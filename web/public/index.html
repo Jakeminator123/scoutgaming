@@ -32,64 +32,7 @@
 
     <!-- the whole table: screen-space perspective art matched to the ER -->
     <div id="table2d">
-      <svg id="tableart" viewBox="0 0 1600 640" preserveAspectRatio="none">
-        <defs>
-          <radialGradient id="feltg" cx="50%" cy="45%" r="78%">
-            <stop offset="0%" stop-color="hsl(147 36% 36%)"/>
-            <stop offset="55%" stop-color="hsl(146 30% 28%)"/>
-            <stop offset="100%" stop-color="hsl(145 25% 19%)"/>
-          </radialGradient>
-          <linearGradient id="railg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="hsl(28 20% 17%)"/>
-            <stop offset="25%" stop-color="hsl(27 15% 10%)"/>
-            <stop offset="70%" stop-color="hsl(28 12% 6%)"/>
-            <stop offset="100%" stop-color="hsl(28 14% 10%)"/>
-          </linearGradient>
-          <linearGradient id="shellg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="hsl(220 8% 42%)"/>
-            <stop offset="30%" stop-color="hsl(220 12% 78%)"/>
-            <stop offset="65%" stop-color="hsl(220 9% 56%)"/>
-            <stop offset="100%" stop-color="hsl(220 10% 26%)"/>
-          </linearGradient>
-          <linearGradient id="shellshade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="rgba(0,0,0,.5)"/>
-            <stop offset="18%" stop-color="rgba(0,0,0,0)"/>
-            <stop offset="82%" stop-color="rgba(0,0,0,0)"/>
-            <stop offset="100%" stop-color="rgba(0,0,0,.5)"/>
-          </linearGradient>
-          <linearGradient id="legg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="hsl(27 12% 10%)"/>
-            <stop offset="100%" stop-color="hsl(27 10% 4%)"/>
-          </linearGradient>
-          <filter id="soften" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14"/></filter>
-          <mask id="cutRail"><rect x="0" y="0" width="1600" height="640" fill="#fff"/><ellipse cx="800" cy="73" rx="178" ry="52" fill="#000"/></mask>
-          <mask id="cutFelt"><rect x="0" y="0" width="1600" height="640" fill="#fff"/><ellipse cx="800" cy="73" rx="198" ry="68" fill="#000"/></mask>
-          <path id="t-arc-big" d="M 500 208 Q 800 164 1100 208" fill="none"/>
-          <path id="t-arc-small" d="M 560 234 Q 800 196 1040 234" fill="none"/>
-          <path id="t-ins-top" d="M 520 274 Q 800 230 1080 274" fill="none"/>
-          <path id="t-ins-mid" d="M 495 300 Q 800 254 1105 300" fill="none"/>
-          <path id="t-ins-bot" d="M 520 322 Q 800 278 1080 322" fill="none"/>
-        </defs>
-        <ellipse cx="800" cy="636" rx="820" ry="22" fill="rgba(0,0,0,.55)" filter="url(#soften)"/>
-        <g mask="url(#cutRail)">
-          <path d="M 296 104 H 1304 Q 1516 128 1560 318 Q 1588 420 1574 490 Q 800 810 26 490 Q 12 420 40 318 Q 84 128 296 104 Z" fill="url(#shellg)"/>
-          <path d="M 296 104 H 1304 Q 1516 128 1560 318 Q 1588 420 1574 490 Q 800 810 26 490 Q 12 420 40 318 Q 84 128 296 104 Z" fill="url(#shellshade)"/>
-          <path d="M 304 118 H 1296 Q 1478 140 1524 314 Q 1548 396 1534 448 Q 800 655 66 448 Q 52 396 76 314 Q 122 140 304 118 Z" fill="url(#railg)"/>
-          <path d="M 304 118 H 1296 Q 1478 140 1524 314" fill="none" stroke="hsl(30 28% 38%)" stroke-opacity=".30" stroke-width="4" stroke-linecap="round"/>
-          <path d="M 66 448 Q 800 655 1534 448" fill="none" stroke="hsl(30 22% 36%)" stroke-opacity=".25" stroke-width="9" stroke-linecap="round"/>
-          <path d="M 46 462 Q 800 690 1554 462" fill="none" stroke="hsl(220 12% 78%)" stroke-opacity=".4" stroke-width="4"/>
-        </g>
-        <g mask="url(#cutFelt)">
-          <path d="M 336 152 H 1264 Q 1420 172 1462 328 Q 1482 396 1470 425 Q 800 560 130 425 Q 118 396 138 328 Q 180 172 336 152 Z" fill="url(#feltg)"/>
-          <path d="M 336 152 H 1264 Q 1420 172 1462 328 Q 1482 396 1470 425 Q 800 560 130 425 Q 118 396 138 328 Q 180 172 336 152 Z" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="3"/>
-          <path d="M 408 214 H 1192 Q 1310 230 1348 340 Q 1362 392 1352 415 Q 800 505 248 415 Q 238 392 252 340 Q 290 230 408 214 Z" fill="none" stroke="rgba(233,214,138,.30)" stroke-width="2"/>
-        </g>
-        <text class="t-line big"><textPath href="#t-arc-big" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
-        <text class="t-line small"><textPath href="#t-arc-small" startOffset="50%" text-anchor="middle">Dealer must draw to 16 and stand on all 17s</textPath></text>
-        <use href="#t-ins-top" class="t-ins-line"/>
-        <use href="#t-ins-bot" class="t-ins-line"/>
-        <text class="t-line ins"><textPath href="#t-ins-mid" startOffset="50%" text-anchor="middle">INSURANCE PAYS 2 TO 1</textPath></text>
-      </svg>
+      <img id="tableimg" src="assets/table.png" alt="" />
       <div id="discard"><img src="assets/tray.png" alt=""></div>
       <div id="shoe2d"><img src="assets/shoe.png" alt=""></div>
       <div id="dealer-cards" class="cards"></div>
