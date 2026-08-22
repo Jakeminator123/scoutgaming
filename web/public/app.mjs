@@ -146,19 +146,18 @@ for (let i = 0; i < SEATS; i++) {
   seatsEl.appendChild(el);
   seatEls.push(el);
 }
+// screen-space seat positions measured from the expected-results screenshot:
+// x fractions of the viewport, y on a shallow arc bowing toward the player
 function layoutSeats() {
-  const r = seatsEl.getBoundingClientRect(); // untransformed size == plane size
-  const w = seatsEl.offsetWidth, h = seatsEl.offsetHeight;
-  const cx = w / 2, cy = h * 0.16, rx = w * 0.30, ry = h * 0.37;
-  // seat 0 leftmost .. seat 6 rightmost along the near arc
+  const P = [0.185, 0.28, 0.39, 0.50, 0.61, 0.72, 0.815];
+  const table = document.querySelector('#table2d').getBoundingClientRect();
   for (let i = 0; i < SEATS; i++) {
-    const deg = 152 - (i * (124 / (SEATS - 1))); // 152° .. 28° (svg-style, y down)
-    const a = deg * Math.PI / 180;
-    const x = cx + rx * Math.cos(a);
-    const y = cy + ry * Math.sin(a);
-    seatEls[i].style.left = `${x}px`;
-    seatEls[i].style.top = `${y}px`;
-    seatEls[i].querySelector('.seat-inner').style.transform = `rotate(${(deg - 90) * -0.18}deg)`;
+    const p = P[i];
+    // measured from the ER: chip row bows from .57 (edges) to .78 (center) of table height
+    const yRel = 0.78 - 0.205 * ((p - 0.5) / 0.315) ** 2;
+    seatEls[i].style.left = `${p * innerWidth}px`;
+    seatEls[i].style.top = `${yRel * table.height}px`;
+    seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(p - 0.5) * 38}deg`);
   }
 }
 layoutSeats();
@@ -246,9 +245,7 @@ $('#clear-btn').onclick = () => {
 };
 
 function stackChip(v) {
-  const base = [...CHIPS].reverse().find(c => c <= v) ?? 1;
-  const pile = v >= base * 2 ? ' pile2' : '';
-  return `<div class="chip3d ${chipClassFor(v)}${pile}"><b>${v >= 1000 ? (v / 1000) + 'K' : v}</b></div>`;
+  return `<div class="chipimg ${chipClassFor(v)}"><img src="assets/chip-gold.png" alt=""><b>${v >= 1000 ? (v / 1000) + 'K' : v}</b></div>`;
 }
 function renderBets() {
   seatEls.forEach((seat, i) => {
@@ -287,7 +284,7 @@ function cardEl(card, faceDown = false) {
   return el;
 }
 function flyFromShoe(el) {
-  const shoe = $('#shoe3d').getBoundingClientRect();
+  const shoe = $('#shoe2d').getBoundingClientRect();
   const r = el.getBoundingClientRect();
   el.style.setProperty('--dx', `${shoe.x + shoe.width / 2 - (r.x + r.width / 2)}px`);
   el.style.setProperty('--dy', `${shoe.y + shoe.height / 2 - (r.y + r.height / 2)}px`);
@@ -354,8 +351,8 @@ function showActions(seat) {
   }
   if (bar.hidden) return;
   const r = (seat ?? seatOfLive(round.active)).getBoundingClientRect();
-  bar.style.left = `${Math.min(innerWidth - 180, r.x + 98)}px`;
-  bar.style.top = `${Math.max(60, r.y + 4)}px`;
+  bar.style.left = `${Math.min(innerWidth - 190, r.x + 56)}px`;
+  bar.style.top = `${Math.max(60, r.y + 18)}px`;
 }
 
 $('#deal-now').onclick = () => { if (!round && !busy) void dealSequence(); };
@@ -546,6 +543,11 @@ function sendChat() {
   setBanner(CANNED[Math.floor(Math.random() * CANNED.length)]);
   setTimeout(() => { if (!round && !busy) setBanner('PLEASE PLACE BETS'); else setBanner(null); }, 4000);
 }
+
+$('#ask-pill').onclick = () => {
+  voice.say(Math.random() < 0.5 ? 'chatter2' : 'chatter1', { force: true });
+  $('#chat-input').focus();
+};
 
 renderBets();
 setBanner('PLEASE PLACE BETS');
