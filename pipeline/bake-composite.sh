@@ -3,9 +3,9 @@
 # window: per-frame person mask (Vision) -> composite over the exact scene
 # crop the panel occupies at the design aspect (16:9) -> re-encoded clip.
 #
-# Panel geometry (styles.css): --dealer-h 88vh, --dealer-top 2.8vh, centered.
-# At 16:9 the scene (2752x1536) covers height-fit, so the video square maps to
-# scene rect x=700 y=43 w=1352 h=1352 (see repo notes). bg.png = that crop.
+# Panel geometry (styles.css): --dealer-h 68vh, --dealer-top 1vh, centered.
+# At 16:9 the scene (2752x1536) covers height-fit (15.36 px/vh), so the video
+# square maps to scene rect x=854 y=15 w=1044 h=1044. bg.png = that crop.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -16,7 +16,7 @@ mkdir -p "$WORK"
 
 # 1. background plate for the full video square
 ffmpeg -hide_banner -loglevel error -y -i content/scene-16x9.png \
-  -vf "crop=1352:1352:700:43,scale=1440:1440" "$BG"
+  -vf "crop=1044:1044:854:15,scale=1440:1440" "$BG"
 
 # 2. per clip: frames -> masks -> composite -> intermediate mp4
 for f in "$RAW"/*.mp4; do

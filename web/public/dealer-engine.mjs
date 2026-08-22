@@ -42,7 +42,7 @@ export class DealerEngine {
   makeDecoder() {
     const d = new VideoDecoder({
       output: f => { this.stats.decoded++; this.display.push(f); },
-      error: e => { this.stats.errors++; this.decoderDead = true; this.log(`decoder error: ${e.message}`); },
+      error: e => { this.stats.errors++; this.decoderDead = true; console.error('[dealer] decoder error:', e.message); },
     });
     d.configure(this.config);
     return d;
@@ -133,9 +133,12 @@ export class DealerEngine {
     };
     void feed();
     // Presenter: fixed 24 fps cadence off performance.now, drift-corrected.
+    // rAF stops in hidden/occluded tabs, which freezes the canvas and parks the
+    // decoder at the buffer cap (reads as "engine dead" to any headless audit).
+    // A low-rate interval watchdog keeps frames moving whenever rAF stalls.
     let next = performance.now();
-    const present = () => {
-      if (!this.running) return;
+    let lastRaf = performance.now();
+    const drain = () => {
       const now = performance.now();
       while (now >= next && this.display.length) {
         const f = this.display.shift();
@@ -144,9 +147,25 @@ export class DealerEngine {
         next += 1000 / 24;
       }
       if (now - next > 500) next = now; // fell behind badly; resync
+    };
+    const present = () => {
+      if (!this.running) return;
+      lastRaf = performance.now();
+      drain();
       requestAnimationFrame(present);
     };
     requestAnimationFrame(present);
+    this.watchdog = setInterval(() => {
+      if (!this.running) { clearInterval(this.watchdog); return; }
+      if (performance.now() - lastRaf > 400) drain(); // rAF throttled; keep alive
+    }, 500);
+    // heartbeat so a silent stall is visible in any console capture
+    this.heartbeat = setInterval(() => {
+      if (!this.running) { clearInterval(this.heartbeat); return; }
+      const d = this.stats.decoded - (this.lastDecoded ?? 0);
+      this.lastDecoded = this.stats.decoded;
+      if (d === 0) console.warn(`[dealer] STALLED: 0 frames decoded in 5s (display=${this.display.length}, queue=${this.decoder?.decodeQueueSize}, errors=${this.stats.errors})`);
+    }, 5000);
   }
 
   stop() {

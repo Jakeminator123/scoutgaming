@@ -154,7 +154,7 @@ function layoutSeats() {
   for (let i = 0; i < SEATS; i++) {
     const p = P[i];
     // measured from the ER: chip row bows from .57 (edges) to .78 (center) of table height
-    const yRel = 0.78 - 0.205 * ((p - 0.5) / 0.315) ** 2;
+    const yRel = 0.72 - 0.185 * ((p - 0.5) / 0.315) ** 2;
     seatEls[i].style.left = `${p * innerWidth}px`;
     seatEls[i].style.top = `${yRel * table.height}px`;
     seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(p - 0.5) * 38}deg`);
@@ -173,7 +173,6 @@ for (const v of CHIPS) {
     selected = v;
     chipsEl.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
     el.classList.add('sel');
-    if (!voice.greeted) { voice.greeted = true; voice.say('greeting', { force: true }); }
   };
   chipsEl.appendChild(el);
 }
@@ -544,9 +543,10 @@ function sendChat() {
   setTimeout(() => { if (!round && !busy) setBanner('PLEASE PLACE BETS'); else setBanner(null); }, 4000);
 }
 
-$('#ask-pill').onclick = () => {
-  voice.say(Math.random() < 0.5 ? 'chatter2' : 'chatter1', { force: true });
-  $('#chat-input').focus();
+$('#gate-enter').onclick = () => {
+  $('#gate').classList.add('hidden');
+  voice.greeted = true;
+  voice.say('greeting', { force: true });
 };
 
 renderBets();

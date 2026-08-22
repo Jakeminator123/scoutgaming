@@ -32,27 +32,44 @@
 
     <!-- the whole table: screen-space perspective art matched to the ER -->
     <div id="table2d">
-      <svg id="tableart" viewBox="0 0 1600 560" preserveAspectRatio="none">
+      <svg id="tableart" viewBox="0 0 1600 580" preserveAspectRatio="none">
         <defs>
-          <radialGradient id="feltg" cx="50%" cy="12%" r="95%">
-            <stop offset="0%" stop-color="#3ba263"/>
-            <stop offset="45%" stop-color="#2a8a52"/>
-            <stop offset="100%" stop-color="#1b6238"/>
+          <radialGradient id="feltg" cx="50%" cy="45%" r="78%">
+            <stop offset="0%" stop-color="hsl(147 36% 36%)"/>
+            <stop offset="55%" stop-color="hsl(146 30% 28%)"/>
+            <stop offset="100%" stop-color="hsl(145 25% 19%)"/>
           </radialGradient>
           <linearGradient id="railg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#26272e"/>
-            <stop offset="18%" stop-color="#17181d"/>
-            <stop offset="100%" stop-color="#0c0d10"/>
+            <stop offset="0%" stop-color="hsl(28 20% 17%)"/>
+            <stop offset="25%" stop-color="hsl(27 15% 10%)"/>
+            <stop offset="70%" stop-color="hsl(28 12% 6%)"/>
+            <stop offset="100%" stop-color="hsl(28 14% 10%)"/>
           </linearGradient>
-          <path id="t-arc-big" d="M 470 218 Q 800 172 1130 218" fill="none"/>
-          <path id="t-arc-small" d="M 540 248 Q 800 210 1060 248" fill="none"/>
-          <path id="t-ins-top" d="M 490 305 Q 800 260 1110 305" fill="none"/>
-          <path id="t-ins-mid" d="M 480 330 Q 800 285 1120 330" fill="none"/>
-          <path id="t-ins-bot" d="M 490 352 Q 800 308 1110 352" fill="none"/>
+          <linearGradient id="shellg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="hsl(220 6% 52%)"/>
+            <stop offset="55%" stop-color="hsl(220 6% 72%)"/>
+            <stop offset="100%" stop-color="hsl(220 8% 40%)"/>
+          </linearGradient>
+          <filter id="soften" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14"/></filter>
+          <mask id="cutRail"><rect x="0" y="0" width="1600" height="580" fill="#fff"/><ellipse cx="800" cy="66" rx="178" ry="50" fill="#000"/></mask>
+          <mask id="cutFelt"><rect x="0" y="0" width="1600" height="580" fill="#fff"/><ellipse cx="800" cy="66" rx="198" ry="64" fill="#000"/></mask>
+          <path id="t-arc-big" d="M 500 214 Q 800 172 1100 214" fill="none"/>
+          <path id="t-arc-small" d="M 560 242 Q 800 206 1040 242" fill="none"/>
+          <path id="t-ins-top" d="M 520 284 Q 800 242 1080 284" fill="none"/>
+          <path id="t-ins-mid" d="M 495 310 Q 800 266 1105 310" fill="none"/>
+          <path id="t-ins-bot" d="M 520 332 Q 800 290 1080 332" fill="none"/>
         </defs>
-        <path d="M -20 300 Q 40 100 300 74 L 640 74 A 170 46 0 0 0 960 74 L 1300 74 Q 1560 100 1620 300 L 1620 580 -20 580 Z" fill="url(#railg)"/>
-        <path d="M -14 340 Q 60 132 320 104 L 655 104 A 158 38 0 0 0 945 104 L 1280 104 Q 1540 132 1614 340 L 1614 580 -14 580 Z" fill="url(#feltg)"/>
-        <path d="M 30 560 Q 120 200 380 168 L 680 168 A 136 30 0 0 0 920 168 L 1220 168 Q 1480 200 1570 560" fill="none" stroke="rgba(233,214,138,.42)" stroke-width="2.5"/>
+        <ellipse cx="800" cy="552" rx="740" ry="44" fill="rgba(0,0,0,.55)" filter="url(#soften)"/>
+        <g mask="url(#cutRail)">
+          <rect x="40" y="56" width="1520" height="516" rx="250" fill="url(#shellg)"/>
+          <rect x="58" y="70" width="1484" height="490" rx="238" fill="url(#railg)"/>
+          <rect x="58" y="70" width="1484" height="490" rx="238" fill="none" stroke="hsl(30 28% 36%)" stroke-opacity=".28" stroke-width="4"/>
+        </g>
+        <g mask="url(#cutFelt)">
+          <rect x="94" y="104" width="1412" height="424" rx="206" fill="url(#feltg)"/>
+          <rect x="94" y="104" width="1412" height="424" rx="206" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="2.5"/>
+          <rect x="158" y="164" width="1284" height="306" rx="152" fill="none" stroke="rgba(233,214,138,.30)" stroke-width="2"/>
+        </g>
         <text class="t-line big"><textPath href="#t-arc-big" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
         <text class="t-line small"><textPath href="#t-arc-small" startOffset="50%" text-anchor="middle">Dealer must draw to 16 and stand on all 17s</textPath></text>
         <use href="#t-ins-top" class="t-ins-line"/>
@@ -71,7 +88,6 @@
       <button data-act="stand"><i>&minus;</i><em>STAND</em></button>
       <button data-act="split" disabled><i>&harr;</i><em>SPLIT</em></button>
     </div>
-    <button id="ask-pill" type="button">&#10024; Unsure? <b>Ask Vera</b></button>
     <div id="actions" hidden>
       <button data-act="double" title="double">2×</button>
       <button data-act="hit" title="hit">+</button>
@@ -103,6 +119,14 @@
     </footer>
 
     <div id="engine-hud"></div>
+    <div id="gate">
+      <div id="gate-panel">
+        <h2>Priv&eacute; Blackjack</h2>
+        <p><b>Vera is an AI dealer.</b> Her commentary is for entertainment only &mdash; she has no knowledge of upcoming cards and never gives betting advice. All outcomes are determined by a certified random number generator.</p>
+        <p class="fine">Play responsibly. Game rules and RTP are available from the table menu.</p>
+        <button id="gate-enter">ENTER TABLE</button>
+      </div>
+    </div>
   </div>
   <script type="module" src="app.mjs"></script>
 </body>
