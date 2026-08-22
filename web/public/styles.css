@@ -173,9 +173,9 @@ body.in-round .stake { display: none; }
 .card.back { background: repeating-linear-gradient(45deg, #274a8f 0 6px, #1d3a73 6px 12px); }
 
 /* ---------- shoe + discard tray: photoreal assets ---------- */
-#shoe2d { position: absolute; right: 13%; top: 18%; width: 140px; pointer-events: none; transform: rotate(-8deg); }
+#shoe2d { position: absolute; right: 10.5%; top: 11%; width: 136px; pointer-events: none; transform: rotate(-8deg); }
 #shoe2d img { width: 100%; filter: drop-shadow(0 10px 16px rgba(0,0,0,.35)); }
-#discard { position: absolute; left: 16%; top: 16%; width: 84px; pointer-events: none; transform: rotate(6deg); }
+#discard { position: absolute; left: 14%; top: 10%; width: 82px; pointer-events: none; transform: rotate(6deg); }
 #discard img { width: 100%; filter: drop-shadow(0 10px 14px rgba(0,0,0,.3)); }
 
 /* ---------- action bars ---------- */

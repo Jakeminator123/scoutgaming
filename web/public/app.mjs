@@ -155,7 +155,7 @@ function layoutSeats() {
   const img = imgEl?.getBoundingClientRect();
   const table = document.querySelector('#table2d').getBoundingClientRect();
   if (!img || !img.width) return;
-  const CX = 0.5, CY = 0.185, RX = 0.395, RY = 0.60;
+  const CX = 0.5, CY = 0.13, RX = 0.365, RY = 0.445;
   for (let i = 0; i < SEATS; i++) {
     const phi = (145 - i * (110 / (SEATS - 1))) * Math.PI / 180; // 145deg .. 35deg
     const fx = CX + RX * Math.cos(phi);
