@@ -1,0 +1,89 @@
+{
+  "visemes": [
+    {
+      "viseme": "AA",
+      "startMs": 16,
+      "endMs": 126
+    },
+    {
+      "viseme": "PP",
+      "startMs": 190,
+      "endMs": 254
+    },
+    {
+      "viseme": "DD",
+      "startMs": 254,
+      "endMs": 294
+    },
+    {
+      "viseme": "AA",
+      "startMs": 294,
+      "endMs": 382
+    },
+    {
+      "viseme": "KK",
+      "startMs": 382,
+      "endMs": 510
+    },
+    {
+      "viseme": "CH",
+      "startMs": 510,
+      "endMs": 570
+    },
+    {
+      "viseme": "AA",
+      "startMs": 570,
+      "endMs": 638
+    },
+    {
+      "viseme": "KK",
+      "startMs": 638,
+      "endMs": 766
+    },
+    {
+      "viseme": "FF",
+      "startMs": 806,
+      "endMs": 846
+    },
+    {
+      "viseme": "OH",
+      "startMs": 846,
+      "endMs": 886
+    },
+    {
+      "viseme": "RR",
+      "startMs": 886,
+      "endMs": 946
+    },
+    {
+      "viseme": "TH",
+      "startMs": 966,
+      "endMs": 1006
+    },
+    {
+      "viseme": "AA",
+      "startMs": 1006,
+      "endMs": 1096
+    },
+    {
+      "viseme": "DD",
+      "startMs": 1155,
+      "endMs": 1223
+    },
+    {
+      "viseme": "EE",
+      "startMs": 1223,
+      "endMs": 1360
+    },
+    {
+      "viseme": "DD",
+      "startMs": 1360,
+      "endMs": 1429
+    },
+    {
+      "viseme": "RR",
+      "startMs": 1429,
+      "endMs": 1579
+    }
+  ]
+}

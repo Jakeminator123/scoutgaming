@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Croupier — Privé Blackjack</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="scene">
+    <div id="room"></div>
+    <div id="dealer-wrap"><canvas id="dealer"></canvas></div>
+
+    <header id="hud-top">
+      <div id="game-title">
+        <h1>Privé Blackjack <span class="limits">· $5 – $2,000</span></h1>
+        <div class="sub">Croupier Demo · <span id="clock"></span> · <span class="ai-badge" title="This dealer is an AI. Outcomes are determined by a certified RNG.">AI dealer</span></div>
+      </div>
+      <div id="chat">
+        <input id="chat-input" placeholder="Ask anything…" autocomplete="off" />
+        <button id="chat-send" aria-label="send">➤</button>
+      </div>
+    </header>
+
+    <div id="table">
+      <div id="felt">
+        <div class="felt-text">
+          <div class="rule-line">DEALER MUST DRAW TO 16 AND STAND ON ALL 17S</div>
+          <div class="rule-arc">INSURANCE PAYS 2 TO 1</div>
+        </div>
+        <div id="dealer-cards" class="cards"></div>
+        <div id="banner">PLEASE PLACE BETS</div>
+        <div id="chips"></div>
+        <div id="boxes">
+          <div class="box" data-box="0"><div class="cards"></div><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
+          <div class="box" data-box="1"><div class="cards"></div><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
+          <div class="box" data-box="2"><div class="cards"></div><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="actions" hidden>
+      <button data-act="hit">HIT</button>
+      <button data-act="stand">STAND</button>
+      <button data-act="double">DOUBLE</button>
+    </div>
+    <div id="insurance" hidden>
+      <span>Insurance?</span>
+      <button id="ins-yes">YES</button>
+      <button id="ins-no">NO</button>
+    </div>
+
+    <footer id="hud-bottom">
+      <div id="wallet">
+        <div><label>BALANCE</label><span id="balance">$1,000.00</span></div>
+        <div><label>TOTAL BET</label><span id="total-bet">$0.00</span></div>
+      </div>
+      <div id="deal-controls">
+        <button id="clear-btn" disabled>CLEAR</button>
+        <button id="deal-btn" disabled>DEAL</button>
+      </div>
+      <button id="autobet" disabled title="Autobet is opt-in only and not in this demo">⟳ AUTOBET</button>
+    </footer>
+
+    <div id="engine-hud"></div>
+  </div>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>
