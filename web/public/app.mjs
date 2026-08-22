@@ -149,7 +149,7 @@ for (let i = 0; i < SEATS; i++) {
 function layoutSeats() {
   const r = seatsEl.getBoundingClientRect(); // untransformed size == plane size
   const w = seatsEl.offsetWidth, h = seatsEl.offsetHeight;
-  const cx = w / 2, cy = h * 0.24, rx = w * 0.325, ry = h * 0.34;
+  const cx = w / 2, cy = h * 0.16, rx = w * 0.30, ry = h * 0.37;
   // seat 0 leftmost .. seat 6 rightmost along the near arc
   for (let i = 0; i < SEATS; i++) {
     const deg = 152 - (i * (124 / (SEATS - 1))); // 152° .. 28° (svg-style, y down)
@@ -158,7 +158,7 @@ function layoutSeats() {
     const y = cy + ry * Math.sin(a);
     seatEls[i].style.left = `${x}px`;
     seatEls[i].style.top = `${y}px`;
-    seatEls[i].querySelector('.seat-inner').style.transform = `rotate(${(deg - 90) * -0.35}deg)`;
+    seatEls[i].querySelector('.seat-inner').style.transform = `rotate(${(deg - 90) * -0.18}deg)`;
   }
 }
 layoutSeats();
@@ -255,7 +255,7 @@ function renderBets() {
     const b = bets[i];
     const spot = seat.querySelector('.spot');
     if (b.main) { spot.classList.add('staked'); spot.innerHTML = stackChip(b.main); }
-    else { spot.classList.remove('staked'); spot.textContent = '+'; }
+    else { spot.classList.remove('staked'); spot.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20c.8-3.6 3.4-5.6 6.5-5.6s5.7 2 6.5 5.6"/><path d="M18 8.5h5M20.5 6v5"/></svg>'; }
     for (const f of ['pp', 'tp']) {
       const el = seat.querySelector(`.side.${f}`);
       if (b[f]) { el.classList.add('staked'); el.innerHTML = stackChip(b[f]); }
@@ -298,6 +298,7 @@ function updateBadge(container, cards) {
   if (!cards.length) { badge?.remove(); return; }
   if (!badge) { badge = document.createElement('div'); badge.className = 'hand-total'; }
   container.appendChild(badge);
+  badge.style.setProperty('--cn', Math.max(0, container.querySelectorAll('.card').length - 1));
   const { total, soft } = handValue(cards);
   badge.textContent = soft && total <= 21 ? `${total - 10}/${total}` : String(total);
 }
@@ -309,6 +310,7 @@ function seatOfLive(liveIdx) {
 const boxContainer = liveIdx => seatOfLive(liveIdx)?.querySelector('.cards');
 function dealCardTo(container, card, { faceDown = false } = {}) {
   const el = cardEl(card, faceDown);
+  el.style.setProperty('--ci', container.querySelectorAll('.card').length);
   const badge = container.querySelector('.hand-total');
   container.insertBefore(el, badge ?? null);
   flyFromShoe(el);
@@ -318,6 +320,7 @@ function revealHole(container, card) {
   const back = container.querySelector('.card.back');
   if (!back) return;
   const el = cardEl(card);
+  el.style.setProperty('--ci', back.style.getPropertyValue('--ci') || 1);
   el.classList.add('flip');
   back.replaceWith(el);
 }
@@ -331,6 +334,7 @@ function setBanner(text) { const b = $('#banner'); if (!text) b.classList.add('h
 function activeBoxHighlight() {
   seatEls.forEach(s => s.classList.remove('active'));
   $('#actions').hidden = true;
+  $('#actions-top').hidden = true;
   if (!round || round.phase !== 'decisions') return;
   const seat = seatOfLive(round.active);
   if (!seat) return;
@@ -341,15 +345,17 @@ function showActions(seat) {
   const legal = round?.legal() ?? [];
   const bar = $('#actions');
   bar.hidden = legal.length === 0;
-  if (bar.hidden) return;
+  const top = $('#actions-top');
+  top.hidden = legal.length === 0;
   const stake = round?.live()[round.active]?.stake ?? Infinity;
-  bar.querySelectorAll('button').forEach(b => {
+  for (const b of [...bar.querySelectorAll('button'), ...top.querySelectorAll('button')]) {
     b.disabled = !legal.includes(b.dataset.act) ||
       (b.dataset.act === 'double' && balance < stake);
-  });
+  }
+  if (bar.hidden) return;
   const r = (seat ?? seatOfLive(round.active)).getBoundingClientRect();
-  bar.style.left = `${Math.min(innerWidth - 170, r.x + 60)}px`;
-  bar.style.top = `${Math.max(60, r.y - 96)}px`;
+  bar.style.left = `${Math.min(innerWidth - 180, r.x + 98)}px`;
+  bar.style.top = `${Math.max(60, r.y + 4)}px`;
 }
 
 $('#deal-now').onclick = () => { if (!round && !busy) void dealSequence(); };
@@ -428,7 +434,7 @@ async function afterDealChoreo() {
   if (round.phase === 'decisions') trigger(CLIP.think);
 }
 
-document.querySelectorAll('#actions button').forEach(btn => {
+document.querySelectorAll('#actions button, #actions-top button').forEach(btn => {
   btn.onclick = async e => {
     console.info('[act]', btn.dataset.act, 'trusted=', e?.isTrusted, 'phase=', round?.phase, 'busy=', busy);
     if (!round || round.phase !== 'decisions' || busy) return;
@@ -454,6 +460,7 @@ document.querySelectorAll('#actions button').forEach(btn => {
       activeBoxHighlight();
     } else {
       $('#actions').hidden = true;
+      $('#actions-top').hidden = true;
       seatEls.forEach(s => s.classList.remove('active'));
       busy = true;
       await dealerRevealChoreo();
@@ -480,6 +487,7 @@ async function dealerRevealChoreo() {
 
 async function finish() {
   $('#actions').hidden = true;
+  $('#actions-top').hidden = true;
   seatEls.forEach(s => s.classList.remove('active'));
   const live = round.live();
   let ret = 0, sideRet = 0, anyWin = false, anyPush = false, anyLose = false, anyPlayerBJ = false;
