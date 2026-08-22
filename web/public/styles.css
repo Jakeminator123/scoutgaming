@@ -63,7 +63,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #caption.show { opacity: 1; }
 
 /* ---------- the whole table: screen-space art (matched to ER1/ER2) ---------- */
-#table2d { position: absolute; left: 0; right: 0; top: 42vh; bottom: 0; z-index: 20; }
+#table2d { position: absolute; left: 0; right: 0; top: 40.5vh; bottom: 0; z-index: 20; }
 #tableart { position: absolute; inset: 0; width: 100%; height: 100%; }
 #tableart .t-line { fill: rgba(238,220,142,.5); font-family: Georgia, serif; letter-spacing: .26em; }
 #tableart .t-line.big { font-size: 18px; }
@@ -72,7 +72,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #tableart .t-ins-line { stroke: rgba(233,214,138,.35); stroke-width: 1.2; fill: none; }
 
 /* dealer's cards on the felt, screen space */
-#dealer-cards { position: absolute; left: 47.5%; top: 15%; width: 0; height: 0; }
+#dealer-cards { position: absolute; left: 47.5%; top: 12%; width: 0; height: 0; }
 #dealer-cards .card, .seat .cards .card {
   position: absolute;
   left: calc(var(--ci, 0) * 20px - 22px); top: calc(var(--ci, 0) * -5px);
