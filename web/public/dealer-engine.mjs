@@ -164,7 +164,13 @@ export class DealerEngine {
       if (!this.running) { clearInterval(this.heartbeat); return; }
       const d = this.stats.decoded - (this.lastDecoded ?? 0);
       this.lastDecoded = this.stats.decoded;
+      const wedged = d === 0 && (this.decoder?.decodeQueueSize ?? 0) > 0 && this.display.length === 0;
       if (d === 0) console.warn(`[dealer] STALLED: 0 frames decoded in 5s (display=${this.display.length}, queue=${this.decoder?.decodeQueueSize}, errors=${this.stats.errors})`);
+      if (wedged) {
+        // decoder accepted chunks but never emits and never errors: rebuild it
+        this.stalls = (this.stalls ?? 0) + 1;
+        if (this.stalls >= 2) { console.warn('[dealer] wedged decoder - rebuilding'); this.decoderDead = true; this.stalls = 0; }
+      } else this.stalls = 0;
     }, 5000);
   }
 
