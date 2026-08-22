@@ -7,20 +7,44 @@
 }
 html, body { height: 100%; background: #000; overflow: hidden; font-family: "Figtree", "Helvetica Neue", Arial, sans-serif; color: #eee; }
 
+:root {
+  /* video-plane calibration knobs: size and vertical seat of the dealer video
+     over the wide scene photograph. The panel bottom is seated ON the scene's
+     rail line so the two rails read as one table (no feathered haze). */
+  --dealer-h: 88vh;
+  --dealer-top: 2.8vh;
+  --dealer-crop: 0.86;
+}
 #scene { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-#room {
+#room { position: absolute; inset: 0; background: #0b0c10; }
+/* The whole environment is one photograph (the canonical frame outpainted to
+   16:9): room, rail and felt run continuously to the viewport bottom. */
+#room2 {
   position: absolute; inset: 0;
-  background: #14161f url('background.jpg') center 30% / cover no-repeat;
-  filter: brightness(.9);
+  background: url('scene.jpg') center / cover no-repeat;
 }
-#room::after { content:''; position:absolute; inset:0; background: radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0,0,0,.55) 100%); }
-
+#room2::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, transparent 45%, rgba(0,0,0,.5) 100%); }
 #dealer-wrap {
-  position: absolute; left: 50%; top: 0; transform: translateX(-50%);
-  height: 62vh; aspect-ratio: 1; display: flex; justify-content: center;
+  /* invisible window: the clips are baked over the exact scene crop this rect
+     occupies at the design aspect (pipeline/bake-composite.sh), so the video
+     pixels around the dealer ARE the scene. Feathers only cover the tiny
+     drift on non-16:9 viewports. */
+  position: absolute; left: 50%; top: var(--dealer-top); transform: translateX(-50%);
+  width: var(--dealer-h); height: calc(var(--dealer-h) * var(--dealer-crop, 0.86));
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 3%, #000 97%, transparent 100%),
+                      linear-gradient(to bottom, transparent 0%, #000 3%, #000 96%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent 0%, #000 3%, #000 97%, transparent 100%),
+              linear-gradient(to bottom, transparent 0%, #000 3%, #000 96%, transparent 100%);
+  mask-composite: intersect;
 }
-#dealer { width: 100%; height: 100%; object-fit: cover; }
+#dealer { display: block; width: 100%; height: auto; aspect-ratio: 1; }
 
+/* HUD strips span the viewport but must never eat clicks meant for the felt:
+   the strip itself is click-transparent, its controls are not. */
+#hud-top, #hud-bottom { pointer-events: none; }
+#hud-top button, #hud-top input, #wallet, #deal-controls button, #autobet { pointer-events: auto; }
 #hud-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; padding: 14px 18px; z-index: 30; }
 #game-title h1 { font-size: 17px; font-weight: 600; }
 #game-title .limits { font-weight: 400; color: #cfcfcf; }
@@ -30,14 +54,14 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #chat input { width: 260px; background: rgba(20,20,26,.75); border: 1px solid #3a3a44; color: #ddd; border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none; }
 #chat button { background: rgba(20,20,26,.75); border: 1px solid #3a3a44; color: #bbb; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
 
-#table { position: absolute; left: 50%; bottom: -6vh; transform: translateX(-50%); width: 128vmin; max-width: 96vw; z-index: 20; }
+/* The table itself is the photograph now: this container only lays out the
+   interactive elements floating on it. */
+#table { position: absolute; left: 50%; bottom: -10.5vh; transform: translateX(-50%); width: 128vmin; max-width: 96vw; z-index: 20; }
 #felt {
-  position: relative; height: 46vh; border-radius: 50% 50% 0 0 / 88% 88% 0 0;
-  background: radial-gradient(ellipse at 50% -10%, #2c9a58 0%, var(--felt) 45%, var(--felt-dark) 100%);
-  border-top: 14px solid #17181d; box-shadow: 0 -8px 40px rgba(0,0,0,.6), inset 0 6px 30px rgba(0,0,0,.35);
+  position: relative; height: 46vh;
   padding-top: 3.5vh;
 }
-.felt-text { text-align: center; color: rgba(230,220,150,.75); pointer-events: none; user-select: none; }
+.felt-text { display: none; }
 .rule-line { font-size: 11px; letter-spacing: .18em; }
 .rule-arc { font-family: Georgia, serif; font-size: 22px; letter-spacing: .22em; margin-top: 6px; color: rgba(240,225,140,.85); border: 1px solid rgba(240,225,140,.35); border-radius: 50%/100%; display: inline-block; padding: 6px 40px 10px; border-bottom: none; }
 
@@ -48,7 +72,36 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 }
 #banner.hidden { display: none; }
 
-#chips { display: flex; justify-content: center; gap: 10px; margin-top: 1.6vh; z-index: 25; position: relative; }
+/* betting layout mirrors the reference: spots mid-table, chips near the
+   player edge, DEAL NOW up on the felt */
+#chip-row {
+  position: absolute; bottom: 12.5vh; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px; z-index: 25;
+}
+#chips { display: flex; justify-content: center; gap: 10px; }
+#undo-btn, #double-btn {
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35);
+  background: rgba(10,14,12,.55); color: #eee; font-size: 17px; cursor: pointer;
+}
+#undo-btn:disabled, #double-btn:disabled { opacity: .35; cursor: default; }
+#deal-now {
+  position: absolute; top: 7vh; left: 50%; transform: translateX(-50%); z-index: 26;
+  background: linear-gradient(#3b2f14, #241c0a); color: #f0dfa8; border: 1px solid #d9c06a;
+  border-radius: 24px; padding: 12px 34px; font-size: 15px; font-weight: 800; letter-spacing: .1em;
+  cursor: pointer; box-shadow: 0 4px 18px rgba(0,0,0,.5);
+}
+#deal-now:disabled { opacity: 0; pointer-events: none; }
+body.in-round #deal-now, body.in-round #chip-row { display: none; }
+.clear-box {
+  position: absolute; top: 34px; left: 50%; transform: translateX(-50%);
+  width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(15,18,16,.75); color: #ddd; font-size: 15px; line-height: 1; z-index: 2;
+}
+.chip-fly {
+  position: fixed; z-index: 60; pointer-events: none;
+  transition: transform .45s cubic-bezier(.2,.75,.3,1), opacity .45s;
+}
+body.in-round .clear-box { display: none; }
 .chip {
   width: 52px; height: 52px; border-radius: 50%; border: 5px dashed #fff; cursor: pointer;
   display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff;
@@ -61,16 +114,24 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .c25 { background: #c2571f; } .c50 { background: #a73aa0; } .c100 { background: #348a37; }
 .c500 { background: #6b3ab5; } .c1000 { background: #23252c; }
 
-#boxes { display: flex; justify-content: center; gap: 7vw; margin-top: 2.4vh; }
+#boxes { display: flex; justify-content: center; gap: 7vw; margin-top: 5vh; }
 .box { position: relative; text-align: center; }
 .spot {
   width: 74px; height: 74px; border-radius: 50%; margin: 0 auto;
-  background: radial-gradient(circle, rgba(10,80,50,.9), rgba(8,60,38,.9));
+  background: radial-gradient(circle, rgba(10,80,50,.55), rgba(8,60,38,.55));
   border: 2px solid rgba(255,255,255,.4); color: rgba(255,255,255,.75);
   display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer;
   transition: box-shadow .15s;
 }
 .box.active .spot { box-shadow: 0 0 0 4px rgba(255,255,180,.7); }
+/* a staked spot shows a chip stack, not a plus */
+.spot.staked { border-style: none; background: none; font-size: 0; }
+.spot .stack-chip {
+  width: 58px; height: 58px; border-radius: 50%; border: 5px dashed #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: #fff;
+  box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 6px 10px rgba(0,0,0,.5), inset 0 0 0 3px rgba(0,0,0,.25);
+}
 .stake { margin-top: 5px; font-size: 13px; color: var(--gold); min-height: 16px; font-weight: 600; }
 .result { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-weight: 700; font-size: 14px; padding: 2px 10px; border-radius: 5px; }
 .result.win { background: #d9c06a; color: #222; }
@@ -78,15 +139,34 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .result.push { background: #44464e; color: #fff; }
 
 .cards { display: flex; justify-content: center; gap: 6px; min-height: 66px; margin-bottom: 4px; }
-#dealer-cards { position: absolute; top: 13vh; left: 50%; transform: translateX(-50%); z-index: 24; }
+/* dealer's cards land on the video's own table strip, in front of her hands */
+#dealer-cards { position: absolute; top: -5vh; left: 50%; transform: translateX(-50%); z-index: 24; }
+/* chips leave the table while a round is running, exactly like the live demo */
+body.in-round #chips { display: none; }
 .card {
-  width: 46px; height: 66px; border-radius: 6px; background: #f7f5ee; color: #222;
+  width: clamp(46px, 5vmin, 68px); height: clamp(66px, 7.2vmin, 98px);
+  border-radius: 6px; background: #f7f5ee; color: #222;
   box-shadow: 0 2px 6px rgba(0,0,0,.45); position: relative; font-weight: 700;
-  animation: dealin .25s ease-out;
+  will-change: transform;
 }
-@keyframes dealin { from { transform: translateY(-30px) scale(.8); opacity: 0; } }
-.card .corner { position: absolute; top: 3px; left: 5px; font-size: 13px; line-height: 1; text-align: center; }
-.card .pip { position: absolute; bottom: 4px; right: 6px; font-size: 22px; }
+/* dealt from the shoe: JS sets --dx/--dy = vector from final position back to the shoe */
+.card.fly { animation: flyin .5s cubic-bezier(.2, .75, .25, 1); }
+@keyframes flyin {
+  from { transform: translate(var(--dx, 0px), var(--dy, -180px)) rotate(-10deg) scale(.72); opacity: .25; }
+  to { transform: none; opacity: 1; }
+}
+.card.flip { animation: flipin .4s ease-out; }
+@keyframes flipin { from { transform: rotateY(88deg) scale(1.05); } to { transform: none; } }
+
+#shoe {
+  position: absolute; top: 3.6vh; right: 14%; width: 92px; height: 56px; z-index: 23;
+  background: linear-gradient(160deg, rgba(235,235,240,.9), rgba(150,150,165,.85) 60%, rgba(90,90,105,.9));
+  border-radius: 8px 14px 10px 8px; transform: skewX(-18deg) rotate(-3deg);
+  box-shadow: 0 6px 14px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.25);
+}
+#shoe::after { content: ''; position: absolute; left: 8px; top: 10px; width: 26px; height: 36px; background: repeating-linear-gradient(45deg, #274a8f 0 5px, #1d3a73 5px 10px); border-radius: 3px; }
+.card .corner { position: absolute; top: 3px; left: 5px; font-size: clamp(13px, 1.5vmin, 19px); line-height: 1; text-align: center; }
+.card .pip { position: absolute; bottom: 4px; right: 6px; font-size: clamp(22px, 2.6vmin, 34px); }
 .card.red { color: #c22b2b; }
 .card.back { background: repeating-linear-gradient(45deg, #274a8f 0 6px, #1d3a73 6px 12px); }
 .hand-total { align-self: center; background: rgba(0,0,0,.65); border-radius: 4px; font-size: 12px; padding: 2px 7px; margin-left: 6px; }

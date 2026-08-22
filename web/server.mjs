@@ -18,7 +18,10 @@ const MIME = {
 
 createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
-  let path = normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.[/\\])+/, '');
+  let decoded;
+  try { decoded = decodeURIComponent(url.pathname); }
+  catch { res.writeHead(400); res.end('bad request'); return; }
+  let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '');
   if (path === '/' || path === '\\') path = '/index.html';
   const file = join(root, path);
   if (!file.startsWith(root) || !existsSync(file) || !statSync(file).isFile()) {
@@ -28,7 +31,7 @@ createServer((req, res) => {
   const type = MIME[extname(file)] ?? 'application/octet-stream';
   const range = req.headers.range?.match(/bytes=(\d*)-(\d*)/);
   if (range && (range[1] || range[2])) {
-    const start = range[1] ? Number(range[1]) : size - Number(range[2]);
+    const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
     const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
     if (start > end || start >= size) { res.writeHead(416, { 'Content-Range': `bytes */${size}` }); res.end(); return; }
     res.writeHead(206, {
