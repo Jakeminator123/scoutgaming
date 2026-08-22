@@ -30,15 +30,22 @@ export class DealerEngine {
     this.canvas.height = this.index.height;
     if (typeof VideoDecoder === 'undefined') throw new Error('WebCodecs VideoDecoder unavailable');
     // No description => Annex-B mode; SPS/PPS ride in-band on the IDR AU.
-    const config = { codec: this.index.codec, optimizeForLatency: true };
-    const support = await VideoDecoder.isConfigSupported(config);
+    this.config = { codec: this.index.codec, optimizeForLatency: true };
+    const support = await VideoDecoder.isConfigSupported(this.config);
     if (!support.supported) throw new Error(`codec ${this.index.codec} unsupported`);
-    this.decoder = new VideoDecoder({
-      output: f => { this.stats.decoded++; this.display.push(f); },
-      error: e => { this.stats.errors++; this.log(`decoder error: ${e.message}`); },
-    });
-    this.decoder.configure(config);
+    this.decoder = this.makeDecoder();
     this.log(`engine ready: ${Object.keys(this.index.clips).length} clips, ${this.index.codec}`);
+  }
+
+  // A VideoDecoder that errors is closed for good; the feeder swaps in a fresh
+  // one and restarts at the next clip boundary (frame 0 is always an IDR).
+  makeDecoder() {
+    const d = new VideoDecoder({
+      output: f => { this.stats.decoded++; this.display.push(f); },
+      error: e => { this.stats.errors++; this.decoderDead = true; this.log(`decoder error: ${e.message}`); },
+    });
+    d.configure(this.config);
+    return d;
   }
 
   clipKeys() { return Object.keys(this.index.clips); }
@@ -74,23 +81,38 @@ export class DealerEngine {
     let cur = null; // { meta, buf, i }
     const feed = async () => {
       while (this.running) {
-        const buffered = this.display.length + this.decoder.decodeQueueSize;
-        if (buffered >= 24) { await new Promise(r => setTimeout(r, 40)); continue; }
-        if (!cur || cur.i >= cur.meta.frames.length) {
-          const key = this.nextClip();
-          cur = { meta: this.index.clips[key], buf: await this.fetchClip(key), i: 0 };
-          this.stats.splices++;
-          this.currentClip = key;
+        try {
+          if (this.decoderDead) {
+            try { this.decoder.close(); } catch { /* already closed */ }
+            for (const f of this.display.splice(0)) f.close();
+            this.decoder = this.makeDecoder();
+            this.decoderDead = false;
+            cur = null; // restart cleanly on an IDR
+          }
+          const buffered = this.display.length + this.decoder.decodeQueueSize;
+          if (buffered >= 24) { await new Promise(r => setTimeout(r, 40)); continue; }
+          if (!cur || cur.i >= cur.meta.frames.length) {
+            const key = this.nextClip();
+            cur = { meta: this.index.clips[key], buf: await this.fetchClip(key), i: 0 };
+            this.stats.splices++;
+            this.currentClip = key;
+          }
+          const [off, size] = cur.meta.frames[cur.i];
+          this.decoder.decode(new EncodedVideoChunk({
+            type: cur.i === 0 ? 'key' : 'delta',
+            timestamp: this.ts,
+            data: new Uint8Array(cur.buf, off, size),
+          }));
+          cur.i++;
+          this.ts += this.frameUs;
+          this.stats.submitted++;
+        } catch (err) {
+          // fetch failure, decode-on-closed, anything: log, back off, try again
+          this.stats.errors++;
+          this.log(`feeder recovering: ${err.message}`);
+          cur = null;
+          await new Promise(r => setTimeout(r, 600));
         }
-        const [off, size] = cur.meta.frames[cur.i];
-        this.decoder.decode(new EncodedVideoChunk({
-          type: cur.i === 0 ? 'key' : 'delta',
-          timestamp: this.ts,
-          data: new Uint8Array(cur.buf, off, size),
-        }));
-        cur.i++;
-        this.ts += this.frameUs;
-        this.stats.submitted++;
       }
     };
     void feed();

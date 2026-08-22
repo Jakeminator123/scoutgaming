@@ -4,11 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Croupier — Privé Blackjack</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%F0%9F%83%8F%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div id="scene">
     <div id="room"></div>
+    <div id="room2"></div>
     <div id="dealer-wrap"><canvas id="dealer"></canvas></div>
 
     <header id="hud-top">
@@ -28,13 +30,19 @@
           <div class="rule-line">DEALER MUST DRAW TO 16 AND STAND ON ALL 17S</div>
           <div class="rule-arc">INSURANCE PAYS 2 TO 1</div>
         </div>
+        <div id="shoe"></div>
         <div id="dealer-cards" class="cards"></div>
         <div id="banner">PLEASE PLACE BETS</div>
-        <div id="chips"></div>
+        <button id="deal-now" disabled>DEAL NOW</button>
         <div id="boxes">
-          <div class="box" data-box="0"><div class="cards"></div><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
-          <div class="box" data-box="1"><div class="cards"></div><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
-          <div class="box" data-box="2"><div class="cards"></div><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
+          <div class="box" data-box="0"><div class="cards"></div><button class="clear-box" hidden>×</button><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
+          <div class="box" data-box="1"><div class="cards"></div><button class="clear-box" hidden>×</button><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
+          <div class="box" data-box="2"><div class="cards"></div><button class="clear-box" hidden>×</button><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
+        </div>
+        <div id="chip-row">
+          <button id="undo-btn" title="undo last chip" disabled>⟲</button>
+          <div id="chips"></div>
+          <button id="double-btn" title="double all bets" disabled>2×</button>
         </div>
       </div>
     </div>
@@ -57,7 +65,6 @@
       </div>
       <div id="deal-controls">
         <button id="clear-btn" disabled>CLEAR</button>
-        <button id="deal-btn" disabled>DEAL</button>
       </div>
       <button id="autobet" disabled title="Autobet is opt-in only and not in this demo">⟳ AUTOBET</button>
     </footer>
