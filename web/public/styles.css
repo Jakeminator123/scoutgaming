@@ -63,7 +63,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #caption.show { opacity: 1; }
 
 /* ---------- the whole table: screen-space art (matched to ER1/ER2) ---------- */
-#table2d { position: absolute; left: 0; right: 0; top: 40.5vh; bottom: 0; z-index: 20; }
+#table2d { position: absolute; left: 0; right: 0; top: 45vh; bottom: 0; z-index: 20; }
 #tableart { position: absolute; inset: 0; width: 100%; height: 100%; }
 #tableart .t-line { fill: rgba(238,220,142,.5); font-family: Georgia, serif; letter-spacing: .26em; }
 #tableart .t-line.big { font-size: 18px; }
