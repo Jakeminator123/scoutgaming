@@ -148,20 +148,26 @@ for (let i = 0; i < SEATS; i++) {
 }
 // screen-space seat positions measured from the expected-results screenshot:
 // x fractions of the viewport, y on a shallow arc bowing toward the player
+// Seats live on the TABLE IMAGE, not the viewport: equal angular spacing
+// along an ellipse concentric with the felt's near rail, constant inset.
 function layoutSeats() {
-  const P = [0.185, 0.28, 0.39, 0.50, 0.61, 0.72, 0.815];
+  const imgEl = document.querySelector('#tableimg');
+  const img = imgEl?.getBoundingClientRect();
   const table = document.querySelector('#table2d').getBoundingClientRect();
+  if (!img || !img.width) return;
+  const CX = 0.5, CY = 0.185, RX = 0.395, RY = 0.60;
   for (let i = 0; i < SEATS; i++) {
-    const p = P[i];
-    // measured from the ER: chip row bows from .57 (edges) to .78 (center) of table height
-    const yRel = 0.665 - 0.175 * ((p - 0.5) / 0.315) ** 2;
-    seatEls[i].style.left = `${p * innerWidth}px`;
-    seatEls[i].style.top = `${yRel * table.height}px`;
-    seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(p - 0.5) * 38}deg`);
+    const phi = (145 - i * (110 / (SEATS - 1))) * Math.PI / 180; // 145deg .. 35deg
+    const fx = CX + RX * Math.cos(phi);
+    const fy = CY + RY * Math.sin(phi);
+    seatEls[i].style.left = `${img.left + fx * img.width - table.left}px`;
+    seatEls[i].style.top = `${img.top + fy * img.height - table.top}px`;
+    seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(fx - 0.5) * 61}deg`);
   }
 }
 layoutSeats();
 addEventListener('resize', layoutSeats);
+document.querySelector('#tableimg')?.addEventListener('load', layoutSeats);
 
 // ---------- chip picker ----------
 const chipsEl = $('#chips');
