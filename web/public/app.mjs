@@ -154,7 +154,7 @@ function layoutSeats() {
   for (let i = 0; i < SEATS; i++) {
     const p = P[i];
     // measured from the ER: chip row bows from .57 (edges) to .78 (center) of table height
-    const yRel = 0.72 - 0.185 * ((p - 0.5) / 0.315) ** 2;
+    const yRel = 0.74 - 0.185 * ((p - 0.5) / 0.315) ** 2;
     seatEls[i].style.left = `${p * innerWidth}px`;
     seatEls[i].style.top = `${yRel * table.height}px`;
     seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(p - 0.5) * 38}deg`);

@@ -50,27 +50,33 @@
             <stop offset="55%" stop-color="hsl(220 10% 76%)"/>
             <stop offset="100%" stop-color="hsl(220 10% 34%)"/>
           </linearGradient>
+          <linearGradient id="legg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="hsl(27 12% 10%)"/>
+            <stop offset="100%" stop-color="hsl(27 10% 4%)"/>
+          </linearGradient>
           <filter id="soften" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14"/></filter>
           <mask id="cutRail"><rect x="0" y="0" width="1600" height="640" fill="#fff"/><ellipse cx="800" cy="73" rx="178" ry="52" fill="#000"/></mask>
           <mask id="cutFelt"><rect x="0" y="0" width="1600" height="640" fill="#fff"/><ellipse cx="800" cy="73" rx="198" ry="68" fill="#000"/></mask>
-          <path id="t-arc-big" d="M 500 236 Q 800 190 1100 236" fill="none"/>
-          <path id="t-arc-small" d="M 560 266 Q 800 226 1040 266" fill="none"/>
-          <path id="t-ins-top" d="M 520 312 Q 800 266 1080 312" fill="none"/>
-          <path id="t-ins-mid" d="M 495 340 Q 800 292 1105 340" fill="none"/>
-          <path id="t-ins-bot" d="M 520 364 Q 800 318 1080 364" fill="none"/>
+          <path id="t-arc-big" d="M 500 208 Q 800 164 1100 208" fill="none"/>
+          <path id="t-arc-small" d="M 560 234 Q 800 196 1040 234" fill="none"/>
+          <path id="t-ins-top" d="M 520 274 Q 800 230 1080 274" fill="none"/>
+          <path id="t-ins-mid" d="M 495 300 Q 800 254 1105 300" fill="none"/>
+          <path id="t-ins-bot" d="M 520 322 Q 800 278 1080 322" fill="none"/>
         </defs>
-        <ellipse cx="800" cy="640" rx="820" ry="44" fill="rgba(0,0,0,.6)" filter="url(#soften)"/>
+        <ellipse cx="800" cy="636" rx="840" ry="42" fill="rgba(0,0,0,.65)" filter="url(#soften)"/>
+        <path d="M 250 520 L 232 652 L 366 652 L 354 520 Z" fill="url(#legg)"/>
+        <path d="M 1246 520 L 1234 652 L 1368 652 L 1350 520 Z" fill="url(#legg)"/>
         <g mask="url(#cutRail)">
-          <path d="M 296 104 H 1304 Q 1516 128 1576 332 Q 1620 470 1616 610 Q 800 980 -16 610 Q -20 470 24 332 Q 84 128 296 104 Z" fill="url(#shellg)"/>
-          <path d="M 304 118 H 1296 Q 1488 140 1540 330 Q 1568 436 1552 522 Q 800 770 48 522 Q 32 436 60 330 Q 112 140 304 118 Z" fill="url(#railg)"/>
-          <path d="M 44 530 Q 800 782 1556 530" fill="none" stroke="hsl(220 12% 80%)" stroke-opacity=".45" stroke-width="5"/>
+          <path d="M 296 104 H 1304 Q 1516 128 1576 332 Q 1620 470 1606 562 Q 800 806 -6 562 Q -20 470 24 332 Q 84 128 296 104 Z" fill="url(#shellg)"/>
+          <path d="M 304 118 H 1296 Q 1488 140 1540 330 Q 1568 436 1552 516 Q 800 745 48 516 Q 32 436 60 330 Q 112 140 304 118 Z" fill="url(#railg)"/>
+          <path d="M 44 524 Q 800 757 1556 524" fill="none" stroke="hsl(220 12% 80%)" stroke-opacity=".45" stroke-width="5"/>
           <path d="M 304 118 H 1296 Q 1488 140 1540 330" fill="none" stroke="hsl(30 28% 38%)" stroke-opacity=".30" stroke-width="4" stroke-linecap="round"/>
           <path d="M 48 528 Q 800 780 1552 528" fill="none" stroke="hsl(30 22% 34%)" stroke-opacity=".20" stroke-width="12" stroke-linecap="round"/>
         </g>
         <g mask="url(#cutFelt)">
-          <path d="M 336 152 H 1264 Q 1428 170 1478 340 Q 1500 424 1486 474 Q 800 636 114 474 Q 100 424 122 340 Q 172 170 336 152 Z" fill="url(#feltg)"/>
-          <path d="M 336 152 H 1264 Q 1428 170 1478 340 Q 1500 424 1486 474 Q 800 636 114 474 Q 100 424 122 340 Q 172 170 336 152 Z" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="3"/>
-          <path d="M 408 214 H 1192 Q 1320 230 1360 356 Q 1374 414 1364 456 Q 800 570 236 456 Q 226 414 240 356 Q 280 230 408 214 Z" fill="none" stroke="rgba(233,214,138,.30)" stroke-width="2"/>
+          <path d="M 336 152 H 1264 Q 1428 170 1478 340 Q 1500 424 1486 466 Q 800 616 114 466 Q 100 424 122 340 Q 172 170 336 152 Z" fill="url(#feltg)"/>
+          <path d="M 336 152 H 1264 Q 1428 170 1478 340 Q 1500 424 1486 466 Q 800 616 114 466 Q 100 424 122 340 Q 172 170 336 152 Z" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="3"/>
+          <path d="M 408 214 H 1192 Q 1320 230 1360 356 Q 1374 414 1364 448 Q 800 556 236 448 Q 226 414 240 356 Q 280 230 408 214 Z" fill="none" stroke="rgba(233,214,138,.30)" stroke-width="2"/>
         </g>
         <text class="t-line big"><textPath href="#t-arc-big" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
         <text class="t-line small"><textPath href="#t-arc-small" startOffset="50%" text-anchor="middle">Dealer must draw to 16 and stand on all 17s</textPath></text>
