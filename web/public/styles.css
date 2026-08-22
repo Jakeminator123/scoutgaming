@@ -5,8 +5,8 @@
   --gold: #d9c06a;
   --rail: #16171c;
   /* dealer video window calibration (bake-composite.sh matches these) */
-  --dealer-h: 88vh;
-  --dealer-top: 2.8vh;
+  --dealer-h: 68vh;
+  --dealer-top: 1vh;
   --dealer-crop: 0.86;
   /* table plane tilt */
   --tilt: 55deg;
@@ -25,10 +25,10 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   width: var(--dealer-h); height: calc(var(--dealer-h) * var(--dealer-crop, 0.86));
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 3%, #000 97%, transparent 100%),
-                      linear-gradient(to bottom, transparent 0%, #000 3%, #000 96%, transparent 100%);
+                      linear-gradient(to bottom, transparent 0%, #000 3%, #000 86%, transparent 99%);
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(to right, transparent 0%, #000 3%, #000 97%, transparent 100%),
-              linear-gradient(to bottom, transparent 0%, #000 3%, #000 96%, transparent 100%);
+              linear-gradient(to bottom, transparent 0%, #000 3%, #000 86%, transparent 99%);
   mask-composite: intersect;
 }
 #dealer { display: block; width: 100%; height: auto; aspect-ratio: 1; }
@@ -49,13 +49,13 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #chat button { background: rgba(20,20,26,.75); border: 1px solid #3a3a44; color: #bbb; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
 
 #banner {
-  position: absolute; top: 56vh; left: 50%; transform: translateX(-50%);
-  background: rgba(10,60,30,.85); border: 1px solid rgba(255,255,255,.15); color: #fff;
+  position: absolute; top: 62.5vh; left: 50%; transform: translateX(-50%);
+  background: rgba(10,50,26,.8); border: 1px solid rgba(255,255,255,.15); color: #fff;
   padding: 8px 22px; border-radius: 6px; font-size: 14px; letter-spacing: .12em; z-index: 36; white-space: nowrap;
 }
 #banner.hidden { display: none; }
 #caption {
-  position: absolute; top: 51vh; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 38.5vh; left: 50%; transform: translateX(-50%);
   color: #f2e9cf; font-style: italic; font-size: 15px; text-shadow: 0 1px 4px #000;
   background: rgba(8,10,9,.45); padding: 4px 14px; border-radius: 14px;
   z-index: 37; white-space: nowrap; transition: opacity .3s; opacity: 0; pointer-events: none;
@@ -63,16 +63,16 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #caption.show { opacity: 1; }
 
 /* ---------- the whole table: screen-space art (matched to ER1/ER2) ---------- */
-#table2d { position: absolute; left: 0; right: 0; top: 46vh; bottom: 0; z-index: 20; }
+#table2d { position: absolute; left: 0; right: 0; top: 42vh; bottom: 0; z-index: 20; }
 #tableart { position: absolute; inset: 0; width: 100%; height: 100%; }
-#tableart .t-line { fill: rgba(238,220,142,.72); font-family: Georgia, serif; letter-spacing: .28em; }
-#tableart .t-line.big { font-size: 26px; }
-#tableart .t-line.small { font-size: 15px; letter-spacing: .12em; fill: rgba(238,220,142,.5); }
-#tableart .t-line.ins { font-size: 19px; letter-spacing: .16em; }
-#tableart .t-ins-line { stroke: rgba(233,214,138,.5); stroke-width: 1.5; fill: none; }
+#tableart .t-line { fill: rgba(238,220,142,.5); font-family: Georgia, serif; letter-spacing: .26em; }
+#tableart .t-line.big { font-size: 18px; }
+#tableart .t-line.small { font-size: 11px; letter-spacing: .12em; fill: rgba(238,220,142,.4); }
+#tableart .t-line.ins { font-size: 14px; letter-spacing: .15em; }
+#tableart .t-ins-line { stroke: rgba(233,214,138,.35); stroke-width: 1.2; fill: none; }
 
 /* dealer's cards on the felt, screen space */
-#dealer-cards { position: absolute; left: 47.5%; top: 9%; width: 0; height: 0; }
+#dealer-cards { position: absolute; left: 47.5%; top: 15%; width: 0; height: 0; }
 #dealer-cards .card, .seat .cards .card {
   position: absolute;
   left: calc(var(--ci, 0) * 20px - 22px); top: calc(var(--ci, 0) * -5px);
@@ -95,9 +95,9 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .spot svg { opacity: .8; }
 /* side bets: subtle curved slivers with tiny labels, like the reference */
 .side {
-  position: absolute; width: 34px; height: 20px; border-radius: 50%;
-  border: 1px solid rgba(210,240,230,.35); color: rgba(215,245,238,.7);
-  font-size: 8px; letter-spacing: .04em; display: flex; align-items: center; justify-content: center;
+  position: absolute; width: 40px; height: 23px; border-radius: 50%;
+  border: 1px solid rgba(210,240,230,.35); color: rgba(215,245,238,.75);
+  font-size: 10px; letter-spacing: .04em; display: flex; align-items: center; justify-content: center;
   background: rgba(30,110,96,.22); cursor: pointer;
 }
 .side.pp { left: -8px; top: 20px; transform: rotate(calc(var(--tang, 0deg) - 32deg)); }
@@ -174,14 +174,14 @@ body.in-round .stake { display: none; }
 .card.back { background: repeating-linear-gradient(45deg, #274a8f 0 6px, #1d3a73 6px 12px); }
 
 /* ---------- shoe + discard tray: photoreal assets ---------- */
-#shoe2d { position: absolute; right: 8.5%; top: 5%; width: 158px; pointer-events: none; transform: rotate(-8deg); }
+#shoe2d { position: absolute; right: 9%; top: 9%; width: 148px; pointer-events: none; transform: rotate(-8deg); }
 #shoe2d img { width: 100%; filter: drop-shadow(0 10px 16px rgba(0,0,0,.35)); }
-#discard { position: absolute; left: 21%; top: 3%; width: 96px; pointer-events: none; transform: rotate(6deg); }
+#discard { position: absolute; left: 20%; top: 7%; width: 88px; pointer-events: none; transform: rotate(6deg); }
 #discard img { width: 100%; filter: drop-shadow(0 10px 14px rgba(0,0,0,.3)); }
 
 /* ---------- action bars ---------- */
 #actions-top {
-  position: absolute; top: 37vh; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 30vh; left: 50%; transform: translateX(-50%);
   display: flex; gap: 14px; z-index: 46;
   background: rgba(14,15,19,.78); border: 1px solid rgba(255,255,255,.12);
   border-radius: 18px; padding: 12px 18px 10px;
@@ -201,13 +201,13 @@ body.in-round .stake { display: none; }
 #actions-top button:disabled { opacity: .45; cursor: default; }
 #actions-top button:disabled em { color: #9aa0a8; }
 
-#ask-pill {
-  position: absolute; top: 51.5vh; left: 50%; transform: translateX(-50%); z-index: 46;
-  background: rgba(12,10,4,.85); color: #eee; border: 1.5px solid #e5c95c; border-radius: 22px;
-  padding: 9px 18px; font-size: 14px; cursor: pointer; white-space: nowrap;
-}
-#ask-pill b { color: #ffd94d; }
-body.in-round #ask-pill { display: none; }
+#gate { position: absolute; inset: 0; z-index: 90; background: rgba(6,7,9,.72); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+#gate.hidden { display: none; }
+#gate-panel { max-width: 430px; background: rgba(14,15,19,.96); border: 1px solid rgba(255,255,255,.15); border-radius: 16px; padding: 30px 34px; text-align: center; }
+#gate-panel h2 { font-size: 21px; margin-bottom: 14px; color: #f0dfa8; }
+#gate-panel p { font-size: 14px; line-height: 1.55; color: #cfd2d8; margin-bottom: 12px; }
+#gate-panel p.fine { font-size: 12px; color: #8b8e96; }
+#gate-enter { margin-top: 8px; background: linear-gradient(#3b2f14, #241c0a); color: #f0dfa8; border: 1px solid var(--gold); border-radius: 22px; padding: 12px 34px; font-size: 14px; font-weight: 800; letter-spacing: .1em; cursor: pointer; }
 
 #actions { position: fixed; display: flex; gap: 5px; z-index: 50; background: rgba(10,12,16,.88); padding: 5px 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); }
 #actions[hidden], #insurance[hidden] { display: none; }
