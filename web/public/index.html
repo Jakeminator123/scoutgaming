@@ -36,20 +36,31 @@
         <div id="oval">
           <svg id="felt-arcs" viewBox="0 0 1000 620" preserveAspectRatio="none">
             <defs>
-              <path id="arc-outer" d="M 165 235 A 360 170 0 0 1 835 235" fill="none" />
-              <path id="arc-inner" d="M 225 260 A 300 135 0 0 1 775 260" fill="none" />
+              <path id="arc-outer" d="M 300 148 A 520 300 0 0 1 700 148" fill="none" />
+              <path id="arc-mid" d="M 320 176 A 520 300 0 0 1 680 176" fill="none" />
+              <path id="arc-ins-t" d="M 322 212 A 560 330 0 0 1 678 212" fill="none" />
+              <path id="arc-ins" d="M 285 240 A 640 380 0 0 1 715 240" fill="none" />
+              <path id="arc-ins-b" d="M 322 262 A 560 330 0 0 1 678 262" fill="none" />
             </defs>
-            <ellipse cx="500" cy="235" rx="375" ry="180" class="racetrack" />
             <text class="felt-line big"><textPath href="#arc-outer" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
-            <text class="felt-line"><textPath href="#arc-inner" startOffset="50%" text-anchor="middle">INSURANCE PAYS 2 TO 1 · DEALER STANDS ON ALL 17S</textPath></text>
+            <text class="felt-line small"><textPath href="#arc-mid" startOffset="50%" text-anchor="middle">Dealer must draw to 16 and stand on all 17s</textPath></text>
+            <use href="#arc-ins-t" class="ins-line" />
+            <use href="#arc-ins-b" class="ins-line" />
+            <text class="felt-line ins"><textPath href="#arc-ins" startOffset="50%" text-anchor="middle">INSURANCE PAYS 2 TO 1</textPath></text>
           </svg>
-          <div id="shoe3d"><div class="s-body"></div><div class="s-top"></div><div class="s-card"></div><div class="s-lip"></div></div>
+          <div id="discard"></div><div id="shoe3d"><div class="s-body"></div><div class="s-top"></div><div class="s-card"></div><div class="s-lip"></div></div>
           <div id="dealer-cards-anchor"><div id="dealer-cards" class="cards"></div></div>
           <div id="seats"></div>
         </div>
       </div>
     </div>
 
+    <div id="actions-top" hidden>
+      <button data-act="double">DOUBLE</button>
+      <button data-act="hit">HIT</button>
+      <button data-act="stand">STAND</button>
+      <button data-act="split" disabled>SPLIT</button>
+    </div>
     <div id="actions" hidden>
       <button data-act="double" title="double">2×</button>
       <button data-act="hit" title="hit">+</button>
