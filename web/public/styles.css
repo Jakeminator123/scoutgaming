@@ -16,7 +16,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #scene { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 #room { position: absolute; inset: 0; background: #0b0c10; }
 #room2 { position: absolute; inset: 0; background: url('scene.jpg') center / cover no-repeat; }
-#room2::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, transparent 45%, rgba(0,0,0,.5) 100%); }
+#room2::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(0,0,0,.35) 100%); }
 
 #dealer-wrap {
   /* invisible window: clips are baked over the exact scene crop this rect
