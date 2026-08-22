@@ -9,7 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-RAW=content/raw2
+RAW=${1:-content/raw2}
 WORK=content/bake
 BG=$WORK/bg.png
 mkdir -p "$WORK"

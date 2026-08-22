@@ -3,7 +3,9 @@
 // recreation is playable without an RGS).
 // Rules per the build scope: 8 decks reshuffled every round, S17, American
 // hole card with peek, blackjack 3:2, insurance 2:1, double any two, no
-// surrender, up to 3 boxes.
+// surrender, up to 7 boxes. Side bets, settled at deal time: Perfect Pairs
+// (perfect 25:1 / colored 12:1 / mixed 6:1) and 21+3 (suited trips 100:1 /
+// straight flush 40:1 / trips 30:1 / straight 10:1 / flush 5:1).
 
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 const SUITS = ['♠','♥','♦','♣'];
@@ -38,12 +40,50 @@ export function handValue(cards) {
 }
 const isBJ = cards => cards.length === 2 && handValue(cards).total === 21;
 const tenVal = c => ['10','J','Q','K'].includes(c.r);
+const isRed = c => c.s === '♥' || c.s === '♦';
+const rankOrd = c => RANKS.indexOf(c.r) + 1; // A=1, 2..10, J=11, Q=12, K=13
+
+// Perfect Pairs: player's first two cards. Returns {name, pays} or null.
+function perfectPairsHit(c1, c2) {
+  if (c1.r !== c2.r) return null;
+  if (c1.s === c2.s) return { name: 'Perfect Pair', pays: 25 };
+  if (isRed(c1) === isRed(c2)) return { name: 'Colored Pair', pays: 12 };
+  return { name: 'Mixed Pair', pays: 6 };
+}
+
+// 21+3: player's first two cards + dealer upcard. Returns {name, pays} or null.
+// Straights: ace high or low (A-2-3 and Q-K-A valid, no K-A-2 wraparound).
+function isStraight3(cards) {
+  const v = cards.map(rankOrd).sort((a, b) => a - b);
+  if (v[0] === v[1] || v[1] === v[2]) return false; // needs 3 distinct ranks
+  if (v[0] + 1 === v[1] && v[1] + 1 === v[2]) return true; // ace low / no ace
+  return v[0] === 1 && v[1] === 12 && v[2] === 13;          // ace high: Q-K-A
+}
+function twentyOnePlusThreeHit(cards) {
+  const suited = cards.every(c => c.s === cards[0].s);
+  if (cards.every(c => c.r === cards[0].r))
+    return suited ? { name: 'Suited Three of a Kind', pays: 100 } : { name: 'Three of a Kind', pays: 30 };
+  const straight = isStraight3(cards);
+  if (straight && suited) return { name: 'Straight Flush', pays: 40 };
+  if (straight) return { name: 'Straight', pays: 10 };
+  if (suited) return { name: 'Flush', pays: 5 };
+  return null;
+}
 
 export class Round {
-  // boxes: array of stakes, e.g. [25] or [25, 0, 100] (0 = empty box)
+  // boxes: array of stakes, e.g. [25] or [25, 0, 100] (0 = empty box), or of
+  // objects {main, pp, tp} (numbers, 0 = not placed). A box is live when
+  // main > 0; pp/tp without main are ignored.
   constructor(boxes) {
     this.shoe = freshShoe();
-    this.boxes = boxes.map(stake => ({ stake, cards: [], done: false, doubled: false, insured: 0, result: null }));
+    this.boxes = boxes.map(box => {
+      const o = typeof box === 'object' && box !== null ? box : { main: box };
+      return {
+        stake: o.main || 0, pp: o.pp || 0, tp: o.tp || 0,
+        cards: [], done: false, doubled: false, insured: 0, result: null,
+        sideReturn: 0, sideLabels: [],
+      };
+    });
     this.dealer = [];
     this.phase = 'dealing';
     this.active = -1;
@@ -57,6 +97,7 @@ export class Round {
     this.dealer.push(this.draw());             // upcard
     for (const b of this.live()) b.cards.push(this.draw());
     this.holeCard = this.draw();               // face down, dealt but hidden
+    this.settleSideBets();
     this.emit('round.dealt');
     const up = this.dealer[0];
     if (up.r === 'A') { this.phase = 'insurance'; this.emit('insurance.offered'); return; }
@@ -64,6 +105,28 @@ export class Round {
   }
 
   live() { return this.boxes.filter(b => b.stake > 0); }
+
+  // Side bets settle off the first two player cards + dealer upcard, right at
+  // the deal. "pays N:1" => total return = stake * (N + 1); loss = 0.
+  settleSideBets() {
+    const up = this.dealer[0];
+    for (const b of this.live()) {
+      if (b.pp > 0) {
+        const hit = perfectPairsHit(b.cards[0], b.cards[1]);
+        if (hit) {
+          b.sideReturn += b.pp * (hit.pays + 1);
+          b.sideLabels.push(`${hit.name} ${hit.pays}:1`);
+        }
+      }
+      if (b.tp > 0) {
+        const hit = twentyOnePlusThreeHit([b.cards[0], b.cards[1], up]);
+        if (hit) {
+          b.sideReturn += b.tp * (hit.pays + 1);
+          b.sideLabels.push(`${hit.name} ${hit.pays}:1`);
+        }
+      }
+    }
+  }
 
   // insuranceTaken: array of booleans matching live() order
   resolveInsurance(insuranceTaken = []) {
