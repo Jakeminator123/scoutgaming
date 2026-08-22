@@ -59,16 +59,17 @@
           <path id="t-ins-mid" d="M 495 310 Q 800 266 1105 310" fill="none"/>
           <path id="t-ins-bot" d="M 520 332 Q 800 290 1080 332" fill="none"/>
         </defs>
-        <ellipse cx="800" cy="552" rx="740" ry="44" fill="rgba(0,0,0,.55)" filter="url(#soften)"/>
+        <ellipse cx="800" cy="596" rx="780" ry="46" fill="rgba(0,0,0,.6)" filter="url(#soften)"/>
         <g mask="url(#cutRail)">
-          <rect x="40" y="56" width="1520" height="516" rx="250" fill="url(#shellg)"/>
-          <rect x="58" y="70" width="1484" height="490" rx="238" fill="url(#railg)"/>
-          <rect x="58" y="70" width="1484" height="490" rx="238" fill="none" stroke="hsl(30 28% 36%)" stroke-opacity=".28" stroke-width="4"/>
+          <path d="M 300 96 H 1300 Q 1502 118 1556 316 Q 1586 424 1560 516 Q 800 678 40 516 Q 14 424 44 316 Q 98 118 300 96 Z" fill="url(#shellg)"/>
+          <path d="M 306 108 H 1294 Q 1478 128 1530 314 Q 1556 412 1534 494 Q 800 640 66 494 Q 44 412 70 314 Q 122 128 306 108 Z" fill="url(#railg)"/>
+          <path d="M 306 108 H 1294 Q 1478 128 1530 314" fill="none" stroke="hsl(30 28% 38%)" stroke-opacity=".30" stroke-width="4" stroke-linecap="round"/>
+          <path d="M 66 494 Q 800 640 1534 494" fill="none" stroke="hsl(30 25% 30%)" stroke-opacity=".22" stroke-width="7" stroke-linecap="round"/>
         </g>
         <g mask="url(#cutFelt)">
-          <rect x="94" y="104" width="1412" height="424" rx="206" fill="url(#feltg)"/>
-          <rect x="94" y="104" width="1412" height="424" rx="206" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="2.5"/>
-          <rect x="158" y="164" width="1284" height="306" rx="152" fill="none" stroke="rgba(233,214,138,.30)" stroke-width="2"/>
+          <path d="M 336 138 H 1264 Q 1424 156 1472 322 Q 1494 404 1478 462 Q 800 576 122 462 Q 106 404 128 322 Q 176 156 336 138 Z" fill="url(#feltg)"/>
+          <path d="M 336 138 H 1264 Q 1424 156 1472 322 Q 1494 404 1478 462 Q 800 576 122 462 Q 106 404 128 322 Q 176 156 336 138 Z" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="2.5"/>
+          <path d="M 408 196 H 1192 Q 1318 212 1358 336 Q 1372 396 1360 434 Q 800 520 240 434 Q 228 396 242 336 Q 282 212 408 196 Z" fill="none" stroke="rgba(233,214,138,.30)" stroke-width="2"/>
         </g>
         <text class="t-line big"><textPath href="#t-arc-big" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
         <text class="t-line small"><textPath href="#t-arc-small" startOffset="50%" text-anchor="middle">Dealer must draw to 16 and stand on all 17s</textPath></text>
