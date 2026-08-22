@@ -65,8 +65,8 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 /* ---------- the whole table: screen-space art (matched to ER1/ER2) ---------- */
 #table2d { position: absolute; left: 0; right: 0; top: 34vh; bottom: 0; z-index: 20; }
 #tableimg {
-  position: absolute; left: 50%; bottom: -22vh; transform: translateX(-50%);
-  width: 112vw; height: 77vh; pointer-events: none;
+  position: absolute; left: 50%; bottom: -8vh; transform: translateX(-50%);
+  width: 106vw; height: 62vh; pointer-events: none;
   filter: drop-shadow(0 18px 30px rgba(0,0,0,.55));
 }
 
