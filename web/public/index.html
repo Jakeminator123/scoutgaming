@@ -18,45 +18,55 @@
         <h1>Privé Blackjack <span class="limits">· $5 – $2,000</span></h1>
         <div class="sub">Croupier Demo · <span id="clock"></span> · <span class="ai-badge" title="This dealer is an AI. Outcomes are determined by a certified RNG.">AI dealer</span></div>
       </div>
-      <div id="chat">
-        <input id="chat-input" placeholder="Ask anything…" autocomplete="off" />
-        <button id="chat-send" aria-label="send">➤</button>
+      <div id="top-right">
+        <button id="sound-btn" title="dealer voice">🔊</button>
+        <div id="chat">
+          <input id="chat-input" placeholder="Ask anything…" autocomplete="off" />
+          <button id="chat-send" aria-label="send">➤</button>
+        </div>
       </div>
     </header>
 
-    <div id="table">
-      <div id="felt">
-        <div class="felt-text">
-          <div class="rule-line">DEALER MUST DRAW TO 16 AND STAND ON ALL 17S</div>
-          <div class="rule-arc">INSURANCE PAYS 2 TO 1</div>
-        </div>
-        <div id="shoe"></div>
-        <div id="dealer-cards" class="cards"></div>
-        <div id="banner">PLEASE PLACE BETS</div>
-        <button id="deal-now" disabled>DEAL NOW</button>
-        <div id="boxes">
-          <div class="box" data-box="0"><div class="cards"></div><button class="clear-box" hidden>×</button><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
-          <div class="box" data-box="1"><div class="cards"></div><button class="clear-box" hidden>×</button><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
-          <div class="box" data-box="2"><div class="cards"></div><button class="clear-box" hidden>×</button><div class="spot">+</div><div class="stake"></div><div class="result"></div></div>
-        </div>
-        <div id="chip-row">
-          <button id="undo-btn" title="undo last chip" disabled>⟲</button>
-          <div id="chips"></div>
-          <button id="double-btn" title="double all bets" disabled>2×</button>
+    <div id="banner">PLEASE PLACE BETS</div>
+    <div id="caption"></div>
+
+    <!-- the whole table: a 3D perspective plane -->
+    <div id="table3d">
+      <div id="plane">
+        <div id="oval">
+          <svg id="felt-arcs" viewBox="0 0 1000 620" preserveAspectRatio="none">
+            <defs>
+              <path id="arc-outer" d="M 165 235 A 360 170 0 0 1 835 235" fill="none" />
+              <path id="arc-inner" d="M 225 260 A 300 135 0 0 1 775 260" fill="none" />
+            </defs>
+            <ellipse cx="500" cy="235" rx="375" ry="180" class="racetrack" />
+            <text class="felt-line big"><textPath href="#arc-outer" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
+            <text class="felt-line"><textPath href="#arc-inner" startOffset="50%" text-anchor="middle">INSURANCE PAYS 2 TO 1 · DEALER STANDS ON ALL 17S</textPath></text>
+          </svg>
+          <div id="shoe3d"><div class="s-body"></div><div class="s-top"></div><div class="s-card"></div><div class="s-lip"></div></div>
+          <div id="dealer-cards-anchor"><div id="dealer-cards" class="cards"></div></div>
+          <div id="seats"></div>
         </div>
       </div>
     </div>
 
     <div id="actions" hidden>
-      <button data-act="hit">HIT</button>
-      <button data-act="stand">STAND</button>
-      <button data-act="double">DOUBLE</button>
+      <button data-act="double" title="double">2×</button>
+      <button data-act="hit" title="hit">+</button>
+      <button data-act="stand" title="stand">−</button>
     </div>
     <div id="insurance" hidden>
       <span>Insurance?</span>
       <button id="ins-yes">YES</button>
       <button id="ins-no">NO</button>
     </div>
+
+    <div id="chip-row">
+      <button id="undo-btn" title="undo last chip" disabled>⟲</button>
+      <div id="chips"></div>
+      <button id="double-btn" title="double all bets" disabled>2×</button>
+    </div>
+    <button id="deal-now" disabled>DEAL NOW</button>
 
     <footer id="hud-bottom">
       <div id="wallet">

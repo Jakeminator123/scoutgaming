@@ -68,6 +68,17 @@ export class DealerEngine {
     void this.fetchClip(key); // warm the cache before the boundary arrives
   }
 
+  // Cut to a clip NOW: abandon the current clip and flush buffered frames.
+  // Every clip starts on an IDR so a mid-clip cut is legal; visually it is a
+  // hard cut within the same pose family. Used for speech, where audio and
+  // lips must start together.
+  interrupt(key) {
+    if (!this.index.clips[key]) return;
+    this.queue = [key];
+    this.cut = true;
+    void this.fetchClip(key);
+  }
+
   nextClip() {
     if (this.queue.length) return this.queue.shift();
     if (this.onIdlePick) return this.onIdlePick();
@@ -88,6 +99,11 @@ export class DealerEngine {
             this.decoder = this.makeDecoder();
             this.decoderDead = false;
             cur = null; // restart cleanly on an IDR
+          }
+          if (this.cut) {
+            this.cut = false;
+            cur = null;
+            for (const f of this.display.splice(0)) f.close();
           }
           const buffered = this.display.length + this.decoder.decodeQueueSize;
           if (buffered >= 24) { await new Promise(r => setTimeout(r, 40)); continue; }
