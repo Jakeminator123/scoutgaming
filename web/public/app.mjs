@@ -112,12 +112,12 @@ setInterval(() => {
 const sfx = {
   files: {},
   load() {
-    for (const n of ['ambience', 'win', 'bigwin', 'deal', 'chip']) {
+    for (const n of ['ambience', 'win', 'bigwin', 'deal', 'chip', 'knock']) {
       const el = new Audio(`sfx/${n}.mp3`); el.preload = 'auto'; this.files[n] = el;
     }
     this.files.ambience.loop = true; this.files.ambience.volume = 0.16;
     this.files.win.volume = 0.5; this.files.bigwin.volume = 0.6;
-    this.files.deal.volume = 0.4; this.files.chip.volume = 0.45;
+    this.files.deal.volume = 0.85; this.files.chip.volume = 0.9; this.files.knock.volume = 0.8;
   },
   play(n) { if (voice.muted) return; const el = this.files[n]; if (!el) return; el.currentTime = 0; el.play().catch(() => {}); },
   startAmbience() { if (!voice.muted) this.files.ambience?.play().catch(() => {}); },
@@ -140,6 +140,18 @@ function hoverTick() {
 document.addEventListener('mouseover', e => {
   if (e.target.closest?.('button, .chip, .spot, .side')) hoverTick();
 });
+
+// win toasts: stacked notifications so wins and their amounts are unmissable
+function toast(title, amount, big = false) {
+  let stack = document.querySelector('#toasts');
+  if (!stack) { stack = document.createElement('div'); stack.id = 'toasts'; document.body.appendChild(stack); }
+  const t = document.createElement('div');
+  t.className = big ? 'toast big' : 'toast';
+  t.innerHTML = `<b>${title}</b><span>+${fmt(amount)}</span>`;
+  stack.appendChild(t);
+  setTimeout(() => t.classList.add('out'), 4200);
+  setTimeout(() => t.remove(), 4800);
+}
 
 // celebration bursts
 function burstAt(x, y, big = false) {
@@ -232,7 +244,7 @@ function layoutSeats() {
   }
 }
 layoutSeats();
-addEventListener('resize', layoutSeats);
+addEventListener('resize', () => { layoutSeats(); activeBoxHighlight(); });
 document.querySelector('#tableimg')?.addEventListener('load', layoutSeats);
 
 // ---------- chip picker ----------
@@ -472,8 +484,11 @@ async function dealSequence() {
     if (b.sideReturn > 0) {
       sideWin = true;
       el.textContent = `${b.sideLabels.join(' · ')} +${fmt(b.sideReturn)}`;
-      const r = seatOfLive(i).getBoundingClientRect();
+      const seatEl = seatOfLive(i);
+      const r = seatEl.getBoundingClientRect();
       burstAt(r.x, r.y, b.sideReturn >= b.stake * 10);
+      const seatNo = seatEls.indexOf(seatEl) + 1;
+      toast(`SEAT ${seatNo} · ${b.sideLabels.join(' + ')}`, b.sideReturn, b.sideReturn >= b.stake * 10);
     }
     else el.textContent = 'side lost';
   });
@@ -527,6 +542,7 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
       voice.say('double', { force: true });
     }
     document.querySelectorAll('#actions button').forEach(b => { b.disabled = true; });
+    if (btn.dataset.act === 'hit') sfx.play('knock');
     round.act(btn.dataset.act);
     if (hand.cards.length > before) {
       dealCardTo(boxContainer(liveIdx), hand.cards.at(-1));

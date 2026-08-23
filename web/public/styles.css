@@ -343,7 +343,37 @@ body.debug #engine-hud { display: block; }
 .bj-flash {
   position: fixed; left: 50%; top: 42vh; transform: translateX(-50%); z-index: 71; pointer-events: none;
   font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; letter-spacing: .06em;
-  color: #f0dfa8; text-shadow: 0 0 30px rgba(217,192,106,.9), 0 2px 6px rgba(0,0,0,.6);
+  color: #D6FF3A; text-shadow: 0 0 30px rgba(214,255,58,.85), 0 2px 6px rgba(0,0,0,.6);
   animation: bjflash 1.8s ease forwards;
 }
 @keyframes bjflash { 0% { opacity: 0; transform: translateX(-50%) scale(.6); } 15% { opacity: 1; transform: translateX(-50%) scale(1.08); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) scale(1); } }
+
+/* win toasts */
+#toasts {
+  position: fixed; top: 74px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 10px; align-items: center;
+  z-index: 80; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: baseline; gap: 14px;
+  padding: 12px 22px; border-radius: 12px;
+  background: rgba(10,11,13,.88); border: 1px solid rgba(214,255,58,.35);
+  box-shadow: 0 10px 30px rgba(0,0,0,.5), 0 0 24px rgba(214,255,58,.18);
+  animation: toast-in .35s cubic-bezier(.2,1.4,.4,1) both;
+}
+.toast b {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 15px;
+  letter-spacing: .1em; color: #F2F1ED;
+}
+.toast span {
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 20px;
+  color: #D6FF3A;
+}
+.toast.big {
+  border-color: rgba(214,255,58,.7); background: rgba(10,11,13,.94);
+  box-shadow: 0 12px 36px rgba(0,0,0,.55), 0 0 44px rgba(214,255,58,.35);
+}
+.toast.big span { font-size: 26px; }
+.toast.out { animation: toast-out .5s ease both; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-14px) scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-8px); } }
