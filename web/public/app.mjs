@@ -366,22 +366,45 @@ for (let i = 0; i < SEATS; i++) {
 // x fractions of the viewport, y on a shallow arc bowing toward the player
 // Seats live on the TABLE IMAGE, not the viewport: equal angular spacing
 // along an ellipse concentric with the felt's near rail, constant inset.
+// Narrow viewports play the three centre boxes only: seven boxes on a phone
+// leaves ~50px each, which cannot hold a chip stack and two cards.
+const COMPACT_BOXES = [2, 3, 4];
+const compactQuery = matchMedia('(max-width: 860px) and (orientation: portrait)');
+let compactSeats = compactQuery.matches;
+const playedBoxes = () => (compactSeats ? COMPACT_BOXES : seatEls.map((_, i) => i));
+
 function layoutSeats() {
   const imgEl = document.querySelector('#tableimg');
   const img = imgEl?.getBoundingClientRect();
   const table = document.querySelector('#table2d').getBoundingClientRect();
   if (!img || !img.width) return;
-  const CX = 0.5, CY = 0.13, RX = 0.365, RY = 0.445;
-  for (let i = 0; i < SEATS; i++) {
-    const phi = (145 - i * (110 / (SEATS - 1))) * Math.PI / 180; // 145deg .. 35deg
+  // compact mode flattens the arc so the centre box's cards stay on the felt
+  const CX = 0.5, CY = compactSeats ? 0.17 : 0.13;
+  const RX = 0.365, RY = compactSeats ? 0.33 : 0.445;
+  const boxes = playedBoxes();
+  const span = compactSeats ? 84 : 110;          // degrees of arc the boxes occupy
+  const step = span / (boxes.length - 1);
+  seatEls.forEach((el, i) => el.classList.toggle('seat-off', !boxes.includes(i)));
+  boxes.forEach((i, k) => {
+    const phi = (90 + span / 2 - k * step) * Math.PI / 180;
     const fx = CX + RX * Math.cos(phi);
     const fy = CY + RY * Math.sin(phi);
     seatEls[i].style.left = `${img.left + fx * img.width - table.left}px`;
     seatEls[i].style.top = `${img.top + fy * img.height - table.top}px`;
     seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(fx - 0.5) * 61}deg`);
-  }
+  });
 }
 layoutSeats();
+compactQuery.addEventListener('change', e => {
+  compactSeats = e.matches;
+  // boxes that just left the table must not keep money on them
+  if (!round && !busy) {
+    const boxes = playedBoxes();
+    bets = bets.map((b, i) => (boxes.includes(i) ? b : { main: 0, pp: 0, tp: 0 }));
+    undoStack = undoStack.filter(u => boxes.includes(u.box));
+  }
+  layoutSeats(); renderBets(); activeBoxHighlight();
+});
 addEventListener('resize', () => { layoutSeats(); activeBoxHighlight(); });
 document.querySelector('#tableimg')?.addEventListener('load', layoutSeats);
 
@@ -469,6 +492,46 @@ $('#double-btn').onclick = () => {
   bets = bets.map(b => ({ main: b.main * 2, pp: b.pp * 2, tp: b.tp * 2 }));
   renderBets();
 };
+// MAX: scale every staked box up as far as the balance and the table cap
+// allow, keeping the boxes' relative sizes. Nothing staked yet -> the centre
+// box takes the whole affordable maximum.
+$('#max-btn').onclick = () => {
+  if (round || busy) return;
+  let idx = bets.map((_, i) => i).filter(i => bets[i].main > 0);
+  const seed = bets.map(b => ({ ...b }));
+  if (!idx.length) { idx = [Math.floor(SEATS / 2)]; seed[idx[0]] = { main: LIMITS.min, pp: 0, tp: 0 }; }
+  const unit = idx.reduce((a, i) => a + seed[i].main + seed[i].pp + seed[i].tp, 0);
+  if (!unit || balance < LIMITS.min) return;
+  // largest scale that keeps the total inside the balance and every box inside its cap
+  let k = balance / unit;
+  for (const i of idx) {
+    if (seed[i].main) k = Math.min(k, LIMITS.max / seed[i].main);
+    if (seed[i].pp) k = Math.min(k, (LIMITS.max / 2) / seed[i].pp);
+    if (seed[i].tp) k = Math.min(k, (LIMITS.max / 2) / seed[i].tp);
+  }
+  const snap = (v, cap) => Math.min(cap, Math.floor((v + 1e-9) / LIMITS.min) * LIMITS.min);
+  const next = bets.map(b => ({ ...b }));
+  for (const i of idx) {
+    next[i] = {
+      main: snap(seed[i].main * k, LIMITS.max),
+      pp: snap(seed[i].pp * k, LIMITS.max / 2),
+      tp: snap(seed[i].tp * k, LIMITS.max / 2),
+    };
+  }
+  const total = next.reduce((a, b) => a + b.main + b.pp + b.tp, 0);
+  if (!total || total > balance) return;
+  if (total === betTotal()) return; // already maxed
+  for (const [i, b] of bets.entries()) {
+    for (const f of ['main', 'pp', 'tp']) {
+      const delta = next[i][f] - b[f];
+      if (delta > 0) undoStack.push({ box: i, field: f, value: delta });
+    }
+  }
+  bets = next;
+  sfx.play('chip');
+  renderBets();
+};
+
 $('#clear-btn').onclick = () => {
   if (round || busy) return;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
@@ -506,6 +569,7 @@ function renderBets() {
   $('#clear-btn').disabled = betTotal() === 0 || !!round || busy;
   $('#undo-btn').disabled = !undoStack.length || !!round || busy;
   $('#double-btn').disabled = !betTotal() || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max) || !!round || busy;
+  $('#max-btn').disabled = balance < LIMITS.min || !!round || busy;
 }
 
 // ---------- demo cashier ----------

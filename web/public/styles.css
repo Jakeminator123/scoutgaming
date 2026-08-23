@@ -5,17 +5,25 @@
   --gold: #d9c06a;
   --rail: #16171c;
   /* dealer video window calibration (bake-composite.sh matches these) */
-  --dealer-h: 68vh;
+  --dealer-h: max(68vh, 37.94vw);
   --dealer-top: 1vh;
   --dealer-crop: 0.86;
   /* table plane tilt */
   --tilt: 55deg;
+  /* responsive knobs (media queries below retune these) */
+  --chip-size: 44px;
 }
 html, body { height: 100%; background: #000; overflow: hidden; font-family: "Figtree", "Helvetica Neue", Arial, sans-serif; color: #eee; }
 
 #scene { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 #room { position: absolute; inset: 0; background: #0b0c10; }
-#room2 { position: absolute; inset: 0; background: url('scene.jpg') center / cover no-repeat; }
+#room2 {
+  position: absolute; inset: 0;
+  background: url('scene.jpg') no-repeat;
+  background-size: calc(var(--dealer-h) * 2.63602) calc(var(--dealer-h) * 1.47126);
+  background-position: calc(50vw - var(--dealer-h) * 1.31801) calc(var(--dealer-top) - var(--dealer-h) * 0.0143678);
+  background-color: #0b0c10;
+}
 #room2::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(0,0,0,.35) 100%); }
 
 #dealer-wrap {
@@ -35,7 +43,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 
 /* ---------- HUD ---------- */
 #hud-top, #hud-bottom { pointer-events: none; }
-#hud-top button, #hud-top input, #wallet, #deal-controls button, #autobet { pointer-events: auto; }
+#hud-top button, #hud-top input, #wallet, #bottom-right button, #chip-row button, .chip { pointer-events: auto; }
 #hud-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; padding: 14px 18px; z-index: 40; }
 /* Scout brand */
 .scout-lockup { display: flex; align-items: center; gap: 10px; }
@@ -277,14 +285,15 @@ body.in-round .stake { display: none; }
 
 /* ---------- betting controls (screen space) ---------- */
 #chip-row {
-  position: absolute; bottom: 2.6vh; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 14px; z-index: 45;
+  grid-area: chips; justify-self: center; pointer-events: auto;
+  display: flex; align-items: center; gap: clamp(6px, .9vw, 14px); min-width: 0;
 }
-#chips { display: flex; justify-content: center; gap: 10px; }
+#chips { display: flex; justify-content: center; gap: clamp(4px, .7vw, 10px); min-width: 0; }
 .chip {
-  width: 44px; height: 44px; border-radius: 50%; border: 4px dashed #fff; cursor: pointer;
+  width: var(--chip-size, 44px); height: var(--chip-size, 44px); flex: none;
+  border-radius: 50%; border: 4px dashed #fff; cursor: pointer;
   background: radial-gradient(circle at 50% 32%, var(--chip-c, #666), var(--chip-d, #333) 78%) !important;
-  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: calc(var(--chip-size, 44px) * .32); color: #fff;
   box-shadow: 0 3px 8px rgba(0,0,0,.5), inset 0 0 0 3px rgba(0,0,0,.25); user-select: none;
   transition: transform .1s;
 }
@@ -294,7 +303,7 @@ body.in-round .stake { display: none; }
 .chip.c25 { background: #c2571f; } .chip.c50 { background: #a73aa0; } .chip.c100 { background: #348a37; }
 .chip.c500 { background: #6b3ab5; } .chip.c1000 { background: #23252c; }
 #undo-btn, #double-btn {
-  width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3);
+  flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3);
   background: rgba(10,14,12,.55); color: #eee; font-size: 15px; cursor: pointer;
 }
 #undo-btn:not(:disabled):hover, #double-btn:not(:disabled):hover { border-color: rgba(214,255,58,.7); color: #D6FF3A; }
@@ -311,17 +320,24 @@ body.in-round .stake { display: none; }
 body.in-round #deal-now, body.in-round #chip-row { display: none; }
 .chip-fly { position: fixed; z-index: 60; pointer-events: none; transition: transform .45s cubic-bezier(.2,.75,.3,1), opacity .45s; }
 
-#hud-bottom { position: absolute; bottom: 0; left: 0; right: 0; display: flex; align-items: flex-end; justify-content: space-between; padding: 16px 20px; z-index: 45; }
-#wallet { display: flex; background: rgba(12,13,17,.85); border-radius: 10px; padding: 10px 18px; gap: 26px; border-left: 3px solid #D6FF3A; }
+#hud-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 45;
+  display: grid; grid-template-columns: 1fr auto 1fr; grid-template-areas: "wallet chips right";
+  align-items: end; gap: clamp(8px, 1.2vw, 20px); padding: 14px clamp(10px, 1.4vw, 20px);
+}
+#wallet { grid-area: wallet; justify-self: start; align-items: center; display: flex; background: rgba(12,13,17,.85); border-radius: 10px; padding: 9px 16px; gap: clamp(12px, 1.6vw, 26px); border-left: 3px solid #D6FF3A; }
+#bottom-right { grid-area: right; justify-self: end; display: flex; align-items: center; gap: clamp(6px, .8vw, 12px); pointer-events: auto; }
 #wallet label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .16em; color: #8b8d96; }
 #wallet span { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
-#deal-controls { display: flex; gap: 12px; margin-left: auto; margin-right: 18px; }
-#deal-controls button {
+#bottom-right button {
+  display: flex; align-items: center; gap: 7px; cursor: pointer;
   background: rgba(16,18,24,.9); color: #ccc; border: 1px solid #575a66; border-radius: 10px;
-  padding: 12px 26px; font-size: 14px; font-weight: 800; letter-spacing: .1em; cursor: pointer;
+  padding: 11px clamp(12px, 1.3vw, 22px);
+  font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .1em;
 }
-#deal-controls button:disabled { opacity: .35; cursor: default; }
-#autobet { background: rgba(12,13,17,.85); color: #9a9ca6; border: 1px solid #3c3e48; border-radius: 8px; padding: 10px 16px; font-size: 12px; letter-spacing: .08em; }
+#bottom-right button i { font-style: normal; font-size: 14px; line-height: 1; }
+#bottom-right button:disabled { opacity: .35; cursor: default; }
+#bottom-right button:not(:disabled):hover { border-color: rgba(214,255,58,.6); color: #F2F1ED; }
 
 #engine-hud { position: absolute; top: 60px; right: 12px; z-index: 50; font: 10px/1.5 ui-monospace, monospace; color: #7f8; background: rgba(0,0,0,.55); padding: 6px 8px; border-radius: 6px; white-space: pre; display: none; }
 body.debug #engine-hud { display: block; }
@@ -444,15 +460,18 @@ body.debug #engine-hud { display: block; }
 #cashier .fine { margin: 12px 0 0; font-size: 11px; line-height: 1.5; color: #5A6470; }
 
 /* all-seats side-bet mode + last-win + cashier currency */
-#all-sides {
-  pointer-events: auto; cursor: pointer; padding: 8px 13px; border-radius: 999px;
-  background: rgba(12,13,17,.85); border: 1px solid rgba(242,241,237,.18); color: #8b8d96;
-  font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: .12em;
-}
 #all-sides.on {
-  border-color: #D6FF3A; color: #D6FF3A; background: rgba(214,255,58,.10);
+  border-color: #D6FF3A !important; color: #D6FF3A !important; background: rgba(214,255,58,.10);
   box-shadow: 0 0 14px rgba(214,255,58,.25);
 }
+#max-btn {
+  flex: none; cursor: pointer; padding: 0 clamp(10px, 1.1vw, 16px); height: 40px; border-radius: 999px;
+  background: rgba(214,255,58,.12); border: 1px solid rgba(214,255,58,.55); color: #D6FF3A;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: .12em;
+  transition: background .15s, color .15s;
+}
+#max-btn:not(:disabled):hover { background: #D6FF3A; color: #0A0B0D; }
+#max-btn:disabled { opacity: .3; cursor: default; }
 #last-win.won { color: #D6FF3A; }
 .cashier-currencies { display: flex; gap: 8px; margin-bottom: 10px; }
 .cashier-currencies .cur {
@@ -461,3 +480,143 @@ body.debug #engine-hud { display: block; }
   font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 11px; letter-spacing: .08em;
 }
 .cashier-currencies .cur.sel { border-color: #D6FF3A; color: #D6FF3A; background: rgba(214,255,58,.10); }
+
+
+/* ==========================================================================
+   RESPONSIVE — the composition is landscape-native, so narrow viewports
+   retune the same knobs (dealer window, table plate, control bar) rather
+   than reflowing into a different game.
+   ========================================================================== */
+
+/* --- compact desktop / tablet landscape: shrink chips, drop button words --- */
+@media (max-width: 1280px) {
+  :root { --chip-size: 38px; }
+  #bottom-right button em { display: none; }
+  #bottom-right button { padding: 11px 13px; }
+  #wallet span { font-size: 15px; }
+  #chat input { width: 180px; }
+}
+@media (max-width: 1040px) {
+  :root { --chip-size: 32px; }
+  .wallet-lastwin { display: none; }
+  #wallet { padding: 8px 12px; }
+  #add-funds { margin-left: 8px; padding: 7px 10px; font-size: 11px; }
+  #chat input { width: 140px; }
+  #undo-btn, #double-btn { width: 34px; height: 34px; font-size: 13px; }
+  #max-btn { height: 34px; }
+}
+
+/* --- phones & narrow tablets: stack the control bar, shrink the scene --- */
+@media (max-width: 860px) {
+  :root { --chip-size: 34px; --dealer-h: max(min(46vh, 96vw), 37.94vw); }
+
+  #hud-top { padding: 9px 11px; gap: 8px; }
+  .scout-mark { width: 20px; height: 20px; }
+  .scout-word { font-size: 16px; }
+  #game-title .sub { font-size: 8px; letter-spacing: .12em; margin-top: 4px; }
+  #top-right { flex: 1; justify-content: flex-end; }
+  #chat { flex: 1; max-width: 60vw; }
+  #chat input { width: 100%; min-width: 0; font-size: 16px; padding: 7px 10px; }
+
+  /* the table plate keeps its perspective aspect and fills the width */
+  #table2d { top: 38vh; }
+  #tableimg { width: 200vw; height: auto; bottom: -2vh; }
+
+  #banner { top: auto; bottom: 27vh; font-size: 11px; padding: 6px 14px; }
+  #caption { top: 33vh; font-size: 12px; max-width: 88vw; white-space: normal; text-align: center; }
+  #deal-now { top: auto; bottom: 22vh; padding: 13px 34px; font-size: 14px; }
+
+  /* control bar stacks: wallet + actions on one row, chips on their own */
+  #hud-bottom {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "wallet right" "chips chips";
+    gap: 9px; padding: 10px 11px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, rgba(6,7,9,.92) 55%, transparent);
+  }
+  #chip-row { justify-self: center; width: 100%; justify-content: center; overflow-x: auto; padding-bottom: 2px; }
+  #chips { flex: 0 1 auto; }
+  #wallet { gap: 14px; padding: 7px 11px; }
+  #wallet label { font-size: 8px; letter-spacing: .1em; }
+  #wallet span { font-size: 14px; }
+  #bottom-right button { padding: 10px 12px; }
+
+  /* touch targets: 44px minimum on the things you tap mid-hand */
+  #actions-top button { width: 52px; height: 52px; }
+  #actions button { width: 46px; height: 46px; }
+  #insurance button { padding: 12px 20px; }
+
+  #cashier-panel { width: 100%; max-width: none; border-radius: 16px 16px 0 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+  #cashier { align-items: flex-end; }
+  .fld-row { flex-wrap: wrap; }
+  .fld-row .fld.grow { flex: 1 0 100%; }
+  #toasts { top: 58px; width: 92vw; }
+  .toast { width: 100%; justify-content: space-between; }
+}
+
+/* --- portrait phones: the table needs to sit lower and read wider --- */
+@media (max-width: 860px) and (orientation: portrait) {
+  :root { --dealer-h: min(42vh, 100vw); }
+  #table2d { top: 34vh; }
+  #banner { bottom: 30vh; }
+  #deal-now { bottom: 25vh; }
+}
+
+/* --- landscape phones: very little height, so trim the vertical stack --- */
+@media (max-height: 560px) and (orientation: landscape) {
+  :root { --chip-size: 28px; --dealer-h: max(52vh, 37.94vw); }
+  #dealer-wrap {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 4%, #000 96%, transparent 100%),
+                        linear-gradient(to bottom, transparent 0%, #000 4%, #000 96%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 4%, #000 96%, transparent 100%),
+                linear-gradient(to bottom, transparent 0%, #000 4%, #000 96%, transparent 100%);
+  }
+  #hud-top { padding: 6px 10px; }
+  #game-title .sub { display: none; }
+  #table2d { top: 42vh; }
+  #tableimg { width: 128vw; height: 58vh; bottom: -2vh; }
+  #actions-top { top: auto; bottom: 20vh; padding: 7px 12px 5px; gap: 8px; }
+  #actions-top button i { width: 38px; height: 38px; font-size: 16px; }
+  #actions-top button em { font-size: 7px; }
+  #actions { display: none !important; }
+  #hud-bottom { grid-template-columns: 1fr auto 1fr; grid-template-areas: "wallet chips right"; padding: 6px 10px; background: none; }
+  #deal-now { top: auto; bottom: 12vh; padding: 9px 26px; font-size: 12px; }
+  #banner { top: auto; bottom: 20vh; }
+  #undo-btn, #double-btn { width: 30px; height: 30px; }
+  #max-btn { height: 30px; }
+  #wallet { padding: 5px 9px; }
+  .wallet-lastwin { display: none; }
+}
+
+
+/* compact seat mode: narrow viewports play the three centre boxes so each one
+   still has room for chips and two cards (layoutSeats spreads them). */
+.seat.seat-off { display: none !important; }
+
+/* --- portrait phones: fit the table so the played boxes fill the width --- */
+@media (max-width: 860px) and (orientation: portrait) {
+  /* drop the whole scene (dealer window AND its registered background) so her
+     lower fade tucks behind the plate instead of ghosting over the room */
+  :root { --dealer-top: 9vh; }
+  #tableimg { width: 155vw; bottom: 20vh; }
+  /* the wide bottom fade is there to blend her into the desktop plate; in
+     portrait the plate sits lower, so a soft fade just makes her arms
+     translucent over the room. Cut tight instead. */
+  #dealer-wrap {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 4%, #000 96%, transparent 100%),
+                        linear-gradient(to bottom, transparent 0%, #000 4%, #000 96%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 4%, #000 96%, transparent 100%),
+                linear-gradient(to bottom, transparent 0%, #000 4%, #000 96%, transparent 100%);
+  }
+  #game-title .sub { white-space: nowrap; }
+  .card { width: 30px; }
+
+  /* one action bar, parked in thumb reach above the betting bar */
+  #actions { display: none !important; }
+  #actions-top {
+    top: auto; bottom: 15.5vh; gap: 10px; padding: 11px 14px 9px;
+    max-width: calc(100vw - 20px); justify-content: space-between;
+  }
+  #actions-top button i { width: 50px; height: 50px; font-size: 20px; }
+  #actions-top button em { font-size: 8px; letter-spacing: .1em; }
+  #insurance { bottom: 16vh; top: auto; }
+}

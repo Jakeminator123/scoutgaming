@@ -59,25 +59,28 @@
       <button id="ins-no">NO</button>
     </div>
 
-    <div id="chip-row">
-      <button id="undo-btn" title="undo last chip" disabled>⟲</button>
-      <div id="chips"></div>
-      <button id="double-btn" title="double all bets" disabled>2×</button>
-      <button id="all-sides" title="side bets apply to every staked seat">⧉ ALL SEATS</button>
-    </div>
     <button id="deal-now" disabled>DEAL NOW</button>
 
     <footer id="hud-bottom">
       <div id="wallet">
         <div><label>BALANCE</label><span id="balance">$1,000.00</span></div>
         <div><label>TOTAL BET</label><span id="total-bet">$0.00</span></div>
-        <div><label>LAST WIN</label><span id="last-win">&ndash;</span></div>
+        <div class="wallet-lastwin"><label>LAST WIN</label><span id="last-win">&ndash;</span></div>
         <button id="add-funds">+ ADD FUNDS</button>
       </div>
-      <div id="deal-controls">
-        <button id="clear-btn" disabled>CLEAR</button>
+
+      <div id="chip-row">
+        <button id="undo-btn" title="undo last chip" disabled>⟲</button>
+        <div id="chips"></div>
+        <button id="double-btn" title="double all bets" disabled>2×</button>
+        <button id="max-btn" title="bet the maximum your balance allows">MAX</button>
       </div>
-      <button id="autobet" disabled title="Autobet is opt-in only and not in this demo">⟳ AUTOBET</button>
+
+      <div id="bottom-right">
+        <button id="all-sides" title="side bets apply to every staked seat"><i>⧉</i><em>ALL SEATS</em></button>
+        <button id="clear-btn" disabled>CLEAR</button>
+        <button id="autobet" disabled title="Autobet is opt-in only and not in this demo"><i>⟳</i><em>AUTOBET</em></button>
+      </div>
     </footer>
 
     <div id="cashier" hidden>
