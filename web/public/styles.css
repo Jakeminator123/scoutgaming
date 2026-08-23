@@ -15,7 +15,7 @@
   /* --- calibratable seat geometry (see calibrate.mjs, open with ?cal=1) --- */
   --spot-x: 33px; --spot-y: 39px; --spot-w: 54px; --spot-h: 40px;
   --arc-x: 60px; --arc-y: 59px; --arc-w: 106px; --arc-h: 83px; --arc-rot: 0deg;
-  --pp-rot: -90deg; --tp-rot: 90deg; --label-size: 10px; --tp-size: 8.5px;
+  --pp-rot: 0deg; --tp-rot: 0deg; --label-size: 10px; --tp-size: 8.5px;
   --cards-x: -2px; --cards-y: -40px; --cards-flat: .62; --cards-rot-k: .5;
   --side-chip-r: 45; --sidechip-dx: 0px; --sidechip-dy: 0px;
   /* seat arc on the felt, read by layoutSeats() */
@@ -107,7 +107,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   left: calc(var(--ci, 0) * 19px - 32px); top: calc(var(--ci, 0) * -4px);
   transform: rotate(calc(var(--ci, 0) * 6deg - 4deg));
 }
-#dealer-cards .hand-total { position: absolute; left: -14px; top: 96px; transform: scaleY(1.61); }
+#dealer-cards .hand-total { position: absolute; left: -14px; top: 96px; transform: scaleY(calc(1 / var(--cards-flat, .62))); }
 
 /* ---------- seats (screen-space, positioned by layoutSeats) ---------- */
 #seats { position: absolute; inset: 0; }
@@ -144,8 +144,13 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .sidearcs .side-label {
   transform-box: fill-box; transform-origin: center;
 }
-.sidearcs .pp-label { transform: rotate(var(--pp-rot)) scaleY(1.3514); }
-.sidearcs .tp-label { transform: rotate(var(--tp-rot)) scaleY(1.3514); font-size: var(--tp-size, 9px); }
+.sidearcs .pp-label {
+  transform: rotate(calc(-1 * var(--arc-rot) + var(--pp-rot))) scaleY(1.3514);
+}
+.sidearcs .tp-label {
+  transform: rotate(calc(-1 * var(--arc-rot) + var(--tp-rot))) scaleY(1.3514);
+  font-size: var(--tp-size, 9px);
+}
 .sidearcs .side {
   fill: rgba(214, 255, 58, .07); stroke: rgba(214, 255, 58, .30); stroke-width: 1.2;
   cursor: pointer; pointer-events: auto;
@@ -196,7 +201,14 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 
 /* seat hand: neat cascade above-left of the chip */
 .seat .cards { position: absolute; left: var(--cards-x); top: var(--cards-y); width: 0; height: 0; transform: rotate(calc(var(--tang, 0deg) * var(--cards-rot-k))) scaleY(var(--cards-flat)); transform-origin: 62px 103px; }
-.seat .cards .hand-total { position: absolute; left: 42px; top: 168px; transform: translateX(-50%) scaleY(1.61); }
+.seat .cards .hand-total {
+  position: absolute; left: 42px; top: 168px;
+  /* .cards rotates and flattens the whole hand; the badge undoes both so it
+     always reads straight, whatever the box's angle on the arc */
+  transform: translateX(-50%)
+             scaleY(calc(1 / var(--cards-flat, .62)))
+             rotate(calc(-1 * var(--tang, 0deg) * var(--cards-rot-k, .5)));
+}
 .hand-total {
   background: rgba(8,8,10,.9); border-radius: 7px; color: #fff;
   font-size: 15px; font-weight: 800; padding: 4px 11px; white-space: nowrap;
