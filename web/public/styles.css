@@ -95,7 +95,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 /* side bets: crescent ring-sectors wrapped around the spot */
 .sidearcs {
   position: absolute; left: 60px; top: 59px; width: 128px; height: 100px;
-  transform: translate(-50%, -50%) rotate(calc(var(--tang, 0deg) * 0.5)); overflow: visible;
+  transform: translate(-50%, -50%) rotate(calc(var(--tang, 0deg) * -0.6)); overflow: visible;
 }
 .sidearcs .side {
   fill: rgba(30, 110, 96, .30); stroke: rgba(210, 240, 230, .4); stroke-width: 1.2;
