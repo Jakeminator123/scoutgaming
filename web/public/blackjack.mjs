@@ -2,8 +2,9 @@
 // real product the server decides everything; this module exists so the
 // recreation is playable without an RGS).
 // Rules per the build scope: 8 decks reshuffled every round, S17, American
-// hole card with peek, blackjack 3:2, insurance 2:1, double any two, no
-// surrender, up to 7 boxes. Side bets, settled at deal time: Perfect Pairs
+// hole card with peek, blackjack 3:2, insurance 2:1, double any two, split to
+// 4 hands (aces get one card each), double after split, no surrender, up to
+// 7 boxes. Side bets, settled at deal time: Perfect Pairs
 // (perfect 25:1 / colored 12:1 / mixed 6:1) and 21+3 (suited trips 100:1 /
 // straight flush 40:1 / trips 30:1 / straight 10:1 / flush 5:1).
 
@@ -39,6 +40,10 @@ export function handValue(cards) {
   return { total, soft };
 }
 const isBJ = cards => cards.length === 2 && handValue(cards).total === 21;
+// A natural pays 3:2. A two-card 21 on a hand that came out of a split does
+// NOT: it is an ordinary 21 and pays 1:1.
+const isNatural = hand => hand.splitFrom === null && isBJ(hand.cards);
+const MAX_HANDS_PER_BOX = 4; // 3 splits
 const tenVal = c => ['10','J','Q','K'].includes(c.r);
 const isRed = c => c.s === '♥' || c.s === '♦';
 const rankOrd = c => RANKS.indexOf(c.r) + 1; // A=1, 2..10, J=11, Q=12, K=13
@@ -74,16 +79,24 @@ export class Round {
   // boxes: array of stakes, e.g. [25] or [25, 0, 100] (0 = empty box), or of
   // objects {main, pp, tp} (numbers, 0 = not placed). A box is live when
   // main > 0; pp/tp without main are ignored.
+  //
+  // boxes[i] is the SEAT record and doubles as that seat's FIRST hand.
+  // this.hands (== live()) is the flat, ordered list of playable hands: it
+  // starts as one hand per live box and grows as boxes are split. Every hand
+  // carries `box` (its index into this.boxes) and `splitFrom` (null until the
+  // hand takes part in a split, then the box index).
   constructor(boxes) {
     this.shoe = freshShoe();
-    this.boxes = boxes.map(box => {
+    this.boxes = boxes.map((box, i) => {
       const o = typeof box === 'object' && box !== null ? box : { main: box };
       return {
+        box: i, splitFrom: null,
         stake: o.main || 0, pp: o.pp || 0, tp: o.tp || 0,
         cards: [], done: false, doubled: false, insured: 0, result: null,
         sideReturn: 0, sideLabels: [],
       };
     });
+    this.hands = this.boxes.filter(b => b.stake > 0);
     this.dealer = [];
     this.phase = 'dealing';
     this.active = -1;
@@ -106,7 +119,9 @@ export class Round {
     this.afterInsurance();
   }
 
-  live() { return this.boxes.filter(b => b.stake > 0); }
+  // Every playable hand, left to right, split hands sitting next to the hand
+  // they came from. Indices shift when a box splits, so re-read it after act().
+  live() { return this.hands; }
 
   // Side bets settle off the first two player cards + dealer upcard, right at
   // the deal. "pays N:1" => total return = stake * (N + 1); loss = 0.
@@ -154,12 +169,22 @@ export class Round {
   }
 
   advance() {
-    const boxes = this.live();
-    this.active = boxes.findLastIndex(b => !b.done);
+    const hands = this.live();
+    this.active = hands.findLastIndex(b => !b.done);
     if (this.active === -1) { this.dealerPlay(); return; }
-    const b = boxes[this.active];
-    if (isBJ(b.cards) || handValue(b.cards).total >= 21) { b.done = true; this.advance(); return; }
+    const b = hands[this.active];
+    if (handValue(b.cards).total >= 21) { b.done = true; this.advance(); return; }
     this.emit('hand.thinking', { box: this.active });
+  }
+
+  // Same rank, or any two ten-valued cards; first two cards only (a hit hand
+  // holds three); and the box is not already at its 4-hand cap. Split aces are
+  // marked done the moment they are dealt, so they never reach here.
+  canSplit(b) {
+    if (b.cards.length !== 2) return false;
+    if (this.hands.filter(h => h.box === b.box).length >= MAX_HANDS_PER_BOX) return false;
+    const [c1, c2] = b.cards;
+    return c1.r === c2.r || (tenVal(c1) && tenVal(c2));
   }
 
   legal() {
@@ -167,6 +192,7 @@ export class Round {
     if (!b) return [];
     const acts = ['hit', 'stand'];
     if (b.cards.length === 2 && !b.doubled) acts.push('double');
+    if (this.canSplit(b)) acts.push('split');
     return acts;
   }
 
@@ -182,15 +208,44 @@ export class Round {
       b.cards.push(this.draw());
       this.emit('card.dealt', { box: this.active, card: b.cards.at(-1) });
       b.done = true;
+    } else if (action === 'split') {
+      this.split(b);
+      return;
     } else b.done = true;
     if (b.done) this.advance();
+  }
+
+  // The second card moves to a new hand that costs another bet of the same
+  // size and sits immediately to the right of its parent, so a box's hands
+  // stay contiguous and still play right to left. Side bets and insurance
+  // belong to the box and stay on the parent hand: they are never duplicated.
+  split(b) {
+    const i = this.active;
+    const aces = b.cards[0].r === 'A';
+    const moved = b.cards.pop();
+    const nh = {
+      box: b.box, splitFrom: b.box,
+      stake: b.stake, pp: 0, tp: 0,
+      cards: [moved], done: false, doubled: false, insured: 0, result: null,
+      sideReturn: 0, sideLabels: [],
+    };
+    b.splitFrom = b.box;
+    this.hands.splice(i + 1, 0, nh);
+    this.emit('hand.split', { box: this.active, seat: b.box, stake: nh.stake });
+    b.cards.push(this.draw());
+    this.emit('card.dealt', { box: i, card: b.cards.at(-1) });
+    nh.cards.push(this.draw());
+    this.emit('card.dealt', { box: i + 1, card: nh.cards.at(-1) });
+    if (aces) { b.done = true; nh.done = true; }  // one card each, no further action
+    this.advance();
   }
 
   dealerPlay() {
     this.phase = 'dealer';
     this.dealer.push(this.holeCard);
     this.emit('dealer.reveal');
-    const anyLive = this.live().some(b => handValue(b.cards).total <= 21 && !isBJ(b.cards));
+    // true if ANY hand on ANY box can still be beaten or beaten by a draw
+    const anyLive = this.live().some(b => handValue(b.cards).total <= 21 && !isNatural(b));
     if (anyLive) {
       // S17: stand on ALL 17s including soft
       while (handValue(this.dealer).total < 17) {
@@ -209,7 +264,7 @@ export class Round {
       const p = handValue(b.cards).total;
       let payout = 0; // total returned to player (stake included when won/pushed)
       if (b.insured) payout += dealerBJ ? b.insured * 3 : 0;
-      if (isBJ(b.cards)) payout += dealerBJ ? b.stake : b.stake * 2.5;
+      if (isNatural(b)) payout += dealerBJ ? b.stake : b.stake * 2.5;
       else if (dealerBJ || p > 21) payout += 0;
       else if (d > 21 || p > d) payout += b.stake * 2;
       else if (p === d) payout += b.stake;

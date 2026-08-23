@@ -15,6 +15,7 @@ const CLIP = {
   dealWatch: 'idle-1/actions/action-deal-watch',
   think: 'idle-1/actions/action-think',
   gest: 'idle-1/actions/gesticulate1',
+  supervisor: 'idle-1/actions/supervisor',
 };
 const engine = new DealerEngine($('#dealer'), 'dealer', { log: m => console.info('[dealer]', m) });
 let engineUp = false;
@@ -1044,6 +1045,9 @@ async function finish() {
   else if (anyPush && !anyLose) voice.say('push', { force: true });
   else voice.say('lose', { force: true });
   trigger(anyWin ? CLIP.gest : CLIP.headTilt);
+  // a big collect brings the pit boss over, same as a real floor
+  const bigCollect = totalWin >= staked * 4 && totalWin > 0;
+  setTimeout(() => supervisorMayLook({ force: bigCollect }), 1200);
   const who = player?.name ?? 'the player';
   if (totalWin > 0) void veraEvent(`Round settled: ${who} collected ${fmt(totalWin)} this round${anyPlayerBJ ? ' including a natural blackjack' : ''}.`);
   else void veraEvent(`Round settled: the house took this one; ${who} won nothing back.`, { minGap: 45000 });
@@ -1194,6 +1198,43 @@ buildChips();
 $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
 // calibration overlay: applies any saved tweaks, then lies dormant until `C`
 import('./calibrate.mjs').then(m => { m.applySavedSeats?.(); if (m.applySaved()) layoutSeats(); }).catch(() => {});
+
+// ---------- floor supervisor ----------
+// Kevin walks the pit: he looks in between rounds, never mid-hand, on a loose
+// schedule plus straight after an unusually large payout - which is exactly
+// when a real pit boss appears.
+let roundsSinceLook = 0, nextLookAfter = 4 + Math.floor(Math.random() * 4);
+function supervisorMayLook({ force = false } = {}) {
+  if (round || busy || !engineUp) return false;
+  if (!engine.index?.clips?.[CLIP.supervisor]) return false;
+  if (!force && ++roundsSinceLook < nextLookAfter) return false;
+  roundsSinceLook = 0;
+  nextLookAfter = 4 + Math.floor(Math.random() * 4);
+  engine.interrupt(CLIP.supervisor);
+  showCaption(force
+    ? 'Floor supervisor checking the table.'
+    : 'Floor supervisor on his rounds.', 4200);
+  return true;
+}
+
+// Call him over on demand. Warm the clip first so the first press does not
+// sit on a cold 1.2MB fetch and look like nothing happened.
+const pitBtn = $('#pitboss');
+if (pitBtn) {
+  const warm = () => { if (engineUp && engine.index?.clips?.[CLIP.supervisor]) engine.fetchClip(CLIP.supervisor).catch(() => {}); };
+  setTimeout(warm, 3000);
+  pitBtn.addEventListener('pointerenter', warm, { once: true });
+  pitBtn.onclick = () => {
+    if (round || busy) { hint('PIT BOSS', 'he waits for the hand to finish'); return; }
+    pitBtn.disabled = true;
+    const ok = supervisorMayLook({ force: true });
+    if (!ok) hint('PIT BOSS', 'not available yet');
+    setTimeout(() => { pitBtn.disabled = false; }, 9000);
+  };
+}
+
+// QA hook: lets a test drive the table without playing 20 rounds first
+window.__croupier = { engine, CLIP, supervisorMayLook, get round() { return round; } };
 
 renderBets();
 setBanner('PLEASE PLACE BETS');
