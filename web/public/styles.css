@@ -71,13 +71,13 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 }
 
 /* dealer's cards on the felt, screen space */
-#dealer-cards { position: absolute; left: 50%; top: 24%; width: 0; height: 0; }
+#dealer-cards { position: absolute; left: 50%; top: 13.5%; width: 0; height: 0; transform: scaleY(.78); }
 #dealer-cards .card, .seat .cards .card {
   position: absolute;
   left: calc(var(--ci, 0) * 19px - 32px); top: calc(var(--ci, 0) * -4px);
   transform: rotate(calc(var(--ci, 0) * 6deg - 4deg));
 }
-#dealer-cards .hand-total { position: absolute; left: -14px; top: 62px; }
+#dealer-cards .hand-total { position: absolute; left: -14px; top: 78px; transform: scaleY(1.28); }
 
 /* ---------- seats (screen-space, positioned by layoutSeats) ---------- */
 #seats { position: absolute; inset: 0; }
@@ -132,8 +132,8 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .side .chipimg b { font-size: 9px; }
 
 /* seat hand: neat cascade above-left of the chip */
-.seat .cards { position: absolute; left: -2px; top: -44px; width: 0; height: 0; transform: rotate(calc(var(--tang, 0deg) * .5)); transform-origin: 62px 103px; }
-.seat .cards .hand-total { position: absolute; left: 42px; top: 128px; transform: translateX(-50%); }
+.seat .cards { position: absolute; left: -2px; top: -40px; width: 0; height: 0; transform: rotate(calc(var(--tang, 0deg) * .5)) scaleY(.78); transform-origin: 62px 103px; }
+.seat .cards .hand-total { position: absolute; left: 42px; top: 148px; transform: translateX(-50%) scaleY(1.28); }
 .hand-total {
   background: rgba(8,8,10,.9); border-radius: 7px; color: #fff;
   font-size: 15px; font-weight: 800; padding: 4px 11px; white-space: nowrap;
@@ -166,7 +166,7 @@ body.in-round .stake { display: none; }
 .card {
   width: 46px; height: 66px;
   border-radius: 6px; background: #f7f5ee; color: #222;
-  box-shadow: 0 3px 7px rgba(0,0,0,.45); position: relative; font-weight: 700;
+  box-shadow: 0 6px 8px -2px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.3); position: relative; font-weight: 700;
   will-change: transform;
 }
 .card.fly { animation: flyin .5s cubic-bezier(.2, .75, .25, 1); }
