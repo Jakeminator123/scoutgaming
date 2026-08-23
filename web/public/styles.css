@@ -860,3 +860,10 @@ body.cal-on .seat.cal-hint .sidearcs .side { stroke: #FFB020; stroke-width: 2.4;
 #calibrator .cal-apply { flex: 1 0 100%; background: #D6FF3A; color: #0A0B0D; border-color: #D6FF3A; }
 #calibrator .cal-apply:hover { background: #e6ff70; }
 #calibrator .cal-copy { background: none; color: #F2F1ED; border-color: rgba(242,241,237,.16); }
+#calibrator header { cursor: move; user-select: none; }
+#calibrator .cal-side, #calibrator .cal-min {
+  background: none; border: none; color: #5A6470; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 3px;
+}
+#calibrator .cal-side:hover, #calibrator .cal-min:hover { color: #D6FF3A; }
+#calibrator.min .cal-body, #calibrator.min footer, #calibrator.min .cal-scope { display: none; }
+#calibrator.min { width: auto; min-width: 210px; }

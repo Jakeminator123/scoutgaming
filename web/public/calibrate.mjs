@@ -87,6 +87,8 @@ function build() {
     <header>
       <b>CALIBRATE</b>
       <span class="cal-note">click a box to edit it alone &middot; drag its lime handle to rotate</span>
+      <button class="cal-side" title="move to the other side">⇄</button>
+      <button class="cal-min" title="collapse">–</button>
       <button class="cal-x" title="close (C)">×</button>
     </header>
     <div class="cal-scope"><span class="cal-scope-txt">editing ALL BOXES</span><button class="cal-scope-all">EDIT ALL</button></div>
@@ -133,6 +135,39 @@ function build() {
   }
 
   buildPerBox(body);
+  // The panel sits over the felt, so it has to get out of the way: drag it by
+  // its header, flip it to the other side, or collapse it to a title bar.
+  const header = panel.querySelector('header');
+  header.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    e.preventDefault();
+    const r = panel.getBoundingClientRect();
+    const off = { x: e.clientX - r.left, y: e.clientY - r.top };
+    const move = ev => {
+      const x = Math.max(6, Math.min(innerWidth - r.width - 6, ev.clientX - off.x));
+      const y = Math.max(6, Math.min(innerHeight - 44, ev.clientY - off.y));
+      panel.style.left = `${x}px`; panel.style.top = `${y}px`; panel.style.right = 'auto';
+      localStorage.setItem(STORE + '.pos', JSON.stringify({ x, y }));
+    };
+    const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+    addEventListener('pointermove', move); addEventListener('pointerup', up);
+  });
+  try {
+    const pos = JSON.parse(localStorage.getItem(STORE + '.pos') || 'null');
+    if (pos) { panel.style.left = `${pos.x}px`; panel.style.top = `${pos.y}px`; panel.style.right = 'auto'; }
+  } catch { /* default position */ }
+
+  panel.querySelector('.cal-side').onclick = () => {
+    const r = panel.getBoundingClientRect();
+    const x = r.left < innerWidth / 2 ? innerWidth - r.width - 14 : 14;
+    panel.style.left = `${x}px`; panel.style.right = 'auto';
+    localStorage.setItem(STORE + '.pos', JSON.stringify({ x, y: r.top }));
+  };
+  panel.querySelector('.cal-min').onclick = e => {
+    panel.classList.toggle('min');
+    e.currentTarget.textContent = panel.classList.contains('min') ? '+' : '–';
+  };
+
   panel.querySelector('.cal-x').onclick = toggle;
   panel.querySelector('.cal-all').onclick = applyToAll;
   panel.querySelector('.cal-scope-all').onclick = () => selectSeat(null);
