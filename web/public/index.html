@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Croupier — Privé Blackjack</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%F0%9F%83%8F%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -15,8 +17,8 @@
 
     <header id="hud-top">
       <div id="game-title">
-        <h1>Privé Blackjack <span class="limits">· $5 – $2,000</span></h1>
-        <div class="sub">Croupier Demo · <span id="clock"></span> · <span class="ai-badge" title="This dealer is an AI. Outcomes are determined by a certified RNG.">AI dealer</span></div>
+        <div class="scout-lockup"><svg class="scout-mark" viewBox="0 0 100 100" aria-label="Scout"><path d="M8 22 V8 H22" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M78 8 H92 V22" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M92 78 V92 H78" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M22 92 H8 V78" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M68 36 C68 28, 60 24, 50 24 C40 24, 32 28, 32 36 C32 50, 68 50, 68 64 C68 72, 60 76, 50 76 C40 76, 32 72, 32 64" fill="none" stroke="currentColor" stroke-width="9.5" stroke-linecap="square"/><circle cx="50" cy="50" r="7" fill="#D6FF3A"/></svg><span class="scout-word">scout<i>/</i>gaming</span></div>
+        <div class="sub eyebrow">PRIV&Eacute; BLACKJACK &middot; $5 &ndash; $2,000 &middot; <span id="clock"></span> &middot; <span class="ai-badge" title="This dealer is an AI. Outcomes are determined by a certified RNG.">AI DEALER</span></div>
       </div>
       <div id="top-right">
         <button id="sound-btn" title="dealer voice">🔊</button>
@@ -33,13 +35,13 @@
     <!-- the whole table: screen-space perspective art matched to the ER -->
     <div id="table2d">
       <img id="tableimg" src="assets/table.png" alt="" />
-      <div id="discard"><img src="assets/tray.png" alt=""></div>
+      <div id="felt-brand"><svg class="scout-mark" viewBox="0 0 100 100" aria-label="Scout"><path d="M8 22 V8 H22" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M78 8 H92 V22" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M92 78 V92 H78" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M22 92 H8 V78" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M68 36 C68 28, 60 24, 50 24 C40 24, 32 28, 32 36 C32 50, 68 50, 68 64 C68 72, 60 76, 50 76 C40 76, 32 72, 32 64" fill="none" stroke="currentColor" stroke-width="9.5" stroke-linecap="square"/><circle cx="50" cy="50" r="7" fill="#D6FF3A"/></svg></div>
       <div id="shoe2d"><img src="assets/shoe.png" alt=""></div>
       <div id="dealer-cards" class="cards"></div>
       <div id="seats"></div>
     </div>
 
-    <div id="actions-top"<div id="actions-top" hidden>
+    <div id="actions-top" hidden>
       <button data-act="double"><i>2x</i><em>DOUBLE</em></button>
       <button data-act="hit"><i>+</i><em>HIT</em></button>
       <button data-act="stand"><i>&minus;</i><em>STAND</em></button>
@@ -78,6 +80,7 @@
     <div id="engine-hud"></div>
     <div id="gate">
       <div id="gate-panel">
+        <div class="scout-lockup gate-lockup"><svg class="scout-mark" viewBox="0 0 100 100" aria-label="Scout"><path d="M8 22 V8 H22" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M78 8 H92 V22" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M92 78 V92 H78" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M22 92 H8 V78" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M68 36 C68 28, 60 24, 50 24 C40 24, 32 28, 32 36 C32 50, 68 50, 68 64 C68 72, 60 76, 50 76 C40 76, 32 72, 32 64" fill="none" stroke="currentColor" stroke-width="9.5" stroke-linecap="square"/><circle cx="50" cy="50" r="7" fill="#D6FF3A"/></svg><span class="scout-word">scout<i>/</i>gaming</span></div>
         <h2>Priv&eacute; Blackjack</h2>
         <p><b>Vera is an AI dealer.</b> Her commentary is for entertainment only &mdash; she has no knowledge of upcoming cards and never gives betting advice. All outcomes are determined by a certified random number generator.</p>
         <p class="fine">Play responsibly. Game rules and RTP are available from the table menu.</p>

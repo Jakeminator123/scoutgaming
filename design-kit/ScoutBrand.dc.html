@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", sans-serif; }
+    a { color: #D6FF3A; } a:hover { color: #e2ff66; }
+  </style>
+</helmet>
+<div style="width: 860px; height: 560px; background: #0A0B0D; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; position: relative;">
+  <div style="position: absolute; top: 22px; left: 32px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .18em; color: rgba(242,241,237,.55);">SCOUT &middot; GAME BRANDING</div>
+
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <svg width="34" height="34" viewBox="0 0 100 100"><path d="M8 22 V8 H22" fill="none" stroke="#F2F1ED" stroke-width="8"/><path d="M78 8 H92 V22" fill="none" stroke="#F2F1ED" stroke-width="8"/><path d="M92 78 V92 H78" fill="none" stroke="#F2F1ED" stroke-width="8"/><path d="M22 92 H8 V78" fill="none" stroke="#F2F1ED" stroke-width="8"/><path d="M68 36 C68 28, 60 24, 50 24 C40 24, 32 28, 32 36 C32 50, 68 50, 68 64 C68 72, 60 76, 50 76 C40 76, 32 72, 32 64" fill="none" stroke="#F2F1ED" stroke-width="9.5"/><circle cx="50" cy="50" r="7" fill="#D6FF3A"/></svg>
+    <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 30px; letter-spacing: -0.04em; color: #F2F1ED;">scout<span style="color: #B5DC1F;">/</span>gaming</span>
+  </div>
+  <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .18em; color: #9a9aa2;">PRIV&Eacute; BLACKJACK &middot; $5 &ndash; $2,000 &middot; <span style="border: 1px solid rgba(214,255,58,.5); color: #D6FF3A; border-radius: 4px; padding: 1px 6px;">AI DEALER</span></div>
+
+  <div style="display: flex; gap: 40px; align-items: center; margin-top: 8px;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+      <div style="width: 130px; height: 130px; border-radius: 10px; background: radial-gradient(ellipse at 50% 30%, hsl(147 36% 32%), hsl(145 25% 18%)); display: flex; align-items: center; justify-content: center;">
+        <svg width="72" height="72" viewBox="0 0 100 100" style="transform: scaleY(.78); opacity: .9;"><path d="M8 22 V8 H22" fill="none" stroke="rgba(233,214,138,.16)" stroke-width="8"/><path d="M78 8 H92 V22" fill="none" stroke="rgba(233,214,138,.16)" stroke-width="8"/><path d="M92 78 V92 H78" fill="none" stroke="rgba(233,214,138,.16)" stroke-width="8"/><path d="M22 92 H8 V78" fill="none" stroke="rgba(233,214,138,.16)" stroke-width="8"/><path d="M68 36 C68 28, 60 24, 50 24 C40 24, 32 28, 32 36 C32 50, 68 50, 68 64 C68 72, 60 76, 50 76 C40 76, 32 72, 32 64" fill="none" stroke="rgba(233,214,138,.16)" stroke-width="9.5"/><circle cx="50" cy="50" r="7" fill="rgba(233,214,138,.22)"/></svg>
+      </div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: rgba(242,241,237,.6);">FELT ETCH</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+      <img src="cardback.png" style="width: 96px; border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,.6);" alt="Scout card back">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: rgba(242,241,237,.6);">CARD BACK</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+      <div style="background: #D6FF3A; color: #0A0B0D; border-radius: 22px; padding: 13px 38px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: .08em; box-shadow: 0 6px 22px rgba(214,255,58,.25);">ENTER TABLE</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; color: rgba(242,241,237,.6);">BRAND CTA</div>
+    </div>
+  </div>
+  <div style="font-size: 12px; color: rgba(242,241,237,.5); letter-spacing: .06em;">operator identity rides the chrome; the casino keeps its champagne table language</div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":860,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

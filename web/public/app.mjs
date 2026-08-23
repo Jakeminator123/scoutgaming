@@ -108,6 +108,64 @@ setInterval(() => {
   if (!round && !busy && voice.greeted && Math.random() < 0.5) voice.say(Math.random() < 0.5 ? 'chatter1' : 'chatter2');
 }, 48000);
 
+// ---------- sound system ----------
+const sfx = {
+  files: {},
+  load() {
+    for (const n of ['ambience', 'win', 'bigwin', 'deal', 'chip']) {
+      const el = new Audio(`sfx/${n}.mp3`); el.preload = 'auto'; this.files[n] = el;
+    }
+    this.files.ambience.loop = true; this.files.ambience.volume = 0.16;
+    this.files.win.volume = 0.5; this.files.bigwin.volume = 0.6;
+    this.files.deal.volume = 0.4; this.files.chip.volume = 0.45;
+  },
+  play(n) { if (voice.muted) return; const el = this.files[n]; if (!el) return; el.currentTime = 0; el.play().catch(() => {}); },
+  startAmbience() { if (!voice.muted) this.files.ambience?.play().catch(() => {}); },
+  stopAmbience() { this.files.ambience?.pause(); },
+};
+sfx.load();
+// hover ticks: tiny synth click, no asset needed
+let actx = null;
+function hoverTick() {
+  if (voice.muted) return;
+  try {
+    actx = actx ?? new AudioContext();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = 1400; o.type = 'sine';
+    g.gain.setValueAtTime(0.045, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.05);
+    o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.06);
+  } catch { /* ignore */ }
+}
+document.addEventListener('mouseover', e => {
+  if (e.target.closest?.('button, .chip, .spot, .side')) hoverTick();
+});
+
+// celebration bursts
+function burstAt(x, y, big = false) {
+  const b = document.createElement('div');
+  b.className = 'burst'; b.style.left = `${x}px`; b.style.top = `${y}px`;
+  const n = big ? 26 : 14;
+  const colors = ['#d9c06a', '#f0dfa8', '#D6FF3A', '#fff'];
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('i');
+    const ang = Math.random() * Math.PI * 2, r = (big ? 130 : 80) * (0.5 + Math.random() * 0.8);
+    p.style.setProperty('--bx', `${Math.cos(ang) * r}px`);
+    p.style.setProperty('--by', `${Math.sin(ang) * r - 30}px`);
+    p.style.setProperty('--bc', colors[i % colors.length]);
+    p.style.animationDelay = `${Math.random() * 0.12}s`;
+    b.appendChild(p);
+  }
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 1400);
+}
+function bjFlash(text) {
+  const el = document.createElement('div');
+  el.className = 'bj-flash'; el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1900);
+}
+
 // ---------- clock ----------
 setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }, 1000);
 
@@ -216,6 +274,7 @@ function placeBet(i, field, targetEl) {
   const next = bets[i][field] + selected;
   if (next > cap || betTotal() + selected > balance) return;
   flyChip(selected, targetEl);
+  sfx.play('chip');
   bets[i][field] = next;
   undoStack.push({ box: i, field, value: selected });
   renderBets();
@@ -265,7 +324,7 @@ function renderBets() {
     const b = bets[i];
     const spot = seat.querySelector('.spot');
     if (b.main) { spot.classList.add('staked'); spot.innerHTML = stackChip(b.main); }
-    else { spot.classList.remove('staked'); spot.innerHTML = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20c.8-3.6 3.4-5.6 6.5-5.6s5.7 2 6.5 5.6"/><path d="M18 8.5h5M20.5 6v5"/></svg>'; }
+    else { spot.classList.remove('staked'); spot.innerHTML = '<svg width="24" height="22" viewBox="-11 -12 27 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="-2" cy="-5" r="4.2"/><path d="M -9.5 8 c 1 -4.4 4 -6.8 7.5 -6.8 s 6.5 2.4 7.5 6.8"/><path d="M 8 -6 h 7 M 11.5 -9.5 v 7"/></svg>'; }
     for (const f of ['pp', 'tp']) {
       const arc = seat.querySelector(`.side.${f}`);
       const chip = seat.querySelector(`.${f}-chip`);
@@ -321,6 +380,7 @@ function seatOfLive(liveIdx) {
 }
 const boxContainer = liveIdx => seatOfLive(liveIdx)?.querySelector('.cards');
 function dealCardTo(container, card, { faceDown = false } = {}) {
+  sfx.play('deal');
   const el = cardEl(card, faceDown);
   el.style.setProperty('--ci', container.querySelectorAll('.card').length);
   const badge = container.querySelector('.hand-total');
@@ -409,10 +469,15 @@ async function dealSequence() {
   live.forEach((b, i) => {
     if (!(b.pp || b.tp)) return;
     const el = seatOfLive(i).querySelector('.sideresult');
-    if (b.sideReturn > 0) { sideWin = true; el.textContent = `${b.sideLabels.join(' · ')} +${fmt(b.sideReturn)}`; }
+    if (b.sideReturn > 0) {
+      sideWin = true;
+      el.textContent = `${b.sideLabels.join(' · ')} +${fmt(b.sideReturn)}`;
+      const r = seatOfLive(i).getBoundingClientRect();
+      burstAt(r.x, r.y, b.sideReturn >= b.stake * 10);
+    }
     else el.textContent = 'side lost';
   });
-  if (sideWin) voice.say('sidebet', { force: true });
+  if (sideWin) { sfx.play('bigwin'); voice.say('sidebet', { force: true }); }
 
   trigger(CLIP.dealWatch);
 
@@ -516,7 +581,11 @@ async function finish() {
     const el = seat.querySelector('.result');
     const net = hand.result - hand.stake - hand.insured;
     if (hand.cards.length === 2 && handValue(hand.cards).total === 21) anyPlayerBJ = true;
-    if (net > 0) { el.textContent = 'WIN ' + fmt(hand.result); el.classList.add('win'); anyWin = true; }
+    if (net > 0) {
+      el.textContent = 'WIN ' + fmt(hand.result); el.classList.add('win'); anyWin = true;
+      const r = seat.getBoundingClientRect();
+      burstAt(r.x, r.y, hand.result >= hand.stake * 2.4);
+    }
     else if (net === 0) { el.textContent = 'PUSH'; el.classList.add('push'); anyPush = true; }
     else { el.textContent = 'LOSE'; el.classList.add('lose'); anyLose = true; }
   });
@@ -526,9 +595,9 @@ async function finish() {
   const dealerTotal = handValue(round.dealer).total;
   const dealerBJ = round.dealer.length === 2 && dealerTotal === 21;
   if (dealerBJ) voice.say('dealerblackjack', { force: true });
-  else if (anyPlayerBJ && anyWin) voice.say('blackjack', { force: true });
-  else if (dealerTotal > 21) voice.say('dealerbust', { force: true });
-  else if (anyWin) voice.say('win', { force: true });
+  else if (anyPlayerBJ && anyWin) { sfx.play('bigwin'); bjFlash('BLACKJACK'); voice.say('blackjack', { force: true }); }
+  else if (dealerTotal > 21) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
+  else if (anyWin) { sfx.play('win'); voice.say('win', { force: true }); }
   else if (anyPush && !anyLose) voice.say('push', { force: true });
   else voice.say('lose', { force: true });
   trigger(anyWin ? CLIP.gest : CLIP.headTilt);
@@ -565,6 +634,7 @@ function sendChat() {
 $('#gate-enter').onclick = () => {
   $('#gate').classList.add('hidden');
   voice.greeted = true;
+  sfx.startAmbience();
   voice.say('greeting', { force: true });
 };
 

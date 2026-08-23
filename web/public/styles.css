@@ -37,10 +37,16 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #hud-top, #hud-bottom { pointer-events: none; }
 #hud-top button, #hud-top input, #wallet, #deal-controls button, #autobet { pointer-events: auto; }
 #hud-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; padding: 14px 18px; z-index: 40; }
+/* Scout brand */
+.scout-lockup { display: flex; align-items: center; gap: 10px; }
+.scout-mark { width: 26px; height: 26px; color: #F2F1ED; }
+.scout-word { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 21px; letter-spacing: -0.04em; color: #F2F1ED; line-height: 1; }
+.scout-word i { font-style: normal; color: #B5DC1F; }
+.eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
 #game-title h1 { font-size: 17px; font-weight: 600; }
 #game-title .limits { font-weight: 400; color: #cfcfcf; }
-#game-title .sub { font-size: 11px; color: #9a9aa2; margin-top: 2px; }
-.ai-badge { border: 1px solid #6f6fd8; color: #aeaef5; border-radius: 4px; padding: 0 5px; font-size: 10px; letter-spacing: .04em; }
+#game-title .sub { color: #9a9aa2; margin-top: 6px; }
+.ai-badge { border: 1px solid rgba(214,255,58,.5); color: #D6FF3A; border-radius: 4px; padding: 0 5px; }
 #top-right { display: flex; gap: 8px; align-items: center; }
 #sound-btn { background: rgba(20,20,26,.75); border: 1px solid #3a3a44; border-radius: 8px; padding: 7px 10px; cursor: pointer; font-size: 14px; }
 #sound-btn.muted { opacity: .45; }
@@ -70,6 +76,14 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   filter: drop-shadow(0 18px 30px rgba(0,0,0,.55));
 }
 
+#felt-brand {
+  position: absolute; left: 50%; top: 38%; transform: translateX(-50%) scaleY(.78);
+  width: 84px; height: 84px; pointer-events: none;
+  color: rgba(233, 214, 138, .16); mix-blend-mode: luminosity; opacity: .9;
+}
+#felt-brand .scout-mark { width: 100%; height: 100%; color: inherit; }
+#felt-brand circle { fill: rgba(233, 214, 138, .22); }
+
 /* dealer's cards on the felt, screen space */
 #dealer-cards { position: absolute; left: 50%; top: 13.5%; width: 0; height: 0; transform: scaleY(.78); }
 #dealer-cards .card, .seat .cards .card {
@@ -96,7 +110,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 /* side bets: crescent ring-sectors wrapped around the spot */
 .sidearcs {
   position: absolute; left: 60px; top: 59px; width: 106px; height: 83px;
-  transform: translate(-50%, -50%) rotate(calc(var(--tang, 0deg) * -1.05)); overflow: visible;
+  transform: translate(-50%, -50%); overflow: visible;
 }
 .sidearcs .side {
   fill: rgba(233, 214, 138, .10); stroke: rgba(233, 214, 138, .38); stroke-width: 1.2;
@@ -121,14 +135,14 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   color: #fff; font-size: clamp(13px, 1.1vw, 17px); font-weight: 800;
   text-shadow: 0 0 3px rgba(60,30,0,.9), 0 1px 2px rgba(0,0,0,.7);
 }
-.c1 { --tint: hue-rotate(-32deg) saturate(1.6); }
-.c5 { --tint: hue-rotate(125deg) saturate(.9); }
-.c10 { --tint: none; }
-.c25 { --tint: hue-rotate(-14deg) saturate(1.35); }
-.c50 { --tint: hue-rotate(240deg) saturate(1.1); }
-.c100 { --tint: hue-rotate(75deg) saturate(.95); }
-.c500 { --tint: hue-rotate(215deg) saturate(1.25); }
-.c1000 { --tint: saturate(.25) brightness(.6); }
+.c1 { --tint: hue-rotate(-32deg) saturate(1.6); --chip-c: #c9463c; --chip-d: #8c1f18; }
+.c5 { --tint: hue-rotate(125deg) saturate(.9); --chip-c: #2b9b84; --chip-d: #14574a; }
+.c10 { --tint: none; --chip-c: #d1913a; --chip-d: #815318; }
+.c25 { --tint: hue-rotate(-14deg) saturate(1.35); --chip-c: #d1682a; --chip-d: #8a3a12; }
+.c50 { --tint: hue-rotate(240deg) saturate(1.1); --chip-c: #b747af; --chip-d: #732670; }
+.c100 { --tint: hue-rotate(75deg) saturate(.95); --chip-c: #43a447; --chip-d: #205f24; }
+.c500 { --tint: hue-rotate(215deg) saturate(1.25); --chip-c: #7c48c9; --chip-d: #482579; }
+.c1000 { --tint: saturate(.25) brightness(.6); --chip-c: #34363f; --chip-d: #0e0f13; }
 .side .chipimg { width: 34px; }
 .side .chipimg b { font-size: 9px; }
 
@@ -180,13 +194,11 @@ body.in-round .stake { display: none; }
 .card .corner { position: absolute; top: 3px; left: 5px; font-size: 12px; line-height: 1; text-align: center; }
 .card .pip { position: absolute; bottom: 4px; right: 6px; font-size: 20px; }
 .card.red { color: #c22b2b; }
-.card.back { background: repeating-linear-gradient(45deg, #274a8f 0 6px, #1d3a73 6px 12px); }
+.card.back { background: #0A0B0D url('assets/cardback.png') center / cover no-repeat; }
 
 /* ---------- shoe + discard tray: photoreal assets ---------- */
 #shoe2d { position: absolute; right: 5%; top: 1.5%; width: 116px; pointer-events: none; transform: rotate(-8deg); }
 #shoe2d img { width: 100%; filter: drop-shadow(0 10px 16px rgba(0,0,0,.35)); }
-#discard { position: absolute; left: 9%; top: 1.5%; width: 70px; pointer-events: none; transform: rotate(6deg); }
-#discard img { width: 100%; filter: drop-shadow(0 10px 14px rgba(0,0,0,.3)); }
 
 /* ---------- action bars ---------- */
 #actions-top {
@@ -298,9 +310,9 @@ body.in-round #deal-now, body.in-round #chip-row { display: none; }
 .chip-fly { position: fixed; z-index: 60; pointer-events: none; transition: transform .45s cubic-bezier(.2,.75,.3,1), opacity .45s; }
 
 #hud-bottom { position: absolute; bottom: 0; left: 0; right: 0; display: flex; align-items: flex-end; justify-content: space-between; padding: 16px 20px; z-index: 45; }
-#wallet { display: flex; background: rgba(12,13,17,.85); border-radius: 10px; padding: 10px 18px; gap: 26px; }
-#wallet label { display: block; font-size: 9px; letter-spacing: .14em; color: #8b8d96; }
-#wallet span { font-size: 16px; font-weight: 700; }
+#wallet { display: flex; background: rgba(12,13,17,.85); border-radius: 10px; padding: 10px 18px; gap: 26px; border-left: 3px solid #D6FF3A; }
+#wallet label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .16em; color: #8b8d96; }
+#wallet span { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
 #deal-controls { display: flex; gap: 12px; margin-left: auto; margin-right: 18px; }
 #deal-controls button {
   background: rgba(16,18,24,.9); color: #ccc; border: 1px solid #575a66; border-radius: 10px;
@@ -311,3 +323,25 @@ body.in-round #deal-now, body.in-round #chip-row { display: none; }
 
 #engine-hud { position: absolute; top: 60px; right: 12px; z-index: 50; font: 10px/1.5 ui-monospace, monospace; color: #7f8; background: rgba(0,0,0,.55); padding: 6px 8px; border-radius: 6px; white-space: pre; display: none; }
 body.debug #engine-hud { display: block; }
+
+/* instant gratification: gold burst + badge pop */
+.result.win { animation: winpop .55s cubic-bezier(.2,.9,.3,1.4); }
+@keyframes winpop { 0% { transform: translateX(-50%) scale(.4); opacity: 0; } 60% { transform: translateX(-50%) scale(1.25); opacity: 1; } 100% { transform: translateX(-50%) scale(1); } }
+.sideresult { animation: winpop .55s cubic-bezier(.2,.9,.3,1.4); }
+.burst { position: fixed; pointer-events: none; z-index: 70; width: 0; height: 0; }
+.burst i {
+  position: absolute; width: 7px; height: 7px; border-radius: 2px;
+  background: var(--bc, #d9c06a);
+  animation: burstfly .9s cubic-bezier(.1,.8,.3,1) forwards;
+}
+@keyframes burstfly {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(var(--bx), var(--by)) rotate(320deg) scale(.4); opacity: 0; }
+}
+.bj-flash {
+  position: fixed; left: 50%; top: 42vh; transform: translateX(-50%); z-index: 71; pointer-events: none;
+  font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; letter-spacing: .06em;
+  color: #f0dfa8; text-shadow: 0 0 30px rgba(217,192,106,.9), 0 2px 6px rgba(0,0,0,.6);
+  animation: bjflash 1.8s ease forwards;
+}
+@keyframes bjflash { 0% { opacity: 0; transform: translateX(-50%) scale(.6); } 15% { opacity: 1; transform: translateX(-50%) scale(1.08); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) scale(1); } }
