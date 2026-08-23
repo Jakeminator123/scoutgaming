@@ -782,10 +782,13 @@ function flyFromShoe(el) {
   el.classList.add('fly');
 }
 function updateBadge(container, cards) {
-  let badge = container.querySelector('.hand-total');
+  // the badge is parented OUTSIDE the cards container: inside it, it inherited
+  // the hand's rotation and flattening and drifted whenever the hand was posed
+  const host = container.parentNode;
+  let badge = host.querySelector(':scope > .hand-total');
   if (!cards.length) { badge?.remove(); return; }
   if (!badge) { badge = document.createElement('div'); badge.className = 'hand-total'; }
-  container.appendChild(badge);
+  host.appendChild(badge);
   badge.style.setProperty('--cn', Math.max(0, container.querySelectorAll('.card').length - 1));
   const { total, soft } = handValue(cards);
   badge.textContent = soft && total <= 21 ? `${total - 10}/${total}` : String(total);
@@ -805,8 +808,7 @@ function dealCardTo(container, card, { faceDown = false } = {}) {
   const total = n + 1;
   container.style.setProperty('--cn', total);
   container.style.setProperty('--fan', Math.min(1, 3.2 / Math.max(2, total)).toFixed(3));
-  const badge = container.querySelector('.hand-total');
-  container.insertBefore(el, badge ?? null);
+  container.appendChild(el);
   flyFromShoe(el);
   return el;
 }
@@ -820,6 +822,7 @@ function revealHole(container, card) {
 }
 function clearTable() {
   document.querySelectorAll('.cards').forEach(c => (c.innerHTML = ''));
+  document.querySelectorAll('.hand-total').forEach(b => b.remove());
   document.querySelectorAll('.result, .sideresult').forEach(r => { r.textContent = ''; r.className = r.className.split(' ')[0]; });
 }
 

@@ -355,6 +355,15 @@ function say(text) {
 }
 
 let selSeat = null, handle = null, handHandle = null;
+let selPiece = 'arcs';                 // 'arcs' or 'hand' - only one is ever marked
+function markPiece(piece) {
+  selPiece = piece;
+  if (!selSeat) return;
+  selSeat.classList.toggle('mark-arcs', piece === 'arcs');
+  selSeat.classList.toggle('mark-hand', piece === 'hand');
+  if (handle) handle.hidden = piece !== 'arcs';
+  if (handHandle) handHandle.hidden = piece !== 'hand';
+}
 export function refreshScope() {
   if (!panel) return;
   const txt = panel.querySelector('.cal-scope-txt');
@@ -372,6 +381,7 @@ function selectSeat(seat) {
   document.querySelectorAll('.seat.cal-sel').forEach(s => s.classList.remove('cal-sel'));
   selSeat = seat;
   refreshScope();
+  document.querySelectorAll('.seat.mark-arcs, .seat.mark-hand').forEach(s => s.classList.remove('mark-arcs', 'mark-hand'));
   if (!seat) { handle?.remove(); handle = null; handHandle?.remove(); handHandle = null; return; }
   seat.classList.add('cal-sel');
   if (!handle) {
@@ -388,6 +398,7 @@ function selectSeat(seat) {
     handHandle.addEventListener('pointerdown', e => startRotate(e, 'hand'));
   }
   seat.appendChild(handHandle);
+  markPiece(selPiece);
   say(`box ${seatIdx(seat) + 1} selected \u2014 drag the handle to rotate`);
 }
 
@@ -433,10 +444,16 @@ let drag = null;
 function onDown(e) {
   if (!panel || e.button !== 0 || e.target.closest('#calibrator, .cal-handle')) return;
   const seat = e.target.closest?.('.seat');
-  if (seat && seat !== selSeat) { e.preventDefault(); e.stopPropagation(); selectSeat(seat); return; }
+  if (seat && seat !== selSeat) {
+    e.preventDefault(); e.stopPropagation();
+    selPiece = e.target.closest('.card') ? 'hand' : 'arcs';
+    selectSeat(seat);
+    return;
+  }
   const h = handleFor(e.target);
   if (!h || !seat) return;
-  if (h.card) { h.move = ['--cards-x', '--cards-y']; h.label = 'hand'; }
+  if (h.card) { h.move = ['--cards-x', '--cards-y']; h.label = 'hand'; markPiece('hand'); }
+  else if (h.sel === '.sidearcs') markPiece('arcs');
   if (!h.move) return;
   e.preventDefault(); e.stopPropagation();
   drag = { h, seat, x0: e.clientX, y0: e.clientY,
@@ -476,15 +493,18 @@ function onWheel(e) {
   const step = e.shiftKey ? 0.5 : 2;
   const dir = e.deltaY > 0 ? step : -step;
   if (cardSlot !== null) {
+    markPiece('hand');
     const v = setSeatVar(seat, '--hand-rot', seatVal(seat, '--hand-rot') + dir, 'deg');
     say(`box ${seatIdx(seat) + 1}  hand turn ${v}\u00b0`);
     return;
   }
   if (lbl) {
+    markPiece('arcs');
     const name = lbl.textContent.trim() === 'PP' ? '--pp-rot' : '--tp-rot';
     const v = setSeatVar(seat, name, seatVal(seat, name) + dir, 'deg');
     say(`box ${seatIdx(seat) + 1}  ${lbl.textContent.trim()} label ${v}\u00b0`);
   } else {
+    markPiece('arcs');
     const v = setSeatVar(seat, '--arc-rot', seatVal(seat, '--arc-rot') + dir, 'deg');
     say(`box ${seatIdx(seat) + 1}  rotation ${v}\u00b0`);
   }

@@ -133,7 +133,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .cards > .card:nth-child(2) { --slot-rot: var(--card-rot-1, 0deg); --slot-dx: var(--card-dx-1, 0px); --slot-dy: var(--card-dy-1, 0px); }
 .cards > .card:nth-child(3) { --slot-rot: var(--card-rot-2, 0deg); --slot-dx: var(--card-dx-2, 0px); --slot-dy: var(--card-dy-2, 0px); }
 .cards > .card:nth-child(4) { --slot-rot: var(--card-rot-3, 0deg); --slot-dx: var(--card-dx-3, 0px); --slot-dy: var(--card-dy-3, 0px); }
-#dealer-cards .hand-total { position: absolute; left: -14px; top: 96px; transform: scaleY(calc(1 / var(--cards-flat, .62))); }
+#table2d > .hand-total { position: absolute; left: calc(50% - 14px); top: calc(13.5% + 62px); }
 
 /* ---------- seats (screen-space, positioned by layoutSeats) ---------- */
 #seats { position: absolute; inset: 0; }
@@ -227,13 +227,10 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 
 /* seat hand: neat cascade above-left of the chip */
 .seat .cards { position: absolute; left: var(--cards-x); top: var(--cards-y); width: 0; height: 0; transform: rotate(calc(var(--tang, 0deg) * var(--cards-rot-k) + var(--hand-rot, 0deg))) scaleY(var(--cards-flat)); transform-origin: 62px 103px; }
-.seat .cards .hand-total {
-  position: absolute; left: 42px; top: 168px;
-  /* .cards rotates and flattens the whole hand; the badge undoes both so it
-     always reads straight, whatever the box's angle on the arc */
-  transform: translateX(-50%)
-             scaleY(calc(1 / var(--cards-flat, .62)))
-             rotate(calc(-1 * var(--tang, 0deg) * var(--cards-rot-k, .5)));
+.seat-inner > .hand-total {
+  /* parented outside .cards on purpose: it holds still while the hand is posed */
+  position: absolute; left: calc(42px + var(--badge-x, 0px)); top: calc(104px + var(--badge-y, 0px));
+  transform: translateX(-50%);
 }
 .hand-total {
   background: rgba(8,8,10,.9); border-radius: 7px; color: #fff;
@@ -869,8 +866,9 @@ body.cal-dragging, body.cal-dragging * { cursor: grabbing !important; user-selec
 
 /* per-box calibration: selection + the rotate handle */
 body.cal-on .seat { cursor: pointer; }
-body.cal-on .seat.cal-sel .sidearcs .side { stroke: #D6FF3A; stroke-width: 2.2; fill: rgba(214,255,58,.16); }
-body.cal-on .seat.cal-sel .spot { outline: 2px dashed rgba(214,255,58,.8); outline-offset: 3px; }
+body.cal-on .seat.cal-sel.mark-arcs .sidearcs .side { stroke: #D6FF3A; stroke-width: 2.2; fill: rgba(214,255,58,.16); }
+body.cal-on .seat.cal-sel.mark-hand .cards .card { outline: 2px solid #FFB020; outline-offset: 2px; }
+body.cal-on .seat.cal-sel.mark-arcs .spot { outline: 2px dashed rgba(214,255,58,.8); outline-offset: 3px; }
 .cal-handle {
   position: absolute; left: -7px; top: -78px; width: 15px; height: 15px; border-radius: 50%;
   background: #D6FF3A; border: 2px solid #0A0B0D; cursor: grab; z-index: 60;
