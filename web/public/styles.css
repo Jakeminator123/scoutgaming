@@ -71,10 +71,10 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 }
 
 /* dealer's cards on the felt, screen space */
-#dealer-cards { position: absolute; left: 47.5%; top: 26%; width: 0; height: 0; }
+#dealer-cards { position: absolute; left: 50%; top: 24%; width: 0; height: 0; }
 #dealer-cards .card, .seat .cards .card {
   position: absolute;
-  left: calc(var(--ci, 0) * 20px - 22px); top: calc(var(--ci, 0) * -5px);
+  left: calc(var(--ci, 0) * 19px - 32px); top: calc(var(--ci, 0) * -4px);
   transform: rotate(calc(var(--ci, 0) * 6deg - 4deg));
 }
 #dealer-cards .hand-total { position: absolute; left: -14px; top: 62px; }
@@ -132,7 +132,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .side .chipimg b { font-size: 9px; }
 
 /* seat hand: neat cascade above-left of the chip */
-.seat .cards { position: absolute; left: -6px; top: -52px; width: 0; height: 0; transform: rotate(var(--tang, 0deg)); transform-origin: 30px 110px; }
+.seat .cards { position: absolute; left: -2px; top: -44px; width: 0; height: 0; transform: rotate(calc(var(--tang, 0deg) * .5)); transform-origin: 62px 103px; }
 .seat .cards .hand-total { position: absolute; left: 42px; top: 128px; transform: translateX(-50%); }
 .hand-total {
   background: rgba(8,8,10,.9); border-radius: 7px; color: #fff;
