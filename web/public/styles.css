@@ -148,23 +148,6 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
 .seat.active .spot { box-shadow: 0 0 0 4px rgba(214,255,58,.9), 0 0 26px rgba(214,255,58,.55); }
-/* The hand IN PLAY has to be unmistakable - on a phone the boxes are small and
-   the glowing spot alone is easy to miss, so the cards themselves carry it. */
-.seat.active .cards .card {
-  box-shadow: 0 0 0 2px #D6FF3A, 0 0 18px rgba(214,255,58,.55), 0 6px 8px -2px rgba(0,0,0,.5);
-}
-.seat.active .seat-inner > .hand-total {
-  background: #D6FF3A; color: #0A0B0D;
-  box-shadow: 0 0 16px rgba(214,255,58,.5);
-}
-.seat.active .stake { color: #D6FF3A; }
-/* a soft pool under the whole active box, so the eye lands on it first */
-.seat.active .seat-inner::before {
-  content: ''; position: absolute; left: 60px; top: 62px; width: 150px; height: 110px;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse, rgba(214,255,58,.16), transparent 70%);
-  pointer-events: none; z-index: -1;
-}
 .spot.staked { border: none; background: none; }
 .spot svg { opacity: .85; }
 .spot:hover { border-color: rgba(214,255,58,.75); background: radial-gradient(ellipse, rgba(24,72,50,.5), rgba(20,60,42,.55)); }
@@ -661,44 +644,11 @@ body.debug #engine-hud { display: block; }
 
 /* --- portrait phones: the table needs to sit lower and read wider --- */
 @media (max-width: 860px) and (orientation: portrait) {
-  /* seven boxes on a phone: a wide SHALLOW arc across the full width, with
-     every piece scaled down so a hand still reads. Matches how the real
-     mobile tables lay it out rather than hiding players. */
-  :root {
-    /* the arc is a fraction of the TABLE IMAGE, which overflows the phone
-       (605px wide on a 390px viewport), so the radius is much smaller than the
-       viewport fraction it looks like. .26 puts the outer boxes inside the edge. */
-    --arc-cy: .17; --arc-ry: .16; --arc-rx: .318; --arc-span: 110;
-    /* boxes are spaced by equal ANGLE, so a wide span bunches the outer ones
-       together (cos flattens near the ends). 110deg keeps the gaps even; the
-       radius then does the work of reaching the table's full width. */
-    --dealer-h: min(42vh, 100vw);
-    /* seven boxes share 390px, so a box gets ~50px. The side-bet crescents are
-       by far the widest piece, so they only draw on the focused box (below) and
-       the remaining budget goes to the cards, which are what has to stay legible. */
-    --spot-x: 44px; --spot-y: 48px; --spot-w: 30px; --spot-h: 21px;
-    --arc-x: 59px; --arc-y: 59px; --arc-w: 50px; --arc-h: 39px;
-    --label-size: 5.5px; --tp-size: 4.5px;
-    --card-w: 21px; --card-dx: 7px; --card-x0: -13px; --card-dy: -2px;
-    /* the base offsets are not centred on the box - on desktop calibration.css
-       corrects that per box, and a phone has no calibration. Centre the hand on
-       the seat instead: hand spans (x0)..(x0+dx+card-w) = -13..15, centre +1,
-       so cards-x = 60 - 1 puts it over the seat's own middle. */
-    --cards-y: -20px; --cards-x: 59px;
-    --side-chip-r: 45;
-  }
+  :root { --arc-cy: .17; --arc-ry: .33; --arc-span: 84; }
+  :root { --dealer-h: min(42vh, 100vw); }
   #table2d { top: 34vh; }
   #banner { bottom: 30vh; }
   #deal-now { bottom: 25vh; }
-  .chipstack { --stack-w: 22px; --stack-d: 15px; --stack-step: 3px; }
-  .chipstack b { font-size: 7px; }
-  .seat-inner > .hand-total { font-size: 10px; padding: 1px 5px; top: 72px; }
-  .stake { font-size: 7px; top: 66px; }
-  .seat.active .seat-inner::before { width: 78px; height: 66px; left: 59px; top: 58px; }
-  .result { font-size: 9px; }
-  .sideresult { font-size: 7px; }
-  /* crescents and their chips only on the box the strip has focused */
-  .seat:not(.focus) .sidearcs, .seat:not(.focus) .side-chip { display: none; }
 }
 
 /* --- landscape phones: very little height, so trim the vertical stack --- */
@@ -1027,23 +977,3 @@ body.cal-on .seat .cards .card:hover { outline: 2px dashed rgba(214,255,58,.9); 
   box-shadow: 0 0 0 3px rgba(255,176,32,.28), 0 3px 10px rgba(0,0,0,.55);
 }
 .cal-handle-hand::before { background: linear-gradient(rgba(255,176,32,.9), rgba(255,176,32,0)); }
-
-
-/* ---------- seat strip: every player, reachable on a phone ---------- */
-#seat-strip { grid-area: seats; display: none; gap: 5px; justify-self: center; pointer-events: auto; }
-#seat-strip .seat-pip {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-  width: 40px; height: 38px; border-radius: 10px; cursor: pointer;
-  background: rgba(10,11,13,.75); border: 1px solid rgba(242,241,237,.14); color: #8b8d96;
-  font-family: 'Space Grotesk', sans-serif;
-}
-#seat-strip .seat-pip i { font-style: normal; font-size: 12px; font-weight: 700; }
-#seat-strip .seat-pip em {
-  font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 8px; line-height: 1; color: #D6FF3A;
-}
-#seat-strip .seat-pip.staked { border-color: rgba(214,255,58,.55); color: #F2F1ED; }
-#seat-strip .seat-pip.on { box-shadow: 0 0 0 2px rgba(214,255,58,.5); }
-@media (max-width: 860px) and (orientation: portrait) {
-  #seat-strip { display: flex; }
-  #hud-bottom { grid-template-areas: "tables tables" "seats seats" "wallet right" "chips chips"; }
-}
