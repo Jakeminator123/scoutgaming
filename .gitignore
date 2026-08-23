@@ -4,3 +4,6 @@ content/encoded/
 .DS_Store
 .claude/
 web/data/
+content/bake/frames/
+content/bake/masks/
+content/cutout/
