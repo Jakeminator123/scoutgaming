@@ -830,3 +830,28 @@ body.cal-on .seat.cal-sel .spot { outline: 2px dashed rgba(214,255,58,.8); outli
 }
 body.cal-dragging .cal-handle { cursor: grabbing; }
 #calibrator .cal-all { background: rgba(214,255,58,.12); border-color: rgba(214,255,58,.5); color: #D6FF3A; }
+#cal-btn {
+  pointer-events: auto; cursor: pointer; width: 36px; height: 36px; border-radius: 999px;
+  background: rgba(10,11,13,.72); border: 1px solid rgba(242,241,237,.14); color: #8b8d96;
+  font-size: 15px; line-height: 1;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+#cal-btn:hover { border-color: rgba(214,255,58,.55); color: #D6FF3A; }
+body.cal-on #cal-btn { border-color: #D6FF3A; color: #0A0B0D; background: #D6FF3A; }
+#calibrator .cal-scope {
+  display: flex; align-items: center; gap: 8px; padding: 8px 13px;
+  border-bottom: 1px solid rgba(242,241,237,.10); background: rgba(242,241,237,.03);
+}
+#calibrator .cal-scope-txt {
+  flex: 1; font-family: 'Space Grotesk', sans-serif; font-size: 10px;
+  letter-spacing: .14em; text-transform: uppercase; color: #8b8d96;
+}
+#calibrator .cal-scope.one { background: rgba(214,255,58,.10); }
+#calibrator .cal-scope.one .cal-scope-txt { color: #D6FF3A; }
+#calibrator .cal-scope-all {
+  padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  background: none; border: 1px solid rgba(242,241,237,.18); color: #8b8d96;
+  font-family: 'Space Grotesk', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .12em;
+}
+#calibrator .cal-scope-all:hover { border-color: rgba(214,255,58,.6); color: #D6FF3A; }
+#calibrator .cal-scope:not(.one) .cal-scope-all { display: none; }

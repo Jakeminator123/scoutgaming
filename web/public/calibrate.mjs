@@ -54,6 +54,16 @@ const GROUPS = [
   ]],
 ];
 
+// Everything a single box can own. The seat ring and the dealer window are
+// table-wide by nature, so they always write to :root.
+const PER_BOX = new Set([
+  '--spot-x', '--spot-y', '--spot-w', '--spot-h',
+  '--arc-x', '--arc-y', '--arc-w', '--arc-h', '--arc-rot',
+  '--pp-rot', '--tp-rot',
+  '--cards-x', '--cards-y', '--cards-flat', '--cards-rot-k',
+  '--ppchip-x', '--ppchip-y', '--tpchip-x', '--tpchip-y',
+]);
+
 const read = name => getComputedStyle(ROOT).getPropertyValue(name).trim();
 const numOf = v => parseFloat(v);
 
@@ -76,9 +86,10 @@ function build() {
   panel.innerHTML = `
     <header>
       <b>CALIBRATE</b>
-      <span class="cal-note">click a box on the felt, drag its lime handle to rotate. wheel = rotate, shift = fine</span>
+      <span class="cal-note">click a box to edit it alone &middot; drag its lime handle to rotate</span>
       <button class="cal-x" title="close (C)">×</button>
     </header>
+    <div class="cal-scope"><span class="cal-scope-txt">editing ALL BOXES</span><button class="cal-scope-all">EDIT ALL</button></div>
     <div class="cal-body"></div>
     <footer>
       <button class="cal-all">APPLY TO ALL</button>
@@ -102,11 +113,15 @@ function build() {
       const [range, number] = row.querySelectorAll('input');
       INPUTS.set(name, { range, number, unit, min, max });
       const set = v => {
-        const val = `${v}${unit}`;
-        ROOT.style.setProperty(name, val);
-        saved[name] = val;
+        // A selected box takes the edit; otherwise it lands on every box.
+        if (selSeat && PER_BOX.has(name)) setSeatVar(selSeat, name, parseFloat(v), unit);
+        else {
+          const val = `${v}${unit}`;
+          ROOT.style.setProperty(name, val);
+          saved[name] = val;
+          localStorage.setItem(STORE, JSON.stringify(saved));
+        }
         range.value = v; number.value = v;
-        localStorage.setItem(STORE, JSON.stringify(saved));
         window.dispatchEvent(new Event('resize'));   // relayout the seat ring
       };
       range.oninput = e => set(e.target.value);
@@ -118,6 +133,7 @@ function build() {
 
   panel.querySelector('.cal-x').onclick = toggle;
   panel.querySelector('.cal-all').onclick = applyToAll;
+  panel.querySelector('.cal-scope-all').onclick = () => selectSeat(null);
   panel.querySelector('.cal-reset').onclick = () => {
     for (const k of Object.keys(saved)) ROOT.style.removeProperty(k);
     saved = {}; localStorage.removeItem(STORE);
@@ -134,6 +150,7 @@ function build() {
     setTimeout(() => { btn.textContent = 'COPY CSS'; }, 1400);
   };
   document.body.appendChild(panel);
+  refreshScope();
 }
 
 // ---- direct manipulation, per box ----------------------------------------
@@ -169,6 +186,8 @@ function setSeatVar(seat, name, value, unit = 'px') {
   (perSeat[i] ??= {})[name] = `${rounded}${unit}`;
   seat.style.setProperty(name, `${rounded}${unit}`);
   localStorage.setItem(STORE + '.seats', JSON.stringify(perSeat));
+  const spec = INPUTS.get(name);
+  if (spec && selSeat === seat) { spec.range.value = rounded; spec.number.value = rounded; }
   return rounded;
 }
 export function applySavedSeats() {
@@ -188,9 +207,23 @@ function say(text) {
 }
 
 let selSeat = null, handle = null;
+export function refreshScope() {
+  if (!panel) return;
+  const txt = panel.querySelector('.cal-scope-txt');
+  const box = panel.querySelector('.cal-scope');
+  if (selSeat) { txt.textContent = `editing BOX ${seatIdx(selSeat) + 1} only`; box.classList.add('one'); }
+  else { txt.textContent = 'editing ALL BOXES'; box.classList.remove('one'); }
+  // show the values that belong to whatever is selected
+  for (const [name, spec] of INPUTS) {
+    const v = (selSeat && PER_BOX.has(name)) ? seatVal(selSeat, name) : numOf(saved[name] ?? read(name));
+    spec.range.value = v; spec.number.value = v;
+  }
+}
+
 function selectSeat(seat) {
   document.querySelectorAll('.seat.cal-sel').forEach(s => s.classList.remove('cal-sel'));
   selSeat = seat;
+  refreshScope();
   if (!seat) { handle?.remove(); handle = null; return; }
   seat.classList.add('cal-sel');
   if (!handle) {
@@ -327,4 +360,24 @@ addEventListener('keydown', e => {
   toggle();
 });
 
-if (new URLSearchParams(location.search).has('cal')) addEventListener('load', () => toggle());
+// This module is imported dynamically, usually AFTER the page's load event has
+// already fired - so waiting for 'load' meant ?cal=1 silently never opened.
+if (new URLSearchParams(location.search).has('cal')) {
+  if (document.readyState === 'complete') toggle();
+  else addEventListener('load', () => toggle(), { once: true });
+}
+
+// A button, so opening this never depends on remembering a key or a query.
+addEventListener('DOMContentLoaded', mountButton);
+if (document.readyState !== 'loading') mountButton();
+function mountButton() {
+  if (document.querySelector('#cal-btn')) return;
+  const host = document.querySelector('#top-right');
+  if (!host) return;
+  const b = document.createElement('button');
+  b.id = 'cal-btn';
+  b.title = 'calibrate the table layout (C)';
+  b.textContent = '⚙';
+  b.onclick = toggle;
+  host.insertBefore(b, host.firstChild);
+}
