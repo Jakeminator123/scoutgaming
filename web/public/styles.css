@@ -856,3 +856,7 @@ body.cal-on #cal-btn { border-color: #D6FF3A; color: #0A0B0D; background: #D6FF3
 #calibrator .cal-scope-all:hover { border-color: rgba(214,255,58,.6); color: #D6FF3A; }
 #calibrator .cal-scope:not(.one) .cal-scope-all { display: none; }
 body.cal-on .seat.cal-hint .sidearcs .side { stroke: #FFB020; stroke-width: 2.4; fill: rgba(255,176,32,.18); }
+#calibrator footer { flex-wrap: wrap; }
+#calibrator .cal-apply { flex: 1 0 100%; background: #D6FF3A; color: #0A0B0D; border-color: #D6FF3A; }
+#calibrator .cal-apply:hover { background: #e6ff70; }
+#calibrator .cal-copy { background: none; color: #F2F1ED; border-color: rgba(242,241,237,.16); }

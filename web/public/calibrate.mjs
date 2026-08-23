@@ -92,7 +92,8 @@ function build() {
     <div class="cal-scope"><span class="cal-scope-txt">editing ALL BOXES</span><button class="cal-scope-all">EDIT ALL</button></div>
     <div class="cal-body"></div>
     <footer>
-      <button class="cal-all">APPLY TO ALL</button>
+      <button class="cal-apply" title="bake these values in permanently, each box keeping its own">APPLY</button>
+      <button class="cal-all" title="copy the selected box's pose onto every box">SAME FOR ALL</button>
       <button class="cal-copy">COPY CSS</button>
       <button class="cal-reset">RESET</button>
     </footer>`;
@@ -135,6 +136,25 @@ function build() {
   panel.querySelector('.cal-x').onclick = toggle;
   panel.querySelector('.cal-all').onclick = applyToAll;
   panel.querySelector('.cal-scope-all').onclick = () => selectSeat(null);
+  panel.querySelector('.cal-apply').onclick = async e => {
+    // Bake exactly what is on screen: table-wide values plus each box's own.
+    const btn = e.currentTarget;
+    btn.textContent = 'SAVING...';
+    try {
+      const r = await fetch('/calibration', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ root: saved, boxes: perSeat }),
+      });
+      const out = await r.json();
+      if (!out.ok) throw new Error(out.error || 'save failed');
+      btn.textContent = 'APPLIED';
+      say('calibration baked into calibration.css - it survives reloads now');
+    } catch (err) {
+      btn.textContent = 'FAILED';
+      say(`could not save: ${err.message}`);
+    }
+    setTimeout(() => { btn.textContent = 'APPLY'; }, 1800);
+  };
   panel.querySelector('.cal-reset').onclick = () => {
     for (const k of Object.keys(saved)) ROOT.style.removeProperty(k);
     saved = {}; localStorage.removeItem(STORE);
