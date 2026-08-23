@@ -93,9 +93,11 @@ export class Round {
   draw() { return this.shoe.pop(); }
 
   deal() {
-    for (const b of this.live()) b.cards.push(this.draw());
+    // right-to-left off the shoe: the rightmost seat receives first
+    const order = [...this.live()].reverse();
+    for (const b of order) b.cards.push(this.draw());
     this.dealer.push(this.draw());             // upcard
-    for (const b of this.live()) b.cards.push(this.draw());
+    for (const b of order) b.cards.push(this.draw());
     this.holeCard = this.draw();               // face down, dealt but hidden
     this.settleSideBets();
     this.emit('round.dealt');
@@ -153,7 +155,7 @@ export class Round {
 
   advance() {
     const boxes = this.live();
-    this.active = boxes.findIndex(b => !b.done);
+    this.active = boxes.findLastIndex(b => !b.done);
     if (this.active === -1) { this.dealerPlay(); return; }
     const b = boxes[this.active];
     if (isBJ(b.cards) || handValue(b.cards).total >= 21) { b.done = true; this.advance(); return; }
