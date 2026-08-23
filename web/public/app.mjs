@@ -3,7 +3,9 @@ import { Round, handValue } from './blackjack.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2 });
+const CURRENCIES = { USD: 'en-US', EUR: 'de-DE', SEK: 'sv-SE' };
+let currency = 'USD';
+const fmt = n => n.toLocaleString(CURRENCIES[currency], { style: 'currency', currency, minimumFractionDigits: 2 });
 
 // ---------- dealer engine ----------
 const CLIP = {
@@ -275,6 +277,53 @@ const SEATS = 7;
 const CHIPS = [1, 5, 10, 25, 50, 100, 500, 1000];
 const LIMITS = { min: 5, max: 2000 };
 let balance = 1000;
+
+// ---------- player account: server-persisted demo money (SQLite) ----------
+let player = null;
+async function api(path, payload) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const out = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(out.error ?? `api ${r.status}`);
+  return out;
+}
+async function loadPlayer() {
+  try {
+    player = await api('/api/player', { id: localStorage.getItem('croupier-player'), name: 'Kevin' });
+    localStorage.setItem('croupier-player', player.id);
+    balance = player.balance; currency = player.currency;
+    renderBets(); renderCurrency();
+  } catch { /* server db unavailable: play on with the local demo balance */ }
+}
+function syncBalance(reason) {
+  if (!player) return;
+  fetch('/api/balance', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: player.id, balance, reason }),
+  }).catch(() => {});
+}
+
+// Vera reacts to table events through her live brain (throttled, text captions)
+let veraBusy = false, lastVeraComment = 0;
+function showCaption(text, ms = 6500) {
+  const cap = $('#caption');
+  cap.textContent = text; cap.classList.add('show');
+  clearTimeout(showCaption.t);
+  showCaption.t = setTimeout(() => cap.classList.remove('show'), ms);
+}
+async function veraEvent(text, { minGap = 18000 } = {}) {
+  const now = Date.now();
+  if (veraBusy || now - lastVeraComment < minGap) return;
+  veraBusy = true; lastVeraComment = now;
+  try {
+    const r = await fetch('/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, event: true }),
+    });
+    const { reply } = await r.json();
+    if (reply) { showCaption(reply); trigger(CLIP.gest); }
+  } catch { /* brain offline: stay quiet */ }
+  finally { veraBusy = false; }
+}
 const ledger = (why, delta) => console.info('[ledger]', why, delta, '->', balance);
 let selected = 5;
 let bets = Array.from({ length: SEATS }, () => ({ main: 0, pp: 0, tp: 0 }));
@@ -367,9 +416,19 @@ function flyChip(value, targetEl) {
 }
 
 // ---------- betting ----------
+let allSides = false;
 function placeBet(i, field, targetEl) {
   console.info('[bet]', i, field, 'round=', !!round, 'busy=', busy);
   if (round || busy) return;
+  // ALL SEATS mode: one click on any side-bet crescent bets it on every staked box
+  if (field !== 'main' && allSides && !placeBet.bulk) {
+    placeBet.bulk = true;
+    for (let j = 0; j < SEATS; j++) {
+      if (bets[j].main > 0) placeBet(j, field, seatEls[j].querySelector(field === 'pp' ? '.side.pp' : '.side.tp'));
+    }
+    placeBet.bulk = false;
+    return;
+  }
   if (field !== 'main' && bets[i].main === 0) return; // side bets ride on a main bet
   const cap = field === 'main' ? LIMITS.max : LIMITS.max / 2;
   const next = bets[i][field] + selected;
@@ -451,6 +510,10 @@ function renderBets() {
 
 // ---------- demo cashier ----------
 let depositAmt = 500;
+const setDeposit = amt => {
+  depositAmt = amt;
+  $('#cashier-pay').textContent = Number.isFinite(amt) && amt >= 1 ? `ADD ${fmt(amt)}` : 'ADD FUNDS';
+};
 $('#add-funds').onclick = () => { $('#cashier').hidden = false; };
 $('#cashier-close').onclick = () => { $('#cashier').hidden = true; };
 $('#cashier').onclick = e => { if (e.target.id === 'cashier') $('#cashier').hidden = true; };
@@ -458,8 +521,30 @@ document.querySelectorAll('#cashier .amt').forEach(b => {
   b.onclick = () => {
     document.querySelectorAll('#cashier .amt').forEach(x => x.classList.remove('sel'));
     b.classList.add('sel');
-    depositAmt = Number(b.dataset.amt);
-    $('#cashier-pay').textContent = `ADD ${fmt(depositAmt)}`;
+    $('#cc-amount').value = '';
+    setDeposit(Number(b.dataset.amt));
+  };
+});
+$('#cc-amount').addEventListener('input', e => {
+  e.target.classList.remove('bad');
+  document.querySelectorAll('#cashier .amt').forEach(x => x.classList.remove('sel'));
+  setDeposit(Math.floor(Number(e.target.value.replace(',', '.'))));
+});
+function renderCurrency() {
+  document.querySelectorAll('#cashier .cur').forEach(b => b.classList.toggle('sel', b.dataset.cur === currency));
+  setDeposit(depositAmt);
+}
+document.querySelectorAll('#cashier .cur').forEach(b => {
+  b.onclick = async () => {
+    if (b.dataset.cur === currency || round || busy) return;
+    try {
+      if (player) {
+        const out = await api('/api/currency', { id: player.id, currency: b.dataset.cur });
+        balance = out.balance; currency = out.currency;
+      } else currency = b.dataset.cur;
+      renderCurrency(); renderBets();
+      toast('CURRENCY', balance, false);
+    } catch { /* keep current currency */ }
   };
 });
 $('#cc-num').addEventListener('input', e => {
@@ -467,12 +552,19 @@ $('#cc-num').addEventListener('input', e => {
   const d = e.target.value.replace(/\D/g, '').slice(0, 16);
   e.target.value = d.replace(/(.{4})/g, '$1 ').trim();
 });
-$('#cashier-pay').onclick = () => {
+$('#cashier-pay').onclick = async () => {
   if ($('#cc-num').value.replace(/\D/g, '').length < 12) { $('#cc-num').classList.add('bad'); return; }
-  balance += depositAmt; ledger('deposit', depositAmt);
+  if (!(Number.isFinite(depositAmt) && depositAmt >= 1 && depositAmt <= 100000)) { $('#cc-amount').classList.add('bad'); return; }
+  const amt = depositAmt;
+  try {
+    if (player) balance = (await api('/api/deposit', { id: player.id, amount: amt })).balance;
+    else { balance += amt; }
+  } catch { balance += amt; }
+  ledger('deposit', amt);
   $('#cashier').hidden = true;
   sfx.play('chip');
-  toast('FUNDS ADDED', depositAmt, depositAmt >= 5000);
+  toast('FUNDS ADDED', amt, amt >= 5000);
+  void veraEvent(`${player?.name ?? 'The player'} just added ${fmt(amt)} at the cashier.`, { minGap: 30000 });
   renderBets();
 };
 
@@ -567,6 +659,7 @@ async function dealSequence() {
   busy = true;
   document.body.classList.add('in-round');
   balance -= betTotal(); ledger('deal', -betTotal());
+  syncBalance('deal');
   round = new Round(bets.map(b => ({ ...b })));
   round.deal();
   renderBets(); setBanner(null); clearTable();
@@ -723,6 +816,12 @@ async function finish() {
   });
   balance += ret; ledger('settle', ret);
   if (sideRet) { balance += sideRet; ledger('sidebets', sideRet); }
+  const totalWin = ret + sideRet;
+  const lw = $('#last-win');
+  lw.textContent = fmt(totalWin);
+  lw.classList.toggle('won', totalWin > 0);
+  if (totalWin > 0) toast('TOTAL WIN', totalWin, anyPlayerBJ || totalWin >= 500);
+  syncBalance('settle');
   renderBets();
   const dealerTotal = handValue(round.dealer).total;
   const dealerBJ = round.dealer.length === 2 && dealerTotal === 21;
@@ -733,6 +832,9 @@ async function finish() {
   else if (anyPush && !anyLose) voice.say('push', { force: true });
   else voice.say('lose', { force: true });
   trigger(anyWin ? CLIP.gest : CLIP.headTilt);
+  const who = player?.name ?? 'the player';
+  if (totalWin > 0) void veraEvent(`Round settled: ${who} collected ${fmt(totalWin)} this round${anyPlayerBJ ? ' including a natural blackjack' : ''}.`);
+  else void veraEvent(`Round settled: the house took this one; ${who} won nothing back.`, { minGap: 45000 });
   await sleep(3600);
   round = null; busy = false;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
@@ -768,7 +870,17 @@ $('#gate-enter').onclick = () => {
   voice.greeted = true;
   sfx.startAmbience();
   voice.say('greeting', { force: true });
+  // personalized follow-up once the generic voice greeting has landed
+  setTimeout(() => {
+    void veraEvent(`${player?.name ?? 'A player'} just sat down at your table with a balance of ${fmt(balance)}. Greet them by name.`, { minGap: 0 });
+  }, 5000);
+};
+
+$('#all-sides').onclick = () => {
+  allSides = !allSides;
+  $('#all-sides').classList.toggle('on', allSides);
 };
 
 renderBets();
 setBanner('PLEASE PLACE BETS');
+void loadPlayer();
