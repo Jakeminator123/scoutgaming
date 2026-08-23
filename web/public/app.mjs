@@ -427,12 +427,14 @@ for (let i = 0; i < SEATS; i++) {
     <div class="cards"></div>
     <button class="clear-box" hidden>×</button>
     <svg class="sidearcs" viewBox="-64 -50 128 100" aria-hidden="false">
-      <g transform="scale(1 0.74)">
+      <g class="arc-g">
         <path class="side pp" d="M -26.9 -26.9 A 38 38 0 0 0 -26.9 26.9 L -36.8 36.8 A 52 52 0 0 1 -36.8 -36.8 Z"><title>Perfect Pairs — needs a main bet</title></path>
         <path class="side tp" d="M 26.9 -26.9 A 38 38 0 0 1 26.9 26.9 L 36.8 36.8 A 52 52 0 0 0 36.8 -36.8 Z"><title>21+3 — needs a main bet</title></path>
       </g>
-      <text class="side-label" x="-44" y="3" text-anchor="middle" transform="rotate(-75 -44 0)">PP</text>
-      <text class="side-label" x="44" y="3" text-anchor="middle" transform="rotate(75 44 0)">21+3</text>
+      <g class="label-g">
+        <text class="side-label pp-label" x="-45" y="0" text-anchor="middle" dominant-baseline="middle">PP</text>
+        <text class="side-label tp-label" x="45" y="0" text-anchor="middle" dominant-baseline="middle">21+3</text>
+      </g>
     </svg>
     <div class="spot">+</div>
     <div class="side-chip pp-chip" hidden></div>

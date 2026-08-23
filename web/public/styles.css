@@ -15,7 +15,7 @@
   /* --- calibratable seat geometry (see calibrate.mjs, open with ?cal=1) --- */
   --spot-x: 33px; --spot-y: 39px; --spot-w: 54px; --spot-h: 40px;
   --arc-x: 60px; --arc-y: 59px; --arc-w: 106px; --arc-h: 83px; --arc-rot: 0deg;
-  --pp-rot: -75deg; --tp-rot: 75deg;
+  --pp-rot: -90deg; --tp-rot: 90deg; --label-size: 10px; --tp-size: 8.5px;
   --cards-x: -2px; --cards-y: -40px; --cards-flat: .62; --cards-rot-k: .5;
   --ppchip-x: 18px; --ppchip-y: 45px; --tpchip-x: 72px; --tpchip-y: 45px;
   /* seat arc on the felt, read by layoutSeats() */
@@ -126,8 +126,26 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 /* side bets: crescent ring-sectors wrapped around the spot */
 .sidearcs {
   position: absolute; left: var(--arc-x); top: var(--arc-y); width: var(--arc-w); height: var(--arc-h);
-  transform: translate(-50%, -50%) rotate(var(--arc-rot)); overflow: visible;
+  transform: translate(-50%, -50%); overflow: visible;
 }
+/* The crescents are squashed 0.74 to sit in the table's perspective. Rotating
+   the squashed shape shears it off the circle, so the rotation happens INSIDE
+   the squash: orbit first in round space, then flatten. viewBox is
+   "-64 -50 128 100", so user-space (0,0) is 64px,50px from its corner. */
+.sidearcs .arc-g, .sidearcs .label-g {
+  /* With transform-box: view-box the reference box is measured from user-space
+     (0,0), NOT from the viewBox's min-x/min-y. So `center` lands on (64,50) -
+     the viewBox corner - and the group swings instead of orbiting. The circle
+     centre these arcs wrap is user (0,0), which is `0 0` here. */
+  transform-box: view-box; transform-origin: 0 0;
+  transform: scale(1, .74) rotate(var(--arc-rot));
+}
+/* labels ride the same orbit but are un-squashed so the glyphs read normally */
+.sidearcs .side-label {
+  transform-box: fill-box; transform-origin: center;
+}
+.sidearcs .pp-label { transform: rotate(var(--pp-rot)) scaleY(1.3514); }
+.sidearcs .tp-label { transform: rotate(var(--tp-rot)) scaleY(1.3514); font-size: var(--tp-size, 9px); }
 .sidearcs .side {
   fill: rgba(214, 255, 58, .07); stroke: rgba(214, 255, 58, .30); stroke-width: 1.2;
   cursor: pointer; pointer-events: auto;
@@ -135,8 +153,8 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .sidearcs .side:hover { fill: rgba(214, 255, 58, .16); stroke: rgba(214, 255, 58, .55); }
 .sidearcs .side.staked { fill: rgba(214, 255, 58, .04); stroke: rgba(214, 255, 58, .14); }
 .sidearcs .side-label {
-  fill: rgba(214, 255, 58, .65); font-size: 11px; font-weight: 700; letter-spacing: .06em; font-family: 'JetBrains Mono', monospace;
-  pointer-events: none;
+  fill: rgba(214, 255, 58, .65); font-size: var(--label-size, 10px); font-weight: 700;
+  letter-spacing: .02em; font-family: 'JetBrains Mono', monospace; pointer-events: none;
 }
 .side-chip { position: absolute; pointer-events: none; z-index: 4; }
 .side-chip.pp-chip { left: var(--ppchip-x); top: var(--ppchip-y); }
