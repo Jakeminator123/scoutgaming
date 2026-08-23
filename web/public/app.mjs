@@ -637,8 +637,23 @@ $('#clear-btn').onclick = () => {
 };
 
 const chipFace = v => v >= 1e6 ? (v / 1e6) + 'M' : v >= 1000 ? (v / 1000) + 'K' : String(v);
+// A bet is shown as the chips it is actually made of: break it into
+// denominations from the current rack, biggest at the bottom, so adding money
+// visibly grows the stack instead of just changing a number on one disc.
+function chipBreakdown(total) {
+  const out = [];
+  let left = Math.round(total * 100) / 100;
+  for (const d of [...CHIPS].sort((a, b) => b - a)) {
+    while (left >= d - 1e-9 && out.length < 9) { out.push(d); left = Math.round((left - d) * 100) / 100; }
+  }
+  if (left > 0 && out.length < 9) out.push(CHIPS[0]);   // remainder under the smallest chip
+  return out;
+}
 function stackChip(v) {
-  return `<div class="chipimg ${chipClassFor(v)}"><img src="assets/chip-gold.png" alt=""><b>${chipFace(v)}</b></div>`;
+  const chips = chipBreakdown(v);
+  if (!chips.length) return '';
+  const discs = chips.map((d, i) => `<i class="c${chipSkin.get(d) ?? 1}" style="--n:${i}"></i>`).join('');
+  return `<div class="chipstack" style="--h:${chips.length}">${discs}<b>${chipFace(v)}</b></div>`;
 }
 function renderBets() {
   seatEls.forEach((seat, i) => {
