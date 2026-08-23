@@ -7,3 +7,5 @@ web/data/
 content/bake/frames/
 content/bake/masks/
 content/cutout/
+.lipsync-venv/
+vendor/

@@ -19,6 +19,9 @@ export class DealerEngine {
     this.currentClip = null;
     this.stats = { decoded: 0, submitted: 0, errors: 0, splices: 0 };
     this.onIdlePick = null;     // optional idle-selection hook
+    this.onPresentClip = null;  // fires when a clip's first frame is actually painted
+    this.presentedClip = null;
+    this.decodingClip = null;
   }
 
   async init() {
@@ -41,7 +44,7 @@ export class DealerEngine {
   // one and restarts at the next clip boundary (frame 0 is always an IDR).
   makeDecoder() {
     const d = new VideoDecoder({
-      output: f => { this.stats.decoded++; this.display.push(f); },
+      output: f => { this.stats.decoded++; this.display.push({ f, key: this.decodingClip }); },
       error: e => { this.stats.errors++; this.decoderDead = true; console.error('[dealer] decoder error:', e.message); },
     });
     d.configure(this.config);
@@ -95,7 +98,7 @@ export class DealerEngine {
         try {
           if (this.decoderDead) {
             try { this.decoder.close(); } catch { /* already closed */ }
-            for (const f of this.display.splice(0)) f.close();
+            for (const d of this.display.splice(0)) d.f.close();
             this.decoder = this.makeDecoder();
             this.decoderDead = false;
             cur = null; // restart cleanly on an IDR
@@ -103,7 +106,7 @@ export class DealerEngine {
           if (this.cut) {
             this.cut = false;
             cur = null;
-            for (const f of this.display.splice(0)) f.close();
+            for (const d of this.display.splice(0)) d.f.close();
           }
           const buffered = this.display.length + this.decoder.decodeQueueSize;
           if (buffered >= 24) { await new Promise(r => setTimeout(r, 40)); continue; }
@@ -112,6 +115,7 @@ export class DealerEngine {
             cur = { meta: this.index.clips[key], buf: await this.fetchClip(key), i: 0 };
             this.stats.splices++;
             this.currentClip = key;
+            this.decodingClip = key;
           }
           const [off, size] = cur.meta.frames[cur.i];
           this.decoder.decode(new EncodedVideoChunk({
@@ -141,9 +145,16 @@ export class DealerEngine {
     const drain = () => {
       const now = performance.now();
       while (now >= next && this.display.length) {
-        const f = this.display.shift();
+        const { f, key } = this.display.shift();
         this.ctx.drawImage(f, 0, 0, this.canvas.width, this.canvas.height);
         f.close();
+        // presentedClip is the truth for anything that must line up with what
+        // the viewer can actually see - audio, above all
+        if (key && key !== this.presentedClip) {
+          this.presentedClip = key;
+          this.onPresentClip?.(key);
+        }
+        this.stats.presented = (this.stats.presented ?? 0) + 1;
         next += 1000 / 24;
       }
       if (now - next > 500) next = now; // fell behind badly; resync

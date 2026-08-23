@@ -17,14 +17,14 @@
 }
 .seat[data-box="1"] {
   --arc-rot: 26.82deg;
-  --cards-x: 72.13px;
-  --cards-y: -33.37px;
-  --hand-rot: 23.33deg;
+  --cards-x: 66.47px;
+  --cards-y: -28.93px;
+  --hand-rot: 29deg;
 }
 .seat[data-box="2"] {
   --arc-rot: 15.05deg;
-  --cards-x: 67.16px;
-  --cards-y: -49.76px;
+  --cards-x: 64.57px;
+  --cards-y: -45.17px;
   --hand-rot: 10.71deg;
 }
 .seat[data-box="3"] {
@@ -39,7 +39,13 @@
 }
 .seat[data-box="5"] {
   --arc-rot: -33.29deg;
+  --hand-rot: -24.78deg;
+  --cards-x: 40.62px;
+  --cards-y: -63.6px;
 }
 .seat[data-box="6"] {
   --arc-rot: -50.05deg;
+  --hand-rot: -50.12deg;
+  --cards-x: 31.77px;
+  --cards-y: -90.2px;
 }
