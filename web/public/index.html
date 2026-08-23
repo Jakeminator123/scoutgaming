@@ -16,6 +16,9 @@
     <div id="room"></div>
     <div id="room2"></div>
     <div id="dealer-wrap"><canvas id="dealer"></canvas></div>
+    <!-- the floor supervisor is a transparent cutout layered over the scene, so
+         the dealer's own clips are never regenerated or swapped out -->
+    <video id="supervisor" playsinline muted preload="auto" src="dealer/supervisor.webm"></video>
 
     <header id="hud-top">
       <div id="game-title">

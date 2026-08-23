@@ -15,7 +15,6 @@ const CLIP = {
   dealWatch: 'idle-1/actions/action-deal-watch',
   think: 'idle-1/actions/action-think',
   gest: 'idle-1/actions/gesticulate1',
-  supervisor: 'idle-1/actions/supervisor',
 };
 const engine = new DealerEngine($('#dealer'), 'dealer', { log: m => console.info('[dealer]', m) });
 let engineUp = false;
@@ -1204,13 +1203,25 @@ import('./calibrate.mjs').then(m => { m.applySavedSeats?.(); if (m.applySaved())
 // schedule plus straight after an unusually large payout - which is exactly
 // when a real pit boss appears.
 let roundsSinceLook = 0, nextLookAfter = 4 + Math.floor(Math.random() * 4);
+const supEl = $('#supervisor');
+let supBusy = false;
 function supervisorMayLook({ force = false } = {}) {
-  if (round || busy || !engineUp) return false;
-  if (!engine.index?.clips?.[CLIP.supervisor]) return false;
+  if (round || busy || supBusy || !supEl) return false;
   if (!force && ++roundsSinceLook < nextLookAfter) return false;
   roundsSinceLook = 0;
   nextLookAfter = 4 + Math.floor(Math.random() * 4);
-  engine.interrupt(CLIP.supervisor);
+  supBusy = true;
+  supEl.currentTime = 0;
+  supEl.classList.add('show');
+  const done = () => {
+    supEl.classList.remove('show');
+    supBusy = false;
+    setTimeout(() => { try { supEl.pause(); } catch { /* ignore */ } }, 600);
+  };
+  supEl.onended = done;
+  clearTimeout(supervisorMayLook.t);
+  supervisorMayLook.t = setTimeout(done, 12000);   // safety if 'ended' never fires
+  supEl.play().catch(done);
   showCaption(force
     ? 'Floor supervisor checking the table.'
     : 'Floor supervisor on his rounds.', 4200);
@@ -1221,20 +1232,18 @@ function supervisorMayLook({ force = false } = {}) {
 // sit on a cold 1.2MB fetch and look like nothing happened.
 const pitBtn = $('#pitboss');
 if (pitBtn) {
-  const warm = () => { if (engineUp && engine.index?.clips?.[CLIP.supervisor]) engine.fetchClip(CLIP.supervisor).catch(() => {}); };
-  setTimeout(warm, 3000);
-  pitBtn.addEventListener('pointerenter', warm, { once: true });
+  // the cutout is a normal <video>; preload="auto" already warms it
   pitBtn.onclick = () => {
     if (round || busy) { hint('PIT BOSS', 'he waits for the hand to finish'); return; }
     pitBtn.disabled = true;
     const ok = supervisorMayLook({ force: true });
-    if (!ok) hint('PIT BOSS', 'not available yet');
+    if (!ok) hint('PIT BOSS', 'he is already at the table');
     setTimeout(() => { pitBtn.disabled = false; }, 9000);
   };
 }
 
 // QA hook: lets a test drive the table without playing 20 rounds first
-window.__croupier = { engine, CLIP, supervisorMayLook, get round() { return round; } };
+window.__croupier = { engine, CLIP, supervisorMayLook, supEl, get round() { return round; } };
 
 renderBets();
 setBanner('PLEASE PLACE BETS');
