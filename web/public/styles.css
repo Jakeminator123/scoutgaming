@@ -964,3 +964,6 @@ body.cal-on .seat.cal-hint .sidearcs .side { stroke: #FFB020; stroke-width: 2.4;
           drop-shadow(0 12px 26px rgba(0,0,0,.5));
 }
 #supervisor.show { opacity: 1; }
+/* in calibration mode a single card is its own handle */
+body.cal-on .seat .cards .card { cursor: grab; }
+body.cal-on .seat .cards .card:hover { outline: 2px dashed rgba(214,255,58,.9); outline-offset: 2px; }
