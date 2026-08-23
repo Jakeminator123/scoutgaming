@@ -18,7 +18,26 @@ const CLIP = {
 };
 const engine = new DealerEngine($('#dealer'), 'dealer', { log: m => console.info('[dealer]', m) });
 let engineUp = false;
+let speaking = false;
+// Speaking clips with their real lengths. Cutting between different clips
+// mid-sentence reads as a jump cut, so one clip is chosen to cover the whole
+// line - the closest length at or above the audio - and held for its duration.
+const SPEAK_POOL = [
+  ['idle-1/speak/greeting', 6.04], ['idle-1/speak/dealerbust', 5.04],
+  ['idle-1/speak/insurance', 5.04], ['idle-1/speak/lose', 5.04],
+  ['idle-1/speak/goodluck', 4.04], ['idle-1/speak/win', 4.04],
+  ['idle-1/speak/push', 4.04], ['idle-1/speak/blackjack', 4.04],
+];
+let heldSpeakClip = null;
+function clipForDuration(secs) {
+  const avail = SPEAK_POOL.filter(([k]) => engine.index?.clips?.[k]);
+  if (!avail.length) return null;
+  const covering = avail.filter(([, d]) => d >= secs).sort((a, b) => a[1] - b[1]);
+  return (covering[0] ?? avail.sort((a, b) => b[1] - a[1])[0])[0];
+}
+const someSpeakClip = () => heldSpeakClip ?? clipForDuration(5);
 engine.onIdlePick = () => {
+  if (speaking) { const c = someSpeakClip(); if (c) return c; }
   const extras = [CLIP.headTilt, CLIP.gest].filter(k => engine.index.clips[k]);
   if (extras.length && Math.random() < 0.25) return extras[Math.floor(Math.random() * extras.length)];
   return CLIP.idle;
@@ -104,6 +123,7 @@ voice.load();
 const soundBtn = $('#sound-btn');
 const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); soundBtn.textContent = voice.muted ? '🔇' : '🔊'; };
 soundBtn.onclick = () => {
+  if (!voice.muted) { bankAudio?.pause(); speaking = false; }
   voice.muted = !voice.muted; localStorage.setItem('croupier-muted', voice.muted ? '1' : '0'); renderSound();
   if (voice.muted) sfx.stopAmbience(); else sfx.startAmbience();
 };
@@ -132,8 +152,20 @@ const sfx = {
   },
   startAmbience() { if (!voice.muted) this.files.ambience?.play().catch(() => {}); },
   stopAmbience() { this.files.ambience?.pause(); },
+  // The room tone kept dying: autoplay can refuse it before the first gesture,
+  // a hidden tab or another app taking audio focus pauses it, and nothing ever
+  // restarted it. Nudge it back on any gesture and whenever the tab returns.
+  keepAmbience() {
+    const a = this.files.ambience;
+    if (!a || voice.muted) return;
+    if (a.paused || a.ended) { a.currentTime = a.currentTime || 0; a.play().catch(() => {}); }
+  },
 };
 sfx.load();
+for (const ev of ['pointerdown', 'keydown', 'visibilitychange']) {
+  document.addEventListener(ev, () => { if (!document.hidden) sfx.keepAmbience(); }, { passive: true });
+}
+setInterval(() => { if (!document.hidden) sfx.keepAmbience(); }, 4000);
 // hover ticks: tiny synth click, no asset needed
 let actx = null;
 function hoverTick() {
@@ -232,6 +264,48 @@ function synthBigWin() {
   } catch { /* ignore */ }
 }
 
+// hint(): one short transient line explaining what a control just did (or why
+// it stopped). Cheaper than a toast and it never covers the felt.
+let hintTimer = null;
+function hint(tag, text) {
+  let el = document.querySelector('#hint');
+  if (!el) { el = document.createElement('div'); el.id = 'hint'; document.body.appendChild(el); }
+  el.innerHTML = `<b>${tag}</b><span>${text}</span>`;
+  el.classList.add('show');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// Round summary: what went in, what came back, per box and in total. The seat
+// badges alone were ambiguous - a badge reading "WIN $100" on a $50 stake is a
+// $50 profit, not a $100 one - so the money is spelled out here.
+function showSettlement(rows, staked, back) {
+  if (!rows.length) return;
+  let el = document.querySelector('#settlement');
+  if (!el) { el = document.createElement('div'); el.id = 'settlement'; document.body.appendChild(el); }
+  const net = back - staked;
+  const line = r => {
+    const parts = [`<span class="s-box">BOX ${r.box + 1}</span>`,
+                   `<span class="s-stake">${fmt(r.stake)}</span>`];
+    parts.push('<span class="s-side"></span>');   // sides get their own row below
+    const mainCls = r.outcome === 'win' ? 'up' : r.outcome === 'push' ? 'flat' : 'down';
+    const label = r.outcome === 'push' ? 'push' : (r.net > 0 ? '+' : '') + fmt(r.net);
+    parts.push(`<span class="s-net ${mainCls}">${label}</span>`);
+    return `<div class="s-row">${parts.join('')}</div>`;
+  };
+  const sideRows = rows.filter(r => r.sides).map(r =>
+    `<div class="s-row sub"><span class="s-box">side ${r.box + 1}</span><span class="s-stake">${fmt(r.sides)}</span><span class="s-side"></span>` +
+    `<span class="s-net ${r.sideNet > 0 ? 'up' : 'down'}">${r.sideNet > 0 ? '+' : ''}${fmt(r.sideNet)}</span></div>`).join('');
+  el.innerHTML = `
+    <div class="s-head"><b>ROUND</b><span>staked ${fmt(staked)} &middot; returned ${fmt(back)}</span></div>
+    ${rows.map(line).join('')}${sideRows}
+    <div class="s-row total"><span class="s-box">NET</span><span class="s-stake"></span><span class="s-side"></span>
+      <span class="s-net ${net > 0 ? 'up' : net === 0 ? 'flat' : 'down'}">${net > 0 ? '+' : ''}${fmt(net)}</span></div>`;
+  el.classList.add('show');
+  clearTimeout(showSettlement.t);
+  showSettlement.t = setTimeout(() => el.classList.remove('show'), 7000);
+}
+
 // win toasts: stacked notifications so wins and their amounts are unmissable
 function toast(title, amount, big = false) {
   let stack = document.querySelector('#toasts');
@@ -274,8 +348,16 @@ setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('en-
 
 // ---------- state ----------
 const SEATS = 7;
-const CHIPS = [1, 5, 10, 25, 50, 100, 500, 1000];
-const LIMITS = { min: 5, max: 2000 };
+// Table tiers. Picking a table sets both the limits and the chip ladder, so a
+// VIP box is bet in 250K chips rather than 250 clicks of a 1K chip.
+const TABLES = [
+  { id: 'classic', name: 'CLASSIC',     min: 5,    max: 2000,      chips: [1, 5, 10, 25, 50, 100, 500, 1000] },
+  { id: 'high',    name: 'HIGH ROLLER', min: 100,  max: 50000,     chips: [25, 100, 500, 1000, 5000, 10000, 25000] },
+  { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000] },
+];
+let table = TABLES[0];
+let CHIPS = table.chips;
+const LIMITS = { get min() { return table.min; }, get max() { return table.max; } };
 let balance = 1000;
 
 // ---------- player account: server-persisted demo money (SQLite) ----------
@@ -320,7 +402,7 @@ async function veraEvent(text, { minGap = 18000 } = {}) {
       body: JSON.stringify({ message: text, event: true }),
     });
     const { reply } = await r.json();
-    if (reply) { showCaption(reply); trigger(CLIP.gest); }
+    if (reply) { showCaption(reply); speakFor(reply); }
   } catch { /* brain offline: stay quiet */ }
   finally { veraBusy = false; }
 }
@@ -379,10 +461,11 @@ function layoutSeats() {
   const table = document.querySelector('#table2d').getBoundingClientRect();
   if (!img || !img.width) return;
   // compact mode flattens the arc so the centre box's cards stay on the felt
-  const CX = 0.5, CY = compactSeats ? 0.17 : 0.13;
-  const RX = 0.365, RY = compactSeats ? 0.33 : 0.445;
+  const num = (name, fb) => { const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)); return Number.isFinite(v) ? v : fb; };
+  const CX = num('--arc-cx', 0.5), CY = num('--arc-cy', compactSeats ? 0.17 : 0.13);
+  const RX = num('--arc-rx', 0.365), RY = num('--arc-ry', compactSeats ? 0.33 : 0.445);
   const boxes = playedBoxes();
-  const span = compactSeats ? 84 : 110;          // degrees of arc the boxes occupy
+  const span = num('--arc-span', compactSeats ? 84 : 110);   // degrees of arc the boxes occupy
   const step = span / (boxes.length - 1);
   seatEls.forEach((el, i) => el.classList.toggle('seat-off', !boxes.includes(i)));
   boxes.forEach((i, k) => {
@@ -410,21 +493,31 @@ document.querySelector('#tableimg')?.addEventListener('load', layoutSeats);
 
 // ---------- chip picker ----------
 const chipsEl = $('#chips');
-for (const v of CHIPS) {
-  const el = document.createElement('div');
-  el.className = `chip c${v}` + (v === selected ? ' sel' : '');
-  el.textContent = v >= 1000 ? '1K' : v;
-  el.onclick = () => {
-    selected = v;
-    chipsEl.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
-    el.classList.add('sel');
-  };
-  chipsEl.appendChild(el);
+// chip colours cycle through the eight painted denominations, so a VIP ladder
+// still reads as a normal rack instead of eight identical discs
+const CHIP_SKINS = [1, 5, 10, 25, 50, 100, 500, 1000];
+let chipSkin = new Map();
+function buildChips() {
+  chipsEl.innerHTML = '';
+  chipSkin = new Map(CHIPS.map((v, i) => [v, CHIP_SKINS[i % CHIP_SKINS.length]]));
+  if (!CHIPS.includes(selected)) selected = CHIPS[0];
+  for (const v of CHIPS) {
+    const el = document.createElement('div');
+    el.className = `chip c${chipSkin.get(v)}` + (v === selected ? ' sel' : '');
+    el.textContent = chipFace(v);
+    el.dataset.v = v;
+    el.onclick = () => {
+      selected = v;
+      chipsEl.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+      el.classList.add('sel');
+    };
+    chipsEl.appendChild(el);
+  }
 }
-const chipClassFor = v => `c${[...CHIPS].reverse().find(c => c <= v) ?? 1}`;
+const chipClassFor = v => `c${chipSkin.get([...CHIPS].reverse().find(c => c <= v) ?? CHIPS[0]) ?? 1}`;
 
 function flyChip(value, targetEl) {
-  const src = chipsEl.querySelector(`.chip.c${value}`) ?? chipsEl.firstChild;
+  const src = chipsEl.querySelector(`.chip[data-v="${value}"]`) ?? chipsEl.firstChild;
   const a = src.getBoundingClientRect();
   const b = targetEl.getBoundingClientRect();
   const ghost = src.cloneNode(true);
@@ -455,7 +548,8 @@ function placeBet(i, field, targetEl) {
   if (field !== 'main' && bets[i].main === 0) return; // side bets ride on a main bet
   const cap = field === 'main' ? LIMITS.max : LIMITS.max / 2;
   const next = bets[i][field] + selected;
-  if (next > cap || betTotal() + selected > balance) return;
+  if (next > cap) { hint('LIMIT', `${field === 'main' ? 'box' : 'side bet'} caps at ${fmt(cap)}`); return; }
+  if (betTotal() + selected > balance) { hint('BALANCE', `${fmt(selected)} more than you have — add funds`); return; }
   flyChip(selected, targetEl);
   sfx.play('chip');
   bets[i][field] = next;
@@ -492,43 +586,44 @@ $('#double-btn').onclick = () => {
   bets = bets.map(b => ({ main: b.main * 2, pp: b.pp * 2, tp: b.tp * 2 }));
   renderBets();
 };
-// MAX: scale every staked box up as far as the balance and the table cap
-// allow, keeping the boxes' relative sizes. Nothing staked yet -> the centre
-// box takes the whole affordable maximum.
+// MAX: fill the boxes you have chosen with the chip you have selected, as many
+// as fit inside the table cap and your balance. The chip sets the granularity
+// (pick 1K and boxes fill in 1K steps), and the hint says what stopped it so
+// the button never looks like it did nothing.
 $('#max-btn').onclick = () => {
   if (round || busy) return;
+  const step = selected;
+  const perBox = Math.floor(LIMITS.max / step) * step;   // biggest whole-chip stack inside the cap
   let idx = bets.map((_, i) => i).filter(i => bets[i].main > 0);
-  const seed = bets.map(b => ({ ...b }));
-  if (!idx.length) { idx = [Math.floor(SEATS / 2)]; seed[idx[0]] = { main: LIMITS.min, pp: 0, tp: 0 }; }
-  const unit = idx.reduce((a, i) => a + seed[i].main + seed[i].pp + seed[i].tp, 0);
-  if (!unit || balance < LIMITS.min) return;
-  // largest scale that keeps the total inside the balance and every box inside its cap
-  let k = balance / unit;
-  for (const i of idx) {
-    if (seed[i].main) k = Math.min(k, LIMITS.max / seed[i].main);
-    if (seed[i].pp) k = Math.min(k, (LIMITS.max / 2) / seed[i].pp);
-    if (seed[i].tp) k = Math.min(k, (LIMITS.max / 2) / seed[i].tp);
-  }
-  const snap = (v, cap) => Math.min(cap, Math.floor((v + 1e-9) / LIMITS.min) * LIMITS.min);
+  if (!idx.length) idx = [playedBoxes()[Math.floor(playedBoxes().length / 2)]];  // none chosen -> centre box
+  if (!perBox) { hint('MAX', `${fmt(step)} chip is over this table's ${fmt(LIMITS.max)} cap`); return; }
+  if (balance < step) { hint('MAX', `balance is under one ${fmt(step)} chip — add funds`); return; }
+
   const next = bets.map(b => ({ ...b }));
-  for (const i of idx) {
-    next[i] = {
-      main: snap(seed[i].main * k, LIMITS.max),
-      pp: snap(seed[i].pp * k, LIMITS.max / 2),
-      tp: snap(seed[i].tp * k, LIMITS.max / 2),
-    };
-  }
-  const total = next.reduce((a, b) => a + b.main + b.pp + b.tp, 0);
-  if (!total || total > balance) return;
-  if (total === betTotal()) return; // already maxed
-  for (const [i, b] of bets.entries()) {
-    for (const f of ['main', 'pp', 'tp']) {
-      const delta = next[i][f] - b[f];
-      if (delta > 0) undoStack.push({ box: i, field: f, value: delta });
+  for (const i of idx) next[i].main = 0;                 // recompute the maximum from scratch
+  let total = next.reduce((a, b) => a + b.main + b.pp + b.tp, 0);
+
+  // round-robin so several chosen boxes fill evenly rather than front to back
+  let stop = null, moved = true;
+  while (moved) {
+    moved = false;
+    for (const i of idx) {
+      if (next[i].main + step > perBox) { stop = stop ?? 'table'; continue; }
+      if (total + step > balance) { stop = 'balance'; continue; }
+      next[i].main += step; total += step; moved = true;
     }
   }
+
+  const before = betTotal();
   bets = next;
-  sfx.play('chip');
+  for (const [i, b] of bets.entries()) {
+    const delta = b.main - (idx.includes(i) ? 0 : b.main);
+    if (idx.includes(i) && b.main) undoStack.push({ box: i, field: 'main', value: b.main });
+  }
+  if (betTotal() !== before) sfx.play('chip');
+  hint('MAX', stop === 'balance' ? 'all in — balance spent'
+     : stop === 'table' ? `table cap ${fmt(LIMITS.max)} a box`
+     : `${fmt(betTotal())} staked`);
   renderBets();
 };
 
@@ -539,8 +634,9 @@ $('#clear-btn').onclick = () => {
   renderBets();
 };
 
+const chipFace = v => v >= 1e6 ? (v / 1e6) + 'M' : v >= 1000 ? (v / 1000) + 'K' : String(v);
 function stackChip(v) {
-  return `<div class="chipimg ${chipClassFor(v)}"><img src="assets/chip-gold.png" alt=""><b>${v >= 1000 ? (v / 1000) + 'K' : v}</b></div>`;
+  return `<div class="chipimg ${chipClassFor(v)}"><img src="assets/chip-gold.png" alt=""><b>${chipFace(v)}</b></div>`;
 }
 function renderBets() {
   seatEls.forEach((seat, i) => {
@@ -578,9 +674,24 @@ const setDeposit = amt => {
   depositAmt = amt;
   $('#cashier-pay').textContent = Number.isFinite(amt) && amt >= 1 ? `ADD ${fmt(amt)}` : 'ADD FUNDS';
 };
-$('#add-funds').onclick = () => { $('#cashier').hidden = false; };
+$('#add-funds').onclick = () => { refreshCashierAmounts(); $('#cashier').hidden = false; };
 $('#cashier-close').onclick = () => { $('#cashier').hidden = true; };
 $('#cashier').onclick = e => { if (e.target.id === 'cashier') $('#cashier').hidden = true; };
+// deposit presets scale with the table: a VIP box cannot be funded $500 at a time
+function refreshCashierAmounts() {
+  const base = table.max;
+  const presets = [base / 2, base * 2, base * 10, base * 50].map(v => Math.max(100, Math.round(v / 100) * 100));
+  document.querySelectorAll('#cashier .amt').forEach((b, i) => {
+    b.dataset.amt = presets[i];
+    b.textContent = chipFace(presets[i]);
+  });
+  const sel = document.querySelector('#cashier .amt.sel') ?? document.querySelector('#cashier .amt');
+  document.querySelectorAll('#cashier .amt').forEach(x => x.classList.remove('sel'));
+  sel.classList.add('sel');
+  depositAmt = Number(sel.dataset.amt);
+  $('#cashier-pay').textContent = `ADD ${fmt(depositAmt)}`;
+}
+
 document.querySelectorAll('#cashier .amt').forEach(b => {
   b.onclick = () => {
     document.querySelectorAll('#cashier .amt').forEach(x => x.classList.remove('sel'));
@@ -618,7 +729,12 @@ $('#cc-num').addEventListener('input', e => {
 });
 $('#cashier-pay').onclick = async () => {
   if ($('#cc-num').value.replace(/\D/g, '').length < 12) { $('#cc-num').classList.add('bad'); return; }
-  if (!(Number.isFinite(depositAmt) && depositAmt >= 1 && depositAmt <= 100000)) { $('#cc-amount').classList.add('bad'); return; }
+  const depositCap = Math.max(100000, table.max * 100);   // must be able to fund the table you chose
+  if (!(Number.isFinite(depositAmt) && depositAmt >= 1 && depositAmt <= depositCap)) {
+    $('#cc-amount').classList.add('bad');
+    hint('CASHIER', `deposits up to ${fmt(depositCap)}`);
+    return;
+  }
   const amt = depositAmt;
   try {
     if (player) balance = (await api('/api/deposit', { id: player.id, amount: amt })).balance;
@@ -861,8 +977,10 @@ async function finish() {
   const live = round.live();
   let ret = 0, sideRet = 0, anyWin = false, anyPush = false, anyLose = false, anyPlayerBJ = false;
   let n = -1;
+  const rows = [];
   seatEls.forEach((seat, i) => {
-    if (!bets[i].main) return;
+    const b = bets[i];
+    if (!b.main) return;
     n++;
     const hand = live[n];
     ret += hand.result;
@@ -870,20 +988,28 @@ async function finish() {
     const el = seat.querySelector('.result');
     const net = hand.result - hand.stake - hand.insured;
     if (hand.cards.length === 2 && handValue(hand.cards).total === 21) anyPlayerBJ = true;
+    // show the NET, signed: "WIN $100" used to mean the total returned, which
+    // reads as profit and is not
+    const sideNet = (hand.sideReturn ?? 0) - (b.pp + b.tp);
+    rows.push({ box: i, stake: hand.stake, sides: b.pp + b.tp, back: hand.result, net, sideNet,
+                outcome: net > 0 ? 'win' : net === 0 ? 'push' : 'lose' });
     if (net > 0) {
-      el.textContent = 'WIN ' + fmt(hand.result); el.classList.add('win'); anyWin = true;
+      el.textContent = '+' + fmt(net); el.classList.add('win'); anyWin = true;
+      el.title = `staked ${fmt(hand.stake)}, returned ${fmt(hand.result)}`;
       const r = seat.getBoundingClientRect();
       burstAt(r.x, r.y, hand.result >= hand.stake * 2.4);
     }
-    else if (net === 0) { el.textContent = 'PUSH'; el.classList.add('push'); anyPush = true; }
-    else { el.textContent = 'LOSE'; el.classList.add('lose'); anyLose = true; }
+    else if (net === 0) { el.textContent = 'PUSH ' + fmt(hand.stake); el.classList.add('push'); anyPush = true; el.title = 'stake returned'; }
+    else { el.textContent = fmt(net); el.classList.add('lose'); anyLose = true; el.title = `staked ${fmt(hand.stake)}`; }
   });
+  const staked = betTotal();
   balance += ret; ledger('settle', ret);
   if (sideRet) { balance += sideRet; ledger('sidebets', sideRet); }
   const totalWin = ret + sideRet;
   const lw = $('#last-win');
   lw.textContent = fmt(totalWin);
   lw.classList.toggle('won', totalWin > 0);
+  showSettlement(rows, staked, totalWin);
   if (totalWin > 0) toast('TOTAL WIN', totalWin, anyPlayerBJ || totalWin >= 500);
   syncBalance('settle');
   renderBets();
@@ -909,24 +1035,105 @@ async function finish() {
   voice.say('placebets');
 }
 
-// ---------- chat stub ----------
-const CANNED = [
-  "I'm your AI dealer — cards land as the RNG decides, I just keep you company.",
-  'Dealer stands on all 17s here, and blackjack pays 3 to 2.',
-  'Perfect Pairs pays up to 25 to 1, and 21+3 up to 100 to 1.',
-  'Insurance pays 2 to 1, but mathematically it favours the house.',
-  'Good luck — place your bets whenever you are ready.',
-];
+// ---------- chat: Vera's live brain ----------
+// Posts to /chat, which relays to the headless-claude subscription on
+// scout-hel1. While her reply is on screen a speak clip runs, so her mouth
+// moves for the duration she is "talking" (the baked clips are lip-synced to
+// their own recorded lines; arbitrary chat text is mouth-movement, not visemes).
+const SPEAK_CLIPS = ['idle-1/speak/greeting', 'idle-1/speak/goodluck', 'idle-1/speak/win', 'idle-1/speak/push'];
+let chatHistory = [];
+let chatBusy = false;
+
+function chatLog(role, text, pending = false) {
+  const panel = $('#chat-log');
+  const row = document.createElement('div');
+  row.className = `msg ${role}` + (pending ? ' pending' : '');
+  row.innerHTML = `<b>${role === 'user' ? (player?.name ?? 'You') : 'Vera'}</b><p>${text}</p>`;
+  panel.appendChild(row);
+  panel.classList.add('open');
+  panel.scrollTop = panel.scrollHeight;
+  while (panel.children.length > 24) panel.firstChild.remove();
+  clearTimeout(chatLog.t);
+  chatLog.t = setTimeout(() => panel.classList.remove('open'), 26000);
+  return row;
+}
+
+// Vera only ever speaks in her OWN voice. Every spoken line is a recorded
+// Vera take (dealer/audio/en/*.mp3); the brain picks which one fits, and
+// anything off-book is shown as text without a voice. A synthetic system
+// voice would break the illusion worse than staying quiet.
+const VERA_BANK_URL = 'dealer/audio/en';
+let veraBank = {};
+fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => { veraBank = b; }).catch(() => {});
+
+let bankAudio = null;
+function sayLine(id) {
+  const line = veraBank[id];
+  if (!line) return false;
+  showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70));
+  if (voice.muted) return true;
+  try {
+    bankAudio?.pause();
+    bankAudio = new Audio(`${VERA_BANK_URL}/${id}.mp3`);
+    bankAudio.volume = 0.95;
+    const stop = () => { speaking = false; heldSpeakClip = null; trigger(CLIP.idle); };
+    bankAudio.onloadedmetadata = () => { heldSpeakClip = clipForDuration(bankAudio.duration || 5); };
+    bankAudio.onplay = () => {
+      speaking = true;
+      heldSpeakClip = heldSpeakClip ?? clipForDuration(bankAudio.duration || 5);
+      if (heldSpeakClip) engine.interrupt(heldSpeakClip); else trigger(CLIP.gest);
+    };
+    bankAudio.onended = stop; bankAudio.onerror = stop;
+    bankAudio.play().catch(stop);
+  } catch { speaking = false; }
+  return true;
+}
+
+function speakFor(text) {
+  // hold a speaking clip roughly as long as the line takes to say
+  const clip = SPEAK_CLIPS.find(k => engine.index?.clips?.[k]);
+  if (!clip) { trigger(CLIP.gest); return; }
+  engine.interrupt?.(clip);
+  const ms = Math.min(9000, 1200 + text.length * 55);
+  clearTimeout(speakFor.t);
+  speakFor.t = setTimeout(() => trigger(CLIP.idle), ms);
+}
+
 $('#chat-send').onclick = sendChat;
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
-function sendChat() {
+
+async function sendChat() {
   const input = $('#chat-input');
-  if (!input.value.trim()) return;
+  const message = input.value.trim();
+  if (!message || chatBusy) return;
   input.value = '';
-  trigger(CLIP.gest);
-  voice.say(Math.random() < 0.5 ? 'chatter1' : 'chatter2');
-  setBanner(CANNED[Math.floor(Math.random() * CANNED.length)]);
-  setTimeout(() => { if (!round && !busy) setBanner('PLEASE PLACE BETS'); else setBanner(null); }, 4000);
+  chatBusy = true;
+  chatLog('user', message);
+  const pending = chatLog('vera', '<i>thinking…</i>', true);
+  try {
+    const r = await fetch('/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history: chatHistory.slice(-12) }),
+    });
+    const { reply, say } = await r.json();
+    if (reply || say) {
+      pending.classList.remove('pending');
+      // when she has a recorded take for this, the spoken words and the words
+      // on screen are the same line - never a voice saying something else
+      const spoken = say && veraBank[say] ? veraBank[say].text : null;
+      const shown = spoken ?? reply;
+      pending.querySelector('p').textContent = shown;
+      chatHistory.push({ role: 'user', text: message }, { role: 'vera', text: shown });
+      if (spoken) sayLine(say);
+      else { showCaption(shown, Math.min(13000, 3500 + shown.length * 70)); speakFor(shown); }
+    } else {
+      pending.querySelector('p').textContent = 'I have lost my earpiece for a moment — try me again.';
+      pending.classList.remove('pending');
+    }
+  } catch {
+    pending.querySelector('p').textContent = 'I have lost my earpiece for a moment — try me again.';
+    pending.classList.remove('pending');
+  } finally { chatBusy = false; }
 }
 
 $('#gate-enter').onclick = () => {
@@ -944,6 +1151,27 @@ $('#all-sides').onclick = () => {
   allSides = !allSides;
   $('#all-sides').classList.toggle('on', allSides);
 };
+
+function setTable(id) {
+  const next = TABLES.find(x => x.id === id);
+  if (!next || next === table || round || busy) return;
+  table = next; CHIPS = table.chips;
+  bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));   // old stakes are off-limits here
+  undoStack = [];
+  buildChips();
+  document.querySelectorAll('#table-pick .tbl').forEach(b => b.classList.toggle('on', b.dataset.id === id));
+  $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
+  hint(table.name, balance < table.min
+    ? `min is ${fmt(table.min)} — add funds to play here`
+    : `${fmt(table.min)} to ${fmt(table.max)} a box`);
+  renderBets();
+}
+document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick = () => setTable(b.dataset.id); });
+
+buildChips();
+$('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
+// calibration overlay: applies any saved tweaks, then lies dormant until `C`
+import('./calibrate.mjs').then(m => { if (m.applySaved()) layoutSeats(); }).catch(() => {});
 
 renderBets();
 setBanner('PLEASE PLACE BETS');
