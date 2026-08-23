@@ -265,7 +265,7 @@ function renderBets() {
     const b = bets[i];
     const spot = seat.querySelector('.spot');
     if (b.main) { spot.classList.add('staked'); spot.innerHTML = stackChip(b.main); }
-    else { spot.classList.remove('staked'); spot.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20c.8-3.6 3.4-5.6 6.5-5.6s5.7 2 6.5 5.6"/><path d="M18 8.5h5M20.5 6v5"/></svg>'; }
+    else { spot.classList.remove('staked'); spot.innerHTML = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20c.8-3.6 3.4-5.6 6.5-5.6s5.7 2 6.5 5.6"/><path d="M18 8.5h5M20.5 6v5"/></svg>'; }
     for (const f of ['pp', 'tp']) {
       const arc = seat.querySelector(`.side.${f}`);
       const chip = seat.querySelector(`.${f}-chip`);
