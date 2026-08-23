@@ -44,7 +44,13 @@ for (const f of readdirSync(inDir).filter(f => f.endsWith('.h264')).sort()) {
     [off, (i + 1 < bounds.length ? bounds[i + 1] : buf.length) - off]);
   // clip key "idle-1/idle/idle-breathe" from file "idle-1_idle_idle-breathe.h264"
   const stem = basename(f, '.h264');
-  const key = stem.replaceAll('_', '/');
+  // key is group/category/name, so only the FIRST TWO underscores are
+  // separators - a clip name may itself contain underscores (fair_rng), and
+  // splitting on every one silently produced a four-part key nothing matched
+  const bits = stem.split('_');
+  const key = bits.length > 3
+    ? [bits[0], bits[1], bits.slice(2).join('_')].join('/')
+    : bits.join('/');
   clips[key] = { file: f, fps: 24, frameCount: frames.length, frames };
   copyFileSync(join(inDir, f), join(outDir, 'streams', f));
   console.log(`${key}: ${frames.length} frames, ${buf.length} bytes, IDR=${frames[0][1]}b`);

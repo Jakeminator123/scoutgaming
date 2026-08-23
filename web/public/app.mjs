@@ -1100,20 +1100,53 @@ function sayLine(id) {
   if (!line) return false;
   showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70));
   if (voice.muted) return true;
-  try {
-    bankAudio?.pause();
-    bankAudio = new Audio(`${VERA_BANK_URL}/${id}.mp3`);
-    bankAudio.volume = 0.95;
-    const stop = () => { speaking = false; heldSpeakClip = null; trigger(CLIP.idle); };
-    bankAudio.onloadedmetadata = () => { heldSpeakClip = clipForDuration(bankAudio.duration || 5); };
-    bankAudio.onplay = () => {
+
+  // A line has its OWN clip when one was baked from that exact audio; those are
+  // lip-synced to the words. Otherwise fall back to a generic speaking clip.
+  const own = `idle-1/speak/${id}`;
+  const clip = engine.index?.clips?.[own] ? own : null;
+
+  const stop = () => { speaking = false; heldSpeakClip = null; trigger(CLIP.idle); };
+
+  const startAudio = () => {
+    try {
+      bankAudio?.pause();
+      bankAudio = new Audio(`${VERA_BANK_URL}/${id}.mp3`);
+      bankAudio.volume = 0.95;
+      bankAudio.onended = stop;
+      bankAudio.onerror = stop;
+      bankAudio.play().catch(stop);
+    } catch { stop(); }
+  };
+
+  (async () => {
+    try {
+      if (!clip) {                       // no matching clip: mouth movement only
+        heldSpeakClip = clipForDuration(5);
+        speaking = true;
+        if (heldSpeakClip) engine.interrupt(heldSpeakClip); else trigger(CLIP.gest);
+        startAudio();
+        return;
+      }
+      // Sync order matters: the VIDEO leads. Starting the audio first and
+      // cutting the video after left her mouth trailing the words by however
+      // long the clip took to fetch and decode.
+      await engine.fetchClip(clip).catch(() => {});
+      const decodedBefore = engine.stats?.decoded ?? 0;
       speaking = true;
-      heldSpeakClip = heldSpeakClip ?? clipForDuration(bankAudio.duration || 5);
-      if (heldSpeakClip) engine.interrupt(heldSpeakClip); else trigger(CLIP.gest);
-    };
-    bankAudio.onended = stop; bankAudio.onerror = stop;
-    bankAudio.play().catch(stop);
-  } catch { speaking = false; }
+      heldSpeakClip = clip;
+      engine.interrupt(clip);
+      // wait until the cut has actually landed on screen, then speak
+      const t0 = performance.now();
+      while (performance.now() - t0 < 2000) {
+        if (engine.currentClip === clip && (engine.stats?.decoded ?? 0) > decodedBefore + 1) break;
+        await new Promise(r => requestAnimationFrame(r));
+      }
+      const lead = Number(getComputedStyle(document.documentElement).getPropertyValue('--lipsync-offset')) || 0;
+      if (lead > 0) await new Promise(r => setTimeout(r, lead));
+      startAudio();
+    } catch { stop(); }
+  })();
   return true;
 }
 
@@ -1246,7 +1279,7 @@ if (pitBtn) {
 }
 
 // QA hook: lets a test drive the table without playing 20 rounds first
-window.__croupier = { engine, CLIP, supervisorMayLook, supEl, get round() { return round; } };
+window.__croupier = { engine, CLIP, supervisorMayLook, supEl, sayLine, veraBank, get round() { return round; } };
 
 renderBets();
 setBanner('PLEASE PLACE BETS');

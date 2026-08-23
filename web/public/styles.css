@@ -19,6 +19,8 @@
   --pp-rot: 0deg; --tp-rot: 0deg; --label-size: 10px; --tp-size: 8.5px;
   --cards-x: -2px; --cards-y: -40px; --cards-flat: .62; --cards-rot-k: .5;
   --hand-rot: 0deg; --cards-skew-k: .4;
+  /* ms the audio waits after the speaking clip is on screen; tune if lips lead or trail */
+  --lipsync-offset: 80;
   --card-w: 46px; --card-dx: 19px; --card-dy: -4px; --card-rot: 6deg; --card-rot0: -4deg; --card-x0: -32px;
   /* per-slot nudges: extra turn/offset for the 1st..4th card of a hand alone */
   --card-rot-0: 0deg; --card-dx-0: 0px; --card-dy-0: 0px;

@@ -87,6 +87,9 @@ const GROUPS = [
     ['--sup-bright', 'brightness', 0.4, 1.3, 0.01, ''],
     ['--sup-sat', 'saturation', 0.2, 1.4, 0.01, ''],
   ]],
+  ['Lip sync', [
+    ['--lipsync-offset', 'audio delay', -200, 600, 5, ''],
+  ]],
   ['Dealer window', [
     ['--dealer-h', 'size', 30, 120, 0.5, 'vh'],
     ['--dealer-top', 'top', -10, 40, 0.5, 'vh'],
