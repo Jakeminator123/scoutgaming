@@ -8,6 +8,7 @@
   --dealer-h: max(68vh, 37.94vw);
   --dealer-top: 1vh;
   --dealer-crop: 0.86;
+  --dealer-x: 0vw;
   /* table plane tilt */
   --tilt: 55deg;
   /* responsive knobs (media queries below retune these) */
@@ -18,7 +19,14 @@
   --pp-rot: 0deg; --tp-rot: 0deg; --label-size: 10px; --tp-size: 8.5px;
   --cards-x: -2px; --cards-y: -40px; --cards-flat: .62; --cards-rot-k: .5;
   --card-w: 46px; --card-dx: 19px; --card-dy: -4px; --card-rot: 6deg; --card-rot0: -4deg; --card-x0: -32px;
+  /* per-slot nudges: extra turn/offset for the 1st..4th card of a hand alone */
+  --card-rot-0: 0deg; --card-dx-0: 0px; --card-dy-0: 0px;
+  --card-rot-1: 0deg; --card-dx-1: 0px; --card-dy-1: 0px;
+  --card-rot-2: 0deg; --card-dx-2: 0px; --card-dy-2: 0px;
+  --card-rot-3: 0deg; --card-dx-3: 0px; --card-dy-3: 0px;
   --side-chip-r: 45; --sidechip-dx: 0px; --sidechip-dy: 0px;
+  /* floor supervisor overlay */
+  --sup-x: -30vh; --sup-y: 6vh; --sup-h: 54vh; --sup-bright: .82; --sup-sat: .9;
   /* seat arc on the felt, read by layoutSeats() */
   --arc-cx: .5; --arc-cy: .13; --arc-rx: .365; --arc-ry: .445; --arc-span: 110;
 }
@@ -30,7 +38,10 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   position: absolute; inset: 0;
   background: url('scene.jpg') no-repeat;
   background-size: calc(var(--dealer-h) * 2.63602) calc(var(--dealer-h) * 1.47126);
-  background-position: calc(50vw - var(--dealer-h) * 1.31801) calc(var(--dealer-top) - var(--dealer-h) * 0.0143678);
+  /* registered to the dealer window: --dealer-x slides the window, so the
+     scene has to slide by exactly the same amount or the painted-in dealer
+     drifts off the video and you get a second, ghostly dealer. */
+  background-position: calc(50vw + var(--dealer-x, 0vw) - var(--dealer-h) * 1.31801) calc(var(--dealer-top) - var(--dealer-h) * 0.0143678);
   background-color: #0b0c10;
 }
 #room2::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(0,0,0,.35) 100%); }
@@ -38,7 +49,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #dealer-wrap {
   /* invisible window: clips are baked over the exact scene crop this rect
      occupies at the design aspect (pipeline/bake-composite.sh) */
-  position: absolute; left: 50%; top: var(--dealer-top); transform: translateX(-50%);
+  position: absolute; left: 50%; top: var(--dealer-top); transform: translateX(calc(-50% + var(--dealer-x, 0vw)));
   width: var(--dealer-h); height: calc(var(--dealer-h) * var(--dealer-crop, 0.86));
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 3%, #000 97%, transparent 100%),
@@ -107,10 +118,20 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   position: absolute;
   /* --fan tightens the spread as a hand grows (set in dealCardTo), so a
      five-card hand stops reaching into the next box */
-  left: calc(var(--ci, 0) * var(--card-dx, 19px) * var(--fan, 1) + var(--card-x0, -32px));
-  top: calc(var(--ci, 0) * var(--card-dy, -4px) * var(--fan, 1));
-  transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg)));
+  left: calc(var(--ci, 0) * var(--card-dx, 19px) * var(--fan, 1) + var(--card-x0, -32px) + var(--slot-dx, 0px));
+  top: calc(var(--ci, 0) * var(--card-dy, -4px) * var(--fan, 1) + var(--slot-dy, 0px));
+  transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg) + var(--slot-rot, 0deg)));
 }
+/* Per-slot pose. CSS cannot index a custom property by --ci, so each card
+   picks its own slot's values structurally instead. dealCardTo() inserts every
+   card BEFORE the hand-total badge, so child 1..4 are always cards - and the
+   badge is not a .card, so this compound selector can never land on it.
+   #dealer-cards carries class="cards" too, so this covers the dealer as well.
+   Slots past the fourth simply never define --slot-*, and fall back to zero. */
+.cards > .card:nth-child(1) { --slot-rot: var(--card-rot-0, 0deg); --slot-dx: var(--card-dx-0, 0px); --slot-dy: var(--card-dy-0, 0px); }
+.cards > .card:nth-child(2) { --slot-rot: var(--card-rot-1, 0deg); --slot-dx: var(--card-dx-1, 0px); --slot-dy: var(--card-dy-1, 0px); }
+.cards > .card:nth-child(3) { --slot-rot: var(--card-rot-2, 0deg); --slot-dx: var(--card-dx-2, 0px); --slot-dy: var(--card-dy-2, 0px); }
+.cards > .card:nth-child(4) { --slot-rot: var(--card-rot-3, 0deg); --slot-dx: var(--card-dx-3, 0px); --slot-dy: var(--card-dy-3, 0px); }
 #dealer-cards .hand-total { position: absolute; left: -14px; top: 96px; transform: scaleY(calc(1 / var(--cards-flat, .62))); }
 
 /* ---------- seats (screen-space, positioned by layoutSeats) ---------- */
@@ -251,10 +272,10 @@ body.in-round .stake { display: none; }
 .card.fly { animation: flyin .5s cubic-bezier(.2, .75, .25, 1); }
 @keyframes flyin {
   from { transform: translate(var(--dx, 0px), var(--dy, -180px)) rotate(-12deg) scale(.72); opacity: .25; }
-  to { transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg))); opacity: 1; }
+  to { transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg) + var(--slot-rot, 0deg))); opacity: 1; }
 }
 .card.flip { animation: flipin .4s ease-out; }
-@keyframes flipin { from { transform: rotateY(88deg) scale(1.05); } to { transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg))); } }
+@keyframes flipin { from { transform: rotateY(88deg) scale(1.05); } to { transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg) + var(--slot-rot, 0deg))); } }
 .card .corner { position: absolute; top: 3px; left: 5px; font-size: 12px; line-height: 1; text-align: center; }
 .card .pip { position: absolute; bottom: 4px; right: 6px; font-size: 20px; }
 .card.red { color: #c22b2b; }
@@ -926,3 +947,20 @@ body.cal-on .seat.cal-hint .sidearcs .side { stroke: #FFB020; stroke-width: 2.4;
   .chipstack { --stack-w: 38px; --stack-d: 25px; }
   .chipstack b { font-size: 11px; }
 }
+
+/* ---------- floor supervisor: transparent cutout over the room ---------- */
+/* He is a visitor, not the panel, so he is layered rather than baked: the
+   dealer's clips stay exactly as they are while he walks in behind her. */
+#supervisor {
+  /* BELOW #table2d (z-index 20) on purpose: the table then occludes his legs,
+     which is what reads as "standing behind the table" rather than in the felt */
+  position: absolute; z-index: 19; pointer-events: none; opacity: 0;
+  left: calc(50vw + var(--sup-x, -30vh));
+  top: var(--sup-y, 6vh);
+  height: var(--sup-h, 54vh); width: auto;
+  transform: translateX(-50%) scaleX(var(--sup-flip, 1));
+  transition: opacity .5s ease;
+  filter: brightness(var(--sup-bright, .82)) saturate(var(--sup-sat, .9))
+          drop-shadow(0 12px 26px rgba(0,0,0,.5));
+}
+#supervisor.show { opacity: 1; }

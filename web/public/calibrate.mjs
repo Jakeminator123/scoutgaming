@@ -50,14 +50,46 @@ const GROUPS = [
     ['--card-rot0', 'first card turn', -30, 30, 0.5, 'deg'],
     ['--card-rot', 'turn per card', -14, 14, 0.5, 'deg'],
   ]],
+  // The rows above fan a hand uniformly. These four sections turn and shift ONE
+  // card at a time, keyed by its slot in the hand (1st dealt, 2nd dealt, ...)
+  // because cards are thrown away and remade every round.
+  ['Card 1 alone (1st dealt)', [
+    ['--card-rot-0', 'extra turn', -45, 45, 0.5, 'deg'],
+    ['--card-dx-0', 'nudge x', -40, 40, 1, 'px'],
+    ['--card-dy-0', 'nudge y', -40, 40, 1, 'px'],
+  ]],
+  ['Card 2 alone (2nd dealt)', [
+    ['--card-rot-1', 'extra turn', -45, 45, 0.5, 'deg'],
+    ['--card-dx-1', 'nudge x', -40, 40, 1, 'px'],
+    ['--card-dy-1', 'nudge y', -40, 40, 1, 'px'],
+  ]],
+  ['Card 3 alone (3rd dealt)', [
+    ['--card-rot-2', 'extra turn', -45, 45, 0.5, 'deg'],
+    ['--card-dx-2', 'nudge x', -40, 40, 1, 'px'],
+    ['--card-dy-2', 'nudge y', -40, 40, 1, 'px'],
+  ]],
+  ['Card 4 alone (4th dealt)', [
+    ['--card-rot-3', 'extra turn', -45, 45, 0.5, 'deg'],
+    ['--card-dx-3', 'nudge x', -40, 40, 1, 'px'],
+    ['--card-dy-3', 'nudge y', -40, 40, 1, 'px'],
+  ]],
   ['Side-bet chips', [
     ['--side-chip-r', 'distance out', 20, 80, 0.5, ''],
     ['--sidechip-dx', 'nudge x', -30, 30, 1, 'px'],
     ['--sidechip-dy', 'nudge y', -30, 30, 1, 'px'],
   ]],
+  ['Floor supervisor', [
+    ['--sup-x', 'across', -70, 70, 0.5, 'vh'],
+    ['--sup-y', 'height on wall', -20, 40, 0.5, 'vh'],
+    ['--sup-h', 'size', 20, 100, 0.5, 'vh'],
+    ['--sup-bright', 'brightness', 0.4, 1.3, 0.01, ''],
+    ['--sup-sat', 'saturation', 0.2, 1.4, 0.01, ''],
+  ]],
   ['Dealer window', [
     ['--dealer-h', 'size', 30, 120, 0.5, 'vh'],
     ['--dealer-top', 'top', -10, 40, 0.5, 'vh'],
+    ['--dealer-x', 'nudge x', -20, 20, 0.5, 'vw'],
+    ['--dealer-crop', 'reveal height', 0.6, 1.15, 0.005, ''],
   ]],
 ];
 
@@ -69,11 +101,33 @@ const PER_BOX = new Set([
   '--pp-rot', '--tp-rot',
   '--cards-x', '--cards-y', '--cards-flat', '--cards-rot-k',
   '--card-w', '--card-x0', '--card-dx', '--card-dy', '--card-rot0', '--card-rot',
+  '--card-rot-0', '--card-dx-0', '--card-dy-0',
+  '--card-rot-1', '--card-dx-1', '--card-dy-1',
+  '--card-rot-2', '--card-dx-2', '--card-dy-2',
+  '--card-rot-3', '--card-dx-3', '--card-dy-3',
   '--side-chip-r', '--sidechip-dx', '--sidechip-dy',
 ]);
 
 const read = name => getComputedStyle(ROOT).getPropertyValue(name).trim();
 const numOf = v => parseFloat(v);
+
+// Custom properties are NOT computed to a value, so a var holding an
+// expression (--dealer-h is `max(68vh, 37.94vw)`) comes back as that literal
+// token stream and parseFloat gives NaN. The slider then silently showed its
+// midpoint, so touching it jerked the window to a value nobody chose. Resolve
+// those by measuring the expression on a throwaway element and converting the
+// resulting pixels back into the slider's own unit.
+function resolveNum(name, unit) {
+  const direct = numOf(saved[name] ?? read(name));
+  if (Number.isFinite(direct)) return direct;
+  const probe = document.createElement('div');
+  probe.style.cssText = `position:absolute;left:-9999px;top:0;visibility:hidden;width:var(${name});`;
+  document.body.appendChild(probe);
+  const px = parseFloat(getComputedStyle(probe).width) || 0;
+  probe.remove();
+  const per = unit === 'vh' ? innerHeight / 100 : unit === 'vw' ? innerWidth / 100 : 1;
+  return Math.round((px / per) * 100) / 100;
+}
 
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch { saved = {}; }
@@ -113,7 +167,7 @@ function build() {
     const sec = document.createElement('section');
     sec.innerHTML = `<h4>${title}</h4>`;
     for (const [name, label, min, max, step, unit] of rows) {
-      const cur = numOf(saved[name] ?? read(name));
+      const cur = resolveNum(name, unit);
       const row = document.createElement('label');
       row.className = 'cal-row';
       row.innerHTML = `
@@ -308,7 +362,7 @@ export function refreshScope() {
   else { txt.textContent = 'editing ALL BOXES'; box.classList.remove('one'); }
   // show the values that belong to whatever is selected
   for (const [name, spec] of INPUTS) {
-    const v = (selSeat && PER_BOX.has(name)) ? seatVal(selSeat, name) : numOf(saved[name] ?? read(name));
+    const v = (selSeat && PER_BOX.has(name)) ? seatVal(selSeat, name) : resolveNum(name, spec.unit);
     spec.range.value = v; spec.number.value = v;
   }
 }
