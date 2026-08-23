@@ -212,6 +212,25 @@ const CAL_FILE = join(root, 'calibration.css');
 const CAL_PROP = /^--[a-z0-9-]+$/i;
 const CAL_VALUE = /^-?[0-9.]+(px|deg|vh|vw|%)?$/;
 
+// Read back what is already baked so APPLY can MERGE rather than replace.
+// Without this, applying from a browser that only knows about this session's
+// edits silently destroyed every value baked in an earlier one.
+function readCalibrationCss() {
+  const out = { root: {}, boxes: {} };
+  let css = '';
+  try { css = readSync(CAL_FILE, 'utf8'); } catch { return out; }
+  const block = /(:root|\.seat\[data-box="(\d+)"\])\s*\{([^}]*)\}/g;
+  let m;
+  while ((m = block.exec(css))) {
+    const target = m[2] === undefined ? out.root : (out.boxes[m[2]] ??= {});
+    for (const line of m[3].split(';')) {
+      const kv = line.match(/\s*(--[a-z0-9-]+)\s*:\s*([^;]+)/i);
+      if (kv) target[kv[1]] = kv[2].trim();
+    }
+  }
+  return out;
+}
+
 function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
   const block = (sel, vars) => {
     const lines = Object.entries(vars)
@@ -234,7 +253,17 @@ createServer((req, res) => {
     req.on('data', c => { body += c; if (body.length > 60000) req.destroy(); });
     req.on('end', () => {
       try {
-        const css = buildCalibrationCss(JSON.parse(body || '{}'));
+        const incoming = JSON.parse(body || '{}');
+        const existing = readCalibrationCss();
+        // incoming wins per key, but anything it does not mention survives
+        const merged = {
+          root: { ...existing.root, ...(incoming.root ?? {}) },
+          boxes: { ...existing.boxes },
+        };
+        for (const [i, vars] of Object.entries(incoming.boxes ?? {})) {
+          merged.boxes[i] = { ...(existing.boxes[i] ?? {}), ...vars };
+        }
+        const css = buildCalibrationCss(merged);
         writeSync(CAL_FILE, css, 'utf8');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, bytes: css.length }));
