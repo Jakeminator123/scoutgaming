@@ -43,10 +43,9 @@ const GROUPS = [
     ['--cards-rot-k', 'follow arc', 0, 1.5, 0.05, ''],
   ]],
   ['Side-bet chips', [
-    ['--ppchip-x', 'PP x', -20, 110, 1, 'px'],
-    ['--ppchip-y', 'PP y', -20, 110, 1, 'px'],
-    ['--tpchip-x', '21+3 x', -20, 130, 1, 'px'],
-    ['--tpchip-y', '21+3 y', -20, 110, 1, 'px'],
+    ['--side-chip-r', 'distance out', 20, 80, 0.5, ''],
+    ['--sidechip-dx', 'nudge x', -30, 30, 1, 'px'],
+    ['--sidechip-dy', 'nudge y', -30, 30, 1, 'px'],
   ]],
   ['Dealer window', [
     ['--dealer-h', 'size', 30, 120, 0.5, 'vh'],
@@ -61,7 +60,7 @@ const PER_BOX = new Set([
   '--arc-x', '--arc-y', '--arc-w', '--arc-h', '--arc-rot',
   '--pp-rot', '--tp-rot',
   '--cards-x', '--cards-y', '--cards-flat', '--cards-rot-k',
-  '--ppchip-x', '--ppchip-y', '--tpchip-x', '--tpchip-y',
+  '--side-chip-r', '--sidechip-dx', '--sidechip-dy',
 ]);
 
 const read = name => getComputedStyle(ROOT).getPropertyValue(name).trim();
@@ -336,8 +335,7 @@ const HANDLES = [
   { sel: '.sidearcs', label: 'crescents', move: ['--arc-x', '--arc-y'] },
   { sel: '.spot', label: 'betting spot', move: ['--spot-x', '--spot-y'] },
   { sel: '.seat .cards', label: 'cards', move: ['--cards-x', '--cards-y'] },
-  { sel: '.pp-chip', label: 'PP chip', move: ['--ppchip-x', '--ppchip-y'] },
-  { sel: '.tp-chip', label: '21+3 chip', move: ['--tpchip-x', '--tpchip-y'] },
+  { sel: '.side-chip', label: 'side chips', move: ['--sidechip-dx', '--sidechip-dy'] },
 ];
 const handleFor = el => {
   for (const h of HANDLES) { const hit = el.closest?.(h.sel); if (hit) return { ...h, el: hit }; }
@@ -361,6 +359,7 @@ function onMove(e) {
     e.preventDefault();
     const a = Math.atan2(e.clientY - rot.cy, e.clientX - rot.cx);
     let deg = rot.r0 + (a - rot.a0) * 180 / Math.PI;
+    deg = ((deg + 180) % 360 + 360) % 360 - 180;            // keep it in (-180, 180]
     if (e.shiftKey) deg = Math.round(deg / 5) * 5;          // shift snaps to 5 degrees
     const v = setSeatVar(selSeat, '--arc-rot', deg, 'deg');
     say(`box ${seatIdx(selSeat) + 1}  rotation ${v}\u00b0`);
