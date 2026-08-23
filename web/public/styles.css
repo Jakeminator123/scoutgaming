@@ -94,8 +94,8 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .spot svg { opacity: .8; }
 /* side bets: crescent ring-sectors wrapped around the spot */
 .sidearcs {
-  position: absolute; left: 60px; top: 59px; width: 144px; height: 112px;
-  transform: translate(-50%, -50%) rotate(var(--tang, 0deg)); overflow: visible;
+  position: absolute; left: 60px; top: 59px; width: 128px; height: 100px;
+  transform: translate(-50%, -50%) rotate(calc(var(--tang, 0deg) * 0.5)); overflow: visible;
 }
 .sidearcs .side {
   fill: rgba(30, 110, 96, .30); stroke: rgba(210, 240, 230, .4); stroke-width: 1.2;
@@ -104,12 +104,12 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .sidearcs .side:hover { fill: rgba(52, 150, 132, .45); }
 .sidearcs .side.staked { fill: rgba(30, 110, 96, .12); stroke: rgba(210, 240, 230, .18); }
 .sidearcs .side-label {
-  fill: rgba(215, 245, 238, .8); font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  fill: rgba(215, 245, 238, .8); font-size: 10px; font-weight: 700; letter-spacing: .06em;
   pointer-events: none;
 }
 .side-chip { position: absolute; pointer-events: none; z-index: 4; }
-.side-chip.pp-chip { left: 6px; top: 42px; }
-.side-chip.tp-chip { left: 84px; top: 42px; }
+.side-chip.pp-chip { left: 12px; top: 44px; }
+.side-chip.tp-chip { left: 78px; top: 44px; }
 .side-chip .chipimg, .side-chip .chip3d { width: 34px; }
 
 /* ---------- chips: photoreal asset with per-denomination tint ---------- */

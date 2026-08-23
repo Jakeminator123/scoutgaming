@@ -136,13 +136,13 @@ for (let i = 0; i < SEATS; i++) {
   el.innerHTML = `<div class="seat-inner">
     <div class="cards"></div>
     <button class="clear-box" hidden>×</button>
-    <svg class="sidearcs" viewBox="-72 -56 144 112" aria-hidden="false">
+    <svg class="sidearcs" viewBox="-64 -50 128 100" aria-hidden="false">
       <g transform="scale(1 0.74)">
-        <path class="side pp" d="M -41.6 -24 A 48 48 0 0 0 -41.6 24 L -57.2 33 A 66 66 0 0 1 -57.2 -33 Z"><title>Perfect Pairs — needs a main bet</title></path>
-        <path class="side tp" d="M 41.6 -24 A 48 48 0 0 1 41.6 24 L 57.2 33 A 66 66 0 0 0 57.2 -33 Z"><title>21+3 — needs a main bet</title></path>
+        <path class="side pp" d="M -26.9 -26.9 A 38 38 0 0 0 -26.9 26.9 L -36.8 36.8 A 52 52 0 0 1 -36.8 -36.8 Z"><title>Perfect Pairs — needs a main bet</title></path>
+        <path class="side tp" d="M 26.9 -26.9 A 38 38 0 0 1 26.9 26.9 L 36.8 36.8 A 52 52 0 0 0 36.8 -36.8 Z"><title>21+3 — needs a main bet</title></path>
       </g>
-      <text class="side-label" x="-49" y="4" text-anchor="middle" transform="rotate(-90 -49 0)">PP</text>
-      <text class="side-label" x="49" y="4" text-anchor="middle" transform="rotate(90 49 0)">21+3</text>
+      <text class="side-label" x="-44" y="3" text-anchor="middle" transform="rotate(-75 -44 0)">PP</text>
+      <text class="side-label" x="44" y="3" text-anchor="middle" transform="rotate(75 44 0)">21+3</text>
     </svg>
     <div class="spot">+</div>
     <div class="side-chip pp-chip" hidden></div>
