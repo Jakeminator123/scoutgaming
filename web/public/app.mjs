@@ -112,14 +112,21 @@ setInterval(() => {
 const sfx = {
   files: {},
   load() {
-    for (const n of ['ambience', 'win', 'bigwin', 'deal', 'chip', 'knock']) {
+    for (const n of ['ambience', 'win', 'bigwin']) {
       const el = new Audio(`sfx/${n}.mp3`); el.preload = 'auto'; this.files[n] = el;
     }
     this.files.ambience.loop = true; this.files.ambience.volume = 0.16;
     this.files.win.volume = 0.5; this.files.bigwin.volume = 0.6;
-    this.files.deal.volume = 0.85; this.files.chip.volume = 0.9; this.files.knock.volume = 0.8;
   },
-  play(n) { if (voice.muted) return; const el = this.files[n]; if (!el) return; el.currentTime = 0; el.play().catch(() => {}); },
+  // chip/deal/knock are synthesized: generated foley assets were noise-washes
+  // that read as "background noise gets louder", and synthesis has zero latency
+  play(n) {
+    if (voice.muted) return;
+    if (n === 'chip') return synthChip();
+    if (n === 'deal') return synthDeal();
+    if (n === 'knock') return synthKnock();
+    const el = this.files[n]; if (!el) return; el.currentTime = 0; el.play().catch(() => {});
+  },
   startAmbience() { if (!voice.muted) this.files.ambience?.play().catch(() => {}); },
   stopAmbience() { this.files.ambience?.pause(); },
 };
@@ -140,6 +147,53 @@ function hoverTick() {
 document.addEventListener('mouseover', e => {
   if (e.target.closest?.('button, .chip, .spot, .side')) hoverTick();
 });
+
+// tabletop foley, synthesized so every hit is instant and dry
+function noiseBurst(t, { dur, gain, type, freq, q = 1.5, decay = 2 }) {
+  const len = Math.max(8, Math.floor(actx.sampleRate * dur));
+  const buf = actx.createBuffer(1, len, actx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  const src = actx.createBufferSource(); src.buffer = buf;
+  const f = actx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+  const g = actx.createGain(); g.gain.value = gain;
+  src.connect(f).connect(g).connect(actx.destination); src.start(t);
+}
+function synthChip() {
+  // ceramic chip landing on a stack: bright click + softer settle click
+  try {
+    actx = actx ?? new AudioContext();
+    const t0 = actx.currentTime;
+    const f = 3600 + Math.random() * 1400;
+    noiseBurst(t0, { dur: 0.045, gain: 0.75, type: 'bandpass', freq: f, q: 2.5, decay: 2.6 });
+    noiseBurst(t0 + 0.04 + Math.random() * 0.025, { dur: 0.035, gain: 0.35, type: 'bandpass', freq: f * 0.85, q: 2.5, decay: 2.6 });
+  } catch { /* ignore */ }
+}
+function synthDeal() {
+  // card snapped onto felt: short high snap + faint slide
+  try {
+    actx = actx ?? new AudioContext();
+    const t0 = actx.currentTime;
+    noiseBurst(t0, { dur: 0.03, gain: 0.5, type: 'highpass', freq: 2600, q: 0.8, decay: 1.6 });
+    noiseBurst(t0 + 0.012, { dur: 0.07, gain: 0.16, type: 'bandpass', freq: 1400, q: 0.9, decay: 3 });
+  } catch { /* ignore */ }
+}
+function synthKnock() {
+  // dealer's double knock on the padded table: two damped low thumps
+  try {
+    actx = actx ?? new AudioContext();
+    const thump = t => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(185, t); o.frequency.exponentialRampToValueAtTime(72, t + 0.09);
+      g.gain.setValueAtTime(0.85, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.14);
+      noiseBurst(t, { dur: 0.02, gain: 0.4, type: 'lowpass', freq: 1100, q: 0.8, decay: 1.8 });
+    };
+    const t0 = actx.currentTime;
+    thump(t0); thump(t0 + 0.17);
+  } catch { /* ignore */ }
+}
 
 // win toasts: stacked notifications so wins and their amounts are unmissable
 function toast(title, amount, big = false) {
