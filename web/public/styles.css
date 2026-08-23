@@ -84,7 +84,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .seat { position: absolute; width: 0; height: 0; }
 .seat-inner { position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; }
 .spot {
-  position: absolute; left: 28px; top: 36px; width: 64px; height: 46px; border-radius: 50%;
+  position: absolute; left: 33px; top: 39px; width: 54px; height: 40px; border-radius: 50%;
   background: radial-gradient(ellipse, rgba(52,150,132,.30), rgba(30,110,96,.34));
   border: 1.5px solid rgba(190,235,225,.45); color: rgba(215,245,238,.85);
   display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -94,8 +94,8 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .spot svg { opacity: .8; }
 /* side bets: crescent ring-sectors wrapped around the spot */
 .sidearcs {
-  position: absolute; left: 60px; top: 59px; width: 128px; height: 100px;
-  transform: translate(-50%, -50%) rotate(calc(var(--tang, 0deg) * -0.6)); overflow: visible;
+  position: absolute; left: 60px; top: 59px; width: 106px; height: 83px;
+  transform: translate(-50%, -50%) rotate(calc(var(--tang, 0deg) * -1.05)); overflow: visible;
 }
 .sidearcs .side {
   fill: rgba(30, 110, 96, .30); stroke: rgba(210, 240, 230, .4); stroke-width: 1.2;
@@ -104,12 +104,12 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .sidearcs .side:hover { fill: rgba(52, 150, 132, .45); }
 .sidearcs .side.staked { fill: rgba(30, 110, 96, .12); stroke: rgba(210, 240, 230, .18); }
 .sidearcs .side-label {
-  fill: rgba(215, 245, 238, .8); font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  fill: rgba(215, 245, 238, .8); font-size: 11px; font-weight: 700; letter-spacing: .06em;
   pointer-events: none;
 }
 .side-chip { position: absolute; pointer-events: none; z-index: 4; }
-.side-chip.pp-chip { left: 12px; top: 44px; }
-.side-chip.tp-chip { left: 78px; top: 44px; }
+.side-chip.pp-chip { left: 18px; top: 45px; }
+.side-chip.tp-chip { left: 72px; top: 45px; }
 .side-chip .chipimg, .side-chip .chip3d { width: 34px; }
 
 /* ---------- chips: photoreal asset with per-denomination tint ---------- */
@@ -182,9 +182,9 @@ body.in-round .stake { display: none; }
 .card.back { background: repeating-linear-gradient(45deg, #274a8f 0 6px, #1d3a73 6px 12px); }
 
 /* ---------- shoe + discard tray: photoreal assets ---------- */
-#shoe2d { position: absolute; right: 10.5%; top: 11%; width: 136px; pointer-events: none; transform: rotate(-8deg); }
+#shoe2d { position: absolute; right: 5%; top: 1.5%; width: 116px; pointer-events: none; transform: rotate(-8deg); }
 #shoe2d img { width: 100%; filter: drop-shadow(0 10px 16px rgba(0,0,0,.35)); }
-#discard { position: absolute; left: 14%; top: 10%; width: 82px; pointer-events: none; transform: rotate(6deg); }
+#discard { position: absolute; left: 9%; top: 1.5%; width: 70px; pointer-events: none; transform: rotate(6deg); }
 #discard img { width: 100%; filter: drop-shadow(0 10px 14px rgba(0,0,0,.3)); }
 
 /* ---------- action bars ---------- */
