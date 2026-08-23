@@ -17,7 +17,7 @@
   --arc-x: 60px; --arc-y: 59px; --arc-w: 106px; --arc-h: 83px; --arc-rot: 0deg;
   --pp-rot: -90deg; --tp-rot: 90deg; --label-size: 10px; --tp-size: 8.5px;
   --cards-x: -2px; --cards-y: -40px; --cards-flat: .62; --cards-rot-k: .5;
-  --ppchip-x: 18px; --ppchip-y: 45px; --tpchip-x: 72px; --tpchip-y: 45px;
+  --side-chip-r: 45; --sidechip-dx: 0px; --sidechip-dy: 0px;
   /* seat arc on the felt, read by layoutSeats() */
   --arc-cx: .5; --arc-cy: .13; --arc-rx: .365; --arc-ry: .445; --arc-span: 110;
 }
@@ -156,9 +156,23 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   fill: rgba(214, 255, 58, .65); font-size: var(--label-size, 10px); font-weight: 700;
   letter-spacing: .02em; font-family: 'JetBrains Mono', monospace; pointer-events: none;
 }
-.side-chip { position: absolute; pointer-events: none; z-index: 4; }
-.side-chip.pp-chip { left: var(--ppchip-x); top: var(--ppchip-y); }
-.side-chip.tp-chip { left: var(--tpchip-x); top: var(--tpchip-y); }
+/* Side-bet chips sit in the middle of their own crescent and orbit with it.
+   They were pinned to fixed x/y, so rotating a box left them behind.
+   The chain below walks to the band centre through the same squash-then-rotate
+   the arcs use, then undoes both so the chip itself stays upright and round:
+   the translation lands on the band, the linear parts cancel to identity. */
+.side-chip {
+  position: absolute; pointer-events: none; z-index: 4;
+  left: var(--arc-x); top: var(--arc-y);
+  --band-r: calc(var(--arc-w) * var(--side-chip-r, 45) / 128);   /* 45 = mid-band in viewBox units */
+  transform:
+    translate(-50%, -50%)
+    scaleY(.74) rotate(var(--arc-rot)) translateX(var(--side-dir))
+    rotate(calc(-1 * var(--arc-rot))) scaleY(1.3514)
+    translate(var(--sidechip-dx, 0px), var(--sidechip-dy, 0px));
+}
+.side-chip.pp-chip { --side-dir: calc(-1 * var(--band-r)); }
+.side-chip.tp-chip { --side-dir: var(--band-r); }
 .side-chip .chipimg, .side-chip .chip3d { width: 34px; }
 
 /* ---------- chips: photoreal asset with per-denomination tint ---------- */

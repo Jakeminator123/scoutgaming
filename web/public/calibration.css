@@ -10,10 +10,16 @@
   --arc-rot: 37.24deg;
 }
 .seat[data-box="1"] {
-  --arc-rot: 249.42deg;
+  --arc-rot: 206.82deg;
+}
+.seat[data-box="2"] {
+  --arc-rot: 15.05deg;
 }
 .seat[data-box="3"] {
-  --arc-rot: -0.19deg;
+  --arc-rot: 2.84deg;
+}
+.seat[data-box="4"] {
+  --arc-rot: -12.04deg;
 }
 .seat[data-box="5"] {
   --arc-rot: -33.29deg;
