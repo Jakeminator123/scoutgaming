@@ -780,3 +780,35 @@ body.in-round #table-pick { opacity: .3; pointer-events: none; }
   #settlement { left: 50%; transform: translateX(-50%) translateY(8px); bottom: 30vh; min-width: min(88vw, 300px); }
   #settlement.show { transform: translateX(-50%) translateY(0); }
 }
+
+/* calibration mode: the pieces on the felt become grabbable */
+body.cal-on .sidearcs, body.cal-on .spot, body.cal-on .seat .cards,
+body.cal-on .side-chip { cursor: grab; }
+body.cal-on .sidearcs:hover .side { stroke: #D6FF3A; stroke-width: 2; fill: rgba(214,255,58,.18); }
+body.cal-on .spot:hover { outline: 2px dashed rgba(214,255,58,.85); outline-offset: 3px; }
+body.cal-on .seat .cards:hover { outline: 2px dashed rgba(214,255,58,.6); }
+body.cal-dragging, body.cal-dragging * { cursor: grabbing !important; user-select: none; }
+#cal-readout {
+  position: fixed; left: 50%; top: 74px; transform: translateX(-50%);
+  z-index: 210; pointer-events: none; padding: 7px 14px; border-radius: 999px;
+  background: rgba(10,11,13,.94); border: 1px solid rgba(214,255,58,.45); color: #D6FF3A;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  opacity: 0; transition: opacity .15s;
+}
+#cal-readout.show { opacity: 1; }
+
+/* per-box calibration: selection + the rotate handle */
+body.cal-on .seat { cursor: pointer; }
+body.cal-on .seat.cal-sel .sidearcs .side { stroke: #D6FF3A; stroke-width: 2.2; fill: rgba(214,255,58,.16); }
+body.cal-on .seat.cal-sel .spot { outline: 2px dashed rgba(214,255,58,.8); outline-offset: 3px; }
+.cal-handle {
+  position: absolute; left: -7px; top: -78px; width: 15px; height: 15px; border-radius: 50%;
+  background: #D6FF3A; border: 2px solid #0A0B0D; cursor: grab; z-index: 60;
+  box-shadow: 0 0 0 3px rgba(214,255,58,.28), 0 3px 10px rgba(0,0,0,.55);
+}
+.cal-handle::before {
+  content: ''; position: absolute; left: 50%; top: 13px; width: 1.5px; height: 26px;
+  background: linear-gradient(rgba(214,255,58,.9), rgba(214,255,58,0)); transform: translateX(-50%);
+}
+body.cal-dragging .cal-handle { cursor: grabbing; }
+#calibrator .cal-all { background: rgba(214,255,58,.12); border-color: rgba(214,255,58,.5); color: #D6FF3A; }

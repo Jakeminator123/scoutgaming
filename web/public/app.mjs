@@ -1171,7 +1171,7 @@ document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick = () => s
 buildChips();
 $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
 // calibration overlay: applies any saved tweaks, then lies dormant until `C`
-import('./calibrate.mjs').then(m => { if (m.applySaved()) layoutSeats(); }).catch(() => {});
+import('./calibrate.mjs').then(m => { m.applySavedSeats?.(); if (m.applySaved()) layoutSeats(); }).catch(() => {});
 
 renderBets();
 setBanner('PLEASE PLACE BETS');
