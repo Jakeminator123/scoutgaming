@@ -101,7 +101,10 @@ const voice = {
 voice.load();
 const soundBtn = $('#sound-btn');
 const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); soundBtn.textContent = voice.muted ? '🔇' : '🔊'; };
-soundBtn.onclick = () => { voice.muted = !voice.muted; localStorage.setItem('croupier-muted', voice.muted ? '1' : '0'); renderSound(); };
+soundBtn.onclick = () => {
+  voice.muted = !voice.muted; localStorage.setItem('croupier-muted', voice.muted ? '1' : '0'); renderSound();
+  if (voice.muted) sfx.stopAmbience(); else sfx.startAmbience();
+};
 renderSound();
 // idle chatter — she talks on her own now and then
 setInterval(() => {
@@ -112,20 +115,18 @@ setInterval(() => {
 const sfx = {
   files: {},
   load() {
-    for (const n of ['ambience', 'win', 'bigwin']) {
-      const el = new Audio(`sfx/${n}.mp3`); el.preload = 'auto'; this.files[n] = el;
-    }
-    this.files.ambience.loop = true; this.files.ambience.volume = 0.16;
-    this.files.win.volume = 0.5; this.files.bigwin.volume = 0.6;
+    const el = new Audio('sfx/ambience.mp3'); el.preload = 'auto';
+    el.loop = true; el.volume = 0.16; this.files.ambience = el;
   },
-  // chip/deal/knock are synthesized: generated foley assets were noise-washes
-  // that read as "background noise gets louder", and synthesis has zero latency
+  // everything except the ambience loop is synthesized: generated foley assets
+  // were noise-washes (or, boosted, pure hiss), and synthesis has zero latency
   play(n) {
     if (voice.muted) return;
     if (n === 'chip') return synthChip();
     if (n === 'deal') return synthDeal();
     if (n === 'knock') return synthKnock();
-    const el = this.files[n]; if (!el) return; el.currentTime = 0; el.play().catch(() => {});
+    if (n === 'win') return synthWin();
+    if (n === 'bigwin') return synthBigWin();
   },
   startAmbience() { if (!voice.muted) this.files.ambience?.play().catch(() => {}); },
   stopAmbience() { this.files.ambience?.pause(); },
@@ -179,19 +180,53 @@ function synthDeal() {
   } catch { /* ignore */ }
 }
 function synthKnock() {
-  // dealer's double knock on the padded table: two damped low thumps
+  // knuckles on the table edge. No pitch sweep and no long tail (that reads as
+  // a kick drum): a hard lowpassed contact click plus inharmonic wood modes
+  // with <60ms decay, second knock slightly softer and earlier-damped.
   try {
     actx = actx ?? new AudioContext();
-    const thump = t => {
-      const o = actx.createOscillator(), g = actx.createGain();
-      o.type = 'sine';
-      o.frequency.setValueAtTime(185, t); o.frequency.exponentialRampToValueAtTime(72, t + 0.09);
-      g.gain.setValueAtTime(0.85, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
-      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.14);
-      noiseBurst(t, { dur: 0.02, gain: 0.4, type: 'lowpass', freq: 1100, q: 0.8, decay: 1.8 });
+    const knock = (t, vel) => {
+      noiseBurst(t, { dur: 0.011, gain: 0.55 * vel, type: 'lowpass', freq: 800, q: 0.7, decay: 1.1 });
+      for (const [freq, gain, dec] of [[97, 0.34, 0.06], [176, 0.24, 0.05], [287, 0.13, 0.04], [520, 0.06, 0.03]]) {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sine'; o.frequency.value = freq * (0.97 + Math.random() * 0.06);
+        g.gain.setValueAtTime(gain * vel, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dec);
+        o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dec + 0.01);
+      }
     };
     const t0 = actx.currentTime;
-    thump(t0); thump(t0 + 0.17);
+    knock(t0, 1);
+    knock(t0 + 0.125 + Math.random() * 0.03, 0.8);
+  } catch { /* ignore */ }
+}
+function chime(t, freq, dur, gain) {
+  // soft bell: fundamental + quiet detuned octave partial, exponential decay
+  const o = actx.createOscillator(), o2 = actx.createOscillator();
+  const g = actx.createGain(), g2 = actx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  o2.type = 'sine'; o2.frequency.value = freq * 2.01; g2.gain.value = 0.16;
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); o2.connect(g2).connect(g); g.connect(actx.destination);
+  o.start(t); o.stop(t + dur); o2.start(t); o2.stop(t + dur);
+}
+function synthWin() {
+  // two-note payout chime
+  try {
+    actx = actx ?? new AudioContext();
+    const t0 = actx.currentTime;
+    chime(t0, 880, 0.5, 0.28);
+    chime(t0 + 0.1, 1174.7, 0.7, 0.28);
+  } catch { /* ignore */ }
+}
+function synthBigWin() {
+  // ascending E-major arpeggio with a sparkle on top
+  try {
+    actx = actx ?? new AudioContext();
+    const t0 = actx.currentTime;
+    [659.3, 830.6, 987.8, 1318.5].forEach((f, i) => chime(t0 + i * 0.1, f, 0.8, 0.3));
+    chime(t0 + 0.52, 1661.2, 1.2, 0.2);
   } catch { /* ignore */ }
 }
 
@@ -413,6 +448,33 @@ function renderBets() {
   $('#undo-btn').disabled = !undoStack.length || !!round || busy;
   $('#double-btn').disabled = !betTotal() || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max) || !!round || busy;
 }
+
+// ---------- demo cashier ----------
+let depositAmt = 500;
+$('#add-funds').onclick = () => { $('#cashier').hidden = false; };
+$('#cashier-close').onclick = () => { $('#cashier').hidden = true; };
+$('#cashier').onclick = e => { if (e.target.id === 'cashier') $('#cashier').hidden = true; };
+document.querySelectorAll('#cashier .amt').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#cashier .amt').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel');
+    depositAmt = Number(b.dataset.amt);
+    $('#cashier-pay').textContent = `ADD ${fmt(depositAmt)}`;
+  };
+});
+$('#cc-num').addEventListener('input', e => {
+  e.target.classList.remove('bad');
+  const d = e.target.value.replace(/\D/g, '').slice(0, 16);
+  e.target.value = d.replace(/(.{4})/g, '$1 ').trim();
+});
+$('#cashier-pay').onclick = () => {
+  if ($('#cc-num').value.replace(/\D/g, '').length < 12) { $('#cc-num').classList.add('bad'); return; }
+  balance += depositAmt; ledger('deposit', depositAmt);
+  $('#cashier').hidden = true;
+  sfx.play('chip');
+  toast('FUNDS ADDED', depositAmt, depositAmt >= 5000);
+  renderBets();
+};
 
 // ---------- card rendering ----------
 function cardEl(card, faceDown = false) {

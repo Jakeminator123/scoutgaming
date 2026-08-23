@@ -70,12 +70,37 @@
       <div id="wallet">
         <div><label>BALANCE</label><span id="balance">$1,000.00</span></div>
         <div><label>TOTAL BET</label><span id="total-bet">$0.00</span></div>
+        <button id="add-funds">+ ADD FUNDS</button>
       </div>
       <div id="deal-controls">
         <button id="clear-btn" disabled>CLEAR</button>
       </div>
       <button id="autobet" disabled title="Autobet is opt-in only and not in this demo">⟳ AUTOBET</button>
     </footer>
+
+    <div id="cashier" hidden>
+      <div id="cashier-panel">
+        <div class="cashier-head">
+          <span class="cashier-title">CASHIER</span>
+          <span class="demo-tag">DEMO &middot; TEST CARD &middot; NO REAL MONEY</span>
+          <button id="cashier-close" aria-label="close">&times;</button>
+        </div>
+        <div class="cashier-amounts">
+          <button class="amt" data-amt="100">$100</button>
+          <button class="amt sel" data-amt="500">$500</button>
+          <button class="amt" data-amt="1000">$1,000</button>
+          <button class="amt" data-amt="5000">$5,000</button>
+        </div>
+        <label class="fld">CARD NUMBER<input id="cc-num" value="4111 1111 1111 1111" inputmode="numeric" autocomplete="off" spellcheck="false"></label>
+        <div class="fld-row">
+          <label class="fld">EXPIRY<input id="cc-exp" value="12/29" autocomplete="off" spellcheck="false"></label>
+          <label class="fld">CVC<input id="cc-cvc" value="000" inputmode="numeric" autocomplete="off" spellcheck="false"></label>
+          <label class="fld grow">NAME ON CARD<input id="cc-name" value="KEVIN NEGASH" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <button id="cashier-pay">ADD $500.00</button>
+        <p class="fine">Demo cashier for the Croupier prototype &mdash; the pre-filled card is a public test number. Never enter real card details here.</p>
+      </div>
+    </div>
 
     <div id="engine-hud"></div>
     <div id="gate">

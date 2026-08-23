@@ -377,3 +377,68 @@ body.debug #engine-hud { display: block; }
 .toast.out { animation: toast-out .5s ease both; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(-14px) scale(.92); } to { opacity: 1; transform: none; } }
 @keyframes toast-out { to { opacity: 0; transform: translateY(-8px); } }
+
+/* demo cashier */
+#add-funds {
+  align-self: center; pointer-events: auto;
+  margin-left: 14px; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  background: none; border: 1px solid rgba(214,255,58,.45); color: #D6FF3A;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: .12em;
+  transition: background .15s, color .15s;
+}
+#add-funds:hover { background: #D6FF3A; color: #0A0B0D; }
+#cashier {
+  position: fixed; inset: 0; z-index: 90; pointer-events: auto;
+  background: rgba(10,11,13,.62); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+}
+#cashier[hidden] { display: none; }
+#cashier-panel {
+  width: 420px; max-width: calc(100vw - 40px);
+  background: rgba(10,11,13,.96); border: 1px solid rgba(214,255,58,.30); border-radius: 16px;
+  padding: 22px 24px 18px; box-shadow: 0 24px 70px rgba(0,0,0,.6), 0 0 40px rgba(214,255,58,.12);
+}
+.cashier-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.cashier-title {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px;
+  letter-spacing: .14em; color: #F2F1ED;
+}
+.demo-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .08em;
+  color: #FFB020; border: 1px solid rgba(255,176,32,.5); border-radius: 999px; padding: 3px 9px;
+}
+#cashier-close {
+  margin-left: auto; background: none; border: none; color: #5A6470;
+  font-size: 22px; cursor: pointer; line-height: 1;
+}
+#cashier-close:hover { color: #F2F1ED; }
+.cashier-amounts { display: flex; gap: 8px; margin-bottom: 16px; }
+.cashier-amounts .amt {
+  flex: 1; padding: 10px 0; border-radius: 10px; cursor: pointer;
+  background: rgba(242,241,237,.05); border: 1px solid rgba(242,241,237,.14); color: #F2F1ED;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px;
+}
+.cashier-amounts .amt.sel { background: rgba(214,255,58,.12); border-color: #D6FF3A; color: #D6FF3A; }
+#cashier .fld {
+  display: block; margin-bottom: 12px;
+  font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 600;
+  letter-spacing: .16em; color: #5A6470;
+}
+#cashier .fld input {
+  display: block; width: 100%; margin-top: 5px; padding: 10px 12px; border-radius: 10px;
+  background: rgba(242,241,237,.05); border: 1px solid rgba(242,241,237,.14); color: #F2F1ED;
+  font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: .06em; outline: none;
+}
+#cashier .fld input:focus { border-color: rgba(214,255,58,.6); }
+#cashier .fld input.bad { border-color: #E5484D; }
+.fld-row { display: flex; gap: 10px; }
+.fld-row .fld { flex: 0 0 84px; }
+.fld-row .fld.grow { flex: 1; }
+#cashier-pay {
+  width: 100%; padding: 13px 0; margin-top: 4px; border: none; border-radius: 12px; cursor: pointer;
+  background: #D6FF3A; color: #0A0B0D;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .12em;
+  box-shadow: 0 4px 18px rgba(214,255,58,.35);
+}
+#cashier-pay:hover { background: #e6ff70; }
+#cashier .fine { margin: 12px 0 0; font-size: 11px; line-height: 1.5; color: #5A6470; }
