@@ -1132,16 +1132,25 @@ function sayLine(id) {
       // cutting the video after left her mouth trailing the words by however
       // long the clip took to fetch and decode.
       await engine.fetchClip(clip).catch(() => {});
-      const decodedBefore = engine.stats?.decoded ?? 0;
       speaking = true;
       heldSpeakClip = clip;
+      // Wait for the clip's first frame to be PAINTED, not merely decoded. The
+      // engine buffers up to 24 frames between decode and paint, so keying off
+      // decode started her voice as much as a second before her mouth appeared.
+      const painted = new Promise(resolve => {
+        const t0 = performance.now();
+        const prev = engine.onPresentClip;
+        const done = () => { engine.onPresentClip = prev; resolve(); };
+        engine.onPresentClip = k => { prev?.(k); if (k === clip) done(); };
+        const poll = () => {
+          if (engine.presentedClip === clip) return done();
+          if (performance.now() - t0 > 3000) return done();   // never hang the voice
+          requestAnimationFrame(poll);
+        };
+        requestAnimationFrame(poll);
+      });
       engine.interrupt(clip);
-      // wait until the cut has actually landed on screen, then speak
-      const t0 = performance.now();
-      while (performance.now() - t0 < 2000) {
-        if (engine.currentClip === clip && (engine.stats?.decoded ?? 0) > decodedBefore + 1) break;
-        await new Promise(r => requestAnimationFrame(r));
-      }
+      await painted;
       const lead = Number(getComputedStyle(document.documentElement).getPropertyValue('--lipsync-offset')) || 0;
       if (lead > 0) await new Promise(r => setTimeout(r, lead));
       startAudio();
