@@ -18,7 +18,7 @@
   --arc-x: 60px; --arc-y: 59px; --arc-w: 106px; --arc-h: 83px; --arc-rot: 0deg;
   --pp-rot: 0deg; --tp-rot: 0deg; --label-size: 10px; --tp-size: 8.5px;
   --cards-x: -2px; --cards-y: -40px; --cards-flat: .62; --cards-rot-k: .5;
-  --hand-rot: 0deg;
+  --hand-rot: 0deg; --cards-skew-k: .4;
   --card-w: 46px; --card-dx: 19px; --card-dy: -4px; --card-rot: 6deg; --card-rot0: -4deg; --card-x0: -32px;
   /* per-slot nudges: extra turn/offset for the 1st..4th card of a hand alone */
   --card-rot-0: 0deg; --card-dx-0: 0px; --card-dy-0: 0px;
@@ -226,7 +226,9 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .side .chipimg b { font-size: 9px; }
 
 /* seat hand: neat cascade above-left of the chip */
-.seat .cards { position: absolute; left: var(--cards-x); top: var(--cards-y); width: 0; height: 0; transform: rotate(calc(var(--tang, 0deg) * var(--cards-rot-k) + var(--hand-rot, 0deg))) scaleY(var(--cards-flat)); transform-origin: 62px 103px; }
+.seat .cards { position: absolute; left: var(--cards-x); top: var(--cards-y); width: 0; height: 0; transform: rotate(calc(var(--tang, 0deg) * var(--cards-rot-k) + var(--hand-rot, 0deg)))
+             skewX(calc(var(--tang, 0deg) * var(--cards-skew-k, 0)))
+             scaleY(var(--cards-flat)); transform-origin: 62px 103px; }
 .seat-inner > .hand-total {
   /* parented outside .cards on purpose: it holds still while the hand is posed */
   position: absolute; left: calc(42px + var(--badge-x, 0px)); top: calc(104px + var(--badge-y, 0px));

@@ -41,6 +41,7 @@ const GROUPS = [
     ['--cards-x', 'hand x', -70, 70, 1, 'px'],
     ['--cards-y', 'hand y', -110, 40, 1, 'px'],
     ['--cards-flat', 'lay flat', 0.25, 1, 0.01, ''],
+    ['--cards-skew-k', 'lie into table', -1, 1, 0.01, ''],
     ['--cards-rot-k', 'follow arc', 0, 1.5, 0.05, ''],
   ]],
   ['Each card', [
@@ -100,7 +101,7 @@ const PER_BOX = new Set([
   '--spot-x', '--spot-y', '--spot-w', '--spot-h',
   '--arc-x', '--arc-y', '--arc-w', '--arc-h', '--arc-rot',
   '--pp-rot', '--tp-rot',
-  '--hand-rot', '--cards-x', '--cards-y', '--cards-flat', '--cards-rot-k',
+  '--hand-rot', '--cards-x', '--cards-y', '--cards-flat', '--cards-rot-k', '--cards-skew-k',
   '--card-w', '--card-x0', '--card-dx', '--card-dy', '--card-rot0', '--card-rot',
   '--card-rot-0', '--card-dx-0', '--card-dy-0',
   '--card-rot-1', '--card-dx-1', '--card-dy-1',
