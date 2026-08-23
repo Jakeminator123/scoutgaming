@@ -131,6 +131,7 @@ function build() {
     body.appendChild(sec);
   }
 
+  buildPerBox(body);
   panel.querySelector('.cal-x').onclick = toggle;
   panel.querySelector('.cal-all').onclick = applyToAll;
   panel.querySelector('.cal-scope-all').onclick = () => selectSeat(null);
@@ -151,6 +152,35 @@ function build() {
   };
   document.body.appendChild(panel);
   refreshScope();
+}
+
+// One rotation slider per box. Selecting a box on the felt is nice, but it can
+// be fiddly, so each box also gets its own row that can only ever affect it.
+function buildPerBox(body) {
+  const sec = document.createElement('section');
+  sec.innerHTML = '<h4>Rotation, one box at a time</h4>';
+  document.querySelectorAll('.seat').forEach(seat => {
+    const i = seatIdx(seat);
+    const cur = seatVal(seat, '--arc-rot');
+    const row = document.createElement('label');
+    row.className = 'cal-row';
+    row.innerHTML = `
+      <span class="cal-label">box ${i + 1}</span>
+      <input type="range" min="-90" max="90" step="0.5" value="${cur}">
+      <input type="number" min="-90" max="90" step="0.5" value="${cur}">
+      <span class="cal-unit">deg</span>`;
+    const [range, number] = row.querySelectorAll('input');
+    const set = v => {
+      setSeatVar(seat, '--arc-rot', parseFloat(v), 'deg');
+      range.value = v; number.value = v;
+    };
+    range.oninput = e => set(e.target.value);
+    number.oninput = e => set(e.target.value);
+    row.onpointerenter = () => seat.classList.add('cal-hint');
+    row.onpointerleave = () => seat.classList.remove('cal-hint');
+    sec.appendChild(row);
+  });
+  body.appendChild(sec);
 }
 
 // ---- direct manipulation, per box ----------------------------------------
@@ -324,8 +354,9 @@ addEventListener('keydown', e => {
 });
 
 // push the selected box's pose onto every box
-export function applyToAll() {
+export function applyToAll(confirmed) {
   if (!selSeat) { say('select a box first'); return; }
+  if (!confirmed && !window.confirm(`Copy box ${seatIdx(selSeat) + 1}'s pose onto ALL boxes?\n\nThis overwrites every other box.`)) return;
   const src = perSeat[seatIdx(selSeat)] ?? {};
   document.querySelectorAll('.seat').forEach(s => {
     const i = seatIdx(s);
@@ -349,7 +380,20 @@ export function resetSeats() {
 }
 
 export function toggle() {
-  if (panel) { panel.remove(); panel = null; document.body.classList.remove('cal-on'); return; }
+  if (panel) {
+    panel.remove(); panel = null;
+    document.body.classList.remove('cal-on');
+    selectSeat(null);
+    return;
+  }
+  // The entry gate covers the whole viewport. Calibrating behind it means no
+  // click can reach a box, so nothing is ever selected and every edit lands on
+  // all boxes - which reads as "per-box does not work".
+  const gate = document.querySelector('#gate');
+  if (gate && !gate.classList.contains('hidden')) {
+    document.querySelector('#gate-enter')?.click();
+    gate.classList.add('hidden');   // regardless of whether that handler is wired yet
+  }
   build();
   document.body.classList.add('cal-on');
 }
