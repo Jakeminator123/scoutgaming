@@ -4,11 +4,73 @@
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
 import { createServer } from 'node:http';
 import { readFileSync as readSync } from 'node:fs';
-import { statSync, createReadStream, existsSync } from 'node:fs';
+import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
 import { join, normalize, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
+import { randomUUID } from 'node:crypto';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), 'public');
+
+// ---------- player database (demo money only) ----------
+const dataDir = join(fileURLToPath(new URL('.', import.meta.url)), 'data');
+mkdirSync(dataDir, { recursive: true });
+const db = new DatabaseSync(join(dataDir, 'croupier.db'));
+db.exec(`
+  CREATE TABLE IF NOT EXISTS players (
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, currency TEXT NOT NULL DEFAULT 'USD',
+    balance REAL NOT NULL DEFAULT 1000, created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT NOT NULL, type TEXT NOT NULL,
+    amount REAL NOT NULL, currency TEXT NOT NULL, meta TEXT, at TEXT NOT NULL
+  );
+`);
+const RATES = { USD: 1, EUR: 0.92, SEK: 10.6 }; // fixed demo rates per USD
+const logTx = (pid, type, amount, currency, meta = '') =>
+  db.prepare('INSERT INTO transactions (player_id, type, amount, currency, meta, at) VALUES (?,?,?,?,?,?)')
+    .run(pid, type, amount, currency, meta, new Date().toISOString());
+const getPlayer = id => db.prepare('SELECT id, name, currency, balance FROM players WHERE id = ?').get(id);
+
+function apiPlayer({ id, name }) {
+  let p = id ? getPlayer(id) : undefined;
+  if (!p) {
+    p = { id: randomUUID(), name: (typeof name === 'string' && name.trim().slice(0, 40)) || 'Player', currency: 'USD', balance: 1000 };
+    db.prepare('INSERT INTO players (id, name, currency, balance, created_at) VALUES (?,?,?,?,?)')
+      .run(p.id, p.name, p.currency, p.balance, new Date().toISOString());
+    logTx(p.id, 'open', p.balance, p.currency, 'starting demo balance');
+  }
+  return p;
+}
+function apiDeposit({ id, amount }) {
+  const p = getPlayer(id);
+  if (!p) return { error: 'no such player' };
+  const amt = Number(amount);
+  if (!Number.isFinite(amt) || amt < 1 || amt > 100000) return { error: 'amount must be 1-100000' };
+  const balance = Math.round((p.balance + amt) * 100) / 100;
+  db.prepare('UPDATE players SET balance = ? WHERE id = ?').run(balance, id);
+  logTx(id, 'deposit', amt, p.currency, 'demo test card');
+  return { balance, currency: p.currency };
+}
+function apiBalance({ id, balance, reason }) {
+  const p = getPlayer(id);
+  if (!p) return { error: 'no such player' };
+  const b = Number(balance);
+  if (!Number.isFinite(b) || b < 0 || b > 10000000) return { error: 'bad balance' };
+  db.prepare('UPDATE players SET balance = ? WHERE id = ?').run(b, id);
+  logTx(id, 'sync', Math.round((b - p.balance) * 100) / 100, p.currency, String(reason ?? '').slice(0, 80));
+  return { balance: b };
+}
+function apiCurrency({ id, currency }) {
+  const p = getPlayer(id);
+  if (!p) return { error: 'no such player' };
+  if (!RATES[currency]) return { error: 'currency must be USD, EUR or SEK' };
+  const balance = Math.round((p.balance / RATES[p.currency]) * RATES[currency] * 100) / 100;
+  db.prepare('UPDATE players SET balance = ?, currency = ? WHERE id = ?').run(balance, currency, id);
+  logTx(id, 'fx', balance, currency, `converted from ${p.currency}`);
+  return { balance, currency };
+}
+const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency };
 const port = Number(process.env.PORT ?? 4173);
 const MIME = {
   '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript',
@@ -35,9 +97,11 @@ Hard rules you never break, in character:
 - Rules you can state: 8 decks reshuffled every round, dealer stands on all 17s, blackjack pays 3:2, insurance pays 2:1, Perfect Pairs up to 25:1, 21+3 up to 100:1. Outcomes come from a certified RNG.
 - Keep replies to one or two short sentences, spoken aloud at a table. No markdown, no lists, no emoji.`;
 
-async function veraChat(message, history = []) {
+async function veraChat(message, history = [], isEvent = false) {
   const convo = history.slice(-6).map(h => `${h.role === 'user' ? 'Player' : 'Vera'}: ${h.text}`).join('\n');
-  const prompt = `${VERA_SYSTEM}\n\n${convo ? convo + '\n' : ''}Player: ${message}\nVera:`;
+  const prompt = isEvent
+    ? `${VERA_SYSTEM}\n\nTable event: ${message}\nVera, react aloud at the table in ONE short sentence (two at most):`
+    : `${VERA_SYSTEM}\n\n${convo ? convo + '\n' : ''}Player: ${message}\nVera:`;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 25000);
   try {
@@ -69,15 +133,27 @@ createServer((req, res) => {
     req.on('data', c => { body += c; if (body.length > 20000) req.destroy(); });
     req.on('end', async () => {
       try {
-        const { message, history } = JSON.parse(body || '{}');
+        const { message, history, event } = JSON.parse(body || '{}');
         if (!message || typeof message !== 'string') { res.writeHead(400); res.end('{}'); return; }
-        const reply = await veraChat(message.slice(0, 500), Array.isArray(history) ? history : []);
+        const reply = await veraChat(message.slice(0, 500), Array.isArray(history) ? history : [], !!event);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ reply: reply || null }));
       } catch (e) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ reply: null, error: String(e.message || e) }));
       }
+    });
+    return;
+  }
+  if (req.method === 'POST' && API[req.url]) {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
+    req.on('end', () => {
+      let out;
+      try { out = API[req.url](JSON.parse(body || '{}')); }
+      catch (e) { out = { error: String(e.message || e) }; }
+      res.writeHead(out.error ? 400 : 200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(out));
     });
     return;
   }

@@ -63,6 +63,7 @@
       <button id="undo-btn" title="undo last chip" disabled>⟲</button>
       <div id="chips"></div>
       <button id="double-btn" title="double all bets" disabled>2×</button>
+      <button id="all-sides" title="side bets apply to every staked seat">⧉ ALL SEATS</button>
     </div>
     <button id="deal-now" disabled>DEAL NOW</button>
 
@@ -70,6 +71,7 @@
       <div id="wallet">
         <div><label>BALANCE</label><span id="balance">$1,000.00</span></div>
         <div><label>TOTAL BET</label><span id="total-bet">$0.00</span></div>
+        <div><label>LAST WIN</label><span id="last-win">&ndash;</span></div>
         <button id="add-funds">+ ADD FUNDS</button>
       </div>
       <div id="deal-controls">
@@ -85,12 +87,18 @@
           <span class="demo-tag">DEMO &middot; TEST CARD &middot; NO REAL MONEY</span>
           <button id="cashier-close" aria-label="close">&times;</button>
         </div>
-        <div class="cashier-amounts">
-          <button class="amt" data-amt="100">$100</button>
-          <button class="amt sel" data-amt="500">$500</button>
-          <button class="amt" data-amt="1000">$1,000</button>
-          <button class="amt" data-amt="5000">$5,000</button>
+        <div class="cashier-currencies">
+          <button class="cur sel" data-cur="USD">USD $</button>
+          <button class="cur" data-cur="EUR">EUR &euro;</button>
+          <button class="cur" data-cur="SEK">SEK kr</button>
         </div>
+        <div class="cashier-amounts">
+          <button class="amt" data-amt="100">100</button>
+          <button class="amt sel" data-amt="500">500</button>
+          <button class="amt" data-amt="1000">1,000</button>
+          <button class="amt" data-amt="5000">5,000</button>
+        </div>
+        <label class="fld">CUSTOM AMOUNT<input id="cc-amount" placeholder="e.g. 777" inputmode="numeric" autocomplete="off" spellcheck="false"></label>
         <label class="fld">CARD NUMBER<input id="cc-num" value="4111 1111 1111 1111" inputmode="numeric" autocomplete="off" spellcheck="false"></label>
         <div class="fld-row">
           <label class="fld">EXPIRY<input id="cc-exp" value="12/29" autocomplete="off" spellcheck="false"></label>

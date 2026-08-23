@@ -442,3 +442,22 @@ body.debug #engine-hud { display: block; }
 }
 #cashier-pay:hover { background: #e6ff70; }
 #cashier .fine { margin: 12px 0 0; font-size: 11px; line-height: 1.5; color: #5A6470; }
+
+/* all-seats side-bet mode + last-win + cashier currency */
+#all-sides {
+  pointer-events: auto; cursor: pointer; padding: 8px 13px; border-radius: 999px;
+  background: rgba(12,13,17,.85); border: 1px solid rgba(242,241,237,.18); color: #8b8d96;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: .12em;
+}
+#all-sides.on {
+  border-color: #D6FF3A; color: #D6FF3A; background: rgba(214,255,58,.10);
+  box-shadow: 0 0 14px rgba(214,255,58,.25);
+}
+#last-win.won { color: #D6FF3A; }
+.cashier-currencies { display: flex; gap: 8px; margin-bottom: 10px; }
+.cashier-currencies .cur {
+  flex: 1; padding: 7px 0; border-radius: 999px; cursor: pointer;
+  background: none; border: 1px solid rgba(242,241,237,.14); color: #8b8d96;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 11px; letter-spacing: .08em;
+}
+.cashier-currencies .cur.sel { border-color: #D6FF3A; color: #D6FF3A; background: rgba(214,255,58,.10); }
