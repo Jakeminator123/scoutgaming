@@ -452,48 +452,10 @@ for (let i = 0; i < SEATS; i++) {
 // along an ellipse concentric with the felt's near rail, constant inset.
 // Narrow viewports play the three centre boxes only: seven boxes on a phone
 // leaves ~50px each, which cannot hold a chip stack and two cards.
-// A phone cannot show seven boxes on the arc and still leave a hand readable.
-// Instead ALL seven stay in play and stay visible in the strip, while the felt
-// shows one focused box at a size you can actually read.
+const COMPACT_BOXES = [2, 3, 4];
 const compactQuery = matchMedia('(max-width: 860px) and (orientation: portrait)');
 let compactSeats = compactQuery.matches;
-let focusBox = 3;
-const playedBoxes = () => seatEls.map((_, i) => i);
-
-const stripEl = $('#seat-strip');
-function buildStrip() {
-  if (!stripEl) return;
-  stripEl.innerHTML = '';
-  seatEls.forEach((_, i) => {
-    const b = document.createElement('button');
-    b.className = 'seat-pip';
-    b.dataset.box = i;
-    b.innerHTML = `<i>${i + 1}</i><em></em>`;
-    b.onclick = () => setFocusBox(i);
-    stripEl.appendChild(b);
-  });
-  renderStrip();
-}
-function renderStrip() {
-  if (!stripEl) return;
-  [...stripEl.children].forEach((b, i) => {
-    const bet = bets[i];
-    const staked = bet.main + bet.pp + bet.tp;
-    b.classList.toggle('on', i === focusBox);
-    b.classList.toggle('staked', staked > 0);
-    b.querySelector('em').textContent = staked ? chipFace(staked) : '';
-    // a phone cannot show side-bet crescents on all seven boxes and still be
-    // readable, so only the focused box draws them (portrait CSS keys off this)
-    seatEls[i]?.classList.toggle('focus', i === focusBox);
-  });
-}
-function setFocusBox(i) {
-  focusBox = i;
-  // tapping a pip stakes that box with the selected chip - the boxes
-  // themselves are small on a phone, the pips are a reliable target
-  placeBet(i, 'main', seatEls[i]?.querySelector('.spot'));
-  renderStrip();
-}
+const playedBoxes = () => (compactSeats ? COMPACT_BOXES : seatEls.map((_, i) => i));
 
 function layoutSeats() {
   const imgEl = document.querySelector('#tableimg');
@@ -502,14 +464,14 @@ function layoutSeats() {
   if (!img || !img.width) return;
   // compact mode flattens the arc so the centre box's cards stay on the felt
   const num = (name, fb) => { const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)); return Number.isFinite(v) ? v : fb; };
-  const CX = num('--arc-cx', 0.5), CY = num('--arc-cy', 0.13);
-  const RX = num('--arc-rx', 0.365), RY = num('--arc-ry', 0.445);
+  const CX = num('--arc-cx', 0.5), CY = num('--arc-cy', compactSeats ? 0.17 : 0.13);
+  const RX = num('--arc-rx', 0.365), RY = num('--arc-ry', compactSeats ? 0.33 : 0.445);
   const boxes = playedBoxes();
-  const span = num('--arc-span', 110);   // degrees of arc the boxes occupy
-  const step = boxes.length > 1 ? span / (boxes.length - 1) : 0;
+  const span = num('--arc-span', compactSeats ? 84 : 110);   // degrees of arc the boxes occupy
+  const step = span / (boxes.length - 1);
   seatEls.forEach((el, i) => el.classList.toggle('seat-off', !boxes.includes(i)));
   boxes.forEach((i, k) => {
-    const phi = (90 + (boxes.length > 1 ? span / 2 - k * step : 0)) * Math.PI / 180;
+    const phi = (90 + span / 2 - k * step) * Math.PI / 180;
     const fx = CX + RX * Math.cos(phi);
     const fy = CY + RY * Math.sin(phi);
     seatEls[i].style.left = `${img.left + fx * img.width - table.left}px`;
@@ -521,8 +483,12 @@ layoutSeats();
 compactQuery.addEventListener('change', e => {
   compactSeats = e.matches;
   // boxes that just left the table must not keep money on them
-  // every box stays playable on a phone now, so nothing has to be refunded
-  layoutSeats(); renderStrip(); renderBets(); activeBoxHighlight();
+  if (!round && !busy) {
+    const boxes = playedBoxes();
+    bets = bets.map((b, i) => (boxes.includes(i) ? b : { main: 0, pp: 0, tp: 0 }));
+    undoStack = undoStack.filter(u => boxes.includes(u.box));
+  }
+  layoutSeats(); renderBets(); activeBoxHighlight();
 });
 addEventListener('resize', () => { layoutSeats(); activeBoxHighlight(); });
 document.querySelector('#tableimg')?.addEventListener('load', layoutSeats);
@@ -708,7 +674,6 @@ function renderBets() {
     seat.querySelector('.stake').textContent = parts.join(' ');
     seat.querySelector('.clear-box').hidden = !(b.main || b.pp || b.tp) || !!round || busy;
   });
-  renderStrip();
   $('#total-bet').textContent = fmt(betTotal());
   $('#balance').textContent = fmt(balance);
   const staked = bets.filter(b => b.main > 0);
@@ -1274,7 +1239,6 @@ function setTable(id) {
 document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick = () => setTable(b.dataset.id); });
 
 buildChips();
-buildStrip();
 $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
 // calibration overlay: applies any saved tweaks, then lies dormant until `C`
 import('./calibrate.mjs').then(m => { m.applySavedSeats?.(); if (m.applySaved()) layoutSeats(); }).catch(() => {});
