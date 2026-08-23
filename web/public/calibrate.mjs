@@ -394,7 +394,18 @@ function startRotate(e) {
   document.body.classList.add('cal-dragging');
 }
 
+// slot of a card within its hand: cards are recreated every round, so the
+// override keys on position in the hand, not on the element
+const slotOf = el => {
+  const card = el.closest?.('.card');
+  if (!card) return null;
+  const i = [...card.parentNode.children].filter(x => x.classList.contains('card')).indexOf(card);
+  return i >= 0 && i <= 3 ? i : null;
+};
+
 const HANDLES = [
+  // the single card comes first: otherwise the whole-hand handle swallows it
+  { sel: '.card', label: 'card', card: true },
   { sel: '.sidearcs', label: 'crescents', move: ['--arc-x', '--arc-y'] },
   { sel: '.spot', label: 'betting spot', move: ['--spot-x', '--spot-y'] },
   { sel: '.seat .cards', label: 'cards', move: ['--cards-x', '--cards-y'] },
@@ -412,6 +423,13 @@ function onDown(e) {
   if (seat && seat !== selSeat) { e.preventDefault(); e.stopPropagation(); selectSeat(seat); return; }
   const h = handleFor(e.target);
   if (!h || !seat) return;
+  if (h.card) {
+    const s = slotOf(e.target);
+    if (s === null) return;
+    h.move = [`--card-dx-${s}`, `--card-dy-${s}`];
+    h.label = `card ${s + 1}`;
+  }
+  if (!h.move) return;
   e.preventDefault(); e.stopPropagation();
   drag = { h, seat, x0: e.clientX, y0: e.clientY,
            ax: seatVal(seat, h.move[0]), ay: seatVal(seat, h.move[1]) };
@@ -444,10 +462,17 @@ function onWheel(e) {
   const seat = e.target.closest?.('.seat');
   if (!seat) return;
   const lbl = e.target.closest?.('.side-label');
+  const cardSlot = slotOf(e.target);
   e.preventDefault();
   selectSeat(seat);
   const step = e.shiftKey ? 0.5 : 2;
   const dir = e.deltaY > 0 ? step : -step;
+  if (cardSlot !== null) {
+    const name = `--card-rot-${cardSlot}`;
+    const v = setSeatVar(seat, name, seatVal(seat, name) + dir, 'deg');
+    say(`box ${seatIdx(seat) + 1}  card ${cardSlot + 1}  turn ${v}\u00b0`);
+    return;
+  }
   if (lbl) {
     const name = lbl.textContent.trim() === 'PP' ? '--pp-rot' : '--tp-rot';
     const v = setSeatVar(seat, name, seatVal(seat, name) + dir, 'deg');
