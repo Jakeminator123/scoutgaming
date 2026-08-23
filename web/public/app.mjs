@@ -366,8 +366,11 @@ function showActions(seat) {
   }
   if (bar.hidden) return;
   const r = (seat ?? seatOfLive(round.active)).getBoundingClientRect();
-  bar.style.left = `${Math.min(innerWidth - 190, r.x + 56)}px`;
-  bar.style.top = `${Math.max(60, r.y + 18)}px`;
+  // center the bar under the hand it controls, caret pointing at the chip
+  bar.hidden = false;
+  const w = bar.offsetWidth || 190;
+  bar.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.x - w / 2))}px`;
+  bar.style.top = `${r.y + 84}px`;
 }
 
 $('#deal-now').onclick = () => { if (!round && !busy) void dealSequence(); };
@@ -385,7 +388,7 @@ async function dealSequence() {
 
   const live = round.live();
   const PACE = 320;
-  for (let i = 0; i < live.length; i++) {
+  for (let i = live.length - 1; i >= 0; i--) {
     dealCardTo(boxContainer(i), live[i].cards[0]);
     updateBadge(boxContainer(i), live[i].cards.slice(0, 1));
     await sleep(PACE);
@@ -393,7 +396,7 @@ async function dealSequence() {
   dealCardTo($('#dealer-cards'), round.dealer[0]);
   updateBadge($('#dealer-cards'), [round.dealer[0]]);
   await sleep(PACE);
-  for (let i = 0; i < live.length; i++) {
+  for (let i = live.length - 1; i >= 0; i--) {
     dealCardTo(boxContainer(i), live[i].cards[1]);
     updateBadge(boxContainer(i), live[i].cards.slice(0, 2));
     await sleep(PACE);

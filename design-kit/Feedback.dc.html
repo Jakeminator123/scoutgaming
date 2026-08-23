@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Cormorant+Garamond:wght@600&display=swap">
+  <style>
+    body { margin: 0; font-family: "Figtree", "Helvetica Neue", sans-serif; }
+    a { color: #d9c06a; } a:hover { color: #f0dfa8; }
+  </style>
+</helmet>
+<div style="width: 560px; height: 400px; background: radial-gradient(ellipse at 50% 0%, hsl(147 36% 32%), hsl(146 30% 24%) 55%, hsl(145 25% 16%)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; position: relative;">
+  <div style="position: absolute; top: 20px; left: 32px; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; letter-spacing: .22em; color: rgba(233,214,138,.75);">FEEDBACK</div>
+
+  <div style="display: flex; gap: 14px; align-items: center;">
+    <div style="background: rgba(8,8,10,.9); border-radius: 7px; color: #fff; font-size: 15px; font-weight: 800; padding: 4px 12px;">17</div>
+    <div style="background: rgba(8,8,10,.9); border-radius: 7px; color: #ffe14d; font-size: 15px; font-weight: 800; padding: 4px 12px; box-shadow: 0 0 0 1.5px rgba(255,225,77,.6);">11/21</div>
+    <div style="background: linear-gradient(#f0dfa8, #d9c06a); color: #221c08; font-size: 13px; font-weight: 800; letter-spacing: .08em; padding: 5px 14px; border-radius: 7px; box-shadow: 0 4px 14px rgba(217,192,106,.4);">WIN $50.00</div>
+    <div style="background: rgba(122,39,39,.92); color: #ffd9d4; font-size: 13px; font-weight: 800; letter-spacing: .08em; padding: 5px 14px; border-radius: 7px;">LOSE</div>
+    <div style="background: rgba(68,70,78,.92); color: #e8eaee; font-size: 13px; font-weight: 800; letter-spacing: .08em; padding: 5px 14px; border-radius: 7px;">PUSH</div>
+  </div>
+
+  <div style="display: flex; gap: 12px; align-items: center; background: linear-gradient(165deg, rgba(28,26,22,.7), rgba(12,11,9,.86)); border: 1px solid rgba(217,192,106,.3); padding: 13px 20px; border-radius: 16px; box-shadow: 0 14px 34px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d9c06a" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4.5-3.2 7.6-8 9-4.8-1.4-8-4.5-8-9V7l8-4z"/></svg>
+    <span style="color: #eee; font-size: 14px; font-weight: 600;">Insurance?</span>
+    <div style="background: linear-gradient(#3b2f14, #241c0a); color: #f0dfa8; border: 1px solid #d9c06a; border-radius: 12px; padding: 9px 22px; font-size: 13px; font-weight: 800; letter-spacing: .1em;">YES</div>
+    <div style="background: rgba(16,18,24,.9); color: #cfd3da; border: 1px solid rgba(255,255,255,.25); border-radius: 12px; padding: 9px 22px; font-size: 13px; font-weight: 800; letter-spacing: .1em;">NO</div>
+  </div>
+
+  <div style="display: flex; gap: 10px;">
+    <div style="background: rgba(10,50,26,.85); border: 1px solid rgba(255,255,255,.16); color: #fff; padding: 9px 24px; border-radius: 8px; font-size: 13px; letter-spacing: .14em; font-weight: 600;">PLEASE PLACE BETS</div>
+    <div style="color: #ffd97a; font-size: 12px; font-weight: 700; text-shadow: 0 1px 3px #000; align-self: center;">Mixed Pair 6:1 +$175.00</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":560,"height":400}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
