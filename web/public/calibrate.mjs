@@ -37,10 +37,18 @@ const GROUPS = [
     ['--tp-rot', '21+3 rotation', -180, 180, 1, 'deg'],
   ]],
   ['Cards on the felt', [
-    ['--cards-x', 'x', -70, 70, 1, 'px'],
-    ['--cards-y', 'y', -110, 40, 1, 'px'],
+    ['--cards-x', 'hand x', -70, 70, 1, 'px'],
+    ['--cards-y', 'hand y', -110, 40, 1, 'px'],
     ['--cards-flat', 'lay flat', 0.25, 1, 0.01, ''],
     ['--cards-rot-k', 'follow arc', 0, 1.5, 0.05, ''],
+  ]],
+  ['Each card', [
+    ['--card-w', 'size', 24, 80, 1, 'px'],
+    ['--card-x0', 'first card x', -70, 20, 1, 'px'],
+    ['--card-dx', 'spread', 4, 34, 0.5, 'px'],
+    ['--card-dy', 'rise', -14, 6, 0.5, 'px'],
+    ['--card-rot0', 'first card turn', -30, 30, 0.5, 'deg'],
+    ['--card-rot', 'turn per card', -14, 14, 0.5, 'deg'],
   ]],
   ['Side-bet chips', [
     ['--side-chip-r', 'distance out', 20, 80, 0.5, ''],
@@ -60,6 +68,7 @@ const PER_BOX = new Set([
   '--arc-x', '--arc-y', '--arc-w', '--arc-h', '--arc-rot',
   '--pp-rot', '--tp-rot',
   '--cards-x', '--cards-y', '--cards-flat', '--cards-rot-k',
+  '--card-w', '--card-x0', '--card-dx', '--card-dy', '--card-rot0', '--card-rot',
   '--side-chip-r', '--sidechip-dx', '--sidechip-dy',
 ]);
 

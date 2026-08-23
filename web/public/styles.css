@@ -17,6 +17,7 @@
   --arc-x: 60px; --arc-y: 59px; --arc-w: 106px; --arc-h: 83px; --arc-rot: 0deg;
   --pp-rot: 0deg; --tp-rot: 0deg; --label-size: 10px; --tp-size: 8.5px;
   --cards-x: -2px; --cards-y: -40px; --cards-flat: .62; --cards-rot-k: .5;
+  --card-w: 46px; --card-dx: 19px; --card-dy: -4px; --card-rot: 6deg; --card-rot0: -4deg; --card-x0: -32px;
   --side-chip-r: 45; --sidechip-dx: 0px; --sidechip-dy: 0px;
   /* seat arc on the felt, read by layoutSeats() */
   --arc-cx: .5; --arc-cy: .13; --arc-rx: .365; --arc-ry: .445; --arc-span: 110;
@@ -104,8 +105,11 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #dealer-cards { position: absolute; left: 50%; top: 13.5%; width: 0; height: 0; transform: scaleY(.78); }
 #dealer-cards .card, .seat .cards .card {
   position: absolute;
-  left: calc(var(--ci, 0) * 19px - 32px); top: calc(var(--ci, 0) * -4px);
-  transform: rotate(calc(var(--ci, 0) * 6deg - 4deg));
+  /* --fan tightens the spread as a hand grows (set in dealCardTo), so a
+     five-card hand stops reaching into the next box */
+  left: calc(var(--ci, 0) * var(--card-dx, 19px) * var(--fan, 1) + var(--card-x0, -32px));
+  top: calc(var(--ci, 0) * var(--card-dy, -4px) * var(--fan, 1));
+  transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg)));
 }
 #dealer-cards .hand-total { position: absolute; left: -14px; top: 96px; transform: scaleY(calc(1 / var(--cards-flat, .62))); }
 
@@ -239,7 +243,7 @@ body.in-round .stake { display: none; }
 /* ---------- cards ---------- */
 .cards { min-height: 0; }
 .card {
-  width: 46px; height: 66px;
+  width: var(--card-w, 46px); height: calc(var(--card-w, 46px) * 1.435);
   border-radius: 6px; background: #f7f5ee; color: #222;
   box-shadow: 0 6px 8px -2px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.3); position: relative; font-weight: 700;
   will-change: transform;
@@ -247,10 +251,10 @@ body.in-round .stake { display: none; }
 .card.fly { animation: flyin .5s cubic-bezier(.2, .75, .25, 1); }
 @keyframes flyin {
   from { transform: translate(var(--dx, 0px), var(--dy, -180px)) rotate(-12deg) scale(.72); opacity: .25; }
-  to { transform: rotate(calc(var(--ci, 0) * 6deg - 4deg)); opacity: 1; }
+  to { transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg))); opacity: 1; }
 }
 .card.flip { animation: flipin .4s ease-out; }
-@keyframes flipin { from { transform: rotateY(88deg) scale(1.05); } to { transform: rotate(calc(var(--ci, 0) * 6deg - 4deg)); } }
+@keyframes flipin { from { transform: rotateY(88deg) scale(1.05); } to { transform: rotate(calc(var(--ci, 0) * var(--card-rot, 6deg) * var(--fan, 1) + var(--card-rot0, -4deg))); } }
 .card .corner { position: absolute; top: 3px; left: 5px; font-size: 12px; line-height: 1; text-align: center; }
 .card .pip { position: absolute; bottom: 4px; right: 6px; font-size: 20px; }
 .card.red { color: #c22b2b; }

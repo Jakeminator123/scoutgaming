@@ -799,7 +799,12 @@ const boxContainer = liveIdx => seatOfLive(liveIdx)?.querySelector('.cards');
 function dealCardTo(container, card, { faceDown = false } = {}) {
   sfx.play('deal');
   const el = cardEl(card, faceDown);
-  el.style.setProperty('--ci', container.querySelectorAll('.card').length);
+  const n = container.querySelectorAll('.card').length;
+  el.style.setProperty('--ci', n);
+  // squeeze the fan once a hand runs long, so it stays over its own box
+  const total = n + 1;
+  container.style.setProperty('--cn', total);
+  container.style.setProperty('--fan', Math.min(1, 3.2 / Math.max(2, total)).toFixed(3));
   const badge = container.querySelector('.hand-total');
   container.insertBefore(el, badge ?? null);
   flyFromShoe(el);
