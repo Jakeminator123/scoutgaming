@@ -136,9 +136,17 @@ for (let i = 0; i < SEATS; i++) {
   el.innerHTML = `<div class="seat-inner">
     <div class="cards"></div>
     <button class="clear-box" hidden>×</button>
-    <div class="side pp" title="Perfect Pairs — needs a main bet">PP</div>
+    <svg class="sidearcs" viewBox="-72 -56 144 112" aria-hidden="false">
+      <g transform="scale(1 0.74)">
+        <path class="side pp" d="M -41.6 -24 A 48 48 0 0 0 -41.6 24 L -57.2 33 A 66 66 0 0 1 -57.2 -33 Z"><title>Perfect Pairs — needs a main bet</title></path>
+        <path class="side tp" d="M 41.6 -24 A 48 48 0 0 1 41.6 24 L 57.2 33 A 66 66 0 0 0 57.2 -33 Z"><title>21+3 — needs a main bet</title></path>
+      </g>
+      <text class="side-label" x="-49" y="4" text-anchor="middle" transform="rotate(-90 -49 0)">PP</text>
+      <text class="side-label" x="49" y="4" text-anchor="middle" transform="rotate(90 49 0)">21+3</text>
+    </svg>
     <div class="spot">+</div>
-    <div class="side tp" title="21+3 — needs a main bet">21+3</div>
+    <div class="side-chip pp-chip" hidden></div>
+    <div class="side-chip tp-chip" hidden></div>
     <div class="stake"></div>
     <div class="sideresult"></div>
     <div class="result"></div>
@@ -259,9 +267,11 @@ function renderBets() {
     if (b.main) { spot.classList.add('staked'); spot.innerHTML = stackChip(b.main); }
     else { spot.classList.remove('staked'); spot.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20c.8-3.6 3.4-5.6 6.5-5.6s5.7 2 6.5 5.6"/><path d="M18 8.5h5M20.5 6v5"/></svg>'; }
     for (const f of ['pp', 'tp']) {
-      const el = seat.querySelector(`.side.${f}`);
-      if (b[f]) { el.classList.add('staked'); el.innerHTML = stackChip(b[f]); }
-      else { el.classList.remove('staked'); el.textContent = f === 'pp' ? 'PP' : '21+3'; }
+      const arc = seat.querySelector(`.side.${f}`);
+      const chip = seat.querySelector(`.${f}-chip`);
+      arc.classList.toggle('staked', !!b[f]);
+      chip.hidden = !b[f];
+      if (b[f]) chip.innerHTML = stackChip(b[f]);
     }
     const parts = [];
     if (b.main) parts.push(fmt(b.main));
