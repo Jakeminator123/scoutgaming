@@ -29,7 +29,7 @@ def window_lags(m,e,half=30,step=24):
         mw=norm(m[c-half:c+half])
         if e[max(0,c-half):c+half].max()<e.max()*0.08: continue  # silence
         best,bl=-9,None
-        for lag in range(-6,19):
+        for lag in range(-6,31):  # some takes stretch a phrase by up to ~1.2s
             lo,hi=c-half-lag,c+half-lag
             if lo<0 or hi>len(e): continue
             cc=(mw*norm(e[lo:hi])).mean()

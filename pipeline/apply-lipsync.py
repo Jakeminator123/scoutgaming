@@ -3,11 +3,14 @@
 # an audio line. The engine delays that clip's voice by this amount; the CSS
 # --lipsync-offset remains the fallback for unmeasured clips.
 import json, os, subprocess, sys
-IDX='web/public/dealer/streams/index.json'
+BASE=sys.argv[1] if len(sys.argv)>1 else 'web/public/dealer'
+IDX=f'{BASE}/streams/index.json'
 idx=json.load(open(IDX))
 # hand-verified delays (contact-sheet mouth onset vs waveform word onset)
 # beat every automatic method on short clips; they win outright
-try: OVERRIDES=json.load(open('pipeline/lipsync-overrides.json'))
+# hand-tuned overrides are per-dealer: the repo file belongs to Vera's set
+ov_path='pipeline/lipsync-overrides.json' if BASE=='web/public/dealer' else f'{BASE}/lipsync-overrides.json'
+try: OVERRIDES=json.load(open(ov_path))
 except FileNotFoundError: OVERRIDES={}
 changed=0
 for key,c in idx['clips'].items():
@@ -16,14 +19,14 @@ for key,c in idx['clips'].items():
     if short in OVERRIDES:
         c['audioDelayMs']=OVERRIDES[short]; changed+=1
         print(f"{key}: audioDelayMs={c['audioDelayMs']} (manual override)"); continue
-    mp3=f"web/public/dealer/audio/en/{short}.mp3"
+    mp3=f"{BASE}/audio/en/{short}.mp3"
     if not os.path.exists(mp3): continue
-    out=subprocess.run(['python3','pipeline/measure-lipsync.py',f"web/public/dealer/streams/{c['file']}",mp3],capture_output=True,text=True)
+    out=subprocess.run(['python3','pipeline/measure-lipsync.py',f"{BASE}/streams/{c['file']}",mp3],capture_output=True,text=True)
     r=json.loads(out.stdout)
     # short lines give the correlation too little signal - for those, match
     # the FIRST SUSTAINED mouth motion against the audio onset instead
     if c.get('frameCount',999)<150 or r['corr']<0.3:
-        o=subprocess.run(['python3','pipeline/measure-onset.py',f"web/public/dealer/streams/{c['file']}",mp3],capture_output=True,text=True)
+        o=subprocess.run(['python3','pipeline/measure-onset.py',f"{BASE}/streams/{c['file']}",mp3],capture_output=True,text=True)
         r2=json.loads(o.stdout)
         if r2['ok']:
             c['audioDelayMs']=max(0,r2['lagMs']); changed+=1

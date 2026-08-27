@@ -1,0 +1,14 @@
+{
+ "greeting": {
+  "text": "Welcome to the Dark Hall. I'm Astrid. Take a seat whenever you're ready."
+ },
+ "goodluck": {
+  "text": "Bets are closed. Good luck at my table."
+ },
+ "win": {
+  "text": "Well played. Your winnings, exactly as earned."
+ },
+ "lose": {
+  "text": "The house takes this one. Shall we go again?"
+ }
+}

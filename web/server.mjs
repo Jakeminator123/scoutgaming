@@ -180,11 +180,13 @@ function cleanVera(raw) {
   return (lines.join(' ') || s).replace(/\s+/g, ' ').trim();
 }
 
-async function veraChat(message, history = [], isEvent = false) {
-  const convo = history.slice(-6).map(h => `${h.role === 'user' ? 'Player' : 'Vera'}: ${h.text}`).join('\n');
+async function veraChat(message, history = [], isEvent = false, system = null) {
+  const sys = system ?? VERA_SYSTEM;
+  const who = system ? (sys.match(/You are (\w+)/)?.[1] ?? 'Vera') : 'Vera';
+  const convo = history.slice(-6).map(h => `${h.role === 'user' ? 'Player' : who}: ${h.text}`).join('\n');
   const prompt = isEvent
-    ? `${VERA_SYSTEM}\n\nTable event: ${message}\nVera, react aloud at the table in ONE short sentence (two at most):`
-    : `${VERA_SYSTEM}\n\n${convo ? convo + '\n' : ''}Player: ${message}\nVera:`;
+    ? `${sys}\n\nTable event: ${message}\n${who}, react aloud at the table in ONE short sentence (two at most):`
+    : `${sys}\n\n${convo ? convo + '\n' : ''}Player: ${message}\n${who}:`;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 25000);
   try {
@@ -285,9 +287,14 @@ createServer((req, res) => {
     req.on('data', c => { body += c; if (body.length > 20000) req.destroy(); });
     req.on('end', async () => {
       try {
-        const { message, history, event } = JSON.parse(body || '{}');
+        const { message, history, event, dealer } = JSON.parse(body || '{}');
         if (!message || typeof message !== 'string') { res.writeHead(400); res.end('{}'); return; }
-        let raw = await veraChat(message.slice(0, 500), Array.isArray(history) ? history : [], !!event);
+        // other dealers share Vera's table brain but keep their own name and
+        // have no recorded-take list (their banks are small; they speak text)
+        const persona = dealer && dealer !== 'vera'
+          ? VERA_SYSTEM.split('RECORDED TAKES')[0].replaceAll('Vera', dealer[0].toUpperCase() + dealer.slice(1))
+          : null;
+        let raw = await veraChat(message.slice(0, 500), Array.isArray(history) ? history : [], !!event, persona);
         // She may answer by naming a recorded take; only then can she speak
         // aloud. Match a LEADING directive - the model sometimes appends
         // chatter after it, and none of that may ever leak to the player.
