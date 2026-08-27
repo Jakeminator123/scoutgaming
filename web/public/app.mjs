@@ -41,6 +41,7 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
     rs.setProperty('--scene-h-k', DEALER.sceneHK);
   }
   if (DEALER.table) $('#tableimg')?.setAttribute('src', DEALER.table);
+  $('#chat-input')?.setAttribute('placeholder', `Talk to ${DEALER.name}…`);
 }
 
 // a dealer without clips still stands at her table: her canonical poster
