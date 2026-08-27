@@ -32,7 +32,7 @@ button:hover{background:#e2ff66}
   <input id="p" type="password" autocomplete="current-password" required>
   <button type="submit">SIGN IN</button>
   <div class="err" id="err"></div>
-  <div class="foot">AUTHORIZED PERSONNEL ONLY</div>
+  <div class="foot"><a href="#" id="forgot" style="color:#9a9aa2;text-decoration:underline">FORGOT PASSWORD?</a> &middot; AUTHORIZED PERSONNEL ONLY</div>
 </form>
 <script>
 document.getElementById('f').onsubmit = async e => {
@@ -41,6 +41,15 @@ document.getElementById('f').onsubmit = async e => {
     body: JSON.stringify({ user: document.getElementById('u').value, pass: document.getElementById('p').value }) });
   if (r.ok) location.href = '/bo/';
   else document.getElementById('err').textContent = 'Wrong username or password.';
+};
+document.getElementById('forgot').onclick = async e => {
+  e.preventDefault();
+  const u = document.getElementById('u').value;
+  const err = document.getElementById('err');
+  if (!u) { err.textContent = 'Enter your username or email above first.'; return; }
+  await fetch('/api/bo/reset-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: u }) });
+  err.style.color = '#D6FF3A';
+  err.textContent = 'If that account exists and has an email, a reset link is on its way.';
 };
 </script>
 </body>
