@@ -103,8 +103,8 @@ function dealerScan() {
   const spec = [
     { key: 'vera', name: 'Vera', base: 'dealer', room: 'Mahogany Privé', voice: 'Vera (ElevenLabs)' },
     { key: 'astrid', name: 'Astrid', base: 'dealers/astrid', room: 'Dark Hall', voice: 'Helena (ElevenLabs)' },
-    { key: 'amira', name: 'Amira', base: 'dealers/amira', room: 'Golden Salon', voice: '—' },
-    { key: 'mei', name: 'Mei', base: 'dealers/mei', room: 'Azure Venue', voice: '—' },
+    { key: 'amira', name: 'Amira', base: 'dealers/amira', room: 'Golden Salon', voice: 'Soraya (ElevenLabs)' },
+    { key: 'mei', name: 'Mei', base: 'dealers/mei', room: 'Azure Venue', voice: 'Kaia (ElevenLabs)' },
   ];
   for (const d of spec) {
     let clips = 0, speak = 0, stills = false;
