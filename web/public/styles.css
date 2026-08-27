@@ -4,11 +4,24 @@
   --felt-dark: #1d5c39;
   --gold: #d9c06a;
   --rail: #16171c;
-  /* dealer video window calibration (bake-composite.sh matches these) */
+  /* dealer video window calibration (bake-composite.sh matches these).
+     The streams keep HER OWN TABLE below v0.845 (bake-with-table.sh): her
+     video rail starts at v0.855, and --dealer-top puts the art rail's first
+     opaque row (screen 53.52vh: #tableimg top 42vh + 0.18 x 64vh) exactly
+     there, so the art rail lands ON the video rail and her arms rest on it
+     natively - contact and shadows come from the generated video itself.
+     Derived from --dealer-h, NOT a constant: the invariant then survives the
+     max() regime switch on wide viewports. */
   --dealer-h: max(68vh, 37.94vw);
-  --dealer-top: 1vh;
-  --dealer-crop: 0.86;
+  --dealer-top: calc(53.52vh - 0.855 * var(--dealer-h));
+  --dealer-crop: 0.90;
   --dealer-x: 0vw;
+  /* hands overlay band, fractions of the video square (build-hands.sh) */
+  --hands-band-y: 0.78056;  /* 1124/1440 */
+  --hands-band-h: 0.21944;  /*  316/1440 */
+  /* where the overlay starts showing her (video-v units): from just below
+     the rail top, so a dealing hand rides over the felt */
+  --hands-cut: 0.850;
   /* table plane tilt */
   --tilt: 55deg;
   /* responsive knobs (media queries below retune these) */
@@ -20,7 +33,7 @@
   --cards-x: -2px; --cards-y: -40px; --cards-flat: .62; --cards-rot-k: .5;
   --hand-rot: 0deg; --cards-skew-k: .4;
   /* ms the audio waits after the speaking clip is on screen; tune if lips lead or trail */
-  --lipsync-offset: 80;
+  --lipsync-offset: 200;
   --card-w: 46px; --card-dx: 19px; --card-dy: -4px; --card-rot: 6deg; --card-rot0: -4deg; --card-x0: -32px;
   /* per-slot nudges: extra turn/offset for the 1st..4th card of a hand alone */
   --card-rot-0: 0deg; --card-dx-0: 0px; --card-dy-0: 0px;
@@ -29,7 +42,9 @@
   --card-rot-3: 0deg; --card-dx-3: 0px; --card-dy-3: 0px;
   --side-chip-r: 45; --sidechip-dx: 0px; --sidechip-dy: 0px;
   /* floor supervisor overlay */
-  --sup-x: -30vh; --sup-y: 6vh; --sup-h: 54vh; --sup-bright: .82; --sup-sat: .9;
+  /* --sup-y follows the room plate, which rides --dealer-top (originally
+     1vh); keep him glued to the same floor line at any viewport */
+  --sup-x: -30vh; --sup-y: calc(5vh + var(--dealer-top)); --sup-h: 54vh; --sup-bright: .82; --sup-sat: .9;
   /* seat arc on the felt, read by layoutSeats() */
   --arc-cx: .5; --arc-cy: .13; --arc-rx: .365; --arc-ry: .445; --arc-span: 110;
 }
@@ -55,14 +70,41 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   position: absolute; left: 50%; top: var(--dealer-top); transform: translateX(calc(-50% + var(--dealer-x, 0vw)));
   width: var(--dealer-h); height: calc(var(--dealer-h) * var(--dealer-crop, 0.86));
   overflow: hidden;
+  /* bottom fade must start BELOW the art rail top (v0.855 = 95% of the 0.90
+     wrap): any earlier and a semi-faded strip of the video shines through
+     above the rail, reading as a pale line across the table under her hands.
+     96% = v0.864, safely behind the art rail band. */
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 3%, #000 97%, transparent 100%),
-                      linear-gradient(to bottom, transparent 0%, #000 3%, #000 86%, transparent 99%);
+                      linear-gradient(to bottom, transparent 0%, #000 3%, #000 96%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(to right, transparent 0%, #000 3%, #000 97%, transparent 100%),
-              linear-gradient(to bottom, transparent 0%, #000 3%, #000 86%, transparent 99%);
+              linear-gradient(to bottom, transparent 0%, #000 3%, #000 96%, transparent 100%);
   mask-composite: intersect;
 }
 #dealer { display: block; width: 100%; height: auto; aspect-ratio: 1; }
+
+/* her forearms/hands over the felt: the engine paints person-only pixels of
+   the frame's bottom band here (streams-hands matte), and this wrap places
+   that band at exactly the video window's coordinates, one z above the table */
+#dealer-hands-wrap {
+  position: absolute; left: 50%;
+  top: calc(var(--dealer-top) + var(--dealer-h) * var(--hands-band-y));
+  transform: translateX(calc(-50% + var(--dealer-x, 0vw)));
+  width: var(--dealer-h); height: calc(var(--dealer-h) * var(--hands-band-h));
+  z-index: 25; pointer-events: none;
+  /* runtime rail line: the matte carries the whole band, this fades it in
+     just below --hands-cut (tunable live, no matte rebuilds); the 2% feather
+     keeps the cut from reading as a line when a hand crosses it */
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent calc((var(--hands-cut) - var(--hands-band-y)) / var(--hands-band-h) * 100%),
+    #000       calc((var(--hands-cut) - var(--hands-band-y)) / var(--hands-band-h) * 100% + 2%),
+    #000 90%, transparent 100%);
+  mask-image: linear-gradient(to bottom,
+    transparent calc((var(--hands-cut) - var(--hands-band-y)) / var(--hands-band-h) * 100%),
+    #000       calc((var(--hands-cut) - var(--hands-band-y)) / var(--hands-band-h) * 100% + 2%),
+    #000 90%, transparent 100%);
+}
+#dealer-hands { display: block; width: 100%; height: 100%; }
 
 /* ---------- HUD ---------- */
 #hud-top, #hud-bottom { pointer-events: none; }

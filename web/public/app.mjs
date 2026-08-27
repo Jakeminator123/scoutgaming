@@ -16,7 +16,10 @@ const CLIP = {
   think: 'idle-1/actions/action-think',
   gest: 'idle-1/actions/gesticulate1',
 };
-const engine = new DealerEngine($('#dealer'), 'dealer', { log: m => console.info('[dealer]', m) });
+const engine = new DealerEngine($('#dealer'), 'dealer', {
+  log: m => console.info('[dealer]', m),
+  handsCanvas: $('#dealer-hands'),
+});
 let engineUp = false;
 let speaking = false;
 // Speaking clips with their real lengths. Cutting between different clips
@@ -37,7 +40,16 @@ function clipForDuration(secs) {
 }
 const someSpeakClip = () => heldSpeakClip ?? clipForDuration(5);
 engine.onIdlePick = () => {
-  if (speaking) { const c = someSpeakClip(); if (c) return c; }
+  if (speaking) {
+    // the decoder reaches this boundary ~1s before paint: only replay the
+    // speak clip while the voice still has that much runway, else a whole
+    // silent playthrough gets queued before the audio-end handler can act
+    const rem = bankAudio && !bankAudio.ended && bankAudio.duration
+      ? bankAudio.duration - bankAudio.currentTime : 0;
+    const c = someSpeakClip();
+    if (c && rem > 1.2) return c;
+    return CLIP.idle;
+  }
   const extras = [CLIP.headTilt, CLIP.gest].filter(k => engine.index.clips[k]);
   if (extras.length && Math.random() < 0.25) return extras[Math.floor(Math.random() * extras.length)];
   return CLIP.idle;
@@ -88,6 +100,19 @@ const LINES = {
   double: "Doubling down. One card, let's make it count.",
 };
 const VOICE_LINES = Object.keys(LINES);
+// ---------- global speech gate ----------
+// One voice, one caption, one mouth at a time. Every speaker (game-flow
+// lines, chat takes, chat commentary) runs as a queued turn; without this
+// they overlap at round settle and the captions stomp each other.
+let speechActive = 0;
+let speechChain = Promise.resolve();
+function speechTurn(fn) {
+  speechActive++;
+  const run = speechChain.then(() => Promise.resolve(fn())).catch(() => {}).finally(() => { speechActive--; });
+  speechChain = run;
+  return run;
+}
+
 const voice = {
   muted: localStorage.getItem('croupier-muted') === '1',
   audio: new Map(),
@@ -98,25 +123,36 @@ const voice = {
     if (this.muted) return;
     const a = this.audio.get(t);
     if (!a) return;
-    if (this.playing && !force) return;
-    this.playing = true;
-    const cap = $('#caption');
-    cap.textContent = LINES[t] ?? '';
-    cap.classList.add('show');
-    const done = () => { this.playing = false; cap.classList.remove('show'); };
-    // lip-synced speaking clip when we have one: cut the video to it, then
-    // start the audio a beat later so lips and voice line up
-    const speakClip = `idle-1/speak/${t}`;
-    if (engineUp && engine.index.clips[speakClip]) {
-      engine.interrupt(speakClip);
-      setTimeout(() => { a.currentTime = 0; a.play().catch(() => {}); }, 350);
-    } else {
-      a.currentTime = 0;
-      a.play().catch(() => {});
-      if (Math.random() < 0.6) trigger(Math.random() < 0.5 ? CLIP.gest : CLIP.headTilt);
-    }
-    a.onended = done;
-    setTimeout(done, 8000); // safety
+    if (speechActive > 0 && !force) return;   // something's talking: drop optional chatter
+    speechTurn(() => new Promise(resolve => {
+      if (this.muted) return resolve();
+      this.playing = true;
+      const cap = $('#caption');
+      cap.textContent = LINES[t] ?? '';
+      cap.classList.add('show');
+      const done = () => { this.playing = false; cap.classList.remove('show'); resolve(); };
+      // lip-synced speaking clip when we have one: same synced path as chat
+      // lines - painted-frame wait + this clip's measured voice delay
+      const speakClip = `idle-1/speak/${t}`;
+      if (engineUp && engine.index.clips[speakClip]) {
+        // only cut back to idle if her take is still on screen and no round is
+        // running - mid-round the game logic owns the video
+        const stop = () => { done(); speaking = false; heldSpeakClip = null; if (engineUp && engine.presentedClip === speakClip && !busy) engine.interrupt(CLIP.idle); };
+        a.onended = stop; a.onerror = stop;
+        bankAudio?.pause(); bankAudio = a;      // the boundary guard watches this
+        (async () => {
+          try { await cutToTake(speakClip); a.currentTime = 0; await a.play(); }
+          catch { stop(); }
+        })();
+        setTimeout(() => { if (this.playing) stop(); }, 15000); // safety
+      } else {
+        a.currentTime = 0;
+        a.play().catch(() => {});
+        if (Math.random() < 0.6) trigger(Math.random() < 0.5 ? CLIP.gest : CLIP.headTilt);
+        a.onended = done;
+        setTimeout(done, 8000); // safety
+      }
+    }));
   },
 };
 voice.load();
@@ -402,7 +438,10 @@ async function veraEvent(text, { minGap = 18000 } = {}) {
       body: JSON.stringify({ message: text, event: true }),
     });
     const { reply } = await r.json();
-    if (reply) { showCaption(reply); speakFor(reply); }
+    if (reply) speechTurn(() => new Promise(res => {
+      showCaption(reply); speakFor(reply);
+      setTimeout(res, Math.min(9000, 1200 + reply.length * 55));
+    }));
   } catch { /* brain offline: stay quiet */ }
   finally { veraBusy = false; }
 }
@@ -870,7 +909,10 @@ async function dealSequence() {
   renderBets(); setBanner(null); clearTable();
   voice.say('goodluck', { force: true });
   trigger(CLIP.deal);
-  await sleep(700);
+  // let "Bets are closed" land before the first card flies — the cards were
+  // beating her to it, which read as the line arriving late ("good luck"
+  // rides over the first cards, like a real table)
+  await sleep(2000);
 
   const live = round.live();
   const PACE = 320;
@@ -1095,18 +1137,50 @@ let veraBank = {};
 fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => { veraBank = b; }).catch(() => {});
 
 let bankAudio = null;
+// The one synced way to cut to a recorded take. Sync order matters: the VIDEO
+// leads. Fetch and decode first, wait for the clip's first frame to be
+// PAINTED (the engine buffers up to 24 frames between decode and paint), then
+// wait that clip's measured voice delay. Only after all that may audio start.
+async function cutToTake(clip) {
+  await engine.fetchClip(clip).catch(() => {});
+  speaking = true;
+  heldSpeakClip = clip;
+  const painted = new Promise(resolve => {
+    const t0 = performance.now();
+    const prev = engine.onPresentClip;
+    const done = () => { engine.onPresentClip = prev; resolve(); };
+    engine.onPresentClip = k => { prev?.(k); if (k === clip) done(); };
+    const poll = () => {
+      if (engine.presentedClip === clip) return done();
+      if (performance.now() - t0 > 3000) return done();   // never hang the voice
+      requestAnimationFrame(poll);
+    };
+    requestAnimationFrame(poll);
+  });
+  engine.interrupt(clip);
+  await painted;
+  // per-clip measured delay (pipeline/apply-lipsync.py); CSS var is the fallback
+  const lead = engine.index?.clips?.[clip]?.audioDelayMs
+    ?? (Number(getComputedStyle(document.documentElement).getPropertyValue('--lipsync-offset')) || 0);
+  if (lead > 0) await new Promise(r => setTimeout(r, lead));
+}
+
 function sayLine(id) {
   const line = veraBank[id];
   if (!line) return false;
+  if (voice.muted) { showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70)); return true; }
+  speechTurn(() => new Promise(resolveTurn => {
   showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70));
-  if (voice.muted) return true;
 
   // A line has its OWN clip when one was baked from that exact audio; those are
   // lip-synced to the words. Otherwise fall back to a generic speaking clip.
   const own = `idle-1/speak/${id}`;
   const clip = engine.index?.clips?.[own] ? own : null;
 
-  const stop = () => { speaking = false; heldSpeakClip = null; trigger(CLIP.idle); };
+  // interrupt, don't queue: a queued idle waits for the next clip boundary,
+  // which after a replay is a full clip away (the crossfade hides the cut)
+  const stop = () => { speaking = false; heldSpeakClip = null; if (engineUp) engine.interrupt(CLIP.idle); else trigger(CLIP.idle); resolveTurn(); };
+  setTimeout(stop, 20000);  // safety: a turn must always end
 
   const startAudio = () => {
     try {
@@ -1128,34 +1202,11 @@ function sayLine(id) {
         startAudio();
         return;
       }
-      // Sync order matters: the VIDEO leads. Starting the audio first and
-      // cutting the video after left her mouth trailing the words by however
-      // long the clip took to fetch and decode.
-      await engine.fetchClip(clip).catch(() => {});
-      speaking = true;
-      heldSpeakClip = clip;
-      // Wait for the clip's first frame to be PAINTED, not merely decoded. The
-      // engine buffers up to 24 frames between decode and paint, so keying off
-      // decode started her voice as much as a second before her mouth appeared.
-      const painted = new Promise(resolve => {
-        const t0 = performance.now();
-        const prev = engine.onPresentClip;
-        const done = () => { engine.onPresentClip = prev; resolve(); };
-        engine.onPresentClip = k => { prev?.(k); if (k === clip) done(); };
-        const poll = () => {
-          if (engine.presentedClip === clip) return done();
-          if (performance.now() - t0 > 3000) return done();   // never hang the voice
-          requestAnimationFrame(poll);
-        };
-        requestAnimationFrame(poll);
-      });
-      engine.interrupt(clip);
-      await painted;
-      const lead = Number(getComputedStyle(document.documentElement).getPropertyValue('--lipsync-offset')) || 0;
-      if (lead > 0) await new Promise(r => setTimeout(r, lead));
+      await cutToTake(clip);
       startAudio();
     } catch { stop(); }
   })();
+  }));
   return true;
 }
 
@@ -1195,7 +1246,10 @@ async function sendChat() {
       pending.querySelector('p').textContent = shown;
       chatHistory.push({ role: 'user', text: message }, { role: 'vera', text: shown });
       if (spoken) sayLine(say);
-      else { showCaption(shown, Math.min(13000, 3500 + shown.length * 70)); speakFor(shown); }
+      else speechTurn(() => new Promise(res => {
+        showCaption(shown, Math.min(13000, 3500 + shown.length * 70)); speakFor(shown);
+        setTimeout(res, Math.min(9000, 1200 + shown.length * 55));
+      }));
     } else {
       pending.querySelector('p').textContent = 'I have lost my earpiece for a moment — try me again.';
       pending.classList.remove('pending');

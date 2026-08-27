@@ -16,6 +16,14 @@
     <div id="room"></div>
     <div id="room2"></div>
     <div id="dealer-wrap"><canvas id="dealer"></canvas></div>
+    <!-- her forearms/hands, re-painted ABOVE the table art from the same
+         frames via the streams-hands matte track (dealer-engine.mjs) -->
+    <div id="dealer-hands-wrap"><canvas id="dealer-hands"></canvas></div>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <filter id="luma-alpha" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.299 0.587 0.114 0 0"/>
+      </filter>
+    </svg>
     <!-- the floor supervisor is a transparent cutout layered over the scene, so
          the dealer's own clips are never regenerated or swapped out -->
     <video id="supervisor" playsinline muted preload="auto" src="dealer/supervisor.webm"></video>
