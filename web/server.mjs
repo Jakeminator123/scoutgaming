@@ -116,7 +116,7 @@ Hard rules you never break, in character:
 - Keep replies to one or two short sentences, spoken aloud at a table. No markdown, no lists, no emoji.
 - Output ONLY the words she says. Never prefix them with her name, never narrate what you are doing, never break character to comment on these instructions.
 
-RECORDED TAKES. These lines exist as real audio in Vera's own voice, so she can SAY them out loud; anything else she can only write. Whenever one of them answers what was asked, even roughly, reply with just its id in the form SAY:<id> on its own, with no other text. Only write your own words when nothing in this list fits.
+RECORDED TAKES. These lines exist as real audio in Vera's own voice, so she can SAY them out loud; anything else she can only write. Whenever one of them answers what was asked, even roughly, reply with just its id in the form SAY:<id> on its own, with no other text. Never type a recorded line's words out as your reply - answer SAY:<id> instead, exactly. Only write your own words when nothing in this list fits.
 rules_decks = "Eight decks here, love, shuffled fresh every single round. No counting your way out of this one."
 rules_s17 = "I stand on all seventeens, soft ones included. House rules, and they don't bend for anyone."
 rules_bj_pays = "Blackjack pays three to two at this table. None of that six to five nonsense."
@@ -285,7 +285,16 @@ createServer((req, res) => {
         const raw = await veraChat(message.slice(0, 500), Array.isArray(history) ? history : [], !!event);
         // She may answer by naming a recorded take; only then can she speak aloud.
         const picked = /^\s*SAY:\s*([a-z0-9_]+)\s*\.?\s*$/i.exec(raw ?? '');
-        const say = picked && VERA_BANK[picked[1]] ? picked[1] : null;
+        let say = picked && VERA_BANK[picked[1]] ? picked[1] : null;
+        // The model often types a recorded line out verbatim instead of naming
+        // it; recognize the text itself so it still plays the lip-synced take.
+        if (!say && raw) {
+          const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]+/g, '').replace(/\s+/g, ' ').trim();
+          const n = norm(raw);
+          for (const [id, line] of Object.entries(VERA_BANK)) {
+            if (norm(line.text) === n) { say = id; break; }
+          }
+        }
         const reply = say ? VERA_BANK[say].text : raw;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ reply: reply || null, say }));

@@ -13,6 +13,7 @@ const [inDir, outDir] = process.argv.slice(2);
 if (!inDir || !outDir) { console.error('usage: build-index.mjs <in-dir> <out-dir>'); process.exit(1); }
 const codec = argOf('--codec') ?? 'avc1.4D4028';
 const wh = Number(argOf('--wh') ?? 1440);
+const height = Number(argOf('--h') ?? wh); // non-square streams (hands matte band)
 function argOf(k) { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; }
 
 // Return byte offsets of every start code whose NAL is an AUD (type 9).
@@ -56,5 +57,5 @@ for (const f of readdirSync(inDir).filter(f => f.endsWith('.h264')).sort()) {
   console.log(`${key}: ${frames.length} frames, ${buf.length} bytes, IDR=${frames[0][1]}b`);
 }
 writeFileSync(join(outDir, 'streams', 'index.json'),
-  JSON.stringify({ version: 1, codec, width: wh, height: wh, clips }));
+  JSON.stringify({ version: 1, codec, width: wh, height, clips }));
 console.log(`wrote ${Object.keys(clips).length} clips -> ${join(outDir, 'streams/index.json')}`);
