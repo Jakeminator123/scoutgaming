@@ -436,7 +436,10 @@ const SEATS = 7;
 // VIP box is bet in 250K chips rather than 250 clicks of a 1K chip.
 const TABLES = [
   { id: 'classic', name: 'CLASSIC',     min: 5,    max: 2000,      chips: [1, 5, 10, 25, 50, 100, 500, 1000], dealer: 'vera' },
-  { id: 'high',    name: 'HIGH ROLLER', min: 100,  max: 50000,     chips: [25, 100, 500, 1000, 5000, 10000, 25000], dealer: 'astrid' },
+  // Astrid returns as a tier when her clip set is complete (2 of ~10 speaking
+  // clips survived the sync gate - a dealer who barely moves her lips is
+  // worse than no dealer). She stays reachable at ?dealer=astrid for review.
+  { id: 'high',    name: 'HIGH ROLLER', min: 100,  max: 50000,     chips: [25, 100, 500, 1000, 5000, 10000, 25000], dealer: 'vera' },
   { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000], dealer: 'vera' },
 ];
 let table = TABLES[0];
