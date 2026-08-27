@@ -145,12 +145,24 @@ const voice = {
   audio: new Map(),
   playing: false,
   greeted: false,
-  load() { for (const t of VOICE_LINES) { const a = new Audio(`${DEALER.base}/audio/en/${t}.mp3`); a.preload = 'auto'; this.audio.set(t, a); } },
+  dead: new Set(),
+  load() {
+    for (const t of VOICE_LINES) {
+      const a = new Audio(`${DEALER.base}/audio/en/${t}.mp3`);
+      a.preload = 'auto';
+      // a 404 fires 'error' exactly once - THAT is the only reliable signal
+      // that this dealer has no take for the line
+      a.addEventListener('error', () => this.dead.add(t), { once: true });
+      this.audio.set(t, a);
+    }
+  },
   say(t, { force = false } = {}) {
+    // one honest line per decision - silence must never be a mystery again
+    console.info('[voice]', t, 'muted=' + this.muted, 'dead=' + this.dead.has(t), 'busy=' + speechActive, 'force=' + force);
     if (this.muted) return;
     const a = this.audio.get(t);
     if (!a) return;
-    if (a.error || (a.readyState === 0 && a.networkState === 3)) return; // dealer has no take for this line: stay silent, no orphan caption
+    if (this.dead.has(t)) return; // dealer has no take for this line: stay silent, no orphan caption
     if (speechActive > 0 && !force) return;   // something's talking: drop optional chatter
     speechTurn(() => new Promise(resolve => {
       if (this.muted) return resolve();
@@ -181,6 +193,11 @@ const voice = {
         const moves = [CLIP.gest, CLIP.headTilt, CLIP.think].filter(k => engine.index?.clips?.[k]);
         if (moves.length && Math.random() < 0.7) trigger(moves[Math.floor(Math.random() * moves.length)]);
         a.onended = done;
+        // if sound hasn't actually started within 1.5s, release the stage -
+        // never hold a silent caption open
+        const started = () => clearTimeout(stall);
+        a.addEventListener('playing', started, { once: true });
+        const stall = setTimeout(() => { a.removeEventListener('playing', started); done(); }, 1500);
         setTimeout(done, 8000); // safety
       }
     }));
