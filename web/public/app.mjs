@@ -176,7 +176,10 @@ const voice = {
       } else {
         a.currentTime = 0;
         a.play().catch(() => {});
-        if (Math.random() < 0.6) trigger(Math.random() < 0.5 ? CLIP.gest : CLIP.headTilt);
+        // some motion under a voice-over: whichever gesture clips this dealer
+        // actually has (never a talking mouth on the wrong words)
+        const moves = [CLIP.gest, CLIP.headTilt, CLIP.think].filter(k => engine.index?.clips?.[k]);
+        if (moves.length && Math.random() < 0.7) trigger(moves[Math.floor(Math.random() * moves.length)]);
         a.onended = done;
         setTimeout(done, 8000); // safety
       }
@@ -1014,7 +1017,10 @@ async function dealSequence() {
   round.deal();
   renderBets(); setBanner(null); clearTable();
   voice.say('goodluck', { force: true });
-  trigger(CLIP.deal);
+  // a dealer with no spoken take for this line should be DEALING while the
+  // voice runs - queueing behind a 6s idle leaves her frozen mid-announcement
+  if (engineUp && !engine.index.clips['idle-1/speak/goodluck'] && engine.index.clips[CLIP.deal]) engine.interrupt(CLIP.deal);
+  else trigger(CLIP.deal);
   // let "Bets are closed" land before the first card flies — the cards were
   // beating her to it, which read as the line arriving late ("good luck"
   // rides over the first cards, like a real table)
