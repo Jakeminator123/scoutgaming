@@ -106,6 +106,12 @@ if (!AGENT_TOKEN) {
     AGENT_TOKEN = env.match(/^AXEL_AGENT_TOKEN=(.+)$/m)?.[1]?.trim() ?? '';
   } catch { /* stays empty; /chat returns the canned fallback */ }
 }
+// plain-text answers for take ids the model remembers but that have no
+// recording (spoken as caption only)
+const FALLBACK_LINES = {
+  rules_split: "You can split any pair here, up to four hands. Split aces take one card each, and you can double after a split.",
+};
+
 const VERA_SYSTEM = `You are Vera, the AI dealer at Scout Gaming's "Prive Blackjack" table. Character: warm, wry, unflappable; a veteran croupier who has seen everything and enjoys good company; dry one-liners, never cruel; slightly old-school manners.
 Hard rules you never break, in character:
 - You have NO knowledge of upcoming cards and never predict, imply or hint at outcomes.
@@ -285,6 +291,8 @@ createServer((req, res) => {
         // She may answer by naming a recorded take; only then can she speak aloud.
         const picked = /^\s*SAY:\s*([a-z0-9_]+)\s*\.?\s*$/i.exec(raw ?? '');
         let say = picked && VERA_BANK[picked[1]] ? picked[1] : null;
+        // a SAY naming a take that does not exist must never leak to the player
+        if (picked && !say) raw = FALLBACK_LINES[picked[1]] ?? "Ask me the rules, the odds, or anything about this table.";
         // The model often types a recorded line out verbatim instead of naming
         // it; recognize the text itself so it still plays the lip-synced take.
         if (!say && raw) {

@@ -278,8 +278,13 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   position: absolute; left: calc(42px + var(--badge-x, 0px)); top: calc(104px + var(--badge-y, 0px));
   transform: translateX(-50%);
 }
-/* split box: each hand fans in its own container, offset around the seat */
-.seat .cards .subhand { position: absolute; left: var(--shx, 0px); top: 0; }
+/* split box: each hand fans in its own container, offset around the seat.
+   Kept tight and slightly scaled down so two or three fans read as one box;
+   the hand being played is full-strength, its siblings sit back dimmed. */
+.seat .cards .subhand { position: absolute; left: var(--shx, 0px); top: 0;
+  transform: scale(0.94); transform-origin: 62px 103px;
+  transition: opacity .25s ease, filter .25s ease; }
+.seat .cards .subhand.waiting { opacity: .5; filter: saturate(.6) brightness(.85); }
 .hand-total {
   background: rgba(8,8,10,.9); border-radius: 7px; color: #fff;
   font-size: 15px; font-weight: 800; padding: 4px 11px; white-space: nowrap;

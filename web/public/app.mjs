@@ -858,10 +858,37 @@ function boxContainer(liveIdx) {
 function subhandEl(cardsEl, k, count) {
   let sub = cardsEl.querySelector(`:scope > .subhand[data-h="${k}"]`);
   if (!sub) { sub = document.createElement('div'); sub.className = 'subhand'; sub.dataset.h = k; cardsEl.appendChild(sub); }
-  const shift = (k - (count - 1) / 2) * 84;
+  const shift = (k - (count - 1) / 2) * 64;
   sub.style.setProperty('--shx', `${shift}px`);
   return sub;
 }
+// A split, paced like a table: the pair separates into single-card fans
+// first, then the dealer deals each new hand its second card - without this
+// the cards appear instantly and it reads as the game hitting for you.
+async function animateSplit(bHand) {
+  const boxIdx = bHand.box;
+  const sibs = round.live().filter(h => h.box === boxIdx);
+  const nh = sibs[sibs.indexOf(bHand) + 1];
+  const seat = seatEls[boxIdx];
+  const cardsEl = seat.querySelector('.cards');
+  cardsEl.innerHTML = '';
+  seat.querySelectorAll('.hand-total').forEach(b => b.remove());
+  const conts = sibs.map((h, k) => subhandEl(cardsEl, k, sibs.length));
+  sibs.forEach((h, k) => {
+    const upto = (h === bHand || h === nh) ? 1 : h.cards.length;
+    h.cards.slice(0, upto).forEach((card, ci) => { const el = cardEl(card); el.style.setProperty('--ci', ci); conts[k].appendChild(el); });
+    updateBadge(conts[k], h.cards.slice(0, upto));
+  });
+  await sleep(550);
+  for (const h of [bHand, nh]) {
+    const k = sibs.indexOf(h);
+    if (!h.cards[1]) continue;
+    dealCardTo(conts[k], h.cards[1]);
+    updateBadge(conts[k], h.cards);
+    await sleep(480);
+  }
+}
+
 // rebuild one box's card DOM from round state (used right after a split: the
 // dealer visibly separates the pair into two fans)
 function renderBoxHands(boxIdx) {
@@ -913,12 +940,19 @@ function clearTable() {
 function setBanner(text) { const b = $('#banner'); if (!text) b.classList.add('hidden'); else { b.classList.remove('hidden'); b.textContent = text; } }
 function activeBoxHighlight() {
   seatEls.forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.subhand').forEach(su => su.classList.remove('waiting'));
   $('#actions').hidden = true;
   $('#actions-top').hidden = true;
   if (!round || round.phase !== 'decisions') return;
   const seat = seatOfLive(round.active);
   if (!seat) return;
   seat.classList.add('active');
+  // on a split box, dim the hands that are waiting so HIT visibly belongs
+  // to one fan
+  const cont = boxContainer(round.active);
+  if (cont?.classList.contains('subhand')) {
+    cont.parentNode.querySelectorAll(':scope > .subhand').forEach(su => { if (su !== cont) su.classList.add('waiting'); });
+  }
   showActions(seat);
 }
 function showActions(seat) {
@@ -1049,7 +1083,7 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
     document.querySelectorAll('#actions button').forEach(b => { b.disabled = true; });
     if (btn.dataset.act === 'hit') sfx.play('knock');
     round.act(btn.dataset.act);
-    if (btn.dataset.act === 'split') { renderBoxHands(hand.box); syncBalance('split'); }
+    if (btn.dataset.act === 'split') { await animateSplit(hand); syncBalance('split'); }
     else if (hand.cards.length > before) {
       dealCardTo(boxContainer(liveIdx), hand.cards.at(-1));
       updateBadge(boxContainer(liveIdx), hand.cards);
