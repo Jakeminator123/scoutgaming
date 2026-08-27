@@ -7,6 +7,7 @@ const api=async(p,body)=>{const r=await fetch(p,body?{method:'POST',headers:{'Co
 
 const SECTIONS=[
  ['ops','Operations','SCOUT LIVE CASINO · ALL SYSTEMS'],
+ ['voice','Voice Lines','SYNC VERIFICATION · EVERY TAKE, AS THE GAME PLAYS IT'],
  ['rooms','Tables & Rooms','ROOMS · TIERS · RULES'],
  ['dealers','Dealers','EVERY FACE · ROSTER & PIPELINE'],
  ['pit','Pit Bosses','SUPERVISION · FAIRNESS'],
@@ -15,7 +16,7 @@ const SECTIONS=[
  ['pay','Payments','WALLET · LEDGER'],
  ['shoes','Shoes & Decks','GAME INTEGRITY · RNG'],
 ];
-const ICONS={ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+const ICONS={voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
  rooms:'<ellipse cx="12" cy="12" rx="9" ry="6"/><path d="M5 16 v3 M19 16 v3"/>',
  dealers:'<circle cx="12" cy="9" r="4"/><path d="M4 21 c1.5-5 4.5-7 8-7 s6.5 2 8 7"/>',
  pit:'<path d="M12 3 L20 6 V12 C20 17 16.5 20 12 21.5 C7.5 20 4 17 4 12 V6 Z"/>',
@@ -52,6 +53,27 @@ async function render(id){
     <div class="panel"><div class="t">TIER ASSIGNMENTS &middot; LIVE GAME CONTROL</div><table><thead><tr><th>TIER</th><th>LIMITS</th><th>DEALER</th><th>ROOM</th><th>STATE</th></tr></thead><tbody>
     ${Object.entries(ov.tiers).map(([t,d])=>{const dd=ov.dealers.find(x=>x.key===d);const [lbl,cls]=DSTATE(dd);return `<tr><td class="mono">${TIERN[t]}</td><td class="mono" style="color:var(--mut)">${{classic:'$5 - $2,000',high:'$100 - $50,000',vip:'$1,000 - $1,000,000'}[t]}</td><td>${dd.name}</td><td style="color:var(--mut)">${dd.room}</td><td>${pill(lbl,cls)}</td></tr>`;}).join('')}
     </tbody></table></div>`;
+  }
+  if(id==='voice'){
+    const vl=await api('/api/bo/voicelines');
+    C.innerHTML=vl.dealers.filter(d=>d.lines.length).map(d=>`
+    <div class="panel"><div class="t"><span>${d.name.toUpperCase()} &middot; ${d.lines.filter(l=>l.clip).length} LIP-SYNCED &middot; ${d.lines.filter(l=>!l.clip).length} VOICE-OVER</span></div>
+    <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
+    ${d.lines.map(l=>`
+      <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel2)">
+        ${l.preview?`<video src="${l.preview}" preload="none" controls playsinline style="width:100%;aspect-ratio:1;display:block;background:#000"></video>`
+                   :`<div style="width:100%;aspect-ratio:2.6;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:#000">
+                      <audio src="${l.audio}" controls preload="none" style="width:88%;height:30px"></audio>
+                      <span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">VOICE ONLY - NO CLIP YET</span></div>`}
+        <div style="padding:9px 11px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+            <span class="mono" style="font-size:10px;letter-spacing:.1em">${l.key.toUpperCase()}</span>
+            ${l.clip?pill((l.delay??0)+'MS','live'):pill('VOICE-OVER','pending')}
+          </div>
+          <div style="font-size:11px;color:var(--mut);margin-top:4px">${l.text||'&mdash;'}</div>
+        </div>
+      </div>`).join('')}
+    </div></div>`).join('');
   }
   if(id==='rooms'){
     C.innerHTML=`<div class="row">${ov.rooms.map(r=>{const d=ov.dealers.find(x=>x.key===r.dealer)||{};

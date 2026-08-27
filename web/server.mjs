@@ -134,6 +134,29 @@ function boApi(url) {
     return { tx: db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all() };
   }
   if (url === '/api/bo/config') return cfg;
+  if (url === '/api/bo/voicelines') {
+    const out = [];
+    for (const d of dealerScan()) {
+      let idx = {}, bank = {};
+      try { idx = JSON.parse(readSync(join(root, d.base, 'streams/index.json'), 'utf8')).clips; } catch {}
+      try { bank = JSON.parse(readSync(join(root, d.base, 'audio/en/bank.json'), 'utf8')); } catch {}
+      const lines = [];
+      const audioDir = join(root, d.base, 'audio/en');
+      let mp3s = [];
+      try { mp3s = readdirSync(audioDir).filter(f => f.endsWith('.mp3')); } catch {}
+      for (const f of mp3s) {
+        const k = f.replace('.mp3', '');
+        const clip = idx['idle-1/speak/' + k];
+        const preview = existsSync(join(root, d.base, 'preview', k + '.mp4'));
+        lines.push({ key: k, text: bank[k]?.text ?? '', clip: !!clip, delay: clip?.audioDelayMs ?? null,
+                     preview: preview ? `/${d.base}/preview/${k}.mp4` : null,
+                     audio: `/${d.base}/audio/en/${k}.mp3` });
+      }
+      lines.sort((a, b) => a.key.localeCompare(b.key));
+      out.push({ dealer: d.key, name: d.name, lines });
+    }
+    return { dealers: out };
+  }
   return null;
 }
 function boPost(url, body) {
