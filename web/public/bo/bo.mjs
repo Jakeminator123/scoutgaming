@@ -26,6 +26,9 @@ const ICONS={ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y=
 $('#nav').innerHTML=SECTIONS.map(([id,name])=>`<a href="#${id}" data-id="${id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[id]}</svg>${name}</a>`).join('');
 
 const TIERN={classic:'CLASSIC',high:'HIGH ROLLER',vip:'VIP SALON'};
+const PORTRAIT=k=>`/bo/img/${k}-portrait.jpg`;
+const ROOMIMG={prive:'/bo/img/prive-room.jpg',darkhall:'/bo/img/darkhall-room.jpg',goldensalon:'/bo/img/goldensalon-room.jpg',azure:'/bo/img/azure-room.jpg'};
+const DEALER_ROOM={vera:'prive',astrid:'darkhall',amira:'goldensalon',mei:'azure'};
 const DSTATE=d=>d.speak>=10?['LIVE-READY','live']:d.speak>0?['PREVIEW','preview']:d.stills?['STILLS READY','pending']:['PENDING','pending'];
 
 async function render(id){
@@ -51,9 +54,17 @@ async function render(id){
     </tbody></table></div>`;
   }
   if(id==='rooms'){
-    C.innerHTML=`<div class="panel"><div class="t">ROOMS</div><table><thead><tr><th>ROOM</th><th>SCENE</th><th>FELT</th><th>DEALER</th><th>STATE</th></tr></thead><tbody>
-    ${ov.rooms.map(r=>`<tr><td>${r.name}</td><td style="color:var(--mut)">${r.scene}</td><td>${r.felt}</td><td>${(ov.dealers.find(d=>d.key===r.dealer)||{}).name||'-'}</td><td>${pill(r.state.toUpperCase(),r.state)}</td></tr>`).join('')}
-    </tbody></table></div>
+    C.innerHTML=`<div class="row">${ov.rooms.map(r=>{const d=ov.dealers.find(x=>x.key===r.dealer)||{};
+    return `<div class="kpi" style="min-width:280px;padding:0;overflow:hidden">
+      <div style="position:relative"><img src="${ROOMIMG[r.id]}" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">
+      <div style="position:absolute;top:10px;right:10px">${pill(r.state.toUpperCase(),r.state)}</div>
+      <img src="${PORTRAIT(r.dealer)}" title="${d.name||''}" style="position:absolute;bottom:-14px;left:14px;width:44px;height:44px;object-fit:cover;object-position:top;border-radius:50%;border:2px solid var(--panel)"></div>
+      <div style="padding:20px 14px 12px">
+      <div style="font-family:'Space Grotesk';font-weight:700;font-size:16px">${r.name}</div>
+      <div class="kv" style="margin-top:6px"><b>Scene</b><span>${r.scene}</span></div>
+      <div class="kv"><b>Felt</b><span>${r.felt}</span></div>
+      <div class="kv"><b>Dealer</b><span>${d.name||'-'}</span></div>
+      </div></div>`;}).join('')}</div>
     <div class="grid2"><div class="panel"><div class="t">HOUSE RULES &middot; ALL TABLES</div><div class="pad">
     ${[['Decks','8, reshuffled every round'],['Dealer stands','All 17s'],['Blackjack pays','3 : 2'],['Insurance pays','2 : 1'],['Split','Any pair, up to 4 hands'],['Split aces','One card each'],['Double after split','Allowed'],['Side bets','Perfect Pairs 25:1 · 21+3 100:1']].map(([k,v])=>`<div class="kv"><b>${k}</b><span>${v}</span></div>`).join('')}
     </div></div>
@@ -62,23 +73,36 @@ async function render(id){
     </div></div></div>`;
   }
   if(id==='dealers'){
-    C.innerHTML=`<div class="row">${ov.dealers.map(d=>{const [lbl,cls]=DSTATE(d);const full=17;const pct=Math.min(100,Math.round(d.speak/ (d.key==='vera'?32:full) *100));
-    return `<div class="kpi" style="min-width:280px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;gap:10px;align-items:center"><div style="width:40px;height:40px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;color:var(--lime)">${d.name[0]}</div><div><div style="font-family:'Space Grotesk';font-weight:600;font-size:15px">${d.name}</div><div class="mono" style="font-size:9px;letter-spacing:.12em;color:var(--mut)">${d.room.toUpperCase()}</div></div></div>${pill(lbl,cls)}</div>
-      <div class="kv"><b>Clips on disk</b><span class="mono">${d.clips} (${d.speak} speech)</span></div>
+    C.innerHTML=`<div class="row">${ov.dealers.map(d=>{const [lbl,cls]=DSTATE(d);const full=d.key==='vera'?32:17;const pct=Math.min(100,Math.round(d.speak/full*100));
+    return `<div class="kpi" style="min-width:250px;padding:0;overflow:hidden">
+      <div style="position:relative"><img src="${PORTRAIT(d.key)}" alt="${d.name}" style="width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;display:block;filter:${d.speak===0&&d.clips===0?'saturate(.5) brightness(.75)':'none'}">
+      <div style="position:absolute;top:10px;right:10px">${pill(lbl,cls)}</div>
+      <div style="position:absolute;bottom:0;left:0;right:0;padding:24px 14px 10px;background:linear-gradient(transparent,rgba(10,11,13,.92))"><div style="font-family:'Space Grotesk';font-weight:700;font-size:17px">${d.name}</div><div class="mono" style="font-size:9px;letter-spacing:.12em;color:var(--mut)">${d.room.toUpperCase()}</div></div></div>
+      <div style="padding:12px 14px">
+      <div class="kv"><b>Clips</b><span class="mono">${d.clips} (${d.speak} speech)</span></div>
       <div class="kv"><b>Voice</b><span>${d.voice}</span></div>
       <div style="margin-top:10px" class="bar"><i style="width:${pct}%"></i></div>
       <div style="display:flex;gap:8px;margin-top:12px"><button onclick="window.open('/?dealer=${d.key}','_blank')">OPEN TABLE</button></div>
+      </div>
     </div>`;}).join('')}</div>
-    <div class="panel"><div class="t">TIER ASSIGNMENT &middot; CHANGES THE LIVE GAME</div><table><thead><tr><th>TIER</th><th>CURRENT DEALER</th><th>ASSIGN</th><th></th></tr></thead><tbody>
-    ${Object.entries(ov.tiers).map(([t,cur])=>`<tr><td class="mono">${TIERN[t]}</td><td>${(ov.dealers.find(d=>d.key===cur)||{}).name}</td>
-      <td><select id="sel-${t}">${ov.dealers.map(d=>`<option value="${d.key}" ${d.key===cur?'selected':''}>${d.name}${d.speak===0?' (no clips)':''}</option>`).join('')}</select></td>
-      <td><button class="pri" data-tier="${t}">APPLY</button></td></tr>`).join('')}
-    </tbody></table></div>`;
-    C.querySelectorAll('button[data-tier]').forEach(b=>b.onclick=async()=>{
-      const t=b.dataset.tier;const d=$('#sel-'+t).value;
-      const r=await api('/api/bo/tier',{tier:t,dealer:d});
-      if(r.ok){toast(`${TIERN[t]} → ${d.toUpperCase()} — live on next table load`);}else toast('rejected: '+r.error);
+    <div class="panel"><div class="t">TABLE ASSIGNMENT &middot; CLICK A DEALER TO SEAT HER &middot; CHANGES THE LIVE GAME</div>
+    <div class="pad" style="display:flex;flex-direction:column;gap:16px">
+    ${Object.entries(ov.tiers).map(([t,cur])=>{
+      return `<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2)">
+        <div style="position:relative;width:190px;flex-shrink:0"><img src="${ROOMIMG[DEALER_ROOM[cur]]}" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;display:block">
+          <div class="mono" style="position:absolute;bottom:6px;left:8px;font-size:9px;letter-spacing:.14em;text-shadow:0 1px 4px #000">${TIERN[t]}</div></div>
+        <div style="min-width:130px"><div style="font-family:'Space Grotesk';font-weight:600">${TIERN[t]}</div><div class="mono" style="font-size:10px;color:var(--mut)">${{classic:'$5 - $2,000',high:'$100 - $50,000',vip:'$1,000 - $1,000,000'}[t]}</div></div>
+        <div style="display:flex;gap:10px;flex:1;flex-wrap:wrap">
+        ${ov.dealers.map(d=>{const on=d.key===cur;const ok=d.clips>0;
+          return `<div data-tier="${t}" data-dealer="${d.key}" title="${d.name}${ok?'':' - no clips yet'}" style="cursor:${ok?'pointer':'not-allowed'};text-align:center;opacity:${ok?1:.35}">
+            <img src="${PORTRAIT(d.key)}" style="width:58px;height:58px;object-fit:cover;object-position:top;border-radius:50%;display:block;border:2px solid ${on?'var(--lime)':'var(--line)'};box-shadow:${on?'0 0 0 3px rgba(214,255,58,.2)':'none'}">
+            <div class="mono" style="font-size:8px;letter-spacing:.1em;margin-top:4px;color:${on?'var(--lime)':'var(--mut)'}">${d.name.toUpperCase()}</div></div>`;}).join('')}
+        </div></div>`;}).join('')}
+    </div></div>`;
+    C.querySelectorAll('[data-tier][data-dealer]').forEach(el=>el.onclick=async()=>{
+      const r=await api('/api/bo/tier',{tier:el.dataset.tier,dealer:el.dataset.dealer});
+      if(r.ok){toast(`${TIERN[el.dataset.tier]} → ${el.dataset.dealer.toUpperCase()} — live on next table load`);render('dealers');}
+      else toast('rejected: '+r.error);
     });
   }
   if(id==='pit'){
