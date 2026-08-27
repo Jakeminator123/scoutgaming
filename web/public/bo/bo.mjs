@@ -89,8 +89,13 @@ async function render(id){
     const me=await api('/api/bo/me');
     if(me.role!=='superadmin'){C.innerHTML='<div class="mono" style="color:var(--mut);font-size:11px">SUPERADMIN ONLY</div>';return;}
     const u=await api('/api/bo/users');
-    C.innerHTML=`<div class="panel"><div class="t">BACKOFFICE USERS &middot; CRAIG</div><table><thead><tr><th>USER</th><th>EMAIL</th><th>ROLE</th><th>STATE</th><th>SINCE</th></tr></thead><tbody>
-    ${u.users.map(x=>`<tr><td>${x.username}</td><td style="color:var(--mut)">${x.email||'—'}</td><td class="mono">${x.role.toUpperCase()}</td><td>${x.active?pill('ACTIVE','live'):pill('INVITED','pending')}</td><td style="color:var(--mut)">${(x.created_at||'').slice(0,10)}</td></tr>`).join('')}
+    const ROLES=['reader','staff','admin','superadmin'];
+    C.innerHTML=`<div class="panel"><div class="t">BACKOFFICE USERS &middot; CRAIG</div><table><thead><tr><th>USER</th><th>EMAIL</th><th>ROLE</th><th>STATE</th><th>SINCE</th><th></th></tr></thead><tbody>
+    ${u.users.map(x=>{const self=x.username===me.user;
+      return `<tr><td>${x.username}${self?' <span class="mono" style="color:var(--lime);font-size:8px">YOU</span>':''}</td><td style="color:var(--mut)">${x.email||'—'}</td>
+      <td>${self?`<span class="mono">${x.role.toUpperCase()}</span>`:`<select data-role-user="${x.username}">${ROLES.map(r=>`<option value="${r}" ${r===x.role?'selected':''}>${r.toUpperCase()}</option>`).join('')}</select>`}</td>
+      <td>${x.active?pill('ACTIVE','live'):pill('INVITED','pending')}</td><td style="color:var(--mut)">${(x.created_at||'').slice(0,10)}</td>
+      <td>${self?'':`<button data-remove="${x.username}" style="color:var(--red);border-color:rgba(232,106,94,.4)">REMOVE</button>`}</td></tr>`;}).join('')}
     </tbody></table></div>
     <div class="panel" style="max-width:640px"><div class="t">INVITE BY EMAIL &middot; THEY CHOOSE THEIR OWN PASSWORD</div>
     <div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -98,6 +103,15 @@ async function render(id){
       <select id="inv-role"><option value="reader">READER (read-only)</option><option value="staff">STAFF</option><option value="admin">ADMIN</option><option value="superadmin">SUPER ADMIN</option></select>
       <button class="pri" id="inv-send">SEND INVITE</button>
     </div><div class="pad" id="inv-out" style="padding-top:0"></div></div>`;
+    C.querySelectorAll('select[data-role-user]').forEach(sel=>sel.onchange=async()=>{
+      const r=await api('/api/bo/users/role',{username:sel.dataset.roleUser,role:sel.value});
+      if(r.ok)toast(`${sel.dataset.roleUser} → ${sel.value.toUpperCase()}`);else{toast(r.error);render('users');}
+    });
+    C.querySelectorAll('button[data-remove]').forEach(b=>b.onclick=async()=>{
+      if(!confirm(`Remove ${b.dataset.remove}? This cannot be undone.`))return;
+      const r=await api('/api/bo/users/remove',{username:b.dataset.remove});
+      if(r.ok){toast('removed');render('users');}else toast(r.error);
+    });
     $('#inv-send').onclick=async()=>{
       const r=await api('/api/bo/users/invite',{email:$('#inv-email').value,role:$('#inv-role').value});
       const out=$('#inv-out');

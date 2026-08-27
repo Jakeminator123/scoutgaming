@@ -321,6 +321,20 @@ async function boPost(url, body, who) {
     }));
     return { ok: true, emailSent: mail.sent, reason: mail.reason, link };
   }
+  if (url === '/api/bo/users/role') {
+    const { username, role } = body;
+    if (!['reader', 'staff', 'admin', 'superadmin'].includes(role)) return { error: 'bad role' };
+    if (username === who?.sub) return { error: 'cannot change your own role' };
+    const r = boDb.prepare('UPDATE users SET role = ? WHERE username = ?').run(role, username);
+    return r.changes ? { ok: true } : { error: 'no such user' };
+  }
+  if (url === '/api/bo/users/remove') {
+    const { username } = body;
+    if (username === who?.sub) return { error: 'cannot remove yourself' };
+    boDb.prepare('DELETE FROM tokens WHERE username = ?').run(username);
+    const r = boDb.prepare('DELETE FROM users WHERE username = ?').run(username);
+    return r.changes ? { ok: true } : { error: 'no such user' };
+  }
   if (url === '/api/bo/reset-request') {
     const { user } = body;
     const u = boDb.prepare('SELECT username, email FROM users WHERE username = ? OR email = ?').get(user ?? '', user ?? '');
@@ -638,7 +652,7 @@ createServer((req, res) => {
     // least role that may perform each action
     const NEED = { '/api/bo/voiceline-review': 'staff', '/api/bo/tournament': 'staff',
                    '/api/bo/pitboss': 'admin', '/api/bo/tier': 'admin', '/api/bo/room': 'admin',
-                   '/api/bo/users/invite': 'superadmin' };
+                   '/api/bo/users/invite': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin' };
     const PUBLIC = ['/api/bo/reset-request', '/api/bo/set-password'];
     const who = boSessionOk(req);
     if (!PUBLIC.includes(req.url)) {
