@@ -278,6 +278,8 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   position: absolute; left: calc(42px + var(--badge-x, 0px)); top: calc(104px + var(--badge-y, 0px));
   transform: translateX(-50%);
 }
+/* split box: each hand fans in its own container, offset around the seat */
+.seat .cards .subhand { position: absolute; left: var(--shx, 0px); top: 0; }
 .hand-total {
   background: rgba(8,8,10,.9); border-radius: 7px; color: #fff;
   font-size: 15px; font-weight: 800; padding: 4px 11px; white-space: nowrap;
