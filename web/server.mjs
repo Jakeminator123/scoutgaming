@@ -287,11 +287,12 @@ createServer((req, res) => {
       try {
         const { message, history, event } = JSON.parse(body || '{}');
         if (!message || typeof message !== 'string') { res.writeHead(400); res.end('{}'); return; }
-        const raw = await veraChat(message.slice(0, 500), Array.isArray(history) ? history : [], !!event);
-        // She may answer by naming a recorded take; only then can she speak aloud.
-        const picked = /^\s*SAY:\s*([a-z0-9_]+)\s*\.?\s*$/i.exec(raw ?? '');
+        let raw = await veraChat(message.slice(0, 500), Array.isArray(history) ? history : [], !!event);
+        // She may answer by naming a recorded take; only then can she speak
+        // aloud. Match a LEADING directive - the model sometimes appends
+        // chatter after it, and none of that may ever leak to the player.
+        const picked = /^\s*SAY:\s*([a-z0-9_]+)\b/i.exec(raw ?? '');
         let say = picked && VERA_BANK[picked[1]] ? picked[1] : null;
-        // a SAY naming a take that does not exist must never leak to the player
         if (picked && !say) raw = FALLBACK_LINES[picked[1]] ?? "Ask me the rules, the odds, or anything about this table.";
         // The model often types a recorded line out verbatim instead of naming
         // it; recognize the text itself so it still plays the lip-synced take.

@@ -1137,11 +1137,22 @@ async function finish() {
     // hands per box, and every one of them pays or loses
     const handsHere = live.filter(h => h.box === i);
     let stakeSum = 0, backSum = 0, insSum = 0;
-    for (const hand of handsHere) {
+    handsHere.forEach((hand, k) => {
       ret += hand.result;
       stakeSum += hand.stake; backSum += hand.result; insSum += hand.insured;
       if (hand.splitFrom === null && hand.cards.length === 2 && handValue(hand.cards).total === 21) anyPlayerBJ = true;
-    }
+      // on a split box every hand shows its own verdict - the combined net
+      // below can read as "my 21 didn't pay" when a sibling busted
+      if (handsHere.length > 1) {
+        const hnet = hand.result - hand.stake - hand.insured;
+        const badge = seat.querySelector(`.hand-total[data-h="${k}"]`);
+        if (badge) {
+          const t = handValue(hand.cards).total;
+          badge.textContent = `${t > 21 ? 'BUST' : t} ${hnet > 0 ? '+' : ''}${fmt(hnet)}`;
+          badge.classList.add(hnet > 0 ? 'win' : hnet === 0 ? 'push' : 'lose');
+        }
+      }
+    });
     sideRet += handsHere[0]?.sideReturn ?? 0;   // side bets ride the original hand only
     const el = seat.querySelector('.result');
     const net = backSum - stakeSum - insSum;

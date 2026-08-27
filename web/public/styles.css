@@ -285,6 +285,9 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
   transform: scale(0.94); transform-origin: 62px 103px;
   transition: opacity .25s ease, filter .25s ease; }
 .seat .cards .subhand.waiting { opacity: .5; filter: saturate(.6) brightness(.85); }
+.hand-total.win  { background: #1E6B47; color: #EAF6EE; }
+.hand-total.push { background: #4A5350; color: #E7EAE7; }
+.hand-total.lose { background: #7E2F24; color: #F6E9E6; }
 .hand-total {
   background: rgba(8,8,10,.9); border-radius: 7px; color: #fff;
   font-size: 15px; font-weight: 800; padding: 4px 11px; white-space: nowrap;
