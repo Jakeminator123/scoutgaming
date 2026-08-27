@@ -321,6 +321,33 @@ async function boPost(url, body, who) {
     }));
     return { ok: true, emailSent: mail.sent, reason: mail.reason, link };
   }
+  if (url === '/api/bo/users/resend') {
+    const { username } = body;
+    const u = boDb.prepare('SELECT username, email, role, hash FROM users WHERE username = ?').get(username ?? '');
+    if (!u) return { error: 'no such user' };
+    if (!u.email) return { error: 'user has no email on file' };
+    boDb.prepare("DELETE FROM tokens WHERE username = ?").run(u.username);
+    if (!u.hash) {
+      const t = mintToken(u.username, 'invite', 72);
+      const mail = await sendMail(u.email, 'You are invited to the Scout backoffice', brandEmail({
+        preheader: 'Choose your password to activate your account.',
+        headline: 'You have a seat in the backoffice.',
+        intro: `Your invitation to the Scout Live Casino backoffice (<span style="color:#D6FF3A">${u.role.toUpperCase()}</span> role) has been renewed. Choose your password to activate. The link is valid for 72 hours.`,
+        cta: 'CHOOSE PASSWORD', ctaUrl: `${BO_URL}/bo/set-password.html?t=${t}`,
+        footer: 'If you were not expecting this invitation, ignore this email and nothing happens.',
+      }));
+      return { ok: true, kind: 'invite', emailSent: mail.sent, reason: mail.reason };
+    }
+    const t = mintToken(u.username, 'reset', 2);
+    const mail = await sendMail(u.email, 'Reset your Scout backoffice password', brandEmail({
+      preheader: 'Password reset for your backoffice account.',
+      headline: 'Reset your password.',
+      intro: 'A password reset was issued for your Scout backoffice account by an administrator. The link is valid for 2 hours.',
+      cta: 'SET NEW PASSWORD', ctaUrl: `${BO_URL}/bo/set-password.html?t=${t}`,
+      footer: 'If this was not you, ignore this email - your password stays unchanged.',
+    }));
+    return { ok: true, kind: 'reset', emailSent: mail.sent, reason: mail.reason };
+  }
   if (url === '/api/bo/users/role') {
     const { username, role } = body;
     if (!['reader', 'staff', 'admin', 'superadmin'].includes(role)) return { error: 'bad role' };
@@ -652,7 +679,7 @@ createServer((req, res) => {
     // least role that may perform each action
     const NEED = { '/api/bo/voiceline-review': 'staff', '/api/bo/tournament': 'staff',
                    '/api/bo/pitboss': 'admin', '/api/bo/tier': 'admin', '/api/bo/room': 'admin',
-                   '/api/bo/users/invite': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin' };
+                   '/api/bo/users/invite': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin', '/api/bo/users/resend': 'superadmin' };
     const PUBLIC = ['/api/bo/reset-request', '/api/bo/set-password'];
     const who = boSessionOk(req);
     if (!PUBLIC.includes(req.url)) {
