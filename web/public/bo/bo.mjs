@@ -140,7 +140,7 @@ async function render(id){
     return `<div class="kpi" style="min-width:280px;padding:0;overflow:hidden">
       <div style="position:relative"><img src="${ROOMIMG[r.id]}" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">
       <div style="position:absolute;top:10px;right:10px">${pill(r.state.toUpperCase(),r.state)}</div>
-      <img src="${PORTRAIT(r.dealer)}" title="${d.name||''}" style="position:absolute;bottom:-14px;left:14px;width:44px;height:44px;object-fit:cover;object-position:top;border-radius:50%;border:2px solid var(--panel)"></div>
+      <img src="${PORTRAIT(r.dealer)}" title="${d.name||''}" style="position:absolute;bottom:-14px;left:14px;width:44px;height:44px;object-fit:cover;border-radius:50%;border:2px solid var(--panel)"></div>
       <div style="padding:20px 14px 12px">
       <div style="font-family:'Space Grotesk';font-weight:700;font-size:16px">${r.name}</div>
       <div class="kv" style="margin-top:6px"><b>Scene</b><span>${r.scene}</span></div>
@@ -167,7 +167,7 @@ async function render(id){
   if(id==='dealers'){
     C.innerHTML=`<div class="row">${ov.dealers.map(d=>{const [lbl,cls]=DSTATE(d);const full=d.key==='vera'?32:17;const pct=Math.min(100,Math.round(d.speak/full*100));
     return `<div class="kpi" style="min-width:250px;padding:0;overflow:hidden">
-      <div style="position:relative"><img src="${PORTRAIT(d.key)}" alt="${d.name}" style="width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;display:block;filter:${d.speak===0&&d.clips===0?'saturate(.5) brightness(.75)':'none'}">
+      <div style="position:relative"><img src="${PORTRAIT(d.key)}" alt="${d.name}" style="width:100%;aspect-ratio:16/10;object-fit:cover;display:block;filter:${d.speak===0&&d.clips===0?'saturate(.5) brightness(.75)':'none'}">
       <div style="position:absolute;top:10px;right:10px">${pill(lbl,cls)}</div>
       <div style="position:absolute;bottom:0;left:0;right:0;padding:24px 14px 10px;background:linear-gradient(transparent,rgba(10,11,13,.92))"><div style="font-family:'Space Grotesk';font-weight:700;font-size:17px">${d.name}</div><div class="mono" style="font-size:9px;letter-spacing:.12em;color:var(--mut)">${d.room.toUpperCase()}</div></div></div>
       <div style="padding:12px 14px">
@@ -177,18 +177,19 @@ async function render(id){
       <div style="display:flex;gap:8px;margin-top:12px"><button onclick="window.open('/?dealer=${d.key}','_blank')">OPEN TABLE</button></div>
       </div>
     </div>`;}).join('')}</div>
-    <div class="panel"><div class="t">TABLE ASSIGNMENT &middot; CLICK A DEALER TO SEAT HER &middot; CHANGES THE LIVE GAME</div>
+    <div class="panel"><div class="t"><span>TABLE ASSIGNMENT &middot; CLICK A DEALER TO SEAT HER &middot; CHANGES THE LIVE GAME</span><span class="mono" style="font-size:8px;letter-spacing:.1em;color:var(--mut)">A DEALER BRINGS HER OWN ENVIRONMENT &middot; NEW DEALER+ROOM COMBOS = GENERATION PASS</span></div>
     <div class="pad" style="display:flex;flex-direction:column;gap:16px">
     ${Object.entries(ov.tiers).map(([t,cur])=>{
       return `<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2)">
         <div style="position:relative;width:190px;flex-shrink:0"><img src="${ROOMIMG[DEALER_ROOM[cur]]}" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;display:block">
           <div class="mono" style="position:absolute;bottom:6px;left:8px;font-size:9px;letter-spacing:.14em;text-shadow:0 1px 4px #000">${TIERN[t]}</div></div>
-        <div style="min-width:130px"><div style="font-family:'Space Grotesk';font-weight:600">${TIERN[t]}</div><div class="mono" style="font-size:10px;color:var(--mut)">${{classic:'$5 - $2,000',high:'$100 - $50,000',vip:'$1,000 - $1,000,000'}[t]}</div></div>
+        <div style="min-width:150px"><div style="font-family:'Space Grotesk';font-weight:600">${TIERN[t]}</div><div class="mono" style="font-size:10px;color:var(--mut)">${{classic:'$5 - $2,000',high:'$100 - $50,000',vip:'$1,000 - $1,000,000'}[t]}</div><div class="mono" style="font-size:9px;color:var(--lime);margin-top:3px">${({prive:'MAHOGANY PRIVÉ',darkhall:'DARK HALL',goldensalon:'GOLDEN SALON',azure:'AZURE VENUE'})[DEALER_ROOM[cur]]}</div></div>
         <div style="display:flex;gap:10px;flex:1;flex-wrap:wrap">
-        ${ov.dealers.map(d=>{const on=d.key===cur;const ok=d.clips>0;
-          return `<div data-tier="${t}" data-dealer="${d.key}" title="${d.name}${ok?'':' - no clips yet'}" style="cursor:${ok?'pointer':'not-allowed'};text-align:center;opacity:${ok?1:.35}">
-            <img src="${PORTRAIT(d.key)}" style="width:58px;height:58px;object-fit:cover;object-position:top;border-radius:50%;display:block;border:2px solid ${on?'var(--lime)':'var(--line)'};box-shadow:${on?'0 0 0 3px rgba(214,255,58,.2)':'none'}">
-            <div class="mono" style="font-size:8px;letter-spacing:.1em;margin-top:4px;color:${on?'var(--lime)':'var(--mut)'}">${d.name.toUpperCase()}</div></div>`;}).join('')}
+        ${ov.dealers.map(d=>{const on=d.key===cur;const ok=d.clips>0;const venue=({vera:'PRIVÉ',astrid:'DARK HALL',amira:'GOLDEN SALON',mei:'AZURE'})[d.key];
+          return `<div ${ok?`data-tier="${t}" data-dealer="${d.key}"`:''} title="${d.name} &middot; ${venue}${ok?'':' — needs clips first (generate under Dealers)'}" style="cursor:${ok?'pointer':'not-allowed'};text-align:center;opacity:${ok?1:.35}">
+            <img src="${PORTRAIT(d.key)}" style="width:58px;height:58px;object-fit:cover;border-radius:50%;display:block;border:2px solid ${on?'var(--lime)':'var(--line)'};box-shadow:${on?'0 0 0 3px rgba(214,255,58,.2)':'none'}">
+            <div class="mono" style="font-size:8px;letter-spacing:.1em;margin-top:4px;color:${on?'var(--lime)':'var(--mut)'}">${d.name.toUpperCase()}</div>
+            <div class="mono" style="font-size:7px;letter-spacing:.08em;color:var(--mut)">${venue}</div></div>`;}).join('')}
         </div></div>`;}).join('')}
     </div></div>`;
     C.querySelectorAll('[data-tier][data-dealer]').forEach(el=>el.onclick=async()=>{
