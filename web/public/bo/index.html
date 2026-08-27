@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scout Live Casino — Backoffice</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{--ink:#0A0B0D;--panel:#101214;--panel2:#15181B;--paper:#F2F1ED;--lime:#D6FF3A;--mut:#9a9aa2;--line:rgba(242,241,237,.08);--amber:#E8B84B;--red:#E86A5E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--paper);font:14px/1.5 Inter,sans-serif;display:flex;min-height:100vh}
+.mono{font-family:'JetBrains Mono',monospace}
+aside{width:232px;flex-shrink:0;border-right:1px solid var(--line);padding:20px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;padding:0 8px 14px}
+.logo b{font-family:'Space Grotesk';font-weight:700;font-size:16px}
+.logo b i{color:var(--lime);font-style:normal}
+.tag{font-family:'JetBrains Mono';font-size:9px;letter-spacing:.2em;color:var(--mut);padding:0 14px 10px}
+nav a{display:flex;align-items:center;gap:11px;padding:9px 14px;border-radius:8px;color:var(--mut);text-decoration:none;font-size:13px}
+nav a.on{background:rgba(214,255,58,.09);color:var(--paper);font-weight:600}
+nav a.on svg{stroke:var(--lime)}
+nav svg{stroke:var(--mut);flex-shrink:0}
+main{flex:1;min-width:0;padding:0}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;border-bottom:1px solid var(--line)}
+header h1{font-family:'Space Grotesk';font-size:20px;margin:0}
+header .sub{font-family:'JetBrains Mono';font-size:10px;letter-spacing:.14em;color:var(--mut)}
+.wrap{padding:24px 28px;display:flex;flex-direction:column;gap:20px}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.kpi{flex:1;min-width:160px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.kpi .l{font-family:'JetBrains Mono';font-size:9px;letter-spacing:.18em;color:var(--mut)}
+.kpi .v{font-family:'Space Grotesk';font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px}
+.kpi .d{font-family:'JetBrains Mono';font-size:10px;color:var(--mut);margin-top:4px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.panel>.t{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);font-family:'JetBrains Mono';font-size:10px;letter-spacing:.18em;color:var(--mut)}
+table{width:100%;border-collapse:collapse}
+th{font-family:'JetBrains Mono';font-size:9px;letter-spacing:.16em;color:var(--mut);text-align:left;padding:8px 16px;border-bottom:1px solid var(--line);font-weight:500;white-space:nowrap}
+td{padding:11px 16px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.pill{font-family:'JetBrains Mono';font-size:9px;letter-spacing:.12em;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.pill.live{color:var(--lime);background:rgba(214,255,58,.12)}
+.pill.preview{color:var(--amber);background:rgba(232,184,75,.12)}
+.pill.pending{color:var(--mut);background:rgba(154,154,162,.12)}
+.pill.bad{color:var(--red);background:rgba(232,106,94,.12)}
+button,select,input{font-family:'JetBrains Mono';font-size:10px;letter-spacing:.1em;border-radius:99px;border:1px solid rgba(242,241,237,.2);background:transparent;color:var(--paper);padding:7px 14px;cursor:pointer}
+button.pri{background:var(--lime);color:var(--ink);border-color:var(--lime);font-weight:700}
+select{appearance:none;padding-right:22px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0 L4 5 L8 0' fill='%239a9aa2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+input{border-radius:8px;letter-spacing:0}
+.bar{height:5px;border-radius:99px;background:var(--panel2);overflow:hidden}
+.bar i{display:block;height:5px;border-radius:99px;background:var(--lime)}
+.grid2{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.kv:last-child{border-bottom:none}
+.kv b{font-weight:500;color:var(--mut)}
+.pad{padding:14px 16px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--lime);color:var(--ink);font-family:'JetBrains Mono';font-size:11px;padding:10px 18px;border-radius:99px;font-weight:700;opacity:0;transition:opacity .25s}
+.toast.on{opacity:1}
+section{display:none}section.on{display:block}
+@media(max-width:900px){aside{display:none}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<aside>
+  <div class="logo"><svg width="22" height="22" viewBox="0 0 100 100"><path d="M8 22 V8 H22" fill="none" stroke="#F2F1ED" stroke-width="8"/><path d="M78 8 H92 V22" fill="none" stroke="#F2F1ED" stroke-width="8"/><path d="M92 78 V92 H78" fill="none" stroke="#F2F1ED" stroke-width="8"/><path d="M22 92 H8 V78" fill="none" stroke="#F2F1ED" stroke-width="8"/><path d="M68 36 C68 28, 60 24, 50 24 C40 24, 32 28, 32 36 C32 50, 68 50, 68 64 C68 72, 60 76, 50 76 C40 76, 32 72, 32 64" fill="none" stroke="#F2F1ED" stroke-width="9.5"/><circle cx="50" cy="50" r="7" fill="#D6FF3A"/></svg><b>scout<i>/</i>gaming</b></div>
+  <div class="tag">LIVE CASINO BACKOFFICE</div>
+  <nav id="nav"></nav>
+  <div style="flex:1"></div>
+  <div style="display:flex;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:600;color:var(--lime);font-size:11px">K</div>
+    <div><div style="font-size:12px;font-weight:600">Kevin Negash</div><div class="mono" style="font-size:9px;letter-spacing:.1em;color:var(--mut)">SUPERADMIN</div></div>
+  </div>
+</aside>
+<main>
+  <header><div><h1 id="title">Operations</h1><div class="sub" id="sub">SCOUT LIVE CASINO</div></div><div class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--mut)">BETTALOTTO.SE &middot; <span style="color:var(--lime)">LIVE</span></div></header>
+  <div class="wrap" id="content"></div>
+</main>
+<div class="toast" id="toast"></div>
+<script type="module" src="./bo.mjs"></script>
+</body>
+</html>

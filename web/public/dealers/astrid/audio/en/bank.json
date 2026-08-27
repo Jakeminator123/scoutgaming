@@ -1,14 +1,53 @@
 {
- "greeting": {
-  "text": "Welcome to the Dark Hall. I'm Astrid. Take a seat whenever you're ready."
- },
  "goodluck": {
-  "text": "Bets are closed. Good luck at my table."
+  "text": "Bets are closed, good luck."
  },
  "win": {
-  "text": "Well played. Your winnings, exactly as earned."
+  "text": "Well played, enjoy it."
  },
  "lose": {
-  "text": "The house takes this one. Shall we go again?"
+  "text": "The house takes this one."
+ },
+ "push": {
+  "text": "A push, your stake goes back."
+ },
+ "bust": {
+  "text": "That is a bust."
+ },
+ "dealerbust": {
+  "text": "Dealer busts, the table wins."
+ },
+ "insurance": {
+  "text": "Insurance is open if you want it."
+ },
+ "blackjack": {
+  "text": "Blackjack, beautifully done."
+ },
+ "placebets": {
+  "text": "Place your bets whenever you are ready."
+ },
+ "dealerblackjack": {
+  "text": "Dealer has blackjack this round."
+ },
+ "sidebet": {
+  "text": "Your side bet pays, nicely done."
+ },
+ "double": {
+  "text": "Doubling down, one card coming."
+ },
+ "peek": {
+  "text": "One moment, let me check my hand."
+ },
+ "farewell": {
+  "text": "Thanks for playing, come back soon."
+ },
+ "chatter1": {
+  "text": "The cards are being kind tonight."
+ },
+ "chatter2": {
+  "text": "Take your time, there is no rush."
+ },
+ "greeting": {
+  "text": "Welcome to the Dark Hall. I'm Astrid. Take a seat whenever you're ready."
  }
 }

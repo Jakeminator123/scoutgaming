@@ -71,6 +71,86 @@ function apiCurrency({ id, currency }) {
   return { balance, currency };
 }
 const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency };
+
+// ---------- backoffice (BO) ----------
+// Real data where it exists (players/transactions from SQLite, dealer assets
+// scanned from disk); a JSON store for what has no engine yet (tournaments,
+// pit-boss triggers, tier->dealer assignment - the last one steers the game).
+import { readdirSync } from 'node:fs';
+const BO_PATH = join(dataDir, 'bo.json');
+const BO_DEFAULTS = {
+  tiers: { classic: 'vera', high: 'vera', vip: 'vera' },
+  rooms: [
+    { id: 'prive', name: 'Mahogany Privé', scene: 'Warm mahogany · sconces', felt: 'Green', dealer: 'vera', state: 'live' },
+    { id: 'darkhall', name: 'Dark Hall', scene: 'Graphite · pendant bars', felt: 'Graphite', dealer: 'astrid', state: 'preview' },
+    { id: 'goldensalon', name: 'Golden Salon', scene: 'Amber salon · tan felt', felt: 'Tan', dealer: 'amira', state: 'pending' },
+    { id: 'azure', name: 'Azure Venue', scene: 'Curved white · cyan glow', felt: 'Petrol', dealer: 'mei', state: 'pending' },
+  ],
+  pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
+  tournaments: [
+    { id: 't1', name: 'Midnight Privé Open', format: 'Elimination · 20 rounds', buyin: 100, pool: 25000, entries: 184, cap: 250, starts: 'Tonight 00:00', state: 'registering' },
+    { id: 't2', name: 'High Roller Sprint', format: 'Points race · 1 hour', buyin: 1000, pool: 50000, entries: 31, cap: 64, starts: 'Fri 21:00', state: 'registering' },
+    { id: 't3', name: 'Weekly Leaderboard #34', format: 'Cumulative points', buyin: 0, pool: 5000, entries: 1212, cap: 0, starts: 'Ends Sunday', state: 'live' },
+  ],
+};
+function boLoad() {
+  try { return { ...BO_DEFAULTS, ...JSON.parse(readSync(BO_PATH, 'utf8')) }; }
+  catch { return structuredClone(BO_DEFAULTS); }
+}
+function boSave(cfg) { writeSync(BO_PATH, JSON.stringify(cfg, null, 1)); }
+function dealerScan() {
+  const out = [];
+  const spec = [
+    { key: 'vera', name: 'Vera', base: 'dealer', room: 'Mahogany Privé', voice: 'Vera (ElevenLabs)' },
+    { key: 'astrid', name: 'Astrid', base: 'dealers/astrid', room: 'Dark Hall', voice: 'Helena (ElevenLabs)' },
+    { key: 'amira', name: 'Amira', base: 'dealers/amira', room: 'Golden Salon', voice: '—' },
+    { key: 'mei', name: 'Mei', base: 'dealers/mei', room: 'Azure Venue', voice: '—' },
+  ];
+  for (const d of spec) {
+    let clips = 0, speak = 0, stills = false;
+    try {
+      const idx = JSON.parse(readSync(join(root, d.base, 'streams/index.json'), 'utf8'));
+      clips = Object.keys(idx.clips).length;
+      speak = Object.keys(idx.clips).filter(k => k.includes('/speak/')).length;
+    } catch { /* no assets yet */ }
+    try { stills = existsSync(join(root, '..', '..', 'content/persona/roster', d.key + '-canonical.png')) || d.key === 'vera'; } catch {}
+    out.push({ ...d, clips, speak, stills });
+  }
+  return out;
+}
+function boApi(url) {
+  const cfg = boLoad();
+  if (url === '/api/bo/overview') {
+    const day = new Date().toISOString().slice(0, 10);
+    // game rounds arrive as balance syncs whose meta names the reason
+    const tx = db.prepare("SELECT CASE WHEN type='sync' THEN meta ELSE type END AS type, COUNT(*) n, SUM(amount) sum FROM transactions WHERE at >= ? GROUP BY 1").all(day);
+    const players = db.prepare('SELECT COUNT(*) n FROM players').get();
+    return { tiers: cfg.tiers, rooms: cfg.rooms, tx, players: players.n, dealers: dealerScan() };
+  }
+  if (url === '/api/bo/players') {
+    return { players: db.prepare('SELECT id, name, currency, balance, created_at FROM players ORDER BY balance DESC LIMIT 50').all() };
+  }
+  if (url === '/api/bo/transactions') {
+    return { tx: db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all() };
+  }
+  if (url === '/api/bo/config') return cfg;
+  return null;
+}
+function boPost(url, body) {
+  const cfg = boLoad();
+  if (url === '/api/bo/tier') {
+    const { tier, dealer } = body;
+    if (!cfg.tiers[tier] || !['vera', 'astrid', 'amira', 'mei'].includes(dealer)) return { error: 'bad tier/dealer' };
+    cfg.tiers[tier] = dealer; boSave(cfg);
+    return { ok: true, tiers: cfg.tiers };
+  }
+  if (url === '/api/bo/pitboss') { cfg.pitboss = { ...cfg.pitboss, ...body }; boSave(cfg); return { ok: true, pitboss: cfg.pitboss }; }
+  if (url === '/api/bo/tournament') {
+    const t = { id: 't' + Date.now(), state: 'draft', entries: 0, ...body };
+    cfg.tournaments.unshift(t); boSave(cfg); return { ok: true, tournaments: cfg.tournaments };
+  }
+  return null;
+}
 const port = Number(process.env.PORT ?? 4173);
 // 0.0.0.0 locally so phones on the LAN can open the demo; behind a reverse
 // proxy set HOST=127.0.0.1 so the port is not exposed publicly.
@@ -282,6 +362,23 @@ createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && req.url.startsWith('/api/bo/')) {
+    const out = boApi(req.url);
+    res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(out ?? { error: 'not found' }));
+    return;
+  }
+  if (req.method === 'POST' && req.url.startsWith('/api/bo/')) {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 100000) req.destroy(); });
+    req.on('end', () => {
+      let out = null;
+      try { out = boPost(req.url, JSON.parse(body || '{}')); } catch { out = { error: 'bad json' }; }
+      res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(out ?? { error: 'not found' }));
+    });
+    return;
+  }
   if (req.method === 'POST' && req.url === '/chat') {
     let body = '';
     req.on('data', c => { body += c; if (body.length > 20000) req.destroy(); });
@@ -338,6 +435,7 @@ createServer((req, res) => {
   catch { res.writeHead(400); res.end('bad request'); return; }
   let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '');
   if (path === '/' || path === '\\') path = '/index.html';
+  if (path.endsWith('/')) path += 'index.html';   // directory index (e.g. /bo/)
   const file = join(root, path);
   if (!file.startsWith(root) || !existsSync(file) || !statSync(file).isFile()) {
     res.writeHead(404); res.end('not found'); return;
