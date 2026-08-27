@@ -24,6 +24,12 @@ const DEALERS = {
   astrid: { key: 'astrid', base: 'dealers/astrid', anchor: 0.878, name: 'Astrid',
             scene: 'dealers/astrid/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
             table: 'dealers/astrid/table.png' },
+  amira:  { key: 'amira', base: 'dealers/amira', anchor: 0.87, name: 'Amira',
+            scene: 'dealers/amira/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
+            table: 'dealers/amira/table.png' },
+  mei:    { key: 'mei', base: 'dealers/mei', anchor: 0.87, name: 'Mei',
+            scene: 'dealers/mei/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
+            table: 'dealers/mei/table.png' },
 };
 const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
 {
