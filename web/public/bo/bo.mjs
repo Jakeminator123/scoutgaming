@@ -8,6 +8,7 @@ const api=async(p,body)=>{const r=await fetch(p,body?{method:'POST',headers:{'Co
 const SECTIONS=[
  ['ops','Operations','SCOUT LIVE CASINO · ALL SYSTEMS'],
  ['voice','Voice Lines','SYNC VERIFICATION · EVERY TAKE, AS THE GAME PLAYS IT'],
+ ['emails','Emails','BRAND TEMPLATES · TRANSACTIONAL & LIFECYCLE'],
  ['rooms','Tables & Rooms','ROOMS · TIERS · RULES'],
  ['dealers','Dealers','EVERY FACE · ROSTER & PIPELINE'],
  ['pit','Pit Bosses','SUPERVISION · FAIRNESS'],
@@ -16,7 +17,7 @@ const SECTIONS=[
  ['pay','Payments','WALLET · LEDGER'],
  ['shoes','Shoes & Decks','GAME INTEGRITY · RNG'],
 ];
-const ICONS={voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+const ICONS={emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
  rooms:'<ellipse cx="12" cy="12" rx="9" ry="6"/><path d="M5 16 v3 M19 16 v3"/>',
  dealers:'<circle cx="12" cy="9" r="4"/><path d="M4 21 c1.5-5 4.5-7 8-7 s6.5 2 8 7"/>',
  pit:'<path d="M12 3 L20 6 V12 C20 17 16.5 20 12 21.5 C7.5 20 4 17 4 12 V6 Z"/>',
@@ -68,12 +69,31 @@ async function render(id){
         <div style="padding:9px 11px">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
             <span class="mono" style="font-size:10px;letter-spacing:.1em">${l.key.toUpperCase()}</span>
-            ${l.clip?pill((l.delay??0)+'MS','live'):pill('VOICE-OVER','pending')}
+            <span style="display:flex;gap:5px">${l.clip?pill((l.delay??0)+'MS','live'):pill('VOICE-OVER','pending')}${l.review==='approved'?pill('CONFIRMED','live'):l.review==='rejected'?pill('REJECTED','bad'):''}</span>
           </div>
           <div style="font-size:11px;color:var(--mut);margin-top:4px">${l.text||'&mdash;'}</div>
+          <div style="display:flex;gap:8px;margin-top:9px">
+            <button data-rv="approved" data-d="${d.dealer}" data-l="${l.key}" style="border-color:${l.review==='approved'?'var(--lime)':'rgba(242,241,237,.2)'};color:${l.review==='approved'?'var(--lime)':'var(--paper)'}">&#10003; CONFIRM</button>
+            <button data-rv="rejected" data-d="${d.dealer}" data-l="${l.key}" style="border-color:${l.review==='rejected'?'var(--red)':'rgba(242,241,237,.2)'};color:${l.review==='rejected'?'var(--red)':'var(--paper)'}">&#10005; REJECT</button>
+          </div>
         </div>
       </div>`).join('')}
     </div></div>`).join('');
+    C.querySelectorAll('button[data-rv]').forEach(b=>b.onclick=async()=>{
+      const r=await api('/api/bo/voiceline-review',{dealer:b.dataset.d,line:b.dataset.l,verdict:b.dataset.rv});
+      if(r.ok){toast(`${b.dataset.d}/${b.dataset.l}: ${b.dataset.rv}`);render('voice');}
+    });
+  }
+  if(id==='emails'){
+    const T=[['welcome','Welcome / account created'],['deposit-receipt','Deposit receipt'],['tournament-invite','Tournament invite'],['rg-checkin','Responsible gambling check-in']];
+    C.innerHTML='<div class="row">'+T.map(([f,label])=>`
+      <div class="kpi" style="min-width:300px;padding:0;overflow:hidden">
+        <iframe src="/bo/emails/${f}.html" style="width:100%;height:360px;border:none;background:#0A0B0D;pointer-events:none" scrolling="no"></iframe>
+        <div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px">${label}</span>
+          <button onclick="window.open('/bo/emails/${f}.html','_blank')">OPEN</button>
+        </div>
+      </div>`).join('')+'</div>';
   }
   if(id==='rooms'){
     C.innerHTML=`<div class="row">${ov.rooms.map(r=>{const d=ov.dealers.find(x=>x.key===r.dealer)||{};
@@ -85,7 +105,13 @@ async function render(id){
       <div style="font-family:'Space Grotesk';font-weight:700;font-size:16px">${r.name}</div>
       <div class="kv" style="margin-top:6px"><b>Scene</b><span>${r.scene}</span></div>
       <div class="kv"><b>Felt</b><span>${r.felt}</span></div>
-      <div class="kv"><b>Dealer</b><span>${d.name||'-'}</span></div>
+      <div class="kv"><b>Dealer</b><span>${d.name||'-'} &middot; ${d.speak||0} lines</span></div>
+      <div class="kv"><b>Serving tier</b><span>${Object.entries(ov.tiers).filter(([,dk])=>dk===r.dealer).map(([t])=>TIERN[t]).join(' · ')||'—'}</span></div>
+      <div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">
+        <button onclick="window.open('/?dealer=${r.dealer}','_blank')">OPEN TABLE</button>
+        <button onclick="location.hash='dealers'">SEAT DEALER</button>
+        <button data-room="${r.id}" data-next="${r.state==='live'?'preview':'live'}" class="${r.state==='live'?'':'pri'}">${r.state==='live'?'SET PREVIEW':'GO LIVE'}</button>
+      </div>
       </div></div>`;}).join('')}</div>
     <div class="grid2"><div class="panel"><div class="t">HOUSE RULES &middot; ALL TABLES</div><div class="pad">
     ${[['Decks','8, reshuffled every round'],['Dealer stands','All 17s'],['Blackjack pays','3 : 2'],['Insurance pays','2 : 1'],['Split','Any pair, up to 4 hands'],['Split aces','One card each'],['Double after split','Allowed'],['Side bets','Perfect Pairs 25:1 · 21+3 100:1']].map(([k,v])=>`<div class="kv"><b>${k}</b><span>${v}</span></div>`).join('')}
@@ -93,6 +119,10 @@ async function render(id){
     <div class="panel"><div class="t">TIER LIMITS</div><div class="pad">
     ${[['CLASSIC','$5 - $2,000'],['HIGH ROLLER','$100 - $50,000'],['VIP SALON','$1,000 - $1,000,000']].map(([k,v])=>`<div class="kv"><b>${k}</b><span class="mono">${v}</span></div>`).join('')}
     </div></div></div>`;
+    C.querySelectorAll('button[data-room]').forEach(b=>b.onclick=async()=>{
+      const r=await api('/api/bo/room',{id:b.dataset.room,state:b.dataset.next});
+      if(r.ok){toast(`${b.dataset.room} → ${b.dataset.next.toUpperCase()}`);render('rooms');}
+    });
   }
   if(id==='dealers'){
     C.innerHTML=`<div class="row">${ov.dealers.map(d=>{const [lbl,cls]=DSTATE(d);const full=d.key==='vera'?32:17;const pct=Math.min(100,Math.round(d.speak/full*100));

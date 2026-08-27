@@ -94,6 +94,7 @@ const trigger = k => { if (engineUp && engine.index.clips[k]) engine.trigger(k);
 
 try {
   await engine.init();
+  if (!engine.index?.clips?.['idle-1/idle/idle']) throw new Error('no playable clips');
   await engine.start();
   engineUp = true;
 } catch (e) {
