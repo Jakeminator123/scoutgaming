@@ -443,6 +443,11 @@ const TABLES = [
   { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000], dealer: 'vera' },
 ];
 let table = TABLES[0];
+// the backoffice owns tier->dealer assignment; apply it before anyone switches
+fetch('/api/bo/config').then(r => r.ok ? r.json() : null).then(cfg => {
+  if (!cfg?.tiers) return;
+  for (const t of TABLES) if (cfg.tiers[t.id]) t.dealer = cfg.tiers[t.id];
+}).catch(() => {});
 let CHIPS = table.chips;
 const LIMITS = { get min() { return table.min; }, get max() { return table.max; } };
 let balance = 1000;
