@@ -144,6 +144,7 @@ const voice = {
     if (this.muted) return;
     const a = this.audio.get(t);
     if (!a) return;
+    if (a.error || (a.readyState === 0 && a.networkState === 3)) return; // dealer has no take for this line: stay silent, no orphan caption
     if (speechActive > 0 && !force) return;   // something's talking: drop optional chatter
     speechTurn(() => new Promise(resolve => {
       if (this.muted) return resolve();

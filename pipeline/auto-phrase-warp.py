@@ -62,13 +62,20 @@ def plan(aph, waves):
     delay=max(0.0, waves[0][0]-aph[0][0])
     prev_a, prev_v = 0.0, delay
     for (a0,a1),(v0,v1) in zip(aph,waves):
-        # gap before this phrase
+        # gap before this phrase: silence may stretch or squeeze freely
         if a0>prev_a+20:
             gd_a=a0-prev_a; gd_v=max(40.0, v0-prev_v)
-            segs.append((prev_a,a0,max(0.5,min(3.0,gd_a/gd_v))))
+            gt=max(0.26,min(4.0,gd_a/gd_v))
+            if gt<0.5:   # atempo floor is 0.5: split the silence into halves
+                mid=(prev_a+a0)/2; h=gt**0.5
+                segs.append((prev_a,mid,h)); segs.append((mid,a0,h))
+            else:
+                segs.append((prev_a,a0,gt))
+        # speech itself must stay essentially untouched - re-paced speech
+        # reads as dubbing even when the onsets line up
         pd_a=a1-a0; pd_v=max(120.0, v1-v0)
         t=pd_a/pd_v
-        if not (0.68<=t<=1.5): t=max(0.68,min(1.5,t))
+        if not (0.88<=t<=1.15): return None   # bad draw: reroll, don't re-pace
         segs.append((a0,a1,t))
         prev_a, prev_v = a1, v1
     segs.append((prev_a,None,1.0))
