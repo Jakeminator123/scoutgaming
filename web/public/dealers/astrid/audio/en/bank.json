@@ -1,4 +1,7 @@
 {
+ "greeting": {
+  "text": "Welcome to the Dark Hall. I'm Astrid. Take a seat whenever you're ready."
+ },
  "goodluck": {
   "text": "Bets are closed, good luck."
  },
@@ -46,8 +49,5 @@
  },
  "chatter2": {
   "text": "Take your time, there is no rush."
- },
- "greeting": {
-  "text": "Welcome to the Dark Hall. I'm Astrid. Take a seat whenever you're ready."
  }
 }

@@ -141,6 +141,12 @@ function boPost(url, body) {
   if (url === '/api/bo/tier') {
     const { tier, dealer } = body;
     if (!cfg.tiers[tier] || !['vera', 'astrid', 'amira', 'mei'].includes(dealer)) return { error: 'bad tier/dealer' };
+    // a dealer with no playable clips cannot hold a live tier
+    const base = dealer === 'vera' ? 'dealer' : 'dealers/' + dealer;
+    try {
+      const idx = JSON.parse(readSync(join(root, base, 'streams/index.json'), 'utf8'));
+      if (!idx.clips['idle-1/idle/idle']) return { error: dealer + ' has no idle clip yet' };
+    } catch { return { error: dealer + ' has no clips yet' }; }
     cfg.tiers[tier] = dealer; boSave(cfg);
     return { ok: true, tiers: cfg.tiers };
   }

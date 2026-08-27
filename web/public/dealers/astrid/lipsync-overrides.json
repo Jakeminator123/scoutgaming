@@ -1,4 +1,17 @@
 {
- "goodluck": 0,
- "win": 0
+ "goodluck": 773,
+ "win": 890,
+ "lose": 933,
+ "push": 31,
+ "bust": 0,
+ "dealerbust": 166,
+ "insurance": 838,
+ "blackjack": 741,
+ "placebets": 193,
+ "dealerblackjack": 203,
+ "sidebet": 373,
+ "peek": 805,
+ "farewell": 348,
+ "chatter2": 1180,
+ "greeting": 250
 }
