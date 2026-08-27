@@ -16,7 +16,28 @@ const CLIP = {
   think: 'idle-1/actions/action-think',
   gest: 'idle-1/actions/gesticulate1',
 };
-const engine = new DealerEngine($('#dealer'), 'dealer', {
+// ---------- dealers: EVERY FACE ----------
+// Each dealer is a complete asset set (streams, voice, scene, table art) and
+// a rail anchor: the v-fraction where her table's rail top sits in her video.
+const DEALERS = {
+  vera:   { key: 'vera',   base: 'dealer',         anchor: 0.855, name: 'Vera' },
+  astrid: { key: 'astrid', base: 'dealers/astrid', anchor: 0.878, name: 'Astrid',
+            scene: 'dealers/astrid/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
+            table: 'dealers/astrid/table.png' },
+};
+const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
+{
+  const rs = document.documentElement.style;
+  rs.setProperty('--rail-anchor', DEALER.anchor);
+  if (DEALER.scene) {
+    rs.setProperty('--scene-url', `url('${DEALER.scene}')`);
+    rs.setProperty('--scene-w-k', DEALER.sceneWK);
+    rs.setProperty('--scene-h-k', DEALER.sceneHK);
+  }
+  if (DEALER.table) $('#tableimg')?.setAttribute('src', DEALER.table);
+}
+
+const engine = new DealerEngine($('#dealer'), DEALER.base, {
   log: m => console.info('[dealer]', m),
   handsCanvas: $('#dealer-hands'),
 });
@@ -118,7 +139,7 @@ const voice = {
   audio: new Map(),
   playing: false,
   greeted: false,
-  load() { for (const t of VOICE_LINES) { const a = new Audio(`dealer/audio/en/${t}.mp3`); a.preload = 'auto'; this.audio.set(t, a); } },
+  load() { for (const t of VOICE_LINES) { const a = new Audio(`${DEALER.base}/audio/en/${t}.mp3`); a.preload = 'auto'; this.audio.set(t, a); } },
   say(t, { force = false } = {}) {
     if (this.muted) return;
     const a = this.audio.get(t);
@@ -387,9 +408,9 @@ const SEATS = 7;
 // Table tiers. Picking a table sets both the limits and the chip ladder, so a
 // VIP box is bet in 250K chips rather than 250 clicks of a 1K chip.
 const TABLES = [
-  { id: 'classic', name: 'CLASSIC',     min: 5,    max: 2000,      chips: [1, 5, 10, 25, 50, 100, 500, 1000] },
-  { id: 'high',    name: 'HIGH ROLLER', min: 100,  max: 50000,     chips: [25, 100, 500, 1000, 5000, 10000, 25000] },
-  { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000] },
+  { id: 'classic', name: 'CLASSIC',     min: 5,    max: 2000,      chips: [1, 5, 10, 25, 50, 100, 500, 1000], dealer: 'vera' },
+  { id: 'high',    name: 'HIGH ROLLER', min: 100,  max: 50000,     chips: [25, 100, 500, 1000, 5000, 10000, 25000], dealer: 'astrid' },
+  { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000], dealer: 'vera' },
 ];
 let table = TABLES[0];
 let CHIPS = table.chips;
@@ -435,7 +456,7 @@ async function veraEvent(text, { minGap = 18000 } = {}) {
   try {
     const r = await fetch('/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, event: true }),
+      body: JSON.stringify({ message: text, event: true, dealer: DEALER.key }),
     });
     const { reply } = await r.json();
     if (reply) speechTurn(() => new Promise(res => {
@@ -1233,9 +1254,13 @@ function chatLog(role, text, pending = false) {
 // Vera take (dealer/audio/en/*.mp3); the brain picks which one fits, and
 // anything off-book is shown as text without a voice. A synthetic system
 // voice would break the illusion worse than staying quiet.
-const VERA_BANK_URL = 'dealer/audio/en';
+const VERA_BANK_URL = `${DEALER.base}/audio/en`;
 let veraBank = {};
-fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => { veraBank = b; }).catch(() => {});
+fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => {
+  veraBank = b;
+  // the caption must show what THIS dealer actually says
+  for (const [k, v] of Object.entries(b)) if (LINES[k] && v.text) LINES[k] = v.text;
+}).catch(() => {});
 
 let bankAudio = null;
 // The one synced way to cut to a recorded take. Sync order matters: the VIDEO
@@ -1337,7 +1362,7 @@ async function sendChat() {
   try {
     const r = await fetch('/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history: chatHistory.slice(-12) }),
+      body: JSON.stringify({ message, history: chatHistory.slice(-12), dealer: DEALER.key }),
     });
     const { reply, say } = await r.json();
     if (reply || say) {
@@ -1382,6 +1407,12 @@ $('#all-sides').onclick = () => {
 function setTable(id) {
   const next = TABLES.find(x => x.id === id);
   if (!next || next === table || round || busy) return;
+  // a different table can mean a different dealer in a different room
+  if ((next.dealer ?? 'vera') !== DEALER.key) {
+    const q = new URLSearchParams({ dealer: next.dealer ?? 'vera', table: id });
+    location.search = q.toString();
+    return;
+  }
   table = next; CHIPS = table.chips;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));   // old stakes are off-limits here
   undoStack = [];
@@ -1396,6 +1427,15 @@ function setTable(id) {
 document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick = () => setTable(b.dataset.id); });
 
 buildChips();
+// arriving via a dealer switch: land on the tier that was picked
+{
+  const wanted = new URLSearchParams(location.search).get('table');
+  const t = wanted && TABLES.find(x => x.id === wanted);
+  if (t && (t.dealer ?? 'vera') === DEALER.key && t !== table) {
+    table = t; CHIPS = table.chips; buildChips();
+    document.querySelectorAll('#table-pick .tbl').forEach(b => b.classList.toggle('on', b.dataset.id === t.id));
+  }
+}
 $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
 // calibration overlay: applies any saved tweaks, then lies dormant until `C`
 import('./calibrate.mjs').then(m => { m.applySavedSeats?.(); if (m.applySaved()) layoutSeats(); }).catch(() => {});

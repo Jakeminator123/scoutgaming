@@ -13,7 +13,7 @@
      Derived from --dealer-h, NOT a constant: the invariant then survives the
      max() regime switch on wide viewports. */
   --dealer-h: max(68vh, 37.94vw);
-  --dealer-top: calc(53.52vh - 0.855 * var(--dealer-h));
+  --dealer-top: calc(53.52vh - var(--rail-anchor, 0.855) * var(--dealer-h));
   --dealer-crop: 0.90;
   --dealer-x: 0vw;
   /* hands overlay band, fractions of the video square (build-hands.sh) */
@@ -54,8 +54,8 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 #room { position: absolute; inset: 0; background: #0b0c10; }
 #room2 {
   position: absolute; inset: 0;
-  background: url('scene.jpg') no-repeat;
-  background-size: calc(var(--dealer-h) * 2.63602) calc(var(--dealer-h) * 1.47126);
+  background: var(--scene-url, url('scene.jpg')) no-repeat;
+  background-size: calc(var(--dealer-h) * var(--scene-w-k, 2.63602)) calc(var(--dealer-h) * var(--scene-h-k, 1.47126));
   /* registered to the dealer window: --dealer-x slides the window, so the
      scene has to slide by exactly the same amount or the painted-in dealer
      drifts off the video and you get a second, ghostly dealer. */
