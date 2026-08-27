@@ -43,6 +43,15 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
   if (DEALER.table) $('#tableimg')?.setAttribute('src', DEALER.table);
 }
 
+// a dealer without clips still stands at her table: her canonical poster
+// fills the dealer frame instead of an empty room
+function showPoster() {
+  const c = $('#dealer');
+  const img = new Image();
+  img.onload = () => { const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height); };
+  img.src = `${DEALER.base}/poster.jpg`;
+}
+
 const engine = new DealerEngine($('#dealer'), DEALER.base, {
   log: m => console.info('[dealer]', m),
   handsCanvas: $('#dealer-hands'),
@@ -92,7 +101,9 @@ try {
   const ctx = $('#dealer').getContext('2d');
   const img = new Image();
   img.onload = () => { $('#dealer').width = 1440; $('#dealer').height = 1440; ctx.drawImage(img, 0, 0, 1440, 1440); };
-  img.src = 'dealer-fallback.png';
+  // THIS dealer's own poster; the generic fallback only as a last resort
+  img.onerror = () => { img.onerror = null; img.src = 'dealer-fallback.png'; };
+  img.src = `${DEALER.base}/poster.jpg`;
 }
 
 // debug HUD (?debug)
