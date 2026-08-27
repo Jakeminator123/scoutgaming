@@ -823,21 +823,65 @@ function flyFromShoe(el) {
 function updateBadge(container, cards) {
   // the badge is parented OUTSIDE the cards container: inside it, it inherited
   // the hand's rotation and flattening and drifted whenever the hand was posed
-  const host = container.parentNode;
-  let badge = host.querySelector(':scope > .hand-total');
+  const isSub = container.classList?.contains('subhand');
+  const host = isSub ? container.closest('.seat-inner') ?? container.parentNode.parentNode : container.parentNode;
+  const key = isSub ? container.dataset.h : '';
+  let badge = host.querySelector(`:scope > .hand-total[data-h="${key}"]`);
   if (!cards.length) { badge?.remove(); return; }
-  if (!badge) { badge = document.createElement('div'); badge.className = 'hand-total'; }
+  if (!badge) { badge = document.createElement('div'); badge.className = 'hand-total'; badge.dataset.h = key; }
+  if (isSub) badge.style.setProperty('--badge-x', container.style.getPropertyValue('--shx') || '0px');
   host.appendChild(badge);
   badge.style.setProperty('--cn', Math.max(0, container.querySelectorAll('.card').length - 1));
   const { total, soft } = handValue(cards);
   badge.textContent = soft && total <= 21 ? `${total - 10}/${total}` : String(total);
 }
 function seatOfLive(liveIdx) {
+  // hands carry .box = the SEAT index (the engine is handed all seven boxes);
+  // live indices shift when a box splits, so the seat must come from the box
+  const boxIdx = round?.live()?.[liveIdx]?.box;
+  if (boxIdx !== undefined) return seatEls[boxIdx] ?? null;
   let n = -1;
   for (let i = 0; i < SEATS; i++) if (bets[i].main) { n++; if (n === liveIdx) return seatEls[i]; }
   return null;
 }
-const boxContainer = liveIdx => seatOfLive(liveIdx)?.querySelector('.cards');
+function boxContainer(liveIdx) {
+  const seat = seatOfLive(liveIdx);
+  if (!seat || !round) return seat?.querySelector('.cards') ?? null;
+  const hand = round.live()[liveIdx];
+  const sibs = round.live().filter(h => h.box === hand.box);
+  const cardsEl = seat.querySelector('.cards');
+  if (sibs.length === 1) return cardsEl;
+  return subhandEl(cardsEl, sibs.indexOf(hand), sibs.length);
+}
+// a split box shows its hands side by side: each hand gets its own fan,
+// offset around the seat centre
+function subhandEl(cardsEl, k, count) {
+  let sub = cardsEl.querySelector(`:scope > .subhand[data-h="${k}"]`);
+  if (!sub) { sub = document.createElement('div'); sub.className = 'subhand'; sub.dataset.h = k; cardsEl.appendChild(sub); }
+  const shift = (k - (count - 1) / 2) * 84;
+  sub.style.setProperty('--shx', `${shift}px`);
+  return sub;
+}
+// rebuild one box's card DOM from round state (used right after a split: the
+// dealer visibly separates the pair into two fans)
+function renderBoxHands(boxIdx) {
+  const hands = round.live().filter(h => h.box === boxIdx);
+  const firstLive = round.live().findIndex(h => h.box === boxIdx);
+  const seat = seatOfLive(firstLive);
+  if (!seat) return;
+  const cardsEl = seat.querySelector('.cards');
+  cardsEl.innerHTML = '';
+  seat.querySelectorAll('.hand-total').forEach(b => b.remove());
+  hands.forEach((hand, k) => {
+    const cont = hands.length === 1 ? cardsEl : subhandEl(cardsEl, k, hands.length);
+    hand.cards.forEach((card, ci) => {
+      const el = cardEl(card, false);
+      el.style.setProperty('--ci', ci);
+      cont.appendChild(el);
+    });
+    updateBadge(cont, hand.cards);
+  });
+}
 function dealCardTo(container, card, { faceDown = false } = {}) {
   sfx.play('deal');
   const el = cardEl(card, faceDown);
@@ -886,7 +930,7 @@ function showActions(seat) {
   const stake = round?.live()[round.active]?.stake ?? Infinity;
   for (const b of [...bar.querySelectorAll('button'), ...top.querySelectorAll('button')]) {
     b.disabled = !legal.includes(b.dataset.act) ||
-      (b.dataset.act === 'double' && balance < stake);
+      ((b.dataset.act === 'double' || b.dataset.act === 'split') && balance < stake);
   }
   if (bar.hidden) return;
   const r = (seat ?? seatOfLive(round.active)).getBoundingClientRect();
@@ -997,10 +1041,16 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
       balance -= hand.stake; ledger('double', -hand.stake);
       voice.say('double', { force: true });
     }
+    if (btn.dataset.act === 'split') {
+      if (balance < hand.stake) return;
+      balance -= hand.stake; ledger('split', -hand.stake);
+      sfx.play('chip');
+    }
     document.querySelectorAll('#actions button').forEach(b => { b.disabled = true; });
     if (btn.dataset.act === 'hit') sfx.play('knock');
     round.act(btn.dataset.act);
-    if (hand.cards.length > before) {
+    if (btn.dataset.act === 'split') { renderBoxHands(hand.box); syncBalance('split'); }
+    else if (hand.cards.length > before) {
       dealCardTo(boxContainer(liveIdx), hand.cards.at(-1));
       updateBadge(boxContainer(liveIdx), hand.cards);
       if (handValue(hand.cards).total > 21) voice.say('bust');
@@ -1049,25 +1099,31 @@ async function finish() {
     const b = bets[i];
     if (!b.main) return;
     n++;
-    const hand = live[n];
-    ret += hand.result;
-    sideRet += hand.sideReturn ?? 0;
+    // a split box settles as the SUM of its hands - live[] can hold several
+    // hands per box, and every one of them pays or loses
+    const handsHere = live.filter(h => h.box === i);
+    let stakeSum = 0, backSum = 0, insSum = 0;
+    for (const hand of handsHere) {
+      ret += hand.result;
+      stakeSum += hand.stake; backSum += hand.result; insSum += hand.insured;
+      if (hand.splitFrom === null && hand.cards.length === 2 && handValue(hand.cards).total === 21) anyPlayerBJ = true;
+    }
+    sideRet += handsHere[0]?.sideReturn ?? 0;   // side bets ride the original hand only
     const el = seat.querySelector('.result');
-    const net = hand.result - hand.stake - hand.insured;
-    if (hand.cards.length === 2 && handValue(hand.cards).total === 21) anyPlayerBJ = true;
+    const net = backSum - stakeSum - insSum;
     // show the NET, signed: "WIN $100" used to mean the total returned, which
     // reads as profit and is not
-    const sideNet = (hand.sideReturn ?? 0) - (b.pp + b.tp);
-    rows.push({ box: i, stake: hand.stake, sides: b.pp + b.tp, back: hand.result, net, sideNet,
+    const sideNet = (handsHere[0]?.sideReturn ?? 0) - (b.pp + b.tp);
+    rows.push({ box: i, stake: stakeSum, sides: b.pp + b.tp, back: backSum, net, sideNet,
                 outcome: net > 0 ? 'win' : net === 0 ? 'push' : 'lose' });
     if (net > 0) {
       el.textContent = '+' + fmt(net); el.classList.add('win'); anyWin = true;
-      el.title = `staked ${fmt(hand.stake)}, returned ${fmt(hand.result)}`;
+      el.title = `staked ${fmt(stakeSum)}, returned ${fmt(backSum)}`;
       const r = seat.getBoundingClientRect();
-      burstAt(r.x, r.y, hand.result >= hand.stake * 2.4);
+      burstAt(r.x, r.y, backSum >= stakeSum * 2.4);
     }
-    else if (net === 0) { el.textContent = 'PUSH ' + fmt(hand.stake); el.classList.add('push'); anyPush = true; el.title = 'stake returned'; }
-    else { el.textContent = fmt(net); el.classList.add('lose'); anyLose = true; el.title = `staked ${fmt(hand.stake)}`; }
+    else if (net === 0) { el.textContent = 'PUSH ' + fmt(stakeSum); el.classList.add('push'); anyPush = true; el.title = 'stake returned'; }
+    else { el.textContent = fmt(net); el.classList.add('lose'); anyLose = true; el.title = `staked ${fmt(stakeSum)}`; }
   });
   const staked = betTotal();
   balance += ret; ledger('settle', ret);
@@ -1211,8 +1267,10 @@ function sayLine(id) {
 }
 
 function speakFor(text) {
-  // hold a speaking clip roughly as long as the line takes to say
-  const clip = SPEAK_CLIPS.find(k => engine.index?.clips?.[k]);
+  // free text has no recorded take and no audio - a talking mouth with no
+  // sound reads as broken, so she considers instead: think/gesture clips
+  // while the caption carries the words
+  const clip = [CLIP.think, CLIP.gest, CLIP.headTilt].find(k => engine.index?.clips?.[k]);
   if (!clip) { trigger(CLIP.gest); return; }
   engine.interrupt?.(clip);
   const ms = Math.min(9000, 1200 + text.length * 55);
