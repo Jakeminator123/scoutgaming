@@ -95,7 +95,7 @@ async function render(id){
       return `<tr><td>${x.username}${self?' <span class="mono" style="color:var(--lime);font-size:8px">YOU</span>':''}</td><td style="color:var(--mut)">${x.email||'—'}</td>
       <td>${self?`<span class="mono">${x.role.toUpperCase()}</span>`:`<select data-role-user="${x.username}">${ROLES.map(r=>`<option value="${r}" ${r===x.role?'selected':''}>${r.toUpperCase()}</option>`).join('')}</select>`}</td>
       <td>${x.active?pill('ACTIVE','live'):pill('INVITED','pending')}</td><td style="color:var(--mut)">${(x.created_at||'').slice(0,10)}</td>
-      <td>${self?'':`<button data-remove="${x.username}" style="color:var(--red);border-color:rgba(232,106,94,.4)">REMOVE</button>`}</td></tr>`;}).join('')}
+      <td style="white-space:nowrap">${x.email?`<button data-resend="${x.username}">${x.active?'SEND RESET':'RESEND INVITE'}</button> `:''}${self?'':`<button data-remove="${x.username}" style="color:var(--red);border-color:rgba(232,106,94,.4)">REMOVE</button>`}</td></tr>`;}).join('')}
     </tbody></table></div>
     <div class="panel" style="max-width:640px"><div class="t">INVITE BY EMAIL &middot; THEY CHOOSE THEIR OWN PASSWORD</div>
     <div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -106,6 +106,11 @@ async function render(id){
     C.querySelectorAll('select[data-role-user]').forEach(sel=>sel.onchange=async()=>{
       const r=await api('/api/bo/users/role',{username:sel.dataset.roleUser,role:sel.value});
       if(r.ok)toast(`${sel.dataset.roleUser} → ${sel.value.toUpperCase()}`);else{toast(r.error);render('users');}
+    });
+    C.querySelectorAll('button[data-resend]').forEach(b=>b.onclick=async()=>{
+      const r=await api('/api/bo/users/resend',{username:b.dataset.resend});
+      if(r.ok)toast(r.emailSent?`${r.kind} email sent`:`${r.kind} created, email failed: ${r.reason||''}`);
+      else toast(r.error);
     });
     C.querySelectorAll('button[data-remove]').forEach(b=>b.onclick=async()=>{
       if(!confirm(`Remove ${b.dataset.remove}? This cannot be undone.`))return;
