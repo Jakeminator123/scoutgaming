@@ -9,6 +9,7 @@ const SECTIONS=[
  ['ops','Operations','SCOUT LIVE CASINO · ALL SYSTEMS'],
  ['voice','Voice Lines','SYNC VERIFICATION · EVERY TAKE, AS THE GAME PLAYS IT'],
  ['emails','Emails','BRAND TEMPLATES · TRANSACTIONAL & LIFECYCLE'],
+ ['users','Users','CRAIG · ROLES & INVITES'],
  ['rooms','Tables & Rooms','ROOMS · TIERS · RULES'],
  ['dealers','Dealers','EVERY FACE · ROSTER & PIPELINE'],
  ['pit','Pit Bosses','SUPERVISION · FAIRNESS'],
@@ -17,7 +18,7 @@ const SECTIONS=[
  ['pay','Payments','WALLET · LEDGER'],
  ['shoes','Shoes & Decks','GAME INTEGRITY · RNG'],
 ];
-const ICONS={emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+const ICONS={users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
  rooms:'<ellipse cx="12" cy="12" rx="9" ry="6"/><path d="M5 16 v3 M19 16 v3"/>',
  dealers:'<circle cx="12" cy="9" r="4"/><path d="M4 21 c1.5-5 4.5-7 8-7 s6.5 2 8 7"/>',
  pit:'<path d="M12 3 L20 6 V12 C20 17 16.5 20 12 21.5 C7.5 20 4 17 4 12 V6 Z"/>',
@@ -83,6 +84,26 @@ async function render(id){
       const r=await api('/api/bo/voiceline-review',{dealer:b.dataset.d,line:b.dataset.l,verdict:b.dataset.rv});
       if(r.ok){toast(`${b.dataset.d}/${b.dataset.l}: ${b.dataset.rv}`);render('voice');}
     });
+  }
+  if(id==='users'){
+    const me=await api('/api/bo/me');
+    if(me.role!=='superadmin'){C.innerHTML='<div class="mono" style="color:var(--mut);font-size:11px">SUPERADMIN ONLY</div>';return;}
+    const u=await api('/api/bo/users');
+    C.innerHTML=`<div class="panel"><div class="t">BACKOFFICE USERS &middot; CRAIG</div><table><thead><tr><th>USER</th><th>EMAIL</th><th>ROLE</th><th>STATE</th><th>SINCE</th></tr></thead><tbody>
+    ${u.users.map(x=>`<tr><td>${x.username}</td><td style="color:var(--mut)">${x.email||'—'}</td><td class="mono">${x.role.toUpperCase()}</td><td>${x.active?pill('ACTIVE','live'):pill('INVITED','pending')}</td><td style="color:var(--mut)">${(x.created_at||'').slice(0,10)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="panel" style="max-width:640px"><div class="t">INVITE BY EMAIL &middot; THEY CHOOSE THEIR OWN PASSWORD</div>
+    <div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input id="inv-email" type="email" placeholder="name@company.com" style="flex:2;min-width:200px">
+      <select id="inv-role"><option value="reader">READER (read-only)</option><option value="staff">STAFF</option><option value="admin">ADMIN</option><option value="superadmin">SUPER ADMIN</option></select>
+      <button class="pri" id="inv-send">SEND INVITE</button>
+    </div><div class="pad" id="inv-out" style="padding-top:0"></div></div>`;
+    $('#inv-send').onclick=async()=>{
+      const r=await api('/api/bo/users/invite',{email:$('#inv-email').value,role:$('#inv-role').value});
+      const out=$('#inv-out');
+      if(r.ok){toast(r.emailSent?'invite email sent':'invite created');out.innerHTML=`<div class="kv"><b>${r.emailSent?'Email sent':'Email not sent ('+(r.reason||'')+') - share this link'}</b><span class="mono" style="font-size:10px;word-break:break-all">${r.emailSent?'':r.link}</span></div>`;render('users');}
+      else out.innerHTML=`<div class="kv"><b style="color:var(--red)">${r.error}</b></div>`;
+    };
   }
   if(id==='emails'){
     const T=[['welcome','Welcome / account created'],['deposit-receipt','Deposit receipt'],['tournament-invite','Tournament invite'],['rg-checkin','Responsible gambling check-in']];

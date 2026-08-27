@@ -126,11 +126,36 @@ const boDb = new DatabaseSync(join(dataDir, 'craig.db'));
 boDb.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
-    salt TEXT NOT NULL, hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'admin',
+    email TEXT, salt TEXT, hash TEXT, role TEXT NOT NULL DEFAULT 'reader',
     created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS tokens (
+    token TEXT PRIMARY KEY, username TEXT NOT NULL, kind TEXT NOT NULL,
+    exp INTEGER NOT NULL
   );
   CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 `);
+try { boDb.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch { /* exists */ }
+// pre-invite schema had NOT NULL salt/hash - invited users have neither until
+// they choose a password, so rebuild the table once if the old constraint is there
+{
+  const saltCol = boDb.prepare('PRAGMA table_info(users)').all().find(c => c.name === 'salt');
+  if (saltCol?.notnull) {
+    boDb.exec(`BEGIN;
+      CREATE TABLE users_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
+        email TEXT, salt TEXT, hash TEXT, role TEXT NOT NULL DEFAULT 'reader',
+        created_at TEXT NOT NULL
+      );
+      INSERT INTO users_new (id, username, email, salt, hash, role, created_at)
+        SELECT id, username, email, salt, hash, role, created_at FROM users;
+      DROP TABLE users;
+      ALTER TABLE users_new RENAME TO users;
+    COMMIT;`);
+    console.log('[bo] craig: users table migrated for invite flow');
+  }
+}
+const ROLE_RANK = { reader: 0, staff: 1, admin: 2, superadmin: 3 };
 function boSecret() {
   const row = boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
   if (row) return Buffer.from(row.v, 'hex');
@@ -164,14 +189,16 @@ function boCreateUser(username, pw, role = 'admin') {
   boDb.prepare('INSERT INTO users (username, salt, hash, role, created_at) VALUES (?,?,?,?,?)')
     .run(username, salt, hash, role, new Date().toISOString());
 }
+// kevin is ALWAYS superadmin - covers craig.db files minted before roles existed
+try { boDb.exec("UPDATE users SET role='superadmin' WHERE username='kevin'"); } catch {}
 if (!boDb.prepare('SELECT COUNT(*) n FROM users').get().n) {
   const pw = randomBytes(9).toString('base64url');
-  boCreateUser('kevin', pw);
+  boCreateUser('kevin', pw, 'superadmin');
   console.log(`[bo] backoffice login created - user: kevin  password: ${pw}`);
 }
 function boCheckLogin(user, pass) {
-  const u = boDb.prepare('SELECT salt, hash, role FROM users WHERE username = ?').get(user);
-  if (!u) return null;
+  const u = boDb.prepare('SELECT salt, hash, role FROM users WHERE username = ? OR email = ?').get(user, user);
+  if (!u || !u.hash) return null;
   const h = scryptSync(String(pass), u.salt, 64);
   return timingSafeEqual(h, Buffer.from(u.hash, 'hex')) ? { role: u.role } : null;
 }
@@ -179,6 +206,54 @@ function boSessionOk(req) {
   const c = req.headers.cookie ?? '';
   const m = /(?:^|;\s*)bo_jwt=([A-Za-z0-9_.-]+)/.exec(c);
   return m ? jwtVerify(m[1]) : null;
+}
+
+// ---------- brand emails (per design-kit/ScoutBrand.dc.html) ----------
+const MAIL_FROM = 'Scout Backoffice <bo@axelio.io>';
+let RESEND_KEY = process.env.RESEND_API_KEY ?? '';
+if (!RESEND_KEY) {
+  try { RESEND_KEY = (readSync('/Users/solvifyab/Desktop/Axelio-Platform/.env', 'utf8').match(/^RESEND_API_KEY=(.+)$/m)?.[1]?.trim() ?? '').replace(/^["']|["']$/g, ''); } catch {}
+}
+function brandEmail({ preheader, headline, intro, rows = [], cta, ctaUrl, footer }) {
+  const kv = rows.length ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px">' + rows.map(([k, v]) =>
+    `<tr><td style="padding:9px 0;border-bottom:1px solid rgba(242,241,237,0.08);font-family:'JetBrains Mono','Courier New',monospace;font-size:10px;letter-spacing:2.5px;color:rgba(242,241,237,0.55)">${k.toUpperCase()}</td>` +
+    `<td align="right" style="padding:9px 0;border-bottom:1px solid rgba(242,241,237,0.08);font-family:'Space Grotesk',Arial,sans-serif;font-size:14px;color:#F2F1ED">${v}</td></tr>`).join('') + '</table>' : '';
+  const btn = cta ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 4px"><tr><td style="background:#D6FF3A;border-radius:22px;box-shadow:0 6px 22px rgba(214,255,58,0.25)"><a href="${ctaUrl}" style="display:inline-block;padding:13px 38px;font-family:'Space Grotesk',Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:1.2px;color:#0A0B0D;text-decoration:none">${cta}</a></td></tr></table>` : '';
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"><title>Scout</title></head>
+<body style="margin:0;padding:0;background:#0A0B0D">
+<div style="display:none;max-height:0;overflow:hidden">${preheader}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0B0D"><tr><td align="center" style="padding:40px 16px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+<tr><td style="padding:0 6px 10px;font-family:'JetBrains Mono','Courier New',monospace;font-size:11px;letter-spacing:3px;color:rgba(242,241,237,0.55)">SCOUT &middot; LIVE CASINO</td></tr>
+<tr><td style="padding:0 6px 24px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<td style="padding-right:11px"><img src="https://backoffice.bettalotto.se/bo/img/scout-mark.png" width="26" height="26" alt="" style="display:block"></td>
+<td style="font-family:'Space Grotesk',Arial,sans-serif;font-weight:600;font-size:22px;letter-spacing:-0.5px;color:#F2F1ED">scout<span style="color:#D6FF3A">/</span>gaming</td></tr></table></td></tr>
+<tr><td style="background:#101214;border:1px solid rgba(242,241,237,0.10);border-radius:14px;padding:36px 34px">
+<div style="font-family:'Space Grotesk',Arial,sans-serif;font-weight:600;font-size:26px;letter-spacing:-1px;line-height:1.2;color:#F2F1ED;margin:0 0 14px">${headline}</div>
+<div style="font-family:'Space Grotesk',Arial,sans-serif;font-size:15px;line-height:1.65;color:#9a9aa2;margin:0 0 18px">${intro}</div>
+${kv}${btn}
+${footer ? `<div style="font-family:'Space Grotesk',Arial,sans-serif;font-size:12px;line-height:1.6;color:#9a9aa2;margin-top:16px">${footer}</div>` : ''}
+</td></tr>
+<tr><td style="padding:22px 6px;font-family:'JetBrains Mono','Courier New',monospace;font-size:9px;letter-spacing:2.5px;color:rgba(242,241,237,0.4)">18+ &middot; PLAY RESPONSIBLY &middot; SCOUT GAMING</td></tr>
+</table></td></tr></table></body></html>`;
+}
+async function sendMail(to, subject, html) {
+  if (!RESEND_KEY) return { sent: false, reason: 'no mail key on this host' };
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST', headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: MAIL_FROM, to: [to], subject, html }),
+    });
+    return r.ok ? { sent: true } : { sent: false, reason: `resend ${r.status}` };
+  } catch (e) { return { sent: false, reason: e.message }; }
+}
+const BO_URL = process.env.BO_URL ?? 'https://backoffice.bettalotto.se';
+function mintToken(username, kind, hours) {
+  const t = randomBytes(24).toString('base64url');
+  boDb.prepare('INSERT INTO tokens (token, username, kind, exp) VALUES (?,?,?,?)')
+    .run(t, username, kind, Math.floor(Date.now() / 1000) + hours * 3600);
+  return t;
 }
 
 function boApi(url) {
@@ -197,6 +272,9 @@ function boApi(url) {
     return { tx: db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all() };
   }
   if (url === '/api/bo/config') return cfg;
+  if (url === '/api/bo/users') {
+    return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
+  }
   if (url === '/api/bo/voicelines') {
     const out = [];
     for (const d of dealerScan()) {
@@ -224,7 +302,51 @@ function boApi(url) {
   }
   return null;
 }
-function boPost(url, body) {
+async function boPost(url, body, who) {
+  if (url === '/api/bo/users/invite') {
+    const { email, role } = body;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email ?? '')) return { error: 'bad email' };
+    if (!['reader', 'staff', 'admin', 'superadmin'].includes(role)) return { error: 'bad role' };
+    if (boDb.prepare('SELECT 1 FROM users WHERE username = ? OR email = ?').get(email, email)) return { error: 'user exists' };
+    boDb.prepare('INSERT INTO users (username, email, role, created_at) VALUES (?,?,?,?)')
+      .run(email, email, role, new Date().toISOString());
+    const t = mintToken(email, 'invite', 72);
+    const link = `${BO_URL}/bo/set-password.html?t=${t}`;
+    const mail = await sendMail(email, 'You are invited to the Scout backoffice', brandEmail({
+      preheader: 'Choose your password to activate your account.',
+      headline: 'You have a seat in the backoffice.',
+      intro: `An account has been created for you on the Scout Live Casino backoffice with the <span style="color:#D6FF3A">${role.toUpperCase()}</span> role. Choose your own password to activate it. The link is valid for 72 hours.`,
+      cta: 'CHOOSE PASSWORD', ctaUrl: link,
+      footer: 'If you were not expecting this invitation, ignore this email and nothing happens.',
+    }));
+    return { ok: true, emailSent: mail.sent, reason: mail.reason, link };
+  }
+  if (url === '/api/bo/reset-request') {
+    const { user } = body;
+    const u = boDb.prepare('SELECT username, email FROM users WHERE username = ? OR email = ?').get(user ?? '', user ?? '');
+    if (u && u.email) {
+      const t = mintToken(u.username, 'reset', 2);
+      await sendMail(u.email, 'Reset your Scout backoffice password', brandEmail({
+        preheader: 'Password reset for your backoffice account.',
+        headline: 'Reset your password.',
+        intro: 'A password reset was requested for your Scout backoffice account. The link is valid for 2 hours.',
+        cta: 'SET NEW PASSWORD', ctaUrl: `${BO_URL}/bo/set-password.html?t=${t}`,
+        footer: 'If this was not you, ignore this email - your password stays unchanged.',
+      }));
+    }
+    return { ok: true };   // never reveal whether the account exists
+  }
+  if (url === '/api/bo/set-password') {
+    const { token, pass } = body;
+    if (!pass || String(pass).length < 8) return { error: 'password must be at least 8 characters' };
+    const row = boDb.prepare('SELECT username, kind, exp FROM tokens WHERE token = ?').get(token ?? '');
+    if (!row || row.exp < Date.now() / 1000) return { error: 'invalid or expired link' };
+    const salt = randomBytes(16).toString('hex');
+    const hash = scryptSync(String(pass), salt, 64).toString('hex');
+    boDb.prepare('UPDATE users SET salt = ?, hash = ? WHERE username = ?').run(salt, hash, row.username);
+    boDb.prepare('DELETE FROM tokens WHERE username = ?').run(row.username);
+    return { ok: true };
+  }
   const cfg = boLoad();
   if (url === '/api/bo/tier') {
     const { tier, dealer } = body;
@@ -486,26 +608,52 @@ createServer((req, res) => {
     });
     return;
   }
-  // the game itself reads tier config; everything else in the BO needs a session
-  const boOpen = req.method === 'GET' && req.url === '/api/bo/config';
+  // the game itself reads tier config; login, password flows and /me stay
+  // reachable without a session; everything else in the BO needs one
+  const boOpen = (req.method === 'GET' && (req.url === '/api/bo/config' || req.url === '/api/bo/me'))
+    || (req.method === 'POST' && ['/api/bo/reset-request', '/api/bo/set-password'].includes(req.url))
+    || req.url === '/bo/login.html' || req.url.startsWith('/bo/set-password.html');
   if ((req.url.startsWith('/api/bo/') || req.url === '/bo' || req.url.startsWith('/bo/')) && !boOpen
-      && req.url !== '/bo/login.html' && !boSessionOk(req)) {
+      && !boSessionOk(req)) {
     if (req.url.startsWith('/api/')) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"login required"}'); }
     else { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); }
     return;
   }
   if (req.method === 'GET' && req.url.startsWith('/api/bo/')) {
+    const who = boSessionOk(req);
+    if (req.url === '/api/bo/me') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(who ? { user: who.sub, role: who.role } : {}));
+      return;
+    }
+    if (req.url === '/api/bo/users' && (who?.role !== 'superadmin')) {
+      res.writeHead(403, { 'Content-Type': 'application/json' }); res.end('{"error":"superadmin only"}'); return;
+    }
     const out = boApi(req.url);
     res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(out ?? { error: 'not found' }));
     return;
   }
   if (req.method === 'POST' && req.url.startsWith('/api/bo/')) {
+    // least role that may perform each action
+    const NEED = { '/api/bo/voiceline-review': 'staff', '/api/bo/tournament': 'staff',
+                   '/api/bo/pitboss': 'admin', '/api/bo/tier': 'admin', '/api/bo/room': 'admin',
+                   '/api/bo/users/invite': 'superadmin' };
+    const PUBLIC = ['/api/bo/reset-request', '/api/bo/set-password'];
+    const who = boSessionOk(req);
+    if (!PUBLIC.includes(req.url)) {
+      const need = NEED[req.url] ?? 'admin';
+      if (!who || (ROLE_RANK[who.role] ?? -1) < ROLE_RANK[need]) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `${need} role required` }));
+        return;
+      }
+    }
     let body = '';
     req.on('data', c => { body += c; if (body.length > 100000) req.destroy(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       let out = null;
-      try { out = boPost(req.url, JSON.parse(body || '{}')); } catch { out = { error: 'bad json' }; }
+      try { out = await boPost(req.url, JSON.parse(body || '{}'), who); } catch (e) { out = { error: 'bad request' }; }
       res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out ?? { error: 'not found' }));
     });
