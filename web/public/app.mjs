@@ -129,7 +129,13 @@ let speechActive = 0;
 let speechChain = Promise.resolve();
 function speechTurn(fn) {
   speechActive++;
-  const run = speechChain.then(() => Promise.resolve(fn())).catch(() => {}).finally(() => { speechActive--; });
+  // watchdog: no turn may hold the queue longer than any real line lasts -
+  // a wedged turn otherwise silences the dealer for the rest of the session
+  const guarded = () => Promise.race([
+    Promise.resolve(fn()),
+    new Promise(r => setTimeout(r, 20000)),
+  ]);
+  const run = speechChain.then(guarded).catch(() => {}).finally(() => { speechActive--; });
   speechChain = run;
   return run;
 }
@@ -1273,16 +1279,14 @@ async function cutToTake(clip) {
   speaking = true;
   heldSpeakClip = clip;
   const painted = new Promise(resolve => {
-    const t0 = performance.now();
     const prev = engine.onPresentClip;
-    const done = () => { engine.onPresentClip = prev; resolve(); };
+    let fallback;
+    const done = () => { engine.onPresentClip = prev; clearTimeout(fallback); resolve(); };
     engine.onPresentClip = k => { prev?.(k); if (k === clip) done(); };
-    const poll = () => {
-      if (engine.presentedClip === clip) return done();
-      if (performance.now() - t0 > 3000) return done();   // never hang the voice
-      requestAnimationFrame(poll);
-    };
-    requestAnimationFrame(poll);
+    if (engine.presentedClip === clip) return done();
+    // REAL timer, not rAF: rAF suspends in a hidden tab, and with the global
+    // speech queue one hung wait would mute every line for the whole session
+    fallback = setTimeout(done, 3000);
   });
   engine.interrupt(clip);
   await painted;
