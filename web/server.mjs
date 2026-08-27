@@ -8,7 +8,7 @@ import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
 import { join, normalize, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), 'public');
 
@@ -118,6 +118,69 @@ function dealerScan() {
   }
   return out;
 }
+// ---------- BO auth: JWT + craig (the auth DB) ----------
+// Backoffice users live in CRAIG - their own SQLite DB (data/craig.db),
+// separate from the players DB. Auth is a stateless HS256 JWT in an HttpOnly
+// cookie, so logins survive server restarts.
+const boDb = new DatabaseSync(join(dataDir, 'craig.db'));
+boDb.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
+    salt TEXT NOT NULL, hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'admin',
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+`);
+function boSecret() {
+  const row = boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
+  if (row) return Buffer.from(row.v, 'hex');
+  const sec = randomBytes(32);
+  boDb.prepare("INSERT INTO meta (k, v) VALUES ('jwt_secret', ?)").run(sec.toString('hex'));
+  return sec;
+}
+const BO_SECRET = boSecret();
+const b64u = b => Buffer.from(b).toString('base64url');
+function jwtSign(payload) {
+  const h = b64u(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const p = b64u(JSON.stringify(payload));
+  const sig = createHmac('sha256', BO_SECRET).update(`${h}.${p}`).digest('base64url');
+  return `${h}.${p}.${sig}`;
+}
+function jwtVerify(tok) {
+  const parts = (tok ?? '').split('.');
+  if (parts.length !== 3) return null;
+  const sig = createHmac('sha256', BO_SECRET).update(`${parts[0]}.${parts[1]}`).digest();
+  const given = Buffer.from(parts[2], 'base64url');
+  if (sig.length !== given.length || !timingSafeEqual(sig, given)) return null;
+  try {
+    const p = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+    if (!p.exp || p.exp < Date.now() / 1000) return null;
+    return p;
+  } catch { return null; }
+}
+function boCreateUser(username, pw, role = 'admin') {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(pw, salt, 64).toString('hex');
+  boDb.prepare('INSERT INTO users (username, salt, hash, role, created_at) VALUES (?,?,?,?,?)')
+    .run(username, salt, hash, role, new Date().toISOString());
+}
+if (!boDb.prepare('SELECT COUNT(*) n FROM users').get().n) {
+  const pw = randomBytes(9).toString('base64url');
+  boCreateUser('kevin', pw);
+  console.log(`[bo] backoffice login created - user: kevin  password: ${pw}`);
+}
+function boCheckLogin(user, pass) {
+  const u = boDb.prepare('SELECT salt, hash, role FROM users WHERE username = ?').get(user);
+  if (!u) return null;
+  const h = scryptSync(String(pass), u.salt, 64);
+  return timingSafeEqual(h, Buffer.from(u.hash, 'hex')) ? { role: u.role } : null;
+}
+function boSessionOk(req) {
+  const c = req.headers.cookie ?? '';
+  const m = /(?:^|;\s*)bo_jwt=([A-Za-z0-9_.-]+)/.exec(c);
+  return m ? jwtVerify(m[1]) : null;
+}
+
 function boApi(url) {
   const cfg = boLoad();
   if (url === '/api/bo/overview') {
@@ -153,6 +216,8 @@ function boApi(url) {
                      audio: `/${d.base}/audio/en/${k}.mp3` });
       }
       lines.sort((a, b) => a.key.localeCompare(b.key));
+      const review = (cfg.voiceReview ?? {})[d.key] ?? {};
+      for (const l of lines) l.review = review[l.key] ?? null;
       out.push({ dealer: d.key, name: d.name, lines });
     }
     return { dealers: out };
@@ -172,6 +237,23 @@ function boPost(url, body) {
     } catch { return { error: dealer + ' has no clips yet' }; }
     cfg.tiers[tier] = dealer; boSave(cfg);
     return { ok: true, tiers: cfg.tiers };
+  }
+  if (url === '/api/bo/room') {
+    const { id, state } = body;
+    const room = cfg.rooms.find(r => r.id === id);
+    if (!room || !['live', 'preview', 'pending'].includes(state)) return { error: 'bad room/state' };
+    room.state = state; boSave(cfg);
+    return { ok: true, rooms: cfg.rooms };
+  }
+  if (url === '/api/bo/voiceline-review') {
+    const { dealer, line, verdict } = body;
+    if (!dealer || !line || !['approved', 'rejected', null].includes(verdict)) return { error: 'bad review' };
+    cfg.voiceReview = cfg.voiceReview ?? {};
+    cfg.voiceReview[dealer] = cfg.voiceReview[dealer] ?? {};
+    if (verdict === null) delete cfg.voiceReview[dealer][line];
+    else cfg.voiceReview[dealer][line] = verdict;
+    boSave(cfg);
+    return { ok: true };
   }
   if (url === '/api/bo/pitboss') { cfg.pitboss = { ...cfg.pitboss, ...body }; boSave(cfg); return { ok: true, pitboss: cfg.pitboss }; }
   if (url === '/api/bo/tournament') {
@@ -391,6 +473,27 @@ createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && req.url === '/api/bo/login') {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
+    req.on('end', () => {
+      let who = null, uname = '';
+      try { const { user, pass } = JSON.parse(body || '{}'); uname = user; who = boCheckLogin(user, pass); } catch {}
+      if (!who) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
+      const tok = jwtSign({ sub: uname, role: who.role, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800` });
+      res.end('{"ok":true}');
+    });
+    return;
+  }
+  // the game itself reads tier config; everything else in the BO needs a session
+  const boOpen = req.method === 'GET' && req.url === '/api/bo/config';
+  if ((req.url.startsWith('/api/bo/') || req.url === '/bo' || req.url.startsWith('/bo/')) && !boOpen
+      && req.url !== '/bo/login.html' && !boSessionOk(req)) {
+    if (req.url.startsWith('/api/')) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"login required"}'); }
+    else { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); }
+    return;
+  }
   if (req.method === 'GET' && req.url.startsWith('/api/bo/')) {
     const out = boApi(req.url);
     res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });
