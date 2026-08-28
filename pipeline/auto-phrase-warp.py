@@ -9,13 +9,50 @@ import subprocess, io, sys, os, json, shutil
 import numpy as np
 from PIL import Image
 FPS=24
-def mouth_track(stream, cx=660, cy=480):
+def mouth_track(stream, cx=660, cy=480, cw=200, ch=140, detrend=False):
     out=subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-f','h264','-i',stream,
-        '-vf',f'crop=200:140:{cx}:{cy},scale=50:35','-vsync','0','-f','image2pipe','-vcodec','png','-'],
+        '-vf',f'crop={cw}:{ch}:{cx}:{cy},scale=50:35','-vsync','0','-f','image2pipe','-vcodec','png','-'],
         capture_output=True).stdout
     sig=b'\x89PNG'; st=[i for i in range(len(out)) if out[i:i+4]==sig]
     fr=[np.array(Image.open(io.BytesIO(out[s:(st[i+1] if i+1<len(st) else len(out))])).convert('L'),dtype=np.float32) for i,s in enumerate(st)]
-    return np.array([0.0]+[np.abs(fr[i]-fr[i-1]).mean() for i in range(1,len(fr))])
+    m=np.array([0.0]+[np.abs(fr[i]-fr[i-1]).mean() for i in range(1,len(fr))])
+    if detrend:
+        # a dealer who moves her head adds a slow baseline to the frame-diff
+        # signal; speech flutter is fast - subtract a rolling median to keep it
+        k=9; pad=np.pad(m,(k//2,k//2),mode='edge')
+        base=np.array([np.median(pad[i:i+k]) for i in range(len(m))])
+        m=np.clip(m-base,0,None)
+    return m
+def stab_mouth_track(stream, cfg):
+    # For a dealer who moves her head: track the nose (rigid under speech) by
+    # template match, then frame-diff the STABILIZED mouth patch - translation
+    # removed, what remains is lip deformation. cfg: crop [x,y,w,h] of the face
+    # region, nose [x,y,w,h] in crop coords (frame-0 template), mouthOff
+    # [dx,dy,w,h] of the mouth patch relative to the tracked nose origin.
+    cx,cy,cw,ch=cfg['crop']
+    out=subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-f','h264','-i',stream,
+        '-vf',f'crop={cw}:{ch}:{cx}:{cy}','-vsync','0','-f','image2pipe','-vcodec','png','-'],
+        capture_output=True).stdout
+    sig=b'\x89PNG'; st=[i for i in range(len(out)) if out[i:i+4]==sig]
+    fr=[np.array(Image.open(io.BytesIO(out[s:(st[i+1] if i+1<len(st) else len(out))])).convert('L'),dtype=np.float32) for i,s in enumerate(st)]
+    nx,ny,nw,nh=cfg['nose']; dx,dy,mw,mh=cfg['mouthOff']
+    tpl=fr[0][ny:ny+nh, nx:nx+nw].copy(); tpl-=tpl.mean(); tn=np.sqrt((tpl*tpl).sum())+1e-6
+    R=28  # search radius around the previous position
+    pos=(nx,ny); patches=[]
+    for f in fr:
+        px,py=pos; best=(-1e18,pos)
+        y0=max(0,py-R); y1=min(ch-nh,py+R); x0=max(0,px-R); x1=min(cw-nw,px+R)
+        win=np.lib.stride_tricks.sliding_window_view(f[y0:y1+nh, x0:x1+nw],(nh,nw))
+        w=win-win.mean(axis=(2,3),keepdims=True)
+        num=np.einsum('ijkl,kl->ij',w,tpl)
+        den=np.sqrt((w*w).sum(axis=(2,3)))*tn+1e-6
+        ncc=num/den
+        iy,ix=np.unravel_index(np.argmax(ncc),ncc.shape)
+        pos=(x0+ix, y0+iy)
+        mx=min(max(0,pos[0]+dx),cw-mw); my=min(max(0,pos[1]+dy),ch-mh)
+        pt=f[my:my+mh, mx:mx+mw]
+        patches.append(pt/ (pt.mean()+1e-6))
+    return np.array([0.0]+[np.abs(patches[i]-patches[i-1]).mean()*100 for i in range(1,len(patches))])
 def audio_env_ms(mp3, hop_ms=10):
     out=subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-i',mp3,'-f','s16le','-ac','1','-ar','24000','-'],capture_output=True).stdout
     a=np.abs(np.frombuffer(out,dtype=np.int16).astype(np.float32)); hop=int(24000*hop_ms/1000)
@@ -36,11 +73,16 @@ def group(runs, gap_ms):
         if a-out[-1][1]<=gap_ms: out[-1][1]=b
         else: out.append([a,b])
     return out
-def analyze(stream, mp3, crop):
-    m=mouth_track(stream,*crop)
+def analyze(stream, mp3, crop, box=None, trackcfg=None):
+    m=stab_mouth_track(stream,trackcfg) if trackcfg else mouth_track(stream,*crop,*(box or (200,140,False)))
     env,adur=audio_env_ms(mp3)
     aph=group(bursts(env,np.percentile(env,97)*0.15,10,60),300)
-    mth=max(3.0,np.percentile(m,60))
+    if trackcfg:
+        # stabilized signal has its own scale: threshold relative to its range
+        base=np.percentile(m,20)
+        mth=base+0.18*(np.percentile(m,97)-base)
+    else:
+        mth=max(3.0,np.percentile(m,60))
     waves=group(bursts(m,mth,1000/FPS,120),330)
     return aph, waves, adur
 def reconcile(aph, waves):
@@ -98,9 +140,13 @@ def main():
     args=[a for a in sys.argv[1:] if not a.startswith('--')]
     base=args[0]; keys=args[1:]
     apply='--apply' in sys.argv
-    crop=(660,480)
+    crop=(660,480); box=None
     for a in sys.argv:
         if a.startswith('--crop'): crop=tuple(int(x) for x in a.split('=')[1].split(':'))
+        if a.startswith('--box'): box=tuple(int(x) for x in a.split('=')[1].split(':'))+(False,)
+        if a=='--detrend' and box: box=box[:2]+(True,)
+    trackcfg=None
+    if os.path.exists(f'{base}/trackcfg.json'): trackcfg=json.load(open(f'{base}/trackcfg.json'))
     idx=json.load(open(f'{base}/streams/index.json'))
     if not keys: keys=[k.split('/')[-1] for k in idx['clips'] if '/speak/' in k]
     for key in keys:
@@ -112,11 +158,12 @@ def main():
         except FileNotFoundError: tuned={}
         if key in tuned and os.path.exists(f'{base}/audio/en/orig/{key}.mp3'):
             print(f'{key}: already hand-tuned, skipping'); continue
-        aph,waves,adur=analyze(stream,mp3,crop)
+        aph,waves,adur=analyze(stream,mp3,crop,box,trackcfg)
         waves=reconcile(aph,waves)
         errs=phrase_errors(aph,waves)
         status=f"{key}: phrases={len(aph)} waves={len(waves)} onset-errors={errs}"
-        ok = aph and len(aph)==len(waves) and all(abs(e)<=120 for e in errs)
+        tempos=[(a1-a0)/max(120.0,v1-v0) for (a0,a1),(v0,v1) in zip(aph,waves)]
+        ok = aph and len(aph)==len(waves) and all(abs(e)<=120 for e in errs) and all(0.88<=t<=1.15 for t in tempos)
         if ok: print(status+" ALIGNED"); continue
         p=plan(aph,waves)
         if p is None:
@@ -127,7 +174,7 @@ def main():
         os.makedirs(os.path.dirname(orig),exist_ok=True)
         if not os.path.exists(orig): shutil.copy(mp3,orig)
         if render(orig,mp3,*p):
-            a2,w2,_=analyze(stream,mp3,crop)
+            a2,w2,_=analyze(stream,mp3,crop,box,trackcfg)
             e2=phrase_errors(a2,w2) if len(a2)==len(w2) else ['?']
             print(status+f" -> WARPED, residual onset-errors={e2}")
             ovp=f'{base}/lipsync-overrides.json'
