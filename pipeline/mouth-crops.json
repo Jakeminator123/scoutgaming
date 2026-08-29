@@ -1,0 +1,42 @@
+{
+  "vera": {
+    "crop": [
+      660,
+      480,
+      200,
+      140
+    ],
+    "corr": 0.628,
+    "note": "keep documented vera crop"
+  },
+  "astrid": {
+    "crop": [
+      700,
+      448,
+      200,
+      140
+    ],
+    "corr": 0.61,
+    "lag_frames": 6
+  },
+  "amira": {
+    "crop": [
+      620,
+      440,
+      200,
+      140
+    ],
+    "corr": null,
+    "note": "retargeted: 432,416 was hair/background; 620,440 is the mouth"
+  },
+  "mei": {
+    "crop": [
+      620,
+      440,
+      200,
+      140
+    ],
+    "corr": null,
+    "note": "retargeted: 460,544 was off-mouth; 620,440 is the mouth"
+  }
+}
