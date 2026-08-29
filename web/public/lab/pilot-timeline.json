@@ -1,0 +1,324 @@
+{
+ "text": "This table pays three to two and I never miss a beat",
+ "audio": "vera-pilot-line.mp3",
+ "waves": [
+  {
+   "id": "wav-01",
+   "startMs": 90,
+   "endMs": 1730
+  },
+  {
+   "id": "wav-02",
+   "startMs": 2050,
+   "endMs": 3090
+  }
+ ],
+ "keyframes": [
+  {
+   "id": "kf-001",
+   "viseme": "EE",
+   "startMs": 90,
+   "endMs": 155,
+   "word": "this",
+   "wave": "wav-01",
+   "intensity": 0.39
+  },
+  {
+   "id": "kf-002",
+   "viseme": "EE",
+   "startMs": 155,
+   "endMs": 220,
+   "word": "table",
+   "wave": "wav-01",
+   "intensity": 0.53
+  },
+  {
+   "id": "kf-003",
+   "viseme": "AA",
+   "startMs": 220,
+   "endMs": 351,
+   "word": "table",
+   "wave": "wav-01",
+   "intensity": 0.32
+  },
+  {
+   "id": "kf-004",
+   "viseme": "MM",
+   "startMs": 351,
+   "endMs": 416,
+   "word": "table",
+   "wave": "wav-01",
+   "intensity": 0.55
+  },
+  {
+   "id": "kf-005",
+   "viseme": "AH",
+   "startMs": 416,
+   "endMs": 547,
+   "word": "table",
+   "wave": "wav-01",
+   "intensity": 0.56
+  },
+  {
+   "id": "kf-006",
+   "viseme": "EE",
+   "startMs": 547,
+   "endMs": 612,
+   "word": "table",
+   "wave": "wav-01",
+   "intensity": 0.41
+  },
+  {
+   "id": "kf-007",
+   "viseme": "MM",
+   "startMs": 612,
+   "endMs": 678,
+   "word": "pays",
+   "wave": "wav-01",
+   "intensity": 0.03
+  },
+  {
+   "id": "kf-008",
+   "viseme": "AA",
+   "startMs": 678,
+   "endMs": 809,
+   "word": "pays",
+   "wave": "wav-01",
+   "intensity": 0.11
+  },
+  {
+   "id": "kf-009",
+   "viseme": "EE",
+   "startMs": 809,
+   "endMs": 874,
+   "word": "pays",
+   "wave": "wav-01",
+   "intensity": 0.29
+  },
+  {
+   "id": "kf-010",
+   "viseme": "EE",
+   "startMs": 874,
+   "endMs": 939,
+   "word": "three",
+   "wave": "wav-01",
+   "intensity": 0.22
+  },
+  {
+   "id": "kf-011",
+   "viseme": "OH",
+   "startMs": 939,
+   "endMs": 1070,
+   "word": "three",
+   "wave": "wav-01",
+   "intensity": 0.29
+  },
+  {
+   "id": "kf-012",
+   "viseme": "EE",
+   "startMs": 1070,
+   "endMs": 1135,
+   "word": "three",
+   "wave": "wav-01",
+   "intensity": 0.13
+  },
+  {
+   "id": "kf-013",
+   "viseme": "EE",
+   "startMs": 1135,
+   "endMs": 1201,
+   "word": "to",
+   "wave": "wav-01",
+   "intensity": 0.87
+  },
+  {
+   "id": "kf-014",
+   "viseme": "OH",
+   "startMs": 1201,
+   "endMs": 1331,
+   "word": "to",
+   "wave": "wav-01",
+   "intensity": 0.61
+  },
+  {
+   "id": "kf-015",
+   "viseme": "EE",
+   "startMs": 1331,
+   "endMs": 1397,
+   "word": "two",
+   "wave": "wav-01",
+   "intensity": 0.07
+  },
+  {
+   "id": "kf-016",
+   "viseme": "OH",
+   "startMs": 1397,
+   "endMs": 1528,
+   "word": "two",
+   "wave": "wav-01",
+   "intensity": 0.1
+  },
+  {
+   "id": "kf-017",
+   "viseme": "AA",
+   "startMs": 1528,
+   "endMs": 1658,
+   "word": "and",
+   "wave": "wav-01",
+   "intensity": 0.16
+  },
+  {
+   "id": "kf-018",
+   "viseme": "EE",
+   "startMs": 1658,
+   "endMs": 1724,
+   "word": "and",
+   "wave": "wav-01",
+   "intensity": 0.23
+  },
+  {
+   "id": "kf-019",
+   "viseme": "AA",
+   "startMs": 2050,
+   "endMs": 2180,
+   "word": "i",
+   "wave": "wav-02",
+   "intensity": 0.22
+  },
+  {
+   "id": "kf-020",
+   "viseme": "EE",
+   "startMs": 2180,
+   "endMs": 2246,
+   "word": "never",
+   "wave": "wav-02",
+   "intensity": 0.26
+  },
+  {
+   "id": "kf-021",
+   "viseme": "AA",
+   "startMs": 2246,
+   "endMs": 2376,
+   "word": "never",
+   "wave": "wav-02",
+   "intensity": 0.23
+  },
+  {
+   "id": "kf-022",
+   "viseme": "MM",
+   "startMs": 2376,
+   "endMs": 2442,
+   "word": "never",
+   "wave": "wav-02",
+   "intensity": 0.51
+  },
+  {
+   "id": "kf-023",
+   "viseme": "OH",
+   "startMs": 2442,
+   "endMs": 2572,
+   "word": "never",
+   "wave": "wav-02",
+   "intensity": 0.44
+  },
+  {
+   "id": "kf-024",
+   "viseme": "MM",
+   "startMs": 2572,
+   "endMs": 2638,
+   "word": "miss",
+   "wave": "wav-02",
+   "intensity": 0.17
+  },
+  {
+   "id": "kf-025",
+   "viseme": "EE",
+   "startMs": 2638,
+   "endMs": 2703,
+   "word": "miss",
+   "wave": "wav-02",
+   "intensity": 0.22
+  },
+  {
+   "id": "kf-026",
+   "viseme": "EE",
+   "startMs": 2703,
+   "endMs": 2769,
+   "word": "miss",
+   "wave": "wav-02",
+   "intensity": 0.17
+  },
+  {
+   "id": "kf-027",
+   "viseme": "AH",
+   "startMs": 2769,
+   "endMs": 2899,
+   "word": "a",
+   "wave": "wav-02",
+   "intensity": 0.16
+  },
+  {
+   "id": "kf-028",
+   "viseme": "MM",
+   "startMs": 2899,
+   "endMs": 2965,
+   "word": "beat",
+   "wave": "wav-02",
+   "intensity": 0.09
+  },
+  {
+   "id": "kf-029",
+   "viseme": "EE",
+   "startMs": 2965,
+   "endMs": 3030,
+   "word": "beat",
+   "wave": "wav-02",
+   "intensity": 0.12
+  },
+  {
+   "id": "kf-030",
+   "viseme": "EE",
+   "startMs": 3030,
+   "endMs": 3095,
+   "word": "beat",
+   "wave": "wav-02",
+   "intensity": 0.22
+  }
+ ],
+ "binding": {
+  "wav-01": [
+   "kf-001",
+   "kf-002",
+   "kf-003",
+   "kf-004",
+   "kf-005",
+   "kf-006",
+   "kf-007",
+   "kf-008",
+   "kf-009",
+   "kf-010",
+   "kf-011",
+   "kf-012",
+   "kf-013",
+   "kf-014",
+   "kf-015",
+   "kf-016",
+   "kf-017",
+   "kf-018"
+  ],
+  "wav-02": [
+   "kf-019",
+   "kf-020",
+   "kf-021",
+   "kf-022",
+   "kf-023",
+   "kf-024",
+   "kf-025",
+   "kf-026",
+   "kf-027",
+   "kf-028",
+   "kf-029",
+   "kf-030"
+  ]
+ }
+}
