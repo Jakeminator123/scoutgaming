@@ -9,5 +9,8 @@
  "peek": 0,
  "sidebet": 0,
  "win": 0,
- "greeting": 366
+ "greeting": 366,
+ "placebets": 66,
+ "dealerbust": 296,
+ "blackjack": 15
 }
