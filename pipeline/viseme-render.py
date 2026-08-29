@@ -25,7 +25,10 @@ idle=f"{base}/streams/{idx['clips']['idle-1/idle/idle']['file']}"
 out=subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-f','h264','-r',str(FPS),'-i',idle,
     '-vsync','0','-f','image2pipe','-vcodec','png','-'],capture_output=True).stdout
 sig=b'\x89PNG'; st=[i for i in range(len(out)) if out[i:i+4]==sig]
-full=[np.array(Image.open(io.BytesIO(out[s:(st[i+1] if i+1<len(st) else len(out))])).convert('RGB'),dtype=np.float32) for i,s in enumerate(st)]
+full=[]
+for i,s_ in enumerate(st):
+    try: full.append(np.array(Image.open(io.BytesIO(out[s_:(st[i+1] if i+1<len(st) else len(out))])).convert('RGB'),dtype=np.float32))
+    except Exception: pass   # truncated trailing PNG from the pipe: drop it
 n=len(full)
 gray=[cv2.cvtColor(f[cy:cy+ch,cx:cx+cw].astype(np.uint8),cv2.COLOR_RGB2GRAY).astype(np.float32) for f in full]
 tpl=gray[0][ny:ny+nh,nx:nx+nw].copy()
@@ -50,14 +53,15 @@ def pick_tile(cl,ms):
     arr=tiles.get(cl) or tiles.get('AH') or tiles.get('EE')
     return arr[(ms//140)%len(arr)]
 frames_needed=int(np.ceil((delay+adur)/1000*FPS))+FPS
-outframes=[]
+outframes=[]; track=[]
 prev_cl=None; fade=0
 for i in range(frames_needed):
     src=full[i%n].copy()
     ms=i*1000/FPS - delay
     k=viseme_at(ms)
+    ax,ay=anchors[i%n]
+    rec={'f':i,'ms':int(i*1000/FPS),'nose':[int(cx+ax),int(cy+ay)]}
     if k is not None:
-        ax,ay=anchors[i%n]
         px=cx+ax+dx-MX; py=cy+ay+dy-MY
         tile=pick_tile(k['viseme'],int(ms)).copy()
         reg=src[py:py+th_,px:px+tw_]
@@ -71,9 +75,18 @@ for i in range(frames_needed):
         fade=min(fade+1,3); a=a*(fade/3.0)
         prev_cl=k['viseme']
         src[py:py+th_,px:px+tw_]=reg*(1-a)+tile*a
+        rec.update({'kf':k['id'],'viseme':k['viseme'],'word':k['word'],'wave':k['wave'],
+                    'rect':[int(px),int(py),int(tw_),int(th_)],'alpha':round(fade/3.0,2)})
     else:
         prev_cl=None; fade=0
+    track.append(rec)
     outframes.append(src.astype(np.uint8))
+# audio envelope for the live waveform lane (10ms hops)
+ab=subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-i',mp3,'-f','f32le','-ac','1','-ar','44100','-'],capture_output=True).stdout
+xw=np.abs(np.frombuffer(ab,dtype=np.float32)); hop=441
+envl=[round(float(v),4) for v in (np.array([xw[j*hop:(j+1)*hop].mean() for j in range(len(xw)//hop)])/ (xw.max()+1e-9))]
+json.dump({'fps':FPS,'delayMs':delay,'timeline':tl,'frames':track,'env10ms':envl},
+          open(outp.replace('.mp4','.track.json'),'w'))
 td=tempfile.mkdtemp()
 for i,f in enumerate(outframes):
     Image.fromarray(f).save(f'{td}/f{i:04d}.png')
