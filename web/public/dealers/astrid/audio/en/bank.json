@@ -18,13 +18,13 @@
   "text": "That is a bust."
  },
  "dealerbust": {
-  "text": "Dealer busts, the table wins."
+  "text": "Dealer busts this time, and the round goes to all of you."
  },
  "insurance": {
   "text": "Insurance is open if you want it."
  },
  "blackjack": {
-  "text": "Blackjack, beautifully done."
+  "text": "That's blackjack right away, and it pays three to two."
  },
  "placebets": {
   "text": "Place your bets whenever you are ready."
@@ -39,7 +39,7 @@
   "text": "Doubling down, one card coming."
  },
  "peek": {
-  "text": "One moment, let me check my hand."
+  "text": "Let me take a quick look to see if the house has blackjack."
  },
  "farewell": {
   "text": "Thanks for playing, come back soon."

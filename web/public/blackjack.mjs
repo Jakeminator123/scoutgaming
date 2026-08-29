@@ -202,12 +202,15 @@ export class Round {
     if (action === 'hit') {
       b.cards.push(this.draw());
       this.emit('card.dealt', { box: this.active, card: b.cards.at(-1) });
-      if (handValue(b.cards).total >= 21) b.done = true;
+      const tot = handValue(b.cards).total;
+      if (tot >= 21) b.done = true;
+      if (tot > 21) b.busted = true;
     } else if (action === 'double') {
       b.doubled = true; b.stake *= 2;
       b.cards.push(this.draw());
       this.emit('card.dealt', { box: this.active, card: b.cards.at(-1) });
       b.done = true;
+      if (handValue(b.cards).total > 21) b.busted = true;
     } else if (action === 'split') {
       this.split(b);
       return;
@@ -245,7 +248,7 @@ export class Round {
     this.dealer.push(this.holeCard);
     this.emit('dealer.reveal');
     // true if ANY hand on ANY box can still be beaten or beaten by a draw
-    const anyLive = this.live().some(b => handValue(b.cards).total <= 21 && !isNatural(b));
+    const anyLive = this.live().some(b => !b.busted && handValue(b.cards).total <= 21 && !isNatural(b));
     if (anyLive) {
       // S17: stand on ALL 17s including soft
       while (handValue(this.dealer).total < 17) {
@@ -264,10 +267,19 @@ export class Round {
       const p = handValue(b.cards).total;
       let payout = 0; // total returned to player (stake included when won/pushed)
       if (b.insured) payout += dealerBJ ? b.insured * 3 : 0;
-      if (isNatural(b)) payout += dealerBJ ? b.stake : b.stake * 2.5;
-      else if (dealerBJ || p > 21) payout += 0;
-      else if (d > 21 || p > d) payout += b.stake * 2;
-      else if (p === d) payout += b.stake;
+      // A busted hand NEVER collects on the main bet, even if the dealer also
+      // goes over. Player acts first; busting is an immediate loss.
+      if (p > 21 || b.busted) {
+        b.busted = true;
+      } else if (isNatural(b)) {
+        payout += dealerBJ ? b.stake : b.stake * 2.5;
+      } else if (dealerBJ) {
+        payout += 0;
+      } else if (d > 21 || p > d) {
+        payout += b.stake * 2;
+      } else if (p === d) {
+        payout += b.stake;
+      }
       b.result = payout;
     }
     this.emit('round.settled');

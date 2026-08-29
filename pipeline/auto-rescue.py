@@ -22,6 +22,8 @@ os.makedirs(f'{base}/streams/orig',exist_ok=True)
 bak=f"{base}/streams/orig/{c['file']}"
 if not os.path.exists(bak): shutil.copy(stream,bak)
 mp3=f'{base}/audio/en/{key}.mp3'
+_dry=f'{base}/audio/en/dry/{key}.mp3'
+if os.path.exists(_dry): mp3=_dry   # measure against DRY: room reverb contaminates the envelope
 if squeezes:
     od=f'{base}/audio/en/orig'; os.makedirs(od,exist_ok=True)
     ab=f'{od}/{key}.mp3'

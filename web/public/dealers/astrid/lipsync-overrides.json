@@ -12,5 +12,8 @@
  "chatter2": 650,
  "double": 410,
  "push": 0,
- "sidebet": 37
+ "sidebet": 37,
+ "blackjack": 162,
+ "peek": 265,
+ "dealerbust": 142
 }

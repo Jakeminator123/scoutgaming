@@ -1261,9 +1261,11 @@ async function finish() {
   renderBets();
   const dealerTotal = handValue(round.dealer).total;
   const dealerBJ = round.dealer.length === 2 && dealerTotal === 21;
+  const allBusted = live.length > 0 && live.every(h => h.busted || handValue(h.cards).total > 21);
   if (dealerBJ) voice.say('dealerblackjack', { force: true });
   else if (anyPlayerBJ && anyWin) { sfx.play('bigwin'); bjFlash('BLACKJACK'); voice.say('blackjack', { force: true }); }
-  else if (dealerTotal > 21) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
+  else if (allBusted) { /* already voiced on the hit; never celebrate a dealer bust the player didn't beat */ }
+  else if (dealerTotal > 21 && anyWin) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
   else if (anyWin) { sfx.play('win'); voice.say('win', { force: true }); }
   else if (anyPush && !anyLose) voice.say('push', { force: true });
   else voice.say('lose', { force: true });
