@@ -25,6 +25,7 @@ with tempfile.TemporaryDirectory() as td:
     for v0,v1,a0,a1 in pairs:
         cp.append((float(v0),D+a0)); cp.append((float(v1),D+a1))
     cp.append((end, cp[-1][1]+(end-pairs[-1][1])))
+    cp=[cp[0]]+[cp[i] for i in range(1,len(cp)) if cp[i]!=cp[i-1]]
     for i in range(1,len(cp)):
         if cp[i][0]<=cp[i-1][0] or cp[i][1]<=cp[i-1][1]:
             sys.exit(f'non-monotonic control points at {i}: {cp[i-1]} -> {cp[i]}')
