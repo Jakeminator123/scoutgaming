@@ -54,7 +54,7 @@ def pick_tile(cl,kfid):
     return arr[sum(ord(c) for c in kfid)%len(arr)]
 frames_needed=int(np.ceil((delay+adur)/1000*FPS))+FPS
 outframes=[]; track=[]
-prev_cl=None; fade=0
+prev_cl=None; fade=0; prev_tile=None
 for i in range(frames_needed):
     src=full[i%n].copy()
     ms=i*1000/FPS - delay
@@ -71,14 +71,21 @@ for i in range(frames_needed):
             rm,rs=reg[...,c].mean(),reg[...,c].std()+1e-5
             tile[...,c]=np.clip((tile[...,c]-tm)/ts*rs+rm,0,255)
         a=mask.copy()
-        if k['viseme']!=prev_cl: fade=0
-        fade=min(fade+1,3); a=a*(fade/3.0)
-        prev_cl=k['viseme']
+        if k['id']!=prev_cl: fade=0
+        fade=min(fade+1,3)
+        # crossfade EVERY tile change and soften with the line's energy so
+        # quiet moments relax instead of snapping between static poses
+        inten=0.55+0.45*float(k.get('intensity',0.5))
+        a=a*(fade/3.0)*min(1.0,inten)
+        prev_cl=k['id']
+        if prev_tile is not None and fade<3:
+            tile=prev_tile*(1-fade/3.0)+tile*(fade/3.0)
         src[py:py+th_,px:px+tw_]=reg*(1-a)+tile*a
+        prev_tile=tile
         rec.update({'kf':k['id'],'viseme':k['viseme'],'word':k['word'],'wave':k['wave'],
                     'rect':[int(px),int(py),int(tw_),int(th_)],'alpha':round(fade/3.0,2)})
     else:
-        prev_cl=None; fade=0
+        prev_cl=None; fade=0; prev_tile=None
     track.append(rec)
     outframes.append(src.astype(np.uint8))
 # audio envelope for the live waveform lane (10ms hops)
