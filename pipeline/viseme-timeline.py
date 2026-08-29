@@ -47,23 +47,62 @@ for w in words:
     if not vs:  # fallback: alternate EE/AH by length
         vs=['EE' if i%2==0 else 'AH' for i in range(max(2,len(w)//2))]
     plan.append((w,vs))
-total_units=sum((2 if v in VOWELS else 1) for _,vs in plan for v in vs)
-span=sum(w['endMs']-w['startMs'] for w in waves)
-unit=span/max(1,total_units)
-kfs=[]; binding={}
-cursor_wave=0; t=waves[0]['startMs'] if waves else 0
-kid=0
+# SYLLABLE-LEVEL compression: one keyframe per vowel nucleus, keep lip seals
+# (MM) - a keyframe per phoneme reads as a too-fast flipbook (Kevin 08-29)
+syll=[]
 for w,vs in plan:
+    run=[]
     for v in vs:
-        dur=unit*(2 if v in VOWELS else 1)
-        wv=waves[cursor_wave]
-        if t+dur>wv['endMs']+40 and cursor_wave+1<len(waves):
-            cursor_wave+=1; wv=waves[cursor_wave]; t=wv['startMs']
-        kid+=1
-        kf={'id':f'kf-{kid:03d}','viseme':v,'startMs':int(t),'endMs':int(t+dur),'word':w,'wave':wv['id'],
-            'intensity':round(float(env[min(len(env)-1,int(t/10))]/(env.max()+1e-9)),2)}
-        kfs.append(kf); binding.setdefault(wv['id'],[]).append(kf['id'])
-        t+=dur
+        if v=='MM':
+            if run: syll.append((w,max(run,key=lambda x:(x in VOWELS)))); run=[]
+            syll.append((w,'MM'))
+        elif v in VOWELS:
+            run.append(v)
+        else:
+            if not run: run.append(v)   # leading consonant colors the onset
+    if run: syll.append((w,max(run,key=lambda x:(x in VOWELS))))
+# ENERGY-GUIDED timing: vowels land on envelope peaks, seals in valleys
+import scipy.signal as ss
+sm=np.convolve(env,np.ones(5)/5,mode='same')
+peaks=[]
+for wv in ( [ (w['startMs'],w['endMs']) for w in waves ] ):
+    a,b=wv[0]//10,wv[1]//10
+    pk,_=ss.find_peaks(sm[a:b],distance=14,prominence=sm.max()*0.06)
+    peaks+= [ (p+a)*10 for p in pk ]
+peaks.sort()
+vidx=[i for i,(w,v) in enumerate(syll) if v in VOWELS]
+kfs=[]; binding={}; kid=0
+times={}
+if len(peaks)>=2 and vidx:
+    # map vowel nuclei onto peaks in order (interpolate when counts differ)
+    for j,i in enumerate(vidx):
+        pj=min(int(round(j*(len(peaks)-1)/max(1,len(vidx)-1))),len(peaks)-1)
+        times[i]=peaks[pj]
+span0=waves[0]['startMs'] if waves else 0
+span1=waves[-1]['endMs'] if waves else 1000
+def wave_of(t):
+    for w in waves:
+        if w['startMs']-60<=t<=w['endMs']+60: return w
+    return waves[0]
+# assign times: vowels at their peaks, others midway between neighbors
+last=span0
+for i,(w,v) in enumerate(syll):
+    if i in times: t=times[i]
+    else:
+        nxt=next((times[j] for j in sorted(times) if j>i), span1)
+        t=(last+nxt)/2
+    dur=140 if v in VOWELS else 80
+    t0=max(span0,t-dur//2); t1=min(span1,t0+dur)
+    if kfs and t0<kfs[-1]['endMs']: t0=kfs[-1]['endMs']; t1=max(t1,t0+50)
+    wv=wave_of(t0); kid+=1
+    kf={'id':f'kf-{kid:03d}','viseme':v,'startMs':int(t0),'endMs':int(t1),'word':w,'wave':wv['id'],
+        'intensity':round(float(env[min(len(env)-1,int(t0/10))]/(env.max()+1e-9)),2)}
+    kfs.append(kf); binding.setdefault(wv['id'],[]).append(kf['id'])
+    last=t1
+# stretch each keyframe to meet the next (continuous coverage inside waves)
+for i in range(len(kfs)-1):
+    gap=kfs[i+1]['startMs']-kfs[i]['endMs']
+    if 0<gap<=260: kfs[i]['endMs']=kfs[i+1]['startMs']
 json.dump({'text':text,'audio':mp3.split('/')[-1],'waves':waves,'keyframes':kfs,'binding':binding},
           open(outp,'w'),indent=1)
 print(json.dumps({'waves':len(waves),'keyframes':len(kfs),'span':[waves[0]['startMs'],waves[-1]['endMs']] if waves else None}))
