@@ -36,8 +36,8 @@ DEALERS.forEach(d=>{
   const c=document.createElement('div'); c.className='card';
   c.innerHTML=`
    <div class="label"><span>${d.toUpperCase()} &middot; "THIS TABLE PAYS THREE TO TWO AND I NEVER MISS A BEAT"</span>
-     <button class="kf" id="tg-${d}">KEYFRAMES: ON</button></div>
-   <div class="stage"><video id="v-${d}" src="${d}-pilot.mp4" controls preload="metadata" crossorigin="anonymous"></video>
+     <span><button class="kf off" id="dbg-${d}" style="margin-right:8px">DEBUG VIDEO</button><button class="kf" id="tg-${d}">KEYFRAMES: ON</button></span></div>
+   <div class="stage"><video id="v-${d}" src="${d}-pilot.mp4" controls preload="metadata" playsinline webkit-playsinline crossorigin="anonymous"></video>
      <canvas class="ov" id="ov-${d}"></canvas></div>
    <canvas class="wave" id="wv-${d}" width="1440" height="192"></canvas>
    <details><summary>keyframe cross-reference table (kf-id &harr; wave-id)</summary>
@@ -55,6 +55,10 @@ function init(d,tr){
         tg=document.getElementById('tg-'+d);
   let on=true;
   tg.onclick=()=>{on=!on; tg.textContent='KEYFRAMES: '+(on?'ON':'OFF'); tg.classList.toggle('off',!on); if(!on) octx().clearRect(0,0,ov.width,ov.height);};
+  const dbg=document.getElementById('dbg-'+d); let dOn=false;
+  dbg.classList.add('off');
+  dbg.onclick=()=>{dOn=!dOn; dbg.classList.toggle('off',!dOn);
+    const t=v.currentTime; v.src=dOn?`${d}-pilot-debug.mp4`:`${d}-pilot.mp4`; v.currentTime=t; v.play();};
   const kfs=tr.timeline.keyframes, waves=tr.timeline.waves, delay=tr.delayMs, fps=tr.fps;
   const durMs=()=> (v.duration||1)*1000;
   // table
