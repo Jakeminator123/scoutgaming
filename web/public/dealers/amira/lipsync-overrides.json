@@ -11,5 +11,7 @@
  "push": 0,
  "sidebet": 0,
  "win": 0,
- "greeting": 400
+ "greeting": 400,
+ "bust": 566,
+ "dealerblackjack": 280
 }
