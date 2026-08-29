@@ -24,9 +24,9 @@ for key in keys:
     c=idx['clips'].get(f'idle-1/speak/{key}')
     if not c: continue
     out=subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-f','h264','-r',str(FPS),'-i',f"{base}/streams/{c['file']}",
-        '-vf',f'crop={cw}:{ch}:{cx}:{cy}','-vsync','0','-f','image2pipe','-vcodec','png','-'],capture_output=True).stdout
-    sig=b'\x89PNG'; st=[i for i in range(len(out)) if out[i:i+4]==sig]
-    frames=[np.array(Image.open(io.BytesIO(out[s:(st[i+1] if i+1<len(st) else len(out))])).convert('RGB')) for i,s in enumerate(st)]
+        '-vf',f'crop={cw}:{ch}:{cx}:{cy}','-vsync','0','-f','rawvideo','-pix_fmt','rgb24','-'],capture_output=True).stdout
+    nfr=len(out)//(cw*ch*3)
+    frames=[np.frombuffer(out[i*cw*ch*3:(i+1)*cw*ch*3],dtype=np.uint8).reshape(ch,cw,3) for i in range(nfr)]
     gray=[cv2.cvtColor(f,cv2.COLOR_RGB2GRAY).astype(np.float32) for f in gray] if False else [cv2.cvtColor(f,cv2.COLOR_RGB2GRAY).astype(np.float32) for f in frames]
     tpl=gray[0][ny:ny+nh,nx:nx+nw].copy()
     R=30; pos=(nx,ny)

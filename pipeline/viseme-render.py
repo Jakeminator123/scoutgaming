@@ -23,12 +23,10 @@ idx=json.load(open(f'{base}/streams/index.json'))
 idle=f"{base}/streams/{idx['clips']['idle-1/idle/idle']['file']}"
 # decode FULL idle frames (1440) - we rebuild complete frames
 out=subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-f','h264','-r',str(FPS),'-i',idle,
-    '-vsync','0','-f','image2pipe','-vcodec','png','-'],capture_output=True).stdout
-sig=b'\x89PNG'; st=[i for i in range(len(out)) if out[i:i+4]==sig]
-full=[]
-for i,s_ in enumerate(st):
-    try: full.append(np.array(Image.open(io.BytesIO(out[s_:(st[i+1] if i+1<len(st) else len(out))])).convert('RGB'),dtype=np.float32))
-    except Exception: pass   # truncated trailing PNG from the pipe: drop it
+    '-vsync','0','-f','rawvideo','-pix_fmt','rgb24','-'],capture_output=True).stdout
+FW=1440
+nfr=len(out)//(FW*FW*3)
+full=[np.frombuffer(out[i*FW*FW*3:(i+1)*FW*FW*3],dtype=np.uint8).reshape(FW,FW,3).astype(np.float32) for i in range(nfr)]
 n=len(full)
 gray=[cv2.cvtColor(f[cy:cy+ch,cx:cx+cw].astype(np.uint8),cv2.COLOR_RGB2GRAY).astype(np.float32) for f in full]
 tpl=gray[0][ny:ny+nh,nx:nx+nw].copy()
@@ -49,9 +47,11 @@ def viseme_at(ms):
     for k in kfs:
         if k['startMs']<=ms<k['endMs']: return k
     return None
-def pick_tile(cl,ms):
+def pick_tile(cl,kfid):
+    # ONE stable exemplar per keyframe - flipping exemplars mid-keyframe reads
+    # as texture popping (Kevin: "doesn't look natural")
     arr=tiles.get(cl) or tiles.get('AH') or tiles.get('EE')
-    return arr[(ms//140)%len(arr)]
+    return arr[sum(ord(c) for c in kfid)%len(arr)]
 frames_needed=int(np.ceil((delay+adur)/1000*FPS))+FPS
 outframes=[]; track=[]
 prev_cl=None; fade=0
@@ -63,7 +63,7 @@ for i in range(frames_needed):
     rec={'f':i,'ms':int(i*1000/FPS),'nose':[int(cx+ax),int(cy+ay)]}
     if k is not None:
         px=cx+ax+dx-MX; py=cy+ay+dy-MY
-        tile=pick_tile(k['viseme'],int(ms)).copy()
+        tile=pick_tile(k['viseme'],k['id']).copy()
         reg=src[py:py+th_,px:px+tw_]
         # per-frame color match: tile stats -> region stats (channelwise)
         for c in range(3):
@@ -93,6 +93,6 @@ for i,f in enumerate(outframes):
 subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-r',str(FPS),'-i',f'{td}/f%04d.png',
     '-itsoffset',f'{delay/1000:.3f}','-i',mp3,'-map','0:v','-map','1:a',
     '-c:v','libx264','-preset','fast','-crf','20','-pix_fmt','yuv420p','-c:a','aac',
-    '-shortest','-movflags','+faststart','-y',outp],check=True)
+    '-movflags','+faststart','-y',outp],check=True)
 for f in glob.glob(f'{td}/*.png'): os.remove(f)
 print(json.dumps({'out':outp,'frames':len(outframes),'keyframes':len(kfs),'delayMs':delay}))
