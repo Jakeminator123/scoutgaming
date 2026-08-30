@@ -123,7 +123,7 @@ if (location.search.includes('debug')) {
 const LINES = {
   greeting: "Welcome to Priv\u00e9 Blackjack. Take a seat, I'll be your dealer tonight.",
   placebets: 'Place your bets, please.',
-  goodluck: 'Bets are closed. Good luck!',
+  goodluck: 'Bets are closed. Good luck at my table!',
   insurance: 'Insurance is open. Would you like to protect your hand?',
   peek: 'Let me take a look at my hand.',
   blackjack: 'Blackjack! That is beautifully done. Congratulations!',
