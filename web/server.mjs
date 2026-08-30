@@ -774,7 +774,13 @@ createServer((req, res) => {
     });
     createReadStream(file, { start, end }).pipe(res);
   } else {
-    res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': size, ...noStore(file) });
+    // media files MUST revalidate: streams are rewritten in place under the
+    // same names, and a cached .h264 against a fresh index.json kills the
+    // engine (the "stale dealer" poster). ETag makes revalidation a cheap 304.
+    const etag = `"${size}-${Math.round(statSync(file).mtimeMs)}"`;
+    if (req.headers['if-none-match'] === etag) { res.writeHead(304, { ETag: etag }); res.end(); return; }
+    const cache = LIVE.has(extname(file)) ? noStore(file) : { 'Cache-Control': 'no-cache', ETag: etag };
+    res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': size, ...cache });
     createReadStream(file).pipe(res);
   }
 }).listen(port, host, () => console.log(`croupier demo on http://${host}:${port}`));
