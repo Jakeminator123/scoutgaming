@@ -196,9 +196,10 @@ const voice = {
       if (engineUp && engine.index.clips[speakClip]) {
         // only cut back to idle if her take is still on screen and no round is
         // running - mid-round the game logic owns the video
-        const stop = () => { done(); speaking = false; heldSpeakClip = null; if (engineUp && engine.presentedClip === speakClip && !busy) engine.interrupt(CLIP.idle); };
+        const stop = () => { done(); speaking = false; heldSpeakClip = null; kfDebug.stop(); if (engineUp && engine.presentedClip === speakClip && !busy) engine.interrupt(CLIP.idle); };
         a.onended = stop; a.onerror = stop;
         bankAudio?.pause(); bankAudio = a;      // the boundary guard watches this
+        kfDebug.start(speakClip, a);
         (async () => {
           try { await cutToTake(speakClip); a.currentTime = 0; await a.play(); }
           catch { stop(); }
@@ -223,6 +224,72 @@ const voice = {
   },
 };
 voice.load();
+// ---- live keyframe debug overlay: ?kf=1 (or press K). Draws the gate's
+// measured keyframes on the LIVE dealer while she speaks: mouth box, nose
+// anchor, and a lane where audio phrases (shifted by the shipped delay) sit
+// against mouth waves - aligned bars = the sync proof, live at the table. ----
+const kfDebug = (() => {
+  let enabled = new URLSearchParams(location.search).has('kf');
+  let data = null, cur = null, cv = null;
+  const ensure = async () => {
+    if (!cv) {
+      cv = document.createElement('canvas');
+      cv.style.cssText = 'position:absolute;pointer-events:none;z-index:60';
+      $('#dealer-wrap').appendChild(cv);
+    }
+    if (!data) {
+      try { data = await (await fetch(`${DEALER.base}/streams/kf.json`)).json(); }
+      catch { data = { clips: {} }; }
+    }
+  };
+  addEventListener('keydown', e => { if (e.key === 'k' || e.key === 'K') { enabled = !enabled; if (cv) cv.getContext('2d').clearRect(0,0,cv.width,cv.height); } });
+  const draw = () => {
+    requestAnimationFrame(draw);
+    if (!enabled || !data || !cv) return;
+    const dc = $('#dealer'); if (!dc) return;
+    const r = dc.getBoundingClientRect(), wr = $('#dealer-wrap').getBoundingClientRect();
+    if (!r.width) return;
+    if (cv.width !== (r.width|0)) { cv.width = r.width|0; cv.height = r.height|0; }
+    cv.style.left = (r.left - wr.left) + 'px'; cv.style.top = (r.top - wr.top) + 'px';
+    cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
+    const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
+    const sc = cv.width / 1440;
+    const f = Math.max(10, 12 * sc * 2); ctx.font = `${f}px Menlo, monospace`;
+    if (data.noseRect) { const [x,y,w,h] = data.noseRect; ctx.strokeStyle='#59c8ff'; ctx.lineWidth=1.5; ctx.strokeRect(x*sc,y*sc,w*sc,h*sc); }
+    if (data.mouthRect) { const [x,y,w,h] = data.mouthRect; ctx.strokeStyle='#D6FF3A'; ctx.lineWidth=2.5; ctx.strokeRect(x*sc,y*sc,w*sc,h*sc); }
+    ctx.fillStyle='#D6FF3A'; ctx.fillText('KEYFRAMES ON (K)', 10, 10 + f);
+    const kd = cur && data.clips[cur.k];
+    if (!kd) return;
+    const aDur = kd.env10ms.length * 10, total = kd.delayMs + aDur;
+    const LH = Math.max(56, cv.height * 0.13), y0 = cv.height * 0.56, W = cv.width - 20, X = 10;
+    ctx.fillStyle='rgba(10,11,13,.72)'; ctx.fillRect(X, y0, W, LH);
+    kd.phrases.forEach(ph => {  // audio time + shipped delay (green, lower half)
+      const x0 = X + (ph.startMs + kd.delayMs) / total * W, x1 = X + (ph.endMs + kd.delayMs) / total * W;
+      ctx.fillStyle='rgba(120,220,120,.30)'; ctx.fillRect(x0, y0 + LH/2, x1-x0, LH/2 - 4);
+      ctx.fillStyle='#8ee08e'; ctx.fillText(ph.id, x0 + 3, y0 + LH - 6);
+    });
+    kd.waves.forEach(wv => {    // mouth motion, video time (lime, upper half)
+      const x0 = X + wv.startMs / total * W, x1 = X + wv.endMs / total * W;
+      ctx.fillStyle='rgba(214,255,58,.30)'; ctx.fillRect(x0, y0 + 4, x1-x0, LH/2 - 4);
+      ctx.fillStyle='#D6FF3A'; ctx.fillText(wv.id, x0 + 3, y0 + 4 + f);
+    });
+    ctx.strokeStyle='#4f9f4f';
+    kd.env10ms.forEach((e, i) => { if (i % 2) return;
+      const x = X + (kd.delayMs + i*10) / total * W, h = e * (LH/2 - 6);
+      ctx.beginPath(); ctx.moveTo(x, y0 + LH*0.75 - h); ctx.lineTo(x, y0 + LH*0.75 + h); ctx.stroke(); });
+    const t = kd.delayMs + (cur.audio?.currentTime ?? 0) * 1000;
+    const px = X + Math.min(1, t/total) * W;
+    ctx.strokeStyle='#F2F1ED'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px,y0); ctx.lineTo(px,y0+LH); ctx.stroke();
+    ctx.fillStyle='#F2F1ED';
+    ctx.fillText(`${cur.k}  delay=${kd.delayMs}ms  waves=${kd.waves.length} phrases=${kd.phrases.length}`, X, y0 - 6);
+  };
+  ensure().then(() => requestAnimationFrame(draw));
+  return {
+    start(clip, audio) { cur = { k: clip.split('/').pop(), audio }; },
+    stop() { cur = null; },
+  };
+})();
+
 const soundBtn = $('#sound-btn');
 const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); soundBtn.textContent = voice.muted ? '🔇' : '🔊'; };
 soundBtn.onclick = () => {
@@ -1362,7 +1429,7 @@ function sayLine(id) {
 
   // interrupt, don't queue: a queued idle waits for the next clip boundary,
   // which after a replay is a full clip away (the crossfade hides the cut)
-  const stop = () => { speaking = false; heldSpeakClip = null; if (engineUp) engine.interrupt(CLIP.idle); else trigger(CLIP.idle); resolveTurn(); };
+  const stop = () => { speaking = false; heldSpeakClip = null; kfDebug.stop(); if (engineUp) engine.interrupt(CLIP.idle); else trigger(CLIP.idle); resolveTurn(); };
   setTimeout(stop, 20000);  // safety: a turn must always end
 
   const startAudio = () => {
@@ -1370,6 +1437,7 @@ function sayLine(id) {
       bankAudio?.pause();
       bankAudio = new Audio(`${VERA_BANK_URL}/${id}.mp3`);
       bankAudio.volume = 0.95;
+      if (clip) kfDebug.start(clip, bankAudio);
       bankAudio.onended = stop;
       bankAudio.onerror = stop;
       bankAudio.play().catch(stop);
