@@ -14,6 +14,9 @@ export class DealerEngine {
     this.buffers = new Map();   // clipKey -> ArrayBuffer (whole stream)
     this.queue = [];            // pending action clip keys
     this.display = [];          // decoded VideoFrames waiting for presentation
+    this.frameTags = new Map();
+    this.handsFrameTags = new Map();
+    this.requestSequence = 0;
     this.ts = 0;                // monotonic self-assigned timestamp (us)
     this.running = false;
     this.currentClip = null;
@@ -87,7 +90,12 @@ export class DealerEngine {
 
   makeHandsDecoder() {
     const d = new VideoDecoder({
-      output: f => { this.handsDisplay.push({ f, key: this.handsDecodingClip }); },
+      output: f => {
+        const key = this.handsFrameTags.get(f.timestamp);
+        this.handsFrameTags.delete(f.timestamp);
+        if (!key) { f.close(); return; }
+        this.handsDisplay.push({ f, key });
+      },
       error: e => { this.stats.errors++; this.decoderDead = true; console.error('[dealer] hands decoder error:', e.message); },
     });
     d.configure(this.handsConfig);
@@ -98,7 +106,12 @@ export class DealerEngine {
   // one and restarts at the next clip boundary (frame 0 is always an IDR).
   makeDecoder() {
     const d = new VideoDecoder({
-      output: f => { this.stats.decoded++; this.display.push({ f, key: this.decodingClip }); },
+      output: f => {
+        const tag = this.frameTags.get(f.timestamp);
+        this.frameTags.delete(f.timestamp);
+        if (!tag) { f.close(); return; }
+        this.stats.decoded++; this.display.push({ f, ...tag });
+      },
       error: e => { this.stats.errors++; this.decoderDead = true; console.error('[dealer] decoder error:', e.message); },
     });
     d.configure(this.config);
@@ -132,7 +145,7 @@ export class DealerEngine {
   // Queue an action clip; it plays at the next clip boundary.
   trigger(key) {
     if (!this.index.clips[key]) { this.log(`trigger ignored, unknown clip: ${key}`); return; }
-    this.queue.push(key);
+    this.queue.push({ key, request: 0 });
     void this.fetchClip(key); // warm the cache before the boundary arrives
     if (this.handsIndex?.clips[key]) void this.fetchHandsClip(key);
   }
@@ -143,16 +156,18 @@ export class DealerEngine {
   // lips must start together.
   interrupt(key) {
     if (!this.index.clips[key]) return;
-    this.queue = [key];
+    const request = ++this.requestSequence;
+    this.queue = [{ key, request }];
     this.cut = true;
     void this.fetchClip(key);
     if (this.handsIndex?.clips[key]) void this.fetchHandsClip(key);
+    return request;
   }
 
   nextClip() {
     if (this.queue.length) return this.queue.shift();
-    if (this.onIdlePick) return this.onIdlePick();
-    return this.clipKeys()[0];
+    if (this.onIdlePick) return { key: this.onIdlePick(), request: 0 };
+    return { key: this.clipKeys()[0], request: 0 };
   }
 
   async start() {
@@ -178,14 +193,18 @@ export class DealerEngine {
           if (this.cut) {
             this.cut = false;
             cur = null;
+            this.decoder.reset(); this.decoder.configure(this.config);
+            this.frameTags.clear(); this.handsFrameTags.clear();
+            if (this.handsDecoder) { this.handsDecoder.reset(); this.handsDecoder.configure(this.handsConfig); }
+            this.handsCtx?.clearRect(0, 0, this.handsCanvas.width, this.handsCanvas.height);
             for (const d of this.display.splice(0)) d.f.close();
             for (const d of this.handsDisplay.splice(0)) d.f.close();
           }
           const buffered = this.display.length + this.decoder.decodeQueueSize;
           if (buffered >= 24) { await new Promise(r => setTimeout(r, 40)); continue; }
           if (!cur || cur.i >= cur.meta.frames.length) {
-            const key = this.nextClip();
-            cur = { meta: this.index.clips[key], buf: await this.fetchClip(key), i: 0 };
+            const { key, request } = this.nextClip();
+            cur = { key, request, meta: this.index.clips[key], buf: await this.fetchClip(key), i: 0 };
             // matte rides along frame-for-frame when this clip has one; a
             // missing matte file must not wedge the feeder, the clip just
             // plays without the hands layer
@@ -199,6 +218,7 @@ export class DealerEngine {
             this.decodingClip = key;
           }
           const [off, size] = cur.meta.frames[cur.i];
+          this.frameTags.set(this.ts, { key: cur.key, first: cur.i === 0, request: cur.request });
           this.decoder.decode(new EncodedVideoChunk({
             type: cur.i === 0 ? 'key' : 'delta',
             timestamp: this.ts,
@@ -207,6 +227,7 @@ export class DealerEngine {
           if (cur.hands && cur.i < cur.hands.meta.frames.length) {
             const [hoff, hsize] = cur.hands.meta.frames[cur.i];
             this.handsDecodingClip = this.decodingClip;
+            this.handsFrameTags.set(this.ts, cur.key);
             this.handsDecoder.decode(new EncodedVideoChunk({
               type: cur.i === 0 ? 'key' : 'delta',
               timestamp: this.ts,
@@ -235,7 +256,7 @@ export class DealerEngine {
     const drain = () => {
       const now = performance.now();
       while (now >= next && this.display.length) {
-        const { f, key } = this.display.shift();
+        const { f, key, first, request } = this.display.shift();
         // a splice is a hard cut within the pose family; a ~200ms crossfade
         // hides the residual micro-pose jump (worst on speech interrupts,
         // invisible on well-matched boundaries)
@@ -259,9 +280,9 @@ export class DealerEngine {
         f.close();
         // presentedClip is the truth for anything that must line up with what
         // the viewer can actually see - audio, above all
-        if (key && key !== this.presentedClip) {
+        if (key && (first || key !== this.presentedClip)) {
           this.presentedClip = key;
-          this.onPresentClip?.(key);
+          this.onPresentClip?.(key, request);
         }
         this.stats.presented = (this.stats.presented ?? 0) + 1;
         next += 1000 / 24;
@@ -305,11 +326,12 @@ export class DealerEngine {
       this.handsCtx.clearRect(0, 0, width, height);
       return;
     }
-    while (this.handsDisplay.length && this.handsDisplay[0].key !== key)
-      this.handsDisplay.shift().f.close(); // stale pre-splice mattes
-    while (this.handsDisplay.length > 3)
-      this.handsDisplay.shift().f.close(); // decoder skew; roughly re-sync
-    if (!this.handsDisplay.length) return;
+    while (this.handsDisplay.length && this.handsDisplay[0].f.timestamp < f.timestamp)
+      this.handsDisplay.shift().f.close();
+    if (!this.handsDisplay.length || this.handsDisplay[0].f.timestamp !== f.timestamp || this.handsDisplay[0].key !== key) {
+      this.handsCtx.clearRect(0, 0, this.handsCanvas.width, this.handsCanvas.height);
+      return;
+    }
     const m = this.handsDisplay.shift();
     const { width, height } = this.handsCanvas;
     this.matteCtx.clearRect(0, 0, width, height);
@@ -331,7 +353,9 @@ export class DealerEngine {
 
   stop() {
     this.running = false;
-    for (const f of this.display.splice(0)) f.close();
-    for (const f of this.handsDisplay.splice(0)) f.close();
+    for (const { f } of this.display.splice(0)) f.close();
+    for (const { f } of this.handsDisplay.splice(0)) f.close();
+    this.frameTags.clear(); this.handsFrameTags.clear();
+    clearInterval(this.watchdog);
   }
 }

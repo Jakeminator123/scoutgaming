@@ -3,6 +3,7 @@
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
 import { createServer } from 'node:http';
+import { isAgentFailure } from './agent-response.mjs';
 import { readFileSync as readSync, writeFileSync as writeSync } from 'node:fs';
 import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
 import { join, normalize, extname } from 'node:path';
@@ -562,6 +563,7 @@ async function veraChat(message, history = [], isEvent = false, system = null) {
         if (ev.type === 'result' && typeof ev.result === 'string' && !out) out = ev.result;
       } catch { /* skip */ }
     }
+    if (isAgentFailure(out)) throw new Error('Dealer chat temporarily unavailable');
     return cleanVera(out);
   } finally { clearTimeout(t); }
 }
