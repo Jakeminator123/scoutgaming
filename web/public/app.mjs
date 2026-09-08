@@ -1,6 +1,6 @@
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
-import { Round, handValue } from './blackjack.mjs';
+import { handValue } from './blackjack.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -512,7 +512,7 @@ let player = null;
 async function api(path, payload) {
   const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const out = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(out.error ?? `api ${r.status}`);
+  if (!r.ok || out.error) throw new Error(out.error ?? `api ${r.status}`);
   return out;
 }
 async function loadPlayer() {
@@ -523,12 +523,47 @@ async function loadPlayer() {
     renderBets(); renderCurrency();
   } catch { /* server db unavailable: play on with the local demo balance */ }
 }
-function syncBalance(reason) {
-  if (!player) return;
-  fetch('/api/balance', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: player.id, balance, reason }),
-  }).catch(() => {});
+function syncBalance() { /* Server table commands now persist the wallet. */ }
+let tableVersion = 0, shoeState = null;
+function showShoe(state) {
+  if (!state) return;
+  shoeState = state; tableScene?.setShoe(state);
+  const label = $('#shoe-status');
+  if (label) { label.dataset.remaining=state.remaining; label.textContent = state.cutReached ? 'CUT CARD · SHUFFLE AFTER ROUND' : `${state.decks} DECK SHOE`; }
+}
+function roundView(data) {
+  return data && { ...data, live() { return this.hands; }, legal() { return this.legalActions; } };
+}
+async function tableCommand(op, extra = {}) {
+  if (!player) await loadPlayer();
+  if (!player) throw new Error('Cannot connect to the game server');
+  const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), ...extra };
+  let out;
+  for (let attempt=0; attempt<2; attempt++) {
+    try { out = await api('/api/table', payload); break; }
+    catch (e) { if (attempt || !/fetch|network|load failed/i.test(e.message)) throw e; }
+  }
+  tableVersion = out.version;
+  return out;
+}
+function tableError(e) { busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets(); }
+async function prepareTable() {
+  const out = await tableCommand('state'); showShoe(out.shoe);
+  if (out.round) {
+    bets = out.round.boxes.map(b => ({main:b.stake,pp:b.pp,tp:b.tp}));
+    round = roundView(out.round); balance = out.balance;
+    document.body.classList.add('in-round'); setBanner(null); clearTable();
+    [...new Set(round.hands.map(h=>h.box))].forEach(renderBoxHands);
+    const dc = $('#dealer-cards');
+    round.dealer.forEach((c,i)=>{ const el=cardEl(c); el.style.setProperty('--ci',i); dc.appendChild(el); });
+    if (round.dealer.length === 1) { const el=cardEl(null,true); el.style.setProperty('--ci',1); dc.appendChild(el); }
+    updateBadge(dc,round.dealer); renderBets();
+    if (round.phase === 'insurance') { $('#insurance').hidden=false; busy=false; }
+    else if (round.phase === 'settled') { busy=true; await finish(); }
+    else { busy=false; activeBoxHighlight(); }
+  }
+  if (!out.round) { busy=false; renderBets(); }
+  return out;
 }
 
 // Vera reacts to table events through her live brain (throttled, text captions)
@@ -561,7 +596,7 @@ let selected = 5;
 let bets = Array.from({ length: SEATS }, () => ({ main: 0, pp: 0, tp: 0 }));
 let undoStack = []; // [{box, field, value}]
 let round = null;
-let busy = false;
+let busy = true; // opens after the server table has loaded
 
 const betTotal = () => bets.reduce((a, b) => a + b.main + b.pp + b.tp, 0);
 const mains = () => bets.map(b => b.main);
@@ -927,11 +962,22 @@ function cardEl(card, faceDown = false) {
   return el;
 }
 function flyFromShoe(el) {
-  const shoe = $('#shoe2d').getBoundingClientRect();
+  const fallback = $('#shoe2d').getBoundingClientRect();
+  const origin = tableScene?.shoeOutlet() ?? { x:fallback.x+fallback.width/2, y:fallback.y+fallback.height/2 };
   const r = el.getBoundingClientRect();
-  el.style.setProperty('--dx', `${shoe.x + shoe.width / 2 - (r.x + r.width / 2)}px`);
-  el.style.setProperty('--dy', `${shoe.y + shoe.height / 2 - (r.y + r.height / 2)}px`);
-  el.classList.add('fly');
+  // Animate a viewport-level card, avoiding seat rotation/perspective changing
+  // the meaning of the shoe's screen coordinates.
+  const flying = el.cloneNode(true); flying.classList.add('dealing-card');
+  Object.assign(flying.style, { left:`${r.x}px`, top:`${r.y}px`, width:`${r.width}px`, height:`${r.height}px` });
+  document.body.appendChild(flying); el.style.visibility = 'hidden';
+  const dx=origin.x-(r.x+r.width/2), dy=origin.y-(r.y+r.height/2);
+  const motion = flying.animate([
+    { transform:`translate(${dx}px,${dy}px) rotate(-28deg) scale(.72)` },
+    { transform:`translate(${dx*.85}px,${dy*.86}px) rotate(-20deg) scale(.85)`, offset:.22 },
+    { transform:'translate(0,0) rotate(0deg) scale(1)' }
+  ], { duration:matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 460, easing:'cubic-bezier(.2,.65,.3,1)' });
+  const done=()=>{ flying.remove(); el.style.visibility=''; };
+  motion.onfinish=done; motion.oncancel=done;
 }
 function updateBadge(container, cards) {
   // the badge is parented OUTSIDE the cards container: inside it, it inherited
@@ -960,7 +1006,7 @@ function seatOfLive(liveIdx) {
 function boxContainer(liveIdx) {
   const seat = seatOfLive(liveIdx);
   if (!seat || !round) return seat?.querySelector('.cards') ?? null;
-  const hand = round.live()[liveIdx];
+  let hand = round.live()[liveIdx];
   const sibs = round.live().filter(h => h.box === hand.box);
   const cardsEl = seat.querySelector('.cards');
   if (sibs.length === 1) return cardsEl;
@@ -1022,7 +1068,8 @@ function renderBoxHands(boxIdx) {
     updateBadge(cont, hand.cards);
   });
 }
-function dealCardTo(container, card, { faceDown = false } = {}) {
+function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDraw } = {}) {
+  if (shoeState && shoeDraw) showShoe({ ...shoeState, dealt:shoeDraw, remaining:shoeState.total-shoeDraw, cutReached:shoeDraw>=shoeState.cutAfter });
   sfx.play('deal');
   const el = cardEl(card, faceDown);
   const n = container.querySelectorAll('.card').length;
@@ -1093,10 +1140,18 @@ $('#deal-now').onclick = () => { if (!round && !busy) void dealSequence(); };
 async function dealSequence() {
   busy = true;
   document.body.classList.add('in-round');
-  balance -= betTotal(); ledger('deal', -betTotal());
-  syncBalance('deal');
-  round = new Round(bets.map(b => ({ ...b })));
-  round.deal();
+  let out;
+  try {
+    await tableReady;
+    out = await tableCommand('start', {bets:bets.map(b=>({...b}))});
+  } catch (e) { document.body.classList.remove('in-round'); tableError(e); return; }
+  balance=out.balance; ledger('deal',-betTotal());
+  if (out.shuffled) {
+    clearTable(); setBanner('CHANGING SHOE · SHUFFLING');
+    showShoe({...out.shoe,dealt:0,remaining:out.shoe.total,cutReached:false});
+    await sleep(1800);
+  }
+  round = roundView(out.round);
   renderBets(); setBanner(null); clearTable();
   voice.say('goodluck', { force: true });
   // a dealer with no spoken take for this line should be DEALING while the
@@ -1109,7 +1164,7 @@ async function dealSequence() {
   await sleep(2000);
 
   const live = round.live();
-  const PACE = 320;
+  const PACE = 500;
   for (let i = live.length - 1; i >= 0; i--) {
     dealCardTo(boxContainer(i), live[i].cards[0]);
     updateBadge(boxContainer(i), live[i].cards.slice(0, 1));
@@ -1123,7 +1178,7 @@ async function dealSequence() {
     updateBadge(boxContainer(i), live[i].cards.slice(0, 2));
     await sleep(PACE);
   }
-  dealCardTo($('#dealer-cards'), null, { faceDown: true });
+  dealCardTo($('#dealer-cards'), null, { faceDown: true, shoeDraw:round.holeDraw });
   await sleep(PACE);
 
   // side bets resolve on the deal, like the real game
@@ -1158,8 +1213,9 @@ async function dealSequence() {
 
 $('#ins-yes').onclick = () => resolveIns(true);
 $('#ins-no').onclick = () => resolveIns(false);
-function resolveIns(yes) {
+async function resolveIns(yes) {
   if (!round || round.phase !== 'insurance') return;
+  const beforeBalance=balance;
   $('#insurance').hidden = true;
   busy = true;
   if (yes) {
@@ -1167,7 +1223,8 @@ function resolveIns(yes) {
     if (balance < cost) yes = false;
     else { balance -= cost; ledger('insurance', -cost); }
   }
-  round.resolveInsurance(round.live().map(() => yes));
+  try { const out=await tableCommand('insurance',{take:yes}); round=roundView(out.round); balance=out.balance; }
+  catch(e) { balance=beforeBalance; tableError(e); return; }
   renderBets();
   void afterDealChoreo();
 }
@@ -1183,8 +1240,9 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
   btn.onclick = async e => {
     console.info('[act]', btn.dataset.act, 'trusted=', e?.isTrusted, 'phase=', round?.phase, 'busy=', busy);
     if (!round || round.phase !== 'decisions' || busy) return;
+    const beforeBalance = balance;
     const liveIdx = round.active;
-    const hand = round.live()[liveIdx];
+    let hand = round.live()[liveIdx];
     const before = hand.cards.length;
     if (btn.dataset.act === 'double') {
       if (balance < hand.stake) return;
@@ -1198,15 +1256,19 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
     }
     document.querySelectorAll('#actions button').forEach(b => { b.disabled = true; });
     if (btn.dataset.act === 'hit') sfx.play('knock');
-    round.act(btn.dataset.act);
+    busy=true;
+    try { const out=await tableCommand('act',{action:btn.dataset.act}); round=roundView(out.round); balance=out.balance; hand=round.live()[liveIdx]; }
+    catch(e) { balance=beforeBalance; tableError(e); return; }
     if (btn.dataset.act === 'split') { await animateSplit(hand); syncBalance('split'); }
     else if (hand.cards.length > before) {
       dealCardTo(boxContainer(liveIdx), hand.cards.at(-1));
       updateBadge(boxContainer(liveIdx), hand.cards);
       if (handValue(hand.cards).total > 21) voice.say('bust');
+      await sleep(480);
     }
     renderBets();
     if (round.phase === 'decisions') {
+      busy=false;
       trigger(CLIP.think);
       setTimeout(() => { if (round && round.phase === 'decisions' && !busy) activeBoxHighlight(); }, 280);
       activeBoxHighlight();
@@ -1287,8 +1349,11 @@ async function finish() {
     else { el.textContent = fmt(net); el.classList.add('lose'); anyLose = true; el.title = `staked ${fmt(stakeSum)}`; }
   });
   const staked = betTotal();
+  let collected;
+  try { collected=await tableCommand('collect'); } catch(e) { tableError(e); return; }
   balance += ret; ledger('settle', ret);
   if (sideRet) { balance += sideRet; ledger('sidebets', sideRet); }
+  balance=collected.balance; showShoe(collected.shoe);
   const totalWin = ret + sideRet;
   const lw = $('#last-win');
   lw.textContent = fmt(totalWin);
@@ -1354,6 +1419,7 @@ function chatLog(role, text, pending = false) {
 const VERA_BANK_URL = `${DEALER.base}/audio/en`;
 let veraBank = {};
 fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => {
+  delete b.rules_decks; delete b.fair_rng;
   veraBank = b;
   // the caption must show what THIS dealer actually says
   for (const [k, v] of Object.entries(b)) if (LINES[k] && v.text) LINES[k] = v.text;
@@ -1593,7 +1659,7 @@ window.__croupier = { engine, CLIP, supervisorMayLook, supEl, sayLine, veraBank,
 
 renderBets();
 setBanner('PLEASE PLACE BETS');
-void loadPlayer();
+// prepareTable loads the player before opening the server-owned table.
 
 
 // Optional rehearsal uses the exact in-game playback path, with no generation
@@ -1631,3 +1697,6 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
   panel.querySelector('#rehearsal-play').onclick = play;
   panel.querySelector('#rehearsal-repeat').onclick = () => { play(); play(); };
 }
+
+const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
+tableReady.catch(()=>{});

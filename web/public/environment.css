@@ -72,3 +72,6 @@ html:not([data-dealer="vera"]) #room {
   background-position: calc(50vw + var(--dealer-x, 0vw) - var(--dealer-h) * 1.31801) calc(var(--dealer-top) - var(--dealer-h) * .0143678);
   background-repeat: repeat-x;
 }
+#shoe-status { position:absolute;right:3%;top:65%;z-index:22;font:9px/1.5 Arial,sans-serif;letter-spacing:.1em;color:#c8c1a1;pointer-events:none;text-shadow:0 1px 3px #000; }
+.dealing-card { position:fixed!important;z-index:85;pointer-events:none;margin:0!important;transform:none; }
+@media (max-width:860px) and (orientation:portrait) { #shoe-status {top:49%;right:3%;font-size:7px;max-width:110px;text-align:right;} }
