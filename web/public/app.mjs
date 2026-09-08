@@ -72,6 +72,7 @@ const engine = new DealerEngine($('#dealer'), DEALER.base, {
 });
 let engineUp = false;
 let speaking = false;
+let dealingActive = false;
 // Speaking clips with their real lengths. Cutting between different clips
 // mid-sentence reads as a jump cut, so one clip is chosen to cover the whole
 // line - the closest length at or above the audio - and held for its duration.
@@ -100,6 +101,7 @@ engine.onIdlePick = () => {
     if (c && rem > 1.2) return c;
     return CLIP.idle;
   }
+  if (dealingActive && engine.index.clips[CLIP.deal]) return CLIP.deal;
   const extras = [CLIP.headTilt, CLIP.gest].filter(k => engine.index.clips[k]);
   if (extras.length && Math.random() < 0.25) return extras[Math.floor(Math.random() * extras.length)];
   return CLIP.idle;
@@ -190,7 +192,7 @@ const voice = {
     if (!a) return;
     if (this.dead.has(t)) return; // dealer has no take for this line: stay silent, no orphan caption
     if (speechActive > 0 && !force) return;   // something's talking: drop optional chatter
-    return speechTurn(() => playRecorded(t, a, LINES[t] ?? ''));
+    return speechTurn(async () => { await bankReady; return playRecorded(t, a, LINES[t] ?? ''); });
   },
 };
 voice.load();
@@ -268,10 +270,7 @@ soundBtn.onclick = () => {
   if (voice.muted) sfx.stopAmbience(); else sfx.startAmbience();
 };
 renderSound();
-// idle chatter — she talks on her own now and then
-setInterval(() => {
-  if (!round && !busy && voice.greeted && Math.random() < 0.5) voice.say(Math.random() < 0.5 ? 'chatter1' : 'chatter2');
-}, 48000);
+// Automatic small talk is paused while the core gameplay is being finished.
 
 // ---------- sound system ----------
 const sfx = {
@@ -587,7 +586,10 @@ function showCaption(text, ms = 6500) {
   clearTimeout(showCaption.t);
   showCaption.t = setTimeout(() => cap.classList.remove('show'), ms);
 }
+const AUTO_COMMENTARY = false; // Re-enable after core gameplay acceptance.
 async function veraEvent(text, { minGap = 18000 } = {}) {
+  if (!AUTO_COMMENTARY) return;
+
   const now = Date.now();
   if (veraBusy || now - lastVeraComment < minGap) return;
   veraBusy = true; lastVeraComment = now;
@@ -856,6 +858,7 @@ function stackChip(v) {
   return `<div class="chipstack" style="--h:${chips.length}">${discs}<b>${chipFace(v)}</b></div>`;
 }
 function renderBets() {
+  if (!round && !busy) $('#dealer-switch-status').textContent = '';
   seatEls.forEach((seat, i) => {
     const b = bets[i];
     const spot = seat.querySelector('.spot');
@@ -974,7 +977,14 @@ function cardEl(card, faceDown = false) {
   el.innerHTML = `<div class="corner">${card.r}<br>${card.s}</div><div class="pip">${card.s}</div>`;
   return el;
 }
-function flyFromShoe(el) {
+function flyFromShoe(el, card, faceDown) {
+  if (tableScene && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const target=el.getBoundingClientRect();
+    const dealerRect=$('#dealer').getBoundingClientRect();
+    el.style.visibility='hidden';
+    return tableScene.dealCard({target,card,faceDown,handoff:{x:dealerRect.x+dealerRect.width*.55,y:dealerRect.y+dealerRect.height*.93}})
+      .catch(error=>console.warn('[deal]',error.message)).finally(()=>{el.style.visibility='';});
+  }
   const fallback = $('#shoe2d').getBoundingClientRect();
   const origin = tableScene?.shoeOutlet() ?? { x:fallback.x+fallback.width/2, y:fallback.y+fallback.height/2 };
   const r = el.getBoundingClientRect();
@@ -989,8 +999,10 @@ function flyFromShoe(el) {
     { transform:`translate(${dx*.85}px,${dy*.86}px) rotate(-20deg) scale(.85)`, offset:.22 },
     { transform:'translate(0,0) rotate(0deg) scale(1)' }
   ], { duration:matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 460, easing:'cubic-bezier(.2,.65,.3,1)' });
-  const done=()=>{ flying.remove(); el.style.visibility=''; };
-  motion.onfinish=done; motion.oncancel=done;
+  return new Promise(resolve => {
+    const done=()=>{ flying.remove(); el.style.visibility=''; resolve(); };
+    motion.onfinish=done; motion.oncancel=done;
+  });
 }
 function updateBadge(container, cards) {
   // the badge is parented OUTSIDE the cards container: inside it, it inherited
@@ -1052,13 +1064,15 @@ async function animateSplit(bHand) {
     updateBadge(conts[k], h.cards.slice(0, upto));
   });
   await sleep(550);
+  await beginDealingTake();
   for (const h of [bHand, nh]) {
     const k = sibs.indexOf(h);
     if (!h.cards[1]) continue;
-    dealCardTo(conts[k], h.cards[1]);
+    await deliverCard(conts[k], h.cards[1]);
     updateBadge(conts[k], h.cards);
-    await sleep(480);
+    await sleep(80);
   }
+  dealingActive = false;
 }
 
 // rebuild one box's card DOM from round state (used right after a split: the
@@ -1092,8 +1106,11 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
   container.style.setProperty('--cn', total);
   container.style.setProperty('--fan', Math.min(1, 3.2 / Math.max(2, total)).toFixed(3));
   container.appendChild(el);
-  flyFromShoe(el);
+  el.dealt = flyFromShoe(el, card, faceDown);
   return el;
+}
+async function deliverCard(...args) {
+  await dealCardTo(...args).dealt;
 }
 function revealHole(container, card) {
   const back = container.querySelector('.card.back');
@@ -1145,10 +1162,28 @@ function showActions(seat) {
   bar.hidden = false;
   const w = bar.offsetWidth || 190;
   bar.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.x - w / 2))}px`;
-  bar.style.top = `${r.y + 84}px`;
+  bar.style.top = `${Math.min(r.y + 84, innerHeight - $('#dealer-picker').offsetHeight - bar.offsetHeight - 8)}px`;
 }
 
 $('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await ensureLogin('Sign in to start this round. Your selected bets will stay in place.'))return; if(betTotal()>balance){hint('BALANCE','Add funds or reduce your bet.');renderBets();return;} if(!round&&!busy)void dealSequence(); } catch(e){hint('SIGN IN',e.message);} };
+
+async function beginDealingTake() {
+  try {
+  await speechChain;
+  dealingActive = true;
+  if (!engineUp || !engine.index.clips[CLIP.deal]) return;
+  await engine.fetchClip(CLIP.deal);
+  const request=engine.interrupt(CLIP.deal);
+  await new Promise(resolve=>{
+    const previous=engine.onPresentClip;
+    const finish=()=>{clearTimeout(timer);if(engine.onPresentClip===listener)engine.onPresentClip=previous;resolve();};
+    const listener=(key,id)=>{previous?.(key,id);if(key===CLIP.deal&&id===request)finish();};
+    engine.onPresentClip=listener;
+    const timer=setTimeout(finish,3000);
+  });
+  await sleep(350);
+  } catch (error) { console.warn('[deal] Filmed action unavailable:', error.message); }
+}
 
 async function dealSequence() {
   busy = true;
@@ -1166,34 +1201,30 @@ async function dealSequence() {
   }
   round = roundView(out.round);
   renderBets(); setBanner(null); clearTable();
-  voice.say('goodluck', { force: true });
-  // a dealer with no spoken take for this line should be DEALING while the
-  // voice runs - queueing behind a 6s idle leaves her frozen mid-announcement
-  if (engineUp && !engine.index.clips['idle-1/speak/goodluck'] && engine.index.clips[CLIP.deal]) engine.interrupt(CLIP.deal);
-  else trigger(CLIP.deal);
-  // let "Bets are closed" land before the first card flies — the cards were
-  // beating her to it, which read as the line arriving late ("good luck"
-  // rides over the first cards, like a real table)
-  await sleep(2000);
+  // Speech and action share a filmed body: wait for the actual sentence,
+  // then begin the dealing take before releasing any server-issued cards.
+  await voice.say('goodluck', { force: true });
+  await beginDealingTake();
 
   const live = round.live();
-  const PACE = 500;
+  const PACE = 80;
   for (let i = live.length - 1; i >= 0; i--) {
-    dealCardTo(boxContainer(i), live[i].cards[0]);
+    await deliverCard(boxContainer(i), live[i].cards[0]);
     updateBadge(boxContainer(i), live[i].cards.slice(0, 1));
     await sleep(PACE);
   }
-  dealCardTo($('#dealer-cards'), round.dealer[0]);
+  await deliverCard($('#dealer-cards'), round.dealer[0]);
   updateBadge($('#dealer-cards'), [round.dealer[0]]);
   await sleep(PACE);
   for (let i = live.length - 1; i >= 0; i--) {
-    dealCardTo(boxContainer(i), live[i].cards[1]);
+    await deliverCard(boxContainer(i), live[i].cards[1]);
     updateBadge(boxContainer(i), live[i].cards.slice(0, 2));
     await sleep(PACE);
   }
-  dealCardTo($('#dealer-cards'), null, { faceDown: true, shoeDraw:round.holeDraw });
+  await deliverCard($('#dealer-cards'), null, { faceDown: true, shoeDraw:round.holeDraw });
   await sleep(PACE);
 
+  dealingActive = false;
   // side bets resolve on the deal, like the real game
   let sideWin = false;
   live.forEach((b, i) => {
@@ -1260,24 +1291,26 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
     if (btn.dataset.act === 'double') {
       if (balance < hand.stake) return;
       balance -= hand.stake; ledger('double', -hand.stake);
-      voice.say('double', { force: true });
     }
     if (btn.dataset.act === 'split') {
       if (balance < hand.stake) return;
       balance -= hand.stake; ledger('split', -hand.stake);
       sfx.play('chip');
     }
-    document.querySelectorAll('#actions button').forEach(b => { b.disabled = true; });
+    document.querySelectorAll('#actions button, #actions-top button').forEach(b => { b.disabled = true; });
     if (btn.dataset.act === 'hit') sfx.play('knock');
     busy=true;
     try { const out=await tableCommand('act',{action:btn.dataset.act}); round=roundView(out.round); balance=out.balance; hand=round.live()[liveIdx]; }
     catch(e) { balance=beforeBalance; tableError(e); return; }
+    if (btn.dataset.act === 'double') await voice.say('double', { force: true });
     if (btn.dataset.act === 'split') { await animateSplit(hand); syncBalance('split'); }
     else if (hand.cards.length > before) {
-      dealCardTo(boxContainer(liveIdx), hand.cards.at(-1));
+      await beginDealingTake();
+      await deliverCard(boxContainer(liveIdx), hand.cards.at(-1));
       updateBadge(boxContainer(liveIdx), hand.cards);
-      if (handValue(hand.cards).total > 21) voice.say('bust');
-      await sleep(480);
+      dealingActive = false;
+      if (handValue(hand.cards).total > 21) await voice.say('bust', { force:true });
+      await sleep(80);
     }
     renderBets();
     if (round.phase === 'decisions') {
@@ -1305,11 +1338,13 @@ async function dealerRevealChoreo() {
     updateBadge(dc, round.dealer.slice(0, 2));
     await sleep(650);
   }
+  if (round.dealer.length > 2) await beginDealingTake();
   for (let i = 2; i < round.dealer.length; i++) {
-    dealCardTo(dc, round.dealer[i]);
+    await deliverCard(dc, round.dealer[i]);
     updateBadge(dc, round.dealer.slice(0, i + 1));
-    await sleep(560);
+    await sleep(80);
   }
+  dealingActive = false;
 }
 
 async function finish() {
@@ -1361,7 +1396,9 @@ async function finish() {
     else if (net === 0) { el.textContent = 'PUSH ' + fmt(stakeSum); el.classList.add('push'); anyPush = true; el.title = 'stake returned'; }
     else { el.textContent = fmt(net); el.classList.add('lose'); anyLose = true; el.title = `staked ${fmt(stakeSum)}`; }
   });
-  const staked = betTotal();
+  // Include extra double/split stakes and insurance, not just opening bets.
+  const staked = live.reduce((sum,h) => sum + h.stake + (h.insured ?? 0), 0)
+    + bets.reduce((sum,b) => sum + b.pp + b.tp, 0);
   let collected;
   try { collected=await tableCommand('collect'); } catch(e) { tableError(e); return; }
   balance += ret; ledger('settle', ret);
@@ -1386,13 +1423,12 @@ async function finish() {
   else if (anyPush && !anyLose) voice.say('push', { force: true });
   else voice.say('lose', { force: true });
   trigger(anyWin ? CLIP.gest : CLIP.headTilt);
-  // a big collect brings the pit boss over, same as a real floor
-  const bigCollect = totalWin >= staked * 4 && totalWin > 0;
-  setTimeout(() => supervisorMayLook({ force: bigCollect }), 1200);
+  // Automatic floor visits wait until core gameplay is accepted.
   const who = player?.name ?? 'the player';
   if (totalWin > 0) void veraEvent(`Round settled: ${who} collected ${fmt(totalWin)} this round${anyPlayerBJ ? ' including a natural blackjack' : ''}.`);
   else void veraEvent(`Round settled: the house took this one; ${who} won nothing back.`, { minGap: 45000 });
-  await sleep(3600);
+  await Promise.all([sleep(1800), speechChain]);
+  dealingActive = false;
   round = null; busy = false;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
   undoStack = [];
@@ -1431,7 +1467,7 @@ function chatLog(role, text, pending = false) {
 // voice would break the illusion worse than staying quiet.
 const VERA_BANK_URL = `${DEALER.base}/audio/en`;
 let veraBank = {};
-fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => {
+const bankReady = fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => {
   delete b.rules_decks; delete b.fair_rng;
   veraBank = b;
   // the caption must show what THIS dealer actually says
@@ -1608,6 +1644,29 @@ function setTable(id) {
   renderBets();
 }
 document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick = () => setTable(b.dataset.id); });
+
+// Dealer tables are available in the main controls, without a rehearsal URL.
+for (const dealer of Object.values(DEALERS)) {
+  const button = document.createElement('button');
+  button.type = 'button'; button.dataset.dealer = dealer.key;
+  button.setAttribute('aria-label', `${dealer.name}'s table`);
+  button.setAttribute('aria-pressed', String(dealer.key === DEALER.key));
+  const portrait = document.createElement('img'); portrait.src = `${dealer.base}/poster.jpg`; portrait.alt = '';
+  const name = document.createElement('span'); name.textContent = dealer.name;
+  button.append(portrait, name);
+  button.onclick = () => {
+    if (dealer.key === DEALER.key) return;
+    if (round || busy) {
+      $('#dealer-switch-status').textContent = 'Finish this round to change tables.';
+      return;
+    }
+    const query = new URLSearchParams(location.search);
+    query.set('dealer', dealer.key); query.delete('table');
+    location.search = query.toString();
+  };
+  $('#dealer-options').appendChild(button);
+}
+
 
 buildChips();
 // arriving via a dealer switch: land on the tier that was picked

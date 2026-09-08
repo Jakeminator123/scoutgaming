@@ -77,3 +77,29 @@ html:not([data-dealer="vera"]) #room {
 @media (max-width:860px) and (orientation:portrait) { #shoe-status {top:52%;right:3%;font-size:7px;max-width:110px;text-align:right;} }
 #sign-out {position:absolute;right:20px;bottom:100px;z-index:60;border:0;background:#101812bb;color:#b7c0b4;font:10px Arial;padding:8px 12px;border-radius:4px;cursor:pointer}
 @media(max-width:860px) and (orientation:portrait){#sign-out{bottom:156px;right:12px}}
+
+/* A compact, permanent dealer rail below the betting controls. */
+#dealer-picker { position:fixed; inset:auto 0 0; min-height:38px; padding:3px 16px calc(3px + env(safe-area-inset-bottom, 0px)); z-index:46; display:flex; align-items:center; justify-content:center; gap:18px; background:#0a0b0df5; border-top:1px solid #ffffff14; }
+.dealer-picker-label { font:9px 'JetBrains Mono',monospace; letter-spacing:.15em; color:#92958f; }
+#dealer-options { display:flex; gap:6px; }
+#dealer-options button { display:flex; align-items:center; gap:8px; border:1px solid transparent; padding:3px 12px 3px 4px; border-radius:18px; background:transparent; color:#b6b8b2; font:12px 'Inter',sans-serif; cursor:pointer; }
+#dealer-options button img { width:25px; height:25px; border-radius:50%; object-fit:cover; object-position:50% 27%; }
+#dealer-options button[aria-pressed="true"] { color:#D6FF3A; border-color:#D6FF3A66; background:#D6FF3A0c; }
+#dealer-options button:hover, #dealer-options button:focus-visible { color:#F2F1ED; border-color:#D6FF3A; outline:none; }
+#dealer-switch-status { position:absolute; bottom:48px; right:16px; color:#F2F1ED; font:11px 'Inter',sans-serif; background:#0a0b0ded; border-radius:6px; }
+#dealer-switch-status:not(:empty) { padding:9px 12px; }
+#hud-bottom { bottom:44px; }
+@media(max-width:860px) and (orientation:portrait) {
+  #dealer-picker { gap:8px; padding-left:6px; padding-right:6px; }
+  .dealer-picker-label { display:none; }
+  #dealer-options { width:100%; justify-content:center; }
+  #dealer-options button { padding-right:10px; min-height:36px; }
+  #hud-bottom { bottom:calc(44px + env(safe-area-inset-bottom, 0px)); }
+  .table-3d #table-pick { bottom:178px; }
+}
+
+html[data-dealer="astrid"] { --hands-cut:.878; }
+@media(max-width:860px) and (orientation:portrait) {
+  #dealer-options button { min-height:40px; }
+  #chip-row { justify-content:flex-start; }
+}

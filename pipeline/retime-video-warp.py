@@ -38,7 +38,7 @@ with tempfile.TemporaryDirectory() as td:
         for s in order: fh.write(f"file 'f{s+1:04d}.png'\nduration {1/FPS:.6f}\n")
     subprocess.run(['ffmpeg','-nostdin','-loglevel','error','-f','concat','-safe','0','-i',lst,
         '-r',str(FPS),'-c:v','libx264','-preset','slow','-crf','19','-pix_fmt','yuv420p',
-        '-x264-params','keyint=infinite:min-keyint=infinite:scenecut=0:aud=1',
+        '-x264-params','bframes=0:keyint=infinite:min-keyint=infinite:scenecut=0:open-gop=0:repeat-headers=1:aud=1',
         '-an','-f','h264','-y',stream],check=True)
 delay=max(0,int(round(v0-a0)))
 print(json.dumps({'key':key,'frames_in':n,'frames_out':m,'speed':round(1/r,2),'audioDelayMs':delay}))
