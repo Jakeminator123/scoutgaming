@@ -36,3 +36,39 @@
 
 html, body { overscroll-behavior: none; }
 body { position: fixed; inset: 0; }
+
+/* Full room behind the calibrated centre plate; no width-dependent black bars. */
+#room {
+  background-image: linear-gradient(to bottom, transparent 45%, rgba(6,8,9,.18) 100%), var(--room-plate, url('assets/room-extended.png'));
+  background-repeat: no-repeat;
+  background-size: max(100vw, calc(var(--dealer-h) * 4.41378)) calc(var(--dealer-h) * 1.47126);
+  background-position: center calc(var(--dealer-top) - var(--dealer-h) * .0143678);
+}
+#room2 {
+  background-color: transparent;
+  mask-image: linear-gradient(to right, transparent calc(50% - var(--dealer-h) * 1.03), #000 calc(50% - var(--dealer-h) * .7), #000 calc(50% + var(--dealer-h) * .7), transparent calc(50% + var(--dealer-h) * 1.03));
+  -webkit-mask-image: linear-gradient(to right, transparent calc(50% - var(--dealer-h) * 1.03), #000 calc(50% - var(--dealer-h) * .7), #000 calc(50% + var(--dealer-h) * .7), transparent calc(50% + var(--dealer-h) * 1.03));
+}
+/* All ink uses the same circle centre and table-plane squash. The old per-box
+   label counter-rotations put text outside the crescent after projection. */
+.table-3d .seat { --spot-x: 30px; --spot-y: 36.8px; --spot-w: 60px; --spot-h: 44.4px; --arc-x: 60px; --arc-y: 59px; --arc-w: 120px; --arc-h: 93.75px; }
+.table-3d .sidearcs .arc-g, .table-3d .sidearcs .label-g { transform: scale(1, .74) rotate(var(--arc-rot)); }
+.table-3d .sidearcs .pp-label { transform: rotate(-90deg); font-size: 8px; }
+.table-3d .sidearcs .tp-label { transform: rotate(90deg); font-size: 7.2px; }
+.table-3d .sidearcs .side-label { fill: #bdba8d; font-family: Arial, sans-serif; letter-spacing: .03em; font-weight: 500; }
+.table-3d .sidearcs .side { fill: rgba(212,203,158,.025); stroke: rgba(212,203,158,.45); stroke-width: .9; }
+.table-3d .spot { border: 1px solid rgba(212,203,158,.58); color: #c4c39c; background: transparent; }
+.table-3d .spot.staked { border: none; }
+.table-3d .spot svg { width: 24px; height: 24px; opacity: .8; }
+.table-3d .sidearcs .side:hover { fill: rgba(232,218,156,.16); stroke: #d5c88e; }
+
+/* Hidden overflow can still scroll on focus and move the entire camera. */
+#scene { overflow: clip; }
+
+/* Other dealer films retain their own complete, registered scene plate. */
+html:not([data-dealer="vera"]) #room2 { mask-image: none; -webkit-mask-image: none; }
+html:not([data-dealer="vera"]) #room {
+  background-size: calc(var(--dealer-h) * var(--scene-w-k)) calc(var(--dealer-h) * var(--scene-h-k));
+  background-position: calc(50vw + var(--dealer-x, 0vw) - var(--dealer-h) * 1.31801) calc(var(--dealer-top) - var(--dealer-h) * .0143678);
+  background-repeat: repeat-x;
+}

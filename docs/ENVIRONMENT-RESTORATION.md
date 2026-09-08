@@ -7,7 +7,7 @@ Game: http://127.0.0.1:4173/
 Rehearsal: http://127.0.0.1:4173/?rehearsal=1
 
 ## Preserved baseline
-The original checkout was already at 8de4800. Its uncommitted source media, encoded working files, calibration scripts and bust-settle test are preserved. The inspection clone under Scout-Gaming is not the running app. No dealer media regenerated; no generation credits spent; no production deployment.
+The original checkout was already at 8de4800. Its uncommitted source media, encoded working files, calibration scripts and bust-settle test are preserved. The inspection clone under Scout-Gaming is not the running app. The initial restoration did not regenerate dealer media or spend generation credits. No production deployment.
 
 ## Changes
 - Replace the foreground table PNG with a Three.js mesh: felt surface, extruded body, raised leather rail, brass edge and card shoe. Render only on resize/context restoration; pixel ratio capped at 1.75.
@@ -30,3 +30,14 @@ This is a real 3D table with filmed dealers, not rigged 3D human characters. Exi
 Playback fixes do not prove every original take has accurate lip motion. Missing clips and existing per-take word/phoneme mismatches remain visible in rehearsal. Compare by ear and eye; do not regenerate approved takes blindly.
 The external chat backend returned a session-limit error during the demo. Recorded dialogue works independently; the upstream account limit itself is not fixed.
 The stream builder still requires the documented calibration pass after rebuilt assets. No streams were rebuilt here.
+
+## Visual correction loop — 8 September
+- Added a generated 3:1 outer room plate (`assets/room-extended.png`) based on the existing empty-room source. The central original backdrop remains registered to the filmed dealer. The transition excludes the original outer sconces, avoiding doubled lights. Other dealers retain their own registered scenes.
+- Added two table pedestals, bronze feet/collars, deeper table body, carpet and soft cast shadows. Reduced desktop tabletop depth to leave room for the supports.
+- Replaced the primitive shoe blocks with the existing detailed transparent shoe cutout, facing the fixed camera, with a contact shadow on the felt. This is a photographic billboard, not a fully modeled interactive shoe. Its horizontal placement is clamped inside phone viewports.
+- Unified betting-ring centres, perspective and rotations. Labels follow their crescent rather than independent calibration angles. Warm, restrained ink replaces bright outlines.
+- Prevented the scene container from scrolling when focus/click brought overflowing seat descendants into view (`overflow: clip`). Reproduced a 55px upward camera shift before the fix; verified zero scroll after main and side bets.
+- Iterated browser renders at 1920×920 and 390×844. Verified $5 main + $5 Perfect Pairs produces a $10 total, then cleared the demo bet. Checked Astrid's room as well as Vera. No browser errors/warnings; module syntax checks pass.
+- Generated background source remains at `/Users/solvifyab/.codex/generated_images/01a07fda-b136-7c40-a3f1-3156faac4d1f/exec-ef0a5481-f909-4e62-9973-61f1f124e987.png`.
+
+The room remains a composited broadcast scene: filmed dealer, photographic background and shoe, plus a real mesh table. It has no free-moving camera. These visual changes do not establish production readiness or repair every recorded mouth take.

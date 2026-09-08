@@ -9,13 +9,16 @@ export function createTableScene(canvas, dealer) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera();
   camera.position.set(0, 2000, 2000);
   camera.lookAt(0, 0, 0);
   scene.add(new THREE.HemisphereLight(0xfff3df, 0x171b20, 2));
   const key = new THREE.DirectionalLight(0xffe6bd, 3.2);
-  key.position.set(-500, 800, -300); scene.add(key);
+  key.position.set(-500, 800, -300); key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024); key.shadow.bias = -.001;
+  key.shadow.normalBias = 1.5; scene.add(key);
   const fill = new THREE.DirectionalLight(0xc0d4ef, 1.5);
   fill.position.set(600, 300, 500); scene.add(fill);
   const palette = { vera: '#144c35', astrid: '#263336', amira: '#665139', mei: '#12484e' };
@@ -24,12 +27,16 @@ export function createTableScene(canvas, dealer) {
   const leather = new THREE.MeshPhysicalMaterial({ color: '#191a18', roughness: .32, metalness: .12, clearcoat: .25 });
   const wood = new THREE.MeshStandardMaterial({ color: '#21150f', roughness: .38, metalness: .12 });
   const brass = new THREE.MeshStandardMaterial({ color: '#b99b57', roughness: .3, metalness: .75 });
-  const glass = new THREE.MeshPhysicalMaterial({ color: '#e1e6df', transparent: true, opacity: .27, roughness: .08, metalness: .1, depthWrite: false, side: THREE.DoubleSide });
-  const paper = new THREE.MeshStandardMaterial({ color: '#e7e4d8', roughness: .6 });
-  const divider = new THREE.MeshStandardMaterial({ color: '#7e2926', roughness: .65 });
+  const carpet = new THREE.MeshStandardMaterial({ map: carpetTexture(), roughness: 1, color: '#9da9ad' });
+  const legMaterial = new THREE.MeshStandardMaterial({ color: '#201912', roughness: .26, metalness: .18 });
+  const footMaterial = new THREE.MeshStandardMaterial({ color: '#8e7957', roughness: .3, metalness: .75 });
+  const shoeMap = new THREE.TextureLoader().load('assets/shoe.png', () => { if (group) render(); });
+  shoeMap.colorSpace = THREE.SRGBColorSpace;
+  const shoeMaterial = new THREE.MeshBasicMaterial({ map: shoeMap, transparent: true, depthWrite: false, toneMapped: false });
+  const contact = new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false, opacity: .6 });
   let group, width, height, rx, depth, rear;
   function mesh(geometry, material, y = 0) {
-    const m = new THREE.Mesh(geometry, material); m.position.y = y; group.add(m); return m;
+    const m = new THREE.Mesh(geometry, material); m.position.y = y; m.castShadow = true; m.receiveShadow = true; group.add(m); return m;
   }
   function shape(radius, d) {
     const s = new THREE.Shape();
@@ -45,11 +52,13 @@ export function createTableScene(canvas, dealer) {
     const portrait = width < 861 && height > width;
     rear = portrait ? height * .40 : height * .52;
     rx = portrait ? width * .78 : width * .485;
-    depth = height * (portrait ? .34 : .435) * Math.SQRT2;
+    depth = height * (portrait ? .34 : .39) * Math.SQRT2;
     renderer.setSize(width, height, false);
     camera.left = -width / 2; camera.right = width / 2;
     camera.top = height / 2; camera.bottom = -height / 2;
     camera.near = 1; camera.far = 10000; camera.updateProjectionMatrix();
+    Object.assign(key.shadow.camera, { left: -width, right: width, top: height, bottom: -height, near: 1, far: 5000 });
+    key.shadow.camera.updateProjectionMatrix();
     if (group) {
       scene.remove(group);
       group.traverse(o => { o.geometry?.dispose(); });
@@ -57,7 +66,22 @@ export function createTableScene(canvas, dealer) {
     group = new THREE.Group();
     group.position.z = (rear - height / 2) * Math.SQRT2;
     scene.add(group);
-    const body = new THREE.ExtrudeGeometry(shape(rx, depth), { depth: height * .045, bevelEnabled: true, bevelSize: 4, bevelThickness: 4, bevelSegments: 3, steps: 1, curveSegments: 64 });
+    // The table is supported by two pedestals on a carpeted floor. Floor
+    // starts behind the legs, replacing the old photo's foreground table.
+    const floorGeo = new THREE.PlaneGeometry(width * 4, height * 4);
+    floorGeo.rotateX(-Math.PI / 2);
+    const floor = mesh(floorGeo, carpet, -height * .27);
+    floor.position.z = height * 2 - depth * .1; floor.castShadow = false;
+    for (const side of [-1, 1]) {
+      const x = side * rx * .72, z = depth * .48;
+      const leg = mesh(new THREE.CylinderGeometry(height * .038, height * .049, height * .235, 40), legMaterial, -height * .1475);
+      leg.position.x = x; leg.position.z = z;
+      const foot = mesh(new THREE.CylinderGeometry(height * .063, height * .067, height * .018, 40), footMaterial, -height * .258);
+      foot.position.x = x; foot.position.z = z;
+      const collar = mesh(new THREE.CylinderGeometry(height * .046, height * .046, 4, 40), footMaterial, -height * .058);
+      collar.position.x = x; collar.position.z = z;
+    }
+    const body = new THREE.ExtrudeGeometry(shape(rx, depth), { depth: height * .07, bevelEnabled: true, bevelSize: 4, bevelThickness: 4, bevelSegments: 3, steps: 1, curveSegments: 64 });
     body.rotateX(Math.PI / 2); mesh(body, wood, -3);
     const top = new THREE.ShapeGeometry(shape(rx - 8, depth - 8), 64);
     // Texture coordinates must be tied to the entire tabletop, not one tile.
@@ -83,17 +107,16 @@ export function createTableScene(canvas, dealer) {
     render();
   }
   function addShoe() {
-    const shoe = new THREE.Group();
-    shoe.position.set(rx * .72, 12, depth * .16);
-    shoe.rotation.y = -.25;
-    const unit = Math.min(width / 1470, height / 750);
-    shoe.scale.setScalar(Math.max(.6, unit));
-    const side = new THREE.BoxGeometry(3, 48, 90);
-    for (const x of [-27, 27]) { const m = new THREE.Mesh(side, glass); m.position.set(x, 22, 0); shoe.add(m); }
-    const stack = new THREE.Mesh(new THREE.BoxGeometry(46, 26, 65), paper);
-    stack.rotation.x = -.32; stack.position.y = 14; shoe.add(stack);
-    const cut = new THREE.Mesh(new THREE.BoxGeometry(45, 1, 65), divider);
-    cut.rotation.x = -.32; cut.position.set(0, 28, -5); shoe.add(cut);
+    // A detailed existing product cutout suits this fixed broadcast camera
+    // better than a low-poly replacement. Its contact shadow lives on the felt.
+    const size = Math.max(100, Math.min(width * .16, height * .27));
+    const shoeX = Math.min(rx * .73, width / 2 - size * .48);
+    const shadowGeo = new THREE.PlaneGeometry(size * .72, size * .72); shadowGeo.rotateX(-Math.PI / 2);
+    const shadow = mesh(shadowGeo, contact, 3); shadow.castShadow = false;
+    shadow.position.x = shoeX; shadow.position.z = depth * .20;
+    const shoe = new THREE.Mesh(new THREE.PlaneGeometry(size, size), shoeMaterial);
+    shoe.quaternion.copy(camera.quaternion);
+    shoe.position.set(shoeX, size * .25, depth * .18);
     group.add(shoe);
   }
   function project(x, z) {
@@ -132,4 +155,25 @@ function feltTexture(color) {
   x.fillText('INSURANCE PAYS 2 TO 1', 1024, 485);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4; return t;
+}
+
+
+function shadowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 10, 64, 64, 63);
+  g.addColorStop(0, 'rgba(0,0,0,.7)'); g.addColorStop(.45, 'rgba(0,0,0,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
+}
+function carpetTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const x = c.getContext('2d'); x.fillStyle = '#26313a'; x.fillRect(0, 0, 512, 512);
+  x.strokeStyle = '#565448'; x.lineWidth = 1;
+  for (let y = -64; y < 576; y += 64) for (let z = -64; z < 576; z += 64) {
+    x.beginPath(); x.moveTo(z, y-24); x.quadraticCurveTo(z+13,y-10,z+24,y);
+    x.quadraticCurveTo(z+10,y+13,z,y+24); x.quadraticCurveTo(z-13,y+10,z-24,y);
+    x.quadraticCurveTo(z-10,y-13,z,y-24); x.stroke();
+    x.fillStyle = '#72654b'; x.fillRect(z-1,y-1,2,2);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(9,9); t.anisotropy = 4; return t;
 }
