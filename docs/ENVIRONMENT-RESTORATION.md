@@ -122,3 +122,13 @@ A local transcription spot-check of greeting, goodluck and win for Vera, Amira a
 The cut-card browser fixture reached draw 314 while keeping the original shoe through settlement. The next start produced a different shoe ID, one burn and four initial cards (draw count 5), with card conservation intact. Animation completion now handles hidden/occluded tabs and render failures; three regression tests cover those lifecycle cases. All 89 roster streams passed the no-B-frame audit. Speech and shoe/service regression suites passed again after these changes.
 
 Remaining delivery dependency: matched speech regeneration and missing dealer action footage require generation capacity. The connected account was rechecked and still reports 3.02 credits, with no active Unlimited allowance. The quoted 180-credit repair budget covers two speech takes plus one retry each; it does not cover a complete new set of hand-action footage for all four dealers. No subscription or credit purchase was initiated.
+
+## Hand release cues and return motion
+
+Astrid now has measured fingertip coordinates for four release cues in the existing dealing footage. Card delivery waits for the corresponding displayed video frame, including the correct loop cycle, before starting the shoe-to-hand-to-seat animation. The common engine exposes frame presentation events; other dealers can use the same cue format when suitable footage exists. These coordinates do not establish a filmed grip or an actual reach into the shoe.
+
+Ending a delivery interrupts the dealing loop. Astrid uses a 41-frame return-to-rest segment extracted from the existing take, with a matching hand matte; dealers without this segment return to idle. Browser checks on the isolated server verified hit delivery, return to a folded resting pose, stand and settlement back to betting. Twelve timing/playback tests pass, including three new checks for painted-frame cues, loop identity and timeout cleanup.
+
+The source footage itself clips Astrid's fingertips at its bottom edge. A replacement take must keep both hands and the entire delivery workspace in frame; software timing cannot reconstruct the missing fingers. Amira and Mei still need dealing footage, and no replacement generation has succeeded in this pass.
+
+After the user reported a top-up, MCP and CLI still showed 3.02 credits in the connected Team workspace. The available Chrome profile was signed out. Account/workspace clarification is pending. Higgsfield's official help confirms website Unlimited coverage does not apply to MCP/CLI generation: https://higgsfield.ai/creator-hub/help-center/credits/what-are-unlimited-models-and-which-plans-include-them . No additional purchase was initiated.

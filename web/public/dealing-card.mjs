@@ -29,7 +29,7 @@ export function createDealingCard({scene, camera, renderer}) {
     const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(x/innerWidth*2-1,1-y/innerHeight*2),camera);
     return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-height),new THREE.Vector3());
   }
-  return async function deal({origin, target, card, faceDown, handoff, duration=680}) {
+  return async function deal({origin, target, card, faceDown, handoff, duration=680, releaseFraction=.38}) {
     const w=target.width, h=target.height*Math.SQRT2;
     const shape=new THREE.Shape();const r=Math.min(w,h)*.055;
     shape.moveTo(-w/2+r,-h/2);shape.lineTo(w/2-r,-h/2);shape.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);
@@ -50,12 +50,12 @@ export function createDealingCard({scene, camera, renderer}) {
     const start=origin.clone(),mid=atScreen(handoff.x,handoff.y,14),end=atScreen(target.x+w/2,target.y+target.height/2,4);
     try {
       await animateProgress(duration,t=>{
-        const split=.38;
+        const split=releaseFraction;
         if(t<split){const u=t/split;root.position.lerpVectors(start,mid,u*u*(3-2*u));}
         else{const u=(t-split)/(1-split);root.position.lerpVectors(mid,end,1-(1-u)**2);}
         root.position.y+=Math.sin(t*Math.PI)*12;
         // Back shows at the shoe. Turn face up only after the handoff.
-        const flip=Math.max(0,Math.min(1,(t-.25)/.5));
+        const flip=Math.max(0,Math.min(1,(t-releaseFraction)/.4));
         root.rotation.set(0,-.45*(1-t),faceDown?Math.PI:Math.PI*(1-flip));
         root.scale.setScalar(.8+.2*t);renderer.render(scene,camera);
       });
