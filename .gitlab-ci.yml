@@ -1,0 +1,13 @@
+stages:
+  - test
+
+dealer-regression:
+  image: node:22-bookworm
+  stage: test
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq ffmpeg
+  script:
+    - node pipeline/audit-dealer-sync.mjs --probe
+    - node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs
+    - node test/shoe-game.mjs
+    - node test/split-rules.mjs

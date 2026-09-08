@@ -1,0 +1,20 @@
+// Default recorded captions; dealer bank entries override these per identity.
+export const SPEECH_LINES = {
+  greeting: "Welcome to Priv\u00e9 Blackjack. Take a seat, I'll be your dealer tonight.",
+  placebets: 'Place your bets, please.',
+  goodluck: 'Bets are closed. Good luck at my table!',
+  insurance: 'Insurance is open. Would you like to protect your hand?',
+  peek: 'Let me take a look at my hand.',
+  blackjack: 'Blackjack! That is beautifully done. Congratulations!',
+  bust: "Bust. I'm sorry, that hand is over.",
+  dealerbust: 'Dealer busts! Congratulations, the table wins.',
+  win: 'Well played! Enjoy your winnings.',
+  lose: 'Dealer wins this one. Better luck next round.',
+  push: "It's a push. Your stake is returned.",
+  dealerblackjack: 'Dealer has blackjack. This round goes to the house.',
+  sidebet: 'Your side bet pays! Nicely done.',
+  chatter1: 'The cards have been kind tonight.',
+  chatter2: "Take your time. There's no rush at my table.",
+  farewell: 'Thanks for playing with me. Come back soon.',
+  double: "Doubling down. One card, let's make it count.",
+};
