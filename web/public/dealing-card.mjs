@@ -1,3 +1,4 @@
+import { animateProgress } from './animation-clock.mjs';
 import * as THREE from './vendor/three/three.module.js';
 
 // Physical card faces, paper edge and a lit turnover; the resting hand stays
@@ -40,14 +41,16 @@ export function createDealingCard({scene, camera, renderer}) {
     for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)+w/2)/w,1-(p.getZ(i)+h/2)/h);
     const frontMat=new THREE.MeshStandardMaterial({map:card?textures.get(key):back,roughness:.64,metalness:0});
     const backMat=new THREE.MeshStandardMaterial({map:back,roughness:.64,side:THREE.BackSide});
-    const root=new THREE.Group();const face=new THREE.Mesh(geo,frontMat);face.position.y=.35;face.castShadow=true;root.add(face);
-    const reverse=new THREE.Mesh(geo,backMat);reverse.position.y=-.35;reverse.castShadow=true;root.add(reverse);
-    const edgeGeo=new THREE.EdgesGeometry(geo);const edgeMat=new THREE.LineBasicMaterial({color:'#dfdbcf'});root.add(new THREE.LineSegments(edgeGeo,edgeMat));scene.add(root);
+    const root=new THREE.Group();const face=new THREE.Mesh(geo,frontMat);face.position.y=.4;face.castShadow=true;root.add(face);
+    const reverse=new THREE.Mesh(geo,backMat);reverse.position.y=-.4;reverse.castShadow=true;root.add(reverse);
+    const edgeGeo=new THREE.ExtrudeGeometry(shape,{depth:.7,bevelEnabled:false,steps:1});
+    edgeGeo.rotateX(-Math.PI/2);edgeGeo.translate(0,-.35,0);
+    const edgeMat=new THREE.MeshStandardMaterial({color:'#dfdbcf',roughness:.9});
+    const paper=new THREE.Mesh(edgeGeo,edgeMat);paper.castShadow=true;root.add(paper);scene.add(root);
     const start=origin.clone(),mid=atScreen(handoff.x,handoff.y,14),end=atScreen(target.x+w/2,target.y+target.height/2,4);
-    const started=performance.now();
-    await new Promise(resolve=>{
-      function frame(now){
-        const t=Math.min(1,(now-started)/duration),split=.38;
+    try {
+      await animateProgress(duration,t=>{
+        const split=.38;
         if(t<split){const u=t/split;root.position.lerpVectors(start,mid,u*u*(3-2*u));}
         else{const u=(t-split)/(1-split);root.position.lerpVectors(mid,end,1-(1-u)**2);}
         root.position.y+=Math.sin(t*Math.PI)*12;
@@ -55,10 +58,9 @@ export function createDealingCard({scene, camera, renderer}) {
         const flip=Math.max(0,Math.min(1,(t-.25)/.5));
         root.rotation.set(0,-.45*(1-t),faceDown?Math.PI:Math.PI*(1-flip));
         root.scale.setScalar(.8+.2*t);renderer.render(scene,camera);
-        if(t<1)requestAnimationFrame(frame);else resolve();
-      }
-      requestAnimationFrame(frame);
-    });
+      });
+    } finally {
     scene.remove(root);geo.dispose();edgeGeo.dispose();frontMat.dispose();backMat.dispose();edgeMat.dispose();renderer.render(scene,camera);
+    }
   };
 }

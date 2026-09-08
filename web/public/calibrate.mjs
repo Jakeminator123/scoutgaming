@@ -572,7 +572,7 @@ export function toggle() {
 }
 
 addEventListener('keydown', e => {
-  if (e.key.toLowerCase() !== 'c') return;
+  if (typeof e.key !== 'string' || e.key.toLowerCase() !== 'c') return;
   if (/^(INPUT|TEXTAREA)$/.test(e.target?.tagName ?? '')) return;   // never steal chat typing
   toggle();
 });
