@@ -1,3 +1,4 @@
+import { createDealingCard } from './dealing-card.mjs';
 import { makeShoe } from './shoe-model.mjs';
 import * as THREE from './vendor/three/three.module.js';
 
@@ -128,7 +129,9 @@ export function createTableScene(canvas, dealer) {
   });
   canvas.addEventListener('webglcontextrestored', () => { resize(); document.documentElement.classList.add('table-3d'); });
   resize();
+  const dealCard = createDealingCard({scene,camera,renderer});
   return { resize, project, render,
+    dealCard(options) { return dealCard({...options,origin:shoeModel.outlet.getWorldPosition(new THREE.Vector3())}); },
     setShoe(state) { shoeState=state; shoeModel?.update(state); render(); },
     shoeOutlet() {
       const p=shoeModel.outlet.getWorldPosition(new THREE.Vector3()).project(camera);

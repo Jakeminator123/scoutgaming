@@ -1,53 +1,53 @@
 {
- "greeting": {
-  "text": "Welcome to the Dark Hall. I'm Astrid. Take a seat whenever you're ready."
- },
- "goodluck": {
-  "text": "Bets are closed, good luck."
- },
- "win": {
-  "text": "Well played, enjoy it."
- },
- "lose": {
-  "text": "The house takes this one."
- },
- "push": {
-  "text": "A push, your stake goes back."
- },
- "bust": {
-  "text": "That is a bust."
- },
- "dealerbust": {
-  "text": "Dealer busts this time, and the round goes to all of you."
- },
- "insurance": {
-  "text": "Insurance is open if you want it."
- },
- "blackjack": {
-  "text": "That's blackjack right away, and it pays three to two."
- },
- "placebets": {
-  "text": "Place your bets whenever you are ready."
- },
- "dealerblackjack": {
-  "text": "Dealer has blackjack this round."
- },
- "sidebet": {
-  "text": "Your side bet pays, nicely done."
- },
- "double": {
-  "text": "Doubling down, one card coming."
- },
- "peek": {
-  "text": "Let me take a quick look to see if the house has blackjack."
- },
- "farewell": {
-  "text": "Thanks for playing, come back soon."
- },
- "chatter1": {
-  "text": "The cards are being rather kind to everyone tonight."
- },
- "chatter2": {
-  "text": "Take your time, there is no rush."
- }
+  "greeting": {
+    "text": "Welcome to the Dark Hall. I'm Astrid. Take a seat whenever you're ready."
+  },
+  "goodluck": {
+    "text": "Bets are closed. Good luck at my table."
+  },
+  "win": {
+    "text": "Well played. Your winnings exactly as earned."
+  },
+  "lose": {
+    "text": "The house takes this one."
+  },
+  "push": {
+    "text": "A push, your stake goes back."
+  },
+  "bust": {
+    "text": "That is a bust."
+  },
+  "dealerbust": {
+    "text": "Dealer busts this time, and the round goes to all of you."
+  },
+  "insurance": {
+    "text": "Insurance is open if you want it."
+  },
+  "blackjack": {
+    "text": "That's blackjack right away, and it pays three to two."
+  },
+  "placebets": {
+    "text": "Place your bets whenever you are ready."
+  },
+  "dealerblackjack": {
+    "text": "Dealer has blackjack this round."
+  },
+  "sidebet": {
+    "text": "Your side bet pays, nicely done."
+  },
+  "double": {
+    "text": "Doubling down, one card coming."
+  },
+  "peek": {
+    "text": "Let me take a quick look to see if the house has blackjack."
+  },
+  "farewell": {
+    "text": "Thanks for playing, come back soon."
+  },
+  "chatter1": {
+    "text": "The cards are being rather kind to everyone tonight."
+  },
+  "chatter2": {
+    "text": "Take your time, there is no rush."
+  }
 }
