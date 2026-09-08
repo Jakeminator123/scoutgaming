@@ -1,3 +1,4 @@
+import { SPEECH_LINES } from './speech-lines.mjs';
 import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
@@ -82,33 +83,10 @@ let engineUp = false;
 let speaking = false;
 let dealingActive = false;
 // Speaking clips with their real lengths. Cutting between different clips
-// mid-sentence reads as a jump cut, so one clip is chosen to cover the whole
-// line - the closest length at or above the audio - and held for its duration.
-const SPEAK_POOL = [
-  ['idle-1/speak/greeting', 6.04], ['idle-1/speak/dealerbust', 5.04],
-  ['idle-1/speak/insurance', 5.04], ['idle-1/speak/lose', 5.04],
-  ['idle-1/speak/goodluck', 4.04], ['idle-1/speak/win', 4.04],
-  ['idle-1/speak/push', 4.04], ['idle-1/speak/blackjack', 4.04],
-];
-let heldSpeakClip = null;
-function clipForDuration(secs) {
-  const avail = SPEAK_POOL.filter(([k]) => engine.index?.clips?.[k]);
-  if (!avail.length) return null;
-  const covering = avail.filter(([, d]) => d >= secs).sort((a, b) => a[1] - b[1]);
-  return (covering[0] ?? avail.sort((a, b) => b[1] - a[1])[0])[0];
-}
-const someSpeakClip = () => heldSpeakClip ?? clipForDuration(5);
 engine.onIdlePick = () => {
-  if (speaking) {
-    // the decoder reaches this boundary ~1s before paint: only replay the
-    // speak clip while the voice still has that much runway, else a whole
-    // silent playthrough gets queued before the audio-end handler can act
-    const rem = bankAudio && !bankAudio.ended && bankAudio.duration
-      ? bankAudio.duration - bankAudio.currentTime : 0;
-    const c = someSpeakClip();
-    if (c && rem > 1.2) return c;
-    return CLIP.idle;
-  }
+  // A recorded sentence is a single take. Decode-ahead must never replay its
+  // first words over the end of the audio. The roster audit checks coverage.
+  if (speaking) return CLIP.idle;
   if (dealingActive && engine.index.clips[CLIP.deal]) return CLIP.deal;
   const extras = [CLIP.headTilt, CLIP.gest].filter(k => engine.index.clips[k]);
   if (extras.length && Math.random() < 0.25) return extras[Math.floor(Math.random() * extras.length)];
@@ -143,25 +121,7 @@ if (location.search.includes('debug')) {
 }
 
 // ---------- dealer voice ----------
-const LINES = {
-  greeting: "Welcome to Priv\u00e9 Blackjack. Take a seat, I'll be your dealer tonight.",
-  placebets: 'Place your bets, please.',
-  goodluck: 'Bets are closed. Good luck at my table!',
-  insurance: 'Insurance is open. Would you like to protect your hand?',
-  peek: 'Let me take a look at my hand.',
-  blackjack: 'Blackjack! That is beautifully done. Congratulations!',
-  bust: "Bust. I'm sorry, that hand is over.",
-  dealerbust: 'Dealer busts! Congratulations, the table wins.',
-  win: 'Well played! Enjoy your winnings.',
-  lose: 'Dealer wins this one. Better luck next round.',
-  push: "It's a push. Your stake is returned.",
-  dealerblackjack: 'Dealer has blackjack. This round goes to the house.',
-  sidebet: 'Your side bet pays! Nicely done.',
-  chatter1: 'The cards have been kind tonight.',
-  chatter2: "Take your time. There's no rush at my table.",
-  farewell: 'Thanks for playing with me. Come back soon.',
-  double: "Doubling down. One card, let's make it count.",
-};
+const LINES = { ...SPEECH_LINES };
 const VOICE_LINES = Object.keys(LINES);
 // ---------- global speech gate ----------
 // One voice, one caption, one mouth at a time. Every speaker (game-flow
@@ -1513,7 +1473,6 @@ async function cutToTake(clip, signal) {
   await engine.fetchClip(clip);
   signal.throwIfAborted();
   speaking = true;
-  heldSpeakClip = clip;
   await new Promise((resolve, reject) => {
     const prev = engine.onPresentClip;
     let timer;
@@ -1565,7 +1524,7 @@ function playRecorded(id, audio, text) {
       if (activeSpeech !== controller) return;
       activeSpeech = null;
       console.info('[speech] end', id);
-      voice.playing = false; speaking = false; heldSpeakClip = null;
+      voice.playing = false; speaking = false;
       $('#caption').classList.remove('show');
       kfDebug.stop();
       if (matched && engine.presentedClip === clip) engine.interrupt(CLIP.idle);

@@ -132,3 +132,13 @@ Ending a delivery interrupts the dealing loop. Astrid uses a 41-frame return-to-
 The source footage itself clips Astrid's fingertips at its bottom edge. A replacement take must keep both hands and the entire delivery workspace in frame; software timing cannot reconstruct the missing fingers. Amira and Mei still need dealing footage, and no replacement generation has succeeded in this pass.
 
 After the user reported a top-up, MCP and CLI still showed 3.02 credits in the connected Team workspace. The available Chrome profile was signed out. Account/workspace clarification is pending. Higgsfield's official help confirms website Unlimited coverage does not apply to MCP/CLI generation: https://higgsfield.ai/creator-hub/help-center/credits/what-are-unlimited-models-and-which-plans-include-them . No additional purchase was initiated.
+
+## Continuity and roster safeguards
+
+Recovered the later conversation from the local session after the app reader returned only the beginning. Added `docs/JOHN-HANDOFF.md`, repository `AGENTS.md`, and `pipeline/save-checkpoint.py` for a private conversation export, verified committed-history Git bundle, handoff and checksums. The app history display itself remains outside this repair; uncommitted/untracked media stays in the original workspace and is not included in a Git bundle.
+
+Fixed `build-index.mjs` to preserve calibration and other clip metadata on identical rebuilds, retain unrelated clips during partial rebuilds, and reject changed calibrated footage before copying any files. Shared speech playback no longer queues a repeat of a sentence merely because its audio is still running when decode-ahead reaches the boundary. Default captions now have one shared module.
+
+The roster audit fingerprints audio, video, captions, calibration, indexes, hand mattes and cue files for all four dealers. Deep checks verify frame boundaries, dimensions, 24 fps compatibility, no B frames and audio coverage. Versioned pre-commit checks are enabled locally, and GitLab CI is prepared but has not run remotely. The baseline records the current imperfect assets; passing it does not certify mouth-to-word accuracy. Thirteen bank lines still lack a matching video (Vera 8, Amira 2, Mei 3), including Mei's gameplay push. All existing speech takes have calibration and enough video duration for their audio plus delay.
+
+Validation: 16 focused regression tests; 197 shoe/service checks plus persisted split/double/insurance/idempotency checks; 77 split-rule assertions and a 50,000-round sweep with zero violations. Further audiovisual fixes remain open and are described in John's handoff. The generation account was rechecked and still reports 3.02 credits.
