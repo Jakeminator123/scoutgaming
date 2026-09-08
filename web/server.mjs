@@ -2,6 +2,7 @@
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
+import { playerAuth } from './player-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { isAgentFailure } from './agent-response.mjs';
@@ -632,7 +633,23 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
   return css;
 }
 
-createServer((req, res) => {
+const auth=playerAuth(db,apiPlayer);
+createServer(async (req, res) => {
+  try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
+  const pathname=new URL(req.url,'http://local').pathname;
+  const publicAuth=['/login.html','/login.css','/login.mjs','/favicon.ico'];
+  const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
+  const authenticated=auth.user(req);
+  if(!authenticated&&!publicAuth.includes(pathname)&&!backoffice) {
+    res.setHeader('Cache-Control','no-store');
+    if(pathname.startsWith('/api/')||req.method!=='GET'){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
+    else {res.writeHead(303,{Location:'/login.html'});res.end();}
+    return;
+  }
+  if(authenticated && !backoffice && req.method==='POST' && req.headers.origin && (!URL.canParse(req.headers.origin)||new URL(req.headers.origin).host!==req.headers.host)) {
+    res.writeHead(403);res.end('Invalid origin');return;
+  }
+  if(!backoffice) res.setHeader('Cache-Control','no-store');
   if (req.method === 'POST' && req.url === '/calibration') {
     let body = '';
     req.on('data', c => { body += c; if (body.length > 60000) req.destroy(); });
@@ -767,7 +784,7 @@ createServer((req, res) => {
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
     req.on('end', () => {
       let out;
-      try { out = API[req.url](JSON.parse(body || '{}')); }
+      try { out = API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }); }
       catch (e) { out = { error: String(e.message || e) }; }
       res.writeHead(out.error ? 400 : 200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));

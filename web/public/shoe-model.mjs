@@ -19,9 +19,9 @@ export function makeShoe(size, state, render) {
   }
   const rear=panel(new T.BoxGeometry(w+6,h,2));rear.position.set(0,h/2+4,-l/2);
   for(const x of [-w*.4,w*.4]) {const foot=mesh(new T.BoxGeometry(9,4,l*.7),dark);foot.position.set(x,0,0);}
-  const stack=new T.Group();root.add(stack);stack.rotation.x=-.48;
+  const stack=new T.Group();root.add(stack);stack.rotation.x=.07;
   // Card fronts incline toward the opening, while the pack recedes into the shoe.
-  stack.position.set(0,h*.31,l*.35);
+  stack.position.set(0,h*.48,l*.36);
   const pack=mesh(new T.BoxGeometry(w*.91,h*.82,1),paper,stack);
   const faceTexture=new T.TextureLoader().load('assets/cardback.png',render);faceTexture.colorSpace=T.SRGBColorSpace;
   const cardBack=new T.MeshStandardMaterial({map:faceTexture,roughness:.65}); materials.push(cardBack);
@@ -38,12 +38,12 @@ export function makeShoe(size, state, render) {
   const outlet=new T.Object3D();outlet.position.set(0,h*.16,l*.53);root.add(outlet);
   function update(s) {
     const fraction=Math.max(.015, Math.min(1,(s?.remaining??415)/(s?.total??416)));
-    const length=l*.68*fraction;
+    const length=l*.86*fraction;
     pack.scale.z=length;pack.position.z=-length/2;
     edgeLines.children.forEach((line,i)=>{line.position.z=-length*i/42;});
     follower.position.z=-length-4;
     const until=Math.max(0,(s?.cutAfter??312)-(s?.dealt??1));
-    cut.position.z=-l*.68*until/(s?.total??416);
+    cut.position.z=-l*.86*until/(s?.total??416);
     // Pull the reached cut card clear of the pack; never intersect the next card.
     cut.position.x=s?.cutReached ? -w*1.02 : 0;
     cut.position.y=s?.cutReached ? h*.38 : h*.06;

@@ -108,13 +108,13 @@ export function createTableScene(canvas, dealer) {
   function addShoe() {
     // A detailed existing product cutout suits this fixed broadcast camera
     // better than a low-poly replacement. Its contact shadow lives on the felt.
-    const size = Math.max(100, Math.min(width * .16, height * .27));
-    const shoeX = Math.min(rx * .73, width / 2 - size * .48);
+    const size = Math.max(80, Math.min(width * .12, height * .19));
+    const shoeX = Math.min(rx * .70, width / 2 - size * .60);
     const shadowGeo = new THREE.PlaneGeometry(size * .72, size * .72); shadowGeo.rotateX(-Math.PI / 2);
     const shadow = mesh(shadowGeo, contact, 3); shadow.castShadow = false;
-    shadow.position.x = shoeX; shadow.position.z = depth * .20;
+    shadow.position.x = shoeX; shadow.position.z = depth * .25;
     shoeModel=makeShoe(size,shoeState,render);
-    shoeModel.root.position.set(shoeX,5,depth*.17);
+    shoeModel.root.position.set(shoeX,5,depth*.25);
     shoeModel.root.rotation.y=-.62;
     group.add(shoeModel.root);
   }
