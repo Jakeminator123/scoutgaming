@@ -47,15 +47,15 @@ export function createDealingCard({scene, camera, renderer}) {
     edgeGeo.rotateX(-Math.PI/2);edgeGeo.translate(0,-.35,0);
     const edgeMat=new THREE.MeshStandardMaterial({color:'#dfdbcf',roughness:.9});
     const paper=new THREE.Mesh(edgeGeo,edgeMat);paper.castShadow=true;root.add(paper);scene.add(root);
-    const start=origin.clone(),mid=atScreen(handoff.x,handoff.y,14),end=atScreen(target.x+w/2,target.y+target.height/2,4);
+    const start=origin.clone(),mid=handoff ? atScreen(handoff.x,handoff.y,14) : start.clone(),end=atScreen(target.x+w/2,target.y+target.height/2,4);
     try {
       await animateProgress(duration,t=>{
-        const split=releaseFraction;
+        const split=handoff ? releaseFraction : 0;
         if(t<split){const u=t/split;root.position.lerpVectors(start,mid,u*u*(3-2*u));}
         else{const u=(t-split)/(1-split);root.position.lerpVectors(mid,end,1-(1-u)**2);}
         root.position.y+=Math.sin(t*Math.PI)*12;
         // Back shows at the shoe. Turn face up only after the handoff.
-        const flip=Math.max(0,Math.min(1,(t-releaseFraction)/.4));
+        const flip=Math.max(0,Math.min(1,(t-split)/.4));
         root.rotation.set(0,-.45*(1-t),faceDown?Math.PI:Math.PI*(1-flip));
         root.scale.setScalar(.8+.2*t);renderer.render(scene,camera);
       });
