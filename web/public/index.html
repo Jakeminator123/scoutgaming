@@ -11,13 +11,14 @@
   <!-- values baked by the in-game calibrator (APPLY); empty until first use -->
   <link rel="stylesheet" href="calibration.css" />
   <link rel="stylesheet" href="environment.css" />
+<link rel="stylesheet" href="/auth-modal.css">
 </head>
 <body>
   <div id="scene">
     <div id="room"></div>
     <div id="room2"></div>
     <div id="shoe-status" role="status"></div>
-    <button id="sign-out" type="button">Sign out</button>
+    <button id="sign-out" type="button" hidden>Sign out</button>
     <canvas id="table-canvas" aria-hidden="true"></canvas>
     <div id="dealer-wrap"><canvas id="dealer"></canvas></div>
     <!-- her forearms/hands, re-painted ABOVE the table art from the same
