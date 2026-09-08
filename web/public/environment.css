@@ -1,0 +1,38 @@
+/* One room plate, one playable table, one registered dealer. */
+:root {
+  --dealer-h: 64vh;
+  --dealer-top: calc(52vh - var(--rail-anchor, .855) * var(--dealer-h));
+}
+#room { background: radial-gradient(ellipse at 50% 65%, #211b15, #090c0c 75%); }
+#room2 { clip-path: inset(0 0 48% 0); }
+#table-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 19; pointer-events: none; }
+.table-3d #tableimg { visibility: hidden; }
+.table-3d #shoe2d, .table-3d #felt-brand { display: none; }
+.table-3d #table2d { top: 52vh; }
+.table-3d #dealer-cards { top: 15%; }
+.table-3d #banner { top: 57vh; font-size: 11px; padding: 9px 20px; letter-spacing: .14em; background: rgba(13,34,25,.72); border-color: rgba(221,207,151,.12); }
+.table-3d #caption { top: 44vh; max-width: 70vw; white-space: normal; text-align: center; font-size: 14px; }
+.table-3d .spot { border-color: rgba(203,193,137,.5); color: #d4c998; background: rgba(25,70,48,.2); }
+.table-3d #hud-bottom { background: linear-gradient(transparent, rgba(5,8,7,.75)); }
+.table-3d #table-pick { position: fixed; top: 78px; left: 18px; bottom: auto; width: max-content; height: fit-content; opacity: .85; }
+@media (max-width: 860px) and (orientation: portrait) {
+  :root { --dealer-h: 49vh; --dealer-top: calc(40vh - var(--rail-anchor, .855) * var(--dealer-h)); }
+  #room2 { clip-path: inset(0 0 60% 0); }
+  .table-3d #table2d { top: 40vh; }
+  .table-3d #banner { top: 44vh; bottom: auto; font-size: 9px; }
+  .table-3d #caption { top: 32vh; max-width: 94vw; font-size: 12px; }
+  .table-3d #dealer-cards { top: 14%; }
+}
+
+#rehearsal { position: absolute; top: 120px; left: 18px; z-index: 65; width: 225px; padding: 14px; background: rgba(11,17,15,.95); border: 1px solid #4a5140; border-radius: 10px; font-size: 12px; }
+#rehearsal summary { cursor: pointer; color: #d4c998; font-weight: 600; }
+#rehearsal label { display: block; margin-top: 12px; color: #b9bbae; }
+#rehearsal select, #rehearsal button { margin-top: 7px; width: 100%; background: #202b23; color: #f1ead4; padding: 8px; border: 1px solid #4a5140; border-radius: 5px; }
+#rehearsal p { margin-top: 10px; line-height: 1.5; color: #bbbba9; }
+@media (max-width: 860px) and (orientation: portrait) {
+  .table-3d #table-pick { top: auto; bottom: 130px; left: 10px; }
+  #rehearsal { top: 105px; left: 10px; width: 190px; }
+}
+
+html, body { overscroll-behavior: none; }
+body { position: fixed; inset: 0; }

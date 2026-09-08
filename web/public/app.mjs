@@ -1,4 +1,5 @@
 import { DealerEngine } from './dealer-engine.mjs';
+import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
 import { Round, handValue } from './blackjack.mjs';
 
 const $ = s => document.querySelector(s);
@@ -42,7 +43,16 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
   }
   if (DEALER.table) $('#tableimg')?.setAttribute('src', DEALER.table);
   $('#chat-input')?.setAttribute('placeholder', `Talk to ${DEALER.name}…`);
+  const disclosure = document.querySelector('#gate-panel p');
+  if (disclosure) disclosure.textContent = disclosure.textContent.replace('Vera', DEALER.name);
 }
+
+let tableScene = null;
+try {
+  const { createTableScene } = await import('./table-scene.mjs');
+  tableScene = createTableScene($('#table-canvas'), DEALER.key);
+  document.documentElement.classList.add('table-3d');
+} catch (error) { console.warn('[table] Using image fallback:', error.message); }
 
 // a dealer without clips still stands at her table: her canonical poster
 // fills the dealer frame instead of an empty room
@@ -91,7 +101,7 @@ engine.onIdlePick = () => {
   if (extras.length && Math.random() < 0.25) return extras[Math.floor(Math.random() * extras.length)];
   return CLIP.idle;
 };
-const trigger = k => { if (engineUp && engine.index.clips[k]) engine.trigger(k); };
+const trigger = k => { if (engineUp && !speaking && speechActive === 0 && engine.index.clips[k]) engine.trigger(k); };
 
 try {
   await engine.init();
@@ -148,13 +158,7 @@ let speechActive = 0;
 let speechChain = Promise.resolve();
 function speechTurn(fn) {
   speechActive++;
-  // watchdog: no turn may hold the queue longer than any real line lasts -
-  // a wedged turn otherwise silences the dealer for the rest of the session
-  const guarded = () => Promise.race([
-    Promise.resolve(fn()),
-    new Promise(r => setTimeout(r, 20000)),
-  ]);
-  const run = speechChain.then(guarded).catch(() => {}).finally(() => { speechActive--; });
+  const run = speechChain.then(fn).catch(() => {}).finally(() => { speechActive--; });
   speechChain = run;
   return run;
 }
@@ -183,44 +187,7 @@ const voice = {
     if (!a) return;
     if (this.dead.has(t)) return; // dealer has no take for this line: stay silent, no orphan caption
     if (speechActive > 0 && !force) return;   // something's talking: drop optional chatter
-    speechTurn(() => new Promise(resolve => {
-      if (this.muted) return resolve();
-      this.playing = true;
-      const cap = $('#caption');
-      cap.textContent = LINES[t] ?? '';
-      cap.classList.add('show');
-      const done = () => { this.playing = false; cap.classList.remove('show'); resolve(); };
-      // lip-synced speaking clip when we have one: same synced path as chat
-      // lines - painted-frame wait + this clip's measured voice delay
-      const speakClip = `idle-1/speak/${t}`;
-      if (engineUp && engine.index.clips[speakClip]) {
-        // only cut back to idle if her take is still on screen and no round is
-        // running - mid-round the game logic owns the video
-        const stop = () => { done(); speaking = false; heldSpeakClip = null; kfDebug.stop(); if (engineUp && engine.presentedClip === speakClip && !busy) engine.interrupt(CLIP.idle); };
-        a.onended = stop; a.onerror = stop;
-        bankAudio?.pause(); bankAudio = a;      // the boundary guard watches this
-        kfDebug.start(speakClip, a);
-        (async () => {
-          try { await cutToTake(speakClip); a.currentTime = 0; await a.play(); }
-          catch { stop(); }
-        })();
-        setTimeout(() => { if (this.playing) stop(); }, 15000); // safety
-      } else {
-        a.currentTime = 0;
-        a.play().catch(() => {});
-        // some motion under a voice-over: whichever gesture clips this dealer
-        // actually has (never a talking mouth on the wrong words)
-        const moves = [CLIP.gest, CLIP.headTilt, CLIP.think].filter(k => engine.index?.clips?.[k]);
-        if (moves.length && Math.random() < 0.7) trigger(moves[Math.floor(Math.random() * moves.length)]);
-        a.onended = done;
-        // if sound hasn't actually started within 1.5s, release the stage -
-        // never hold a silent caption open
-        const started = () => clearTimeout(stall);
-        a.addEventListener('playing', started, { once: true });
-        const stall = setTimeout(() => { a.removeEventListener('playing', started); done(); }, 1500);
-        setTimeout(done, 8000); // safety
-      }
-    }));
+    return speechTurn(() => playRecorded(t, a, LINES[t] ?? ''));
   },
 };
 voice.load();
@@ -293,7 +260,7 @@ const kfDebug = (() => {
 const soundBtn = $('#sound-btn');
 const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); soundBtn.textContent = voice.muted ? '🔇' : '🔊'; };
 soundBtn.onclick = () => {
-  if (!voice.muted) { bankAudio?.pause(); speaking = false; }
+  if (!voice.muted) { activeSpeech?.abort(); bankAudio?.pause(); speaking = false; }
   voice.muted = !voice.muted; localStorage.setItem('croupier-muted', voice.muted ? '1' : '0'); renderSound();
   if (voice.muted) sfx.stopAmbience(); else sfx.startAmbience();
 };
@@ -648,15 +615,16 @@ function layoutSeats() {
   const CX = num('--arc-cx', 0.5), CY = num('--arc-cy', compactSeats ? 0.17 : 0.13);
   const RX = num('--arc-rx', 0.365), RY = num('--arc-ry', compactSeats ? 0.33 : 0.445);
   const boxes = playedBoxes();
-  const span = num('--arc-span', compactSeats ? 84 : 110);   // degrees of arc the boxes occupy
+  const span = compactSeats && tableScene ? 60 : num('--arc-span', compactSeats ? 84 : 110);   // degrees of arc the boxes occupy
   const step = span / (boxes.length - 1);
   seatEls.forEach((el, i) => el.classList.toggle('seat-off', !boxes.includes(i)));
   boxes.forEach((i, k) => {
     const phi = (90 + span / 2 - k * step) * Math.PI / 180;
     const fx = CX + RX * Math.cos(phi);
     const fy = CY + RY * Math.sin(phi);
-    seatEls[i].style.left = `${img.left + fx * img.width - table.left}px`;
-    seatEls[i].style.top = `${img.top + fy * img.height - table.top}px`;
+    const p = tableScene?.project(.83 * Math.cos(phi), .78 * Math.sin(phi));
+    seatEls[i].style.left = `${(p?.x ?? img.left + fx * img.width) - table.left}px`;
+    seatEls[i].style.top = `${(p?.y ?? img.top + fy * img.height) - table.top}px`;
     seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(fx - 0.5) * 61}deg`);
   });
 }
@@ -671,7 +639,7 @@ compactQuery.addEventListener('change', e => {
   }
   layoutSeats(); renderBets(); activeBoxHighlight();
 });
-addEventListener('resize', () => { layoutSeats(); activeBoxHighlight(); });
+addEventListener('resize', () => { tableScene?.resize(); layoutSeats(); activeBoxHighlight(); });
 document.querySelector('#tableimg')?.addEventListener('load', layoutSeats);
 
 // ---------- chip picker ----------
@@ -1393,71 +1361,79 @@ let bankAudio = null;
 // leads. Fetch and decode first, wait for the clip's first frame to be
 // PAINTED (the engine buffers up to 24 frames between decode and paint), then
 // wait that clip's measured voice delay. Only after all that may audio start.
-async function cutToTake(clip) {
-  await engine.fetchClip(clip).catch(() => {});
+async function cutToTake(clip, signal) {
+  await engine.fetchClip(clip);
+  signal.throwIfAborted();
   speaking = true;
   heldSpeakClip = clip;
-  const painted = new Promise(resolve => {
+  await new Promise((resolve, reject) => {
     const prev = engine.onPresentClip;
-    let fallback;
-    const done = () => { engine.onPresentClip = prev; clearTimeout(fallback); resolve(); };
-    engine.onPresentClip = k => { prev?.(k); if (k === clip) done(); };
-    if (engine.presentedClip === clip) return done();
-    // REAL timer, not rAF: rAF suspends in a hidden tab, and with the global
-    // speech queue one hung wait would mute every line for the whole session
-    fallback = setTimeout(done, 3000);
+    let timer;
+    const cleanup = () => {
+      if (engine.onPresentClip === listener) engine.onPresentClip = prev;
+      clearTimeout(timer); signal.removeEventListener('abort', cancelled);
+    };
+    const cancelled = () => { cleanup(); reject(new DOMException('Speech cancelled', 'AbortError')); };
+    const request = engine.interrupt(clip);
+    const listener = (key, requestId) => {
+      prev?.(key, requestId);
+      if (key === clip && requestId === request) { cleanup(); resolve(); }
+    };
+    engine.onPresentClip = listener;
+    signal.addEventListener('abort', cancelled, { once: true });
+    // Failure must not start an unpaired voice over a frozen/wrong take.
+    timer = setTimeout(() => { cleanup(); reject(new Error('Dealer frame did not arrive')); }, 3000);
   });
-  engine.interrupt(clip);
-  await painted;
-  // per-clip measured delay (pipeline/apply-lipsync.py); CSS var is the fallback
-  const lead = engine.index?.clips?.[clip]?.audioDelayMs
+  const delay = engine.index?.clips?.[clip]?.audioDelayMs
     ?? (Number(getComputedStyle(document.documentElement).getPropertyValue('--lipsync-offset')) || 0);
-  if (lead > 0) await new Promise(r => setTimeout(r, lead));
+  if (delay > 0) await abortableDelay(delay, signal);
+}
+
+let activeSpeech = null;
+function playRecorded(id, audio, text) {
+  if (voice.muted) return Promise.resolve();
+  const clip = `idle-1/speak/${id}`;
+  const matched = engineUp && !!engine.index?.clips?.[clip];
+  const controller = new AbortController();
+  activeSpeech = controller;
+  bankAudio = audio;
+  voice.playing = true;
+  clearTimeout(speakFor.t);
+  return playSpeech({
+    audio, signal: controller.signal,
+    prepare: async signal => {
+      await waitForAudio(audio, signal);
+      if (matched) await cutToTake(clip, signal);
+    },
+    onStart: () => {
+      clearTimeout(showCaption.t);
+      $('#caption').textContent = text;
+      $('#caption').classList.add('show');
+      console.info('[speech] start', id, matched ? 'matched' : 'voice-over');
+      if (matched) kfDebug.start(clip, audio);
+      // Unmatched lines remain voice-over; never reuse a mouth saying other words.
+    },
+    onFinish: () => {
+      if (activeSpeech !== controller) return;
+      activeSpeech = null;
+      console.info('[speech] end', id);
+      voice.playing = false; speaking = false; heldSpeakClip = null;
+      $('#caption').classList.remove('show');
+      kfDebug.stop();
+      if (matched && engine.presentedClip === clip) engine.interrupt(CLIP.idle);
+    },
+  });
 }
 
 function sayLine(id) {
   const line = veraBank[id];
   if (!line) return false;
   if (voice.muted) { showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70)); return true; }
-  speechTurn(() => new Promise(resolveTurn => {
-  showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70));
-
-  // A line has its OWN clip when one was baked from that exact audio; those are
-  // lip-synced to the words. Otherwise fall back to a generic speaking clip.
-  const own = `idle-1/speak/${id}`;
-  const clip = engine.index?.clips?.[own] ? own : null;
-
-  // interrupt, don't queue: a queued idle waits for the next clip boundary,
-  // which after a replay is a full clip away (the crossfade hides the cut)
-  const stop = () => { speaking = false; heldSpeakClip = null; kfDebug.stop(); if (engineUp) engine.interrupt(CLIP.idle); else trigger(CLIP.idle); resolveTurn(); };
-  setTimeout(stop, 20000);  // safety: a turn must always end
-
-  const startAudio = () => {
-    try {
-      bankAudio?.pause();
-      bankAudio = new Audio(`${VERA_BANK_URL}/${id}.mp3`);
-      bankAudio.volume = 0.95;
-      if (clip) kfDebug.start(clip, bankAudio);
-      bankAudio.onended = stop;
-      bankAudio.onerror = stop;
-      bankAudio.play().catch(stop);
-    } catch { stop(); }
-  };
-
-  (async () => {
-    try {
-      if (!clip) {                       // no matching clip: mouth movement only
-        heldSpeakClip = clipForDuration(5);
-        speaking = true;
-        if (heldSpeakClip) engine.interrupt(heldSpeakClip); else trigger(CLIP.gest);
-        startAudio();
-        return;
-      }
-      await cutToTake(clip);
-      startAudio();
-    } catch { stop(); }
-  })();
-  }));
+  speechTurn(() => {
+    const audio = new Audio(`${VERA_BANK_URL}/${id}.mp3`);
+    audio.volume = .95;
+    return playRecorded(id, audio, line.text);
+  });
   return true;
 }
 
@@ -1615,3 +1591,40 @@ window.__croupier = { engine, CLIP, supervisorMayLook, supEl, sayLine, veraBank,
 renderBets();
 setBanner('PLEASE PLACE BETS');
 void loadPlayer();
+
+
+// Optional rehearsal uses the exact in-game playback path, with no generation
+// or chat request. This lets every dealer and recorded line be checked locally.
+if (new URLSearchParams(location.search).has('rehearsal')) {
+  const panel = document.createElement('details'); panel.id = 'rehearsal'; panel.open = true;
+  panel.innerHTML = `<summary>Dealer rehearsal</summary>
+    <label>Dealer<select id="rehearsal-dealer" aria-label="Rehearsal dealer"></select></label>
+    <label>Recorded line<select id="rehearsal-line" aria-label="Recorded line"></select></label>
+    <p id="rehearsal-status" aria-live="polite">Choose a line to review.</p>
+    <button id="rehearsal-play">Play line</button><button id="rehearsal-repeat">Play twice</button>`;
+  $('#scene').appendChild(panel);
+  const dealerSelect = panel.querySelector('#rehearsal-dealer');
+  for (const d of Object.values(DEALERS)) dealerSelect.add(new Option(d.name, d.key));
+  dealerSelect.value = DEALER.key;
+  dealerSelect.onchange = () => { location.href = `?dealer=${dealerSelect.value}&rehearsal=1`; };
+  const lineSelect = panel.querySelector('#rehearsal-line');
+  const bank = await fetch(`${DEALER.base}/audio/en/bank.json`).then(r => r.json());
+  for (const id of new Set([...VOICE_LINES, ...Object.keys(bank)])) {
+    if (voice.dead.has(id) && !bank[id]) continue;
+    lineSelect.add(new Option(id.replaceAll('_', ' '), id));
+  }
+  const status = panel.querySelector('#rehearsal-status');
+  const update = () => {
+    const id = lineSelect.value;
+    const matched = !!engine.index?.clips?.[`idle-1/speak/${id}`];
+    status.textContent = (bank[id]?.text ?? LINES[id] ?? id) + (matched ? ' — matching clip available.' : ' — voice only; matching clip missing.');
+  };
+  lineSelect.onchange = update; update();
+  const play = () => {
+    const id = lineSelect.value;
+    voice.muted = false; soundBtn.classList.remove('muted');
+    return speechTurn(() => playRecorded(id, new Audio(`${DEALER.base}/audio/en/${id}.mp3`), bank[id]?.text ?? LINES[id] ?? id));
+  };
+  panel.querySelector('#rehearsal-play').onclick = play;
+  panel.querySelector('#rehearsal-repeat').onclick = () => { play(); play(); };
+}
