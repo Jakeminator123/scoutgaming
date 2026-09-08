@@ -11,7 +11,22 @@ Updated 8 September 2026. Read this alongside `ENVIRONMENT-RESTORATION.md` and G
 - Four dealers: `?dealer=vera`, `?dealer=astrid`, `?dealer=amira`, `?dealer=mei`.
 - Private recovered conversation: `/Users/solvifyab/Desktop/Scout-Gaming/.codex-audit/casino-conversation-recovered-2026-09-08.md`.
 - Private checkpoints: `/Users/solvifyab/Desktop/Croupier-Backups/`. The Git bundle contains committed history. A separate working-media-and-code archive preserves nonignored modified/untracked product assets and scripts; the user database and ignored files remain only in the original workspace.
-- No remote push or account invitation has been performed by this task. Sharing an account does not by itself copy this Mac's workspace to another computer.
+- Sharing an account does not by itself copy this Mac's workspace to another computer. Use the private GitLab branch below. No account invitation has been sent by this task.
+
+## Open this project on John's computer
+
+John needs access to the private `scout-gg/croupier` GitLab project and a Git client authenticated to GitLab. A GitLab account alone does not grant project access. In a terminal:
+
+```sh
+git clone --branch codex/restore-casino-environment git@gitlab.com:scout-gg/croupier.git
+cd croupier
+git config --local core.hooksPath .githooks
+sh web/preview.sh
+```
+
+Use a Node version with `node:sqlite` support. The media audit also needs `ffprobe` from FFmpeg. No npm install is needed for the local server. Open the cloned `croupier` folder as a local project in the Codex desktop app, then open `http://127.0.0.1:4173/` and ask Codex to read `AGENTS.md` and this handoff before editing.
+
+The clone contains the deployed dealer media and code. It creates a new local demo database; Kevin's accounts, wallet data and provider credentials are not transferred. Unfinished source media and the full recovered conversation are in Kevin's private checkpoint, not the GitLab branch. The committed handoff preserves the working context needed to start gameplay improvements.
 
 ## Product direction and completed foundation
 
