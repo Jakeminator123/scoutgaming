@@ -17,6 +17,8 @@ export class DealerEngine {
     this.frameTags = new Map();
     this.handsFrameTags = new Map();
     this.requestSequence = 0;
+    this.frameListeners = new Set();
+    this.presentation = null;
     this.ts = 0;                // monotonic self-assigned timestamp (us)
     this.running = false;
     this.currentClip = null;
@@ -142,6 +144,17 @@ export class DealerEngine {
     return buf;
   }
 
+  waitForFrame(key, frame, { afterCycle = -1, timeoutMs = 9000 } = {}) {
+    const matches = p => p?.key === key && p.frame >= frame && p.cycle > afterCycle;
+    if (matches(this.presentation)) return Promise.resolve(this.presentation);
+    return new Promise(resolve => {
+      const done = value => { clearTimeout(timer); this.frameListeners.delete(listener); resolve(value); };
+      const listener = p => { if (matches(p)) done(p); };
+      const timer = setTimeout(() => done(null), timeoutMs);
+      this.frameListeners.add(listener);
+    });
+  }
+
   // Queue an action clip; it plays at the next clip boundary.
   trigger(key) {
     if (!this.index.clips[key]) { this.log(`trigger ignored, unknown clip: ${key}`); return; }
@@ -204,7 +217,7 @@ export class DealerEngine {
           if (buffered >= 24) { await new Promise(r => setTimeout(r, 40)); continue; }
           if (!cur || cur.i >= cur.meta.frames.length) {
             const { key, request } = this.nextClip();
-            cur = { key, request, meta: this.index.clips[key], buf: await this.fetchClip(key), i: 0 };
+            cur = { key, request, meta: this.index.clips[key], buf: await this.fetchClip(key), i: 0, cycle: this.ts };
             // matte rides along frame-for-frame when this clip has one; a
             // missing matte file must not wedge the feeder, the clip just
             // plays without the hands layer
@@ -218,7 +231,7 @@ export class DealerEngine {
             this.decodingClip = key;
           }
           const [off, size] = cur.meta.frames[cur.i];
-          this.frameTags.set(this.ts, { key: cur.key, first: cur.i === 0, request: cur.request });
+          this.frameTags.set(this.ts, { key: cur.key, first: cur.i === 0, request: cur.request, frame: cur.i, cycle: cur.cycle });
           this.decoder.decode(new EncodedVideoChunk({
             type: cur.i === 0 ? 'key' : 'delta',
             timestamp: this.ts,
@@ -256,7 +269,7 @@ export class DealerEngine {
     const drain = () => {
       const now = performance.now();
       while (now >= next && this.display.length) {
-        const { f, key, first, request } = this.display.shift();
+        const { f, key, first, request, frame, cycle } = this.display.shift();
         // a splice is a hard cut within the pose family; a ~200ms crossfade
         // hides the residual micro-pose jump (worst on speech interrupts,
         // invisible on well-matched boundaries)
@@ -277,6 +290,8 @@ export class DealerEngine {
           this.fadeTicks--;
         }
         this.presentHands(f, key);
+        this.presentation = { key, frame, cycle, request };
+        for (const listener of [...this.frameListeners]) listener(this.presentation);
         f.close();
         // presentedClip is the truth for anything that must line up with what
         // the viewer can actually see - audio, above all

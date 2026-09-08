@@ -25,7 +25,7 @@ const DEALERS = {
   vera:   { key: 'vera',   base: 'dealer',         anchor: 0.855, name: 'Vera' },
   astrid: { key: 'astrid', base: 'dealers/astrid', anchor: 0.878, name: 'Astrid',
             scene: 'dealers/astrid/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
-            table: 'dealers/astrid/table.png' },
+            table: 'dealers/astrid/table.png', dealingCues: 'dealers/astrid/dealing-cues.json' },
   amira:  { key: 'amira', base: 'dealers/amira', anchor: 0.87, name: 'Amira',
             scene: 'dealers/amira/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
             table: 'dealers/amira/table.png' },
@@ -48,6 +48,14 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
   $('#chat-input')?.setAttribute('placeholder', `Talk to ${DEALER.name}…`);
   const disclosure = document.querySelector('#gate-panel p');
   if (disclosure) disclosure.textContent = disclosure.textContent.replace('Vera', DEALER.name);
+}
+
+let dealingCues = null;
+if (DEALER.dealingCues) {
+  try {
+    const response = await fetch(DEALER.dealingCues);
+    if (response.ok) dealingCues = await response.json();
+  } catch (error) { console.warn('[deal] hand cues unavailable', error.message); }
 }
 
 let tableScene = null;
@@ -977,12 +985,12 @@ function cardEl(card, faceDown = false) {
   el.innerHTML = `<div class="corner">${card.r}<br>${card.s}</div><div class="pip">${card.s}</div>`;
   return el;
 }
-function flyFromShoe(el, card, faceDown) {
+function flyFromShoe(el, card, faceDown, cardMotion) {
   if (tableScene && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const target=el.getBoundingClientRect();
     const dealerRect=$('#dealer').getBoundingClientRect();
     el.style.visibility='hidden';
-    return tableScene.dealCard({target,card,faceDown,handoff:{x:dealerRect.x+dealerRect.width*.55,y:dealerRect.y+dealerRect.height*.93}})
+    return tableScene.dealCard({target,card,faceDown,handoff:cardMotion?.handoff ?? {x:dealerRect.x+dealerRect.width*.55,y:dealerRect.y+dealerRect.height*.93},duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
       .catch(error=>console.warn('[deal]',error.message)).finally(()=>{el.style.visibility='';});
   }
   const fallback = $('#shoe2d').getBoundingClientRect();
@@ -1072,7 +1080,7 @@ async function animateSplit(bHand) {
     updateBadge(conts[k], h.cards);
     await sleep(80);
   }
-  dealingActive = false;
+  endDealingTake();
 }
 
 // rebuild one box's card DOM from round state (used right after a split: the
@@ -1095,7 +1103,7 @@ function renderBoxHands(boxIdx) {
     updateBadge(cont, hand.cards);
   });
 }
-function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDraw } = {}) {
+function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDraw, motion } = {}) {
   if (shoeState && shoeDraw) showShoe({ ...shoeState, dealt:shoeDraw, remaining:shoeState.total-shoeDraw, cutReached:shoeDraw>=shoeState.cutAfter });
   sfx.play('deal');
   const el = cardEl(card, faceDown);
@@ -1106,11 +1114,33 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
   container.style.setProperty('--cn', total);
   container.style.setProperty('--fan', Math.min(1, 3.2 / Math.max(2, total)).toFixed(3));
   container.appendChild(el);
-  el.dealt = flyFromShoe(el, card, faceDown);
+  el.dealt = flyFromShoe(el, card, faceDown, motion);
   return el;
 }
-async function deliverCard(...args) {
-  await dealCardTo(...args).dealt;
+async function deliverCard(container, card, options={}) {
+  let motion;
+  if (dealingActive && dealingCues && engineUp && !document.hidden) {
+    const current=engine.presentation;
+    const lead=dealingCues.leadFrames;
+    const cue=dealingCues.cues.find(c => current?.key===CLIP.deal && c.frame-lead > current.frame)
+      ?? dealingCues.cues[0];
+    const afterCycle=current?.key===CLIP.deal && cue.frame-lead<=current.frame ? current.cycle : -1;
+    const shown=await engine.waitForFrame(CLIP.deal,cue.frame-lead,{afterCycle});
+    if (shown) {
+      console.info('[deal] hand cue', cue.frame, 'prepared at', shown.frame, 'cycle', shown.cycle);
+      const r=$('#dealer').getBoundingClientRect();
+      motion={handoff:{x:r.x+r.width*cue.x,y:r.y+r.height*cue.y},duration:dealingCues.durationMs,releaseFraction:dealingCues.releaseFraction};
+    }
+  }
+  await dealCardTo(container,card,{...options,motion}).dealt;
+}
+
+function endDealingTake() {
+  dealingActive=false;
+  if(engineUp && !speaking && engine.presentedClip===CLIP.deal) {
+    const returning='idle-1/actions/action-return';
+    engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);
+  }
 }
 function revealHole(container, card) {
   const back = container.querySelector('.card.back');
@@ -1224,7 +1254,7 @@ async function dealSequence() {
   await deliverCard($('#dealer-cards'), null, { faceDown: true, shoeDraw:round.holeDraw });
   await sleep(PACE);
 
-  dealingActive = false;
+  endDealingTake();
   // side bets resolve on the deal, like the real game
   let sideWin = false;
   live.forEach((b, i) => {
@@ -1308,7 +1338,7 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
       await beginDealingTake();
       await deliverCard(boxContainer(liveIdx), hand.cards.at(-1));
       updateBadge(boxContainer(liveIdx), hand.cards);
-      dealingActive = false;
+      endDealingTake();
       if (handValue(hand.cards).total > 21) await voice.say('bust', { force:true });
       await sleep(80);
     }
@@ -1344,7 +1374,7 @@ async function dealerRevealChoreo() {
     updateBadge(dc, round.dealer.slice(0, i + 1));
     await sleep(80);
   }
-  dealingActive = false;
+  endDealingTake();
 }
 
 async function finish() {
@@ -1428,7 +1458,7 @@ async function finish() {
   if (totalWin > 0) void veraEvent(`Round settled: ${who} collected ${fmt(totalWin)} this round${anyPlayerBJ ? ' including a natural blackjack' : ''}.`);
   else void veraEvent(`Round settled: the house took this one; ${who} won nothing back.`, { minGap: 45000 });
   await Promise.all([sleep(1800), speechChain]);
-  dealingActive = false;
+  endDealingTake();
   round = null; busy = false;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
   undoStack = [];
