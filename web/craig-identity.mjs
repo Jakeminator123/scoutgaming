@@ -8,6 +8,7 @@ export function craigIdentity(db) {
       const matches=db.prepare('SELECT id,username,salt,hash FROM users WHERE lower(username)=? OR lower(email)=?').all(login,login);
       const u=matches.length===1 ? matches[0] : null;
       const computed=scryptSync(password,u?.salt??'invalid-craig-account',64);
+      if(u && !u.hash)throw Error('Account setup is incomplete. Finish your Scout invitation before signing in.');
       if(!u?.hash || !/^[a-f0-9]{128}$/i.test(u.hash) || !timingSafeEqual(computed,Buffer.from(u.hash,'hex')))return null;
       return {id:String(u.id),name:u.username,stamp:fingerprint(u)};
     },
