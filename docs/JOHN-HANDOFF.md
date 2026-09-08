@@ -45,6 +45,8 @@ The backend owns an eight-deck shoe, one burn, a 75% cut-card threshold, end-of-
 
 All existing speech takes have calibration and enough total video duration for audio plus delay. All 90 main streams are checked for index integrity and B-frame compatibility. These checks cannot prove correct phonemes. The initial hash baseline records the current imperfect state; it is NOT an approved-quality baseline.
 
+**Latest user review: Astrid’s existing action looks like shuffling and is rejected as realistic dealing.** See `ASTRID-DEALING-RETAKE.md` for the verified source defect and replacement contract. No replacement take has been generated.
+
 Astrid has four measured fingertip release cues. Cards wait for painted video frames, and the dealer returns to rest after the last delivery. This improves timing, but does not create missing fingers or a genuine filmed shoe pickup. Amira/Mei do not have dealing footage. Do not describe the entire roster as hand-synced.
 
 Generation remains blocked: the connected Higgsfield Team workspace reported 3.02 credits after Kevin said he topped up. The available Chrome profile was signed out. Identify the credited workspace/account. Unlimited website passes do not cover MCP/CLI. Do not purchase another pass automatically. The earlier 180-credit estimate covered two Astrid speech takes with one retry each, not all dealer hands.
