@@ -82,12 +82,13 @@ const engine = new DealerEngine($('#dealer'), DEALER.base, {
 let engineUp = false;
 let speaking = false;
 let dealingActive = false;
+const canUseDealingTake = () => engineUp && dealingCues?.status !== 'rejected' && !!engine.index?.clips?.[CLIP.deal];
 // Speaking clips with their real lengths. Cutting between different clips
 engine.onIdlePick = () => {
   // A recorded sentence is a single take. Decode-ahead must never replay its
   // first words over the end of the audio. The roster audit checks coverage.
   if (speaking) return CLIP.idle;
-  if (dealingActive && engine.index.clips[CLIP.deal]) return CLIP.deal;
+  if (dealingActive && canUseDealingTake()) return CLIP.deal;
   const extras = [CLIP.headTilt, CLIP.gest].filter(k => engine.index.clips[k]);
   if (extras.length && Math.random() < 0.25) return extras[Math.floor(Math.random() * extras.length)];
   return CLIP.idle;
@@ -950,7 +951,10 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
     const target=el.getBoundingClientRect();
     const dealerRect=$('#dealer').getBoundingClientRect();
     el.style.visibility='hidden';
-    return tableScene.dealCard({target,card,faceDown,handoff:cardMotion?.handoff ?? {x:dealerRect.x+dealerRect.width*.55,y:dealerRect.y+dealerRect.height*.93},duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
+    const handoff = canUseDealingTake()
+      ? cardMotion?.handoff ?? {x:dealerRect.x+dealerRect.width*.55,y:dealerRect.y+dealerRect.height*.93}
+      : null;
+    return tableScene.dealCard({target,card,faceDown,handoff,duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
       .catch(error=>console.warn('[deal]',error.message)).finally(()=>{el.style.visibility='';});
   }
   const fallback = $('#shoe2d').getBoundingClientRect();
@@ -1079,7 +1083,7 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
 }
 async function deliverCard(container, card, options={}) {
   let motion;
-  if (dealingActive && dealingCues && engineUp && !document.hidden) {
+  if (dealingActive && dealingCues && canUseDealingTake() && !document.hidden) {
     const current=engine.presentation;
     const lead=dealingCues.leadFrames;
     const cue=dealingCues.cues.find(c => current?.key===CLIP.deal && c.frame-lead > current.frame)
@@ -1160,8 +1164,11 @@ $('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await en
 async function beginDealingTake() {
   try {
   await speechChain;
-  dealingActive = true;
-  if (!engineUp || !engine.index.clips[CLIP.deal]) return;
+  dealingActive = canUseDealingTake();
+  if (!dealingActive) {
+    console.info('[deal] No usable filmed action; direct shoe delivery');
+    return;
+  }
   await engine.fetchClip(CLIP.deal);
   const request=engine.interrupt(CLIP.deal);
   await new Promise(resolve=>{

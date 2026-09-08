@@ -1,4 +1,6 @@
 {
+  "status": "rejected",
+  "reason": "User rejected this take: palms move over existing cards; no shoe pickup. Disabled in gameplay until replaced.",
   "clip": "idle-1/actions/action-deal",
   "fps": 24,
   "leadFrames": 3,

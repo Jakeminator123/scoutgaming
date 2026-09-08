@@ -6,6 +6,12 @@ User review, 8 September 2026: “her handmovement looks like she is shuffling n
 
 The currently indexed `idle-1/actions/action-deal` moves both palms over cards that are already on the tabletop. It does not contain a visible shoe pickup. Fingertips leave the source frame. The measured release cues improve timing but cannot turn this action into authentic dealing. Do not mark the existing take approved or copy its motion to other dealer identities. The existing asset is retained for comparison; no replacement was generated in this review.
 
+## Approved visual direction
+
+Kevin approved the four-panel concept on 8 September 2026: pickup, guide, release, rest. The saved storyboard is `reference/astrid-dealing-approved-concept.png`. It is an art-direction reference, not an implemented animation or proof of exact grip geometry.
+
+The rejected Astrid action is now disabled for gameplay through its cue status. Initial deals and hits use direct shoe-to-seat card animation with the dealer resting until an approved replacement is integrated. This is a temporary fallback, not completion of the hand-action requirement. Speech assets and their calibration are unchanged.
+
 ## Required replacement
 
 Use the same Astrid identity, outfit, lighting, camera and room. Stage a single-card action with enough lower and side framing to contain both hands, the shoe outlet and the full delivery path. Preserve a matching resting pose at both ends. Keep her mouth closed throughout the action so dealing does not introduce another speech mismatch.
