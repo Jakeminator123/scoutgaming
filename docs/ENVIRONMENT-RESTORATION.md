@@ -41,3 +41,19 @@ The stream builder still requires the documented calibration pass after rebuilt 
 - Generated background source remains at `/Users/solvifyab/.codex/generated_images/01a07fda-b136-7c40-a3f1-3156faac4d1f/exec-ef0a5481-f909-4e62-9973-61f1f124e987.png`.
 
 The room remains a composited broadcast scene: filmed dealer, photographic background and shoe, plus a real mesh table. It has no free-moving camera. These visual changes do not establish production readiness or repair every recorded mouth take.
+
+## Persistent shoe and dealing — 8 September, follow-up
+
+The current shoe replaces the earlier photographic billboard with geometry (`shoe-model.mjs`): transparent acrylic walls and edges, sloping card pack, printed card back, follower, exposed card edges and separate red cut card. The stack shrinks with each server draw; the cut card advances to the outlet and is pulled clear when reached.
+
+`web/shoe-game.mjs` is authoritative for a demo table per player profile. Eight decks (416 cards), one face-down burn on a fresh shoe, cut reached at 312 removed cards (75%, including the burn). Finish the current round; reshuffle only when starting the next round after collection. These are this demo's configured rules (`SHOE_RULES`), not a claim of universal casino requirements. The cut is a marker, never a playable card. An exhausted shoe raises an error and rolls back the command rather than inventing a card or shuffling mid-round.
+
+`/api/table` persists the private shuffled order, round, revision and last command in SQLite alongside each wallet change in one transaction. Commands validate phase, legal action, stakes and funds. Request IDs make retries idempotent; revisions reject stale actions from another tab. Responses exclude the future shoe, burn identity and unrevealed hole card. Client wallet overwrites are rejected after a table is created. Currency changes wait until the round is collected. Refresh resumes an unpaid round and cannot silently redeal it.
+
+The browser consumes round snapshots and animates every visible draw from the modeled outlet in screen coordinates. This avoids the previous hidden `#shoe2d` origin and transformed-seat coordinate error. Initial cards are paced separately; split draws, doubles, hits and dealer draws share this path. A hole-card reveal does not consume another card. The new-shoe interlude blocks betting while the shoe refills. No recorded rule audio was regenerated: obsolete fresh-every-round/certified-RNG takes are excluded from the live bank. The disclosure and dealer prompt now describe the server-shuffled demo.
+
+Validation: 197 shoe/service checks plus deterministic persisted split, double, insurance and duplicate-collection checks. Existing 77 split checks and 50,000-round sweep passed; 10 bust-settlement checks and six speech/decoder checks passed. Browser: played a server round (411 cards after four dealt from 415; hit to 410), refreshed at player 17/dealer upcard 8 with balance 990 unchanged, stood and completed settlement. Checked full, half and reached-cut model states in an isolated temporary preview, then removed that preview. No browser warnings/errors observed.
+
+Rule reference: Pennsylvania's published blackjack rules require reshuffling after the cut card is reached and the current round completes: https://www.pacodeandbulletin.gov/secure/pacode/data/058/chapter633a/s633a.5.html and https://www.pacodeandbulletin.gov/secure/pacode/data/058/chapter633a/s633a.7.html . The 75% placement and face-down burn are explicit demo configuration choices.
+
+Limits: this remains demo money and the existing demo player-ID identity scheme, not a certified RGS or authenticated real-money wallet. Each profile has its own table, not a synchronized multiplayer broadcast table. The filmed dealer does not yet physically grip the animated cards; the shoe-to-hand animation is rendered separately. The existing lip-sync limitations still apply.

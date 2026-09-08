@@ -1,7 +1,6 @@
-// Demo-mode blackjack round engine (client-side for this demo only — in the
-// real product the server decides everything; this module exists so the
-// recreation is playable without an RGS).
-// Rules per the build scope: 8 decks reshuffled every round, S17, American
+// Shared demo blackjack rules. The web server owns the persistent shoe;
+// standalone rounds default to a fresh shoe for simulations and tests.
+// Rules: eight-deck cut-card shoe, S17, American
 // hole card with peek, blackjack 3:2, insurance 2:1, double any two, split to
 // 4 hands (aces get one card each), double after split, no surrender, up to
 // 7 boxes. Side bets, settled at deal time: Perfect Pairs
@@ -85,8 +84,8 @@ export class Round {
   // starts as one hand per live box and grows as boxes are split. Every hand
   // carries `box` (its index into this.boxes) and `splitFrom` (null until the
   // hand takes part in a split, then the box index).
-  constructor(boxes) {
-    this.shoe = freshShoe();
+  constructor(boxes, shoe = freshShoe()) {
+    this.shoe = shoe;
     this.boxes = boxes.map((box, i) => {
       const o = typeof box === 'object' && box !== null ? box : { main: box };
       return {
@@ -103,7 +102,11 @@ export class Round {
     this.events = [];
   }
   emit(e, data) { this.events.push({ e, ...data }); }
-  draw() { return this.shoe.pop(); }
+  draw() {
+    const card = this.shoe.draw ? this.shoe.draw() : this.shoe.pop();
+    if (!card) throw new Error('Shoe exhausted');
+    return card;
+  }
 
   deal() {
     // right-to-left off the shoe: the rightmost seat receives first

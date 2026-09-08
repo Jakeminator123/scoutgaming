@@ -1,3 +1,4 @@
+import { makeShoe } from './shoe-model.mjs';
 import * as THREE from './vendor/three/three.module.js';
 
 // Fixed camera: the dealer film, mesh rail and DOM hit targets share one
@@ -30,11 +31,8 @@ export function createTableScene(canvas, dealer) {
   const carpet = new THREE.MeshStandardMaterial({ map: carpetTexture(), roughness: 1, color: '#9da9ad' });
   const legMaterial = new THREE.MeshStandardMaterial({ color: '#201912', roughness: .26, metalness: .18 });
   const footMaterial = new THREE.MeshStandardMaterial({ color: '#8e7957', roughness: .3, metalness: .75 });
-  const shoeMap = new THREE.TextureLoader().load('assets/shoe.png', () => { if (group) render(); });
-  shoeMap.colorSpace = THREE.SRGBColorSpace;
-  const shoeMaterial = new THREE.MeshBasicMaterial({ map: shoeMap, transparent: true, depthWrite: false, toneMapped: false });
   const contact = new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false, opacity: .6 });
-  let group, width, height, rx, depth, rear;
+  let group, width, height, rx, depth, rear, shoeModel, shoeState;
   function mesh(geometry, material, y = 0) {
     const m = new THREE.Mesh(geometry, material); m.position.y = y; m.castShadow = true; m.receiveShadow = true; group.add(m); return m;
   }
@@ -60,6 +58,7 @@ export function createTableScene(canvas, dealer) {
     Object.assign(key.shadow.camera, { left: -width, right: width, top: height, bottom: -height, near: 1, far: 5000 });
     key.shadow.camera.updateProjectionMatrix();
     if (group) {
+      shoeModel?.dispose();
       scene.remove(group);
       group.traverse(o => { o.geometry?.dispose(); });
     }
@@ -114,10 +113,10 @@ export function createTableScene(canvas, dealer) {
     const shadowGeo = new THREE.PlaneGeometry(size * .72, size * .72); shadowGeo.rotateX(-Math.PI / 2);
     const shadow = mesh(shadowGeo, contact, 3); shadow.castShadow = false;
     shadow.position.x = shoeX; shadow.position.z = depth * .20;
-    const shoe = new THREE.Mesh(new THREE.PlaneGeometry(size, size), shoeMaterial);
-    shoe.quaternion.copy(camera.quaternion);
-    shoe.position.set(shoeX, size * .25, depth * .18);
-    group.add(shoe);
+    shoeModel=makeShoe(size,shoeState,render);
+    shoeModel.root.position.set(shoeX,5,depth*.17);
+    shoeModel.root.rotation.y=-.62;
+    group.add(shoeModel.root);
   }
   function project(x, z) {
     const p = new THREE.Vector3(x * rx, 1, z * depth).applyMatrix4(group.matrixWorld).project(camera);
@@ -129,7 +128,13 @@ export function createTableScene(canvas, dealer) {
   });
   canvas.addEventListener('webglcontextrestored', () => { resize(); document.documentElement.classList.add('table-3d'); });
   resize();
-  return { resize, project, render };
+  return { resize, project, render,
+    setShoe(state) { shoeState=state; shoeModel?.update(state); render(); },
+    shoeOutlet() {
+      const p=shoeModel.outlet.getWorldPosition(new THREE.Vector3()).project(camera);
+      return {x:(p.x+1)*width/2,y:(1-p.y)*height/2};
+    }
+  };
 }
 
 function feltTexture(color) {

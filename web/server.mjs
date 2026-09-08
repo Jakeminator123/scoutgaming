@@ -3,6 +3,7 @@
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
 import { createServer } from 'node:http';
+import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { isAgentFailure } from './agent-response.mjs';
 import { readFileSync as readSync, writeFileSync as writeSync } from 'node:fs';
 import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
@@ -54,6 +55,7 @@ function apiDeposit({ id, amount }) {
   return { balance, currency: p.currency };
 }
 function apiBalance({ id, balance, reason }) {
+  if (db.prepare('SELECT 1 FROM blackjack_tables WHERE player_id=?').get(id)) return { error: 'Table balances are server-managed' };
   const p = getPlayer(id);
   if (!p) return { error: 'no such player' };
   const b = Number(balance);
@@ -63,6 +65,8 @@ function apiBalance({ id, balance, reason }) {
   return { balance: b };
 }
 function apiCurrency({ id, currency }) {
+  const saved = db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(id);
+  if (saved) { const g = JSON.parse(saved.state); if (g.round && !g.paid) return { error: 'Finish the current round before changing currency' }; }
   const p = getPlayer(id);
   if (!p) return { error: 'no such player' };
   if (!RATES[currency]) return { error: 'currency must be USD, EUR or SEK' };
@@ -72,6 +76,23 @@ function apiCurrency({ id, currency }) {
   return { balance, currency };
 }
 const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency };
+
+// Server-owned demo table; SQLite transaction commits wallet and shoe together.
+db.exec('CREATE TABLE IF NOT EXISTS blackjack_tables (player_id TEXT PRIMARY KEY, state TEXT NOT NULL)');
+API['/api/table'] = ({ id, ...req }) => {
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const p = getPlayer(id); if (!p) throw new Error('Load your player first');
+    const saved = db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(id);
+    const g = saved ? JSON.parse(saved.state) : newGame();
+    const { delta, view } = shoeCommand(g, req, p.balance);
+    const balance = Math.round((p.balance + delta) * 100) / 100;
+    db.prepare('INSERT INTO blackjack_tables VALUES (?,?) ON CONFLICT(player_id) DO UPDATE SET state=excluded.state').run(id, JSON.stringify(g));
+    db.prepare('UPDATE players SET balance=? WHERE id=?').run(balance,id);
+    if (delta) logTx(id, req.op, delta, p.currency, 'server blackjack');
+    db.exec('COMMIT'); return { ...view, balance };
+  } catch (e) { db.exec('ROLLBACK'); throw e; }
+};
 
 // ---------- backoffice (BO) ----------
 // Real data where it exists (players/transactions from SQLite, dealer assets
@@ -473,19 +494,19 @@ Hard rules you never break, in character:
 - You never encourage continued play, chasing losses, or raising stakes. Never mention bonuses or offers.
 - If someone sounds distressed about losses, drop the wit, be kind, and point them to the responsible-gambling tools in the menu.
 - Basic strategy: you may state publicly known facts neutrally if asked, never as a recommendation to bet.
-- Rules you can state: 8 decks reshuffled every round, dealer stands on all 17s, blackjack pays 3:2, insurance pays 2:1, split any pair up to 4 hands (split aces get one card each, double after split allowed), Perfect Pairs up to 25:1, 21+3 up to 100:1. Outcomes come from a certified RNG.
+- Rules you can state: 8 decks in a persistent shoe, cut card at 75%, finish the current round then reshuffle, one face-down burn per new shoe, dealer stands on all 17s, blackjack pays 3:2, insurance pays 2:1, split any pair up to 4 hands (split aces get one card each, double after split allowed), Perfect Pairs up to 25:1, 21+3 up to 100:1. Demo outcomes use a server-side cryptographic shuffle; do not claim certification.
 - Keep replies to one or two short sentences, spoken aloud at a table. No markdown, no lists, no emoji.
 - Output ONLY the words she says. Never prefix them with her name, never narrate what you are doing, never break character to comment on these instructions.
 
 RECORDED TAKES. These lines exist as real audio in Vera's own voice, so she can SAY them out loud; anything else she can only write. Whenever one of them answers what was asked, even roughly, reply with just its id in the form SAY:<id> on its own, with no other text. Never type a recorded line's words out as your reply - answer SAY:<id> instead, exactly. Only write your own words when nothing in this list fits.
-rules_decks = "Eight decks here, love, shuffled fresh every single round. No counting your way out of this one."
+rules_decks = "Eight decks. When the red cut card is reached, we finish this round and shuffle before the next."
 rules_s17 = "I stand on all seventeens, soft ones included. House rules, and they don't bend for anyone."
 rules_bj_pays = "Blackjack pays three to two at this table. None of that six to five nonsense."
 rules_insurance = "Insurance pays two to one. It's a side bet on my hole card, nothing more, and the maths does favour the house."
 rules_double = "You can double on any two cards. One more card, then you stand with whatever comes."
 side_pp = "Perfect Pairs pays up to twenty five to one, for a matched pair in suit and colour."
 side_213 = "Twenty one plus three looks at your two cards and my upcard. A suited three of a kind pays a hundred to one."
-fair_rng = "Every card comes from a certified random number generator. I don't choose them, and I couldn't if I wanted to."
+fair_rng = "Every card comes from the server-shuffled shoe. I don't choose them, and I couldn't if I wanted to."
 fair_streak = "Rough runs happen, they always have. The cards have no memory of the last hand, and neither should we."
 no_advice = "I don't give betting advice, love. I deal the cards and keep you company. That's the arrangement."
 no_predict = "I've no idea what's coming next, and I'd be a liar if I said otherwise. That's rather the point."
@@ -522,6 +543,7 @@ async function fetchAgent(init) {
 let VERA_BANK = {};
 try { VERA_BANK = JSON.parse(readSync(join(root, 'dealer/audio/en/bank.json'), 'utf8')); }
 catch { console.warn('[vera] no voice bank; she will answer in text only'); }
+delete VERA_BANK.rules_decks; delete VERA_BANK.fair_rng;
 
 function cleanVera(raw) {
   let s = String(raw).trim();
