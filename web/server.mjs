@@ -2,6 +2,7 @@
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
+import { craigIdentity } from './craig-identity.mjs';
 import { playerAuth } from './player-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
@@ -633,7 +634,7 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
   return css;
 }
 
-const auth=playerAuth(db,apiPlayer);
+const auth=playerAuth(db,apiPlayer,craigIdentity(boDb));
 createServer(async (req, res) => {
   try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
   const pathname=new URL(req.url,'http://local').pathname;
