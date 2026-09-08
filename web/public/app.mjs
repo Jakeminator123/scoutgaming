@@ -1,3 +1,4 @@
+import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
 import { handValue } from './blackjack.mjs';
@@ -511,7 +512,7 @@ let balance = 1000;
 let player = null;
 async function api(path, payload) {
   const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  if(r.status===401) { location.replace('/login.html'); throw new Error('Sign in required'); }
+  if(r.status===401) { player=null; throw new Error('Sign in required'); }
   const out = await r.json().catch(() => ({}));
   if (!r.ok || out.error) throw new Error(out.error ?? `api ${r.status}`);
   return out;
@@ -547,8 +548,19 @@ async function tableCommand(op, extra = {}) {
   tableVersion = out.version;
   return out;
 }
+async function ensureLogin(purpose) {
+  await tableReady;
+  const session=await fetch('/api/auth/session').then(r=>r.json());
+  if(session.authenticated && player)return true;
+  player=null;
+  if(!session.authenticated && !await requestLogin(purpose))return false;
+  await prepareTable();return !!player;
+}
 function tableError(e) { busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets(); }
 async function prepareTable() {
+  const session=await fetch('/api/auth/session').then(r=>r.json());
+  $('#sign-out').hidden=!session.authenticated;
+  if(!session.authenticated){player=null;busy=false;renderBets();return null;}
   const out = await tableCommand('state'); showShoe(out.shoe);
   if (out.round) {
     bets = out.round.boxes.map(b => ({main:b.stake,pp:b.pp,tp:b.tp}));
@@ -879,7 +891,7 @@ const setDeposit = amt => {
   depositAmt = amt;
   $('#cashier-pay').textContent = Number.isFinite(amt) && amt >= 1 ? `ADD ${fmt(amt)}` : 'ADD FUNDS';
 };
-$('#add-funds').onclick = () => { refreshCashierAmounts(); $('#cashier').hidden = false; };
+$('#add-funds').onclick = async () => { try { if(!await ensureLogin('Sign in to add demo funds.'))return; refreshCashierAmounts(); $('#cashier').hidden = false; } catch(e){hint('SIGN IN',e.message);} };
 $('#cashier-close').onclick = () => { $('#cashier').hidden = true; };
 $('#cashier').onclick = e => { if (e.target.id === 'cashier') $('#cashier').hidden = true; };
 // deposit presets scale with the table: a VIP box cannot be funded $500 at a time
@@ -933,6 +945,7 @@ $('#cc-num').addEventListener('input', e => {
   e.target.value = d.replace(/(.{4})/g, '$1 ').trim();
 });
 $('#cashier-pay').onclick = async () => {
+  try {if(!await ensureLogin('Sign in to add demo funds.'))return;}catch(e){hint('SIGN IN',e.message);return;}
   if ($('#cc-num').value.replace(/\D/g, '').length < 12) { $('#cc-num').classList.add('bad'); return; }
   const depositCap = Math.max(100000, table.max * 100);   // must be able to fund the table you chose
   if (!(Number.isFinite(depositAmt) && depositAmt >= 1 && depositAmt <= depositCap)) {
@@ -942,9 +955,8 @@ $('#cashier-pay').onclick = async () => {
   }
   const amt = depositAmt;
   try {
-    if (player) balance = (await api('/api/deposit', { id: player.id, amount: amt })).balance;
-    else { balance += amt; }
-  } catch { balance += amt; }
+    balance = (await api('/api/deposit', { amount: amt })).balance;
+  } catch(e) {hint('FUNDS NOT ADDED',e.message);return;}
   ledger('deposit', amt);
   $('#cashier').hidden = true;
   sfx.play('chip');
@@ -1136,7 +1148,7 @@ function showActions(seat) {
   bar.style.top = `${r.y + 84}px`;
 }
 
-$('#deal-now').onclick = () => { if (!round && !busy) void dealSequence(); };
+$('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await ensureLogin('Sign in to start this round. Your selected bets will stay in place.'))return; if(betTotal()>balance){hint('BALANCE','Add funds or reduce your bet.');renderBets();return;} if(!round&&!busy)void dealSequence(); } catch(e){hint('SIGN IN',e.message);} };
 
 async function dealSequence() {
   busy = true;
@@ -1702,4 +1714,4 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
 
-document.querySelector('#sign-out').onclick=async()=>{await api('/api/auth/logout',{});location.replace('/login.html');};
+document.querySelector('#sign-out').onclick=async()=>{await api('/api/auth/logout',{});location.reload();};

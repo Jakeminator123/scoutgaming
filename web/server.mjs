@@ -637,10 +637,11 @@ const auth=playerAuth(db,apiPlayer);
 createServer(async (req, res) => {
   try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
   const pathname=new URL(req.url,'http://local').pathname;
-  const publicAuth=['/login.html','/login.css','/login.mjs','/favicon.ico'];
+  if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
   const authenticated=auth.user(req);
-  if(!authenticated&&!publicAuth.includes(pathname)&&!backoffice) {
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated}));return;}
+  if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||req.method!=='GET')) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||req.method!=='GET'){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
     else {res.writeHead(303,{Location:'/login.html'});res.end();}
