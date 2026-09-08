@@ -12,7 +12,7 @@ import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
 import { join, normalize, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
+import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), 'public');
 
@@ -635,13 +635,28 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
 }
 
 const auth=playerAuth(db,apiPlayer,craigIdentity(boDb));
+const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
+db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
+function previewPlayer(req,res) {
+  const token=(req.headers.cookie??'').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
+  const digest=t=>createHash('sha256').update(t).digest('hex');
+  const existing=token && db.prepare('SELECT player_id FROM preview_sessions WHERE digest=? AND expires>?').get(digest(token),Date.now());
+  if(existing && getPlayer(existing.player_id))return existing.player_id;
+  const p=apiPlayer({name:'Product preview'}), fresh=randomBytes(32).toString('hex');
+  db.prepare('DELETE FROM preview_sessions WHERE expires<=?').run(Date.now());
+  db.prepare('INSERT INTO preview_sessions VALUES (?,?,?)').run(digest(fresh),p.id,Date.now()+7*86400000);
+  res.setHeader('Set-Cookie',`preview_session=${fresh}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`);
+  return p.id;
+}
 createServer(async (req, res) => {
   try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
   const pathname=new URL(req.url,'http://local').pathname;
   if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
-  const authenticated=auth.user(req);
-  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated}));return;}
+  let authenticated=auth.user(req);
+  const guest=guestPreview && !authenticated && !backoffice && (pathname.startsWith('/api/') || pathname==='/chat');
+  if(guest)authenticated=previewPlayer(req,res);
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||req.method!=='GET')) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||req.method!=='GET'){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
