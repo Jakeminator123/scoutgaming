@@ -17,7 +17,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.
 const login=(email,p=password)=>fetch(base+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:p})});
 try {
 assert.equal((await login('existing','wrong')).status,400);assert.equal(created,0);
-assert.equal((await login('invited')).status,400);assert.equal(created,0);
+const invited=await login('invited');assert.equal(invited.status,400);assert.match((await invited.json()).error,/Account setup is incomplete/);assert.equal(created,0);
 const first=await login(' EXISTING@EXAMPLE.INVALID ');assert.equal(first.status,200);const cookie=first.headers.get('set-cookie');
 assert.deepEqual(await(await fetch(base,{headers:{cookie}})).json(),{id:'casino-1'});
 const second=await login('existing');assert.equal(second.status,200);assert.equal(created,1);
