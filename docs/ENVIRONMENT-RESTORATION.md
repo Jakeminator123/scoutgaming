@@ -87,3 +87,8 @@ On first successful authentication, a transaction links the CRAIG user ID to a c
 
 ## Pending invitation diagnosis
 The reported email login failure was traced to its local CRAIG record: the email account has no password hash yet (unfinished invitation), while the separate `kevin` username is active. Updated the auth adapter to return an explicit account-setup-incomplete message instead of a misleading incorrect-password message for pending invitations. Added a response assertion to the CRAIG integration test; all checks pass. No credentials or account state changed.
+
+## Temporary guest preview
+Login prompting is temporarily bypassed for local product work. Start with `sh web/preview.sh` (sets `HOST=127.0.0.1 DEMO_GUEST_ACCESS=1`). Each guest browser receives its own persistent demo player and shoe through an HttpOnly preview cookie; game outcomes and demo funds still come from the server. Backoffice authentication remains required. Normal server startup without `DEMO_GUEST_ACCESS=1` restores the CRAIG login requirement.
+
+Verified a complete guest round and demo deposit through the server, backoffice rejection without credentials, and Add Funds opening directly in the browser without the login modal. The isolated HTTP test profile was removed. Current local server runs preview mode.

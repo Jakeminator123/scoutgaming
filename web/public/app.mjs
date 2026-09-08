@@ -551,16 +551,16 @@ async function tableCommand(op, extra = {}) {
 async function ensureLogin(purpose) {
   await tableReady;
   const session=await fetch('/api/auth/session').then(r=>r.json());
-  if(session.authenticated && player)return true;
+  if((session.authenticated || session.guest) && player)return true;
   player=null;
-  if(!session.authenticated && !await requestLogin(purpose))return false;
+  if(!session.authenticated && !session.guest && !await requestLogin(purpose))return false;
   await prepareTable();return !!player;
 }
 function tableError(e) { busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets(); }
 async function prepareTable() {
   const session=await fetch('/api/auth/session').then(r=>r.json());
   $('#sign-out').hidden=!session.authenticated;
-  if(!session.authenticated){player=null;busy=false;renderBets();return null;}
+  if(!session.authenticated && !session.guest){player=null;busy=false;renderBets();return null;}
   const out = await tableCommand('state'); showShoe(out.shoe);
   if (out.round) {
     bets = out.round.boxes.map(b => ({main:b.stake,pp:b.pp,tp:b.tp}));
