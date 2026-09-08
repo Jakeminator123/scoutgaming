@@ -511,14 +511,15 @@ let balance = 1000;
 let player = null;
 async function api(path, payload) {
   const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if(r.status===401) { location.replace('/login.html'); throw new Error('Sign in required'); }
   const out = await r.json().catch(() => ({}));
   if (!r.ok || out.error) throw new Error(out.error ?? `api ${r.status}`);
   return out;
 }
 async function loadPlayer() {
   try {
-    player = await api('/api/player', { id: localStorage.getItem('croupier-player'), name: 'Kevin' });
-    localStorage.setItem('croupier-player', player.id);
+    player = await api('/api/player', {  });
+    // Identity is resolved from the server's HttpOnly session cookie.
     balance = player.balance; currency = player.currency;
     renderBets(); renderCurrency();
   } catch { /* server db unavailable: play on with the local demo balance */ }
@@ -1700,3 +1701,5 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
 
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
+
+document.querySelector('#sign-out').onclick=async()=>{await api('/api/auth/logout',{});location.replace('/login.html');};
