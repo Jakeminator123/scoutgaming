@@ -10,7 +10,7 @@ Updated 8 September 2026. Read this alongside `ENVIRONMENT-RESTORATION.md` and G
 - Local preview: run `sh web/preview.sh`, then open `http://127.0.0.1:4173/`.
 - Four dealers: `?dealer=vera`, `?dealer=astrid`, `?dealer=amira`, `?dealer=mei`.
 - Private recovered conversation: `/Users/solvifyab/Desktop/Scout-Gaming/.codex-audit/casino-conversation-recovered-2026-09-08.md`.
-- Private checkpoints: `/Users/solvifyab/Desktop/Croupier-Backups/`. A Git bundle contains committed history; it does not include untracked raw media or the user database. The original workspace still contains those files.
+- Private checkpoints: `/Users/solvifyab/Desktop/Croupier-Backups/`. The Git bundle contains committed history. A separate working-media-and-code archive preserves nonignored modified/untracked product assets and scripts; the user database and ignored files remain only in the original workspace.
 - No remote push or account invitation has been performed by this task. Sharing an account does not by itself copy this Mac's workspace to another computer.
 
 ## Product direction and completed foundation
@@ -44,7 +44,7 @@ Generation remains blocked: the connected Higgsfield Team workspace reported 3.0
 6. Record dealer, line, reason, before/after hashes, measured delay, reviewer/date, visual result and remaining defects in the change description. No take currently has blanket visual approval.
 7. After the intentional media diff has been reviewed, record it with `node pipeline/audit-dealer-sync.mjs --record-baseline --probe`. Inspect the JSON diff. Never use this command simply to silence a failing check.
 8. Run `.githooks/pre-commit`, `node test/shoe-game.mjs`, and `node test/split-rules.mjs`. Check initial deal, hit, stand, split, double, insurance and next round in an isolated database. CI repeats the tests when pushed to GitLab; it has not yet run remotely.
-9. Commit a bounded change and update this handoff. Run `python3 pipeline/save-checkpoint.py --transcript /path/to/this-session.jsonl` to save a verified Git bundle, handoff, readable conversation and checksum manifest outside the repo. Without `--transcript`, it still backs up committed history and the handoff. Do not reset the existing dirty raw-media work.
+9. Commit a bounded change and update this handoff. Run `python3 pipeline/save-checkpoint.py --transcript /path/to/this-session.jsonl` to save a verified Git bundle, handoff, readable conversation, unfinished media/code archive and checksum manifest outside the repo. Without `--transcript`, it still backs up committed history and the handoff. Do not reset the existing dirty raw-media work.
 
 ## Code map
 

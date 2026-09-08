@@ -135,7 +135,7 @@ After the user reported a top-up, MCP and CLI still showed 3.02 credits in the c
 
 ## Continuity and roster safeguards
 
-Recovered the later conversation from the local session after the app reader returned only the beginning. Added `docs/JOHN-HANDOFF.md`, repository `AGENTS.md`, and `pipeline/save-checkpoint.py` for a private conversation export, verified committed-history Git bundle, handoff and checksums. The app history display itself remains outside this repair; uncommitted/untracked media stays in the original workspace and is not included in a Git bundle.
+Recovered the later conversation from the local session after the app reader returned only the beginning. Added `docs/JOHN-HANDOFF.md`, repository `AGENTS.md`, and `pipeline/save-checkpoint.py` for a private conversation export, verified committed-history Git bundle, handoff and checksums. The app history display itself remains outside this repair; nonignored modified/untracked product media and scripts are saved in a separate archive because a Git bundle cannot include them. The original workspace, database and ignored files remain intact.
 
 Fixed `build-index.mjs` to preserve calibration and other clip metadata on identical rebuilds, retain unrelated clips during partial rebuilds, and reject changed calibrated footage before copying any files. Shared speech playback no longer queues a repeat of a sentence merely because its audio is still running when decode-ahead reaches the boundary. Default captions now have one shared module.
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Save committed history, handoff and a private readable conversation.
 Usage: python3 pipeline/save-checkpoint.py --transcript /path/to/rollout.jsonl
-The bundle excludes dirty/untracked files; no credentials/database are copied.
+The bundle excludes dirty/untracked files; a separate archive preserves local
+media/code under content, pipeline, test and web/public. No database is copied.
 """
-import argparse, datetime, hashlib, json, pathlib, re, shutil, subprocess
+import argparse, datetime, hashlib, json, pathlib, re, shutil, subprocess, tarfile
 from zoneinfo import ZoneInfo
 parser=argparse.ArgumentParser()
 parser.add_argument('--transcript', type=pathlib.Path)
@@ -22,6 +23,10 @@ for name in ['JOHN-HANDOFF.md','ENVIRONMENT-RESTORATION.md','dealer-sync-baselin
  shutil.copy2(root/'docs'/name,out/name)
 (out/'working-tree-status.txt').write_text(git('status','--short'))
 (out/'commits.txt').write_text(git('log','-30','--oneline'))
+working = sorted(set(git('ls-files','-m','-o','--exclude-standard','-z').split('\0')))
+working = [p for p in working if p.startswith(('content/','pipeline/','test/','web/public/')) and '__pycache__' not in p and (root/p).is_file() and not (root/p).is_symlink()]
+with tarfile.open(out/'working-media-and-code.tar', 'w') as archive:
+ for path in working: archive.add(root/path, arcname=path, recursive=False)
 count=0
 if args.transcript:
  messages=[]
@@ -39,7 +44,7 @@ if args.transcript:
   messages.append(f'## {stamp} — {"You" if role=="user" else "Codex"}\n\n{text.strip()}\n')
  count=len(messages)
  (out/'conversation.md').write_text('# Saved conversation\n\nUser and assistant messages only. Tool output and internal summaries excluded. Times: Europe/Stockholm.\n\n'+'\n'.join(messages))
-manifest={'created':now.isoformat(),'commit':head,'conversationMessages':count,'scope':'Committed Git history and handoff. Dirty/untracked media and database remain in the original workspace and are NOT in this bundle.','sha256':{}}
+manifest={'created':now.isoformat(),'commit':head,'conversationMessages':count,'workingFiles':working,'scope':'Committed Git history plus separate archive of nonignored modified/untracked files under content, pipeline, test and web/public. Database, ignored files and other private configuration are excluded.','sha256':{}}
 for file in out.iterdir():
  if file.is_file():
   digest=hashlib.sha256()
