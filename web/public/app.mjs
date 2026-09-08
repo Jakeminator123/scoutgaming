@@ -34,10 +34,12 @@ const DEALERS = {
 };
 const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
 {
+  document.documentElement.dataset.dealer = DEALER.key;
   const rs = document.documentElement.style;
   rs.setProperty('--rail-anchor', DEALER.anchor);
   if (DEALER.scene) {
     rs.setProperty('--scene-url', `url('${DEALER.scene}')`);
+    rs.setProperty('--room-plate', `url('${DEALER.scene}')`);
     rs.setProperty('--scene-w-k', DEALER.sceneWK);
     rs.setProperty('--scene-h-k', DEALER.sceneHK);
   }
@@ -623,6 +625,7 @@ function layoutSeats() {
     const fx = CX + RX * Math.cos(phi);
     const fy = CY + RY * Math.sin(phi);
     const p = tableScene?.project(.83 * Math.cos(phi), .78 * Math.sin(phi));
+    if (tableScene) seatEls[i].style.setProperty('--arc-rot', `${(phi * 180 / Math.PI - 90) * .65}deg`);
     seatEls[i].style.left = `${(p?.x ?? img.left + fx * img.width) - table.left}px`;
     seatEls[i].style.top = `${(p?.y ?? img.top + fy * img.height) - table.top}px`;
     seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(fx - 0.5) * 61}deg`);
