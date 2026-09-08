@@ -108,3 +108,17 @@ Verified a complete guest round and demo deposit through the server, backoffice 
 Validation: shoe/service regression checks, persisted split/double/insurance/duplicate-payout checks, speech regression tests, and split-rule tests. Browser checks covered dealer switching, rejection of mid-round switching, portrait layout, initial deal, hit/bust, and settlement. Rendering checks do not establish phoneme-accurate lip sync or fully rigged hand contact.
 
 The live double check exposed a receipt error: its header/net used only the opening stake. Settlement now includes all split/doubled hand stakes, insurance and original side bets. A $5 opening bet doubled to $10 with a $20 return correctly reports a $10 net, not $15. Server wallet amounts were already correct. Live double → dealer draws → result speech → betting completed successfully.
+
+## Final gameplay checks — follow-up
+
+The sequential-frame encoding contract now holds for every deployed stream across Vera, Astrid, Amira and Mei. Additional normalization preserved decoded frame counts and all indexed clip metadata. The dealing card now has a paper-thickness mesh, and renderer failures clean up the temporary card and unblock the resting card. A malformed keyboard event no longer crashes the calibration listener.
+
+An isolated server and database on localhost:4174 were used for deterministic browser tests, separate from the user's 127.0.0.1:4173 profile. The split fixture completed split → hit → stand → double → dealer draw → settlement. It consumed nine dealt cards plus the burn, charged $15 total, returned $10 and displayed the correct $5 loss.
+
+Asset gaps remain explicit: Amira and Mei have speech/idle assets but no dealing-action clips. Astrid/Vera have filmed dealing motions, not rigged finger-level contact with arbitrary 3D cards. The current generation account still has insufficient credits for replacement takes.
+
+A local transcription spot-check of greeting, goodluck and win for Vera, Amira and Mei found no additional word-count mismatch against their configured/default captions. This is a transcript check, not a phoneme-quality claim. The insurance fixture paid $7.50 against $7.50 total stake (main plus insurance), correctly showing zero net.
+
+The cut-card browser fixture reached draw 314 while keeping the original shoe through settlement. The next start produced a different shoe ID, one burn and four initial cards (draw count 5), with card conservation intact. Animation completion now handles hidden/occluded tabs and render failures; three regression tests cover those lifecycle cases. All 89 roster streams passed the no-B-frame audit. Speech and shoe/service regression suites passed again after these changes.
+
+Remaining delivery dependency: matched speech regeneration and missing dealer action footage require generation capacity. The connected account was rechecked and still reports 3.02 credits, with no active Unlimited allowance. The quoted 180-credit repair budget covers two speech takes plus one retry each; it does not cover a complete new set of hand-action footage for all four dealers. No subscription or credit purchase was initiated.
