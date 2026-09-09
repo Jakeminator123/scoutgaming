@@ -33,6 +33,15 @@
       "status": "Rejected: unwanted sweep during preparation",
       "prompt": "Photographic blackjack dealer Astrid, one continuous gentle preparatory hand movement. EXACT supplied first and last frames. Camera entirely locked. Four seconds. Start in the exact folded-arm resting pose in first image. Calmly and naturally move her image-right arm and hand into the exact ready-to-reach pose in the last image. End exactly in that supplied last pose, including gaze and head angle. This is ONLY the preparatory movement BEFORE she takes a card. Both hands EMPTY throughout. No cards drawn, no dealing, no shuffling, no rubbing hands, no new props, no speech. Keep the dealer identity, face, blonde tied-back hair, black blazer, ivory blouse, skin exposure, room, shoe, felt and geometry perfectly fixed. Smooth ease in and ease out, no cuts or dissolves. Body and hands follow a plausible physical path between the supplied poses. Keep all fingers and arms intact.",
       "sha256": "25c225a8542c1fcf1a086de9eb281b3339767d9a64f3fc3bcf3865138b57bd12"
+    },
+    {
+      "folder": "centre-entry-clean",
+      "job": "9bbd4a8c-2336-4241-9341-ab450348bd39",
+      "model": "seedance_2_0",
+      "status": "Empty-hand pose entry; sampled into 24 frames before original player delivery",
+      "prompt": "A locked-off photographic portrait. Same blonde woman in a black blazer and ivory blouse, seated with forearms folded. Over four seconds she gently lowers her gaze toward image right and makes a tiny adjustment of her folded wrists to match the supplied final image. Her hands REMAIN RESTING TOGETHER in front of her body the entire time. Do not extend either arm. Do not reach anywhere. No dealing, no cards, no sweep, no shuffle, no objects touched, no speech. The only movement is a small natural downward glance and a subtle reposition of folded wrists. Begin exactly in the supplied first image, end exactly in the supplied last image. Preserve camera, face identity, room, shoe and lighting exactly. One continuous natural movement, no transition effects or cuts.",
+      "sha256": "94bb2dce2db948656474033b921a797f653c3f4a5516db2ce843df0eacd2d9d7"
     }
-  ]
+  ],
+  "preparation": "pipeline/prepend-contact-entry.mjs prepends 24 empty-hand frames. All 145 original centre-contact frames and measurements retain their original speed. Events shift by exactly 24. No interpolated face or card motion is used."
 }

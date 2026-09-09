@@ -1,22 +1,22 @@
 {
   "version": 1,
   "status": "draft",
-  "reviewCandidate": "astrid-centre-contact-20260909",
-  "summary": "Contact proof failed extraction and rest-pose checks. This staged path is diagnostic only. Controlled capture is required before expansion or default promotion.",
+  "reviewCandidate": "astrid-centre-continuous-20260909",
+  "summary": "Measured player and dealer deliveries with a matched-pose entry and continuous presented-frame handoffs. Extraction and remaining action limitations are recorded in the handoff.",
   "takes": [
     {
       "version": 1,
-      "id": "astrid-centre-contact-20260909",
+      "id": "astrid-centre-continuous-20260909",
       "dealer": "astrid",
       "action": "deal-centre",
       "status": "review",
       "media": {
         "src": "dealers/astrid/performance/centre-review.mp4",
-        "sha256": "e2d58d58a4acbd1baecfec6d0e3b2c651331dd5164a7f85d847eec75144936dd",
+        "sha256": "e79981f3d80fa8116a8dff192abc7191f6c9747e188b1eac2f511cf6bbc87123",
         "width": 1280,
         "height": 720,
         "fps": 24,
-        "frames": 145,
+        "frames": 169,
         "layout": "rgb-over-masks-r-actor-g-fingers"
       },
       "camera": {
@@ -109,10 +109,10 @@
         }
       },
       "events": {
-        "pickup": 45,
-        "release": 92,
-        "land": 98,
-        "rest": 130
+        "pickup": 69,
+        "release": 116,
+        "land": 122,
+        "rest": 154
       },
       "frames": [
         {
@@ -297,6 +297,102 @@
         },
         {
           "frame": 45,
+          "card": null
+        },
+        {
+          "frame": 46,
+          "card": null
+        },
+        {
+          "frame": 47,
+          "card": null
+        },
+        {
+          "frame": 48,
+          "card": null
+        },
+        {
+          "frame": 49,
+          "card": null
+        },
+        {
+          "frame": 50,
+          "card": null
+        },
+        {
+          "frame": 51,
+          "card": null
+        },
+        {
+          "frame": 52,
+          "card": null
+        },
+        {
+          "frame": 53,
+          "card": null
+        },
+        {
+          "frame": 54,
+          "card": null
+        },
+        {
+          "frame": 55,
+          "card": null
+        },
+        {
+          "frame": 56,
+          "card": null
+        },
+        {
+          "frame": 57,
+          "card": null
+        },
+        {
+          "frame": 58,
+          "card": null
+        },
+        {
+          "frame": 59,
+          "card": null
+        },
+        {
+          "frame": 60,
+          "card": null
+        },
+        {
+          "frame": 61,
+          "card": null
+        },
+        {
+          "frame": 62,
+          "card": null
+        },
+        {
+          "frame": 63,
+          "card": null
+        },
+        {
+          "frame": 64,
+          "card": null
+        },
+        {
+          "frame": 65,
+          "card": null
+        },
+        {
+          "frame": 66,
+          "card": null
+        },
+        {
+          "frame": 67,
+          "card": null
+        },
+        {
+          "frame": 68,
+          "card": null
+        },
+        {
+          "frame": 69,
           "card": {
             "corners": [
               [
@@ -332,7 +428,7 @@
           }
         },
         {
-          "frame": 46,
+          "frame": 70,
           "card": {
             "corners": [
               [
@@ -368,7 +464,7 @@
           }
         },
         {
-          "frame": 47,
+          "frame": 71,
           "card": {
             "corners": [
               [
@@ -404,7 +500,7 @@
           }
         },
         {
-          "frame": 48,
+          "frame": 72,
           "card": {
             "corners": [
               [
@@ -440,7 +536,7 @@
           }
         },
         {
-          "frame": 49,
+          "frame": 73,
           "card": {
             "corners": [
               [
@@ -476,7 +572,7 @@
           }
         },
         {
-          "frame": 50,
+          "frame": 74,
           "card": {
             "corners": [
               [
@@ -512,7 +608,7 @@
           }
         },
         {
-          "frame": 51,
+          "frame": 75,
           "card": {
             "corners": [
               [
@@ -548,7 +644,7 @@
           }
         },
         {
-          "frame": 52,
+          "frame": 76,
           "card": {
             "corners": [
               [
@@ -584,7 +680,7 @@
           }
         },
         {
-          "frame": 53,
+          "frame": 77,
           "card": {
             "corners": [
               [
@@ -620,7 +716,7 @@
           }
         },
         {
-          "frame": 54,
+          "frame": 78,
           "card": {
             "corners": [
               [
@@ -656,7 +752,7 @@
           }
         },
         {
-          "frame": 55,
+          "frame": 79,
           "card": {
             "corners": [
               [
@@ -692,7 +788,7 @@
           }
         },
         {
-          "frame": 56,
+          "frame": 80,
           "card": {
             "corners": [
               [
@@ -728,7 +824,7 @@
           }
         },
         {
-          "frame": 57,
+          "frame": 81,
           "card": {
             "corners": [
               [
@@ -764,7 +860,7 @@
           }
         },
         {
-          "frame": 58,
+          "frame": 82,
           "card": {
             "corners": [
               [
@@ -800,7 +896,7 @@
           }
         },
         {
-          "frame": 59,
+          "frame": 83,
           "card": {
             "corners": [
               [
@@ -836,7 +932,7 @@
           }
         },
         {
-          "frame": 60,
+          "frame": 84,
           "card": {
             "corners": [
               [
@@ -872,7 +968,7 @@
           }
         },
         {
-          "frame": 61,
+          "frame": 85,
           "card": {
             "corners": [
               [
@@ -908,7 +1004,7 @@
           }
         },
         {
-          "frame": 62,
+          "frame": 86,
           "card": {
             "corners": [
               [
@@ -944,7 +1040,7 @@
           }
         },
         {
-          "frame": 63,
+          "frame": 87,
           "card": {
             "corners": [
               [
@@ -980,7 +1076,7 @@
           }
         },
         {
-          "frame": 64,
+          "frame": 88,
           "card": {
             "corners": [
               [
@@ -1016,7 +1112,7 @@
           }
         },
         {
-          "frame": 65,
+          "frame": 89,
           "card": {
             "corners": [
               [
@@ -1052,7 +1148,7 @@
           }
         },
         {
-          "frame": 66,
+          "frame": 90,
           "card": {
             "corners": [
               [
@@ -1088,7 +1184,7 @@
           }
         },
         {
-          "frame": 67,
+          "frame": 91,
           "card": {
             "corners": [
               [
@@ -1124,7 +1220,7 @@
           }
         },
         {
-          "frame": 68,
+          "frame": 92,
           "card": {
             "corners": [
               [
@@ -1160,7 +1256,7 @@
           }
         },
         {
-          "frame": 69,
+          "frame": 93,
           "card": {
             "corners": [
               [
@@ -1196,7 +1292,7 @@
           }
         },
         {
-          "frame": 70,
+          "frame": 94,
           "card": {
             "corners": [
               [
@@ -1232,7 +1328,7 @@
           }
         },
         {
-          "frame": 71,
+          "frame": 95,
           "card": {
             "corners": [
               [
@@ -1268,7 +1364,7 @@
           }
         },
         {
-          "frame": 72,
+          "frame": 96,
           "card": {
             "corners": [
               [
@@ -1304,7 +1400,7 @@
           }
         },
         {
-          "frame": 73,
+          "frame": 97,
           "card": {
             "corners": [
               [
@@ -1340,7 +1436,7 @@
           }
         },
         {
-          "frame": 74,
+          "frame": 98,
           "card": {
             "corners": [
               [
@@ -1376,7 +1472,7 @@
           }
         },
         {
-          "frame": 75,
+          "frame": 99,
           "card": {
             "corners": [
               [
@@ -1412,7 +1508,7 @@
           }
         },
         {
-          "frame": 76,
+          "frame": 100,
           "card": {
             "corners": [
               [
@@ -1448,7 +1544,7 @@
           }
         },
         {
-          "frame": 77,
+          "frame": 101,
           "card": {
             "corners": [
               [
@@ -1484,7 +1580,7 @@
           }
         },
         {
-          "frame": 78,
+          "frame": 102,
           "card": {
             "corners": [
               [
@@ -1520,7 +1616,7 @@
           }
         },
         {
-          "frame": 79,
+          "frame": 103,
           "card": {
             "corners": [
               [
@@ -1556,7 +1652,7 @@
           }
         },
         {
-          "frame": 80,
+          "frame": 104,
           "card": {
             "corners": [
               [
@@ -1592,7 +1688,7 @@
           }
         },
         {
-          "frame": 81,
+          "frame": 105,
           "card": {
             "corners": [
               [
@@ -1628,7 +1724,7 @@
           }
         },
         {
-          "frame": 82,
+          "frame": 106,
           "card": {
             "corners": [
               [
@@ -1664,7 +1760,7 @@
           }
         },
         {
-          "frame": 83,
+          "frame": 107,
           "card": {
             "corners": [
               [
@@ -1700,7 +1796,7 @@
           }
         },
         {
-          "frame": 84,
+          "frame": 108,
           "card": {
             "corners": [
               [
@@ -1736,7 +1832,7 @@
           }
         },
         {
-          "frame": 85,
+          "frame": 109,
           "card": {
             "corners": [
               [
@@ -1772,7 +1868,7 @@
           }
         },
         {
-          "frame": 86,
+          "frame": 110,
           "card": {
             "corners": [
               [
@@ -1808,7 +1904,7 @@
           }
         },
         {
-          "frame": 87,
+          "frame": 111,
           "card": {
             "corners": [
               [
@@ -1844,7 +1940,7 @@
           }
         },
         {
-          "frame": 88,
+          "frame": 112,
           "card": {
             "corners": [
               [
@@ -1880,7 +1976,7 @@
           }
         },
         {
-          "frame": 89,
+          "frame": 113,
           "card": {
             "corners": [
               [
@@ -1916,7 +2012,7 @@
           }
         },
         {
-          "frame": 90,
+          "frame": 114,
           "card": {
             "corners": [
               [
@@ -1952,7 +2048,7 @@
           }
         },
         {
-          "frame": 91,
+          "frame": 115,
           "card": {
             "corners": [
               [
@@ -1988,7 +2084,7 @@
           }
         },
         {
-          "frame": 92,
+          "frame": 116,
           "card": {
             "corners": [
               [
@@ -2024,7 +2120,7 @@
           }
         },
         {
-          "frame": 93,
+          "frame": 117,
           "card": {
             "corners": [
               [
@@ -2052,7 +2148,7 @@
           }
         },
         {
-          "frame": 94,
+          "frame": 118,
           "card": {
             "corners": [
               [
@@ -2080,7 +2176,7 @@
           }
         },
         {
-          "frame": 95,
+          "frame": 119,
           "card": {
             "corners": [
               [
@@ -2108,7 +2204,7 @@
           }
         },
         {
-          "frame": 96,
+          "frame": 120,
           "card": {
             "corners": [
               [
@@ -2136,7 +2232,7 @@
           }
         },
         {
-          "frame": 97,
+          "frame": 121,
           "card": {
             "corners": [
               [
@@ -2164,7 +2260,7 @@
           }
         },
         {
-          "frame": 98,
+          "frame": 122,
           "card": {
             "corners": [
               [
@@ -2190,102 +2286,6 @@
             ],
             "faceUp": true
           }
-        },
-        {
-          "frame": 99,
-          "card": null
-        },
-        {
-          "frame": 100,
-          "card": null
-        },
-        {
-          "frame": 101,
-          "card": null
-        },
-        {
-          "frame": 102,
-          "card": null
-        },
-        {
-          "frame": 103,
-          "card": null
-        },
-        {
-          "frame": 104,
-          "card": null
-        },
-        {
-          "frame": 105,
-          "card": null
-        },
-        {
-          "frame": 106,
-          "card": null
-        },
-        {
-          "frame": 107,
-          "card": null
-        },
-        {
-          "frame": 108,
-          "card": null
-        },
-        {
-          "frame": 109,
-          "card": null
-        },
-        {
-          "frame": 110,
-          "card": null
-        },
-        {
-          "frame": 111,
-          "card": null
-        },
-        {
-          "frame": 112,
-          "card": null
-        },
-        {
-          "frame": 113,
-          "card": null
-        },
-        {
-          "frame": 114,
-          "card": null
-        },
-        {
-          "frame": 115,
-          "card": null
-        },
-        {
-          "frame": 116,
-          "card": null
-        },
-        {
-          "frame": 117,
-          "card": null
-        },
-        {
-          "frame": 118,
-          "card": null
-        },
-        {
-          "frame": 119,
-          "card": null
-        },
-        {
-          "frame": 120,
-          "card": null
-        },
-        {
-          "frame": 121,
-          "card": null
-        },
-        {
-          "frame": 122,
-          "card": null
         },
         {
           "frame": 123,
@@ -2374,23 +2374,114 @@
         {
           "frame": 144,
           "card": null
+        },
+        {
+          "frame": 145,
+          "card": null
+        },
+        {
+          "frame": 146,
+          "card": null
+        },
+        {
+          "frame": 147,
+          "card": null
+        },
+        {
+          "frame": 148,
+          "card": null
+        },
+        {
+          "frame": 149,
+          "card": null
+        },
+        {
+          "frame": 150,
+          "card": null
+        },
+        {
+          "frame": 151,
+          "card": null
+        },
+        {
+          "frame": 152,
+          "card": null
+        },
+        {
+          "frame": 153,
+          "card": null
+        },
+        {
+          "frame": 154,
+          "card": null
+        },
+        {
+          "frame": 155,
+          "card": null
+        },
+        {
+          "frame": 156,
+          "card": null
+        },
+        {
+          "frame": 157,
+          "card": null
+        },
+        {
+          "frame": 158,
+          "card": null
+        },
+        {
+          "frame": 159,
+          "card": null
+        },
+        {
+          "frame": 160,
+          "card": null
+        },
+        {
+          "frame": 161,
+          "card": null
+        },
+        {
+          "frame": 162,
+          "card": null
+        },
+        {
+          "frame": 163,
+          "card": null
+        },
+        {
+          "frame": 164,
+          "card": null
+        },
+        {
+          "frame": 165,
+          "card": null
+        },
+        {
+          "frame": 166,
+          "card": null
+        },
+        {
+          "frame": 167,
+          "card": null
+        },
+        {
+          "frame": 168,
+          "card": null
         }
       ],
       "review": {
-        "result": "failed",
-        "reviewer": "Codex visual inspection",
+        "result": "pending",
         "date": "2026-09-09",
-        "mediaSha256": "e2d58d58a4acbd1baecfec6d0e3b2c651331dd5164a7f85d847eec75144936dd",
-        "calibrationSha256": "6adc8bc2513dcea4cbc1b36cc68dcfe833d903d443948ded6e0c249abcba7125",
-        "failures": [
-          "At shoe exit, the visible marker fragment is fitted as the whole card, producing a narrow strip and unstable corners.",
-          "The native release stops past the card-fan destination; the handoff requires a corrective slide.",
-          "The generated return pose does not match the existing idle pose."
-        ],
-        "note": "The staged game demonstrated server-issued 9 spades, ace clubs, 4 diamonds and 2 diamonds under the fingers. This is not acceptance of full contact, likeness or all-device rendering."
+        "mediaSha256": "e79981f3d80fa8116a8dff192abc7191f6c9747e188b1eac2f511cf6bbc87123",
+        "calibrationSha256": "d3153684d627c042ae562a9c5814c0cd2f9f6061dcad47f0fc845a4869117a32",
+        "note": "Empty-hand entry joins the existing measured delivery. Contact limitations remain; not default-table approval."
       },
-      "calibrationSha256": "6adc8bc2513dcea4cbc1b36cc68dcfe833d903d443948ded6e0c249abcba7125",
-      "trackingMethod": "Per-frame minimum-area rectangle fitted to visible marker pixels; occluded full-card geometry is not recovered."
+      "calibrationSha256": "d3153684d627c042ae562a9c5814c0cd2f9f6061dcad47f0fc845a4869117a32",
+      "trackingMethod": "Per-frame minimum-area rectangle fitted to visible marker pixels; occluded full-card geometry is not recovered.",
+      "entryFrames": 24
     },
     {
       "version": 1,
@@ -5279,7 +5370,13 @@
     }
   ],
   "reviewCandidates": [
-    "astrid-centre-contact-20260909",
+    "astrid-centre-continuous-20260909",
     "astrid-dealer-contact-20260909"
-  ]
+  ],
+  "transitionReview": {
+    "date": "2026-09-09",
+    "scope": "Initial centre/player and own-card deliveries in staged game",
+    "result": "checked-in-game",
+    "details": "Presented layer retained until next frame is ready. Empty-hand generated entry joins original player delivery. No actor dissolve or idle reset between cards. Original contact quality and complete-table/device acceptance remain open."
+  }
 }

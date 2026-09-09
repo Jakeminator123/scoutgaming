@@ -6,7 +6,7 @@ The user accepted the direction of the measured dealing motion and requested Ast
 
 The long actor dissolves and per-card legacy-idle resets have been removed. A completed actor frame stays visible while the next take loads, and the next actor replaces it only after its first frame is rendered. Two consecutive own-card deliveries were inspected at the boundary in the actual game with no idle flash. Existing speech stays on the shared player.
 
-A replacement centre take was rejected because it delivered too far left. An attempted preparatory take was rejected because it added a sweep. Neither is loaded by the game. The original measured player contact is preserved. See `performance/provenance.json` for source prompts and hashes.
+A replacement centre take was rejected because it delivered too far left. An attempted preparatory take was rejected because it added a sweep. Neither is loaded by the game. The original measured player contact is preserved. A later clean preparatory take keeps both hands resting and joins their small wrist/gaze reposition to that original delivery. Only this 24-frame entry is prepended; the 145 original contact frames retain their speed and tracking. See `performance/provenance.json` for source prompts and hashes.
 
 ## Earlier contact findings (still relevant to contact quality)
 
