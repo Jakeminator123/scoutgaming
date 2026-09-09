@@ -1,5 +1,7 @@
 # Astrid actual-game dealing and transition checkpoint — 9 September 2026
 
+For a clean continuation prompt, use [PROJECT-HANDOVER-PROMPT.md](PROJECT-HANDOVER-PROMPT.md). It incorporates the useful parts of the older Claude handover while distinguishing historical instructions from the current implementation and Kevin's latest direction.
+
 The active review path is `/?dealer=astrid&performance=staged&rehearsal=1` in the existing blackjack application. The normal dealer routes and existing speech assets remain preserved. This is a staged playable implementation, not completion of every item in the realistic-table plan.
 
 - Player delivery and a separate dealer delivery use packed actor RGB, actor alpha and foreground fingers from one presented-video clock. Measured server-card corners follow contact, then release to the actual transformed DOM card fan. Pickup/landing cues use that same clock. The backend still owns all draws, balances, legal moves, cut position and settlements.
