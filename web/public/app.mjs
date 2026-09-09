@@ -1244,7 +1244,7 @@ function showActions(seat) {
   top.hidden=compact;
   const controls=compact?bar:top;
   const visible=el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
-  const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#rehearsal')].filter(visible);
+  const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#table-pick,#rehearsal')].filter(visible);
   const obstacles=protectedEls.map(el=>el.getBoundingClientRect());
   const totals=[...activeSeat.querySelectorAll('.hand-total')].map(el=>el.getBoundingClientRect());
   const anchor={x:r.x,bottom:Math.max(r.y,...totals.map(b=>b.bottom))};
@@ -1875,6 +1875,7 @@ setBanner('PLEASE PLACE BETS');
 // or chat request. This lets every dealer and recorded line be checked locally.
 if (new URLSearchParams(location.search).has('rehearsal')) {
   const panel = document.createElement('details'); panel.id = 'rehearsal'; panel.open = true;
+  panel.addEventListener('toggle', () => { if(round&&!busy)activeBoxHighlight(); });
   panel.innerHTML = `<summary>Dealer rehearsal</summary>
     <label>Dealer<select id="rehearsal-dealer" aria-label="Rehearsal dealer"></select></label>
     <label>Recorded line<select id="rehearsal-line" aria-label="Recorded line"></select></label>

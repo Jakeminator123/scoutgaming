@@ -1,3 +1,9 @@
+# Latest: CAC layout acceptance and left return — 10 September 2026
+
+Read [ASTRID-LAYOUT-AND-RETURN-QA.md](ASTRID-LAYOUT-AND-RETURN-QA.md). **CAC-3 and CAC-6 are Done** after the reported overlaps passed live seven-seat and left/centre/right split checks. Phone controls also clear the wallet after collapsing rehearsal. CAC-2/4 remain In Dev; CAC-1/5/7 remain Ready for QA. Keep updating Jira live.
+
+The existing opt-in `&continuity=review` now includes a left empty-hand return as well as centre. The original four deliveries, all dealer speech, backend and guest access are preserved. **Watch left return test** shows the recorded game. Two other generated returns were rejected and are not installed. This is not full motion acceptance or default promotion.
+
 # Latest: centre return continuation — 10 September 2026
 
 Read [ASTRID-RETURN-CONTINUATION.md](ASTRID-RETURN-CONTINUATION.md). A centre-only empty-hand return is now playable with `&continuity=review` added to the existing staged Astrid route. It preserves the measured delivery, returns to the outlet and resumes the next card at registered frame 55. The final delivery keeps its original resting tail. Other three directions are unchanged. The rehearsal panel includes **Watch centre return test** with an actual-game recording. This is a partial candidate, not complete CAC-4 acceptance or default promotion.
