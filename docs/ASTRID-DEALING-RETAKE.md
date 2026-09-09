@@ -4,7 +4,7 @@ User review, 8 September 2026: “her handmovement looks like she is shuffling n
 
 ## Verified defect
 
-The currently indexed `idle-1/actions/action-deal` moves both palms over cards that are already on the tabletop. It does not contain a visible shoe pickup. Fingertips leave the source frame. The measured release cues improve timing but cannot turn this action into authentic dealing. Do not mark the existing take approved or copy its motion to other dealer identities. The existing asset is retained for comparison; no replacement was generated in this review.
+The currently indexed `idle-1/actions/action-deal` moves both palms over cards that are already on the tabletop. It does not contain a visible shoe pickup. Fingertips leave the source frame. The measured release cues improve timing but cannot turn this action into authentic dealing. Do not mark the existing take approved or copy its motion to other dealer identities. The existing asset is retained for comparison. See the 9 September checkpoint below for replacement research.
 
 ## Approved visual direction
 
@@ -34,6 +34,12 @@ Prepare additional target directions only after the first single-card action pas
 
 Watch the actual game at normal speed, then inspect pickup/release frame by frame. Test initial deal, one-card hit, double, split and dealer draws. Reject doubled cards, a second gesture without a card, floating cards, shuffling/rubbing motions, clipped fingertips, camera drift or an abrupt return cut. Repeat at narrow and wide viewport sizes. Update asset hashes only after documenting this visual review; a passing regression baseline is not visual approval.
 
-## Current dependency
+## 9 September replacement checkpoint
 
-Replacement footage has not been produced. The last connected Higgsfield Team balance was 3.02 credits despite the reported top-up. Resolve the credited account/workspace or supply a suitable approved dealing take before claiming this visual defect fixed. Do not spend on a new subscription automatically.
+Higgsfield credits were confirmed available. Several Seedance takes were generated and reviewed. The initial take reframed the actor; the eight-second retry preserved framing but contained generated cards, including one retained by the person matte. An empty-hand regeneration raised the hand instead of dealing. These were not promoted.
+
+Targeted Seedance 2.5 video cleanup (job `36f7b6e4-746d-4b20-9094-a585695745d2`) removed the card props while retaining the low single-card movement. Source and prompts are preserved under `content/staging/2026-09-09/`. A review copy is committed at `web/public/review/2026-09-09/astrid-deal-cleanup.mp4`.
+
+`/review/2026-09-09/contact.html` now demonstrates a real Three.js card following measured index/thumb positions on the presented video frame. Pause, seek and replay use the video clock; pickup and landing foley use cue crossings and suppress stale/hidden cues. This is an isolated review fixture, not an authoritative game draw.
+
+**Still not accepted for live dealing:** exact fingertip occlusion, pickup alignment with the actual table shoe, and target-specific releases remain unresolved. The live rejected-action safeguard stays enabled. Do not report all dealers' hand synchronization complete. The next integration must satisfy the contract and acceptance cases above before promotion.

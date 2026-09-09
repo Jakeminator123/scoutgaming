@@ -1,3 +1,11 @@
+# Latest saved follow-up — 9 September 2026
+
+The core checkpoint `a91f22c` is pushed and GitLab pipeline 2833139374 passed. No new John commits or recorded GitLab deployments were found during this session.
+
+New hand-contact inspection: `/review/2026-09-09/contact.html`. The cleaned actor take now contains no generated card props. Its real 3D review card follows measured fingertips on the video frame clock, with pickup/landing sounds. This remains a review fixture: hand occlusion and actual table/shoe alignment are not accepted, so it does not replace live dealing. See `ASTRID-DEALING-RETAKE.md` for exact boundaries and next acceptance steps.
+
+Astrid native goodluck was played twice consecutively and logged two complete embedded audio/video cycles. Earlier win twice and all-four-dealer repetitions also completed. These playback checks are not blanket approval of every phoneme or voice likeness.
+
 # Croupier — gameplay handoff for John
 
 Updated 9 September 2026. Read this alongside `ENVIRONMENT-RESTORATION.md` and Git history. This is a working demo with outstanding audiovisual defects, not final delivery.
