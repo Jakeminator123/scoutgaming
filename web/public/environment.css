@@ -103,3 +103,6 @@ html[data-dealer="astrid"] { --hands-cut:.878; }
   #dealer-options button { min-height:40px; }
   #chip-row { justify-content:flex-start; }
 }
+
+/* Finished speech uses a single native media clock for both mouth and voice. */
+.dealer-speech-video { position:absolute; inset:0; width:100%; height:auto; aspect-ratio:1; display:block; pointer-events:none; }

@@ -1,3 +1,4 @@
+import { movementCues } from './movement-cues.mjs';
 import { animateProgress } from './animation-clock.mjs';
 import * as THREE from './vendor/three/three.module.js';
 
@@ -29,7 +30,7 @@ export function createDealingCard({scene, camera, renderer}) {
     const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(x/innerWidth*2-1,1-y/innerHeight*2),camera);
     return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-height),new THREE.Vector3());
   }
-  return async function deal({origin, target, card, faceDown, handoff, duration=680, releaseFraction=.38}) {
+  return async function deal({origin, target, card, faceDown, handoff, duration=680, releaseFraction=.38, onCue=()=>{}}) {
     const w=target.width, h=target.height*Math.SQRT2;
     const shape=new THREE.Shape();const r=Math.min(w,h)*.055;
     shape.moveTo(-w/2+r,-h/2);shape.lineTo(w/2-r,-h/2);shape.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);
@@ -48,6 +49,7 @@ export function createDealingCard({scene, camera, renderer}) {
     const edgeMat=new THREE.MeshStandardMaterial({color:'#dfdbcf',roughness:.9});
     const paper=new THREE.Mesh(edgeGeo,edgeMat);paper.castShadow=true;root.add(paper);scene.add(root);
     const start=origin.clone(),mid=handoff ? atScreen(handoff.x,handoff.y,14) : start.clone(),end=atScreen(target.x+w/2,target.y+target.height/2,4);
+    const cues=movementCues(onCue);
     try {
       await animateProgress(duration,t=>{
         const split=handoff ? releaseFraction : 0;
@@ -58,6 +60,7 @@ export function createDealingCard({scene, camera, renderer}) {
         const flip=Math.max(0,Math.min(1,(t-split)/.4));
         root.rotation.set(0,-.45*(1-t),faceDown?Math.PI:Math.PI*(1-flip));
         root.scale.setScalar(.8+.2*t);renderer.render(scene,camera);
+        cues(t, !document.hidden);
       });
     } finally {
     scene.remove(root);geo.dispose();edgeGeo.dispose();frontMat.dispose();backMat.dispose();edgeMat.dispose();renderer.render(scene,camera);

@@ -28,3 +28,11 @@ test('caption and calibration changes require explicit baseline review',t=>{
  const path=join(base,'streams/index.json'),index=JSON.parse(readFileSync(path));delete index.clips['idle-1/speak/win'].audioDelayMs;writeFileSync(path,JSON.stringify(index));
  assert.throws(()=>f.run(),/missing or invalid calibration/);
 });
+
+test('embedded speech media and wording are protected by the roster baseline',t=>{
+ const f=fixture(t),path=join(f.root,'web/public/speech-media.json');
+ const manifest={astrid:{win:{src:'dealers/astrid/audio/en/win.mp3',text:'Well played.',review:'fixture'}}};
+ writeFileSync(path,JSON.stringify(manifest));assert.throws(()=>f.run(),/changed since baseline/);
+ f.run('--record-baseline');assert.match(f.run(),/PASS/);
+ manifest.astrid.win.text='Changed native words';writeFileSync(path,JSON.stringify(manifest));assert.throws(()=>f.run(),/changed since baseline/);
+});

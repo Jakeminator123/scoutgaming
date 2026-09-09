@@ -1,6 +1,23 @@
 # Croupier — gameplay handoff for John
 
-Updated 8 September 2026. Read this alongside `ENVIRONMENT-RESTORATION.md` and Git history. This is a working demo with outstanding audiovisual defects, not final delivery.
+Updated 9 September 2026. Read this alongside `ENVIRONMENT-RESTORATION.md` and Git history. This is a working demo with outstanding audiovisual defects, not final delivery.
+
+
+## 9 September checkpoint — current work
+
+Remote check found no newer commits from John, no open MRs and no GitLab deployment records. Branch head at start was `9721e82`; its pipeline 2829487983 passed. The Higgsfield top-up is now visible (1,002.12 credits at start), superseding the old credit blocker below.
+
+Card foley now comes from presented 3D movement: a light extraction at the first visible movement and a separate soft felt contact at landing. Muted/hidden and skipped frames cannot replay stale pickup cues. The unfilmed hit-button knock was removed. Reduced-motion/DOM fallback emits landing only. All dealers share this path.
+
+Astrid `win` and `goodluck` have new finished MP4s with embedded audio. `speech-media.json` selects these through the shared playback/abort queue; a native video overlays the existing dealer canvas in the same crop. No second MP3 or independent mouth clock runs for these takes. Original streams/calibrations remain intact. Exact transcripts and frame contact sheets were reviewed; voice likeness and full human phoneme acceptance remain open. Native media, text and review notes are now fingerprinted by the roster audit.
+
+The procedural shoe now has beveled acrylic, rounded base/outlet/follower and steel fixings. The reached cut card lies beside the shoe. Counts and game rules still come from the server. A generated GLB failed shape/transparency review and is not used in gameplay.
+
+`/review/2026-09-09/` shows the live shoe with rotation/full/half/cut controls and generated candidates. These inspection controls do not change any player's game. Two card-bearing Astrid action takes failed integration review: first changed framing; second retained framing/rest but produced duplicate cards, including one retained by person segmentation. An empty-hand actor plate is being generated for a server-owned 3D card to follow; no replacement action has been promoted yet. Mei's generated push is awaiting wording review because ASR reports “state” for “stake”; her existing audio is untouched.
+
+Verification so far: 20 focused tests and deep 90-stream audit; all four dealers' goodluck rehearsed twice, Astrid native win twice; isolated Mei round dealt/stand/dealer draws/settlement returned to betting with $1,005 from $1,000 after a $5 winning hand, no browser errors. Gameplay rule suite: 197 service checks, persisted split/double/insurance/idempotency, 77 split assertions and 50,000-round sweep. No real player DB was modified for fixtures.
+
+Local review server: localhost:4174, separate temp database. User preview: 127.0.0.1:4173. The preview server had stopped and was restarted. Low disk space prevented downloading a larger transcription model; the task's temporary Python environment was removed, freeing roughly 1 GB. Existing user files and previous private backups were preserved.
 
 ## Where the actual work is
 
