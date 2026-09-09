@@ -689,6 +689,20 @@
           "metadata": "d3530a32540f651a18c4d045217c4b07e074e05025747fe57e8c9ffba5dd8909"
         }
       },
+      "native": {
+        "win": {
+          "src": "dealers/astrid/speech/win.mp4",
+          "text": "Well played. Your winnings exactly as earned.",
+          "review": "2026-09-09: exact transcript; mouth opens through speech and returns to rest; native audio/video clock. Voice likeness needs user review.",
+          "sha256": "d6b1c106a86f337850ae2541686c6176e59dff8fa67dc36e7a8a5ee7cf2f0301"
+        },
+        "goodluck": {
+          "src": "dealers/astrid/speech/goodluck.mp4",
+          "text": "Bets are closed. Good luck at my table.",
+          "review": "2026-09-09: exact transcript, speech 0.8–3.2s, mouth returns to rest, fixed framing. Embedded audio/video clock. Voice likeness needs user review.",
+          "sha256": "222154b3a76e14ce0968e6cf92558c0fdce91a181e7ac61cac08dae8b37089b6"
+        }
+      },
       "cues": "5c4b12d48635673869b7542ca61bd6db596ef4d25e40411577c641565448b23a"
     },
     "amira": {

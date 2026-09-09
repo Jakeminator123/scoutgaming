@@ -51,6 +51,7 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
   if (disclosure) disclosure.textContent = disclosure.textContent.replace('Vera', DEALER.name);
 }
 
+const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
 let dealingCues = null;
 if (DEALER.dealingCues) {
   try {
@@ -251,9 +252,9 @@ const sfx = {
   // everything except the ambience loop is synthesized: generated foley assets
   // were noise-washes (or, boosted, pure hiss), and synthesis has zero latency
   play(n) {
-    if (voice.muted) return;
+    if (voice.muted || document.hidden) return;
     if (n === 'chip') return synthChip();
-    if (n === 'deal') return synthDeal();
+    if (n === 'pickup' || n === 'land') return synthDeal(n);
     if (n === 'knock') return synthKnock();
     if (n === 'win') return synthWin();
     if (n === 'bigwin') return synthBigWin();
@@ -312,13 +313,17 @@ function synthChip() {
     noiseBurst(t0 + 0.04 + Math.random() * 0.025, { dur: 0.035, gain: 0.35, type: 'bandpass', freq: f * 0.85, q: 2.5, decay: 2.6 });
   } catch { /* ignore */ }
 }
-function synthDeal() {
+function synthDeal(phase) {
   // card snapped onto felt: short high snap + faint slide
   try {
     actx = actx ?? new AudioContext();
     const t0 = actx.currentTime;
-    noiseBurst(t0, { dur: 0.03, gain: 0.5, type: 'highpass', freq: 2600, q: 0.8, decay: 1.6 });
-    noiseBurst(t0 + 0.012, { dur: 0.07, gain: 0.16, type: 'bandpass', freq: 1400, q: 0.9, decay: 3 });
+    if (phase === 'pickup') {
+      noiseBurst(t0, { dur: .06, gain: .12, type: 'bandpass', freq: 2400, q: .7, decay: 2 });
+    } else {
+      noiseBurst(t0, { dur: .024, gain: .25, type: 'lowpass', freq: 1800, q: .7, decay: 2 });
+      noiseBurst(t0, { dur: .04, gain: .08, type: 'bandpass', freq: 3200, q: .8, decay: 3 });
+    }
   } catch { /* ignore */ }
 }
 function synthKnock() {
@@ -954,7 +959,7 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
     const handoff = canUseDealingTake()
       ? cardMotion?.handoff ?? {x:dealerRect.x+dealerRect.width*.55,y:dealerRect.y+dealerRect.height*.93}
       : null;
-    return tableScene.dealCard({target,card,faceDown,handoff,duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
+    return tableScene.dealCard({target,card,faceDown,handoff,onCue:phase=>sfx.play(phase),duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
       .catch(error=>console.warn('[deal]',error.message)).finally(()=>{el.style.visibility='';});
   }
   const fallback = $('#shoe2d').getBoundingClientRect();
@@ -972,8 +977,9 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
     { transform:'translate(0,0) rotate(0deg) scale(1)' }
   ], { duration:matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 460, easing:'cubic-bezier(.2,.65,.3,1)' });
   return new Promise(resolve => {
-    const done=()=>{ flying.remove(); el.style.visibility=''; resolve(); };
-    motion.onfinish=done; motion.oncancel=done;
+    let finished=false;
+    const done=()=>{ if(finished)return; finished=true; flying.remove(); el.style.visibility=''; resolve(); };
+    motion.onfinish=()=>{if(!finished)sfx.play('land');done();}; motion.oncancel=done;
   });
 }
 function updateBadge(container, cards) {
@@ -1069,7 +1075,6 @@ function renderBoxHands(boxIdx) {
 }
 function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDraw, motion } = {}) {
   if (shoeState && shoeDraw) showShoe({ ...shoeState, dealt:shoeDraw, remaining:shoeState.total-shoeDraw, cutReached:shoeDraw>=shoeState.cutAfter });
-  sfx.play('deal');
   const el = cardEl(card, faceDown);
   const n = container.querySelectorAll('.card').length;
   el.style.setProperty('--ci', n);
@@ -1295,7 +1300,7 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
       sfx.play('chip');
     }
     document.querySelectorAll('#actions button, #actions-top button').forEach(b => { b.disabled = true; });
-    if (btn.dataset.act === 'hit') sfx.play('knock');
+    // A hit request has no filmed table knock; sound follows card contact.
     busy=true;
     try { const out=await tableCommand('act',{action:btn.dataset.act}); round=roundView(out.round); balance=out.balance; hand=round.live()[liveIdx]; }
     catch(e) { balance=beforeBalance; tableError(e); return; }
@@ -1506,8 +1511,18 @@ async function cutToTake(clip, signal) {
 let activeSpeech = null;
 function playRecorded(id, audio, text) {
   if (voice.muted) return Promise.resolve();
+  const native = speechMedia[DEALER.key]?.[id];
+  let video;
+  if (native) {
+    video=document.createElement('video');
+    video.src=native.src; video.playsInline=true; video.preload='auto'; video.volume=audio.volume;
+    video.className='dealer-speech-video'; video.setAttribute('aria-hidden','true');
+    video.style.visibility='hidden';
+    $('#dealer-wrap').appendChild(video);
+    audio=video; text=native.text;
+  }
   const clip = `idle-1/speak/${id}`;
-  const matched = engineUp && !!engine.index?.clips?.[clip];
+  const matched = !native && engineUp && !!engine.index?.clips?.[clip];
   const controller = new AbortController();
   activeSpeech = controller;
   bankAudio = audio;
@@ -1520,14 +1535,16 @@ function playRecorded(id, audio, text) {
       if (matched) await cutToTake(clip, signal);
     },
     onStart: () => {
+      if(video) video.style.visibility='';
       clearTimeout(showCaption.t);
       $('#caption').textContent = text;
       $('#caption').classList.add('show');
-      console.info('[speech] start', id, matched ? 'matched' : 'voice-over');
+      console.info('[speech] start', id, native ? 'embedded audio/video' : matched ? 'matched' : 'voice-over');
       if (matched) kfDebug.start(clip, audio);
       // Unmatched lines remain voice-over; never reuse a mouth saying other words.
     },
     onFinish: () => {
+      if(video) { video.removeAttribute('src'); video.load(); video.remove(); }
       if (activeSpeech !== controller) return;
       activeSpeech = null;
       console.info('[speech] end', id);
@@ -1754,7 +1771,8 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
   const update = () => {
     const id = lineSelect.value;
     const matched = !!engine.index?.clips?.[`idle-1/speak/${id}`];
-    status.textContent = (bank[id]?.text ?? LINES[id] ?? id) + (matched ? ' — matching clip available.' : ' — voice only; matching clip missing.');
+    const native=speechMedia[DEALER.key]?.[id];
+    status.textContent = (native?.text ?? bank[id]?.text ?? LINES[id] ?? id) + (native ? ' — video with embedded audio.' : matched ? ' — matching clip available.' : ' — voice only; matching clip missing.');
   };
   lineSelect.onchange = update; update();
   const play = () => {

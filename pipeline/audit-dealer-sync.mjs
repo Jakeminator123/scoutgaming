@@ -15,12 +15,14 @@ const read = file => JSON.parse(readFileSync(file, 'utf8'));
 const fingerprint = file => existsSync(file) ? sha(readFileSync(file)) : null;
 const probeCache = new Map();
 const probe = file => {
-  if (!probeCache.has(file)) probeCache.set(file, JSON.parse(execFileSync(process.env.FFPROBE || 'ffprobe', ['-v','error','-show_entries','stream=has_b_frames,width,height:format=duration','-of','json',file], {encoding:'utf8'})));
+  if (!probeCache.has(file)) probeCache.set(file, JSON.parse(execFileSync(process.env.FFPROBE || 'ffprobe', ['-v','error','-show_entries','stream=codec_type,has_b_frames,width,height:format=duration','-of','json',file], {encoding:'utf8'})));
   return probeCache.get(file);
 };
 const deep = process.argv.includes('--probe');
 const snapshot = { version:1, purpose:'Asset regression baseline only. Human audiovisual acceptance remains pending.', dealers:{} };
 const errors = [];
+const nativeFile=join(root,'web/public/speech-media.json');
+const nativeMedia=existsSync(nativeFile)?read(nativeFile):{};
 for (const [name, relative] of Object.entries(roster)) {
   const base = join(root, 'web/public', relative);
   const index = read(join(base, 'streams/index.json'));
@@ -72,8 +74,18 @@ for (const [name, relative] of Object.entries(roster)) {
     if (!mattes[key].video) errors.push(`${name}/${key}: missing hand matte`);
     if (deep && mattes[key].video && probe(file).streams[0]?.has_b_frames !== 0) errors.push(`${name}/${key}: B frames in hand matte`);
   }
+  const native = {};
+  for(const [id, take] of Object.entries(nativeMedia[name] ?? {})) {
+    const file=join(root,'web/public',take.src);
+    native[id]={...take,sha256:fingerprint(file)};
+    if(!native[id].sha256 || !take.text || !take.review) errors.push(`${name}/${id}: native speech requires media, text and review`);
+    if(deep && native[id].sha256) {
+      const streams=probe(file).streams;
+      if(!streams.some(s=>s.codec_type==='audio') || !streams.some(s=>s.codec_type==='video')) errors.push(`${name}/${id}: native speech requires both audio and video tracks`);
+    }
+  }
   const {clips: ignored, ...header} = index;
-  snapshot.dealers[name] = {header, lines, streams, mattes, cues:fingerprint(join(base,'dealing-cues.json'))};
+  snapshot.dealers[name] = {header, lines, streams, mattes, ...(Object.keys(native).length?{native}:{}), cues:fingerprint(join(base,'dealing-cues.json'))};
   console.log(`${name}: ${ids.size} lines, ${Object.values(lines).filter(l=>!l.video).length} missing speech takes (not approved), ${Object.keys(streams).length} streams`);
 }
 if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
@@ -84,9 +96,9 @@ if (process.argv.includes('--record-baseline')) {
   const before = read(baselineFile);
   for (const name of Object.keys(roster)) {
     const previous = before.dealers[name], current = snapshot.dealers[name];
-    for (const section of ['lines','streams','mattes']) {
-      for (const key of new Set([...Object.keys(previous?.[section] ?? {}),...Object.keys(current[section])])) {
-        if (JSON.stringify(previous?.[section]?.[key]) !== JSON.stringify(current[section][key])) errors.push(`${name}/${section}/${key}: changed since baseline; inspect media and calibration together`);
+    for (const section of ['lines','streams','mattes','native']) {
+      for (const key of new Set([...Object.keys(previous?.[section] ?? {}),...Object.keys(current[section] ?? {})])) {
+        if (JSON.stringify(previous?.[section]?.[key]) !== JSON.stringify(current[section]?.[key])) errors.push(`${name}/${section}/${key}: changed since baseline; inspect media and calibration together`);
       }
     }
     if (previous?.cues !== current.cues) errors.push(`${name}: hand cues changed`);
