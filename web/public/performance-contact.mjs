@@ -64,7 +64,43 @@ export function selectContactTake(manifest, action, {staged=false}={}) {
 }
 
 export function calibrationPayload(take) {
-  return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate})});
+  return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate}),...(take.continuation?{continuation:take.continuation}:{})});
+}
+
+// An empty-hand return may replace only the tail after a measured landing.
+// It is bound to the exact delivery and next pickup; media edits invalidate
+// the join instead of silently seeking into unrelated footage.
+export function validateContinuation(take, takes) {
+  const c=take?.continuation;
+  if(!c)return ['Missing continuation contract'];
+  const base=takes?.find(t=>t.id===c.baseId);
+  if(!base||base.action!==take.action||base.media.sha256!==c.baseMediaSha256||base.calibrationSha256!==c.baseCalibrationSha256)return ['Continuation base changed'];
+  if(!integer(c.preserveThrough)||c.preserveThrough<base.events.land||c.preserveThrough>=base.media.frames||c.preserveThrough>=take.media.frames)return ['Continuation starts before landing'];
+  if(JSON.stringify(take.camera)!==JSON.stringify(base.camera)||take.media.fps!==base.media.fps||take.playbackRate!==base.playbackRate)return ['Continuation camera or playback rate changed'];
+  if(['pickup','release','land'].some(k=>take.events[k]!==base.events[k])||JSON.stringify(take.frames.slice(0,c.preserveThrough+1))!==JSON.stringify(base.frames.slice(0,c.preserveThrough+1)))return ['Continuation changed measured delivery'];
+  if(!Array.isArray(c.resume)||!c.resume.length)return ['Continuation needs a registered next pickup'];
+  for(const r of c.resume){
+    const next=takes.find(t=>t.id===r.takeId);
+    if(!next||next.media.sha256!==r.mediaSha256||next.calibrationSha256!==r.calibrationSha256||JSON.stringify(next.camera)!==JSON.stringify(take.camera)||!integer(r.frame)||r.frame>=next.events.pickup)return ['Continuation pickup changed'];
+  }
+  return [];
+}
+
+export function selectSequenceTake(manifest, take, {staged=false,continues=false}={}) {
+  // Sequence candidates are never promoted by the ordinary table approval.
+  if(!staged||!continues)return take;
+  const candidate=manifest.continuations?.find(t=>t.continuation?.baseId===take.id);
+  if(!candidate||candidate.status!=='review'||!manifest.reviewCandidates?.includes(candidate.id)||validateContactTake(candidate).length||validateContinuation(candidate,manifest.takes).length)return take;
+  return candidate;
+}
+
+export function continuationStartFrame(previous, next) {
+  const id=next.continuation?.baseId??next.id;
+  const media=next.continuation?.baseMediaSha256??next.media.sha256;
+  const calibration=next.continuation?.baseCalibrationSha256??next.calibrationSha256;
+  const r=previous?.continuation?.resume?.find(r=>r.takeId===id);
+  if(!r||r.mediaSha256!==media||r.calibrationSha256!==calibration||JSON.stringify(previous.camera)!==JSON.stringify(next.camera)||!integer(r.frame)||r.frame>=next.events.pickup)return 0;
+  return r.frame;
 }
 
 // Route by the actual card-fan destination, including split offsets and camera

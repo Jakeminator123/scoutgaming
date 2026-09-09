@@ -3,14 +3,15 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {validateContactTake,validateSharedExtraction,calibrationPayload} from '../web/public/performance-contact.mjs';
+import {validateContactTake,validateSharedExtraction,validateContinuation,calibrationPayload} from '../web/public/performance-contact.mjs';
 const root=fileURLToPath(new URL('../web/public/',import.meta.url));
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'dealers/astrid/performance/manifest.json')));
 const sha=value=>createHash('sha256').update(value).digest('hex');
 let failures=0;
-for(const take of manifest.takes ?? []) {
+for(const take of [...manifest.takes??[],...manifest.continuations??[]]) {
   const errors=validateContactTake(take,{approved:['approved','contact-approved'].includes(take.status)});
   errors.push(...validateSharedExtraction(take,manifest.takes));
+  if(take.continuation)errors.push(...validateContinuation(take,manifest.takes));
   if(sha(calibrationPayload(take))!==take.calibrationSha256)errors.push('Tracking/camera checksum mismatch');
   const file=path.resolve(root,take.media.src);
   if(!file.startsWith(root))errors.push('Asset outside public directory');

@@ -1,4 +1,10 @@
-# Latest: Astrid CAC-1–7 follow-up — 9 September 2026, late evening
+# Latest: centre return continuation — 10 September 2026
+
+Read [ASTRID-RETURN-CONTINUATION.md](ASTRID-RETURN-CONTINUATION.md). A centre-only empty-hand return is now playable with `&continuity=review` added to the existing staged Astrid route. It preserves the measured delivery, returns to the outlet and resumes the next card at registered frame 55. The final delivery keeps its original resting tail. Other three directions are unchanged. The rehearsal panel includes **Watch centre return test** with an actual-game recording. This is a partial candidate, not complete CAC-4 acceptance or default promotion.
+
+Initial deal, return-time refresh, split and settlement were exercised on isolated4180. All four dealers repeated goodluck, deep media checks and42 hook tests pass. Source footage/provenance and the integer-frame packing fix are included. Raw evidence is saved privately. **CAC-4 moved In Dev → In Testing → In Dev; CAC-2 remains In Dev. CAC-1/3/5/6/7 remain Ready for QA.** No issue is Done. Continue updating Jira live.
+
+# Earlier: Astrid CAC-1–7 follow-up — 9 September 2026, late evening
 
 **Jira workflow update, 10 September:** user explicitly requested live issue progress. Current read-back: **CAC-2 and CAC-4 = In Dev**; **CAC-1, CAC-3, CAC-5, CAC-6 and CAC-7 = Ready for QA**. None are Done. Keep Jira current while working, use In Testing for active QA, and return failures to In Dev. The rule is also in AGENTS.md. Ready for QA indicates an implemented candidate awaiting acceptance, not production release or completion of the full Astrid milestone.
 

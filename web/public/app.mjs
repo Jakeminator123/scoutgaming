@@ -56,21 +56,23 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
 
 const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
 const performanceStaged=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
+const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
 const actorProvenance=performanceStaged?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
-let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,performanceCardCorners=null;
+let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,selectSequencePerformance=null,performanceCardCorners=null;
 if(performanceStaged) {
   try {
-    const [{PerformancePlayer,cardLandingCorners},{selectContactTake,selectPlayerDelivery},manifest]=await Promise.all([
+    const [{PerformancePlayer,cardLandingCorners},{selectContactTake,selectPlayerDelivery,selectSequenceTake},manifest]=await Promise.all([
       import('./performance-player.mjs'),import('./performance-contact.mjs'),
       fetch('dealers/astrid/performance/manifest.json').then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
     ]);
     performanceManifest=manifest;selectPerformance=selectContactTake;performanceCardCorners=cardLandingCorners;
     selectPlayerPerformance=selectPlayerDelivery;
+    selectSequencePerformance=selectSequenceTake;
     performancePlayer=new PerformancePlayer({host:$('#scene'),staged:performanceStaged,onState:text=>{
       const status=$('#performance-status');if(status)status.textContent=text;
       console.info('[performance]',text);
     }});
-    performancePlayer.preload(manifest.takes).catch(error=>console.warn('[performance] preload',error.message));
+    performancePlayer.preload([...manifest.takes,...(performanceContinuity?manifest.continuations??[]:[])]).catch(error=>console.warn('[performance] preload',error.message));
   }catch(error){console.info('[performance]',error.message);}
 }
 let dealingCues = null;
@@ -1001,8 +1003,9 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
   if(cardMotion?.performance && performancePlayer && tableScene) {
     const target=el.getBoundingClientRect();el.style.visibility='hidden';
     const corners=performanceCardCorners(el);
-    const take=cardMotion.performance.action==='deal-dealer'?cardMotion.performance:
+    const delivery=cardMotion.performance.action==='deal-dealer'?cardMotion.performance:
       selectPlayerPerformance(performanceManifest,{x:target.x+target.width/2,y:target.y+target.height/2},{width:innerWidth,height:innerHeight},{staged:performanceStaged})??cardMotion.performance;
+    const take=selectSequencePerformance(performanceManifest,delivery,{staged:performanceContinuity,continues:cardMotion.continues});
     return performancePlayer.play(take,{target,card,faceDown,corners,
       origin:tableScene.shoeOutlet(),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}})
       .catch(error=>{console.warn('[performance]',error.message);const status=$('#performance-status');if(status)status.textContent=error.message;})
@@ -1119,7 +1122,7 @@ async function animateSplit(bHand) {
   for (const h of [bHand, nh]) {
     const k = sibs.indexOf(h);
     if (!h.cards[1]) continue;
-    await deliverCard(conts[k], h.cards[1]);
+    await deliverCard(conts[k], h.cards[1], {continues:h===bHand&&!!nh.cards[1]});
     updateBadge(conts[k], h.cards);
     await sleep(80);
   }
@@ -1165,7 +1168,7 @@ async function deliverCard(container, card, options={}) {
   const action=container.id==='dealer-cards'?'deal-dealer':centre<innerWidth*.42?'deal-left':centre>innerWidth*.58?'deal-right':'deal-centre';
   const performanceTake=selectPerformance?.(performanceManifest,action,{staged:performanceStaged});
   if(performanceTake && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    motion={performance:performanceTake};
+    motion={performance:performanceTake,continues:options.continues===true};
   } else if (dealingActive && dealingCues && canUseDealingTake() && !document.hidden) {
     const current=engine.presentation;
     const lead=dealingCues.leadFrames;
@@ -1303,15 +1306,15 @@ async function dealSequence() {
   const live = round.live();
   const PACE = 80;
   for (let i = live.length - 1; i >= 0; i--) {
-    await deliverCard(boxContainer(i), live[i].cards[0]);
+    await deliverCard(boxContainer(i), live[i].cards[0], {continues:true});
     updateBadge(boxContainer(i), live[i].cards.slice(0, 1));
     await sleep(PACE);
   }
-  await deliverCard($('#dealer-cards'), round.dealer[0]);
+  await deliverCard($('#dealer-cards'), round.dealer[0], {continues:true});
   updateBadge($('#dealer-cards'), [round.dealer[0]]);
   await sleep(PACE);
   for (let i = live.length - 1; i >= 0; i--) {
-    await deliverCard(boxContainer(i), live[i].cards[1]);
+    await deliverCard(boxContainer(i), live[i].cards[1], {continues:true});
     updateBadge(boxContainer(i), live[i].cards.slice(0, 2));
     await sleep(PACE);
   }
@@ -1434,7 +1437,7 @@ async function dealerRevealChoreo() {
   }
   if (round.dealer.length > 2) await beginDealingTake();
   for (let i = 2; i < round.dealer.length; i++) {
-    await deliverCard(dc, round.dealer[i]);
+    await deliverCard(dc, round.dealer[i], {continues:i<round.dealer.length-1});
     updateBadge(dc, round.dealer.slice(0, i + 1));
     await sleep(80);
   }
