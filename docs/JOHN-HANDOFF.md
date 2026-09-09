@@ -1,4 +1,12 @@
-# Latest: Astrid CAC-1–4 checkpoint — 9 September 2026, evening
+# Latest: Astrid CAC-1–7 follow-up — 9 September 2026, late evening
+
+Read [ASTRID-CAC-FOLLOWUP.md](ASTRID-CAC-FOLLOWUP.md) first. CAC-5/6/7 are now included: one room plus transparent floor shadows; totals below betting spots with neighbour-aware split clearance; consistent GPU edge cleanup without regenerated footage. The 3D/resting card share one bitmap and deliveries route to the nearest measured release for the actual card fan. All source media/audio and the other dealers are preserved.
+
+The desktop scene now reserves space below the table using a shared actor/table/shoe/card camera transform. Deal Now is below the betting area, preventing its interception of centre-seat clicks. Phone gameplay follows the active server hand and keeps outer card fans in view. Actual seven-seat phone hit/bust/double/stand/settlement and split/side-bet checks were exercised on isolated4180 data. The latest real three-seat recording is available through the existing rehearsal button. See the follow-up for measured balances, evidence and limits.
+
+Still staged: source pose discontinuities, motion softness, exact seven-seat capture, filmed reveal/collection/shoe-change, full phoneme approval and physical-device verification remain. Do not mark the full goal achieved from these tests. No generation credits were spent in this follow-up and no Jira issue was closed.
+
+# Earlier: Astrid CAC-1–4 checkpoint — 9 September 2026, evening
 
 Read [ASTRID-CAC-FIXES.md](ASTRID-CAC-FIXES.md) for the issue-by-issue evidence and remaining limitations. Every CAC report refers to Astrid, even when named Vera. Current path remains `/?dealer=astrid&performance=staged&rehearsal=1`; 4176 serves the new static files after refresh. This is still staged, not the completed realism milestone or a production deployment.
 

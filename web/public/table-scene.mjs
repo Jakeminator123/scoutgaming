@@ -30,7 +30,10 @@ export function createTableScene(canvas, dealer, {contactProof=false}={}) {
   const leather = new THREE.MeshPhysicalMaterial({ color: '#191a18', roughness: .32, metalness: .12, clearcoat: .25 });
   const wood = new THREE.MeshStandardMaterial({ color: '#21150f', roughness: .38, metalness: .12 });
   const brass = new THREE.MeshStandardMaterial({ color: '#b99b57', roughness: .3, metalness: .75 });
-  const carpet = new THREE.MeshStandardMaterial({ map: carpetTexture(), roughness: 1, color: '#9da9ad' });
+  // The isolated Astrid scene already has a continuous photographic floor.
+  // Receive the table's shadows without painting a second carpet/horizon.
+  const carpet = contactProof ? new THREE.ShadowMaterial({opacity:.28})
+    : new THREE.MeshStandardMaterial({ map: carpetTexture(), roughness: 1, color: '#9da9ad' });
   const legMaterial = new THREE.MeshStandardMaterial({ color: '#201912', roughness: .26, metalness: .18 });
   const footMaterial = new THREE.MeshStandardMaterial({ color: '#8e7957', roughness: .3, metalness: .75 });
   const contact = new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false, opacity: .6 });

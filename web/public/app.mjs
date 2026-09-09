@@ -5,6 +5,7 @@ import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs'
 import { handValue } from './blackjack.mjs';
 import { placeActions } from './action-placement.mjs';
 import { packedSpeechCanvas } from './packed-speech.mjs';
+import { cardFaceArt } from './card-art.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -56,14 +57,15 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
 const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
 const performanceStaged=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
 const actorProvenance=performanceStaged?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
-let performanceManifest=null,performancePlayer=null,selectPerformance=null,performanceCardCorners=null;
+let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,performanceCardCorners=null;
 if(performanceStaged) {
   try {
-    const [{PerformancePlayer,cardLandingCorners},{selectContactTake},manifest]=await Promise.all([
+    const [{PerformancePlayer,cardLandingCorners},{selectContactTake,selectPlayerDelivery},manifest]=await Promise.all([
       import('./performance-player.mjs'),import('./performance-contact.mjs'),
       fetch('dealers/astrid/performance/manifest.json').then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
     ]);
     performanceManifest=manifest;selectPerformance=selectContactTake;performanceCardCorners=cardLandingCorners;
+    selectPlayerPerformance=selectPlayerDelivery;
     performancePlayer=new PerformancePlayer({host:$('#scene'),staged:performanceStaged,onState:text=>{
       const status=$('#performance-status');if(status)status.textContent=text;
       console.info('[performance]',text);
@@ -658,7 +660,16 @@ for (let i = 0; i < SEATS; i++) {
 const COMPACT_BOXES = [2, 3, 4];
 const compactQuery = matchMedia('(max-width: 860px) and (orientation: portrait)');
 let compactSeats = compactQuery.matches;
-const playedBoxes = () => (compactSeats ? COMPACT_BOXES : seatEls.map((_, i) => i));
+const playedBoxes = () => {
+  if(!compactSeats)return seatEls.map((_,i)=>i);
+  // A seven-seat desktop hand may be resumed on a phone. Keep the current
+  // server-owned hand in view instead of hiding seats 0, 1, 5 and 6 forever.
+  const active=round?.live()?.[round.active]?.box;
+  if(Number.isInteger(active)){
+    const start=Math.max(0,Math.min(SEATS-3,active-1));return [start,start+1,start+2];
+  }
+  return COMPACT_BOXES;
+};
 
 function layoutSeats() {
   const imgEl = document.querySelector('#tableimg');
@@ -670,7 +681,7 @@ function layoutSeats() {
   const CX = num('--arc-cx', 0.5), CY = num('--arc-cy', compactSeats ? 0.17 : 0.13);
   const RX = num('--arc-rx', 0.365), RY = num('--arc-ry', compactSeats ? 0.33 : 0.445);
   const boxes = playedBoxes();
-  const span = compactSeats && tableScene ? 60 : num('--arc-span', compactSeats ? 84 : 110);   // degrees of arc the boxes occupy
+  const span = compactSeats && tableScene ? 40 : num('--arc-span', compactSeats ? 84 : 110);   // leave room for the outer card fans on phones
   const step = span / (boxes.length - 1);
   seatEls.forEach((el, i) => el.classList.toggle('seat-off', !boxes.includes(i)));
   boxes.forEach((i, k) => {
@@ -683,6 +694,7 @@ function layoutSeats() {
     seatEls[i].style.top = `${(p?.y ?? img.top + fy * img.height) - table.top}px`;
     seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(fx - 0.5) * 61}deg`);
   });
+  layoutHandTotals();
 }
 layoutSeats();
 compactQuery.addEventListener('change', e => {
@@ -978,13 +990,20 @@ function cardEl(card, faceDown = false) {
   if (faceDown) { el.className = 'card back'; return el; }
   const red = card.s === '♥' || card.s === '♦';
   el.className = 'card' + (red ? ' red' : '');
+  if(performancePlayer){
+    el.style.backgroundImage=`url('${cardFaceArt(card).url}')`;el.style.backgroundSize='100% 100%';
+    el.style.backgroundColor='transparent';el.setAttribute('aria-label',`${card.r}${card.s}`);return el;
+  }
   el.innerHTML = `<div class="corner">${card.r}<br>${card.s}</div><div class="pip">${card.s}</div>`;
   return el;
 }
 function flyFromShoe(el, card, faceDown, cardMotion) {
   if(cardMotion?.performance && performancePlayer && tableScene) {
     const target=el.getBoundingClientRect();el.style.visibility='hidden';
-    return performancePlayer.play(cardMotion.performance,{target,card,faceDown,corners:performanceCardCorners(el),
+    const corners=performanceCardCorners(el);
+    const take=cardMotion.performance.action==='deal-dealer'?cardMotion.performance:
+      selectPlayerPerformance(performanceManifest,{x:target.x+target.width/2,y:target.y+target.height/2},{width:innerWidth,height:innerHeight},{staged:performanceStaged})??cardMotion.performance;
+    return performancePlayer.play(take,{target,card,faceDown,corners,
       origin:tableScene.shoeOutlet(),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}})
       .catch(error=>{console.warn('[performance]',error.message);const status=$('#performance-status');if(status)status.textContent=error.message;})
       .finally(()=>{el.style.visibility='';});
@@ -1033,6 +1052,23 @@ function updateBadge(container, cards) {
   badge.style.setProperty('--cn', Math.max(0, container.querySelectorAll('.card').length - 1));
   const { total, soft } = handValue(cards);
   badge.textContent = soft && total <= 21 ? `${total - 10}/${total}` : String(total);
+  layoutHandTotals();
+}
+function layoutHandTotals(){
+  const badges=[...document.querySelectorAll('.seat:not(.seat-off) .hand-total')];
+  for(const badge of badges)badge.style.setProperty('--badge-clear-y','0px');
+  const obstacles=[...document.querySelectorAll('.seat:not(.seat-off) .sidearcs,.seat:not(.seat-off) .card')].map(el=>el.getBoundingClientRect());
+  // A split fan can reach beneath a neighbouring seat's side-bet arc. Clear
+  // that arc as well as the split's own chip, then keep each total separate.
+  for(const parent of new Set(badges.map(b=>b.parentElement))){
+    const group=badges.filter(b=>b.parentElement===parent),bounds=group.map(b=>b.getBoundingClientRect());
+    const left=Math.min(...bounds.map(r=>r.left)),right=Math.max(...bounds.map(r=>r.right));
+    let top=Math.max(...bounds.map(r=>r.top));
+    for(const o of obstacles)if(left<o.right+6&&right>o.left-6)top=Math.max(top,o.bottom+8);
+    const scale=parent.getBoundingClientRect().width/parent.offsetWidth||1;
+    group.forEach((badge,i)=>badge.style.setProperty('--badge-clear-y',`${(top-bounds[i].top)/scale}px`));
+    obstacles.push(...group.map(b=>b.getBoundingClientRect()));
+  }
 }
 function seatOfLive(liveIdx) {
   // hands carry .box = the SEAT index (the engine is handed all seven boxes);
@@ -1170,6 +1206,7 @@ function clearTable() {
 // ---------- round flow ----------
 function setBanner(text) { const b = $('#banner'); if (!text) b.classList.add('hidden'); else { b.classList.remove('hidden'); b.textContent = text; } }
 function activeBoxHighlight() {
+  if(compactSeats)layoutSeats();
   seatEls.forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.subhand').forEach(su => su.classList.remove('waiting'));
   $('#actions').hidden = true;
@@ -1204,12 +1241,12 @@ function showActions(seat) {
   top.hidden=compact;
   const controls=compact?bar:top;
   const visible=el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
-  const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,#wallet,#bottom-right,#rehearsal')].filter(visible);
+  const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#rehearsal')].filter(visible);
   const obstacles=protectedEls.map(el=>el.getBoundingClientRect());
   const totals=[...activeSeat.querySelectorAll('.hand-total')].map(el=>el.getBoundingClientRect());
   const anchor={x:r.x,bottom:Math.max(r.y,...totals.map(b=>b.bottom))};
   const placement=placeActions({width:controls.offsetWidth,height:controls.offsetHeight,
-    viewport:{width:innerWidth,top:Math.min(innerHeight*.35,$('#table2d').getBoundingClientRect().top),bottom:$('#dealer-picker').getBoundingClientRect().top},anchor,obstacles});
+    viewport:{width:innerWidth,top:Math.min(innerHeight*.35,$('#table2d').getBoundingClientRect().top),bottom:$('#dealer-picker').getBoundingClientRect().top},anchor,obstacles,belowAnchor:true});
   if(placement){
     controls.style.position='fixed';controls.style.transform='none';controls.style.bottom='auto';
     controls.style.left=`${placement.x}px`;controls.style.top=`${placement.y}px`;
@@ -1491,6 +1528,7 @@ async function finish() {
   undoStack = [];
   clearTable();
   document.body.classList.remove('in-round');
+  layoutSeats();
   renderBets(); setBanner('PLEASE PLACE BETS');
   voice.say('placebets');
 }

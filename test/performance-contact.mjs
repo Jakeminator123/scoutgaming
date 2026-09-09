@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {CONTACT_CHECKS,DEAL_ACTIONS,TABLE_ACTIONS,validateContactTake,validateSharedExtraction,selectContactTake,contactFrame,contactCueClock,calibrationPayload,uniformRegistration} from '../web/public/performance-contact.mjs';
+import {CONTACT_CHECKS,DEAL_ACTIONS,TABLE_ACTIONS,validateContactTake,validateSharedExtraction,selectContactTake,selectPlayerDelivery,contactFrame,contactCueClock,calibrationPayload,uniformRegistration} from '../web/public/performance-contact.mjs';
 export function fixture() {
   const take={version:1,id:'synthetic-contract-test',dealer:'astrid',action:'deal-centre',status:'contact-approved',
     media:{src:'test.mp4',sha256:'a'.repeat(64),layout:'rgb-over-masks-r-actor-g-fingers',width:1280,height:720,fps:24,frames:12},
@@ -60,7 +60,7 @@ test('viewport registration preserves aspect ratio and actor/shoe coordinates to
     const fit=uniformRegistration(source,viewport);
     assert.equal(fit.width/fit.height,source.width/source.height);
     assert.equal(fit.x+fit.width/2,viewport.width/2);
-    if(viewport.width>viewport.height)assert.equal(fit.y+fit.height/2,viewport.height/2);
+    if(viewport.width>viewport.height){assert.equal(fit.y+fit.height/2,(viewport.height-136)/2);assert.ok(fit.y+fit.height<=viewport.height-136);}
     const outlet={x:fit.x+fit.width*.636,y:fit.y+fit.height*.599};
     assert.ok(outlet.x>0&&outlet.x<viewport.width&&outlet.y>0&&outlet.y<viewport.height);
   }
@@ -74,6 +74,24 @@ test('native-resolution media preserves calibrated on-screen contact at desktop 
     assert.deepEqual(validateContactTake(take),[]);
     assert.equal(contactFrame(take,4/24).frame,4);
   }
+});
+test('player delivery follows the measured fan target after resize and split offsets',()=>{
+  const takes=['deal-left','deal-centre','deal-right'].map((action,i)=>{
+    const t=fixture();t.id=action;t.action=action;t.status='review';
+    for(const f of t.frames)if(f.card)for(const p of f.card.corners)p[0]+=(i-1)*.28;
+    return t;
+  });
+  const manifest={status:'draft',takes,reviewCandidates:takes.map(t=>t.id)};
+  for(const viewport of [{width:1280,height:720},{width:390,height:844}]){
+    const fit=uniformRegistration(takes[0].camera,viewport);
+    for(const [i,t] of takes.entries()){
+      const target={x:fit.x+(.625+(i-1)*.28)*fit.width,y:fit.y+.54*fit.height};
+      assert.equal(selectPlayerDelivery(manifest,target,viewport,{staged:true}),t);
+    }
+  }
+  takes[2].status='rejected';
+  assert.notEqual(selectPlayerDelivery(manifest,{x:1200,y:550},{width:1280,height:720},{staged:true}),takes[2]);
+  assert.equal(selectPlayerDelivery(manifest,{x:500,y:500},{width:1280,height:720}),null);
 });
 test('own-card contact cannot silently diverge from its shared player extraction',()=>{
   const player=fixture(),dealer=structuredClone(player);dealer.action='deal-dealer';

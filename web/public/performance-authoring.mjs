@@ -32,7 +32,7 @@ export function installPerformanceAuthoring({ panel, tableScene }) {
         :kind==='dealer'?'An excerpt of Astrid dealing her initial upcard in the actual game. Silent recording; the complete initial deal also includes her face-down card.'
         :'Recorded in the actual game with an isolated demo wallet. This recording is silent; see the handoff for remaining visual and device checks.';
       const video=document.createElement('video');video.controls=true;video.playsInline=true;video.preload='metadata';
-      video.src=`dealers/astrid/performance/${{source:'centre-source',initial:'cac-three-seat-deal',dealer:'dealer-turn-review'}[kind]}.mp4`;
+      video.src=`dealers/astrid/performance/${{source:'centre-source',initial:'cac-followup-deal',dealer:'dealer-turn-review'}[kind]}.mp4`;
       const close=document.createElement('button');close.textContent='Return to game';close.onclick=()=>dialog.close();
       dialog.append(heading,note,video,close);document.body.append(dialog);dialog.showModal();
       dialog.addEventListener('close',()=>{video.pause();dialog.remove();},{once:true});

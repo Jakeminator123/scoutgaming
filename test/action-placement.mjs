@@ -20,3 +20,10 @@ test('portrait split hand keeps both totals and the dealer count above a usable 
   assert.ok(p);assert.ok(p.x>=12&&p.x+268<=378&&p.y+74<=785);
   assert.ok(obstacles.every(o=>!overlaps(box(p.x,p.y,268,74),o)));
 });
+test('actions stay below totals when clear space exists beside the wallet',()=>{
+  const anchor={x:1060,bottom:548};
+  const obstacles=[box(1030,520,60,28),box(960,455,135,75),box(18,612,300,52),box(820,612,330,52)];
+  const p=placeActions({width:196,height:54,viewport:{width:1280,top:250,bottom:678},anchor,obstacles,belowAnchor:true});
+  assert.ok(p);assert.ok(p.y>=anchor.bottom+12);
+  assert.ok(obstacles.every(o=>!overlaps(box(p.x,p.y,196,54),o)));
+});
