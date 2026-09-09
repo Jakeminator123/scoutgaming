@@ -4,7 +4,9 @@ Read [ASTRID-CAC-FOLLOWUP.md](ASTRID-CAC-FOLLOWUP.md) first. CAC-5/6/7 are now i
 
 The desktop scene now reserves space below the table using a shared actor/table/shoe/card camera transform. Deal Now is below the betting area, preventing its interception of centre-seat clicks. Phone gameplay follows the active server hand and keeps outer card fans in view. Actual seven-seat phone hit/bust/double/stand/settlement and split/side-bet checks were exercised on isolated4180 data. The latest real three-seat recording is available through the existing rehearsal button. See the follow-up for measured balances, evidence and limits.
 
-Still staged: source pose discontinuities, motion softness, exact seven-seat capture, filmed reveal/collection/shoe-change, full phoneme approval and physical-device verification remain. Do not mark the full goal achieved from these tests. No generation credits were spent in this follow-up and no Jira issue was closed.
+Code checkpoint `85e09a4` is pushed and its GitLab regression pipeline passed. A verified private backup contains source changes and raw QA evidence. Refresh during fingertip contact also recovered the same cards and balance; the reported house-wins speech played twice with the room aligned.
+
+Still staged: source pose discontinuities, motion softness, exact seven-seat capture, filmed reveal/collection/shoe-change, full phoneme approval and physical-device verification remain. Do not mark the full goal achieved from these tests. The implemented fringe/layout fixes used no generation credits. A subsequent single silent return-to-shoe candidate was generated and reviewed at source level; it is saved privately and **not installed**. See the follow-up's final section for the concrete next integration check. No Jira issue was closed.
 
 # Earlier: Astrid CAC-1–4 checkpoint — 9 September 2026, evening
 
