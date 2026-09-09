@@ -797,6 +797,8 @@ body.in-round #table-pick { opacity: .3; pointer-events: none; }
 
 @media (max-width: 860px) {
   #table-pick .tbl { padding: 5px 11px; font-size: 9px; letter-spacing: .1em; }
+  /* Stakes cannot change mid-hand; reserve the narrow control area for play. */
+  body.in-round #table-pick { display: none; }
   #hint { bottom: 27vh; }
 }
 
