@@ -12,6 +12,6 @@ dealer-regression:
     - node pipeline/audit-astrid-actor.mjs --probe
     - node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
     - node test/shoe-game.mjs
-    - node --test test/performance-contact.mjs
+    - node --test test/performance-contact.mjs test/pack-contact-media.mjs
     - node --test test/action-placement.mjs test/bugshot-report.mjs
     - node test/split-rules.mjs

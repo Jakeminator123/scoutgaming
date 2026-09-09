@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js';
-import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload} from './performance-contact.mjs';
+import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
 
@@ -65,6 +65,15 @@ export class PerformancePlayer {
       // the calibrated rate after loading as well, before the first frame.
       video.playbackRate=take.playbackRate??1;
       layer.dataset.playbackRate=String(video.playbackRate);
+      const startFrame=continuationStartFrame(this.held?.take,take);
+      layer.dataset.startFrame=String(startFrame);
+      layer.dataset.take=take.id;
+      if(startFrame>0)await new Promise((resolve,reject)=>{
+        const clean=()=>{video.removeEventListener('seeked',ready);video.removeEventListener('error',failed);signal.removeEventListener('abort',aborted);};
+        const ready=()=>{clean();resolve();},failed=()=>{clean();reject(new Error('Cannot seek to registered pickup'));},aborted=()=>{clean();reject(new Error('Pickup preparation interrupted'));};
+        video.addEventListener('seeked',ready,{once:true});video.addEventListener('error',failed,{once:true});signal.addEventListener('abort',aborted,{once:true});
+        if(signal.aborted)aborted();else video.currentTime=startFrame/take.media.fps;
+      });
       signal.throwIfAborted();
       clearTimeout(timer);timer=setTimeout(()=>controller.abort(),(video.duration/video.playbackRate+3)*1000);
       visual=createContactVisual(moving,width,height,card,faceDown,video);
@@ -87,6 +96,7 @@ export class PerformancePlayer {
           if(signal.aborted)return;
           try {
             const sample=contactFrame(take,metadata.mediaTime);
+            if(sample.frame<startFrame){frameRequest=video.requestVideoFrameCallback(paint);return;}
             layer.dataset.frame=String(sample.frame);
             layer.dataset.phase=sample.frame<take.events.pickup?'reach':sample.frame<take.events.release?'contact':sample.frame<take.events.land?'release':'return';
             let sampleCard=sample.card;
@@ -108,8 +118,8 @@ export class PerformancePlayer {
         video.play().catch(error=>{clean();reject(error);});
       });
       completed=true;
-      this.held={layer,camera:take.camera,dispose};
-      this.onState('Ready · continuous resting pose');
+      this.held={layer,camera:take.camera,take,dispose};
+      this.onState(take.continuation?'Ready · hand at shoe for next card':'Ready · resting pose');
       return {landed};
     } finally {
       clearTimeout(timer);video.pause();if(frameRequest!==undefined)video.cancelVideoFrameCallback(frameRequest);

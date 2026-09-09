@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {CONTACT_CHECKS,DEAL_ACTIONS,TABLE_ACTIONS,validateContactTake,validateSharedExtraction,selectContactTake,selectPlayerDelivery,contactFrame,contactCueClock,calibrationPayload,uniformRegistration} from '../web/public/performance-contact.mjs';
+import {CONTACT_CHECKS,DEAL_ACTIONS,TABLE_ACTIONS,validateContactTake,validateSharedExtraction,validateContinuation,selectSequenceTake,continuationStartFrame,selectContactTake,selectPlayerDelivery,contactFrame,contactCueClock,calibrationPayload,uniformRegistration} from '../web/public/performance-contact.mjs';
 export function fixture() {
   const take={version:1,id:'synthetic-contract-test',dealer:'astrid',action:'deal-centre',status:'contact-approved',
     media:{src:'test.mp4',sha256:'a'.repeat(64),layout:'rgb-over-masks-r-actor-g-fingers',width:1280,height:720,fps:24,frames:12},
@@ -109,4 +109,43 @@ test('silent action pacing is calibrated while cues follow presented source fram
   for(let tick=0;tick<30;tick++)cue(contactFrame(take,tick/60*take.playbackRate).frame);
   assert.deepEqual(cues,['pickup','land']);
   for(const rate of [0,Infinity,NaN,2.1]){take.playbackRate=rate;assert.ok(validateContactTake(take).includes('Invalid silent-action playback rate'));}
+});
+
+function sequenceFixture(){
+  const base=fixture(),candidate=structuredClone(base);
+  candidate.id='return-candidate';candidate.status='review';
+  candidate.media.sha256='c'.repeat(64);
+  candidate.continuation={baseId:base.id,baseMediaSha256:base.media.sha256,baseCalibrationSha256:base.calibrationSha256,preserveThrough:9,
+    resume:[{takeId:base.id,mediaSha256:base.media.sha256,calibrationSha256:base.calibrationSha256,frame:1}]};
+  candidate.calibrationSha256=createHash('sha256').update(calibrationPayload(candidate)).digest('hex');
+  return {base,candidate,manifest:{takes:[base],continuations:[candidate],reviewCandidates:[candidate.id]}};
+}
+test('only a continuing reviewed sequence can use the empty-hand return',()=>{
+  const {base,candidate,manifest}=sequenceFixture();
+  assert.deepEqual(validateContinuation(candidate,manifest.takes),[]);
+  assert.equal(selectSequenceTake(manifest,base,{staged:true,continues:true}),candidate);
+  for(const opts of [{staged:false,continues:true},{staged:true,continues:false}])assert.equal(selectSequenceTake(manifest,base,opts),base);
+  candidate.status='rejected';assert.equal(selectSequenceTake(manifest,base,{staged:true,continues:true}),base);
+});
+test('return replacement cannot alter the issued card or move its landing',()=>{
+  for(const mutate of [c=>c.continuation.preserveThrough=7,c=>c.events.land=7,c=>c.frames[4].card.corners[0][0]=.1,c=>c.continuation.baseMediaSha256='d'.repeat(64),c=>c.camera.shoeOutlet[0]=.1]){
+    const {base,candidate,manifest}=sequenceFixture();mutate(candidate);
+    assert.ok(validateContinuation(candidate,manifest.takes).length);
+    assert.equal(selectSequenceTake(manifest,base,{staged:true,continues:true}),base);
+  }
+});
+test('next pickup seek is bound to media, calibration and pre-pickup frames',()=>{
+  const {base,candidate}=sequenceFixture();
+  assert.equal(continuationStartFrame(candidate,base),1);
+  assert.equal(continuationStartFrame(candidate,candidate),1);
+  assert.equal(continuationStartFrame(null,base),0);
+  const cues=[],cue=contactCueClock(base.events,name=>cues.push(name));
+  for(const frame of [1,2,3,7,8,9])cue(frame);
+  assert.deepEqual(cues,['pickup','land']);
+  for(const mutate of [t=>t.media.sha256='d'.repeat(64),t=>t.calibrationSha256='e'.repeat(64),t=>t.camera.width=999]){
+    const next=structuredClone(base);mutate(next);assert.equal(continuationStartFrame(candidate,next),0);
+  }
+  const before=calibrationPayload(candidate);candidate.continuation.resume[0].frame=2;
+  assert.notEqual(calibrationPayload(candidate),before);
+  assert.equal(continuationStartFrame(candidate,base),0);
 });

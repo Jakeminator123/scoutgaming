@@ -22,8 +22,11 @@ export function packContactMedia({segments,masks,sourceOutput,packedOutput}) {
   });
   const maskFiles=fs.readdirSync(masks).filter(f=>/^\d{4}\.png$/.test(f)).sort();
   if(maskFiles.length!==frames||maskFiles.some((f,i)=>f!==String(i+1).padStart(4,'0')+'.png'))throw new Error('Native RGB and matte frame counts differ');
-  filters.push(segments.map((_,i)=>`[s${i}]`).join('')+`concat=n=${segments.length}:v=1:a=0,split=2[clean][rgb]`);
-  filters.push(`[${segments.length}:v]scale=${width}:${height}:flags=lanczos,setsar=1[mask]`);
+  // Concat uses microsecond timestamps; the image sequence uses 1/fps. Give
+  // both streams exact integer frame ticks before vstack, otherwise a rounded
+  // final timestamp can duplicate the last RGB/matte frame.
+  filters.push(segments.map((_,i)=>`[s${i}]`).join('')+`concat=n=${segments.length}:v=1:a=0,settb=1/${fps},setpts=N,split=2[clean][rgb]`);
+  filters.push(`[${segments.length}:v]scale=${width}:${height}:flags=lanczos,setsar=1,settb=1/${fps},setpts=N[mask]`);
   filters.push('[rgb][mask]vstack=inputs=2[packed]');
   for(const file of [sourceOutput,packedOutput])fs.mkdirSync(path.dirname(file),{recursive:true});
   const encode=['-an','-c:v','libx264','-crf','14','-bf','0','-pix_fmt','yuv420p','-movflags','+faststart'];
