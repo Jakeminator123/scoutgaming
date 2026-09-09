@@ -25,7 +25,7 @@ const CLIP = {
 const DEALERS = {
   vera:   { key: 'vera',   base: 'dealer',         anchor: 0.855, name: 'Vera' },
   astrid: { key: 'astrid', base: 'dealers/astrid', anchor: 0.878, name: 'Astrid',
-            scene: 'dealers/astrid/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
+            scene: 'dealers/astrid/scene.png', sceneWK: 2.63602, sceneHK: 1.11831,
             table: 'dealers/astrid/table.png', dealingCues: 'dealers/astrid/dealing-cues.json' },
   amira:  { key: 'amira', base: 'dealers/amira', anchor: 0.87, name: 'Amira',
             scene: 'dealers/amira/scene.png', sceneWK: 3.468, sceneHK: 1.47126,

@@ -1,3 +1,15 @@
+# Walkable casino checkpoint — 9 September 2026
+
+User clarified that the target includes moving a player around the casino, not just a filmed table. `/casino.html` is now a real navigable Three.js room connected to the existing four dealer routes. WASD/arrows, drag look, touch movement and click-to-walk table buttons work. First/third person can be switched. The table proximity prompt enters the existing blackjack game. The bottom “Walk casino” link returns to the saved approach position. Demo wallet and round remain server-owned; no new wallet or independent card simulation was added to the room.
+
+The generated guest GLB (`assets/player.glb`, Tripo job `f048bb88-ceff-473f-92a5-020ba114a45a`) is a real textured full-body mesh. Higgsfield rigging job `ffe67af4-f21a-45c8-a76b-b0ae29fc3470` failed without a reason. `player-rig.mjs` binds a basic local locomotion skeleton to this specific A-pose mesh; it is not a facial or dealer-hand rig. Footstep sounds follow rendered gait phase, opt-in. Source/job metadata is preserved privately under `content/staging/2026-09-09/walkable/`.
+
+Astrid background registration was scaled 32% too large: her 3168x1344 source needs scene width/height multipliers 2.63602/1.11831. Corrected the dealer configuration and removed the extra centre-plate vignette. Checked the actual seated scene at desktop width. No dealer speech media/calibration changed in this checkpoint.
+
+Verified: generated avatar and gait rendered; click-to-walk reached Astrid and exposed seat action; entering table loaded the actual game. Started an isolated $5 hand (5 hearts + ace spades against dealer 6 spades), left to the floor, returned to the same position, sat again and recovered the same cards with $1,000 balance and $5 bet, without a second deduction. Stand completed and balance settled at $1,010. Phone controls and first-person view checked; no browser warnings/errors observed. Three navigation tests cover table/wall collision and table selection. Deep all-four-dealer audit still passes with existing known missing speech takes.
+
+**Scope limits:** the walkable floor has real geometry and an animated guest, but no rigged dealer NPCs or multiplayer. Sitting transitions into the existing fixed-camera game. The earlier hand-contact rehearsal is still rejected for floating contact; Astrid's live action remains disabled rather than reusing the shuffling take. A reference clip can guide pickup/grip/release choreography; it is not model training. This is a playable development build, not photorealistic final delivery.
+
 # Latest saved follow-up — 9 September 2026
 
 The core checkpoint `a91f22c` is pushed and GitLab pipeline 2833139374 passed. No new John commits or recorded GitLab deployments were found during this session.
