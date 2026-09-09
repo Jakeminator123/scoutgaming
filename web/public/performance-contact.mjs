@@ -18,6 +18,7 @@ export function validateContactTake(take, {approved=false}={}) {
   check(typeof take.id==='string' && DEAL_ACTIONS.includes(take.action), 'Unknown single-card action');
   check(['draft','review','rejected','contact-approved','approved'].includes(take.status), 'Unknown review status');
   check(take.dealer==='astrid', 'This capture belongs to Astrid');
+  check(take.playbackRate===undefined||(finite(take.playbackRate)&&take.playbackRate>=1&&take.playbackRate<=2), 'Invalid silent-action playback rate');
   const m=take.media ?? {}, c=take.camera ?? {}, e=take.events ?? {};
   check(asset(m.src) && hash(m.sha256), 'Packed media path and SHA-256 are required');
   check(m.layout==='rgb-over-masks-r-actor-g-fingers', 'A single clock must carry RGB and both masks');
@@ -63,7 +64,7 @@ export function selectContactTake(manifest, action, {staged=false}={}) {
 }
 
 export function calibrationPayload(take) {
-  return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames});
+  return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate})});
 }
 
 export function validateSharedExtraction(take, takes) {

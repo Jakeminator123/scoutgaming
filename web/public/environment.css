@@ -106,6 +106,8 @@ html[data-dealer="astrid"] { --hands-cut:.878; }
 
 /* Finished speech uses a single native media clock for both mouth and voice. */
 .dealer-speech-video { position:absolute; inset:0; width:100%; height:auto; aspect-ratio:1; display:block; pointer-events:none; }
+.dealer-speech-hands {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+.packed-speech-playing #dealer, .packed-speech-playing #dealer-hands {visibility:hidden;}
 
 /* Astrid's scene is 3168x1344, with a ~1202px central film crop. The old
    Vera scale stretched it by 32%, then offset it 0.416 dealer widths. */
@@ -118,6 +120,19 @@ html[data-performance-staged="true"] #table2d {top:var(--performance-rear);heigh
 html[data-performance-staged="true"] #room2 {clip-path:inset(0 0 calc(100vh - var(--performance-rear)) 0);}
 .performance-playing #dealer-wrap, .performance-playing #dealer-hands-wrap {visibility:hidden;}
 .performance-active #actions, .performance-active #actions-top {visibility:hidden;}
+/* Every Astrid performance shares this one room. Legacy RGB is masked before
+   display, including idle and embedded speech; no central background window. */
+html[data-actor-isolated="true"] #room2 {display:none;}
+html[data-actor-isolated="true"] #room {
+  background-image:linear-gradient(to bottom,transparent 45%,rgba(6,8,9,.18)),url('dealers/astrid/actor/room.jpg');
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+@media(max-width:860px) and (orientation:portrait) {
+  .seat:nth-child(5) .hand-total[data-h=""] {left:10px;}
+  .table-3d #table2d > .hand-total {top:calc(13.5% - 18px);}
+}
 #performance-status {border-top:1px solid #D6FF3A44;padding-top:10px;}
 #performance-stage-banner {position:absolute;right:20px;top:80px;z-index:48;padding:8px 12px;border:1px solid #d2b663;background:#10130eee;color:#dfcc9b;font:10px/1.4 Inter,Arial,sans-serif;border-radius:4px;}
 #performance-source-review {max-width:min(1100px,94vw);padding:20px;background:#0b0e0d;color:#eee;border:1px solid #626744;border-radius:12px;}

@@ -21,7 +21,7 @@ const recipeFile=path.join(root,'media-recipe.json');
 const segments=fs.existsSync(recipeFile)?JSON.parse(fs.readFileSync(recipeFile)).segments:[{file:path.join(root,'source.mp4')}];
 const dimensions=packContactMedia({segments,masks:path.join(root,'contact-masks'),sourceOutput:native,packedOutput:packed});
 if(dimensions.frames!==tracking.length||measurements.length!==tracking.length)throw new Error('Source and measured frame counts differ');
-const take={version:1,id:`astrid-${prefix}-contact-20260909`,dealer:'astrid',action,status:'review',
+const take={version:1,id:`astrid-${prefix}-contact-20260909`,dealer:'astrid',action,status:'review',playbackRate:1.75,
   media:{src:`dealers/astrid/performance/${prefix}-review.mp4`,sha256:sha(fs.readFileSync(packed)),...dimensions,layout:'rgb-over-masks-r-actor-g-fingers'},
   camera:{...structuredClone(manifest.takes[0].camera),width:dimensions.width,height:dimensions.height},events:{pickup:+pickup,release:+release,land:+land,rest:+rest},frames:[]};
 for(const row of tracking){

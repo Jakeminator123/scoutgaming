@@ -3,6 +3,8 @@ import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
 import { handValue } from './blackjack.mjs';
+import { placeActions } from './action-placement.mjs';
+import { packedSpeechCanvas } from './packed-speech.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -53,6 +55,7 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
 
 const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
 const performanceStaged=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
+const actorProvenance=performanceStaged?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
 let performanceManifest=null,performancePlayer=null,selectPerformance=null,performanceCardCorners=null;
 if(performanceStaged) {
   try {
@@ -97,6 +100,7 @@ function showPoster() {
 const engine = new DealerEngine($('#dealer'), DEALER.base, {
   log: m => console.info('[dealer]', m),
   handsCanvas: $('#dealer-hands'),
+  actorMatteBase:actorProvenance?'dealers/astrid/actor':null,handsCut:DEALER.anchor,
 });
 let engineUp = false;
 let speaking = false;
@@ -117,6 +121,11 @@ const trigger = k => { if (!performanceStaged && engineUp && !speaking && speech
 
 try {
   await engine.init();
+  if(engine.fullActor){
+    document.documentElement.dataset.actorIsolated='true';
+    document.documentElement.style.setProperty('--hands-band-y',engine.bandY/engine.index.height);
+    document.documentElement.style.setProperty('--hands-band-h',engine.bandH/engine.index.height);
+  }
   if (!engine.index?.clips?.['idle-1/idle/idle']) throw new Error('no playable clips');
   await engine.start();
   engineUp = true;
@@ -854,7 +863,7 @@ function stackChip(v) {
 function renderBets() {
   if (!round && !busy) $('#dealer-switch-status').textContent = '';
   seatEls.forEach((seat, i) => {
-    const b = bets[i];
+    const b = round ? {...bets[i],main:round.hands.filter(h=>h.box===i).reduce((sum,h)=>sum+h.stake,0)} : bets[i];
     const spot = seat.querySelector('.spot');
     if (b.main) { spot.classList.add('staked'); spot.innerHTML = stackChip(b.main); }
     else { spot.classList.remove('staked'); spot.innerHTML = '<svg width="24" height="22" viewBox="-11 -12 27 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="-2" cy="-5" r="4.2"/><path d="M -9.5 8 c 1 -4.4 4 -6.8 7.5 -6.8 s 6.5 2.4 7.5 6.8"/><path d="M 8 -6 h 7 M 11.5 -9.5 v 7"/></svg>'; }
@@ -871,7 +880,8 @@ function renderBets() {
     seat.querySelector('.stake').textContent = parts.join(' ');
     seat.querySelector('.clear-box').hidden = !(b.main || b.pp || b.tp) || !!round || busy;
   });
-  $('#total-bet').textContent = fmt(betTotal());
+  // Splits/doubles change server hand stakes, not the original betting draft.
+  $('#total-bet').textContent = fmt(round ? round.hands.reduce((sum,h)=>sum+h.stake+(h.pp??0)+(h.tp??0)+(h.insured??0),0) : betTotal());
   $('#balance').textContent = fmt(balance);
   const staked = bets.filter(b => b.main > 0);
   const playable = staked.length > 0 && staked.every(b => b.main >= LIMITS.min);
@@ -1188,12 +1198,24 @@ function showActions(seat) {
       ((b.dataset.act === 'double' || b.dataset.act === 'split') && balance < stake);
   }
   if (bar.hidden) return;
-  const r = (seat ?? seatOfLive(round.active)).getBoundingClientRect();
-  // center the bar under the hand it controls, caret pointing at the chip
-  bar.hidden = false;
-  const w = bar.offsetWidth || 190;
-  bar.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.x - w / 2))}px`;
-  bar.style.top = `${Math.min(r.y + 84, innerHeight - $('#dealer-picker').offsetHeight - bar.offsetHeight - 8)}px`;
+  const activeSeat=seat ?? seatOfLive(round.active),r=activeSeat.getBoundingClientRect();
+  const compact=getComputedStyle(bar).display!=='none';
+  // Only one action panel is needed. Both layouts keep the same legal moves.
+  top.hidden=compact;
+  const controls=compact?bar:top;
+  const visible=el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
+  const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,#wallet,#bottom-right,#rehearsal')].filter(visible);
+  const obstacles=protectedEls.map(el=>el.getBoundingClientRect());
+  const totals=[...activeSeat.querySelectorAll('.hand-total')].map(el=>el.getBoundingClientRect());
+  const anchor={x:r.x,bottom:Math.max(r.y,...totals.map(b=>b.bottom))};
+  const placement=placeActions({width:controls.offsetWidth,height:controls.offsetHeight,
+    viewport:{width:innerWidth,top:Math.min(innerHeight*.35,$('#table2d').getBoundingClientRect().top),bottom:$('#dealer-picker').getBoundingClientRect().top},anchor,obstacles});
+  if(placement){
+    controls.style.position='fixed';controls.style.transform='none';controls.style.bottom='auto';
+    controls.style.left=`${placement.x}px`;controls.style.top=`${placement.y}px`;
+    controls.style.setProperty('--action-pointer-x',`${Math.max(16,Math.min(controls.offsetWidth-16,r.x-placement.x))}px`);
+    controls.classList.toggle('above-hand',placement.y<r.y);
+  }
 }
 
 $('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await ensureLogin('Sign in to start this round. Your selected bets will stay in place.'))return; if(betTotal()>balance){hint('BALANCE','Add funds or reduce your bet.');renderBets();return;} if(!round&&!busy)void dealSequence(); } catch(e){hint('SIGN IN',e.message);} };
@@ -1544,14 +1566,21 @@ async function cutToTake(clip, signal) {
 let activeSpeech = null;
 function playRecorded(id, audio, text) {
   if (voice.muted) return Promise.resolve();
-  const native = speechMedia[DEALER.key]?.[id];
-  let video;
+  const originalNative = speechMedia[DEALER.key]?.[id];
+  const packed=engine.fullActor&&originalNative?actorProvenance?.nativeSpeech?.[id]:null;
+  const native=packed?{...originalNative,...packed}:originalNative;
+  let video,packedPlayer;
   if (native) {
     video=document.createElement('video');
-    video.src=native.src; video.playsInline=true; video.preload='auto'; video.volume=audio.volume;
+    if(!packed)video.src=native.src; video.playsInline=true; video.preload='auto'; video.volume=audio.volume;
     video.className='dealer-speech-video'; video.setAttribute('aria-hidden','true');
     video.style.visibility='hidden';
     $('#dealer-wrap').appendChild(video);
+    if(packed){
+      video.style.display='none';packedPlayer=packedSpeechCanvas(video,{...packed,bandY:engine.bandY});
+      $('#dealer-wrap').append(packedPlayer.canvas);$('#dealer-hands-wrap').append(packedPlayer.hands);
+      packedPlayer.canvas.style.visibility=packedPlayer.hands.style.visibility='hidden';
+    }
     audio=video; text=native.text;
   }
   const clip = `idle-1/speak/${id}`;
@@ -1564,7 +1593,9 @@ function playRecorded(id, audio, text) {
   return playSpeech({
     audio, signal: controller.signal,
     prepare: async signal => {
+      if(packed)video.src=await performancePlayer.source({media:packed},signal);
       await waitForAudio(audio, signal);
+      if(packed&&(video.videoWidth!==packed.width||video.videoHeight!==packed.height*2))throw new Error('Packed speech dimensions changed');
       if (matched) await cutToTake(clip, signal);
     },
     onStart: () => {
@@ -1572,7 +1603,11 @@ function playRecorded(id, audio, text) {
       if(video) {
         $('#dealer-wrap').querySelectorAll('.dealer-speech-transition').forEach(node=>node.remove());
         video.style.visibility='';
-        if(performanceStaged)video.animate([{opacity:0},{opacity:1}],{duration:120});
+        if(packedPlayer){
+          packedPlayer.start();packedPlayer.canvas.style.visibility=packedPlayer.hands.style.visibility='';
+          document.documentElement.classList.add('packed-speech-playing');
+        }
+        else if(performanceStaged)video.animate([{opacity:0},{opacity:1}],{duration:120});
       }
       clearTimeout(showCaption.t);
       $('#caption').textContent = text;
@@ -1583,12 +1618,14 @@ function playRecorded(id, audio, text) {
     },
     onFinish: () => {
       if(video) {
-        if(performanceStaged&&video.ended&&!document.hidden&&video.videoWidth){
+        if(!packedPlayer&&performanceStaged&&video.ended&&!document.hidden&&video.videoWidth){
           const still=document.createElement('canvas');still.width=video.videoWidth;still.height=video.videoHeight;
           still.className='dealer-speech-video dealer-speech-transition';
           still.getContext('2d').drawImage(video,0,0);$('#dealer-wrap').append(still);
           still.animate([{opacity:1},{opacity:0}],{duration:180,fill:'forwards'}).finished.finally(()=>still.remove());
         }
+        packedPlayer?.stop();
+        if(packedPlayer&&activeSpeech===controller)document.documentElement.classList.remove('packed-speech-playing');
         video.removeAttribute('src'); video.load(); video.remove();
       }
       if (activeSpeech !== controller) return;
