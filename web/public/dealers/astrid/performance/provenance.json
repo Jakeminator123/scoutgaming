@@ -1,0 +1,38 @@
+{
+  "date": "2026-09-09",
+  "scope": "Astrid staged performance; existing speech untouched",
+  "sources": [
+    {
+      "folder": "contact-proof",
+      "job": "2d3b9918-2b53-4639-875f-74425ef19706",
+      "model": "seedance_2_0",
+      "status": "Existing player contact; extraction and target correction limitations",
+      "prompt": "Locked-off real casino broadcast camera, one continuous six-second photographic take. Preserve the provided first image EXACTLY: Astrid with blonde tied-back hair, black blazer and ivory blouse, her face, body proportions, dark warm room, every light, felt, rail, table legs and the transparent card shoe at image right of her. No camera movement, zoom, cut, reframing or background change. This is a precision motion-capture source for one single blackjack card, not a shuffle. 0-0.7 seconds: her hands rest exactly as in reference, lips closed. 0.7-2 seconds: the hand on image right extends naturally down and right to the BLACK FRONT OUTLET of the existing transparent shoe, near normalized image position (0.645,0.581). The other hand stays resting. 2-2.8 seconds: index finger and thumb visibly pinch the nearest edge of ONE thin blank ivory card and slide that card forward out of that existing shoe. 2.8-4 seconds: with continuous physical fingertip contact, guide this one card low over the felt toward normalized image position (0.53,0.60). Keep card nearly flat, no vertical flourish. At 4 seconds release the card gently so it slides forward a short distance onto the felt at (0.50,0.69). 4-5.3 seconds: empty hand withdraws to its original resting position, without dealing a second card. 5.3-6 seconds: still rest, lips closed, subtle natural breathing. All fingertips, both wrists, the outlet, and the complete card trajectory stay within the image. Fingers overlap the card edge naturally, card cannot float detached from grip. Only one blank card may move; no existing cards on table, no shuffling, no rubbing, no tapping, no talking, no extra gestures. Shoe does not move or deform. No text changes or new graphics. Warm natural skin, physically plausible motion and crisp hands.",
+      "sha256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
+    },
+    {
+      "folder": "dealer-delivery",
+      "job": "cc719eb9-cc3f-4555-9489-a48ecd0a9977",
+      "model": "seedance_2_0",
+      "status": "Dealer upcard, hole card and additional draw candidate",
+      "prompt": "Locked-off photographic blackjack dealer broadcast, identical supplied start and end camera composition, six seconds, ONE continuous action. Preserve Astrid exactly: blonde tied-back hair, black blazer and ivory blouse, warm room, lights, existing green-grey felt, transparent shoe at image right, fixed lens and framing. First and final resting posture must match the supplied image: both arms folded lightly in front, facing the player. 0-0.7 seconds hold that rest, lips closed. 0.7-2 seconds her image-right hand reaches the FRONT BLACK OUTLET of the existing shoe at normalized image coordinate (0.636,0.599). Thumb and index pull out ONE rigid blank ivory poker card. 2-3.5 seconds she deals the card TO HER OWN DEALER HAND: carry it sideways LEFT from the shoe, close to the back edge of the felt, and lay it at normalized image coordinate (0.50,0.615), immediately in front of her torso. Do NOT push it toward the player's betting circles or the insurance writing. This is a short sideways dealer delivery, not a long forward player delivery. The full card is visible beneath fingertips after leaving the outlet, keep its rectangle rigid with natural finger occlusion. At 3.5 seconds release onto the felt. 3.5-5 seconds empty hand returns to the original resting posture; 5-6 seconds look toward player, arms resting in the EXACT supplied end pose. Keep all fingers and wrist intact and in frame. No shuffling, no rubbing, no second card, no tossing, no card flipping, no speech, no camera movement, no cut, no zoom, no lighting changes. One blank tracking prop only; natural physical hand contact throughout.",
+      "sha256": "0baff4f9a64a1a06c7bc623ed2bc595c5919f8e5a0887e9892bca69cc453ef42"
+    },
+    {
+      "folder": "centre-continuity",
+      "job": "8c7cdd98-37cb-4ff9-988c-1d8cc2b0a218",
+      "model": "seedance_2_0",
+      "status": "Rejected: card delivered too far left",
+      "prompt": "One continuous fixed-camera photographic blackjack delivery, six seconds. Match the provided FIRST AND LAST image exactly. Astrid: blonde tied-back hair, black blazer, ivory blouse. Preserve identity, body size, exposure, lens, warm casino and existing table geometry throughout. Start 0-0.5 seconds looking toward player, forearms neatly folded in the EXACT reference resting pose. Then her image-right hand reaches to the FRONT BLACK CARD OUTLET of the transparent shoe at normalized coordinate (0.636,0.599), pulls ONE rigid blank ivory poker card out from the bottom front outlet, and slides it along the felt forward-left toward the centre player at (0.50,0.77). Keep the card nearly flat on the felt under her index and middle fingertips with realistic contact. Do not lift it upright. Release at 3.5 seconds, leave the card flat, and return her EMPTY hand calmly to folded resting arms by 5 seconds. Final second faces the player in the EXACT supplied end-frame pose. No shuffle, no second card, no card fan, no speech, no camera drift, no zoom, no cuts, no pose jumps. Full hand stays in frame. The blank card is a tracking prop only. First and last frames must match the reference actor pose and lighting so this action joins seamlessly to the other dealer delivery.",
+      "sha256": "5933bf8452908d188e14107cfae8f28d2c61e9af49c24aa9c4a975ac4689bd5c"
+    },
+    {
+      "folder": "centre-entry",
+      "job": "cfb36866-f66b-4280-b29c-cef580ae380d",
+      "model": "seedance_2_0",
+      "status": "Rejected: unwanted sweep during preparation",
+      "prompt": "Photographic blackjack dealer Astrid, one continuous gentle preparatory hand movement. EXACT supplied first and last frames. Camera entirely locked. Four seconds. Start in the exact folded-arm resting pose in first image. Calmly and naturally move her image-right arm and hand into the exact ready-to-reach pose in the last image. End exactly in that supplied last pose, including gaze and head angle. This is ONLY the preparatory movement BEFORE she takes a card. Both hands EMPTY throughout. No cards drawn, no dealing, no shuffling, no rubbing hands, no new props, no speech. Keep the dealer identity, face, blonde tied-back hair, black blazer, ivory blouse, skin exposure, room, shoe, felt and geometry perfectly fixed. Smooth ease in and ease out, no cuts or dissolves. Body and hands follow a plausible physical path between the supplied poses. Keep all fingers and arms intact.",
+      "sha256": "25c225a8542c1fcf1a086de9eb281b3339767d9a64f3fc3bcf3865138b57bd12"
+    }
+  ]
+}

@@ -1,10 +1,11 @@
 import { createDealingCard } from './dealing-card.mjs';
 import { makeShoe } from './shoe-model.mjs';
+import { uniformRegistration } from './performance-contact.mjs';
 import * as THREE from './vendor/three/three.module.js';
 
 // Fixed camera: the dealer film, mesh rail and DOM hit targets share one
 // projection. Camera parallax would break contact with the recorded hands.
-export function createTableScene(canvas, dealer) {
+export function createTableScene(canvas, dealer, {contactProof=false}={}) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   renderer.setClearColor(0x000000, 0);
@@ -47,14 +48,23 @@ export function createTableScene(canvas, dealer) {
     s.closePath(); return s;
   }
   function resize() {
-    width = innerWidth; height = innerHeight;
-    const portrait = width < 861 && height > width;
-    rear = portrait ? height * .40 : height * .52;
+    width = contactProof ? 1280 : innerWidth; height = contactProof ? 720 : innerHeight;
+    const fit=contactProof?uniformRegistration({width,height},{width:innerWidth,height:innerHeight}):null;
+    const portrait = !contactProof && width < 861 && height > width;
+    rear = fit ? fit.y+fit.height*.52 : portrait ? height * .40 : height * .52;
+    if(fit){
+      const style=document.documentElement.style;
+      style.setProperty('--dealer-h',`${fit.height*.64}px`);
+      style.setProperty('--dealer-top',`${rear-.878*fit.height*.64}px`);
+      style.setProperty('--performance-rear',`${rear}px`);
+      style.setProperty('--performance-table-height',`${fit.height*.48}px`);
+      document.documentElement.dataset.performanceStaged='true';
+    }
     rx = portrait ? width * .78 : width * .485;
     depth = height * (portrait ? .34 : .39) * Math.SQRT2;
-    renderer.setSize(width, height, false);
-    camera.left = -width / 2; camera.right = width / 2;
-    camera.top = height / 2; camera.bottom = -height / 2;
+    renderer.setSize(innerWidth, innerHeight, false);
+    camera.left = -innerWidth / 2; camera.right = innerWidth / 2;
+    camera.top = innerHeight / 2; camera.bottom = -innerHeight / 2;
     camera.near = 1; camera.far = 10000; camera.updateProjectionMatrix();
     Object.assign(key.shadow.camera, { left: -width, right: width, top: height, bottom: -height, near: 1, far: 5000 });
     key.shadow.camera.updateProjectionMatrix();
@@ -64,7 +74,8 @@ export function createTableScene(canvas, dealer) {
       group.traverse(o => { o.geometry?.dispose(); });
     }
     group = new THREE.Group();
-    group.position.z = (rear - height / 2) * Math.SQRT2;
+    group.position.z = (rear - innerHeight / 2) * Math.SQRT2;
+    if(fit)group.scale.setScalar(fit.scale);
     scene.add(group);
     // The table is supported by two pedestals on a carpeted floor. Floor
     // starts behind the legs, replacing the old photo's foreground table.
@@ -110,18 +121,19 @@ export function createTableScene(canvas, dealer) {
     // A detailed existing product cutout suits this fixed broadcast camera
     // better than a low-poly replacement. Its contact shadow lives on the felt.
     const size = Math.max(80, Math.min(width * .12, height * .19));
-    const shoeX = Math.min(rx * .70, width / 2 - size * .60);
+    const shoeX = Math.min(rx * (contactProof ? .34 : .70), width / 2 - size * .60);
+    const shoeZ = depth * (contactProof ? .10 : .25);
     const shadowGeo = new THREE.PlaneGeometry(size * .72, size * .72); shadowGeo.rotateX(-Math.PI / 2);
     const shadow = mesh(shadowGeo, contact, 3); shadow.castShadow = false;
-    shadow.position.x = shoeX; shadow.position.z = depth * .25;
+    shadow.position.x = shoeX; shadow.position.z = shoeZ;
     shoeModel=makeShoe(size,shoeState,render);
-    shoeModel.root.position.set(shoeX,5,depth*.25);
+    shoeModel.root.position.set(shoeX,5,shoeZ);
     shoeModel.root.rotation.y=-.62;
     group.add(shoeModel.root);
   }
   function project(x, z) {
     const p = new THREE.Vector3(x * rx, 1, z * depth).applyMatrix4(group.matrixWorld).project(camera);
-    return { x: (p.x + 1) * width / 2, y: (1 - p.y) * height / 2 };
+    return { x: (p.x + 1) * innerWidth / 2, y: (1 - p.y) * innerHeight / 2 };
   }
   function render() { renderer.render(scene, camera); }
   canvas.addEventListener('webglcontextlost', e => {
@@ -131,11 +143,22 @@ export function createTableScene(canvas, dealer) {
   resize();
   const dealCard = createDealingCard({scene,camera,renderer});
   return { resize, project, render,
+    registration() {
+      scene.updateMatrixWorld(true);
+      const outlet=shoeModel.outlet.getWorldPosition(new THREE.Vector3());
+      const screen=outlet.clone().project(camera);
+      return {version:1, viewport:{width:innerWidth,height:innerHeight}, camera:{type:'orthographic',
+        projection:camera.projectionMatrix.toArray(), world:camera.matrixWorld.toArray()},
+        shoe:{matrix:shoeModel.root.matrixWorld.toArray(), outlet:outlet.toArray(),
+          screen:[(screen.x+1)/2,(1-screen.y)/2]},
+        dealerRect:(()=>{const r=document.querySelector('#dealer').getBoundingClientRect();
+          return {x:r.x/innerWidth,y:r.y/innerHeight,width:r.width/innerWidth,height:r.height/innerHeight};})()};
+    },
     dealCard(options) { return dealCard({...options,origin:shoeModel.outlet.getWorldPosition(new THREE.Vector3())}); },
     setShoe(state) { shoeState=state; shoeModel?.update(state); render(); },
     shoeOutlet() {
       const p=shoeModel.outlet.getWorldPosition(new THREE.Vector3()).project(camera);
-      return {x:(p.x+1)*width/2,y:(1-p.y)*height/2};
+      return {x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2};
     }
   };
 }

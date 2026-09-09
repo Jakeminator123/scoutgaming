@@ -1,4 +1,6 @@
 #!/bin/sh
 set -eu
 node pipeline/audit-dealer-sync.mjs
+node pipeline/audit-performance.mjs
 node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
+node --test test/performance-contact.mjs
