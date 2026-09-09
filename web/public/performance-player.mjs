@@ -32,6 +32,9 @@ export class PerformancePlayer {
     const controller=new AbortController();this.active=controller;
     const {signal}=controller;
     const video=document.createElement('video');video.playsInline=true;video.muted=true;video.preload='auto';
+    // Only silent dealing footage is retimed. Contact and foley still use the
+    // presented source frame, never a separate accelerated animation timer.
+    video.defaultPlaybackRate=take.playbackRate??1;
     const layer=document.createElement('div');layer.className='performance-layer';layer.setAttribute('aria-hidden','true');
     layer.dataset.action=take.action;layer.dataset.faceDown=String(faceDown);
     Object.assign(layer.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});
@@ -56,8 +59,12 @@ export class PerformancePlayer {
       });
       if(video.videoWidth!==width||video.videoHeight!==height*2)throw new Error('Packed performance dimensions are invalid');
       if(Math.abs(video.duration-take.media.frames/take.media.fps)>2/take.media.fps)throw new Error('Performance duration no longer matches tracking');
+      // Resource selection resets playbackRate to defaultPlaybackRate. Apply
+      // the calibrated rate after loading as well, before the first frame.
+      video.playbackRate=take.playbackRate??1;
+      layer.dataset.playbackRate=String(video.playbackRate);
       signal.throwIfAborted();
-      clearTimeout(timer);timer=setTimeout(()=>controller.abort(),(video.duration+3)*1000);
+      clearTimeout(timer);timer=setTimeout(()=>controller.abort(),(video.duration/video.playbackRate+3)*1000);
       visual=createContactVisual(moving,width,height,card,faceDown,video);
       const cue=contactCueClock(take.events,onCue);
       const end=(corners??[[target.x,target.y],[target.right,target.y],[target.right,target.bottom],[target.x,target.bottom]])

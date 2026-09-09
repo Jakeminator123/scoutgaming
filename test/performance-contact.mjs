@@ -84,3 +84,11 @@ test('own-card contact cannot silently diverge from its shared player extraction
   dealer.frames[3]=structuredClone(player.frames[3]);dealer.events.pickup++;
   assert.deepEqual(validateSharedExtraction(dealer,[player,dealer]),['Shared pickup camera/timing changed']);
 });
+test('silent action pacing is calibrated while cues follow presented source frames',()=>{
+  const take=fixture(),original=calibrationPayload(take);take.playbackRate=1.75;
+  assert.notEqual(calibrationPayload(take),original);
+  const cues=[],cue=contactCueClock(take.events,name=>cues.push(name));
+  for(let tick=0;tick<30;tick++)cue(contactFrame(take,tick/60*take.playbackRate).frame);
+  assert.deepEqual(cues,['pickup','land']);
+  for(const rate of [0,Infinity,NaN,2.1]){take.playbackRate=rate;assert.ok(validateContactTake(take).includes('Invalid silent-action playback rate'));}
+});

@@ -6,10 +6,11 @@
 // self-assigned monotonic timestamps and fragment/container timing never exists.
 
 export class DealerEngine {
-  constructor(canvas, assetBase, { log = () => {}, handsCanvas = null } = {}) {
+  constructor(canvas, assetBase, { log = () => {}, handsCanvas = null, actorMatteBase = null, handsCut = .878 } = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.assetBase = assetBase;
+    this.actorMatteBase=actorMatteBase;this.handsCut=handsCut;
     this.log = log;
     this.buffers = new Map();   // clipKey -> ArrayBuffer (whole stream)
     this.queue = [];            // pending action clip keys
@@ -60,31 +61,34 @@ export class DealerEngine {
   async initHands() {
     if (!this.handsCanvas) return;
     try {
-      const res = await fetch(`${this.assetBase}-hands/streams/index.json`);
+      const res = await fetch(`${this.actorMatteBase??this.assetBase+'-hands'}/streams/index.json`);
       if (!res.ok) return;
       this.handsIndex = await res.json();
     } catch { return; }
     const hc = { codec: this.handsIndex.codec, optimizeForLatency: true };
     if (!(await VideoDecoder.isConfigSupported(hc)).supported) { this.handsIndex = null; return; }
     this.handsConfig = hc;
+    this.fullActor=!!this.actorMatteBase&&this.handsIndex.fullActor===true;
+    if(this.fullActor&&Object.entries(this.index.clips).some(([key,clip])=>this.handsIndex.clips[key]?.frameCount!==clip.frameCount))throw new Error('Actor matte coverage does not match the speech frames');
     // stacked track: frame = [band content | alpha] vertically; content and
     // alpha come from the SAME decoded frame, so they can never drift apart.
     // Legacy matte-only track: frame = alpha, content is cut from the main
     // frame at paint time.
     this.handsStacked = !!this.handsIndex.stacked;
-    this.bandH = this.handsStacked ? this.handsIndex.height / 2 : this.handsIndex.height;
+    this.bandH = this.fullActor?Math.round(this.index.height*(1-this.handsCut)):(this.handsStacked ? this.handsIndex.height / 2 : this.handsIndex.height);
     this.handsCanvas.width = this.handsIndex.width;
     this.handsCanvas.height = this.bandH;
     this.handsCtx = this.handsCanvas.getContext('2d');
     this.bandY = this.index.height - this.bandH; // band is bottom-anchored
     this.matte = document.createElement('canvas');
     this.matte.width = this.handsIndex.width;
-    this.matte.height = this.bandH;
+    this.matte.height = this.fullActor?this.index.height:this.bandH;
     this.matteCtx = this.matte.getContext('2d');
     this.matteCtx.filter = 'url(#luma-alpha)';
     if (this.matteCtx.filter === 'none') { // browser can't do SVG canvas filters
       this.log('hands matte off: no SVG filter support');
       this.handsIndex = null;
+      this.fullActor = false;
       return;
     }
     this.handsDecoder = this.makeHandsDecoder();
@@ -129,6 +133,7 @@ export class DealerEngine {
     const res = await fetch(`${this.assetBase}/streams/${meta.file}`);
     if (!res.ok) throw new Error(`clip ${key}: HTTP ${res.status}`);
     const buf = await res.arrayBuffer();
+    if(this.fullActor)await this.checkActorHash(buf,this.handsIndex.clips[key]?.sha256,'speech source');
     this.buffers.set(key, buf);
     return buf;
   }
@@ -137,11 +142,17 @@ export class DealerEngine {
     if (this.handsBuffers.has(key)) return this.handsBuffers.get(key);
     const meta = this.handsIndex?.clips[key];
     if (!meta) return null;
-    const res = await fetch(`${this.assetBase}-hands/streams/${meta.file}`);
+    const res = await fetch(`${this.actorMatteBase??this.assetBase+'-hands'}/streams/${meta.file}`);
     if (!res.ok) throw new Error(`hands clip ${key}: HTTP ${res.status}`);
     const buf = await res.arrayBuffer();
+    if(this.fullActor)await this.checkActorHash(buf,meta.matteSha256,'actor mask');
     this.handsBuffers.set(key, buf);
     return buf;
+  }
+
+  async checkActorHash(bytes,expected,label){
+    const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
+    if(actual!==expected)throw new Error(`Astrid ${label} differs from its paired asset`);
   }
 
   waitForFrame(key, frame, { afterCycle = -1, timeoutMs = 9000 } = {}) {
@@ -224,7 +235,7 @@ export class DealerEngine {
             cur.hands = null;
             if (this.handsIndex?.clips[key]) {
               try { cur.hands = { meta: this.handsIndex.clips[key], buf: await this.fetchHandsClip(key) }; }
-              catch (e) { this.log(`hands clip ${key} unavailable: ${e.message}`); }
+              catch (e) { if(this.fullActor)throw e;this.log(`hands clip ${key} unavailable: ${e.message}`); }
             }
             this.stats.splices++;
             this.currentClip = key;
@@ -269,11 +280,17 @@ export class DealerEngine {
     const drain = () => {
       const now = performance.now();
       while (now >= next && this.display.length) {
+        if(this.fullActor){
+          const pending=this.display[0];
+          while(this.handsDisplay.length&&this.handsDisplay[0].f.timestamp<pending.f.timestamp)this.handsDisplay.shift().f.close();
+          // Never paint a background-bearing RGB frame without its exact mask.
+          if(!this.handsDisplay.length||this.handsDisplay[0].f.timestamp!==pending.f.timestamp)break;
+        }
         const { f, key, first, request, frame, cycle } = this.display.shift();
         // a splice is a hard cut within the pose family; a ~200ms crossfade
         // hides the residual micro-pose jump (worst on speech interrupts,
         // invisible on well-matched boundaries)
-        if (key && key !== this.presentedClip && this.presentedClip) {
+        if (!this.fullActor && key && key !== this.presentedClip && this.presentedClip) {
           if (!this.fadeCanvas) {
             this.fadeCanvas = document.createElement('canvas');
             this.fadeCanvas.width = this.canvas.width;
@@ -282,6 +299,7 @@ export class DealerEngine {
           this.fadeCanvas.getContext('2d').drawImage(this.canvas, 0, 0);
           this.fadeTicks = 5;
         }
+        this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
         this.ctx.drawImage(f, 0, 0, this.canvas.width, this.canvas.height);
         if (this.fadeTicks > 0) {
           this.ctx.globalAlpha = this.fadeTicks / 6;
@@ -349,6 +367,14 @@ export class DealerEngine {
     }
     const m = this.handsDisplay.shift();
     const { width, height } = this.handsCanvas;
+    if(this.fullActor){
+      this.matteCtx.clearRect(0,0,this.matte.width,this.matte.height);
+      this.matteCtx.drawImage(m.f,0,0,this.matte.width,this.matte.height);
+      this.ctx.globalCompositeOperation='destination-in';this.ctx.drawImage(this.matte,0,0);this.ctx.globalCompositeOperation='source-over';
+      this.handsCtx.clearRect(0,0,width,height);
+      this.handsCtx.drawImage(this.canvas,0,this.bandY,width,height,0,0,width,height);
+      m.f.close();return;
+    }
     this.matteCtx.clearRect(0, 0, width, height);
     // alpha strip: whole frame (legacy) or the frame's bottom half (stacked)
     this.matteCtx.drawImage(m.f, 0, this.handsStacked ? height : 0, width, height,

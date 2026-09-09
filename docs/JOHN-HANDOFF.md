@@ -1,3 +1,15 @@
+# Latest: Astrid CAC-1–4 checkpoint — 9 September 2026, evening
+
+Read [ASTRID-CAC-FIXES.md](ASTRID-CAC-FIXES.md) for the issue-by-issue evidence and remaining limitations. Every CAC report refers to Astrid, even when named Vera. Current path remains `/?dealer=astrid&performance=staged&rehearsal=1`; 4176 serves the new static files after refresh. This is still staged, not the completed realism milestone or a production deployment.
+
+The staged table now uses one clean room, full actor masks for every original Astrid stream, and matched masks with unchanged embedded goodluck/win audio. Native speech hides both idle RGB and idle hands. New left/right deliveries share the same first72 front-outlet frames as centre/own delivery. Silent takes play at1.75 after loading (about4s); speech stays1x. Controls avoid rendered cards/totals/wallet, with phone and split total positioning corrected. Active chip/total values read server hand stakes instead of the original betting draft.
+
+Evidence is in the actual game: **Watch updated three-seat deal** opens the new recording. Initial left/centre/right plus upcard/hole, left hit, split, right double, dealer draws and two completed rounds were exercised on isolated4178 data. Refresh retained the same cards and balance. All four goodluck lines repeated twice; Astrid's other gameplay lines completed sequentially, native mute cleared its layers. Deep roster/performance/actor probes and36 hook tests passed;197 service checks,77 split checks and50,000 randomized rounds passed. See the report for exact observations; logs are not full lip-sync approval.
+
+Outstanding: generated motion softness, some legacy-to-performance pose joins, corrective slides from the three direction releases to seven seat/card-fan destinations, real-device Safari/mobile acceptance, and filmed reveal/collection/shoe change. No CAC ticket was closed automatically. Do not replace source media or calibrations based only on these technical passes. Other dealers' assets are unchanged and local guest access remains enabled.
+
+Screenshot reporting now preserves Steps/Expected Results in local JSON/Markdown before Jira posting and in every project's description. `tools/bugshot.sh` records the current local script, including concurrent expected-image additions; tests do not create Jira tickets. Missing historical Expected Results cannot be reconstructed from the existing CAC reports.
+
 # Latest: front-outlet pickup and native movement resolution — 9 September 2026
 
 Astrid's staged own-card delivery now reuses the first 72 frames of the good player extraction, then continues along the felt to her own cards. The former top-of-stack pickup is no longer selected. Both action videos now retain native 1080p RGB instead of being reduced to 720p. The player choreography and all four dealers' speech assets are preserved. No backend or login behavior changed.

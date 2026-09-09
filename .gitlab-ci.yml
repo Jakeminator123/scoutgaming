@@ -5,11 +5,13 @@ dealer-regression:
   image: node:22-bookworm
   stage: test
   before_script:
-    - apt-get update -qq && apt-get install -y -qq ffmpeg
+    - apt-get update -qq && apt-get install -y -qq ffmpeg jq
   script:
     - node pipeline/audit-dealer-sync.mjs --probe
     - node pipeline/audit-performance.mjs --probe
+    - node pipeline/audit-astrid-actor.mjs --probe
     - node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
     - node test/shoe-game.mjs
     - node --test test/performance-contact.mjs
+    - node --test test/action-placement.mjs test/bugshot-report.mjs
     - node test/split-rules.mjs
