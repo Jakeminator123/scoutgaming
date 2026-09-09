@@ -111,4 +111,19 @@ html[data-dealer="astrid"] { --hands-cut:.878; }
    Vera scale stretched it by 32%, then offset it 0.416 dealer widths. */
 html[data-dealer="astrid"] #room2::after { display:none; }
 .casino-return {color:#D6FF3A;text-decoration:none;font:11px Inter,Arial,sans-serif;border:1px solid #D6FF3A44;border-radius:18px;padding:7px 11px;white-space:nowrap;}
+html[data-performance-capture="true"] #scene > :not(#room):not(#room2):not(#dealer-wrap):not(#dealer-hands-wrap):not(#table-canvas) { visibility:hidden!important; }
+.performance-layer {position:absolute;z-index:24;pointer-events:none;}
+.performance-layer canvas {position:absolute;inset:0;width:100%;height:100%;}
+html[data-performance-staged="true"] #table2d {top:var(--performance-rear);height:var(--performance-table-height);bottom:auto;}
+html[data-performance-staged="true"] #room2 {clip-path:inset(0 0 calc(100vh - var(--performance-rear)) 0);}
+.performance-playing #dealer-wrap, .performance-playing #dealer-hands-wrap {visibility:hidden;}
+.performance-active #actions, .performance-active #actions-top {visibility:hidden;}
+#performance-status {border-top:1px solid #D6FF3A44;padding-top:10px;}
+#performance-stage-banner {position:absolute;right:20px;top:80px;z-index:48;padding:8px 12px;border:1px solid #d2b663;background:#10130eee;color:#dfcc9b;font:10px/1.4 Inter,Arial,sans-serif;border-radius:4px;}
+#performance-source-review {max-width:min(1100px,94vw);padding:20px;background:#0b0e0d;color:#eee;border:1px solid #626744;border-radius:12px;}
+#performance-source-review::backdrop {background:#000d;}
+#performance-source-review video {display:block;width:100%;max-height:68vh;}
+#performance-source-review h2 {font:600 18px Inter,Arial,sans-serif;}
+#performance-source-review p {font:12px/1.6 Inter,Arial,sans-serif;color:#b8bcad;max-width:70ch;margin:12px 0;}
+#performance-source-review button {margin-top:14px;padding:10px 20px;border:1px solid #D6FF3A;border-radius:20px;background:#D6FF3A;color:#111;}
 @media(max-width:700px){.casino-return{font-size:9px;padding:6px}#dealer-picker{gap:4px}#dealer-options button{gap:4px;padding-right:5px;font-size:10px}}

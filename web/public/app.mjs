@@ -52,6 +52,22 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
 }
 
 const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+const performanceStaged=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
+let performanceManifest=null,performancePlayer=null,selectPerformance=null,performanceCardCorners=null;
+if(performanceStaged) {
+  try {
+    const [{PerformancePlayer,cardLandingCorners},{selectContactTake},manifest]=await Promise.all([
+      import('./performance-player.mjs'),import('./performance-contact.mjs'),
+      fetch('dealers/astrid/performance/manifest.json').then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
+    ]);
+    performanceManifest=manifest;selectPerformance=selectContactTake;performanceCardCorners=cardLandingCorners;
+    performancePlayer=new PerformancePlayer({host:$('#scene'),staged:performanceStaged,onState:text=>{
+      const status=$('#performance-status');if(status)status.textContent=text;
+      console.info('[performance]',text);
+    }});
+    performancePlayer.preload(manifest.takes).catch(error=>console.warn('[performance] preload',error.message));
+  }catch(error){console.info('[performance]',error.message);}
+}
 let dealingCues = null;
 if (DEALER.dealingCues) {
   try {
@@ -63,7 +79,9 @@ if (DEALER.dealingCues) {
 let tableScene = null;
 try {
   const { createTableScene } = await import('./table-scene.mjs');
-  tableScene = createTableScene($('#table-canvas'), DEALER.key);
+  tableScene = createTableScene($('#table-canvas'), DEALER.key, {
+    contactProof: DEALER.key === 'astrid' && new URLSearchParams(location.search).get('performance') === 'staged',
+  });
   document.documentElement.classList.add('table-3d');
 } catch (error) { console.warn('[table] Using image fallback:', error.message); }
 
@@ -89,12 +107,13 @@ engine.onIdlePick = () => {
   // A recorded sentence is a single take. Decode-ahead must never replay its
   // first words over the end of the audio. The roster audit checks coverage.
   if (speaking) return CLIP.idle;
+  if (performanceStaged) return CLIP.idle;
   if (dealingActive && canUseDealingTake()) return CLIP.deal;
   const extras = [CLIP.headTilt, CLIP.gest].filter(k => engine.index.clips[k]);
   if (extras.length && Math.random() < 0.25) return extras[Math.floor(Math.random() * extras.length)];
   return CLIP.idle;
 };
-const trigger = k => { if (engineUp && !speaking && speechActive === 0 && engine.index.clips[k]) engine.trigger(k); };
+const trigger = k => { if (!performanceStaged && engineUp && !speaking && speechActive === 0 && engine.index.clips[k]) engine.trigger(k); };
 
 try {
   await engine.init();
@@ -132,6 +151,7 @@ const VOICE_LINES = Object.keys(LINES);
 let speechActive = 0;
 let speechChain = Promise.resolve();
 function speechTurn(fn) {
+  performancePlayer?.cancel();
   speechActive++;
   const run = speechChain.then(fn).catch(() => {}).finally(() => { speechActive--; });
   speechChain = run;
@@ -952,6 +972,13 @@ function cardEl(card, faceDown = false) {
   return el;
 }
 function flyFromShoe(el, card, faceDown, cardMotion) {
+  if(cardMotion?.performance && performancePlayer && tableScene) {
+    const target=el.getBoundingClientRect();el.style.visibility='hidden';
+    return performancePlayer.play(cardMotion.performance,{target,card,faceDown,corners:performanceCardCorners(el),
+      origin:tableScene.shoeOutlet(),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}})
+      .catch(error=>{console.warn('[performance]',error.message);const status=$('#performance-status');if(status)status.textContent=error.message;})
+      .finally(()=>{el.style.visibility='';});
+  }
   if (tableScene && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const target=el.getBoundingClientRect();
     const dealerRect=$('#dealer').getBoundingClientRect();
@@ -1088,7 +1115,12 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
 }
 async function deliverCard(container, card, options={}) {
   let motion;
-  if (dealingActive && dealingCues && canUseDealingTake() && !document.hidden) {
+  const centre=container.getBoundingClientRect().x+container.getBoundingClientRect().width/2;
+  const action=container.id==='dealer-cards'?'deal-dealer':centre<innerWidth*.42?'deal-left':centre>innerWidth*.58?'deal-right':'deal-centre';
+  const performanceTake=selectPerformance?.(performanceManifest,action,{staged:performanceStaged});
+  if(performanceTake && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    motion={performance:performanceTake};
+  } else if (dealingActive && dealingCues && canUseDealingTake() && !document.hidden) {
     const current=engine.presentation;
     const lead=dealingCues.leadFrames;
     const cue=dealingCues.cues.find(c => current?.key===CLIP.deal && c.frame-lead > current.frame)
@@ -1169,6 +1201,7 @@ $('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await en
 async function beginDealingTake() {
   try {
   await speechChain;
+  if(performancePlayer){console.info('[deal] Presented-frame performance sequence');return;}
   dealingActive = canUseDealingTake();
   if (!dealingActive) {
     console.info('[deal] No usable filmed action; direct shoe delivery');
@@ -1535,7 +1568,12 @@ function playRecorded(id, audio, text) {
       if (matched) await cutToTake(clip, signal);
     },
     onStart: () => {
-      if(video) video.style.visibility='';
+      performancePlayer?.release();
+      if(video) {
+        $('#dealer-wrap').querySelectorAll('.dealer-speech-transition').forEach(node=>node.remove());
+        video.style.visibility='';
+        if(performanceStaged)video.animate([{opacity:0},{opacity:1}],{duration:120});
+      }
       clearTimeout(showCaption.t);
       $('#caption').textContent = text;
       $('#caption').classList.add('show');
@@ -1544,7 +1582,15 @@ function playRecorded(id, audio, text) {
       // Unmatched lines remain voice-over; never reuse a mouth saying other words.
     },
     onFinish: () => {
-      if(video) { video.removeAttribute('src'); video.load(); video.remove(); }
+      if(video) {
+        if(performanceStaged&&video.ended&&!document.hidden&&video.videoWidth){
+          const still=document.createElement('canvas');still.width=video.videoWidth;still.height=video.videoHeight;
+          still.className='dealer-speech-video dealer-speech-transition';
+          still.getContext('2d').drawImage(video,0,0);$('#dealer-wrap').append(still);
+          still.animate([{opacity:1},{opacity:0}],{duration:180,fill:'forwards'}).finished.finally(()=>still.remove());
+        }
+        video.removeAttribute('src'); video.load(); video.remove();
+      }
       if (activeSpeech !== controller) return;
       activeSpeech = null;
       console.info('[speech] end', id);
@@ -1782,6 +1828,13 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
   };
   panel.querySelector('#rehearsal-play').onclick = play;
   panel.querySelector('#rehearsal-repeat').onclick = () => { play(); play(); };
+  if (DEALER.key === 'astrid') {
+    const { installPerformanceAuthoring } = await import('./performance-authoring.mjs');
+    installPerformanceAuthoring({panel,tableScene});
+    if(performanceStaged){const stage=document.createElement('div');stage.id='performance-stage-banner';stage.textContent='ASTRID · STAGED GAMEPLAY';$('#scene').append(stage);
+      const status=document.createElement('p');status.id='performance-status';
+      status.textContent=performanceManifest?.summary??'Contact capture is not approved. Existing gameplay remains available.';panel.append(status);}
+  }
 }
 
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });

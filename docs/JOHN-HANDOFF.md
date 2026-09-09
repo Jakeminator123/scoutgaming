@@ -1,3 +1,20 @@
+# Astrid actual-game dealing and transition checkpoint — 9 September 2026
+
+The active review path is `/?dealer=astrid&performance=staged&rehearsal=1` in the existing blackjack application. The normal dealer routes and existing speech assets remain preserved. This is a staged playable implementation, not completion of every item in the realistic-table plan.
+
+- Player delivery and a separate dealer delivery use packed actor RGB, actor alpha and foreground fingers from one presented-video clock. Measured server-card corners follow contact, then release to the actual transformed DOM card fan. Pickup/landing cues use that same clock. The backend still owns all draws, balances, legal moves, cut position and settlements.
+- The dealer take now handles her initial upcard, face-down hole card and all additional dealer draws. Hole-card reveal is still a CSS flip; there is no filmed reveal/collection/shoe-change take yet.
+- Removed long dissolves and the reset to the legacy idle between every card. The previous presented actor stays visible during loading; a new layer replaces it only when its first frame is rendered. No transparent actor blend is used during delivery. The last resting frame is held between actions, so waiting is currently static until another action or speech starts.
+- One uniform camera fit registers dealer, shoe, table and tracked card on desktop and portrait viewports. No new account, registration, game or wallet API was introduced. Local guest access remains enabled.
+
+Actual game checks: $5 initial rounds included player/upcard/player/hole delivery; stand performed two additional dealer draws and settled. Refresh recovered J clubs / 2 diamonds against dealer 4 spades with the same $995 balance and $5 bet. After the transition fix, two more consecutive own-card draws were recorded: the presented actor remained visible through the entire boundary, with no idle reset. Recordings are in `web/public/dealers/astrid/performance/initial-deal-review.mp4` and `dealer-turn-review.mp4`; they are silent visual evidence, not proof of audio output.
+
+Regression: all four dealers' goodluck line played twice consecutively through the actual rehearsal interface. Astrid used embedded audio/video; Vera, Amira and Mei used matched original streams. Deep 90-stream asset audit passes with the pre-existing missing-take warnings. Hook suite and performance contract tests pass. Earlier in this checkpoint the service checks (197), split checks (77) and 50,000-round sweep passed. No real user database was modified for fixtures. Preview 4176 uses its own temporary data directory; do not delete it while Kevin is playing.
+
+Known limits: extraction still fits partially occluded marker geometry; some release positions require a corrective slide. The own-card source reaches high on the shoe and briefly lifts the prop. Side-direction captures, filmed reveal/collection/shoe change, complete Astrid phoneme review, realistic continuous idle, native Safari and real iPhone/Android checks remain outstanding. Browser viewport checks do not substitute for physical-device acceptance. Do not enable this as default until the full plan's acceptance checks pass. The walkable prototype remains saved outside this milestone.
+
+Source takes, exact packed assets, camera/events/frame records, generation receipts and repeatable preparation scripts are saved with this checkpoint. See `docs/ASTRID-CONTROLLED-CAPTURE.md`. Historical notes below are retained for recovery; current notes above take precedence.
+
 # Walkable casino checkpoint — 9 September 2026
 
 User clarified that the target includes moving a player around the casino, not just a filmed table. `/casino.html` is now a real navigable Three.js room connected to the existing four dealer routes. WASD/arrows, drag look, touch movement and click-to-walk table buttons work. First/third person can be switched. The table proximity prompt enters the existing blackjack game. The bottom “Walk casino” link returns to the saved approach position. Demo wallet and round remain server-owned; no new wallet or independent card simulation was added to the room.
