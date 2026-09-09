@@ -54,7 +54,7 @@ export function selectContactTake(manifest, action, {staged=false}={}) {
   const take=manifest.takes?.find(t=>t.action===action);
   const reviewing=staged&&take?.status==='review'&&
     (manifest.reviewCandidate===take.id||manifest.reviewCandidates?.includes(take.id));
-  if(!take || validateContactTake(take,{approved:!reviewing}).length)return null;
+  if(!take || validateContactTake(take,{approved:!reviewing}).length||validateSharedExtraction(take,manifest.takes).length)return null;
   if(!staged && (take.status!=='approved'||!TABLE_ACTIONS.every(key=>manifest.review?.actions?.[key]===true)||!DEAL_ACTIONS.every(key=>{
     const entry=manifest.takes.find(t=>t.action===key);
     return entry?.status==='approved'&&!validateContactTake(entry,{approved:true}).length;
@@ -64,6 +64,16 @@ export function selectContactTake(manifest, action, {staged=false}={}) {
 
 export function calibrationPayload(take) {
   return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames});
+}
+
+export function validateSharedExtraction(take, takes) {
+  if(!take.sharedExtraction)return [];
+  const {action,frames,sourceSha256}=take.sharedExtraction;
+  const source=takes.find(t=>t.action===action);
+  if(!source||source===take||!integer(frames)||frames<=take.events.pickup||frames>=take.events.release||!hash(sourceSha256))return ['Invalid shared extraction source'];
+  if(source.events.pickup!==take.events.pickup||JSON.stringify(source.camera.shoeOutlet)!==JSON.stringify(take.camera.shoeOutlet))return ['Shared pickup camera/timing changed'];
+  if(JSON.stringify(source.frames.slice(0,frames))!==JSON.stringify(take.frames.slice(0,frames)))return ['Shared extraction tracking changed'];
+  return [];
 }
 
 // Never advance an attached card with elapsed wall time or interpolate over a
@@ -97,4 +107,3 @@ export function uniformRegistration(source, viewport) {
   return {scale,x:(viewport.width-source.width*scale)/2,y:portrait?viewport.height*.08:(viewport.height-source.height*scale)/2,
     width:source.width*scale,height:source.height*scale};
 }
-

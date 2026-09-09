@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {CONTACT_CHECKS,DEAL_ACTIONS,TABLE_ACTIONS,validateContactTake,selectContactTake,contactFrame,contactCueClock,calibrationPayload,uniformRegistration} from '../web/public/performance-contact.mjs';
+import {CONTACT_CHECKS,DEAL_ACTIONS,TABLE_ACTIONS,validateContactTake,validateSharedExtraction,selectContactTake,contactFrame,contactCueClock,calibrationPayload,uniformRegistration} from '../web/public/performance-contact.mjs';
 export function fixture() {
   const take={version:1,id:'synthetic-contract-test',dealer:'astrid',action:'deal-centre',status:'contact-approved',
     media:{src:'test.mp4',sha256:'a'.repeat(64),layout:'rgb-over-masks-r-actor-g-fingers',width:1280,height:720,fps:24,frames:12},
@@ -64,4 +64,23 @@ test('viewport registration preserves aspect ratio and actor/shoe coordinates to
     const outlet={x:fit.x+fit.width*.636,y:fit.y+fit.height*.599};
     assert.ok(outlet.x>0&&outlet.x<viewport.width&&outlet.y>0&&outlet.y<viewport.height);
   }
+});
+test('native-resolution media preserves calibrated on-screen contact at desktop and phone sizes',()=>{
+  for(const viewport of [{width:1920,height:1080},{width:1470,height:900},{width:390,height:844}]) {
+    const before=uniformRegistration({width:1280,height:720},viewport);
+    const after=uniformRegistration({width:1920,height:1080},viewport);
+    for(const key of ['x','y','width','height'])assert.ok(Math.abs(before[key]-after[key])<1e-9);
+    const take=fixture();take.media.width=take.camera.width=1920;take.media.height=take.camera.height=1080;
+    assert.deepEqual(validateContactTake(take),[]);
+    assert.equal(contactFrame(take,4/24).frame,4);
+  }
+});
+test('own-card contact cannot silently diverge from its shared player extraction',()=>{
+  const player=fixture(),dealer=structuredClone(player);dealer.action='deal-dealer';
+  dealer.sharedExtraction={action:'deal-centre',frames:4,sourceSha256:'b'.repeat(64)};
+  assert.deepEqual(validateSharedExtraction(dealer,[player,dealer]),[]);
+  dealer.frames[3].card.corners[0][1]-=.1;
+  assert.deepEqual(validateSharedExtraction(dealer,[player,dealer]),['Shared extraction tracking changed']);
+  dealer.frames[3]=structuredClone(player.frames[3]);dealer.events.pickup++;
+  assert.deepEqual(validateSharedExtraction(dealer,[player,dealer]),['Shared pickup camera/timing changed']);
 });

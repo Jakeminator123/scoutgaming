@@ -5,6 +5,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {calibrationPayload,validateContactTake} from '../web/public/performance-contact.mjs';
+import {packContactMedia} from './pack-contact-media.mjs';
 
 const [entryDirectory,contactDirectory,strideValue='4']=process.argv.slice(2);
 const stride=Number(strideValue);if(![1,4].includes(stride))throw new Error('Entry stride must be 1 or 4');
@@ -28,15 +29,16 @@ for(let index=0;index<original.media.frames;index++){
   for(const folder of ['frames','contact-masks'])copy(path.join(contact,folder,name),folder,index+selected.length);
 }
 const target=path.resolve('web/public/dealers/astrid/performance');
-const encode=['-an','-c:v','libx264','-crf','18','-bf','0','-pix_fmt','yuv420p','-movflags','+faststart'];
-execFileSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-framerate','24','-i',path.join(output,'frames/%04d.png'),...encode,path.join(output,'centre-source.mp4')]);
-execFileSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-framerate','24','-i',path.join(output,'frames/%04d.png'),'-framerate','24','-i',path.join(output,'contact-masks/%04d.png'),'-filter_complex','[0:v][1:v]vstack[out]','-map','[out]',...encode,path.join(output,'centre-review.mp4')]);
-const probe=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=nb_read_frames,width,height','-of','json',path.join(output,'centre-review.mp4')],{encoding:'utf8'})).streams[0];
-if(Number(probe.nb_read_frames)!==selected.length+original.media.frames||probe.width!==original.media.width||probe.height!==original.media.height*2)throw new Error('Packed frame count/dimensions changed; public media was not replaced');
+const dimensions=packContactMedia({segments:[
+  {file:path.join(entry,'source.mp4'),start:0,end:selected.length*stride,stride},
+  {file:path.join(contact,'source.mp4')},
+],masks:path.join(output,'contact-masks'),sourceOutput:path.join(output,'centre-source.mp4'),packedOutput:path.join(output,'centre-review.mp4')});
+if(dimensions.frames!==selected.length+original.media.frames)throw new Error('Packed frame count changed; public media was not replaced');
 const take=structuredClone(original),offset=selected.length;
 take.id='astrid-centre-continuous-20260909';take.status='review';take.entryFrames=offset;
 take.frames=[...selected.map((_,frame)=>({frame,card:null})),...take.frames.map(row=>({...row,frame:row.frame+offset}))];
-take.media.frames=take.frames.length;
+Object.assign(take.media,dimensions);
+take.camera.width=dimensions.width;take.camera.height=dimensions.height;
 take.events=Object.fromEntries(Object.entries(take.events).map(([key,frame])=>[key,frame+offset]));
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 take.media.sha256=sha(fs.readFileSync(path.join(output,'centre-review.mp4')));

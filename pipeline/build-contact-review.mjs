@@ -3,23 +3,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {execFileSync} from 'node:child_process';
 import {calibrationPayload,validateContactTake} from '../web/public/performance-contact.mjs';
-const [source,action,pickup,release,land,rest]=process.argv.slice(2);
+import {packContactMedia} from './pack-contact-media.mjs';
+const [source,action,pickup,release,land,rest,publicDirectory='web/public',assetName]=process.argv.slice(2);
 if(!source||!/^deal-(?:centre|dealer|left|right)$/.test(action)||![pickup,release,land,rest].every(v=>/^\d+$/.test(v??'')))
   throw new Error('Usage: node pipeline/build-contact-review.mjs staging-directory action pickup release land rest');
-const root=path.resolve(source),publicRoot=path.resolve('web/public');
-const target=path.join(publicRoot,'dealers/astrid/performance'),prefix=action.slice(5);
+const root=path.resolve(source),publicRoot=path.resolve(publicDirectory);
+const target=path.join(publicRoot,'dealers/astrid/performance'),prefix=assetName??action.slice(5);
+if(!/^[a-z0-9-]+$/.test(prefix))throw new Error('Invalid asset name');
 const read=file=>JSON.parse(fs.readFileSync(path.join(root,file)));
 const measurements=read('measurements.json'),tracking=read('marker-tracking.json');
 const manifestPath=path.join(target,'manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestPath));
 const sha=value=>createHash('sha256').update(value).digest('hex');
-const packed=path.join(target,`${prefix}-review.mp4`);
-execFileSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-i',path.join(root,'source.mp4'),'-framerate','24','-i',path.join(root,'contact-masks/%04d.png'),'-filter_complex','[0:v]scale=1280:720[rgb];[rgb][1:v]vstack=inputs=2[out]','-map','[out]','-an','-c:v','libx264','-crf','18','-bf','0','-pix_fmt','yuv420p','-movflags','+faststart',packed]);
-fs.copyFileSync(path.join(root,'source.mp4'),path.join(target,`${prefix}-source.mp4`));
+const prepared=path.join(root,'prepared');fs.mkdirSync(prepared,{recursive:true});
+const packed=path.join(prepared,`${prefix}-review.mp4`),native=path.join(prepared,`${prefix}-source.mp4`);
+const recipeFile=path.join(root,'media-recipe.json');
+const segments=fs.existsSync(recipeFile)?JSON.parse(fs.readFileSync(recipeFile)).segments:[{file:path.join(root,'source.mp4')}];
+const dimensions=packContactMedia({segments,masks:path.join(root,'contact-masks'),sourceOutput:native,packedOutput:packed});
+if(dimensions.frames!==tracking.length||measurements.length!==tracking.length)throw new Error('Source and measured frame counts differ');
 const take={version:1,id:`astrid-${prefix}-contact-20260909`,dealer:'astrid',action,status:'review',
-  media:{src:`dealers/astrid/performance/${prefix}-review.mp4`,sha256:sha(fs.readFileSync(packed)),width:1280,height:720,fps:24,frames:tracking.length,layout:'rgb-over-masks-r-actor-g-fingers'},
-  camera:structuredClone(manifest.takes[0].camera),events:{pickup:+pickup,release:+release,land:+land,rest:+rest},frames:[]};
+  media:{src:`dealers/astrid/performance/${prefix}-review.mp4`,sha256:sha(fs.readFileSync(packed)),...dimensions,layout:'rgb-over-masks-r-actor-g-fingers'},
+  camera:{...structuredClone(manifest.takes[0].camera),width:dimensions.width,height:dimensions.height},events:{pickup:+pickup,release:+release,land:+land,rest:+rest},frames:[]};
 for(const row of tracking){
   const frame={frame:row.frame,card:null};
   if(row.frame>=+pickup&&row.frame<=+land){
@@ -35,10 +39,30 @@ for(const row of tracking){
   }
   take.frames.push(frame);
 }
+const prefixFile=path.join(root,'shared-prefix.json');
+if(fs.existsSync(prefixFile)) {
+  const shared=JSON.parse(fs.readFileSync(prefixFile));
+  const original=manifest.takes.find(t=>t.action===shared.action);
+  if(!original||!Number.isInteger(shared.frames)||shared.frames<=+pickup||shared.frames>=+release||original.events.pickup!==+pickup)throw new Error('Invalid shared extraction prefix');
+  take.sharedExtraction=shared;
+  for(let i=0;i<shared.frames;i++)take.frames[i]=structuredClone(original.frames[i]);
+  // A quad has four equivalent cyclic labels. Retain the card's artwork
+  // orientation at the shared boundary without changing any measured point.
+  let previous=take.frames[shared.frames-1].card.corners;
+  for(const frame of take.frames.slice(shared.frames))if(frame.card) {
+    const box=frame.card.corners,candidates=box.map((_,i)=>[...box.slice(i),...box.slice(0,i)]);
+    const distance=q=>q.reduce((sum,p,i)=>sum+(p[0]-previous[i][0])**2+(p[1]-previous[i][1])**2,0);
+    frame.card.corners=candidates.sort((a,b)=>distance(a)-distance(b))[0];previous=frame.card.corners;
+  }
+}
 take.calibrationSha256=sha(calibrationPayload(take));
 take.review={result:'pending',date:'2026-09-09',mediaSha256:take.media.sha256,calibrationSha256:take.calibrationSha256,
   note:'Measured candidate for actual-game review. This metadata is not visual acceptance.'};
 const errors=validateContactTake(take);if(errors.length)throw new Error(errors.join('; '));
+// Publish only after every measured record and encoded frame has passed. A
+// distinct asset name lets existing tabs finish using their cached old take.
+fs.copyFileSync(packed,path.join(target,`${prefix}-review.mp4`));
+fs.copyFileSync(native,path.join(target,`${prefix}-source.mp4`));
 manifest.takes=manifest.takes.filter(t=>t.action!==action);manifest.takes.push(take);
 manifest.reviewCandidates=[...new Set([manifest.reviewCandidate,...(manifest.reviewCandidates??[]),take.id].filter(Boolean))];
 fs.writeFileSync(manifestPath,JSON.stringify(manifest,null,2)+'\n');

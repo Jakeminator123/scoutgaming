@@ -1,6 +1,6 @@
 # Croupier / Scout Live Casino — continuation prompt
 
-Prepared 9 September 2026. Copy the prompt below when handing the project to John or another engineer. Current runtime checkpoint: `3ce7628`. Read later commits and current user instructions before relying on this snapshot.
+Prepared 9 September 2026. Copy the prompt below when handing the project to John or another engineer. Current runtime: the front-outlet/native-resolution checkpoint described in `ASTRID-FRONT-OUTLET.md`. Read later commits and current user instructions before relying on this snapshot.
 
 ---
 
@@ -26,17 +26,17 @@ Kevin's latest feedback takes precedence over older handovers. He wants the usef
 
 ## What currently works
 
-Astrid's staged player delivery and separate dealer delivery use one presented-video clock for actor RGB, actor alpha, foreground fingers, tracked server-issued cards and pickup/landing sound cues. Her own take handles the upcard, face-down hole card and additional dealer draws. The player delivery has a 24-frame empty-hand lead-in; its original 145 contact frames retain their speed and measurements.
+Astrid's staged player delivery and separate dealer delivery use one presented-video clock for actor RGB, actor alpha, foreground fingers, tracked server-issued cards and pickup/landing sound cues. Her own take handles the upcard, face-down hole card and additional dealer draws. Both deliveries share 72 entry/extraction frames. The player retains its original contact motion; a new continuation delivers to Astrid. Both now retain native 1080p RGB.
 
 The long actor dissolves and per-card resets to a different idle have been removed. Keep the last presented actor visible until the next take's first frame is ready. This removes idle flashes during loading. Waiting currently holds a still resting frame, so natural idle continuity remains work.
 
 The existing backend owns cards, shoe depletion, legal actions, balances and settlement. Keep it authoritative. No replacement game or wallet API is needed. Local guest access remains enabled at Kevin's request; do not reintroduce a forced login screen.
 
-Initial dealing, additional dealer draws and settlement were exercised in the actual game. Refresh recovered 6 hearts / 8 diamonds against 9 hearts and a face-down hole card with the same $995 balance and $5 bet. All four dealers' goodluck lines played twice consecutively. The 90-stream asset audit, 30 hook/contract tests and checkpoint CI passed. These are scoped results, not full visual or phoneme approval.
+Initial dealing, additional dealer draws and settlement were exercised in the actual game. Refresh recovered 6 hearts / 8 diamonds against 9 hearts and a face-down hole card with the same $995 balance and $5 bet. All four dealers' goodluck lines played twice consecutively. The 90-stream asset audit, 32 hook/contract tests passed (check the current commit's CI separately). These are scoped results, not full visual or phoneme approval.
 
 ## Next work, in order
 
-1. **Finish physical contact and continuity.** Resolve partial-card geometry at extraction, the own-card take reaching too high on the shoe, and corrective slides after release. Preserve the improved transitions. Inspect pickup, fingers, release and return frame by frame, then normal-speed rounds. If generated contact footage cannot pass, use controlled performance capture; do not label a floating-card substitute finished.
+1. **Finish physical contact and continuity.** Resolve partial-card geometry at extraction, corrective slides after release, and the visible speech/idle background and pose change. Preserve the improved transitions. Inspect pickup, fingers, release and return frame by frame, then normal-speed rounds. If generated contact footage cannot pass, use controlled performance capture; do not label a floating-card substitute finished.
 2. **Repair portrait composition.** The 390 × 844 check exposed overlapping player/dealer card fans and duplicate mobile header elements. Fix these while keeping the actor, shoe and table registered to one camera. Viewport emulation is not real iPhone/Android acceptance.
 3. **Complete the action and speech set.** Add and verify left/right deliveries, filmed hole-card reveal, collection and shoe change while preserving seat/split support. Review every reachable Astrid gameplay line against its exact text and voice. Replace only failed takes. Keep the other dealers' working assets intact.
 

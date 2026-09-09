@@ -29,6 +29,7 @@ export function installPerformanceAuthoring({ panel, tableScene }) {
       const heading=document.createElement('h2');heading.textContent={source:'Astrid source performance',initial:'Initial deal in the blackjack game',dealer:'Astrid dealing her own cards'}[kind];
       const note=document.createElement('p');note.textContent=kind==='source'
         ?'The source card is a tracking prop. Gameplay replaces it with the server-issued card and foreground finger occlusion.'
+        :kind==='dealer'?'An excerpt of Astrid dealing her initial upcard in the actual game. Silent recording; the complete initial deal also includes her face-down card.'
         :'Recorded in the actual game with an isolated demo wallet. This recording is silent; see the handoff for remaining visual and device checks.';
       const video=document.createElement('video');video.controls=true;video.playsInline=true;video.preload='metadata';
       video.src=`dealers/astrid/performance/${{source:'centre-source',initial:'initial-deal-review',dealer:'dealer-turn-review'}[kind]}.mp4`;
@@ -37,7 +38,7 @@ export function installPerformanceAuthoring({ panel, tableScene }) {
       dialog.addEventListener('close',()=>{video.pause();dialog.remove();},{once:true});
     };
     review.onclick=()=>showReview();
-    for(const [kind,label] of [['initial','Watch initial deal'],['dealer','Watch dealer draws']]){
+    for(const [kind,label] of [['initial','Watch initial deal'],['dealer','Watch own-card delivery']]){
       const button=document.createElement('button');button.textContent=label;button.onclick=()=>showReview(kind);panel.append(button);
     }
   }
