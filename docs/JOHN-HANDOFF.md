@@ -1,5 +1,7 @@
 # Latest: Astrid CAC-1–7 follow-up — 9 September 2026, late evening
 
+**Jira workflow update, 10 September:** user explicitly requested live issue progress. Current read-back: **CAC-2 and CAC-4 = In Dev**; **CAC-1, CAC-3, CAC-5, CAC-6 and CAC-7 = Ready for QA**. None are Done. Keep Jira current while working, use In Testing for active QA, and return failures to In Dev. The rule is also in AGENTS.md. Ready for QA indicates an implemented candidate awaiting acceptance, not production release or completion of the full Astrid milestone.
+
 Read [ASTRID-CAC-FOLLOWUP.md](ASTRID-CAC-FOLLOWUP.md) first. CAC-5/6/7 are now included: one room plus transparent floor shadows; totals below betting spots with neighbour-aware split clearance; consistent GPU edge cleanup without regenerated footage. The 3D/resting card share one bitmap and deliveries route to the nearest measured release for the actual card fan. All source media/audio and the other dealers are preserved.
 
 The desktop scene now reserves space below the table using a shared actor/table/shoe/card camera transform. Deal Now is below the betting area, preventing its interception of centre-seat clicks. Phone gameplay follows the active server hand and keeps outer card fans in view. Actual seven-seat phone hit/bust/double/stand/settlement and split/side-bet checks were exercised on isolated4180 data. The latest real three-seat recording is available through the existing rehearsal button. See the follow-up for measured balances, evidence and limits.
