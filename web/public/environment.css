@@ -106,3 +106,9 @@ html[data-dealer="astrid"] { --hands-cut:.878; }
 
 /* Finished speech uses a single native media clock for both mouth and voice. */
 .dealer-speech-video { position:absolute; inset:0; width:100%; height:auto; aspect-ratio:1; display:block; pointer-events:none; }
+
+/* Astrid's scene is 3168x1344, with a ~1202px central film crop. The old
+   Vera scale stretched it by 32%, then offset it 0.416 dealer widths. */
+html[data-dealer="astrid"] #room2::after { display:none; }
+.casino-return {color:#D6FF3A;text-decoration:none;font:11px Inter,Arial,sans-serif;border:1px solid #D6FF3A44;border-radius:18px;padding:7px 11px;white-space:nowrap;}
+@media(max-width:700px){.casino-return{font-size:9px;padding:6px}#dealer-picker{gap:4px}#dealer-options button{gap:4px;padding-right:5px;font-size:10px}}

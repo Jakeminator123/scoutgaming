@@ -1,0 +1,17 @@
+{
+  "name": "Casino guest",
+  "generatedAt": "2026-09-09T13:23:30.548234Z",
+  "provider": "Higgsfield / Tripo",
+  "jobId": "f048bb88-ceff-473f-92a5-020ba114a45a",
+  "sha256": "b0fff48fadd4f414ddb037f92366c075fe4735b7845cdde4e862dc5b0ddcc009",
+  "sourcePose": "A-pose",
+  "sourceForward": "+X",
+  "runtimeHeightMeters": 1.8,
+  "rig": "Local procedural locomotion skeleton in player-rig.mjs",
+  "riggingProviderStatus": "Higgsfield 3D Rigging failed; no provider rig is used",
+  "limitations": [
+    "No facial blend shapes",
+    "No dealer hand or finger animation",
+    "Basic locomotion, not motion-capture quality"
+  ]
+}
