@@ -1,3 +1,11 @@
+# Latest: front-outlet pickup and native movement resolution — 9 September 2026
+
+Astrid's staged own-card delivery now reuses the first 72 frames of the good player extraction, then continues along the felt to her own cards. The former top-of-stack pickup is no longer selected. Both action videos now retain native 1080p RGB instead of being reduced to 720p. The player choreography and all four dealers' speech assets are preserved. No backend or login behavior changed.
+
+Read [ASTRID-FRONT-OUTLET.md](ASTRID-FRONT-OUTLET.md) for the exact source recipe, events, shared-extraction regression, actual-game recording and remaining limits. The uninterrupted initial-deal proof includes player/upcard/player/hole; all four speech repetitions and all 32 checks pass. Refresh recovery and settlement were verified using the new isolated 4177 database. Preserve Kevin's 4176 data and any active hand.
+
+The speech/idle-to-dealing room and pose transition is still visible: legacy clips have a baked background, while dealing uses an isolated actor. Native encoding improves source detail but cannot eliminate generated blur. Partial-card extraction, release-to-fan correction, mobile layout and the remaining filmed actions are not accepted. This is a staged improvement, not full milestone completion. The earlier checkpoints below are historical; the old high shoe pickup is superseded by this repair.
+
 # Astrid actual-game dealing and transition checkpoint — 9 September 2026
 
 For a clean continuation prompt, use [PROJECT-HANDOVER-PROMPT.md](PROJECT-HANDOVER-PROMPT.md). It incorporates the useful parts of the older Claude handover while distinguishing historical instructions from the current implementation and Kevin's latest direction.
