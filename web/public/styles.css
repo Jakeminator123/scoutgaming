@@ -177,7 +177,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 .cards > .card:nth-child(2) { --slot-rot: var(--card-rot-1, 0deg); --slot-dx: var(--card-dx-1, 0px); --slot-dy: var(--card-dy-1, 0px); }
 .cards > .card:nth-child(3) { --slot-rot: var(--card-rot-2, 0deg); --slot-dx: var(--card-dx-2, 0px); --slot-dy: var(--card-dy-2, 0px); }
 .cards > .card:nth-child(4) { --slot-rot: var(--card-rot-3, 0deg); --slot-dx: var(--card-dx-3, 0px); --slot-dy: var(--card-dy-3, 0px); }
-#table2d > .hand-total { position: absolute; left: calc(50% - 14px); top: calc(13.5% + 62px); }
+#table2d > .hand-total { position: absolute; left:50%; top:calc(13.5% - 32px); transform:translateX(-50%); }
 
 /* ---------- seats (screen-space, positioned by layoutSeats) ---------- */
 #seats { position: absolute; inset: 0; }
@@ -275,10 +275,10 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
              scaleY(var(--cards-flat)); transform-origin: 62px 103px; }
 .seat-inner > .hand-total {
   /* parented outside .cards on purpose: it holds still while the hand is posed */
-  position: absolute; left: calc(110px + var(--badge-x, 0px)); top: calc(54px + var(--badge-y, 0px));
+  position: absolute; left: calc(60px + var(--badge-x, 0px)); top: calc(110px + var(--badge-y, 0px) + var(--badge-clear-y, 0px));
   transform: translateX(-50%);
 }
-.seat-inner > .hand-total[data-h]:not([data-h=""]) {top:calc(9px + var(--badge-y,0px));left:calc(58px + var(--badge-x,0px));}
+.seat-inner > .hand-total[data-h]:not([data-h=""]) {left:calc(60px + var(--badge-x,0px));}
 /* split box: each hand fans in its own container, offset around the seat.
    Kept tight and slightly scaled down so two or three fans read as one box;
    the hand being played is full-strength, its siblings sit back dimmed. */
@@ -315,6 +315,7 @@ html, body { height: 100%; background: #000; overflow: hidden; font-family: "Fig
 }
 body.in-round .clear-box { display: none; }
 body.in-round .stake { display: none; }
+body.in-round .sideresult { top:148px; }
 
 /* ---------- cards ---------- */
 .cards { min-height: 0; }

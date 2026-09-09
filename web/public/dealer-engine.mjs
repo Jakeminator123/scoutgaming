@@ -5,6 +5,8 @@
 // other at a clip boundary with no blending. We own the clock: chunks get
 // self-assigned monotonic timestamps and fragment/container timing never exists.
 
+import {createActorCompositor} from './actor-compositor.mjs';
+
 export class DealerEngine {
   constructor(canvas, assetBase, { log = () => {}, handsCanvas = null, actorMatteBase = null, handsCut = .878 } = {}) {
     this.canvas = canvas;
@@ -84,8 +86,9 @@ export class DealerEngine {
     this.matte.width = this.handsIndex.width;
     this.matte.height = this.fullActor?this.index.height:this.bandH;
     this.matteCtx = this.matte.getContext('2d');
-    this.matteCtx.filter = 'url(#luma-alpha)';
-    if (this.matteCtx.filter === 'none') { // browser can't do SVG canvas filters
+    if(this.fullActor)this.actorCompositor=createActorCompositor(this.index.width,this.index.height);
+    else this.matteCtx.filter = 'url(#luma-alpha)';
+    if (!this.fullActor && this.matteCtx.filter === 'none') { // legacy browser can't do SVG canvas filters
       this.log('hands matte off: no SVG filter support');
       this.handsIndex = null;
       this.fullActor = false;
@@ -368,9 +371,8 @@ export class DealerEngine {
     const m = this.handsDisplay.shift();
     const { width, height } = this.handsCanvas;
     if(this.fullActor){
-      this.matteCtx.clearRect(0,0,this.matte.width,this.matte.height);
-      this.matteCtx.drawImage(m.f,0,0,this.matte.width,this.matte.height);
-      this.ctx.globalCompositeOperation='destination-in';this.ctx.drawImage(this.matte,0,0);this.ctx.globalCompositeOperation='source-over';
+      this.actorCompositor.paint(this.canvas,m.f);
+      this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);this.ctx.drawImage(this.actorCompositor.canvas,0,0);
       this.handsCtx.clearRect(0,0,width,height);
       this.handsCtx.drawImage(this.canvas,0,this.bandY,width,height,0,0,width,height);
       m.f.close();return;
@@ -394,6 +396,7 @@ export class DealerEngine {
 
   stop() {
     this.running = false;
+    this.actorCompositor?.dispose();this.actorCompositor=null;
     for (const { f } of this.display.splice(0)) f.close();
     for (const { f } of this.handsDisplay.splice(0)) f.close();
     this.frameTags.clear(); this.handsFrameTags.clear();

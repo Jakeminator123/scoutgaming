@@ -67,6 +67,20 @@ export function calibrationPayload(take) {
   return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate})});
 }
 
+// Route by the actual card-fan destination, including split offsets and camera
+// registration. Screen thirds sent inner-right hands to the far-right release.
+export function selectPlayerDelivery(manifest,target,viewport,options={}) {
+  const takes=['deal-left','deal-centre','deal-right'].map(action=>selectContactTake(manifest,action,options)).filter(Boolean);
+  let best=null,distance=Infinity;
+  for(const take of takes){
+    const fit=uniformRegistration(take.camera,viewport);
+    const p=take.frames[take.events.release].card.corners.reduce((a,v)=>[a[0]+v[0]/4,a[1]+v[1]/4],[0,0]);
+    const d=(fit.x+p[0]*fit.width-target.x)**2+(fit.y+p[1]*fit.height-target.y)**2;
+    if(d<distance){best=take;distance=d;}
+  }
+  return best;
+}
+
 export function validateSharedExtraction(take, takes) {
   if(!take.sharedExtraction)return [];
   const {action,frames,sourceSha256}=take.sharedExtraction;
@@ -103,8 +117,12 @@ export function contactCueClock(events, emit) {
 
 export function uniformRegistration(source, viewport) {
   const portrait=viewport.width<861&&viewport.height>viewport.width;
+  // Reserve a real control band under the scene. Without it, placing totals
+  // below the chips forces actions over cards or the wallet at 720px height.
+  // Table, actor, shoe and tracked card all use this same transform.
+  const sceneHeight=portrait?viewport.height:Math.max(1,viewport.height-136);
   const scale=portrait?Math.min(viewport.height*.65/source.height,viewport.width/(source.width*.48))
-    :Math.min(viewport.width/source.width,viewport.height/source.height);
-  return {scale,x:(viewport.width-source.width*scale)/2,y:portrait?viewport.height*.08:(viewport.height-source.height*scale)/2,
+    :Math.min(viewport.width/source.width,sceneHeight/source.height);
+  return {scale,x:(viewport.width-source.width*scale)/2,y:portrait?viewport.height*.08:(sceneHeight-source.height*scale)/2,
     width:source.width*scale,height:source.height*scale};
 }

@@ -1,5 +1,7 @@
 import * as THREE from './vendor/three/three.module.js';
 import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload} from './performance-contact.mjs';
+import {cardFaceArt} from './card-art.mjs';
+import {actorEdgeGLSL} from './actor-compositor.mjs';
 
 // A packed source carries RGB in its upper half; R=actor alpha and G=front
 // fingers in its lower half. Two independent videos cannot guarantee contact.
@@ -130,28 +132,27 @@ function createContactVisual(canvas,width,height,card,faceDown,video) {
   const planes=[];
   for(const foreground of [false,true]) {
     const material=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-      uniforms:{source:{value:videoTexture},foreground:{value:foreground?1:0}},
+      uniforms:{source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)}},
       vertexShader:'varying vec2 v; void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
       fragmentShader:`uniform sampler2D source; uniform float foreground; varying vec2 v;
-        void main(){vec3 rgb=texture2D(source,vec2(v.x,0.5+v.y*0.5)).rgb;
+        float actorAt(vec2 uv){return texture2D(source,vec2(uv.x,uv.y*0.5)).r;}
+        vec3 rgbAt(vec2 uv){return texture2D(source,vec2(uv.x,0.5+uv.y*0.5)).rgb;}
+        ${actorEdgeGLSL}
+        void main(){vec4 actor=cleanActor(v);
         vec3 masks=texture2D(source,vec2(v.x,v.y*0.5)).rgb;
-        float alpha=mix(masks.r,min(masks.r,masks.g),foreground);
-        alpha=clamp((alpha-0.015)/0.97,0.0,1.0);
-        if(alpha<0.01)discard;gl_FragColor=vec4(rgb,alpha);}`});
+        float alpha=mix(actor.a,min(actor.a,masks.g),foreground);
+        if(alpha<0.01)discard;gl_FragColor=vec4(actor.rgb,alpha);}`});
     const plane=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
     plane.position.set(width/2,-height/2,foreground?1:-1);plane.renderOrder=foreground?2:0;
     plane.frustumCulled=false;scene.add(plane);planes.push(plane);
   }
-  const art=document.createElement('canvas');art.width=280;art.height=392;const x=art.getContext('2d');
-  x.fillStyle='#f8f5eb';x.fillRect(0,0,280,392);
-  if(card){x.fillStyle=card.s==='♥'||card.s==='♦'?'#b72e2d':'#18221e';x.textAlign='center';
-    for(let i=0;i<2;i++){x.save();if(i){x.translate(280,392);x.rotate(Math.PI);}x.font='bold 45px Georgia';x.fillText(card.r,34,49);x.font='38px Georgia';x.fillText(card.s,34,89);x.restore();}
-    x.font='112px Georgia';x.fillText(card.s,140,232);}
-  const front=new THREE.CanvasTexture(art);front.colorSpace=THREE.SRGBColorSpace;
+  const front=new THREE.CanvasTexture(cardFaceArt(card??{r:'',s:''}).canvas);front.colorSpace=THREE.SRGBColorSpace;
   const back=new THREE.TextureLoader().load('assets/cardback.png');back.colorSpace=THREE.SRGBColorSpace;
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(12),3));
   geo.setAttribute('uv',new THREE.Float32BufferAttribute([0,1,1,1,1,0,0,0],2));geo.setIndex([0,2,1,0,3,2]);
-  const mat=new THREE.MeshStandardMaterial({map:front,roughness:.7,side:THREE.DoubleSide});
+  // The face bitmap already carries the table's paper exposure. Additional
+  // lighting made it cream in motion, then white when the DOM took over.
+  const mat=new THREE.MeshBasicMaterial({map:front,transparent:true,alphaTest:.01,toneMapped:false,side:THREE.DoubleSide});
   const mesh=new THREE.Mesh(geo,mat);mesh.frustumCulled=false;mesh.renderOrder=1;scene.add(mesh);
   return {paint(sample){videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
     for(let i=0;i<4;i++){const p=sample.corners[i];geo.attributes.position.setXYZ(i,p[0]*width,-p[1]*height,p[2]);}

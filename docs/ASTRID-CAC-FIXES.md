@@ -1,5 +1,7 @@
 # Astrid CAC fixes — 9 September 2026
 
+Superseded in part by [the CAC-1–7 follow-up](ASTRID-CAC-FOLLOWUP.md), which fixes the subsequently reported total/side-bet overlap and white fringe, removes the remaining 3D floor seam and makes outer desktop hands accessible on phones. The observations below describe the earlier checkpoint.
+
 The four reports in CAC refer to Astrid, including the report named Vera. These changes are in the existing `/?dealer=astrid&performance=staged&rehearsal=1` game. Guest access remains enabled. This checkpoint does not promote the entire realistic-table milestone to the default route or deploy production.
 
 | Report | Change and evidence | Acceptance boundary |
