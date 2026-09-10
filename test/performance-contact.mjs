@@ -65,6 +65,16 @@ test('viewport registration preserves aspect ratio and actor/shoe coordinates to
     assert.ok(outlet.x>0&&outlet.x<viewport.width&&outlet.y>0&&outlet.y<viewport.height);
   }
 });
+test('accelerated card cues survive ordinary frame drops but never replay after a stall',()=>{
+  const heard=[],cue=contactCueClock({pickup:69,land:122},name=>heard.push(name),{fps:24,playbackRate:1.75});
+  // A 14fps presentation can skip three source frames at 1.75x. Each
+  // contact is still presented less than 80ms after its authored time.
+  for(const frame of [63,66,70,73,117,120,124,124])cue(frame);
+  assert.deepEqual(heard,['pickup','land']);
+  const late=[],stalled=contactCueClock({pickup:69,land:122},name=>late.push(name),{fps:24,playbackRate:1.75});
+  for(const frame of [20,71,75,100,140,122])stalled(frame);
+  assert.deepEqual(late,[]);
+});
 test('native-resolution media preserves calibrated on-screen contact at desktop and phone sizes',()=>{
   for(const viewport of [{width:1920,height:1080},{width:1470,height:900},{width:390,height:844}]) {
     const before=uniformRegistration({width:1280,height:720},viewport);

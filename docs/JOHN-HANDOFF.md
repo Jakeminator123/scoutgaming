@@ -1,4 +1,12 @@
-# Current dependency: controlled dealer capture — 10 September 2026
+# Latest: sound recovery and seven-seat rejection — 10 September 2026
+
+**Current Jira state: CAC-8 Ready for QA; CAC-2 and CAC-4 Blocked on usable motion capture.**
+
+Read [ASTRID-AUDIO-AND-SEAT-COVERAGE.md](ASTRID-AUDIO-AND-SEAT-COVERAGE.md). The user correctly rejected the three-direction delivery as incomplete. A real seven-seat deal records the exact target corners and the remaining corrective card travel, up to 175px in the tested 1280px-wide view. Those targets are saved in `docs/reference/astrid-capture-20260910/player-targets.json` for per-position capture. No new hand footage was made or approved; CAC-2 is still unfinished.
+
+CAC-8 tracks the newly reported audio loss. The shared effects controller now resumes suspended/interrupted browser audio on interaction and discards scheduled effects on mute/hidden reset. Card cue timing tolerates small frame drops at 1.75x while rejecting stale cues. Rehearsal unmute uses the real persisted state, and saved silent recordings are labelled. The isolated suspension/recovery check and all 32 cues of a seven-seat initial deal passed. User audio-output QA remains open; existing dealer assets and backend are unchanged. The earlier Blocked snapshot below is historical context for the source-footage dependency.
+
+# Earlier dependency: controlled dealer capture — 10 September 2026
 
 **CAC-2 and CAC-4 are Blocked awaiting usable controlled performance footage. CAC-1/3/5/6/7 remain Done within their recorded QA scope.** The source renders for the rejected right and own-card returns are confirmed completed, not still processing. A fresh GitLab fetch found no new John changes. The capture request remains unanswered. The same dependency persisted across three consecutive goal turns; available independent speech/loading checks are saved, and the Safari attempt is recorded as inconclusive.
 

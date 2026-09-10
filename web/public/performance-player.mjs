@@ -77,7 +77,7 @@ export class PerformancePlayer {
       signal.throwIfAborted();
       clearTimeout(timer);timer=setTimeout(()=>controller.abort(),(video.duration/video.playbackRate+3)*1000);
       visual=createContactVisual(moving,width,height,card,faceDown,video);
-      const cue=contactCueClock(take.events,onCue);
+      const cue=contactCueClock(take.events,onCue,{fps:take.media.fps,playbackRate:video.playbackRate});
       const end=(corners??[[target.x,target.y],[target.right,target.y],[target.right,target.bottom],[target.x,target.bottom]])
         .map(([x,y])=>[(x-fit.x)/fit.width,(y-fit.y)/fit.height,0]);
       const release=take.frames[take.events.release].card;

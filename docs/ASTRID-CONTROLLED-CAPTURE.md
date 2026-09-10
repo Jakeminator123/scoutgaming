@@ -2,6 +2,8 @@
 
 ## Next capture — 10 September
 
+**Per-position correction:** the latest user report rejects three-direction routing. Use [player-targets.json](reference/astrid-capture-20260910/player-targets.json) from the actual seven-seat game. It records each initial card fan target and the existing release gap; see [the coverage audit](ASTRID-AUDIO-AND-SEAT-COVERAGE.md). The first two proof shots below address continuity defects but are not sufficient coverage for CAC-2. Capture distinct usable reaches/releases for all served positions, subsequent cards and split fans. Do not declare a seat covered merely because its card can slide there after a left/centre/right take.
+
 The existing four direction takes now use the same front-outlet extraction. Centre and left have partial, opt-in empty-hand return candidates. The right continuation failed because it swept across the table before reaching the outlet. The own-card continuation failed because it moved a delivered card back into the shoe. Neither rejected take is in the runtime. See [ASTRID-LAYOUT-AND-RETURN-QA.md](ASTRID-LAYOUT-AND-RETURN-QA.md) for the source IDs and recorded failures.
 
 The next step is a controlled performance proof. John/performer availability has been requested but is not yet confirmed. No physical recording has been scheduled and no new generation job is pending. The two rejected render jobs were rechecked and are completed. CAC-2 and CAC-4 are now Blocked on this dependency; return them to In Dev when usable source footage is available. This brief is ready for the person arranging capture; it is not a claim that capture has happened.

@@ -39,7 +39,7 @@ export function installPerformanceAuthoring({ panel, tableScene }) {
     };
     review.onclick=()=>showReview();
     for(const [kind,label] of [['initial','Watch updated three-seat deal'],['dealer','Watch own-card delivery'],['continuity','Watch centre return test'],['leftReturn','Watch left return test']]){
-      const button=document.createElement('button');button.textContent=label;button.onclick=()=>showReview(kind);panel.append(button);
+      const button=document.createElement('button');button.textContent=`${label} · silent recording`;button.onclick=()=>showReview(kind);panel.append(button);
     }
   }
 }
