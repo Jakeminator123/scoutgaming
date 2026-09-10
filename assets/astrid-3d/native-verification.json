@@ -1,0 +1,50 @@
+[
+  {
+    "action": "Deal_Seat_01_Contact_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532760119535086
+  },
+  {
+    "action": "Deal_Seat_02_Contact_Study",
+    "maxNativeJointPositionErrorMm": 0.0011379649097941389
+  },
+  {
+    "action": "Deal_Seat_03_Contact_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532760119535086
+  },
+  {
+    "action": "Deal_Seat_04_Contact_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532760119535086
+  },
+  {
+    "action": "Deal_Seat_05_Contact_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532760119535086
+  },
+  {
+    "action": "Deal_Seat_06_Contact_Study",
+    "maxNativeJointPositionErrorMm": 0.0011824613639408784
+  },
+  {
+    "action": "Deal_Seat_07_Contact_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532760119535086
+  },
+  {
+    "action": "Deal_Own_Card_Contact_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532760119535086
+  },
+  {
+    "action": "Reveal_Hole_Card_Study",
+    "maxNativeJointPositionErrorMm": 0.001205797691592211
+  },
+  {
+    "action": "Collect_Card_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532760119535086
+  },
+  {
+    "action": "Greeting_Wave_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532496599598106
+  },
+  {
+    "action": "Accept_Bets_Nod_Study",
+    "maxNativeJointPositionErrorMm": 0.0010532496599598106
+  }
+]
