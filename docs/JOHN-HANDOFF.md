@@ -1,4 +1,12 @@
-# Latest: scene QA and real HTTP recovery — 10 September 2026
+# Current dependency: controlled dealer capture — 10 September 2026
+
+**CAC-2 and CAC-4 are Blocked awaiting usable controlled performance footage. CAC-1/3/5/6/7 remain Done within their recorded QA scope.** The source renders for the rejected right and own-card returns are confirmed completed, not still processing. A fresh GitLab fetch found no new John changes. The capture request remains unanswered. The same dependency persisted across three consecutive goal turns; available independent speech/loading checks are saved, and the Safari attempt is recorded as inconclusive.
+
+The full goal is unfinished. Follow [ASTRID-CONTROLLED-CAPTURE.md](ASTRID-CONTROLLED-CAPTURE.md): first supply continuous right-player and own-card delivery/empty-hand-return proofs with locked camera, rigid card tracking and finger occlusion. The existing right continuation makes an extra sweep; the own-card continuation retrieves a dealt card into the shoe. Neither is installed. Do not spend further hand-generation credits or turn these failures into a purported finished performance. Move the two issues back to In Dev when usable capture or an explicitly revised source-production approach is available, then repeat in-game contact/continuity QA before promotion.
+
+Desktop Safari also needs a reliably visible test session; physical iPhone Safari/Android Chrome and full speech/motion acceptance remain open. No default promotion or production release has occurred. The walkable prototype and all other dealer media remain preserved.
+
+# Earlier: scene QA and real HTTP recovery — 10 September 2026
 
 Safari follow-up: [ASTRID-SAFARI-QA.md](ASTRID-SAFARI-QA.md) records an inconclusive native Safari 26.1 attempt. The initial scene rendered, but the automated page reported hidden and correctly skipped speech. No playback code was changed to bypass this. Safari and physical-device acceptance remain open; CAC-2/4 still need the controlled hand-performance proof.
 
