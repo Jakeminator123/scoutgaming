@@ -23,12 +23,17 @@ export async function verifyFacialSource(data,bytes) {
  if(hash!==data.sha256)throw new Error('Facial performance does not match this source video');
  return hash;
 }
-export function prepareFacialPerformance(data) {
+export function prepareFacialPerformance(data,{modelSha256}={}) {
  if(data.schemaVersion!==1||!Array.isArray(data.frames)||!data.frames.length||!(data.duration>0))throw new Error('Invalid facial performance');
  let previous=-1;
  for(const frame of data.frames){if(!Number.isFinite(frame.time)||frame.time<0||frame.time<=previous||frame.time>=data.duration)throw new Error('Facial timestamps must be strictly increasing within source duration');previous=frame.time;}
- const frames=data.frames.map(f=>({time:f.time,weights:mapFacialWeights(f.weights)}));
- return {duration:data.duration,sourceHash:data.sha256,sample(time){
+ const calibrated=modelSha256!==undefined&&data.rigCalibration!==undefined;
+ if(calibrated){
+  if(!/^[a-f0-9]{64}$/.test(modelSha256)||!data.rigCalibration||data.rigCalibration.schemaVersion!==1||data.rigCalibration.targetModelSha256!==modelSha256)throw new Error('Facial calibration does not match this dealer model');
+  for(const f of data.frames)if(!f.rigWeights||Object.keys(f.rigWeights).length!==FACE_SHAPES.length||FACE_SHAPES.some(name=>!Number.isFinite(f.rigWeights[name])||f.rigWeights[name]<0||f.rigWeights[name]>1))throw new Error('Invalid calibrated facial weights');
+ }
+ const frames=data.frames.map(f=>({time:f.time,weights:calibrated?Object.fromEntries(FACE_SHAPES.map(name=>[name,f.rigWeights[name]])):mapFacialWeights(f.weights)}));
+ return {duration:data.duration,sourceHash:data.sha256,rigModelHash:calibrated?modelSha256:null,sample(time){
   if(!Number.isFinite(time)||time<frames[0].time||time>=data.duration)return mapFacialWeights();
   let lo=0,hi=frames.length-1;while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(frames[mid].time<=time)lo=mid;else hi=mid-1;}
   const a=frames[lo],b=frames[Math.min(lo+1,frames.length-1)];
