@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+const faceFolder=process.env.ASTRID_FACE_FIXTURE_ROOT?pathToFileURL(path.resolve(process.env.ASTRID_FACE_FIXTURE_ROOT)+path.sep):new URL('../web/public/dealers/astrid/rig/face-study/',import.meta.url);
 import * as T from '../web/public/vendor/three/three.module.js';
 import {loadRigGeometry} from '../pipeline/load-dealer-rig.mjs';
 import {poseDealer} from '../web/public/dealer-rig.mjs';
 import {seatTarget} from '../web/public/dealer-motion.mjs';
 test('head turns keep lower-face skin within the 2 mm regression tolerance',()=>{
- const folder=new URL('../web/public/dealers/astrid/rig/face-study/',import.meta.url);
+ const folder=faceFolder;
  const {rig,root}=loadRigGeometry(new URL('astrid-rigged.glb',folder),JSON.parse(fs.readFileSync(new URL('profile.json',folder))));
  const mesh=root.getObjectByName('Astrid_Face').children.find(o=>o.isSkinnedMesh),head=rig.bones.get('Head');
  const headRestInverse=head.matrixWorld.clone().invert(),selected=[];

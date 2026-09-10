@@ -1,3 +1,9 @@
+# Latest: corrected anatomical neck and packed source — 10 September 2026
+
+The corrected opt-in model removes the duplicated neck offset caused by reading raw mesh positions after editing shape-key Basis. Actual evaluated neck/body separation fell from 46.11 mm maximum to 2.12 mm. Rest and both outer-seat renders are in `assets/astrid-3d/anatomical/review/`; six face tests pass on the published candidate. Four editable Blender projects, embedded-material GLBs, twelve body actions, manual controls and the measured goodluck take with original packed audio are saved and reopened under `assets/astrid-3d/anatomical/`. Export joint residual remains below 0.65 mm. Read the anatomical face study and package README.
+
+The collaborating game task has verified all 17 source-clock speech bindings and a full actual round; its integration checkpoint follows separately. Studio replay, scrub and on-demand rendering are verified in the browser. Hair, eyes, lower-chest shading and full photographic/device acceptance remain open. Native/body and face controls are an inspectable technical delivery, not completion of the user's realism goal. CAC-2/CAC-4 remain In Dev.
+
 # Latest: anatomical face and source-clock controls — 10 September 2026
 
 See [ASTRID-ANATOMICAL-FACE-STUDY.md](ASTRID-ANATOMICAL-FACE-STUDY.md). The opt-in face-study GLB now has separately weighted gaze eyes and ten real facial shape keys. Studio controls and source-clock measurements are available, with six face regressions passing. Jaw stretching and jagged collar attempts were rejected; the current mechanical candidate preserves the jacket and retained body weights. Neck surface/albedo continuity, hair appearance and final photographic acceptance remain open. The collaborating game task owns the 17-line adapter/manifest and actual-game review. Native source packaging continues separately; do not promote the default dealer or close CAC-2/CAC-4 from this checkpoint.
