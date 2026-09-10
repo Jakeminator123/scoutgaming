@@ -8,6 +8,7 @@ const faceStudy=new URLSearchParams(location.search).get('face')==='anatomical';
 const rigFolder=faceStudy?'dealers/astrid/rig/face-study/':'dealers/astrid/rig/';
 let faceController=null,facePerformance=null,faceFromMedia=false,faceIdle=false,idleStart=0;const manualFace={};
 const $=s=>document.querySelector(s),scene=new T.Scene();scene.background=new T.Color('#161e19');
+$('a[download]').href=rigFolder+'astrid-rigged.glb';
 const renderer=new T.WebGLRenderer({canvas:$('#stage'),antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.80;
 const camera=new T.PerspectiveCamera(40,1,.03,30);scene.add(new T.HemisphereLight(0xf7ecdf,0x778074,.8));
 const key=new T.DirectionalLight(0xffedda,2);key.position.set(-2,4,3);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.normalBias=.004;Object.assign(key.shadow.camera,{left:-2,right:2,top:3,bottom:-2,near:.1,far:12});scene.add(key);
