@@ -1,0 +1,9 @@
+html.rigged-review #room, html.rigged-review #room2,
+html.rigged-review #dealer-wrap, html.rigged-review #dealer-hands-wrap { visibility:hidden; }
+html.rigged-review #table2d {top:0;inset:0;}
+html.rigged-review .cards .card {opacity:0!important;pointer-events:none;}
+html.rigged-review #dealer-cards {left:var(--rig-dealer-x);top:var(--rig-dealer-y);}
+html.rigged-review #table2d > .hand-total {left:var(--rig-dealer-x);top:calc(var(--rig-dealer-y) + 24px);}
+html.rigged-review #rig-review-status {position:fixed;right:16px;top:90px;z-index:49;max-width:310px;padding:8px 12px;border:1px solid #aa9257;border-radius:5px;color:#dfd2a6;background:#0e120fea;font:11px/1.45 Inter,Arial,sans-serif;}
+html.rigged-review #caption {top:40vh;}
+@media(max-width:860px) and (orientation:portrait){html.rigged-review #rig-review-status{top:100px;left:10px;right:auto;max-width:245px;font-size:10px;}html.rigged-review #caption{top:36vh;}}

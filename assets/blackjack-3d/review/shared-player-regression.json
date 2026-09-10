@@ -1,0 +1,126 @@
+{
+  "vera": {
+    "url": "?dealer=vera&rehearsal=1",
+    "line": "greeting",
+    "events": [
+      {
+        "level": "info",
+        "message": "[speech] start greeting matched",
+        "timestamp": "2026-09-10T06:57:10.429Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end greeting",
+        "timestamp": "2026-09-10T06:57:16.077Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] start greeting matched",
+        "timestamp": "2026-09-10T06:57:16.139Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end greeting",
+        "timestamp": "2026-09-10T06:57:21.784Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      }
+    ],
+    "result": "Consecutive playback completed without overlap; not all-line phoneme approval."
+  },
+  "astrid": {
+    "url": "?dealer=astrid&rehearsal=1",
+    "line": "greeting",
+    "events": [
+      {
+        "level": "info",
+        "message": "[speech] start greeting matched",
+        "timestamp": "2026-09-10T06:58:15.064Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end greeting",
+        "timestamp": "2026-09-10T06:58:19.957Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] start greeting matched",
+        "timestamp": "2026-09-10T06:58:20.005Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end greeting",
+        "timestamp": "2026-09-10T06:58:24.879Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      }
+    ],
+    "result": "Consecutive playback completed without overlap; not all-line phoneme approval."
+  },
+  "amira": {
+    "url": "?dealer=amira&rehearsal=1",
+    "line": "greeting",
+    "events": [
+      {
+        "level": "info",
+        "message": "[speech] start greeting matched",
+        "timestamp": "2026-09-10T06:59:57.967Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end greeting",
+        "timestamp": "2026-09-10T07:00:03.342Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] start greeting matched",
+        "timestamp": "2026-09-10T07:00:03.822Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end greeting",
+        "timestamp": "2026-09-10T07:00:09.195Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      }
+    ],
+    "result": "Consecutive playback completed without overlap; not all-line phoneme approval."
+  },
+  "mei": {
+    "url": "?dealer=mei&rehearsal=1",
+    "line": "greeting",
+    "events": [
+      {
+        "level": "info",
+        "message": "[speech] start greeting matched",
+        "timestamp": "2026-09-10T07:03:19.259Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end greeting",
+        "timestamp": "2026-09-10T07:03:23.379Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] start greeting matched",
+        "timestamp": "2026-09-10T07:03:23.765Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end greeting",
+        "timestamp": "2026-09-10T07:03:28.037Z",
+        "url": "http://rigqa.localhost:4197/app.mjs"
+      }
+    ],
+    "result": "Consecutive playback completed without overlap; not all-line phoneme approval."
+  }
+}
