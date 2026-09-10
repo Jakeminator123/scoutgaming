@@ -2,6 +2,12 @@ html.rigged-review #room, html.rigged-review #room2,
 html.rigged-review #dealer-wrap, html.rigged-review #dealer-hands-wrap { visibility:hidden; }
 html.rigged-review #table2d {top:0;inset:0;}
 html.rigged-review .cards .card {opacity:0!important;pointer-events:none;}
+html.rigged-review .seat .hand-total {font-size:13px;padding:3px 7px;z-index:32;}
+html.rigged-review .seat .hand-total::before {content:attr(data-hand-label);font-size:10px;color:#d8c88e;}
+html.rigged-review .seat .hand-total.current-hand {color:#dbff46;border:1px solid #a5bd31;box-shadow:0 0 0 2px #16200bb0;}
+html.rigged-review #actions,html.rigged-review #actions-top {display:grid;grid-template-columns:repeat(4,auto);}
+html.rigged-review #actions[hidden],html.rigged-review #actions-top[hidden] {display:none;}
+html.rigged-review .rig-hand-readout {grid-column:1/-1;text-align:center;max-width:290px;overflow-wrap:anywhere;font:12px/1.5 Inter,Arial,sans-serif;color:#f2efdf;}
 html.rigged-review #dealer-cards {left:var(--rig-dealer-x);top:var(--rig-dealer-y);}
 html.rigged-review #table2d > .hand-total {left:var(--rig-dealer-x);top:calc(var(--rig-dealer-y) + 24px);}
 html.rigged-review #rig-review-status {position:fixed;right:16px;top:90px;z-index:49;max-width:310px;padding:8px 12px;border:1px solid #aa9257;border-radius:5px;color:#dfd2a6;background:#0e120fea;font:11px/1.45 Inter,Arial,sans-serif;}

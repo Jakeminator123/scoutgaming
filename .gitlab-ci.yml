@@ -18,3 +18,4 @@ dealer-regression:
     - node test/split-rules.mjs
     - node test/blackjack-asset-state.mjs
     - node --test test/dealer-motion.mjs test/dealer-skin-contact.mjs
+    - node --test test/rigged-card-layout.mjs test/rigged-layout-contact.mjs

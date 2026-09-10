@@ -1077,6 +1077,7 @@ function updateBadge(container, cards) {
   layoutHandTotals();
 }
 function layoutHandTotals(){
+  if(tableScene?.layoutHandTotals){tableScene.layoutHandTotals();return;}
   const badges=[...document.querySelectorAll('.seat:not(.seat-off) .hand-total')];
   for(const badge of badges)badge.style.setProperty('--badge-clear-y','0px');
   const obstacles=[...document.querySelectorAll('.seat:not(.seat-off) .sidearcs,.seat:not(.seat-off) .card')].map(el=>el.getBoundingClientRect());
@@ -1128,6 +1129,7 @@ async function animateSplit(bHand) {
   const nh = sibs[sibs.indexOf(bHand) + 1];
   const seat = seatEls[boxIdx];
   const cardsEl = seat.querySelector('.cards');
+  tableScene?.rememberBoxCards?.(boxIdx);
   cardsEl.innerHTML = '';
   seat.querySelectorAll('.hand-total').forEach(b => b.remove());
   const conts = sibs.map((h, k) => subhandEl(cardsEl, k, sibs.length));
@@ -1229,6 +1231,7 @@ function clearTable() {
 // ---------- round flow ----------
 function setBanner(text) { const b = $('#banner'); if (!text) b.classList.add('hidden'); else { b.classList.remove('hidden'); b.textContent = text; } }
 function activeBoxHighlight() {
+  tableScene?.setActiveHand?.(null);
   if(compactSeats)layoutSeats();
   seatEls.forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.subhand').forEach(su => su.classList.remove('waiting'));
@@ -1241,6 +1244,7 @@ function activeBoxHighlight() {
   // on a split box, dim the hands that are waiting so HIT visibly belongs
   // to one fan
   const cont = boxContainer(round.active);
+  tableScene?.setActiveHand?.(cont);
   if (cont?.classList.contains('subhand')) {
     cont.parentNode.querySelectorAll(':scope > .subhand').forEach(su => { if (su !== cont) su.classList.add('waiting'); });
   }
@@ -1263,11 +1267,21 @@ function showActions(seat) {
   // Only one action panel is needed. Both layouts keep the same legal moves.
   top.hidden=compact;
   const controls=compact?bar:top;
+  if(tableScene?.rigged){
+    for(const panel of [bar,top]){
+      let readout=panel.querySelector('.rig-hand-readout');
+      if(!readout){readout=document.createElement('div');readout.className='rig-hand-readout';panel.prepend(readout);}
+      const hand=round.live()[round.active],siblings=round.live().filter(h=>h.box===hand.box);
+      const label=siblings.length>1?`Hand ${siblings.indexOf(hand)+1} of ${siblings.length}`:'Your hand';
+      readout.textContent=`${label} · ${hand.cards.map(c=>`${c.r}${c.s}`).join(' ')}`;
+    }
+  }
   const visible=el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
   const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#table-pick,#rehearsal')].filter(visible);
-  const obstacles=protectedEls.map(el=>el.getBoundingClientRect());
+  const obstacles=protectedEls.map(el=>el.classList.contains('card')?(tableScene?.cardBounds?.(el)??el.getBoundingClientRect()):el.getBoundingClientRect());
   const totals=[...activeSeat.querySelectorAll('.hand-total')].map(el=>el.getBoundingClientRect());
-  const anchor={x:r.x,bottom:Math.max(r.y,...totals.map(b=>b.bottom))};
+  const fan=tableScene?.handBounds?.(boxContainer(round.active));
+  const anchor={x:fan?(fan.left+fan.right)/2:r.x,bottom:Math.max(fan?.bottom??r.y,...totals.map(b=>b.bottom))};
   const placement=placeActions({width:controls.offsetWidth,height:controls.offsetHeight,
     viewport:{width:innerWidth,top:Math.min(innerHeight*.35,$('#table2d').getBoundingClientRect().top),bottom:$('#dealer-picker').getBoundingClientRect().top},anchor,obstacles,belowAnchor:true});
   if(placement){
