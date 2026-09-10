@@ -14,5 +14,5 @@ html.rigged-review #rig-review-status {position:fixed;right:16px;top:90px;z-inde
 html.rigged-review #caption {top:40vh;}
 @media(max-width:860px) and (orientation:portrait){html.rigged-review #rig-review-status{top:100px;left:10px;right:auto;max-width:245px;font-size:10px;}html.rigged-review #caption{top:36vh;}}
 @media(max-width:860px) and (orientation:portrait){
- html.rigged-review .seat-inner>.spot,html.rigged-review .seat-inner>.sidearcs,html.rigged-review .seat-inner>.side-chip{transform:scale(.8);transform-origin:center;}
+ html.rigged-review .seat{--spot-x:36px;--spot-y:41.24px;--spot-w:48px;--spot-h:35.52px;--arc-w:96px;--arc-h:75px;}
 }

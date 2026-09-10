@@ -8,6 +8,7 @@ import {riggedCardPose,cardCorners} from './rigged-card-layout.mjs';
 import {placeActions} from './action-placement.mjs';
 import {createDiscardState} from './rigged-discard-state.mjs';
 import {createRiggedFacePlayback} from './rigged-face-playback.mjs';
+import {planCollection} from './dealer-collection.mjs';
 
 // Opt-in contact review inside the real game. This renderer consumes the card
 // DOM built from server snapshots; it has no shuffle, wallet or command API.
@@ -170,7 +171,7 @@ export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
     for(const el of els){
       if(!el.classList.contains('back')&&(!el.dataset.rank||!el.dataset.suit))continue;
       const item=records.get(el)??createCard(el);
-      if(active?.item===item||item.collected)continue;
+      if(active?.item===item||active?.items?.includes(item)||item.collected)continue;
       const pose=poseFor(el),target=new T.Vector3(...pose.position);
       if(!item.placed){item.mesh.position.copy(target);item.mesh.rotation.y=pose.yaw;item.placed=true;}
       else if(!item.destination||item.destination.distanceToSquared(target)>1e-12){
@@ -197,12 +198,32 @@ export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
   function render(now=performance.now()){
     if(disposed)return;requestAnimationFrame(render);const dt=Math.min((now-last)/1000,.050);last=now;
     if(document.hidden)return;
-    for(const item of records.values())if(item.shift&&active?.item!==item){
+    for(const item of records.values())if(item.shift&&active?.item!==item&&!active?.items?.includes(item)){
       const shift=item.shift;shift.time=Math.min(.32,shift.time+dt);const t=shift.time/.32,s=t*t*(3-2*t);
       item.mesh.position.lerpVectors(shift.from,shift.target,s);item.mesh.rotation.y=T.MathUtils.lerp(shift.yaw,shift.yawTarget,s);
       if(t===1)item.shift=null;
     }
-    if(active){
+    if(active?.kind==='collect-sweep'){
+      active.time=Math.min(active.seconds,active.time+dt);
+      const sample=active.plan.sample(active.time),pose=poseCardAction(rig,sample.progress,{kind:'collect-sweep',sample});
+      for(const transform of sample.transforms){const item=active.items[transform.id];item.mesh.position.set(...transform.position);item.mesh.rotation.set(0,transform.yaw,0);}
+      active.gazeTarget=sample.card;
+      if(sample.picked&&!active.picked){active.picked=true;active.onCue?.('pickup');}
+      if(sample.count>(active.gathered??0)){
+        active.gathered=sample.count;
+        if(!sample.released&&active.time-(active.lastGatherSound??-1)>.08){active.lastGatherSound=active.time;active.onCue?.('gather');}
+      }
+      if(sample.released&&!active.released){
+        active.released=true;active.onCue?.('land');
+        if(discardTop)remove(discardTop);
+        discardTop=active.items[active.plan.ordered[0].id];
+        for(const item of active.items){discardState.land(item.el);item.collected=true;item.mesh.visible=item===discardTop;}
+        updateDiscard();
+      }
+      status(`${sample.phase} · collecting one stack`,Number(pose.fingerError)||0);
+      const audit=document.querySelector('#rig-review-status');if(audit){audit.dataset.action='collect-sweep';audit.dataset.progress=sample.progress.toFixed(4);audit.dataset.gathered=String(sample.count);audit.dataset.collectionSize=String(active.items.length);audit.dataset.cardPosition=JSON.stringify(sample.card);}
+      if(active.time===active.seconds){const done=active;active=null;done.resolve();}
+    }else if(active){
       active.time+=dt;const progress=Math.min(1,active.time/active.seconds);
       const pose=active.kind==='deal'?poseDealer(rig,progress,active.target,outlet):poseCardAction(rig,progress,{kind:active.kind,source:active.source,target:active.target,initialYaw:active.initialYaw});
       const sample=pose.sample;
@@ -223,7 +244,7 @@ export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
       if(audit){audit.dataset.action=active.kind;audit.dataset.progress=progress.toFixed(4);audit.dataset.target=JSON.stringify(active.target);audit.dataset.cardPosition=JSON.stringify(sample.card);audit.dataset.cardYaw=String(sample.cardYaw??0);audit.dataset.cardPitch=String(sample.cardPitch??0);}
       if(progress===1){const done=active;active=null;done.item.mesh.position.set(...done.target);done.item.mesh.visible=true;if(done.kind==='collect')done.item.collected=true;done.resolve();}
     }else poseDealer(rig,0,tableProfile.seatCards[3],outlet);
-    facePlayback?.sample(now/1000,active?.item.mesh.position.toArray());renderer.render(scene,camera);
+    facePlayback?.sample(now/1000,active?.gazeTarget??active?.item?.mesh.position.toArray());renderer.render(scene,camera);
   }
   resize();syncCards();requestAnimationFrame(render);
   canvas.addEventListener('webglcontextlost',event=>{
@@ -260,13 +281,13 @@ export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
       return new Promise(resolve=>{active={kind:'reveal',seconds:CARD_ACTION_SECONDS.reveal,item,source:pos,target:pos,initialYaw:item.mesh.rotation.y,time:0,onCue,resolve,picked:false,released:false};});
     },
     async collectCards({onCue}={}){
-      const target=assets.nodes.Discard_Landing.getWorldPosition(new T.Vector3());
-      for(const item of [...records.values()]){
-        if(!item.el.isConnected||item.collected)continue;
-        if(active)throw new Error('Dealer already presenting a card');
-        const source=item.mesh.position.toArray(),to=target.clone();to.y+=discardState.view().count*.00045;
-        await new Promise(resolve=>{active={kind:'collect',seconds:CARD_ACTION_SECONDS.collect,item,source,target:to.toArray(),initialYaw:item.mesh.rotation.y,time:0,onCue,resolve,picked:false,released:false};});
-      }
+      if(active)throw new Error('Dealer already presenting a card');
+      const items=[...records.values()].filter(item=>item.el.isConnected&&!item.collected);if(!items.length)return;
+      const landing=discardLanding.clone();landing.y+=discardState.view().count*.00045;
+      const plan=planCollection(items.map((item,id)=>({id,position:item.mesh.position.toArray(),yaw:item.mesh.rotation.y,
+        group:item.el.closest('.seat')?`${item.el.closest('.seat').dataset.box}:${item.el.closest('.subhand')?.dataset.h??0}`:'dealer'})),{landing:landing.toArray()});
+      items.forEach(item=>{item.shift=null;});
+      await new Promise(resolve=>{active={kind:'collect-sweep',seconds:plan.duration,plan,items,time:0,onCue,resolve,picked:false,released:false};});
     },
     registration(){return{version:1,type:'rigged-review',units:'metres',shoe:{outlet},camera:{projection:camera.projectionMatrix.toArray(),world:camera.matrixWorld.toArray()},limitations:profile.limitations};},
     dispose(){disposed=true;observer.disconnect();const cards=new Set(records.values());if(discardTop)cards.add(discardTop);for(const item of cards)remove(item);discardBody.geometry.dispose();discardBody.material.dispose();discardCover.geometry.dispose();discardCover.material.dispose();backTexture.dispose();renderer.dispose();},

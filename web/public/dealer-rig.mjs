@@ -108,14 +108,14 @@ export function poseDealer(rig,progress,target,outlet) {
 
 // Choreography candidates: consume authoritative card positions, never issue cards.
 export function poseCardAction(rig,progress,options) {
-  const sample=sampleCardAction(progress,options),t=Math.max(0,Math.min(1,progress));
+  const sample=options.sample??sampleCardAction(progress,options),t=Math.max(0,Math.min(1,progress));
   rig.reset();
-  const weight=ease(t/.2)*(1-ease((t-.75)/.25));
+  const weight=sample.bodyWeight??ease(t/.2)*(1-ease((t-.75)/.25));
   const bodyTarget=sample.hand;
   rig.root.position.set(.095+(bodyTarget[0]*.28-.095)*weight,-.030-.040*weight,0);
   rig.root.updateMatrixWorld(true);const bend=Math.min(.45,Math.max(Math.abs(bodyTarget[0])*.40,bodyTarget[2]*.70));rig.lean(.4+bend*weight,-bodyTarget[0]*.22*weight);rig.raiseGaze(.28+bend*.75*weight);
   const footErrors=rig.plantFeet(),errors={};sample.contacts={};
-  const handoff=options.kind==='collect'&&options.source[0]>0&&options.target[0]<0?ease((t-.24)/.12)*(1-ease((t-.40)/.14)):0;
+  const handoff=sample.handoff??(options.kind==='collect'&&options.source[0]>0&&options.target[0]<0?ease((t-.24)/.12)*(1-ease((t-.40)/.14)):0);
   for(const side of ['left','right']){
     const sign=side==='left'?1:-1,point=[...sample[side]];
     point[0]+=sign*.025*handoff;

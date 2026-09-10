@@ -1,3 +1,9 @@
+# Latest: continuous collection sweep — 10 September 2026
+
+The actual rigged table now gathers finished cards into one stack, exchanges it between the hands near the centre and places it once in the discard tray. The original cards stay still until touched. `dealer-collection.mjs` builds the path from existing server card transforms; `pipeline/sample-dealer-collection.mjs` exports the same poses and independent card transforms for an additional editable study. Existing twelve source actions are retained. The new gathering sound follows presented contacts and respects existing mute/hidden-tab cancellation.
+
+First actual three-seat sweep gathered eight cards and cleared the table. Evidence, limitations and the numerical checks are in `assets/blackjack-3d/review/collection-sweep/` and [ASTRID-FACE-IN-GAME-REVIEW.md](ASTRID-FACE-IN-GAME-REVIEW.md). Geometry checks pass for all seven seats and outer four-hand splits. The early abrupt secondary-hand arrival was rejected and slowed before this candidate. Photographic appearance is still not approved; facial calibration and surface/identity work continue separately. CAC-2/4 remain In Dev.
+
 # Latest: anatomical face connected to the actual game — 10 September 2026
 
 Read [ASTRID-FACE-IN-GAME-REVIEW.md](ASTRID-FACE-IN-GAME-REVIEW.md). The opt-in `?dealer=astrid&scene=rigged-review&face=anatomical` now combines the corrected neck/head with 17 measured facial performances, exact media-source bindings, cancellation-safe shared playback and silent card-following gaze. The combined editable table is in `assets/blackjack-3d/editable-project/anatomical/`. Its source, images and controls were reopened and checked. Default filmed dealers and guest access remain unchanged.

@@ -301,7 +301,7 @@ const sfx = {
   play(n) {
     if (voice.muted || document.hidden) return;
     if (n === 'chip') return synthChip();
-    if (n === 'pickup' || n === 'land') return synthDeal(n);
+    if (n === 'pickup' || n === 'land' || n === 'gather') return synthDeal(n);
     if (n === 'knock') return synthKnock();
     if (n === 'win') return synthWin();
     if (n === 'bigwin') return synthBigWin();
@@ -370,6 +370,8 @@ function synthDeal(phase) {
     const t0 = actx.currentTime;
     if (phase === 'pickup') {
       noiseBurst(t0, { dur: .06, gain: .12, type: 'bandpass', freq: 2400, q: .7, decay: 2 });
+    } else if (phase === 'gather') {
+      noiseBurst(t0, { dur: .16, gain: .07, type: 'bandpass', freq: 1500, q: .45, decay: 1.4 });
     } else {
       noiseBurst(t0, { dur: .024, gain: .25, type: 'lowpass', freq: 1800, q: .7, decay: 2 });
       noiseBurst(t0, { dur: .04, gain: .08, type: 'bandpass', freq: 3200, q: .8, decay: 3 });
