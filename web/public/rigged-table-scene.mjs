@@ -6,6 +6,7 @@ import {bindBlackjackAssets} from './blackjack-asset-state.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {riggedCardPose,cardCorners} from './rigged-card-layout.mjs';
 import {placeActions} from './action-placement.mjs';
+import {createDiscardState} from './rigged-discard-state.mjs';
 
 // Opt-in contact review inside the real game. This renderer consumes the card
 // DOM built from server snapshots; it has no shuffle, wallet or command API.
@@ -57,6 +58,19 @@ export async function createRiggedTableScene(canvas) {
   const records=new Map();let active=null,last=performance.now(),visibleSeats=[0,1,2,3,4,5,6],disposed=false;
   let rememberedCards=[],activeHand=null;
   const backTexture=await new T.TextureLoader().loadAsync('assets/cardback.png');backTexture.colorSpace=T.SRGBColorSpace;
+  const discardState=createDiscardState(),discardLanding=assets.nodes.Discard_Landing.getWorldPosition(new T.Vector3());
+  const discardBody=new T.Mesh(new T.BoxGeometry(.063,1,.088),new T.MeshStandardMaterial({color:'#ddd8cb',roughness:.9}));
+  const discardCover=new T.Mesh(new T.BoxGeometry(.063,.0004,.088),new T.MeshStandardMaterial({map:backTexture,roughness:.78}));
+  discardBody.castShadow=discardCover.castShadow=true;discardBody.receiveShadow=discardCover.receiveShadow=true;
+  discardBody.visible=discardCover.visible=false;scene.add(discardBody,discardCover);
+  let discardTop=null;
+  function updateDiscard(){
+    const {count}=discardState.view();discardBody.visible=count>1;discardCover.visible=count>0&&!discardTop;
+    const height=Math.max(0,count-1)*.00045;
+    discardBody.scale.y=Math.max(.0004,height);discardBody.position.copy(discardLanding);discardBody.position.y+=height/2-.0002;
+    discardCover.position.copy(discardLanding);discardCover.position.y+=height;
+    const audit=document.querySelector('#rig-review-status');if(audit)audit.dataset.discardCount=String(count);
+  }
   function screen(point){const p=new T.Vector3(...point).project(camera);return{x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2};}
   function poseFor(el){
     const box=el.closest('.seat')?.dataset.box,sub=el.closest('.subhand'),ci=Number(el.style.getPropertyValue('--ci'))||0;
@@ -127,7 +141,7 @@ export async function createRiggedTableScene(canvas) {
   function remove(item){scene.remove(item.mesh);item.mesh.geometry.dispose();new Set(item.mesh.material).forEach(m=>m.dispose());if(item.tex!==backTexture)item.tex.dispose();records.delete(item.el);}
   function syncCards(){
     const els=new Set(document.querySelectorAll('.cards .card'));
-    for(const [el,item] of records)if(!els.has(el))remove(item);
+    for(const [el,item] of records)if(!els.has(el)){if(item===discardTop)records.delete(el);else remove(item);}
     for(const el of els){
       if(!el.classList.contains('back')&&(!el.dataset.rank||!el.dataset.suit))continue;
       const item=records.get(el)??createCard(el);
@@ -169,7 +183,13 @@ export async function createRiggedTableScene(canvas) {
       active.item.mesh.rotation.y=sample.cardYaw??0;
       active.item.mesh.rotation.x=sample.cardPitch??0;
       if(sample.picked&&!active.picked){active.picked=true;active.onCue?.('pickup');}
-      if(sample.released&&!active.released){active.released=true;active.onCue?.('land');}
+      if(sample.released&&!active.released){
+        active.released=true;active.onCue?.('land');
+        if(active.kind==='collect'){
+          discardState.land(active.item.el);if(discardTop&&discardTop!==active.item)remove(discardTop);
+          discardTop=active.item;discardTop.collected=true;updateDiscard();
+        }
+      }
       const error=Number(pose.fingerError)||0;
       status(`${sample.phase} · motion review · face animation unfinished`,error);
       const audit=document.querySelector('#rig-review-status');
@@ -185,6 +205,11 @@ export async function createRiggedTableScene(canvas) {
     document.documentElement.classList.remove('rigged-review');
   });
   return {rigged:true,resize,render:()=>{},cardBounds,handBounds,layoutHandTotals,
+    setTableSnapshot(snapshot,options){
+      const before=discardState.view(),after=discardState.sync(snapshot,options);
+      if(discardTop&&(before.shoeId!==after.shoeId||before.count!==after.count)){remove(discardTop);discardTop=null;}
+      updateDiscard();
+    },
     setActiveHand(container){activeHand=container;layoutHandTotals();},
     rememberBoxCards(box){rememberedCards=[...records.values()].filter(item=>item.el.closest('.seat')?.dataset.box===String(box)).map(item=>({box:String(box),rank:item.el.dataset.rank,suit:item.el.dataset.suit,position:item.mesh.position.clone(),yaw:item.mesh.rotation.y}));},
     project(x,z){return screen([x*1.1,.911,z*1.15-.10]);},
@@ -205,15 +230,15 @@ export async function createRiggedTableScene(canvas) {
       return new Promise(resolve=>{active={kind:'reveal',seconds:CARD_ACTION_SECONDS.reveal,item,source:pos,target:pos,initialYaw:item.mesh.rotation.y,time:0,onCue,resolve,picked:false,released:false};});
     },
     async collectCards({onCue}={}){
-      const target=assets.nodes.Discard_Landing.getWorldPosition(new T.Vector3());let count=0;
+      const target=assets.nodes.Discard_Landing.getWorldPosition(new T.Vector3());
       for(const item of [...records.values()]){
-        if(!item.el.isConnected)continue;
+        if(!item.el.isConnected||item.collected)continue;
         if(active)throw new Error('Dealer already presenting a card');
-        const source=item.mesh.position.toArray(),to=target.clone();to.y+=count++*.00045;
+        const source=item.mesh.position.toArray(),to=target.clone();to.y+=discardState.view().count*.00045;
         await new Promise(resolve=>{active={kind:'collect',seconds:CARD_ACTION_SECONDS.collect,item,source,target:to.toArray(),initialYaw:item.mesh.rotation.y,time:0,onCue,resolve,picked:false,released:false};});
       }
     },
     registration(){return{version:1,type:'rigged-review',units:'metres',shoe:{outlet},camera:{projection:camera.projectionMatrix.toArray(),world:camera.matrixWorld.toArray()},limitations:profile.limitations};},
-    dispose(){disposed=true;observer.disconnect();for(const item of records.values())remove(item);backTexture.dispose();renderer.dispose();},
+    dispose(){disposed=true;observer.disconnect();const cards=new Set(records.values());if(discardTop)cards.add(discardTop);for(const item of cards)remove(item);discardBody.geometry.dispose();discardBody.material.dispose();discardCover.geometry.dispose();discardCover.material.dispose();backTexture.dispose();renderer.dispose();},
   };
 }

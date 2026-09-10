@@ -1,4 +1,8 @@
-# Latest: rigged split hands and refresh proof — 10 September 2026
+# Latest: persistent discard presentation — 10 September 2026
+
+The opt-in rigged game retains collected cards between rounds and restores the pile from public server counts after refresh. `rigged-discard-state.mjs` excludes current player/dealer/hidden cards until they land in the tray, ignores repeated landings and clears on a new shoe. Actual far-seat game passed: 45 discards → four cards in play → 49 discards, 367 in shoe, balance990 after a push and after refresh. Evidence is in `assets/blackjack-3d/review/discard/`. Shared regression hook and growing-stack deformed-skin/reach tests pass. No backend/wallet/media changes. New anatomical head and its17line facial measurements remain in progress separately; do not promote them from capture success alone.
+
+# Earlier: rigged split hands and refresh proof — 10 September 2026
 
 The opt-in rigged game now separates up to four hands per seat, highlights the current hand and shows its server-issued ranks/suits beside the actions. Resplits preserve card positions and slide existing cards into the new fans. `rigged-card-layout.mjs` owns these targets. Geometric overlap/felt tests and independent deformed-skin reach checks run in the hook and CI. A real centre-box four-hand fixture, refresh and dealer settlement passed: 970 → 950 after 20 stake → 990 after 40 return. Exact cards, screenshots and a silent recording are saved in `assets/blackjack-3d/review/split-hands/`.
 
