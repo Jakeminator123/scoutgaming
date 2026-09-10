@@ -1,3 +1,9 @@
+# Latest: editable Astrid 3D candidate — 10 September 2026
+
+CAC-2 and CAC-4 are **In Dev** for the revised 3D approach. See [ASTRID-RIGGED-DEALER-STUDY.md](ASTRID-RIGGED-DEALER-STUDY.md): original generated model, prepared 54-bone rig, eight editable deal actions and embedded-material GLB are saved. Seven player seats and own-card delivery share runtime and baked poses. Manual wrist/foot IK, body, head and finger controls are in the native Blender project. Sync probe, 49 hook tests, three motion tests and numerical export checks pass.
+
+This is not a finished dealer: face/eyes/lip sync, measured skin contact, professional motion cleanup, reveal/collection/chip actions and complete rendered/device QA remain open. The companion task owns opt-in real-game integration and combined table/room project. Existing default gameplay and other dealer media are not promoted by this delivery. Earlier snapshots below are historical.
+
 # Latest: sound recovery and seven-seat rejection — 10 September 2026
 
 **Current Jira state: CAC-8 Ready for QA; CAC-2 and CAC-4 Blocked on usable motion capture.**

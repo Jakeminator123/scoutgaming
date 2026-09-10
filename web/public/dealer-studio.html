@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Astrid · Dealer Studio</title><link rel="stylesheet" href="dealer-studio.css"></head>
+<body><canvas id="stage" aria-label="Astrid vid blackjackbordet. Dra för att vrida kameran."></canvas>
+<header><a href="/?dealer=astrid">PRIVÉ <span>BLACKJACK</span></a><div class="tag">ASTRID / 3D-STUDIE</div><a href="casino.html">Casinot ↗</a></header>
+<aside><p class="eyebrow">EN SAMMANHÄNGANDE RÖRELSE</p><h1>Från sko<br>till spelare.</h1><p class="intro">Sju platser. Ett kort i handen.<br>En naturlig väg tillbaka.</p><p id="loading" role="status">Laddar Astrids modell…</p><p id="quality">Arbetsversion · Ansikte, grepp och rörelser granskas här före införande i spelet.</p></aside>
+<nav id="views" aria-label="Kameravinkel"><button data-view="player" aria-pressed="true">Spelarvy</button><button data-view="body">Hela kroppen</button><button data-view="hands">Händerna</button><button id="bones" aria-pressed="false">Visa rigg</button><button id="clean" aria-pressed="false">Ren vy</button></nav>
+<section class="console"><div class="topline"><span id="phase">REDO</span><span id="contact">Inväntar modell</span></div><div class="seats" role="group" aria-label="Spelarplats"></div>
+<div class="transport"><button id="play" class="primary" disabled>Dela till alla sju <span>→</span></button><button id="pause" disabled>Pausa</button><button id="reset">Återställ</button><label>Tempo <select id="speed"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option></select></label></div>
+<label class="timeline">Rörelse <input id="timeline" type="range" min="0" max="1" step="0.001" value="0"><output id="frame">0%</output></label>
+<details><summary>Modell och källfiler</summary><p id="asset-info"></p><a href="dealers/astrid/rig/astrid-rigged.glb" download>Hämta riggad GLB</a><p>Referens, Blenderprojekt och granskningsprotokoll finns i projektets arbetsmapp.</p></details></section>
+<script type="module" src="dealer-studio.mjs"></script></body></html>

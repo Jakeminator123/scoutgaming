@@ -1,0 +1,53 @@
+{
+  "status": "numeric-only-not-visual-approval",
+  "summary": [
+    {
+      "seat": 1,
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "seat": 2,
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "seat": 3,
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "seat": 4,
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "seat": 5,
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "seat": 6,
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "seat": 7,
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "seat": 8,
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    }
+  ]
+}
