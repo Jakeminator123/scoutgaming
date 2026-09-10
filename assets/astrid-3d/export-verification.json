@@ -1,23 +1,33 @@
 [
   {
+    "action": "Accept_Bets_Nod_Study",
+    "maxJointPositionErrorMm": 0.08432078956405505,
+    "maxJointRotationErrorDegrees": 0.08430518704317334
+  },
+  {
+    "action": "Collect_Card_Study",
+    "maxJointPositionErrorMm": 0.000899019631543669,
+    "maxJointRotationErrorDegrees": 0.11482661864454431
+  },
+  {
     "action": "Deal_Own_Card_Contact_Study",
-    "maxJointPositionErrorMm": 0.0011309963795771516,
-    "maxJointRotationErrorDegrees": 0.11854718652154404
+    "maxJointPositionErrorMm": 0.0010978462907323108,
+    "maxJointRotationErrorDegrees": 0.1176219377310456
   },
   {
     "action": "Deal_Seat_01_Contact_Study",
     "maxJointPositionErrorMm": 0.6479506227483343,
-    "maxJointRotationErrorDegrees": 0.13111631841702284
+    "maxJointRotationErrorDegrees": 0.13078693166045607
   },
   {
     "action": "Deal_Seat_02_Contact_Study",
     "maxJointPositionErrorMm": 0.41717305252573306,
-    "maxJointRotationErrorDegrees": 0.12761189951996046
+    "maxJointRotationErrorDegrees": 0.12600507972077016
   },
   {
     "action": "Deal_Seat_03_Contact_Study",
     "maxJointPositionErrorMm": 0.6346244492437003,
-    "maxJointRotationErrorDegrees": 0.1159026419750706
+    "maxJointRotationErrorDegrees": 0.11468000187225336
   },
   {
     "action": "Deal_Seat_04_Contact_Study",
@@ -26,17 +36,27 @@
   },
   {
     "action": "Deal_Seat_05_Contact_Study",
-    "maxJointPositionErrorMm": 0.0010770483013137634,
+    "maxJointPositionErrorMm": 0.0009749576602534408,
     "maxJointRotationErrorDegrees": 0.08424879141642135
   },
   {
     "action": "Deal_Seat_06_Contact_Study",
-    "maxJointPositionErrorMm": 0.0010317389021544147,
+    "maxJointPositionErrorMm": 0.0009192439814335706,
     "maxJointRotationErrorDegrees": 0.1251157008458315
   },
   {
     "action": "Deal_Seat_07_Contact_Study",
-    "maxJointPositionErrorMm": 0.0010647594724033365,
+    "maxJointPositionErrorMm": 0.0009246023618790989,
     "maxJointRotationErrorDegrees": 0.11610921495737865
+  },
+  {
+    "action": "Greeting_Wave_Study",
+    "maxJointPositionErrorMm": 0.08432078956405505,
+    "maxJointRotationErrorDegrees": 0.0970222901973929
+  },
+  {
+    "action": "Reveal_Hole_Card_Study",
+    "maxJointPositionErrorMm": 0.07762848133963769,
+    "maxJointRotationErrorDegrees": 0.08463404738801691
   }
 ]

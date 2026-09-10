@@ -20,12 +20,12 @@ bind={b.name:b.matrix_local.copy() for b in arm.data.bones}
 correction={name:(conversion@matrix(m)).inverted()@(arm.matrix_world@bind[name]) for name,m in data['rest'].items()}
 inv_arm=arm.matrix_world.inverted()
 actions=[]
-for seat in range(8):
-    action=bpy.data.actions.new('Deal_Own_Card_Contact_Study' if seat==7 else f'Deal_Seat_{seat+1:02d}_Contact_Study')
+for seat, specification in enumerate(data['actions']):
+    action=bpy.data.actions.new(specification['name'])
     action.use_fake_user=True
     arm.animation_data.action=action
     for sample in (s for s in data['samples'] if s['seat']==seat):
-        frame=round(sample['progress']*50)+1
+        frame=sample['frame']
         poses={n:inv_arm@conversion@matrix(m)@correction[n] for n,m in sample['bones'].items()}
         for b in arm.pose.bones:
             desired=poses[b.name]
@@ -37,8 +37,8 @@ for seat in range(8):
                 b.keyframe_insert(key,frame=frame,group=b.name)
     actions.append(action)
 arm.animation_data.action=actions[3]
-scene=bpy.context.scene;scene.frame_start=1;scene.frame_end=51;scene.render.fps=30;scene.frame_set(1)
-scene['animation_status']='Seven seat and own-card contact studies. Numeric reach verified, visual skin/contact not approved. No facial/lip sync animation.'
+scene=bpy.context.scene;scene.frame_start=1;scene.frame_end=max(s['frame'] for s in data['samples']);scene.render.fps=30;scene.frame_set(1)
+scene['animation_status']='Twelve dealing, reveal, collection and greeting studies. Numeric reach verified, visual skin/contact not approved. No facial/lip sync animation.'
 # A delivery camera and lighting make the editable project immediately inspectable.
 camera=bpy.data.objects.new('Dealer_Review_Camera',bpy.data.cameras.new('Dealer_Review_Camera'))
 scene.collection.objects.link(camera);camera.location=(0,-3.0,1.65);camera.rotation_euler=(Vector((0,0,1.0))-camera.location).to_track_quat('-Z','Y').to_euler();camera.data.lens=45;scene.camera=camera
@@ -47,4 +47,4 @@ for name,location,power in [('Key',(-2,-3,4),450),('Fill',(2,-2,2.5),180),('Rim'
 scene.render.engine='BLENDER_EEVEE_NEXT';scene.render.resolution_x=960;scene.render.resolution_y=720;scene.render.resolution_percentage=100
 bpy.ops.wm.save_as_mainfile(filepath=str(folder/'astrid-animated.blend'))
 bpy.ops.export_scene.gltf(filepath=str(folder/'astrid-animated.glb'),export_format='GLB',export_animations=True,export_animation_mode='ACTIONS',export_extras=True,export_cameras=False,export_lights=False)
-print(json.dumps({'actions':[a.name for a in actions],'frames':51,'fps':30,'blend':str(folder/'astrid-animated.blend'),'glb':str(folder/'astrid-animated.glb')}))
+print(json.dumps({'actions':[a.name for a in actions],'frames':scene.frame_end,'fps':30,'blend':str(folder/'astrid-animated.blend'),'glb':str(folder/'astrid-animated.glb')}))

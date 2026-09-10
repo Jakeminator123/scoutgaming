@@ -1,7 +1,7 @@
 import * as T from './vendor/three/three.module.js';
 import {GLTFLoader} from './vendor/three/GLTFLoader.js';
-import {controlDealer,poseDealer} from './dealer-rig.mjs';
-import {seatTarget,DEAL_SECONDS} from './dealer-motion.mjs';
+import {controlDealer,poseDealer,poseCardAction,poseDealerGesture} from './dealer-rig.mjs';
+import {seatTarget,DEAL_SECONDS,CARD_ACTION_SECONDS} from './dealer-motion.mjs';
 import {bindBlackjackAssets} from './blackjack-asset-state.mjs';
 const $=s=>document.querySelector(s),scene=new T.Scene();scene.background=new T.Color('#161e19');
 const renderer=new T.WebGLRenderer({canvas:$('#stage'),antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.80;
@@ -12,7 +12,7 @@ const rim=new T.DirectionalLight(0xffe0a4,.8);rim.position.set(.3,3,-2);scene.ad
 const mat=(color,roughness=.6,metalness=0)=>new T.MeshStandardMaterial({color,roughness,metalness});
 function mesh(g,m,p=[0,0,0]){const o=new T.Mesh(g,m);o.position.set(...p);o.castShadow=true;o.receiveShadow=true;scene.add(o);return o;}
 let outlet=[.43,.935,.11],tableAssets;
-const cards=[];let moving=null,rig=null,profile=null,skeleton=null,currentSeat=3,progress=0,playing=false,queue=[],last=performance.now(),view='player';
+const cards=[];let moving=null,rig=null,profile=null,skeleton=null,currentSeat=3,progress=0,playing=false,queue=[],last=performance.now(),view='player',action='deal';
 const targets=[];
 for(let i=0;i<7;i++){
  const b=document.createElement('button');b.textContent=`Plats ${i+1}`;b.disabled=true;b.onclick=()=>start([i]);$('.seats').append(b);
@@ -24,7 +24,8 @@ function card(){
 }
 function clearCards(){for(const c of cards){scene.remove(c);c.geometry.dispose();for(const m of c.material)m.dispose();c.userData.texture.dispose();}cards.length=0;moving=null;}
 function begin(seat){currentSeat=seat;progress=0;moving=card();cards.push(moving);for(const [i,b] of [...$('.seats').children].entries())b.setAttribute('aria-pressed',String(i===seat));}
-function start(seats){clearCards();queue=[...seats];begin(queue.shift());playing=true;$('#pause').textContent='Pausa';}
+function start(seats){action='deal';clearCards();queue=[...seats];begin(queue.shift());playing=true;$('#pause').textContent='Pausa';}
+for(const b of document.querySelectorAll('[data-action]'))b.onclick=()=>{clearCards();queue=[];begin(currentSeat);action=b.dataset.action;playing=true;};
 $('#play').onclick=()=>start([0,1,2,3,4,5,6]);$('#pause').onclick=()=>{playing=!playing;$('#pause').textContent=playing?'Pausa':'Fortsätt';};
 $('#reset').onclick=()=>{playing=false;queue=[];clearCards();progress=0;$('#timeline').value=0;$('#frame').textContent='0%';rig?.reset();};
 $('#timeline').oninput=()=>{playing=false;if(!moving)begin(currentSeat);progress=Number($('#timeline').value);$('#pause').textContent='Fortsätt';};
@@ -47,11 +48,13 @@ try{
 }catch(e){$('#loading').textContent=e.message;console.error(e);}
 function pose(){
  if(!rig)return;
- const target=seatTarget(currentSeat),{sample:s,errors,fingerError}=poseDealer(rig,progress,target,outlet),err=errors[s.active];
- if(moving){moving.position.set(...s.card);moving.rotation.y=s.cardYaw;moving.visible=s.picked;}
+ const target=action==='own'?[0,.91055,.23]:seatTarget(currentSeat);
+ const result=['reveal','collect'].includes(action)?poseCardAction(rig,progress,{kind:action,source:action==='reveal'?[0,.91055,.23]:target,target:[-.91,.920,.25]}):['greeting','accept-bets'].includes(action)?poseDealerGesture(rig,progress,{kind:action}):poseDealer(rig,progress,target,outlet);
+ const {sample:s,errors,fingerError}=result,err=errors[s.active];
+ if(moving){if(s.card){moving.position.set(...s.card);moving.rotation.set(s.cardPitch??0,s.cardYaw??0,0);moving.visible=s.visible??s.picked;}else moving.visible=false;}
  const phases={pickup:'HÄMTA KORT',handoff:'LÄMNA ÖVER KORT',carry:'FÖR KORTET',release:'SLÄPP',return:'TOM HAND TILLBAKA'};
- $('#phase').textContent=`PLATS ${currentSeat+1} · ${phases[s.phase]}`;$('#contact').textContent=err<.005?`Riggens kontaktpunkt: ${Math.round(fingerError*1000)} mm`:`Räckvidd behöver justeras: ${Math.round(err*1000)} mm`;
+ $('#phase').textContent=`PLATS ${currentSeat+1} · ${phases[s.phase]??s.phase}`;$('#contact').textContent=err<.005?`Riggens kontaktpunkt: ${Math.round(fingerError*1000)} mm`:`Räckvidd behöver justeras: ${Math.round(err*1000)} mm`;
  $('#contact').dataset.error=String(err);$('#timeline').value=progress;$('#frame').textContent=`${Math.round(progress*100)}%`;
 }
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;if(document.hidden)return;if(playing&&rig){progress=Math.min(1,progress+dt/DEAL_SECONDS*Number($('#speed').value));if(progress>=1){pose();if(queue.length)begin(queue.shift());else playing=false;}}pose();setCamera();renderer.render(scene,camera);}
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;if(document.hidden)return;if(playing&&rig){progress=Math.min(1,progress+dt/(CARD_ACTION_SECONDS[action]??DEAL_SECONDS)*Number($('#speed').value));if(progress>=1){pose();if(queue.length)begin(queue.shift());else playing=false;}}pose();setCamera();renderer.render(scene,camera);}
 function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}addEventListener('resize',resize);resize();requestAnimationFrame(frame);
