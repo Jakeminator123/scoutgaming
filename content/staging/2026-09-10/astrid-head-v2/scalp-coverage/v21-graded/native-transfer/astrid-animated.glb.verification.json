@@ -1,0 +1,61 @@
+{
+  "sourceSha256": "c28e83457eff45f60805d9532138af4ade10cecd4fd36d16f9c01d7c5250318a",
+  "modelSha256": "2d81e327fd9dccb25278c4ee217ff86f0c0d8fb6fe4ab2fd14bce6d948239359",
+  "outputSha256": "79447cb566cbc15b3b1998c29df14041fa56bba5fa3df585201842b7c9c3d192",
+  "animations": [
+    {
+      "name": "Accept_Bets_Nod_Study",
+      "channels": 168
+    },
+    {
+      "name": "Collect_Card_Study",
+      "channels": 168
+    },
+    {
+      "name": "Deal_Own_Card_Contact_Study",
+      "channels": 168
+    },
+    {
+      "name": "Deal_Seat_01_Contact_Study",
+      "channels": 168
+    },
+    {
+      "name": "Deal_Seat_02_Contact_Study",
+      "channels": 168
+    },
+    {
+      "name": "Deal_Seat_03_Contact_Study",
+      "channels": 168
+    },
+    {
+      "name": "Deal_Seat_04_Contact_Study",
+      "channels": 168
+    },
+    {
+      "name": "Deal_Seat_05_Contact_Study",
+      "channels": 168
+    },
+    {
+      "name": "Deal_Seat_06_Contact_Study",
+      "channels": 168
+    },
+    {
+      "name": "Deal_Seat_07_Contact_Study",
+      "channels": 168
+    },
+    {
+      "name": "Greeting_Wave_Study",
+      "channels": 168
+    },
+    {
+      "name": "Reveal_Hole_Card_Study",
+      "channels": 168
+    }
+  ],
+  "mappedNodes": 57,
+  "copiedViews": 602,
+  "addedBytes": 327676,
+  "modelBinaryUnchanged": true,
+  "animationBinaryUnchanged": true,
+  "status": "Rest transforms, hierarchy and animation bytes verified; visual playback verification required"
+}
