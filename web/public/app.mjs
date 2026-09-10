@@ -1,5 +1,6 @@
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
+import { createTableAudio } from './table-audio.mjs';
 import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
@@ -266,12 +267,16 @@ const kfDebug = (() => {
 })();
 
 const soundBtn = $('#sound-btn');
-const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); soundBtn.textContent = voice.muted ? '🔇' : '🔊'; };
-soundBtn.onclick = () => {
-  if (!voice.muted) { speechQueue.cancel(); activeSpeech?.abort(); bankAudio?.pause(); speaking = false; }
-  voice.muted = !voice.muted; localStorage.setItem('croupier-muted', voice.muted ? '1' : '0'); renderSound();
-  if (voice.muted) sfx.stopAmbience(); else sfx.startAmbience();
-};
+const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); soundBtn.textContent = voice.muted ? '🔇' : '🔊'; soundBtn.setAttribute('aria-label',voice.muted?'Turn sound on':'Mute sound'); };
+function setMuted(muted) {
+  if (muted) { speechQueue.cancel(); activeSpeech?.abort(); bankAudio?.pause(); speaking = false; }
+  voice.muted = muted; localStorage.setItem('croupier-muted', muted ? '1' : '0'); renderSound();
+  if (muted) { tableAudio.reset(); sfx.stopAmbience(); }
+  else { tableAudio.unlock(); sfx.startAmbience(); }
+}
+soundBtn.onclick = () => setMuted(!voice.muted);
+const tableAudio=createTableAudio({createContext:()=>new AudioContext(),canPlay:()=>!voice.muted&&!document.hidden,
+  onState:state=>{soundBtn.dataset.audioState=state;}});
 renderSound();
 // Automatic small talk is paused while the core gameplay is being finished.
 
@@ -305,10 +310,10 @@ const sfx = {
 };
 sfx.load();
 document.addEventListener('visibilitychange', () => {
-  if(document.hidden){speechQueue.cancel();activeSpeech?.abort();sfx.stopAmbience();}
+  if(document.hidden){speechQueue.cancel();activeSpeech?.abort();sfx.stopAmbience();tableAudio.reset();}
 });
 for (const ev of ['pointerdown', 'keydown', 'visibilitychange']) {
-  document.addEventListener(ev, () => { if (!document.hidden) sfx.keepAmbience(); }, { passive: true });
+  document.addEventListener(ev, () => { if (!document.hidden) {tableAudio.unlock();sfx.keepAmbience();} }, { passive: true });
 }
 setInterval(() => { if (!document.hidden) sfx.keepAmbience(); }, 4000);
 // hover ticks: tiny synth click, no asset needed
@@ -316,7 +321,7 @@ let actx = null;
 function hoverTick() {
   if (voice.muted) return;
   try {
-    actx = actx ?? new AudioContext();
+    actx = tableAudio.context; if (!actx) return;
     const o = actx.createOscillator(), g = actx.createGain();
     o.frequency.value = 1400; o.type = 'sine';
     g.gain.setValueAtTime(0.045, actx.currentTime);
@@ -342,7 +347,7 @@ function noiseBurst(t, { dur, gain, type, freq, q = 1.5, decay = 2 }) {
 function synthChip() {
   // ceramic chip landing on a stack: bright click + softer settle click
   try {
-    actx = actx ?? new AudioContext();
+    actx = tableAudio.context; if (!actx) return;
     const t0 = actx.currentTime;
     const f = 3600 + Math.random() * 1400;
     noiseBurst(t0, { dur: 0.045, gain: 0.75, type: 'bandpass', freq: f, q: 2.5, decay: 2.6 });
@@ -352,7 +357,7 @@ function synthChip() {
 function synthDeal(phase) {
   // card snapped onto felt: short high snap + faint slide
   try {
-    actx = actx ?? new AudioContext();
+    actx = tableAudio.context; if (!actx) return;
     const t0 = actx.currentTime;
     if (phase === 'pickup') {
       noiseBurst(t0, { dur: .06, gain: .12, type: 'bandpass', freq: 2400, q: .7, decay: 2 });
@@ -367,7 +372,7 @@ function synthKnock() {
   // a kick drum): a hard lowpassed contact click plus inharmonic wood modes
   // with <60ms decay, second knock slightly softer and earlier-damped.
   try {
-    actx = actx ?? new AudioContext();
+    actx = tableAudio.context; if (!actx) return;
     const knock = (t, vel) => {
       noiseBurst(t, { dur: 0.011, gain: 0.55 * vel, type: 'lowpass', freq: 800, q: 0.7, decay: 1.1 });
       for (const [freq, gain, dec] of [[97, 0.34, 0.06], [176, 0.24, 0.05], [287, 0.13, 0.04], [520, 0.06, 0.03]]) {
@@ -397,7 +402,7 @@ function chime(t, freq, dur, gain) {
 function synthWin() {
   // two-note payout chime
   try {
-    actx = actx ?? new AudioContext();
+    actx = tableAudio.context; if (!actx) return;
     const t0 = actx.currentTime;
     chime(t0, 880, 0.5, 0.28);
     chime(t0 + 0.1, 1174.7, 0.7, 0.28);
@@ -406,7 +411,7 @@ function synthWin() {
 function synthBigWin() {
   // ascending E-major arpeggio with a sparkle on top
   try {
-    actx = actx ?? new AudioContext();
+    actx = tableAudio.context; if (!actx) return;
     const t0 = actx.currentTime;
     [659.3, 830.6, 987.8, 1318.5].forEach((f, i) => chime(t0 + i * 0.1, f, 0.8, 0.3));
     chime(t0 + 0.52, 1661.2, 1.2, 0.2);
@@ -1908,7 +1913,7 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
   lineSelect.onchange = update; update();
   const play = () => {
     const id = lineSelect.value;
-    voice.muted = false; soundBtn.classList.remove('muted');
+    setMuted(false);
     return speechTurn(signal => playRecorded(id, new Audio(`${DEALER.base}/audio/en/${id}.mp3`), bank[id]?.text ?? LINES[id] ?? id, signal));
   };
   panel.querySelector('#rehearsal-play').onclick = play;

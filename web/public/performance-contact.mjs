@@ -135,7 +135,7 @@ export function contactFrame(take, mediaTime) {
   return take.frames[index];
 }
 
-export function contactCueClock(events, emit) {
+export function contactCueClock(events, emit, {fps=24,playbackRate=1}={}) {
   let previous=null;
   const fired=new Set();
   return (frame,{visible=true,seeking=false}={})=>{
@@ -143,8 +143,12 @@ export function contactCueClock(events, emit) {
     for(const [name,at] of [['pickup',events.pickup],['land',events.land]]) {
       if(frame>=at&&!fired.has(name)) {
         fired.add(name);
-        // First/late frame, seek, hidden-tab completion: consume silently.
-        if(visible&&!seeking&&previous!==null&&previous<at&&frame-previous<=2)emit(name);
+        // Allow ordinary dropped frames at accelerated playback. A fixed
+        // two-frame gap discarded on-time contact cues on slower devices.
+        // Long stalls, late events, seeks and hidden completion stay silent.
+        const framesPerSecond=fps*playbackRate;
+        if(visible&&!seeking&&previous!==null&&previous<at&&
+          (frame-previous)/framesPerSecond<=.25&&(frame-at)/framesPerSecond<=.08)emit(name);
       }
     }
     previous=frame;
