@@ -4,6 +4,8 @@ import {controlDealer,poseDealer,poseCardAction} from './dealer-rig.mjs';
 import {DEAL_SECONDS,CARD_ACTION_SECONDS} from './dealer-motion.mjs';
 import {bindBlackjackAssets} from './blackjack-asset-state.mjs';
 import {cardFaceArt} from './card-art.mjs';
+import {riggedCardPose,cardCorners} from './rigged-card-layout.mjs';
+import {placeActions} from './action-placement.mjs';
 
 // Opt-in contact review inside the real game. This renderer consumes the card
 // DOM built from server snapshots; it has no shuffle, wallet or command API.
@@ -53,14 +55,58 @@ export async function createRiggedTableScene(canvas) {
   }
   const outlet=assets.nodes.Shoe_Outlet.getWorldPosition(new T.Vector3()).toArray();
   const records=new Map();let active=null,last=performance.now(),visibleSeats=[0,1,2,3,4,5,6],disposed=false;
+  let rememberedCards=[],activeHand=null;
   const backTexture=await new T.TextureLoader().loadAsync('assets/cardback.png');backTexture.colorSpace=T.SRGBColorSpace;
   function screen(point){const p=new T.Vector3(...point).project(camera);return{x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2};}
-  function targetFor(el){
+  function poseFor(el){
     const box=el.closest('.seat')?.dataset.box,sub=el.closest('.subhand'),ci=Number(el.style.getPropertyValue('--ci'))||0;
-    let pos=box===undefined?[...tableProfile.dealerCards]:[...tableProfile.seatCards[6-Number(box)]];
-    if(sub){const siblings=sub.parentElement.querySelectorAll(':scope > .subhand').length;pos[0]+=(Number(sub.dataset.h)-(siblings-1)/2)*.105;}
-    pos[0]+=(ci-.5)*.023;pos[2]-=ci*.008;pos[1]=tableProfile.feltHeight+.00055+ci*.00045;
-    return pos;
+    return riggedCardPose({profile:tableProfile,seat:box===undefined?null:Number(box),
+      handIndex:sub?Number(sub.dataset.h):0,handCount:sub?sub.parentElement.querySelectorAll(':scope > .subhand').length:1,
+      cardIndex:ci,cardCount:Math.max(ci+1,el.parentElement?.querySelectorAll(':scope > .card').length??1)});
+  }
+  const targetFor=el=>poseFor(el).position;
+  function bounds(points){
+    const ps=points.map(screen),left=Math.min(...ps.map(p=>p.x)),right=Math.max(...ps.map(p=>p.x)),top=Math.min(...ps.map(p=>p.y)),bottom=Math.max(...ps.map(p=>p.y));
+    return{left,right,top,bottom,x:left,y:top,width:right-left,height:bottom-top};
+  }
+  function cardBounds(el){
+    const item=records.get(el);
+    if(item?.collected)return null;
+    return bounds(cardCorners(item?{position:item.mesh.position.toArray(),yaw:item.mesh.rotation.y}:poseFor(el)));
+  }
+  function handBounds(container){
+    const rs=[...(container?.querySelectorAll(':scope > .card')??[])].map(cardBounds).filter(Boolean);
+    if(!rs.length)return null;
+    const left=Math.min(...rs.map(r=>r.left)),right=Math.max(...rs.map(r=>r.right)),top=Math.min(...rs.map(r=>r.top)),bottom=Math.max(...rs.map(r=>r.bottom));
+    return{left,right,top,bottom,x:left,y:top,width:right-left,height:bottom-top};
+  }
+  function layoutHandTotals(){
+    const cardObstacles=[...document.querySelectorAll('.seat:not(.seat-off) .card,#dealer-cards > .card')].map(cardBounds).filter(Boolean);
+    const obstacles=[...cardObstacles,...[...document.querySelectorAll('.seat:not(.seat-off) .sidearcs,.seat:not(.seat-off) .spot.staked,#wallet,#bottom-right,#table-pick,#rehearsal')].filter(el=>el.getClientRects().length).map(el=>el.getBoundingClientRect())];
+    const bottom=document.querySelector('#dealer-picker')?.getBoundingClientRect().top??innerHeight;
+    for(const seat of document.querySelectorAll('.seat:not(.seat-off)')){
+      const badges=[...seat.querySelectorAll('.hand-total')].sort((a,b)=>Number(a.dataset.h)-Number(b.dataset.h));
+      const fan=handBounds(seat.querySelector('.cards'))??(()=>{
+        const rs=[...seat.querySelectorAll('.subhand')].map(handBounds).filter(Boolean);
+        if(!rs.length)return null;const left=Math.min(...rs.map(r=>r.left)),right=Math.max(...rs.map(r=>r.right));
+        return{left,right,bottom:Math.max(...rs.map(r=>r.bottom))};
+      })();
+      if(!badges.length||!fan)continue;
+      badges.forEach((badge,i)=>{
+        badge.dataset.handLabel=badges.length>1?`${i+1} · `:'';
+        const current=activeHand?.closest('.seat')===seat&&badge.dataset.h===(activeHand?.dataset.h??'');
+        badge.classList.toggle('current-hand',current);
+        if(current)badge.setAttribute('aria-current','true');else badge.removeAttribute('aria-current');
+      });
+      const cols=Math.min(2,badges.length),cellWidth=Math.max(...badges.map(b=>b.offsetWidth))+6,cellHeight=Math.max(...badges.map(b=>b.offsetHeight))+5;
+      const width=cols*cellWidth-6,height=Math.ceil(badges.length/cols)*cellHeight-5;
+      const placement=placeActions({width,height,viewport:{width:innerWidth,top:innerHeight*.36,bottom},
+        anchor:{x:(fan.left+fan.right)/2,bottom:fan.bottom},obstacles,margin:4,belowAnchor:true})??{x:Math.max(4,Math.min(innerWidth-width-4,(fan.left+fan.right-width)/2)),y:Math.min(bottom-height-4,fan.bottom+8)};
+      badges.forEach((badge,i)=>{
+        badge.style.position='fixed';badge.style.left=`${placement.x+(i%cols)*cellWidth}px`;badge.style.top=`${placement.y+Math.floor(i/cols)*cellHeight}px`;badge.style.transform='none';
+      });
+      obstacles.push({left:placement.x,right:placement.x+width,top:placement.y,bottom:placement.y+height});
+    }
   }
   function createCard(el){
     const faceDown=el.classList.contains('back');
@@ -71,7 +117,12 @@ export async function createRiggedTableScene(canvas) {
     const back=new T.MeshStandardMaterial({map:backTexture,roughness:.78});
     const mesh=new T.Mesh(new T.BoxGeometry(.063,.0004,.088),[edge,edge,front,back,edge,edge]);
     mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);
-    const item={el,mesh,tex,faceDown};records.set(el,item);return item;
+    const item={el,mesh,tex,faceDown};
+    const remembered=rememberedCards.findIndex(c=>c.box===el.closest('.seat')?.dataset.box&&c.rank===el.dataset.rank&&c.suit===el.dataset.suit);
+    if(remembered>=0){
+      const [prior]=rememberedCards.splice(remembered,1);mesh.position.copy(prior.position);mesh.rotation.y=prior.yaw;item.placed=true;
+    }
+    records.set(el,item);return item;
   }
   function remove(item){scene.remove(item.mesh);item.mesh.geometry.dispose();new Set(item.mesh.material).forEach(m=>m.dispose());if(item.tex!==backTexture)item.tex.dispose();records.delete(item.el);}
   function syncCards(){
@@ -81,9 +132,14 @@ export async function createRiggedTableScene(canvas) {
       if(!el.classList.contains('back')&&(!el.dataset.rank||!el.dataset.suit))continue;
       const item=records.get(el)??createCard(el);
       if(active?.item===item||item.collected)continue;
-      const target=targetFor(el);item.mesh.position.set(...target);
-      item.mesh.rotation.y=Math.atan2(target[0]*.72,Math.max(.25,target[2]));item.mesh.visible=true;
+      const pose=poseFor(el),target=new T.Vector3(...pose.position);
+      if(!item.placed){item.mesh.position.copy(target);item.mesh.rotation.y=pose.yaw;item.placed=true;}
+      else if(!item.destination||item.destination.distanceToSquared(target)>1e-12){
+        item.shift={from:item.mesh.position.clone(),yaw:item.mesh.rotation.y,target,yawTarget:pose.yaw,time:0};
+      }
+      item.destination=target;item.mesh.visible=true;
     }
+    layoutHandTotals();
   }
   const observer=new MutationObserver(syncCards);
   observer.observe(document.querySelector('#table2d'),{childList:true,subtree:true});
@@ -92,6 +148,7 @@ export async function createRiggedTableScene(canvas) {
     const portrait=innerWidth<861&&innerHeight>innerWidth;
     const focus=portrait?visibleSeats.reduce((sum,i)=>sum+tableProfile.seatCards[6-i][0],0)/visibleSeats.length:0;
     camera.position.set(focus,portrait?1.73:1.60,portrait?2.37:2.45);camera.lookAt(focus,portrait?1.12:1.10,.20);camera.updateProjectionMatrix();
+    camera.updateMatrixWorld(true);
     const pos=screen(tableProfile.dealerCards),root=document.documentElement.style;
     root.setProperty('--rig-dealer-x',`${pos.x}px`);root.setProperty('--rig-dealer-y',`${pos.y}px`);
   }
@@ -99,6 +156,11 @@ export async function createRiggedTableScene(canvas) {
   function render(now=performance.now()){
     if(disposed)return;requestAnimationFrame(render);const dt=Math.min((now-last)/1000,.050);last=now;
     if(document.hidden)return;
+    for(const item of records.values())if(item.shift&&active?.item!==item){
+      const shift=item.shift;shift.time=Math.min(.32,shift.time+dt);const t=shift.time/.32,s=t*t*(3-2*t);
+      item.mesh.position.lerpVectors(shift.from,shift.target,s);item.mesh.rotation.y=T.MathUtils.lerp(shift.yaw,shift.yawTarget,s);
+      if(t===1)item.shift=null;
+    }
     if(active){
       active.time+=dt;const progress=Math.min(1,active.time/active.seconds);
       const pose=active.kind==='deal'?poseDealer(rig,progress,active.target,outlet):poseCardAction(rig,progress,{kind:active.kind,source:active.source,target:active.target,initialYaw:active.initialYaw});
@@ -122,13 +184,16 @@ export async function createRiggedTableScene(canvas) {
     if(active){const done=active;active=null;done.resolve();}
     document.documentElement.classList.remove('rigged-review');
   });
-  return {rigged:true,resize,render:()=>{},
+  return {rigged:true,resize,render:()=>{},cardBounds,handBounds,layoutHandTotals,
+    setActiveHand(container){activeHand=container;layoutHandTotals();},
+    rememberBoxCards(box){rememberedCards=[...records.values()].filter(item=>item.el.closest('.seat')?.dataset.box===String(box)).map(item=>({box:String(box),rank:item.el.dataset.rank,suit:item.el.dataset.suit,position:item.mesh.position.clone(),yaw:item.mesh.rotation.y}));},
     project(x,z){return screen([x*1.1,.911,z*1.15-.10]);},
     seatScreen(index,boxes){visibleSeats=boxes;resize();const p=[...tableProfile.seatCards[6-index]];p[2]+=.145;return screen(p);},
     shoeOutlet(){return screen(outlet);},setShoe(state){assets.updateShoe(state);},
     dealCard({element,onCue}){
       if(active)throw new Error('Dealer already presenting a card');
       const item=records.get(element)??createCard(element);item.mesh.visible=false;
+      item.shift=null;item.placed=true;item.destination=new T.Vector3(...targetFor(element));
       return new Promise(resolve=>{active={kind:'deal',seconds:DEAL_SECONDS,item,target:targetFor(element),time:0,onCue,resolve,picked:false,released:false};console.info('[rigged-review] deal',element.closest('.seat')?.dataset.box??'dealer',element.dataset.rank??'hidden',element.dataset.suit??'',JSON.stringify(active.target));});
     },
     revealCard({element,card,onCue}){

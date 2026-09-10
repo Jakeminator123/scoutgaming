@@ -1,4 +1,10 @@
-# Latest: actual-game 3D table review and source verification — 10 September 2026
+# Latest: rigged split hands and refresh proof — 10 September 2026
+
+The opt-in rigged game now separates up to four hands per seat, highlights the current hand and shows its server-issued ranks/suits beside the actions. Resplits preserve card positions and slide existing cards into the new fans. `rigged-card-layout.mjs` owns these targets. Geometric overlap/felt tests and independent deformed-skin reach checks run in the hook and CI. A real centre-box four-hand fixture, refresh and dealer settlement passed: 970 → 950 after 20 stake → 990 after 40 return. Exact cards, screenshots and a silent recording are saved in `assets/blackjack-3d/review/split-hands/`.
+
+The original filmed Astrid remains the default. The collaborating dealer task owns the anatomical head, facial controls and texture work; that candidate is not installed by this checkpoint. Do not promote a head based only on successful morph tests. Remaining full photographic, shoe/skin, outer split and physical-device acceptance is recorded in the table review. CAC-2 and CAC-4 remain In Dev.
+
+# Earlier: actual-game 3D table review and source verification — 10 September 2026
 
 See [ASTRID-RIGGED-TABLE-REVIEW.md](ASTRID-RIGGED-TABLE-REVIEW.md). The actual game has an opt-in `?dealer=astrid&scene=rigged-review` path with the independent table, shoe, cards and rig. Seven-seat delivery, own cards, server-driven reveal/collection and snapshot-driven shoe presentation are integrated. The editable combined Blender project has twelve marked motion studies and matching card-helper tracks. This is a development candidate; it is not photographic Astrid or full CAC acceptance.
 
