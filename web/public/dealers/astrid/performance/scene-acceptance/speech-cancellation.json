@@ -1,0 +1,209 @@
+{
+  "bankDelayMs": 20000,
+  "baseline": {
+    "startedAt": "2026-09-10T00:45:30.758Z",
+    "mutedAndUnmutedByMs": 13356,
+    "events": [
+      {
+        "level": "info",
+        "message": "[dealer] engine ready: 20 clips, avc1.4D4028, hands matte on (20 clips)",
+        "timestamp": "2026-09-10T00:45:31.686Z"
+      },
+      {
+        "level": "info",
+        "message": "[click-src] 3 trusted= true",
+        "timestamp": "2026-09-10T00:45:43.019Z"
+      },
+      {
+        "level": "info",
+        "message": "[bet] 3 main round= false busy= false",
+        "timestamp": "2026-09-10T00:45:43.019Z"
+      },
+      {
+        "level": "info",
+        "message": "[ledger] deal -5 -> 995",
+        "timestamp": "2026-09-10T00:45:43.336Z"
+      },
+      {
+        "level": "info",
+        "message": "[voice] goodluck muted=false dead=false busy=0 force=true",
+        "timestamp": "2026-09-10T00:45:43.336Z"
+      },
+      {
+        "level": "info",
+        "message": "[speech] start goodluck embedded audio/video",
+        "timestamp": "2026-09-10T00:45:51.759Z"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end goodluck",
+        "timestamp": "2026-09-10T00:45:56.933Z"
+      },
+      {
+        "level": "info",
+        "message": "[deal] Presented-frame performance sequence",
+        "timestamp": "2026-09-10T00:45:56.933Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Dealing to player",
+        "timestamp": "2026-09-10T00:45:57.312Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Ready \u00b7 hand at shoe for next card",
+        "timestamp": "2026-09-10T00:46:01.284Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Dealing to Astrid",
+        "timestamp": "2026-09-10T00:46:02.322Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Ready \u00b7 resting pose",
+        "timestamp": "2026-09-10T00:46:04.978Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Dealing to player",
+        "timestamp": "2026-09-10T00:46:05.134Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Ready \u00b7 hand at shoe for next card",
+        "timestamp": "2026-09-10T00:46:09.399Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Dealing to Astrid \u00b7 face down",
+        "timestamp": "2026-09-10T00:46:09.587Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Ready \u00b7 resting pose",
+        "timestamp": "2026-09-10T00:46:12.282Z"
+      }
+    ]
+  },
+  "fixed": {
+    "startedAt": "2026-09-10T00:47:17.022Z",
+    "mutedAndUnmutedByMs": 17928,
+    "events": [
+      {
+        "level": "info",
+        "message": "[dealer] engine ready: 20 clips, avc1.4D4028, hands matte on (20 clips)",
+        "timestamp": "2026-09-10T00:47:18.835Z"
+      },
+      {
+        "level": "info",
+        "message": "[click-src] 3 trusted= true",
+        "timestamp": "2026-09-10T00:47:33.859Z"
+      },
+      {
+        "level": "info",
+        "message": "[bet] 3 main round= false busy= false",
+        "timestamp": "2026-09-10T00:47:33.860Z"
+      },
+      {
+        "level": "info",
+        "message": "[ledger] deal -5 -> 995",
+        "timestamp": "2026-09-10T00:47:34.168Z"
+      },
+      {
+        "level": "info",
+        "message": "[voice] goodluck muted=false dead=false busy=0 force=true",
+        "timestamp": "2026-09-10T00:47:34.168Z"
+      },
+      {
+        "level": "info",
+        "message": "[deal] Presented-frame performance sequence",
+        "timestamp": "2026-09-10T00:47:34.439Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Dealing to player",
+        "timestamp": "2026-09-10T00:47:34.515Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Ready \u00b7 hand at shoe for next card",
+        "timestamp": "2026-09-10T00:47:38.785Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Dealing to Astrid",
+        "timestamp": "2026-09-10T00:47:38.985Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Ready \u00b7 resting pose",
+        "timestamp": "2026-09-10T00:47:41.681Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Dealing to player",
+        "timestamp": "2026-09-10T00:47:41.818Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Ready \u00b7 hand at shoe for next card",
+        "timestamp": "2026-09-10T00:47:46.095Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Dealing to Astrid \u00b7 face down",
+        "timestamp": "2026-09-10T00:47:46.288Z"
+      },
+      {
+        "level": "info",
+        "message": "[performance] Ready \u00b7 resting pose",
+        "timestamp": "2026-09-10T00:47:49.023Z"
+      },
+      {
+        "level": "info",
+        "message": "[ledger] settle 12.5 -> 1007.5",
+        "timestamp": "2026-09-10T00:47:50.280Z"
+      },
+      {
+        "level": "info",
+        "message": "[voice] blackjack muted=false dead=false busy=0 force=true",
+        "timestamp": "2026-09-10T00:47:50.280Z"
+      },
+      {
+        "level": "info",
+        "message": "[speech] start blackjack matched",
+        "timestamp": "2026-09-10T00:47:50.512Z"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end blackjack",
+        "timestamp": "2026-09-10T00:47:54.232Z"
+      },
+      {
+        "level": "info",
+        "message": "[voice] placebets muted=false dead=false busy=0 force=false",
+        "timestamp": "2026-09-10T00:47:54.234Z"
+      },
+      {
+        "level": "info",
+        "message": "[speech] start placebets matched",
+        "timestamp": "2026-09-10T00:47:54.340Z"
+      },
+      {
+        "level": "info",
+        "message": "[speech] end placebets",
+        "timestamp": "2026-09-10T00:47:56.664Z"
+      }
+    ]
+  },
+  "checks": {
+    "lateCancelledSpeechSuppressed": true,
+    "newBlackjackAndPlaceBetsLinesComplete": true,
+    "isolatedWalletBefore": 1000,
+    "stake": 5,
+    "return": 12.5,
+    "isolatedWalletAfter": 1007.5,
+    "physicalHiddenTab": "Not verified: browser automation kept document.hidden false; lifecycle covered by unit test only."
+  }
+}

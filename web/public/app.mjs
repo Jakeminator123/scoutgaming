@@ -1,4 +1,5 @@
 import { SPEECH_LINES } from './speech-lines.mjs';
+import { createSpeechQueue } from './speech-queue.mjs';
 import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
@@ -124,7 +125,7 @@ engine.onIdlePick = () => {
   if (extras.length && Math.random() < 0.25) return extras[Math.floor(Math.random() * extras.length)];
   return CLIP.idle;
 };
-const trigger = k => { if (!performanceStaged && engineUp && !speaking && speechActive === 0 && engine.index.clips[k]) engine.trigger(k); };
+const trigger = k => { if (!performanceStaged && engineUp && !speaking && speechQueue.pending === 0 && engine.index.clips[k]) engine.trigger(k); };
 
 try {
   await engine.init();
@@ -164,15 +165,11 @@ const VOICE_LINES = Object.keys(LINES);
 // One voice, one caption, one mouth at a time. Every speaker (game-flow
 // lines, chat takes, chat commentary) runs as a queued turn; without this
 // they overlap at round settle and the captions stomp each other.
-let speechActive = 0;
-let speechChain = Promise.resolve();
-function speechTurn(fn) {
-  performancePlayer?.cancel();
-  speechActive++;
-  const run = speechChain.then(fn).catch(() => {}).finally(() => { speechActive--; });
-  speechChain = run;
-  return run;
-}
+const speechQueue = createSpeechQueue({
+  canPlay: () => !voice.muted && !document.hidden,
+  beforePlay: () => performancePlayer?.cancel(),
+});
+const speechTurn = fn => speechQueue.enqueue(fn);
 
 const voice = {
   muted: localStorage.getItem('croupier-muted') === '1',
@@ -192,13 +189,13 @@ const voice = {
   },
   say(t, { force = false } = {}) {
     // one honest line per decision - silence must never be a mystery again
-    console.info('[voice]', t, 'muted=' + this.muted, 'dead=' + this.dead.has(t), 'busy=' + speechActive, 'force=' + force);
+    console.info('[voice]', t, 'muted=' + this.muted, 'dead=' + this.dead.has(t), 'busy=' + speechQueue.pending, 'force=' + force);
     if (this.muted) return;
     const a = this.audio.get(t);
     if (!a) return;
     if (this.dead.has(t)) return; // dealer has no take for this line: stay silent, no orphan caption
-    if (speechActive > 0 && !force) return;   // something's talking: drop optional chatter
-    return speechTurn(async () => { await bankReady; return playRecorded(t, a, LINES[t] ?? ''); });
+    if (speechQueue.pending > 0 && !force) return;   // something's talking: drop optional chatter
+    return speechTurn(async signal => { await bankReady; return playRecorded(t, a, LINES[t] ?? '', signal); });
   },
 };
 voice.load();
@@ -271,7 +268,7 @@ const kfDebug = (() => {
 const soundBtn = $('#sound-btn');
 const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); soundBtn.textContent = voice.muted ? '🔇' : '🔊'; };
 soundBtn.onclick = () => {
-  if (!voice.muted) { activeSpeech?.abort(); bankAudio?.pause(); speaking = false; }
+  if (!voice.muted) { speechQueue.cancel(); activeSpeech?.abort(); bankAudio?.pause(); speaking = false; }
   voice.muted = !voice.muted; localStorage.setItem('croupier-muted', voice.muted ? '1' : '0'); renderSound();
   if (voice.muted) sfx.stopAmbience(); else sfx.startAmbience();
 };
@@ -307,6 +304,9 @@ const sfx = {
   },
 };
 sfx.load();
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden){speechQueue.cancel();activeSpeech?.abort();sfx.stopAmbience();}
+});
 for (const ev of ['pointerdown', 'keydown', 'visibilitychange']) {
   document.addEventListener(ev, () => { if (!document.hidden) sfx.keepAmbience(); }, { passive: true });
 }
@@ -1265,7 +1265,7 @@ $('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await en
 
 async function beginDealingTake() {
   try {
-  await speechChain;
+  await speechQueue.idle;
   if(performancePlayer){console.info('[deal] Presented-frame performance sequence');return;}
   dealingActive = canUseDealingTake();
   if (!dealingActive) {
@@ -1527,7 +1527,7 @@ async function finish() {
   const who = player?.name ?? 'the player';
   if (totalWin > 0) void veraEvent(`Round settled: ${who} collected ${fmt(totalWin)} this round${anyPlayerBJ ? ' including a natural blackjack' : ''}.`);
   else void veraEvent(`Round settled: the house took this one; ${who} won nothing back.`, { minGap: 45000 });
-  await Promise.all([sleep(1800), speechChain]);
+  await Promise.all([sleep(1800), speechQueue.idle]);
   endDealingTake();
   round = null; busy = false;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
@@ -1608,8 +1608,8 @@ async function cutToTake(clip, signal) {
 }
 
 let activeSpeech = null;
-function playRecorded(id, audio, text) {
-  if (voice.muted) return Promise.resolve();
+function playRecorded(id, audio, text, signal) {
+  if (voice.muted || document.hidden || signal?.aborted) return Promise.resolve();
   const originalNative = speechMedia[DEALER.key]?.[id];
   const packed=engine.fullActor&&originalNative?actorProvenance?.nativeSpeech?.[id]:null;
   const native=packed?{...originalNative,...packed}:originalNative;
@@ -1630,6 +1630,8 @@ function playRecorded(id, audio, text) {
   const clip = `idle-1/speak/${id}`;
   const matched = !native && engineUp && !!engine.index?.clips?.[clip];
   const controller = new AbortController();
+  const cancel = () => controller.abort();
+  signal?.addEventListener('abort', cancel, {once:true});
   activeSpeech = controller;
   bankAudio = audio;
   voice.playing = true;
@@ -1661,6 +1663,7 @@ function playRecorded(id, audio, text) {
       // Unmatched lines remain voice-over; never reuse a mouth saying other words.
     },
     onFinish: () => {
+      signal?.removeEventListener('abort', cancel);
       if(video) {
         if(!packedPlayer&&performanceStaged&&video.ended&&!document.hidden&&video.videoWidth){
           const still=document.createElement('canvas');still.width=video.videoWidth;still.height=video.videoHeight;
@@ -1687,10 +1690,10 @@ function sayLine(id) {
   const line = veraBank[id];
   if (!line) return false;
   if (voice.muted) { showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70)); return true; }
-  speechTurn(() => {
+  speechTurn(signal => {
     const audio = new Audio(`${VERA_BANK_URL}/${id}.mp3`);
     audio.volume = .95;
-    return playRecorded(id, audio, line.text);
+    return playRecorded(id, audio, line.text, signal);
   });
   return true;
 }
@@ -1906,7 +1909,7 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
   const play = () => {
     const id = lineSelect.value;
     voice.muted = false; soundBtn.classList.remove('muted');
-    return speechTurn(() => playRecorded(id, new Audio(`${DEALER.base}/audio/en/${id}.mp3`), bank[id]?.text ?? LINES[id] ?? id));
+    return speechTurn(signal => playRecorded(id, new Audio(`${DEALER.base}/audio/en/${id}.mp3`), bank[id]?.text ?? LINES[id] ?? id, signal));
   };
   panel.querySelector('#rehearsal-play').onclick = play;
   panel.querySelector('#rehearsal-repeat').onclick = () => { play(); play(); };

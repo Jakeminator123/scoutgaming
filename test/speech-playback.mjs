@@ -2,12 +2,43 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { playSpeech, abortableDelay } from '../web/public/speech-playback.mjs';
 import { DealerEngine } from '../web/public/dealer-engine.mjs';
+import { createSpeechQueue } from '../web/public/speech-queue.mjs';
 class Audio extends EventTarget {
   plays = 0; pauses = 0;
   play() { this.plays++; return Promise.resolve(); }
   pause() { this.pauses++; }
 }
 const tick = () => new Promise(r => setImmediate(r));
+test('cancelling a loading line releases gameplay and suppresses its late voice after unmute',async()=>{
+  const queue=createSpeechQueue();let bankReady;const bank=new Promise(r=>bankReady=r);
+  const heard=[];let signal;
+  const first=queue.enqueue(async s=>{signal=s;await bank;if(!s.aborted)heard.push('stale');});
+  const second=queue.enqueue(()=>heard.push('also stale'));
+  await tick();queue.cancel();await Promise.all([first,second]);
+  assert.equal(signal.aborted,true);assert.equal(queue.pending,0);
+  await queue.enqueue(()=>heard.push('fresh'));bankReady();await tick();
+  assert.deepEqual(heard,['fresh']);assert.equal(queue.pending,0);
+});
+test('a hidden queue drops current and queued speech and does not replay them on return',async()=>{
+  let visible=true,finish;const heard=[];
+  const queue=createSpeechQueue({canPlay:()=>visible});
+  queue.enqueue(signal=>new Promise(resolve=>{heard.push('first');finish=resolve;signal.addEventListener('abort',resolve,{once:true});}));
+  queue.enqueue(()=>heard.push('queued'));
+  await tick();visible=false;queue.cancel();
+  await queue.enqueue(()=>heard.push('hidden'));await queue.idle;
+  visible=true;await queue.enqueue(()=>heard.push('new event'));finish();await tick();
+  assert.deepEqual(heard,['first','new event']);assert.equal(queue.pending,0);
+});
+test('repeated requested lines remain sequential and cancellation stops active audio',async()=>{
+  const queue=createSpeechQueue(),audio=new Audio();const order=[];
+  const first=queue.enqueue(signal=>playSpeech({audio,signal,onStart:()=>order.push('first'),onFinish:()=>order.push('end')}));
+  const second=queue.enqueue(()=>order.push('second'));
+  await tick();assert.deepEqual(order,['first']);assert.equal(queue.pending,2);
+  audio.dispatchEvent(new Event('ended'));await Promise.all([first,second]);
+  assert.deepEqual(order,['first','end','second']);
+  const again=queue.enqueue(signal=>playSpeech({audio,signal}));await tick();
+  queue.cancel();await again;assert.equal(audio.pauses,2);assert.equal(queue.pending,0);
+});
 test('completed line cannot stop a later line when its timeout would fire', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const first = new Audio(); let stops = 0;
