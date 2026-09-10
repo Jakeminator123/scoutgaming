@@ -84,6 +84,9 @@ if (DEALER.dealingCues) {
 }
 
 let tableScene = null;
+// Resize the camera even while the dealer's asynchronous media load is still
+// pending. Waiting for gameplay controls leaves the shoe at the old viewport.
+addEventListener('resize', () => tableScene?.resize());
 try {
   const { createTableScene } = await import('./table-scene.mjs');
   tableScene = createTableScene($('#table-canvas'), DEALER.key, {
@@ -709,7 +712,7 @@ compactQuery.addEventListener('change', e => {
   }
   layoutSeats(); renderBets(); activeBoxHighlight();
 });
-addEventListener('resize', () => { tableScene?.resize(); layoutSeats(); activeBoxHighlight(); });
+addEventListener('resize', () => { layoutSeats(); activeBoxHighlight(); });
 document.querySelector('#tableimg')?.addEventListener('load', layoutSeats);
 
 // ---------- chip picker ----------

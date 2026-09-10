@@ -52,6 +52,37 @@
       "file": "speech-room-checks.json",
       "sha256": "a96a19d09505317339434542e341890f22b85a16c3f9fcb20d2941ca4a702a72",
       "bytes": 3717
+    },
+    {
+      "file": "resize-delayed-after.jpg",
+      "sha256": "5d774da0156af4010a49bce02eb4344e7ea6193cbf90519e837590e5481c2639",
+      "bytes": 152272
+    },
+    {
+      "file": "resize-delayed-after.json",
+      "sha256": "4537fc40faaa98eb2c5ff96d5f16242a9b816f55ea8098286c2e7b968d930b1b",
+      "bytes": 1253
+    },
+    {
+      "file": "resize-delayed-before.jpg",
+      "sha256": "0f65cd3d2d0e2177b85d9ee20ddfbc5cfdcb3bc10f262aa9ee278cc435658f18",
+      "bytes": 156230
+    },
+    {
+      "file": "resize-delayed-before.json",
+      "sha256": "cc91ee5ffdafb9ae82de9d2efa6c00c9abd7e8c9431acfcd86ea86779ffe5e06",
+      "bytes": 1240
+    },
+    {
+      "file": "resize-phone-after.jpg",
+      "sha256": "6df864b02f1d82af4f77a7fe40182f4d9da4265fa5fff9c2d2f43480cc37d657",
+      "bytes": 32190
+    },
+    {
+      "file": "resize-phone-after.json",
+      "sha256": "a5e508651e33e04d620983f31640485a6b9ad75af3b26f54fa87296bf786f5e2",
+      "bytes": 1193
     }
-  ]
+  ],
+  "resizeFix": "Additional bootstrap fix after adb5eff; before/after measurements use an isolated 8-second stream-index response delay."
 }
