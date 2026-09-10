@@ -8,6 +8,7 @@ import {riggedCardPose,cardCorners} from './rigged-card-layout.mjs';
 import {placeActions} from './action-placement.mjs';
 import {createDiscardState} from './rigged-discard-state.mjs';
 import {createRiggedFacePlayback} from './rigged-face-playback.mjs';
+import {verifyFacialSource} from './dealer-face.mjs';
 import {planCollection} from './dealer-collection.mjs';
 
 // Opt-in contact review inside the real game. This renderer consumes the card
@@ -36,13 +37,39 @@ export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
   const rigFolder=faceStudy?'dealers/astrid/rig/face-study/':'dealers/astrid/rig/';
   const faceManifest=faceStudy?await fetch(rigFolder+'speech-manifest.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error('Facial performance manifest unavailable');return r.json();}):null;
   const rigRevision=faceManifest?.modelSha256?'?revision='+encodeURIComponent(faceManifest.modelSha256):'';
+  async function loadDealer(){
+    if(!faceStudy)return loader.loadAsync(rigFolder+'astrid-rigged.glb');
+    const response=await fetch(rigFolder+'astrid-rigged.glb'+rigRevision);
+    if(!response.ok)throw new Error('Dealer geometry unavailable');
+    const bytes=await response.arrayBuffer();
+    await verifyFacialSource({sha256:faceManifest.modelSha256},bytes);
+    return loader.parseAsync(bytes,new URL(rigFolder,location.href).href);
+  }
   const [table,room,dealer,profile,tableProfile]=await Promise.all([
     loader.loadAsync('assets/blackjack-3d/blackjack-table.glb'),loader.loadAsync('assets/blackjack-3d/blackjack-room.glb'),
-    loader.loadAsync(rigFolder+'astrid-rigged.glb'+rigRevision),
+    loadDealer(),
     fetch(rigFolder+'profile.json'+rigRevision).then(r=>{if(!r.ok)throw new Error('Dealer rig unavailable');return r.json();}),
     fetch('assets/blackjack-3d/profile.json').then(r=>{if(!r.ok)throw new Error('Table calibration unavailable');return r.json();}),
   ]);
   for(const asset of [table.scene,room.scene,dealer.scene]){scene.add(asset);asset.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});}
+  // The seated review has one continuous photographic room. It is a distant
+  // camera-facing plate in this scene, with one cover fit and no actor pixels.
+  // Table, dealer, props and their contact shadows still share the 3D camera.
+  // Keep the editable geometric room as the load-failure/walkable prototype.
+  let roomPlate=null,roomShadow=null;
+  if(faceStudy){
+    try{
+      const texture=await new T.TextureLoader().loadAsync('dealers/astrid/actor/room.jpg');
+      texture.colorSpace=T.SRGBColorSpace;
+      roomPlate=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:texture,toneMapped:false,depthWrite:false}));
+      roomPlate.name='Astrid continuous photographic room';roomPlate.renderOrder=-100;
+      roomPlate.userData.aspect=texture.image.width/texture.image.height;scene.add(roomPlate);
+      room.scene.visible=false;
+      roomShadow=new T.Mesh(new T.PlaneGeometry(14,14),new T.ShadowMaterial({opacity:.28}));
+      roomShadow.name='Table foot contact shadows';roomShadow.rotation.x=-Math.PI/2;roomShadow.position.y=.002;
+      roomShadow.receiveShadow=true;scene.add(roomShadow);
+    }catch(error){console.warn('[rigged-review] Room plate unavailable; using geometric room',error);}
+  }
   // Acrylic cannot cast an opaque black shadow across the shoe opening.
   table.scene.traverse(o=>{
     if(o.isMesh&&o.material?.transmission>0)o.castShadow=false;
@@ -52,7 +79,7 @@ export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
   let facePlayback=null;
   if(faceStudy){
     const manifest=faceManifest;
-    facePlayback=createRiggedFacePlayback({root:dealer.scene,baseURL:location.href,
+    facePlayback=createRiggedFacePlayback({root:dealer.scene,modelSha256:manifest.modelSha256,baseURL:location.href,
       async loadPerformance(id,signal){const line=manifest.lines[id];if(!line)throw new Error(`No measured facial performance for ${id}`);const r=await fetch(rigFolder+line.file,{signal});if(!r.ok)throw new Error(`Facial performance unavailable: ${id}`);return r.json();},
       async loadBytes(url,signal){const r=await fetch(url,{signal});if(!r.ok)throw new Error('Facial source unavailable');return r.arrayBuffer();},
       onState:id=>{
@@ -189,8 +216,16 @@ export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
     // Frame the dealer, shoe and farthest card together. Following the active
     // seat on a narrow screen cropped her face and moved the shoe off-screen.
     const distance=portrait?Math.max(3.15,1.04/(Math.tan(T.MathUtils.degToRad(camera.fov/2))*camera.aspect)+.94):2.45;
-    camera.position.set(0,portrait?1.10+(distance-.20)*.50:1.60,distance);camera.lookAt(0,1.10,.20);camera.updateProjectionMatrix();
+    // Dolly along the same seated viewing axis on phones. Raising the camera
+    // to half its distance looked down onto the face and changed the grip view.
+    camera.position.set(0,1.10+(distance-.20)*(.50/2.25),distance);camera.lookAt(0,1.10,.20);camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
+    if(roomPlate){
+      const depth=12,height=2*depth*Math.tan(T.MathUtils.degToRad(camera.fov/2));
+      const coverHeight=Math.max(height,height*camera.aspect/roomPlate.userData.aspect);
+      roomPlate.position.copy(camera.position).add(camera.getWorldDirection(new T.Vector3()).multiplyScalar(depth));
+      roomPlate.quaternion.copy(camera.quaternion);roomPlate.scale.set(coverHeight*roomPlate.userData.aspect,coverHeight,1);
+    }
     const pos=screen(tableProfile.dealerCards),root=document.documentElement.style;
     root.setProperty('--rig-dealer-x',`${pos.x}px`);root.setProperty('--rig-dealer-y',`${pos.y}px`);
   }
@@ -289,7 +324,7 @@ export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
       items.forEach(item=>{item.shift=null;});
       await new Promise(resolve=>{active={kind:'collect-sweep',seconds:plan.duration,plan,items,time:0,onCue,resolve,picked:false,released:false};});
     },
-    registration(){return{version:1,type:'rigged-review',units:'metres',shoe:{outlet},camera:{projection:camera.projectionMatrix.toArray(),world:camera.matrixWorld.toArray()},limitations:profile.limitations};},
-    dispose(){disposed=true;observer.disconnect();const cards=new Set(records.values());if(discardTop)cards.add(discardTop);for(const item of cards)remove(item);discardBody.geometry.dispose();discardBody.material.dispose();discardCover.geometry.dispose();discardCover.material.dispose();backTexture.dispose();renderer.dispose();},
+    registration(){return{version:1,type:'rigged-review',units:'metres',shoe:{outlet},room:roomPlate?'fixed-camera photographic plate':'geometric prototype',camera:{projection:camera.projectionMatrix.toArray(),world:camera.matrixWorld.toArray()},limitations:profile.limitations};},
+    dispose(){disposed=true;observer.disconnect();const cards=new Set(records.values());if(discardTop)cards.add(discardTop);for(const item of cards)remove(item);discardBody.geometry.dispose();discardBody.material.dispose();discardCover.geometry.dispose();discardCover.material.dispose();backTexture.dispose();if(roomPlate){roomPlate.geometry.dispose();roomPlate.material.map.dispose();roomPlate.material.dispose();roomShadow.geometry.dispose();roomShadow.material.dispose();}renderer.dispose();},
   };
 }

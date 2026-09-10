@@ -15,7 +15,7 @@ test('all Astrid lines bind measured frames to the shipped media, wording and ca
   const data=read(entry.file),binding=data.binding;
   assert.equal(binding.lineId,id);assert.equal(binding.text,native?.[id]?.text??bank[id].text);
   assert.equal(data.missingTimes.length,0,`${id} detection gap`);
-  prepareFacialPerformance(data);
+  prepareFacialPerformance(data,{modelSha256:manifest.modelSha256});
   await verifyFacialSource(data,fs.readFileSync(new URL(binding.videoUrl,base)));
   await verifyFacialSource({sha256:binding.audioSha256},fs.readFileSync(new URL(binding.audioUrl,base)));
   if(native?.[id]){

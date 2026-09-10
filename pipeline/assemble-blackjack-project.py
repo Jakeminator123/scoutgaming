@@ -69,6 +69,32 @@ scene['gameplay']='Existing Croupier backend owns cards, shoe, balances and sett
 scene.render.resolution_x=1280;scene.render.resolution_y=900
 scene.render.resolution_percentage=100;scene.render.engine='CYCLES';scene.cycles.samples=24
 scene.camera.location=p((0,1.85,2.65));scene.camera.rotation_euler=(Vector(p((0,1.02,.18)))-scene.camera.location).to_track_quat('-Z','Y').to_euler();scene.camera.data.lens=36
+if anatomical:
+    # Same seated camera as the game. Preserve the geometric room for other
+    # views; this photographic plane is only the fixed-camera presentation.
+    scene.render.resolution_x=1440;scene.render.resolution_y=900
+    scene.camera.location=p((0,1.60,2.45))
+    scene.camera.rotation_euler=(Vector(p((0,1.10,.20)))-scene.camera.location).to_track_quat('-Z','Y').to_euler()
+    scene.camera.data.sensor_fit='VERTICAL';scene.camera.data.sensor_height=24
+    scene.camera.data.lens=12/math.tan(math.radians(19))
+    room=bpy.data.objects.get('Room_Root')
+    if room:
+        for obj in [room,*room.children_recursive]:obj.hide_render=True
+    image=bpy.data.images.load(str(REPO/'web/public/dealers/astrid/actor/room.jpg'),check_existing=True)
+    depth=12;height=2*depth*math.tan(math.radians(19));aspect=image.size[0]/image.size[1]
+    height=max(height,height*scene.render.resolution_x/scene.render.resolution_y/aspect)
+    bpy.ops.mesh.primitive_plane_add(size=1)
+    plate=bpy.context.object;plate.name='Astrid continuous photographic room'
+    plate.location=scene.camera.location+scene.camera.rotation_euler.to_quaternion()@Vector((0,0,-depth))
+    plate.rotation_euler=scene.camera.rotation_euler;plate.scale=(height*aspect,height,1)
+    plate['purpose']='Fixed seated camera photographic room plate. Not walkable geometry.'
+    plate.visible_shadow=plate.visible_diffuse=plate.visible_glossy=False
+    material=bpy.data.materials.new('Astrid room plate | photographic reference');material.use_nodes=True
+    nodes=material.node_tree.nodes;nodes.clear();tex=nodes.new('ShaderNodeTexImage');tex.image=image
+    emit=nodes.new('ShaderNodeEmission');out=nodes.new('ShaderNodeOutputMaterial')
+    material.node_tree.links.new(tex.outputs['Color'],emit.inputs['Color']);material.node_tree.links.new(emit.outputs[0],out.inputs['Surface'])
+    plate.data.materials.append(material)
+    scene['roomPresentation']='One photographic room plate; geometric room preserved with render visibility off.'
 preview_errors=[]
 for entry in timeline:
     samples=[s for s in motion['samples'] if s['action']==entry['action']]
@@ -82,6 +108,7 @@ for entry in timeline:
 scene.frame_set(0);scene.frame_set(1);bpy.context.view_layer.update()
 bpy.ops.file.pack_all();bpy.context.preferences.filepaths.save_version=0
 bpy.ops.wm.save_as_mainfile(filepath=str(DELIVERY/'astrid-blackjack-editable.blend'),compress=True)
+scene.render.resolution_percentage=next((int(arg.split('=',1)[1]) for arg in sys.argv if arg.startswith('--preview-scale=')),100)
 scene.render.filepath=str(DELIVERY/'scene-contact-review.png');bpy.ops.render.render(write_still=True)
 result={'file':'astrid-blackjack-editable.blend','units':'metres','fps':30,'dealerObjects':[o.name for o in added],
  'dealerSource':str(dealer.relative_to(REPO)),

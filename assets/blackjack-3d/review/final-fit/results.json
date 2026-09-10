@@ -1,0 +1,3632 @@
+{
+  "modelSha256": "73c8d9858ec6f300d8a9bc37b906aa0a7a76295d95d7c3632b858e31d07fff6d",
+  "lines": [
+    {
+      "id": "greeting",
+      "history": [
+        {
+          "id": "greeting",
+          "samples": 118,
+          "mediaTime": 4.64,
+          "captureTime": 4.64
+        },
+        {
+          "id": "greeting",
+          "samples": 145,
+          "mediaTime": 4.64,
+          "captureTime": 4.64
+        }
+      ]
+    },
+    {
+      "id": "goodluck",
+      "history": [
+        {
+          "id": "goodluck",
+          "samples": 166,
+          "mediaTime": 5.085011,
+          "captureTime": 5.085011
+        },
+        {
+          "id": "goodluck",
+          "samples": 170,
+          "mediaTime": 5.085011,
+          "captureTime": 5.085011
+        }
+      ]
+    },
+    {
+      "id": "win",
+      "history": [
+        {
+          "id": "win",
+          "samples": 168,
+          "mediaTime": 5.085011,
+          "captureTime": 5.085011
+        },
+        {
+          "id": "win",
+          "samples": 172,
+          "mediaTime": 5.085011,
+          "captureTime": 5.085011
+        }
+      ]
+    },
+    {
+      "id": "lose",
+      "history": [
+        {
+          "id": "lose",
+          "samples": 56,
+          "mediaTime": 1.6,
+          "captureTime": 1.9500000000000002
+        },
+        {
+          "id": "lose",
+          "samples": 54,
+          "mediaTime": 1.589039,
+          "captureTime": 1.9390390000000002
+        }
+      ]
+    },
+    {
+      "id": "push",
+      "history": [
+        {
+          "id": "push",
+          "samples": 62,
+          "mediaTime": 1.838503,
+          "captureTime": 1.838503
+        },
+        {
+          "id": "push",
+          "samples": 59,
+          "mediaTime": 1.865533,
+          "captureTime": 1.865533
+        }
+      ]
+    },
+    {
+      "id": "bust",
+      "history": [
+        {
+          "id": "bust",
+          "samples": 47,
+          "mediaTime": 1.35208,
+          "captureTime": 1.35208
+        },
+        {
+          "id": "bust",
+          "samples": 44,
+          "mediaTime": 1.34402,
+          "captureTime": 1.34402
+        }
+      ]
+    },
+    {
+      "id": "dealerbust",
+      "history": [
+        {
+          "id": "dealerbust",
+          "samples": 114,
+          "mediaTime": 3.448828,
+          "captureTime": 3.5908279999999997
+        },
+        {
+          "id": "dealerbust",
+          "samples": 113,
+          "mediaTime": 3.450844,
+          "captureTime": 3.592844
+        }
+      ]
+    },
+    {
+      "id": "insurance",
+      "history": [
+        {
+          "id": "insurance",
+          "samples": 76,
+          "mediaTime": 2,
+          "captureTime": 2.7960000000000003
+        },
+        {
+          "id": "insurance",
+          "samples": 76,
+          "mediaTime": 1.990857,
+          "captureTime": 2.7868570000000004
+        }
+      ]
+    },
+    {
+      "id": "blackjack",
+      "history": [
+        {
+          "id": "blackjack",
+          "samples": 130,
+          "mediaTime": 3.644351,
+          "captureTime": 3.806351
+        },
+        {
+          "id": "blackjack",
+          "samples": 117,
+          "mediaTime": 3.648095,
+          "captureTime": 3.810095
+        }
+      ]
+    },
+    {
+      "id": "placebets",
+      "history": [
+        {
+          "id": "placebets",
+          "samples": 66,
+          "mediaTime": 2.24,
+          "captureTime": 2.266
+        },
+        {
+          "id": "placebets",
+          "samples": 68,
+          "mediaTime": 2.24,
+          "captureTime": 2.266
+        }
+      ]
+    },
+    {
+      "id": "dealerblackjack",
+      "history": [
+        {
+          "id": "dealerblackjack",
+          "samples": 60,
+          "mediaTime": 2.076529,
+          "captureTime": 2.2385289999999998
+        },
+        {
+          "id": "dealerblackjack",
+          "samples": 59,
+          "mediaTime": 2.08,
+          "captureTime": 2.242
+        }
+      ]
+    },
+    {
+      "id": "sidebet",
+      "history": [
+        {
+          "id": "sidebet",
+          "samples": 59,
+          "mediaTime": 2.025476,
+          "captureTime": 2.0624759999999998
+        },
+        {
+          "id": "sidebet",
+          "samples": 62,
+          "mediaTime": 2.043016,
+          "captureTime": 2.080016
+        }
+      ]
+    },
+    {
+      "id": "double",
+      "history": [
+        {
+          "id": "double",
+          "samples": 56,
+          "mediaTime": 1.993878,
+          "captureTime": 2.403878
+        },
+        {
+          "id": "double",
+          "samples": 58,
+          "mediaTime": 1.993878,
+          "captureTime": 2.403878
+        }
+      ]
+    },
+    {
+      "id": "peek",
+      "history": [
+        {
+          "id": "peek",
+          "samples": 75,
+          "mediaTime": 2.704932,
+          "captureTime": 2.969932
+        },
+        {
+          "id": "peek",
+          "samples": 78,
+          "mediaTime": 2.72,
+          "captureTime": 2.9850000000000003
+        }
+      ]
+    },
+    {
+      "id": "farewell",
+      "history": [
+        {
+          "id": "farewell",
+          "samples": 57,
+          "mediaTime": 1.92,
+          "captureTime": 2.226
+        },
+        {
+          "id": "farewell",
+          "samples": 57,
+          "mediaTime": 1.9111,
+          "captureTime": 2.2171
+        }
+      ]
+    },
+    {
+      "id": "chatter1",
+      "history": [
+        {
+          "id": "chatter1",
+          "samples": 85,
+          "mediaTime": 2.8,
+          "captureTime": 3.3629999999999995
+        },
+        {
+          "id": "chatter1",
+          "samples": 75,
+          "mediaTime": 2.8,
+          "captureTime": 3.3629999999999995
+        }
+      ]
+    },
+    {
+      "id": "chatter2",
+      "history": [
+        {
+          "id": "chatter2",
+          "samples": 66,
+          "mediaTime": 2.444832,
+          "captureTime": 3.094832
+        },
+        {
+          "id": "chatter2",
+          "samples": 69,
+          "mediaTime": 2.48,
+          "captureTime": 3.13
+        }
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "version": 0,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 415,
+        "dealt": 1,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": null,
+      "balance": 1000
+    },
+    {
+      "version": 1,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 399,
+        "dealt": 17,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": {
+        "boxes": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "hands": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "dealer": [
+          {
+            "r": "2",
+            "s": "♠",
+            "shoeDraw": 9
+          }
+        ],
+        "phase": "decisions",
+        "active": 6,
+        "holeDraw": 17,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double",
+          "split"
+        ]
+      },
+      "shuffled": false,
+      "balance": 965
+    },
+    {
+      "version": 2,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 399,
+        "dealt": 17,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": {
+        "boxes": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "hands": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "dealer": [
+          {
+            "r": "2",
+            "s": "♠",
+            "shoeDraw": 9
+          }
+        ],
+        "phase": "decisions",
+        "active": 5,
+        "holeDraw": 17,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      },
+      "shuffled": false,
+      "balance": 965
+    },
+    {
+      "version": 3,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 399,
+        "dealt": 17,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": {
+        "boxes": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "hands": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "dealer": [
+          {
+            "r": "2",
+            "s": "♠",
+            "shoeDraw": 9
+          }
+        ],
+        "phase": "decisions",
+        "active": 4,
+        "holeDraw": 17,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      },
+      "shuffled": false,
+      "balance": 965
+    },
+    {
+      "version": 4,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 399,
+        "dealt": 17,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": {
+        "boxes": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "hands": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "dealer": [
+          {
+            "r": "2",
+            "s": "♠",
+            "shoeDraw": 9
+          }
+        ],
+        "phase": "decisions",
+        "active": 3,
+        "holeDraw": 17,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      },
+      "shuffled": false,
+      "balance": 965
+    },
+    {
+      "version": 5,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 399,
+        "dealt": 17,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": {
+        "boxes": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "hands": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "dealer": [
+          {
+            "r": "2",
+            "s": "♠",
+            "shoeDraw": 9
+          }
+        ],
+        "phase": "decisions",
+        "active": 2,
+        "holeDraw": 17,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      },
+      "shuffled": false,
+      "balance": 965
+    },
+    {
+      "version": 6,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 399,
+        "dealt": 17,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": {
+        "boxes": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "hands": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "dealer": [
+          {
+            "r": "2",
+            "s": "♠",
+            "shoeDraw": 9
+          }
+        ],
+        "phase": "decisions",
+        "active": 1,
+        "holeDraw": 17,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      },
+      "shuffled": false,
+      "balance": 965
+    },
+    {
+      "version": 7,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 399,
+        "dealt": 17,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": {
+        "boxes": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "hands": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": false,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": null,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "dealer": [
+          {
+            "r": "2",
+            "s": "♠",
+            "shoeDraw": 9
+          }
+        ],
+        "phase": "decisions",
+        "active": 0,
+        "holeDraw": 17,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      },
+      "shuffled": false,
+      "balance": 965
+    },
+    {
+      "version": 8,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 397,
+        "dealt": 19,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": {
+        "boxes": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "hands": [
+          {
+            "box": 0,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 8
+              },
+              {
+                "r": "Q",
+                "s": "♠",
+                "shoeDraw": 16
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 1,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "2",
+                "s": "♥",
+                "shoeDraw": 7
+              },
+              {
+                "r": "5",
+                "s": "♦",
+                "shoeDraw": 15
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 2,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "3",
+                "s": "♦",
+                "shoeDraw": 6
+              },
+              {
+                "r": "6",
+                "s": "♠",
+                "shoeDraw": 14
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 3,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 5
+              },
+              {
+                "r": "2",
+                "s": "♠",
+                "shoeDraw": 13
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 4,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "6",
+                "s": "♣",
+                "shoeDraw": 4
+              },
+              {
+                "r": "3",
+                "s": "♥",
+                "shoeDraw": 12
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 5,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "9",
+                "s": "♦",
+                "shoeDraw": 3
+              },
+              {
+                "r": "4",
+                "s": "♦",
+                "shoeDraw": 11
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          },
+          {
+            "box": 6,
+            "splitFrom": null,
+            "stake": 5,
+            "pp": 0,
+            "tp": 0,
+            "cards": [
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 2
+              },
+              {
+                "r": "8",
+                "s": "♠",
+                "shoeDraw": 10
+              }
+            ],
+            "done": true,
+            "doubled": false,
+            "insured": 0,
+            "result": 10,
+            "sideReturn": 0,
+            "sideLabels": []
+          }
+        ],
+        "dealer": [
+          {
+            "r": "2",
+            "s": "♠",
+            "shoeDraw": 9
+          },
+          {
+            "r": "4",
+            "s": "♥",
+            "shoeDraw": 17
+          },
+          {
+            "r": "9",
+            "s": "♠",
+            "shoeDraw": 18
+          },
+          {
+            "r": "9",
+            "s": "♥",
+            "shoeDraw": 19
+          }
+        ],
+        "phase": "settled",
+        "active": -1,
+        "holeDraw": 17,
+        "legalActions": []
+      },
+      "shuffled": false,
+      "balance": 965
+    },
+    {
+      "version": 9,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 397,
+        "dealt": 19,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": null,
+      "shuffled": false,
+      "balance": 1035
+    },
+    {
+      "version": 9,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 397,
+        "dealt": 19,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": null,
+      "balance": 1035
+    },
+    {
+      "version": 9,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 397,
+        "dealt": 19,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": null,
+      "balance": 1035
+    },
+    {
+      "version": 9,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 397,
+        "dealt": 19,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": null,
+      "balance": 1035
+    },
+    {
+      "version": 9,
+      "shoe": {
+        "id": "117c5913-c71e-4b3f-9dd8-63de58c9938c",
+        "total": 416,
+        "remaining": 397,
+        "dealt": 19,
+        "cutAfter": 312,
+        "cutReached": false,
+        "shufflePending": false,
+        "decks": 8,
+        "burn": 1
+      },
+      "round": null,
+      "balance": 1035
+    }
+  ],
+  "final": {
+    "discardCount": "19",
+    "facialLine": "placebets",
+    "faceLastLine": "placebets",
+    "faceSamples": "9",
+    "faceMaxTime": "0.15157299999999999",
+    "faceMediaTime": "0.125573",
+    "faceHistory": "[{\"id\":\"goodluck\",\"samples\":193,\"mediaTime\":5.085011,\"captureTime\":5.085011},{\"id\":\"dealerbust\",\"samples\":100,\"mediaTime\":3.424828,\"captureTime\":3.566828}]",
+    "contactError": "0.0007000545823527694",
+    "action": "collect-sweep",
+    "progress": "1.0000",
+    "target": "[0.0345,0.9119,0.21400000000000002]",
+    "cardPosition": "[-0.9100000262260437,0.9281000166893005,0.25]",
+    "cardYaw": "0.09903494905418227",
+    "cardPitch": "0",
+    "gathered": "18",
+    "collectionSize": "18"
+  },
+  "errors": [],
+  "logs": [
+    {
+      "at": 1789045313627,
+      "dealer": "astrid-rig",
+      "text": "[speech] start goodluck embedded audio/video"
+    },
+    {
+      "at": 1789045318710,
+      "dealer": "astrid-rig",
+      "text": "[speech] end goodluck"
+    },
+    {
+      "at": 1789045369488,
+      "dealer": "astrid-rig",
+      "text": "[speech] start dealerbust matched"
+    },
+    {
+      "at": 1789045373108,
+      "dealer": "astrid-rig",
+      "text": "[speech] end dealerbust"
+    },
+    {
+      "at": 1789045383664,
+      "dealer": "astrid-rig",
+      "text": "[speech] start placebets matched"
+    },
+    {
+      "at": 1789045383991,
+      "dealer": "vera",
+      "text": "[speech] end placebets"
+    },
+    {
+      "at": 1789045391846,
+      "dealer": "vera",
+      "text": "[speech] start greeting matched"
+    },
+    {
+      "at": 1789045397287,
+      "dealer": "vera",
+      "text": "[speech] end greeting"
+    },
+    {
+      "at": 1789045397461,
+      "dealer": "vera",
+      "text": "[speech] start greeting matched"
+    },
+    {
+      "at": 1789045402839,
+      "dealer": "vera",
+      "text": "[speech] end greeting"
+    },
+    {
+      "at": 1789045406222,
+      "dealer": "amira",
+      "text": "[speech] start greeting matched"
+    },
+    {
+      "at": 1789045411667,
+      "dealer": "amira",
+      "text": "[speech] end greeting"
+    },
+    {
+      "at": 1789045411976,
+      "dealer": "amira",
+      "text": "[speech] start greeting matched"
+    },
+    {
+      "at": 1789045417275,
+      "dealer": "amira",
+      "text": "[speech] end greeting"
+    },
+    {
+      "at": 1789045424620,
+      "dealer": "mei",
+      "text": "[speech] start greeting matched"
+    },
+    {
+      "at": 1789045428722,
+      "dealer": "mei",
+      "text": "[speech] end greeting"
+    },
+    {
+      "at": 1789045429169,
+      "dealer": "mei",
+      "text": "[speech] start greeting matched"
+    },
+    {
+      "at": 1789045433305,
+      "dealer": "mei",
+      "text": "[speech] end greeting"
+    },
+    {
+      "at": 1789045438794,
+      "dealer": "astrid",
+      "text": "[speech] start greeting matched"
+    },
+    {
+      "at": 1789045443642,
+      "dealer": "astrid",
+      "text": "[speech] end greeting"
+    },
+    {
+      "at": 1789045443664,
+      "dealer": "astrid",
+      "text": "[speech] start greeting matched"
+    },
+    {
+      "at": 1789045448327,
+      "dealer": "astrid",
+      "text": "[speech] end greeting"
+    }
+  ]
+}

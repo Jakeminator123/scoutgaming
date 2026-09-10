@@ -1,3 +1,7 @@
+# Follow-up: calibrated mouth and continuous collection
+
+The latest evidence is [saved here](../assets/blackjack-3d/review/final-fit/README.md). Model `73c8d985…` replaces the earlier candidate below within the opt-in scene. Seventeen model-bound calibrations preserve all raw measured frames and original audio. The full seven-seat round and 34 Astrid playback completions passed; photographic, phoneme and narrow-phone acceptance remain open. Earlier model hashes and snapshots below are historical.
+
 # Anatomical Astrid inside the blackjack game
 
 This is an opt-in technical and likeness review, **not photographic acceptance**. Open `?dealer=astrid&scene=rigged-review&face=anatomical` on the existing server. Guest access and the default four filmed dealers are preserved. CAC-2 and CAC-4 remain In Dev.

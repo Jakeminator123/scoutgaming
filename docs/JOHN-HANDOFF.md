@@ -1,3 +1,9 @@
+# Latest: calibrated facial candidate and seven-seat collection — 10 September 2026
+
+Read [the integration review](../assets/blackjack-3d/review/final-fit/README.md). The opt-in anatomical game uses the corrected oral/collar geometry with 17 separate model-bound calibrations, unchanged raw source measurements/audio, and actual loaded-model hash verification. It also has a continuous photographic room reference and consistent seated camera angle. The combined editable table project was rebuilt from the corrected native source.
+
+All 17 Astrid lines completed twice, all four default dealers completed two greetings, and a fresh seven-seat game passed: 1,000 → 965 stake → 1,035 after settlement; 18 cards gathered into one stack, discard count 19, no live cards. Recording is silent. This remains a technical/visual candidate: hair/skin/clothing, fine hand quality and the too-small 390px phone composition are not accepted. Full phoneme and physical-device QA remain open; CAC-2/CAC-4 stay In Dev. No default promotion or production deployment.
+
 # Latest: continuous collection sweep — 10 September 2026
 
 The actual rigged table now gathers finished cards into one stack, exchanges it between the hands near the centre and places it once in the discard tray. The original cards stay still until touched. `dealer-collection.mjs` builds the path from existing server card transforms; `pipeline/sample-dealer-collection.mjs` exports the same poses and independent card transforms for an additional editable study. Existing twelve source actions are retained. The new gathering sound follows presented contacts and respects existing mute/hidden-tab cancellation.

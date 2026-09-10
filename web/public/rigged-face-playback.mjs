@@ -3,7 +3,7 @@ import {controlDealerFace,prepareFacialPerformance,verifyFacialSource,sampleDeal
 // The caller supplies the same media element used by shared playSpeech.
 // Preparation does not animate anything; only its successfully started token
 // can own the face, and an old completion cannot clear a newer utterance.
-export function createRiggedFacePlayback({root,loadPerformance,loadBytes,baseURL,onState=()=>{},onSample=()=>{}}){
+export function createRiggedFacePlayback({root,modelSha256,loadPerformance,loadBytes,baseURL,onState=()=>{},onSample=()=>{}}){
  const face=controlDealerFace(root),verified=new Map();let active=null;
  let eye=null;root.traverse(obj=>{if(obj.isBone&&obj.name==='EyeLeft')eye=obj;});
  const eyeRest=eye?.quaternion.clone();let lastTime=null,yaw=0,pitch=0;
@@ -23,7 +23,7 @@ export function createRiggedFacePlayback({root,loadPerformance,loadBytes,baseURL
     throw new Error(`Facial binding differs from the playing line: ${id}`);
    if(!['embedded-video','indexed-audio'].includes(kind)||url(media.currentSrc||media.src)!==url(b.audioUrl))
     throw new Error(`Facial audio source differs from the playing media: ${id}`);
-   const performance=prepareFacialPerformance(data);
+   const performance=prepareFacialPerformance(data,{modelSha256});
    await verify(data,b.videoUrl,signal);
    await verify({sha256:b.audioSha256},b.audioUrl,signal);cancelled(signal);
    return {id,media,performance,offset:kind==='indexed-audio'?Math.max(0,b.audioDelayMs)/1000:0,signal};
