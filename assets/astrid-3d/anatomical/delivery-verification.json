@@ -1,0 +1,129 @@
+{
+  "status": "editable technical delivery; visual acceptance remains open",
+  "blender": "4.5.3 LTS",
+  "projects": {
+    "astrid-face-source.blend": {
+      "sha256": "ab5de6aa6cbf18dbdb1bde7a3cef6178a179d834231e5e2ade43e7ecc03c5a3a",
+      "bytes": 18453766,
+      "meshes": 7,
+      "packedImages": 7,
+      "shapeKeys": {
+        "Astrid_Face": 10,
+        "Astrid_Eyes": 10,
+        "Astrid_Teeth": 10,
+        "Astrid_Tongue": 10,
+        "Astrid_Eyelashes": 10,
+        "Astrid_Eyebrows": 10
+      },
+      "actions": [],
+      "controls": []
+    },
+    "astrid-rigged.blend": {
+      "sha256": "05c5dd1e5ba54c8d7358c9b74af8f8361c1dbeb361ab9fae60fe6e2ffc35485d",
+      "bytes": 41666484,
+      "meshes": 8,
+      "packedImages": 9,
+      "shapeKeys": {
+        "Astrid_Face": 10,
+        "Astrid_Eyes": 10,
+        "Astrid_Teeth": 10,
+        "Astrid_Tongue": 10,
+        "Astrid_Eyelashes": 10
+      },
+      "actions": [
+        "Armature|clip0|baselayer"
+      ],
+      "controls": [
+        "CTRL_LEFT_WRIST",
+        "CTRL_LEFT_ELBOW",
+        "CTRL_RIGHT_WRIST",
+        "CTRL_RIGHT_ELBOW",
+        "CTRL_BODY",
+        "CTRL_LOOK"
+      ]
+    },
+    "astrid-animated.blend": {
+      "sha256": "effcf6f71ae8d0568fdcb86cfb97bc4c8c537993ab8b0e720092395bb8b34650",
+      "bytes": 44646341,
+      "meshes": 8,
+      "packedImages": 9,
+      "shapeKeys": {
+        "Astrid_Face": 10,
+        "Astrid_Eyes": 10,
+        "Astrid_Teeth": 10,
+        "Astrid_Tongue": 10,
+        "Astrid_Eyelashes": 10
+      },
+      "actions": [
+        "Accept_Bets_Nod_Study",
+        "Collect_Card_Study",
+        "Deal_Own_Card_Contact_Study",
+        "Deal_Seat_01_Contact_Study",
+        "Deal_Seat_02_Contact_Study",
+        "Deal_Seat_03_Contact_Study",
+        "Deal_Seat_04_Contact_Study",
+        "Deal_Seat_05_Contact_Study",
+        "Deal_Seat_06_Contact_Study",
+        "Deal_Seat_07_Contact_Study",
+        "Greeting_Wave_Study",
+        "Reveal_Hole_Card_Study"
+      ],
+      "controls": [
+        "CTRL_LEFT_WRIST",
+        "CTRL_LEFT_ELBOW",
+        "CTRL_RIGHT_WRIST",
+        "CTRL_RIGHT_ELBOW",
+        "CTRL_BODY",
+        "CTRL_LEFT_FOOT",
+        "CTRL_LEFT_KNEE",
+        "CTRL_RIGHT_FOOT",
+        "CTRL_RIGHT_KNEE",
+        "CTRL_HEAD_ROTATION"
+      ]
+    },
+    "astrid-goodluck.blend": {
+      "sha256": "04cf28f656162d7463079f4a5b2715cc93ab0de54d72a6e58540273288d9640f",
+      "bytes": 45149298,
+      "meshes": 8,
+      "packedImages": 9,
+      "shapeKeys": {
+        "Astrid_Face": 10,
+        "Astrid_Eyes": 10,
+        "Astrid_Teeth": 10,
+        "Astrid_Tongue": 10,
+        "Astrid_Eyelashes": 10
+      },
+      "actions": [
+        "Accept_Bets_Nod_Study",
+        "Collect_Card_Study",
+        "Deal_Own_Card_Contact_Study",
+        "Deal_Seat_01_Contact_Study",
+        "Deal_Seat_02_Contact_Study",
+        "Deal_Seat_03_Contact_Study",
+        "Deal_Seat_04_Contact_Study",
+        "Deal_Seat_05_Contact_Study",
+        "Deal_Seat_06_Contact_Study",
+        "Deal_Seat_07_Contact_Study",
+        "Greeting_Wave_Study",
+        "Reveal_Hole_Card_Study",
+        "Speech_Goodluck_Astrid_Eyelashes",
+        "Speech_Goodluck_Astrid_Eyes",
+        "Speech_Goodluck_Astrid_Face",
+        "Speech_Goodluck_Astrid_Teeth",
+        "Speech_Goodluck_Astrid_Tongue"
+      ],
+      "controls": [
+        "CTRL_LEFT_WRIST",
+        "CTRL_LEFT_ELBOW",
+        "CTRL_RIGHT_WRIST",
+        "CTRL_RIGHT_ELBOW",
+        "CTRL_BODY",
+        "CTRL_LEFT_FOOT",
+        "CTRL_LEFT_KNEE",
+        "CTRL_RIGHT_FOOT",
+        "CTRL_RIGHT_KNEE",
+        "CTRL_HEAD_ROTATION"
+      ]
+    }
+  }
+}

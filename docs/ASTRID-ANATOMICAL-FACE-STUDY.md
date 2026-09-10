@@ -12,6 +12,8 @@ The native MakeHuman head/neck/chest weights are carried through subdivision as 
 
 The studio exposes body poses, head framing, individual facial controls, gaze, an optional authored idle gaze/blink sequence and original-video playback. Manual facial input pauses source playback so two controllers cannot fight. Reset clears both morphs and gaze.
 
+Packed editable deliveries are in `assets/astrid-3d/anatomical/`: high-detail facial source, combined rest rig, twelve body actions with manual controls, and the measured goodluck take with packed audio. The corresponding animated GLBs embed seven material images. The original generated baseline animation is excluded from the twelve-action export. `delivery-verification.json` records reopening the packed files and enumerates their controls and actions.
+
 ## Measured speech
 
 `capture-dealer-face.py` extracts MediaPipe blendshape measurements from the exact source video frames. `dealer-face.mjs` interpolates those measurements against the media's actual currentTime; it does not run an independent speech timer. Seek, playback-rate changes, pauses, repeats and interruptions therefore use the same source time.
@@ -33,5 +35,9 @@ Blender Python requires bpy, NumPy and the local vendor assets. Measurement requ
 ## Verification and remaining work
 
 The six face regression tests cover source-clock behavior, missing intervals, reset/clamping, mismatched source rejection, actual exported morph/gaze data and lower-face skin stability. Body contact and export tests remain separate. Native renders include rest and both outer-seat poses; rejected jaw/collar attempts remain staged as diagnostic evidence.
+
+A second neck-fitting pass initially used raw Mesh coordinates after the preceding pass had moved shape-key Basis. Correcting each pass to read the current Basis removed a duplicated neck offset. Matching the full retained neck surface then removed the prominent collar ring. The independent evaluated-surface check rejects the prior model (46.11 mm maximum gap) and passes the corrected model (2.12 mm maximum, 0.92 mm mean). Before/after renders and both outer-seat poses are saved in `assets/astrid-3d/anatomical/review/`. This check samples actual evaluated geometry, not helper bones.
+
+The studio renders paused states only when controls, camera, viewport or media state change. A completed action offers Spela igen, which restarts the current movement; scrubbing pauses at the selected pose. Both replay and manual release positioning were exercised in the browser after this change.
 
 Final acceptance still requires natural skin/neck continuity, less repetitive hair appearance, eye and facial lighting review, all-line rendered lip review, full-round interaction and physical-device performance. Do not mark CAC-2/CAC-4 or the user's complete realism goal done from these technical checks.

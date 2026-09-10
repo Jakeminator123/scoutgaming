@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+const faceFolder=process.env.ASTRID_FACE_FIXTURE_ROOT?pathToFileURL(path.resolve(process.env.ASTRID_FACE_FIXTURE_ROOT)+path.sep):new URL('../web/public/dealers/astrid/rig/face-study/',import.meta.url);
 import {prepareFacialPerformance,controlDealerFace,mapFacialWeights,verifyFacialSource} from '../web/public/dealer-face.mjs';
 const data={schemaVersion:1,duration:1,frames:[{time:0,weights:{jawOpen:0}},{time:.1,weights:{jawOpen:1}},{time:.2,weights:{jawOpen:0}}]};
 test('source-clock sampling supports seek, reverse scrub and playback-rate changes without state drift',()=>{
@@ -19,7 +22,7 @@ test('measured performance is rejected when the source video bytes change',async
  await assert.rejects(verifyFacialSource(source,Buffer.concat([bytes,Buffer.from([0])])),/does not match/);
 });
 test('exported face contains real deformation targets and separately weighted gaze bones',()=>{
- const bytes=fs.readFileSync(new URL('../web/public/dealers/astrid/rig/face-study/astrid-rigged.glb',import.meta.url));
+ const bytes=fs.readFileSync(new URL('astrid-rigged.glb',faceFolder));
  const jsonLength=bytes.readUInt32LE(12),json=JSON.parse(bytes.subarray(20,20+jsonLength)),bin=bytes.subarray(28+jsonLength);
  const node=json.nodes.find(n=>n.name==='Astrid_Face'),mesh=json.meshes[node.mesh],names=mesh.extras.targetNames;
  for(const name of ['jawOpen','mouthPucker','eyeBlinkLeft','eyeBlinkRight']){

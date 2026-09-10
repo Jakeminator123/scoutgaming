@@ -14,6 +14,11 @@ bpy.ops.wm.open_mainfile(filepath=str(folder/'astrid-rigged.blend'))
 data=json.loads((folder/'motion-samples.json').read_text())
 arm=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE')
 arm.animation_data_create()
+# The generated source's baseline clip is not an authored dealer action.
+arm.animation_data.action=None
+for track in list(arm.animation_data.nla_tracks):arm.animation_data.nla_tracks.remove(track)
+for old in list(bpy.data.actions):
+    if old.users==0:bpy.data.actions.remove(old)
 conversion=Matrix.Rotation(math.pi/2,4,'X')
 def matrix(values):return Matrix([values[i:i+4] for i in range(0,16,4)]).transposed()
 bind={b.name:b.matrix_local.copy() for b in arm.data.bones}

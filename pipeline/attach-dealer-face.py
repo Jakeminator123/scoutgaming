@@ -50,14 +50,15 @@ for v in bm.verts:
 bmesh.ops.delete(bm,geom=remove,context='VERTS');bmesh.update_edit_mesh(head.data,loop_triangles=True,destructive=True);bpy.ops.object.mode_set(mode='OBJECT')
 inverse=head.matrix_world.inverted()
 headBias=[v.value for v in head.data.attributes['RigHeadWeight'].data]
+basis=head.data.shape_keys.key_blocks[0]
 for v in head.data.vertices:
- w=head.matrix_world@v.co
+ rest=basis.data[v.index].co.copy();w=head.matrix_world@rest
  if w.z>=1.555:continue
  weight=max(0,min(1,(1.555-w.z)/.07));weight=weight*weight*(3-2*weight)
  weight*=1-headBias[v.index]
  target=w.copy();target.y+=.045*weight
  target.x=target.x*(1-weight)+max(-.048,min(.048,target.x))*weight
- delta=inverse@target-v.co
+ delta=inverse@target-rest
  for key in head.data.shape_keys.key_blocks:key.data[v.index].co+=delta
 # Blend the replacement neck's albedo into the retained neck, without projecting
 # shirt pixels onto skin. Geometry and every expression remain independently editable.
@@ -66,7 +67,7 @@ body.data.calc_loop_triangles();triangles=[];triangleUV=[];skinSamples=[]
 worldMatrix=body.matrix_world.copy();bodyWorld=[worldMatrix@v.co for v in body.data.vertices]
 for triangle in body.data.loop_triangles:
  points=[bodyWorld[i] for i in triangle.vertices];center=sum(points,Vector())/3
- if not (1.43<center.z<1.461 and center.y<.02 and abs(center.x)<.04):continue
+ if not (1.43<center.z<1.515 and center.y<.02 and abs(center.x)<.04):continue
  coords=[uv.data[i].uv.copy() for i in triangle.loops];sample=sum(coords,Vector((0,0)))/3;r,g,b=pixels[min(image.size[1]-1,int(sample.y*image.size[1])),min(image.size[0]-1,int(sample.x*image.size[0])),:3]
  if r>g*1.08 and g>b*1.04 and .15<r<.9:triangles.append(points);triangleUV.append(coords);skinSamples.append((r,g,b))
 if not triangles:raise ValueError('No retained neck skin for material seam matching')
@@ -74,11 +75,11 @@ print('Matched',len(triangles),'neck skin triangles',flush=True)
 skinMedian=np.median(skinSamples,axis=0)
 tree=BVHTree.FromPolygons([p for triangle in triangles for p in triangle],[(i*3,i*3+1,i*3+2) for i in range(len(triangles))],all_triangles=True)
 for vertex in head.data.vertices:
- point=head.matrix_world@vertex.co
+ rest=basis.data[vertex.index].co.copy();point=head.matrix_world@rest
  if point.z>=1.505 or point.y>.035:continue
  hit,normal,index,distance=tree.find_nearest(point);weight=max(0,min(1,(1.505-point.z)/.025));weight=weight*weight*(3-2*weight)
  weight*=1-headBias[vertex.index]
- target=point.copy();target.y+=(hit.y+.002-point.y)*weight;delta=head.matrix_world.inverted()@target-vertex.co
+ target=point.copy();target.y+=(hit.y+(-.0007 if point.z>=1.44 else .002)-point.y)*weight;delta=head.matrix_world.inverted()@target-rest
  for block in head.data.shape_keys.key_blocks:block.data[vertex.index].co+=delta
 binding=np.array([[v.value for v in head.data.attributes[name].data] for name in ['RigHeadWeight','RigNeckWeight','RigChestWeight']]).T
 head.vertex_groups.clear();groups=[head.vertex_groups.new(name=name) for name in ['Head','neck','Spine02']]
@@ -95,7 +96,7 @@ head.data.color_attributes.new(name='NeckBlend',type='FLOAT_COLOR',domain='CORNE
 blend=head.data.color_attributes['NeckBlend'];neckColor=head.data.color_attributes['NeckColor']
 matrix=head.matrix_world.copy()
 for loop in head.data.loops:
- point=matrix@head.data.vertices[loop.vertex_index].co;weight=max(0,min(1,(1.56-point.z)/.045));weight=weight*weight*(3-2*weight)
+ point=matrix@basis.data[loop.vertex_index].co;weight=max(0,min(1,(1.56-point.z)/.045));weight=weight*weight*(3-2*weight)
  # Albedo transitions by surface height independently of skeletal stiffness.
  # Head weighting must not leave a dark horizontal ring above the old neck.
  lateral=max(0,min(1,(.085-abs(point.x))/.025));weight*=lateral*lateral*(3-2*lateral)
