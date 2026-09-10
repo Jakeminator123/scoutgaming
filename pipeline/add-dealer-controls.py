@@ -5,7 +5,7 @@ import bpy
 from mathutils import Vector
 folder=Path(sys.argv[1]).resolve()
 bpy.ops.wm.open_mainfile(filepath=str(folder/'astrid-animated.blend'))
-scene=bpy.context.scene;scene.frame_set(1)
+scene=bpy.context.scene;scene.frame_end=max(s['frame'] for s in json.loads((folder/'motion-samples.json').read_text())['samples']);scene.frame_set(1)
 arm=next(o for o in scene.objects if o.type=='ARMATURE')
 collection=bpy.data.collections['DEALER_CONTROLS']
 def obj(name,location):

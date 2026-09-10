@@ -1,5 +1,5 @@
 import * as T from './vendor/three/three.module.js';
-import {solveArm,sampleTwoHandDelivery,ease} from './dealer-motion.mjs';
+import {solveArm,sampleTwoHandDelivery,sampleCardAction,ease} from './dealer-motion.mjs';
 
 // Uses the imported skin weights and skeleton. Never substitutes a rigid cutout.
 export function controlDealer(root,profile) {
@@ -63,9 +63,12 @@ export function poseDealer(rig,progress,target,outlet) {
   const reachWeight=progress<.2?0:progress<.69?ease((progress-.2)/.49):1-ease((progress-.75)/.25);
   rig.root.position.set(.095+(target[0]*.28-.095)*reachWeight,-.030-.025*reachWeight,0);
   rig.root.updateMatrixWorld(true);rig.lean(.4+.45*reachWeight,-target[0]*.22*reachWeight);rig.raiseGaze(.28+.34*reachWeight);const footErrors=rig.plantFeet();
-  const errors={};
+  const errors={};sample.contacts={};
   for(const side of ['left','right']){
-    const point=sample[side],direction=[point[0]-rig.root.position.x,0,Math.max(.25,point[2])],grip=sample[side+'Grip'];
+    const handoff=target[0]<0?ease((progress-.24)/.12)*(1-ease((progress-.40)/.14)):0;
+    const point=[...sample[side]],sign=side==='left'?1:-1;
+    point[0]+=sign*.025*handoff;sample.contacts[side]=point;
+    const direction=[(point[0]-rig.root.position.x)*(1-handoff)-sign*.20*handoff,0,Math.max(.25,point[2])],grip=sample[side+'Grip'];
     rig.flattenHand(side,direction);rig.curl(side,grip*.24);
     const wrist=new T.Vector3(...point).sub(rig.contactOffset(side)).add(new T.Vector3(0,.003,0)).toArray();
     errors[side]=rig.reach(side,wrist);rig.flattenHand(side,direction);rig.curl(side,grip*.24);
@@ -75,5 +78,48 @@ export function poseDealer(rig,progress,target,outlet) {
   const contactZ=sample.released?target[2]:sample.card[2];
   const bodyX=sample.released?target[0]*.28:rig.root.position.x;
   sample.cardYaw=Math.atan2(contactX-bodyX,Math.max(.25,contactZ));
-  return {sample,errors,footErrors,fingerError:rig.contactPoint(sample.active).distanceTo(new T.Vector3(...sample.hand))};
+  return {sample,errors,footErrors,fingerError:rig.contactPoint(sample.active).distanceTo(new T.Vector3(...sample.contacts[sample.active]))};
+}
+
+
+// Choreography candidates: consume authoritative card positions, never issue cards.
+export function poseCardAction(rig,progress,options) {
+  const sample=sampleCardAction(progress,options),t=Math.max(0,Math.min(1,progress));
+  rig.reset();
+  const weight=ease(t/.2)*(1-ease((t-.75)/.25));
+  const bodyTarget=sample.hand;
+  rig.root.position.set(.095+(bodyTarget[0]*.28-.095)*weight,-.030-.040*weight,0);
+  rig.root.updateMatrixWorld(true);const bend=Math.min(.45,Math.max(Math.abs(bodyTarget[0])*.40,bodyTarget[2]*.70));rig.lean(.4+bend*weight,-bodyTarget[0]*.22*weight);rig.raiseGaze(.28+bend*.75*weight);
+  const footErrors=rig.plantFeet(),errors={};sample.contacts={};
+  const handoff=options.kind==='collect'&&options.source[0]>0&&options.target[0]<0?ease((t-.24)/.12)*(1-ease((t-.40)/.14)):0;
+  for(const side of ['left','right']){
+    const sign=side==='left'?1:-1,point=[...sample[side]];
+    point[0]+=sign*.025*handoff;
+    const direction=[(point[0]-rig.root.position.x)*(1-handoff)-sign*.20*handoff,0,Math.max(.25,point[2])];
+    // A bounded wrist roll accompanies the lifted reveal; the rigid card turns fully.
+    const roll=options.kind==='reveal'&&side==='right'&&sample.picked&&!sample.released?.48*Math.sin(sample.cardPitch):0;
+    function orient(){rig.flattenHand(side,direction);if(roll){const q=rig.arms[side].hand.getWorldQuaternion(new T.Quaternion());q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,0,1),roll));rig.orientHand(side,q);}rig.curl(side,sample[side+'Grip']*.24);}
+    orient();sample.contacts[side]=point;
+    errors[side]=rig.reach(side,new T.Vector3(...point).sub(rig.contactOffset(side)).add(new T.Vector3(0,.003,0)).toArray());orient();
+  }
+  return {sample,errors,footErrors,fingerError:rig.contactPoint(sample.active).distanceTo(new T.Vector3(...sample.contacts[sample.active]))};
+}
+
+
+export function poseDealerGesture(rig,progress,{kind='greeting'}={}) {
+  if(!['greeting','accept-bets'].includes(kind))throw new Error('Unknown dealer gesture');
+  const t=Math.max(0,Math.min(1,progress)),w=ease(t/.28)*(1-ease((t-.72)/.28));
+  const base=poseDealer(rig,0,[0,.91055,.23],[.56,.935,.11]);
+  rig.raiseGaze(-.12*Math.sin(Math.PI*t)*Math.sin(Math.PI*t));
+  if(kind==='greeting'){
+    const idleQ=rig.arms.right.hand.getWorldQuaternion(new T.Quaternion());
+    const start=rig.handPosition('right'),goal=new T.Vector3(-.38,1.30,.10),point=start.lerp(goal,w);
+    base.errors.right=rig.reach('right',point.toArray());
+    const raised=rig.arms.right.flat.clone().premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),-Math.PI*.5));
+    const q=idleQ.slerp(raised,w);
+    q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,0,1),Math.sin(t*Math.PI*6)*.16*w));
+    rig.orientHand('right',q);rig.curl('right',.06*w);
+  }
+  base.sample={kind,phase:kind,active:'right',picked:false,released:false};base.fingerError=0;
+  return base;
 }

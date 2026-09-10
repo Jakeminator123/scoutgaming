@@ -37,7 +37,7 @@ export function sampleDelivery(time,{outlet,target,rest}) {
 export function seatTarget(seat,cardIndex=0,splitIndex=0) {
   if(!Number.isInteger(seat)||seat<0||seat>6)throw new Error('Seat must be 0–6');
   const angle=Math.PI*.15+seat*(Math.PI*.70/6);
-  return [Math.cos(angle)*.91+(splitIndex-.5)*.09+cardIndex*.024,.916,Math.sin(angle)*.66-.05-cardIndex*.009];
+  return [Math.cos(angle)*.91+(splitIndex-.5)*.09+cardIndex*.024,.91055,Math.sin(angle)*.66-.05-cardIndex*.009];
 }
 
 export function sampleTwoHandDelivery(time,{outlet,target,leftRest=[.22,.92,.23],rightRest=[-.22,.92,.23]}) {
@@ -49,4 +49,29 @@ export function sampleTwoHandDelivery(time,{outlet,target,leftRest=[.22,.92,.23]
   else if(t<.69){const u=ease((t-.39)/.3);card=mix(transfer,target,u);card[1]+=Math.sin(Math.PI*u)*.03;right=[...card];left=mix(transfer,leftRest,ease((t-.39)/.18));rightGrip=1;phase='carry';active='right';}
   else{card=[...target];const u=ease((t-.75)/.25);right=mix(target,rightRest,u);right[1]+=Math.sin(Math.PI*u)*.12;left=[...leftRest];rightGrip=Math.max(0,1-(t-.69)/.045);phase=t<.75?'release':'return';active='right';}
   return {hand:active==='left'?left:right,left,right,card,leftGrip,rightGrip,grip:active==='left'?leftGrip:rightGrip,phase,active,picked:t>=.2,released:t>=.69};
+}
+
+
+export const CARD_ACTION_SECONDS={reveal:1.8,collect:2.0};
+export function sampleCardAction(time,{kind,source,target=source,initialYaw=0}) {
+  const t=Math.max(0,Math.min(1,time));
+  if(!['reveal','collect'].includes(kind))throw new Error('Unknown card action');
+  if(kind==='collect'){
+    const one=source[0]<=0?sampleDelivery(t,{outlet:source,target,rest:[-.22,.92,.23]}):null;
+    const s=one?{...one,right:one.hand,left:[.22,.92,.23],rightGrip:one.grip,leftGrip:0,active:'right'}:sampleTwoHandDelivery(t,{outlet:source,target});
+    return {...s,visible:true,cardPitch:0,cardYaw:initialYaw,kind};
+  }
+  const rest=[-.22,.92,.23],card=[...source],start=add(source,[0,0,.035]),end=add(source,[0,0,-.035]);let right,phase,pitch=Math.PI,grip=0;
+  if(t<.2){right=mix(rest,start,ease(t/.2));phase='approach';}
+  else if(t<.72){
+    const u=(t-.2)/.52;
+    card[1]+=.11*Math.sin(Math.PI*u);
+    pitch=Math.PI*(1-ease((u-.12)/.76));
+    right=add(card,[0,.035*Math.sin(pitch),-.035*Math.cos(pitch)]);grip=1;phase='reveal';
+  }else{
+    pitch=0;const u=ease((t-.77)/.23);
+    right=mix(end,rest,u);right[1]+=.06*Math.sin(Math.PI*u);
+    phase=t<.77?'release':'return';grip=Math.max(0,1-(t-.72)/.04);
+  }
+  return {kind,hand:right,right,left:[.22,.92,.23],card,cardPitch:pitch,cardYaw:initialYaw,rightGrip:grip,leftGrip:0,grip,phase,active:'right',visible:true,picked:t>=.2,released:t>=.72};
 }

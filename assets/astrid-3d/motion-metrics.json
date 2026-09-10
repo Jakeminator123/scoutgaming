@@ -2,52 +2,113 @@
   "status": "numeric-only-not-visual-approval",
   "summary": [
     {
-      "seat": 1,
+      "action": "Deal_Seat_01_Contact_Study",
       "maxActiveWristErrorMm": 0,
       "maxCarryFingerErrorMm": 3,
       "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Collect_Card_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 3,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 0,
+      "maxAnkleErrorMm": 0
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "maxActiveWristErrorMm": 0,
+      "maxCarryFingerErrorMm": 0,
+      "maxAnkleErrorMm": 0
+    }
+  ],
+  "collectionCoverage": [
+    {
+      "seat": 1,
+      "wristErrorMm": 1.570092458683775e-13,
+      "ankleErrorMm": 1.6883057536160647e-13
     },
     {
       "seat": 2,
-      "maxActiveWristErrorMm": 0,
-      "maxCarryFingerErrorMm": 3,
-      "maxAnkleErrorMm": 0
+      "wristErrorMm": 1.570092458683775e-13,
+      "ankleErrorMm": 1.6883057536160647e-13
     },
     {
       "seat": 3,
-      "maxActiveWristErrorMm": 0,
-      "maxCarryFingerErrorMm": 3,
-      "maxAnkleErrorMm": 0
+      "wristErrorMm": 1.570092458683775e-13,
+      "ankleErrorMm": 1.6883057536160647e-13
     },
     {
       "seat": 4,
-      "maxActiveWristErrorMm": 0,
-      "maxCarryFingerErrorMm": 3,
-      "maxAnkleErrorMm": 0
+      "wristErrorMm": 1.2412670766236365e-13,
+      "ankleErrorMm": 1.6883057536160647e-13
     },
     {
       "seat": 5,
-      "maxActiveWristErrorMm": 0,
-      "maxCarryFingerErrorMm": 3,
-      "maxAnkleErrorMm": 0
+      "wristErrorMm": 1.1443916996305594e-13,
+      "ankleErrorMm": 1.6653345369377348e-13
     },
     {
       "seat": 6,
-      "maxActiveWristErrorMm": 0,
-      "maxCarryFingerErrorMm": 3,
-      "maxAnkleErrorMm": 0
+      "wristErrorMm": 1.2412670766236365e-13,
+      "ankleErrorMm": 1.6883057536160647e-13
     },
     {
       "seat": 7,
-      "maxActiveWristErrorMm": 0,
-      "maxCarryFingerErrorMm": 3,
-      "maxAnkleErrorMm": 0
-    },
-    {
-      "seat": 8,
-      "maxActiveWristErrorMm": 0,
-      "maxCarryFingerErrorMm": 3,
-      "maxAnkleErrorMm": 0
+      "wristErrorMm": 1.570092458683775e-13,
+      "ankleErrorMm": 1.6883057536160647e-13
     }
   ]
 }
