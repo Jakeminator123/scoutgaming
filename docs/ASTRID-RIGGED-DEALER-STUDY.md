@@ -25,7 +25,7 @@ The source is a Meshy7 output (job cc1a080e-8d37-4f3c-847d-5f70bf1c3125), using 
 
 - Required all-four-dealer sync probe passed; existing regression baseline unchanged. Existing missing speech takes remain documented by that audit.
 - Repository pre-commit suite passed 49 tests; five dealer-motion tests passed, including two-hand continuity at boundaries, release permanence and preserved segment lengths.
-- Twelve-action sweep: maximum active wrist and ankle reach residuals round to 0mm. The estimated index contact marker stays 3mm above the mathematical card point. This does NOT measure the actual skinned fingertip surface, occlusion or physical grip.
+- Twelve-action sweep: maximum active wrist and ankle reach residuals round to 0mm. The actual deformed fingertip surface stays 0.7mm above the mathematical card point. Whole-hand minimum height across all twelve actions is at least 911mm over 910mm felt; collection from all seven seats stays above 910.953mm. These measurements do not prove physical grip or occlusion.
 - GLB reimported animation samples versus runtime joint matrices: worst joint displacement 0.648mm, worst angular difference 0.132 degrees. See export-verification.json.
 - Four manual IK target perturbation tests: endpoint residual below 0.002mm. See control-verification.json.
 - Browser inspection of both outer-seat delivery poses confirmed distinct reach and a planted card; static face and coarse hand texture remain visibly unfinished. This inspection does not approve all poses, skin intersections, motion quality or physical-device performance.
@@ -35,7 +35,7 @@ Still required: facial topology/weights, eyes/blinks and exact audio-driven mout
 
 ## Follow-up: observed hand collision and additional actions
 
-A close browser inspection at transfer progress .39 found overlapping hands that numerical reach checks missed. The correction separates the left/right contact points by 50mm across the card and blends opposing palm angles. A second close inspection showed separated hands. sample.contacts exposes the two mathematical targets; the small fingerError is measured against those, not the card centre. Actual skinned contact and full-sequence collision approval remain open.
+A close browser inspection at transfer progress .39 found overlapping hands that numerical reach checks missed. The correction separates the left/right contact points by 50mm across the card and blends opposing palm angles. A second close inspection showed separated hands. sample.contacts exposes the two mathematical targets; the small fingerError is measured against those, not the card centre. The subsequent actual-skin correction below supersedes the earlier bone-marker contact check; full visual grip approval remains open.
 
 poseCardAction(rig, progress, options) supports reveal and single-card collection. It returns the same diagnostics plus sample.cardPitch, cardYaw, visible and contacts. Reveal keeps the card visible, lifts it, rotates from face-down to face-up and returns it to its original landing. The finger target follows a rotating edge. Collection chooses the near hand and only transfers between hands when moving from positive X to the negative-X discard area. Numeric sweeps of collection from all seven seat targets show no reach residual. This does not test arbitrary large split offsets or actual card pile collisions. The one baked collection action starts at the central seat; runtime accepts the actual source.
 
@@ -49,3 +49,16 @@ Export landing heights match the real adapter: first-card centre .91055m over .9
 ## Native control-root correction
 
 Combined-scene rendering exposed an approximately 0.996m downward offset introduced when parenting the armature to CTRL_BODY after resetting that control's location without evaluating its world matrix. The GLB, exported before control creation, was unaffected. The control pipeline now evaluates the reset before parenting and explicitly preserves the parent inverse/world matrix. Native verification runs after all controls and compares every joint at four frames in each of the twelve actions against the sampled runtime world positions; maximum residual is 0.0013mm. See native-verification.json. Earlier native apron checks made against the displaced model are withdrawn and must be rerun on the corrected project.
+
+
+## Actual skin contact correction and appearance boundary
+
+The solver now measures deformed mesh vertices with the actual skin weights, instead of extrapolating an index bone. It lowers finger curl, pitches the palm and levels the thumb to prevent the palm heel and thumb penetrating the felt. Independent Three.js applyBoneTransform comparisons differ by only 0.000071mm. Three new tests check the actual skin at all seven delivery targets, seven reveal/collection sources and wrist continuity; all pass. The GLB and native twelve-action source were rebuilt from this solver. Native post-control world residual is 0.0012mm.
+
+The game-integration task reran the registered native model against the apron: zero failures across 84 deformed-mesh samples. The subsequent dense audit also passed: all 626 authored frames, zero deep apron intersections, runtime head registration verified on every frame. Evidence is recorded separately in ASTRID-RIGGED-TABLE-REVIEW.md. The earlier zero-collision claim for the incorrectly positioned native model remains withdrawn. Browser review of the updated outer-seat release shows actual fingers over the card and the hand above the felt. The hand camera now follows the card so small review viewports retain the contact area.
+
+All four dealers completed two consecutive rendered rehearsal plays in the game-integration task; this establishes playback continuity, not per-line lip-sync acceptance. The sync probe still passes the unchanged baseline, with known missing speech takes reported separately.
+
+A normal-only native variant, assets/astrid-3d/astrid-clean-surface.blend, welds duplicate seams and clears broken custom normals while retaining source positions, weights and materials (zero retained-vertex mismatches). It is an optional editable variant, not the runtime replacement. A local photographic head-projection study was rejected after front and three-quarter rendering: projected lighting, coarse geometry and molded hair remain visibly wrong. It is staged, not installed. See ASTRID-APPEARANCE-STUDY.md. A properly modeled head with separate eyes, eyelids, oral cavity and hair remains necessary for the requested realistic Astrid.
+
+Local CPU pose timing on Apple M2: 357 samples, mean 1.98ms, p95 4.24ms, max 7.31ms. See pose-timing.json. This excludes WebGL, UI and scheduling; it is not a browser frame-rate or mobile performance approval.

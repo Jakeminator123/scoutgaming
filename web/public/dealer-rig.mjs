@@ -22,6 +22,25 @@ export function controlDealer(root,profile) {
     const prefix=side[0].toUpperCase()+side.slice(1),thigh=bones.get(prefix+'UpLeg'),shin=bones.get(prefix+'Leg'),foot=bones.get(prefix+'Foot');
     if(thigh&&shin&&foot){const h=thigh.getWorldPosition(new T.Vector3()),k=shin.getWorldPosition(new T.Vector3()),f=foot.getWorldPosition(new T.Vector3());legs[side]={thigh,shin,foot,l1:h.distanceTo(k),l2:k.distanceTo(f),rest:f.clone(),q:foot.getWorldQuaternion(new T.Quaternion())};}
   }
+  const skinSets={left:[],right:[]};
+  root.updateMatrixWorld(true);
+  root.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const indices=mesh.geometry.attributes.skinIndex,weights=mesh.geometry.attributes.skinWeight;
+    for(const side of ['left','right']){const prefix=side[0].toUpperCase()+side.slice(1),hand=[],finger=[],thumb=[];
+      for(let i=0;i<indices.count;i++){let hw=0,fw=0,tw=0;for(let j=0;j<4;j++){const name=mesh.skeleton.bones[indices.getComponent(i,j)]?.name??'',w=weights.getComponent(i,j);if(name===prefix+'Hand'||(profile.bones.fingers?.[side]??[]).includes(name))hw+=w;if((profile.bones.fingers?.[side]??[]).includes(name)&&!name.includes('Thumb')&&/[23]$/.test(name))fw+=w;if(name.startsWith(prefix+'Thumb'))tw+=w;}if(hw>.5)hand.push(i);if(fw>.65)finger.push(i);if(tw>.5)thumb.push(i);}
+      if(hand.length&&finger.length)skinSets[side].push({mesh,hand,finger,thumb});
+    }
+  });
+  function skinPoint(mesh,index){const attrs=mesh.geometry.attributes,p=new T.Vector3().fromBufferAttribute(attrs.position,index).applyMatrix4(mesh.bindMatrix),result=new T.Vector3(),matrices=mesh.skeleton.boneMatrices;
+    for(let j=0;j<4;j++){const w=attrs.skinWeight.getComponent(index,j);if(!w)continue;const k=attrs.skinIndex.getComponent(index,j)*16;result.x+=(matrices[k]*p.x+matrices[k+4]*p.y+matrices[k+8]*p.z+matrices[k+12])*w;result.y+=(matrices[k+1]*p.x+matrices[k+5]*p.y+matrices[k+9]*p.z+matrices[k+13])*w;result.z+=(matrices[k+2]*p.x+matrices[k+6]*p.y+matrices[k+10]*p.z+matrices[k+14])*w;}
+    return result.applyMatrix4(mesh.bindMatrixInverse).applyMatrix4(mesh.matrixWorld);
+  }
+  function skinContact(side){
+    let lowest=null;
+    for(const set of skinSets[side]){set.mesh.skeleton.update();for(const index of set.finger){const p=skinPoint(set.mesh,index);if(!lowest||p.y<lowest.y)lowest=p;}}
+    if(!lowest)throw new Error('Actual skinned fingertip geometry is required for dealer contact');return lowest;
+  }
+  function handLowest(side){let result=null;for(const set of skinSets[side]){set.mesh.skeleton.update();for(const index of set.hand){const point=skinPoint(set.mesh,index);if(!result||point.y<result.point.y){const ids=set.mesh.geometry.attributes.skinIndex,weights=set.mesh.geometry.attributes.skinWeight;result={point,index,bones:Array.from({length:4},(_,j)=>[set.mesh.skeleton.bones[ids.getComponent(index,j)].name,weights.getComponent(index,j)])};}}}return result;}
+  function handFloor(side){return handLowest(side).point.y;}
   const v=arr=>new T.Vector3(...arr);
   function aim(joint,child,target){
     root.updateMatrixWorld(true);
@@ -46,12 +65,17 @@ export function controlDealer(root,profile) {
     root.updateMatrixWorld(true);
   }
   return {root,bones,arms,reset,reach,orientHand,bone,
-    flattenHand(side,direction=[0,0,1]){const yaw=Math.atan2(direction[0],direction[2]);orientHand(side,arms[side].flat.clone().premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),yaw)));},
+    flattenHand(side,direction=[0,0,1]){const yaw=Math.atan2(direction[0],direction[2]);orientHand(side,arms[side].flat.clone().premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),.15)).premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),yaw)));},
     plantFeet(){const errors={};for(const [side,leg] of Object.entries(legs)){const h=leg.thigh.getWorldPosition(new T.Vector3()),pole=h.clone().add(new T.Vector3(0,-.3,.3)),s=solveArm(h.toArray(),leg.rest.toArray(),leg.l1,leg.l2,pole.toArray());aim(leg.thigh,leg.shin,new T.Vector3(...s.elbow));aim(leg.shin,leg.foot,new T.Vector3(...s.wrist));leg.foot.quaternion.copy(leg.foot.parent.getWorldQuaternion(new T.Quaternion()).invert().multiply(leg.q));errors[side]=s.error;}root.updateMatrixWorld(true);return errors;},
     lean(angle,lateral=0){const spine=bones.get('Spine02');if(!spine)return;const q=spine.getWorldQuaternion(new T.Quaternion());q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),angle));q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,0,1),lateral));spine.quaternion.copy(spine.parent.getWorldQuaternion(new T.Quaternion()).invert().multiply(q));root.updateMatrixWorld(true);},
     raiseGaze(angle){const head=bone('head'),q=head.getWorldQuaternion(new T.Quaternion());q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),-angle));head.quaternion.copy(head.parent.getWorldQuaternion(new T.Quaternion()).invert().multiply(q));root.updateMatrixWorld(true);},
     curl(side,amount){for(const name of profile.bones.fingers?.[side]??[]){const b=bones.get(name);if(b)b.quaternion.copy(rest.get(name).q).multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),amount*(name.includes('Thumb')?.35:1)));}root.updateMatrixWorld(true);},
-    contactPoint(side){const prefix=side[0].toUpperCase()+side.slice(1),tip=bones.get(prefix+'Index3'),middle=bones.get(prefix+'Index2');if(!tip||!middle)throw new Error('Finger contact requires index joints');const p=tip.getWorldPosition(new T.Vector3()),m=middle.getWorldPosition(new T.Vector3());return p.add(p.clone().sub(m).multiplyScalar(.7));},
+    levelThumb(side){const prefix=side[0].toUpperCase()+side.slice(1),joint=bones.get(prefix+'Thumb1'),tip=bones.get(prefix+'Thumb3');if(!joint||!tip)return;
+      for(let step=0;step<2;step++){const floor=skinContact(side).y;let lowest=Infinity;for(const set of skinSets[side])for(const index of set.thumb)lowest=Math.min(lowest,skinPoint(set.mesh,index).y);if(lowest>=floor+.0003)break;const target=tip.getWorldPosition(new T.Vector3());target.y+=floor-lowest+.0006;aim(joint,tip,target);}
+    },
+    contactPoint:skinContact,
+    handFloor,handLowest,
+    verifySkinMath(){let worst=0;for(const sets of Object.values(skinSets))for(const set of sets){set.mesh.skeleton.update();for(let j=0;j<set.hand.length;j+=Math.max(1,Math.floor(set.hand.length/16))){const index=set.hand[j],reference=new T.Vector3().fromBufferAttribute(set.mesh.geometry.attributes.position,index);set.mesh.applyBoneTransform(index,reference);set.mesh.localToWorld(reference);worst=Math.max(worst,reference.distanceTo(skinPoint(set.mesh,index)));}}return worst;},
     contactOffset(side){return this.contactPoint(side).sub(this.handPosition(side));},
     handPosition(side){return arms[side].hand.getWorldPosition(new T.Vector3());},
     diagnostics(){return {bones:bones.size,arms:Object.fromEntries(Object.entries(arms).map(([k,a])=>[k,{upper:a.l1,lower:a.l2}]))};},
@@ -69,9 +93,9 @@ export function poseDealer(rig,progress,target,outlet) {
     const point=[...sample[side]],sign=side==='left'?1:-1;
     point[0]+=sign*.025*handoff;sample.contacts[side]=point;
     const direction=[(point[0]-rig.root.position.x)*(1-handoff)-sign*.20*handoff,0,Math.max(.25,point[2])],grip=sample[side+'Grip'];
-    rig.flattenHand(side,direction);rig.curl(side,grip*.24);
-    const wrist=new T.Vector3(...point).sub(rig.contactOffset(side)).add(new T.Vector3(0,.003,0)).toArray();
-    errors[side]=rig.reach(side,wrist);rig.flattenHand(side,direction);rig.curl(side,grip*.24);
+    rig.flattenHand(side,direction);rig.curl(side,grip*.03);rig.levelThumb(side);
+    const wrist=new T.Vector3(...point).sub(rig.contactOffset(side)).add(new T.Vector3(0,.0007,0)).toArray();
+    errors[side]=rig.reach(side,wrist);rig.flattenHand(side,direction);rig.curl(side,grip*.03);rig.levelThumb(side);
   }
   // Card local +Z follows the hand's radial direction. Freeze at release.
   const contactX=sample.released?target[0]:sample.card[0];
@@ -98,9 +122,9 @@ export function poseCardAction(rig,progress,options) {
     const direction=[(point[0]-rig.root.position.x)*(1-handoff)-sign*.20*handoff,0,Math.max(.25,point[2])];
     // A bounded wrist roll accompanies the lifted reveal; the rigid card turns fully.
     const roll=options.kind==='reveal'&&side==='right'&&sample.picked&&!sample.released?.48*Math.sin(sample.cardPitch):0;
-    function orient(){rig.flattenHand(side,direction);if(roll){const q=rig.arms[side].hand.getWorldQuaternion(new T.Quaternion());q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,0,1),roll));rig.orientHand(side,q);}rig.curl(side,sample[side+'Grip']*.24);}
+    function orient(){rig.flattenHand(side,direction);if(roll){const q=rig.arms[side].hand.getWorldQuaternion(new T.Quaternion());q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,0,1),roll));rig.orientHand(side,q);}rig.curl(side,sample[side+'Grip']*.03);rig.levelThumb(side);}
     orient();sample.contacts[side]=point;
-    errors[side]=rig.reach(side,new T.Vector3(...point).sub(rig.contactOffset(side)).add(new T.Vector3(0,.003,0)).toArray());orient();
+    errors[side]=rig.reach(side,new T.Vector3(...point).sub(rig.contactOffset(side)).add(new T.Vector3(0,.0007,0)).toArray());orient();
   }
   return {sample,errors,footErrors,fingerError:rig.contactPoint(sample.active).distanceTo(new T.Vector3(...sample.contacts[sample.active]))};
 }
