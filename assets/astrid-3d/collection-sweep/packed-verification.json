@@ -1,6 +1,6 @@
 {
-  "blendSha256": "b67ecb1bacc44ea15db3ef26891bcd715c44af0159b1bfad076c2d7bf265472c",
-  "glbSha256": "431cbb2e2c01b92618d6462b847fc62b3f2f44cb7552edb971e336b2e7a06df4",
+  "blendSha256": "a96ce507f9d9670e4c927a561bfa29d1dbee3a35416751000c31a13e831f6600",
+  "glbSha256": "07663fa528d8c3115eb926f69a33a5ac1cffbe377c17df12999523d4a20e16d8",
   "bones": 56,
   "bodyActions": 13,
   "cardActions": 16,
@@ -9,5 +9,7 @@
   "activeNlaTracks": [
     "Collect_All_Cards_Sweep_Study"
   ],
-  "status": "packed project reopened; visual collection acceptance remains separate"
+  "status": "packed project reopened; visual collection acceptance remains separate",
+  "oralFitVersion": 1,
+  "posteriorNeckFitVersion": 1
 }

@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import * as T from '../web/public/vendor/three/three.module.js';
 const folder=process.argv[2],output=process.argv[3]??'astrid-collection-sweep.glb';
-const source=new URL('../web/public/dealers/astrid/rig/face-study/astrid-rigged.glb',import.meta.url),raw=fs.readFileSync(source),data=JSON.parse(fs.readFileSync(path.join(folder,'motion-samples.json')));
+const source=process.argv[4]??new URL('../web/public/dealers/astrid/rig/face-study/astrid-rigged.glb',import.meta.url),raw=fs.readFileSync(source),data=JSON.parse(fs.readFileSync(path.join(folder,'motion-samples.json')));
 assert.equal(crypto.createHash('sha256').update(raw).digest('hex'),data.modelSha256);
 const size=raw.readUInt32LE(12),j=JSON.parse(raw.subarray(20,20+size)),original=raw.subarray(28+size,28+size+j.buffers[0].byteLength),parts=[original];let offset=original.length;
 function append(values,type,componentType=5126,target){const size=componentType===5126?4:2,n={SCALAR:1,VEC3:3,VEC4:4}[type],padding=(4-offset%4)%4;if(padding){parts.push(Buffer.alloc(padding));offset+=padding;}const bytes=Buffer.alloc(values.length*size);values.forEach((v,i)=>componentType===5126?bytes.writeFloatLE(v,i*size):bytes.writeUInt16LE(v,i*size));const view=j.bufferViews.length;j.bufferViews.push({buffer:0,byteOffset:offset,byteLength:bytes.length,...(target?{target}:{})});parts.push(bytes);offset+=bytes.length;const index=j.accessors.length,a={bufferView:view,componentType,count:values.length/n,type};if(type==='SCALAR'||target===34962){a.min=Array.from({length:n},(_,c)=>Math.min(...values.filter((_,i)=>i%n===c)));a.max=Array.from({length:n},(_,c)=>Math.max(...values.filter((_,i)=>i%n===c)));}j.accessors.push(a);return index;}

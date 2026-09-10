@@ -19,8 +19,8 @@
       "controls": []
     },
     "astrid-rigged.blend": {
-      "sha256": "05c5dd1e5ba54c8d7358c9b74af8f8361c1dbeb361ab9fae60fe6e2ffc35485d",
-      "bytes": 41666484,
+      "sha256": "f3e7642bea2f4b060a437e7152fa446ac4ed17eb24eb9a05667c915482e56b9c",
+      "bytes": 41661570,
       "meshes": 8,
       "packedImages": 9,
       "shapeKeys": {
@@ -40,11 +40,13 @@
         "CTRL_RIGHT_ELBOW",
         "CTRL_BODY",
         "CTRL_LOOK"
-      ]
+      ],
+      "oralFitVersion": 1,
+      "posteriorNeckFitVersion": 1
     },
     "astrid-animated.blend": {
-      "sha256": "effcf6f71ae8d0568fdcb86cfb97bc4c8c537993ab8b0e720092395bb8b34650",
-      "bytes": 44646341,
+      "sha256": "813367b2b5cfddcf30519c5366470a11c08aae3849ca190a8d3ea282488bf40b",
+      "bytes": 44636540,
       "meshes": 8,
       "packedImages": 9,
       "shapeKeys": {
@@ -79,11 +81,13 @@
         "CTRL_RIGHT_FOOT",
         "CTRL_RIGHT_KNEE",
         "CTRL_HEAD_ROTATION"
-      ]
+      ],
+      "oralFitVersion": 1,
+      "posteriorNeckFitVersion": 1
     },
     "astrid-goodluck.blend": {
-      "sha256": "04cf28f656162d7463079f4a5b2715cc93ab0de54d72a6e58540273288d9640f",
-      "bytes": 45149298,
+      "sha256": "6904f16ede6fc069ff3678ed8dd0473d9dfb2e6eac2797b6ba62708bf6189991",
+      "bytes": 45145888,
       "meshes": 8,
       "packedImages": 9,
       "shapeKeys": {
@@ -123,7 +127,9 @@
         "CTRL_RIGHT_FOOT",
         "CTRL_RIGHT_KNEE",
         "CTRL_HEAD_ROTATION"
-      ]
+      ],
+      "oralFitVersion": 1,
+      "posteriorNeckFitVersion": 1
     }
   }
 }

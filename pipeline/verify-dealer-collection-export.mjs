@@ -6,7 +6,7 @@ import * as T from '../web/public/vendor/three/three.module.js';
 const folder=process.argv[2],bytes=fs.readFileSync(path.join(folder,process.argv[3]??'astrid-collection-sweep.glb'));
 const length=bytes.readUInt32LE(12),json=JSON.parse(bytes.subarray(20,20+length)),bin=bytes.subarray(28+length);
 const data=JSON.parse(fs.readFileSync(path.join(folder,'motion-samples.json')));
-const sourceBytes=fs.readFileSync(new URL('../web/public/dealers/astrid/rig/face-study/astrid-rigged.glb',import.meta.url)),sourceSize=sourceBytes.readUInt32LE(12),source=JSON.parse(sourceBytes.subarray(20,20+sourceSize));
+const sourceBytes=fs.readFileSync(process.argv[4]??new URL('../web/public/dealers/astrid/rig/face-study/astrid-rigged.glb',import.meta.url)),sourceSize=sourceBytes.readUInt32LE(12),source=JSON.parse(sourceBytes.subarray(20,20+sourceSize));
 assert.equal(crypto.createHash('sha256').update(sourceBytes).digest('hex'),data.modelSha256);
 assert.ok(bin.subarray(0,source.buffers[0].byteLength).equals(sourceBytes.subarray(28+sourceSize,28+sourceSize+source.buffers[0].byteLength)),'Original geometry and texture bytes changed');
 for(const key of ['accessors','bufferViews','materials','meshes'])assert.deepEqual(json[key].slice(0,source[key].length),source[key],`${key} changed`);

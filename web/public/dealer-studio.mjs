@@ -51,10 +51,18 @@ try{
  for(const asset of [table.scene,room.scene]){scene.add(asset);asset.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});}
  tableAssets=bindBlackjackAssets(table.scene);scene.updateMatrixWorld(true);outlet=tableAssets.nodes.Shoe_Outlet.getWorldPosition(new T.Vector3()).toArray();
  profile=await fetch(rigFolder+'profile.json').then(r=>{if(!r.ok)throw new Error('Modellbearbetning pågår. Ladda om när exporten är klar.');return r.json();});
- const gltf=await new GLTFLoader().loadAsync(rigFolder+'astrid-rigged.glb');scene.add(gltf.scene);rig=controlDealer(gltf.scene,profile);skeleton=new T.SkeletonHelper(gltf.scene);skeleton.visible=false;scene.add(skeleton);
+ let modelSha256;
+ const gltf=faceStudy?await (async()=>{
+  const [response,manifestResponse]=await Promise.all([fetch(rigFolder+'astrid-rigged.glb'),fetch(rigFolder+'speech-manifest.json')]);
+  if(!response.ok||!manifestResponse.ok)throw new Error('Kunde inte läsa modell och talbindning.');
+  const bytes=await response.arrayBuffer(),manifest=await manifestResponse.json();
+  modelSha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+  if(modelSha256!==manifest.modelSha256)throw new Error('Talets kalibrering tillhör en annan modellversion.');
+  return loader.parseAsync(bytes,rigFolder);
+ })():await loader.loadAsync(rigFolder+'astrid-rigged.glb');scene.add(gltf.scene);rig=controlDealer(gltf.scene,profile);skeleton=new T.SkeletonHelper(gltf.scene);skeleton.visible=false;scene.add(skeleton);
  if(faceStudy){
   gltf.scene.traverse(o=>o.layers.enable(1));
-  faceController=controlDealerFace(gltf.scene);facePerformance=prepareFacialPerformance(await fetch(rigFolder+'goodluck-face.json').then(r=>r.json()));document.body.classList.add('face-study');$('#face-view').hidden=$('#face-controls').hidden=false;
+  faceController=controlDealerFace(gltf.scene);facePerformance=prepareFacialPerformance(await fetch(rigFolder+'goodluck-face.json').then(r=>r.json()),{modelSha256});document.body.classList.add('face-study');$('#face-view').hidden=$('#face-controls').hidden=false;
   const stopIdle=()=>{faceIdle=false;$('#face-idle').setAttribute('aria-pressed','false');$('#face-idle').textContent='Starta viloblick';};
   const clearManual=()=>{for(const key of Object.keys(manualFace))manualFace[key]=0;for(const id of ['face-jaw','face-close','face-blink','face-smile'])$('#'+id).value=0;};
   for(const id of ['face-yaw','face-pitch'])$('#'+id).oninput=$('#'+id).onchange=stopIdle;
