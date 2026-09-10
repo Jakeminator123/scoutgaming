@@ -34,7 +34,7 @@ $('#clean').onclick=()=>{const clean=document.body.classList.toggle('clean');$('
 let yaw=0,pitch=0,drag=null;
 $('#stage').onpointerdown=e=>{$('#stage').setPointerCapture(e.pointerId);drag=[e.clientX,e.clientY];};$('#stage').onpointermove=e=>{if(!drag)return;yaw+=(e.clientX-drag[0])*.006;pitch=T.MathUtils.clamp(pitch+(e.clientY-drag[1])*.004,-.3,.6);drag=[e.clientX,e.clientY];};$('#stage').onpointerup=$('#stage').onpointercancel=()=>drag=null;
 for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>{view=b.dataset.view;yaw=pitch=0;for(const c of document.querySelectorAll('[data-view]'))c.setAttribute('aria-pressed',String(c===b));};
-function setCamera(){const narrow=innerWidth<900;const cfg=view==='body'?{look:[0,.95,0],d:narrow?4.8:3.8,y:1.55}:view==='hands'?{look:[-.15,1.03,.1],d:1.8,y:1.65}:{look:[0,1.02,.15],d:narrow?3.8:2.65,y:1.65};camera.position.set(Math.sin(yaw)*cfg.d,cfg.y+pitch,Math.cos(yaw)*cfg.d);camera.lookAt(...cfg.look);}
+function setCamera(){const narrow=innerWidth<900;const cfg=view==='body'?{look:[0,.95,0],d:narrow?4.8:3.8,y:1.55}:view==='hands'?{look:[moving?.visible?moving.position.x:0,1.0,moving?.visible?moving.position.z:.2],d:1.1,y:1.45}:{look:[0,1.02,.15],d:narrow?3.8:2.65,y:1.65};camera.position.set((view==='hands'?cfg.look[0]:0)+Math.sin(yaw)*cfg.d,cfg.y+pitch,Math.cos(yaw)*cfg.d);camera.lookAt(...cfg.look);}
 try{
  const loader=new GLTFLoader();
  const [table,room]=await Promise.all([loader.loadAsync('assets/blackjack-3d/blackjack-table.glb'),loader.loadAsync('assets/blackjack-3d/blackjack-room.glb')]);
