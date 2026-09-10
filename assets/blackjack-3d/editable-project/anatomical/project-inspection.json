@@ -404,7 +404,7 @@
       "constraints": 9
     }
   ],
-  "meshes": 230,
+  "meshes": 231,
   "limitations": [
     "Editable facial shapes and gaze bones are included. Captured speech is provided in the separate anatomical speech project and in-game manifests; this body study timeline contains no speech.",
     "Only the named exported actions listed here are delivered; no implied gesture support.",
