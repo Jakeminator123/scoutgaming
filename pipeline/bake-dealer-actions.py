@@ -38,7 +38,7 @@ for seat, specification in enumerate(data['actions']):
     actions.append(action)
 arm.animation_data.action=actions[3]
 scene=bpy.context.scene;scene.frame_start=1;scene.frame_end=max(s['frame'] for s in data['samples']);scene.render.fps=30;scene.frame_set(1)
-scene['animation_status']='Twelve dealing, reveal, collection and greeting studies. Numeric reach verified, visual skin/contact not approved. No facial/lip sync animation.'
+scene['animation_status']='Twelve dealing, reveal, collection and greeting studies. Numeric reach verified; new asset variants require rendered review. '+('Facial shape keys and gaze bones are editable; captured speech performance is separate.' if 'EyeLeft' in arm.data.bones else 'No facial/lip sync animation.')
 # A delivery camera and lighting make the editable project immediately inspectable.
 camera=bpy.data.objects.new('Dealer_Review_Camera',bpy.data.cameras.new('Dealer_Review_Camera'))
 scene.collection.objects.link(camera);camera.location=(0,-3.0,1.65);camera.rotation_euler=(Vector((0,0,1.0))-camera.location).to_track_quat('-Z','Y').to_euler();camera.data.lens=45;scene.camera=camera

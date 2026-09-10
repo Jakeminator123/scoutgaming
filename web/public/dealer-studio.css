@@ -2,3 +2,7 @@
 body.clean aside,body.clean .console{display:none}body.clean header{opacity:.3}
 
 .actions{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.actions button{font-size:12px;padding:8px 10px}
+
+[hidden]{display:none!important}#face-controls{position:absolute;top:220px;left:24px;width:220px;padding:14px;background:#111a17ed;border:1px solid #8f9b7938;font-size:12px}#face-controls label{display:flex;align-items:center;gap:12px;margin:14px 0}#face-controls input{min-width:0}#face-source{width:100%;margin-top:6px}body.face-study aside{display:none}body.clean #face-controls{display:none}
+
+body.face-view .console{display:none}@media(max-width:900px){#face-controls{width:180px;left:16px;top:240px;padding:10px;font-size:11px}}
