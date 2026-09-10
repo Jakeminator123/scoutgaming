@@ -1,0 +1,13 @@
+{
+  "blendSha256": "b67ecb1bacc44ea15db3ef26891bcd715c44af0159b1bfad076c2d7bf265472c",
+  "glbSha256": "431cbb2e2c01b92618d6462b847fc62b3f2f44cb7552edb971e336b2e7a06df4",
+  "bones": 56,
+  "bodyActions": 13,
+  "cardActions": 16,
+  "packedImages": 9,
+  "cardHelpers": 16,
+  "activeNlaTracks": [
+    "Collect_All_Cards_Sweep_Study"
+  ],
+  "status": "packed project reopened; visual collection acceptance remains separate"
+}
