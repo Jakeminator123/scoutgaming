@@ -1,0 +1,5020 @@
+{
+  "source": "/Users/solvifyab/Desktop/croupier/assets/astrid-3d/astrid-animated.blend",
+  "everyAuthoredFrame": true,
+  "samples": [
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Accept_Bets_Nod_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.00021210315993613478,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0006029803436112164,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0003067659014551087,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0002780861091829706,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.00017394640357653094,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0002055093483413009,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0004477751587349977,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 6.854942533626276e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0005338869976426935,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.00042193200243415994,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.0003290551476494299,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.0005208555196295268,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.0002616008678089478,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.0005055231968694486,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.0005733675365095422,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.0005073672770473374,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.0003758801376088336,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.00036454368636357383,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.00027976944646322026,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.00029999709758334416,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.000283335445503316,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.0005931997625262425,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.00031605592795856365,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.00015962188064397474,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.000387538967666381,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.0003409041716912358,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.0002600695979083967,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.0002975711231349022,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 8.7534622795494e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.00026547656093426025,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.0007357119460463916,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.00029263857437466693,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00011099698262496461,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.00018319048011178818,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.00025557336399915855,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.0001896992840855792,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.0004005490264491901,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.0004489236010407123,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.00023791570881300482,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.0002678299155405175,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.0003948949384406955,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.00028620759119226834,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.00028620759119226834,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.00028620759119226834,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.00028620759119226834,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.00024961885760988714,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0003116304884500045,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.0004995339094233749,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 5.851187985275924e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0004404029887747814,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 52,
+      "nativeHeadErrorMm": 0.00020616939071758749,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 53,
+      "nativeHeadErrorMm": 0.00013304934796025934,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 54,
+      "nativeHeadErrorMm": 0.0004332593497725158,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 55,
+      "nativeHeadErrorMm": 0.00017893976330242447,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 56,
+      "nativeHeadErrorMm": 0.0006508595474884399,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 57,
+      "nativeHeadErrorMm": 0.000509954956996539,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 58,
+      "nativeHeadErrorMm": 0.00019331151842969587,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 59,
+      "nativeHeadErrorMm": 0.0004106352063870693,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 60,
+      "nativeHeadErrorMm": 0.00018950069332299323,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Collect_Card_Study",
+      "frame": 61,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.00040372618522920137,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.0005660123209500124,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.000613317191906608,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.00011404007034432161,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.00035106107593513953,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.00027818938977961253,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.000325555625178159,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.0007127003471743607,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.00012231455250987172,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.0003742188611325633,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.00042016057866219036,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.00015067299043501872,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.00022473701141239013,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.0003621534434898063,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.0002502318717710126,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.00028047657735719476,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.00023168827077456973,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.0001469548602701877,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.0005295350016409836,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.0001229548364360866,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.0003406402537877305,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.0003481332659113965,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00020980975693355743,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.00039200387150789675,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.0003736687899536657,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.0003736687899536657,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.0003736687899536657,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.00013356020328563587,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.00019680980009825503,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.00021081998717343447,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.00010477579696354819,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.00035760153726358305,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.0001905324892892774,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.0001910804515850842,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.0002920847162564782,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.0002178066082643931,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.00014570150309277415,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.00012602802442710816,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.00026131911348407683,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Own_Card_Contact_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.00036163095646091095,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.00041172695061093633,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.00018119817363277787,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.00020361629410034347,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.00062241448481146,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.00037519894512054854,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.0004268214228174269,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.0002490829895202603,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.0002664544116373968,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.000496945316436318,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.00045028692622761147,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.00036599060489117476,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.0004056570794675867,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.00027972801751223805,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.00034381659606935966,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.00013322769014196918,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.000318980830982298,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.00037624961462158176,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.0002276487373798563,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.00034008656438823127,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.00019706289838911667,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 6.104402129684339e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00044582908848805685,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.0002474015728830927,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.00018363660653371847,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.00018363660653371847,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.00018363660653371847,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.0007177402915003654,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.00028105494706616923,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.0005219372102606513,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.0003885507092156234,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.0004461481539640026,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.00025271251081530953,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.0001703000527252239,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.00016206455039267521,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.00021369617029247612,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0006836060684592286,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.00033437596739525134,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.00017024976312261957,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_01_Contact_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.0002407363511850259,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.0002618719059353987,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.0001370010827437221,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.00020065640369242512,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.00041347320244828343,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.000329115361279769,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.0006223413700230792,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.00017764167455463606,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.00049865409158046,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 4.008278217564914e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.0002861094485846077,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.000289738964280503,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.0002871500918592158,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.00021872677760644417,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.0003826895909388861,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.00039351819075698934,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.0004467640956890125,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.0003974076130375877,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.00039322025664816296,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.0002798760341966039,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 3.1429178445105175e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.00030971398907930444,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00027932239719212504,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.0003929888639629495,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 4.362451945235953e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 4.362451945235953e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 4.362451945235953e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.00047198854551276794,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.00010112087914497166,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.00017276905802515797,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.00016599622193503536,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.00040836899369036447,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.00022106820894459377,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.00032014316865121355,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.00019199463493975005,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.00027706014239946915,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0002809895684730908,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.00024228339872077353,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.00023687851330199235,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_02_Contact_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.0003953690478499099,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.0005005080651082724,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.00024942789199795964,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.0003618706298383572,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.00033068879343432404,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.00019595632010524204,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.00030871590122934667,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.000522758811114951,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.0005609845871638321,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.0003143703970954534,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.0006788931442949862,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.00039373202424683267,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.00033012036245037385,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.00012796959307746663,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 8.810515087407979e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.00022100415911505665,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.000784491258459781,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.00035138315980265226,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.00021385735617019237,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.00024169854842695816,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.000134763622434023,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.00013935819524248948,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00025634870203745697,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.0004376981396906384,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.00011089219053337405,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.00011089219053337405,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.00011089219053337405,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.00010730636343486949,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.0003608334501646101,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.0004386273566847643,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 6.023387615537673e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.0005365330921285651,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.0005151996749208739,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.000140591667199011,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.0007265541127364742,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.0001626840931185192,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0009291817273711471,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.0001530930699993574,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.0004299493170493393,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_03_Contact_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.0002882158485187007,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.00015326863514738802,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 8.66031581277222e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 5.581138876376627e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.00033033019227459543,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.0002573804055256932,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.000345044705057634,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.0001998874504925793,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.0004889255344834274,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.00020522110562964444,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.0003919642006776449,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.00044722684462275255,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.0003069552792189518,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.00019346071662656143,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.0002240109313246523,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.00017725525770185478,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.000396195646145935,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.0005628955842598254,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.00033481005471132033,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.00036460894186827255,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.00037599049242734546,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.00029684974576375535,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 6.634604894300584e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.00038107836849611445,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.0004795941380330176,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.0004795941380330176,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.0004795941380330176,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.00035232268322442253,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 3.883921296459623e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.0004885981180408342,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.0002532973585592441,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.000336989232541292,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.0002853461717144759,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.00033256765135238834,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.00019443365005642713,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.0003703236213577119,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0001827137417671451,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.00015414255703016363,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.00018361647995716074,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_04_Contact_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.00013554278997450847,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.00010191635895806738,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.0004436661911389577,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.00015129425355903483,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.0003251051404640553,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.000333595284751508,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.00024288302715708298,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.0003398165236707789,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.0001216099970442862,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.0004660457972347292,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.00038270617364187385,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.0004443713106317481,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.0005082891227571408,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.0004816609691321966,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.00023537123401027772,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.0003563012916633694,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.00021129456517783837,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.00010876724971424909,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.0001792360463750729,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.0001382336416468053,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.0006765882115871878,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.00046742782591371846,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00028835247938115155,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.0004927749490155022,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.0002693196140967786,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.0002693196140967786,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.0002693196140967786,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.00041506192025145077,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.0002053435599667703,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.00026797194021959536,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.00011375899114219697,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.0002489047803773115,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.00025049014957891243,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.0001401301393501966,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.0005402914953674232,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.0003950179309850481,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0002092840837917272,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.00045257395580018363,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.00028888567248977904,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_05_Contact_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.00030746172141062116,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.0002778575483398574,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.0001412460660790138,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.0002050353876018398,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.00030396353234936124,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.00023997690782597502,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 8.247791567648858e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 8.699458100047232e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.0002955394345532645,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.00013818267654479007,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.0001203860170622053,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.0008075369615408553,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.00026584342061347177,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.00017221018906188475,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.00010643973067630848,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.0002536073255308333,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.00027963803488747417,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.00035213064754584705,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.0004338670882667041,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.0007369465974853768,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.0004940623593867446,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.00015015100688166793,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00026785266957097924,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.00018951504145368105,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.000216717029637304,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.000216717029637304,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.000216717029637304,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.0002079871558342808,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.00021496901232108086,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 6.963223356974768e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.00026309390345270235,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.0007507829221136774,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.0001517896734621276,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 4.778894557324173e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.0006664247869349984,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.0003868625576039595,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0001502993210158359,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.0004299407270367365,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 7.071425719170836e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_06_Contact_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 9.965090091427379e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.00021500770131673285,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.00042485760003449643,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.0003145672064078743,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.0006896611345727267,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.0005351016625883877,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.0002598109442688821,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.00020259341144415445,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.0003016964009050713,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.0003605875089291957,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.00017168390933400689,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.00040034273056237886,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.00027266153668781317,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.00027627433189699396,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 3.55742611130528e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.00026624418917472277,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.0003260581495709685,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.000452925675288569,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.00023955380845040066,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.00029637602966611955,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.00043683191464834165,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.00011348168508541413,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00010365671140883525,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 7.837537768638716e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.00012460488937072691,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.00012460488937072691,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.00012460488937072691,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.00029783156507412635,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.00023670436948283678,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.0003475365247061631,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.00012706060846092522,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.0004126125093215222,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.0002270742433081608,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.00017648398583084327,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.00024068737948541885,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.00048144429283001255,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0002882218733992388,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.00021968699656542263,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.0003387599738963258,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Deal_Seat_07_Contact_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Greeting_Wave_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 1,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 2,
+      "nativeHeadErrorMm": 0.00023582239538620076,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 3,
+      "nativeHeadErrorMm": 0.000637925921395376,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 4,
+      "nativeHeadErrorMm": 0.0003600927219743583,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 5,
+      "nativeHeadErrorMm": 0.0002692799077975551,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 6,
+      "nativeHeadErrorMm": 0.00021720309094974864,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 7,
+      "nativeHeadErrorMm": 0.0002825355348863819,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 8,
+      "nativeHeadErrorMm": 0.0006276804323430445,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 9,
+      "nativeHeadErrorMm": 0.00017526549439206504,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 10,
+      "nativeHeadErrorMm": 0.00035366888995818366,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 11,
+      "nativeHeadErrorMm": 0.00032649907651340814,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 12,
+      "nativeHeadErrorMm": 0.00015639874181733662,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 13,
+      "nativeHeadErrorMm": 0.00015639874181733662,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 14,
+      "nativeHeadErrorMm": 0.00015639874181733662,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 15,
+      "nativeHeadErrorMm": 0.00015639874181733662,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 16,
+      "nativeHeadErrorMm": 7.360389030423683e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 17,
+      "nativeHeadErrorMm": 9.029992377096888e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 18,
+      "nativeHeadErrorMm": 6.971105065593639e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 19,
+      "nativeHeadErrorMm": 0.0006239281319200862,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 20,
+      "nativeHeadErrorMm": 0.00026375144258289346,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 21,
+      "nativeHeadErrorMm": 0.00018340664854810335,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 22,
+      "nativeHeadErrorMm": 0.00035560662099197346,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 23,
+      "nativeHeadErrorMm": 0.00010561659351447669,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 24,
+      "nativeHeadErrorMm": 0.00028661185109818887,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 25,
+      "nativeHeadErrorMm": 0.00021879824093663254,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 26,
+      "nativeHeadErrorMm": 0.00031935267813552827,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 27,
+      "nativeHeadErrorMm": 7.902371233558317e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 28,
+      "nativeHeadErrorMm": 0.00016913984860410372,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 29,
+      "nativeHeadErrorMm": 0.0003145750675553087,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 30,
+      "nativeHeadErrorMm": 0.00025152353300526907,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 31,
+      "nativeHeadErrorMm": 9.752229619973411e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 32,
+      "nativeHeadErrorMm": 0.00013111041926012234,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 33,
+      "nativeHeadErrorMm": 0.0002766191001594245,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 34,
+      "nativeHeadErrorMm": 0.00019085027709266956,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 35,
+      "nativeHeadErrorMm": 0.00027362832272936996,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 36,
+      "nativeHeadErrorMm": 0.0002293005438967763,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 37,
+      "nativeHeadErrorMm": 0.0002664301648065598,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 38,
+      "nativeHeadErrorMm": 0.0002664301648065598,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 39,
+      "nativeHeadErrorMm": 0.0002664301648065598,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 40,
+      "nativeHeadErrorMm": 0.0002664301648065598,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 41,
+      "nativeHeadErrorMm": 0.0002664301648065598,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 42,
+      "nativeHeadErrorMm": 0.00031272867043665744,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 43,
+      "nativeHeadErrorMm": 0.00029946677022545717,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 44,
+      "nativeHeadErrorMm": 0.0003833703680041069,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 45,
+      "nativeHeadErrorMm": 0.00018904697955032844,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 46,
+      "nativeHeadErrorMm": 0.00026413522627717796,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 47,
+      "nativeHeadErrorMm": 8.784417585532261e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 48,
+      "nativeHeadErrorMm": 0.00029582297981034636,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 49,
+      "nativeHeadErrorMm": 7.190138808970396e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 50,
+      "nativeHeadErrorMm": 0.00011157768749066633,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 51,
+      "nativeHeadErrorMm": 5.417110052245578e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 52,
+      "nativeHeadErrorMm": 0.00022024820510541582,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 53,
+      "nativeHeadErrorMm": 0.00034450822809643593,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 54,
+      "nativeHeadErrorMm": 2.1057015771244474e-05,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    },
+    {
+      "action": "Reveal_Hole_Card_Study",
+      "frame": 55,
+      "nativeHeadErrorMm": 0.0008133405237486858,
+      "deepApronVertices": 0,
+      "worstDepthMm": 0,
+      "examplesEngine": []
+    }
+  ],
+  "framesWithDeepPenetration": 0,
+  "criterion": "Actual deformed skin/clothing vertices >7mm below felt, >3mm inside physical apron footprint.",
+  "limits": [
+    "Samples are discrete frames, not a continuous swept-volume check.",
+    "Does not validate fingertip grip, shoe collision, contact shadows, face or motion aesthetics."
+  ]
+}

@@ -57,7 +57,8 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
 }
 
 const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
-const performanceStaged=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
+const riggedReview=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('scene')==='rigged-review';
+const performanceStaged=!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
 const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
 const actorProvenance=performanceStaged?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
 let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,selectSequencePerformance=null,performanceCardCorners=null;
@@ -90,10 +91,18 @@ let tableScene = null;
 // pending. Waiting for gameplay controls leaves the shoe at the old viewport.
 addEventListener('resize', () => tableScene?.resize());
 try {
+  if(riggedReview){
+    const {createRiggedTableScene}=await import('./rigged-table-scene.mjs');
+    tableScene=await createRiggedTableScene($('#table-canvas'));
+    const css=document.createElement('link');css.rel='stylesheet';css.href='rigged-review.css';document.head.append(css);
+    document.documentElement.classList.add('rigged-review');
+    const status=document.createElement('div');status.id='rig-review-status';status.textContent='3D contact review · face and speech animation unfinished';$('#scene').append(status);
+  }else{
   const { createTableScene } = await import('./table-scene.mjs');
   tableScene = createTableScene($('#table-canvas'), DEALER.key, {
     contactProof: DEALER.key === 'astrid' && new URLSearchParams(location.search).get('performance') === 'staged',
   });
+  }
   document.documentElement.classList.add('table-3d');
 } catch (error) { console.warn('[table] Using image fallback:', error.message); }
 
@@ -114,7 +123,7 @@ const engine = new DealerEngine($('#dealer'), DEALER.base, {
 let engineUp = false;
 let speaking = false;
 let dealingActive = false;
-const canUseDealingTake = () => engineUp && dealingCues?.status !== 'rejected' && !!engine.index?.clips?.[CLIP.deal];
+const canUseDealingTake = () => !riggedReview && engineUp && dealingCues?.status !== 'rejected' && !!engine.index?.clips?.[CLIP.deal];
 // Speaking clips with their real lengths. Cutting between different clips
 engine.onIdlePick = () => {
   // A recorded sentence is a single take. Decode-ahead must never replay its
@@ -698,7 +707,7 @@ function layoutSeats() {
     const phi = (90 + span / 2 - k * step) * Math.PI / 180;
     const fx = CX + RX * Math.cos(phi);
     const fy = CY + RY * Math.sin(phi);
-    const p = tableScene?.project(.83 * Math.cos(phi), .78 * Math.sin(phi));
+    const p = tableScene?.seatScreen?.(i,boxes) ?? tableScene?.project(.83 * Math.cos(phi), .78 * Math.sin(phi));
     if (tableScene) seatEls[i].style.setProperty('--arc-rot', `${(phi * 180 / Math.PI - 90) * .65}deg`);
     seatEls[i].style.left = `${(p?.x ?? img.left + fx * img.width) - table.left}px`;
     seatEls[i].style.top = `${(p?.y ?? img.top + fy * img.height) - table.top}px`;
@@ -997,6 +1006,7 @@ $('#cashier-pay').onclick = async () => {
 // ---------- card rendering ----------
 function cardEl(card, faceDown = false) {
   const el = document.createElement('div');
+  if(!faceDown){el.dataset.rank=card.r;el.dataset.suit=card.s;}
   if (faceDown) { el.className = 'card back'; return el; }
   const red = card.s === '♥' || card.s === '♦';
   el.className = 'card' + (red ? ' red' : '');
@@ -1008,6 +1018,7 @@ function cardEl(card, faceDown = false) {
   return el;
 }
 function flyFromShoe(el, card, faceDown, cardMotion) {
+  if(tableScene?.rigged)return tableScene.dealCard({element:el,onCue:phase=>sfx.play(phase)});
   if(cardMotion?.performance && performancePlayer && tableScene) {
     const target=el.getBoundingClientRect();el.style.visibility='hidden';
     const corners=performanceCardCorners(el);
@@ -1200,9 +1211,10 @@ function endDealingTake() {
     engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);
   }
 }
-function revealHole(container, card) {
+async function revealHole(container, card) {
   const back = container.querySelector('.card.back');
   if (!back) return;
+  if(tableScene?.revealCard)await tableScene.revealCard({element:back,card,onCue:phase=>sfx.play(phase)});
   const el = cardEl(card);
   el.style.setProperty('--ci', back.style.getPropertyValue('--ci') || 1);
   el.classList.add('flip');
@@ -1271,6 +1283,7 @@ $('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await en
 async function beginDealingTake() {
   try {
   await speechQueue.idle;
+  if(tableScene?.rigged){console.info('[deal] Rigged contact review sequence');return;}
   if(performancePlayer){console.info('[deal] Presented-frame performance sequence');return;}
   dealingActive = canUseDealingTake();
   if (!dealingActive) {
@@ -1439,7 +1452,7 @@ async function dealerRevealChoreo() {
   trigger(CLIP.dealWatch);
   await sleep(500);
   if (round.dealer.length >= 2) {
-    revealHole(dc, round.dealer[1]);
+    await revealHole(dc, round.dealer[1]);
     updateBadge(dc, round.dealer.slice(0, 2));
     await sleep(650);
   }
@@ -1534,6 +1547,7 @@ async function finish() {
   else void veraEvent(`Round settled: the house took this one; ${who} won nothing back.`, { minGap: 45000 });
   await Promise.all([sleep(1800), speechQueue.idle]);
   endDealingTake();
+  if(tableScene?.collectCards)await tableScene.collectCards({onCue:phase=>sfx.play(phase)});
   round = null; busy = false;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
   undoStack = [];

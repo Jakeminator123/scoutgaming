@@ -1,3 +1,13 @@
+# Latest: actual-game 3D table review and source verification — 10 September 2026
+
+See [ASTRID-RIGGED-TABLE-REVIEW.md](ASTRID-RIGGED-TABLE-REVIEW.md). The actual game has an opt-in `?dealer=astrid&scene=rigged-review` path with the independent table, shoe, cards and rig. Seven-seat delivery, own cards, server-driven reveal/collection and snapshot-driven shoe presentation are integrated. The editable combined Blender project has twelve marked motion studies and matching card-helper tracks. This is a development candidate; it is not photographic Astrid or full CAC acceptance.
+
+Actual isolated rounds verified seven separate positions, refresh retaining the exact cards/balance, own-card dealing, hit, insurance decline, stand, reveal, settlement and collection. All four dealers completed two consecutive greeting plays through the shared rehearsal path. Existing regression checks and the eight-scenario HTTP harness pass. Silent in-game recordings and reference comparison are saved under `assets/blackjack-3d/review`. Physical mobile browsers, all-line lip sync and complete visual acceptance remain open.
+
+Dealer/skin checkpoint `2251d2e` includes the genuine skin-contact solver, eight motion/skin tests and a separate optional normals cleanup source. The photographic head, eyes, eyelids, oral cavity, hair and facial rig remain asset requirements. CPU-only pose timing is recorded separately and does not approve phone/browser performance.
+
+A native-control parenting bug was found by rendering the combined source and corrected by the dealer task. The old native collision pass was withdrawn. The correctly positioned mesh then exposed real hand/finger penetration. The corrected solver uses actual deformed skin rather than only a control point; all 626 authored frames now pass the native apron-intersection check, with the earlier failure preserved as before evidence. The photographic face projection also remains staged after failed likeness review; do not promote it. Use the current review notes/evidence for final results, not earlier numerical clearance claims. CAC-2 and CAC-4 remain In Dev. Default photographic gameplay and other dealers remain unchanged.
+
 # Latest: editable Astrid 3D candidate — 10 September 2026
 
 CAC-2 and CAC-4 are **In Dev** for the revised 3D approach. See [ASTRID-RIGGED-DEALER-STUDY.md](ASTRID-RIGGED-DEALER-STUDY.md): original generated model, prepared 54-bone rig, eight editable deal actions and embedded-material GLB are saved. Seven player seats and own-card delivery share runtime and baked poses. Manual wrist/foot IK, body, head and finger controls are in the native Blender project. Sync probe, 49 hook tests, three motion tests and numerical export checks pass.

@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "Initial deal: one debit, private shoe/hole, duplicate retry and stale/illegal rollback",
+    "Process restart: same guest session, cards, version, shoe and wallet; no second debit",
+    "Concurrent split retries: one stake and draw; hit/double/settlement; collection pays once",
+    "Insurance: half-stake charge, delayed hole reveal, dealer blackjack payout",
+    "Player blackjack: expected settlement",
+    "Push: expected settlement",
+    "Player bust: expected settlement",
+    "Natural shoe depletion: cut finishes current round; replacement occurs at next start"
+  ],
+  "passed": 8,
+  "cutRounds": 59,
+  "server": "web/server.mjs over HTTP",
+  "isolated": true,
+  "finalBalance": 920,
+  "limitations": [
+    "No rendered motion or audio acceptance; browser evidence is separate."
+  ]
+}
