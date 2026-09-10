@@ -35,6 +35,14 @@ The first run reached the cut after 60 additional rounds. This number is random 
 
 ## Remaining acceptance
 
+### Loading-time camera correction
+
+While preparing the capture reference, resizing during dealer startup exposed an additional placement error. `app.mjs` built the table before awaiting `engine.init()`/`engine.start()`, but registered its resize listener after those awaits. With the Astrid stream-index response delayed eight seconds in a disposable local server, a 1280×720 → 1920×1080 resize left the old projection `(0.0015625, 0.00277778)` and an undersized dealer/table after loading completed. Warm loads did not consistently reproduce it.
+
+The table listener now registers before the media awaits; the later listener positions gameplay controls once they exist. Repeating the delayed-load test produces the correct projection `(0.00104167, 0.00185185)` and matches the stable camera reference. A delayed resize to 390×844 also produces the correct projection. Before/after screenshots and camera JSON are committed alongside the scene evidence as `resize-*`. This corrects a loading-dependent cause of hand/shoe separation under CAC-2, which remains In Dev for its full delivery requirement.
+
+The 90-stream deep baseline passes after this change. Astrid, Vera, Amira and Mei each played goodluck twice sequentially through the actual shared player; first-end precedes second-start in the saved logs. Their existing media, audio and tracking hashes remain unchanged. Other dealers' known scene/media limitations are not approved by this sequencing check.
+
 These are desktop-browser and phone-viewport checks, not physical Safari/iPhone/Android approval. They do not certify every speech phoneme or fix source blur. CAC-2/4 still need believable contact at every served fan and continuous professional pacing. The generated right return swept across the felt; the generated own-card return carried a dealt card back to the shoe. Both were rejected. The current centre and left returns remain opt-in partial candidates.
 
 Use the updated [controlled capture brief](ASTRID-CONTROLLED-CAPTURE.md) for the next footage. Filmed hole-card reveal, collection and shoe change are also still absent. The current logical/CSS actions are not substitutes for those performances. No release, full milestone completion or default promotion is claimed.

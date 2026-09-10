@@ -1,5 +1,7 @@
 # Latest: scene QA and real HTTP recovery — 10 September 2026
 
+Follow-up: the table now handles resize before dealer media finishes loading. An isolated eight-second loading delay reproduced the stale 1280×720 projection in a 1920×1080 viewport. The same test and a phone resize now pass. This is part of CAC-2; it does not close the remaining directional/contact requirement. Before/after evidence and all-four-dealer repetition logs are saved. No media or wallet changes.
+
 Read [ASTRID-SCENE-ACCEPTANCE.md](ASTRID-SCENE-ACCEPTANCE.md). **CAC-1/3/5/6/7 are Done; CAC-2/4 remain In Dev.** The three latest closures cover background continuity and clean cutout edges across 17 Astrid lines, a desktop three-seat round and a normal phone-viewport round. They do not approve the remaining source motion or full lip sync. Earlier status snapshots below are historical.
 
 The new `test/table-http.mjs` checks actual HTTP/SQLite restart recovery, duplicate and concurrent requests, split/double, insurance, payouts and cut transitions in a disposable server. It passes and is included in CI. No game/wallet API, media, voice or guest-access behavior changed.
