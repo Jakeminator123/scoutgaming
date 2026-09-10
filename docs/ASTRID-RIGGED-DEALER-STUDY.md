@@ -44,3 +44,8 @@ poseDealerGesture supports greeting (raised open palm with a small wave) and acc
 Runtime durations: dealing and gestures 1.65s, reveal 1.8s, collection 2.0s. At 30fps the first duration rounds to 50 frame intervals. motion-samples.json supplies action names, local frame numbers, positions and card orientation for assembling matching props in the complete Blender scene.
 
 Export landing heights match the real adapter: first-card centre .91055m over .910m felt, discard .920m. The earlier .916m study landing was corrected after integration QA found a visible gap.
+
+
+## Native control-root correction
+
+Combined-scene rendering exposed an approximately 0.996m downward offset introduced when parenting the armature to CTRL_BODY after resetting that control's location without evaluating its world matrix. The GLB, exported before control creation, was unaffected. The control pipeline now evaluates the reset before parenting and explicitly preserves the parent inverse/world matrix. Native verification runs after all controls and compares every joint at four frames in each of the twelve actions against the sampled runtime world positions; maximum residual is 0.0013mm. See native-verification.json. Earlier native apron checks made against the displaced model are withdrawn and must be rerun on the corrected project.
