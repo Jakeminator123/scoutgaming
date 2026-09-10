@@ -1,5 +1,7 @@
 # Latest: scene QA and real HTTP recovery — 10 September 2026
 
+Safari follow-up: [ASTRID-SAFARI-QA.md](ASTRID-SAFARI-QA.md) records an inconclusive native Safari 26.1 attempt. The initial scene rendered, but the automated page reported hidden and correctly skipped speech. No playback code was changed to bypass this. Safari and physical-device acceptance remain open; CAC-2/4 still need the controlled hand-performance proof.
+
 Speech follow-up: [ASTRID-SPEECH-CANCELLATION.md](ASTRID-SPEECH-CANCELLATION.md) records a reproduced loading/mute race and its shared-player fix. Cancelling a waiting line now releases gameplay and prevents it from speaking after unmute; active and queued lines share cancellation. The normal isolated game passed the delayed-bank check and settlement. Existing media and calibration are unchanged. CAC-2/4 remain In Dev for the outstanding hand/contact work.
 
 Follow-up: the table now handles resize before dealer media finishes loading. An isolated eight-second loading delay reproduced the stale 1280×720 projection in a 1920×1080 viewport. The same test and a phone resize now pass. This is part of CAC-2; it does not close the remaining directional/contact requirement. Before/after evidence and all-four-dealer repetition logs are saved. No media or wallet changes.

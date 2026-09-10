@@ -76,6 +76,6 @@ If motion reference is transferred onto the existing synthetic Astrid identity, 
 - Inspect original-resolution frames and normal-speed playback. Require rigid card proportions, actual outlet contact, correct finger occlusion, no duplicate prop, a consistent room and a matched return pose. Then repeat at narrow and wide viewports with one camera registration.
 - Only a named review tied to both hashes may set `contact-approved`. Full-table/default approval additionally requires every action, speech, device and recovery check from the implementation plan.
 
-## Still outside this checkpoint
+## Current remaining coverage
 
-Left/right direction variants, filmed hole reveal, collection, shoe-change performance, a continuous isolated Astrid speech/idle set, full Astrid line-by-line phoneme acceptance, and actual iPhone Safari / Android Chrome validation. The walkable prototype remains saved separately.
+Left/right direction variants and isolated Astrid speech/idle now exist in staging, as described above; their existence does not approve contact, motion continuity or every phoneme. Remaining coverage includes the failed right/own-card returns, believable contact across all served fans, filmed hole reveal, collection, shoe-change performance, full Astrid line-by-line speech acceptance and actual desktop Safari / iPhone Safari / Android Chrome validation. The walkable prototype remains saved separately.
