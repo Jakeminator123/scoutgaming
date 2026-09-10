@@ -1,0 +1,25 @@
+{
+  "balance": "$992.50",
+  "liveCards": 0,
+  "seats": [
+    "2",
+    "3",
+    "4"
+  ],
+  "status": {
+    "action": "collect",
+    "cardPitch": "0",
+    "cardPosition": "[-0.9100000262260437,0.9474500166893005,0.25]",
+    "cardYaw": "0.03310789780841217",
+    "contactError": "0.0007000545823527694",
+    "discardCount": "62",
+    "faceHistory": "[{\"id\":\"blackjack\",\"samples\":76,\"mediaTime\":3.640896,\"captureTime\":3.802896},{\"id\":\"placebets\",\"samples\":54,\"mediaTime\":2.234643,\"captureTime\":2.260643}]",
+    "faceLastLine": "placebets",
+    "faceMaxTime": "2.260643",
+    "faceMediaTime": "2.234643",
+    "faceSamples": "54",
+    "facialLine": "",
+    "progress": "1.0000",
+    "target": "[-0.9100000262260437,0.9474500166893005,0.25]"
+  }
+}

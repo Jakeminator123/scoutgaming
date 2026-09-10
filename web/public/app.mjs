@@ -93,10 +93,10 @@ addEventListener('resize', () => tableScene?.resize());
 try {
   if(riggedReview){
     const {createRiggedTableScene}=await import('./rigged-table-scene.mjs');
-    tableScene=await createRiggedTableScene($('#table-canvas'));
+    tableScene=await createRiggedTableScene($('#table-canvas'),{faceStudy:new URLSearchParams(location.search).get('face')==='anatomical'});
     const css=document.createElement('link');css.rel='stylesheet';css.href='rigged-review.css';document.head.append(css);
     document.documentElement.classList.add('rigged-review');
-    const status=document.createElement('div');status.id='rig-review-status';status.textContent='3D contact review · face and speech animation unfinished';$('#scene').append(status);
+    const status=document.createElement('div');status.id='rig-review-status';status.textContent=tableScene.facial?'Astrid likeness review · measured speech, visual acceptance pending':'3D contact review · face and speech animation unfinished';$('#scene').append(status);
   }else{
   const { createTableScene } = await import('./table-scene.mjs');
   tableScene = createTableScene($('#table-canvas'), DEALER.key, {
@@ -682,6 +682,10 @@ const compactQuery = matchMedia('(max-width: 860px) and (orientation: portrait)'
 let compactSeats = compactQuery.matches;
 const playedBoxes = () => {
   if(!compactSeats)return seatEls.map((_,i)=>i);
+  // A fixed 3D camera retains every server card on the felt. Retain its
+  // occupied betting marker too, including completed hands and a resumed
+  // desktop round, instead of sliding a three-marker window over the cards.
+  if(tableScene?.rigged&&round)return [...new Set(round.live().map(hand=>hand.box))].sort((a,b)=>a-b);
   // A seven-seat desktop hand may be resumed on a phone. Keep the current
   // server-owned hand in view instead of hiding seats 0, 1, 5 and 6 forever.
   const active=round?.live()?.[round.active]?.box;
@@ -1647,7 +1651,7 @@ function playRecorded(id, audio, text, signal) {
   const originalNative = speechMedia[DEALER.key]?.[id];
   const packed=engine.fullActor&&originalNative?actorProvenance?.nativeSpeech?.[id]:null;
   const native=packed?{...originalNative,...packed}:originalNative;
-  let video,packedPlayer;
+  let video,packedPlayer,faceToken;
   if (native) {
     video=document.createElement('video');
     if(!packed)video.src=native.src; video.playsInline=true; video.preload='auto'; video.volume=audio.volume;
@@ -1677,8 +1681,10 @@ function playRecorded(id, audio, text, signal) {
       await waitForAudio(audio, signal);
       if(packed&&(video.videoWidth!==packed.width||video.videoHeight!==packed.height*2))throw new Error('Packed speech dimensions changed');
       if (matched) await cutToTake(clip, signal);
+      if(tableScene?.facial)faceToken=await tableScene.prepareFacialSpeech({id,media:audio,text,kind:native?'embedded-video':'indexed-audio',audioDelayMs:native?0:(engine.index?.clips?.[clip]?.audioDelayMs??(Number(getComputedStyle(document.documentElement).getPropertyValue('--lipsync-offset'))||0))},signal);
     },
     onStart: () => {
+      if(faceToken)tableScene.startFacialSpeech(faceToken);
       performancePlayer?.release();
       if(video) {
         $('#dealer-wrap').querySelectorAll('.dealer-speech-transition').forEach(node=>node.remove());
@@ -1697,6 +1703,7 @@ function playRecorded(id, audio, text, signal) {
       // Unmatched lines remain voice-over; never reuse a mouth saying other words.
     },
     onFinish: () => {
+      if(faceToken)tableScene.endFacialSpeech(faceToken);
       signal?.removeEventListener('abort', cancel);
       if(video) {
         if(!packedPlayer&&performanceStaged&&video.ended&&!document.hidden&&video.videoWidth){

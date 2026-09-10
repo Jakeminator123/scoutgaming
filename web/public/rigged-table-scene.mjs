@@ -7,10 +7,11 @@ import {cardFaceArt} from './card-art.mjs';
 import {riggedCardPose,cardCorners} from './rigged-card-layout.mjs';
 import {placeActions} from './action-placement.mjs';
 import {createDiscardState} from './rigged-discard-state.mjs';
+import {createRiggedFacePlayback} from './rigged-face-playback.mjs';
 
 // Opt-in contact review inside the real game. This renderer consumes the card
 // DOM built from server snapshots; it has no shuffle, wallet or command API.
-export async function createRiggedTableScene(canvas) {
+export async function createRiggedTableScene(canvas,{faceStudy=false}={}) {
   const renderer=new T.WebGLRenderer({canvas,alpha:false,antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;
   renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;
@@ -23,11 +24,21 @@ export async function createRiggedTableScene(canvas) {
   Object.assign(key.shadow.camera,{left:-2,right:2,top:3,bottom:-2,near:.1,far:12});scene.add(key);
   const fill=new T.DirectionalLight(0xc8d9ed,.6);fill.position.set(3,2,2);scene.add(fill);
   const rim=new T.DirectionalLight(0xffe0a4,.9);rim.position.set(.3,3,-2);scene.add(rim);
+  if(faceStudy){
+    // A broad camera-side softbox opens the face's eye sockets. Its short
+    // range keeps the room's darker exposure and existing table lights.
+    const portraitFill=new T.SpotLight(0xffeee0,1.5,2.2,.45,1,2);
+    portraitFill.position.set(0,1.62,1.45);portraitFill.target.position.set(.06,1.52,.16);
+    scene.add(portraitFill,portraitFill.target);
+  }
   const loader=new GLTFLoader();
+  const rigFolder=faceStudy?'dealers/astrid/rig/face-study/':'dealers/astrid/rig/';
+  const faceManifest=faceStudy?await fetch(rigFolder+'speech-manifest.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error('Facial performance manifest unavailable');return r.json();}):null;
+  const rigRevision=faceManifest?.modelSha256?'?revision='+encodeURIComponent(faceManifest.modelSha256):'';
   const [table,room,dealer,profile,tableProfile]=await Promise.all([
     loader.loadAsync('assets/blackjack-3d/blackjack-table.glb'),loader.loadAsync('assets/blackjack-3d/blackjack-room.glb'),
-    loader.loadAsync('dealers/astrid/rig/astrid-rigged.glb'),
-    fetch('dealers/astrid/rig/profile.json').then(r=>{if(!r.ok)throw new Error('Dealer rig unavailable');return r.json();}),
+    loader.loadAsync(rigFolder+'astrid-rigged.glb'+rigRevision),
+    fetch(rigFolder+'profile.json'+rigRevision).then(r=>{if(!r.ok)throw new Error('Dealer rig unavailable');return r.json();}),
     fetch('assets/blackjack-3d/profile.json').then(r=>{if(!r.ok)throw new Error('Table calibration unavailable');return r.json();}),
   ]);
   for(const asset of [table.scene,room.scene,dealer.scene]){scene.add(asset);asset.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});}
@@ -37,6 +48,20 @@ export async function createRiggedTableScene(canvas) {
     if(o.name.startsWith('Betting_ink'))o.visible=false; // Live hit targets supply the same seven rings.
   });
   const assets=bindBlackjackAssets(table.scene),rig=controlDealer(dealer.scene,profile);
+  let facePlayback=null;
+  if(faceStudy){
+    const manifest=faceManifest;
+    facePlayback=createRiggedFacePlayback({root:dealer.scene,baseURL:location.href,
+      async loadPerformance(id,signal){const line=manifest.lines[id];if(!line)throw new Error(`No measured facial performance for ${id}`);const r=await fetch(rigFolder+line.file,{signal});if(!r.ok)throw new Error(`Facial performance unavailable: ${id}`);return r.json();},
+      async loadBytes(url,signal){const r=await fetch(url,{signal});if(!r.ok)throw new Error('Facial source unavailable');return r.arrayBuffer();},
+      onState:id=>{
+        const node=document.querySelector('#rig-review-status');if(!node)return;
+        if(!id&&node.dataset.facialLine){const history=JSON.parse(node.dataset.faceHistory??'[]');history.push({id:node.dataset.facialLine,samples:Number(node.dataset.faceSamples),mediaTime:Number(node.dataset.faceMediaTime),captureTime:Number(node.dataset.faceMaxTime)});node.dataset.faceHistory=JSON.stringify(history.slice(-40));}
+        node.dataset.facialLine=id??'';if(id){node.dataset.faceLastLine=id;node.dataset.faceSamples='0';node.dataset.faceMaxTime='0';}
+      },
+      onSample:({mediaTime,time})=>{const node=document.querySelector('#rig-review-status');if(node){node.dataset.faceSamples=String(Number(node.dataset.faceSamples??0)+1);node.dataset.faceMediaTime=String(mediaTime);node.dataset.faceMaxTime=String(Math.max(Number(node.dataset.faceMaxTime??0),time));}},
+    });
+  }
   scene.updateMatrixWorld(true);
   // Source chips remain independent in Blender/GLB. Batch equal tray bodies
   // for rendering while retaining a separate editable transform per instance.
@@ -160,8 +185,10 @@ export async function createRiggedTableScene(canvas) {
   function resize(){
     renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;
     const portrait=innerWidth<861&&innerHeight>innerWidth;
-    const focus=portrait?visibleSeats.reduce((sum,i)=>sum+tableProfile.seatCards[6-i][0],0)/visibleSeats.length:0;
-    camera.position.set(focus,portrait?1.73:1.60,portrait?2.37:2.45);camera.lookAt(focus,portrait?1.12:1.10,.20);camera.updateProjectionMatrix();
+    // Frame the dealer, shoe and farthest card together. Following the active
+    // seat on a narrow screen cropped her face and moved the shoe off-screen.
+    const distance=portrait?Math.max(3.15,1.04/(Math.tan(T.MathUtils.degToRad(camera.fov/2))*camera.aspect)+.94):2.45;
+    camera.position.set(0,portrait?1.10+(distance-.20)*.50:1.60,distance);camera.lookAt(0,1.10,.20);camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
     const pos=screen(tableProfile.dealerCards),root=document.documentElement.style;
     root.setProperty('--rig-dealer-x',`${pos.x}px`);root.setProperty('--rig-dealer-y',`${pos.y}px`);
@@ -191,12 +218,12 @@ export async function createRiggedTableScene(canvas) {
         }
       }
       const error=Number(pose.fingerError)||0;
-      status(`${sample.phase} · motion review · face animation unfinished`,error);
+      status(`${sample.phase} · ${faceStudy?'Astrid likeness review':'motion review · face animation unfinished'}`,error);
       const audit=document.querySelector('#rig-review-status');
       if(audit){audit.dataset.action=active.kind;audit.dataset.progress=progress.toFixed(4);audit.dataset.target=JSON.stringify(active.target);audit.dataset.cardPosition=JSON.stringify(sample.card);audit.dataset.cardYaw=String(sample.cardYaw??0);audit.dataset.cardPitch=String(sample.cardPitch??0);}
       if(progress===1){const done=active;active=null;done.item.mesh.position.set(...done.target);done.item.mesh.visible=true;if(done.kind==='collect')done.item.collected=true;done.resolve();}
     }else poseDealer(rig,0,tableProfile.seatCards[3],outlet);
-    renderer.render(scene,camera);
+    facePlayback?.sample(now/1000,active?.item.mesh.position.toArray());renderer.render(scene,camera);
   }
   resize();syncCards();requestAnimationFrame(render);
   canvas.addEventListener('webglcontextlost',event=>{
@@ -204,7 +231,10 @@ export async function createRiggedTableScene(canvas) {
     if(active){const done=active;active=null;done.resolve();}
     document.documentElement.classList.remove('rigged-review');
   });
-  return {rigged:true,resize,render:()=>{},cardBounds,handBounds,layoutHandTotals,
+  return {rigged:true,facial:!!facePlayback,resize,render:()=>{},cardBounds,handBounds,layoutHandTotals,
+    async prepareFacialSpeech(options,signal){try{return await facePlayback?.prepare(options,signal);}catch(error){if(error.name!=='AbortError'){const node=document.querySelector('#rig-review-status');if(node){node.dataset.faceError=error.message;node.textContent='Facial performance unavailable: '+error.message;}}throw error;}},
+    startFacialSpeech(token){return facePlayback?.start(token);},
+    endFacialSpeech(token){facePlayback?.stop(token);},
     setTableSnapshot(snapshot,options){
       const before=discardState.view(),after=discardState.sync(snapshot,options);
       if(discardTop&&(before.shoeId!==after.shoeId||before.count!==after.count)){remove(discardTop);discardTop=null;}

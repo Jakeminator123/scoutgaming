@@ -2,6 +2,8 @@
 
 This is an experimental rendering path inside the existing blackjack game. It is **not the accepted photographic Astrid milestone**. The default filmed dealers remain available. Use `?dealer=astrid&scene=rigged-review` on a locally running Croupier server to inspect this candidate.
 
+The newer `&face=anatomical` candidate adds a corrected anatomical head, facial controls and measured source-clock speech. Read [ASTRID-FACE-IN-GAME-REVIEW.md](ASTRID-FACE-IN-GAME-REVIEW.md) for the updated editable project, exact evidence and remaining likeness failures. The original baseline limitations below remain historical context for the route without this option.
+
 ## Delivered files
 
 | File or directory | Contents |
@@ -50,7 +52,7 @@ The generated head is not yet a photographic match to Astrid. The imported mesh 
 
 Greeting and accepting-bets studies exist in the editable rig but are not yet connected to game events. Chip handling and a physical shoe-change performance are not delivered animations. Collection currently moves individual cards; it is not yet the natural grouped sweep of a professional dealer. Outer-seat split-hand appearance, skin/shoe collision, card readability and natural transitions still require visual review. The split-layout tests and centre-box game proof narrow those gaps; they do not certify a photographic dealer.
 
-Keep CAC-2 and CAC-4 in development until their full expected results are demonstrated. The new 3D face has no speech animation; existing recorded speech is audible in review but that does not constitute synchronised 3D speech. Existing photographic dealer assets and their known gaps are documented separately.
+Keep CAC-2 and CAC-4 in development until their full expected results are demonstrated. The original imported face has no speech animation. The opt-in anatomical follow-up now has measured speech, with visual acceptance still pending as documented above. Existing photographic dealer assets and their known gaps are documented separately.
 
 ## Higgsfield and source provenance
 

@@ -1,0 +1,24 @@
+{
+  "silent": true,
+  "note": "Initial-deal segment and separate later decision/settlement recording, including user pauses. No audio tracks. Not a continuous uncut round.",
+  "files": [
+    {
+      "file": "three-seat-initial-segment-silent.webm",
+      "sha256": "50603056dc8ca76d1fd946eb248c209851d132cb08202e129322704bddba31b5",
+      "streams": [
+        "video"
+      ],
+      "duration": "21.842000",
+      "bytes": 2196767
+    },
+    {
+      "file": "three-seat-finish-silent.webm",
+      "sha256": "44bfe8fa94be816fe4788a7d9f746ed0bbfe6694b66ecb3d311eae40bcf479b9",
+      "streams": [
+        "video"
+      ],
+      "duration": null,
+      "bytes": 17262609
+    }
+  ]
+}
