@@ -52,7 +52,7 @@ head=obj('CTRL_HEAD_ROTATION',world_head('Head'));head.rotation_mode='QUATERNION
 rotation=arm.pose.bones['Head'].constraints.new('COPY_ROTATION');rotation.name='Editable head orientation';rotation.target=head;rotation.target_space='WORLD';rotation.owner_space='WORLD';drive(rotation,head)
 look=bpy.data.objects.get('CTRL_LOOK')
 if look:bpy.data.objects.remove(look,do_unlink=True)
-scene['control_help']='CTRL_BODY moves root. CTRL_LEFT/RIGHT_WRIST and FOOT have IK blend0..1;0 retains baked actions. Elbow/knee poles control bend. CTRL_HEAD_ROTATION IK1 enables head rotation. Finger FK bones named Left/Right Thumb/Index/Middle/Ring/Pinky1..3. No eye or facial deformation rig.'
+scene['control_help']='CTRL_BODY moves root. CTRL_LEFT/RIGHT_WRIST and FOOT have IK blend0..1;0 retains baked actions. Elbow/knee poles control bend. CTRL_HEAD_ROTATION IK1 enables head rotation. Finger FK bones named Left/Right Thumb/Index/Middle/Ring/Pinky1..3. '+('EyeLeft/EyeRight control gaze; Astrid_Face shape keys control expressions. Captured speech is a separate source-clock performance.' if 'EyeLeft' in arm.data.bones else 'No eye or facial deformation rig.')
 # Validate the final native project, after parenting/constraints, against authored world positions.
 samples=json.loads((folder/'motion-samples.json').read_text());native=[];selected=arm.animation_data.action
 for specification in samples['actions']:

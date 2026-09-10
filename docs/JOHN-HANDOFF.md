@@ -1,3 +1,7 @@
+# Latest: anatomical face and source-clock controls — 10 September 2026
+
+See [ASTRID-ANATOMICAL-FACE-STUDY.md](ASTRID-ANATOMICAL-FACE-STUDY.md). The opt-in face-study GLB now has separately weighted gaze eyes and ten real facial shape keys. Studio controls and source-clock measurements are available, with six face regressions passing. Jaw stretching and jagged collar attempts were rejected; the current mechanical candidate preserves the jacket and retained body weights. Neck surface/albedo continuity, hair appearance and final photographic acceptance remain open. The collaborating game task owns the 17-line adapter/manifest and actual-game review. Native source packaging continues separately; do not promote the default dealer or close CAC-2/CAC-4 from this checkpoint.
+
 # Latest: persistent discard presentation — 10 September 2026
 
 The opt-in rigged game retains collected cards between rounds and restores the pile from public server counts after refresh. `rigged-discard-state.mjs` excludes current player/dealer/hidden cards until they land in the tray, ignores repeated landings and clears on a new shoe. Actual far-seat game passed: 45 discards → four cards in play → 49 discards, 367 in shoe, balance990 after a push and after refresh. Evidence is in `assets/blackjack-3d/review/discard/`. Shared regression hook and growing-stack deformed-skin/reach tests pass. No backend/wallet/media changes. New anatomical head and its17line facial measurements remain in progress separately; do not promote them from capture success alone.
