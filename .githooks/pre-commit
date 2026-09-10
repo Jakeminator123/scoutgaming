@@ -8,4 +8,4 @@ node --test test/performance-contact.mjs test/pack-contact-media.mjs test/table-
 node --test test/action-placement.mjs test/bugshot-report.mjs
 node test/blackjack-asset-state.mjs
 node --test test/dealer-motion.mjs test/dealer-skin-contact.mjs
-node --test test/rigged-card-layout.mjs test/rigged-layout-contact.mjs
+node --test test/rigged-card-layout.mjs test/rigged-layout-contact.mjs test/rigged-discard-state.mjs

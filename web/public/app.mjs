@@ -569,6 +569,7 @@ async function tableCommand(op, extra = {}) {
     catch (e) { if (attempt || !/fetch|network|load failed/i.test(e.message)) throw e; }
   }
   tableVersion = out.version;
+  tableScene?.setTableSnapshot?.(out,{collecting:op==='collect'});
   return out;
 }
 async function ensureLogin(purpose) {

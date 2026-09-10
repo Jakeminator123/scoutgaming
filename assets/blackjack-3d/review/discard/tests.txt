@@ -1,0 +1,17 @@
+✔ burn and previous cards persist while the hidden dealer card stays on the table (5.063166ms)
+✔ hit and split snapshots do not prematurely move newly drawn cards into the discard (0.336209ms)
+✔ new shoe clears the old pile and refresh during a paid collection restores the complete count (0.292958ms)
+(node:39357) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ collection reaches the growing discard stack without pulling hand skin through felt (1025.952625ms)
+✔ extreme split destinations remain reachable with real hand skin above the felt (1263.566959ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2889.274
