@@ -1,0 +1,9 @@
+{
+  "status": "numeric-only-not-visual-approval",
+  "frames": 268,
+  "duration": 8.887532828722168,
+  "cards": 16,
+  "minHandHeightMm": 911.2499544673162,
+  "maxWristErrorMm": 1.570092458683775e-13,
+  "maxFingertipErrorMm": 0.7002610843470144
+}

@@ -36,4 +36,10 @@ Evidence lives in `assets/blackjack-3d/review/face/`.
 
 Recordings are **silent visual evidence**. They cannot establish sound quality or audiovisual perception. The original source audio remains in the game, and sound cues still use the existing card action clock.
 
-The model still reads as rendered: moulded hair, skin/material differences, a lower neck/chest color patch and facial-expression quality remain open. The new neck surface passed the native attachment guard, but that is not approval of the skin appearance. Full phone readability, physical iPhone Safari/Android Chrome, desktop Safari, professional collection, chip handling and a physical shoe-change performance remain open. Do not promote the candidate to Astrid's default or mark the full CAC acceptance complete from these technical checks.
+The model still reads as rendered: moulded hair, skin/material differences, a lower neck/chest color patch and facial-expression quality remain open. The new neck surface passed the native attachment guard, but that is not approval of the skin appearance. Full phone readability, physical iPhone Safari/Android Chrome, desktop Safari, full visual acceptance of collection, chip handling and a physical shoe-change performance remain open. Do not promote the candidate to Astrid's default or mark the full CAC acceptance complete from these technical checks.
+
+## Continuous collection follow-up
+
+The live renderer now gathers completed cards along one surface path into a single packet, then places that packet in the discard tray. Cards remain at their server-issued positions until contact. The two hands prepare a gradual transfer near the centre; one packet landing updates the persistent discard count. A quiet gathering cue follows newly contacted cards, and existing mute/visibility guards apply.
+
+See `assets/blackjack-3d/review/collection-sweep/` for the actual eight-card round, sampled frames, independent contact tests and numerical native-animation export. The sixteen-card reference sweep takes 8.89 seconds; duration adapts to the actual path, rather than repeating a two-second action for each card. Naturalness still needs visual acceptance at a larger player-camera view. The old individual collection action remains in the earlier editable projects; the new study is additional.

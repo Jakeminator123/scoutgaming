@@ -1,0 +1,22 @@
+{
+  "balance": "$977.50",
+  "cards": 0,
+  "status": {
+    "action": "collect-sweep",
+    "cardPitch": "0",
+    "cardPosition": "[-0.9100000262260437,0.9528500166893005,0.25]",
+    "cardYaw": "0.03310789780841217",
+    "collectionSize": "8",
+    "contactError": "0.0007000545823527694",
+    "discardCount": "74",
+    "faceHistory": "[{\"id\":\"goodluck\",\"samples\":210,\"mediaTime\":5.084029,\"captureTime\":5.084029},{\"id\":\"lose\",\"samples\":55,\"mediaTime\":1.6,\"captureTime\":1.9500000000000002},{\"id\":\"placebets\",\"samples\":75,\"mediaTime\":2.24,\"captureTime\":2.266}]",
+    "faceLastLine": "placebets",
+    "faceMaxTime": "2.266",
+    "faceMediaTime": "2.24",
+    "faceSamples": "75",
+    "facialLine": "",
+    "gathered": "8",
+    "progress": "1.0000",
+    "target": "[0.0115,0.911,0.224]"
+  }
+}
