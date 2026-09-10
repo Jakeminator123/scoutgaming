@@ -1,0 +1,13 @@
+{
+  "at": "2026-09-10T09:52:23.093Z",
+  "face": {
+    "discardCount": "49",
+    "faceHistory": "[{\"id\":\"greeting\",\"samples\":89,\"mediaTime\":4.64,\"captureTime\":4.64},{\"id\":\"placebets\",\"samples\":41,\"mediaTime\":2.199762,\"captureTime\":2.225762},{\"id\":\"goodluck\",\"samples\":81,\"mediaTime\":5.085011,\"captureTime\":5.085011},{\"id\":\"insurance\",\"samples\":43,\"mediaTime\":1.986968,\"captureTime\":2.7829680000000003},{\"id\":\"peek\",\"samples\":57,\"mediaTime\":2.692508,\"captureTime\":2.9575080000000002},{\"id\":\"blackjack\",\"samples\":78,\"mediaTime\":3.635023,\"captureTime\":3.797023},{\"id\":\"bust\",\"samples\":31,\"mediaTime\":1.36,\"captureTime\":1.36},{\"id\":\"dealerbust\",\"samples\":75,\"mediaTime\":3.426976,\"captureTime\":3.5689759999999997},{\"id\":\"win\",\"samples\":117,\"mediaTime\":5.085011,\"captureTime\":5.085011},{\"id\":\"lose\",\"samples\":50,\"mediaTime\":1.6,\"captureTime\":1.9500000000000002},{\"id\":\"push\",\"samples\":62,\"mediaTime\":1.865533,\"captureTime\":1.865533},{\"id\":\"dealerblackjack\",\"samples\":69,\"mediaTime\":2.08,\"captureTime\":2.242},{\"id\":\"sidebet\",\"samples\":68,\"mediaTime\":2.024398,\"captureTime\":2.061398},{\"id\":\"chatter1\",\"samples\":87,\"mediaTime\":2.8,\"captureTime\":3.3629999999999995},{\"id\":\"chatter2\",\"samples\":79,\"mediaTime\":2.476412,\"captureTime\":3.1264119999999997},{\"id\":\"farewell\",\"samples\":64,\"mediaTime\":1.896501,\"captureTime\":2.202501},{\"id\":\"double\",\"samples\":67,\"mediaTime\":1.988274,\"captureTime\":2.3982740000000002},{\"id\":\"goodluck\",\"samples\":134,\"mediaTime\":5.085011,\"captureTime\":5.085011},{\"id\":\"goodluck\",\"samples\":139,\"mediaTime\":5.085011,\"captureTime\":5.085011},{\"id\":\"goodluck\",\"samples\":11,\"mediaTime\":0.359772,\"captureTime\":0.359772}]",
+    "faceLastLine": "goodluck",
+    "faceMaxTime": "0.359772",
+    "faceMediaTime": "0.359772",
+    "faceSamples": "11",
+    "facialLine": ""
+  },
+  "sound": "Turn sound on"
+}

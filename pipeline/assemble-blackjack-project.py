@@ -1,11 +1,14 @@
 """Combine the editable table and actual rig; preserve source files separately."""
-import bpy,json,math,shutil
+import bpy,json,math,shutil,sys
 from pathlib import Path
 from mathutils import Vector
 REPO=Path(__file__).resolve().parents[1]
-OUT=REPO/'assets/blackjack-3d';DELIVERY=OUT/'editable-project';DELIVERY.mkdir(exist_ok=True)
+anatomical='--anatomical' in sys.argv
+OUT=REPO/'assets/blackjack-3d';DELIVERY=OUT/'editable-project'
+if anatomical:DELIVERY=DELIVERY/'anatomical'
+DELIVERY.mkdir(parents=True,exist_ok=True)
 def p(v):return(v[0],-v[2],v[1])
-dealer=REPO/'assets/astrid-3d/astrid-animated.blend'
+dealer=REPO/('assets/astrid-3d/anatomical/astrid-animated.blend' if anatomical else 'assets/astrid-3d/astrid-animated.blend')
 assert dealer.exists(),'Wait for the verified dealer bake before assembly'
 bpy.ops.wm.open_mainfile(filepath=str(OUT/'blackjack-table-optimized.blend'))
 scene=bpy.context.scene
@@ -59,7 +62,7 @@ for info in motion['actions']:
     timeline.append({'action':info['name'],'start':start,'end':start+end-1})
     start+=end
 scene.frame_start=1;scene.frame_end=start-1;scene.render.fps=motion['fps']
-scene['acceptance']='CONTACT REVIEW CANDIDATE. Facial animation and remaining gameplay gestures incomplete.'
+scene['acceptance']='CONTACT REVIEW CANDIDATE. Photographic likeness and remaining gameplay gestures incomplete.'
 scene['source_files']='Detailed table and original generated dealer retained separately.'
 scene['workflow']='Play the marked review timeline for all twelve studies and matched card transforms. Mute the review NLA track to edit an individual named Action. Optional target IK sliders default off to preserve the baked studies.'
 scene['gameplay']='Existing Croupier backend owns cards, shoe, balances and settlement. This project contains presentation assets only.'
@@ -77,12 +80,15 @@ for entry in timeline:
         preview_errors.append({'action':entry['action'],'frame':scene.frame_current,'headMm':head_error*1000,'cardMm':card_error*1000})
         assert head_error<.001 and card_error<.001,f'Preview timeline calibration failed: {preview_errors[-1]}'
 scene.frame_set(0);scene.frame_set(1);bpy.context.view_layer.update()
-bpy.ops.wm.save_as_mainfile(filepath=str(DELIVERY/'astrid-blackjack-editable.blend'))
+bpy.ops.file.pack_all();bpy.context.preferences.filepaths.save_version=0
+bpy.ops.wm.save_as_mainfile(filepath=str(DELIVERY/'astrid-blackjack-editable.blend'),compress=True)
 scene.render.filepath=str(DELIVERY/'scene-contact-review.png');bpy.ops.render.render(write_still=True)
 result={'file':'astrid-blackjack-editable.blend','units':'metres','fps':30,'dealerObjects':[o.name for o in added],
+ 'dealerSource':str(dealer.relative_to(REPO)),
+ 'facialTargets':{o.name:[key.name for key in o.data.shape_keys.key_blocks] for o in added if o.type=='MESH' and o.data.shape_keys},
  'actions':[a.name for a in bpy.data.actions], 'timeline':timeline,'previewRegistrationChecks':preview_errors,
  'armatures':[{ 'name':o.name,'bones':len(o.data.bones),'constraints':sum(len(b.constraints) for b in o.pose.bones)} for o in added if o.type=='ARMATURE'],
  'meshes':sum(o.type=='MESH' for o in scene.objects),
- 'limitations':['Facial blendshapes and phoneme/lip synchronization are absent.','Only the named exported actions listed here are delivered; no implied gesture support.','Contact study requires final rendered mesh collision and full-round QA; numerical joint checks alone do not approve it.']}
+ 'limitations':[('Editable facial shapes and gaze bones are included. Captured speech is provided in the separate anatomical speech project and in-game manifests; this body study timeline contains no speech.' if anatomical else 'Facial blendshapes and phoneme/lip synchronization are absent.'),'Only the named exported actions listed here are delivered; no implied gesture support.','Contact study requires final rendered mesh collision and full-round QA; numerical joint checks alone do not approve it.']}
 (DELIVERY/'project-inspection.json').write_text(json.dumps(result,indent=2))
 print(json.dumps(result))

@@ -1,3 +1,9 @@
+# Latest: anatomical face connected to the actual game — 10 September 2026
+
+Read [ASTRID-FACE-IN-GAME-REVIEW.md](ASTRID-FACE-IN-GAME-REVIEW.md). The opt-in `?dealer=astrid&scene=rigged-review&face=anatomical` now combines the corrected neck/head with 17 measured facial performances, exact media-source bindings, cancellation-safe shared playback and silent card-following gaze. The combined editable table is in `assets/blackjack-3d/editable-project/anatomical/`. Its source, images and controls were reopened and checked. Default filmed dealers and guest access remain unchanged.
+
+This remains a likeness candidate. Hair, skin and expression quality still need visual work; a zero-gap capture and passing mechanical tests do not approve photographic Astrid. Original four-dealer repeated playback and the 90-stream baseline were checked. In-game round/recovery evidence and limitations are in the linked report. **CAC-2 and CAC-4 stay In Dev.** Keep experimental speech gaze isolated until it has its own source-clock and visual evidence.
+
 # Latest: corrected anatomical neck and packed source — 10 September 2026
 
 The corrected opt-in model removes the duplicated neck offset caused by reading raw mesh positions after editing shape-key Basis. Actual evaluated neck/body separation fell from 46.11 mm maximum to 2.12 mm. Rest and both outer-seat renders are in `assets/astrid-3d/anatomical/review/`; six face tests pass on the published candidate. Four editable Blender projects, embedded-material GLBs, twelve body actions, manual controls and the measured goodluck take with original packed audio are saved and reopened under `assets/astrid-3d/anatomical/`. Export joint residual remains below 0.65 mm. Read the anatomical face study and package README.
