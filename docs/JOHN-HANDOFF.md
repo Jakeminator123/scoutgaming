@@ -1,4 +1,12 @@
-# Latest: CAC layout acceptance and left return — 10 September 2026
+# Latest: scene QA and real HTTP recovery — 10 September 2026
+
+Read [ASTRID-SCENE-ACCEPTANCE.md](ASTRID-SCENE-ACCEPTANCE.md). **CAC-1/3/5/6/7 are Done; CAC-2/4 remain In Dev.** The three latest closures cover background continuity and clean cutout edges across 17 Astrid lines, a desktop three-seat round and a normal phone-viewport round. They do not approve the remaining source motion or full lip sync. Earlier status snapshots below are historical.
+
+The new `test/table-http.mjs` checks actual HTTP/SQLite restart recovery, duplicate and concurrent requests, split/double, insurance, payouts and cut transitions in a disposable server. It passes and is included in CI. No game/wallet API, media, voice or guest-access behavior changed.
+
+[ASTRID-CONTROLLED-CAPTURE.md](ASTRID-CONTROLLED-CAPTURE.md) now includes the next-shot brief and current clean game camera reference. Right and own-card generated returns failed visual review. John/performer availability is pending; no capture session has been arranged. Centre/left continuations remain opt-in review media, and the full Astrid goal remains open. Keep the existing Jira workflow live.
+
+# Earlier: CAC layout acceptance and left return — 10 September 2026
 
 Read [ASTRID-LAYOUT-AND-RETURN-QA.md](ASTRID-LAYOUT-AND-RETURN-QA.md). **CAC-3 and CAC-6 are Done** after the reported overlaps passed live seven-seat and left/centre/right split checks. Phone controls also clear the wallet after collapsing rehearsal. CAC-2/4 remain In Dev; CAC-1/5/7 remain Ready for QA. Keep updating Jira live.
 

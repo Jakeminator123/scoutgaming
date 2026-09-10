@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-10",
+  "testedCommit": "d0c1361f6cbeb258360d152a9a33ac0204a51cf8",
+  "scope": "CAC-1, CAC-5 and CAC-7 staged background and cutout acceptance; not full motion or device approval",
+  "files": [
+    {
+      "file": "all-lines.jpg",
+      "sha256": "a059a991ecc8435889a825c163f7a6c2ac5176e810da547a7afd9dda05403ba0",
+      "bytes": 260475
+    },
+    {
+      "file": "dealing-room-checks.json",
+      "sha256": "55ae1d36846b9eb103aecd095dca03e1cfd1ebfe8671b8586a4e7d530e45f28e",
+      "bytes": 478
+    },
+    {
+      "file": "edge-inspection.png",
+      "sha256": "7427131bcbf42c94c1de1d3292e5e193e52de9a86855d87ac612e46e40f5bec6",
+      "bytes": 384979
+    },
+    {
+      "file": "http-acceptance.json",
+      "sha256": "c983eb004a81aed203f7b293252ff6ce14037c7c2e872feb7522c1b242408d62",
+      "bytes": 817
+    },
+    {
+      "file": "motion-edges.jpg",
+      "sha256": "7337f859e156778a1fcc88f7262b04485279ff6f6d4547304e26bb2134ed887e",
+      "bytes": 171437
+    },
+    {
+      "file": "phone-actions.jpg",
+      "sha256": "548480f2fe6b2138af1e67fa1327a6fdd2b1b0b09a74f8a6e31cd2665b370592",
+      "bytes": 47310
+    },
+    {
+      "file": "phone-contact.jpg",
+      "sha256": "7a8615d5088429c3b882a28e89f54b836f8a0b3fd8429aeeacc88485cb19c51b",
+      "bytes": 43786
+    },
+    {
+      "file": "phone-settlement.json",
+      "sha256": "365af3995d5371d58afd868d67f85aadef4831bc47f5915b164b23f687844e89",
+      "bytes": 194
+    },
+    {
+      "file": "phone-speech.jpg",
+      "sha256": "dad2ae6a38cc76a7ba008953c93ae8471315de3969fd7fe00e988feb5323cc98",
+      "bytes": 44744
+    },
+    {
+      "file": "speech-room-checks.json",
+      "sha256": "a96a19d09505317339434542e341890f22b85a16c3f9fcb20d2941ca4a702a72",
+      "bytes": 3717
+    }
+  ]
+}

@@ -1,6 +1,38 @@
 # Astrid contact capture handoff
 
-## Latest continuation — 9 September, dealer cards and transitions
+## Next capture — 10 September
+
+The existing four direction takes now use the same front-outlet extraction. Centre and left have partial, opt-in empty-hand return candidates. The right continuation failed because it swept across the table before reaching the outlet. The own-card continuation failed because it moved a delivered card back into the shoe. Neither rejected take is in the runtime. See [ASTRID-LAYOUT-AND-RETURN-QA.md](ASTRID-LAYOUT-AND-RETURN-QA.md) for the source IDs and recorded failures.
+
+The next step is a controlled performance proof. John/performer availability has been requested but is not yet confirmed. No physical recording has been scheduled and no new generation job is pending. This brief is ready for the person arranging capture; it is not a claim that capture has happened.
+
+### Current reference packet
+
+- [Clean current table](reference/astrid-capture-20260910/table-reference.jpg), captured in the actual staged game at 1920×1080 after the viewport finished loading. It binds the pictured dealer scale, rail and shoe. The browser snapshot is 1912×1080 (the 1920px viewport minus its right scrollbar strip); use the recorded viewport dimensions for normalization, not the JPEG width.
+- [Current render camera](reference/astrid-capture-20260910/camera.json), exported by the game's existing capture control. Its matrices describe this render, not a physical lens or centimetres. The current viewport outlet differs from the normalized **source-media** outlet in the older camera below because the whole scene is fitted to the available screen. Do not mix the two coordinate spaces.
+- [Current take anchors](reference/astrid-capture-20260910/take-anchors.json), containing the unchanged original source identities, hashes, source camera, event frames and measured release coordinates. These are references for matching existing joins, not approved replacement footage or measurements of a new performer.
+- The [Scout reference](https://scoutgaminggroup.com/ai-casino) defines photographic identity, lighting, contact and fluid performance. Existing release correction and folded-arm returns are defects to remove, not gestures to reproduce.
+
+### First two proof shots
+
+| Shot | Continuous action | Inspect before more capture |
+| --- | --- | --- |
+| Own-card delivery | Rest → front outlet → extract one rigid marked card → place it in the dealer fan → release → empty hand back to outlet; also finish a version at the same rest pose. | Take from the front outlet, never from the stack centre. The placed card stays on the felt. All fingers and the whole card path remain in frame. |
+| Right delivery and return | Outlet-ready → extract one card → place in the right player fan → release → empty hand directly back to outlet; repeat once without folding arms. | No extra sweep, shuffle or card retrieval. Entry and exit must join the neighbouring take without a visible pose jump. |
+
+Record each sequence as an uncut normal-speed performance. Let the performer execute a natural professional cadence; do not stretch a slow gesture or accelerate a spoken sentence. Keep camera, focus, exposure, white balance, shoe, seat and lighting locked. Include clean hold frames at both ends and enough pre/post-roll to choose genuine motion boundaries. Preserve the original audio track even if it is only location sound.
+
+Use removable table-plane markers and a rigid card whose full corners can be reconstructed under occlusion. Record the camera calibration and measured physical dimensions. The final actor layer must exclude the prop; the finished game uses its server-issued card beneath a matching foreground finger matte. Keep source corner/fingertip measurements and confidence for every contact frame. A visible strip of card is not the full rectangle.
+
+After the first proof passes in the actual game, capture left/centre/right player deliveries with second-card and split offsets, own upcard/hole/additional draws, hole reveal, collection and shoe change. The requirement is believable delivery to every player fan, not an arbitrary requirement for seven unique videos. Choose the action coverage from actual target geometry and verify all seven seats plus split fans.
+
+### Handoff and acceptance
+
+Deliver original constant-frame-rate media, clean plate, camera/lens/calibration measurements, source frame index, rigid full-card transforms, fingertip/occlusion labels, actor matte, foreground finger matte and source hashes. Match the approved synthetic Astrid identity only through an explicit reviewed transfer; a new physical performer is not automatically the same character. New identity-transferred footage must be checked again for face, hands and contact.
+
+Stage one new candidate inside the existing Astrid game. Use the shared presented-media clock for the actor, attached card, occlusion and sound; settle each delivery only at landing. Review extraction, grip, release and both joins frame by frame, then complete repeated normal-speed rounds. Reject floating contact, duplicate cards, bent card geometry, blur, abrupt pose/exposure changes or gestures without game events. Keep CAC-2/4 In Dev until their full expected behavior passes. The ingest details below remain applicable; older action-coverage lists are historical.
+
+## Earlier continuation — 9 September, dealer cards and transitions
 
 The user accepted the direction of the measured dealing motion and requested Astrid also deal her own cards, followed by smoother joins. The staged game now has a distinct dealer-card source for upcard, face-down hole card and additional dealer draws. This supersedes the earlier instruction below to stop all expansion. It does not grant full contact or default-table approval.
 
