@@ -4,7 +4,7 @@
 
 The existing four direction takes now use the same front-outlet extraction. Centre and left have partial, opt-in empty-hand return candidates. The right continuation failed because it swept across the table before reaching the outlet. The own-card continuation failed because it moved a delivered card back into the shoe. Neither rejected take is in the runtime. See [ASTRID-LAYOUT-AND-RETURN-QA.md](ASTRID-LAYOUT-AND-RETURN-QA.md) for the source IDs and recorded failures.
 
-The next step is a controlled performance proof. John/performer availability has been requested but is not yet confirmed. No physical recording has been scheduled and no new generation job is pending. This brief is ready for the person arranging capture; it is not a claim that capture has happened.
+The next step is a controlled performance proof. John/performer availability has been requested but is not yet confirmed. No physical recording has been scheduled and no new generation job is pending. The two rejected render jobs were rechecked and are completed. CAC-2 and CAC-4 are now Blocked on this dependency; return them to In Dev when usable source footage is available. This brief is ready for the person arranging capture; it is not a claim that capture has happened.
 
 ### Current reference packet
 
@@ -30,7 +30,7 @@ After the first proof passes in the actual game, capture left/centre/right playe
 
 Deliver original constant-frame-rate media, clean plate, camera/lens/calibration measurements, source frame index, rigid full-card transforms, fingertip/occlusion labels, actor matte, foreground finger matte and source hashes. Match the approved synthetic Astrid identity only through an explicit reviewed transfer; a new physical performer is not automatically the same character. New identity-transferred footage must be checked again for face, hands and contact.
 
-Stage one new candidate inside the existing Astrid game. Use the shared presented-media clock for the actor, attached card, occlusion and sound; settle each delivery only at landing. Review extraction, grip, release and both joins frame by frame, then complete repeated normal-speed rounds. Reject floating contact, duplicate cards, bent card geometry, blur, abrupt pose/exposure changes or gestures without game events. Keep CAC-2/4 In Dev until their full expected behavior passes. The ingest details below remain applicable; older action-coverage lists are historical.
+Stage one new candidate inside the existing Astrid game. Use the shared presented-media clock for the actor, attached card, occlusion and sound; settle each delivery only at landing. Review extraction, grip, release and both joins frame by frame, then complete repeated normal-speed rounds. Reject floating contact, duplicate cards, bent card geometry, blur, abrupt pose/exposure changes or gestures without game events. Use In Dev during implementation, Ready for QA when the candidate and evidence are prepared, In Testing during acceptance, and Done only after the full expected behavior passes. The ingest details below remain applicable; older action-coverage lists are historical.
 
 ## Earlier continuation — 9 September, dealer cards and transitions
 
