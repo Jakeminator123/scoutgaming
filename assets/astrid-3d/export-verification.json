@@ -1,0 +1,42 @@
+[
+  {
+    "action": "Deal_Own_Card_Contact_Study",
+    "maxJointPositionErrorMm": 0.0011309963795771516,
+    "maxJointRotationErrorDegrees": 0.11854718652154404
+  },
+  {
+    "action": "Deal_Seat_01_Contact_Study",
+    "maxJointPositionErrorMm": 0.6479506227483343,
+    "maxJointRotationErrorDegrees": 0.13111631841702284
+  },
+  {
+    "action": "Deal_Seat_02_Contact_Study",
+    "maxJointPositionErrorMm": 0.41717305252573306,
+    "maxJointRotationErrorDegrees": 0.12761189951996046
+  },
+  {
+    "action": "Deal_Seat_03_Contact_Study",
+    "maxJointPositionErrorMm": 0.6346244492437003,
+    "maxJointRotationErrorDegrees": 0.1159026419750706
+  },
+  {
+    "action": "Deal_Seat_04_Contact_Study",
+    "maxJointPositionErrorMm": 0.627772630638577,
+    "maxJointRotationErrorDegrees": 0.08424879141642135
+  },
+  {
+    "action": "Deal_Seat_05_Contact_Study",
+    "maxJointPositionErrorMm": 0.0010770483013137634,
+    "maxJointRotationErrorDegrees": 0.08424879141642135
+  },
+  {
+    "action": "Deal_Seat_06_Contact_Study",
+    "maxJointPositionErrorMm": 0.0010317389021544147,
+    "maxJointRotationErrorDegrees": 0.1251157008458315
+  },
+  {
+    "action": "Deal_Seat_07_Contact_Study",
+    "maxJointPositionErrorMm": 0.0010647594724033365,
+    "maxJointRotationErrorDegrees": 0.11610921495737865
+  }
+]

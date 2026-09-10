@@ -1,0 +1,26 @@
+[
+  {
+    "control": "CTRL_LEFT_WRIST",
+    "restTargetErrorMm": 0.0007202056630608184,
+    "movedTargetErrorMm": 0.0007831265535039254,
+    "default": "FK; set IK to1 to move this target"
+  },
+  {
+    "control": "CTRL_LEFT_FOOT",
+    "restTargetErrorMm": 0.00017734299145852794,
+    "movedTargetErrorMm": 0.0002123415470123291,
+    "default": "FK; set IK to1 to move this target"
+  },
+  {
+    "control": "CTRL_RIGHT_WRIST",
+    "restTargetErrorMm": 0.0005268882873128994,
+    "movedTargetErrorMm": 0.0005362865600862535,
+    "default": "FK; set IK to1 to move this target"
+  },
+  {
+    "control": "CTRL_RIGHT_FOOT",
+    "restTargetErrorMm": 0.0002952395387154007,
+    "movedTargetErrorMm": 0.00026109608032089755,
+    "default": "FK; set IK to1 to move this target"
+  }
+]
