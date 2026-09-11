@@ -1,4 +1,10 @@
-# Latest: corrected body rig preserves original PBR — 11 September 2026
+# Latest: replacement appearance rejected in Chrome — 11 September 2026
+
+The user rejected the new Tripo character's appearance. The actual Chrome WebGL frame is preserved with its SHA receipt under `content/staging/2026-09-11/astrid-replacement/rig-candidate/evidence/`; read that folder's `REVIEW.md` and `inspection/APPEARANCE-REJECTION.md`. Face likeness, hair, suit and the hunched game pose fail the photographic reference. **Stop rigging this source until a replacement passes a matched-camera appearance review.** Earlier structural/body checks are not appearance acceptance.
+
+Hand trials V1 and V2 are preserved as rejected editable/GLB evidence in `hand-study/`. Moderate bending creates thumb/web tears; successful numerical contact does not override those images. Connected digit topology is saved for research, but V3 was not implemented after the appearance rejection. No public/default asset, backend, wallet or other dealer changed. CAC-2/CAC-4 remain In Dev; no realistic full-round delivery or facial/lip acceptance exists on this replacement.
+
+# Earlier: corrected body rig preserves original PBR — 11 September 2026
 
 The corrected-orientation rig passed scoped anatomical/rest checks and a rendered forward-elbow study. Original canonical geometry, UVs and all three embedded PBR images are preserved in `content/staging/2026-09-11/astrid-replacement/inspection/rig-corrected-transfer/original-pbr-body-rig.blend` and `.glb` (24 body joints, no actions). Read `inspection/BODY-RIG-REVIEW.md` for exact transfer tolerance, visual evidence and the rejected hip-collision pose. The game task has this source for measured finger fitting and actual-table testing. Facial controls, full motion and realism acceptance remain open. No public/default promotion.
 

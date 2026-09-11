@@ -1,0 +1,12 @@
+{
+  "jobId":"be0ab914-5ae5-451c-a879-df4fc9ff1724",
+  "model":"3d_rigging",
+  "sourceFile":"inspection/canonical-source/original-canonical.glb",
+  "sourceSha256":"feee7e1f4597e5a64bce101f1e45f64c0a345686bc9271fc15c07f5a9dfa25e8",
+  "model_url":"https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/7c5f4377-4d0b-47c9-83a4-31930faf310c.glb",
+  "height_meters":1.73,
+  "enable_animation":false,
+  "upload":"MCP explicit model/gltf-binary, recreated in Higgsfield sandbox using saved canonicalization script, exact SHA equality verified, PUT HTTP200, confirmed media7c5f4377-4d0b-47c9-83a4-31930faf310c",
+  "reason":"First body rig mislocalized hand and lower-body joints. Hypothesis: rigger assumed standard front+Z while original Tripo faced+X. This controlled retry normalizes orientation without changing source detail/PBR.",
+  "acceptance":"Pending joint placement, skin weights, original material preservation and actual card-action review."
+}

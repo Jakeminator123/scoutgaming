@@ -1,0 +1,13 @@
+{
+  "status": "rejected",
+  "date": "2026-09-11",
+  "sourceSha256": "432fed3af74c1f829d8cf99031fc90b07aadec3ea7a7ee13411c2191eee456af",
+  "reasons": [
+    "user rejected appearance and likeness",
+    "source face/hair/garment construction below target",
+    "game resting pose incorrect",
+    "V1 and V2 finger deformation failed"
+  ],
+  "defaultPromotion": false,
+  "furtherRigging": "stopped pending replacement appearance proof"
+}
