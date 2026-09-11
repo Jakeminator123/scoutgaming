@@ -1,0 +1,32 @@
+{
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-11/astrid-replacement/inspection/rig-corrected-transfer/original-pbr-body-rig.blend",
+  "checks": [
+    {
+      "side": "Left",
+      "kind": "WRIST",
+      "snapResidualMm": 0.0008200040090537522,
+      "maxAllBoneChangeMm": 0.0008200040090537522
+    },
+    {
+      "side": "Left",
+      "kind": "FOOT",
+      "snapResidualMm": 0.0020605464081755735,
+      "maxAllBoneChangeMm": 0.0020605464081755735
+    },
+    {
+      "side": "Right",
+      "kind": "WRIST",
+      "snapResidualMm": 0.0009087570615227277,
+      "maxAllBoneChangeMm": 0.0009087570615227277
+    },
+    {
+      "side": "Right",
+      "kind": "FOOT",
+      "snapResidualMm": 0.002515600714389056,
+      "maxAllBoneChangeMm": 0.002515600714389056
+    }
+  ],
+  "scope": "Rest pose IK matching only; no full motion or visual acceptance",
+  "restSkinResidualMm": 0.00028115454709698565,
+  "nativeMatrixResidual": 0.000518798828125
+}
