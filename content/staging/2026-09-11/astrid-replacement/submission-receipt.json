@@ -1,0 +1,58 @@
+{
+  "jobs": [
+    {
+      "index": 1,
+      "status": "submission_failed",
+      "error": "Out of credits on Team (monthly) plan in Shared workspace.",
+      "adjustments": {
+        "medias[0].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Nano Banana 2 backend expects schema-key media roles"
+        },
+        "medias[1].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Nano Banana 2 backend expects schema-key media roles"
+        }
+      }
+    },
+    {
+      "index": 2,
+      "status": "submission_failed",
+      "error": "Out of credits on Team (monthly) plan in Shared workspace.",
+      "adjustments": {
+        "medias[0].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Nano Banana 2 backend expects schema-key media roles"
+        },
+        "medias[1].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Nano Banana 2 backend expects schema-key media roles"
+        }
+      }
+    },
+    {
+      "index": 3,
+      "status": "submission_failed",
+      "error": "Out of credits on Team (monthly) plan in Shared workspace.",
+      "adjustments": {
+        "medias[0].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Nano Banana 2 backend expects schema-key media roles"
+        },
+        "medias[1].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Nano Banana 2 backend expects schema-key media roles"
+        }
+      }
+    }
+  ],
+  "submitted_count": 0,
+  "failed_count": 3,
+  "error_code": "INVALID_ARGUMENT"
+}

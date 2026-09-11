@@ -1,0 +1,62 @@
+{
+  "requests": [
+    {
+      "index": 4,
+      "params": {
+        "model": "gpt_image_2",
+        "resolution": "4k",
+        "quality": "high",
+        "aspect_ratio": "2:3",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "431f1aa2-bfdc-4478-8308-e6f97ccb9fc7"
+          },
+          {
+            "role": "image",
+            "value": "516ea1c1-e2c6-4172-9978-8c5b86115086"
+          }
+        ],
+        "prompt": "Photographic full-body turntable reconstruction view of Astrid. Image 1 is the EXACT FRONT body, arms, open palms and pose to reproduce. Image 2 supplies the desired SIDE CAMERA and identity/clothes, but ITS RELAXED ARMS ARE WRONG. Make ONE true profile facing image RIGHT. Keep the same black suit, ivory blouse, compact low blonde bun, face and physique. Change the side view to a correct projection of image 1's rigid A-pose without changing any joint angles. Arms are abducted 30 degrees outward in the body's coronal plane, not hanging down, hands are clear of thighs in 3D. In this exact side projection, upper arm and forearm are foreshortened and the wrist is at image1's higher height. Both PALMS FACE THE SAME DIRECTION AS HER NOSE, hence the side camera sees narrow thumb/little-finger EDGE profiles of the hands, NOT a broad back-of-hand and NOT a broad palm. Fingers are gently separated in a plane perpendicular to the side camera. Match normalized vertical positions from head top0 to shoe sole1: shoulders0.16, wrists0.44, fingertips0.52. Nose faces RIGHT. Neutral high-detail photographic reference, seamless light grey background, soft even illumination, consistent proportions and camera elevation, head to shoe soles visible with small margins. One person, no text, no collage, no change of pose to make the hands more visible."
+      }
+    },
+    {
+      "index": 5,
+      "params": {
+        "model": "gpt_image_2",
+        "resolution": "4k",
+        "quality": "high",
+        "aspect_ratio": "2:3",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "431f1aa2-bfdc-4478-8308-e6f97ccb9fc7"
+          },
+          {
+            "role": "image",
+            "value": "b1ff4104-2b02-41d2-8b09-9b9ec569404a"
+          }
+        ],
+        "prompt": "Photographic full-body turntable reconstruction view of Astrid. Image 1 is the EXACT FRONT body, arms, open palms and pose to reproduce. Image 2 supplies the desired SIDE CAMERA and identity/clothes, but ITS RELAXED ARMS ARE WRONG. Make ONE true profile facing image LEFT. Keep the same black suit, ivory blouse, compact low blonde bun, face and physique. Change the side view to a correct projection of image 1's rigid A-pose without changing any joint angles. Arms are abducted 30 degrees outward in the body's coronal plane, not hanging down, hands are clear of thighs in 3D. In this exact side projection, upper arm and forearm are foreshortened and the wrist is at image1's higher height. Both PALMS FACE THE SAME DIRECTION AS HER NOSE, hence the side camera sees narrow thumb/little-finger EDGE profiles of the hands, NOT a broad back-of-hand and NOT a broad palm. Fingers are gently separated in a plane perpendicular to the side camera. Match normalized vertical positions from head top0 to shoe sole1: shoulders0.16, wrists0.44, fingertips0.52. Nose faces LEFT. Neutral high-detail photographic reference, seamless light grey background, soft even illumination, consistent proportions and camera elevation, head to shoe soles visible with small margins. One person, no text, no collage, no change of pose to make the hands more visible."
+      }
+    }
+  ],
+  "submission": {
+    "jobs": [
+      {
+        "index": 4,
+        "job_id": "5581bcba-e2b1-4f28-9f5a-c2cc032371c6",
+        "status": "pending"
+      },
+      {
+        "index": 5,
+        "job_id": "d65c82a3-5e3b-44f5-8a6d-64ccf00b3dc7",
+        "status": "pending"
+      }
+    ],
+    "submitted_count": 2,
+    "failed_count": 0
+  }
+}
