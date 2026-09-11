@@ -1,4 +1,8 @@
-# Latest: isolated native pose matching and generation blocker — 11 September 2026
+# Latest: original Tripo replacement inspected — 11 September 2026
+
+The credit blocker below was resolved. Tripo job `81c28894-4323-44b3-9bda-3a0a32100c5a` delivered a 7.14 MB GLB after the first quad-output attempt failed without a reason. Original bytes, a separate packed Blender source, inventories and actual front/hand/profile renders are preserved in `content/staging/2026-09-11/astrid-replacement/inspection/`. Read `TRIANGLE-CANDIDATE-REVIEW.md`: this is accepted for a body-rigging trial, not final realism. The new coherent head/suit and volumetric fingers improve on the old assembly, but the model has no skeleton, facial shapes or animation. Eye detail/gaze, hair, cuffs and real card action remain open. Do not reinstall the rejected old head or apply hardcoded old mesh corrections. No public model changed.
+
+# Earlier: isolated native pose matching and generation blocker — 11 September 2026
 
 The user's photographic dealer and natural performance goal is still open. Whole-character assessment is in `content/staging/2026-09-11/dealer-source-assessment/`; collar micro-studies are frozen. The replacement-generation task saved exact Higgsfield reference requests and a rejected submission under `content/staging/2026-09-11/astrid-replacement/`: zero jobs started, shared workspace balance 1.4 credits, three references estimated at 9 credits before unpriced 3D/rigging work. Do not submit duplicate jobs or present the existing character as accepted realism.
 
