@@ -174,6 +174,7 @@ def main():
     centre = (lo+hi)/2
     angle = math.radians(args.front_angle)
     front = Vector((math.sin(angle), -math.cos(angle), 0))
+    screen_right = Vector((math.cos(angle), math.sin(angle), 0))
     world = bpy.data.worlds.new('Inspection_world')
     world.use_nodes = True
     world.node_tree.nodes['Background'].inputs[0].default_value = (.16, .16, .16, 1)
@@ -213,12 +214,12 @@ def main():
     crops = []
     for side, sign in [('image-left', -1), ('image-right', 1)]:
         eligible = [p for p in points if lo.z+.42*height < p.z < lo.z+.63*height
-                    and (p.x-centre.x)*sign > height*.13]
+                    and (p-centre).dot(screen_right)*sign > height*.13]
         if not eligible:
             crops.append({'side': side, 'status': 'not located; inspect manually'})
             continue
-        extremity = max((p.x-centre.x)*sign for p in eligible)
-        hand = [p for p in eligible if (p.x-centre.x)*sign > extremity-height*.09]
+        extremity = max((p-centre).dot(screen_right)*sign for p in eligible)
+        hand = [p for p in eligible if (p-centre).dot(screen_right)*sign > extremity-height*.09]
         target = Vector(tuple((min(p[i] for p in hand)+max(p[i] for p in hand))/2 for i in range(3)))
         camera.data.type, camera.data.ortho_scale = 'ORTHO', height*.21
         camera.location = target+front*height*.6
@@ -228,6 +229,7 @@ def main():
         bpy.ops.render.render(write_still=True)
         crops.append({'side': side, 'target': list(target), 'orthoScale': camera.data.ortho_scale})
     report['renderCrops'] = crops
+    report['frontAngleDegrees'] = args.front_angle
     report['renderBounds'] = {'min': list(lo), 'max': list(hi), 'height': height}
     (output/'inspection.json').write_text(json.dumps(report, indent=2))
     print(json.dumps({'native': str(native), 'renders': str(output), 'status': 'ready for visual inspection'}))
