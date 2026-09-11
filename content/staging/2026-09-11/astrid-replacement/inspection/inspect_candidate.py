@@ -67,8 +67,12 @@ def inventory(names):
                               'restMatrix': [list(row) for row in b.matrix_local]}
                              for b in obj.data.bones]
         result['objects'].append(item)
-    for material in sorted(bpy.data.materials, key=lambda m: m.name):
+    used_materials = {material for name in names if bpy.data.objects[name].type == 'MESH'
+                      for material in bpy.data.objects[name].data.materials if material}
+    used_images = set()
+    for material in sorted(used_materials, key=lambda m: m.name):
         nodes = material.node_tree.nodes if material.use_nodes else []
+        used_images.update(n.image for n in nodes if n.type == 'TEX_IMAGE' and n.image)
         result['materials'].append({
             'name': material.name,
             'nodes': [{'name': n.name, 'type': n.bl_idname,
@@ -78,7 +82,7 @@ def inventory(names):
             'links': sorted([[l.from_node.name, l.from_socket.identifier,
                               l.to_node.name, l.to_socket.identifier]
                              for l in material.node_tree.links]) if material.use_nodes else []})
-    for image in sorted(bpy.data.images, key=lambda i: i.name):
+    for image in sorted(used_images, key=lambda i: i.name):
         if image.type in {'RENDER_RESULT', 'COMPOSITING'}:
             continue
         packed = [sha(p.packed_file.data) for p in image.packed_files]
@@ -105,15 +109,17 @@ def main():
     parser.add_argument('--no-render', action='store_true')
     args = parser.parse_args()
     source, output = args.source.resolve(), args.output.resolve()
-    if source.suffix.lower() not in {'.fbx', '.glb', '.gltf'}:
-        raise ValueError('Expected FBX, GLB or glTF source; retain/unpack archives first.')
+    if source.suffix.lower() not in {'.fbx', '.glb', '.gltf', '.blend'}:
+        raise ValueError('Expected FBX, GLB, glTF or a native Blender study.')
     output.mkdir(parents=True, exist_ok=True)
     native = output/'candidate-packed.blend'
     if native.exists():
         raise FileExistsError(f'Refusing to replace {native}; choose a fresh output folder.')
     original_sha = sha(source.read_bytes())
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    if source.suffix.lower() == '.fbx':
+    if source.suffix.lower() == '.blend':
+        bpy.ops.wm.open_mainfile(filepath=str(source))
+    elif source.suffix.lower() == '.fbx':
         bpy.ops.import_scene.fbx(filepath=str(source), use_image_search=True)
     else:
         bpy.ops.import_scene.gltf(filepath=str(source))

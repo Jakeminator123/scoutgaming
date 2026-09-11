@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "input": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-11/astrid-replacement/inspection/rig-corrected-source/provider-rigged.glb",
+  "sha256": "efc4f85df2babffb15bdefeeafdffc23794174969bc4c653a3405f7b5ce3d3b4",
+  "bytes": 15417056,
+  "materials": [
+    {
+      "name": "Material_1",
+      "alphaMode": "OPAQUE",
+      "doubleSided": true,
+      "baseColorTexture": {
+        "index": 1
+      },
+      "metallicRoughnessTexture": null,
+      "normalTexture": null,
+      "occlusionTexture": null,
+      "metallicFactor": 1,
+      "roughnessFactor": 1,
+      "extensions": [
+        "KHR_materials_specular",
+        "KHR_materials_ior"
+      ]
+    }
+  ],
+  "meshes": [
+    {
+      "name": "char1",
+      "morphNames": [],
+      "primitives": [
+        {
+          "mode": 4,
+          "vertices": 102697,
+          "indexCount": 563214,
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "morphCount": 0,
+          "material": "Material_1"
+        }
+      ]
+    }
+  ],
+  "skins": [
+    {
+      "name": "Armature",
+      "jointCount": 24,
+      "joints": [
+        "Hips",
+        "LeftUpLeg",
+        "LeftLeg",
+        "LeftFoot",
+        "LeftToeBase",
+        "RightUpLeg",
+        "RightLeg",
+        "RightFoot",
+        "RightToeBase",
+        "Spine02",
+        "Spine01",
+        "Spine",
+        "LeftShoulder",
+        "LeftArm",
+        "LeftForeArm",
+        "LeftHand",
+        "RightShoulder",
+        "RightArm",
+        "RightForeArm",
+        "RightHand",
+        "neck",
+        "Head",
+        "head_end",
+        "headfront"
+      ],
+      "fingerNamedJoints": [],
+      "eyeNamedJoints": [],
+      "jawNamedJoints": []
+    }
+  ],
+  "images": [
+    {
+      "name": "texture_0",
+      "mimeType": "image/png",
+      "embedded": true,
+      "externalUri": null,
+      "bytes": 7797406,
+      "sha256": "48461bb85d0ba37142527cbdff6377615b5451fb835fff6e88eaa46ac033971e",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "animations": [
+    {
+      "name": "Armature|clip0|baselayer",
+      "channels": 72,
+      "paths": {
+        "translation": 24,
+        "rotation": 24,
+        "scale": 24
+      },
+      "targetNodes": [
+        "Hips",
+        "LeftUpLeg",
+        "LeftLeg",
+        "LeftFoot",
+        "LeftToeBase",
+        "RightUpLeg",
+        "RightLeg",
+        "RightFoot",
+        "RightToeBase",
+        "Spine02",
+        "Spine01",
+        "Spine",
+        "LeftShoulder",
+        "LeftArm",
+        "LeftForeArm",
+        "LeftHand",
+        "RightShoulder",
+        "RightArm",
+        "RightForeArm",
+        "RightHand",
+        "neck",
+        "Head",
+        "head_end",
+        "headfront"
+      ]
+    }
+  ],
+  "requiredVisualReview": [
+    "Whole seated silhouette and likeness against Astrid canonical reference",
+    "Eye/lid/skin/hair response under actual game lighting",
+    "Five separate digits, thumb opposition and credible card grip",
+    "Complete pickup, delivery, release and return at normal playback speed",
+    "Native editable source and rig controls, not just baked GLB animation"
+  ],
+  "limitations": [
+    "GLB triangles do not establish whether an upstream quad mesh existed.",
+    "Bone names and morph counts do not prove useful deformation.",
+    "Scalar-only materials are still valid PBR; map counts do not prove realism.",
+    "This report does not approve the character or replace rendered inspection."
+  ],
+  "status": "structure inventoried; visual and native-source acceptance pending"
+}

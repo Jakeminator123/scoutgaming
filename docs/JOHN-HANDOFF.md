@@ -1,4 +1,8 @@
-# Latest: reject first body rig; preserve canonical input — 11 September 2026
+# Latest: corrected body rig preserves original PBR — 11 September 2026
+
+The corrected-orientation rig passed scoped anatomical/rest checks and a rendered forward-elbow study. Original canonical geometry, UVs and all three embedded PBR images are preserved in `content/staging/2026-09-11/astrid-replacement/inspection/rig-corrected-transfer/original-pbr-body-rig.blend` and `.glb` (24 body joints, no actions). Read `inspection/BODY-RIG-REVIEW.md` for exact transfer tolerance, visual evidence and the rejected hip-collision pose. The game task has this source for measured finger fitting and actual-table testing. Facial controls, full motion and realism acceptance remain open. No public/default promotion.
+
+# Earlier: reject first body rig; preserve canonical input — 11 September 2026
 
 The first replacement body rig has misplaced left/right joints and invalid body influences (including foot points weighted to a hand), not just missing PBR maps/finger bones. Both rest and evaluated poses were checked. Do not integrate or transfer its weights. See `content/staging/2026-09-11/astrid-replacement/inspection/RIG-REJECTION.md` and preserved numerical evidence.
 
