@@ -1,0 +1,344 @@
+{
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-11/astrid-replacement/inspection/canonical-source/original-canonical.glb",
+  "sourceSha256": "feee7e1f4597e5a64bce101f1e45f64c0a345686bc9271fc15c07f5a9dfa25e8",
+  "native": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-11/astrid-replacement/inspection/canonical-review/candidate-packed.blend",
+  "nativeSha256": "50324b4cffef9209b8db2b3d0dc9ce54ced4ff0875c8a8d32c60a34c1143fbdd",
+  "nativeReopenInventoryMatches": true,
+  "inventory": {
+    "objects": [
+      {
+        "name": "tripo_node_f1cf4d05-de3b-443d-9c48-83c512604332",
+        "type": "MESH",
+        "hideRender": false,
+        "matrixWorld": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "parent": null,
+        "vertices": 102706,
+        "polygons": 190224,
+        "polygonSizes": {
+          "3": 190224
+        },
+        "positionSha256": "dce63d1e94e540970101bdcc8445d100e87c595278594e67a597392b55d3c6b1",
+        "loopIndicesSha256": "09665fafda50b9bd14260cfd016b613899464c4749134cece13fdab9729d0c1d",
+        "skinWeightsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uvLayers": {
+          "UVMap": "7f182d1dde83932df803d40bd10575987e49489eb479eaf72fec38933c3156d6"
+        },
+        "materials": [
+          "tripo_material_f1cf4d05-de3b-443d-9c48-83c512604332"
+        ],
+        "vertexGroups": [],
+        "morphs": {}
+      }
+    ],
+    "materials": [
+      {
+        "name": "tripo_material_f1cf4d05-de3b-443d-9c48-83c512604332",
+        "nodes": [
+          {
+            "name": "Principled BSDF",
+            "type": "ShaderNodeBsdfPrincipled",
+            "image": null,
+            "defaults": {
+              "Base Color": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929,
+                1.0
+              ],
+              "Metallic": 0.0,
+              "Roughness": 0.5,
+              "IOR": 1.5,
+              "Alpha": 1.0,
+              "Normal": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "Weight": 0.0,
+              "Diffuse Roughness": 0.0,
+              "Subsurface Weight": 0.0,
+              "Subsurface Radius": [
+                1.0,
+                0.20000000298023224,
+                0.10000000149011612
+              ],
+              "Subsurface Scale": 0.05000000074505806,
+              "Subsurface IOR": 1.399999976158142,
+              "Subsurface Anisotropy": 0.0,
+              "Specular IOR Level": 0.5,
+              "Specular Tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "Anisotropic": 0.0,
+              "Anisotropic Rotation": 0.0,
+              "Tangent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "Transmission Weight": 0.0,
+              "Coat Weight": 0.0,
+              "Coat Roughness": 0.029999999329447746,
+              "Coat IOR": 1.5,
+              "Coat Tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "Coat Normal": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "Sheen Weight": 0.0,
+              "Sheen Roughness": 0.5,
+              "Sheen Tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "Emission Color": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "Emission Strength": 0.0,
+              "Thin Film Thickness": 0.0,
+              "Thin Film IOR": 1.3300000429153442
+            }
+          },
+          {
+            "name": "Material Output",
+            "type": "ShaderNodeOutputMaterial",
+            "image": null,
+            "defaults": {
+              "Displacement": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "Thickness": 0.0
+            }
+          },
+          {
+            "name": "Image Texture",
+            "type": "ShaderNodeTexImage",
+            "image": "Color_f1cf4d05-de3b-443d-9c48-83c512604332",
+            "defaults": {
+              "Vector": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "name": "Separate Color",
+            "type": "ShaderNodeSeparateColor",
+            "image": null,
+            "defaults": {
+              "Color": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929,
+                1.0
+              ]
+            }
+          },
+          {
+            "name": "Image Texture.001",
+            "type": "ShaderNodeTexImage",
+            "image": "ORM_f1cf4d05-de3b-443d-9c48-83c512604332",
+            "defaults": {
+              "Vector": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "name": "Normal Map",
+            "type": "ShaderNodeNormalMap",
+            "image": null,
+            "defaults": {
+              "Strength": 1.0,
+              "Color": [
+                0.5,
+                0.5,
+                1.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "name": "Image Texture.002",
+            "type": "ShaderNodeTexImage",
+            "image": "NormalGL_f1cf4d05-de3b-443d-9c48-83c512604332",
+            "defaults": {
+              "Vector": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        ],
+        "links": [
+          [
+            "Image Texture",
+            "Color",
+            "Principled BSDF",
+            "Base Color"
+          ],
+          [
+            "Image Texture.001",
+            "Color",
+            "Separate Color",
+            "Color"
+          ],
+          [
+            "Image Texture.002",
+            "Color",
+            "Normal Map",
+            "Color"
+          ],
+          [
+            "Normal Map",
+            "Normal",
+            "Principled BSDF",
+            "Normal"
+          ],
+          [
+            "Principled BSDF",
+            "BSDF",
+            "Material Output",
+            "Surface"
+          ],
+          [
+            "Separate Color",
+            "Blue",
+            "Principled BSDF",
+            "Metallic"
+          ],
+          [
+            "Separate Color",
+            "Green",
+            "Principled BSDF",
+            "Roughness"
+          ]
+        ]
+      }
+    ],
+    "images": [
+      {
+        "name": "Color_f1cf4d05-de3b-443d-9c48-83c512604332",
+        "size": [
+          4096,
+          4096
+        ],
+        "source": "FILE",
+        "colorSpace": "sRGB",
+        "packedSha256": [
+          "a384bfec331da3f38e217cef332bd29c84972fe396be69611873e8d063d07575"
+        ]
+      },
+      {
+        "name": "NormalGL_f1cf4d05-de3b-443d-9c48-83c512604332",
+        "size": [
+          4096,
+          4096
+        ],
+        "source": "FILE",
+        "colorSpace": "Non-Color",
+        "packedSha256": [
+          "9d2ec0f1b28983775a38cf23718c98b48c3a2ab78a6a559fc2f57bc1dbd58363"
+        ]
+      },
+      {
+        "name": "ORM_f1cf4d05-de3b-443d-9c48-83c512604332",
+        "size": [
+          4096,
+          4096
+        ],
+        "source": "FILE",
+        "colorSpace": "Non-Color",
+        "packedSha256": [
+          "f4e870b6098c2dd5462b838afa90f4b3e5b705e435eed0cc016fbb277b935854"
+        ]
+      }
+    ],
+    "actions": []
+  },
+  "limitations": [
+    "Importer interpretation is not byte-lossless conversion.",
+    "Renders show the imported pose; no seated pose is authored.",
+    "Hand crops are geometric heuristics and require visual review.",
+    "No claim of game-camera equivalence or realistic animation."
+  ],
+  "renderCrops": [
+    {
+      "side": "image-left",
+      "target": [
+        -0.37104982137680054,
+        0.1006057858467102,
+        0.943690299987793
+      ],
+      "orthoScale": 0.36329999566078186
+    },
+    {
+      "side": "image-right",
+      "target": [
+        0.371158242225647,
+        0.10499655455350876,
+        0.9435737133026123
+      ],
+      "orthoScale": 0.36329999566078186
+    }
+  ],
+  "frontAngleDegrees": 0,
+  "renderBounds": {
+    "min": [
+      -0.4488986134529114,
+      -0.158008873462677,
+      0.0
+    ],
+    "max": [
+      0.4488986134529114,
+      0.158008873462677,
+      1.7300000190734863
+    ],
+    "height": 1.7300000190734863
+  }
+}

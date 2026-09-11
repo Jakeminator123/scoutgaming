@@ -1,0 +1,21 @@
+{
+  "source": "triangle-front-review/candidate-packed.blend",
+  "weldToleranceMeters": 3e-06,
+  "componentCount": 1,
+  "components": [
+    {
+      "vertices": 102706,
+      "min": [
+        -0.15876193344593048,
+        -0.4529738128185272,
+        -0.8742048144340515
+      ],
+      "max": [
+        0.16090916097164154,
+        0.45520254969596863,
+        0.8757951259613037
+      ]
+    }
+  ],
+  "limitations": "Read-only adjacency grouping; not proof of manifold topology or semantic anatomy."
+}
