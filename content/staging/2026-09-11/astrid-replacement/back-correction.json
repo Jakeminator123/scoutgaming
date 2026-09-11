@@ -1,0 +1,51 @@
+{
+  "request": {
+    "model": "nano_banana_2",
+    "aspect_ratio": "2:3",
+    "resolution": "4k",
+    "count": 1,
+    "medias": [
+      {
+        "role": "image",
+        "value": "85627833-35d5-446b-8595-fa539a0b1a71"
+      },
+      {
+        "role": "image",
+        "value": "431f1aa2-bfdc-4478-8308-e6f97ccb9fc7"
+      }
+    ],
+    "prompt": "Correct this photographic reconstruction reference. Image 1 is the REAR camera view to edit; image 2 is the SAME woman's FRONT view used only to match anatomy and pose. Keep image 1 as a full body REAR view: her face is not visible. Preserve exactly the blonde low bun, body, black tailored suit, ivory collar, background, lighting, camera height, feet and scale. Fix BOTH HANDS in the REAR view. Because both palms face FORWARD in image 2, the rear camera MUST see the BACKS OF THE HANDS: dorsal metacarpal tendons, knuckles, five anatomically distinct digits, and fingernails on each fingertip. NO palm creases and NO fleshy central palm pad visible from behind. Correct wrist and forearm rotation anatomically, not a painted palm on a back-facing hand. Maintain gently separated straight relaxed fingers, thumbs naturally splayed, same arm A-pose angle and shoulder-to-wrist lengths as the front reference. Match the front reference shoulder, elbow, wrist and fingertip heights after normalizing top of head and shoe soles. Only one coherent photographic rear-view woman, no diagram, no text, no collage."
+  },
+  "submission": {
+    "results": [
+      {
+        "id": "8d0c6895-f660-4f48-89f4-53e47b6e90a7",
+        "type": "image",
+        "status": "pending",
+        "model": "nano_banana_flash",
+        "params": {
+          "prompt": "Correct this photographic reconstruction reference. Image 1 is the REAR camera view to edit; image 2 is the SAME woman's FRONT view used only to match anatomy and pose. Keep image 1 as a full body REAR view: her face is not visible. Preserve exactly the blonde low bun, body, black tailored suit, ivory collar, background, lighting, camera height, feet and scale. Fix BOTH HANDS in the REAR view. Because both palms face FORWARD in image 2, the rear camera MUST see the BACKS OF THE HANDS: dorsal metacarpal tendons, knuckles, five anatomically distinct digits, and fingernails on each fingertip. NO palm creases and NO fleshy central palm pad visible from behind. Correct wrist and forearm rotation anatomically, not a painted palm on a back-facing hand. Maintain gently separated straight relaxed fingers, thumbs naturally splayed, same arm A-pose angle and shoulder-to-wrist lengths as the front reference. Match the front reference shoulder, elbow, wrist and fingertip heights after normalizing top of head and shoe soles. Only one coherent photographic rear-view woman, no diagram, no text, no collage.",
+          "aspect_ratio": "2:3",
+          "reference_images": [
+            "85627833-35d5-446b-8595-fa539a0b1a71",
+            "431f1aa2-bfdc-4478-8308-e6f97ccb9fc7"
+          ],
+          "resolution": "4k"
+        }
+      }
+    ],
+    "adjustments": {
+      "medias[0].role": {
+        "requested": "image",
+        "used": "image_references",
+        "reason": "Nano Banana 2 backend expects schema-key media roles"
+      },
+      "medias[1].role": {
+        "requested": "image",
+        "used": "image_references",
+        "reason": "Nano Banana 2 backend expects schema-key media roles"
+      }
+    }
+  },
+  "note": "Initial dorsal-hand rejection was corrected after original-resolution inspection. Original back retained; this submission also asks normalized pose matching."
+}

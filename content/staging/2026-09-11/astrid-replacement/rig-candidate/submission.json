@@ -1,0 +1,10 @@
+{
+  "jobId": "7e425dab-4e40-4a45-972e-a9cfb78ea961",
+  "model": "3d_rigging",
+  "route": "authenticated Higgsfield CLI; MCP exposes catalog but no 3D submission tool",
+  "sourceJob": "81c28894-4323-44b3-9bda-3a0a32100c5a",
+  "sourceSha256": "432fed3af74c1f829d8cf99031fc90b07aadec3ea7a7ee13411c2191eee456af",
+  "params": {"height_meters": 1.73, "enable_animation": false},
+  "costPreflight": "Provider reports job_type does not support alpha v2 cost estimation. No amount asserted.",
+  "acceptance": "One body-rig trial after front and hand source inspection. No realism or gameplay approval."
+}

@@ -1,0 +1,11 @@
+{
+  "jobId": "e8b86c2c-ba3d-4751-8c19-64ecc2e34a37",
+  "statusAtSubmission": "in_progress",
+  "model": "tripo_h3_1_multiview_to_3d",
+  "faceLimit": 120000,
+  "quad": true,
+  "submissionRoute": "Higgsfield authenticated CLI; MCP exposes catalog but not generate_3d",
+  "orderedViewJobs": ["431f1aa2-bfdc-4478-8308-e6f97ccb9fc7", "d65c82a3-5e3b-44f5-8a6d-64ccf00b3dc7", "85627833-35d5-446b-8595-fa539a0b1a71", "5581bcba-e2b1-4f28-9f5a-c2cc032371c6"],
+  "orderDocumentation": "https://docs.tripo3d.ai/model-generation/multiview-to-model-v3-0-v3-1.html",
+  "notes": "Provider recommends at most 150000 quad faces; 120000 requested. Original quad output may be FBX. Preserve original format and inspect actual source; no format or realism acceptance inferred."
+}
