@@ -1,0 +1,61 @@
+{
+  "sourceSha256": "432fed3af74c1f829d8cf99031fc90b07aadec3ea7a7ee13411c2191eee456af",
+  "canonicalSha256": "feee7e1f4597e5a64bce101f1e45f64c0a345686bc9271fc15c07f5a9dfa25e8",
+  "uniformScale": 0.9885714767368937,
+  "originalGltfWorldMin": [
+    -0.15876194061372084,
+    -0.8742048063950989,
+    -0.45520252739893347
+  ],
+  "originalGltfWorldMax": [
+    0.16090916621043988,
+    0.8757951083408955,
+    0.4529737915285613
+  ],
+  "originalBlenderWorldToCanonicalBlenderWorld": [
+    [
+      0.0,
+      0.9885714767368937,
+      0.0,
+      -0.0011016323553151388
+    ],
+    [
+      -0.9885714767368937,
+      0.0,
+      0.0,
+      0.0010613429895178985
+    ],
+    [
+      0.0,
+      0.0,
+      0.9885714767368937,
+      0.8642139364284932
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "canonicalGltfMin": [
+    -0.4488986023698148,
+    0.0,
+    -0.15800886907163894
+  ],
+  "canonicalGltfMax": [
+    0.4488986023698148,
+    1.73,
+    0.15800886907163894
+  ],
+  "vertices": 102706,
+  "originalPbrImageHashesPreserved": [
+    "a384bfec331da3f38e217cef332bd29c84972fe396be69611873e8d063d07575",
+    "f4e870b6098c2dd5462b838afa90f4b3e5b705e435eed0cc016fbb277b935854",
+    "9d2ec0f1b28983775a38cf23718c98b48c3a2ab78a6a559fc2f57bc1dbd58363"
+  ],
+  "uvBytesPreserved": true,
+  "topologyAndMaterialDefinitionsPreserved": true,
+  "front": "glTF +Z / Blender -Y",
+  "rigged": false
+}

@@ -1,4 +1,10 @@
-# Latest: original Tripo replacement inspected — 11 September 2026
+# Latest: reject first body rig; preserve canonical input — 11 September 2026
+
+The first replacement body rig has misplaced left/right joints and invalid body influences (including foot points weighted to a hand), not just missing PBR maps/finger bones. Both rest and evaluated poses were checked. Do not integrate or transfer its weights. See `content/staging/2026-09-11/astrid-replacement/inspection/RIG-REJECTION.md` and preserved numerical evidence.
+
+The original Tripo mesh is now also saved as `inspection/canonical-source/original-canonical.glb` under that replacement folder: 1.73 m, ground zero, standard glTF +Z front. Vertex detail/topology, UV bytes and all three embedded image byte sequences are retained; original provider files are unchanged. A packed native and actual front/hand renders are in `inspection/canonical-review/`. The exact source-to-canonical transform is available for measured finger fitting. A corrected-orientation rig retry must be independently checked; no valid replacement rig or realistic game performance has yet been delivered.
+
+# Earlier: original Tripo replacement inspected — 11 September 2026
 
 The credit blocker below was resolved. Tripo job `81c28894-4323-44b3-9bda-3a0a32100c5a` delivered a 7.14 MB GLB after the first quad-output attempt failed without a reason. Original bytes, a separate packed Blender source, inventories and actual front/hand/profile renders are preserved in `content/staging/2026-09-11/astrid-replacement/inspection/`. Read `TRIANGLE-CANDIDATE-REVIEW.md`: this is accepted for a body-rigging trial, not final realism. The new coherent head/suit and volumetric fingers improve on the old assembly, but the model has no skeleton, facial shapes or animation. Eye detail/gaze, hair, cuffs and real card action remain open. Do not reinstall the rejected old head or apply hardcoded old mesh corrections. No public model changed.
 
