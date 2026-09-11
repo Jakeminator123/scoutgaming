@@ -1,3 +1,9 @@
+# Latest: isolated native pose matching and generation blocker — 11 September 2026
+
+The user's photographic dealer and natural performance goal is still open. Whole-character assessment is in `content/staging/2026-09-11/dealer-source-assessment/`; collar micro-studies are frozen. The replacement-generation task saved exact Higgsfield reference requests and a rejected submission under `content/staging/2026-09-11/astrid-replacement/`: zero jobs started, shared workspace balance 1.4 credits, three references estimated at 9 credits before unpriced 3D/rigging work. Do not submit duplicate jobs or present the existing character as accepted realism.
+
+An isolated native control candidate is in `content/staging/2026-09-11/dealer-controls/`. Its embedded Blender sidebar script matches wrist/foot targets and poles to the evaluated FK pose before enabling manual IK. Read that folder's README for activation and keying instructions. Original twelve actions and public assets remain unchanged; numerical pose continuity does not approve photographic appearance or natural blackjack motion. CAC-2/CAC-4 remain open.
+
 # Latest: calibrated facial candidate and seven-seat collection — 10 September 2026
 
 Read [the integration review](../assets/blackjack-3d/review/final-fit/README.md). The opt-in anatomical game uses the corrected oral/collar geometry with 17 separate model-bound calibrations, unchanged raw source measurements/audio, and actual loaded-model hash verification. It also has a continuous photographic room reference and consistent seated camera angle. The combined editable table project was rebuilt from the corrected native source.
