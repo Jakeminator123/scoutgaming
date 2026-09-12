@@ -1,0 +1,8 @@
+{
+  "upright-idle": {
+    "nativeVsRuntimeBoneHeadMaxMm": 0.0015081859742259972
+  },
+  "centre-release": {
+    "nativeVsRuntimeBoneHeadMaxMm": 0.001360256480536037
+  }
+}
