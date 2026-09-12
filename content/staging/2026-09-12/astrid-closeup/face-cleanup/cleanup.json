@@ -1,0 +1,7 @@
+{
+  "sourceSha256": "1757bd0469cc338cfa7f6c4e3897d64d72eeed79393c9dd63591a94d61184ba1",
+  "affectedVertices": 833,
+  "maxSourceUnitDisplacement": 0.0014051900845610255,
+  "medianSourceUnitDisplacement": 0.00016710190819876902,
+  "scope": "Only bounded forward-axis cheek smoothing; no eye/lip/hair edits, no rig or likeness approval"
+}
