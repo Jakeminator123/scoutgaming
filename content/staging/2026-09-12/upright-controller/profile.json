@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "status": "Rejected V1 appearance, private upright controller diagnostic",
+  "bones": {
+    "hips": "Hips",
+    "head": "Head",
+    "leftUpperArm": "LeftArm",
+    "leftForeArm": "LeftForeArm",
+    "leftHand": "LeftHand",
+    "rightUpperArm": "RightArm",
+    "rightForeArm": "RightForeArm",
+    "rightHand": "RightHand",
+    "fingers": {
+      "right": [
+        "RightThumb1",
+        "RightThumb2",
+        "RightThumb3",
+        "RightIndex1",
+        "RightIndex2",
+        "RightIndex3",
+        "RightMiddle1",
+        "RightMiddle2",
+        "RightMiddle3",
+        "RightRing1",
+        "RightRing2",
+        "RightRing3",
+        "RightPinky1",
+        "RightPinky2",
+        "RightPinky3"
+      ],
+      "left": [
+        "LeftThumb1",
+        "LeftThumb2",
+        "LeftThumb3",
+        "LeftIndex1",
+        "LeftIndex2",
+        "LeftIndex3",
+        "LeftMiddle1",
+        "LeftMiddle2",
+        "LeftMiddle3",
+        "LeftRing1",
+        "LeftRing2",
+        "LeftRing3",
+        "LeftPinky1",
+        "LeftPinky2",
+        "LeftPinky3"
+      ]
+    }
+  },
+  "limitations": [
+    "Measured geometric finger rig candidate; no facial or final grip approval."
+  ],
+  "uprightStudy": {
+    "idleRoot": [
+      0,
+      -0.12,
+      0
+    ],
+    "idleLeanRadians": 0.05,
+    "idleHeadCounterRadians": 0.05,
+    "supportAnchor": "lowest actual whole-hand skin point; not precision fingertip grip",
+    "controller": "dealer-rig-upright.mjs"
+  }
+}

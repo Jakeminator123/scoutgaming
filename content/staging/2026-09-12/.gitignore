@@ -1,0 +1,4 @@
+*.log
+**/__pycache__/
+**/*.blend1
+astrid-closeup/source-*.jpg

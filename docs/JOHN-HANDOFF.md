@@ -1,4 +1,14 @@
-# Latest: replacement appearance rejected in Chrome — 11 September 2026
+# Latest: preserve closer face source and isolate idle-pose defect — 12 September 2026
+
+Read `content/staging/2026-09-12/astrid-closeup/README.md` and its `comparison.html`. The new Higgsfield Tripo job `9b2f127c-956a-42e3-bee0-cb72a41f3710` returned an actual dense GLB bust, now saved untouched with a separately packed editable Blender source. Its likeness is closer, but clay inspection confirms geometric eyelid/cheek artifacts and solid ridged hair. It has no rig, morphs or independent eyes. Do not graft it onto the rejected body or treat it as a finished animated dealer. Two preceding provider jobs failed without a stated reason; do not resubmit them blindly.
+
+The hunched game posture was independently traced to unconditional `.4`-radian spine lean at idle and an inadequate head counter-angle. `content/staging/2026-09-12/upright-controller/` contains a private correction, 707-sample deformed-skin diagnostic, editable poses and limitations. The isolated existing-game preview is at `http://astridnext.localhost:4206/?dealer=astrid&scene=rigged-review&recordproof=1&rehearsal=1`; its actual Chrome capture confirms upright idle with the old rejected mesh. Face, hair, sleeve deformation and full gameplay remain unaccepted. The new bust is not installed there. Public/default assets, shared audio, backend and real user data are unchanged. CAC-2/CAC-4 remain In Dev.
+
+All four dealer media sets passed the deep 90-stream integrity audit. Upright reach/floor/support/return diagnostics passed; those are not photographic, fingertip grip, complete-round or lip-sync acceptance. Previous remote checkpoint `72c7a79` pipeline `2841885403` was freshly verified successful.
+
+Conversation text was found intact in the original local session: 570 visible user/assistant messages across September 8–12, no malformed JSON. A private readable Markdown/HTML/JSON recovery with a source checksum snapshot is saved under `/Users/solvifyab/Documents/Croupier-Conversation-Backups/2026-09-12-recovery/`. No transcript was modified, committed or published. The native app reader still returned only the beginning; the UI history problem itself is unresolved.
+
+# Earlier: replacement appearance rejected in Chrome — 11 September 2026
 
 The user rejected the new Tripo character's appearance. The actual Chrome WebGL frame is preserved with its SHA receipt under `content/staging/2026-09-11/astrid-replacement/rig-candidate/evidence/`; read that folder's `REVIEW.md` and `inspection/APPEARANCE-REJECTION.md`. Face likeness, hair, suit and the hunched game pose fail the photographic reference. **Stop rigging this source until a replacement passes a matched-camera appearance review.** Earlier structural/body checks are not appearance acceptance.
 
