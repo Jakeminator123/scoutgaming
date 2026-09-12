@@ -1,4 +1,10 @@
-# Latest: preserve closer face source and isolate idle-pose defect — 12 September 2026
+# Latest: show exact new source and compare bounded cheek repair — 12 September 2026
+
+The user rejected being shown the old rig again. `content/staging/2026-09-12/astrid-closeup/source-viewer/` now serves the exact new provider GLB and its photographic input at `http://127.0.0.1:4207/`, with rotation, Front, a cheek-repair toggle, and native/GLB downloads. Both model hashes were verified in the actual browser. The material images remain byte-identical through the repair export. The viewer preserves the same camera and lighting between versions.
+
+`surface-repair/` contains a packed editable reconstruction, GLB, reproducible script, numerical receipt and native front render. It reduces jagged cheek damage, but broad cheek shading, eyelid artifacts, solid hair and likeness remain unresolved. The smaller `face-cleanup/` trial failed visibly and is retained as diagnostic evidence. Neither source has a facial or body rig. This is not a finished-game delivery. The 4206 game still uses the rejected old full-body model; the new bust has not been integrated. The companion game task is archived and should not be reported as continuing integration.
+
+# Earlier: preserve closer face source and isolate idle-pose defect — 12 September 2026
 
 Read `content/staging/2026-09-12/astrid-closeup/README.md` and its `comparison.html`. The new Higgsfield Tripo job `9b2f127c-956a-42e3-bee0-cb72a41f3710` returned an actual dense GLB bust, now saved untouched with a separately packed editable Blender source. Its likeness is closer, but clay inspection confirms geometric eyelid/cheek artifacts and solid ridged hair. It has no rig, morphs or independent eyes. Do not graft it onto the rejected body or treat it as a finished animated dealer. Two preceding provider jobs failed without a stated reason; do not resubmit them blindly.
 
