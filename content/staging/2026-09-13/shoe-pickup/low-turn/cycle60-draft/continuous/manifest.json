@@ -1,0 +1,2822 @@
+{
+  "status": "single-decoder staging stream; no new interpolation or seam synthesis",
+  "outputSHA256": "64546deda4dcabc49fb28b84cb6503b3e67f78cbf5d8557815ee835f6e61a360",
+  "dimensions": [
+    3840,
+    1080
+  ],
+  "fps": 60,
+  "frameCount": 181,
+  "durationSeconds": 3.0166666666666666,
+  "packedLayout": "left1920 RGB; right1920 Ractor/Ghand/B0",
+  "boundaries": {
+    "pickup": [
+      0,
+      74
+    ],
+    "slide": [
+      75,
+      140
+    ],
+    "return": [
+      141,
+      180
+    ]
+  },
+  "inputReceipts": {
+    "pickup": {
+      "ledgerSHA": "efc503e40132658e5ad700ff10b32ecc4d1c6fafb9ebc4fbf6271f557c89197f",
+      "phase420SHA": "51a396869e7bc2bdc35a7c055ecfb792ffc2c8887c71ce794e122214d505c56e",
+      "frames": 75
+    },
+    "slide": {
+      "ledgerSHA": "7500e387903b8deba90216366640f48c35fde7fb8171cd6130820d347d280cf5",
+      "phase420SHA": "a74573d3ffd13f13aab077a8c501b558e9fec9ef45b57061ad04c76895adab25",
+      "frames": 66
+    },
+    "return": {
+      "ledgerSHA": "f0c3939a6b0c76a8692b05be5010cc44b024ba10d38de1afb5d8cc358ed5c195",
+      "phase420SHA": "056b9f30574d194707c4b92b94bb7cf1ab4beb03b393aa38c75c06f06e34fb6f",
+      "frames": 40
+    }
+  },
+  "PTS_maxErrorSeconds": 3.33333333379926e-07,
+  "probe": {
+    "index": 0,
+    "codec_name": "h264",
+    "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+    "profile": "High",
+    "codec_type": "video",
+    "codec_tag_string": "avc1",
+    "codec_tag": "0x31637661",
+    "mime_codec_string": "avc1.640034",
+    "width": 3840,
+    "height": 1080,
+    "coded_width": 3840,
+    "coded_height": 1088,
+    "has_b_frames": 0,
+    "pix_fmt": "yuv420p",
+    "level": 52,
+    "chroma_location": "left",
+    "field_order": "progressive",
+    "refs": 2,
+    "is_avc": "true",
+    "nal_length_size": "4",
+    "id": "0x1",
+    "r_frame_rate": "60/1",
+    "avg_frame_rate": "60/1",
+    "time_base": "1/15360",
+    "start_pts": 0,
+    "start_time": "0.000000",
+    "duration_ts": 46336,
+    "duration": "3.016667",
+    "bit_rate": "3648506",
+    "bits_per_raw_sample": "8",
+    "nb_frames": "181",
+    "nb_read_frames": "181",
+    "extradata_size": 46,
+    "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0,
+      "multilayer": 0
+    },
+    "tags": {
+      "language": "und",
+      "handler_name": "VideoHandler",
+      "encoder": "Lavc62.28.102 libx264"
+    }
+  },
+  "frames": [
+    {
+      "globalFrame": 0,
+      "ptsNumerator": 0,
+      "ptsDenominator": 60,
+      "seconds": 0.0,
+      "clip": "pickup",
+      "localFrame": 0,
+      "sourcePosition": 7.0,
+      "sourceFrames": [
+        7,
+        8
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "adbdacd961185088b474d1802b68caa34d6d40006ad2dbb50d8c40661db14f6c"
+    },
+    {
+      "globalFrame": 1,
+      "ptsNumerator": 1,
+      "ptsDenominator": 60,
+      "seconds": 0.016666666666666666,
+      "clip": "pickup",
+      "localFrame": 1,
+      "sourcePosition": 7.8,
+      "sourceFrames": [
+        7,
+        8
+      ],
+      "sourceBlend": 0.7999999999999998,
+      "packedPNG_SHA": "1e17a99756bf5d86b310449e9b62b0396ccfaed8e3e65b321acc32fd40038541"
+    },
+    {
+      "globalFrame": 2,
+      "ptsNumerator": 2,
+      "ptsDenominator": 60,
+      "seconds": 0.03333333333333333,
+      "clip": "pickup",
+      "localFrame": 2,
+      "sourcePosition": 8.6,
+      "sourceFrames": [
+        8,
+        9
+      ],
+      "sourceBlend": 0.5999999999999996,
+      "packedPNG_SHA": "664ffef91d4d557f98e3a472587f10a65280d21a719bb3b5afa72be432b7ede4"
+    },
+    {
+      "globalFrame": 3,
+      "ptsNumerator": 3,
+      "ptsDenominator": 60,
+      "seconds": 0.05,
+      "clip": "pickup",
+      "localFrame": 3,
+      "sourcePosition": 9.4,
+      "sourceFrames": [
+        9,
+        10
+      ],
+      "sourceBlend": 0.40000000000000036,
+      "packedPNG_SHA": "f2a54bafc4f826e65d5a7881a308f02540c71324c97e7e261648739777bf5deb"
+    },
+    {
+      "globalFrame": 4,
+      "ptsNumerator": 4,
+      "ptsDenominator": 60,
+      "seconds": 0.06666666666666667,
+      "clip": "pickup",
+      "localFrame": 4,
+      "sourcePosition": 10.2,
+      "sourceFrames": [
+        10,
+        11
+      ],
+      "sourceBlend": 0.1999999999999993,
+      "packedPNG_SHA": "def8a58fb8da2ef014174ccf3704c507ec78ed4f9f6ad18cf5901494e528799c"
+    },
+    {
+      "globalFrame": 5,
+      "ptsNumerator": 5,
+      "ptsDenominator": 60,
+      "seconds": 0.08333333333333333,
+      "clip": "pickup",
+      "localFrame": 5,
+      "sourcePosition": 11.0,
+      "sourceFrames": [
+        11,
+        12
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "acd4388397b2581448fee077c414631ab58c8666480a3e4a995e3db4c140014e"
+    },
+    {
+      "globalFrame": 6,
+      "ptsNumerator": 6,
+      "ptsDenominator": 60,
+      "seconds": 0.1,
+      "clip": "pickup",
+      "localFrame": 6,
+      "sourcePosition": 11.8,
+      "sourceFrames": [
+        11,
+        12
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "54ec34dcd0099be5c7a6723d2f3e3eb481f626d985dcae7a3bd2b693c2c563fc"
+    },
+    {
+      "globalFrame": 7,
+      "ptsNumerator": 7,
+      "ptsDenominator": 60,
+      "seconds": 0.11666666666666667,
+      "clip": "pickup",
+      "localFrame": 7,
+      "sourcePosition": 12.600000000000001,
+      "sourceFrames": [
+        12,
+        13
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "1bac8a882eac62f332f87b919a72b8021a7ce1ed6b4d4c61c6454ffa93cd2257"
+    },
+    {
+      "globalFrame": 8,
+      "ptsNumerator": 8,
+      "ptsDenominator": 60,
+      "seconds": 0.13333333333333333,
+      "clip": "pickup",
+      "localFrame": 8,
+      "sourcePosition": 13.4,
+      "sourceFrames": [
+        13,
+        14
+      ],
+      "sourceBlend": 0.40000000000000036,
+      "packedPNG_SHA": "5d248548bccb20c82a9301950e9f8dcdb10624f2541f1c248c50d47d87834fec"
+    },
+    {
+      "globalFrame": 9,
+      "ptsNumerator": 9,
+      "ptsDenominator": 60,
+      "seconds": 0.15,
+      "clip": "pickup",
+      "localFrame": 9,
+      "sourcePosition": 14.2,
+      "sourceFrames": [
+        14,
+        15
+      ],
+      "sourceBlend": 0.1999999999999993,
+      "packedPNG_SHA": "b762dad430b055a10ca0ad2e6ba3535ae4010770de0d637fa67a3fa534bc71c9"
+    },
+    {
+      "globalFrame": 10,
+      "ptsNumerator": 10,
+      "ptsDenominator": 60,
+      "seconds": 0.16666666666666666,
+      "clip": "pickup",
+      "localFrame": 10,
+      "sourcePosition": 15.0,
+      "sourceFrames": [
+        15,
+        16
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "0ed6d202d4a8e46196f953b900aa4a3c63b1403ce4d3662a793f1db7428c4dcf"
+    },
+    {
+      "globalFrame": 11,
+      "ptsNumerator": 11,
+      "ptsDenominator": 60,
+      "seconds": 0.18333333333333332,
+      "clip": "pickup",
+      "localFrame": 11,
+      "sourcePosition": 15.8,
+      "sourceFrames": [
+        15,
+        16
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "c343b6f743547ffba00b51187d2997ccdeb0359879815fe6e7e458fda8107a70"
+    },
+    {
+      "globalFrame": 12,
+      "ptsNumerator": 12,
+      "ptsDenominator": 60,
+      "seconds": 0.2,
+      "clip": "pickup",
+      "localFrame": 12,
+      "sourcePosition": 16.6,
+      "sourceFrames": [
+        16,
+        17
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "ef211bc51685f225f77fe6099d5db5f8b162c090acf3f7915a36f7cc833dc921"
+    },
+    {
+      "globalFrame": 13,
+      "ptsNumerator": 13,
+      "ptsDenominator": 60,
+      "seconds": 0.21666666666666667,
+      "clip": "pickup",
+      "localFrame": 13,
+      "sourcePosition": 17.4,
+      "sourceFrames": [
+        17,
+        18
+      ],
+      "sourceBlend": 0.3999999999999986,
+      "packedPNG_SHA": "559e0612601d6122699bf00a6a19ec66d57ba61ec0595f79ce8df94bb870a440"
+    },
+    {
+      "globalFrame": 14,
+      "ptsNumerator": 14,
+      "ptsDenominator": 60,
+      "seconds": 0.23333333333333334,
+      "clip": "pickup",
+      "localFrame": 14,
+      "sourcePosition": 18.200000000000003,
+      "sourceFrames": [
+        18,
+        19
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "ed8b273776ac7633476d6d57ac26f318cf922db18ef590494f80788f218d9c98"
+    },
+    {
+      "globalFrame": 15,
+      "ptsNumerator": 15,
+      "ptsDenominator": 60,
+      "seconds": 0.25,
+      "clip": "pickup",
+      "localFrame": 15,
+      "sourcePosition": 19.0,
+      "sourceFrames": [
+        19,
+        20
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "1f1edc4943572e69852d6e02ed842541b740b015dc2b28c461c189a0dde5f964"
+    },
+    {
+      "globalFrame": 16,
+      "ptsNumerator": 16,
+      "ptsDenominator": 60,
+      "seconds": 0.26666666666666666,
+      "clip": "pickup",
+      "localFrame": 16,
+      "sourcePosition": 19.8,
+      "sourceFrames": [
+        19,
+        20
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "4cc541fdfa30bda4e7d63b498b75f667e4c84aba8007e48888e20617617ea8f8"
+    },
+    {
+      "globalFrame": 17,
+      "ptsNumerator": 17,
+      "ptsDenominator": 60,
+      "seconds": 0.2833333333333333,
+      "clip": "pickup",
+      "localFrame": 17,
+      "sourcePosition": 20.6,
+      "sourceFrames": [
+        20,
+        21
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "975f3c838495f15128814b7a98f325960453b2149a6c707e5be94f31632e40ca"
+    },
+    {
+      "globalFrame": 18,
+      "ptsNumerator": 18,
+      "ptsDenominator": 60,
+      "seconds": 0.3,
+      "clip": "pickup",
+      "localFrame": 18,
+      "sourcePosition": 21.4,
+      "sourceFrames": [
+        21,
+        22
+      ],
+      "sourceBlend": 0.3999999999999986,
+      "packedPNG_SHA": "3ec3f2dfa76a87c3a2a2b5a94a6a6fdc97a1d76a11fbfb5d6bf1163d160b7f97"
+    },
+    {
+      "globalFrame": 19,
+      "ptsNumerator": 19,
+      "ptsDenominator": 60,
+      "seconds": 0.31666666666666665,
+      "clip": "pickup",
+      "localFrame": 19,
+      "sourcePosition": 22.200000000000003,
+      "sourceFrames": [
+        22,
+        23
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "a41eacf3d8b420c3f25d59eb201cc200421f58eba4d8a74a29c5b1eb80f57bab"
+    },
+    {
+      "globalFrame": 20,
+      "ptsNumerator": 20,
+      "ptsDenominator": 60,
+      "seconds": 0.3333333333333333,
+      "clip": "pickup",
+      "localFrame": 20,
+      "sourcePosition": 23.0,
+      "sourceFrames": [
+        23,
+        24
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "2339767db27cecd0d79956f1d10670e61592da9f14f9aa1f5a81cf7cf5766ce6"
+    },
+    {
+      "globalFrame": 21,
+      "ptsNumerator": 21,
+      "ptsDenominator": 60,
+      "seconds": 0.35,
+      "clip": "pickup",
+      "localFrame": 21,
+      "sourcePosition": 23.8,
+      "sourceFrames": [
+        23,
+        24
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "ebc9376e59e093f00957aee25f92dac0d108ef47142093057f508ba5bbcf99bb"
+    },
+    {
+      "globalFrame": 22,
+      "ptsNumerator": 22,
+      "ptsDenominator": 60,
+      "seconds": 0.36666666666666664,
+      "clip": "pickup",
+      "localFrame": 22,
+      "sourcePosition": 24.6,
+      "sourceFrames": [
+        24,
+        25
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "5e54d8f6f0493c7fa1ff7df8ebe74c26fba6d00e54df5b91182db7b065036719"
+    },
+    {
+      "globalFrame": 23,
+      "ptsNumerator": 23,
+      "ptsDenominator": 60,
+      "seconds": 0.38333333333333336,
+      "clip": "pickup",
+      "localFrame": 23,
+      "sourcePosition": 25.400000000000002,
+      "sourceFrames": [
+        25,
+        26
+      ],
+      "sourceBlend": 0.40000000000000213,
+      "packedPNG_SHA": "5795cac1e0292fc917b36e494005b2d7b6da7025828e1a08d261003ac2a6c183"
+    },
+    {
+      "globalFrame": 24,
+      "ptsNumerator": 24,
+      "ptsDenominator": 60,
+      "seconds": 0.4,
+      "clip": "pickup",
+      "localFrame": 24,
+      "sourcePosition": 26.200000000000003,
+      "sourceFrames": [
+        26,
+        27
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "88c406c8efb9424f26564e71656d583bcb06f222966251333e4a233cce91acb2"
+    },
+    {
+      "globalFrame": 25,
+      "ptsNumerator": 25,
+      "ptsDenominator": 60,
+      "seconds": 0.4166666666666667,
+      "clip": "pickup",
+      "localFrame": 25,
+      "sourcePosition": 27.0,
+      "sourceFrames": [
+        27,
+        28
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "19e5b364714c0891e73f952f092e4b95048ecfb5d15efe3cdbc3498c8796a2c0"
+    },
+    {
+      "globalFrame": 26,
+      "ptsNumerator": 26,
+      "ptsDenominator": 60,
+      "seconds": 0.43333333333333335,
+      "clip": "pickup",
+      "localFrame": 26,
+      "sourcePosition": 27.8,
+      "sourceFrames": [
+        27,
+        28
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "ea2c8149ba36329cd81d19c462267f6fd15e5794d4159aa68e8e193138da156a"
+    },
+    {
+      "globalFrame": 27,
+      "ptsNumerator": 27,
+      "ptsDenominator": 60,
+      "seconds": 0.45,
+      "clip": "pickup",
+      "localFrame": 27,
+      "sourcePosition": 28.6,
+      "sourceFrames": [
+        28,
+        29
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "0faeb5df81ebf9e4db15de19a6c0a9929687ad092b0a5cc23bc9c6ddada499f6"
+    },
+    {
+      "globalFrame": 28,
+      "ptsNumerator": 28,
+      "ptsDenominator": 60,
+      "seconds": 0.4666666666666667,
+      "clip": "pickup",
+      "localFrame": 28,
+      "sourcePosition": 29.400000000000002,
+      "sourceFrames": [
+        29,
+        30
+      ],
+      "sourceBlend": 0.40000000000000213,
+      "packedPNG_SHA": "9f64a164d13a77a0b1eb4b43d9fafc86cbfa750e6f9f9cc6314dd82c109e43f7"
+    },
+    {
+      "globalFrame": 29,
+      "ptsNumerator": 29,
+      "ptsDenominator": 60,
+      "seconds": 0.48333333333333334,
+      "clip": "pickup",
+      "localFrame": 29,
+      "sourcePosition": 30.200000000000003,
+      "sourceFrames": [
+        30,
+        31
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "d7753831a4cb1454ebc9ba47486082011dbdfc228c97d168a3c04191aeb67c41"
+    },
+    {
+      "globalFrame": 30,
+      "ptsNumerator": 30,
+      "ptsDenominator": 60,
+      "seconds": 0.5,
+      "clip": "pickup",
+      "localFrame": 30,
+      "sourcePosition": 31.0,
+      "sourceFrames": [
+        31,
+        32
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "0efdf625ec956c873c37191e98eef5ce4d4768ca429830a585d8b428722aa81f"
+    },
+    {
+      "globalFrame": 31,
+      "ptsNumerator": 31,
+      "ptsDenominator": 60,
+      "seconds": 0.5166666666666667,
+      "clip": "pickup",
+      "localFrame": 31,
+      "sourcePosition": 31.8,
+      "sourceFrames": [
+        31,
+        32
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "57fc4e26047cda6b357ad11317a7e76394ded230f4317138de6370cfc3d23ca4"
+    },
+    {
+      "globalFrame": 32,
+      "ptsNumerator": 32,
+      "ptsDenominator": 60,
+      "seconds": 0.5333333333333333,
+      "clip": "pickup",
+      "localFrame": 32,
+      "sourcePosition": 32.6,
+      "sourceFrames": [
+        32,
+        33
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "aeabf5f78325341ce908b43fc59a277e28ab784b0e2f9dc7618aacc29e90614b"
+    },
+    {
+      "globalFrame": 33,
+      "ptsNumerator": 33,
+      "ptsDenominator": 60,
+      "seconds": 0.55,
+      "clip": "pickup",
+      "localFrame": 33,
+      "sourcePosition": 33.400000000000006,
+      "sourceFrames": [
+        33,
+        34
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "a5aa541ed5f42260ef0d68c91274d4f175e55385ce435e10e764588a1199ff42"
+    },
+    {
+      "globalFrame": 34,
+      "ptsNumerator": 34,
+      "ptsDenominator": 60,
+      "seconds": 0.5666666666666667,
+      "clip": "pickup",
+      "localFrame": 34,
+      "sourcePosition": 34.2,
+      "sourceFrames": [
+        34,
+        35
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "84ff3cdd1d4cd980adabbff4722418a962c2766337c2f5f87251a4c4cd27ed51"
+    },
+    {
+      "globalFrame": 35,
+      "ptsNumerator": 35,
+      "ptsDenominator": 60,
+      "seconds": 0.5833333333333334,
+      "clip": "pickup",
+      "localFrame": 35,
+      "sourcePosition": 35.0,
+      "sourceFrames": [
+        35,
+        36
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "03b533f55cde28c42b144cc63678811094f08d870b6cefbfd93f118e8c560892"
+    },
+    {
+      "globalFrame": 36,
+      "ptsNumerator": 36,
+      "ptsDenominator": 60,
+      "seconds": 0.6,
+      "clip": "pickup",
+      "localFrame": 36,
+      "sourcePosition": 35.8,
+      "sourceFrames": [
+        35,
+        36
+      ],
+      "sourceBlend": 0.7999999999999972,
+      "packedPNG_SHA": "c73556fbc0026dd9816054b79638ae3347b110495bc8657f1da1b87f7944871d"
+    },
+    {
+      "globalFrame": 37,
+      "ptsNumerator": 37,
+      "ptsDenominator": 60,
+      "seconds": 0.6166666666666667,
+      "clip": "pickup",
+      "localFrame": 37,
+      "sourcePosition": 36.6,
+      "sourceFrames": [
+        36,
+        37
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "1c280996974bb2265d0f3aa3b491497033063bfb73ade81ec4cac43bfeada9fb"
+    },
+    {
+      "globalFrame": 38,
+      "ptsNumerator": 38,
+      "ptsDenominator": 60,
+      "seconds": 0.6333333333333333,
+      "clip": "pickup",
+      "localFrame": 38,
+      "sourcePosition": 37.400000000000006,
+      "sourceFrames": [
+        37,
+        38
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "bf3d0e5b6a8bb4e2db8784f37bd65a08b1536cdf3ae04dc6e9d9f45581c2cca0"
+    },
+    {
+      "globalFrame": 39,
+      "ptsNumerator": 39,
+      "ptsDenominator": 60,
+      "seconds": 0.65,
+      "clip": "pickup",
+      "localFrame": 39,
+      "sourcePosition": 38.2,
+      "sourceFrames": [
+        38,
+        39
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "d22dfe5b65302cfbd130a74a673a39ce011a82cfa820d9daecd5d706a139858b"
+    },
+    {
+      "globalFrame": 40,
+      "ptsNumerator": 40,
+      "ptsDenominator": 60,
+      "seconds": 0.6666666666666666,
+      "clip": "pickup",
+      "localFrame": 40,
+      "sourcePosition": 39.0,
+      "sourceFrames": [
+        39,
+        40
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "5f9459e7a55613beb409e3217140d9442086e5326ebf8612e1878edaa2b16893"
+    },
+    {
+      "globalFrame": 41,
+      "ptsNumerator": 41,
+      "ptsDenominator": 60,
+      "seconds": 0.6833333333333333,
+      "clip": "pickup",
+      "localFrame": 41,
+      "sourcePosition": 39.800000000000004,
+      "sourceFrames": [
+        39,
+        40
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "dc6442519df710dca8d3255e1a0d88247da037fc77c2dfd6eb24f8fc4f2da94a"
+    },
+    {
+      "globalFrame": 42,
+      "ptsNumerator": 42,
+      "ptsDenominator": 60,
+      "seconds": 0.7,
+      "clip": "pickup",
+      "localFrame": 42,
+      "sourcePosition": 40.6,
+      "sourceFrames": [
+        40,
+        41
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "78895cfcff332c09f41163a2ed901ad1f322e8c32ca9364e9e2e3729da094e5f"
+    },
+    {
+      "globalFrame": 43,
+      "ptsNumerator": 43,
+      "ptsDenominator": 60,
+      "seconds": 0.7166666666666667,
+      "clip": "pickup",
+      "localFrame": 43,
+      "sourcePosition": 41.4,
+      "sourceFrames": [
+        41,
+        42
+      ],
+      "sourceBlend": 0.3999999999999986,
+      "packedPNG_SHA": "87a4984c3c454211342a33ccba2443ce704a20beeeb464a3042603d037401e0f"
+    },
+    {
+      "globalFrame": 44,
+      "ptsNumerator": 44,
+      "ptsDenominator": 60,
+      "seconds": 0.7333333333333333,
+      "clip": "pickup",
+      "localFrame": 44,
+      "sourcePosition": 42.2,
+      "sourceFrames": [
+        42,
+        43
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "efa1bb7e70e91ae7dbd82640e25b4a670dc5ae88b77db655b11904cffcda47e4"
+    },
+    {
+      "globalFrame": 45,
+      "ptsNumerator": 45,
+      "ptsDenominator": 60,
+      "seconds": 0.75,
+      "clip": "pickup",
+      "localFrame": 45,
+      "sourcePosition": 43.0,
+      "sourceFrames": [
+        43,
+        44
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "b37ef9c7a86ff407605d2d417a7fe72bd68256698d6b434c27133f39374f570d"
+    },
+    {
+      "globalFrame": 46,
+      "ptsNumerator": 46,
+      "ptsDenominator": 60,
+      "seconds": 0.7666666666666667,
+      "clip": "pickup",
+      "localFrame": 46,
+      "sourcePosition": 43.800000000000004,
+      "sourceFrames": [
+        43,
+        44
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "aeb5d8c9af1de1b0effd0c170dec34c1299cc029a89f2ff9423a0b98c2ba67f8"
+    },
+    {
+      "globalFrame": 47,
+      "ptsNumerator": 47,
+      "ptsDenominator": 60,
+      "seconds": 0.7833333333333333,
+      "clip": "pickup",
+      "localFrame": 47,
+      "sourcePosition": 44.6,
+      "sourceFrames": [
+        44,
+        45
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "9efb1e2aab7a0c1956da8cee782578d21e4b0b702c8ea2787bea790564569883"
+    },
+    {
+      "globalFrame": 48,
+      "ptsNumerator": 48,
+      "ptsDenominator": 60,
+      "seconds": 0.8,
+      "clip": "pickup",
+      "localFrame": 48,
+      "sourcePosition": 45.400000000000006,
+      "sourceFrames": [
+        45,
+        46
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "9ba3eb4d4b3f6e4f048b03341565070dadc46571b8774bd2366b7e9d5a00945b"
+    },
+    {
+      "globalFrame": 49,
+      "ptsNumerator": 49,
+      "ptsDenominator": 60,
+      "seconds": 0.8166666666666667,
+      "clip": "pickup",
+      "localFrame": 49,
+      "sourcePosition": 46.2,
+      "sourceFrames": [
+        46,
+        47
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "91ba8d3a5b339d2cf3ea0ef322afed08a89240d584f3a404517f6c363e09ac70"
+    },
+    {
+      "globalFrame": 50,
+      "ptsNumerator": 50,
+      "ptsDenominator": 60,
+      "seconds": 0.8333333333333334,
+      "clip": "pickup",
+      "localFrame": 50,
+      "sourcePosition": 47.0,
+      "sourceFrames": [
+        47,
+        48
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "6ff2e85119b6f7c9f637e262a29298d6ecd14b6461ffbc4df0ef8089df2a48e4"
+    },
+    {
+      "globalFrame": 51,
+      "ptsNumerator": 51,
+      "ptsDenominator": 60,
+      "seconds": 0.85,
+      "clip": "pickup",
+      "localFrame": 51,
+      "sourcePosition": 47.800000000000004,
+      "sourceFrames": [
+        47,
+        48
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "7d3b327752a216b731c894c167a96544d8490b82e4cfc944a9d37b761c52cdb2"
+    },
+    {
+      "globalFrame": 52,
+      "ptsNumerator": 52,
+      "ptsDenominator": 60,
+      "seconds": 0.8666666666666667,
+      "clip": "pickup",
+      "localFrame": 52,
+      "sourcePosition": 48.6,
+      "sourceFrames": [
+        48,
+        49
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "19bbf4339e647e422a9c7b6b17501f3e05a2dd99c157e175152c8e5d8ec05b65"
+    },
+    {
+      "globalFrame": 53,
+      "ptsNumerator": 53,
+      "ptsDenominator": 60,
+      "seconds": 0.8833333333333333,
+      "clip": "pickup",
+      "localFrame": 53,
+      "sourcePosition": 49.400000000000006,
+      "sourceFrames": [
+        49,
+        50
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "0da5f8b4167515e02370911840a896bd069495ec5bcc9062d79e73a3cc2da3ab"
+    },
+    {
+      "globalFrame": 54,
+      "ptsNumerator": 54,
+      "ptsDenominator": 60,
+      "seconds": 0.9,
+      "clip": "pickup",
+      "localFrame": 54,
+      "sourcePosition": 50.2,
+      "sourceFrames": [
+        50,
+        51
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "830956751364a04899351b3e4eacb1a5d2208a5f9089fc69f3b2b3980cfa152a"
+    },
+    {
+      "globalFrame": 55,
+      "ptsNumerator": 55,
+      "ptsDenominator": 60,
+      "seconds": 0.9166666666666666,
+      "clip": "pickup",
+      "localFrame": 55,
+      "sourcePosition": 51.0,
+      "sourceFrames": [
+        51,
+        52
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "dd540cfd9ba3f6219ede657fc1243a53f498d20b3b7f49ebcb6078cfff114f54"
+    },
+    {
+      "globalFrame": 56,
+      "ptsNumerator": 56,
+      "ptsDenominator": 60,
+      "seconds": 0.9333333333333333,
+      "clip": "pickup",
+      "localFrame": 56,
+      "sourcePosition": 51.800000000000004,
+      "sourceFrames": [
+        51,
+        52
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "c79a4b518cf836bb7dced81ffe802bbd7c01184a756be738a0c13cf432562675"
+    },
+    {
+      "globalFrame": 57,
+      "ptsNumerator": 57,
+      "ptsDenominator": 60,
+      "seconds": 0.95,
+      "clip": "pickup",
+      "localFrame": 57,
+      "sourcePosition": 52.6,
+      "sourceFrames": [
+        52,
+        53
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "8de6c0e3a753449bd825af3a2a3a3d88890f00fdd93e3f1a0b2f9e882ba2f3af"
+    },
+    {
+      "globalFrame": 58,
+      "ptsNumerator": 58,
+      "ptsDenominator": 60,
+      "seconds": 0.9666666666666667,
+      "clip": "pickup",
+      "localFrame": 58,
+      "sourcePosition": 53.400000000000006,
+      "sourceFrames": [
+        53,
+        54
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "ffdd257ea0babf121a92ba892bf589e51d93978d5a09359fb583e1b460630da6"
+    },
+    {
+      "globalFrame": 59,
+      "ptsNumerator": 59,
+      "ptsDenominator": 60,
+      "seconds": 0.9833333333333333,
+      "clip": "pickup",
+      "localFrame": 59,
+      "sourcePosition": 54.2,
+      "sourceFrames": [
+        54,
+        55
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "3873ecdbe7ac91534639ac3e177a6dfe04c2144d87559986cb481d2b2baab717"
+    },
+    {
+      "globalFrame": 60,
+      "ptsNumerator": 60,
+      "ptsDenominator": 60,
+      "seconds": 1.0,
+      "clip": "pickup",
+      "localFrame": 60,
+      "sourcePosition": 55.0,
+      "sourceFrames": [
+        55,
+        56
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "3db0d9a342491e1babfb49a367cbad6851e56d68c68a1080a2c9bc1b09acc213"
+    },
+    {
+      "globalFrame": 61,
+      "ptsNumerator": 61,
+      "ptsDenominator": 60,
+      "seconds": 1.0166666666666666,
+      "clip": "pickup",
+      "localFrame": 61,
+      "sourcePosition": 55.800000000000004,
+      "sourceFrames": [
+        55,
+        56
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "489b4f10b400f2bc2130dccee6c87081812ba0865a31433771309652fdf76b90"
+    },
+    {
+      "globalFrame": 62,
+      "ptsNumerator": 62,
+      "ptsDenominator": 60,
+      "seconds": 1.0333333333333334,
+      "clip": "pickup",
+      "localFrame": 62,
+      "sourcePosition": 56.6,
+      "sourceFrames": [
+        56,
+        57
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "a09fc7582286dd2b3364e5d0c14b5fa82b12e8866827e924652409139af5cd0e"
+    },
+    {
+      "globalFrame": 63,
+      "ptsNumerator": 63,
+      "ptsDenominator": 60,
+      "seconds": 1.05,
+      "clip": "pickup",
+      "localFrame": 63,
+      "sourcePosition": 57.400000000000006,
+      "sourceFrames": [
+        57,
+        58
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "c1f14ff6f421537f2187ac634f676746442252e39cd3bdb4b27c5a2d2c0ea145"
+    },
+    {
+      "globalFrame": 64,
+      "ptsNumerator": 64,
+      "ptsDenominator": 60,
+      "seconds": 1.0666666666666667,
+      "clip": "pickup",
+      "localFrame": 64,
+      "sourcePosition": 58.2,
+      "sourceFrames": [
+        58,
+        59
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "a200c68836e775c35c6af1d4e712111a504834a128b831236642462a1196a970"
+    },
+    {
+      "globalFrame": 65,
+      "ptsNumerator": 65,
+      "ptsDenominator": 60,
+      "seconds": 1.0833333333333333,
+      "clip": "pickup",
+      "localFrame": 65,
+      "sourcePosition": 59.0,
+      "sourceFrames": [
+        59,
+        60
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "5218c5fbaa57fcc4e53bc34d02fd2d9d69c5f1b3068ecef88e3d3159bfcf2ccc"
+    },
+    {
+      "globalFrame": 66,
+      "ptsNumerator": 66,
+      "ptsDenominator": 60,
+      "seconds": 1.1,
+      "clip": "pickup",
+      "localFrame": 66,
+      "sourcePosition": 59.800000000000004,
+      "sourceFrames": [
+        59,
+        60
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "65dbe60ae8a9090a6b4d9837e33a3fffac272699f349ea652b6cb70fb6f569d1"
+    },
+    {
+      "globalFrame": 67,
+      "ptsNumerator": 67,
+      "ptsDenominator": 60,
+      "seconds": 1.1166666666666667,
+      "clip": "pickup",
+      "localFrame": 67,
+      "sourcePosition": 60.6,
+      "sourceFrames": [
+        60,
+        61
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "38c52092fd4bc2e8426339e05a3dec3f05fc6f22863ef03adad439d45d6d9a1a"
+    },
+    {
+      "globalFrame": 68,
+      "ptsNumerator": 68,
+      "ptsDenominator": 60,
+      "seconds": 1.1333333333333333,
+      "clip": "pickup",
+      "localFrame": 68,
+      "sourcePosition": 61.400000000000006,
+      "sourceFrames": [
+        61,
+        62
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "9ab76450be4fa4594fa1bdf8b8c09fb95ab92ded0203a4adfcf41ad3a5546a61"
+    },
+    {
+      "globalFrame": 69,
+      "ptsNumerator": 69,
+      "ptsDenominator": 60,
+      "seconds": 1.15,
+      "clip": "pickup",
+      "localFrame": 69,
+      "sourcePosition": 62.2,
+      "sourceFrames": [
+        62,
+        63
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "8d78698209de1b7e1c4c55a752f6f78944d7219eae174f3284df931360c244f8"
+    },
+    {
+      "globalFrame": 70,
+      "ptsNumerator": 70,
+      "ptsDenominator": 60,
+      "seconds": 1.1666666666666667,
+      "clip": "pickup",
+      "localFrame": 70,
+      "sourcePosition": 63.0,
+      "sourceFrames": [
+        63,
+        64
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "cf26fa6de6f243d2521c820a33b0383e03e852e98fef42ad85904a45e70fa13c"
+    },
+    {
+      "globalFrame": 71,
+      "ptsNumerator": 71,
+      "ptsDenominator": 60,
+      "seconds": 1.1833333333333333,
+      "clip": "pickup",
+      "localFrame": 71,
+      "sourcePosition": 63.800000000000004,
+      "sourceFrames": [
+        63,
+        64
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "6225fc769aaaaa07db21f45f04a24d4086228b406e9dd0300639133373ee53bd"
+    },
+    {
+      "globalFrame": 72,
+      "ptsNumerator": 72,
+      "ptsDenominator": 60,
+      "seconds": 1.2,
+      "clip": "pickup",
+      "localFrame": 72,
+      "sourcePosition": 64.6,
+      "sourceFrames": [
+        64,
+        65
+      ],
+      "sourceBlend": 0.5999999999999943,
+      "packedPNG_SHA": "8c63e8c2ad7eea3362c6a1367997ec47d0626ac0cff3c93f09b392383b75c467"
+    },
+    {
+      "globalFrame": 73,
+      "ptsNumerator": 73,
+      "ptsDenominator": 60,
+      "seconds": 1.2166666666666666,
+      "clip": "pickup",
+      "localFrame": 73,
+      "sourcePosition": 65.4,
+      "sourceFrames": [
+        65,
+        66
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "c9d1ed5b1f88593fb739984e6f6b8cc4f964d13940d31e886c261eb338ea52a2"
+    },
+    {
+      "globalFrame": 74,
+      "ptsNumerator": 74,
+      "ptsDenominator": 60,
+      "seconds": 1.2333333333333334,
+      "clip": "pickup",
+      "localFrame": 74,
+      "sourcePosition": 66,
+      "sourceFrames": [
+        66,
+        66
+      ],
+      "sourceBlend": 0,
+      "packedPNG_SHA": "157cc9407a80044efcb30934d47bcf52dd124a0d295b3176e6d699acf8d6c7d6"
+    },
+    {
+      "globalFrame": 75,
+      "ptsNumerator": 75,
+      "ptsDenominator": 60,
+      "seconds": 1.25,
+      "clip": "slide",
+      "localFrame": 0,
+      "sourcePosition": 2.0,
+      "sourceFrames": [
+        2,
+        3
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "f29216934a1451b1ae24c9b6b814300ddcade57872f7a876f758463676d9f527"
+    },
+    {
+      "globalFrame": 76,
+      "ptsNumerator": 76,
+      "ptsDenominator": 60,
+      "seconds": 1.2666666666666666,
+      "clip": "slide",
+      "localFrame": 1,
+      "sourcePosition": 2.8,
+      "sourceFrames": [
+        2,
+        3
+      ],
+      "sourceBlend": 0.7999999999999998,
+      "packedPNG_SHA": "862cc6a95aaa0927736e0c6e289d3534bc848c4e6e9f31b91e544f4a4c746629"
+    },
+    {
+      "globalFrame": 77,
+      "ptsNumerator": 77,
+      "ptsDenominator": 60,
+      "seconds": 1.2833333333333334,
+      "clip": "slide",
+      "localFrame": 2,
+      "sourcePosition": 3.6,
+      "sourceFrames": [
+        3,
+        4
+      ],
+      "sourceBlend": 0.6000000000000001,
+      "packedPNG_SHA": "c3f3e164a49755c269e0b2d33ac6c74d739ee329ca65fc23eb171833ba78c38e"
+    },
+    {
+      "globalFrame": 78,
+      "ptsNumerator": 78,
+      "ptsDenominator": 60,
+      "seconds": 1.3,
+      "clip": "slide",
+      "localFrame": 3,
+      "sourcePosition": 4.4,
+      "sourceFrames": [
+        4,
+        5
+      ],
+      "sourceBlend": 0.40000000000000036,
+      "packedPNG_SHA": "4865a86c3d0614bffabe052387479c64015e7827b2c5b20adeef6af1b827ceae"
+    },
+    {
+      "globalFrame": 79,
+      "ptsNumerator": 79,
+      "ptsDenominator": 60,
+      "seconds": 1.3166666666666667,
+      "clip": "slide",
+      "localFrame": 4,
+      "sourcePosition": 5.2,
+      "sourceFrames": [
+        5,
+        6
+      ],
+      "sourceBlend": 0.20000000000000018,
+      "packedPNG_SHA": "c374b99bd57b537aa1f462a7012419312b9672664241f9ebff2977a3d13c450d"
+    },
+    {
+      "globalFrame": 80,
+      "ptsNumerator": 80,
+      "ptsDenominator": 60,
+      "seconds": 1.3333333333333333,
+      "clip": "slide",
+      "localFrame": 5,
+      "sourcePosition": 6.0,
+      "sourceFrames": [
+        6,
+        7
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "e4770a79647eba4107cf422746718264b5113d105db007a98579247cfe52299c"
+    },
+    {
+      "globalFrame": 81,
+      "ptsNumerator": 81,
+      "ptsDenominator": 60,
+      "seconds": 1.35,
+      "clip": "slide",
+      "localFrame": 6,
+      "sourcePosition": 6.800000000000001,
+      "sourceFrames": [
+        6,
+        7
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "18d68a3bd7604e296aef344fb1993370f8012b3e47060916f4f0abb5a8aacb70"
+    },
+    {
+      "globalFrame": 82,
+      "ptsNumerator": 82,
+      "ptsDenominator": 60,
+      "seconds": 1.3666666666666667,
+      "clip": "slide",
+      "localFrame": 7,
+      "sourcePosition": 7.6000000000000005,
+      "sourceFrames": [
+        7,
+        8
+      ],
+      "sourceBlend": 0.6000000000000005,
+      "packedPNG_SHA": "3177172b6b631e65f8617208f589c43608355fb67c219b517deabbc52c70d407"
+    },
+    {
+      "globalFrame": 83,
+      "ptsNumerator": 83,
+      "ptsDenominator": 60,
+      "seconds": 1.3833333333333333,
+      "clip": "slide",
+      "localFrame": 8,
+      "sourcePosition": 8.4,
+      "sourceFrames": [
+        8,
+        9
+      ],
+      "sourceBlend": 0.40000000000000036,
+      "packedPNG_SHA": "0781c61855181c6b3cd520f0b74b302aa1205469f4f31e508e8c7e218294cf48"
+    },
+    {
+      "globalFrame": 84,
+      "ptsNumerator": 84,
+      "ptsDenominator": 60,
+      "seconds": 1.4,
+      "clip": "slide",
+      "localFrame": 9,
+      "sourcePosition": 9.2,
+      "sourceFrames": [
+        9,
+        10
+      ],
+      "sourceBlend": 0.1999999999999993,
+      "packedPNG_SHA": "f9eb4e84c702eb18266b997b8563b0410799366f6afe609d32806696f0aad916"
+    },
+    {
+      "globalFrame": 85,
+      "ptsNumerator": 85,
+      "ptsDenominator": 60,
+      "seconds": 1.4166666666666667,
+      "clip": "slide",
+      "localFrame": 10,
+      "sourcePosition": 10.0,
+      "sourceFrames": [
+        10,
+        11
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "1e5341676efeb6c0a322c6ff74959d5872e64ac2335599b295420bd48b08dfcb"
+    },
+    {
+      "globalFrame": 86,
+      "ptsNumerator": 86,
+      "ptsDenominator": 60,
+      "seconds": 1.4333333333333333,
+      "clip": "slide",
+      "localFrame": 11,
+      "sourcePosition": 10.8,
+      "sourceFrames": [
+        10,
+        11
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "b561a8e625ce0c174364c3dc8624ee97e5b6e8cffad8aac84d8ca1be500141a7"
+    },
+    {
+      "globalFrame": 87,
+      "ptsNumerator": 87,
+      "ptsDenominator": 60,
+      "seconds": 1.45,
+      "clip": "slide",
+      "localFrame": 12,
+      "sourcePosition": 11.600000000000001,
+      "sourceFrames": [
+        11,
+        12
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "1356d8da5b463d8321aae747089b8f4a667f0d6b50f1c786dcce2595f6d1a301"
+    },
+    {
+      "globalFrame": 88,
+      "ptsNumerator": 88,
+      "ptsDenominator": 60,
+      "seconds": 1.4666666666666666,
+      "clip": "slide",
+      "localFrame": 13,
+      "sourcePosition": 12.4,
+      "sourceFrames": [
+        12,
+        13
+      ],
+      "sourceBlend": 0.40000000000000036,
+      "packedPNG_SHA": "1c85c0f0609c1121906913ebcd8510252317da51b649996acd6ad0b2926d2134"
+    },
+    {
+      "globalFrame": 89,
+      "ptsNumerator": 89,
+      "ptsDenominator": 60,
+      "seconds": 1.4833333333333334,
+      "clip": "slide",
+      "localFrame": 14,
+      "sourcePosition": 13.200000000000001,
+      "sourceFrames": [
+        13,
+        14
+      ],
+      "sourceBlend": 0.20000000000000107,
+      "packedPNG_SHA": "825ee30c696273b936f6378a3c8b404f06fc5c13f0b7eca5cb6762c52b7be6ef"
+    },
+    {
+      "globalFrame": 90,
+      "ptsNumerator": 90,
+      "ptsDenominator": 60,
+      "seconds": 1.5,
+      "clip": "slide",
+      "localFrame": 15,
+      "sourcePosition": 14.0,
+      "sourceFrames": [
+        14,
+        15
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "31972b6a6e595d5806bc27043dfb5bf6bc19d8e613a45ec6645cf66ae3fb734e"
+    },
+    {
+      "globalFrame": 91,
+      "ptsNumerator": 91,
+      "ptsDenominator": 60,
+      "seconds": 1.5166666666666666,
+      "clip": "slide",
+      "localFrame": 16,
+      "sourcePosition": 14.8,
+      "sourceFrames": [
+        14,
+        15
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "619fe4c9088b7d61a11da5fd562745cdfb8f00085dae1f826951f7997b4e9ea5"
+    },
+    {
+      "globalFrame": 92,
+      "ptsNumerator": 92,
+      "ptsDenominator": 60,
+      "seconds": 1.5333333333333334,
+      "clip": "slide",
+      "localFrame": 17,
+      "sourcePosition": 15.600000000000001,
+      "sourceFrames": [
+        15,
+        16
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "1e1723e177fdd7e01c5463c295609b83852a34cf65d83ecd71d3af7189e9bc2b"
+    },
+    {
+      "globalFrame": 93,
+      "ptsNumerator": 93,
+      "ptsDenominator": 60,
+      "seconds": 1.55,
+      "clip": "slide",
+      "localFrame": 18,
+      "sourcePosition": 16.4,
+      "sourceFrames": [
+        16,
+        17
+      ],
+      "sourceBlend": 0.3999999999999986,
+      "packedPNG_SHA": "798a7156f3b664520cc6a9d9b33b2310e3d78b48521aa925c2cfdad9520546cd"
+    },
+    {
+      "globalFrame": 94,
+      "ptsNumerator": 94,
+      "ptsDenominator": 60,
+      "seconds": 1.5666666666666667,
+      "clip": "slide",
+      "localFrame": 19,
+      "sourcePosition": 17.200000000000003,
+      "sourceFrames": [
+        17,
+        18
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "d623ba2bb22091555c795e553f97d85c8ce504cc1d704a566c6678b2f06b0b7a"
+    },
+    {
+      "globalFrame": 95,
+      "ptsNumerator": 95,
+      "ptsDenominator": 60,
+      "seconds": 1.5833333333333333,
+      "clip": "slide",
+      "localFrame": 20,
+      "sourcePosition": 18.0,
+      "sourceFrames": [
+        18,
+        19
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "81b3d27e327f834608604709e49bd5a7e35bc1682ffff7c4ff98ff544c54be17"
+    },
+    {
+      "globalFrame": 96,
+      "ptsNumerator": 96,
+      "ptsDenominator": 60,
+      "seconds": 1.6,
+      "clip": "slide",
+      "localFrame": 21,
+      "sourcePosition": 18.8,
+      "sourceFrames": [
+        18,
+        19
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "4481a7fb738acf56900ce94c3b68bef82d8a5b4eb66d2b649bf38a1fc4763df1"
+    },
+    {
+      "globalFrame": 97,
+      "ptsNumerator": 97,
+      "ptsDenominator": 60,
+      "seconds": 1.6166666666666667,
+      "clip": "slide",
+      "localFrame": 22,
+      "sourcePosition": 19.6,
+      "sourceFrames": [
+        19,
+        20
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "4ad7e923839653cac368cdffea2300c170845aacfbdddb0e89d0567e35226b3b"
+    },
+    {
+      "globalFrame": 98,
+      "ptsNumerator": 98,
+      "ptsDenominator": 60,
+      "seconds": 1.6333333333333333,
+      "clip": "slide",
+      "localFrame": 23,
+      "sourcePosition": 20.400000000000002,
+      "sourceFrames": [
+        20,
+        21
+      ],
+      "sourceBlend": 0.40000000000000213,
+      "packedPNG_SHA": "28367fffa5042a0a6b656d4956cb19532503521778b53aaceef5cc80a401812a"
+    },
+    {
+      "globalFrame": 99,
+      "ptsNumerator": 99,
+      "ptsDenominator": 60,
+      "seconds": 1.65,
+      "clip": "slide",
+      "localFrame": 24,
+      "sourcePosition": 21.200000000000003,
+      "sourceFrames": [
+        21,
+        22
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "2a37e49103afddcaee98d8c225594e219866a683790f1ef614406d7178228522"
+    },
+    {
+      "globalFrame": 100,
+      "ptsNumerator": 100,
+      "ptsDenominator": 60,
+      "seconds": 1.6666666666666667,
+      "clip": "slide",
+      "localFrame": 25,
+      "sourcePosition": 22.0,
+      "sourceFrames": [
+        22,
+        23
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "4a27aa073118f857f27e9a8cc5b41594bebf87221c10501ec392b686c81759bc"
+    },
+    {
+      "globalFrame": 101,
+      "ptsNumerator": 101,
+      "ptsDenominator": 60,
+      "seconds": 1.6833333333333333,
+      "clip": "slide",
+      "localFrame": 26,
+      "sourcePosition": 22.8,
+      "sourceFrames": [
+        22,
+        23
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "74ee50e9e6a37def584d7404738b92264e7cdfd9a203aba4f71f0219a9e5e2df"
+    },
+    {
+      "globalFrame": 102,
+      "ptsNumerator": 102,
+      "ptsDenominator": 60,
+      "seconds": 1.7,
+      "clip": "slide",
+      "localFrame": 27,
+      "sourcePosition": 23.6,
+      "sourceFrames": [
+        23,
+        24
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "3babf86c6b41addb4537812440fbbe7945e30c2604f2d12fa112162e880e8d0b"
+    },
+    {
+      "globalFrame": 103,
+      "ptsNumerator": 103,
+      "ptsDenominator": 60,
+      "seconds": 1.7166666666666666,
+      "clip": "slide",
+      "localFrame": 28,
+      "sourcePosition": 24.400000000000002,
+      "sourceFrames": [
+        24,
+        25
+      ],
+      "sourceBlend": 0.40000000000000213,
+      "packedPNG_SHA": "f1eb19bcc5020e46aef4908d5c12a260ff7abeb51f45f60d26c2d84754225403"
+    },
+    {
+      "globalFrame": 104,
+      "ptsNumerator": 104,
+      "ptsDenominator": 60,
+      "seconds": 1.7333333333333334,
+      "clip": "slide",
+      "localFrame": 29,
+      "sourcePosition": 25.200000000000003,
+      "sourceFrames": [
+        25,
+        26
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "4d70f900b3fc5a40d2c3c2f712763bfa01bf64e568b545951820e28dbd8ef833"
+    },
+    {
+      "globalFrame": 105,
+      "ptsNumerator": 105,
+      "ptsDenominator": 60,
+      "seconds": 1.75,
+      "clip": "slide",
+      "localFrame": 30,
+      "sourcePosition": 26.0,
+      "sourceFrames": [
+        26,
+        27
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "c86d2ec1a5cac193a4bb137fd105f094f893ce06b09092dfed89acff9274426d"
+    },
+    {
+      "globalFrame": 106,
+      "ptsNumerator": 106,
+      "ptsDenominator": 60,
+      "seconds": 1.7666666666666666,
+      "clip": "slide",
+      "localFrame": 31,
+      "sourcePosition": 26.8,
+      "sourceFrames": [
+        26,
+        27
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "c8c7c9a13c3885421e2389e7ea77f74d42817056e17a52f3f8e791ce706bc417"
+    },
+    {
+      "globalFrame": 107,
+      "ptsNumerator": 107,
+      "ptsDenominator": 60,
+      "seconds": 1.7833333333333334,
+      "clip": "slide",
+      "localFrame": 32,
+      "sourcePosition": 27.6,
+      "sourceFrames": [
+        27,
+        28
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "0455ef2d9680c9a20fbe99234619d156924034f8677e91b446891f29247803e2"
+    },
+    {
+      "globalFrame": 108,
+      "ptsNumerator": 108,
+      "ptsDenominator": 60,
+      "seconds": 1.8,
+      "clip": "slide",
+      "localFrame": 33,
+      "sourcePosition": 28.400000000000002,
+      "sourceFrames": [
+        28,
+        29
+      ],
+      "sourceBlend": 0.40000000000000213,
+      "packedPNG_SHA": "a9db3e1d2d53a043e2a3d832a892d9bcf1ff56c9bbbe1cf10e1655e6b8c7b7aa"
+    },
+    {
+      "globalFrame": 109,
+      "ptsNumerator": 109,
+      "ptsDenominator": 60,
+      "seconds": 1.8166666666666667,
+      "clip": "slide",
+      "localFrame": 34,
+      "sourcePosition": 29.200000000000003,
+      "sourceFrames": [
+        29,
+        30
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "1a085b4016c2195c7151cfb22f1f8b2edf5ec05e296c530a6174f3599acd4ba0"
+    },
+    {
+      "globalFrame": 110,
+      "ptsNumerator": 110,
+      "ptsDenominator": 60,
+      "seconds": 1.8333333333333333,
+      "clip": "slide",
+      "localFrame": 35,
+      "sourcePosition": 30.0,
+      "sourceFrames": [
+        30,
+        31
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "49f6efc8f040aed26805ec08c31d2ab0a39a26275c823d396d7d8f4d2a129803"
+    },
+    {
+      "globalFrame": 111,
+      "ptsNumerator": 111,
+      "ptsDenominator": 60,
+      "seconds": 1.85,
+      "clip": "slide",
+      "localFrame": 36,
+      "sourcePosition": 30.8,
+      "sourceFrames": [
+        30,
+        31
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "8b140dd70732eab2173b328c1f9c0ea7459e2940e4854648fbb4b74d9422d901"
+    },
+    {
+      "globalFrame": 112,
+      "ptsNumerator": 112,
+      "ptsDenominator": 60,
+      "seconds": 1.8666666666666667,
+      "clip": "slide",
+      "localFrame": 37,
+      "sourcePosition": 31.6,
+      "sourceFrames": [
+        31,
+        32
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "b0e069dd7488f18740c0583a85fd738812167ceb29c6e899eeb92e5c97c8e217"
+    },
+    {
+      "globalFrame": 113,
+      "ptsNumerator": 113,
+      "ptsDenominator": 60,
+      "seconds": 1.8833333333333333,
+      "clip": "slide",
+      "localFrame": 38,
+      "sourcePosition": 32.400000000000006,
+      "sourceFrames": [
+        32,
+        33
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "4b21d4e73f054087a5e07f074b1770957c9bfd500966b7e7e43e8ab85b303b55"
+    },
+    {
+      "globalFrame": 114,
+      "ptsNumerator": 114,
+      "ptsDenominator": 60,
+      "seconds": 1.9,
+      "clip": "slide",
+      "localFrame": 39,
+      "sourcePosition": 33.2,
+      "sourceFrames": [
+        33,
+        34
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "1b00bef3611c3defc9c02cab12943d3950ec1f5512f7b2b2e0472c0a13a22a87"
+    },
+    {
+      "globalFrame": 115,
+      "ptsNumerator": 115,
+      "ptsDenominator": 60,
+      "seconds": 1.9166666666666667,
+      "clip": "slide",
+      "localFrame": 40,
+      "sourcePosition": 34.0,
+      "sourceFrames": [
+        34,
+        35
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "ce93e6d04dcc7d200fad42ffdda7ed52baa951a5ab579cb766fe5fc32b60acd0"
+    },
+    {
+      "globalFrame": 116,
+      "ptsNumerator": 116,
+      "ptsDenominator": 60,
+      "seconds": 1.9333333333333333,
+      "clip": "slide",
+      "localFrame": 41,
+      "sourcePosition": 34.800000000000004,
+      "sourceFrames": [
+        34,
+        35
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "d78ed5d97bbd74b51332e11689079cd304218a7f51b09c66625c39c5ddbaaddf"
+    },
+    {
+      "globalFrame": 117,
+      "ptsNumerator": 117,
+      "ptsDenominator": 60,
+      "seconds": 1.95,
+      "clip": "slide",
+      "localFrame": 42,
+      "sourcePosition": 35.6,
+      "sourceFrames": [
+        35,
+        36
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "3242fe92da8bccb7d6a4536129b3754d9da838854b3603dbcfab2a7d618b2213"
+    },
+    {
+      "globalFrame": 118,
+      "ptsNumerator": 118,
+      "ptsDenominator": 60,
+      "seconds": 1.9666666666666666,
+      "clip": "slide",
+      "localFrame": 43,
+      "sourcePosition": 36.4,
+      "sourceFrames": [
+        36,
+        37
+      ],
+      "sourceBlend": 0.3999999999999986,
+      "packedPNG_SHA": "62f0621029989a11f1076fc8cd66b70a9b63259c4f6873d10d7afb435300508b"
+    },
+    {
+      "globalFrame": 119,
+      "ptsNumerator": 119,
+      "ptsDenominator": 60,
+      "seconds": 1.9833333333333334,
+      "clip": "slide",
+      "localFrame": 44,
+      "sourcePosition": 37.2,
+      "sourceFrames": [
+        37,
+        38
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "c320499296d0f29013dfd1f342ac18d628cb4466ff54ccd781b08a0ca5f4d688"
+    },
+    {
+      "globalFrame": 120,
+      "ptsNumerator": 120,
+      "ptsDenominator": 60,
+      "seconds": 2.0,
+      "clip": "slide",
+      "localFrame": 45,
+      "sourcePosition": 38.0,
+      "sourceFrames": [
+        38,
+        39
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "f25cdc3235416249829ecdf47209cc02e0e753bede3206c7e51b094c8760266a"
+    },
+    {
+      "globalFrame": 121,
+      "ptsNumerator": 121,
+      "ptsDenominator": 60,
+      "seconds": 2.0166666666666666,
+      "clip": "slide",
+      "localFrame": 46,
+      "sourcePosition": 38.800000000000004,
+      "sourceFrames": [
+        38,
+        39
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "b3ab46a4366fbcdcd888d6d1aa1efe7d82c62146821c911a39c1c6cdcd5b5626"
+    },
+    {
+      "globalFrame": 122,
+      "ptsNumerator": 122,
+      "ptsDenominator": 60,
+      "seconds": 2.033333333333333,
+      "clip": "slide",
+      "localFrame": 47,
+      "sourcePosition": 39.6,
+      "sourceFrames": [
+        39,
+        40
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "bf2b994990beb82a5e4d004d5702ee0cc1b24b943d87e8da46e379488caff5fb"
+    },
+    {
+      "globalFrame": 123,
+      "ptsNumerator": 123,
+      "ptsDenominator": 60,
+      "seconds": 2.05,
+      "clip": "slide",
+      "localFrame": 48,
+      "sourcePosition": 40.400000000000006,
+      "sourceFrames": [
+        40,
+        41
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "768e5ff3d8e374c624b8355f1f624ce4604a45b389548d3fb315e1e0c07d6c77"
+    },
+    {
+      "globalFrame": 124,
+      "ptsNumerator": 124,
+      "ptsDenominator": 60,
+      "seconds": 2.066666666666667,
+      "clip": "slide",
+      "localFrame": 49,
+      "sourcePosition": 41.2,
+      "sourceFrames": [
+        41,
+        42
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "6974b642f75c70182c094f1b214eee2054a7ce9cdc3abbcc18480f3c30512d03"
+    },
+    {
+      "globalFrame": 125,
+      "ptsNumerator": 125,
+      "ptsDenominator": 60,
+      "seconds": 2.0833333333333335,
+      "clip": "slide",
+      "localFrame": 50,
+      "sourcePosition": 42.0,
+      "sourceFrames": [
+        42,
+        43
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "7c8d5465c11ce24b480392c94dae32d8ba0c2f3b880b851ccc8d7deed5c75ca5"
+    },
+    {
+      "globalFrame": 126,
+      "ptsNumerator": 126,
+      "ptsDenominator": 60,
+      "seconds": 2.1,
+      "clip": "slide",
+      "localFrame": 51,
+      "sourcePosition": 42.800000000000004,
+      "sourceFrames": [
+        42,
+        43
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "170531d3fd18c637016bb3e7254ec7d413bcd90ed52580e69ac8c58b93c7a5dd"
+    },
+    {
+      "globalFrame": 127,
+      "ptsNumerator": 127,
+      "ptsDenominator": 60,
+      "seconds": 2.1166666666666667,
+      "clip": "slide",
+      "localFrame": 52,
+      "sourcePosition": 43.6,
+      "sourceFrames": [
+        43,
+        44
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "7f14d46047cd88092bcf30e23ce3c0ade43b126968598bba5b065f570df8c1b0"
+    },
+    {
+      "globalFrame": 128,
+      "ptsNumerator": 128,
+      "ptsDenominator": 60,
+      "seconds": 2.1333333333333333,
+      "clip": "slide",
+      "localFrame": 53,
+      "sourcePosition": 44.400000000000006,
+      "sourceFrames": [
+        44,
+        45
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "8e305c83e68b79cf5a09c4cf3528a9f3493a6f07794d6d63e1f3e647214d62a7"
+    },
+    {
+      "globalFrame": 129,
+      "ptsNumerator": 129,
+      "ptsDenominator": 60,
+      "seconds": 2.15,
+      "clip": "slide",
+      "localFrame": 54,
+      "sourcePosition": 45.2,
+      "sourceFrames": [
+        45,
+        46
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "91a92d4763d393bd9fc4d2d255e2f72b9a77c9dccb06dbb9a5bafaae64f2d953"
+    },
+    {
+      "globalFrame": 130,
+      "ptsNumerator": 130,
+      "ptsDenominator": 60,
+      "seconds": 2.1666666666666665,
+      "clip": "slide",
+      "localFrame": 55,
+      "sourcePosition": 46.0,
+      "sourceFrames": [
+        46,
+        47
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "a90f934bd8470262fd4ecea2e5aed3ebf89950aaa1764ed1b8ce467047275ec7"
+    },
+    {
+      "globalFrame": 131,
+      "ptsNumerator": 131,
+      "ptsDenominator": 60,
+      "seconds": 2.183333333333333,
+      "clip": "slide",
+      "localFrame": 56,
+      "sourcePosition": 46.800000000000004,
+      "sourceFrames": [
+        46,
+        47
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "5cf655bd76d68399b5190d3da28139730aeaf94df07443c358d3e756f86d9978"
+    },
+    {
+      "globalFrame": 132,
+      "ptsNumerator": 132,
+      "ptsDenominator": 60,
+      "seconds": 2.2,
+      "clip": "slide",
+      "localFrame": 57,
+      "sourcePosition": 47.6,
+      "sourceFrames": [
+        47,
+        48
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "bdbd6bc8be862392d9bad7a8a732bf2bdb49656ef784098690a109d9d879d98d"
+    },
+    {
+      "globalFrame": 133,
+      "ptsNumerator": 133,
+      "ptsDenominator": 60,
+      "seconds": 2.216666666666667,
+      "clip": "slide",
+      "localFrame": 58,
+      "sourcePosition": 48.400000000000006,
+      "sourceFrames": [
+        48,
+        49
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "9b4d9fa3ae5127ba23f8ab33621f467a68c5355138101642bca8568656b12086"
+    },
+    {
+      "globalFrame": 134,
+      "ptsNumerator": 134,
+      "ptsDenominator": 60,
+      "seconds": 2.2333333333333334,
+      "clip": "slide",
+      "localFrame": 59,
+      "sourcePosition": 49.2,
+      "sourceFrames": [
+        49,
+        50
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "777ed26c72cdf81279ac2c995c220a33c05cf67f3435c12d0accea67e39e73ba"
+    },
+    {
+      "globalFrame": 135,
+      "ptsNumerator": 135,
+      "ptsDenominator": 60,
+      "seconds": 2.25,
+      "clip": "slide",
+      "localFrame": 60,
+      "sourcePosition": 50.0,
+      "sourceFrames": [
+        50,
+        51
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "9bcc4a1163995b717a0bd0a4c085cc2000b419430972eb3ee8bb167917b2c502"
+    },
+    {
+      "globalFrame": 136,
+      "ptsNumerator": 136,
+      "ptsDenominator": 60,
+      "seconds": 2.2666666666666666,
+      "clip": "slide",
+      "localFrame": 61,
+      "sourcePosition": 50.800000000000004,
+      "sourceFrames": [
+        50,
+        51
+      ],
+      "sourceBlend": 0.8000000000000043,
+      "packedPNG_SHA": "29348b35ed56281d9df052ddd2399986be000c75fcfe22b65c19020e34bf8b7f"
+    },
+    {
+      "globalFrame": 137,
+      "ptsNumerator": 137,
+      "ptsDenominator": 60,
+      "seconds": 2.283333333333333,
+      "clip": "slide",
+      "localFrame": 62,
+      "sourcePosition": 51.6,
+      "sourceFrames": [
+        51,
+        52
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "231b7a7aa9ca104f3e7ec674986562faac18f3d9bb82affc5c6340d8ef4403b7"
+    },
+    {
+      "globalFrame": 138,
+      "ptsNumerator": 138,
+      "ptsDenominator": 60,
+      "seconds": 2.3,
+      "clip": "slide",
+      "localFrame": 63,
+      "sourcePosition": 52.400000000000006,
+      "sourceFrames": [
+        52,
+        53
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "53dbf3f5b28763c1de11246be3f37f57f301d67cc112839e8aa56fcff9c10961"
+    },
+    {
+      "globalFrame": 139,
+      "ptsNumerator": 139,
+      "ptsDenominator": 60,
+      "seconds": 2.316666666666667,
+      "clip": "slide",
+      "localFrame": 64,
+      "sourcePosition": 53.2,
+      "sourceFrames": [
+        53,
+        54
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "2766c617da774bf2d3053035f21d0620c2238b3565b14b056adccb44c3d2c708"
+    },
+    {
+      "globalFrame": 140,
+      "ptsNumerator": 140,
+      "ptsDenominator": 60,
+      "seconds": 2.3333333333333335,
+      "clip": "slide",
+      "localFrame": 65,
+      "sourcePosition": 54,
+      "sourceFrames": [
+        54,
+        54
+      ],
+      "sourceBlend": 0,
+      "packedPNG_SHA": "b5d26149d78605d54c118fc536d98f388afe15ebfe816c09d9e9cc2b52e89526"
+    },
+    {
+      "globalFrame": 141,
+      "ptsNumerator": 141,
+      "ptsDenominator": 60,
+      "seconds": 2.35,
+      "clip": "return",
+      "localFrame": 0,
+      "sourcePosition": 5.0,
+      "sourceFrames": [
+        5,
+        6
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "59940bd5046e05070a95834f3b81c39f0926f37a8c983efc07ab5bdacadd6a87"
+    },
+    {
+      "globalFrame": 142,
+      "ptsNumerator": 142,
+      "ptsDenominator": 60,
+      "seconds": 2.3666666666666667,
+      "clip": "return",
+      "localFrame": 1,
+      "sourcePosition": 5.8,
+      "sourceFrames": [
+        5,
+        6
+      ],
+      "sourceBlend": 0.7999999999999998,
+      "packedPNG_SHA": "05f0e052393adb24b93b60c3f88a8771864952d298422c796d325fa3f238e8b3"
+    },
+    {
+      "globalFrame": 143,
+      "ptsNumerator": 143,
+      "ptsDenominator": 60,
+      "seconds": 2.3833333333333333,
+      "clip": "return",
+      "localFrame": 2,
+      "sourcePosition": 6.6,
+      "sourceFrames": [
+        6,
+        7
+      ],
+      "sourceBlend": 0.5999999999999996,
+      "packedPNG_SHA": "b5dad11900d07bc70d8525d8db2ed56aecd37e4dc904a6a12689c84be7023816"
+    },
+    {
+      "globalFrame": 144,
+      "ptsNumerator": 144,
+      "ptsDenominator": 60,
+      "seconds": 2.4,
+      "clip": "return",
+      "localFrame": 3,
+      "sourcePosition": 7.4,
+      "sourceFrames": [
+        7,
+        8
+      ],
+      "sourceBlend": 0.40000000000000036,
+      "packedPNG_SHA": "0e1ed5a06c20da76ca2d923cb27f19b7828bd3477f56250f0529cbfd533f530a"
+    },
+    {
+      "globalFrame": 145,
+      "ptsNumerator": 145,
+      "ptsDenominator": 60,
+      "seconds": 2.4166666666666665,
+      "clip": "return",
+      "localFrame": 4,
+      "sourcePosition": 8.2,
+      "sourceFrames": [
+        8,
+        9
+      ],
+      "sourceBlend": 0.1999999999999993,
+      "packedPNG_SHA": "df126f9fc33e19f37a4142790f48db198de521c6f3cb92f0515c75828ebd4f47"
+    },
+    {
+      "globalFrame": 146,
+      "ptsNumerator": 146,
+      "ptsDenominator": 60,
+      "seconds": 2.433333333333333,
+      "clip": "return",
+      "localFrame": 5,
+      "sourcePosition": 9.0,
+      "sourceFrames": [
+        9,
+        10
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "57fdb940ec2617e49ba0b1b39478463e9687a93cfc851951e2ce642b7c714a71"
+    },
+    {
+      "globalFrame": 147,
+      "ptsNumerator": 147,
+      "ptsDenominator": 60,
+      "seconds": 2.45,
+      "clip": "return",
+      "localFrame": 6,
+      "sourcePosition": 9.8,
+      "sourceFrames": [
+        9,
+        10
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "ac9dcacb544dc08a3b57c34efc1e8e9a84b33f04e2e6bd293e15ca0c7e069ae0"
+    },
+    {
+      "globalFrame": 148,
+      "ptsNumerator": 148,
+      "ptsDenominator": 60,
+      "seconds": 2.466666666666667,
+      "clip": "return",
+      "localFrame": 7,
+      "sourcePosition": 10.600000000000001,
+      "sourceFrames": [
+        10,
+        11
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "ab09d2c4802f3d53d1d259355fcd750b75e84e6511ce1f772cc4cbd2e9271b14"
+    },
+    {
+      "globalFrame": 149,
+      "ptsNumerator": 149,
+      "ptsDenominator": 60,
+      "seconds": 2.4833333333333334,
+      "clip": "return",
+      "localFrame": 8,
+      "sourcePosition": 11.4,
+      "sourceFrames": [
+        11,
+        12
+      ],
+      "sourceBlend": 0.40000000000000036,
+      "packedPNG_SHA": "629eb85f30e0d42be8bd0d807a14bd318674e5496c253d72246753d4b5d0d9e3"
+    },
+    {
+      "globalFrame": 150,
+      "ptsNumerator": 150,
+      "ptsDenominator": 60,
+      "seconds": 2.5,
+      "clip": "return",
+      "localFrame": 9,
+      "sourcePosition": 12.2,
+      "sourceFrames": [
+        12,
+        13
+      ],
+      "sourceBlend": 0.1999999999999993,
+      "packedPNG_SHA": "22d4789df03f4dc67176a932c8dfcc69f466de54f1cacc9567312e3ffbc2fd5c"
+    },
+    {
+      "globalFrame": 151,
+      "ptsNumerator": 151,
+      "ptsDenominator": 60,
+      "seconds": 2.5166666666666666,
+      "clip": "return",
+      "localFrame": 10,
+      "sourcePosition": 13.0,
+      "sourceFrames": [
+        13,
+        14
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "a95d29b098cb0a0fc334dad56ec88003d12f43f866de93f44f48b28a1364aab5"
+    },
+    {
+      "globalFrame": 152,
+      "ptsNumerator": 152,
+      "ptsDenominator": 60,
+      "seconds": 2.533333333333333,
+      "clip": "return",
+      "localFrame": 11,
+      "sourcePosition": 13.8,
+      "sourceFrames": [
+        13,
+        14
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "c7261cf9032ee94376bb1ef05d56828badd76c40eecdf76b9245315ffa00d853"
+    },
+    {
+      "globalFrame": 153,
+      "ptsNumerator": 153,
+      "ptsDenominator": 60,
+      "seconds": 2.55,
+      "clip": "return",
+      "localFrame": 12,
+      "sourcePosition": 14.600000000000001,
+      "sourceFrames": [
+        14,
+        15
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "2438ecad4b210d7fece2f28be6fd9b025bfc16dfe0004311769b659b4c45106d"
+    },
+    {
+      "globalFrame": 154,
+      "ptsNumerator": 154,
+      "ptsDenominator": 60,
+      "seconds": 2.566666666666667,
+      "clip": "return",
+      "localFrame": 13,
+      "sourcePosition": 15.4,
+      "sourceFrames": [
+        15,
+        16
+      ],
+      "sourceBlend": 0.40000000000000036,
+      "packedPNG_SHA": "87f4a2857d29e756d73cfbb153ed151b42ee99fa98ddf2ee051fe1e7c42ec4c9"
+    },
+    {
+      "globalFrame": 155,
+      "ptsNumerator": 155,
+      "ptsDenominator": 60,
+      "seconds": 2.5833333333333335,
+      "clip": "return",
+      "localFrame": 14,
+      "sourcePosition": 16.200000000000003,
+      "sourceFrames": [
+        16,
+        17
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "693b3a0a48539773d8f7665ca99baebe801e166e0165817784cf176a312bebbf"
+    },
+    {
+      "globalFrame": 156,
+      "ptsNumerator": 156,
+      "ptsDenominator": 60,
+      "seconds": 2.6,
+      "clip": "return",
+      "localFrame": 15,
+      "sourcePosition": 17.0,
+      "sourceFrames": [
+        17,
+        18
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "931023ee9f0ebb98bd867ba345839ae85d08d6fe5baeb7a80e5552c8b39d8929"
+    },
+    {
+      "globalFrame": 157,
+      "ptsNumerator": 157,
+      "ptsDenominator": 60,
+      "seconds": 2.6166666666666667,
+      "clip": "return",
+      "localFrame": 16,
+      "sourcePosition": 17.8,
+      "sourceFrames": [
+        17,
+        18
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "aa9546d1bcc207ccbf4793f54d2347bc3c61cef89321a76d3255ef3ff800b670"
+    },
+    {
+      "globalFrame": 158,
+      "ptsNumerator": 158,
+      "ptsDenominator": 60,
+      "seconds": 2.6333333333333333,
+      "clip": "return",
+      "localFrame": 17,
+      "sourcePosition": 18.6,
+      "sourceFrames": [
+        18,
+        19
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "b16849ae5a9bc97a16099bc685364a7e385455e1b1bfc9a0709f2fdd71389777"
+    },
+    {
+      "globalFrame": 159,
+      "ptsNumerator": 159,
+      "ptsDenominator": 60,
+      "seconds": 2.65,
+      "clip": "return",
+      "localFrame": 18,
+      "sourcePosition": 19.4,
+      "sourceFrames": [
+        19,
+        20
+      ],
+      "sourceBlend": 0.3999999999999986,
+      "packedPNG_SHA": "da0dcdfd370989fc199f26937df0ae5f03f4e26790325cecb63e7b34d7a5aa66"
+    },
+    {
+      "globalFrame": 160,
+      "ptsNumerator": 160,
+      "ptsDenominator": 60,
+      "seconds": 2.6666666666666665,
+      "clip": "return",
+      "localFrame": 19,
+      "sourcePosition": 20.200000000000003,
+      "sourceFrames": [
+        20,
+        21
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "26589306847ba1fe30d83b51cf3b76341ec19b658f0aafe15601ca9c2fc01444"
+    },
+    {
+      "globalFrame": 161,
+      "ptsNumerator": 161,
+      "ptsDenominator": 60,
+      "seconds": 2.683333333333333,
+      "clip": "return",
+      "localFrame": 20,
+      "sourcePosition": 21.0,
+      "sourceFrames": [
+        21,
+        22
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "2bf1f8c004cda9d88b11c22c40ca445fe231ea7443f7f79fa7ce3c1dd3060e0f"
+    },
+    {
+      "globalFrame": 162,
+      "ptsNumerator": 162,
+      "ptsDenominator": 60,
+      "seconds": 2.7,
+      "clip": "return",
+      "localFrame": 21,
+      "sourcePosition": 21.8,
+      "sourceFrames": [
+        21,
+        22
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "784f9e245e0899b589131b5477123386e6d1de39efdcc20b8059e9c14d1728bc"
+    },
+    {
+      "globalFrame": 163,
+      "ptsNumerator": 163,
+      "ptsDenominator": 60,
+      "seconds": 2.716666666666667,
+      "clip": "return",
+      "localFrame": 22,
+      "sourcePosition": 22.6,
+      "sourceFrames": [
+        22,
+        23
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "85b6f23b74739f8b1bec994bfb2db6bfa08c055e9b2122bf6ab9921c87b76ccf"
+    },
+    {
+      "globalFrame": 164,
+      "ptsNumerator": 164,
+      "ptsDenominator": 60,
+      "seconds": 2.7333333333333334,
+      "clip": "return",
+      "localFrame": 23,
+      "sourcePosition": 23.400000000000002,
+      "sourceFrames": [
+        23,
+        24
+      ],
+      "sourceBlend": 0.40000000000000213,
+      "packedPNG_SHA": "b911ff78f6a86cf362d114ffa4becc5ab9faa87d66583cc8202739651da79a30"
+    },
+    {
+      "globalFrame": 165,
+      "ptsNumerator": 165,
+      "ptsDenominator": 60,
+      "seconds": 2.75,
+      "clip": "return",
+      "localFrame": 24,
+      "sourcePosition": 24.200000000000003,
+      "sourceFrames": [
+        24,
+        25
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "43c6e4afc9f1b61099f891289f823059dcbf4070e5cd7d49a14cf80c8720629d"
+    },
+    {
+      "globalFrame": 166,
+      "ptsNumerator": 166,
+      "ptsDenominator": 60,
+      "seconds": 2.7666666666666666,
+      "clip": "return",
+      "localFrame": 25,
+      "sourcePosition": 25.0,
+      "sourceFrames": [
+        25,
+        26
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "94aec0ff163fbcc15c58a1f1cd92cbfbd29d2bf8a6fa0eb163d373a84c3f0ec5"
+    },
+    {
+      "globalFrame": 167,
+      "ptsNumerator": 167,
+      "ptsDenominator": 60,
+      "seconds": 2.783333333333333,
+      "clip": "return",
+      "localFrame": 26,
+      "sourcePosition": 25.8,
+      "sourceFrames": [
+        25,
+        26
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "98da59918d9b7b7029fa5df1660f1f1d6c50f03a3ca00cce54e11cdf1698dd9a"
+    },
+    {
+      "globalFrame": 168,
+      "ptsNumerator": 168,
+      "ptsDenominator": 60,
+      "seconds": 2.8,
+      "clip": "return",
+      "localFrame": 27,
+      "sourcePosition": 26.6,
+      "sourceFrames": [
+        26,
+        27
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "29e5f40bea5d2a0b6fc4d19cfee9e07f2be396b2e553f29af579f0568050b7d2"
+    },
+    {
+      "globalFrame": 169,
+      "ptsNumerator": 169,
+      "ptsDenominator": 60,
+      "seconds": 2.816666666666667,
+      "clip": "return",
+      "localFrame": 28,
+      "sourcePosition": 27.400000000000002,
+      "sourceFrames": [
+        27,
+        28
+      ],
+      "sourceBlend": 0.40000000000000213,
+      "packedPNG_SHA": "e1393837b373f7d526a42f4a0f1b61cfa0aea8a3cd64a8ac3d5efa7b49eaea92"
+    },
+    {
+      "globalFrame": 170,
+      "ptsNumerator": 170,
+      "ptsDenominator": 60,
+      "seconds": 2.8333333333333335,
+      "clip": "return",
+      "localFrame": 29,
+      "sourcePosition": 28.200000000000003,
+      "sourceFrames": [
+        28,
+        29
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "bab73ee71140ff42589c4fd35b824a8754e197f0c3052623d076aa31b24136d5"
+    },
+    {
+      "globalFrame": 171,
+      "ptsNumerator": 171,
+      "ptsDenominator": 60,
+      "seconds": 2.85,
+      "clip": "return",
+      "localFrame": 30,
+      "sourcePosition": 29.0,
+      "sourceFrames": [
+        29,
+        30
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "21a0fc67820483f47abc64a3eb7a80a202f3e98942236820de2505c4e899878d"
+    },
+    {
+      "globalFrame": 172,
+      "ptsNumerator": 172,
+      "ptsDenominator": 60,
+      "seconds": 2.8666666666666667,
+      "clip": "return",
+      "localFrame": 31,
+      "sourcePosition": 29.8,
+      "sourceFrames": [
+        29,
+        30
+      ],
+      "sourceBlend": 0.8000000000000007,
+      "packedPNG_SHA": "9dd714449a29e9471f7f6330a6732f0238c55146622b95c47c07b1a5947684b8"
+    },
+    {
+      "globalFrame": 173,
+      "ptsNumerator": 173,
+      "ptsDenominator": 60,
+      "seconds": 2.8833333333333333,
+      "clip": "return",
+      "localFrame": 32,
+      "sourcePosition": 30.6,
+      "sourceFrames": [
+        30,
+        31
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "21ff8b3071f0795ed923c8884eb4dd6ad1500964890abd4c7a24a046090b8e8a"
+    },
+    {
+      "globalFrame": 174,
+      "ptsNumerator": 174,
+      "ptsDenominator": 60,
+      "seconds": 2.9,
+      "clip": "return",
+      "localFrame": 33,
+      "sourcePosition": 31.400000000000002,
+      "sourceFrames": [
+        31,
+        32
+      ],
+      "sourceBlend": 0.40000000000000213,
+      "packedPNG_SHA": "e9b8aae0563fb30b5885ab89c1eeed9543e174a2db9570bf93b2a7f89c7e4d7b"
+    },
+    {
+      "globalFrame": 175,
+      "ptsNumerator": 175,
+      "ptsDenominator": 60,
+      "seconds": 2.9166666666666665,
+      "clip": "return",
+      "localFrame": 34,
+      "sourcePosition": 32.2,
+      "sourceFrames": [
+        32,
+        33
+      ],
+      "sourceBlend": 0.20000000000000284,
+      "packedPNG_SHA": "6edeebc8068e2d81b5d8cd55d1d393389013b5d39f53aa4dd6df2848c3f72d2e"
+    },
+    {
+      "globalFrame": 176,
+      "ptsNumerator": 176,
+      "ptsDenominator": 60,
+      "seconds": 2.933333333333333,
+      "clip": "return",
+      "localFrame": 35,
+      "sourcePosition": 33.0,
+      "sourceFrames": [
+        33,
+        34
+      ],
+      "sourceBlend": 0.0,
+      "packedPNG_SHA": "9a8bb8b0766654c533da5418716165a7e6bf64b833dd3e231320967850155473"
+    },
+    {
+      "globalFrame": 177,
+      "ptsNumerator": 177,
+      "ptsDenominator": 60,
+      "seconds": 2.95,
+      "clip": "return",
+      "localFrame": 36,
+      "sourcePosition": 33.8,
+      "sourceFrames": [
+        33,
+        34
+      ],
+      "sourceBlend": 0.7999999999999972,
+      "packedPNG_SHA": "a878cb1a679af4d6fd771c4b477db0ffa66a5322f31b655ecb847013f572449b"
+    },
+    {
+      "globalFrame": 178,
+      "ptsNumerator": 178,
+      "ptsDenominator": 60,
+      "seconds": 2.966666666666667,
+      "clip": "return",
+      "localFrame": 37,
+      "sourcePosition": 34.6,
+      "sourceFrames": [
+        34,
+        35
+      ],
+      "sourceBlend": 0.6000000000000014,
+      "packedPNG_SHA": "02b3257df03339d3887b7877882ab1e0b46af5c69e46a5e2003e04e4461bbf9b"
+    },
+    {
+      "globalFrame": 179,
+      "ptsNumerator": 179,
+      "ptsDenominator": 60,
+      "seconds": 2.9833333333333334,
+      "clip": "return",
+      "localFrame": 38,
+      "sourcePosition": 35.400000000000006,
+      "sourceFrames": [
+        35,
+        36
+      ],
+      "sourceBlend": 0.4000000000000057,
+      "packedPNG_SHA": "17774e8811484950b65ecd3ae034c9ec02ae435e8edf64b272ad8a2030687190"
+    },
+    {
+      "globalFrame": 180,
+      "ptsNumerator": 180,
+      "ptsDenominator": 60,
+      "seconds": 3.0,
+      "clip": "return",
+      "localFrame": 39,
+      "sourcePosition": 36,
+      "sourceFrames": [
+        36,
+        36
+      ],
+      "sourceBlend": 0,
+      "packedPNG_SHA": "ef53113908eca5db178e9bece7a33eaaa2aa150eae5ea21a8a3727e7c4974bbb"
+    }
+  ]
+}

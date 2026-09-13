@@ -43,3 +43,7 @@ for page in range(6):
  s.save(p/f'review-{page}.jpg',quality=94)
 (p/'observations.json').write_text(json.dumps({'status':'DRAFT estimated visible vicinity bounds; not card geometry or contact measurements','dimensions':[1920,1080],'frames':rows},indent=2)+'\n')
 h={str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted((p/'pickup-rg').glob('*.png'))};h['build-pickup.py']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest();(p/'SHA256.json').write_text(json.dumps(h,indent=2)+'\n')
+
+# Reapply reviewed visible-paper patches after deterministic base masks.
+import subprocess
+subprocess.run([sys.executable,str(p.parent/"pickup-cleanup-v2/promote.py")],check=True)

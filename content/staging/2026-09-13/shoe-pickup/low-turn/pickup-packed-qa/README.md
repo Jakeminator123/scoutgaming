@@ -7,3 +7,5 @@ Decoded all67frames:1920×2160, native24fps, timestamps n/24 within2microseconds
 Inspected codec comparison n54,55,58,61,66. G threshold-positive losses0,0,1,0,1 respectively among approximately12kpositivepixels. The added finger curl/recontact shapes survive encoding; narrow boundary differences remain. Mask shape/occludedfinger correctness still depends on source review. No whole-frame transition omission remains at oldcutoff54.
 
 Evidence coverage.json,timestamps.json,input-sha256.json,rg-codec-review.jpg and reproduciblecheck.py. No public changes or gameplay acceptance. Reviewer suggests pickup66→slide2 as seam candidate; this packing preserves source endpoint but does not change viewer play ranges itself.
+
+After reviewed paper cleanup23–27, repacked and reran all67frame correspondence/timestamp checks. Current outputSHA ceca2a5ab3909959f57a5cadf7b2e3029e7e9daca5787fe2b2269542dd7f0624. Earlier SHA above is pre-cleanup history.

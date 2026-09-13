@@ -8,7 +8,14 @@ const repo=path.resolve(here,'../../../../../..');
 const routes={
   '/':path.join(here,'index.html'),
   '/cycle':path.join(here,'cycle.html'),
+  '/continuous':path.join(here,'continuous.html'),
+  '/continuous.mjs':path.join(here,'continuous.mjs'),
+  '/continuous.mp4':path.resolve(here,'../cycle60-draft/continuous/cycle-shared60-packed-420.mp4'),
+  '/continuous-preroll.mp4':path.join(here,'continuous-preroll.mp4'),
+  '/continuous-preroll.json':path.join(here,'continuous-preroll.json'),
+  '/continuous.json':path.resolve(here,'../cycle60-draft/continuous/manifest.json'),
   '/cycle.mjs':path.join(here,'cycle.mjs'),
+  '/card-pose.mjs':path.join(here,'card-pose.mjs'),
   '/pickup-packed.mp4':path.join(here,'pickup-packed-draft.mp4'),
   '/return-packed.mp4':path.join(here,'return-packed-draft.mp4'),
   '/trajectory.json':path.resolve(here,'../pickup-card/end-refit/extended-trajectory.json'),
@@ -20,6 +27,7 @@ const routes={
   '/card-art.mjs':path.join(repo,'web/public/card-art.mjs'),
   '/observations.json':path.resolve(here,'../../integration-diagnostic/slide-contact/observations.json'),
 };
+for(const name of ['pickup','slide','return']){routes[`/${name}-60.mp4`]=path.resolve(here,`../cycle60-draft/${name}/${name}-shared60-packed.mp4`);routes[`/${name}-60-420.mp4`]=path.resolve(here,`../cycle60-draft/${name}/${name}-shared60-packed-420.mp4`);routes[`/${name}-60.json`]=path.resolve(here,`../cycle60-draft/${name}/ledger.json`);}
 const roots={'/rgb/':path.resolve(here,'../mattes/slide/frames'),'/masks/':path.resolve(here,'../composite-draft/slide-rg')};
 http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost');

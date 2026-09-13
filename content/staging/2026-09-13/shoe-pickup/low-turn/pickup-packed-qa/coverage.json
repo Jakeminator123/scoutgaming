@@ -488,197 +488,197 @@
       "frame": 22,
       "rgbMAE": 0.7346006944444444,
       "R": {
-        "mae": 0.12237509645061728,
+        "mae": 0.12274016203703704,
         "positivePixels": 105401,
-        "decodedPositivePixels": 105345,
-        "lostAbove127": 200,
-        "gainedAbove127": 144,
-        "meanLossOnPositive": 1.3889621540592594,
+        "decodedPositivePixels": 105347,
+        "lostAbove127": 199,
+        "gainedAbove127": 145,
+        "meanLossOnPositive": 1.391979203233366,
         "maxAbsError": 132.0
       },
       "G": {
-        "mae": 0.02865258487654321,
+        "mae": 0.028820891203703704,
         "positivePixels": 11438,
         "decodedPositivePixels": 11438,
         "lostAbove127": 0,
         "gainedAbove127": 0,
-        "meanLossOnPositive": 1.4228011890190593,
-        "maxAbsError": 64.0
+        "meanLossOnPositive": 1.4464067144605701,
+        "maxAbsError": 61.0
       }
     },
     {
       "frame": 23,
       "rgbMAE": 0.7398839377572016,
       "R": {
-        "mae": 0.12020929783950618,
-        "positivePixels": 103862,
-        "decodedPositivePixels": 103819,
-        "lostAbove127": 184,
-        "gainedAbove127": 141,
-        "meanLossOnPositive": 1.373707419460438,
-        "maxAbsError": 100.0
+        "mae": 0.12005111882716049,
+        "positivePixels": 103821,
+        "decodedPositivePixels": 103762,
+        "lostAbove127": 197,
+        "gainedAbove127": 138,
+        "meanLossOnPositive": 1.376417102512979,
+        "maxAbsError": 102.0
       },
       "G": {
-        "mae": 0.028505979938271604,
-        "positivePixels": 10946,
-        "decodedPositivePixels": 10946,
+        "mae": 0.02842206790123457,
+        "positivePixels": 10905,
+        "decodedPositivePixels": 10905,
         "lostAbove127": 0,
         "gainedAbove127": 0,
-        "meanLossOnPositive": 1.426091723003837,
-        "maxAbsError": 61.0
+        "meanLossOnPositive": 1.4807886290692343,
+        "maxAbsError": 62.0
       }
     },
     {
       "frame": 24,
       "rgbMAE": 0.7368819122942387,
       "R": {
-        "mae": 0.1193894675925926,
-        "positivePixels": 102377,
-        "decodedPositivePixels": 102353,
-        "lostAbove127": 151,
+        "mae": 0.11901765046296296,
+        "positivePixels": 102225,
+        "decodedPositivePixels": 102202,
+        "lostAbove127": 150,
         "gainedAbove127": 127,
-        "meanLossOnPositive": 1.424284751457847,
+        "meanLossOnPositive": 1.4263145023233064,
         "maxAbsError": 146.0
       },
       "G": {
-        "mae": 0.02982397762345679,
-        "positivePixels": 10730,
-        "decodedPositivePixels": 10732,
-        "lostAbove127": 0,
+        "mae": 0.029562596450617283,
+        "positivePixels": 10578,
+        "decodedPositivePixels": 10579,
+        "lostAbove127": 1,
         "gainedAbove127": 2,
-        "meanLossOnPositive": 1.6397017707362536,
-        "maxAbsError": 62.0
+        "meanLossOnPositive": 1.6123085649461146,
+        "maxAbsError": 76.0
       }
     },
     {
       "frame": 25,
       "rgbMAE": 0.7321711033950618,
       "R": {
-        "mae": 0.11866367669753086,
-        "positivePixels": 101101,
-        "decodedPositivePixels": 101097,
+        "mae": 0.11719425154320988,
+        "positivePixels": 100947,
+        "decodedPositivePixels": 100942,
         "lostAbove127": 139,
-        "gainedAbove127": 135,
-        "meanLossOnPositive": 1.4281263291164281,
-        "maxAbsError": 108.0
+        "gainedAbove127": 134,
+        "meanLossOnPositive": 1.4207356335502788,
+        "maxAbsError": 101.0
       },
       "G": {
-        "mae": 0.0312794174382716,
-        "positivePixels": 10615,
-        "decodedPositivePixels": 10617,
+        "mae": 0.03039496527777778,
+        "positivePixels": 10461,
+        "decodedPositivePixels": 10464,
         "lostAbove127": 0,
-        "gainedAbove127": 2,
-        "meanLossOnPositive": 1.777296278850683,
-        "maxAbsError": 68.0
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.8042252174744289,
+        "maxAbsError": 66.0
       }
     },
     {
       "frame": 26,
       "rgbMAE": 0.7262344071502057,
       "R": {
-        "mae": 0.1178858024691358,
-        "positivePixels": 100085,
-        "decodedPositivePixels": 100061,
+        "mae": 0.11779079861111111,
+        "positivePixels": 100065,
+        "decodedPositivePixels": 100039,
         "lostAbove127": 150,
-        "gainedAbove127": 126,
-        "meanLossOnPositive": 1.4606584403257232,
-        "maxAbsError": 117.0
+        "gainedAbove127": 124,
+        "meanLossOnPositive": 1.4608304602008695,
+        "maxAbsError": 123.0
       },
       "G": {
-        "mae": 0.03219762731481481,
-        "positivePixels": 10862,
-        "decodedPositivePixels": 10866,
+        "mae": 0.03228298611111111,
+        "positivePixels": 10842,
+        "decodedPositivePixels": 10846,
         "lostAbove127": 0,
         "gainedAbove127": 4,
-        "meanLossOnPositive": 1.8494752347633954,
-        "maxAbsError": 63.0
+        "meanLossOnPositive": 1.8991883416343849,
+        "maxAbsError": 70.0
       }
     },
     {
       "frame": 27,
       "rgbMAE": 0.7324286265432098,
       "R": {
-        "mae": 0.11597125771604938,
-        "positivePixels": 99689,
-        "decodedPositivePixels": 99647,
-        "lostAbove127": 171,
-        "gainedAbove127": 129,
-        "meanLossOnPositive": 1.4484246005075785,
-        "maxAbsError": 119.0
+        "mae": 0.11906684027777778,
+        "positivePixels": 99396,
+        "decodedPositivePixels": 99350,
+        "lostAbove127": 178,
+        "gainedAbove127": 132,
+        "meanLossOnPositive": 1.479365366815566,
+        "maxAbsError": 145.0
       },
       "G": {
-        "mae": 0.03181568287037037,
-        "positivePixels": 11480,
-        "decodedPositivePixels": 11484,
+        "mae": 0.03246141975308642,
+        "positivePixels": 11444,
+        "decodedPositivePixels": 11448,
         "lostAbove127": 0,
         "gainedAbove127": 4,
-        "meanLossOnPositive": 1.8063588850174217,
-        "maxAbsError": 63.0
+        "meanLossOnPositive": 1.7890597693114296,
+        "maxAbsError": 64.0
       }
     },
     {
       "frame": 28,
       "rgbMAE": 0.7324336098251029,
       "R": {
-        "mae": 0.11740644290123457,
+        "mae": 0.1176268325617284,
         "positivePixels": 100833,
         "decodedPositivePixels": 100793,
-        "lostAbove127": 168,
-        "gainedAbove127": 128,
-        "meanLossOnPositive": 1.4276873642557497,
-        "maxAbsError": 116.0
+        "lostAbove127": 169,
+        "gainedAbove127": 129,
+        "meanLossOnPositive": 1.4323485366893776,
+        "maxAbsError": 105.0
       },
       "G": {
-        "mae": 0.03076003086419753,
+        "mae": 0.03066550925925926,
         "positivePixels": 11736,
-        "decodedPositivePixels": 11742,
+        "decodedPositivePixels": 11743,
         "lostAbove127": 0,
-        "gainedAbove127": 6,
-        "meanLossOnPositive": 1.6445126107702794,
-        "maxAbsError": 63.0
+        "gainedAbove127": 7,
+        "meanLossOnPositive": 1.643490115882754,
+        "maxAbsError": 67.0
       }
     },
     {
       "frame": 29,
       "rgbMAE": 0.7376049704218107,
       "R": {
-        "mae": 0.12165943287037037,
+        "mae": 0.12183207947530864,
         "positivePixels": 100895,
-        "decodedPositivePixels": 100874,
-        "lostAbove127": 167,
-        "gainedAbove127": 146,
-        "meanLossOnPositive": 1.472223598790822,
-        "maxAbsError": 115.0
+        "decodedPositivePixels": 100869,
+        "lostAbove127": 170,
+        "gainedAbove127": 144,
+        "meanLossOnPositive": 1.4765052777640122,
+        "maxAbsError": 124.0
       },
       "G": {
-        "mae": 0.032242959104938275,
+        "mae": 0.032251639660493825,
         "positivePixels": 11707,
-        "decodedPositivePixels": 11711,
-        "lostAbove127": 1,
-        "gainedAbove127": 5,
-        "meanLossOnPositive": 1.7076962501067736,
-        "maxAbsError": 73.0
+        "decodedPositivePixels": 11712,
+        "lostAbove127": 2,
+        "gainedAbove127": 7,
+        "meanLossOnPositive": 1.7252925600068336,
+        "maxAbsError": 69.0
       }
     },
     {
       "frame": 30,
       "rgbMAE": 0.734005111882716,
       "R": {
-        "mae": 0.11945842978395062,
+        "mae": 0.1191160300925926,
         "positivePixels": 100810,
-        "decodedPositivePixels": 100761,
-        "lostAbove127": 178,
-        "gainedAbove127": 129,
-        "meanLossOnPositive": 1.4548159904771352,
-        "maxAbsError": 122.0
+        "decodedPositivePixels": 100749,
+        "lostAbove127": 187,
+        "gainedAbove127": 126,
+        "meanLossOnPositive": 1.4510663624640412,
+        "maxAbsError": 118.0
       },
       "G": {
-        "mae": 0.03160059799382716,
+        "mae": 0.03154369212962963,
         "positivePixels": 11694,
-        "decodedPositivePixels": 11696,
+        "decodedPositivePixels": 11694,
         "lostAbove127": 1,
-        "gainedAbove127": 3,
-        "meanLossOnPositive": 1.6874465537882675,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.7266119377458526,
         "maxAbsError": 60.0
       }
     },
@@ -686,109 +686,109 @@
       "frame": 31,
       "rgbMAE": 0.7399996784979423,
       "R": {
-        "mae": 0.12167631172839506,
+        "mae": 0.12171778549382715,
         "positivePixels": 101203,
-        "decodedPositivePixels": 101188,
-        "lostAbove127": 165,
-        "gainedAbove127": 150,
-        "meanLossOnPositive": 1.4519826487357095,
-        "maxAbsError": 113.0
+        "decodedPositivePixels": 101178,
+        "lostAbove127": 170,
+        "gainedAbove127": 145,
+        "meanLossOnPositive": 1.45722952876891,
+        "maxAbsError": 116.0
       },
       "G": {
-        "mae": 0.03111111111111111,
+        "mae": 0.031102912808641976,
         "positivePixels": 11759,
-        "decodedPositivePixels": 11765,
+        "decodedPositivePixels": 11766,
         "lostAbove127": 0,
-        "gainedAbove127": 6,
-        "meanLossOnPositive": 1.5944383025767497,
-        "maxAbsError": 59.0
+        "gainedAbove127": 7,
+        "meanLossOnPositive": 1.608129943022366,
+        "maxAbsError": 64.0
       }
     },
     {
       "frame": 32,
       "rgbMAE": 0.7419619663065844,
       "R": {
-        "mae": 0.11750385802469136,
+        "mae": 0.11750578703703704,
         "positivePixels": 100761,
-        "decodedPositivePixels": 100737,
-        "lostAbove127": 158,
-        "gainedAbove127": 134,
-        "meanLossOnPositive": 1.4336300751282738,
-        "maxAbsError": 111.0
+        "decodedPositivePixels": 100740,
+        "lostAbove127": 156,
+        "gainedAbove127": 135,
+        "meanLossOnPositive": 1.4261370966941576,
+        "maxAbsError": 110.0
       },
       "G": {
-        "mae": 0.028939525462962964,
+        "mae": 0.02915750385802469,
         "positivePixels": 11376,
-        "decodedPositivePixels": 11375,
-        "lostAbove127": 1,
+        "decodedPositivePixels": 11374,
+        "lostAbove127": 2,
         "gainedAbove127": 0,
-        "meanLossOnPositive": 1.5175808720112518,
-        "maxAbsError": 66.0
+        "meanLossOnPositive": 1.535689170182841,
+        "maxAbsError": 63.0
       }
     },
     {
       "frame": 33,
       "rgbMAE": 0.7415022183641975,
       "R": {
-        "mae": 0.11792293595679013,
+        "mae": 0.11835841049382716,
         "positivePixels": 101092,
-        "decodedPositivePixels": 101075,
-        "lostAbove127": 149,
-        "gainedAbove127": 132,
-        "meanLossOnPositive": 1.4244747358841452,
-        "maxAbsError": 116.0
+        "decodedPositivePixels": 101073,
+        "lostAbove127": 148,
+        "gainedAbove127": 129,
+        "meanLossOnPositive": 1.4321706959996834,
+        "maxAbsError": 105.0
       },
       "G": {
-        "mae": 0.02812307098765432,
+        "mae": 0.02793161651234568,
         "positivePixels": 10993,
-        "decodedPositivePixels": 10995,
+        "decodedPositivePixels": 10994,
         "lostAbove127": 1,
-        "gainedAbove127": 3,
-        "meanLossOnPositive": 1.4824888565450742,
-        "maxAbsError": 69.0
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.4433730555808242,
+        "maxAbsError": 63.0
       }
     },
     {
       "frame": 34,
       "rgbMAE": 0.7388152649176954,
       "R": {
-        "mae": 0.12318045910493827,
+        "mae": 0.12302903163580246,
         "positivePixels": 101338,
-        "decodedPositivePixels": 101334,
+        "decodedPositivePixels": 101336,
         "lostAbove127": 143,
-        "gainedAbove127": 139,
-        "meanLossOnPositive": 1.4758234818133376,
-        "maxAbsError": 138.0
+        "gainedAbove127": 141,
+        "meanLossOnPositive": 1.473770944759123,
+        "maxAbsError": 144.0
       },
       "G": {
-        "mae": 0.029741994598765434,
+        "mae": 0.029716435185185186,
         "positivePixels": 11013,
-        "decodedPositivePixels": 11013,
+        "decodedPositivePixels": 11014,
         "lostAbove127": 1,
-        "gainedAbove127": 1,
-        "meanLossOnPositive": 1.479524198674294,
-        "maxAbsError": 66.0
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.5016798329247254,
+        "maxAbsError": 61.0
       }
     },
     {
       "frame": 35,
       "rgbMAE": 0.7452936921296296,
       "R": {
-        "mae": 0.1256028163580247,
+        "mae": 0.12595775462962963,
         "positivePixels": 102488,
-        "decodedPositivePixels": 102486,
-        "lostAbove127": 145,
+        "decodedPositivePixels": 102489,
+        "lostAbove127": 142,
         "gainedAbove127": 143,
-        "meanLossOnPositive": 1.4886328155491375,
+        "meanLossOnPositive": 1.4896865974553117,
         "maxAbsError": 156.0
       },
       "G": {
-        "mae": 0.0305444637345679,
+        "mae": 0.030849729938271606,
         "positivePixels": 11345,
         "decodedPositivePixels": 11344,
         "lostAbove127": 1,
         "gainedAbove127": 0,
-        "meanLossOnPositive": 1.4815337152930808,
+        "meanLossOnPositive": 1.518554429263993,
         "maxAbsError": 65.0
       }
     },
@@ -796,109 +796,109 @@
       "frame": 36,
       "rgbMAE": 0.7424664030349795,
       "R": {
-        "mae": 0.12168547453703704,
+        "mae": 0.12169994212962963,
         "positivePixels": 103087,
-        "decodedPositivePixels": 103063,
-        "lostAbove127": 145,
+        "decodedPositivePixels": 103061,
+        "lostAbove127": 147,
         "gainedAbove127": 121,
-        "meanLossOnPositive": 1.43846459786394,
-        "maxAbsError": 149.0
+        "meanLossOnPositive": 1.4383287902451327,
+        "maxAbsError": 144.0
       },
       "G": {
-        "mae": 0.028856095679012345,
+        "mae": 0.0288233024691358,
         "positivePixels": 11699,
-        "decodedPositivePixels": 11698,
+        "decodedPositivePixels": 11699,
         "lostAbove127": 1,
-        "gainedAbove127": 0,
-        "meanLossOnPositive": 1.4019146935635525,
-        "maxAbsError": 58.0
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4319172578852895,
+        "maxAbsError": 61.0
       }
     },
     {
       "frame": 37,
       "rgbMAE": 0.740912583590535,
       "R": {
-        "mae": 0.1275954861111111,
+        "mae": 0.12758680555555554,
         "positivePixels": 104572,
-        "decodedPositivePixels": 104511,
-        "lostAbove127": 196,
-        "gainedAbove127": 135,
-        "meanLossOnPositive": 1.461959224266534,
-        "maxAbsError": 136.0
+        "decodedPositivePixels": 104515,
+        "lostAbove127": 195,
+        "gainedAbove127": 138,
+        "meanLossOnPositive": 1.461117698810389,
+        "maxAbsError": 138.0
       },
       "G": {
-        "mae": 0.031108217592592594,
+        "mae": 0.030491415895061727,
         "positivePixels": 11681,
         "decodedPositivePixels": 11681,
         "lostAbove127": 0,
         "gainedAbove127": 0,
-        "meanLossOnPositive": 1.4908826299118225,
-        "maxAbsError": 64.0
+        "meanLossOnPositive": 1.4853180378392261,
+        "maxAbsError": 60.0
       }
     },
     {
       "frame": 38,
       "rgbMAE": 0.7355037937242799,
       "R": {
-        "mae": 0.1260836226851852,
+        "mae": 0.12628279320987654,
         "positivePixels": 104659,
         "decodedPositivePixels": 104621,
-        "lostAbove127": 163,
-        "gainedAbove127": 125,
-        "meanLossOnPositive": 1.4243973284667348,
-        "maxAbsError": 139.0
+        "lostAbove127": 164,
+        "gainedAbove127": 126,
+        "meanLossOnPositive": 1.4316112326699089,
+        "maxAbsError": 132.0
       },
       "G": {
-        "mae": 0.03017650462962963,
+        "mae": 0.03017988040123457,
         "positivePixels": 11750,
         "decodedPositivePixels": 11750,
         "lostAbove127": 1,
         "gainedAbove127": 1,
-        "meanLossOnPositive": 1.4591489361702128,
-        "maxAbsError": 68.0
+        "meanLossOnPositive": 1.4706382978723405,
+        "maxAbsError": 73.0
       }
     },
     {
       "frame": 39,
       "rgbMAE": 0.7415755208333333,
       "R": {
-        "mae": 0.1267925347222222,
+        "mae": 0.12681375385802468,
         "positivePixels": 104731,
-        "decodedPositivePixels": 104700,
-        "lostAbove127": 158,
-        "gainedAbove127": 127,
-        "meanLossOnPositive": 1.4383802312591305,
-        "maxAbsError": 146.0
+        "decodedPositivePixels": 104695,
+        "lostAbove127": 162,
+        "gainedAbove127": 126,
+        "meanLossOnPositive": 1.4430970772741596,
+        "maxAbsError": 141.0
       },
       "G": {
-        "mae": 0.03055217978395062,
+        "mae": 0.030516010802469136,
         "positivePixels": 11758,
         "decodedPositivePixels": 11760,
         "lostAbove127": 0,
         "gainedAbove127": 2,
-        "meanLossOnPositive": 1.4590916822588875,
-        "maxAbsError": 59.0
+        "meanLossOnPositive": 1.4722741962918864,
+        "maxAbsError": 65.0
       }
     },
     {
       "frame": 40,
       "rgbMAE": 0.7432987718621399,
       "R": {
-        "mae": 0.13061390817901233,
+        "mae": 0.13092930169753086,
         "positivePixels": 105663,
-        "decodedPositivePixels": 105618,
-        "lostAbove127": 194,
-        "gainedAbove127": 149,
-        "meanLossOnPositive": 1.4682906977844656,
-        "maxAbsError": 152.0
+        "decodedPositivePixels": 105623,
+        "lostAbove127": 193,
+        "gainedAbove127": 153,
+        "meanLossOnPositive": 1.4773667225045664,
+        "maxAbsError": 144.0
       },
       "G": {
-        "mae": 0.032133969907407404,
+        "mae": 0.032136381172839505,
         "positivePixels": 12091,
-        "decodedPositivePixels": 12093,
+        "decodedPositivePixels": 12095,
         "lostAbove127": 0,
-        "gainedAbove127": 2,
-        "meanLossOnPositive": 1.5537176412207427,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.5532214043503432,
         "maxAbsError": 68.0
       }
     },
@@ -906,65 +906,65 @@
       "frame": 41,
       "rgbMAE": 0.7446006944444444,
       "R": {
-        "mae": 0.1303245563271605,
+        "mae": 0.13001832561728396,
         "positivePixels": 105630,
-        "decodedPositivePixels": 105583,
-        "lostAbove127": 194,
-        "gainedAbove127": 147,
-        "meanLossOnPositive": 1.4708416169648775,
-        "maxAbsError": 146.0
+        "decodedPositivePixels": 105577,
+        "lostAbove127": 196,
+        "gainedAbove127": 143,
+        "meanLossOnPositive": 1.4697529111047998,
+        "maxAbsError": 147.0
       },
       "G": {
-        "mae": 0.03202932098765432,
+        "mae": 0.031689814814814816,
         "positivePixels": 12158,
-        "decodedPositivePixels": 12156,
+        "decodedPositivePixels": 12157,
         "lostAbove127": 2,
-        "gainedAbove127": 0,
-        "meanLossOnPositive": 1.5139003125514066,
-        "maxAbsError": 60.0
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4950649777924,
+        "maxAbsError": 65.0
       }
     },
     {
       "frame": 42,
       "rgbMAE": 0.7399834426440329,
       "R": {
-        "mae": 0.12838252314814816,
+        "mae": 0.1285744598765432,
         "positivePixels": 105531,
-        "decodedPositivePixels": 105539,
-        "lostAbove127": 164,
-        "gainedAbove127": 172,
-        "meanLossOnPositive": 1.4516303266338801,
-        "maxAbsError": 139.0
+        "decodedPositivePixels": 105538,
+        "lostAbove127": 163,
+        "gainedAbove127": 170,
+        "meanLossOnPositive": 1.4557618140641138,
+        "maxAbsError": 142.0
       },
       "G": {
-        "mae": 0.03152391975308642,
+        "mae": 0.03144627700617284,
         "positivePixels": 12278,
-        "decodedPositivePixels": 12278,
-        "lostAbove127": 1,
-        "gainedAbove127": 1,
-        "meanLossOnPositive": 1.4496660693924093,
-        "maxAbsError": 59.0
+        "decodedPositivePixels": 12276,
+        "lostAbove127": 2,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.4522723570614107,
+        "maxAbsError": 69.0
       }
     },
     {
       "frame": 43,
       "rgbMAE": 0.7463220164609053,
       "R": {
-        "mae": 0.1290692515432099,
+        "mae": 0.1295119598765432,
         "positivePixels": 105574,
-        "decodedPositivePixels": 105558,
-        "lostAbove127": 178,
-        "gainedAbove127": 162,
-        "meanLossOnPositive": 1.4522799174039063,
-        "maxAbsError": 142.0
+        "decodedPositivePixels": 105557,
+        "lostAbove127": 181,
+        "gainedAbove127": 164,
+        "meanLossOnPositive": 1.465294485384659,
+        "maxAbsError": 141.0
       },
       "G": {
-        "mae": 0.031392746913580245,
+        "mae": 0.03108024691358025,
         "positivePixels": 12415,
         "decodedPositivePixels": 12413,
         "lostAbove127": 3,
         "gainedAbove127": 1,
-        "meanLossOnPositive": 1.44881192106323,
+        "meanLossOnPositive": 1.4401933145388643,
         "maxAbsError": 63.0
       }
     },
@@ -972,131 +972,131 @@
       "frame": 44,
       "rgbMAE": 0.7474289480452675,
       "R": {
-        "mae": 0.12843653549382716,
+        "mae": 0.12871576003086418,
         "positivePixels": 105631,
-        "decodedPositivePixels": 105633,
-        "lostAbove127": 161,
-        "gainedAbove127": 163,
-        "meanLossOnPositive": 1.4427204135149718,
-        "maxAbsError": 137.0
+        "decodedPositivePixels": 105634,
+        "lostAbove127": 163,
+        "gainedAbove127": 166,
+        "meanLossOnPositive": 1.451780253902737,
+        "maxAbsError": 139.0
       },
       "G": {
-        "mae": 0.03081934799382716,
+        "mae": 0.03107156635802469,
         "positivePixels": 12520,
         "decodedPositivePixels": 12522,
         "lostAbove127": 2,
         "gainedAbove127": 4,
-        "meanLossOnPositive": 1.400958466453674,
-        "maxAbsError": 64.0
+        "meanLossOnPositive": 1.4083865814696486,
+        "maxAbsError": 66.0
       }
     },
     {
       "frame": 45,
       "rgbMAE": 0.7488233024691358,
       "R": {
-        "mae": 0.12866801697530864,
+        "mae": 0.1288406635802469,
         "positivePixels": 105497,
-        "decodedPositivePixels": 105491,
-        "lostAbove127": 179,
-        "gainedAbove127": 173,
-        "meanLossOnPositive": 1.4484582499976302,
-        "maxAbsError": 134.0
+        "decodedPositivePixels": 105489,
+        "lostAbove127": 183,
+        "gainedAbove127": 175,
+        "meanLossOnPositive": 1.457340019147464,
+        "maxAbsError": 142.0
       },
       "G": {
-        "mae": 0.030885898919753088,
+        "mae": 0.031119791666666667,
         "positivePixels": 12470,
-        "decodedPositivePixels": 12469,
+        "decodedPositivePixels": 12470,
         "lostAbove127": 1,
-        "gainedAbove127": 0,
-        "meanLossOnPositive": 1.4098636728147553,
-        "maxAbsError": 58.0
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4331996792301525,
+        "maxAbsError": 57.0
       }
     },
     {
       "frame": 46,
       "rgbMAE": 0.7457759452160494,
       "R": {
-        "mae": 0.1298799189814815,
+        "mae": 0.12986641589506173,
         "positivePixels": 105386,
-        "decodedPositivePixels": 105360,
-        "lostAbove127": 195,
-        "gainedAbove127": 169,
-        "meanLossOnPositive": 1.4338621828326343,
-        "maxAbsError": 140.0
+        "decodedPositivePixels": 105362,
+        "lostAbove127": 199,
+        "gainedAbove127": 175,
+        "meanLossOnPositive": 1.4483992181124627,
+        "maxAbsError": 145.0
       },
       "G": {
-        "mae": 0.03140817901234568,
+        "mae": 0.03157841435185185,
         "positivePixels": 12355,
         "decodedPositivePixels": 12356,
-        "lostAbove127": 1,
-        "gainedAbove127": 2,
-        "meanLossOnPositive": 1.4220153783893161,
-        "maxAbsError": 70.0
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4531768514771348,
+        "maxAbsError": 72.0
       }
     },
     {
       "frame": 47,
       "rgbMAE": 0.7525840727880658,
       "R": {
-        "mae": 0.13142843364197532,
+        "mae": 0.13172791280864196,
         "positivePixels": 105367,
-        "decodedPositivePixels": 105314,
-        "lostAbove127": 206,
-        "gainedAbove127": 153,
-        "meanLossOnPositive": 1.452048554101379,
-        "maxAbsError": 140.0
+        "decodedPositivePixels": 105316,
+        "lostAbove127": 203,
+        "gainedAbove127": 152,
+        "meanLossOnPositive": 1.4604762401890534,
+        "maxAbsError": 127.0
       },
       "G": {
-        "mae": 0.031747685185185184,
+        "mae": 0.03140528549382716,
         "positivePixels": 12234,
         "decodedPositivePixels": 12235,
         "lostAbove127": 0,
         "gainedAbove127": 1,
-        "meanLossOnPositive": 1.4485859081248977,
-        "maxAbsError": 59.0
+        "meanLossOnPositive": 1.4409024031387936,
+        "maxAbsError": 61.0
       }
     },
     {
       "frame": 48,
       "rgbMAE": 0.7545029578189301,
       "R": {
-        "mae": 0.12925443672839507,
+        "mae": 0.1291893325617284,
         "positivePixels": 105225,
-        "decodedPositivePixels": 105204,
-        "lostAbove127": 189,
-        "gainedAbove127": 168,
-        "meanLossOnPositive": 1.436303159895462,
-        "maxAbsError": 133.0
+        "decodedPositivePixels": 105214,
+        "lostAbove127": 185,
+        "gainedAbove127": 174,
+        "meanLossOnPositive": 1.433385602280827,
+        "maxAbsError": 127.0
       },
       "G": {
-        "mae": 0.031159818672839505,
+        "mae": 0.031178626543209877,
         "positivePixels": 12168,
         "decodedPositivePixels": 12170,
         "lostAbove127": 0,
         "gainedAbove127": 2,
-        "meanLossOnPositive": 1.4427186061801447,
-        "maxAbsError": 64.0
+        "meanLossOnPositive": 1.4533201840894148,
+        "maxAbsError": 58.0
       }
     },
     {
       "frame": 49,
       "rgbMAE": 0.7585167502572017,
       "R": {
-        "mae": 0.1290697337962963,
+        "mae": 0.12931809413580247,
         "positivePixels": 105491,
-        "decodedPositivePixels": 105466,
-        "lostAbove127": 192,
-        "gainedAbove127": 167,
-        "meanLossOnPositive": 1.452664208321089,
+        "decodedPositivePixels": 105475,
+        "lostAbove127": 195,
+        "gainedAbove127": 179,
+        "meanLossOnPositive": 1.455963067939445,
         "maxAbsError": 126.0
       },
       "G": {
-        "mae": 0.031102430555555557,
+        "mae": 0.031041184413580246,
         "positivePixels": 12144,
-        "decodedPositivePixels": 12146,
-        "lostAbove127": 0,
+        "decodedPositivePixels": 12145,
+        "lostAbove127": 1,
         "gainedAbove127": 2,
-        "meanLossOnPositive": 1.4192193675889329,
+        "meanLossOnPositive": 1.4279479578392622,
         "maxAbsError": 63.0
       }
     },
@@ -1104,374 +1104,374 @@
       "frame": 50,
       "rgbMAE": 0.7562495177469136,
       "R": {
-        "mae": 0.1289163773148148,
+        "mae": 0.1291874035493827,
         "positivePixels": 105448,
-        "decodedPositivePixels": 105411,
-        "lostAbove127": 194,
-        "gainedAbove127": 157,
-        "meanLossOnPositive": 1.43128366588271,
-        "maxAbsError": 134.0
+        "decodedPositivePixels": 105417,
+        "lostAbove127": 189,
+        "gainedAbove127": 158,
+        "meanLossOnPositive": 1.434062286624687,
+        "maxAbsError": 133.0
       },
       "G": {
-        "mae": 0.030556520061728393,
+        "mae": 0.030783179012345677,
         "positivePixels": 12160,
-        "decodedPositivePixels": 12163,
+        "decodedPositivePixels": 12162,
         "lostAbove127": 0,
-        "gainedAbove127": 3,
-        "meanLossOnPositive": 1.4157894736842105,
-        "maxAbsError": 58.0
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.4310032894736842,
+        "maxAbsError": 63.0
       }
     },
     {
       "frame": 51,
       "rgbMAE": 0.7615698945473252,
       "R": {
-        "mae": 0.1299681712962963,
+        "mae": 0.13024836033950618,
         "positivePixels": 105334,
-        "decodedPositivePixels": 105296,
-        "lostAbove127": 218,
+        "decodedPositivePixels": 105298,
+        "lostAbove127": 216,
         "gainedAbove127": 180,
-        "meanLossOnPositive": 1.4378073556496478,
-        "maxAbsError": 134.0
+        "meanLossOnPositive": 1.4463136309263867,
+        "maxAbsError": 141.0
       },
       "G": {
-        "mae": 0.03117235725308642,
+        "mae": 0.03126350308641975,
         "positivePixels": 12199,
-        "decodedPositivePixels": 12201,
+        "decodedPositivePixels": 12200,
         "lostAbove127": 0,
-        "gainedAbove127": 2,
-        "meanLossOnPositive": 1.4118370358226084,
-        "maxAbsError": 59.0
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4362652676448888,
+        "maxAbsError": 60.0
       }
     },
     {
       "frame": 52,
       "rgbMAE": 0.7640374228395062,
       "R": {
-        "mae": 0.13000626929012346,
+        "mae": 0.13002314814814814,
         "positivePixels": 105789,
-        "decodedPositivePixels": 105756,
-        "lostAbove127": 201,
-        "gainedAbove127": 168,
-        "meanLossOnPositive": 1.4349601565380143,
-        "maxAbsError": 144.0
+        "decodedPositivePixels": 105765,
+        "lostAbove127": 197,
+        "gainedAbove127": 173,
+        "meanLossOnPositive": 1.4415014793598577,
+        "maxAbsError": 152.0
       },
       "G": {
-        "mae": 0.03107156635802469,
+        "mae": 0.031243248456790124,
         "positivePixels": 12146,
-        "decodedPositivePixels": 12149,
+        "decodedPositivePixels": 12148,
         "lostAbove127": 0,
-        "gainedAbove127": 3,
-        "meanLossOnPositive": 1.3988967561337067,
-        "maxAbsError": 59.0
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.449942367857731,
+        "maxAbsError": 62.0
       }
     },
     {
       "frame": 53,
       "rgbMAE": 0.7711603009259259,
       "R": {
-        "mae": 0.13050974151234568,
+        "mae": 0.1302782600308642,
         "positivePixels": 105618,
-        "decodedPositivePixels": 105572,
-        "lostAbove127": 215,
-        "gainedAbove127": 169,
-        "meanLossOnPositive": 1.4553674563047965,
-        "maxAbsError": 144.0
+        "decodedPositivePixels": 105577,
+        "lostAbove127": 212,
+        "gainedAbove127": 171,
+        "meanLossOnPositive": 1.4573273495048193,
+        "maxAbsError": 152.0
       },
       "G": {
-        "mae": 0.03136766975308642,
+        "mae": 0.03170669367283951,
         "positivePixels": 12151,
         "decodedPositivePixels": 12152,
         "lostAbove127": 0,
         "gainedAbove127": 1,
-        "meanLossOnPositive": 1.436342687844622,
-        "maxAbsError": 59.0
+        "meanLossOnPositive": 1.462348777878364,
+        "maxAbsError": 62.0
       }
     },
     {
       "frame": 54,
       "rgbMAE": 0.7704343492798353,
       "R": {
-        "mae": 0.12976466049382715,
+        "mae": 0.12955198688271605,
         "positivePixels": 106160,
-        "decodedPositivePixels": 106118,
+        "decodedPositivePixels": 106120,
         "lostAbove127": 198,
-        "gainedAbove127": 156,
-        "meanLossOnPositive": 1.4554069329314243,
-        "maxAbsError": 153.0
+        "gainedAbove127": 158,
+        "meanLossOnPositive": 1.4573003014318011,
+        "maxAbsError": 140.0
       },
       "G": {
-        "mae": 0.030751350308641977,
+        "mae": 0.0309399112654321,
         "positivePixels": 12137,
-        "decodedPositivePixels": 12138,
+        "decodedPositivePixels": 12139,
         "lostAbove127": 0,
-        "gainedAbove127": 1,
-        "meanLossOnPositive": 1.4243223201779682,
-        "maxAbsError": 61.0
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.460657493614567,
+        "maxAbsError": 66.0
       }
     },
     {
       "frame": 55,
       "rgbMAE": 0.7774406828703704,
       "R": {
-        "mae": 0.13071807484567902,
+        "mae": 0.13115644290123457,
         "positivePixels": 106576,
-        "decodedPositivePixels": 106537,
-        "lostAbove127": 203,
-        "gainedAbove127": 164,
-        "meanLossOnPositive": 1.4336435970574988,
-        "maxAbsError": 138.0
+        "decodedPositivePixels": 106549,
+        "lostAbove127": 197,
+        "gainedAbove127": 170,
+        "meanLossOnPositive": 1.4401741480258219,
+        "maxAbsError": 137.0
       },
       "G": {
-        "mae": 0.03169704861111111,
+        "mae": 0.032135416666666666,
         "positivePixels": 12164,
         "decodedPositivePixels": 12168,
         "lostAbove127": 0,
         "gainedAbove127": 4,
-        "meanLossOnPositive": 1.4634988490628082,
-        "maxAbsError": 65.0
+        "meanLossOnPositive": 1.454949029924367,
+        "maxAbsError": 57.0
       }
     },
     {
       "frame": 56,
       "rgbMAE": 0.7818394740226338,
       "R": {
-        "mae": 0.13296440972222223,
+        "mae": 0.133134162808642,
         "positivePixels": 108422,
         "decodedPositivePixels": 108377,
-        "lostAbove127": 206,
-        "gainedAbove127": 161,
-        "meanLossOnPositive": 1.4591503569386286,
-        "maxAbsError": 130.0
+        "lostAbove127": 203,
+        "gainedAbove127": 158,
+        "meanLossOnPositive": 1.4728007231004778,
+        "maxAbsError": 133.0
       },
       "G": {
-        "mae": 0.03358506944444444,
+        "mae": 0.03340277777777778,
         "positivePixels": 12384,
         "decodedPositivePixels": 12387,
         "lostAbove127": 1,
         "gainedAbove127": 4,
-        "meanLossOnPositive": 1.530281007751938,
-        "maxAbsError": 60.0
+        "meanLossOnPositive": 1.4930555555555556,
+        "maxAbsError": 59.0
       }
     },
     {
       "frame": 57,
       "rgbMAE": 0.7836747685185185,
       "R": {
-        "mae": 0.13369068287037036,
+        "mae": 0.13382957175925925,
         "positivePixels": 109306,
-        "decodedPositivePixels": 109253,
-        "lostAbove127": 203,
-        "gainedAbove127": 150,
-        "meanLossOnPositive": 1.4515763087113243,
-        "maxAbsError": 141.0
+        "decodedPositivePixels": 109262,
+        "lostAbove127": 197,
+        "gainedAbove127": 153,
+        "meanLossOnPositive": 1.457065485883666,
+        "maxAbsError": 128.0
       },
       "G": {
-        "mae": 0.03349440586419753,
+        "mae": 0.033439911265432096,
         "positivePixels": 12328,
         "decodedPositivePixels": 12330,
         "lostAbove127": 1,
         "gainedAbove127": 3,
-        "meanLossOnPositive": 1.5380434782608696,
-        "maxAbsError": 59.0
+        "meanLossOnPositive": 1.544208306294614,
+        "maxAbsError": 65.0
       }
     },
     {
       "frame": 58,
       "rgbMAE": 0.7819270833333334,
       "R": {
-        "mae": 0.13381558641975308,
+        "mae": 0.1336646412037037,
         "positivePixels": 109223,
-        "decodedPositivePixels": 109180,
-        "lostAbove127": 194,
-        "gainedAbove127": 151,
-        "meanLossOnPositive": 1.4589417979729544,
-        "maxAbsError": 132.0
+        "decodedPositivePixels": 109182,
+        "lostAbove127": 190,
+        "gainedAbove127": 149,
+        "meanLossOnPositive": 1.4671451983556576,
+        "maxAbsError": 128.0
       },
       "G": {
-        "mae": 0.03341772762345679,
+        "mae": 0.033648244598765434,
         "positivePixels": 12325,
-        "decodedPositivePixels": 12329,
+        "decodedPositivePixels": 12328,
         "lostAbove127": 1,
-        "gainedAbove127": 5,
-        "meanLossOnPositive": 1.5461257606490872,
-        "maxAbsError": 59.0
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.578498985801217,
+        "maxAbsError": 60.0
       }
     },
     {
       "frame": 59,
       "rgbMAE": 0.7908794688786008,
       "R": {
-        "mae": 0.13403018904320987,
+        "mae": 0.13410349151234568,
         "positivePixels": 110072,
-        "decodedPositivePixels": 110008,
-        "lostAbove127": 215,
-        "gainedAbove127": 151,
-        "meanLossOnPositive": 1.481166872592485,
-        "maxAbsError": 137.0
+        "decodedPositivePixels": 110016,
+        "lostAbove127": 209,
+        "gainedAbove127": 153,
+        "meanLossOnPositive": 1.4874900065411731,
+        "maxAbsError": 143.0
       },
       "G": {
-        "mae": 0.03399498456790123,
+        "mae": 0.03427469135802469,
         "positivePixels": 12283,
         "decodedPositivePixels": 12285,
         "lostAbove127": 2,
         "gainedAbove127": 4,
-        "meanLossOnPositive": 1.6159732964259546,
-        "maxAbsError": 64.0
+        "meanLossOnPositive": 1.6379548970121305,
+        "maxAbsError": 62.0
       }
     },
     {
       "frame": 60,
       "rgbMAE": 0.7973011509773662,
       "R": {
-        "mae": 0.1362885802469136,
+        "mae": 0.1364795524691358,
         "positivePixels": 110555,
-        "decodedPositivePixels": 110486,
-        "lostAbove127": 221,
-        "gainedAbove127": 152,
-        "meanLossOnPositive": 1.4855411333725295,
-        "maxAbsError": 131.0
+        "decodedPositivePixels": 110483,
+        "lostAbove127": 220,
+        "gainedAbove127": 148,
+        "meanLossOnPositive": 1.4891049703767356,
+        "maxAbsError": 138.0
       },
       "G": {
-        "mae": 0.03442274305555556,
+        "mae": 0.03419560185185185,
         "positivePixels": 12225,
-        "decodedPositivePixels": 12226,
-        "lostAbove127": 2,
-        "gainedAbove127": 3,
-        "meanLossOnPositive": 1.589038854805726,
-        "maxAbsError": 65.0
+        "decodedPositivePixels": 12227,
+        "lostAbove127": 3,
+        "gainedAbove127": 5,
+        "meanLossOnPositive": 1.6029447852760736,
+        "maxAbsError": 66.0
       }
     },
     {
       "frame": 61,
       "rgbMAE": 0.8025575488683128,
       "R": {
-        "mae": 0.13685378086419753,
+        "mae": 0.137250675154321,
         "positivePixels": 110868,
         "decodedPositivePixels": 110807,
-        "lostAbove127": 222,
-        "gainedAbove127": 161,
-        "meanLossOnPositive": 1.487688061478515,
-        "maxAbsError": 133.0
+        "lostAbove127": 217,
+        "gainedAbove127": 156,
+        "meanLossOnPositive": 1.495499152144893,
+        "maxAbsError": 139.0
       },
       "G": {
-        "mae": 0.03462094907407407,
+        "mae": 0.03442274305555556,
         "positivePixels": 12253,
-        "decodedPositivePixels": 12256,
+        "decodedPositivePixels": 12255,
         "lostAbove127": 0,
-        "gainedAbove127": 3,
-        "meanLossOnPositive": 1.5700644740063658,
-        "maxAbsError": 63.0
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.5823879866155228,
+        "maxAbsError": 64.0
       }
     },
     {
       "frame": 62,
       "rgbMAE": 0.8033428176440329,
       "R": {
-        "mae": 0.1360233410493827,
+        "mae": 0.13635175540123456,
         "positivePixels": 110943,
-        "decodedPositivePixels": 110858,
+        "decodedPositivePixels": 110860,
         "lostAbove127": 228,
-        "gainedAbove127": 143,
-        "meanLossOnPositive": 1.4748564578206826,
-        "maxAbsError": 148.0
+        "gainedAbove127": 145,
+        "meanLossOnPositive": 1.4843027500608421,
+        "maxAbsError": 132.0
       },
       "G": {
-        "mae": 0.03410493827160494,
+        "mae": 0.03415653935185185,
         "positivePixels": 12267,
-        "decodedPositivePixels": 12270,
+        "decodedPositivePixels": 12269,
         "lostAbove127": 1,
-        "gainedAbove127": 4,
-        "meanLossOnPositive": 1.5691693160511944,
-        "maxAbsError": 60.0
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.5915871851308387,
+        "maxAbsError": 58.0
       }
     },
     {
       "frame": 63,
       "rgbMAE": 0.8163477366255144,
       "R": {
-        "mae": 0.13689525462962962,
+        "mae": 0.13686583719135803,
         "positivePixels": 110918,
-        "decodedPositivePixels": 110856,
-        "lostAbove127": 227,
-        "gainedAbove127": 165,
-        "meanLossOnPositive": 1.4827890874339602,
-        "maxAbsError": 156.0
+        "decodedPositivePixels": 110854,
+        "lostAbove127": 231,
+        "gainedAbove127": 167,
+        "meanLossOnPositive": 1.4877567211814133,
+        "maxAbsError": 144.0
       },
       "G": {
-        "mae": 0.033958815586419756,
+        "mae": 0.03427903163580247,
         "positivePixels": 12275,
-        "decodedPositivePixels": 12280,
+        "decodedPositivePixels": 12278,
         "lostAbove127": 1,
-        "gainedAbove127": 6,
-        "meanLossOnPositive": 1.550794297352342,
-        "maxAbsError": 62.0
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.5929938900203666,
+        "maxAbsError": 63.0
       }
     },
     {
       "frame": 64,
       "rgbMAE": 0.8270500578703703,
       "R": {
-        "mae": 0.13801359953703704,
+        "mae": 0.13838155864197532,
         "positivePixels": 111120,
-        "decodedPositivePixels": 111091,
-        "lostAbove127": 209,
-        "gainedAbove127": 180,
-        "meanLossOnPositive": 1.4815064794816415,
-        "maxAbsError": 137.0
+        "decodedPositivePixels": 111097,
+        "lostAbove127": 204,
+        "gainedAbove127": 181,
+        "meanLossOnPositive": 1.4824874010079194,
+        "maxAbsError": 139.0
       },
       "G": {
-        "mae": 0.03499614197530864,
+        "mae": 0.03525366512345679,
         "positivePixels": 12279,
         "decodedPositivePixels": 12282,
         "lostAbove127": 1,
         "gainedAbove127": 4,
-        "meanLossOnPositive": 1.6520074924668133,
-        "maxAbsError": 59.0
+        "meanLossOnPositive": 1.6739148139099276,
+        "maxAbsError": 63.0
       }
     },
     {
       "frame": 65,
       "rgbMAE": 0.8421010159465021,
       "R": {
-        "mae": 0.14087336033950618,
+        "mae": 0.14118344907407407,
         "positivePixels": 110964,
-        "decodedPositivePixels": 110922,
+        "decodedPositivePixels": 110925,
         "lostAbove127": 238,
-        "gainedAbove127": 196,
-        "meanLossOnPositive": 1.520916693702462,
-        "maxAbsError": 138.0
+        "gainedAbove127": 199,
+        "meanLossOnPositive": 1.536426228326304,
+        "maxAbsError": 131.0
       },
       "G": {
-        "mae": 0.03555121527777778,
+        "mae": 0.03587962962962963,
         "positivePixels": 12277,
         "decodedPositivePixels": 12280,
         "lostAbove127": 0,
         "gainedAbove127": 3,
-        "meanLossOnPositive": 1.6664494583367273,
-        "maxAbsError": 63.0
+        "meanLossOnPositive": 1.6779343487822758,
+        "maxAbsError": 61.0
       }
     },
     {
       "frame": 66,
       "rgbMAE": 0.848316132973251,
       "R": {
-        "mae": 0.13992332175925926,
+        "mae": 0.1409939236111111,
         "positivePixels": 111139,
-        "decodedPositivePixels": 111084,
-        "lostAbove127": 237,
-        "gainedAbove127": 182,
-        "meanLossOnPositive": 1.5167043072188882,
-        "maxAbsError": 145.0
+        "decodedPositivePixels": 111087,
+        "lostAbove127": 241,
+        "gainedAbove127": 189,
+        "meanLossOnPositive": 1.5395135820908952,
+        "maxAbsError": 146.0
       },
       "G": {
-        "mae": 0.03606819058641975,
+        "mae": 0.0359789737654321,
         "positivePixels": 12277,
-        "decodedPositivePixels": 12278,
-        "lostAbove127": 1,
-        "gainedAbove127": 2,
-        "meanLossOnPositive": 1.7480654883114768,
-        "maxAbsError": 66.0
+        "decodedPositivePixels": 12279,
+        "lostAbove127": 2,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.6789932393907305,
+        "maxAbsError": 73.0
       }
     }
   ],
