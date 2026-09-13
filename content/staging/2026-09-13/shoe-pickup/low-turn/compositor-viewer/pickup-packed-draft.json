@@ -1,0 +1,489 @@
+{
+  "status": "draft-not-gameplay-approved",
+  "layout": "top RGB; bottom R actor, G fingers, B zero",
+  "nativeRate": 24,
+  "interpolated": false,
+  "sourceFrames": [
+    {
+      "frame": 0,
+      "sha256": [
+        "eee3e91ded863bcff3615f91178a7a4946164966dab615a2b371e02d3afbf487",
+        "05ffafdc8ab2246e71a50901b56e98dcd5d1a2f9b3b16d250b57e61cc8b08f78"
+      ]
+    },
+    {
+      "frame": 1,
+      "sha256": [
+        "e2d8280cd91937749e277243877af61cf3dc3957675f6ac218b44304d039da4f",
+        "316cae13b718da2bfdb8bc056bd49ad907192fd1e01ede79dd9d18ceb2df5fe2"
+      ]
+    },
+    {
+      "frame": 2,
+      "sha256": [
+        "f3ded39d52b7ae1554558c79bef71bf6af13d2eaefdc302accaea7bd1fb4ccd3",
+        "d931d5bc0c2ddae4e1ec99110d459cf919ae2fc581b574b5a3ae0569add1faf0"
+      ]
+    },
+    {
+      "frame": 3,
+      "sha256": [
+        "2601e97114f86ac9038275a080ad88c2590bf28c1dcc929a1bbb23be70916168",
+        "c52165d0aab8816b6f8437a83c86e602bc4b9c93b4bf606da1ab109a553922bf"
+      ]
+    },
+    {
+      "frame": 4,
+      "sha256": [
+        "dec6cd7ffa51a2ecdbb9502965caf276eb9132fcd18a00d646679e68ade92f78",
+        "f9d7a878e5df1ab7a442f3b907c9f974d65d4c47245ba53fbdb537678c23002f"
+      ]
+    },
+    {
+      "frame": 5,
+      "sha256": [
+        "555353aba32e9044f311be608ecc0faaebdf3abd06854548c0af73108340b782",
+        "8154c02b989338f9cca5cb2df331cda38556c28651ac78b7c24530f207fc7451"
+      ]
+    },
+    {
+      "frame": 6,
+      "sha256": [
+        "c3d7fc31ae601e69f677cfd814c9d55c27c17071a406232aea6a4260664c710d",
+        "53c5bd92b00c558a273c38c6189c48c2274b39743dd00971609e4b5dd981fc09"
+      ]
+    },
+    {
+      "frame": 7,
+      "sha256": [
+        "2529cda70be07b985b25ef7b9f9088d85c72e80fb45b5759743ec14b9203f22e",
+        "00b112b1911f707893801f17e5887ed20b159aa87d602a1033e9a57e7b5bff56"
+      ]
+    },
+    {
+      "frame": 8,
+      "sha256": [
+        "7a74b7dcec5aa52c9ca00ff93e9b542769b29da16763eb3109c255288d5cc4ca",
+        "ff9728e219efc996e600e4557e327807d3fa726e9bad205067348f9e3ff3a3e2"
+      ]
+    },
+    {
+      "frame": 9,
+      "sha256": [
+        "065c91a6627ab79a63f9b9b4348aa2395e586118983164db6f1c6747a0f3a875",
+        "248d5a739d7a1c7f1820d1e4652e1181d25c0a5c1c0ae153ce1d386d0a5fc6de"
+      ]
+    },
+    {
+      "frame": 10,
+      "sha256": [
+        "dd54dd3266a80957fd8e6332639e8cddf4b21783ee571552e01213dc0b69932f",
+        "a06e15916d6b21fee42e34aef0411457607be6d1f97a03b74d0d27eb4a267804"
+      ]
+    },
+    {
+      "frame": 11,
+      "sha256": [
+        "d5caee96716f7b7d02241bb9fe004ccef69624659ecadc4f474890f9bd468ae4",
+        "d9e167b088f42ce216b366d93067448105a0e7437546d28e476af5ef03db7a80"
+      ]
+    },
+    {
+      "frame": 12,
+      "sha256": [
+        "afc696b2dd929435d14c67da65804452467081b2c67e74ef1c37d4c9620a4c48",
+        "390cf2295516de5293ed2370ae78ace67ca1e5d7cf24fd9b2433f577959ec898"
+      ]
+    },
+    {
+      "frame": 13,
+      "sha256": [
+        "9f80363735ac083e1ee59de7eb3916ac3352f7606d71384ab38c33a36570ac42",
+        "dd1f881d6f14ae787f3885c0a69f743fe5eba149961b0a983d3304a10b7b179e"
+      ]
+    },
+    {
+      "frame": 14,
+      "sha256": [
+        "4d16cb7a26b02dc1c4c8257b39be04da3e8261d759765c0b628b5c847e73cd7d",
+        "7176a6eec2fb05650b703cd9cc8a7dfa90f13d29e16865e409534e53d48b8079"
+      ]
+    },
+    {
+      "frame": 15,
+      "sha256": [
+        "31d2d143861a2f831bf78da328e45e49926a3c53be7ea08bc1dc3da0cf202f36",
+        "438c6a3ab0bf5a0758697638a882848a8f0f0c2103cba96f55d946546a3465e1"
+      ]
+    },
+    {
+      "frame": 16,
+      "sha256": [
+        "0d0372c1434523d35e672b22df78bfa429694357a0e149bfe22fad0e867e8e0e",
+        "3e44d04ae6c1e46aefe322c0030b209cf7243fdd792bb46c43ba422e5005d445"
+      ]
+    },
+    {
+      "frame": 17,
+      "sha256": [
+        "2f82f73fc6f53a6747394b9e63ca07a63ec656b5eb5d751e463574d4cb24d9f4",
+        "4fc6020d205788379e1bbe68e5d4516b9f516891eb277c62ef8413ae68b9806d"
+      ]
+    },
+    {
+      "frame": 18,
+      "sha256": [
+        "af695ddfbb646277c173a17cbc493fd003658e793a836cf6c381b69d6c1c290d",
+        "78765649046a909a97b377462a80818bd8e0312763b9facce0c6990046eb3b13"
+      ]
+    },
+    {
+      "frame": 19,
+      "sha256": [
+        "7e9ecc413d69bfe7bd218537cd8f8f21ffc6fe80a42d1d9fb8f8f20813184fda",
+        "caab4dbb35d67ef4b5e135930163d347134a488c0c72e3c83cb4778c2980ea4a"
+      ]
+    },
+    {
+      "frame": 20,
+      "sha256": [
+        "6cbb0de4daaa9e7ee175a0d41fb996509a70b458faa9c646883a2d7246564bb6",
+        "ebb18585f37da07f3f64ad549aeabd3f0c3f0747bdfeb7e4ea377eab3e894698"
+      ]
+    },
+    {
+      "frame": 21,
+      "sha256": [
+        "83fd962326a116318da53af9562cc3b4a0490143503e1a6ad39172a822c155e4",
+        "593b9dcbe71bef65f92fa37ecd78b47cc383c6859731a8e22bed81e2afe5531d"
+      ]
+    },
+    {
+      "frame": 22,
+      "sha256": [
+        "0c4be8f8853b7ade95fdf5846d99b583fa832375f6fe6d858a81d9ec103ddbda",
+        "2592596db92743c9fb95d8d9197bc3a859b7a6fbf93ab49eed368f09f3c00400"
+      ]
+    },
+    {
+      "frame": 23,
+      "sha256": [
+        "e515685c1c65d0ecf9fd12ccdd18225260903b876fbf559ece651a16806f4c77",
+        "50388cdc75cf7ec4fa926fe0a66caed5ba499ca3090d484363e3d2766f8890d5"
+      ]
+    },
+    {
+      "frame": 24,
+      "sha256": [
+        "19c64a97ead1b4e5e7e060c3fcaf12b14381a0bfa67ade2d85e8758243b43bf2",
+        "6be5c3706ac90c66533143c7d138b9e52cd0968324a7e7c62fe20ceae80226be"
+      ]
+    },
+    {
+      "frame": 25,
+      "sha256": [
+        "4dcce6bdbeee0e2496d97659c88ac492220ca8216083120a3b1774c2663de107",
+        "3e49f4a897ddb787ca60117892054115df456947c0c1c8b73bd775527ac7d3e6"
+      ]
+    },
+    {
+      "frame": 26,
+      "sha256": [
+        "3843fb917edfa88d7c9a0ab26a846589a240b06256e29321a952971441addbf1",
+        "0c34379ec990acd84ec06fe9ad54e92e1299dba42b4e723599c3b507dbf3da46"
+      ]
+    },
+    {
+      "frame": 27,
+      "sha256": [
+        "b3b3e9a675dd501761b4f7b3f78e68ef4d16e495fd0604255f5933b606b19b1c",
+        "c9cf98c75590da32d891a33cb79d3f9f64e30d02078b9c369331a850a5a44fdf"
+      ]
+    },
+    {
+      "frame": 28,
+      "sha256": [
+        "308c68bf48ab77cd9dee30db9a6d0824a836c40f490416a881a8580ce185082f",
+        "e96c1f9e85cf27290c4cb09a405c0bdd14822287057cf7b95e603ea01d2ca824"
+      ]
+    },
+    {
+      "frame": 29,
+      "sha256": [
+        "ef1a879ecf2996120bc758979123b9145d938623ee49aaf7c0d24230f1ee03c7",
+        "39682b10c5adc8b90e4f648b20f50c0b26cb764f7d643d5728788f31819b0827"
+      ]
+    },
+    {
+      "frame": 30,
+      "sha256": [
+        "704a4505600326f4c9bd841d668a6320fe454f26d6bac0744f578aca69a6af7c",
+        "a2a625323a6094b2a041fa37f8650fa60d18453ef8cab57314d66ff37e011f1d"
+      ]
+    },
+    {
+      "frame": 31,
+      "sha256": [
+        "d62a4ff16b76b107e37b10316467155906874a59ab9637e48a794056d559c25b",
+        "832b7aaab750397d0bb33f51735bb6e3787c07a9598ea0bae1f3cad723d04f6b"
+      ]
+    },
+    {
+      "frame": 32,
+      "sha256": [
+        "800f4650aa65c4bf7cef52b3160a976fe088da72ceb5bcb958b7f0aeaf884f63",
+        "88975a42e72d4d010df676f7d4da998e98da26fdd6e30ce977637cde29e8cd6f"
+      ]
+    },
+    {
+      "frame": 33,
+      "sha256": [
+        "54b503c76378debaf4f0fac676a186751c14b8aa52ddf305d1263c2d9173b8a3",
+        "fe72a61ef7cff2aeb421804ed83a5ef2f2b3240f5b99a888dec5bebc56448a9a"
+      ]
+    },
+    {
+      "frame": 34,
+      "sha256": [
+        "5e8190e15f08e5e763295d8ddc5db0119ff5009ebcc96e3bfcd820ef7188344e",
+        "d1651e6d30c7157c7a421232d0b97147b13a374ba08bcc8a2cec616642b59831"
+      ]
+    },
+    {
+      "frame": 35,
+      "sha256": [
+        "463ec080ccfae353678fcac98d84fa498529523510c25cf51a2bd6d8634f6c79",
+        "f7a1271774b3d3d78c22b163db464c42fabed95eae4d21ccd602568317e753cf"
+      ]
+    },
+    {
+      "frame": 36,
+      "sha256": [
+        "a9ef26d3d61f97ee2ddbd55070c31a4abf2694c56d359ab81c3fd711c23f5784",
+        "90fe97b3daec7aa0c83f6268a1d953ecad4a110f61a8205863d6aa3b249ca150"
+      ]
+    },
+    {
+      "frame": 37,
+      "sha256": [
+        "e68663a7c34f53b3792dffccda3c4156332fe02169c659903c85931b6782773a",
+        "e68ed49b0165afd4a21599b57b0b68355c2c782659661b2637941c854da48f6e"
+      ]
+    },
+    {
+      "frame": 38,
+      "sha256": [
+        "883fbd0aae95dc4127779bf1aecfe2325c4b7c61d7eb222fbfd35c713d3636bb",
+        "402a60b2213f2ae294c4319e98aacce138862e6508c72b3b42d5fca34824cbbb"
+      ]
+    },
+    {
+      "frame": 39,
+      "sha256": [
+        "37f23851f970a0dde1aa0e2993379c5d7454b14e991a3afc065f81ad4e833168",
+        "4eda9def09789b0d803bb1740b05d1f9622d6fd22e405949d316bdcd9fd3d9c9"
+      ]
+    },
+    {
+      "frame": 40,
+      "sha256": [
+        "b90153c49fa0a6b65cc9c2f7246910791678f30e9f395f4f6e78b7af01f4d76e",
+        "fcff19f3aa25b6bcf781e131852d09f533449bd3a9bd1f678b0f8d3310277572"
+      ]
+    },
+    {
+      "frame": 41,
+      "sha256": [
+        "bc86cfa2e0a5c832569a3b1fdd31cbe0c4f35184b6431486523692b268275fad",
+        "ecbaf2df8c4eb81d2cc7cb37ac32ecf1db70069b34f00fc9bc3dd117f0f7213c"
+      ]
+    },
+    {
+      "frame": 42,
+      "sha256": [
+        "c89bfdfdfe908f5202f425f453f71ede65b838b9d4205b0448564f2f79b803cd",
+        "28295b2f09ad543fdc803385563755119df5454e62ceb3d9acee69f8e115789b"
+      ]
+    },
+    {
+      "frame": 43,
+      "sha256": [
+        "b5559e337e6f8af00e7ef3a103c6542a600dc814df460a44f21645962fb2c745",
+        "da2d6b545fa533598d8ef3ada6eaeab15edd756ad26af202b63a748dcd566bc6"
+      ]
+    },
+    {
+      "frame": 44,
+      "sha256": [
+        "d28bce383ffbe6286ffa97a44f6bf6ffe24df0ad81fd65f8bdc7c51d064a09af",
+        "9e640c271a13745625d61a66c0dcd892c26215494b53d48873ad762fee40f971"
+      ]
+    },
+    {
+      "frame": 45,
+      "sha256": [
+        "73982c4e6064876f55b219b31353481ae8bf7fd8edb76f666b23906e133df8e8",
+        "86275eabef331569adbd64aac507cbf548d1f7fe7f46c7788fb8f4f4ab424aa3"
+      ]
+    },
+    {
+      "frame": 46,
+      "sha256": [
+        "481c53f1a11a9263e43c53cf8be5015c59653035b069db95a93039ae2abba955",
+        "54a64009cb63dac25a68fbba8535c10dd9a49899b1042f9096722693b4266515"
+      ]
+    },
+    {
+      "frame": 47,
+      "sha256": [
+        "e29bd00560968f9db53e68d893ac311966dfe04c8ae8caca336274c7e3278f44",
+        "e9d92ff3a20dfab61efaf872e40a92094875202b30042be4f457544f88aadad0"
+      ]
+    },
+    {
+      "frame": 48,
+      "sha256": [
+        "43f71bd165e61b7d9b159ce5d9a95aafbddf3a8a2278aada322d8f1716200238",
+        "d3300e0ada87d680f03110a77d4ad373ee7e55012da21441e18ff0e0525e728e"
+      ]
+    },
+    {
+      "frame": 49,
+      "sha256": [
+        "a41dca9678541cb2924d20dda2721c150293680343447cacf6cc24160335f95a",
+        "03d8b6775d8b2cb92090b39a3d1d216a1db8f8cb4a1b2bbf25cdc96560c90faf"
+      ]
+    },
+    {
+      "frame": 50,
+      "sha256": [
+        "6effa6c0675dbf9fac609b2c941c470761874921ef14f7088188e9a9def07eb2",
+        "20ecf168203bcb543f929bc4d4b494a916a5b1dfa89e40519659e9e92af96586"
+      ]
+    },
+    {
+      "frame": 51,
+      "sha256": [
+        "41e5be48718938a3c7bf8b87cb50624150e01486ff0a64eae5cbccfddb3bf611",
+        "e6960e9fe6bf8d938514aea7cabe541cc643efdf4369d8c38504fbbcfd1e585e"
+      ]
+    },
+    {
+      "frame": 52,
+      "sha256": [
+        "ff1dc3d3f7b9bc1bd0e67ff56d69f664e997334f463dd1163b0ddf6ec5ce7afc",
+        "965671b057d747582dc1ee008acf6e4c54f7b40614fc751c02ba5d4cee8cfb7f"
+      ]
+    },
+    {
+      "frame": 53,
+      "sha256": [
+        "477765a9c807a6b34b89bb5ff9b0ea5b270804aceb2eebc40d42c1e66d5d5475",
+        "3b0a2af73c045d400e2b31b376213a1f4cfa7365340f7d710e99831a70d144d1"
+      ]
+    },
+    {
+      "frame": 54,
+      "sha256": [
+        "59d6f512e2081570fbdeb23117de74f8f6a01c425a68c6d30c77cbe224bb82ae",
+        "a97c4a678f1e2bfb9fc3bff207b94e23dca4a554810496e6237cd6794bdb6d52"
+      ]
+    }
+  ],
+  "command": [
+    "ffmpeg",
+    "-v",
+    "error",
+    "-y",
+    "-framerate",
+    "24",
+    "-start_number",
+    "1",
+    "-i",
+    "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/mattes/source/frames/%04d.png",
+    "-framerate",
+    "24",
+    "-start_number",
+    "0",
+    "-i",
+    "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/pickup-draft/pickup-rg/%04d.png",
+    "-filter_complex",
+    "[0:v][1:v]vstack=inputs=2[v]",
+    "-map",
+    "[v]",
+    "-frames:v",
+    "55",
+    "-an",
+    "-c:v",
+    "libx264",
+    "-crf",
+    "14",
+    "-bf",
+    "0",
+    "-pix_fmt",
+    "yuv420p",
+    "-movflags",
+    "+faststart",
+    "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/compositor-viewer/pickup-packed-draft.mp4"
+  ],
+  "probe": {
+    "index": 0,
+    "codec_name": "h264",
+    "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+    "profile": "High",
+    "codec_type": "video",
+    "codec_tag_string": "avc1",
+    "codec_tag": "0x31637661",
+    "mime_codec_string": "avc1.640032",
+    "width": 1920,
+    "height": 2160,
+    "coded_width": 1920,
+    "coded_height": 2160,
+    "has_b_frames": 0,
+    "pix_fmt": "yuv420p",
+    "level": 50,
+    "chroma_location": "left",
+    "field_order": "progressive",
+    "is_avc": "true",
+    "nal_length_size": "4",
+    "id": "0x1",
+    "r_frame_rate": "24/1",
+    "avg_frame_rate": "24/1",
+    "time_base": "1/12288",
+    "start_pts": 0,
+    "start_time": "0.000000",
+    "duration_ts": 28160,
+    "duration": "2.291667",
+    "bit_rate": "7143775",
+    "bits_per_raw_sample": "8",
+    "nb_frames": "55",
+    "extradata_size": 46,
+    "disposition": {
+      "default": 1,
+      "dub": 0,
+      "original": 0,
+      "comment": 0,
+      "lyrics": 0,
+      "karaoke": 0,
+      "forced": 0,
+      "hearing_impaired": 0,
+      "visual_impaired": 0,
+      "clean_effects": 0,
+      "attached_pic": 0,
+      "timed_thumbnails": 0,
+      "non_diegetic": 0,
+      "captions": 0,
+      "descriptions": 0,
+      "metadata": 0,
+      "dependent": 0,
+      "still_image": 0,
+      "multilayer": 0
+    },
+    "tags": {
+      "language": "und",
+      "handler_name": "VideoHandler",
+      "encoder": "Lavc62.28.102 libx264"
+    }
+  },
+  "outputSha256": "c509fbf2645eeebcba061a8e74569c6dffea1e0a5f84fbdfdfe82a453fdd9501"
+}

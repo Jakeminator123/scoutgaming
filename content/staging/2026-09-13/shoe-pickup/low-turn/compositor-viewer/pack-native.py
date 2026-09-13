@@ -1,10 +1,12 @@
 """Pack reviewed staging RGB/RG with identical native frame order; never publish."""
 from pathlib import Path
-import hashlib,json,subprocess
+import hashlib,json,subprocess,sys
 root=Path(__file__).resolve().parent.parent
-rgb=root/'mattes/slide/frames'
-mask=root/'composite-draft/slide-rg'
-out=root/'compositor-viewer/slide-packed-draft.mp4'
+take=sys.argv[1] if len(sys.argv)>1 else 'slide'
+if take not in ('slide','pickup'): raise SystemExit('Expected slide or pickup')
+rgb=root/('mattes/slide/frames' if take=='slide' else 'mattes/source/frames')
+mask=root/('composite-draft/slide-rg' if take=='slide' else 'pickup-draft/pickup-rg')
+out=root/f'compositor-viewer/{take}-packed-draft.mp4'
 sources=[]
 for n in range(55):
     files=[rgb/f'{n+1:04d}.png',mask/f'{n:04d}.png']
