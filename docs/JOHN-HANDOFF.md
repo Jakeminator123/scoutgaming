@@ -1,4 +1,10 @@
-# Latest: CAC-9 fingertip opacity correction — 13 September 2026
+# Latest: CAC-9 first correction failed; idle matte repaired — 13 September 2026
+
+The user showed continuing fingertip fade in their current tab. Reproduced two visibly different hand-opacity states 2.4 seconds apart; moved CAC-9 back to In Dev. Original idle RGB retains the fingers while its matte loses them during the loop. The first shader-only correction was insufficient.
+
+Repaired all 145 idle mask frames from the inspected hand-region RGB, preserving original mask bytes and all original RGB/audio. New file `actor/streams/idle-1_idle_idle-hand-repair.h264` is paired by updated frame index and provenance. See `content/staging/2026-09-13/cac-9-hands/idle-repair/` for script, original/revised masks and full-loop contact sheets. Reloaded the user's existing zero-stake tab and checked separated samples across the loop: tips remained visible. Actor, deep roster and pre-commit audits passed. This repair is idle-specific, not an all-take acceptance; keep CAC-9 open.
+
+# Earlier: CAC-9 fingertip opacity correction — 13 September 2026
 
 Read CAC-9 and its attached close-up: resting fingertips turn dark/transparent over the sleeve. The original source retains the hand. The shared actor-edge cleanup could borrow opaque black sleeve colour for uncertain fingertip pixels while eroding alpha. Added a colour-similarity guard and matte-supported skin opacity recovery in `actor-compositor.mjs`, used by both speech and dealing. No source bytes or speech calibration changed.
 
