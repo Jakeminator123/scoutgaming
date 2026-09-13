@@ -1,0 +1,57 @@
+{
+  "params": {
+    "model": "nano_banana_2",
+    "aspect_ratio": "16:9",
+    "resolution": "2k",
+    "count": 1,
+    "medias": [
+      {
+        "role": "image",
+        "value": "b8c501cf-83a0-4199-bf80-604508eca717"
+      }
+    ],
+    "prompt": "Precise local pose correction to this photograph. Keep every element of the image unchanged except the dealing right forearm, hand and the single blank white card under its fingers. Move that card and the fingertips touching it together slightly diagonally DOWN and RIGHT: about one card-width to the right and one card-length toward the bottom edge. Extend the arm naturally to keep the fingers firmly touching the card at the new location. The card must remain flat on the felt; her hand moves with it. Do not move the camera, woman, torso, face, left hand, shoe, table or room. Keep the existing skin colour and photorealism. No new objects, no duplicate cards, no labels, no numbers, no arrows or guides."
+  },
+  "response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "This tool provides an auto-updating generation widget for these jobs. Do not call job_display, show_generations, or show_generation_by_ids to display these jobs again, either before or after completion, unless the user explicitly requests a separate display. If you need to await completion, use jobs_wait with timeout_seconds <= 15. Use job_display only if the user explicitly requests a separate re-display of one specific job."
+      },
+      {
+        "type": "text",
+        "text": "Note: adjustments applied — medias[0].role: \"image\" → \"image_references\" (Nano Banana 2 backend expects schema-key media roles).\n\nSubmitted 1 job. If a widget is visible, it polls automatically — do not call job_status or show_generations as a follow-up poll. In text-only clients, use job_status with sync:true to poll for completion.\n- 63c67c47-0302-4f95-a9bc-c51b2bf53f50  \"Precise local pose correction to this photograph. Keep every element of the image unchanged except the dealing right forearm, hand and the single blank white card under its fingers. Move that card and the fingertips touching it together slightly diagonally DOWN and RIGHT: about one card-width to the right and one card-length toward the bottom edge. Extend the arm naturally to keep the fingers firmly touching the card at the new location. The card must remain flat on the felt; her hand moves with it. Do not move the camera, woman, torso, face, left hand, shoe, table or room. Keep the existing skin colour and photorealism. No new objects, no duplicate cards, no labels, no numbers, no arrows or guides.\""
+      },
+      {
+        "type": "text",
+        "text": "If the user requests a combined display of multiple generations, including jobs submitted through separate generate_* calls, collect all requested job IDs, wait for the complete set with jobs_wait, then call show_generation_by_ids with jobs: [{\"index\":0,\"job_id\":\"<first actual job ID>\"},{\"index\":1,\"job_id\":\"<second actual job ID>\"}, ...]. job_display accepts only one id: never pass ids to it or loop over it to show a group. Do not create an extra display when the existing generation widgets already satisfy the request."
+      }
+    ],
+    "structuredContent": {
+      "results": [
+        {
+          "id": "63c67c47-0302-4f95-a9bc-c51b2bf53f50",
+          "type": "image",
+          "status": "pending",
+          "model": "nano_banana_flash",
+          "params": {
+            "prompt": "Precise local pose correction to this photograph. Keep every element of the image unchanged except the dealing right forearm, hand and the single blank white card under its fingers. Move that card and the fingertips touching it together slightly diagonally DOWN and RIGHT: about one card-width to the right and one card-length toward the bottom edge. Extend the arm naturally to keep the fingers firmly touching the card at the new location. The card must remain flat on the felt; her hand moves with it. Do not move the camera, woman, torso, face, left hand, shoe, table or room. Keep the existing skin colour and photorealism. No new objects, no duplicate cards, no labels, no numbers, no arrows or guides.",
+            "aspect_ratio": "16:9",
+            "reference_images": [
+              "b8c501cf-83a0-4199-bf80-604508eca717"
+            ],
+            "resolution": "2k"
+          }
+        }
+      ],
+      "adjustments": {
+        "medias[0].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Nano Banana 2 backend expects schema-key media roles"
+        }
+      }
+    },
+    "isError": false
+  }
+}
