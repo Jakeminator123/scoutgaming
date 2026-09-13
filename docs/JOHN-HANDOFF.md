@@ -1,4 +1,8 @@
-# Latest: CAC-9 first correction failed; idle matte repaired — 13 September 2026
+# Latest: endpoint-reference experiment rejected before video — 13 September 2026
+
+The scheduled continuation inspected existing receipts, then tested two photographic release-pose images through Higgsfield MCP as an alternative to imprecise video text editing. Both have plausible hand/card contact but miss seat 2 by approximately 70 and 111 source pixels respectively. See `content/staging/2026-09-13/per-seat-video/endpoint-proof/` for original images, exact requests, terminal job IDs, measurements and rejection. Neither image was installed or used for a video generation. No job remains pending. Four missing reaches and colour-transition acceptance are unchanged; no gameplay fix is claimed by these stills. Avoid repeating the same relative-position prompts without a controlled pose/motion reference.
+
+# Earlier: CAC-9 first correction failed; idle matte repaired — 13 September 2026
 
 The user showed continuing fingertip fade in their current tab. Reproduced two visibly different hand-opacity states 2.4 seconds apart; moved CAC-9 back to In Dev. Original idle RGB retains the fingers while its matte loses them during the loop. The first shader-only correction was insufficient.
 
