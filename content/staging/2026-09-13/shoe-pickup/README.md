@@ -15,3 +15,16 @@ Third source b761026b-2599-42a1-ad1b-2e2481ac6b9a (turn.mp4), 3840x2160, 73 fram
 Fourth take 2bc43925-eb41-4aba-b0c1-ace56546b0e0 (bound.mp4), 73 frames at 24 fps, completed. Supplied start and face-up end images. The sequence reaches the face-up terminal card, but shows an extended upright presentation and an awkward unsupported-looking drop/slide; reject as a professional player delivery. Endpoint correctness does not prove intervening contact.
 
 All four video jobs and both image jobs are terminal. No further generation is pending. fast.mp4 / pace60.mp4 remain the best extraction/transfer experiments, with the explicit face-down and brief-lift limits above. No public app, server, source manifest or paired speech assets changed. Deep live-asset audit passed. Full commit checks run for the saved staging work. Further work must validate a low economical turn-and-slide and camera/shoe alignment before integration; do not promote any of these based on completion or output resolution alone.
+
+## Overnight continuation — 14 September
+
+All later generation jobs are terminal. Exact requests and IDs are preserved in split-request.json, held-landing-request.json and edge-split-request.json.
+
+- extract-turn.mp4 / slide-return.mp4: rejected for broadside texture morph and early detached card drift; see motion-review/SPLIT-REVIEW.md.
+- held-slide.mp4: conditional supported slide; fingertips stay on the paper through landing.
+- empty-return.mp4: empty hand separates, but source paper drifts 5–7 px relative to background and changes rank. It requires paper replacement, not whole-body stabilization.
+- extract-edge.mp4 / edge-face.mp4: conditional geometric turn improvement, with observed narrowing at native n50–64 and broadening at n43–48. Excess upright holds/lifts remain. See motion-review/EDGE-MOTION-REVIEW.md.
+
+Held-slide last frame and empty-return first frame differ by 0.99/255 RGB overall; no global grade/body warp is justified. See gameplay-qa/seams/. Actual video sizes vary (1924×1076 and 1912×1080); use uniform fit, never force aspect ratio. New integration-diagnostic tools preserve unobserved card corners as unknown. The optional public shoe-lip geometry module is tested but not connected to the player.
+
+Current next work: full-cycle cadence preview, cycle seam review and stationary source-paper removal feasibility. No new source has been promoted into gameplay; all seven genuine reaches, camera/shoe registration, clean finger coverage and paired speech joins remain acceptance gates.
