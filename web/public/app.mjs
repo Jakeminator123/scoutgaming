@@ -73,11 +73,20 @@ if(performanceStaged) {
     performanceManifest=manifest;selectPerformance=selectContactTake;performanceCardCorners=cardLandingCorners;
     selectPlayerPerformance=selectPlayerDelivery;
     selectSequencePerformance=selectSequenceTake;
-    performancePlayer=new PerformancePlayer({host:$('#scene'),staged:performanceStaged,onState:text=>{
+    const sceneJoins=performanceMotion==='smooth60'&&new URLSearchParams(location.search).get('joins')!=='off'
+      ?await fetch('dealers/astrid/performance/joins/manifest.json').then(r=>r.ok?r.json():null):null;
+    performancePlayer=new PerformancePlayer({host:$('#scene'),staged:performanceStaged,joins:sceneJoins,
+      idle:actorProvenance?.sources?.['idle-1/idle/idle'],prepareIdle:async()=>{
+        if(!engineUp)return;
+        await engine.fetchClip(CLIP.idle);
+        const cycle=engine.presentation?.cycle??-1;engine.interrupt(CLIP.idle);
+        if(!await engine.waitForFrame(CLIP.idle,0,{afterCycle:cycle,timeoutMs:3000}))throw new Error('Matched idle frame did not arrive');
+      },onState:text=>{
       const status=$('#performance-status');if(status)status.textContent=text;
       console.info('[performance]',text);
     }});
     performancePlayer.preload([...manifest.takes,...(performanceContinuity?manifest.continuations??[]:[])]).catch(error=>console.warn('[performance] preload',error.message));
+    if(sceneJoins)performancePlayer.preload(sceneJoins.joins).catch(error=>console.warn('[performance] transition preload',error.message));
   }catch(error){console.info('[performance]',error.message);}
 }
 let dealingCues = null;
@@ -1156,7 +1165,7 @@ async function animateSplit(bHand) {
     updateBadge(conts[k], h.cards);
     await sleep(80);
   }
-  endDealingTake();
+  await endDealingTake();
 }
 
 // rebuild one box's card DOM from round state (used right after a split: the
@@ -1215,11 +1224,11 @@ async function deliverCard(container, card, options={}) {
   await dealCardTo(container,card,{...options,motion}).dealt;
 }
 
-function endDealingTake() {
+async function endDealingTake() {
   dealingActive=false;
-  // Hold a presented frame only between cards. Once the sequence ends,
-  // uncover the running idle video while the player makes a decision.
-  performancePlayer?.release();
+  // The filmed return owns the actor until its final pose and the matching
+  // idle frame have both been presented. Speech/decisions wait for this.
+  try {await performancePlayer?.finish();}catch(error){console.warn('[performance] return',error.message);}
   if(engineUp && !speaking && engine.presentedClip===CLIP.deal) {
     const returning='idle-1/actions/action-return';
     engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);
@@ -1310,7 +1319,7 @@ async function beginDealingTake() {
   try {
   await speechQueue.idle;
   if(tableScene?.rigged){console.info('[deal] Rigged contact review sequence');return;}
-  if(performancePlayer){console.info('[deal] Presented-frame performance sequence');return;}
+  if(performancePlayer){if(performancePlayer.joins)performancePlayer.beginSequence();console.info('[deal] Presented-frame performance sequence');return;}
   dealingActive = canUseDealingTake();
   if (!dealingActive) {
     console.info('[deal] No usable filmed action; direct shoe delivery');
@@ -1368,7 +1377,7 @@ async function dealSequence() {
   await deliverCard($('#dealer-cards'), null, { faceDown: true, shoeDraw:round.holeDraw });
   await sleep(PACE);
 
-  endDealingTake();
+  await endDealingTake();
   // side bets resolve on the deal, like the real game
   let sideWin = false;
   live.forEach((b, i) => {
@@ -1452,7 +1461,7 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
       await beginDealingTake();
       await deliverCard(boxContainer(liveIdx), hand.cards.at(-1));
       updateBadge(boxContainer(liveIdx), hand.cards);
-      endDealingTake();
+      await endDealingTake();
       if (handValue(hand.cards).total > 21) await voice.say('bust', { force:true });
       await sleep(80);
     }
@@ -1488,7 +1497,7 @@ async function dealerRevealChoreo() {
     updateBadge(dc, round.dealer.slice(0, i + 1));
     await sleep(80);
   }
-  endDealingTake();
+  await endDealingTake();
 }
 
 async function finish() {
@@ -1572,7 +1581,7 @@ async function finish() {
   if (totalWin > 0) void veraEvent(`Round settled: ${who} collected ${fmt(totalWin)} this round${anyPlayerBJ ? ' including a natural blackjack' : ''}.`);
   else void veraEvent(`Round settled: the house took this one; ${who} won nothing back.`, { minGap: 45000 });
   await Promise.all([sleep(1800), speechQueue.idle]);
-  endDealingTake();
+  await endDealingTake();
   if(tableScene?.collectCards)await tableScene.collectCards({onCue:phase=>sfx.play(phase)});
   round = null; busy = false;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
@@ -1653,8 +1662,10 @@ async function cutToTake(clip, signal) {
 }
 
 let activeSpeech = null;
-function playRecorded(id, audio, text, signal) {
+async function playRecorded(id, audio, text, signal) {
   if (voice.muted || document.hidden || signal?.aborted) return Promise.resolve();
+  if(performancePlayer?.joins)await performancePlayer.whenReleased(signal);
+  if(voice.muted||document.hidden||signal?.aborted)return;
   const originalNative = speechMedia[DEALER.key]?.[id];
   const packed=engine.fullActor&&originalNative?actorProvenance?.nativeSpeech?.[id]:null;
   const native=packed?{...originalNative,...packed}:originalNative;
