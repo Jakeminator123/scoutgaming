@@ -1,0 +1,9 @@
+# Expected continuous dealing rhythm
+
+User-supplied Desktop recording: `Skärminspelning 2026-09-13 kl. 15.55.29.mov`, 11.36 seconds, 2360×1672 at 60 fps. It shows a live dealer in a YouTube player; the seated woman's dealing action is the expected motion reference. It is not an Astrid identity reference.
+
+Inspected the first seven seconds at three samples per second. Successive player-card releases occur approximately around 0.2, 1.0, 2.0, 2.7, 3.7 and 4.3 seconds, followed by dealer cards. These are coarse visual observations, not frame-accurate annotations. The essential feature is continuous shoe-to-seat-to-shoe movement with no folded-arm reset. Target a roughly 0.7–1.0 second release interval during an opening sequence.
+
+Current ordinary Astrid takes play at 2×, but start at frame zero and run through rest: 3.00–3.21 seconds each, including 1.44 seconds before pickup on every card. Fourteen player cards plus two dealer cards therefore consume about 48–51 seconds of action footage before loading/speech overhead. Merely retargeting the arm does not change this cadence. Multiplying the entire take enough to hit the reference would accelerate the folded-arm reset rather than remove it.
+
+Submitted one Genjutsu motion-transfer proof through Higgsfield MCP using the actual driving recording and canonical Astrid reference. Exact request and receipt are in request.json. The full screen recording was accepted as input; the prompt explicitly excludes browser UI and the background man. This introduces a selection risk to inspect in the result. No source or gameplay change has been promoted. Review identity, skin colour, natural hand anatomy, continuous cadence and visible card contact before integration. Generated source still needs segmentation and frame/contact calibration for server-owned cards; a good-looking movie alone does not complete gameplay.

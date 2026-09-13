@@ -1,4 +1,8 @@
-# Latest: seven-position filmed-arm retarget preview — 13 September 2026
+# Latest: user supplied expected professional cadence — 13 September 2026
+
+The Desktop recording `Skärminspelning 2026-09-13 kl. 15.55.29.mov` is the user's expected dealing motion. Inspected the first seven seconds: continuous deliveries roughly every 0.7–1.0 seconds with direct empty-hand returns to the shoe. Current Astrid still takes 3.00–3.21 seconds per card, including 1.44 seconds before each pickup and folded-arm resets. See `content/staging/2026-09-13/reference-rhythm/README.md` and request.json. A Genjutsu motion-transfer source proof is processing (job `10bfb266-4e8c-4778-b3d2-659ae8373dcb`); await this exact job before submitting another. Canonical Astrid image plus the user's recording were supplied through MCP. No gameplay change or cadence acceptance is claimed. The result must preserve Astrid and copy only the seated dealer motion, excluding browser UI/background people; then it needs segmentation and per-release contact calibration before gameplay integration. CAC-4 remains unresolved.
+
+# Earlier: seven-position filmed-arm retarget preview — 13 September 2026
 
 User requested delivery. Implemented opt-in `reach=tracked` for the staged video player: source hand/finger layers and attached card move together toward the actual seat destination. This is video deformation, not seven newly captured or approved takes. See `content/staging/2026-09-13/reach-retarget/README.md` for mechanism, rejection of initial radial bending, tests and material limits. Original source calibration is preserved, and transformed results are not represented as measured footage.
 
