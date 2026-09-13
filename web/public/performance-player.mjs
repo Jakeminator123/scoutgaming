@@ -2,6 +2,7 @@ import * as THREE from './vendor/three/three.module.js';
 import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
+import {deliveryReach,shiftCard} from './dealer-reach.mjs';
 
 // A packed source carries RGB in its upper half; R=actor alpha and G=front
 // fingers in its lower half. Two independent videos cannot guarantee contact.
@@ -81,6 +82,8 @@ export class PerformancePlayer {
       const end=(corners??[[target.x,target.y],[target.right,target.y],[target.right,target.bottom],[target.x,target.bottom]])
         .map(([x,y])=>[(x-fit.x)/fit.width,(y-fit.y)/fit.height,0]);
       const release=take.frames[take.events.release].card;
+      const retarget=new URLSearchParams(location.search).get('reach')==='tracked'&&take.action!=='deal-dealer';
+      layer.dataset.retarget=String(retarget);
       // Keep the previous presented frame while the next media is loading.
       // Swap only after the new frame has actually rendered; never show idle
       // or a transparent canvas between two deliveries.
@@ -102,15 +105,17 @@ export class PerformancePlayer {
             if(sample.frame<startFrame){frameRequest=video.requestVideoFrameCallback(paint);return;}
             layer.dataset.frame=String(sample.frame);
             layer.dataset.phase=sample.frame<take.events.pickup?'reach':sample.frame<take.events.release?'contact':sample.frame<take.events.land?'release':'return';
-            let sampleCard=sample.card;
+            const reach=retarget?deliveryReach(take,sample.frame,end):null;
+            let sampleCard=reach?shiftCard(sample.card,reach.delta):sample.card;
             if(sample.frame>=take.events.release&&sample.frame<=take.events.land) {
               const t=(sample.frame-take.events.release)/Math.max(1,take.events.land-take.events.release),u=1-(1-t)**2;
-              sampleCard={...release,corners:release.corners.map((p,i)=>p.map((v,k)=>v+(end[i][k]-v)*u)),faceUp:!faceDown};
+              const released=reach?shiftCard(release,reach.delta):release;
+              sampleCard={...released,corners:released.corners.map((p,i)=>p.map((v,k)=>v+(end[i][k]-v)*u)),faceUp:!faceDown};
             }
             // Hand the landed card back once, so the resting transition cannot
             // fade, duplicate or pop its face/rotation at the end of the video.
             if(sample.frame>=take.events.land){if(!landed)onLand();sampleCard=null;}
-            visual.paint(sampleCard);
+            visual.paint(sampleCard,reach);
             if(!painted){painted=true;this.held?.dispose();this.held=null;layer.style.visibility='';this.host.classList.add('performance-playing');this.onState(`Dealing ${take.action==='deal-dealer'?'to Astrid':'to player'}${faceDown?' · face down':''}`);}
             landed ||= sample.frame>=take.events.land;
             cue(sample.frame,{visible:!document.hidden});
@@ -146,8 +151,16 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
   const planes=[];
   for(const foreground of [false,true]) {
     const material=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-      uniforms:{actorColourGain:{value:new THREE.Vector3(...colourGain)},source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)}},
-      vertexShader:'varying vec2 v; void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      uniforms:{reachShoulder:{value:new THREE.Vector2()},reachAnchor:{value:new THREE.Vector2()},reachDelta:{value:new THREE.Vector2()},sourceSize:{value:new THREE.Vector2(width,height)},actorColourGain:{value:new THREE.Vector3(...colourGain)},source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)}},
+      vertexShader:`varying vec2 v; uniform vec2 reachAnchor,reachDelta,reachShoulder,sourceSize;
+        void main(){v=uv;vec2 sourcePoint=vec2(uv.x,1.0-uv.y);
+        vec2 arm=(reachAnchor-reachShoulder)*sourceSize;
+        vec2 relative=(sourcePoint-reachShoulder)*sourceSize;
+        float along=clamp(dot(relative,arm)/max(dot(arm,arm),1.0),0.0,1.0);
+        float lateral=length(relative-arm*along);
+        float weight=smoothstep(0.0,0.8,along)*(1.0-smoothstep(90.0,180.0,lateral));
+        vec3 moved=position+vec3(reachDelta.x*sourceSize.x,-reachDelta.y*sourceSize.y,0.0)*weight;
+        gl_Position=projectionMatrix*modelViewMatrix*vec4(moved,1.0);}`,
       fragmentShader:`uniform sampler2D source; uniform vec3 actorColourGain; uniform float foreground; varying vec2 v;
         float actorAt(vec2 uv){return texture2D(source,vec2(uv.x,uv.y*0.5)).r;}
         vec3 rgbAt(vec2 uv){return texture2D(source,vec2(uv.x,0.5+uv.y*0.5)).rgb;}
@@ -165,7 +178,7 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
         // changing the black suit. Both actor layers use identical grading.
         float warmth=smoothstep(0.08,0.18,actor.r-actor.b)*smoothstep(0.015,0.055,actor.r-actor.g);
         gl_FragColor=vec4(actor.rgb*mix(vec3(1.0),actorColourGain,warmth),alpha);}`});
-    const plane=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
+    const plane=new THREE.Mesh(new THREE.PlaneGeometry(width,height,160,90),material);
     plane.position.set(width/2,-height/2,foreground?1:-1);plane.renderOrder=foreground?2:0;
     plane.frustumCulled=false;scene.add(plane);planes.push(plane);
   }
@@ -177,7 +190,7 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
   // lighting made it cream in motion, then white when the DOM took over.
   const mat=new THREE.MeshBasicMaterial({map:front,transparent:true,alphaTest:.01,toneMapped:false,side:THREE.DoubleSide});
   const mesh=new THREE.Mesh(geo,mat);mesh.frustumCulled=false;mesh.renderOrder=1;scene.add(mesh);
-  return {paint(sample){videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
+  return {paint(sample,reach){for(const plane of planes){plane.material.uniforms.reachShoulder.value.set(...(reach?.shoulder??[0,0]));plane.material.uniforms.reachAnchor.value.set(...(reach?.anchor??[0,0]));plane.material.uniforms.reachDelta.value.set(...(reach?.delta??[0,0]));}videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
     for(let i=0;i<4;i++){const p=sample.corners[i];geo.attributes.position.setXYZ(i,p[0]*width,-p[1]*height,p[2]);}
     geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();mat.map=faceDown||!sample.faceUp?back:front;mat.needsUpdate=true;
   }renderer.render(scene,camera);},dispose(){geo.dispose();mat.dispose();front.dispose();back.dispose();videoTexture.dispose();for(const plane of planes){plane.geometry.dispose();plane.material.dispose();}renderer.dispose();renderer.forceContextLoss();}};
