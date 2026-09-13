@@ -1,0 +1,43 @@
+{
+  "request": {
+    "requests": [
+      {
+        "index": 1,
+        "params": {
+          "model": "kling3_0",
+          "mode": "pro",
+          "duration": 3,
+          "sound": "off",
+          "aspect_ratio": "16:9",
+          "medias": [
+            {
+              "role": "start_image",
+              "value": "d207da34-c322-49a1-997c-9a8d6022522e"
+            }
+          ],
+          "prompt": "Fixed-camera realistic footage of this exact professional blackjack dealer. ONE quick ordinary deal with no presentation gesture. Starting immediately, the hand already at the shoe opening pulls a single card out of its low front mouth FLAT ALONG THE FELT. The opposite hand takes that flat card beside the shoe and immediately slides it face-up to the centre player position, forward of the printed gold text. Both hands and the card stay within two centimetres of the felt throughout. No vertical card, no lifting, no displaying the card to camera, no pause between extraction and transfer. This entire extraction-transfer-slide-release takes 1.2 seconds at normal brisk dealer speed. The card remains stationary at its destination as the dealing hand returns EMPTY straight beside the shoe in the next 0.4 second. Stay naturally ready thereafter. Exactly one card emerges from the existing shoe and is dealt. Preserve Astrid's exact face, suit, hair, body dimensions, table, shoe, lighting and camera. Continuous physical contact, natural human joints and fingertips. Single uncut take; no slow motion, dissolve, zoom or mouth movement."
+        }
+      }
+    ]
+  },
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Submitted 1/1 video generations.\n- index 1: f44bf201-4c28-4d63-8496-1459ebda635a (pending)\nWait for the complete requested set with jobs_wait, then show it together with show_generation_by_ids using the collected indexed jobs. This includes jobs submitted across separate calls. job_display accepts only one id and cannot display a group; do not pass ids or call it once per job."
+      }
+    ],
+    "structuredContent": {
+      "jobs": [
+        {
+          "index": 1,
+          "job_id": "f44bf201-4c28-4d63-8496-1459ebda635a",
+          "status": "pending"
+        }
+      ],
+      "submitted_count": 1,
+      "failed_count": 0
+    },
+    "isError": false
+  }
+}

@@ -1,3 +1,9 @@
+# Latest shoe pickup experiments — 13 September 2026
+
+Two new image anchors and four Kling source attempts completed. ALL jobs are terminal; none pending. Saved sources, prompts, per-frame review sheets, probes and limits: `content/staging/2026-09-13/shoe-pickup/README.md`. The revised fast.mp4 genuinely shows an outlet extraction and hand transfer in the sampled source; pace60.mp4 is a separately reviewed 1.8x/interpolated preview, not native 60 fps. Both still deal face down and briefly lift the card. 4K did not fix turnover. The start/end-constrained take reaches face-up output but holds it vertically and drops/slides it awkwardly. None approved or installed in gameplay.
+
+This is concrete source progress, not full delivery. Continue from the best physical outlet extraction (fast.mp4) and require a low economical turn-and-slide plus actual game camera/shoe alignment before integration. Do not run the same prompt batches again or present final card placement as correct physical contact. Deep media audit passed; public game and paired speech assets unchanged. Keep 3D paused and CAC-4/CAC-9 unresolved.
+
 # Latest user rejection: shoe extraction and slow setup — 13 September 2026
 
 User explicitly rejects the current cards because Astrid does not pull them from the shoe and setup motion drags before delivery. Rewatched the supplied YouTube with claude-video and compared installed source frames. See `content/staging/2026-09-13/youtube-reference/SHOE-PICKUP-REVIEW.md`. The performance path receives but never uses the actual shoe outlet; current card tracks are hand proxies and source paper starts already in her hand. Seven-seat UI/lifecycle QA is not physical dealing acceptance. Prioritize a continuous actual outlet extraction/transfer/release source and direct matched setup. Do not claim this repaired by 60 fps, faster playback or a floating card drawn from the shoe. No new generation was submitted in this review; prior jobs remain terminal.
