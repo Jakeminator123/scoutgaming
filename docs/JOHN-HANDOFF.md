@@ -1,3 +1,7 @@
+# Latest user rejection: shoe extraction and slow setup — 13 September 2026
+
+User explicitly rejects the current cards because Astrid does not pull them from the shoe and setup motion drags before delivery. Rewatched the supplied YouTube with claude-video and compared installed source frames. See `content/staging/2026-09-13/youtube-reference/SHOE-PICKUP-REVIEW.md`. The performance path receives but never uses the actual shoe outlet; current card tracks are hand proxies and source paper starts already in her hand. Seven-seat UI/lifecycle QA is not physical dealing acceptance. Prioritize a continuous actual outlet extraction/transfer/release source and direct matched setup. Do not claim this repaired by 60 fps, faster playback or a floating card drawn from the shoe. No new generation was submitted in this review; prior jobs remain terminal.
+
 # Current gameplay: Astrid edge cleanup and moving ready state — 13 September 2026
 
 Astrid smooth60 now loads the complete `joins/ready/manifest.json` lifecycle by default (`ready=off` compares the prior path). After decision-phase dealing and hits, a 67-frame/60 fps moving rest loop keeps controls available. Specific source-bound bridges connect later actions; speech stops at the loop boundary and uses a filmed return to the exact preserved idle before its paired take. Initial idle-to-deal, actual card landing clocks, server wallet/shoe and other dealer sources are preserved. See `content/staging/2026-09-13/ready-at-table/INTEGRATION.md` for implementation, source limits and QA corrections.
