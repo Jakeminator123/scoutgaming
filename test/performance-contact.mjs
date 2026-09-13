@@ -159,3 +159,14 @@ test('next pickup seek is bound to media, calibration and pre-pickup frames',()=
   assert.notEqual(calibrationPayload(candidate),before);
   assert.equal(continuationStartFrame(candidate,base),0);
 });
+
+test('actor grading is calibrated and cannot silently differ on a return',()=>{
+  const take=fixture(),before=calibrationPayload(take);take.colourGain=[.91,.82,.77];
+  assert.notEqual(calibrationPayload(take),before);
+  assert.deepEqual(validateContactTake(take),[]);
+  for(const invalid of [[1,1],[1,NaN,1],[0,1,1],[2,1,1]]){
+    take.colourGain=invalid;assert.ok(validateContactTake(take).includes('Invalid actor colour correction'));
+  }
+  const {base,candidate}=sequenceFixture();candidate.colourGain=[.91,.82,.77];
+  assert.ok(validateContinuation(candidate,[base]).includes('Continuation actor colour changed'));
+});

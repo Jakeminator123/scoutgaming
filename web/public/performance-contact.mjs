@@ -19,6 +19,7 @@ export function validateContactTake(take, {approved=false}={}) {
   check(['draft','review','rejected','contact-approved','approved'].includes(take.status), 'Unknown review status');
   check(take.dealer==='astrid', 'This capture belongs to Astrid');
   check(take.playbackRate===undefined||(finite(take.playbackRate)&&take.playbackRate>=1&&take.playbackRate<=2), 'Invalid silent-action playback rate');
+  check(take.colourGain===undefined||(Array.isArray(take.colourGain)&&take.colourGain.length===3&&take.colourGain.every(v=>finite(v)&&v>=.5&&v<=1.5)), 'Invalid actor colour correction');
   const m=take.media ?? {}, c=take.camera ?? {}, e=take.events ?? {};
   check(asset(m.src) && hash(m.sha256), 'Packed media path and SHA-256 are required');
   check(m.layout==='rgb-over-masks-r-actor-g-fingers', 'A single clock must carry RGB and both masks');
@@ -64,7 +65,7 @@ export function selectContactTake(manifest, action, {staged=false}={}) {
 }
 
 export function calibrationPayload(take) {
-  return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate}),...(take.continuation?{continuation:take.continuation}:{})});
+  return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.colourGain?{colourGain:take.colourGain}:{}),...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate}),...(take.continuation?{continuation:take.continuation}:{})});
 }
 
 // An empty-hand return may replace only the tail after a measured landing.
@@ -76,6 +77,7 @@ export function validateContinuation(take, takes) {
   const base=takes?.find(t=>t.id===c.baseId);
   if(!base||base.action!==take.action||base.media.sha256!==c.baseMediaSha256||base.calibrationSha256!==c.baseCalibrationSha256)return ['Continuation base changed'];
   if(!integer(c.preserveThrough)||c.preserveThrough<base.events.land||c.preserveThrough>=base.media.frames||c.preserveThrough>=take.media.frames)return ['Continuation starts before landing'];
+  if(JSON.stringify(take.colourGain)!==JSON.stringify(base.colourGain))return ['Continuation actor colour changed'];
   if(JSON.stringify(take.camera)!==JSON.stringify(base.camera)||take.media.fps!==base.media.fps||take.playbackRate!==base.playbackRate)return ['Continuation camera or playback rate changed'];
   if(['pickup','release','land'].some(k=>take.events[k]!==base.events[k])||JSON.stringify(take.frames.slice(0,c.preserveThrough+1))!==JSON.stringify(base.frames.slice(0,c.preserveThrough+1)))return ['Continuation changed measured delivery'];
   if(!Array.isArray(c.resume)||!c.resume.length)return ['Continuation needs a registered next pickup'];
