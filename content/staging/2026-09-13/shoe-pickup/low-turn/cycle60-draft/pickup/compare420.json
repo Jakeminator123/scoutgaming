@@ -1,0 +1,1135 @@
+{
+  "status": "decoded420 vs decoded444; threshold comparisons not visual approval",
+  "framesCompared": 75,
+  "maxRdifferences": 529,
+  "maxGdifferences": 93,
+  "minimumGIoU": 0.9917394606912268,
+  "maximumFaceRGB_MAE": 2.4155090557411643,
+  "rows": [
+    {
+      "frame": 0,
+      "R_threshold128_differencePixels": 385,
+      "G_threshold128_differencePixels": 2,
+      "G_positive444": 12471,
+      "G_threshold128_IoU": 0.9998396536518881,
+      "G_edge_MAE": 6.762573629361124,
+      "G_edge_maxAbsolute": 57,
+      "faceRGBmeanDelta420minus444": [
+        -1.704758535290996,
+        -1.2105666607700927,
+        -1.3329795388879062
+      ],
+      "faceRGB_MAE": 2.009336242309885
+    },
+    {
+      "frame": 1,
+      "R_threshold128_differencePixels": 426,
+      "G_threshold128_differencePixels": 32,
+      "G_positive444": 12798,
+      "G_threshold128_IoU": 0.9975033159085589,
+      "G_edge_MAE": 6.887673068334077,
+      "G_edge_maxAbsolute": 56,
+      "faceRGBmeanDelta420minus444": [
+        -1.8841543026706231,
+        -1.1496142433234422,
+        -1.6465875370919882
+      ],
+      "faceRGB_MAE": 2.131513353115727
+    },
+    {
+      "frame": 2,
+      "R_threshold128_differencePixels": 416,
+      "G_threshold128_differencePixels": 37,
+      "G_positive444": 12931,
+      "G_threshold128_IoU": 0.9971415327564895,
+      "G_edge_MAE": 6.728270412642669,
+      "G_edge_maxAbsolute": 56,
+      "faceRGBmeanDelta420minus444": [
+        -1.862721752589594,
+        -1.1387665198237886,
+        -1.5172639599952376
+      ],
+      "faceRGB_MAE": 2.133944517204429
+    },
+    {
+      "frame": 3,
+      "R_threshold128_differencePixels": 383,
+      "G_threshold128_differencePixels": 3,
+      "G_positive444": 12980,
+      "G_threshold128_IoU": 0.9997689107995686,
+      "G_edge_MAE": 6.523009814612868,
+      "G_edge_maxAbsolute": 62,
+      "faceRGBmeanDelta420minus444": [
+        -1.9677669208770256,
+        -1.0627383222116302,
+        -1.6154075309818876
+      ],
+      "faceRGB_MAE": 2.1767755004766443
+    },
+    {
+      "frame": 4,
+      "R_threshold128_differencePixels": 374,
+      "G_threshold128_differencePixels": 8,
+      "G_positive444": 13006,
+      "G_threshold128_IoU": 0.9993850411253747,
+      "G_edge_MAE": 6.660140783106027,
+      "G_edge_maxAbsolute": 56,
+      "faceRGBmeanDelta420minus444": [
+        -1.879225037257824,
+        -1.082622950819672,
+        -1.6064381520119224
+      ],
+      "faceRGB_MAE": 2.166656731246895
+    },
+    {
+      "frame": 5,
+      "R_threshold128_differencePixels": 417,
+      "G_threshold128_differencePixels": 3,
+      "G_positive444": 13124,
+      "G_threshold128_IoU": 0.9997714633960539,
+      "G_edge_MAE": 6.519511663396555,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.889989791629136,
+        -1.0792649972977841,
+        -1.6995736503933225
+      ],
+      "faceRGB_MAE": 2.1893552713224844
+    },
+    {
+      "frame": 6,
+      "R_threshold128_differencePixels": 409,
+      "G_threshold128_differencePixels": 10,
+      "G_positive444": 13155,
+      "G_threshold128_IoU": 0.9992401215805471,
+      "G_edge_MAE": 6.719648737650933,
+      "G_edge_maxAbsolute": 53,
+      "faceRGBmeanDelta420minus444": [
+        -2.0332846537665814,
+        -1.0066325909699403,
+        -1.7651210904222951
+      ],
+      "faceRGB_MAE": 2.225629791894852
+    },
+    {
+      "frame": 7,
+      "R_threshold128_differencePixels": 430,
+      "G_threshold128_differencePixels": 41,
+      "G_positive444": 13204,
+      "G_threshold128_IoU": 0.9968995765275257,
+      "G_edge_MAE": 6.604621032174476,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.8375402956024574,
+        -1.1038866249011616,
+        -1.5270968919165502
+      ],
+      "faceRGB_MAE": 2.1562151531739757
+    },
+    {
+      "frame": 8,
+      "R_threshold128_differencePixels": 410,
+      "G_threshold128_differencePixels": 31,
+      "G_positive444": 13227,
+      "G_threshold128_IoU": 0.9976596708440284,
+      "G_edge_MAE": 6.5937161430119176,
+      "G_edge_maxAbsolute": 61,
+      "faceRGBmeanDelta420minus444": [
+        -1.8778277791291658,
+        -1.097421551933836,
+        -1.5579542690342982
+      ],
+      "faceRGB_MAE": 2.1576258817805885
+    },
+    {
+      "frame": 9,
+      "R_threshold128_differencePixels": 409,
+      "G_threshold128_differencePixels": 1,
+      "G_positive444": 13197,
+      "G_threshold128_IoU": 0.9999242309440824,
+      "G_edge_MAE": 6.657917570498915,
+      "G_edge_maxAbsolute": 68,
+      "faceRGBmeanDelta420minus444": [
+        -1.8645326192794547,
+        -1.015518500486855,
+        -1.744705452775073
+      ],
+      "faceRGB_MAE": 2.177823758519961
+    },
+    {
+      "frame": 10,
+      "R_threshold128_differencePixels": 391,
+      "G_threshold128_differencePixels": 3,
+      "G_positive444": 13202,
+      "G_threshold128_IoU": 0.9997727961223871,
+      "G_edge_MAE": 6.653812824956672,
+      "G_edge_maxAbsolute": 68,
+      "faceRGBmeanDelta420minus444": [
+        -1.8514191338390018,
+        -1.0853315390261806,
+        -1.647908000978713
+      ],
+      "faceRGB_MAE": 2.175882880678574
+    },
+    {
+      "frame": 11,
+      "R_threshold128_differencePixels": 431,
+      "G_threshold128_differencePixels": 15,
+      "G_positive444": 13028,
+      "G_threshold128_IoU": 0.9988493402884321,
+      "G_edge_MAE": 6.992189243472439,
+      "G_edge_maxAbsolute": 68,
+      "faceRGBmeanDelta420minus444": [
+        -1.900274977085243,
+        -1.0679498930644669,
+        -1.634158264589062
+      ],
+      "faceRGB_MAE": 2.194846725735818
+    },
+    {
+      "frame": 12,
+      "R_threshold128_differencePixels": 434,
+      "G_threshold128_differencePixels": 73,
+      "G_positive444": 12941,
+      "G_threshold128_IoU": 0.9943720607509059,
+      "G_edge_MAE": 7.695887934929959,
+      "G_edge_maxAbsolute": 54,
+      "faceRGBmeanDelta420minus444": [
+        -1.861542221679091,
+        -1.1142001710863987,
+        -1.5453378956372967
+      ],
+      "faceRGB_MAE": 2.1826550979673307
+    },
+    {
+      "frame": 13,
+      "R_threshold128_differencePixels": 529,
+      "G_threshold128_differencePixels": 93,
+      "G_positive444": 12900,
+      "G_threshold128_IoU": 0.9928135383664323,
+      "G_edge_MAE": 8.128072153325817,
+      "G_edge_maxAbsolute": 72,
+      "faceRGBmeanDelta420minus444": [
+        -1.8577283014251635,
+        -1.11230044651049,
+        -1.4737904458988318
+      ],
+      "faceRGB_MAE": 2.171875955715946
+    },
+    {
+      "frame": 14,
+      "R_threshold128_differencePixels": 505,
+      "G_threshold128_differencePixels": 74,
+      "G_positive444": 12885,
+      "G_threshold128_IoU": 0.994271115584114,
+      "G_edge_MAE": 8.354574419663177,
+      "G_edge_maxAbsolute": 59,
+      "faceRGBmeanDelta420minus444": [
+        -1.9159684422971073,
+        -1.0671518561555868,
+        -1.6041832303834629
+      ],
+      "faceRGB_MAE": 2.2011497767720627
+    },
+    {
+      "frame": 15,
+      "R_threshold128_differencePixels": 426,
+      "G_threshold128_differencePixels": 7,
+      "G_positive444": 12823,
+      "G_threshold128_IoU": 0.9994543612128771,
+      "G_edge_MAE": 7.818284936479129,
+      "G_edge_maxAbsolute": 67,
+      "faceRGBmeanDelta420minus444": [
+        -1.979549350967426,
+        -1.05008572128337,
+        -1.6275410237570413
+      ],
+      "faceRGB_MAE": 2.2076291942199364
+    },
+    {
+      "frame": 16,
+      "R_threshold128_differencePixels": 461,
+      "G_threshold128_differencePixels": 89,
+      "G_positive444": 12555,
+      "G_threshold128_IoU": 0.9929308975377283,
+      "G_edge_MAE": 9.709268292682927,
+      "G_edge_maxAbsolute": 59,
+      "faceRGBmeanDelta420minus444": [
+        -2.0124498967569537,
+        -0.995080772500911,
+        -1.6574760111745415
+      ],
+      "faceRGB_MAE": 2.2272156767480467
+    },
+    {
+      "frame": 17,
+      "R_threshold128_differencePixels": 512,
+      "G_threshold128_differencePixels": 77,
+      "G_positive444": 12114,
+      "G_threshold128_IoU": 0.9936656794998354,
+      "G_edge_MAE": 8.952208731593903,
+      "G_edge_maxAbsolute": 55,
+      "faceRGBmeanDelta420minus444": [
+        -2.080795826762101,
+        -0.999636054834405,
+        -1.9122892150915929
+      ],
+      "faceRGB_MAE": 2.2919244611589633
+    },
+    {
+      "frame": 18,
+      "R_threshold128_differencePixels": 450,
+      "G_threshold128_differencePixels": 74,
+      "G_positive444": 11905,
+      "G_threshold128_IoU": 0.9938013067515497,
+      "G_edge_MAE": 8.971036979570727,
+      "G_edge_maxAbsolute": 56,
+      "faceRGBmeanDelta420minus444": [
+        -2.0596996851537903,
+        -0.9754177767013805,
+        -1.9178372487285056
+      ],
+      "faceRGB_MAE": 2.2815653507709697
+    },
+    {
+      "frame": 19,
+      "R_threshold128_differencePixels": 363,
+      "G_threshold128_differencePixels": 59,
+      "G_positive444": 11357,
+      "G_threshold128_IoU": 0.9948191078328065,
+      "G_edge_MAE": 7.849021185304371,
+      "G_edge_maxAbsolute": 55,
+      "faceRGBmeanDelta420minus444": [
+        -2.0271261878984723,
+        -0.8517983880668832,
+        -1.9011788764585589
+      ],
+      "faceRGB_MAE": 2.2663699426600905
+    },
+    {
+      "frame": 20,
+      "R_threshold128_differencePixels": 340,
+      "G_threshold128_differencePixels": 0,
+      "G_positive444": 10905,
+      "G_threshold128_IoU": 1.0,
+      "G_edge_MAE": 6.446975861133713,
+      "G_edge_maxAbsolute": 59,
+      "faceRGBmeanDelta420minus444": [
+        -2.045122168717674,
+        -1.0010106414600797,
+        -1.9036918138041734
+      ],
+      "faceRGB_MAE": 2.2988129916968867
+    },
+    {
+      "frame": 21,
+      "R_threshold128_differencePixels": 332,
+      "G_threshold128_differencePixels": 66,
+      "G_positive444": 10580,
+      "G_threshold128_IoU": 0.9937800395815664,
+      "G_edge_MAE": 8.11251004553978,
+      "G_edge_maxAbsolute": 53,
+      "faceRGBmeanDelta420minus444": [
+        -2.031856202171205,
+        -0.9476182001542386,
+        -1.8476004033932492
+      ],
+      "faceRGB_MAE": 2.281505210496134
+    },
+    {
+      "frame": 22,
+      "R_threshold128_differencePixels": 355,
+      "G_threshold128_differencePixels": 81,
+      "G_positive444": 10428,
+      "G_threshold128_IoU": 0.9922599139990445,
+      "G_edge_MAE": 8.502302898943375,
+      "G_edge_maxAbsolute": 54,
+      "faceRGBmeanDelta420minus444": [
+        -2.0116382111419626,
+        -1.0604359898387192,
+        -1.8127252318780647
+      ],
+      "faceRGB_MAE": 2.2875681849510645
+    },
+    {
+      "frame": 23,
+      "R_threshold128_differencePixels": 353,
+      "G_threshold128_differencePixels": 87,
+      "G_positive444": 10503,
+      "G_threshold128_IoU": 0.9917394606912268,
+      "G_edge_MAE": 9.009052183173589,
+      "G_edge_maxAbsolute": 57,
+      "faceRGBmeanDelta420minus444": [
+        -2.0009435631302708,
+        -1.007135696172672,
+        -1.699357197617503
+      ],
+      "faceRGB_MAE": 2.253425330738535
+    },
+    {
+      "frame": 24,
+      "R_threshold128_differencePixels": 318,
+      "G_threshold128_differencePixels": 74,
+      "G_positive444": 10891,
+      "G_threshold128_IoU": 0.9932277843872975,
+      "G_edge_MAE": 8.808314087759815,
+      "G_edge_maxAbsolute": 53,
+      "faceRGBmeanDelta420minus444": [
+        -2.016574259761708,
+        -0.9899728677598207,
+        -1.699421965317919
+      ],
+      "faceRGB_MAE": 2.2617867956431126
+    },
+    {
+      "frame": 25,
+      "R_threshold128_differencePixels": 311,
+      "G_threshold128_differencePixels": 5,
+      "G_positive444": 11444,
+      "G_threshold128_IoU": 0.9995632806358634,
+      "G_edge_MAE": 8.084384093113481,
+      "G_edge_maxAbsolute": 61,
+      "faceRGBmeanDelta420minus444": [
+        -2.0414678682923957,
+        -1.0088354833009365,
+        -1.7047181480827
+      ],
+      "faceRGB_MAE": 2.2574856177966267
+    },
+    {
+      "frame": 26,
+      "R_threshold128_differencePixels": 320,
+      "G_threshold128_differencePixels": 83,
+      "G_positive444": 11789,
+      "G_threshold128_IoU": 0.992979191338183,
+      "G_edge_MAE": 8.29343726426955,
+      "G_edge_maxAbsolute": 56,
+      "faceRGBmeanDelta420minus444": [
+        -2.105284864196076,
+        -1.0048312024980852,
+        -1.887762917574972
+      ],
+      "faceRGB_MAE": 2.2962941141813467
+    },
+    {
+      "frame": 27,
+      "R_threshold128_differencePixels": 317,
+      "G_threshold128_differencePixels": 20,
+      "G_positive444": 11713,
+      "G_threshold128_IoU": 0.998294388538291,
+      "G_edge_MAE": 7.5325222274216195,
+      "G_edge_maxAbsolute": 63,
+      "faceRGBmeanDelta420minus444": [
+        -2.0246601141780944,
+        -0.9613913248190218,
+        -1.6482255311635572
+      ],
+      "faceRGB_MAE": 2.240225217271889
+    },
+    {
+      "frame": 28,
+      "R_threshold128_differencePixels": 343,
+      "G_threshold128_differencePixels": 66,
+      "G_positive444": 11753,
+      "G_threshold128_IoU": 0.9944001357542848,
+      "G_edge_MAE": 8.818675889328063,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -2.0690547614846184,
+        -1.0723486853714488,
+        -1.5994353273336863
+      ],
+      "faceRGB_MAE": 2.257926004352685
+    },
+    {
+      "frame": 29,
+      "R_threshold128_differencePixels": 346,
+      "G_threshold128_differencePixels": 89,
+      "G_positive444": 11752,
+      "G_threshold128_IoU": 0.9924525101763908,
+      "G_edge_MAE": 8.362210604929052,
+      "G_edge_maxAbsolute": 59,
+      "faceRGBmeanDelta420minus444": [
+        -2.103097631223182,
+        -1.0007641215541057,
+        -1.7086933521424792
+      ],
+      "faceRGB_MAE": 2.2805697603793176
+    },
+    {
+      "frame": 30,
+      "R_threshold128_differencePixels": 310,
+      "G_threshold128_differencePixels": 7,
+      "G_positive444": 11759,
+      "G_threshold128_IoU": 0.9994050654428013,
+      "G_edge_MAE": 7.409832015810276,
+      "G_edge_maxAbsolute": 65,
+      "faceRGBmeanDelta420minus444": [
+        -2.0633997297138493,
+        -1.076208942946119,
+        -1.60849638639168
+      ],
+      "faceRGB_MAE": 2.2719705427267565
+    },
+    {
+      "frame": 31,
+      "R_threshold128_differencePixels": 393,
+      "G_threshold128_differencePixels": 51,
+      "G_positive444": 11349,
+      "G_threshold128_IoU": 0.9955172716884944,
+      "G_edge_MAE": 7.990045735808447,
+      "G_edge_maxAbsolute": 56,
+      "faceRGBmeanDelta420minus444": [
+        -2.138477801268499,
+        -0.9233027953958186,
+        -1.665785764622974
+      ],
+      "faceRGB_MAE": 2.2733341163573724
+    },
+    {
+      "frame": 32,
+      "R_threshold128_differencePixels": 387,
+      "G_threshold128_differencePixels": 70,
+      "G_positive444": 10826,
+      "G_threshold128_IoU": 0.9935507646950433,
+      "G_edge_MAE": 7.781948661330389,
+      "G_edge_maxAbsolute": 51,
+      "faceRGBmeanDelta420minus444": [
+        -2.054035005286033,
+        -1.0419945964994715,
+        -1.583460589686362
+      ],
+      "faceRGB_MAE": 2.2790829711421745
+    },
+    {
+      "frame": 33,
+      "R_threshold128_differencePixels": 286,
+      "G_threshold128_differencePixels": 14,
+      "G_positive444": 10995,
+      "G_threshold128_IoU": 0.9987278509768287,
+      "G_edge_MAE": 7.065587266739846,
+      "G_edge_maxAbsolute": 60,
+      "faceRGBmeanDelta420minus444": [
+        -2.005812929364101,
+        -1.0508484528213258,
+        -1.48640713992132
+      ],
+      "faceRGB_MAE": 2.232732468244182
+    },
+    {
+      "frame": 34,
+      "R_threshold128_differencePixels": 318,
+      "G_threshold128_differencePixels": 50,
+      "G_positive444": 11056,
+      "G_threshold128_IoU": 0.9954873646209387,
+      "G_edge_MAE": 7.966298342541436,
+      "G_edge_maxAbsolute": 65,
+      "faceRGBmeanDelta420minus444": [
+        -1.9938920537969107,
+        -1.0885652199447935,
+        -1.5221706701121749
+      ],
+      "faceRGB_MAE": 2.244494038879427
+    },
+    {
+      "frame": 35,
+      "R_threshold128_differencePixels": 306,
+      "G_threshold128_differencePixels": 1,
+      "G_positive444": 11344,
+      "G_threshold128_IoU": 0.9999118476727785,
+      "G_edge_MAE": 7.18781163434903,
+      "G_edge_maxAbsolute": 65,
+      "faceRGBmeanDelta420minus444": [
+        -2.041273377498974,
+        -1.083484786304743,
+        -1.5298118074690743
+      ],
+      "faceRGB_MAE": 2.2586816751675753
+    },
+    {
+      "frame": 36,
+      "R_threshold128_differencePixels": 390,
+      "G_threshold128_differencePixels": 53,
+      "G_positive444": 11816,
+      "G_threshold128_IoU": 0.9955236486486486,
+      "G_edge_MAE": 6.891689008042896,
+      "G_edge_maxAbsolute": 57,
+      "faceRGBmeanDelta420minus444": [
+        -2.0729583431395624,
+        -1.034008001882796,
+        -1.6959872911273242
+      ],
+      "faceRGB_MAE": 2.3009531654506943
+    },
+    {
+      "frame": 37,
+      "R_threshold128_differencePixels": 446,
+      "G_threshold128_differencePixels": 79,
+      "G_positive444": 11615,
+      "G_threshold128_IoU": 0.9932200480604189,
+      "G_edge_MAE": 7.440451206715635,
+      "G_edge_maxAbsolute": 62,
+      "faceRGBmeanDelta420minus444": [
+        -1.9498530276308055,
+        -1.080540858318636,
+        -1.613639035861258
+      ],
+      "faceRGB_MAE": 2.2519106407995295
+    },
+    {
+      "frame": 38,
+      "R_threshold128_differencePixels": 426,
+      "G_threshold128_differencePixels": 66,
+      "G_positive444": 11693,
+      "G_threshold128_IoU": 0.9943681201467702,
+      "G_edge_MAE": 7.219653179190751,
+      "G_edge_maxAbsolute": 56,
+      "faceRGBmeanDelta420minus444": [
+        -2.0299341331451424,
+        -0.9806516113855563,
+        -1.6841331451423194
+      ],
+      "faceRGB_MAE": 2.2470595154081394
+    },
+    {
+      "frame": 39,
+      "R_threshold128_differencePixels": 302,
+      "G_threshold128_differencePixels": 3,
+      "G_positive444": 11750,
+      "G_threshold128_IoU": 0.999744702578504,
+      "G_edge_MAE": 6.651647785787848,
+      "G_edge_maxAbsolute": 59,
+      "faceRGBmeanDelta420minus444": [
+        -1.8360703812316717,
+        -1.0988269794721408,
+        -1.6150146627565982
+      ],
+      "faceRGB_MAE": 2.230928641251222
+    },
+    {
+      "frame": 40,
+      "R_threshold128_differencePixels": 301,
+      "G_threshold128_differencePixels": 1,
+      "G_positive444": 11758,
+      "G_threshold128_IoU": 0.9999149587549961,
+      "G_edge_MAE": 6.740769230769231,
+      "G_edge_maxAbsolute": 60,
+      "faceRGBmeanDelta420minus444": [
+        -1.866435742382434,
+        -1.1148946163330007,
+        -1.616567838900957
+      ],
+      "faceRGB_MAE": 2.2354644904988357
+    },
+    {
+      "frame": 41,
+      "R_threshold128_differencePixels": 373,
+      "G_threshold128_differencePixels": 71,
+      "G_positive444": 12006,
+      "G_threshold128_IoU": 0.9941020103007144,
+      "G_edge_MAE": 7.848484848484849,
+      "G_edge_maxAbsolute": 57,
+      "faceRGBmeanDelta420minus444": [
+        -1.899371807667469,
+        -1.1249339517407386,
+        -1.6554335701285738
+      ],
+      "faceRGB_MAE": 2.2568347717176462
+    },
+    {
+      "frame": 42,
+      "R_threshold128_differencePixels": 406,
+      "G_threshold128_differencePixels": 56,
+      "G_positive444": 12110,
+      "G_threshold128_IoU": 0.995385629531971,
+      "G_edge_MAE": 7.387275940419086,
+      "G_edge_maxAbsolute": 61,
+      "faceRGBmeanDelta420minus444": [
+        -1.839770263142472,
+        -1.033112582781457,
+        -1.5683056906757311
+      ],
+      "faceRGB_MAE": 2.1870714411299303
+    },
+    {
+      "frame": 43,
+      "R_threshold128_differencePixels": 405,
+      "G_threshold128_differencePixels": 50,
+      "G_positive444": 12197,
+      "G_threshold128_IoU": 0.9959103549811876,
+      "G_edge_MAE": 7.3807017543859645,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.9718037399613106,
+        -1.0179377454715985,
+        -1.673427516267073
+      ],
+      "faceRGB_MAE": 2.2375871973738204
+    },
+    {
+      "frame": 44,
+      "R_threshold128_differencePixels": 393,
+      "G_threshold128_differencePixels": 40,
+      "G_positive444": 12300,
+      "G_threshold128_IoU": 0.9967519285424279,
+      "G_edge_MAE": 6.987294469357249,
+      "G_edge_maxAbsolute": 61,
+      "faceRGBmeanDelta420minus444": [
+        -2.0219786660414956,
+        -0.8901066697925214,
+        -1.7088266322822647
+      ],
+      "faceRGB_MAE": 2.249365060758801
+    },
+    {
+      "frame": 45,
+      "R_threshold128_differencePixels": 350,
+      "G_threshold128_differencePixels": 4,
+      "G_positive444": 12416,
+      "G_threshold128_IoU": 0.9996778609970202,
+      "G_edge_MAE": 6.616482164821648,
+      "G_edge_maxAbsolute": 64,
+      "faceRGBmeanDelta420minus444": [
+        -1.9830647524172282,
+        -0.9893934954585408,
+        -1.8188690301787285
+      ],
+      "faceRGB_MAE": 2.2850278347494872
+    },
+    {
+      "frame": 46,
+      "R_threshold128_differencePixels": 377,
+      "G_threshold128_differencePixels": 42,
+      "G_positive444": 12510,
+      "G_threshold128_IoU": 0.9966493817311528,
+      "G_edge_MAE": 6.584007848908511,
+      "G_edge_maxAbsolute": 54,
+      "faceRGBmeanDelta420minus444": [
+        -2.047836792120999,
+        -1.0077383046078086,
+        -1.8446476726462657
+      ],
+      "faceRGB_MAE": 2.3012467268534804
+    },
+    {
+      "frame": 47,
+      "R_threshold128_differencePixels": 425,
+      "G_threshold128_differencePixels": 52,
+      "G_positive444": 12533,
+      "G_threshold128_IoU": 0.9958598726114649,
+      "G_edge_MAE": 6.681707908782145,
+      "G_edge_maxAbsolute": 54,
+      "faceRGBmeanDelta420minus444": [
+        -1.9488922752315085,
+        -1.043664283202438,
+        -1.6801664517641544
+      ],
+      "faceRGB_MAE": 2.2483100847888093
+    },
+    {
+      "frame": 48,
+      "R_threshold128_differencePixels": 412,
+      "G_threshold128_differencePixels": 52,
+      "G_positive444": 12417,
+      "G_threshold128_IoU": 0.9958209435023708,
+      "G_edge_MAE": 6.692532230600827,
+      "G_edge_maxAbsolute": 62,
+      "faceRGBmeanDelta420minus444": [
+        -1.9490035169988276,
+        -1.0601406799531068,
+        -1.6548065650644783
+      ],
+      "faceRGB_MAE": 2.2500390777647516
+    },
+    {
+      "frame": 49,
+      "R_threshold128_differencePixels": 397,
+      "G_threshold128_differencePixels": 25,
+      "G_positive444": 12330,
+      "G_threshold128_IoU": 0.9979745604796241,
+      "G_edge_MAE": 6.627407949280664,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.9479453660824197,
+        -1.0561580397444164,
+        -1.7390820094964534
+      ],
+      "faceRGB_MAE": 2.26738573968775
+    },
+    {
+      "frame": 50,
+      "R_threshold128_differencePixels": 361,
+      "G_threshold128_differencePixels": 3,
+      "G_positive444": 12234,
+      "G_threshold128_IoU": 0.9997548218372017,
+      "G_edge_MAE": 6.419907067742725,
+      "G_edge_maxAbsolute": 59,
+      "faceRGBmeanDelta420minus444": [
+        -1.8774481060161838,
+        -1.106250732965873,
+        -1.6365662014776592
+      ],
+      "faceRGB_MAE": 2.246628356983699
+    },
+    {
+      "frame": 51,
+      "R_threshold128_differencePixels": 354,
+      "G_threshold128_differencePixels": 24,
+      "G_positive444": 12179,
+      "G_threshold128_IoU": 0.9980314960629921,
+      "G_edge_MAE": 6.467039649720263,
+      "G_edge_maxAbsolute": 60,
+      "faceRGBmeanDelta420minus444": [
+        -1.8749633280525728,
+        -1.0195388135891568,
+        -1.611336032388664
+      ],
+      "faceRGB_MAE": 2.221029161532594
+    },
+    {
+      "frame": 52,
+      "R_threshold128_differencePixels": 383,
+      "G_threshold128_differencePixels": 28,
+      "G_positive444": 12147,
+      "G_threshold128_IoU": 0.9976990714109623,
+      "G_edge_MAE": 6.404156479217604,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.9347354853828578,
+        -1.0998301013533307,
+        -1.6473138438104165
+      ],
+      "faceRGB_MAE": 2.2461577518698617
+    },
+    {
+      "frame": 53,
+      "R_threshold128_differencePixels": 380,
+      "G_threshold128_differencePixels": 34,
+      "G_positive444": 12153,
+      "G_threshold128_IoU": 0.9972055560121641,
+      "G_edge_MAE": 6.537558111083925,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.9249970701980545,
+        -1.026251025430681,
+        -1.673327083089183
+      ],
+      "faceRGB_MAE": 2.236513145044728
+    },
+    {
+      "frame": 54,
+      "R_threshold128_differencePixels": 365,
+      "G_threshold128_differencePixels": 10,
+      "G_positive444": 12161,
+      "G_threshold128_IoU": 0.9991780371527207,
+      "G_edge_MAE": 6.232501816420441,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.9580300540032871,
+        -1.0116224465837051,
+        -1.777588635830007
+      ],
+      "faceRGB_MAE": 2.2642247788995853
+    },
+    {
+      "frame": 55,
+      "R_threshold128_differencePixels": 419,
+      "G_threshold128_differencePixels": 3,
+      "G_positive444": 12199,
+      "G_threshold128_IoU": 0.9997541386657925,
+      "G_edge_MAE": 6.28557622614158,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.8948078615429744,
+        -1.0955118803168085,
+        -1.8032267527134056
+      ],
+      "faceRGB_MAE": 2.270695218539161
+    },
+    {
+      "frame": 56,
+      "R_threshold128_differencePixels": 398,
+      "G_threshold128_differencePixels": 50,
+      "G_positive444": 12143,
+      "G_threshold128_IoU": 0.9958915365653246,
+      "G_edge_MAE": 6.54101137188483,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.8875007331808318,
+        -1.0854595577453223,
+        -1.7071382485776292
+      ],
+      "faceRGB_MAE": 2.2396817017615893
+    },
+    {
+      "frame": 57,
+      "R_threshold128_differencePixels": 405,
+      "G_threshold128_differencePixels": 20,
+      "G_positive444": 12147,
+      "G_threshold128_IoU": 0.9983549925974667,
+      "G_edge_MAE": 6.428605711543076,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.8823598404879194,
+        -1.0910157166314802,
+        -1.677633122214403
+      ],
+      "faceRGB_MAE": 2.253635937133474
+    },
+    {
+      "frame": 58,
+      "R_threshold128_differencePixels": 399,
+      "G_threshold128_differencePixels": 39,
+      "G_positive444": 12155,
+      "G_threshold128_IoU": 0.9967956618190781,
+      "G_edge_MAE": 6.8434741111906465,
+      "G_edge_maxAbsolute": 60,
+      "faceRGBmeanDelta420minus444": [
+        -1.9039455143259747,
+        -1.0490840770314702,
+        -1.7194692343823392
+      ],
+      "faceRGB_MAE": 2.2570847033035855
+    },
+    {
+      "frame": 59,
+      "R_threshold128_differencePixels": 421,
+      "G_threshold128_differencePixels": 44,
+      "G_positive444": 12168,
+      "G_threshold128_IoU": 0.9963892991957984,
+      "G_edge_MAE": 6.851233671988389,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -1.9412662090007629,
+        -1.0372000234700463,
+        -1.7016370357331456
+      ],
+      "faceRGB_MAE": 2.254004576659039
+    },
+    {
+      "frame": 60,
+      "R_threshold128_differencePixels": 387,
+      "G_threshold128_differencePixels": 3,
+      "G_positive444": 12164,
+      "G_threshold128_IoU": 0.999753431412838,
+      "G_edge_MAE": 6.534894504984929,
+      "G_edge_maxAbsolute": 60,
+      "faceRGBmeanDelta420minus444": [
+        -1.8802388199484898,
+        -1.090259892296886,
+        -1.5670217747600093
+      ],
+      "faceRGB_MAE": 2.23423476157028
+    },
+    {
+      "frame": 61,
+      "R_threshold128_differencePixels": 437,
+      "G_threshold128_differencePixels": 54,
+      "G_positive444": 12361,
+      "G_threshold128_IoU": 0.9956434045986284,
+      "G_edge_MAE": 7.190979097909791,
+      "G_edge_maxAbsolute": 58,
+      "faceRGBmeanDelta420minus444": [
+        -2.0297360703812317,
+        -0.8858064516129033,
+        -1.7081524926686218
+      ],
+      "faceRGB_MAE": 2.2543108504398828
+    },
+    {
+      "frame": 62,
+      "R_threshold128_differencePixels": 396,
+      "G_threshold128_differencePixels": 51,
+      "G_positive444": 12338,
+      "G_threshold128_IoU": 0.9958744539718493,
+      "G_edge_MAE": 7.123742894621775,
+      "G_edge_maxAbsolute": 57,
+      "faceRGBmeanDelta420minus444": [
+        -2.0196285228804123,
+        -0.9546493232554052,
+        -1.7349270522060116
+      ],
+      "faceRGB_MAE": 2.26257299662116
+    },
+    {
+      "frame": 63,
+      "R_threshold128_differencePixels": 357,
+      "G_threshold128_differencePixels": 18,
+      "G_positive444": 12330,
+      "G_threshold128_IoU": 0.9985412107950401,
+      "G_edge_MAE": 6.888672298029023,
+      "G_edge_maxAbsolute": 62,
+      "faceRGBmeanDelta420minus444": [
+        -1.961890243902439,
+        -0.9866909005628518,
+        -1.641592401500938
+      ],
+      "faceRGB_MAE": 2.2419480925578488
+    },
+    {
+      "frame": 64,
+      "R_threshold128_differencePixels": 441,
+      "G_threshold128_differencePixels": 43,
+      "G_positive444": 12356,
+      "G_threshold128_IoU": 0.9965269364348599,
+      "G_edge_MAE": 7.280182727865999,
+      "G_edge_maxAbsolute": 69,
+      "faceRGBmeanDelta420minus444": [
+        -1.9642165776969556,
+        -1.0610664633073268,
+        -1.6778905379245614
+      ],
+      "faceRGB_MAE": 2.255783031227391
+    },
+    {
+      "frame": 65,
+      "R_threshold128_differencePixels": 363,
+      "G_threshold128_differencePixels": 6,
+      "G_positive444": 12283,
+      "G_threshold128_IoU": 0.9995116790103361,
+      "G_edge_MAE": 7.085548885077187,
+      "G_edge_maxAbsolute": 60,
+      "faceRGBmeanDelta420minus444": [
+        -1.905502111684655,
+        -1.0417644298451432,
+        -1.5622360394181136
+      ],
+      "faceRGB_MAE": 2.2528546848115125
+    },
+    {
+      "frame": 66,
+      "R_threshold128_differencePixels": 428,
+      "G_threshold128_differencePixels": 56,
+      "G_positive444": 12243,
+      "G_threshold128_IoU": 0.9954371384339608,
+      "G_edge_MAE": 7.2995490659222675,
+      "G_edge_maxAbsolute": 61,
+      "faceRGBmeanDelta420minus444": [
+        -1.98656576322891,
+        -1.1407954945441745,
+        -1.82535492197583
+      ],
+      "faceRGB_MAE": 2.2899213891822128
+    },
+    {
+      "frame": 67,
+      "R_threshold128_differencePixels": 429,
+      "G_threshold128_differencePixels": 67,
+      "G_positive444": 12237,
+      "G_threshold128_IoU": 0.9945399722923967,
+      "G_edge_MAE": 7.349978568366909,
+      "G_edge_maxAbsolute": 53,
+      "faceRGBmeanDelta420minus444": [
+        -1.9321686111273964,
+        -1.09773113677669,
+        -1.7031130913994255
+      ],
+      "faceRGB_MAE": 2.2682574114244396
+    },
+    {
+      "frame": 68,
+      "R_threshold128_differencePixels": 404,
+      "G_threshold128_differencePixels": 55,
+      "G_positive444": 12277,
+      "G_threshold128_IoU": 0.9955284552845528,
+      "G_edge_MAE": 7.3266180882983285,
+      "G_edge_maxAbsolute": 62,
+      "faceRGBmeanDelta420minus444": [
+        -1.9596202309089843,
+        -1.0245560569653636,
+        -1.6893277852663657
+      ],
+      "faceRGB_MAE": 2.252710543280783
+    },
+    {
+      "frame": 69,
+      "R_threshold128_differencePixels": 379,
+      "G_threshold128_differencePixels": 4,
+      "G_positive444": 12266,
+      "G_threshold128_IoU": 0.9996739750590921,
+      "G_edge_MAE": 6.839524517087667,
+      "G_edge_maxAbsolute": 62,
+      "faceRGBmeanDelta420minus444": [
+        -1.7346234798877456,
+        -1.0748362956033677,
+        -1.673175865294668
+      ],
+      "faceRGB_MAE": 2.2601145930776427
+    },
+    {
+      "frame": 70,
+      "R_threshold128_differencePixels": 400,
+      "G_threshold128_differencePixels": 4,
+      "G_positive444": 12275,
+      "G_threshold128_IoU": 0.9996742140413748,
+      "G_edge_MAE": 6.883053370189241,
+      "G_edge_maxAbsolute": 70,
+      "faceRGBmeanDelta420minus444": [
+        -1.9082670720299346,
+        -1.0779349859681946,
+        -1.7217609915809167
+      ],
+      "faceRGB_MAE": 2.3245049890863734
+    },
+    {
+      "frame": 71,
+      "R_threshold128_differencePixels": 384,
+      "G_threshold128_differencePixels": 23,
+      "G_positive444": 12282,
+      "G_threshold128_IoU": 0.998128864301985,
+      "G_edge_MAE": 7.224299065420561,
+      "G_edge_maxAbsolute": 62,
+      "faceRGBmeanDelta420minus444": [
+        -1.960925179603995,
+        -1.0445067461012791,
+        -1.7160796682436774
+      ],
+      "faceRGB_MAE": 2.354749527870257
+    },
+    {
+      "frame": 72,
+      "R_threshold128_differencePixels": 429,
+      "G_threshold128_differencePixels": 21,
+      "G_positive444": 12283,
+      "G_threshold128_IoU": 0.9982919886132574,
+      "G_edge_MAE": 7.349574468085106,
+      "G_edge_maxAbsolute": 55,
+      "faceRGBmeanDelta420minus444": [
+        -1.84618081935597,
+        -1.007948103559114,
+        -1.6445561334813863
+      ],
+      "faceRGB_MAE": 2.3061383515477374
+    },
+    {
+      "frame": 73,
+      "R_threshold128_differencePixels": 435,
+      "G_threshold128_differencePixels": 21,
+      "G_positive444": 12287,
+      "G_threshold128_IoU": 0.9982924052691494,
+      "G_edge_MAE": 7.574695447745245,
+      "G_edge_maxAbsolute": 56,
+      "faceRGBmeanDelta420minus444": [
+        -2.0218141411778467,
+        -0.9555529563132347,
+        -1.8420960290075443
+      ],
+      "faceRGB_MAE": 2.3774879622590017
+    },
+    {
+      "frame": 74,
+      "R_threshold128_differencePixels": 419,
+      "G_threshold128_differencePixels": 5,
+      "G_positive444": 12277,
+      "G_threshold128_IoU": 0.9995928007166708,
+      "G_edge_MAE": 7.640485312899106,
+      "G_edge_maxAbsolute": 60,
+      "faceRGBmeanDelta420minus444": [
+        -2.043197936814958,
+        -0.8997127952640526,
+        -1.8908622003399567
+      ],
+      "faceRGB_MAE": 2.4155090557411643
+    }
+  ]
+}
