@@ -1,4 +1,10 @@
-# Latest: endpoint-reference experiment rejected before video — 13 September 2026
+# Latest: seven-position filmed-arm retarget preview — 13 September 2026
+
+User requested delivery. Implemented opt-in `reach=tracked` for the staged video player: source hand/finger layers and attached card move together toward the actual seat destination. This is video deformation, not seven newly captured or approved takes. See `content/staging/2026-09-13/reach-retarget/README.md` for mechanism, rejection of initial radial bending, tests and material limits. Original source calibration is preserved, and transformed results are not represented as measured footage.
+
+Playable review: `http://astridreach.localhost:4173/?dealer=astrid&performance=staged&reach=tracked`. The revised prototype completed inner-seat and seven-seat rounds and returned to idle without warnings/errors. Numeric reach tests and deep/pre-commit audits pass. Full visual acceptance remains open: some timed screenshots arrived after release, arm anchors are approximate, and source folded-arm resets remain. Do not claim perfect seven-seat professional choreography or close CAC-2/CAC-4. Keep 3D paused.
+
+# Earlier: endpoint-reference experiment rejected before video — 13 September 2026
 
 The scheduled continuation inspected existing receipts, then tested two photographic release-pose images through Higgsfield MCP as an alternative to imprecise video text editing. Both have plausible hand/card contact but miss seat 2 by approximately 70 and 111 source pixels respectively. See `content/staging/2026-09-13/per-seat-video/endpoint-proof/` for original images, exact requests, terminal job IDs, measurements and rejection. Neither image was installed or used for a video generation. No job remains pending. Four missing reaches and colour-transition acceptance are unchanged; no gameplay fix is claimed by these stills. Avoid repeating the same relative-position prompts without a controlled pose/motion reference.
 
