@@ -1,8 +1,10 @@
 # Latest: user paused 3D and returned to Astrid video — 13 September 2026
 
-The user explicitly requested that 3D work be put aside for a possible later revisit. Stop the head/eye/rig experiments. Preserve their files without promotion. The active product is again Astrid's video dealer in the playable blackjack game, at `http://astridvideo.localhost:4173/?dealer=astrid`. See `content/staging/2026-09-13/video-return/README.md` and its isolated preview launcher. It serves unchanged public code/media with a separate demo database. The existing 3D comparison is no longer the delivery target.
+The user explicitly requested that 3D work be put aside for a possible later revisit. Stop the head/eye/rig experiments. Preserve their files without promotion. The active product is again Astrid's video dealer in the playable blackjack game, at `http://astriddealing.localhost:4173/?dealer=astrid&performance=staged`. See `content/staging/2026-09-13/video-return/README.md` and its isolated preview launcher. It serves unchanged public code/media with a separate demo database. The existing 3D comparison is no longer the delivery target.
 
 The video dealer was visually checked in the actual in-app game, and two consecutive recorded greetings completed with sound enabled. A five-dollar isolated demo round dealt cards, accepted Stand, settled, collected the cards and returned to betting without browser warnings/errors. Continue future work on video quality, speech continuity and the playable round. Do not treat the previous experimental 3D head or eye controls as accepted, completed or active work.
+
+The first restoration mistakenly opened basic video, leaving Astrid idle during direct shoe-to-table card movement. The user requested the saved visible dealing version. The corrected active URL above enables `performance=staged`, the existing VIDEO takes (not 3D). A separate guest round completed all player/dealer clips and settled 1,000 → 995 → 1,005; a second round visually confirmed arm movement. Seven-seat reaches, split-fan contact and return continuity remain unfinished. The user's separate active hand was left untouched.
 
 # Earlier: show exact new source and compare bounded cheek repair — 12 September 2026
 
