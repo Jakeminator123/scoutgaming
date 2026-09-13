@@ -1,4 +1,10 @@
-# Latest: rhythmic Astrid integrated; body stretching removed — 13 September 2026
+# Latest: 60 fps Astrid quality and pacing review — 13 September 2026
+
+User accepts the concept but requests more frames, higher quality and less rushed dealing. New `motion=smooth60` loads separate 60 fps interpolated takes rebuilt from native 1664×1248 RGB, avoiding the 832px intermediary. Output is a 1920×1080 logical canvas with packed masks, CRF14, 80% source speed. RGB and mattes share optical-flow warps; body retargeting stays disabled. Old rhythm assets preserved. Source is 24 fps; do not claim native 60 fps or recovered motion-blur detail. See `content/staging/2026-09-13/reference-rhythm/smooth60/README.md` and build/receipt.
+
+Full isolated seven-seat round completed with a hit to 21, two additional dealer draws and settlement (35 stake, 22.50 returned, 987.50 balance, zero stake afterward), no browser warnings/errors. Deep audit and full pre-commit suite passed, including frame uniqueness and slowed contact-event checks. Sampled gameplay retained natural proportions. Existing paper remnants, abrupt final pose join and missing distinct physical reaches remain unapproved. User's original tab had an active hand and was not reloaded. All four dealers completed consecutive matched greeting playback in the isolated rehearsal; no new lip-sync approval. Smooth review URL: http://astridsmooth.localhost:4173/?dealer=astrid&performance=staged&motion=smooth60.
+
+# Earlier: rhythmic Astrid integrated; body stretching removed — 13 September 2026
 
 16:55–16:57 UTC follow-up: a fresh isolated four-inner-seat round completed two hits, a bust, Stand and settlement without browser warnings/errors; see `reference-rhythm/colour-review/gameplay-check.md`. Contact/return screenshots retained natural proportions and showed no large whitening jump in those samples. Distinct physical reaches, feeding-hand paper artifacts and the abrupt final pose join remain unaccepted. No public code/media or grading was changed, and no new generation job was submitted. This round had no additional dealer draw.
 

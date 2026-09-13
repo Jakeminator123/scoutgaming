@@ -60,14 +60,15 @@ const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).c
 const riggedReview=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('scene')==='rigged-review';
 const performanceStaged=!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
 const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
-const performanceRhythm=performanceStaged&&new URLSearchParams(location.search).get('motion')==='rhythm';
+const performanceMotion=new URLSearchParams(location.search).get('motion');
+const performanceRhythm=performanceStaged&&['rhythm','smooth60'].includes(performanceMotion);
 const actorProvenance=performanceStaged?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
 let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,selectSequencePerformance=null,performanceCardCorners=null;
 if(performanceStaged) {
   try {
     const [{PerformancePlayer,cardLandingCorners},{selectContactTake,selectPlayerDelivery,selectSequenceTake},manifest]=await Promise.all([
       import('./performance-player.mjs'),import('./performance-contact.mjs'),
-      fetch(`dealers/astrid/performance/${performanceRhythm?'rhythm/':''}manifest.json`).then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
+      fetch(`dealers/astrid/performance/${performanceRhythm?`${performanceMotion}/`:''}manifest.json`).then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
     ]);
     performanceManifest=manifest;selectPerformance=selectContactTake;performanceCardCorners=cardLandingCorners;
     selectPlayerPerformance=selectPlayerDelivery;

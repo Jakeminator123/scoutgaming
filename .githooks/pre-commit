@@ -5,7 +5,7 @@ node pipeline/audit-performance.mjs
 node pipeline/audit-astrid-actor.mjs
 node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
 node --test test/performance-contact.mjs test/pack-contact-media.mjs test/table-audio.mjs
-node --test test/dealer-rhythm.mjs test/dealer-reach.mjs
+node --test test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach.mjs
 node --test test/action-placement.mjs test/bugshot-report.mjs
 node test/blackjack-asset-state.mjs
 node --test test/dealer-motion.mjs test/dealer-skin-contact.mjs
