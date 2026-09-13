@@ -9,3 +9,10 @@ The viewer imports the real game card-face renderer, but uses a nominated Q of s
 ## Decoded GPU review
 
 CPU decoded composition skipped about half the frames; a first GPU run skipped openingframes during shader compilation. The GPU path now warms the decoded firstframe before playback, then uses requestVideoFrameCallback timestamps. Browser38 captured all55frames0–54;0 is explicitly decoded preroll and1–54 are presented callbacks. Evidence gpu-playback.json. This proves native24fps delivery in this isolated preview, not60fps/gameplay performance. GPU uses the same splitR/Galpha formula, rawvideoRGBsampling andactualgamecardart as the stagingPNGreference; no personwarp. Ended fallback draws actual finalvideoimage and records it separately when needed. Currentserverprocesssession49268. Packedpickup source is also saved (55frames), but its authoredcardturn stillneedsgeometry/occlusion review.
+
+
+## Assembled native cycle
+
+`/cycle` plays pickup7–66 → slide2–54 → return5–36. The additional pickup frames retain the actual finger adjustment that the former54 cutoff removed. The GPU accepts explicit card quads and one whole-clip uniform registration; return uses the fixed landed quad independently of the hand. Pickup uses a procedural red review back and the nominated game's Q face after turnover. No authoritative game state is connected.
+
+`extended-playback.json` was read from the actual browser after playback: every selected native frame was presented in order. `cycle-end-browser.png` captures the returning empty hands and retained card. This does not certify visual smoothness or all seven reaches. The captured version still has unresolved early extraction7–12 and draft mask/contact boundaries. HTTP206 ranges are needed for the chosen start-frame seeks; suffix/open-ended and416 responses were also verified.

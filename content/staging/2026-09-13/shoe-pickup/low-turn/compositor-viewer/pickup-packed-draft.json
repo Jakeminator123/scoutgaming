@@ -3,6 +3,8 @@
   "layout": "top RGB; bottom R actor, G fingers, B zero",
   "nativeRate": 24,
   "interpolated": false,
+  "frameCount": 67,
+  "lastNativeFrame": 66,
   "sourceFrames": [
     {
       "frame": 0,
@@ -388,6 +390,90 @@
         "59d6f512e2081570fbdeb23117de74f8f6a01c425a68c6d30c77cbe224bb82ae",
         "a97c4a678f1e2bfb9fc3bff207b94e23dca4a554810496e6237cd6794bdb6d52"
       ]
+    },
+    {
+      "frame": 55,
+      "sha256": [
+        "6340ea4419e0d974f0087e63222794a9969d64eed661cf525c059244c4985b1f",
+        "4ec05267f306187fd2e8556746702bae551f3bbbbf2af05eecc9590ce20e04bf"
+      ]
+    },
+    {
+      "frame": 56,
+      "sha256": [
+        "05a7b51d870904e010550131dc8150d1382dc1c18c8f009d6d5eea51bc31bb7b",
+        "65ceb8d9ed6966d1579ca3a2b208e96403ea47c7971027a9ae3f9c761ff198a4"
+      ]
+    },
+    {
+      "frame": 57,
+      "sha256": [
+        "3d8f9aa7e5658d3ffa192d0185269f0d7706b2d58d2c45ba143a2dd160173529",
+        "ee514121e4f9a1eefd0d958cbb2f8009d691dcbd01fb9617b734ea22cb16cf11"
+      ]
+    },
+    {
+      "frame": 58,
+      "sha256": [
+        "c72d88955379ccc1451c5959485b94bd7f1d053fe88d6894d30a16ee01da15c4",
+        "42c9f4be07607e1574e25a5a3c8121510ba510dc62a068f3b8d8aa93803b9a79"
+      ]
+    },
+    {
+      "frame": 59,
+      "sha256": [
+        "f68d11670e75bc209f305c86f3149b2fff5dbf7489636201110c60b22e5ebc25",
+        "f678d71087bd2e57ecdd04d1f6409a49e59d42d4f59cd56c0a014f062344f698"
+      ]
+    },
+    {
+      "frame": 60,
+      "sha256": [
+        "de38db732a68e3d75fc753020d66739e633dbbeaf238b9edc4977fea60f0d9a4",
+        "4ab44b03a68e11c8404de6122e6edc6ce899ff86e5bcb47e5b466196be163ed7"
+      ]
+    },
+    {
+      "frame": 61,
+      "sha256": [
+        "cba2f0c5651f1aceadd551c0f82e49159ddc30917c34e0cd538bed45f9332537",
+        "beaee07c5d09f0ec741fd518c0cebb69a49e408794cf676dac07f6626cdcfece"
+      ]
+    },
+    {
+      "frame": 62,
+      "sha256": [
+        "b9eff32004a423d981ffc134b3c3531eda0574991a2db2fbb1a8aa09c156abd5",
+        "0344d40803d434a26917e495267796f02b39a3dac4b3b4e443b2a1d47b54de28"
+      ]
+    },
+    {
+      "frame": 63,
+      "sha256": [
+        "6307d0816e55d54dc47b2cb906e55c3cec6bdd67e9391a65a94f9e06517df323",
+        "98bcbb418919b35ef17f789c2165fb9a8dc9e06d1b74abd96b8cf8dabe2b28d5"
+      ]
+    },
+    {
+      "frame": 64,
+      "sha256": [
+        "8557edb78578d6891d2f6499b25152d93b159601b874139d4bfe668d5f4db01a",
+        "bacb2fc8d3b685c9d9aac0994f27995840b9d0a24a54716789d5c8b7eb3a5d94"
+      ]
+    },
+    {
+      "frame": 65,
+      "sha256": [
+        "2247becee6d8d67d91ceeb5322885a643d3d9b669e56f791db32f06c362dc1ab",
+        "db1d2c5936a931e724f0912e80852de51c7d061a3776d3897055ef93ab7e48a3"
+      ]
+    },
+    {
+      "frame": 66,
+      "sha256": [
+        "4c59cb76d45973ae151140e121117666250ed90a2b0dc2445838727390767924",
+        "323fa83236e53a54250ae3e4a99e521ab72b6304bf52d0084b8a7539f7e4611f"
+      ]
     }
   ],
   "command": [
@@ -412,7 +498,7 @@
     "-map",
     "[v]",
     "-frames:v",
-    "55",
+    "67",
     "-an",
     "-c:v",
     "libx264",
@@ -452,11 +538,11 @@
     "time_base": "1/12288",
     "start_pts": 0,
     "start_time": "0.000000",
-    "duration_ts": 28160,
-    "duration": "2.291667",
-    "bit_rate": "7143775",
+    "duration_ts": 34304,
+    "duration": "2.791667",
+    "bit_rate": "6940885",
     "bits_per_raw_sample": "8",
-    "nb_frames": "55",
+    "nb_frames": "67",
     "extradata_size": 46,
     "disposition": {
       "default": 1,
@@ -485,5 +571,5 @@
       "encoder": "Lavc62.28.102 libx264"
     }
   },
-  "outputSha256": "c509fbf2645eeebcba061a8e74569c6dffea1e0a5f84fbdfdfe82a453fdd9501"
+  "outputSha256": "003c0c3c5e801a17a65bfb9e4296af6b9308396a79b174c4e0a81dac1a9aa53b"
 }

@@ -884,6 +884,198 @@
       "contactMeasured": false,
       "cardVisibility": "face-up",
       "visibleSkinPixels": 12137
+    },
+    {
+      "frame": 55,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12164
+    },
+    {
+      "frame": 56,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12384
+    },
+    {
+      "frame": 57,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12328
+    },
+    {
+      "frame": 58,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12325
+    },
+    {
+      "frame": 59,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12283
+    },
+    {
+      "frame": 60,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12225
+    },
+    {
+      "frame": 61,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12253
+    },
+    {
+      "frame": 62,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12267
+    },
+    {
+      "frame": 63,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12275
+    },
+    {
+      "frame": 64,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12279
+    },
+    {
+      "frame": 65,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "linear interpolation between manual visible vicinity estimates",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12277
+    },
+    {
+      "frame": 66,
+      "cardRemovalBoundsNative": [
+        1050,
+        612,
+        1143,
+        657
+      ],
+      "method": "manual visible vicinity estimate",
+      "boundUncertaintyPixels": 12,
+      "visibleCardCornersNative": null,
+      "hiddenCorners": null,
+      "contactMeasured": false,
+      "cardVisibility": "face-up",
+      "visibleSkinPixels": 12277
     }
   ]
 }
