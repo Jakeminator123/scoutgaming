@@ -3,3 +3,4 @@ clean-review-frames/
 raw/
 masks/
 __pycache__/
+bridge-*-review-frames/
