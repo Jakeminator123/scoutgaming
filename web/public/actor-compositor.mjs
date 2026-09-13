@@ -16,7 +16,12 @@ export const actorEdgeGLSL=`
       if(candidate>bestAlpha){bestAlpha=candidate;inward=rgbAt(inside);}
     }
     alpha=clamp((alpha-0.06)/0.94,0.0,1.0);
-    if(bestAlpha>0.95)rgb=mix(rgb,inward,1.0-smoothstep(0.65,0.98,original));
+    // A fingertip over the opaque black sleeve is not background spill.
+    // Borrowing the sleeve's colour turns skin black as the matte fluctuates.
+    float skin=smoothstep(0.07,0.16,rgb.r-rgb.b)*smoothstep(0.015,0.055,rgb.r-rgb.g);
+    alpha=max(alpha,skin*smoothstep(0.04,0.65,original));
+    float colourMatch=1.0-smoothstep(0.08,0.22,length(rgb-inward));
+    if(bestAlpha>0.95)rgb=mix(rgb,inward,colourMatch*(1.0-smoothstep(0.65,0.98,original)));
     return vec4(rgb,alpha);
   }`;
 
