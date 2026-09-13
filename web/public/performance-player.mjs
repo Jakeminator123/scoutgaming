@@ -8,9 +8,9 @@ import {selectSceneJoin,validateSceneJoin,sceneJoinPayload} from './scene-join.m
 // A packed source carries RGB in its upper half; R=actor alpha and G=front
 // fingers in its lower half. Two independent videos cannot guarantee contact.
 export class PerformancePlayer {
-  constructor({host,onState=()=>{},staged=false,joins=null,idle=null,prepareIdle=async()=>{}}) {
+  constructor({host,onState=()=>{},staged=false,joins=null,idle=null,ready=null,prepareIdle=async()=>{}}) {
     this.host=host;this.onState=onState;this.staged=staged;this.active=null;this.assets=new Map();this.held=null;
-    this.joins=joins;this.idle=idle;this.prepareIdle=prepareIdle;
+    this.joins=joins;this.idle=idle;this.ready=ready;this.waiting=null;this.readyPose=false;this.leavingReady=null;this.prepareIdle=prepareIdle;
     this.sequence=false;this.releaseWaiters=new Set();
     this.resize=()=>{if(!this.held)return;const fit=uniformRegistration(this.held.camera,{width:innerWidth,height:innerHeight});Object.assign(this.held.layer.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});};
     window.addEventListener('resize',this.resize);
@@ -25,11 +25,47 @@ export class PerformancePlayer {
       this.releaseWaiters.add(done);signal?.addEventListener('abort',aborted,{once:true});if(signal?.aborted)aborted();
     });
   }
-  release() { this.held?.dispose();this.held=null;this.sequence=false;this.host.classList.remove('performance-playing');for(const done of [...this.releaseWaiters])done(); }
-  async finish() {
+  release() { this.readyPose=false;this.held?.dispose();this.held=null;this.sequence=false;this.host.classList.remove('performance-playing');for(const done of [...this.releaseWaiters])done(); }
+  async finish({wait=false}={}) {
+    if(this.leavingReady)await this.leavingReady;
+    if(this.waiting){if(wait)return;await this.leaveReady();return;}
+    const readyJoin=wait&&this.ready&&selectSceneJoin(this.ready,this.held?.take,'exit',this.idle);
+    if(readyJoin){
+      try{await this.playJoin(readyJoin);this.readyPose=true;await this.startWaiting();return;}
+      catch(error){this.release();throw error;}
+    }
     const join=this.staged&&selectSceneJoin(this.joins,this.held?.take,'exit',this.idle);
     try {if(join){await this.playJoin(join);await this.prepareIdle();}}
     finally {this.release();}
+  }
+  async startWaiting() {
+    if(this.waiting)return;
+    let readyResolve,readyReject;
+    const firstFrame=new Promise((resolve,reject)=>{readyResolve=resolve;readyReject=reject;});
+    const state={stop:false,done:null};this.waiting=state;
+    state.done=this.playJoin(this.ready.loop,{waiting:state,onFirstFrame:readyResolve})
+      .catch(error=>{readyReject(error);this.readyPose=false;this.release();this.onState('Waiting motion interrupted');})
+      .finally(()=>{if(this.waiting===state)this.waiting=null;});
+    await firstFrame;for(const done of [...this.releaseWaiters])done();
+  }
+  async stopWaiting() {
+    const state=this.waiting;if(!state)return;
+    state.stop=true;await state.done;
+  }
+  async leaveReady() {
+    if(this.leavingReady)return this.leavingReady;
+    this.leavingReady=(async()=>{
+      await this.stopWaiting();
+      try{if(this.readyPose){await this.playJoin(this.ready.speech);await this.prepareIdle();}}
+      finally{this.release();}
+    })();
+    try{await this.leavingReady;}finally{this.leavingReady=null;}
+  }
+  async prepareSpeech(signal) {
+    if(this.waiting||this.readyPose||this.leavingReady)await this.leaveReady();
+    await this.whenReleased(signal);
+    // A speech request can arrive during the final action-to-ready bridge.
+    if(this.waiting||this.readyPose)await this.leaveReady();
   }
   async preload(takes) { await Promise.all(takes.map(take=>this.source(take))); }
   async source(take,signal) {
@@ -46,6 +82,13 @@ export class PerformancePlayer {
   async play(take,{card,faceDown=false,target,corners,origin,onCue=()=>{},onLand=()=>{}}) {
     const errors=validateContactTake(take,{approved:!(this.staged&&take.status==='review')});
     if(errors.length)throw new Error(errors[0]);
+    if(this.leavingReady)await this.leavingReady;
+    if(this.waiting)await this.stopWaiting();
+    if(this.readyPose){
+      const bridge=selectSceneJoin(this.ready,take,'entry',this.idle);
+      if(!bridge)throw new Error('Ready-to-action bridge missing');
+      await this.playJoin(bridge);this.readyPose=false;
+    }
     if(this.active)throw new Error('A dealer performance is already playing');
     const entry=!this.held&&this.staged&&selectSceneJoin(this.joins,take,'entry',this.idle);
     if(entry){await this.prepareIdle();await this.playJoin(entry);}
@@ -165,7 +208,7 @@ export class PerformancePlayer {
       this.host.classList.remove('performance-active');this.active=null;
     }
   }
-  async playJoin(join) {
+  async playJoin(join,{waiting=null,onFirstFrame=()=>{}}={}) {
     const errors=validateSceneJoin(join);if(errors.length)throw new Error(errors[0]);
     if(this.active)throw new Error('A dealer performance is already playing');
     const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(sceneJoinPayload(join)))),x=>x.toString(16).padStart(2,'0')).join('');
@@ -180,7 +223,7 @@ export class PerformancePlayer {
     const dispose=()=>{layer.remove();visual?.dispose();video.removeAttribute('src');video.load();};
     const hidden=()=>{if(document.hidden)controller.abort();},resized=()=>controller.abort();
     document.addEventListener('visibilitychange',hidden);window.addEventListener('resize',resized);
-    const timer=setTimeout(()=>controller.abort(),15000);
+    const timer=waiting?null:setTimeout(()=>controller.abort(),15000);
     try {
       if(document.hidden)throw new Error('Scene join skipped while hidden');
       video.src=await this.source(join,signal);
@@ -193,19 +236,26 @@ export class PerformancePlayer {
       const m=join.media;
       if(video.videoWidth!==m.width||video.videoHeight!==m.height*2||Math.abs(video.duration-m.frames/m.fps)>2/m.fps)throw new Error('Scene-join frames changed');
       visual=createContactVisual(canvas,m.width,m.height,null,false,video);
-      this.host.append(layer);this.host.classList.add('performance-active');
+      this.host.append(layer);if(!waiting)this.host.classList.add('performance-active');
       await new Promise((resolve,reject)=>{
         const clean=()=>{video.removeEventListener('ended',ended);video.removeEventListener('error',failed);signal.removeEventListener('abort',aborted);};
         const done=()=>{clean();resolve();},failed=()=>{clean();reject(new Error('Scene-join playback failed'));},aborted=()=>{clean();reject(new Error('Scene join interrupted'));};
-        const ended=()=>Number(layer.dataset.frame)>=m.frames-2?done():failed();
-        video.addEventListener('ended',ended,{once:true});video.addEventListener('error',failed,{once:true});signal.addEventListener('abort',aborted,{once:true});
+        const ended=()=>{
+          if(Number(layer.dataset.frame)<m.frames-2){failed();return;}
+          if(waiting&&!waiting.stop){video.currentTime=0;video.play().catch(failed);return;}
+          done();
+        };
+        video.addEventListener('ended',ended,{once:!waiting});video.addEventListener('error',failed,{once:true});signal.addEventListener('abort',aborted,{once:true});
         const paint=(_,metadata)=>{
           if(signal.aborted)return;
           try {
             const frame=Math.min(m.frames-1,Math.round(metadata.mediaTime*m.fps));
             visual.paint(null,null);layer.dataset.frame=String(frame);
-            if(!painted){painted=true;this.held?.dispose();this.held=null;layer.style.visibility='';this.host.classList.add('performance-playing');this.onState(`Transition · ${join.id}`);}
-            if(frame>=m.frames-1){video.pause();done();return;}
+            if(!painted){painted=true;this.held?.dispose();this.held=null;layer.style.visibility='';this.host.classList.add('performance-playing');this.onState(`Transition · ${join.id}`);onFirstFrame();}
+            if(frame>=m.frames-1){
+              if(waiting&&!waiting.stop){request=video.requestVideoFrameCallback(paint);return;}
+              video.pause();done();return;
+            }
             request=video.requestVideoFrameCallback(paint);
           }catch(error){clean();reject(error);}
         };

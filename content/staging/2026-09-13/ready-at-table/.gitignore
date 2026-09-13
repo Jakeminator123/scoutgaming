@@ -4,3 +4,6 @@ raw/
 masks/
 __pycache__/
 bridge-*-review-frames/
+kling-*-review-frames/
+raw-kling-*/
+masks-kling-*/
