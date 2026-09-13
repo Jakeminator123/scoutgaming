@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><title>Astrid fixed-card contact draft</title>
+<style>body{margin:20px;background:#15181b;color:#eee;font:16px system-ui}canvas{width:min(100%,900px);display:block;margin-top:16px;background:repeating-conic-gradient(#30363b 0% 25%,#444b52 0% 50%) 0/32px 32px}input{width:420px}button{margin:8px;padding:8px}p{max-width:1000px;color:#bcc3cb}</style>
+<h1>Astrid contact composite · staging draft</h1>
+<p>Actual game card artwork, fixed projected size. Card translation follows unapproved fingertip candidates. Masks and contact are under review; this is not gameplay or a server-issued hand.</p>
+<button id="play">Play native 24 fps</button><label>Frame <input id="frame" type="range" min="0" max="54" value="0"></label><output id="status">Loading observations…</output>
+<canvas id="scene" width="1920" height="1080"></canvas>
+<script type="module">
+import {cardFaceArt} from '/card-art.mjs';
+const records=(await(await fetch('/observations.json')).json()).frames;
+const scene=document.querySelector('#scene'),ctx=scene.getContext('2d'),slider=document.querySelector('#frame'),status=document.querySelector('#status');
+const work=document.createElement('canvas');work.width=1920;work.height=1080;const w=work.getContext('2d',{willReadFrequently:true});
+const art=cardFaceArt({r:'Q',s:'♠'}).canvas;
+const cache=new Map();let run=0,timer;
+async function load(n){if(cache.has(n))return cache.get(n);const name=String(n+1).padStart(4,'0')+'.png';const pending=Promise.all(['/rgb/','/masks/'].map(async base=>{const actual=base==='/masks/'?String(n).padStart(4,'0')+'.png':name;const r=await fetch(base+actual);if(!r.ok)throw Error(base+name+' is unavailable');return createImageBitmap(await r.blob());}));cache.set(n,pending);return pending;}
+async function paint(n){const token=++run;try{const [rgb,mask]=await load(n);if(token!==run)return;w.clearRect(0,0,1920,1080);w.drawImage(mask,0,0);const m=w.getImageData(0,0,1920,1080).data;w.clearRect(0,0,1920,1080);w.drawImage(rgb,0,0);const pixels=w.getImageData(0,0,1920,1080),original=new Uint8ClampedArray(pixels.data);ctx.clearRect(0,0,1920,1080);
+for(let i=0;i<m.length;i+=4){const a=m[i]/255,f=Math.min(m[i],m[i+1])/255;pixels.data[i+3]=Math.round(255*(a-f)/Math.max(1-f,0.00001));}w.putImageData(pixels,0,0);ctx.drawImage(work,0,0);
+const p=records[n].fingerCandidateNative;if(p){const dx=p[0]-1075,dy=p[1]-620;ctx.save();ctx.transform(57/184,-7/184,27/264,31/264,1052+dx,619+dy);ctx.drawImage(art,0,0);ctx.restore();}
+pixels.data.set(original);for(let i=0;i<m.length;i+=4)pixels.data[i+3]=Math.min(m[i],m[i+1]);w.putImageData(pixels,0,0);ctx.drawImage(work,0,0);slider.value=n;status.value=`${n}/54 · ${(n/24).toFixed(3)} s · ${p?'candidate contact':'missing contact'}`;
+}catch(e){status.value=e.message;clearInterval(timer);}}
+slider.oninput=()=>{clearInterval(timer);paint(Number(slider.value));};document.querySelector('#play').onclick=async()=>{clearInterval(timer);status.value='Loading all native frames…';try{await Promise.all(records.map((_,n)=>load(n)));let n=0;await paint(n);timer=setInterval(()=>{if(++n>54){clearInterval(timer);return;}paint(n);},1000/24);}catch(e){status.value=e.message;}};paint(0);
+</script>
