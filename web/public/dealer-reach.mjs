@@ -1,6 +1,7 @@
 // Retarget photographed motion, without representing it as a new measured take.
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 const center=c=>c.reduce((p,v)=>[p[0]+v[0]/4,p[1]+v[1]/4],[0,0]);
+export const canRetargetTake=(take,requested)=>!take.tracking&&requested&&take.action!=='deal-dealer';
 export function deliveryReach(take,frame,end){
   const e=take.events,release=take.frames[e.release];
   const from=center(release.card.corners),to=center(end);
