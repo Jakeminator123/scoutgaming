@@ -2479,7 +2479,7 @@
         "date": "2026-09-09",
         "note": "Silent action retimed to 1.75x; original measured source-frame contact and foley clock preserved. Requires actual-game cadence review."
       },
-      "calibrationSha256": "6602c954484fab021531cd1ab171cc946ec2047130185be3b00a067c91acd4ef",
+      "calibrationSha256": "086a2101eadae947f92352cb81dd5b802329611eec75ab3cba5f7cd473adabe9",
       "trackingMethod": "Per-frame minimum-area rectangle fitted to visible marker pixels; occluded full-card geometry is not recovered.",
       "entryFrames": 24,
       "transitionReview": {
@@ -2487,7 +2487,7 @@
         "result": "improved-not-complete",
         "note": "Same 72-frame entry/extraction for player and own-card take; no dissolve between deliveries. Legacy speech/idle background and pose still differ."
       },
-      "playbackRate": 1.75
+      "playbackRate": 2
     },
     {
       "version": 1,
@@ -4885,7 +4885,7 @@
           "card": null
         }
       ],
-      "calibrationSha256": "3b1d9ed7a0e6e98e48c71935ee573f4c1fcd8aac492ac9644b6f202a079ca3d9",
+      "calibrationSha256": "3728df9146383096dfa735aeb569413f0bc52ee536ca7a01f85ada5d54ff129e",
       "review": {
         "result": "pending",
         "date": "2026-09-09",
@@ -4903,7 +4903,7 @@
         "result": "improved-not-complete",
         "note": "Same 72-frame entry/extraction for player and own-card take; no dissolve between deliveries. Legacy speech/idle background and pose still differ."
       },
-      "playbackRate": 1.75
+      "playbackRate": 2
     },
     {
       "version": 1,
@@ -4911,7 +4911,7 @@
       "dealer": "astrid",
       "action": "deal-left",
       "status": "review",
-      "playbackRate": 1.75,
+      "playbackRate": 2,
       "media": {
         "src": "dealers/astrid/performance/left-outlet-review.mp4",
         "sha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
@@ -7811,7 +7811,7 @@
         "frames": 72,
         "sourceSha256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
       },
-      "calibrationSha256": "7d24d022f7c37f602e96611cb980890bd0ee3e781efea04a390abb0197ae2b6c",
+      "calibrationSha256": "77f333bda52c128d426cd398a8fc182adac5c9c4ad5306add09e39d0b584b0d7",
       "review": {
         "result": "pending",
         "date": "2026-09-09",
@@ -7826,7 +7826,7 @@
       "dealer": "astrid",
       "action": "deal-right",
       "status": "review",
-      "playbackRate": 1.75,
+      "playbackRate": 2,
       "media": {
         "src": "dealers/astrid/performance/right-outlet-review.mp4",
         "sha256": "d22d37c9f8ce8eba7250fe9af571143e20a7d793e2baadcd7d9bf73914f07151",
@@ -10318,7 +10318,7 @@
         "frames": 72,
         "sourceSha256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
       },
-      "calibrationSha256": "50d97b3e0d5b0e3d92646d3b77b813f799363cc8adf8a4efce10c888b6da919d",
+      "calibrationSha256": "cd037d8d319cac02ed8e86c4d145c9086258d39eefe2ae516921f11cfba2f201",
       "review": {
         "result": "pending",
         "date": "2026-09-09",
@@ -12860,7 +12860,7 @@
         "date": "2026-09-10",
         "details": "Empty-hand return candidate. Review both joins in the game; no contact or continuity approval inferred from integrity checks."
       },
-      "calibrationSha256": "9b6e23088b3c1b5160de7439bd85146e6ed32e5b8d167cd5584bd852b25b2237",
+      "calibrationSha256": "484032be40d74d9c3b441246e868ecca20fd366867ac50f8c67e65340e6dee85",
       "trackingMethod": "Per-frame minimum-area rectangle fitted to visible marker pixels; occluded full-card geometry is not recovered.",
       "entryFrames": 24,
       "transitionReview": {
@@ -12869,35 +12869,35 @@
         "scope": "Centre return to next own-card delivery",
         "details": "Both joins inspected in actual initial deal. No blank layer or extra card. Other directions still reset; initial pose cuts and source softness remain. Not full CAC-4 acceptance."
       },
-      "playbackRate": 1.75,
+      "playbackRate": 2,
       "continuation": {
         "baseId": "astrid-centre-native-20260909",
         "baseMediaSha256": "7ccca94b5332f28cdd962fd70d34ac59152aecbac4748738bf53ac87331a7726",
-        "baseCalibrationSha256": "6602c954484fab021531cd1ab171cc946ec2047130185be3b00a067c91acd4ef",
+        "baseCalibrationSha256": "086a2101eadae947f92352cb81dd5b802329611eec75ab3cba5f7cd473adabe9",
         "preserveThrough": 124,
         "resume": [
           {
             "takeId": "astrid-centre-native-20260909",
             "mediaSha256": "7ccca94b5332f28cdd962fd70d34ac59152aecbac4748738bf53ac87331a7726",
-            "calibrationSha256": "6602c954484fab021531cd1ab171cc946ec2047130185be3b00a067c91acd4ef",
+            "calibrationSha256": "086a2101eadae947f92352cb81dd5b802329611eec75ab3cba5f7cd473adabe9",
             "frame": 55
           },
           {
             "takeId": "astrid-dealer-front-contact-20260909",
             "mediaSha256": "ebeaf8d31aa9765d0f4180975223949fb4fd7736cc2b867bf3b37db8892001cf",
-            "calibrationSha256": "3b1d9ed7a0e6e98e48c71935ee573f4c1fcd8aac492ac9644b6f202a079ca3d9",
+            "calibrationSha256": "3728df9146383096dfa735aeb569413f0bc52ee536ca7a01f85ada5d54ff129e",
             "frame": 55
           },
           {
             "takeId": "astrid-left-outlet-contact-20260909",
             "mediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
-            "calibrationSha256": "7d24d022f7c37f602e96611cb980890bd0ee3e781efea04a390abb0197ae2b6c",
+            "calibrationSha256": "77f333bda52c128d426cd398a8fc182adac5c9c4ad5306add09e39d0b584b0d7",
             "frame": 55
           },
           {
             "takeId": "astrid-right-outlet-contact-20260909",
             "mediaSha256": "d22d37c9f8ce8eba7250fe9af571143e20a7d793e2baadcd7d9bf73914f07151",
-            "calibrationSha256": "50d97b3e0d5b0e3d92646d3b77b813f799363cc8adf8a4efce10c888b6da919d",
+            "calibrationSha256": "cd037d8d319cac02ed8e86c4d145c9086258d39eefe2ae516921f11cfba2f201",
             "frame": 55
           }
         ]
@@ -12909,7 +12909,7 @@
       "dealer": "astrid",
       "action": "deal-left",
       "status": "review",
-      "playbackRate": 1.75,
+      "playbackRate": 2,
       "media": {
         "src": "dealers/astrid/performance/left-return-review.mp4",
         "sha256": "b3e19344f5b0a3a2fe2eb71d8ae4843610541cbe2a37ead098cd6689c5dd05b7",
@@ -15837,7 +15837,7 @@
         "frames": 72,
         "sourceSha256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
       },
-      "calibrationSha256": "fd7648308fd7d2855b84d69fbf6f99c13769587a3b2afd5c4e86189523d66a0f",
+      "calibrationSha256": "5ffddbc957768b5d9b82d9471f2c28edd51180c5f0f696e9c50ca0cc2ca62391",
       "review": {
         "result": "partial",
         "date": "2026-09-10",
@@ -15846,31 +15846,31 @@
       "continuation": {
         "baseId": "astrid-left-outlet-contact-20260909",
         "baseMediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
-        "baseCalibrationSha256": "7d24d022f7c37f602e96611cb980890bd0ee3e781efea04a390abb0197ae2b6c",
+        "baseCalibrationSha256": "77f333bda52c128d426cd398a8fc182adac5c9c4ad5306add09e39d0b584b0d7",
         "preserveThrough": 138,
         "resume": [
           {
             "takeId": "astrid-centre-native-20260909",
             "mediaSha256": "7ccca94b5332f28cdd962fd70d34ac59152aecbac4748738bf53ac87331a7726",
-            "calibrationSha256": "6602c954484fab021531cd1ab171cc946ec2047130185be3b00a067c91acd4ef",
+            "calibrationSha256": "086a2101eadae947f92352cb81dd5b802329611eec75ab3cba5f7cd473adabe9",
             "frame": 55
           },
           {
             "takeId": "astrid-dealer-front-contact-20260909",
             "mediaSha256": "ebeaf8d31aa9765d0f4180975223949fb4fd7736cc2b867bf3b37db8892001cf",
-            "calibrationSha256": "3b1d9ed7a0e6e98e48c71935ee573f4c1fcd8aac492ac9644b6f202a079ca3d9",
+            "calibrationSha256": "3728df9146383096dfa735aeb569413f0bc52ee536ca7a01f85ada5d54ff129e",
             "frame": 55
           },
           {
             "takeId": "astrid-left-outlet-contact-20260909",
             "mediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
-            "calibrationSha256": "7d24d022f7c37f602e96611cb980890bd0ee3e781efea04a390abb0197ae2b6c",
+            "calibrationSha256": "77f333bda52c128d426cd398a8fc182adac5c9c4ad5306add09e39d0b584b0d7",
             "frame": 55
           },
           {
             "takeId": "astrid-right-outlet-contact-20260909",
             "mediaSha256": "d22d37c9f8ce8eba7250fe9af571143e20a7d793e2baadcd7d9bf73914f07151",
-            "calibrationSha256": "50d97b3e0d5b0e3d92646d3b77b813f799363cc8adf8a4efce10c888b6da919d",
+            "calibrationSha256": "cd037d8d319cac02ed8e86c4d145c9086258d39eefe2ae516921f11cfba2f201",
             "frame": 55
           }
         ]

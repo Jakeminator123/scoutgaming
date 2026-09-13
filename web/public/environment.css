@@ -139,3 +139,9 @@ html[data-actor-isolated="true"] #room {
 #performance-source-review p {font:12px/1.6 Inter,Arial,sans-serif;color:#b8bcad;max-width:70ch;margin:12px 0;}
 #performance-source-review button {margin-top:14px;padding:10px 20px;border:1px solid #D6FF3A;border-radius:20px;background:#D6FF3A;color:#111;}
 @media(max-width:700px){.casino-return{font-size:9px;padding:6px}#dealer-picker{gap:4px}#dealer-options button{gap:4px;padding-right:5px;font-size:10px}}
+
+/* Full-actor mattes already describe the fingers. The old band fade erased
+   their tips at rest but not during a deal, making the hand change opacity. */
+html[data-actor-isolated="true"] #dealer-hands-wrap {
+  -webkit-mask-image:none; mask-image:none;
+}
