@@ -18,6 +18,12 @@ export function validateContactTake(take, {approved=false}={}) {
   check(typeof take.id==='string' && DEAL_ACTIONS.includes(take.action), 'Unknown single-card action');
   check(['draft','review','rejected','contact-approved','approved'].includes(take.status), 'Unknown review status');
   check(take.dealer==='astrid', 'This capture belongs to Astrid');
+  const proxy=take.tracking?.kind==='hand-proxy';
+  if(take.tracking){
+    check(proxy&&take.status==='review'&&!approved, 'Hand proxies are restricted to staged review');
+    check(hash(take.tracking.sourceSha256)&&integer(take.tracking.sourceStart)&&integer(take.tracking.sourceStop)&&take.tracking.sourceStop>take.tracking.sourceStart,'Invalid proxy source binding');
+    check(Array.isArray(take.tracking.shoulder)&&take.tracking.shoulder.length===2&&take.tracking.shoulder.every(x=>finite(x)&&x>=0&&x<=1),'Invalid proxy shoulder');
+  }
   check(take.playbackRate===undefined||(finite(take.playbackRate)&&take.playbackRate>=1&&take.playbackRate<=2), 'Invalid silent-action playback rate');
   check(take.colourGain===undefined||(Array.isArray(take.colourGain)&&take.colourGain.length===3&&take.colourGain.every(v=>finite(v)&&v>=.5&&v<=1.5)), 'Invalid actor colour correction');
   const m=take.media ?? {}, c=take.camera ?? {}, e=take.events ?? {};
@@ -38,7 +44,7 @@ export function validateContactTake(take, {approved=false}={}) {
     const card=frame?.card;
     check(card && Array.isArray(card.corners)&&card.corners.length===4 && card.corners.every(p=>Array.isArray(p)&&p.length===3&&p.every(finite)&&p[0]>=0&&p[0]<=1&&p[1]>=0&&p[1]<=1), `Frame ${i}: four measured card corners required`);
     check(typeof card?.faceUp==='boolean', `Frame ${i}: card orientation required`);
-    if(i<=e.release) check(frame?.contact?.measured===true && Array.isArray(frame.contact.finger)&&frame.contact.finger.length===2&&frame.contact.finger.every(finite), `Frame ${i}: measured grip required`);
+    if(i<=e.release) check((proxy?frame?.contact?.measured===false&&typeof frame.contact.method==='string':frame?.contact?.measured===true) && Array.isArray(frame.contact.finger)&&frame.contact.finger.length===2&&frame.contact.finger.every(finite), `Frame ${i}: measured grip or explicit review proxy required`);
   }
   if(approved) {
     check(['contact-approved','approved'].includes(take.status), 'Take has not passed contact review');
@@ -65,7 +71,7 @@ export function selectContactTake(manifest, action, {staged=false}={}) {
 }
 
 export function calibrationPayload(take) {
-  return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.colourGain?{colourGain:take.colourGain}:{}),...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate}),...(take.continuation?{continuation:take.continuation}:{})});
+  return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.colourGain?{colourGain:take.colourGain}:{}),...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate}),...(take.continuation?{continuation:take.continuation}:{}),...(take.tracking?{tracking:take.tracking}:{})});
 }
 
 // An empty-hand return may replace only the tail after a measured landing.

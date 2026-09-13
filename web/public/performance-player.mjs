@@ -2,7 +2,7 @@ import * as THREE from './vendor/three/three.module.js';
 import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
-import {deliveryReach,shiftCard} from './dealer-reach.mjs';
+import {deliveryReach,shiftCard,canRetargetTake} from './dealer-reach.mjs';
 
 // A packed source carries RGB in its upper half; R=actor alpha and G=front
 // fingers in its lower half. Two independent videos cannot guarantee contact.
@@ -82,7 +82,9 @@ export class PerformancePlayer {
       const end=(corners??[[target.x,target.y],[target.right,target.y],[target.right,target.bottom],[target.x,target.bottom]])
         .map(([x,y])=>[(x-fit.x)/fit.width,(y-fit.y)/fit.height,0]);
       const release=take.frames[take.events.release].card;
-      const retarget=new URLSearchParams(location.search).get('reach')==='tracked'&&take.action!=='deal-dealer';
+      // The new photographic motion stays rigid. Only the released card
+      // travels to its fan; stretching source pixels changes body proportions.
+      const retarget=canRetargetTake(take,new URLSearchParams(location.search).get('reach')==='tracked');
       layer.dataset.retarget=String(retarget);
       // Keep the previous presented frame while the next media is loading.
       // Swap only after the new frame has actually rendered; never show idle
