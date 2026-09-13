@@ -1,3 +1,9 @@
+# Compact turn correction — 14 September 2026
+
+Previous goal turn made progress: committed source cycle/geometry evidence b0ed76b. The cycle failed pace and prolonged presentation, so it remains staged. Refined reference n283–335 shows a brief ~0.15s upright transfer is valid; excessive dwell and centre-body detour are the defects. New low post-turn anchor6aa9c335-7018-4e6e-aefa-b232cbf24099 and adjacent empty ready anchordd01ae2e-cfb1-40c1-9bb6-43e16fda47f1 completed and were visually inspected. New Seedance2.0 job9a9d4020-eb1e-499d-8cdc-bcac7782a4be is VERIFIED IN PROGRESS; do not duplicate or redisplay its single-job widget. Receipts and local images: shoe-pickup/low-turn/.
+
+Root captured actual game camera in isolated browser32 (astridcaptureqa with staged,smooth60,rehearsal), restored controls with Escape; no bets. Evidence: gameplay-qa/live-camera/. Actual outlet(781.133,349.731) at1280x720. Evaluate source placement using actual uniformRegistration's136px desktop control band, not whole-viewport contain-fit. Mapping report is being corrected to make this distinction explicit. Source-card persistence diagnostic now keeps a frozen SOURCE Q placeholder through return and next extraction, original skin above; not server artwork or gameplay integration, early fingertip matte remains approximate. Current goal stays active.
+
 # Overnight autonomous goal and agents — 13 September 2026
 
 User explicitly requested continuous overnight work, agents, and GPT Image fallback. Active persistent goal created; existing 30-minute heartbeat updated in place (finish-astrid-gameplay-verification), no duplicate. Root owns generation/public integration. Agents own staging-only contact_integration diagnostics, motion_review frame evidence and gameplay_qa on isolated astridcontactnightqa.localhost. Avoid file/tab collisions.
