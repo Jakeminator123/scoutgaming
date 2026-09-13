@@ -1,0 +1,62 @@
+{
+  "params": {
+    "model": "seedance_2_0",
+    "mode": "std",
+    "resolution": "1080p",
+    "bitrate_mode": "high",
+    "duration": 4,
+    "generate_audio": false,
+    "aspect_ratio": "16:9",
+    "medias": [
+      {
+        "role": "start_image",
+        "value": "6aa9c335-7018-4e6e-aefa-b232cbf24099"
+      },
+      {
+        "role": "end_image",
+        "value": "8324bd35-0273-44ba-88f2-1f633714d0e5"
+      }
+    ],
+    "prompt": "One compact professional blackjack outward push of the existing face-up card, continuous fixed-camera real-time broadcast. Start exactly at supplied first image: card flat immediately beside shoe, right fingertips touching its trailing edge. In the FIRST 0.6 SECONDS the RIGHT hand pushes that SAME rigid face-up card smoothly over the felt toward the centre player to exactly the final image position. Fingertips STAY PHYSICALLY ON the trailing edge the entire outward movement AND stay touching it in the final pose; this clip ends BEFORE finger release. Card is flat on felt throughout, no lifting, no rotation to display, no inward detour, no card drifting ahead of fingers, no stretching or changing size/artwork. Remaining time hold that final supported contact pose naturally. Left hand empty at shoe. Preserve same Astrid face/hair, skin exposure and colour, long black sleeves fully covering both forearms, blouse, locked camera, room, green table and shoe. Silent, no dialogue. Exact fingertip/card contact matters more than flourish. No cuts, dissolves, body stretching or extra cards."
+  },
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "This tool provides an auto-updating generation widget for these jobs. Do not call job_display, show_generations, or show_generation_by_ids to display these jobs again, either before or after completion, unless the user explicitly requests a separate display. If you need to await completion, use jobs_wait with timeout_seconds <= 15. Use job_display only if the user explicitly requests a separate re-display of one specific job."
+      },
+      {
+        "type": "text",
+        "text": "Submitted 1 job. If a widget is visible, it polls automatically — do not call job_status or show_generations as a follow-up poll. In text-only clients, use job_status with sync:true to poll for completion.\n- fa57fdb7-ef02-4c4c-8ec8-ad33757dbac7  \"One compact professional blackjack outward push of the existing face-up card, continuous fixed-camera real-time broadcast. Start exactly at supplied first image: card flat immediately beside shoe, right fingertips touching its trailing edge. In the FIRST 0.6 SECONDS the RIGHT hand pushes that SAME rigid face-up card smoothly over the felt toward the centre player to exactly the final image position. Fingertips STAY PHYSICALLY ON the trailing edge the entire outward movement AND stay touching it in the final pose; this clip ends BEFORE finger release. Card is flat on felt throughout, no lifting, no rotation to display, no inward detour, no card drifting ahead of fingers, no stretching or changing size/artwork. Remaining time hold that final supported contact pose naturally. Left hand empty at shoe. Preserve same Astrid face/hair, skin exposure and colour, long black sleeves fully covering both forearms, blouse, locked camera, room, green table and shoe. Silent, no dialogue. Exact fingertip/card contact matters more than flourish. No cuts, dissolves, body stretching or extra cards.\""
+      },
+      {
+        "type": "text",
+        "text": "If the user requests a combined display of multiple generations, including jobs submitted through separate generate_* calls, collect all requested job IDs, wait for the complete set with jobs_wait, then call show_generation_by_ids with jobs: [{\"index\":0,\"job_id\":\"<first actual job ID>\"},{\"index\":1,\"job_id\":\"<second actual job ID>\"}, ...]. job_display accepts only one id: never pass ids to it or loop over it to show a group. Do not create an extra display when the existing generation widgets already satisfy the request."
+      }
+    ],
+    "structuredContent": {
+      "results": [
+        {
+          "id": "fa57fdb7-ef02-4c4c-8ec8-ad33757dbac7",
+          "type": "video",
+          "status": "pending",
+          "model": "seedance_2_0",
+          "params": {
+            "prompt": "One compact professional blackjack outward push of the existing face-up card, continuous fixed-camera real-time broadcast. Start exactly at supplied first image: card flat immediately beside shoe, right fingertips touching its trailing edge. In the FIRST 0.6 SECONDS the RIGHT hand pushes that SAME rigid face-up card smoothly over the felt toward the centre player to exactly the final image position. Fingertips STAY PHYSICALLY ON the trailing edge the entire outward movement AND stay touching it in the final pose; this clip ends BEFORE finger release. Card is flat on felt throughout, no lifting, no rotation to display, no inward detour, no card drifting ahead of fingers, no stretching or changing size/artwork. Remaining time hold that final supported contact pose naturally. Left hand empty at shoe. Preserve same Astrid face/hair, skin exposure and colour, long black sleeves fully covering both forearms, blouse, locked camera, room, green table and shoe. Silent, no dialogue. Exact fingertip/card contact matters more than flourish. No cuts, dissolves, body stretching or extra cards.",
+            "aspect_ratio": "16:9",
+            "duration": 4,
+            "reference_images": [
+              "6aa9c335-7018-4e6e-aefa-b232cbf24099",
+              "8324bd35-0273-44ba-88f2-1f633714d0e5"
+            ],
+            "mode": "std",
+            "resolution": "1080p",
+            "bitrate_mode": "high",
+            "generate_audio": false
+          }
+        }
+      ]
+    },
+    "isError": false
+  }
+}
