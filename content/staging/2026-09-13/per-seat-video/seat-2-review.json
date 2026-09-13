@@ -1,0 +1,17 @@
+{
+  "status": "rejected-not-integrated",
+  "job": "398fc6f3-fb96-4283-ad31-5a891386d529",
+  "sourceSha256": "9ef523c9772d2cdd18c9982addec191024e4a77fce90540fc3f3c40cfba37422",
+  "seat": 2,
+  "requestedCentre": [
+    0.3085228229334812,
+    0.6898579240418472
+  ],
+  "observedCardCentre": [
+    0.37057291666666664,
+    0.6578703703703703
+  ],
+  "sourcePixelGap": 124.04391982093522,
+  "measurement": "3.6-second source frame, 8-bit luma >170 within crop x380,y630,w390,h160; bright card bounding box x298..365,y52..109. Approximate centre, not full contact calibration.",
+  "reason": "Card lands too close to centre. Empty return improves but exact seat-2 reach fails. No new runtime clip or routing change."
+}

@@ -1,3 +1,7 @@
+# Latest: four inner seats still lack actual filmed reaches — 13 September 2026
+
+The user explicitly rejected the three-direction motion again: positions 2, 3, 5 and 6 are missing. Confirmed against the source manifest and saved coverage audit. New work is staged in `content/staging/2026-09-13/per-seat-video/`, including normalized card targets and a new Higgsfield MCP source proof. The proof improves the empty-hand return but misses the seat-2 destination by about 125 source pixels, so it was rejected without installation. The exact request, original clip, contact sheet and measured rejection are saved. No other generation is pending; no per-seat gameplay fix was delivered. CAC-2 remains In Dev. Four genuinely matching reaches plus calibration are still needed; existing physical-capture guidance remains relevant. Do not present another card-position-only round as resolving this report.
+
 # Latest: release frozen action frame during decisions — 13 September 2026
 
 The user reported centre-only delivery followed by a freeze. `endDealingTake()` now releases the held performance layer at the end of the sequence. Previously it stayed over the running idle engine until another speech line began, visibly freezing Astrid during player decisions. The frame is still held between consecutive cards.
