@@ -3,17 +3,34 @@ import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,cal
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
 import {deliveryReach,shiftCard,canRetargetTake} from './dealer-reach.mjs';
+import {selectSceneJoin,validateSceneJoin,sceneJoinPayload} from './scene-join.mjs';
 
 // A packed source carries RGB in its upper half; R=actor alpha and G=front
 // fingers in its lower half. Two independent videos cannot guarantee contact.
 export class PerformancePlayer {
-  constructor({host,onState=()=>{},staged=false}) {
+  constructor({host,onState=()=>{},staged=false,joins=null,idle=null,prepareIdle=async()=>{}}) {
     this.host=host;this.onState=onState;this.staged=staged;this.active=null;this.assets=new Map();this.held=null;
+    this.joins=joins;this.idle=idle;this.prepareIdle=prepareIdle;
+    this.sequence=false;this.releaseWaiters=new Set();
     this.resize=()=>{if(!this.held)return;const fit=uniformRegistration(this.held.camera,{width:innerWidth,height:innerHeight});Object.assign(this.held.layer.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});};
     window.addEventListener('resize',this.resize);
   }
   cancel() { this.active?.abort(); }
-  release() { this.held?.dispose();this.held=null;this.host.classList.remove('performance-playing'); }
+  beginSequence() {this.sequence=true;}
+  whenReleased(signal) {
+    if(!this.sequence&&!this.active&&!this.held)return Promise.resolve();
+    return new Promise((resolve,reject)=>{
+      const clean=()=>{this.releaseWaiters.delete(done);signal?.removeEventListener('abort',aborted);};
+      const done=()=>{clean();resolve();},aborted=()=>{clean();reject(new DOMException('Speech cancelled','AbortError'));};
+      this.releaseWaiters.add(done);signal?.addEventListener('abort',aborted,{once:true});if(signal?.aborted)aborted();
+    });
+  }
+  release() { this.held?.dispose();this.held=null;this.sequence=false;this.host.classList.remove('performance-playing');for(const done of [...this.releaseWaiters])done(); }
+  async finish() {
+    const join=this.staged&&selectSceneJoin(this.joins,this.held?.take,'exit',this.idle);
+    try {if(join){await this.playJoin(join);await this.prepareIdle();}}
+    finally {this.release();}
+  }
   async preload(takes) { await Promise.all(takes.map(take=>this.source(take))); }
   async source(take,signal) {
     const key=take.media.sha256;
@@ -30,6 +47,8 @@ export class PerformancePlayer {
     const errors=validateContactTake(take,{approved:!(this.staged&&take.status==='review')});
     if(errors.length)throw new Error(errors[0]);
     if(this.active)throw new Error('A dealer performance is already playing');
+    const entry=!this.held&&this.staged&&selectSceneJoin(this.joins,take,'entry',this.idle);
+    if(entry){await this.prepareIdle();await this.playJoin(entry);}
     if(!HTMLVideoElement.prototype.requestVideoFrameCallback)throw new Error('Presented video frames are unavailable');
     const fit=uniformRegistration(take.camera,{width:innerWidth,height:innerHeight});
     const controller=new AbortController();this.active=controller;
@@ -95,7 +114,14 @@ export class PerformancePlayer {
         const clean=()=>{signal.removeEventListener('abort',aborted);video.removeEventListener('error',failed);video.removeEventListener('ended',ended);};
         const aborted=()=>{clean();reject(new Error('Performance interrupted; server card preserved'));};
         const failed=()=>{clean();reject(new Error('Performance decoding failed'));};
-        const ended=()=>{clean();landed?resolve():reject(new Error('Landing frame was not presented'));};
+        const ended=()=>{
+          // Some browsers deliver ended before the final video-frame callback.
+          // The decoded final image is still available: render that image through
+          // the same calibrated path before handing the card back to the DOM.
+          if(!landed&&video.readyState>=2&&video.currentTime>=video.duration-1/take.media.fps)
+            paint(0,{mediaTime:Math.max(0,video.duration-1/take.media.fps)});
+          clean();landed?resolve():reject(new Error('Landing frame was not presented'));
+        };
         signal.addEventListener('abort',aborted,{once:true});video.addEventListener('error',failed,{once:true});video.addEventListener('ended',ended,{once:true});
         const paint=(_,metadata)=>{
           if(signal.aborted)return;
@@ -137,6 +163,61 @@ export class PerformancePlayer {
       document.removeEventListener('visibilitychange',hidden);window.removeEventListener('resize',resized);
       if(!completed){dispose();if(!this.held)this.host.classList.remove('performance-playing');}
       this.host.classList.remove('performance-active');this.active=null;
+    }
+  }
+  async playJoin(join) {
+    const errors=validateSceneJoin(join);if(errors.length)throw new Error(errors[0]);
+    if(this.active)throw new Error('A dealer performance is already playing');
+    const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(sceneJoinPayload(join)))),x=>x.toString(16).padStart(2,'0')).join('');
+    if(digest!==join.calibrationSha256)throw new Error('Scene-join calibration changed');
+    const controller=new AbortController();this.active=controller;const {signal}=controller;
+    const video=document.createElement('video');video.muted=true;video.playsInline=true;video.preload='auto';
+    const layer=document.createElement('div');layer.className='performance-layer';layer.setAttribute('aria-hidden','true');layer.dataset.join=join.id;
+    const fit=uniformRegistration(join.camera,{width:innerWidth,height:innerHeight});
+    Object.assign(layer.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`,visibility:'hidden'});
+    const canvas=document.createElement('canvas');layer.append(canvas);
+    let visual,request,complete=false,painted=false;
+    const dispose=()=>{layer.remove();visual?.dispose();video.removeAttribute('src');video.load();};
+    const hidden=()=>{if(document.hidden)controller.abort();},resized=()=>controller.abort();
+    document.addEventListener('visibilitychange',hidden);window.addEventListener('resize',resized);
+    const timer=setTimeout(()=>controller.abort(),15000);
+    try {
+      if(document.hidden)throw new Error('Scene join skipped while hidden');
+      video.src=await this.source(join,signal);
+      await new Promise((resolve,reject)=>{
+        const clean=()=>{video.removeEventListener('loadeddata',loaded);video.removeEventListener('error',failed);signal.removeEventListener('abort',aborted);};
+        const loaded=()=>{clean();resolve();},failed=()=>{clean();reject(new Error('Scene join cannot decode'));},aborted=()=>{clean();reject(new Error('Scene join interrupted'));};
+        video.addEventListener('loadeddata',loaded,{once:true});video.addEventListener('error',failed,{once:true});signal.addEventListener('abort',aborted,{once:true});
+        if(signal.aborted)aborted();else if(video.readyState>=2)loaded();
+      });
+      const m=join.media;
+      if(video.videoWidth!==m.width||video.videoHeight!==m.height*2||Math.abs(video.duration-m.frames/m.fps)>2/m.fps)throw new Error('Scene-join frames changed');
+      visual=createContactVisual(canvas,m.width,m.height,null,false,video);
+      this.host.append(layer);this.host.classList.add('performance-active');
+      await new Promise((resolve,reject)=>{
+        const clean=()=>{video.removeEventListener('ended',ended);video.removeEventListener('error',failed);signal.removeEventListener('abort',aborted);};
+        const done=()=>{clean();resolve();},failed=()=>{clean();reject(new Error('Scene-join playback failed'));},aborted=()=>{clean();reject(new Error('Scene join interrupted'));};
+        const ended=()=>Number(layer.dataset.frame)>=m.frames-2?done():failed();
+        video.addEventListener('ended',ended,{once:true});video.addEventListener('error',failed,{once:true});signal.addEventListener('abort',aborted,{once:true});
+        const paint=(_,metadata)=>{
+          if(signal.aborted)return;
+          try {
+            const frame=Math.min(m.frames-1,Math.round(metadata.mediaTime*m.fps));
+            visual.paint(null,null);layer.dataset.frame=String(frame);
+            if(!painted){painted=true;this.held?.dispose();this.held=null;layer.style.visibility='';this.host.classList.add('performance-playing');this.onState(`Transition · ${join.id}`);}
+            if(frame>=m.frames-1){video.pause();done();return;}
+            request=video.requestVideoFrameCallback(paint);
+          }catch(error){clean();reject(error);}
+        };
+        request=video.requestVideoFrameCallback(paint);video.play().catch(failed);
+      });
+      complete=true;this.held={layer,camera:join.camera,dispose};
+      this.onState('Transition complete');
+    }finally{
+      clearTimeout(timer);video.pause();if(request!==undefined)video.cancelVideoFrameCallback(request);
+      document.removeEventListener('visibilitychange',hidden);window.removeEventListener('resize',resized);
+      if(!complete){dispose();if(!this.held)this.host.classList.remove('performance-playing');}
+      this.active=null;this.host.classList.remove('performance-active');
     }
   }
   dispose(){this.cancel();this.release();window.removeEventListener('resize',this.resize);for(const url of this.assets.values())URL.revokeObjectURL(url);this.assets.clear();}
