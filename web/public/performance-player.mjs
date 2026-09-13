@@ -76,7 +76,7 @@ export class PerformancePlayer {
       });
       signal.throwIfAborted();
       clearTimeout(timer);timer=setTimeout(()=>controller.abort(),(video.duration/video.playbackRate+3)*1000);
-      visual=createContactVisual(moving,width,height,card,faceDown,video);
+      visual=createContactVisual(moving,width,height,card,faceDown,video,take.colourGain);
       const cue=contactCueClock(take.events,onCue,{fps:take.media.fps,playbackRate:video.playbackRate});
       const end=(corners??[[target.x,target.y],[target.right,target.y],[target.right,target.bottom],[target.x,target.bottom]])
         .map(([x,y])=>[(x-fit.x)/fit.width,(y-fit.y)/fit.height,0]);
@@ -135,7 +135,7 @@ export class PerformancePlayer {
   dispose(){this.cancel();this.release();window.removeEventListener('resize',this.resize);for(const url of this.assets.values())URL.revokeObjectURL(url);this.assets.clear();}
 }
 
-function createContactVisual(canvas,width,height,card,faceDown,video) {
+function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=[1,1,1]) {
   const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});renderer.setSize(width,height,false);renderer.setClearColor(0,0);
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   const scene=new THREE.Scene(),camera=new THREE.OrthographicCamera(0,width,0,-height,.1,1000);camera.position.z=100;
@@ -146,9 +146,9 @@ function createContactVisual(canvas,width,height,card,faceDown,video) {
   const planes=[];
   for(const foreground of [false,true]) {
     const material=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-      uniforms:{source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)}},
+      uniforms:{actorColourGain:{value:new THREE.Vector3(...colourGain)},source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)}},
       vertexShader:'varying vec2 v; void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-      fragmentShader:`uniform sampler2D source; uniform float foreground; varying vec2 v;
+      fragmentShader:`uniform sampler2D source; uniform vec3 actorColourGain; uniform float foreground; varying vec2 v;
         float actorAt(vec2 uv){return texture2D(source,vec2(uv.x,uv.y*0.5)).r;}
         vec3 rgbAt(vec2 uv){return texture2D(source,vec2(uv.x,0.5+uv.y*0.5)).rgb;}
         ${actorEdgeGLSL}
@@ -160,7 +160,11 @@ function createContactVisual(canvas,width,height,card,faceDown,video) {
         float frontAlpha=min(actor.a,masks.g);
         float backAlpha=(actor.a-frontAlpha)/max(1.0-frontAlpha,0.00001);
         float alpha=mix(backAlpha,frontAlpha,foreground);
-        if(alpha<0.01)discard;gl_FragColor=vec4(actor.rgb,alpha);}`});
+        if(alpha<0.01)discard;
+        // Match warm skin pixels without yellowing the ivory blouse or
+        // changing the black suit. Both actor layers use identical grading.
+        float warmth=smoothstep(0.08,0.18,actor.r-actor.b)*smoothstep(0.015,0.055,actor.r-actor.g);
+        gl_FragColor=vec4(actor.rgb*mix(vec3(1.0),actorColourGain,warmth),alpha);}`});
     const plane=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
     plane.position.set(width/2,-height/2,foreground?1:-1);plane.renderOrder=foreground?2:0;
     plane.frustumCulled=false;scene.add(plane);planes.push(plane);

@@ -2479,7 +2479,7 @@
         "date": "2026-09-09",
         "note": "Silent action retimed to 1.75x; original measured source-frame contact and foley clock preserved. Requires actual-game cadence review."
       },
-      "calibrationSha256": "086a2101eadae947f92352cb81dd5b802329611eec75ab3cba5f7cd473adabe9",
+      "calibrationSha256": "68c58dcf00351ecbf1e1ac420a7673d789c23113e48cc1b23faceb525198d6f3",
       "trackingMethod": "Per-frame minimum-area rectangle fitted to visible marker pixels; occluded full-card geometry is not recovered.",
       "entryFrames": 24,
       "transitionReview": {
@@ -2487,7 +2487,12 @@
         "result": "improved-not-complete",
         "note": "Same 72-frame entry/extraction for player and own-card take; no dissolve between deliveries. Legacy speech/idle background and pose still differ."
       },
-      "playbackRate": 2
+      "playbackRate": 2,
+      "colourGain": [
+        0.90625,
+        0.81379,
+        0.76471
+      ]
     },
     {
       "version": 1,
@@ -4885,7 +4890,7 @@
           "card": null
         }
       ],
-      "calibrationSha256": "3728df9146383096dfa735aeb569413f0bc52ee536ca7a01f85ada5d54ff129e",
+      "calibrationSha256": "0f2b9bc70b7e6ea6cf9e5b6d2f5965b2e2d1bb7625375d2eac2d152ca00f1909",
       "review": {
         "result": "pending",
         "date": "2026-09-09",
@@ -4903,7 +4908,12 @@
         "result": "improved-not-complete",
         "note": "Same 72-frame entry/extraction for player and own-card take; no dissolve between deliveries. Legacy speech/idle background and pose still differ."
       },
-      "playbackRate": 2
+      "playbackRate": 2,
+      "colourGain": [
+        0.90625,
+        0.81379,
+        0.76471
+      ]
     },
     {
       "version": 1,
@@ -7811,14 +7821,19 @@
         "frames": 72,
         "sourceSha256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
       },
-      "calibrationSha256": "77f333bda52c128d426cd398a8fc182adac5c9c4ad5306add09e39d0b584b0d7",
+      "calibrationSha256": "3c469693100a15f66640469246694b6c558961082b906378ef67a9c043949057",
       "review": {
         "result": "pending",
         "date": "2026-09-09",
         "mediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
         "calibrationSha256": "7d24d022f7c37f602e96611cb980890bd0ee3e781efea04a390abb0197ae2b6c",
         "note": "Measured candidate for actual-game review. This metadata is not visual acceptance."
-      }
+      },
+      "colourGain": [
+        0.90625,
+        0.81379,
+        0.76471
+      ]
     },
     {
       "version": 1,
@@ -10318,14 +10333,19 @@
         "frames": 72,
         "sourceSha256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
       },
-      "calibrationSha256": "cd037d8d319cac02ed8e86c4d145c9086258d39eefe2ae516921f11cfba2f201",
+      "calibrationSha256": "119d66766075cfbf4e22400f1ea89935af8bf665d9e09da51408526388718497",
       "review": {
         "result": "pending",
         "date": "2026-09-09",
         "mediaSha256": "d22d37c9f8ce8eba7250fe9af571143e20a7d793e2baadcd7d9bf73914f07151",
         "calibrationSha256": "50d97b3e0d5b0e3d92646d3b77b813f799363cc8adf8a4efce10c888b6da919d",
         "note": "Measured candidate for actual-game review. This metadata is not visual acceptance."
-      }
+      },
+      "colourGain": [
+        0.90625,
+        0.81379,
+        0.76471
+      ]
     }
   ],
   "reviewCandidates": [
@@ -12860,7 +12880,7 @@
         "date": "2026-09-10",
         "details": "Empty-hand return candidate. Review both joins in the game; no contact or continuity approval inferred from integrity checks."
       },
-      "calibrationSha256": "484032be40d74d9c3b441246e868ecca20fd366867ac50f8c67e65340e6dee85",
+      "calibrationSha256": "9de796b9f3c4ad75badc6c18af4dac93622bbea04d7186709f430bf59702ac98",
       "trackingMethod": "Per-frame minimum-area rectangle fitted to visible marker pixels; occluded full-card geometry is not recovered.",
       "entryFrames": 24,
       "transitionReview": {
@@ -12873,35 +12893,40 @@
       "continuation": {
         "baseId": "astrid-centre-native-20260909",
         "baseMediaSha256": "7ccca94b5332f28cdd962fd70d34ac59152aecbac4748738bf53ac87331a7726",
-        "baseCalibrationSha256": "086a2101eadae947f92352cb81dd5b802329611eec75ab3cba5f7cd473adabe9",
+        "baseCalibrationSha256": "68c58dcf00351ecbf1e1ac420a7673d789c23113e48cc1b23faceb525198d6f3",
         "preserveThrough": 124,
         "resume": [
           {
             "takeId": "astrid-centre-native-20260909",
             "mediaSha256": "7ccca94b5332f28cdd962fd70d34ac59152aecbac4748738bf53ac87331a7726",
-            "calibrationSha256": "086a2101eadae947f92352cb81dd5b802329611eec75ab3cba5f7cd473adabe9",
+            "calibrationSha256": "68c58dcf00351ecbf1e1ac420a7673d789c23113e48cc1b23faceb525198d6f3",
             "frame": 55
           },
           {
             "takeId": "astrid-dealer-front-contact-20260909",
             "mediaSha256": "ebeaf8d31aa9765d0f4180975223949fb4fd7736cc2b867bf3b37db8892001cf",
-            "calibrationSha256": "3728df9146383096dfa735aeb569413f0bc52ee536ca7a01f85ada5d54ff129e",
+            "calibrationSha256": "0f2b9bc70b7e6ea6cf9e5b6d2f5965b2e2d1bb7625375d2eac2d152ca00f1909",
             "frame": 55
           },
           {
             "takeId": "astrid-left-outlet-contact-20260909",
             "mediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
-            "calibrationSha256": "77f333bda52c128d426cd398a8fc182adac5c9c4ad5306add09e39d0b584b0d7",
+            "calibrationSha256": "3c469693100a15f66640469246694b6c558961082b906378ef67a9c043949057",
             "frame": 55
           },
           {
             "takeId": "astrid-right-outlet-contact-20260909",
             "mediaSha256": "d22d37c9f8ce8eba7250fe9af571143e20a7d793e2baadcd7d9bf73914f07151",
-            "calibrationSha256": "cd037d8d319cac02ed8e86c4d145c9086258d39eefe2ae516921f11cfba2f201",
+            "calibrationSha256": "119d66766075cfbf4e22400f1ea89935af8bf665d9e09da51408526388718497",
             "frame": 55
           }
         ]
-      }
+      },
+      "colourGain": [
+        0.90625,
+        0.81379,
+        0.76471
+      ]
     },
     {
       "version": 1,
@@ -15837,7 +15862,7 @@
         "frames": 72,
         "sourceSha256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
       },
-      "calibrationSha256": "5ffddbc957768b5d9b82d9471f2c28edd51180c5f0f696e9c50ca0cc2ca62391",
+      "calibrationSha256": "7074cee505f691c5916489ff18276a9dbe09304b62827971f4a627809cccfdad",
       "review": {
         "result": "partial",
         "date": "2026-09-10",
@@ -15846,31 +15871,31 @@
       "continuation": {
         "baseId": "astrid-left-outlet-contact-20260909",
         "baseMediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
-        "baseCalibrationSha256": "77f333bda52c128d426cd398a8fc182adac5c9c4ad5306add09e39d0b584b0d7",
+        "baseCalibrationSha256": "3c469693100a15f66640469246694b6c558961082b906378ef67a9c043949057",
         "preserveThrough": 138,
         "resume": [
           {
             "takeId": "astrid-centre-native-20260909",
             "mediaSha256": "7ccca94b5332f28cdd962fd70d34ac59152aecbac4748738bf53ac87331a7726",
-            "calibrationSha256": "086a2101eadae947f92352cb81dd5b802329611eec75ab3cba5f7cd473adabe9",
+            "calibrationSha256": "68c58dcf00351ecbf1e1ac420a7673d789c23113e48cc1b23faceb525198d6f3",
             "frame": 55
           },
           {
             "takeId": "astrid-dealer-front-contact-20260909",
             "mediaSha256": "ebeaf8d31aa9765d0f4180975223949fb4fd7736cc2b867bf3b37db8892001cf",
-            "calibrationSha256": "3728df9146383096dfa735aeb569413f0bc52ee536ca7a01f85ada5d54ff129e",
+            "calibrationSha256": "0f2b9bc70b7e6ea6cf9e5b6d2f5965b2e2d1bb7625375d2eac2d152ca00f1909",
             "frame": 55
           },
           {
             "takeId": "astrid-left-outlet-contact-20260909",
             "mediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
-            "calibrationSha256": "77f333bda52c128d426cd398a8fc182adac5c9c4ad5306add09e39d0b584b0d7",
+            "calibrationSha256": "3c469693100a15f66640469246694b6c558961082b906378ef67a9c043949057",
             "frame": 55
           },
           {
             "takeId": "astrid-right-outlet-contact-20260909",
             "mediaSha256": "d22d37c9f8ce8eba7250fe9af571143e20a7d793e2baadcd7d9bf73914f07151",
-            "calibrationSha256": "cd037d8d319cac02ed8e86c4d145c9086258d39eefe2ae516921f11cfba2f201",
+            "calibrationSha256": "119d66766075cfbf4e22400f1ea89935af8bf665d9e09da51408526388718497",
             "frame": 55
           }
         ]
@@ -15879,7 +15904,12 @@
         "result": "partial",
         "date": "2026-09-10",
         "scope": "Source frames 138 to 139 and return frame 175 to next dealer pickup; browser captures 0398/0399 and 0419/0420."
-      }
+      },
+      "colourGain": [
+        0.90625,
+        0.81379,
+        0.76471
+      ]
     }
   ]
 }

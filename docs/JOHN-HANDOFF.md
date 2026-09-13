@@ -1,4 +1,12 @@
-# Latest: four inner seats still lack actual filmed reaches — 13 September 2026
+# Latest: action skin colour corrected; inner reaches still unresolved — 13 September 2026
+
+The user requested active work rather than another scheduled wait. Measured the pale action cheeks against preserved idle-source cheeks and added optional calibrated RGB grading to the performance shader. Warm pixels receive the correction in both actor layers; neutral blouse/suit pixels retain their colour. All four ordinary takes and registered returns share the gain. Source bytes, contact tracking and speech assets are unchanged. See `content/staging/2026-09-13/face-colour/README.md` for reproducible measurements and limitations.
+
+The refined correction completed a real centre-seat round in the isolated guest at `http://astridcolour.localhost:4173/?dealer=astrid&performance=staged`, including speech, physical delivery, decision idle, Stand, settlement and return to betting. Zero browser warnings/errors; freeze did not recur. This is a colour improvement candidate, not acceptance of every pose or seven-seat choreography. Contact tests (16), performance audit, deep dealer audit and full pre-commit checks pass. Four-dealer consecutive greeting playback was reviewed through the real rehearsal player; this does not grant lip-sync approval.
+
+A second Higgsfield video edit completed but printed destination text and failed to move the physical reach correctly. Original output and rejection are saved under `per-seat-video/seat-2-edit*`; it was not installed. No job is pending. Positions 2, 3, 5 and 6 still need actual source motion and calibration. CAC-2/CAC-4 remain In Dev. Keep 3D paused; do not claim this colour patch completes the dealing request.
+
+# Earlier: four inner seats still lack actual filmed reaches — 13 September 2026
 
 The user explicitly rejected the three-direction motion again: positions 2, 3, 5 and 6 are missing. Confirmed against the source manifest and saved coverage audit. New work is staged in `content/staging/2026-09-13/per-seat-video/`, including normalized card targets and a new Higgsfield MCP source proof. The proof improves the empty-hand return but misses the seat-2 destination by about 125 source pixels, so it was rejected without installation. The exact request, original clip, contact sheet and measured rejection are saved. No other generation is pending; no per-seat gameplay fix was delivered. CAC-2 remains In Dev. Four genuinely matching reaches plus calibration are still needed; existing physical-capture guidance remains relevant. Do not present another card-position-only round as resolving this report.
 
