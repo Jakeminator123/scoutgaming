@@ -1215,6 +1215,9 @@ async function deliverCard(container, card, options={}) {
 
 function endDealingTake() {
   dealingActive=false;
+  // Hold a presented frame only between cards. Once the sequence ends,
+  // uncover the running idle video while the player makes a decision.
+  performancePlayer?.release();
   if(engineUp && !speaking && engine.presentedClip===CLIP.deal) {
     const returning='idle-1/actions/action-return';
     engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);

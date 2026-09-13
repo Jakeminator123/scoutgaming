@@ -1,3 +1,9 @@
+# Latest: release frozen action frame during decisions — 13 September 2026
+
+The user reported centre-only delivery followed by a freeze. `endDealingTake()` now releases the held performance layer at the end of the sequence. Previously it stayed over the running idle engine until another speech line began, visibly freezing Astrid during player decisions. The frame is still held between consecutive cards.
+
+Tested in a separate guest at `http://astridfreeze.localhost:4173/?dealer=astrid&performance=staged`: five-dollar bets on outside boxes 1 and 7 received two cards each; during Hit/Stand the DOM had zero performance layers and the idle wrapper was visible. Hit on each side completed; the left hit explicitly selected `deal-left` (frame 83 inspected). Settlement completed at balance 1,000 after 10 staked and 10 returned. No seat routing code changed. Classic/High Roller/VIP select stakes, not receiving seats. Actual seven-seat hand contact remains unaccepted; do not equate DOM card placement with convincing physical reaches. Previous visual acceptance claims remain bounded.
+
 # Latest: faster Astrid video and consistent hand compositing — 13 September 2026
 
 The user requested quicker, natural dealing and the same blended appearance as speech. Silent takes now play at 2× and stop on the calibrated rest frame, removing the idle tail. Nominal per-card time drops from 4.02 to 3.00–3.21 seconds. Presented-frame contact and audio cues are preserved. The foreground fingers no longer double the base actor alpha; full-actor hands no longer receive the legacy additional band fade. A shallow shared centre rail anchors the forearms during both speech and action. No speech/video bytes or camera/contact positions changed.
