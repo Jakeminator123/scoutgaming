@@ -1,3 +1,9 @@
+# Latest: user-selected Evolution reference and 30-minute comparison loop — 13 September 2026
+
+User supplied https://www.youtube.com/watch?v=dfE-7NV4Vh8 and explicitly requested claude-video /watch plus recurring comparison/improvement. The existing Astrid heartbeat `finish-astrid-gameplay-verification` was updated in place to ACTIVE every 30 minutes. No duplicate automation. Read `content/staging/2026-09-13/youtube-reference/README.md` and receipt before each run. The requested tool is installed locally and used successfully with an isolated updated downloader; cached video/frames stay local, outside Git. No API key was needed or saved.
+
+Inspected 16 full-clip samples and 24 focused opening samples. Reference target: direct distinct reaches, real card/finger contact, hand near shoe, continuous empty-hand return, economical natural gestures and stable scene/skin. First-pass placement cadence is approximately 0.7–1.0 seconds from a 2 fps inspection, not exact native-frame calibration. Four missing physical reaches and feeding-hand paper artifacts remain the main Astrid gaps. Preserve Astrid's own identity/table/camera. This turn establishes the comparison baseline and loop; it does not claim the game now matches Evolution or that model weights were trained. No transcript was available; analysis was visual.
+
 # Latest: Astrid before/after dealing transitions — 13 September 2026
 
 The reported smooth60 pose cut is addressed with six filmed actor-only entry/return clips bound to the actual source endpoints and preserved idle RGB/matte. Smooth60 loads them by default; `joins=off` is a comparison fallback. The player waits for the return and a freshly presented matching idle frame before releasing the overlay; recorded speech waits across loading, dealing and return. Camera, table, source card events and server authority remain unchanged. See `content/staging/2026-09-13/scene-joins/README.md`, exact requests, sources and build scripts.
