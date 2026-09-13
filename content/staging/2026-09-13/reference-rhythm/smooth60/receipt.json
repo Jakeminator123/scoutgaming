@@ -1,0 +1,26 @@
+[
+  {
+    "id": "astrid-smooth60-deal-centre",
+    "inputFrames": 14,
+    "outputFrames": 42,
+    "restSeconds": 0.6833333333333333
+  },
+  {
+    "id": "astrid-smooth60-deal-left",
+    "inputFrames": 14,
+    "outputFrames": 42,
+    "restSeconds": 0.6833333333333333
+  },
+  {
+    "id": "astrid-smooth60-deal-right",
+    "inputFrames": 19,
+    "outputFrames": 58,
+    "restSeconds": 0.95
+  },
+  {
+    "id": "astrid-smooth60-deal-dealer",
+    "inputFrames": 14,
+    "outputFrames": 42,
+    "restSeconds": 0.6833333333333333
+  }
+]
