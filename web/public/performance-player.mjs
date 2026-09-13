@@ -96,6 +96,9 @@ export class PerformancePlayer {
           if(signal.aborted)return;
           try {
             const sample=contactFrame(take,metadata.mediaTime);
+            // The calibrated resting frame is the end of the action. Do not
+            // replay the baked hold after every card in a live sequence.
+            const atRest=!take.continuation&&sample.frame>=take.events.rest;
             if(sample.frame<startFrame){frameRequest=video.requestVideoFrameCallback(paint);return;}
             layer.dataset.frame=String(sample.frame);
             layer.dataset.phase=sample.frame<take.events.pickup?'reach':sample.frame<take.events.release?'contact':sample.frame<take.events.land?'release':'return';
@@ -111,6 +114,7 @@ export class PerformancePlayer {
             if(!painted){painted=true;this.held?.dispose();this.held=null;layer.style.visibility='';this.host.classList.add('performance-playing');this.onState(`Dealing ${take.action==='deal-dealer'?'to Astrid':'to player'}${faceDown?' · face down':''}`);}
             landed ||= sample.frame>=take.events.land;
             cue(sample.frame,{visible:!document.hidden});
+            if(atRest){video.pause();clean();resolve();return;}
             frameRequest=video.requestVideoFrameCallback(paint);
           }catch(error){clean();reject(error);}
         };
@@ -150,7 +154,12 @@ function createContactVisual(canvas,width,height,card,faceDown,video) {
         ${actorEdgeGLSL}
         void main(){vec4 actor=cleanActor(v);
         vec3 masks=texture2D(source,vec2(v.x,v.y*0.5)).rgb;
-        float alpha=mix(actor.a,min(actor.a,masks.g),foreground);
+        // Split the same actor coverage around the card. Painting fingers
+        // over a second complete actor made soft edges more opaque in action
+        // than they are in the shared speech compositor.
+        float frontAlpha=min(actor.a,masks.g);
+        float backAlpha=(actor.a-frontAlpha)/max(1.0-frontAlpha,0.00001);
+        float alpha=mix(backAlpha,frontAlpha,foreground);
         if(alpha<0.01)discard;gl_FragColor=vec4(actor.rgb,alpha);}`});
     const plane=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
     plane.position.set(width/2,-height/2,foreground?1:-1);plane.renderOrder=foreground?2:0;

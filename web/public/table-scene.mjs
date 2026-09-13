@@ -117,6 +117,12 @@ export function createTableScene(canvas, dealer, {contactProof=false}={}) {
       g.rotateZ(Math.PI / 2);
       const m = mesh(g, leather, 3); m.position.x = sign * rx * .68;
     }
+    if(contactProof){
+      // A shallow padded rest anchors the isolated forearms to the same rail
+      // during speech and dealing. The foreground hands remain above it.
+      const rest=new THREE.CylinderGeometry(4,4,rx*.72,16);
+      rest.rotateZ(Math.PI/2);mesh(rest,leather,2);
+    }
     addShoe();
     render();
   }
