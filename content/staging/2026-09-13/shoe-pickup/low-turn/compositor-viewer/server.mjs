@@ -7,6 +7,12 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
   '/':path.join(here,'index.html'),
+  '/cycle':path.join(here,'cycle.html'),
+  '/cycle.mjs':path.join(here,'cycle.mjs'),
+  '/pickup-packed.mp4':path.join(here,'pickup-packed-draft.mp4'),
+  '/return-packed.mp4':path.join(here,'return-packed-draft.mp4'),
+  '/trajectory.json':path.resolve(here,'../pickup-card/end-refit/extended-trajectory.json'),
+  '/transforms.json':path.resolve(here,'../cycle-registration/clip-transforms.json'),
   '/packed-gpu.mjs':path.join(here,'packed-gpu.mjs'),
   '/vendor/three/three.module.js':path.join(repo,'web/public/vendor/three/three.module.js'),
   '/vendor/three/three.core.min.js':path.join(repo,'web/public/vendor/three/three.core.min.js'),
@@ -23,5 +29,12 @@ http.createServer(async(req,res)=>{
     if(/^\d{4}\.png$/.test(name))file=path.join(root,name);
   }
   if(!file){res.writeHead(404);res.end();return;}
-  try{const s=await stat(file);res.writeHead(200,{'Content-Type':file.endsWith('.mp4')?'video/mp4':file.endsWith('.png')?'image/png':file.endsWith('.json')?'application/json':(file.endsWith('.mjs')||file.endsWith('.js'))?'text/javascript':'text/html','Content-Length':s.size,'Cache-Control':'no-store'});createReadStream(file).pipe(res);}catch{res.writeHead(404);res.end('Asset not ready');}
+  try{const s=await stat(file);const headers={'Content-Type':file.endsWith('.mp4')?'video/mp4':file.endsWith('.png')?'image/png':file.endsWith('.json')?'application/json':(file.endsWith('.mjs')||file.endsWith('.js'))?'text/javascript':'text/html','Content-Length':s.size,'Cache-Control':'no-store','Accept-Ranges':'bytes'};
+    const range=req.headers.range;
+    if(range){const match=/^bytes=(\d*)-(\d*)$/.exec(range);let start,end;if(match&&(match[1]||match[2])){start=match[1]?Number(match[1]):Math.max(0,s.size-Number(match[2]));end=match[1]&&match[2]?Math.min(Number(match[2]),s.size-1):s.size-1;}
+      if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start>end||start>=s.size){res.writeHead(416,{'Content-Range':`bytes */${s.size}`});res.end();return;}
+      res.writeHead(206,{...headers,'Content-Length':end-start+1,'Content-Range':`bytes ${start}-${end}/${s.size}`});if(req.method==='HEAD')res.end();else createReadStream(file,{start,end}).pipe(res);return;
+    }
+    res.writeHead(200,headers);if(req.method==='HEAD')res.end();else createReadStream(file).pipe(res);
+  }catch{res.writeHead(404);res.end('Asset not ready');}
 }).listen(4189,'127.0.0.1',()=>console.log('Staging contact viewer http://127.0.0.1:4189'));

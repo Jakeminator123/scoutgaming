@@ -1,0 +1,1479 @@
+{
+  "frames": [
+    {
+      "frame": 0,
+      "rgbMAE": 0.6139076967592593,
+      "R": {
+        "mae": 0.14062403549382715,
+        "positivePixels": 111996,
+        "decodedPositivePixels": 111921,
+        "lostAbove127": 229,
+        "gainedAbove127": 154,
+        "meanLossOnPositive": 1.4890442515804136,
+        "maxAbsError": 147.0
+      },
+      "G": {
+        "mae": 0.03339506172839506,
+        "positivePixels": 11451,
+        "decodedPositivePixels": 11452,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.580647978342503,
+        "maxAbsError": 67.0
+      }
+    },
+    {
+      "frame": 1,
+      "rgbMAE": 0.6621791409465021,
+      "R": {
+        "mae": 0.14175684799382715,
+        "positivePixels": 112084,
+        "decodedPositivePixels": 112015,
+        "lostAbove127": 242,
+        "gainedAbove127": 173,
+        "meanLossOnPositive": 1.5102869276613968,
+        "maxAbsError": 158.0
+      },
+      "G": {
+        "mae": 0.03381655092592593,
+        "positivePixels": 11466,
+        "decodedPositivePixels": 11467,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.620879120879121,
+        "maxAbsError": 61.0
+      }
+    },
+    {
+      "frame": 2,
+      "rgbMAE": 0.657889017489712,
+      "R": {
+        "mae": 0.14171778549382716,
+        "positivePixels": 111859,
+        "decodedPositivePixels": 111821,
+        "lostAbove127": 211,
+        "gainedAbove127": 173,
+        "meanLossOnPositive": 1.5032675064143253,
+        "maxAbsError": 158.0
+      },
+      "G": {
+        "mae": 0.03374903549382716,
+        "positivePixels": 11484,
+        "decodedPositivePixels": 11485,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.6125043538836643,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 3,
+      "rgbMAE": 0.6843311149691358,
+      "R": {
+        "mae": 0.14204185956790125,
+        "positivePixels": 111816,
+        "decodedPositivePixels": 111766,
+        "lostAbove127": 219,
+        "gainedAbove127": 169,
+        "meanLossOnPositive": 1.5091668455319454,
+        "maxAbsError": 152.0
+      },
+      "G": {
+        "mae": 0.03425395447530864,
+        "positivePixels": 11628,
+        "decodedPositivePixels": 11629,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.6215170278637772,
+        "maxAbsError": 58.0
+      }
+    },
+    {
+      "frame": 4,
+      "rgbMAE": 0.6840952932098765,
+      "R": {
+        "mae": 0.14075327932098766,
+        "positivePixels": 111850,
+        "decodedPositivePixels": 111807,
+        "lostAbove127": 215,
+        "gainedAbove127": 172,
+        "meanLossOnPositive": 1.4925346446133214,
+        "maxAbsError": 157.0
+      },
+      "G": {
+        "mae": 0.03376543209876543,
+        "positivePixels": 12090,
+        "decodedPositivePixels": 12091,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.5711331679073615,
+        "maxAbsError": 62.0
+      }
+    },
+    {
+      "frame": 5,
+      "rgbMAE": 0.7013683127572017,
+      "R": {
+        "mae": 0.13993586033950617,
+        "positivePixels": 111914,
+        "decodedPositivePixels": 111865,
+        "lostAbove127": 221,
+        "gainedAbove127": 172,
+        "meanLossOnPositive": 1.4967564379791625,
+        "maxAbsError": 146.0
+      },
+      "G": {
+        "mae": 0.03354938271604938,
+        "positivePixels": 12095,
+        "decodedPositivePixels": 12098,
+        "lostAbove127": 0,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.5551054154609343,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 6,
+      "rgbMAE": 0.698619470164609,
+      "R": {
+        "mae": 0.14083815586419754,
+        "positivePixels": 111881,
+        "decodedPositivePixels": 111805,
+        "lostAbove127": 245,
+        "gainedAbove127": 169,
+        "meanLossOnPositive": 1.4999687167615592,
+        "maxAbsError": 133.0
+      },
+      "G": {
+        "mae": 0.03380015432098765,
+        "positivePixels": 12366,
+        "decodedPositivePixels": 12367,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.5480349344978166,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 7,
+      "rgbMAE": 0.7143459040637861,
+      "R": {
+        "mae": 0.13889998070987655,
+        "positivePixels": 111771,
+        "decodedPositivePixels": 111689,
+        "lostAbove127": 235,
+        "gainedAbove127": 153,
+        "meanLossOnPositive": 1.4947616107934973,
+        "maxAbsError": 140.0
+      },
+      "G": {
+        "mae": 0.033546489197530865,
+        "positivePixels": 12471,
+        "decodedPositivePixels": 12471,
+        "lostAbove127": 1,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.5707641728810842,
+        "maxAbsError": 72.0
+      }
+    },
+    {
+      "frame": 8,
+      "rgbMAE": 0.7125244341563786,
+      "R": {
+        "mae": 0.1376929012345679,
+        "positivePixels": 111893,
+        "decodedPositivePixels": 111809,
+        "lostAbove127": 230,
+        "gainedAbove127": 146,
+        "meanLossOnPositive": 1.4669282260731233,
+        "maxAbsError": 136.0
+      },
+      "G": {
+        "mae": 0.03302469135802469,
+        "positivePixels": 12842,
+        "decodedPositivePixels": 12843,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4746924155116026,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 9,
+      "rgbMAE": 0.722524916409465,
+      "R": {
+        "mae": 0.1369917052469136,
+        "positivePixels": 111712,
+        "decodedPositivePixels": 111637,
+        "lostAbove127": 223,
+        "gainedAbove127": 148,
+        "meanLossOnPositive": 1.4655632340303637,
+        "maxAbsError": 152.0
+      },
+      "G": {
+        "mae": 0.03314187885802469,
+        "positivePixels": 12979,
+        "decodedPositivePixels": 12981,
+        "lostAbove127": 0,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.470452269050004,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 10,
+      "rgbMAE": 0.7171921617798354,
+      "R": {
+        "mae": 0.13704185956790124,
+        "positivePixels": 111792,
+        "decodedPositivePixels": 111732,
+        "lostAbove127": 209,
+        "gainedAbove127": 149,
+        "meanLossOnPositive": 1.4750161013310434,
+        "maxAbsError": 139.0
+      },
+      "G": {
+        "mae": 0.03318769290123457,
+        "positivePixels": 12981,
+        "decodedPositivePixels": 12982,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.5017333025190662,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 11,
+      "rgbMAE": 0.7284712577160494,
+      "R": {
+        "mae": 0.13799864969135803,
+        "positivePixels": 111953,
+        "decodedPositivePixels": 111856,
+        "lostAbove127": 245,
+        "gainedAbove127": 148,
+        "meanLossOnPositive": 1.4736719873518351,
+        "maxAbsError": 152.0
+      },
+      "G": {
+        "mae": 0.03336902006172839,
+        "positivePixels": 13122,
+        "decodedPositivePixels": 13127,
+        "lostAbove127": 0,
+        "gainedAbove127": 5,
+        "meanLossOnPositive": 1.4564852918762383,
+        "maxAbsError": 58.0
+      }
+    },
+    {
+      "frame": 12,
+      "rgbMAE": 0.7266748649691358,
+      "R": {
+        "mae": 0.13843123070987653,
+        "positivePixels": 111992,
+        "decodedPositivePixels": 111935,
+        "lostAbove127": 220,
+        "gainedAbove127": 163,
+        "meanLossOnPositive": 1.4722926637616973,
+        "maxAbsError": 152.0
+      },
+      "G": {
+        "mae": 0.03366367669753086,
+        "positivePixels": 13211,
+        "decodedPositivePixels": 13212,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.447051699341458,
+        "maxAbsError": 58.0
+      }
+    },
+    {
+      "frame": 13,
+      "rgbMAE": 0.7231701710390946,
+      "R": {
+        "mae": 0.1390065586419753,
+        "positivePixels": 112039,
+        "decodedPositivePixels": 111969,
+        "lostAbove127": 230,
+        "gainedAbove127": 160,
+        "meanLossOnPositive": 1.4729781593909264,
+        "maxAbsError": 152.0
+      },
+      "G": {
+        "mae": 0.033843074845679014,
+        "positivePixels": 13222,
+        "decodedPositivePixels": 13225,
+        "lostAbove127": 0,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.4305702616850704,
+        "maxAbsError": 56.0
+      }
+    },
+    {
+      "frame": 14,
+      "rgbMAE": 0.7189898405349794,
+      "R": {
+        "mae": 0.13838059413580248,
+        "positivePixels": 112087,
+        "decodedPositivePixels": 112007,
+        "lostAbove127": 237,
+        "gainedAbove127": 157,
+        "meanLossOnPositive": 1.4786103651627753,
+        "maxAbsError": 130.0
+      },
+      "G": {
+        "mae": 0.03380353009259259,
+        "positivePixels": 13197,
+        "decodedPositivePixels": 13198,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.486549973478821,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 15,
+      "rgbMAE": 0.7274572402263374,
+      "R": {
+        "mae": 0.1400660686728395,
+        "positivePixels": 111979,
+        "decodedPositivePixels": 111903,
+        "lostAbove127": 237,
+        "gainedAbove127": 161,
+        "meanLossOnPositive": 1.4783128979540807,
+        "maxAbsError": 131.0
+      },
+      "G": {
+        "mae": 0.034407793209876546,
+        "positivePixels": 13201,
+        "decodedPositivePixels": 13202,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.477160821149913,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 16,
+      "rgbMAE": 0.7271706211419753,
+      "R": {
+        "mae": 0.14097463348765432,
+        "positivePixels": 111851,
+        "decodedPositivePixels": 111750,
+        "lostAbove127": 266,
+        "gainedAbove127": 165,
+        "meanLossOnPositive": 1.4859232371637268,
+        "maxAbsError": 131.0
+      },
+      "G": {
+        "mae": 0.033953993055555555,
+        "positivePixels": 13027,
+        "decodedPositivePixels": 13030,
+        "lostAbove127": 0,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.4562063406770553,
+        "maxAbsError": 63.0
+      }
+    },
+    {
+      "frame": 17,
+      "rgbMAE": 0.728922807355967,
+      "R": {
+        "mae": 0.14239679783950618,
+        "positivePixels": 111675,
+        "decodedPositivePixels": 111578,
+        "lostAbove127": 256,
+        "gainedAbove127": 159,
+        "meanLossOnPositive": 1.5095321244683233,
+        "maxAbsError": 138.0
+      },
+      "G": {
+        "mae": 0.03517746913580247,
+        "positivePixels": 12901,
+        "decodedPositivePixels": 12902,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.5121308425703435,
+        "maxAbsError": 70.0
+      }
+    },
+    {
+      "frame": 18,
+      "rgbMAE": 0.7271630658436214,
+      "R": {
+        "mae": 0.14333092206790124,
+        "positivePixels": 111840,
+        "decodedPositivePixels": 111738,
+        "lostAbove127": 274,
+        "gainedAbove127": 172,
+        "meanLossOnPositive": 1.5158798283261803,
+        "maxAbsError": 133.0
+      },
+      "G": {
+        "mae": 0.037084297839506175,
+        "positivePixels": 12869,
+        "decodedPositivePixels": 12878,
+        "lostAbove127": 0,
+        "gainedAbove127": 9,
+        "meanLossOnPositive": 1.6429403994094336,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 19,
+      "rgbMAE": 0.7312750771604938,
+      "R": {
+        "mae": 0.14306520061728395,
+        "positivePixels": 112164,
+        "decodedPositivePixels": 112084,
+        "lostAbove127": 245,
+        "gainedAbove127": 165,
+        "meanLossOnPositive": 1.5201758139866623,
+        "maxAbsError": 149.0
+      },
+      "G": {
+        "mae": 0.03648533950617284,
+        "positivePixels": 12822,
+        "decodedPositivePixels": 12828,
+        "lostAbove127": 1,
+        "gainedAbove127": 7,
+        "meanLossOnPositive": 1.5627827172048043,
+        "maxAbsError": 69.0
+      }
+    },
+    {
+      "frame": 20,
+      "rgbMAE": 0.7315830761316873,
+      "R": {
+        "mae": 0.1372434413580247,
+        "positivePixels": 110018,
+        "decodedPositivePixels": 109949,
+        "lostAbove127": 236,
+        "gainedAbove127": 167,
+        "meanLossOnPositive": 1.483666309149412,
+        "maxAbsError": 144.0
+      },
+      "G": {
+        "mae": 0.03523389274691358,
+        "positivePixels": 12525,
+        "decodedPositivePixels": 12532,
+        "lostAbove127": 0,
+        "gainedAbove127": 7,
+        "meanLossOnPositive": 1.682874251497006,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 21,
+      "rgbMAE": 0.73959860468107,
+      "R": {
+        "mae": 0.13320698302469136,
+        "positivePixels": 108426,
+        "decodedPositivePixels": 108346,
+        "lostAbove127": 229,
+        "gainedAbove127": 149,
+        "meanLossOnPositive": 1.4411119104273882,
+        "maxAbsError": 136.0
+      },
+      "G": {
+        "mae": 0.03375434027777778,
+        "positivePixels": 12120,
+        "decodedPositivePixels": 12124,
+        "lostAbove127": 0,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.6528052805280529,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 22,
+      "rgbMAE": 0.7346006944444444,
+      "R": {
+        "mae": 0.12237509645061728,
+        "positivePixels": 105401,
+        "decodedPositivePixels": 105345,
+        "lostAbove127": 200,
+        "gainedAbove127": 144,
+        "meanLossOnPositive": 1.3889621540592594,
+        "maxAbsError": 132.0
+      },
+      "G": {
+        "mae": 0.02865258487654321,
+        "positivePixels": 11438,
+        "decodedPositivePixels": 11438,
+        "lostAbove127": 0,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.4228011890190593,
+        "maxAbsError": 64.0
+      }
+    },
+    {
+      "frame": 23,
+      "rgbMAE": 0.7398839377572016,
+      "R": {
+        "mae": 0.12020929783950618,
+        "positivePixels": 103862,
+        "decodedPositivePixels": 103819,
+        "lostAbove127": 184,
+        "gainedAbove127": 141,
+        "meanLossOnPositive": 1.373707419460438,
+        "maxAbsError": 100.0
+      },
+      "G": {
+        "mae": 0.028505979938271604,
+        "positivePixels": 10946,
+        "decodedPositivePixels": 10946,
+        "lostAbove127": 0,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.426091723003837,
+        "maxAbsError": 61.0
+      }
+    },
+    {
+      "frame": 24,
+      "rgbMAE": 0.7368819122942387,
+      "R": {
+        "mae": 0.1193894675925926,
+        "positivePixels": 102377,
+        "decodedPositivePixels": 102353,
+        "lostAbove127": 151,
+        "gainedAbove127": 127,
+        "meanLossOnPositive": 1.424284751457847,
+        "maxAbsError": 146.0
+      },
+      "G": {
+        "mae": 0.02982397762345679,
+        "positivePixels": 10730,
+        "decodedPositivePixels": 10732,
+        "lostAbove127": 0,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.6397017707362536,
+        "maxAbsError": 62.0
+      }
+    },
+    {
+      "frame": 25,
+      "rgbMAE": 0.7321711033950618,
+      "R": {
+        "mae": 0.11866367669753086,
+        "positivePixels": 101101,
+        "decodedPositivePixels": 101097,
+        "lostAbove127": 139,
+        "gainedAbove127": 135,
+        "meanLossOnPositive": 1.4281263291164281,
+        "maxAbsError": 108.0
+      },
+      "G": {
+        "mae": 0.0312794174382716,
+        "positivePixels": 10615,
+        "decodedPositivePixels": 10617,
+        "lostAbove127": 0,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.777296278850683,
+        "maxAbsError": 68.0
+      }
+    },
+    {
+      "frame": 26,
+      "rgbMAE": 0.7262344071502057,
+      "R": {
+        "mae": 0.1178858024691358,
+        "positivePixels": 100085,
+        "decodedPositivePixels": 100061,
+        "lostAbove127": 150,
+        "gainedAbove127": 126,
+        "meanLossOnPositive": 1.4606584403257232,
+        "maxAbsError": 117.0
+      },
+      "G": {
+        "mae": 0.03219762731481481,
+        "positivePixels": 10862,
+        "decodedPositivePixels": 10866,
+        "lostAbove127": 0,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.8494752347633954,
+        "maxAbsError": 63.0
+      }
+    },
+    {
+      "frame": 27,
+      "rgbMAE": 0.7324286265432098,
+      "R": {
+        "mae": 0.11597125771604938,
+        "positivePixels": 99689,
+        "decodedPositivePixels": 99647,
+        "lostAbove127": 171,
+        "gainedAbove127": 129,
+        "meanLossOnPositive": 1.4484246005075785,
+        "maxAbsError": 119.0
+      },
+      "G": {
+        "mae": 0.03181568287037037,
+        "positivePixels": 11480,
+        "decodedPositivePixels": 11484,
+        "lostAbove127": 0,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.8063588850174217,
+        "maxAbsError": 63.0
+      }
+    },
+    {
+      "frame": 28,
+      "rgbMAE": 0.7324336098251029,
+      "R": {
+        "mae": 0.11740644290123457,
+        "positivePixels": 100833,
+        "decodedPositivePixels": 100793,
+        "lostAbove127": 168,
+        "gainedAbove127": 128,
+        "meanLossOnPositive": 1.4276873642557497,
+        "maxAbsError": 116.0
+      },
+      "G": {
+        "mae": 0.03076003086419753,
+        "positivePixels": 11736,
+        "decodedPositivePixels": 11742,
+        "lostAbove127": 0,
+        "gainedAbove127": 6,
+        "meanLossOnPositive": 1.6445126107702794,
+        "maxAbsError": 63.0
+      }
+    },
+    {
+      "frame": 29,
+      "rgbMAE": 0.7376049704218107,
+      "R": {
+        "mae": 0.12165943287037037,
+        "positivePixels": 100895,
+        "decodedPositivePixels": 100874,
+        "lostAbove127": 167,
+        "gainedAbove127": 146,
+        "meanLossOnPositive": 1.472223598790822,
+        "maxAbsError": 115.0
+      },
+      "G": {
+        "mae": 0.032242959104938275,
+        "positivePixels": 11707,
+        "decodedPositivePixels": 11711,
+        "lostAbove127": 1,
+        "gainedAbove127": 5,
+        "meanLossOnPositive": 1.7076962501067736,
+        "maxAbsError": 73.0
+      }
+    },
+    {
+      "frame": 30,
+      "rgbMAE": 0.734005111882716,
+      "R": {
+        "mae": 0.11945842978395062,
+        "positivePixels": 100810,
+        "decodedPositivePixels": 100761,
+        "lostAbove127": 178,
+        "gainedAbove127": 129,
+        "meanLossOnPositive": 1.4548159904771352,
+        "maxAbsError": 122.0
+      },
+      "G": {
+        "mae": 0.03160059799382716,
+        "positivePixels": 11694,
+        "decodedPositivePixels": 11696,
+        "lostAbove127": 1,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.6874465537882675,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 31,
+      "rgbMAE": 0.7399996784979423,
+      "R": {
+        "mae": 0.12167631172839506,
+        "positivePixels": 101203,
+        "decodedPositivePixels": 101188,
+        "lostAbove127": 165,
+        "gainedAbove127": 150,
+        "meanLossOnPositive": 1.4519826487357095,
+        "maxAbsError": 113.0
+      },
+      "G": {
+        "mae": 0.03111111111111111,
+        "positivePixels": 11759,
+        "decodedPositivePixels": 11765,
+        "lostAbove127": 0,
+        "gainedAbove127": 6,
+        "meanLossOnPositive": 1.5944383025767497,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 32,
+      "rgbMAE": 0.7419619663065844,
+      "R": {
+        "mae": 0.11750385802469136,
+        "positivePixels": 100761,
+        "decodedPositivePixels": 100737,
+        "lostAbove127": 158,
+        "gainedAbove127": 134,
+        "meanLossOnPositive": 1.4336300751282738,
+        "maxAbsError": 111.0
+      },
+      "G": {
+        "mae": 0.028939525462962964,
+        "positivePixels": 11376,
+        "decodedPositivePixels": 11375,
+        "lostAbove127": 1,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.5175808720112518,
+        "maxAbsError": 66.0
+      }
+    },
+    {
+      "frame": 33,
+      "rgbMAE": 0.7415022183641975,
+      "R": {
+        "mae": 0.11792293595679013,
+        "positivePixels": 101092,
+        "decodedPositivePixels": 101075,
+        "lostAbove127": 149,
+        "gainedAbove127": 132,
+        "meanLossOnPositive": 1.4244747358841452,
+        "maxAbsError": 116.0
+      },
+      "G": {
+        "mae": 0.02812307098765432,
+        "positivePixels": 10993,
+        "decodedPositivePixels": 10995,
+        "lostAbove127": 1,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.4824888565450742,
+        "maxAbsError": 69.0
+      }
+    },
+    {
+      "frame": 34,
+      "rgbMAE": 0.7388152649176954,
+      "R": {
+        "mae": 0.12318045910493827,
+        "positivePixels": 101338,
+        "decodedPositivePixels": 101334,
+        "lostAbove127": 143,
+        "gainedAbove127": 139,
+        "meanLossOnPositive": 1.4758234818133376,
+        "maxAbsError": 138.0
+      },
+      "G": {
+        "mae": 0.029741994598765434,
+        "positivePixels": 11013,
+        "decodedPositivePixels": 11013,
+        "lostAbove127": 1,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.479524198674294,
+        "maxAbsError": 66.0
+      }
+    },
+    {
+      "frame": 35,
+      "rgbMAE": 0.7452936921296296,
+      "R": {
+        "mae": 0.1256028163580247,
+        "positivePixels": 102488,
+        "decodedPositivePixels": 102486,
+        "lostAbove127": 145,
+        "gainedAbove127": 143,
+        "meanLossOnPositive": 1.4886328155491375,
+        "maxAbsError": 156.0
+      },
+      "G": {
+        "mae": 0.0305444637345679,
+        "positivePixels": 11345,
+        "decodedPositivePixels": 11344,
+        "lostAbove127": 1,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.4815337152930808,
+        "maxAbsError": 65.0
+      }
+    },
+    {
+      "frame": 36,
+      "rgbMAE": 0.7424664030349795,
+      "R": {
+        "mae": 0.12168547453703704,
+        "positivePixels": 103087,
+        "decodedPositivePixels": 103063,
+        "lostAbove127": 145,
+        "gainedAbove127": 121,
+        "meanLossOnPositive": 1.43846459786394,
+        "maxAbsError": 149.0
+      },
+      "G": {
+        "mae": 0.028856095679012345,
+        "positivePixels": 11699,
+        "decodedPositivePixels": 11698,
+        "lostAbove127": 1,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.4019146935635525,
+        "maxAbsError": 58.0
+      }
+    },
+    {
+      "frame": 37,
+      "rgbMAE": 0.740912583590535,
+      "R": {
+        "mae": 0.1275954861111111,
+        "positivePixels": 104572,
+        "decodedPositivePixels": 104511,
+        "lostAbove127": 196,
+        "gainedAbove127": 135,
+        "meanLossOnPositive": 1.461959224266534,
+        "maxAbsError": 136.0
+      },
+      "G": {
+        "mae": 0.031108217592592594,
+        "positivePixels": 11681,
+        "decodedPositivePixels": 11681,
+        "lostAbove127": 0,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.4908826299118225,
+        "maxAbsError": 64.0
+      }
+    },
+    {
+      "frame": 38,
+      "rgbMAE": 0.7355037937242799,
+      "R": {
+        "mae": 0.1260836226851852,
+        "positivePixels": 104659,
+        "decodedPositivePixels": 104621,
+        "lostAbove127": 163,
+        "gainedAbove127": 125,
+        "meanLossOnPositive": 1.4243973284667348,
+        "maxAbsError": 139.0
+      },
+      "G": {
+        "mae": 0.03017650462962963,
+        "positivePixels": 11750,
+        "decodedPositivePixels": 11750,
+        "lostAbove127": 1,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4591489361702128,
+        "maxAbsError": 68.0
+      }
+    },
+    {
+      "frame": 39,
+      "rgbMAE": 0.7415755208333333,
+      "R": {
+        "mae": 0.1267925347222222,
+        "positivePixels": 104731,
+        "decodedPositivePixels": 104700,
+        "lostAbove127": 158,
+        "gainedAbove127": 127,
+        "meanLossOnPositive": 1.4383802312591305,
+        "maxAbsError": 146.0
+      },
+      "G": {
+        "mae": 0.03055217978395062,
+        "positivePixels": 11758,
+        "decodedPositivePixels": 11760,
+        "lostAbove127": 0,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.4590916822588875,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 40,
+      "rgbMAE": 0.7432987718621399,
+      "R": {
+        "mae": 0.13061390817901233,
+        "positivePixels": 105663,
+        "decodedPositivePixels": 105618,
+        "lostAbove127": 194,
+        "gainedAbove127": 149,
+        "meanLossOnPositive": 1.4682906977844656,
+        "maxAbsError": 152.0
+      },
+      "G": {
+        "mae": 0.032133969907407404,
+        "positivePixels": 12091,
+        "decodedPositivePixels": 12093,
+        "lostAbove127": 0,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.5537176412207427,
+        "maxAbsError": 68.0
+      }
+    },
+    {
+      "frame": 41,
+      "rgbMAE": 0.7446006944444444,
+      "R": {
+        "mae": 0.1303245563271605,
+        "positivePixels": 105630,
+        "decodedPositivePixels": 105583,
+        "lostAbove127": 194,
+        "gainedAbove127": 147,
+        "meanLossOnPositive": 1.4708416169648775,
+        "maxAbsError": 146.0
+      },
+      "G": {
+        "mae": 0.03202932098765432,
+        "positivePixels": 12158,
+        "decodedPositivePixels": 12156,
+        "lostAbove127": 2,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.5139003125514066,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 42,
+      "rgbMAE": 0.7399834426440329,
+      "R": {
+        "mae": 0.12838252314814816,
+        "positivePixels": 105531,
+        "decodedPositivePixels": 105539,
+        "lostAbove127": 164,
+        "gainedAbove127": 172,
+        "meanLossOnPositive": 1.4516303266338801,
+        "maxAbsError": 139.0
+      },
+      "G": {
+        "mae": 0.03152391975308642,
+        "positivePixels": 12278,
+        "decodedPositivePixels": 12278,
+        "lostAbove127": 1,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4496660693924093,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 43,
+      "rgbMAE": 0.7463220164609053,
+      "R": {
+        "mae": 0.1290692515432099,
+        "positivePixels": 105574,
+        "decodedPositivePixels": 105558,
+        "lostAbove127": 178,
+        "gainedAbove127": 162,
+        "meanLossOnPositive": 1.4522799174039063,
+        "maxAbsError": 142.0
+      },
+      "G": {
+        "mae": 0.031392746913580245,
+        "positivePixels": 12415,
+        "decodedPositivePixels": 12413,
+        "lostAbove127": 3,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.44881192106323,
+        "maxAbsError": 63.0
+      }
+    },
+    {
+      "frame": 44,
+      "rgbMAE": 0.7474289480452675,
+      "R": {
+        "mae": 0.12843653549382716,
+        "positivePixels": 105631,
+        "decodedPositivePixels": 105633,
+        "lostAbove127": 161,
+        "gainedAbove127": 163,
+        "meanLossOnPositive": 1.4427204135149718,
+        "maxAbsError": 137.0
+      },
+      "G": {
+        "mae": 0.03081934799382716,
+        "positivePixels": 12520,
+        "decodedPositivePixels": 12522,
+        "lostAbove127": 2,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.400958466453674,
+        "maxAbsError": 64.0
+      }
+    },
+    {
+      "frame": 45,
+      "rgbMAE": 0.7488233024691358,
+      "R": {
+        "mae": 0.12866801697530864,
+        "positivePixels": 105497,
+        "decodedPositivePixels": 105491,
+        "lostAbove127": 179,
+        "gainedAbove127": 173,
+        "meanLossOnPositive": 1.4484582499976302,
+        "maxAbsError": 134.0
+      },
+      "G": {
+        "mae": 0.030885898919753088,
+        "positivePixels": 12470,
+        "decodedPositivePixels": 12469,
+        "lostAbove127": 1,
+        "gainedAbove127": 0,
+        "meanLossOnPositive": 1.4098636728147553,
+        "maxAbsError": 58.0
+      }
+    },
+    {
+      "frame": 46,
+      "rgbMAE": 0.7457759452160494,
+      "R": {
+        "mae": 0.1298799189814815,
+        "positivePixels": 105386,
+        "decodedPositivePixels": 105360,
+        "lostAbove127": 195,
+        "gainedAbove127": 169,
+        "meanLossOnPositive": 1.4338621828326343,
+        "maxAbsError": 140.0
+      },
+      "G": {
+        "mae": 0.03140817901234568,
+        "positivePixels": 12355,
+        "decodedPositivePixels": 12356,
+        "lostAbove127": 1,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.4220153783893161,
+        "maxAbsError": 70.0
+      }
+    },
+    {
+      "frame": 47,
+      "rgbMAE": 0.7525840727880658,
+      "R": {
+        "mae": 0.13142843364197532,
+        "positivePixels": 105367,
+        "decodedPositivePixels": 105314,
+        "lostAbove127": 206,
+        "gainedAbove127": 153,
+        "meanLossOnPositive": 1.452048554101379,
+        "maxAbsError": 140.0
+      },
+      "G": {
+        "mae": 0.031747685185185184,
+        "positivePixels": 12234,
+        "decodedPositivePixels": 12235,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4485859081248977,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 48,
+      "rgbMAE": 0.7545029578189301,
+      "R": {
+        "mae": 0.12925443672839507,
+        "positivePixels": 105225,
+        "decodedPositivePixels": 105204,
+        "lostAbove127": 189,
+        "gainedAbove127": 168,
+        "meanLossOnPositive": 1.436303159895462,
+        "maxAbsError": 133.0
+      },
+      "G": {
+        "mae": 0.031159818672839505,
+        "positivePixels": 12168,
+        "decodedPositivePixels": 12170,
+        "lostAbove127": 0,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.4427186061801447,
+        "maxAbsError": 64.0
+      }
+    },
+    {
+      "frame": 49,
+      "rgbMAE": 0.7585167502572017,
+      "R": {
+        "mae": 0.1290697337962963,
+        "positivePixels": 105491,
+        "decodedPositivePixels": 105466,
+        "lostAbove127": 192,
+        "gainedAbove127": 167,
+        "meanLossOnPositive": 1.452664208321089,
+        "maxAbsError": 126.0
+      },
+      "G": {
+        "mae": 0.031102430555555557,
+        "positivePixels": 12144,
+        "decodedPositivePixels": 12146,
+        "lostAbove127": 0,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.4192193675889329,
+        "maxAbsError": 63.0
+      }
+    },
+    {
+      "frame": 50,
+      "rgbMAE": 0.7562495177469136,
+      "R": {
+        "mae": 0.1289163773148148,
+        "positivePixels": 105448,
+        "decodedPositivePixels": 105411,
+        "lostAbove127": 194,
+        "gainedAbove127": 157,
+        "meanLossOnPositive": 1.43128366588271,
+        "maxAbsError": 134.0
+      },
+      "G": {
+        "mae": 0.030556520061728393,
+        "positivePixels": 12160,
+        "decodedPositivePixels": 12163,
+        "lostAbove127": 0,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.4157894736842105,
+        "maxAbsError": 58.0
+      }
+    },
+    {
+      "frame": 51,
+      "rgbMAE": 0.7615698945473252,
+      "R": {
+        "mae": 0.1299681712962963,
+        "positivePixels": 105334,
+        "decodedPositivePixels": 105296,
+        "lostAbove127": 218,
+        "gainedAbove127": 180,
+        "meanLossOnPositive": 1.4378073556496478,
+        "maxAbsError": 134.0
+      },
+      "G": {
+        "mae": 0.03117235725308642,
+        "positivePixels": 12199,
+        "decodedPositivePixels": 12201,
+        "lostAbove127": 0,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.4118370358226084,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 52,
+      "rgbMAE": 0.7640374228395062,
+      "R": {
+        "mae": 0.13000626929012346,
+        "positivePixels": 105789,
+        "decodedPositivePixels": 105756,
+        "lostAbove127": 201,
+        "gainedAbove127": 168,
+        "meanLossOnPositive": 1.4349601565380143,
+        "maxAbsError": 144.0
+      },
+      "G": {
+        "mae": 0.03107156635802469,
+        "positivePixels": 12146,
+        "decodedPositivePixels": 12149,
+        "lostAbove127": 0,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.3988967561337067,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 53,
+      "rgbMAE": 0.7711603009259259,
+      "R": {
+        "mae": 0.13050974151234568,
+        "positivePixels": 105618,
+        "decodedPositivePixels": 105572,
+        "lostAbove127": 215,
+        "gainedAbove127": 169,
+        "meanLossOnPositive": 1.4553674563047965,
+        "maxAbsError": 144.0
+      },
+      "G": {
+        "mae": 0.03136766975308642,
+        "positivePixels": 12151,
+        "decodedPositivePixels": 12152,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.436342687844622,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 54,
+      "rgbMAE": 0.7704343492798353,
+      "R": {
+        "mae": 0.12976466049382715,
+        "positivePixels": 106160,
+        "decodedPositivePixels": 106118,
+        "lostAbove127": 198,
+        "gainedAbove127": 156,
+        "meanLossOnPositive": 1.4554069329314243,
+        "maxAbsError": 153.0
+      },
+      "G": {
+        "mae": 0.030751350308641977,
+        "positivePixels": 12137,
+        "decodedPositivePixels": 12138,
+        "lostAbove127": 0,
+        "gainedAbove127": 1,
+        "meanLossOnPositive": 1.4243223201779682,
+        "maxAbsError": 61.0
+      }
+    },
+    {
+      "frame": 55,
+      "rgbMAE": 0.7774406828703704,
+      "R": {
+        "mae": 0.13071807484567902,
+        "positivePixels": 106576,
+        "decodedPositivePixels": 106537,
+        "lostAbove127": 203,
+        "gainedAbove127": 164,
+        "meanLossOnPositive": 1.4336435970574988,
+        "maxAbsError": 138.0
+      },
+      "G": {
+        "mae": 0.03169704861111111,
+        "positivePixels": 12164,
+        "decodedPositivePixels": 12168,
+        "lostAbove127": 0,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.4634988490628082,
+        "maxAbsError": 65.0
+      }
+    },
+    {
+      "frame": 56,
+      "rgbMAE": 0.7818394740226338,
+      "R": {
+        "mae": 0.13296440972222223,
+        "positivePixels": 108422,
+        "decodedPositivePixels": 108377,
+        "lostAbove127": 206,
+        "gainedAbove127": 161,
+        "meanLossOnPositive": 1.4591503569386286,
+        "maxAbsError": 130.0
+      },
+      "G": {
+        "mae": 0.03358506944444444,
+        "positivePixels": 12384,
+        "decodedPositivePixels": 12387,
+        "lostAbove127": 1,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.530281007751938,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 57,
+      "rgbMAE": 0.7836747685185185,
+      "R": {
+        "mae": 0.13369068287037036,
+        "positivePixels": 109306,
+        "decodedPositivePixels": 109253,
+        "lostAbove127": 203,
+        "gainedAbove127": 150,
+        "meanLossOnPositive": 1.4515763087113243,
+        "maxAbsError": 141.0
+      },
+      "G": {
+        "mae": 0.03349440586419753,
+        "positivePixels": 12328,
+        "decodedPositivePixels": 12330,
+        "lostAbove127": 1,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.5380434782608696,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 58,
+      "rgbMAE": 0.7819270833333334,
+      "R": {
+        "mae": 0.13381558641975308,
+        "positivePixels": 109223,
+        "decodedPositivePixels": 109180,
+        "lostAbove127": 194,
+        "gainedAbove127": 151,
+        "meanLossOnPositive": 1.4589417979729544,
+        "maxAbsError": 132.0
+      },
+      "G": {
+        "mae": 0.03341772762345679,
+        "positivePixels": 12325,
+        "decodedPositivePixels": 12329,
+        "lostAbove127": 1,
+        "gainedAbove127": 5,
+        "meanLossOnPositive": 1.5461257606490872,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 59,
+      "rgbMAE": 0.7908794688786008,
+      "R": {
+        "mae": 0.13403018904320987,
+        "positivePixels": 110072,
+        "decodedPositivePixels": 110008,
+        "lostAbove127": 215,
+        "gainedAbove127": 151,
+        "meanLossOnPositive": 1.481166872592485,
+        "maxAbsError": 137.0
+      },
+      "G": {
+        "mae": 0.03399498456790123,
+        "positivePixels": 12283,
+        "decodedPositivePixels": 12285,
+        "lostAbove127": 2,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.6159732964259546,
+        "maxAbsError": 64.0
+      }
+    },
+    {
+      "frame": 60,
+      "rgbMAE": 0.7973011509773662,
+      "R": {
+        "mae": 0.1362885802469136,
+        "positivePixels": 110555,
+        "decodedPositivePixels": 110486,
+        "lostAbove127": 221,
+        "gainedAbove127": 152,
+        "meanLossOnPositive": 1.4855411333725295,
+        "maxAbsError": 131.0
+      },
+      "G": {
+        "mae": 0.03442274305555556,
+        "positivePixels": 12225,
+        "decodedPositivePixels": 12226,
+        "lostAbove127": 2,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.589038854805726,
+        "maxAbsError": 65.0
+      }
+    },
+    {
+      "frame": 61,
+      "rgbMAE": 0.8025575488683128,
+      "R": {
+        "mae": 0.13685378086419753,
+        "positivePixels": 110868,
+        "decodedPositivePixels": 110807,
+        "lostAbove127": 222,
+        "gainedAbove127": 161,
+        "meanLossOnPositive": 1.487688061478515,
+        "maxAbsError": 133.0
+      },
+      "G": {
+        "mae": 0.03462094907407407,
+        "positivePixels": 12253,
+        "decodedPositivePixels": 12256,
+        "lostAbove127": 0,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.5700644740063658,
+        "maxAbsError": 63.0
+      }
+    },
+    {
+      "frame": 62,
+      "rgbMAE": 0.8033428176440329,
+      "R": {
+        "mae": 0.1360233410493827,
+        "positivePixels": 110943,
+        "decodedPositivePixels": 110858,
+        "lostAbove127": 228,
+        "gainedAbove127": 143,
+        "meanLossOnPositive": 1.4748564578206826,
+        "maxAbsError": 148.0
+      },
+      "G": {
+        "mae": 0.03410493827160494,
+        "positivePixels": 12267,
+        "decodedPositivePixels": 12270,
+        "lostAbove127": 1,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.5691693160511944,
+        "maxAbsError": 60.0
+      }
+    },
+    {
+      "frame": 63,
+      "rgbMAE": 0.8163477366255144,
+      "R": {
+        "mae": 0.13689525462962962,
+        "positivePixels": 110918,
+        "decodedPositivePixels": 110856,
+        "lostAbove127": 227,
+        "gainedAbove127": 165,
+        "meanLossOnPositive": 1.4827890874339602,
+        "maxAbsError": 156.0
+      },
+      "G": {
+        "mae": 0.033958815586419756,
+        "positivePixels": 12275,
+        "decodedPositivePixels": 12280,
+        "lostAbove127": 1,
+        "gainedAbove127": 6,
+        "meanLossOnPositive": 1.550794297352342,
+        "maxAbsError": 62.0
+      }
+    },
+    {
+      "frame": 64,
+      "rgbMAE": 0.8270500578703703,
+      "R": {
+        "mae": 0.13801359953703704,
+        "positivePixels": 111120,
+        "decodedPositivePixels": 111091,
+        "lostAbove127": 209,
+        "gainedAbove127": 180,
+        "meanLossOnPositive": 1.4815064794816415,
+        "maxAbsError": 137.0
+      },
+      "G": {
+        "mae": 0.03499614197530864,
+        "positivePixels": 12279,
+        "decodedPositivePixels": 12282,
+        "lostAbove127": 1,
+        "gainedAbove127": 4,
+        "meanLossOnPositive": 1.6520074924668133,
+        "maxAbsError": 59.0
+      }
+    },
+    {
+      "frame": 65,
+      "rgbMAE": 0.8421010159465021,
+      "R": {
+        "mae": 0.14087336033950618,
+        "positivePixels": 110964,
+        "decodedPositivePixels": 110922,
+        "lostAbove127": 238,
+        "gainedAbove127": 196,
+        "meanLossOnPositive": 1.520916693702462,
+        "maxAbsError": 138.0
+      },
+      "G": {
+        "mae": 0.03555121527777778,
+        "positivePixels": 12277,
+        "decodedPositivePixels": 12280,
+        "lostAbove127": 0,
+        "gainedAbove127": 3,
+        "meanLossOnPositive": 1.6664494583367273,
+        "maxAbsError": 63.0
+      }
+    },
+    {
+      "frame": 66,
+      "rgbMAE": 0.848316132973251,
+      "R": {
+        "mae": 0.13992332175925926,
+        "positivePixels": 111139,
+        "decodedPositivePixels": 111084,
+        "lostAbove127": 237,
+        "gainedAbove127": 182,
+        "meanLossOnPositive": 1.5167043072188882,
+        "maxAbsError": 145.0
+      },
+      "G": {
+        "mae": 0.03606819058641975,
+        "positivePixels": 12277,
+        "decodedPositivePixels": 12278,
+        "lostAbove127": 1,
+        "gainedAbove127": 2,
+        "meanLossOnPositive": 1.7480654883114768,
+        "maxAbsError": 66.0
+      }
+    }
+  ],
+  "timestampsExact24fpsTolerance2us": true
+}

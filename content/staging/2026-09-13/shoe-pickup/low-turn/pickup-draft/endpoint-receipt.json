@@ -1,0 +1,24 @@
+{
+  "status": "extended staging draft; close composite review still required",
+  "lastNativeFrame": 66,
+  "frameCount": 67,
+  "slideFirstRecommended": 2,
+  "newMotion": "55\u201361 actual wrist/finger adjustment and recontact,62\u201366 settled",
+  "newFramesInspected": [
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66
+  ],
+  "scriptSha256": "f1e447353ef26abaa5597cf257740e078bf0e6976a90d573ac8f83bc23fa52cf",
+  "lastMaskSha256": "323fa83236e53a54250ae3e4a99e521ab72b6304bf52d0084b8a7539f7e4611f",
+  "noRepackByThisAgent": true
+}

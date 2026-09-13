@@ -5,10 +5,10 @@ from PIL import Image,ImageDraw
 sys.path.insert(0,'/tmp/astrid-optical-flow');import cv2
 p=Path(__file__).resolve().parent;src=p.parent/'mattes/source'
 # Visible card vicinity estimates; bounding regions are deliberately not hidden corners.
-keys={0:[1200,590,1275,666],7:[1200,590,1275,666],13:[1178,595,1270,668],19:[1162,595,1254,670],25:[1060,520,1146,607],31:[1027,503,1119,597],36:[1027,520,1110,594],37:[1037,540,1115,591],38:[1042,551,1118,594],39:[1045,557,1119,592],40:[1054,579,1124,599],41:[1057,591,1129,609],42:[1060,604,1128,624],43:[1061,608,1135,636],44:[1062,610,1141,646],45:[1062,613,1144,652],54:[1050,612,1143,657]}
+keys={0:[1200,590,1275,666],7:[1200,590,1275,666],13:[1178,595,1270,668],19:[1162,595,1254,670],25:[1060,520,1146,607],31:[1027,503,1119,597],36:[1027,520,1110,594],37:[1037,540,1115,591],38:[1042,551,1118,594],39:[1045,557,1119,592],40:[1054,579,1124,599],41:[1057,591,1129,609],42:[1060,604,1128,624],43:[1061,608,1135,636],44:[1062,610,1141,646],45:[1062,613,1144,652],54:[1050,612,1143,657],66:[1050,612,1143,657]}
 for d in ['pickup-rg','pickup-checker']:(p/d).mkdir(exist_ok=True)
 yy,xx=np.indices((1080,1920));checker=np.where(((xx//24+yy//24)%2)[...,None],[85,100,112],[150,162,174]).astype(np.uint8);rows=[];tiles=[]
-for n in range(55):
+for n in range(67):
  rgb=np.array(Image.open(src/'frames'/f'{n+1:04d}.png').convert('RGB'));m=np.array(Image.open(src/'person'/f'{n+1:04d}.png').convert('L'));r,g,b=rgb.astype(np.int16).transpose(2,0,1)
  left=max(k for k in keys if k<=n);right=min(k for k in keys if k>=n);t=0 if left==right else (n-left)/(right-left);box=np.round(np.array(keys[left])*(1-t)+np.array(keys[right])*t).astype(int);x0,y0,x1,y1=box
  region=(xx>=x0)&(xx<=x1)&(yy>=y0)&(yy<=y1)
@@ -37,7 +37,7 @@ for n in range(55):
  view=(rgb*a[:,:,None]/255+checker*(1-a[:,:,None]/255)).astype(np.uint8) if False else (rgb*(a[:,:,None]/255)+checker*(1-a[:,:,None]/255)).astype(np.uint8);Image.fromarray(view).save(p/'pickup-checker'/f'{n:04d}.jpg',quality=94)
  tile=Image.new('RGB',(800,330),'#222');tile.paste(Image.fromarray(rgb).crop((880,480,1380,780)).resize((400,240)),(0,20));tile.paste(Image.fromarray(view).crop((880,480,1380,780)).resize((400,240)),(400,20));ImageDraw.Draw(tile).text((5,270),f'n{n} source / DRAFT cleaned; region {box.tolist()}',fill='white');tiles.append(tile)
  rows.append({'frame':n,'cardRemovalBoundsNative':box.tolist(),'method':'manual visible vicinity estimate' if n in keys else 'linear interpolation between manual visible vicinity estimates','boundUncertaintyPixels':8 if 36<=n<=45 else 12,'visibleCardCornersNative':None,'hiddenCorners':None,'contactMeasured':False,'cardVisibility':'inside shoe or partly occluded' if n<14 else 'red back' if n<40 else 'edge-on blurred' if n<43 else 'face-up','visibleSkinPixels':int((fg>128).sum())})
-for page in range(5):
+for page in range(6):
  s=Image.new('RGB',(1600,1980),'#222')
  for j,tile in enumerate(tiles[page*12:page*12+12]):s.paste(tile,(j%2*800,j//2*330))
  s.save(p/f'review-{page}.jpg',quality=94)

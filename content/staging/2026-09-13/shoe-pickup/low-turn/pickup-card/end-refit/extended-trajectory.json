@@ -1,0 +1,2458 @@
+{
+  "status": "STAGING ONLY; visible manual estimates plus authored pose fit; not source calibration or approved contact",
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/source.mp4",
+  "sourceSHA256": "3ac36f71ad4f3c5144e6258ca1e46b174325278eea4f37d4f9c559fe7f97274e",
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "fps": 24,
+  "physicalDimensions": {
+    "width": 60.4745040191485,
+    "height": 86.68012242744618,
+    "units": "authored source-native orthographic pixels; canonical uniform registration gives60.4706128\u00d786.6745450",
+    "constantAcrossAllFrames": true
+  },
+  "cornerOrder": "A B C D maintain physical identity through turnover",
+  "observations": [
+    {
+      "frame": 13,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1190,
+            626
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1263,
+            642
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1242,
+            659
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        10.784674093452308,
+        null,
+        2.6313767493013076,
+        13.416051014470177
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 19,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1166,
+            612
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1246,
+            644
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1210,
+            661
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        5.093696546399732,
+        null,
+        10.603090962218332,
+        5.509442812370354
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 25,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1072,
+            535
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1136,
+            595
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1084,
+            605
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        0.5764766583734334,
+        null,
+        3.1834239666246082,
+        3.7598602101487035
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 31,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1054,
+            513
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1091,
+            592
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1037,
+            576
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        0.037682478920766024,
+        null,
+        2.0582704579928395,
+        2.0942482258689137
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 33,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1048,
+            512
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1100,
+            530
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1075,
+            597
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1026,
+            578
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        2.8892247744292465,
+        2.687668834822095,
+        4.072984695465844,
+        3.867254715128124
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 35,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1044,
+            516
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1100,
+            531
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1080,
+            595
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1029,
+            578
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        1.6112881979162499,
+        1.4938279975780728,
+        3.5082225246943657,
+        3.377021417044281
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 37,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1048,
+            559
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1105,
+            563
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1096,
+            598
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        1.4457373141739562,
+        1.558912705898869,
+        0.11534279567764323,
+        null
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 39,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1050,
+            576
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1110,
+            579
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1100,
+            599
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        }
+      ],
+      "residualPixels": [
+        0.0248753033942042,
+        0.02805768774950161,
+        0.00898160248288696,
+        null
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 41,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1120,
+            611
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "C",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        }
+      ],
+      "residualPixels": [
+        null,
+        3.8896616669849906,
+        null,
+        null
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 43,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1128,
+            635
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1108,
+            618
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1070,
+            615
+          ],
+          "uncertaintyPixels": 8
+        }
+      ],
+      "residualPixels": [
+        null,
+        1.191086850217374,
+        10.266530416382782,
+        11.457445591070323
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 45,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1135,
+            655
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1112,
+            626
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1068,
+            626
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        null,
+        1.379563688004986,
+        6.812468079750354,
+        8.192006887854903
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 50,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1135,
+            657
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1114,
+            625
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        null,
+        0.05773252116083917,
+        0.05773255988611524,
+        null
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 54,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1135,
+            649
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1113,
+            618
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        null,
+        0.015092883293545164,
+        0.015092942396273495,
+        null
+      ],
+      "contactMeasured": false
+    }
+  ],
+  "frames": [
+    {
+      "frame": 0,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 1,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 2,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 3,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 4,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 5,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 6,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 7,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 8,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 9,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 10,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 11,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 12,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 13,
+      "quadNative": [
+        [
+          1181.5482108157173,
+          619.3010109056348
+        ],
+        [
+          1189.972314809889,
+          592.3327223179951
+        ],
+        [
+          1260.9379464922442,
+          640.3653505183325
+        ],
+        [
+          1252.5138424980726,
+          667.3336391059722
+        ]
+      ],
+      "rotationVector": [
+        -0.4160508956956916,
+        -1.0854881175963753,
+        -0.9525065413535404
+      ],
+      "centerNative": [
+        1221.2430786539808,
+        629.8331807119837
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 2318.453490086927
+    },
+    {
+      "frame": 14,
+      "quadNative": [
+        [
+          1175.00922035959,
+          617.2213887620826
+        ],
+        [
+          1192.4808393576109,
+          591.9682137828139
+        ],
+        [
+          1263.3085959469163,
+          641.9347454096435
+        ],
+        [
+          1245.8369769488954,
+          667.1879203889122
+        ]
+      ],
+      "rotationVector": [
+        -0.4906287012689593,
+        -0.9575788299614814,
+        -0.8691406813054251
+      ],
+      "centerNative": [
+        1219.1589081532532,
+        629.578067085863
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 2661.6219337753064
+    },
+    {
+      "frame": 15,
+      "quadNative": [
+        [
+          1169.6362668448378,
+          615.3275248869679
+        ],
+        [
+          1195.6932813594674,
+          592.0335355091219
+        ],
+        [
+          1264.5132084602133,
+          643.3183820325164
+        ],
+        [
+          1238.4561939455837,
+          666.6123714103625
+        ]
+      ],
+      "rotationVector": [
+        -0.565206506842227,
+        -0.8296695423265875,
+        -0.7857748212573099
+      ],
+      "centerNative": [
+        1217.0747376525255,
+        629.3229534597422
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 2939.4206411095574
+    },
+    {
+      "frame": 16,
+      "quadNative": [
+        [
+          1165.5128048359402,
+          613.7172815886131
+        ],
+        [
+          1199.4865669541414,
+          592.5191741759611
+        ],
+        [
+          1264.4683294676556,
+          644.4183980786297
+        ],
+        [
+          1230.4945673494544,
+          665.6165054912817
+        ]
+      ],
+      "rotationVector": [
+        -0.6397843124154946,
+        -0.7017602546916935,
+        -0.7024089612091945
+      ],
+      "centerNative": [
+        1214.990567151798,
+        629.0678398336214
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3140.7022686134433
+    },
+    {
+      "frame": 17,
+      "quadNative": [
+        [
+          1162.6871427744147,
+          612.4795625033718
+        ],
+        [
+          1203.7249157383083,
+          593.4024584201039
+        ],
+        [
+          1263.1256505277258,
+          645.1458899116295
+        ],
+        [
+          1222.0878775638323,
+          664.2229939948974
+        ]
+      ],
+      "rotationVector": [
+        -0.7143621179887623,
+        -0.5738509670567995,
+        -0.6190431011610792
+      ],
+      "centerNative": [
+        1212.9063966510703,
+        628.8127262075006
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3256.6291941223144
+    },
+    {
+      "frame": 18,
+      "quadNative": [
+        [
+          1161.1711605282746,
+          611.691242870261
+        ],
+        [
+          1208.263486611422,
+          594.6482481924013
+        ],
+        [
+          1260.4732917724107,
+          645.423982292499
+        ],
+        [
+          1213.3809656892633,
+          662.4669769703587
+        ]
+      ],
+      "rotationVector": [
+        -0.7889399235620299,
+        -0.44594167942190555,
+        -0.5356772411129639
+      ],
+      "centerNative": [
+        1210.8222261503427,
+        628.55761258138
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3280.9588588438064
+    },
+    {
+      "frame": 19,
+      "quadNative": [
+        [
+          1160.9400706123417,
+          611.4144582861001
+        ],
+        [
+          1212.9522361335266,
+          596.2099912179025
+        ],
+        [
+          1256.5360406868883,
+          645.1905396244182
+        ],
+        [
+          1204.5238751657034,
+          660.3950066926158
+        ]
+      ],
+      "rotationVector": [
+        -0.8635177291352976,
+        -0.3180323917870116,
+        -0.4523113810648486
+      ],
+      "centerNative": [
+        1208.738055649615,
+        628.3024989552591
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3210.252912076451
+    },
+    {
+      "frame": 20,
+      "quadNative": [
+        [
+          1145.5449891084836,
+          598.8298465314052
+        ],
+        [
+          1199.9597864059037,
+          583.0553280606617
+        ],
+        [
+          1237.5885504280586,
+          636.4142173401921
+        ],
+        [
+          1183.1737531306385,
+          652.1887358109356
+        ]
+      ],
+      "rotationVector": [
+        -0.8151084471042944,
+        -0.22886889216193262,
+        -0.40422014144040785
+      ],
+      "centerNative": [
+        1191.5667697682711,
+        617.6220319357986
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3497.0887772598576
+    },
+    {
+      "frame": 21,
+      "quadNative": [
+        [
+          1130.4419748168277,
+          586.1390544813335
+        ],
+        [
+          1186.755588397732,
+          570.1879590030375
+        ],
+        [
+          1218.3489929570267,
+          627.7440753513426
+        ],
+        [
+          1162.0353793761224,
+          643.6951708296386
+        ]
+      ],
+      "rotationVector": [
+        -0.7666991650732912,
+        -0.1397053925368537,
+        -0.356128901815967
+      ],
+      "centerNative": [
+        1174.3954838869272,
+        606.941564916338
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3745.142307865768
+    },
+    {
+      "frame": 22,
+      "quadNative": [
+        [
+          1115.6122378346947,
+          573.3642007324814
+        ],
+        [
+          1173.287931467355,
+          557.6253553119384
+        ],
+        [
+          1198.8361581764718,
+          619.1579950612735
+        ],
+        [
+          1141.1604645438115,
+          634.8968404818165
+        ]
+      ],
+      "rotationVector": [
+        -0.7182898830422879,
+        -0.05054189291177473,
+        -0.30803766219152623
+      ],
+      "centerNative": [
+        1157.2241980055833,
+        596.2610978968775
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3951.037269535286
+    },
+    {
+      "frame": 23,
+      "quadNative": [
+        [
+          1101.0337034257798,
+          560.5281805921948
+        ],
+        [
+          1159.5084785156314,
+          545.3808975234551
+        ],
+        [
+          1179.0721208226985,
+          610.6330811626392
+        ],
+        [
+          1120.5973457328469,
+          625.7803642313788
+        ]
+      ],
+      "rotationVector": [
+        -0.6698806010112847,
+        0.03862160671330421,
+        -0.25994642256708544
+      ],
+      "centerNative": [
+        1140.0529121242391,
+        585.580630877417
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4111.942790303699
+    },
+    {
+      "frame": 24,
+      "quadNative": [
+        [
+          1086.681260700142,
+          547.65439111419
+        ],
+        [
+          1145.3728840444178,
+          533.4637495558932
+        ],
+        [
+          1159.0819917856484,
+          602.1459366017227
+        ],
+        [
+          1100.3903684413726,
+          616.3365781600196
+        ]
+      ],
+      "rotationVector": [
+        -0.6214713189802814,
+        0.1277851063383832,
+        -0.21185518294264466
+      ],
+      "centerNative": [
+        1122.8816262428952,
+        574.9001638579564
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4225.610086594798
+    },
+    {
+      "frame": 25,
+      "quadNative": [
+        [
+          1072.5270486474092,
+          534.7664511594686
+        ],
+        [
+          1130.8413614251065,
+          521.8787872772874
+        ],
+        [
+          1138.8936320756934,
+          593.672942517523
+        ],
+        [
+          1080.579319297996,
+          606.5606063997042
+        ]
+      ],
+      "rotationVector": [
+        -0.5730620369492782,
+        0.21694860596346213,
+        -0.1637639433182039
+      ],
+      "centerNative": [
+        1105.7103403615513,
+        564.2196968384958
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4290.401781922769
+    },
+    {
+      "frame": 26,
+      "quadNative": [
+        [
+          1069.0409425434532,
+          530.6028952379653
+        ],
+        [
+          1128.4733389186572,
+          522.601561916156
+        ],
+        [
+          1131.6483012171498,
+          594.0143609604851
+        ],
+        [
+          1072.2159048419458,
+          602.0156942822944
+        ]
+      ],
+      "rotationVector": [
+        -0.5965269302298583,
+        0.16573264871027263,
+        -0.09024231811100336
+      ],
+      "centerNative": [
+        1100.3446218803015,
+        562.3086280992252
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4269.637710699772
+    },
+    {
+      "frame": 27,
+      "quadNative": [
+        [
+          1065.748172405024,
+          526.6316433677944
+        ],
+        [
+          1125.8309371533003,
+          523.6095854657785
+        ],
+        [
+          1124.2096343930789,
+          594.1634753521148
+        ],
+        [
+          1064.1268696448026,
+          597.1855332541306
+        ]
+      ],
+      "rotationVector": [
+        -0.6199918235104384,
+        0.11451669145708311,
+        -0.016720692903802806
+      ],
+      "centerNative": [
+        1094.9789033990514,
+        560.3975593599546
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4234.173097298445
+    },
+    {
+      "frame": 28,
+      "quadNative": [
+        [
+          1062.626115559773,
+          522.8705769069616
+        ],
+        [
+          1122.8894747834418,
+          524.8804686745555
+        ],
+        [
+          1116.6002542758297,
+          594.1024043344064
+        ],
+        [
+          1056.336895052161,
+          592.0925125668125
+        ]
+      ],
+      "rotationVector": [
+        -0.6434567167910183,
+        0.06330073420389357,
+        0.056800932303397764
+      ],
+      "centerNative": [
+        1089.6131849178014,
+        558.486490620684
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4184.187027350109
+    },
+    {
+      "frame": 29,
+      "quadNative": [
+        [
+          1059.6507021686384,
+          519.3356728718068
+        ],
+        [
+          1119.6268752038386,
+          526.3895227902701
+        ],
+        [
+          1108.8442307044647,
+          593.81517089102
+        ],
+        [
+          1048.8680576692645,
+          586.7613209725566
+        ]
+      ],
+      "rotationVector": [
+        -0.6669216100715984,
+        0.012084776950704049,
+        0.13032255751059832
+      ],
+      "centerNative": [
+        1084.2474664365516,
+        556.5754218814134
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4119.991493523819
+    },
+    {
+      "frame": 30,
+      "quadNative": [
+        [
+          1056.796636001722,
+          516.0408663041048
+        ],
+        [
+          1116.023859961192,
+          528.1099642503401
+        ],
+        [
+          1100.9668599088816,
+          593.2878399801807
+        ],
+        [
+          1041.7396359494114,
+          581.2187420339454
+        ]
+      ],
+      "rotationVector": [
+        -0.6903865033521785,
+        -0.0391311803024855,
+        0.2038441827177989
+      ],
+      "centerNative": [
+        1078.8817479553018,
+        554.6643531421428
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4042.029051461589
+    },
+    {
+      "frame": 31,
+      "quadNative": [
+        [
+          1054.0376256079287,
+          512.9979304962891
+        ],
+        [
+          1112.0641179420768,
+          530.013137534119
+        ],
+        [
+          1092.9944333401747,
+          592.5086383094553
+        ],
+        [
+          1034.9679410060266,
+          575.4934312716254
+        ]
+      ],
+      "rotationVector": [
+        -0.7138513966327587,
+        -0.09034713755567501,
+        0.27736580792499943
+      ],
+      "centerNative": [
+        1073.5160294740517,
+        552.7532844028722
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3950.869328306276
+    },
+    {
+      "frame": 32,
+      "quadNative": [
+        [
+          1049.7566808957497,
+          511.63715580917216
+        ],
+        [
+          1107.1471301063082,
+          530.6993960030868
+        ],
+        [
+          1086.009348578302,
+          595.3661285937
+        ],
+        [
+          1028.6188993677436,
+          576.3038883997854
+        ]
+      ],
+      "rotationVector": [
+        -0.6615115227452797,
+        -0.11289036523213117,
+        0.30660465778307167
+      ],
+      "centerNative": [
+        1067.8830147370259,
+        553.5016422014361
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4114.1863010076995
+    },
+    {
+      "frame": 33,
+      "quadNative": [
+        [
+          1045.5668179143609,
+          510.4420382754058
+        ],
+        [
+          1102.2394107592017,
+          531.4861370115993
+        ],
+        [
+          1078.9331820856391,
+          598.0579617245942
+        ],
+        [
+          1022.2605892407981,
+          577.0138629884007
+        ]
+      ],
+      "rotationVector": [
+        -0.6091716488578008,
+        -0.1354335929085873,
+        0.3358435076411439
+      ],
+      "centerNative": [
+        1062.25,
+        554.25
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4263.256494272432
+    },
+    {
+      "frame": 34,
+      "quadNative": [
+        [
+          1044.2625749439628,
+          512.5237102811587
+        ],
+        [
+          1101.5652271117808,
+          531.7851930056006
+        ],
+        [
+          1081.2374250560372,
+          596.7262897188413
+        ],
+        [
+          1023.9347728882193,
+          577.4648069943994
+        ]
+      ],
+      "rotationVector": [
+        -0.6580088692952024,
+        -0.1335770379427582,
+        0.3032030002772119
+      ],
+      "centerNative": [
+        1062.75,
+        554.625
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4112.840684478035
+    },
+    {
+      "frame": 35,
+      "quadNative": [
+        [
+          1043.0017883963856,
+          514.7351588039783
+        ],
+        [
+          1100.8702225869215,
+          532.2141806848899
+        ],
+        [
+          1083.4982116036144,
+          595.2648411960217
+        ],
+        [
+          1025.6297774130785,
+          577.7858193151101
+        ]
+      ],
+      "rotationVector": [
+        -0.706846089732604,
+        -0.13172048297692907,
+        0.27056249291328
+      ],
+      "centerNative": [
+        1063.25,
+        555.0
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3952.288758550916
+    },
+    {
+      "frame": 36,
+      "quadNative": [
+        [
+          1044.0886020613111,
+          535.9055813081234
+        ],
+        [
+          1103.449605818278,
+          547.0393999327624
+        ],
+        [
+          1090.3820963597555,
+          597.5788863922826
+        ],
+        [
+          1031.0210926027885,
+          586.4450677676435
+        ]
+      ],
+      "rotationVector": [
+        -0.9280074621544039,
+        -0.03876370798397205,
+        0.19549086734316823
+      ],
+      "centerNative": [
+        1067.2353492105333,
+        566.742233850203
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3145.5659257857037
+    },
+    {
+      "frame": 37,
+      "quadNative": [
+        [
+          1046.5551356516814,
+          558.9497665793231
+        ],
+        [
+          1106.5586031625135,
+          563.0310645524024
+        ],
+        [
+          1095.8862611904517,
+          598.0191688214888
+        ],
+        [
+          1035.8827936796197,
+          593.9378708484095
+        ]
+      ],
+      "rotationVector": [
+        -1.149168834576204,
+        0.054193067008984956,
+        0.12041924177305643
+      ],
+      "centerNative": [
+        1071.2206984210666,
+        578.484467700406
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 2142.9645854343157
+    },
+    {
+      "frame": 38,
+      "quadNative": [
+        [
+          1048.2647348073924,
+          567.4148513814272
+        ],
+        [
+          1108.292920240118,
+          570.9517777126985
+        ],
+        [
+          1097.9423467050701,
+          598.5729909747548
+        ],
+        [
+          1037.9141612723445,
+          595.0360646434835
+        ]
+      ],
+      "rotationVector": [
+        -1.2411700000712962,
+        0.05598551650181537,
+        0.11704991367222078
+      ],
+      "centerNative": [
+        1073.1035407562313,
+        582.993921178091
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 1694.6605276514508
+    },
+    {
+      "frame": 39,
+      "quadNative": [
+        [
+          1049.9751971391624,
+          575.9981029461719
+        ],
+        [
+          1110.027233815173,
+          578.9932506924083
+        ],
+        [
+          1099.99756904363,
+          599.0086463653802
+        ],
+        [
+          1039.9455323676193,
+          596.0134986191438
+        ]
+      ],
+      "rotationVector": [
+        -1.3331711655663887,
+        0.05777796599464579,
+        0.11368058557138512
+      ],
+      "centerNative": [
+        1074.9863830913962,
+        587.503374655776
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 1232.0056028741649
+    },
+    {
+      "frame": 40,
+      "quadNative": [
+        [
+          1055.0328774219136,
+          589.2745175362771
+        ],
+        [
+          1114.9883660399391,
+          593.040977469642
+        ],
+        [
+          1104.398594056587,
+          604.172691828211
+        ],
+        [
+          1044.4431054385614,
+          600.4062318948461
+        ]
+      ],
+      "rotationVector": [
+        -1.4359501470719649,
+        0.04976520820007148,
+        0.13418151988074065
+      ],
+      "centerNative": [
+        1079.7157357392502,
+        596.7236046822441
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 707.2933254030592
+    },
+    {
+      "frame": 41,
+      "quadNative": [
+        [
+          1059.9923690655514,
+          602.6538144662691
+        ],
+        [
+          1119.833656625625,
+          607.1138968406109
+        ],
+        [
+          1108.8978077086567,
+          609.2338549511553
+        ],
+        [
+          1049.056520148583,
+          604.7737725768135
+        ]
+      ],
+      "rotationVector": [
+        -1.5387291285775409,
+        0.041752450405497174,
+        0.15468245419009619
+      ],
+      "centerNative": [
+        1084.445088387104,
+        605.9438347087122
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 175.63580991143434
+    },
+    {
+      "frame": 42,
+      "quadNative": [
+        [
+          1064.8529969132621,
+          616.0902113662736
+        ],
+        [
+          1124.564840658471,
+          621.1584900346372
+        ],
+        [
+          1113.4958851566537,
+          614.237918104087
+        ],
+        [
+          1053.7840414114448,
+          609.1696394357234
+        ]
+      ],
+      "rotationVector": [
+        -1.6415081100831168,
+        0.03373969261092286,
+        0.17518338849945173
+      ],
+      "centerNative": [
+        1089.174441034958,
+        615.1640647351803
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -357.13955869356397
+    },
+    {
+      "frame": 43,
+      "quadNative": [
+        [
+          1069.615174756453,
+          629.537178952068
+        ],
+        [
+          1129.1848601795093,
+          635.1216315739185
+        ],
+        [
+          1118.1924126091706,
+          619.2314105712287
+        ],
+        [
+          1058.6227271861142,
+          613.6469579493781
+        ]
+      ],
+      "rotationVector": [
+        -1.744287091588693,
+        0.02572693481634855,
+        0.19568432280880727
+      ],
+      "centerNative": [
+        1093.9037936828117,
+        624.3842947616483
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -885.1886637783437
+    },
+    {
+      "frame": 44,
+      "quadNative": [
+        [
+          1070.9442943600093,
+          667.9913060243964
+        ],
+        [
+          1130.7906665206142,
+          661.2333576732609
+        ],
+        [
+          1118.4541049568688,
+          587.5382790230897
+        ],
+        [
+          1058.607732796264,
+          594.2962273742252
+        ]
+      ],
+      "rotationVector": [
+        -2.59668007886185,
+        0.17844970056046708,
+        0.07773286625759848
+      ],
+      "centerNative": [
+        1094.699199658439,
+        627.764792523743
+      ],
+      "status": "authored rigid transition43\u201346 to common plane; source residual must be reviewed",
+      "face": "front",
+      "signedArea": -4493.752949181587
+    },
+    {
+      "frame": 45,
+      "quadNative": [
+        [
+          1075.7365985895772,
+          677.4629398182147
+        ],
+        [
+          1134.646810987609,
+          665.2022263896692
+        ],
+        [
+          1115.2526126785556,
+          584.8276407534607
+        ],
+        [
+          1056.3424002805239,
+          597.0883541820062
+        ]
+      ],
+      "rotationVector": [
+        2.808050036229747,
+        -0.31106198334673385,
+        0.09589363853762244
+      ],
+      "centerNative": [
+        1095.4946056340664,
+        631.1452902858377
+      ],
+      "status": "authored rigid transition43\u201346 to common plane; source residual must be reviewed",
+      "face": "front",
+      "signedArea": -4972.670618876515
+    },
+    {
+      "frame": 46,
+      "quadNative": [
+        [
+          1081.1794914042694,
+          653.6657803081365
+        ],
+        [
+          1138.599468184882,
+          646.6142042122718
+        ],
+        [
+          1111.400531815118,
+          615.3857957877282
+        ],
+        [
+          1053.9805550345054,
+          622.437371883593
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.2900116096937,
+        634.5257880479323
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707494
+    },
+    {
+      "frame": 47,
+      "quadNative": [
+        [
+          1081.1457453071607,
+          653.4573216498089
+        ],
+        [
+          1138.565722087773,
+          646.4057455539443
+        ],
+        [
+          1111.3667857180094,
+          615.1773371294006
+        ],
+        [
+          1053.9468089373968,
+          622.2289132252654
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.2562655125848,
+        634.3173293896048
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 48,
+      "quadNative": [
+        [
+          1081.1119992100519,
+          653.2488629914815
+        ],
+        [
+          1138.5319759906643,
+          646.1972868956168
+        ],
+        [
+          1111.3330396209005,
+          614.9688784710731
+        ],
+        [
+          1053.913062840288,
+          622.0204545669379
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.2225194154762,
+        634.1088707312773
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 49,
+      "quadNative": [
+        [
+          1081.0782531129432,
+          653.0404043331539
+        ],
+        [
+          1138.4982298935556,
+          645.9888282372892
+        ],
+        [
+          1111.299293523792,
+          614.7604198127456
+        ],
+        [
+          1053.8793167431793,
+          621.8119959086104
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.1887733183676,
+        633.9004120729497
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 50,
+      "quadNative": [
+        [
+          1081.0445070158344,
+          652.8319456748263
+        ],
+        [
+          1138.4644837964468,
+          645.7803695789617
+        ],
+        [
+          1111.265547426683,
+          614.551961154418
+        ],
+        [
+          1053.8455706460704,
+          621.6035372502829
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.1550272212585,
+        633.6919534146223
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707353
+    },
+    {
+      "frame": 51,
+      "quadNative": [
+        [
+          1081.0107609187257,
+          652.6234870164989
+        ],
+        [
+          1138.4307376993381,
+          645.5719109206342
+        ],
+        [
+          1111.2318013295744,
+          614.3435024960905
+        ],
+        [
+          1053.8118245489618,
+          621.3950785919553
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.1212811241498,
+        633.4834947562947
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 52,
+      "quadNative": [
+        [
+          1080.9770148216169,
+          652.4150283581713
+        ],
+        [
+          1138.3969916022293,
+          645.3634522623066
+        ],
+        [
+          1111.1980552324655,
+          614.135043837763
+        ],
+        [
+          1053.778078451853,
+          621.1866199336278
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0875350270412,
+        633.2750360979671
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 53,
+      "quadNative": [
+        [
+          1080.9432687245082,
+          652.2065696998438
+        ],
+        [
+          1138.3632455051206,
+          645.1549936039792
+        ],
+        [
+          1111.164309135357,
+          613.9265851794355
+        ],
+        [
+          1053.7443323547443,
+          620.9781612753003
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0537889299326,
+        633.0665774396397
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 54,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 55,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 56,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 57,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 58,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 59,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 60,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 61,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 62,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 63,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 64,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 65,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    },
+    {
+      "frame": 66,
+      "quadNative": [
+        [
+          1080.9095226273994,
+          651.9981110415163
+        ],
+        [
+          1138.3294994080118,
+          644.9465349456516
+        ],
+        [
+          1111.130563038248,
+          613.7181265211079
+        ],
+        [
+          1053.7105862576354,
+          620.7697026169727
+        ]
+      ],
+      "rotationVector": [
+        1.9404416579822676,
+        -0.3106447091310892,
+        0.21209204807027573
+      ],
+      "centerNative": [
+        1096.0200428328235,
+        632.8581187813121
+      ],
+      "status": "authored constant rigid plane; stationary54\u201366 while source fingers adjust",
+      "face": "front",
+      "signedArea": -1984.9298561707424
+    }
+  ],
+  "selectedHandoff": {
+    "pickupLastInclusive": 66,
+    "slideFirstInclusive": 2,
+    "reason": "motion_review native wrist/finger recontact54\u201366; slide2 candidate equals slide0",
+    "cardStationaryInclusive": [
+      54,
+      66
+    ],
+    "registrationApproximation": "source54 camera registration retained through66; source66 registration to be consumed by renderer when available",
+    "unresolved": "pickup7\u201312 remain null; rigid-pose join45\u219246 and matte contact still require rendered review"
+  }
+}

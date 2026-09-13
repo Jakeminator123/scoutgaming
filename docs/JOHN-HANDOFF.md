@@ -1,3 +1,11 @@
+# Current: restored pickup transition and assembled native cycle
+
+The omitted pickup frames55–61 contain the real finger curl and recontact. Extending through66 fixes the previously misdiagnosed missing-motion seam without another generation. Recommended join is pickup66 to slide2; registered hand ROI difference falls from23.45 to7.64/255. Evidence is in low-turn/cycle-registration, including every candidate and the corrected BRIDGE-PLAN.md. Pickup masks/packed file now contain67 frames0–66, independently decoded and checked.
+
+The staging GPU viewer at http://127.0.0.1:4189/cycle now assembles pickup7–66, slide2–54 and return5–36 with one uniform transform per actor clip, authored rigid card geometry and persistent landed game artwork. A real browser run displayed every selected frame in order (compositor-viewer/extended-playback.json); cycle-end-browser.png shows the empty return and retained card. This remains native24fps, nominated Q artwork, checkerboard staging—not authoritative gameplay, shoe alignment approval or seven-seat delivery. Early pickup7–12 geometry is still unresolved in this captured run; contact_integration is fitting the visible emergence instead of inventing hidden measurements. Fine mask fringes remain.
+
+Fixed staging HTTP byte-range responses so seeking into return5 no longer restarts decoded motion from frame0. Initial/suffix/open-ended ranges and416 rejection were exercised. All three textures are warmed before playback; no clip-start shader stalls remained in the captured run. Root-owned staging server current session64614. No public gameplay/player changes. All Higgsfield jobs terminal; no duplicate paid bridge needed. Shared RGB/R/G flow resampling to60fps/2x is being reviewed separately in cycle60-draft. Full goal remains active.
+
 # Latest full-cycle assembly progress
 
 PackedGPU preview nowplays all55slideframes0–54 (frame0decodedpreroll;1–54presentedcallbacks), afterfixing CPUbottleneck andshaderstartupdelay. Evidence compositor-viewer/gpu-playback.json; server4189session49268. Actualgamecardartconstantgeometry remainsdraftcontact, no pubchange. Pickup55RGmasks completed inpickup-draft; rootpackedpickup55frames24fps1920x2160. Sourcecardposegeometry beingfit separately bycontact_integration inpickup-card, explicitobserved/inferredsplit.
