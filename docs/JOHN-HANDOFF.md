@@ -1,3 +1,9 @@
+# Latest full-cycle assembly progress
+
+PackedGPU preview nowplays all55slideframes0–54 (frame0decodedpreroll;1–54presentedcallbacks), afterfixing CPUbottleneck andshaderstartupdelay. Evidence compositor-viewer/gpu-playback.json; server4189session49268. Actualgamecardartconstantgeometry remainsdraftcontact, no pubchange. Pickup55RGmasks completed inpickup-draft; rootpackedpickup55frames24fps1920x2160. Sourcecardposegeometry beingfit separately bycontact_integration inpickup-card, explicitobserved/inferredsplit.
+
+Matchingreturn job7e2dae43-1200-4716-862e-d0721390d894 COMPLETED aslow-turn/return.mp4. Independentreview confirmsrelease n8, emptyhandreturn9–22, forwardreadysettle24–36; sourceKstaysvisibletotheend, so persistentgamecardandpaperremovalneeded. Suggested5–36nativeactorcut; endpoints differ~17–20pxhand/~10pxhead beforeuniformregistration. RawVision41returnmasks0–40 complete; gameplay_qa cleaningreturnRGinreturn-draft. motion_review estimatesstaticbackgrounduniformcycle-registration; no localactorwarp. Allgenerationterminal. Goalactive/fullscopeunchanged.
+
 # Latest packed slide staging checkpoint
 
 Cleaned55frame RG draft finished, SHA256.json andREADME in low-turn/composite-draft. Queenprint fragments, shoegost/tableletters/shoulderspeck removed; sleeveopacity restored. Finefingertipfringes and uncertainboundary remain. Root packed identicalnativeRGB/RG into compositor-viewer/slide-packed-draft.mp4:55frames24fps1920x2160, upperRGB/lowerRactorGhands, SHA/perframeinputreceipt adjacentJSON. No interpolation inthispackedasset. Need decodedpacked review and completepickup/release/return masks beforegameintegration. Browser fixed-sizegameart draft isat127.0.0.1:4189, session74313; capturebrowser34n54 saved beforefinalmaskrevision, so doNOTtreatthatscreenshotasfinalRGapproval. Allgenerationterminal, no newjobpending, goalactive.
