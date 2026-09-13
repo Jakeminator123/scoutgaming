@@ -1,0 +1,56 @@
+{
+  "request": {
+    "params": {
+      "model": "gpt_image_2_5",
+      "aspect_ratio": "16:9",
+      "medias": [
+        {
+          "role": "image",
+          "value": "d207da34-c322-49a1-997c-9a8d6022522e"
+        }
+      ],
+      "prompt": "Edit only Astrid's forearms and hands in this exact locked-camera image to depict the middle of a physically correct blackjack card deal. Preserve face, hair, shoulders, torso, clothing, table, lighting, shoe position and full composition exactly. Her LEFT hand on viewer RIGHT stays beside the front low outlet of the shoe, now EMPTY after drawing a card. Her RIGHT hand from viewer LEFT reaches naturally across the felt and grips the short rear edge of ONE FACE-UP QUEEN OF SPADES card just to the LEFT of the shoe outlet, close to the shoe and close to her body. White printed face with black Q/spades is visible on the top surface, long axis pointing towards the foreground centre player position. Card is almost flat parallel to the felt, about 1 centimetre above it, supported between her right thumb beneath and fingertips on its near short edge; correct anatomically possible wrist and five fingers. This is the instant AFTER a wrist turn and BEFORE sliding outward. Other hand clearly empty. No card at any player position, no red card back, no stacked cards, no card in mid-air without finger contact. Keep realistic poker-card dimensions; no oversized card. Her gaze is slightly down at the held card, without changing her face identity."
+    }
+  },
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "This tool provides an auto-updating generation widget for these jobs. Do not call job_display, show_generations, or show_generation_by_ids to display these jobs again, either before or after completion, unless the user explicitly requests a separate display. If you need to await completion, use jobs_wait with timeout_seconds <= 15. Use job_display only if the user explicitly requests a separate re-display of one specific job."
+      },
+      {
+        "type": "text",
+        "text": "Note: adjustments applied — medias[0].role: \"image\" → \"image_references\" (GPT Image 2.5 backend expects schema-key media roles).\n\nSubmitted 1 job. If a widget is visible, it polls automatically — do not call job_status or show_generations as a follow-up poll. In text-only clients, use job_status with sync:true to poll for completion.\n- 7d9a23ca-67c7-45eb-908b-2146a2be973c  \"Edit only Astrid's forearms and hands in this exact locked-camera image to depict the middle of a physically correct blackjack card deal. Preserve face, hair, shoulders, torso, clothing, table, lighting, shoe position and full composition exactly. Her LEFT hand on viewer RIGHT stays beside the front low outlet of the shoe, now EMPTY after drawing a card. Her RIGHT hand from viewer LEFT reaches naturally across the felt and grips the short rear edge of ONE FACE-UP QUEEN OF SPADES card just to the LEFT of the shoe outlet, close to the shoe and close to her body. White printed face with black Q/spades is visible on the top surface, long axis pointing towards the foreground centre player position. Card is almost flat parallel to the felt, about 1 centimetre above it, supported between her right thumb beneath and fingertips on its near short edge; correct anatomically possible wrist and five fingers. This is the instant AFTER a wrist turn and BEFORE sliding outward. Other hand clearly empty. No card at any player position, no red card back, no stacked cards, no card in mid-air without finger contact. Keep realistic poker-card dimensions; no oversized card. Her gaze is slightly down at the held card, without changing her face identity.\""
+      },
+      {
+        "type": "text",
+        "text": "If the user requests a combined display of multiple generations, including jobs submitted through separate generate_* calls, collect all requested job IDs, wait for the complete set with jobs_wait, then call show_generation_by_ids with jobs: [{\"index\":0,\"job_id\":\"<first actual job ID>\"},{\"index\":1,\"job_id\":\"<second actual job ID>\"}, ...]. job_display accepts only one id: never pass ids to it or loop over it to show a group. Do not create an extra display when the existing generation widgets already satisfy the request."
+      }
+    ],
+    "structuredContent": {
+      "results": [
+        {
+          "id": "7d9a23ca-67c7-45eb-908b-2146a2be973c",
+          "type": "image",
+          "status": "pending",
+          "model": "gpt_image_2_5",
+          "params": {
+            "prompt": "Edit only Astrid's forearms and hands in this exact locked-camera image to depict the middle of a physically correct blackjack card deal. Preserve face, hair, shoulders, torso, clothing, table, lighting, shoe position and full composition exactly. Her LEFT hand on viewer RIGHT stays beside the front low outlet of the shoe, now EMPTY after drawing a card. Her RIGHT hand from viewer LEFT reaches naturally across the felt and grips the short rear edge of ONE FACE-UP QUEEN OF SPADES card just to the LEFT of the shoe outlet, close to the shoe and close to her body. White printed face with black Q/spades is visible on the top surface, long axis pointing towards the foreground centre player position. Card is almost flat parallel to the felt, about 1 centimetre above it, supported between her right thumb beneath and fingertips on its near short edge; correct anatomically possible wrist and five fingers. This is the instant AFTER a wrist turn and BEFORE sliding outward. Other hand clearly empty. No card at any player position, no red card back, no stacked cards, no card in mid-air without finger contact. Keep realistic poker-card dimensions; no oversized card. Her gaze is slightly down at the held card, without changing her face identity.",
+            "aspect_ratio": "16:9",
+            "reference_images": [
+              "d207da34-c322-49a1-997c-9a8d6022522e"
+            ]
+          }
+        }
+      ],
+      "adjustments": {
+        "medias[0].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "GPT Image 2.5 backend expects schema-key media roles"
+        }
+      }
+    },
+    "isError": false
+  }
+}
