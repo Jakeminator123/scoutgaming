@@ -1,0 +1,69 @@
+{
+  "requests": [
+    {
+      "index": 34,
+      "params": {
+        "model": "minimax_h3",
+        "duration": 4,
+        "resolution": "2K",
+        "aspect_ratio": "auto",
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "53dd9eae-ff5d-4aa3-bc0b-9782330be551"
+          },
+          {
+            "role": "end_image",
+            "value": "364ab5bc-011b-46e3-9c59-eb9f54696a81"
+          }
+        ],
+        "prompt": "Locked camera continuous footage of this exact woman, Astrid. Begin precisely in the supplied first pose. She calmly lowers and releases the small card already in her hands straight down out of the crop, then raises her empty hands only a few centimetres into the supplied final relaxed ready pose. One economical action, completed in the first two seconds, then hold the final pose with natural breathing. Head and torso stay steady, gaze down, mouth closed. Maintain the exact same face, blonde hair, clothing, body scale and light throughout. Opaque photographic skin and clothing in every frame; physically continuous wrists and fingers. Pure black empty background. This is one uninterrupted camera take with no editing, no dissolve, no ghosting, no morph between portraits, no extra sweep or reaching, no table or new objects."
+      }
+    },
+    {
+      "index": 100,
+      "params": {
+        "model": "minimax_h3",
+        "duration": 4,
+        "resolution": "2K",
+        "aspect_ratio": "auto",
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "364ab5bc-011b-46e3-9c59-eb9f54696a81"
+          },
+          {
+            "role": "end_image",
+            "value": "a331a978-444a-4efa-a81b-e84ea5d93d7e"
+          }
+        ],
+        "prompt": "Locked camera continuous footage of this exact woman, Astrid. Begin precisely in the supplied first empty-handed pose. In one small natural movement she rests one forearm across the other into the exact supplied final folded-hand resting pose, while lifting her gaze to the camera. Complete the movement in the first two seconds, then remain in the exact final pose with slight breathing and closed mouth. Head, shoulders, body scale, face identity, blonde hair, suit, blouse and exposure remain consistent. Hands follow continuous short physical paths, never disappear. Pure black empty background. Single uninterrupted photographic camera take; no dissolve, ghosting, portrait morph, camera change, speech, cards, new props or large gestures."
+      }
+    }
+  ],
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Submitted 2/2 video generations.\n- index 34: ec3bfd62-e907-4a9c-a28f-f29d59928eeb (pending)\n- index 100: 1ff2aaf6-abd0-48f4-b64c-a918859d6f4e (pending)\nWait for the complete requested set with jobs_wait, then show it together with show_generation_by_ids using the collected indexed jobs. This includes jobs submitted across separate calls. job_display accepts only one id and cannot display a group; do not pass ids or call it once per job."
+      }
+    ],
+    "structuredContent": {
+      "jobs": [
+        {
+          "index": 34,
+          "job_id": "ec3bfd62-e907-4a9c-a28f-f29d59928eeb",
+          "status": "pending"
+        },
+        {
+          "index": 100,
+          "job_id": "1ff2aaf6-abd0-48f4-b64c-a918859d6f4e",
+          "status": "pending"
+        }
+      ],
+      "submitted_count": 2,
+      "failed_count": 0
+    },
+    "isError": false
+  }
+}

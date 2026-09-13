@@ -1,0 +1,97 @@
+{
+  "requests": [
+    {
+      "index": 3,
+      "params": {
+        "model": "kling3_0",
+        "mode": "pro",
+        "duration": 3,
+        "sound": "off",
+        "aspect_ratio": "16:9",
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "c36ab753-1bc1-49f4-9dd2-67951555d438"
+          },
+          {
+            "role": "end_image",
+            "value": "75cc684b-51bb-4fb1-a885-4415d6a63a10"
+          }
+        ],
+        "prompt": "One economical preparation movement: from the exact first empty-handed ready pose, her left hand reaches a short distance toward the shoe just outside her left wrist and collects one card, while her right hand settles into the exact final card-dealing pose. A single continuous locked-camera photographic take of Astrid. Keep the subject at precisely the reference size and position in the full black 1920 by 1080 frame. Head and torso steady, mouth closed, same face identity, hair, suit, blouse and light. Complete the movement naturally in 1.5 seconds then settle. Hands and fingers follow a single continuous physical path. No dissolve, ghosting, portrait morph, repeated hand sweeps, speech, zoom, table, or background objects."
+      }
+    },
+    {
+      "index": 21,
+      "params": {
+        "model": "kling3_0",
+        "mode": "pro",
+        "duration": 3,
+        "sound": "off",
+        "aspect_ratio": "16:9",
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "abcd7811-db16-4b59-aaf4-509a5de09eec"
+          },
+          {
+            "role": "end_image",
+            "value": "c36ab753-1bc1-49f4-9dd2-67951555d438"
+          }
+        ],
+        "prompt": "One economical return movement: from the exact first card-dealing pose she lowers the held card below her hands and rests both empty hands in the exact final ready pose. A single continuous locked-camera photographic take of Astrid. Keep the subject at precisely the reference size and position in the full black 1920 by 1080 frame. Head and torso steady, mouth closed, same face identity, hair, suit, blouse and light. Complete the movement naturally in 1.5 seconds then settle. Hands and fingers follow a single continuous physical path. No dissolve, ghosting, portrait morph, repeated hand sweeps, speech, zoom, table, or background objects."
+      }
+    },
+    {
+      "index": 47,
+      "params": {
+        "model": "kling3_0",
+        "mode": "pro",
+        "duration": 3,
+        "sound": "off",
+        "aspect_ratio": "16:9",
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "f868c5d3-e37b-4007-a26d-a81605c82d30"
+          },
+          {
+            "role": "end_image",
+            "value": "c36ab753-1bc1-49f4-9dd2-67951555d438"
+          }
+        ],
+        "prompt": "One economical return movement: from the exact first card-dealing pose she lowers the held card below her hands and rests both empty hands in the exact final ready pose. A single continuous locked-camera photographic take of Astrid. Keep the subject at precisely the reference size and position in the full black 1920 by 1080 frame. Head and torso steady, mouth closed, same face identity, hair, suit, blouse and light. Complete the movement naturally in 1.5 seconds then settle. Hands and fingers follow a single continuous physical path. No dissolve, ghosting, portrait morph, repeated hand sweeps, speech, zoom, table, or background objects."
+      }
+    }
+  ],
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Submitted 3/3 video generations.\n- index 3: 071c648a-5ba7-49b9-9261-9d3b0c3ca3cc (pending)\n- index 21: 39f091db-70d2-4ca5-8dc7-9ec48716a005 (pending)\n- index 47: 1c6ad16f-32b2-4f12-819e-88c229d5bf8f (pending)\nWait for the complete requested set with jobs_wait, then show it together with show_generation_by_ids using the collected indexed jobs. This includes jobs submitted across separate calls. job_display accepts only one id and cannot display a group; do not pass ids or call it once per job."
+      }
+    ],
+    "structuredContent": {
+      "jobs": [
+        {
+          "index": 3,
+          "job_id": "071c648a-5ba7-49b9-9261-9d3b0c3ca3cc",
+          "status": "pending"
+        },
+        {
+          "index": 21,
+          "job_id": "39f091db-70d2-4ca5-8dc7-9ec48716a005",
+          "status": "pending"
+        },
+        {
+          "index": 47,
+          "job_id": "1c6ad16f-32b2-4f12-819e-88c229d5bf8f",
+          "status": "pending"
+        }
+      ],
+      "submitted_count": 3,
+      "failed_count": 0
+    },
+    "isError": false
+  }
+}

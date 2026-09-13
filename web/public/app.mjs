@@ -75,7 +75,13 @@ if(performanceStaged) {
     selectSequencePerformance=selectSequenceTake;
     const sceneJoins=performanceMotion==='smooth60'&&new URLSearchParams(location.search).get('joins')!=='off'
       ?await fetch('dealers/astrid/performance/joins/manifest.json').then(r=>r.ok?r.json():null):null;
-    performancePlayer=new PerformancePlayer({host:$('#scene'),staged:performanceStaged,joins:sceneJoins,
+    let readyMotion=null;
+    if(sceneJoins&&new URLSearchParams(location.search).get('ready')!=='off'){
+      const candidate=await fetch('dealers/astrid/performance/joins/ready/manifest.json').then(r=>r.ok?r.json():null).catch(()=>null);
+      if(candidate){const {readyMotionErrors}=await import('./ready-motion.mjs');const errors=readyMotionErrors(candidate,manifest.takes,actorProvenance?.sources?.['idle-1/idle/idle']);
+        if(!errors.length)readyMotion=candidate;else console.warn('[performance] ready motion unavailable',errors.join('; '));}
+    }
+    performancePlayer=new PerformancePlayer({host:$('#scene'),staged:performanceStaged,joins:sceneJoins,ready:readyMotion,
       idle:actorProvenance?.sources?.['idle-1/idle/idle'],prepareIdle:async()=>{
         if(!engineUp)return;
         await engine.fetchClip(CLIP.idle);
@@ -86,6 +92,7 @@ if(performanceStaged) {
       console.info('[performance]',text);
     }});
     performancePlayer.preload([...manifest.takes,...(performanceContinuity?manifest.continuations??[]:[])]).catch(error=>console.warn('[performance] preload',error.message));
+    if(readyMotion)performancePlayer.preload([readyMotion.loop,readyMotion.speech,...readyMotion.joins]).catch(error=>console.warn('[performance] ready preload',error.message));
     if(sceneJoins)performancePlayer.preload(sceneJoins.joins).catch(error=>console.warn('[performance] transition preload',error.message));
   }catch(error){console.info('[performance]',error.message);}
 }
@@ -188,7 +195,7 @@ const VOICE_LINES = Object.keys(LINES);
 // they overlap at round settle and the captions stomp each other.
 const speechQueue = createSpeechQueue({
   canPlay: () => !voice.muted && !document.hidden,
-  beforePlay: () => performancePlayer?.cancel(),
+  beforePlay: () => { if(!performancePlayer?.ready)performancePlayer?.cancel(); },
 });
 const speechTurn = fn => speechQueue.enqueue(fn);
 
@@ -1228,7 +1235,7 @@ async function endDealingTake() {
   dealingActive=false;
   // The filmed return owns the actor until its final pose and the matching
   // idle frame have both been presented. Speech/decisions wait for this.
-  try {await performancePlayer?.finish();}catch(error){console.warn('[performance] return',error.message);}
+  try {await performancePlayer?.finish({wait:['decisions','insurance'].includes(round?.phase)});}catch(error){console.warn('[performance] return',error.message);}
   if(engineUp && !speaking && engine.presentedClip===CLIP.deal) {
     const returning='idle-1/actions/action-return';
     engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);
@@ -1664,7 +1671,7 @@ async function cutToTake(clip, signal) {
 let activeSpeech = null;
 async function playRecorded(id, audio, text, signal) {
   if (voice.muted || document.hidden || signal?.aborted) return Promise.resolve();
-  if(performancePlayer?.joins)await performancePlayer.whenReleased(signal);
+  if(performancePlayer?.joins)await performancePlayer.prepareSpeech(signal);
   if(voice.muted||document.hidden||signal?.aborted)return;
   const originalNative = speechMedia[DEALER.key]?.[id];
   const packed=engine.fullActor&&originalNative?actorProvenance?.nativeSpeech?.[id]:null;

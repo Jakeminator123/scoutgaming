@@ -1,7 +1,7 @@
 // A filmed actor-only join is separate from card/contact choreography.
 // Bind it to both the reviewed take and the exact underlying idle assets.
 export function sceneJoinPayload(join) {
-  return JSON.stringify({camera:join.camera,media:join.media,bindings:join.bindings,idle:join.idle});
+  return JSON.stringify({camera:join.camera,media:join.media,bindings:join.bindings,idle:join.idle,ready:join.ready});
 }
 export function validateSceneJoin(join) {
   const hash=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
