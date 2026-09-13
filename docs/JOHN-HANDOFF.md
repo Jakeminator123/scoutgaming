@@ -1,4 +1,10 @@
-# Latest: action skin colour corrected; inner reaches still unresolved — 13 September 2026
+# Latest: CAC-9 fingertip opacity correction — 13 September 2026
+
+Read CAC-9 and its attached close-up: resting fingertips turn dark/transparent over the sleeve. The original source retains the hand. The shared actor-edge cleanup could borrow opaque black sleeve colour for uncertain fingertip pixels while eroding alpha. Added a colour-similarity guard and matte-supported skin opacity recovery in `actor-compositor.mjs`, used by both speech and dealing. No source bytes or speech calibration changed.
+
+See `content/staging/2026-09-13/cac-9-hands/README.md` for original evidence and gameplay reproduction. Idle, centre dealing, speech/decision transitions and completed Stand/settlement were inspected at `http://astridhands.localhost:4173/?dealer=astrid&performance=staged`; fingertips now remain visible in those checks. Full pre-commit and deep media audit passed. CAC-9 moved through In Dev and Ready for QA to In Testing; not Done pending full visual acceptance. Four missing reaches remain unresolved.
+
+# Earlier: action skin colour corrected; inner reaches still unresolved — 13 September 2026
 
 The user requested active work rather than another scheduled wait. Measured the pale action cheeks against preserved idle-source cheeks and added optional calibrated RGB grading to the performance shader. Warm pixels receive the correction in both actor layers; neutral blouse/suit pixels retain their colour. All four ordinary takes and registered returns share the gain. Source bytes, contact tracking and speech assets are unchanged. See `content/staging/2026-09-13/face-colour/README.md` for reproducible measurements and limitations.
 
