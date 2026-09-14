@@ -6,6 +6,15 @@ import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
+  '/camera60':path.join(here,'camera60.html'),
+  '/camera60.mjs':path.join(here,'camera60.mjs'),
+  '/camera60.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-cadence60-draft.mp4'),
+  '/camera60-repaired.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-cadence60-knuckle-repaired.mp4'),
+  '/camera60-720.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-cadence60-knuckle-720.mp4'),
+  '/camera60.json':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/ledger.json'),
+  '/camera60-joined.json':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/joined-ledger.json'),
+  '/camera60-joined.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-cleanup.mp4'),
+  '/camera60-joined-720.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-cleanup-720.mp4'),
   '/':path.join(here,'index.html'),
   '/camera-shoe-mask.png':path.resolve(here,'../motion-transfer/camera-card-fit/shoe-mask/card-allowed.png'),
   '/camera-shoe-contract.mjs':path.resolve(here,'../motion-transfer/camera-card-fit/shoe-mask/contract.mjs'),
