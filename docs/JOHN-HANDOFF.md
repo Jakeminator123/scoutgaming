@@ -1,3 +1,11 @@
+## Existing Astrid review link includes the new second-left source — 2026-09-14
+
+The user's existing isolated4190 URL with astridBox0=review now enables the new box1 first-card source without requiring an additional astridBox1 flag. Explicit astridBox1=off still disables it. Host, Astrid identity, exact seat, first-card and no-split gates remain. Ten focused bridge tests pass. The installer writes atomically.
+
+Actual user tab111 at1091x837, using the original URL with v6 and no box1 query, played box1 source e202c670, landed once at frame64 and reported1 dropped frame out of93 new video frames. DOM telemetry is persisted in game-runtime/box1/old-link-game-review.json. This proves the newer source is selected and handed off in gameplay; it does not approve shoe extraction or seamless motion. The test hand was finished through Stand. Public4173 and real-user database remain unchanged.
+
+The source still lifts the card above the stack. A scoped Kling video-edit experiment uses actual shoe-extraction image references to repair that action; generated output must be compared against the source before any runtime replacement. All seven seats and complete-round visual acceptance remain unfinished.
+
 ## Newly generated box1 source reaches actual gameplay — 2026-09-14
 
 The new box1 source9dc93653 (SHA ac46fe3283544d40a7d80c6d9f7f1592fe4d9c566887a8abc73f250734419e0b) is now wired to the FIRST card of the second seat from the left in isolated4190, using `astridBox1=review` alongside existing box0 opts. It is a separate filmed reach, not a translated box0 actor. Source-specific97-frame trajectory, person masks, disconnected-background cleanup and hand/paper RG masks live in box1-trial-spec/card-pose-fit. Original RGB is streamed directly into a1.04MB three-tile grayscale-mask atlas; crop462,68,924,750. All97 native samples remain at60fps, giving2.5x the original cadence with no invented interpolation.

@@ -19,3 +19,11 @@ test('new photographed basis changes shape around unchanged card center',()=>{co
 import {centerCalibration} from './harness/game-contract.mjs';
 test('box1 requires its exact optin and rejects other seat and split',()=>{assert.equal(eligible({...ok,box:1,candidateBox:1}),true);for(const change of [{box:0},{box:2,candidateBox:2},{index:1},{split:true},{query:null},{port:'4173'}])assert.equal(eligible({...ok,box:1,candidateBox:1,...change}),false);});
 test('box1 center correction is bounded in native coordinates independently of card basis',()=>{const q=[[0,0],[80,20],[60,90],[-20,70]],target=q.map(([x,y])=>[x-.179,y+2.738]);const fit=centerCalibration(q,target);assert.ok(Math.abs(fit.distance-Math.hypot(.179,2.738))<1e-10);assert.throws(()=>centerCalibration(q,q.map(([x,y])=>[x+4.0001,y])),/exceeds4/);assert.throws(()=>centerCalibration(q,target,100),/Invalid/);assert.throws(()=>centerCalibration(q,[[NaN,0],...q.slice(1)]),/Invalid/);});
+
+import {reviewQuery} from './harness/game-contract.mjs';
+test('existing user review link includes newly integrated box1 without another optin flag',()=>{
+ const params=new URLSearchParams('dealer=astrid&astridBox0=review&astridVariant=v6');
+ assert.equal(eligible({...ok,box:1,candidateBox:1,query:reviewQuery(params,1)}),true);
+ params.set('astridBox1','off');assert.equal(eligible({...ok,box:1,candidateBox:1,query:reviewQuery(params,1)}),false);
+ assert.equal(reviewQuery(new URLSearchParams('dealer=astrid'),1),null);
+});
