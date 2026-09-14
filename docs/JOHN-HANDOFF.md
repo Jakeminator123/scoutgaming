@@ -4,7 +4,7 @@ The user's existing isolated4190 URL with astridBox0=review now enables the new 
 
 Actual user tab111 at1091x837, using the original URL with v6 and no box1 query, played box1 source e202c670, landed once at frame64 and reported1 dropped frame out of93 new video frames. DOM telemetry is persisted in game-runtime/box1/old-link-game-review.json. This proves the newer source is selected and handed off in gameplay; it does not approve shoe extraction or seamless motion. The test hand was finished through Stand. Public4173 and real-user database remain unchanged.
 
-The source still lifts the card above the stack. A scoped Kling video-edit experiment uses actual shoe-extraction image references to repair that action; generated output must be compared against the source before any runtime replacement. All seven seats and complete-round visual acceptance remain unfinished.
+The source still lifts the card above the stack. Two scoped Kling video-edit attempts failed terminally without output or provider reason: b2c6c8c7 (completed-job video reference), then4399b225 (byte-identical confirmed VIDEO upload). Both full-media preflights accepted8credits; no charge/refund claim. Do not retry these jobs or claim visual rejection. Sanitized receipts and failure boundary are in next-source-investigation/KLING-FINAL-BOUNDARY.md. A different video-edit model is being evaluated read-only; any output must be compared against the source before runtime replacement. All seven seats and complete-round visual acceptance remain unfinished.
 
 ## Newly generated box1 source reaches actual gameplay — 2026-09-14
 
