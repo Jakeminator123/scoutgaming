@@ -1,6 +1,7 @@
 import {packedGPU} from '/packed-gpu.mjs';
 const video=document.querySelector('#video'),canvas=document.querySelector('#scene'),slider=document.querySelector('#frame'),status=document.querySelector('#status');
-const variant=new URLSearchParams(location.search).get('candidate')==='v4'?'full-cycle-v4':'full-cycle';
+const requested=new URLSearchParams(location.search).get('candidate');
+const variant=['v4','v5'].includes(requested)?`full-cycle-${requested}`:'full-cycle';
 video.src=`/${variant}-packed.mp4`;
 const data=await fetch(`/${variant}-ledger.json`).then(r=>{if(!r.ok)throw Error('Packed candidate unavailable');return r.json();});
 const gpu=packedGPU(canvas,video,{outputWidth:1920}),rows=data.ledger;
@@ -9,7 +10,7 @@ let callback=null,epoch=0,last=0,seen=[];
 function paint(frame){
  const row=rows[frame];if(!row)return;
  const value=document.querySelector('#card').value,hidden=document.querySelector('#hidden').checked;
- gpu.paint(null,{cards:row.cardVisible?[{quad:row.cardCorners,face:hidden||row.cardSide==='back'?'back':'front',card:hidden?undefined:{r:value.slice(0,-1),s:value.slice(-1)}}]:[]});
+ gpu.paint(null,{cards:row.cardVisible?[{quad:row.cardCorners,tintLinear:row.cardTintLinear,face:hidden||row.cardSide==='back'?'back':'front',card:hidden?undefined:{r:value.slice(0,-1),s:value.slice(-1)}}]:[]});
  last=frame;slider.value=frame;status.value=`Frame ${frame}/${rows.length-1} · ${row.source} ${row.native} · 60 fps review`;
 }
 function pause(){epoch++;video.pause();if(callback!==null)video.cancelVideoFrameCallback(callback);callback=null;}

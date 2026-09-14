@@ -1,3 +1,11 @@
+## Independent card lighting and repeat preparation comparison — 2026-09-14
+
+V5 is now available separately at staging4189/full-cycle?candidate=v5. The independent GPU card accepts linear light tint from source-paper measurements; actor RGB is unchanged and card backs remain untinted. The89-frame packed version retains final sequence105. Browser105 reached88 with the expected independent2-spades, but reported53 dropped frames under heavy system load. Shoulder fringe and hand boundary debris remain visible; this is a failed smoothness/visual review, not gameplay delivery.
+
+Foreground original preparation dropped2/7/15 frames across three same-card plays. Optional reload preparation dropped38/4/23 with preparation taking10.0/.97/4.08seconds, so reload is not an accepted fix. Explicit counters explain85 versus89: four frames were decoded before the playback baseline, not missing from the asset. Evidence is under single-seat/{foreground,reload}-repeat-browser-review.json. A pixel-preserving crop experiment is being evaluated to reduce packed decoding workload without lowering actor resolution.
+
+Seven-seat evidence rules out static whole-actor fitting for boxes2–4: exact landing introduces18–37px shoe errors. Existing motion therefore cannot be promoted through actor dragging. Different articulated placement segments are required. Reports live in seven-targets/coverage-inventory/. No generation submitted in this pass. Required pre-commit checks and dealer-sync probe passed; full goal remains incomplete.
+
 ## Authoritative single-card playback and source-mask repairs — 2026-09-14
 
 The isolated 4190 harness now binds the real server-issued 4♦ (tableVersion 1, shoeDraw 2) to the immutable reviewed box0 motion slot. Visible and hidden-face browser plays each recorded exactly one landing; playback completion does not mean the server round settled. Repeated Play reuses the same issued card and does not start another round. Source lives in motion-transfer/game-runtime/single-seat/harness with sync-harness.py; ignored runtime copies are not the source of truth. Public4173 and its database remain unchanged.
