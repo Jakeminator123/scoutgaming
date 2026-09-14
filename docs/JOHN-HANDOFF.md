@@ -1,3 +1,17 @@
+# Current continuation: return completed; source hold fixes and shoulder playback verified
+
+Return26f3a6e1-c6bf-4bfa-ae64-5dbb29cf2877 COMPLETED, preserved return-plan/return-source.mp4 (97native24fps). Root inspected release-dense.jpg: contact0–4, release5–6, emptyreturn6–23, settled24, no fifth draw; fourcards stay. Motion agent building native0–30Vision masks and seam registration. Alljobs terminal; do NOT regenerate this return.
+
+Contact agent found source23/24 near-duplicate hold (handROI MAE.584), so earlier n24 proxy drift is fixed by identicaledgepose23/24 andfront25. Allfour trajectories continue refinement. Root added staging card-state.mjs: only caller-supplied deliveries render, faceDown overrides filmedfront, hiddenrank not senttoart. Threefocused tests pass; review still supplies nominatedfixtures, NOT server integration. Regional edgepack browser displayed0–120,zero reported drops; remaining leftnecksliver visible and logged. Currentserver4189session64449, rootownedhiddenQA50 latestmoduleloaded. gameplay_qa preparing sourcepaper/G; automatic21–28contours were wrong and rejected. Publicgame unchanged/fullgoalactive.
+
+# Current: four-card paths, shoulder-fragment repair and one return job
+
+All-four constant63×88 card trajectories now exist in camera-card-fit/trajectories.json, with shared inferred perspective and persistent landings36/60/87/110. Root /camera?fit=four played0–120 with no reported drops; camera-tracked-browser.json records tested trajectorySHA (later refinements differ). Source paper remains and G is forcedoff, so this is not hand-compositing or gameplay approval. Root dense review identified possible n24 grip separation; contact agent refining, and n99 orientation remains under review. Source-sized proxy mismatch13–15px is retained instead of scaling cards.
+
+Shoulder noise traced to actual retained room/lamp pixels. Regional derivative r-edge-clean removes broad streaks, preserves crown and allnativey>300 alpha, protects observed warm ponytail pixels; small uncertain core-edge slivers retained. Packed derivative SHA c94f1e5572272de87cbd99a33396f360637d31409bb148a76002bcf879328fa7,121nativeframes verified. Optional /camera?edges=clean browser review in progress. Current4189 session17075. gameplay_qa now preparing observed paper/G cleanup; do not blindly use unreliable automatic paper contours21–28.
+
+One Seedance return job26f3a6e1-c6bf-4bfa-ae64-5dbb29cf2877 submitted bymotion_review,1080std4s silent, exact cleaned registered start/end JPEGuploads with local/remoteSHAverified. Receipt camera-review/return-plan/video-receipt.json. Check this job before any new submission. No duplicate widget or public promotion. Root staging checkpoint83f7978 and source/reviewcheckpoint9dfd8d4 passed hooks; deepaudit passed. Goal and overnightheartbeat remain active.
+
 # Current: new continuous actor browser playback and independent card meshes
 
 The camera-stable source now has121 native RGB/R packed frames in camera-composite. Root staging /camera at4189 presented all0–120 in order with zero reported dropped frames (camera-browser.json). This is native24fps base actor only; source paper remains and G is unapproved/forcedzero because YUV420 zero-channel chroma bleed is not a finger mask. Four settled constant-size game-art meshes render independently, including actual assets/cardback.png. Shared camera/table fit RMS2.43px supports four landed poses; airborne trajectory and paper/finger cleanup remain under construction. No gameplay promotion or seven-seat acceptance.

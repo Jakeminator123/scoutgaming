@@ -1,10 +1,13 @@
 import {packedGPU} from '/packed-gpu.mjs';
+import {resolveFrameCards} from '/card-state.mjs';
 const response=await fetch('/camera-table.json');if(!response.ok)throw Error('Table fit unavailable');const table=await response.json();
 const motionResponse=await fetch('/camera-trajectory.json');const motion=motionResponse.ok?await motionResponse.json():null;
 const video=document.querySelector('#video'),status=document.querySelector('#status'),slider=document.querySelector('#frame'),gpu=packedGPU(document.querySelector('#scene'),video);
+if(new URLSearchParams(location.search).get('edges')==='clean')video.src='/camera-edge-packed.mp4';
 let generation=0,callbackId=null,showCards=false;
 const artwork=[{r:'A',s:'♠'},{r:'7',s:'♥'},{r:'Q',s:'♣'},{r:'4',s:'♦'}];
-function paint(n){const tracked=motion?.frames.find(frame=>frame.nativeFrame===n);const cards=showCards?table.cards.map((c,i)=>({quad:c.authoredFlatQuad,face:i===3?'back':'front',card:artwork[i]})):(tracked?.cards??[]).filter(c=>c.quad).map(c=>({...c,card:artwork[(Number(c.id)-1)%artwork.length]}));gpu.paint(null,{cards,handMaskEnabled:false});slider.value=n;status.value=`Frame ${n}/120 · native 24 fps · ${showCards?'fitted props; G pending':tracked?'tracked props; paper and G pending':'source actor; paper cleanup pending'}`;}
+const reviewDeliveries=new Map(artwork.map((card,i)=>[i+1,{card,faceDown:false}]));
+function paint(n){const tracked=motion?.frames.find(frame=>frame.nativeFrame===n);const cards=showCards?table.cards.map((c,i)=>({quad:c.authoredFlatQuad,face:i===3?'back':'front',card:artwork[i]})):resolveFrameCards(tracked,reviewDeliveries);gpu.paint(null,{cards,handMaskEnabled:false});slider.value=n;status.value=`Frame ${n}/120 · native 24 fps · ${showCards?'fitted props; G pending':tracked?'tracked props; paper and G pending':'source actor; paper cleanup pending'}`;}
 function stop(){generation++;video.pause();if(callbackId!==null)video.cancelVideoFrameCallback(callbackId);callbackId=null;}
 async function seek(n){if(video.readyState<2)await new Promise((resolve,reject)=>{video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(Error('Packed video unavailable')),{once:true});});const time=n/24;if(Math.abs(video.currentTime-time)>.0001)await new Promise(resolve=>{video.addEventListener('seeked',resolve,{once:true});video.currentTime=time;});}
 document.querySelector('#stop').onclick=stop;slider.oninput=async()=>{stop();showCards=false;const token=generation,n=Number(slider.value);await seek(n);if(token===generation)paint(n);};
