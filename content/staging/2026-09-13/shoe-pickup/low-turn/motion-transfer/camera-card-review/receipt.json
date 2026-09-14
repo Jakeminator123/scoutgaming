@@ -1,0 +1,29 @@
+{
+  "sourceSHA256": "c4e46c9cbde5383dacf87d22910a9a15eefb2c2b7e408785931795ac46d53664",
+  "nativeFrames": 121,
+  "fps": 24,
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "completedCards": 4,
+  "unfinishedCards": 1,
+  "clearSuitChanges": 3,
+  "suspectedAdditionalPipChange": 1,
+  "sourceShoeOriginsVisible": 5,
+  "observedSpontaneousDuplicates": 0,
+  "observedSettledDisappearances": 0,
+  "publicOrMatteEdits": false,
+  "keyFrameFileSHA256": {
+    "8": "7ec9b7809f0b7358d6be273f116a112267e10dd694cae7a16fb3d275d911fa98",
+    "18": "0f86604cfb1c8f3771e96f89c58cf40d64eb57e67627e8ebd9950a111768ac88",
+    "35": "6fa8087a091c8b81e715f3cfedf1eba50ba2ca056eb7a584d2fb63b993db4b31",
+    "42": "680ad16a4838f4b1f1ab071a8ac7d152b6fe839986055e6640ba38f580d74f6b",
+    "60": "2b7ccee8913c955165663f01378b794be4ceacecf29be3a78c790aacf0436814",
+    "67": "2345672baf623d6966384112f7ec6e3fc3ad72281b977e07253abbac9cd7988b",
+    "83": "15c521701913327a0957e53f318596c8568e0c81d0dcdf8361c4d98d059fa579",
+    "94": "1e22470aaff2e6b09b82e2c94d64b7fc5a1c2a05312ebd4acdbf196f3f3d0420",
+    "110": "a6ab5de7e3d31994654f9f8bc41021c9b52564419f64617ee0d5415a97a83cf5",
+    "120": "d8fb73e8a6a330176540ff40146b92fdb52c1a52fb047418984fc9b9319c04a9"
+  }
+}
