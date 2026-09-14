@@ -1,0 +1,1101 @@
+{
+  "status": "Critical subset only; source visual review pending",
+  "dimensions": [
+    1280,
+    720
+  ],
+  "fileClock": "output filename is zero-based SOURCE native; input filename is native+1; packed frame is native+24",
+  "method": "Source-confirmed shoe/paper domains minus existing G dilated1px. Source warm hand convex protection hull protects upper palm beyond old G ROI; release92+ confirmed separated paper removed from G too; RGB untouched. No paper silhouette inferred as card geometry.",
+  "limits": [
+    "Does not fix preexisting G skin omissions or G contamination.",
+    "One1280px mixed boundary retained to avoid eroding fingers.",
+    "Not all145 frames. Must review temporal boundaries before packing."
+  ],
+  "frames": [
+    {
+      "sourceNative": 38,
+      "sourceFile": "0039.png",
+      "output": "critical-v2/0038.png",
+      "sha256": "f22ae13323efc173e91bb02c3c615d2077a8ab82ac7f84ede3afb40a3912f597",
+      "inputSHA256": "66dd708359529e7ec04f5e3797ebc6b44eb18e0b4f79e26a04b93c59527454f9",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 5518,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 39,
+      "sourceFile": "0040.png",
+      "output": "critical-v2/0039.png",
+      "sha256": "6a106f27a2aa780275a79e85bcd184ca34a1ec2a86c2859189fa3e875a8528c4",
+      "inputSHA256": "30086124d4b99306e95acca36228b7954ea485dd45f412881d53b5780c91127f",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 5236,
+      "GChanged": 8
+    },
+    {
+      "sourceNative": 40,
+      "sourceFile": "0041.png",
+      "output": "critical-v2/0040.png",
+      "sha256": "19c3ca880534e4ab955db72b410b1da5931eff8e1800c892cb4596e090b4804c",
+      "inputSHA256": "267f50c5e732a27f64716b6d29d290701a51cfdabc3bd62cdbb8db94a2b40f67",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 5278,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 41,
+      "sourceFile": "0042.png",
+      "output": "critical-v2/0041.png",
+      "sha256": "9727f1266ef22c91d704d751eba289625e5b22b611ab839dba77586d4e0f7429",
+      "inputSHA256": "2c1a6e8b97fd85d8f38e995f98af2d5e60c559df9d0f13f80b81d50674ad6522",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 8872,
+      "GChanged": 1
+    },
+    {
+      "sourceNative": 42,
+      "sourceFile": "0043.png",
+      "output": "critical-v2/0042.png",
+      "sha256": "c4c158d1f4c4955ca174623c3042a7716ee1d72f28052900ea4bc8e6f1a2b99c",
+      "inputSHA256": "aa70a3bd57cfe5da76bac7b66f22e15a76031ff723e3e942e45d235fd45f38cf",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 12499,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 43,
+      "sourceFile": "0044.png",
+      "output": "critical-v2/0043.png",
+      "sha256": "e47b037e1d44b0721f363000adc11c8f4babaeffd0ceeb945962a564692f76d2",
+      "inputSHA256": "08c41be157773fbf1b7cdab2fd1382b5eba810860b5991ee0f66049e4634b832",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 12417,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 44,
+      "sourceFile": "0045.png",
+      "output": "critical-v2/0044.png",
+      "sha256": "be4771b6185a545797d7923e12b07c72d8d368b24949a20dded4b9c5fd6efb18",
+      "inputSHA256": "602a1cc6dc197be35cebb32fbc2e2337faa67c4aafc28db47a70ad23eb1139e7",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 12360,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 45,
+      "sourceFile": "0046.png",
+      "output": "critical-v2/0045.png",
+      "sha256": "1351ff06a8ae5c2e04a744514addd519cd69b269f3c1903d29b56c44185ff59a",
+      "inputSHA256": "39568618f46bb1bbfeb40bc2fe71e97e84ddf8963f8057bd8877785e87037d20",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 4506,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 46,
+      "sourceFile": "0047.png",
+      "output": "critical-v2/0046.png",
+      "sha256": "e37fdcac77bde7d9bd8b07189014206d103a09df6bf0c72fd27d2cc4762b2c55",
+      "inputSHA256": "b873fbdd9bf3b5d58cea3f12c12078860698c19068bc0525614b6ada3bbe9ff5",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 12457,
+      "GChanged": 4
+    },
+    {
+      "sourceNative": 47,
+      "sourceFile": "0048.png",
+      "output": "critical-v2/0047.png",
+      "sha256": "87ac9fbac51d8272ead3f74019f78456d9c8d8be2432f287e0b852caa7114489",
+      "inputSHA256": "67d4fac8dbdff303650f75b0cbbad532429ce4b5f3f99f2dd7197ad2b8cf90c7",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 1978,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 48,
+      "sourceFile": "0049.png",
+      "output": "critical-v2/0048.png",
+      "sha256": "dfecd5d383866e375983cbb6bb4bb628ec69449ed562f042d483eb41a1495b55",
+      "inputSHA256": "57fd5103940d9d0c149a0de4faee72593cfc890aec1d3f1b6a965cc7ee34f65f",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 3250,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 49,
+      "sourceFile": "0050.png",
+      "output": "critical-v2/0049.png",
+      "sha256": "525bfbd7ce1b4a3caf09a613aeacee8ac4875ea25f5d6fe5a7058eaaf1f4fd06",
+      "inputSHA256": "daa2424617b5fa1183427cb3ae73c0543accdb4e788724886768839194d9207b",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "removedNonzeroR": 1907,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 84,
+      "sourceFile": "0085.png",
+      "output": "critical-v2/0084.png",
+      "sha256": "7e9f20ec39560628c125d3fc3bd1124106b3eac5d916bae99e865933e5584464",
+      "inputSHA256": "748637b2bea8f9b6b527e3a97e1e43e67dc3b5e62e3cac6fb832a9be06918dda",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 243,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 85,
+      "sourceFile": "0086.png",
+      "output": "critical-v2/0085.png",
+      "sha256": "d5682f891516f12934eb9888f344f29a1a15427736df0408baf88ecb7b0e6688",
+      "inputSHA256": "577aaca5f9adf46ba8e83de68b260e71f28b8ab90d947d886eb467e7ea457dc2",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 233,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 86,
+      "sourceFile": "0087.png",
+      "output": "critical-v2/0086.png",
+      "sha256": "d7b650b60daa2bd770e4ec244971206e7d993c0fea552f78a10d9b06729f4c02",
+      "inputSHA256": "2a4629101cc0eccc848e704d36a42662171425cdf6164965205148ad3a9ceb99",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 225,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 87,
+      "sourceFile": "0088.png",
+      "output": "critical-v2/0087.png",
+      "sha256": "01d0513ac65af9f6f0c6148f0e10261cea303f76dd228bdfa90e3d9e8aa480b2",
+      "inputSHA256": "94c8467264eb3b2a3b181c12c81a6aaedda599524b19be29ff39b2182dc785c7",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 235,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 88,
+      "sourceFile": "0089.png",
+      "output": "critical-v2/0088.png",
+      "sha256": "236e1940f82f7adefd106b35978b1d32bb37049600044b34230610dee751fbcd",
+      "inputSHA256": "5457a3a438057cd446f479ab202940fe5e458d21172298aacc1f56431fcaa09a",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 248,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 89,
+      "sourceFile": "0090.png",
+      "output": "critical-v2/0089.png",
+      "sha256": "8fd577252268514b28e2719e1b65f0359df92a19cf6f063cf6afd107b59d21d9",
+      "inputSHA256": "4fe1abd5435a16f4b8fc657f4678cc0d700900dab2d3e72ba361afbf0c92a27f",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 290,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 90,
+      "sourceFile": "0091.png",
+      "output": "critical-v2/0090.png",
+      "sha256": "2786d27379029194ca704394362c340568f5adabad8c53f75d6de1439f0abb28",
+      "inputSHA256": "18f4082ad2d492397734bcbff91947fa02dfa56a57ff66d6acba9bc251c74efa",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 315,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 91,
+      "sourceFile": "0092.png",
+      "output": "critical-v2/0091.png",
+      "sha256": "9ba3b4d42ff887152ec459a33f192c2560a6fec390419dc096514214bef863d5",
+      "inputSHA256": "d9a32fdb243cfaad4f85d0cd9de18526e271261b1726652b6bebb887f68240c3",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 536,
+      "GChanged": 76
+    },
+    {
+      "sourceNative": 92,
+      "sourceFile": "0093.png",
+      "output": "critical-v2/0092.png",
+      "sha256": "22e3b2ebb28983a0b0ea9df72a3dbf2da40e8c861583702313e899bfc9d1d5bd",
+      "inputSHA256": "788cce0ff62f5c99eb2b2f76fa24f8af254edaa96daa8a5a73707a83e4cbd14b",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 752,
+      "GChanged": 18
+    },
+    {
+      "sourceNative": 93,
+      "sourceFile": "0094.png",
+      "output": "critical-v2/0093.png",
+      "sha256": "37a02170b6ea0e1b2ca696217dbbd6c654e81525574e924fbc7a948965a8c21c",
+      "inputSHA256": "d8a86d714306a37704e1657f6f0f68dcdfa3f44a05cfa468c0d9ac96a2bcc2b2",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 697,
+      "GChanged": 10
+    },
+    {
+      "sourceNative": 94,
+      "sourceFile": "0095.png",
+      "output": "critical-v2/0094.png",
+      "sha256": "d7eafcc100f2e3f841fc54dfd8d6d19543ee9bafcfec3c0d1c2a367e2bd14a3d",
+      "inputSHA256": "6b51f5e9e53a2b82f36cee4d43b701eeb1036ed4d6aba9b357edc10bc6750746",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 327,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 95,
+      "sourceFile": "0096.png",
+      "output": "critical-v2/0095.png",
+      "sha256": "672bbe6fafb7ffd06806b9bf6495684fb7c7cad5f6f95dc7da2485e09920e59f",
+      "inputSHA256": "21bf4e1f6613d4ffe07e5bad979027bd445db2eb65b628f9b8b083a88dff50f4",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 28,
+      "GChanged": 0
+    },
+    {
+      "sourceNative": 96,
+      "sourceFile": "0097.png",
+      "output": "critical-v2/0096.png",
+      "sha256": "d77cdb5521ba96e8fe1ccab50efe222643aa25f71e45c52d87fade5adefeccf6",
+      "inputSHA256": "66c805ce3aaf707d1db38a53d9446afb2395de8123fb07cf2469bee374b801cd",
+      "domains1280": [
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "removedNonzeroR": 0,
+      "GChanged": 0
+    }
+  ]
+}

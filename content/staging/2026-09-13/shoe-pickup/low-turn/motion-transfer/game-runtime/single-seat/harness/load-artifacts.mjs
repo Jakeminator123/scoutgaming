@@ -13,3 +13,11 @@ export async function loadArtifacts(urls,{signal,timeoutMs=5000,fetchImpl=fetch}
   return await Promise.race([loaded,cancelled]);
  }finally{clearTimeout(timer);signal?.removeEventListener('abort',forward);controller.signal.removeEventListener('abort',rejectAbort);controller.abort();}
 }
+
+export async function awaitPreparation(work,{signal,timeoutMs=5000}={}){
+ let rejectWait;const stopped=new Promise((_,reject)=>{rejectWait=()=>reject(signal?.reason??Error('Candidate preparation cancelled'));});
+ const timer=setTimeout(()=>rejectWaitTimeout(),timeoutMs);let rejectWaitTimeout;
+ const timeout=new Promise((_,reject)=>{rejectWaitTimeout=()=>reject(Error('Candidate texture timeout'));});
+ if(signal?.aborted)rejectWait();else signal?.addEventListener('abort',rejectWait,{once:true});
+ try{return await Promise.race([work,stopped,timeout]);}finally{clearTimeout(timer);signal?.removeEventListener('abort',rejectWait);}
+}

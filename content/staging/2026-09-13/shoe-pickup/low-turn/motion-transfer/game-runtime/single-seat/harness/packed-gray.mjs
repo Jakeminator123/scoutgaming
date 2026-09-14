@@ -1,7 +1,7 @@
 import * as THREE from '/vendor/three/three.module.js';
 import {cardFaceArt} from '/card-art.mjs';
 export function packedGPU(canvas,video,settings={}){
- let disposed=false,cleanupReceipt=null;
+ let disposed=false,cleanupReceipt=null,rejectReady=null;
  const width=1920,height=1080;
  // Exact decoded-source crop; actor pixels retain canonical source coordinates.
  const crop=settings.crop??[352,64,1072,752];
@@ -22,20 +22,21 @@ export function packedGPU(canvas,video,settings={}){
  function faceTexture(card){if(!card)return tex;const key=card.r+card.s;if(!faceTextures.has(key)){const t=new THREE.CanvasTexture(cardFaceArt(card).canvas);t.colorSpace=THREE.SRGBColorSpace;faceTextures.set(key,t);}return faceTextures.get(key);}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(12),3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute([0,1,1,1,1,0,0,0],2));geometry.setIndex([0,2,1,0,3,2]);
  const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.01,toneMapped:false,side:THREE.DoubleSide}));mesh.renderOrder=1;mesh.frustumCulled=false;scene.add(mesh);
- const shoeMask=settings.shoeMaskURL?new THREE.TextureLoader().load(settings.shoeMaskURL,()=>{if(!disposed)renderer.render(scene,camera);}):null;
+ let resolveReady;const ready=settings.shoeMaskURL?new Promise((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;}):Promise.resolve();ready.catch(()=>{});
+ const shoeMask=settings.shoeMaskURL?new THREE.TextureLoader().load(settings.shoeMaskURL,()=>{if(disposed)return;resolveReady();renderer.render(scene,camera);},undefined,()=>{if(!disposed)rejectReady(Error('Shoe mask texture failed'));}):null;
  if(shoeMask){shoeMask.colorSpace=THREE.NoColorSpace;shoeMask.flipY=false;}
  function attachShoeMask(item){if(!shoeMask)return;const enabled={value:0};item.userData.shoeMaskEnabled=enabled;item.material.onBeforeCompile=shader=>{shader.uniforms.shoeAllowedMask={value:shoeMask};shader.uniforms.shoeMaskEnabled=enabled;shader.vertexShader='varying vec2 vSourceShoeUV;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvSourceShoeUV=vec2(position.x,-position.y)/vec2(1920.0,1080.0);');shader.fragmentShader='varying vec2 vSourceShoeUV; uniform sampler2D shoeAllowedMask; uniform float shoeMaskEnabled;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <alphatest_fragment>','diffuseColor.a*=mix(1.0,texture2D(shoeAllowedMask,vSourceShoeUV).r,shoeMaskEnabled);\n#include <alphatest_fragment>');};item.material.customProgramCacheKey=()=> 'source-shoe-mask-v1';item.material.needsUpdate=true;}
  attachShoeMask(mesh);
  const cardMeshes=[mesh];
  function dispose(){
-  if(disposed)return cleanupReceipt;disposed=true;
+  if(disposed)return cleanupReceipt;disposed=true;rejectReady?.(Error('Renderer disposed before shoe readiness'));
   const owned=new Set([...textures.values(),...faceTextures.values(),backTex,shoeMask]);
   for(const item of [...planes,...cardMeshes]){owned.add(item.geometry);for(const material of (Array.isArray(item.material)?item.material:[item.material]))owned.add(material);}
   for(const resource of owned)resource?.dispose();
   textures.clear();faceTextures.clear();scene.clear();renderer.dispose();renderer.forceContextLoss();
   cleanupReceipt=Object.freeze({disposed:true,resourcesDisposed:[...owned].filter(Boolean).length,contextReleased:true});return cleanupReceipt;
  }
- return {dispose,paint(record,options={}){if(disposed)return false;source=textureFor(options.video||video);const scale=options.transform?.scale??1,[tx,ty]=options.transform?.translation??[0,0];for(const plane of planes){plane.material.uniforms.source.value=source;plane.material.uniforms.handMaskEnabled.value=options.handMaskEnabled===false?0:1;plane.material.uniforms.horizontal.value=options.layout==='horizontal'?1:0;const angle=options.transform?.rotation??0,a=Math.cos(angle)*scale,b=Math.sin(angle)*scale;plane.scale.set(scale,scale,1);plane.rotation.z=-angle;plane.position.x=a*actorCX-b*actorCY+tx;plane.position.y=-(b*actorCX+a*actorCY+ty);}const p=record?.fingerCandidateNative;let quad=options.quad;if(quad===undefined&&p){const dx=p[0]-1075,dy=p[1]-620;quad=[[1052,619],[1109,612],[1136,643],[1079,650]].map(([x,y])=>[x+dx,y+dy]);}const cards=options.cards??[{quad,face:options.face,card:options.card}];
+ return {dispose,ready,paint(record,options={}){if(disposed)return false;source=textureFor(options.video||video);const scale=options.transform?.scale??1,[tx,ty]=options.transform?.translation??[0,0];for(const plane of planes){plane.material.uniforms.source.value=source;plane.material.uniforms.handMaskEnabled.value=options.handMaskEnabled===false?0:1;plane.material.uniforms.horizontal.value=options.layout==='horizontal'?1:0;const angle=options.transform?.rotation??0,a=Math.cos(angle)*scale,b=Math.sin(angle)*scale;plane.scale.set(scale,scale,1);plane.rotation.z=-angle;plane.position.x=a*actorCX-b*actorCY+tx;plane.position.y=-(b*actorCX+a*actorCY+ty);}const p=record?.fingerCandidateNative;let quad=options.quad;if(quad===undefined&&p){const dx=p[0]-1075,dy=p[1]-620;quad=[[1052,619],[1109,612],[1136,643],[1079,650]].map(([x,y])=>[x+dx,y+dy]);}const cards=options.cards??[{quad,face:options.face,card:options.card}];
  while(cardMeshes.length<cards.length){const extra=new THREE.Mesh(geometry.clone(),mesh.material.clone());extra.renderOrder=1;extra.frustumCulled=false;attachShoeMask(extra);scene.add(extra);cardMeshes.push(extra);}
  cardMeshes.forEach((item,index)=>{const card=cards[index];item.visible=!!card?.quad;if(!item.visible)return;if(item.userData.shoeMaskEnabled)item.userData.shoeMaskEnabled.value=card.shoeOccluded?1:0;const tint=card.face==='back'?[1,1,1]:(card.tintLinear??[1,1,1]);item.material.color.setRGB(...tint,THREE.LinearSRGBColorSpace);const map=card.face==='back'?backTex:faceTexture(card.card);if(item.material.map!==map){item.material.map=map;item.material.needsUpdate=true;}card.quad.forEach(([x,y],i)=>item.geometry.attributes.position.setXYZ(i,x,-y,0));item.geometry.attributes.position.needsUpdate=true;});
  source.needsUpdate=true;renderer.render(scene,camera);}};
