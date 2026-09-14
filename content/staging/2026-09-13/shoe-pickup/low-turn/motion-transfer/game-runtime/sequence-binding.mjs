@@ -10,10 +10,10 @@ function freeze(value){if(value&&typeof value==='object'){for(const child of Obj
 export function ledgerPayload(ledger){const {review,...payload}=ledger;return JSON.stringify(payload);}
 export async function ledgerDigest(ledger){const bytes=await globalThis.crypto.subtle.digest('SHA-256',new TextEncoder().encode(ledgerPayload(ledger)));return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');}
 
-export async function bindAstridSequence({deliveries,ledger,targets,landingCalibrations=[]}){
+export async function bindAstridSequence({deliveries,ledger,targets,landingCalibrations=[],slotBindings}){
  // Snapshot before the asynchronous digest so caller mutation cannot alter the
  // reviewed schedule or replace hidden-card policy during validation.
- const l=structuredClone(ledger),input=structuredClone(deliveries),t=structuredClone(targets),calibrations=structuredClone(landingCalibrations);
+ const l=structuredClone(ledger),input=structuredClone(deliveries),t=structuredClone(targets),calibrations=structuredClone(landingCalibrations),bindings=slotBindings===undefined?undefined:structuredClone(slotBindings);
  check(l?.dealer==='astrid'&&l.schema==='astrid-staged-sequence-v1','Astrid staged ledger required');
  check(hash(l.sourceSha256)&&Number.isFinite(l.fps)&&l.fps>0&&l.fps<=60,'Invalid source clock');
  check(l.review?.status==='staged-reviewed'&&id(l.review.evidence)&&hash(l.review.payloadSha256),'Reviewed ledger evidence required');
@@ -33,10 +33,19 @@ export async function bindAstridSequence({deliveries,ledger,targets,landingCalib
   if(!d.faceDown){check(['A','2','3','4','5','6','7','8','9','10','J','Q','K'].includes(d.card?.r)&&['♠','♥','♦','♣'].includes(d.card?.s),'Visible server card required');out.card={r:d.card.r,s:d.card.s};}
   issued.set(d.cardId,freeze(out));
  }
+ // Reviewed ledger IDs are immutable slots. Optional bindings attach fresh
+ // server identities without mutating or re-hashing the reviewed payload.
+ const slotMap=new Map(),knownSlots=new Set(l.deliveries.map(d=>d.cardId));
+ if(bindings===undefined){for(const slot of knownSlots)slotMap.set(slot,slot);}
+ else{
+  check(Array.isArray(bindings)&&bindings.length===knownSlots.size,'Slot binding count mismatch');const used=new Set();
+  for(const b of bindings){check(id(b?.slotId)&&id(b.cardId)&&knownSlots.has(b.slotId)&&issued.has(b.cardId),'Unknown slot or issued card');check(!slotMap.has(b.slotId)&&!used.has(b.cardId),'Duplicate slot or issued card binding');slotMap.set(b.slotId,b.cardId);used.add(b.cardId);}
+ }
+ const issuedFor=slot=>issued.get(slotMap.get(slot));
  const schedule=new Map();
  for(const d of l.deliveries){
   check(id(d.cardId)&&!schedule.has(d.cardId),'Duplicate or missing ledger delivery ID');
-  const real=issued.get(d.cardId);check(real,'Ledger delivery missing from server-visible records');
+  const real=issuedFor(d.cardId);check(real,'Ledger delivery missing from server-visible records');
   check(real.seatId===d.seatId&&real.targetId===d.targetId,'Unsupported exact seat binding');
   const target=targetMap.get(d.targetId);check(target&&target.seatId===d.seatId&&quad(d.targetCorners)&&JSON.stringify(target.corners)===JSON.stringify(d.targetCorners),'Unsupported exact seat target');
   check([d.pickup,d.release,d.land].every(integer)&&0<=d.pickup&&d.pickup<d.release&&d.release<=d.land&&d.land<l.frames.length,'Invalid pickup/release/land ordering');
@@ -70,9 +79,9 @@ export async function bindAstridSequence({deliveries,ledger,targets,landingCalib
   present(frame){
    check(integer(frame)&&frame>=0&&frame<l.frames.length,'Invalid presented frame');check(frame>=previous,'Presented sequence cannot rewind');previous=frame;
    const newLandings=[];
-   for(const d of schedule.values())if(frame>=d.land&&!landed.has(d.cardId)){landed.add(d.cardId);newLandings.push({...issued.get(d.cardId),landFrame:d.land,corners:structuredClone(d.targetCorners)});}
-   const moving=l.frames[frame].cards.map(p=>{const d=schedule.get(p.cardId),real=issued.get(p.cardId);return {...real,phase:frame<d.release?'contact':'released',face:real.faceDown||!p.faceUp?'back':'front',corners:structuredClone(p.corners)};});
-   return freeze({frame,moving,newLandings,landed:[...landed].map(cardId=>({...issued.get(cardId),landFrame:schedule.get(cardId).land,corners:structuredClone(schedule.get(cardId).targetCorners)}))});
+   for(const d of schedule.values())if(frame>=d.land&&!landed.has(d.cardId)){landed.add(d.cardId);newLandings.push({...issuedFor(d.cardId),landFrame:d.land,corners:structuredClone(d.targetCorners)});}
+   const moving=l.frames[frame].cards.map(p=>{const d=schedule.get(p.cardId),real=issuedFor(p.cardId);return {...real,phase:frame<d.release?'contact':'released',face:real.faceDown||!p.faceUp?'back':'front',corners:structuredClone(p.corners)};});
+   return freeze({frame,moving,newLandings,landed:[...landed].map(cardId=>({...issuedFor(cardId),landFrame:schedule.get(cardId).land,corners:structuredClone(schedule.get(cardId).targetCorners)}))});
   }
  });
 }

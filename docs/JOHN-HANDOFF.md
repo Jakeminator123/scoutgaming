@@ -1,3 +1,15 @@
+## Authoritative single-card playback and source-mask repairs — 2026-09-14
+
+The isolated 4190 harness now binds the real server-issued 4♦ (tableVersion 1, shoeDraw 2) to the immutable reviewed box0 motion slot. Visible and hidden-face browser plays each recorded exactly one landing; playback completion does not mean the server round settled. Repeated Play reuses the same issued card and does not start another round. Source lives in motion-transfer/game-runtime/single-seat/harness with sync-harness.py; ignored runtime copies are not the source of truth. Public4173 and its database remain unchanged.
+
+Independent packed actor playback uses89 explicitly mapped60fps frames, retaining the final ready pose. Correct foreground composition clamps G to R and uses rear=(R-G)/(1-G), avoiding double actor opacity. V4 source-based masks shorten the erroneous edge-on bar, restore observed finger skin and remove much shoe debris. A separate finger14 patch restores45 interior pixels. Grip boundaries, shoulder fringe, card illumination and release geometry still require visual review. None of these candidates is visually approved.
+
+Correction: visible paper area does not establish physical card growth; occlusion and tilt must be considered. Independent continuation14–20 straight-edge fits give a photographed card basis within roughly2–3px practical uncertainty. Preserve seat centers while evaluating that photographed basis; old CSS skew is not an immutable realism requirement. Other-seat perspective and actual reaches remain unverified.
+
+Fresh same-card browser measurements in single-seat/cold-warm-browser-review.json: first run89 reported video frames/0 drops and all89 callback indices; repeat85 reported frames/24 drops and64 callback indices. Both land once. Drops span the motion, so cold startup alone does not explain the failure. Paint timings and callbacks do not prove physical display completion. Repeat-play investigation remains active.
+
+The26 binding/adapter/harness tests, required pre-commit suites and four-dealer asset probe passed. Full game-camera integration, allseven physical reaches, seamless speech/idle handoffs and complete rendered rounds remain unfinished. No new generation spend in this checkpoint.
+
 ## Shorter full-cycle timing and seven-seat references — 2026-09-14
 
 Independent review supports testing original66→continuation0 without the30-frame stationary hold67–96. This removes1.25native seconds while preserving the preceding reach. Source-footage cut66 pacing variants are rendered in cadence-comparison/far-left-timing/:2.5x is1.77s total/1.17s pickup-to-release;3x is1.47s/.97s. Both are60fps1280x720 diagnostics, not clean contact or live gameplay approval. Ordinary temporal resampling is permitted; the prior2.5x ceiling only applied to optional retention of every original sample. Current neutral53-frame cut diagnostic avoids reconstructed-background artifacts; early source-paper/finger-edge masks remain unfinished.

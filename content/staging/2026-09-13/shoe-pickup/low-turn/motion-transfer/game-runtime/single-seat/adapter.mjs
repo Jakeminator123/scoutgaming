@@ -1,6 +1,6 @@
 // Staging lifecycle contract, not connected to public gameplay or a media clock.
 import {bindAstridSequence} from '../sequence-binding.mjs';
-export async function createAstridSingleSeat({delivery,ledger,target,landingCalibrations=[],surface,onLand=()=>{},onFallback=()=>{},signal}){
+export async function createAstridSingleSeat({delivery,ledger,target,landingCalibrations=[],slotBindings,surface,onLand=()=>{},onFallback=()=>{},signal}){
  if(!surface||typeof surface.render!=='function'||typeof surface.dispose!=='function')throw Error('Explicit renderer surface required');
  if(ledger?.deliveries?.length!==1||ledger.deliveries[0].targetId!=='box0'||target?.targetId!=='box0')throw Error('Only exact box0 candidate supported');
  let state='preparing',epoch=0,queue=Promise.resolve(),last=-1,landed=false,disposed=false,binding;
@@ -14,7 +14,7 @@ export async function createAstridSingleSeat({delivery,ledger,target,landingCali
  }
  const aborted=()=>cancel('aborted');signal?.addEventListener('abort',aborted,{once:true});
  if(signal?.aborted)cancel('aborted');
- try{binding=await bindAstridSequence({deliveries:[delivery],ledger,targets:[target],landingCalibrations});}catch(error){signal?.removeEventListener('abort',aborted);dispose();throw error;}
+ try{binding=await bindAstridSequence({deliveries:[delivery],ledger,targets:[target],landingCalibrations,slotBindings});}catch(error){signal?.removeEventListener('abort',aborted);dispose();throw error;}
  if(state==='preparing')state='ready';
  return Object.freeze({
   get state(){return state;},get landed(){return landed;},
