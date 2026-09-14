@@ -1,3 +1,79 @@
+## Guarded card-clock checkpoint — 2026-09-14
+
+The optional staging display clock now holds stale rear anchors and records potentially visible front-layer stalls. Threshold is bounded50–100ms, derived from3 median RAF intervals with a3-source-frame minimum. Independent review confirmed the unlimited extrapolation issue is fixed; front freshness still does not prove media-time alignment.
+
+Guarded browser run painted348 frame indices (missing1), recovered32 rear-callback gaps, and reported1 video drop per layer. Consecutive run painted347 (missing5/86), rear1/front2 drops. These are improvements, not smoothness acceptance. Receipts and reproducible analysis live beside native-layers.mjs; NATIVE-LAYER-REVIEW.md records the exact scope and remaining limits. The opaque control now has max/absolute measurements of zero at sampled pixels; native-alpha residual still persists.
+
+All110 required tests plus asset checks passed after the clock implementation, before the final threshold floor; syntax/arithmetic checks cover that floor and commit hooks run again. No public gameplay/media promotion.
+
+## First independent card-clock browser trial — 2026-09-14
+
+Opt-in staging `native-layers?full=1&codec=709&cardClock=display` painted all 349 sampled frame indices after initial frame0. Rear callbacks covered325 indices;24 missed callback indices received card updates from the independent display sampler. Both native layers reported one dropped frame. Evidence: `native-layers-display-clock-browser.json` and reproducible `analyze-display-clock.py` output beside it.
+
+This is frame-submission coverage, not visual synchronization approval. Same-frame GPU submission often ends near or just after the video expected-display timestamp; actual presentation phase needs rendered evidence. Independent review also found unbounded stale-anchor extrapolation and unguarded front-only stalls; a bounded diagnostic guard is in progress. Public gameplay is unchanged.
+
+## Display-clock investigation — 2026-09-14
+
+The full native-layer warm run reported zero video drops but missed 16 changing-card frames in rear video callbacks. The current card painter depends on those callbacks, so it can lag behind otherwise continuous actor video. An opt-in display-clock experiment is being implemented in the staging viewer; no public player or media promotion.
+
+Correction to the opaque-control interpretation below: the stored measurements are signed means. Zero mean error does not establish pixel-exact equality; absolute/max errors were not recorded for that control. The native-alpha blue residual remains documented and no global colour correction is justified by the aggregate measurements.
+
+Required pre-commit checks (110 tests plus asset-state checks) and the dealer-sync probe passed before the display-clock experiment. These checks do not establish visual acceptance. Far-left source still lacks a demonstrated release and empty-hand return; all-seven-seat gameplay remains unfinished.
+
+## Full native350 and opaque control — 2026-09-14
+
+Browser87 full native350BT709 reached correctempty-handreturn/fourindependentprops (rootvisuallyinspected endpoint). First nativequality2drops each, callback344front343rear; repeat0drops each butcallbacks320front325rear. Do not equatezero reportednativedrops withcardGPUupdates everyframe. Bothreceipts native-layers-full709{,-warm}-browser.json. Agentaskedtoanalyze presentation/cardclock distinction. No publicpromotion.
+
+Browser88 control compares SAME pixelcoordinates: opaqueVP9BT709 decodedRGBmeanDelta exactly[0,0,0] vsoriginalH264 atbothalpha255/251–254sampledomains. NativealphaVP9 stillblue+1.55atopaquehandpixels,+2.01nearopaque. Therefore remainingdifferenceisnativealpha-specificconversionpath, notsourceYUV orpureunpremultiplication alone. native-layers-709-opaque-control-browser.json saved. No colourpatchapplied. Server4189 nowexec92422.
+
+CardagentexpandedG-onlypalmlayeringrepair through25–35 withnative11frameUNAPPROVEDdiagnostic; sourceRGB/Rhandsunchanged. Entry/exitmaxcornersteps6.97/12.19px plusrotation3.43/11.15deg measured, no sourceframeskip. Finalcontactandjoins24/36/fulltake stillunproven. Seven-seatgameplay remainsunfinished.
+
+## Controlled browser colour metadata comparison — 2026-09-14
+
+Browser85 codec709 versus sourceH264 at midpointframes174/204/233 reduces frontmeanRGB delta from~[-5.3,-4,+2] to~[-.09,+.08,+2]; rearred/greenmeans~[-.08,+.03]. Browser86 codec601 reproduces originalunknownvariantshift. Exactreceipts native-layers-{709,601}-colour-browser.json. BT709 is bestcalibrationcandidate, NOTproofsourceoriginaltagswereknown or byteexactbrowserRGB. Blue~+2front persists; contactagentinformed. No RGBsourceorpublicassetmodified. Server4189 nowexec60106.
+
+Cardrigid-proof26-34/alpha-proof/diagnostic-native24-v2.mp4 is9framesnative24,0.375s,labelledUNAPPROVED. UpdatedQA contours, fixed63x88 geometry; actualroundedcardalpha255 at16 nominatedpaper/palmboundarysamples26–33, so those specificpixels don'tneed inventedpalm. Fullcontour/temporalacceptance stillunproven.
+
+## Profile0 timing and browser colour issue — 2026-09-14
+
+Root browser82 native-layers?codec=420 first59callbacks1–59 perlayer,0drops; repeatrear58/front56callbacks,1drop each. Bothmissingframe4; frontcallbacksalso1/9missing. CommonframeexpectedDisplayTime exactlyequal. Receipts native-layers-420{,-warm}-browser.json. Better thanGBR trial, not completeframe-lock acceptance.
+
+Root added Compare source pixels control: canvas originalpackedtopRGB versus nativealpha>=251 at local0/30/59. Midpointseeks remove source/container frameboundary ambiguity. Browser84 matched result persists frontRGBmeanDelta about[-5.3,-4,+2],rear[-1.5,-1.2,+.5]; systematiccolourinterpretation mismatch despite localYUVbyteequality. Preserve native-layers-420-midpoint-colour-browser.json. Contact agent preparing matrix-onlyBT709/BT601 copyvariants with unchangedYUV/A to isolatebrowsercalibration. Sourcecolourtagsunknown, not reconstructedfact. Full350Profile0layersencoded/verified butUNPROMOTEDpendingcolour/syncQA.
+
+Rootserver4189 exec65417. Cardagent rendered9frame0.375s labelledUNAPPROVED native24diagnostic, thenapplied independentQA thumb/papercontours. Refittingcoverage ratherthanerasing actualpalm; no temporalapproval. Seven-seatgameplayremainsunintegrated.
+
+## Native transparent excerpt browser result — 2026-09-14
+
+Root added alpha-probe.html and native-layers.html/.mjs staging viewers; packedGPU supports explicit actor:false to render independent cards only, preserving default actor rendering. Server4189 currentlyexec30568. Browser80 successfully decoded synthetic420 andexperimentalGBR alpha. Browser81 real60frame1280x720 rear/frontGBRlossless excerpt174–233 visibly composites with cards. First run57callbacks perlayer (frames1–59, rear missing45/47, front2/30),1reported drop each; commonframeexpectedDisplayTime identical. Repeat34rear/47frontcallbacks,24/6drops. Hence no smooth/frame-lock acceptance. Receipts native-layers-browser.json and native-layers-warm-browser.json. Both nativeassets verified byteexactRGBA locally; that is not browserperformance proof.
+
+Contact agent now testing source-YUV-preserving VP9profile0 lossless420 rather than RGB→420 conversion: copy originaltopYUV planes, attach quantizedcomputedalpha, preservecolourtags. This may avoid second chromasubsampling error while testing more efficientdecode. No defaultswitch.
+
+Removed only97 verified reproducible colour-adjusted PNGs under luminance-trial/frames (174557353bytes); cleanuphashmanifest saved, originals/bothpacks/scripts/receipts preserved. Later headroom verified12.4GB byagent; no causal attribution. Sourcevideo untouched.
+
+Motion agent refining paper/skinclassification31–34 and constantdepthtrajectory26–34; rejects inferred268mmdepthjump at30→31 as cardgrowth. Seven-position motion andgameplayremain unfinished.
+
+## Video presentation isolation and card proof — 2026-09-14
+
+Root instrumented camera60 expectedDisplayTime/presentationTime/deadlineSlackMs and optional presentation diagnostics, defaults unchanged. Browser76 direct visible video350 callbacks/0drops; browser77 identical GPU+directvideo350/0 (video rect y689.43,height432,viewport720, ~31px visible). Hidden decode-only323callbacks/345reported drops is NOT visualdelivery proof. Tiny1px opacity.001337callbacks/0drops; fullviewportopacity.001257callbacks/1drop. No invisible backing fix accepted. All JSONs named mixed5-{decode,direct-video,gpu-presented,tiny-surface,large-surface}-browser.json. Exactnative resolution/frames retained. Contact agent investigating native transparentvideo-layer feasibility, no default/media changes.
+
+Root inspected rigid-proof31-34/dense-proof.png: actualcard geometry has continuousorientation, but retained sourcepaper currently contaminates foreground masks31/32. Agent tracing true hand outlines and classifying PminusQ as felt/skin/unknown rather than treating any outsidepaper as infeasible. Receiving hand may have a realreleasegap during regrip; don't force simultaneoustwohandcontact everyframe.
+
+Luminance trial endpoint096 visually inspected: skin/suit improve but blouse/forehead can darken excessively. Bounds analysis suggests milder common scalar but no new colourapproved. Seven-seat gameplay/complete motion still pending.
+
+## Residual transition, reference v2 and prewarm experiment — 2026-09-14
+
+Staging4189 exec15270; browser73 bridge-review?edge=2 uses residual-clean R-only pack. Root inspected native0 and recorded full31/97/145 actual frames without recoveredfinal in bridge-residual-browser.json. Small fringes remain; colourtrial separately pending.
+
+Built-in image_gen second primary-only edit saved far-left-anchor/motion/regrip-assessment/image-repair/native33-reference-candidate-v2.png and PROMPT-v2.md. Independent review reports index shift~5.4px versusv1~20.6px, but other fingertips shift7–9px. Surface reference only. Motion agent now checks whether candidate cardplane covers duplicatedpaper while ORIGINAL visible fingers remain foreground, possibly avoiding inferredpalm repair. Temporal coverage/contact unproven.
+
+Optional prewarm=1 camera60 experiment prepares four card meshes/fronttextures beforeplay, without changing frames/quality. Browser74 mixed5 result324observed/26drops vs earlier338/12. No improvement demonstrated; keep experimental, not default. mixed5-prewarm-browser.json preserved. Contact agent analyzing traces; do not attribute stalls to decoder or backgroundprocess without evidence.
+
+## Far-left reference repair and mixed contour browser review — 2026-09-14
+
+Built-in image_gen created `far-left-anchor/motion/regrip-assessment/image-repair/native33-reference-candidate.png` from native33 plus32/34/35/25; exact prompt/receipt saved alongside. It is NOT a drop-in replacement: independent registration found receiving index moved about20.6px. One-card/palm reference only. Previous holding proxy1084,555 was ambiguous paper/palm rather than a reliable thumb contact; agent is separating visible skin landmarks from actual contact points and rerunning hypotheses. Do not claim anatomical impossibility from that proxy's fit residual.
+
+Root restarted staging4189 exec5432 and browser72 loaded camera60?joined=1&variant=720&output=720&contour=mixed5. Thirdgrip193 visually improved source-lettering/shoe-contour contamination. Full350 playback reachedreturn30 with338 observed and12 dropped frames; `compositor-viewer/mixed5-browser.json` preserves evidence. This is not stable60fps acceptance. Contact agent completed all350 decode/ledger audit separately. Seven-seat gameplay remains unintegrated.
+
 ## Cleaned bridge browser check — 2026-09-14
 
 Root resumed staging4189 exec46442 and opened bridge-review?edge=1 (browser71). The new R-only edge-clean pack visibly removes the broad shoulder blob and most fingertip shoe remnant atnative0; screenshot compositor-viewer/bridge-clean-start.png. Full return→bridge→moving-idle run observed31/97/145 actual frames, no recovered final, measured handoffs0.7/0.5ms. Maximum inter-frame intervals65.4/68.3/67.5ms, so this is not stable60fps proof. Receipt bridge-clean-browser.json preserves wall-clock observations.

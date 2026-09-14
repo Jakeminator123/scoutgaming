@@ -6,8 +6,26 @@ import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
+  '/native-opaque-709.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/opaque-174-233-yuv420-bt709.webm'),
+  '/native-rear-joined709.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/rear-joined350-yuv420-bt709.webm'),
+  '/native-front-joined709.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/front-joined350-yuv420-bt709.webm'),
+  '/native-rear-709.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/rear-174-233-yuv420-bt709.webm'),
+  '/native-front-709.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/front-174-233-yuv420-bt709.webm'),
+  '/native-rear-601.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/rear-174-233-yuv420-bt601.webm'),
+  '/native-front-601.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/front-174-233-yuv420-bt601.webm'),
+
+  '/native-rear-420.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/rear-174-233-yuv420.webm'),
+  '/native-front-420.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/front-174-233-yuv420.webm'),
+  '/native-layers':path.join(here,'native-layers.html'),
+  '/native-layers.mjs':path.join(here,'native-layers.mjs'),
+  '/native-rear.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/rear-174-233.webm'),
+  '/native-front.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/front-174-233.webm'),
+  '/alpha-probe':path.join(here,'alpha-probe.html'),
+  '/probe-420.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/probe-yuva420p.webm'),
+  '/probe-gbr.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/probe-gbrap-experimental.webm'),
   '/bridge-review':path.join(here,'bridge-review.html'),
   '/bridge-review.mjs':path.join(here,'bridge-review.mjs'),
+  '/speech-bridge-residual.mp4':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/mattes/residual-clean/bridge-native-R-residual-clean-draft.mp4'),
   '/speech-bridge-edge.mp4':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/mattes/edge-clean/bridge-native-R-edge-clean-draft.mp4'),
   '/speech-bridge.mp4':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/mattes/bridge-native-R-only-draft.mp4'),
   '/speech-idle-moving.mp4':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/original-idle-moving-packed.mp4'),
@@ -22,6 +40,7 @@ const routes={
   '/camera60-joined.json':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/joined-ledger.json'),
   '/camera60-joined.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-cleanup.mp4'),
   '/camera60-joined-720.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-cleanup-720.mp4'),
+  '/camera60-contour-mixed5.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-background-mixed-v5-720.mp4'),
   '/camera60-contour.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-contour-v3-720.mp4'),
   '/':path.join(here,'index.html'),
   '/camera-shoe-mask.png':path.resolve(here,'../motion-transfer/camera-card-fit/shoe-mask/card-allowed.png'),
@@ -71,7 +90,7 @@ http.createServer(async(req,res)=>{
     if(/^\d{4}\.png$/.test(name))file=path.join(root,name);
   }
   if(!file){res.writeHead(404);res.end();return;}
-  try{const s=await stat(file);const headers={'Content-Type':file.endsWith('.mp4')?'video/mp4':file.endsWith('.png')?'image/png':file.endsWith('.json')?'application/json':(file.endsWith('.mjs')||file.endsWith('.js'))?'text/javascript':'text/html','Content-Length':s.size,'Cache-Control':'no-store','Accept-Ranges':'bytes'};
+  try{const s=await stat(file);const headers={'Content-Type':file.endsWith('.mp4')?'video/mp4':file.endsWith('.webm')?'video/webm':file.endsWith('.png')?'image/png':file.endsWith('.json')?'application/json':(file.endsWith('.mjs')||file.endsWith('.js'))?'text/javascript':'text/html','Content-Length':s.size,'Cache-Control':'no-store','Accept-Ranges':'bytes'};
     const range=req.headers.range;
     if(range){const match=/^bytes=(\d*)-(\d*)$/.exec(range);let start,end;if(match&&(match[1]||match[2])){start=match[1]?Number(match[1]):Math.max(0,s.size-Number(match[2]));end=match[1]&&match[2]?Math.min(Number(match[2]),s.size-1):s.size-1;}
       if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start>end||start>=s.size){res.writeHead(416,{'Content-Range':`bytes */${s.size}`});res.end();return;}

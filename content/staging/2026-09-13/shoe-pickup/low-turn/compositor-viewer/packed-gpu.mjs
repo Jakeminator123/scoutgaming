@@ -7,7 +7,7 @@ export function packedGPU(canvas,video,settings={}){
  const textures=new Map(),planes=[];
  function textureFor(input){if(!textures.has(input)){const texture=new THREE.VideoTexture(input);texture.colorSpace=THREE.NoColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;textures.set(input,texture);}return textures.get(input);}
  let source=textureFor(video);
- for(const front of [false,true]){
+ for(const front of (settings.actor===false?[]:[false,true])){
   const material=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,uniforms:{source:{value:source},front:{value:front?1:0},horizontal:{value:0},handMaskEnabled:{value:1}},vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:`uniform sampler2D source;uniform float front;uniform float horizontal;uniform float handMaskEnabled;varying vec2 v;void main(){vec2 maskUV=mix(vec2(v.x,v.y*.5),vec2(.5+v.x*.5,v.y),horizontal);vec2 rgbUV=mix(vec2(v.x,.5+v.y*.5),vec2(v.x*.5,v.y),horizontal);vec3 m=texture2D(source,maskUV).rgb;vec3 rgb=texture2D(source,rgbUV).rgb;float f=min(m.r,m.g)*handMaskEnabled;float b=(m.r-f)/max(1.0-f,.00001);float a=mix(b,f,front);if(a<.01)discard;gl_FragColor=vec4(rgb,a);}`});
   const plane=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);plane.position.set(width/2,-height/2,front?1:-1);plane.renderOrder=front?2:0;scene.add(plane);planes.push(plane);
  }
