@@ -10,5 +10,17 @@
   "shoe": {
     "path": "content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-card-fit/shoe-mask/card-allowed.png",
     "sha256": "112e58aee7de96eea380b54be0d858c834014f53279dd09764dd545261dc9673"
+  },
+  "returnBridge": {
+    "path": "content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/idle-registration/bridge-pair/mattes/edge-clean/bridge-native-R-edge-clean-draft.mp4",
+    "sha256": "b581225b7f9fe4602eb815632dd7f71e652be1ee0ed8bbc0472cc51ab1d1be2c",
+    "sourceJob": "31828ef9-9a5b-4fbd-a56c-15a89be13816",
+    "nativeFrames": 97,
+    "fps": 24,
+    "handMaskEnabled": false
+  },
+  "returnRegistration": {
+    "path": "content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/idle-registration/bridge-pair/review/endpoint-registration.json",
+    "sha256": "772fb39f60d6ddc7ca63d35a40cd9b7d39e088ee394856bf3c602d52adadde93"
   }
 }

@@ -1,7 +1,7 @@
 {
   "installerIdempotent": true,
   "singleOpeningBranch": true,
-  "appSHA256": "3ed1cb446360e7d3f1800ac4b7afaa0bc1718d228b83b3049948c32b58f399bc",
+  "appSHA256": "68aa0f05ac3aea71a640c50f942f32b9939fcf8a6b81224a0c490bb4ecb65a90",
   "seatCounts": [
     1,
     2,
@@ -11,7 +11,11 @@
     6,
     7
   ],
-  "endpointFrame": 333,
+  "endpointFrame": {
+    "betweenGroups": 333,
+    "beforeBridge": 348
+  },
   "resourcePolicy": "one actor/video/GPU/engine lease per opening",
-  "glide": "distance-aware12\u201328frames, quadratic ease-out"
+  "glide": "distance-aware12\u201328frames, quadratic ease-out",
+  "returnBridge": "existing97-frame silent bridge then actual idle0"
 }
