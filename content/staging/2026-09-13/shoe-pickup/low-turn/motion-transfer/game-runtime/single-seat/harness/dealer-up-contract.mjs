@@ -1,5 +1,5 @@
 import {sourceActorTransform} from './game-contract.mjs';
-export function dealerUpEligible({hostname,port,params,dealer,containerId,index,faceDown}){return hostname==='astridsingleseat.localhost'&&port==='4190'&&params.get('astridDealerUp')==='review'&&params.get('astridBox0')==='review'&&dealer==='astrid'&&containerId==='dealer-cards'&&index===0&&faceDown===false;}
+export function dealerUpEligible({hostname,port,params,dealer,containerId,index,faceDown}){return hostname==='astridsingleseat.localhost'&&port==='4190'&&(params.get('astridDealerUp')??'review')==='review'&&params.get('astridBox0')==='review'&&dealer==='astrid'&&containerId==='dealer-cards'&&index===0&&faceDown===false;}
 export function dealerUpProfile(ledger,media,target){
  const hash=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
  if(!hash(media.outputSHA256)||ledger.sourceSha256!==media.outputSHA256||!hash(media.sourceBundleSHA256)||ledger.sourceBundleSHA256!==media.sourceBundleSHA256||ledger.fps!==60||ledger.frames?.length!==85||media.frameCount!==85||target.targetId!=='dealer-up'||target.seatId!=='dealer')throw Error('Dealer-up profile provenance mismatch');

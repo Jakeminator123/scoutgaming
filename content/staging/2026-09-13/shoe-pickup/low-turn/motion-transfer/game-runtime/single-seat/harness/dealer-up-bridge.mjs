@@ -3,7 +3,7 @@ import {playNativeFrameClock} from './native-frame-clock.mjs';
 import {dealerUpEligible,dealerUpProfile} from './dealer-up-contract.mjs';
 import {applyDealerUpLayout} from './dealer-up-layout.mjs';
 import {loadArtifacts,awaitPreparation} from './load-artifacts.mjs';
-import {reviewQuery,eligible,sourceFit,canonicalCorners,assertTarget,once,responsiveHandMatrix,basisChange,centerCalibration,sourceActorTransform,shoeOcclusionContract,sourceShoeOccluded} from './game-contract.mjs';
+import {reviewDiagnostics,reviewQuery,eligible,sourceFit,canonicalCorners,assertTarget,once,responsiveHandMatrix,basisChange,centerCalibration,sourceActorTransform,shoeOcclusionContract,sourceShoeOccluded} from './game-contract.mjs';
 import {createAstridSingleSeat} from './adapter.mjs';
 import {packedGPU} from './packed-gray.mjs';
 import {uniformRegistration} from '/performance-contact.mjs';
@@ -21,7 +21,7 @@ export function tryAstridDealerUp({el,card,faceDown,tableVersion,dealer,suspend}
  return play();
  async function play(){
   const useNative=p.get('astridNativeFrames')==='review';let nativeSource=null,nativeCanvas=null,nativeContext=null,nativeTime=0,nativeSkipped=0;
-  const originalCardTransform=el.style.transform,originalHandTransform=el.parentElement.style.transform,originalHandTranslate=el.parentElement.style.translate;const variant='dealer-up';const host=document.querySelector('#scene'),label=document.createElement('div');label.id='astrid-dealer-up-review-status';label.textContent='Test: dealerns öppna kort';Object.assign(label.style,{position:'fixed',top:'8px',left:'8px',zIndex:2000,background:'#17231fe6',color:'white',padding:'6px 10px',borderRadius:'6px',font:'11px system-ui'});document.querySelector('#astrid-dealer-up-review-status')?.remove();document.body.append(label);
+  const originalCardTransform=el.style.transform,originalHandTransform=el.parentElement.style.transform,originalHandTranslate=el.parentElement.style.translate;const variant='dealer-up';const host=document.querySelector('#scene'),label=document.createElement('div');label.id='astrid-dealer-up-review-status';label.hidden=!reviewDiagnostics(p);label.textContent='Test: dealerns öppna kort';Object.assign(label.style,{position:'fixed',top:'8px',left:'8px',zIndex:2000,background:'#17231fe6',color:'white',padding:'6px 10px',borderRadius:'6px',font:'11px system-ui'});document.querySelector('#astrid-dealer-up-review-status')?.remove();document.body.append(label);
   let adapter,video,layer,gpu,callback,timer,cancelWait,landings=0,cancelled=false,qualityStart=null,firstLand=null,ownershipStyle=null,resumePresentation=null;const preparationController=new AbortController(),preparationStarted=performance.now();const observedFrames=[],paintTimes=[],captures=[];const captureEnabled=p.get('astridCapture')==='1',captureFrames=new Set();const quality=()=>{if(useNative)return {nativeFrames:nativeSource.frames.length,skippedByClock:nativeSkipped,presented:observedFrames.length+1};const q=video.getVideoPlaybackQuality();return {totalVideoFrames:q.totalVideoFrames,droppedVideoFrames:q.droppedVideoFrames,corruptedVideoFrames:q.corruptedVideoFrames};};const reveal=once(()=>{el.style.visibility='';});const abort=reason=>{cancelled=true;preparationController.abort(Error(reason));adapter?.cancel(reason);cancelWait?.(Error(reason));};
   const resized=()=>abort('resize'),hidden=()=>{if(document.hidden)abort('hidden');};
   el.style.visibility='hidden';window.addEventListener('resize',resized);document.addEventListener('visibilitychange',hidden);hidden();
