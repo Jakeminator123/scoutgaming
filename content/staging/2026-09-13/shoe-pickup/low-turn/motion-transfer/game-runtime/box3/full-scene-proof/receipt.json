@@ -1,0 +1,45 @@
+{
+  "images": [
+    {
+      "checkpoint": 22,
+      "file": "active-22.jpg",
+      "scope": "Actual active full-scene screenshot; captured after diagnostic checkpoint, exactframe not guaranteed"
+    },
+    {
+      "checkpoint": 30,
+      "file": "active-30.jpg",
+      "scope": "Actual active full-scene screenshot; captured after diagnostic checkpoint, exactframe not guaranteed"
+    },
+    {
+      "checkpoint": 34,
+      "file": "active-34.jpg",
+      "scope": "Actual active full-scene screenshot; captured after diagnostic checkpoint, exactframe not guaranteed"
+    },
+    {
+      "checkpoint": 40,
+      "file": "active-40.jpg",
+      "scope": "Actual active full-scene screenshot; captured after diagnostic checkpoint, exactframe not guaranteed"
+    },
+    {
+      "checkpoint": 63,
+      "file": "active-63.jpg",
+      "scope": "Actual active full-scene screenshot; captured after diagnostic checkpoint, exactframe not guaranteed"
+    },
+    {
+      "checkpoint": 64,
+      "file": "active-64.jpg",
+      "scope": "Actual active full-scene screenshot; captured after diagnostic checkpoint, exactframe not guaranteed"
+    },
+    {
+      "checkpoint": 75,
+      "file": "active-75.jpg",
+      "scope": "Actual active full-scene screenshot; captured after diagnostic checkpoint, exactframe not guaranteed"
+    },
+    {
+      "checkpoint": 84,
+      "file": "active-84.jpg",
+      "scope": "Actual active full-scene screenshot; captured after diagnostic checkpoint, exactframe not guaranteed"
+    }
+  ],
+  "discarded": "checkpoint-84.jpg stale from earlier receipt, not motion evidence"
+}
