@@ -2,7 +2,7 @@
 import {bindAstridSequence} from '../sequence-binding.mjs';
 export async function createAstridSingleSeat({delivery,ledger,target,landingCalibrations=[],slotBindings,surface,onLand=()=>{},onFallback=()=>{},signal}){
  if(!surface||typeof surface.render!=='function'||typeof surface.dispose!=='function')throw Error('Explicit renderer surface required');
- if(ledger?.deliveries?.length!==1||ledger.deliveries[0].targetId!=='box0'||target?.targetId!=='box0')throw Error('Only exact box0 candidate supported');
+ if(ledger?.deliveries?.length!==1||!['box0','box1'].includes(target?.targetId)||ledger.deliveries[0].targetId!==target.targetId)throw Error('Only exact registered box0 or box1 candidate supported');
  let state='preparing',epoch=0,queue=Promise.resolve(),last=-1,landed=false,disposed=false,binding;
  // Only safe server-visible fields are retained, including fallback records.
  const safe={cardId:delivery.cardId,seatId:delivery.seatId,targetId:delivery.targetId,faceDown:delivery.faceDown,...(!delivery.faceDown?{card:{r:delivery.card?.r,s:delivery.card?.s}}:{})};

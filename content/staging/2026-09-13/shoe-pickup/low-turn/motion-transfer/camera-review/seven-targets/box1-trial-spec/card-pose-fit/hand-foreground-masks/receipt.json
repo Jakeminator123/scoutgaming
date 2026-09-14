@@ -1,0 +1,793 @@
+{
+  "status": "UNREVIEWED source-color candidate; not final RG",
+  "sourceSHA256": "ac46fe3283544d40a7d80c6d9f7f1592fe4d9c566887a8abc73f250734419e0b",
+  "frameRange": [
+    0,
+    96
+  ],
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "gMeaning": "original person alpha only at source-visible connected warm foreground; zero after63",
+  "paperDelta": "candidate observed neutral paper contours/print holes; not blanket quad; needs source review before R changes",
+  "uncertainty": "Hard warm classifier can omit blurred/dark skin or include warm ink/lettering; uncertain masks explicit. No hidden anatomy invented, no RGB changes.",
+  "rows": [
+    {
+      "rgSHA256": "71eaeb8b83779dcf6ab9424c0ad07578db459d5047cf6f6d39a1b29733589b19",
+      "frame": 0,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "5e0f13679447fcb0076ca1570e8c1374935923eee71be955671268d475de231b",
+      "frame": 1,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "fb913b66a2789260ddf829880d84cd9d6a7bb43d707e74282cd0ea5fb762c1d3",
+      "frame": 2,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "05b5d1eab2a371c1e8978d13069c9c88069f47b0bd848916570d9608ca5b29c2",
+      "frame": 3,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "5369d5624b99554b47f9299b6e127a660d69e8c9d636233ed9eaf6d0e4bc0f93",
+      "frame": 4,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "5048c290c93fc59a731f3f107ebd377769a0a749f020aef16dfcbd118aa3b811",
+      "frame": 5,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "bbbc6ac4badd2daa586ea4b7513505565cdd0e1ab7b9aea3efac822f92538e04",
+      "frame": 6,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "c0a10c884b82accfedbe624b0fd23db1aad60f8dafd2d1da65b222f905ea7069",
+      "frame": 7,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "f9b56ce1ff2ba5ba4b4dc21bdb05caa576205dba3757548fd766686ab148bf7c",
+      "frame": 8,
+      "gPixels": 0,
+      "paperProposalPixels": 0,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "c78b45b27a8f11e45dc7b6eab7dfdbea9aa8af92c30568e7d4edbbd7354d0480",
+      "frame": 9,
+      "gPixels": 4105,
+      "paperProposalPixels": 1231,
+      "uncertainPixels": 25,
+      "gSHA256": "911f5becb2a291d0d11488591f58abb3268248f9a738b877fb904fe0215e55ab"
+    },
+    {
+      "rgSHA256": "77e1e04c80ea4735e4119d1d0adc302acd2a88c30badac0f927b0ea5155a6990",
+      "frame": 10,
+      "gPixels": 4711,
+      "paperProposalPixels": 2213,
+      "uncertainPixels": 5,
+      "gSHA256": "626b4e3ddfec1022c3fd28c9a4ab0de660f0097fce9f5a7c6fb17a6344545dea"
+    },
+    {
+      "rgSHA256": "f38e16a4e280b243cccffdf9a49b2fac1b20904cf731c3ebb91a3d3bce429064",
+      "frame": 11,
+      "gPixels": 4593,
+      "paperProposalPixels": 4307,
+      "uncertainPixels": 59,
+      "gSHA256": "d16fbde8f940807c68d0aad9c4579131d22cee1b3c1d091092b4ca2c9f2fbb2c"
+    },
+    {
+      "rgSHA256": "21b91ba24f97b77a83fb91ab93743667298ad26bb105c87b449511ddddfc21a6",
+      "frame": 12,
+      "gPixels": 4148,
+      "paperProposalPixels": 4934,
+      "uncertainPixels": 12,
+      "gSHA256": "94b24a126511f559d249ccf6f37fa3edfb2140fffe836015ece3a72a15a51645"
+    },
+    {
+      "rgSHA256": "f8c3011a0e23e9a3781796042f366a64a19cc4bea887d3271f98784fd21bca5a",
+      "frame": 13,
+      "gPixels": 8590,
+      "paperProposalPixels": 3448,
+      "uncertainPixels": 181,
+      "gSHA256": "4a12900beae5b288b803545ca87751b6585320a67cf3ca7af6340fc28c11db69"
+    },
+    {
+      "rgSHA256": "3aa8c473ba90303e5d3f5827cb34c454051f38bf6550f81d1a809f1c1bea8360",
+      "frame": 14,
+      "gPixels": 3973,
+      "paperProposalPixels": 4306,
+      "uncertainPixels": 2935,
+      "gSHA256": "4e2ad405a97d3cbf8abd134f159dc57ae6c236e6decbcdd1777fcff4f9abe8aa"
+    },
+    {
+      "rgSHA256": "42d343f114ce0cc8d2e8cddd69dc5d5e59e8d152b99e7a32aee4a408776c6121",
+      "frame": 15,
+      "gPixels": 4445,
+      "paperProposalPixels": 3800,
+      "uncertainPixels": 104,
+      "gSHA256": "778e669e84cc5fcf056e9a2c03912ddca961c5a88b8cd92eb939d7b3c3f6853e"
+    },
+    {
+      "rgSHA256": "d3c9d7812ba1e8474a8c7cf15a77b02b8468d59eb4dc72641abde71195360cd0",
+      "frame": 16,
+      "gPixels": 4864,
+      "paperProposalPixels": 3744,
+      "uncertainPixels": 373,
+      "gSHA256": "69a230b49b5e9e0856831aa1ec55d982379f9d7ead626d4bb79d9b8b41969d49"
+    },
+    {
+      "rgSHA256": "3d1912d8eb9c90083f10f37231e9220b9285de06889f1ae82d2d1b1991ea0b99",
+      "frame": 17,
+      "gPixels": 4929,
+      "paperProposalPixels": 4154,
+      "uncertainPixels": 185,
+      "gSHA256": "afe0364112104d6c049cce83771c9cb90e34ca703b22f2cc2f109a9a6504a821"
+    },
+    {
+      "rgSHA256": "beef39b2250d4e07afa9c387b0fd2f4d71d7dcd56955521766115deb1eb2b7e2",
+      "frame": 18,
+      "gPixels": 5872,
+      "paperProposalPixels": 3701,
+      "uncertainPixels": 276,
+      "gSHA256": "3e919018a1a74625e4a1f3719d9b4f3f656436e7fe649ce67a550cbd5c930279"
+    },
+    {
+      "rgSHA256": "b6eaeb3e61b840a1d3991a19fafe3fc25d92a5c4f6421f90cb768eb959adcd4f",
+      "frame": 19,
+      "gPixels": 6279,
+      "paperProposalPixels": 3439,
+      "uncertainPixels": 479,
+      "gSHA256": "8dbe494ffe2dd9841857a61ab2c6c1d3b6f46e330c27b3e452a144081afc3c5e"
+    },
+    {
+      "rgSHA256": "5f49d7e863788f87d3b091879c2bbecd4d7cdce5df81de5fa7518c2abe96547e",
+      "frame": 20,
+      "gPixels": 6182,
+      "paperProposalPixels": 3051,
+      "uncertainPixels": 234,
+      "gSHA256": "a81cbbc6b7d9a9a00210310d50991a40f049ecf02e0efcc7d6095dceebf25684"
+    },
+    {
+      "rgSHA256": "9c40810237a1aeb7edb93b54ad961edc59067a1973e70311896b80fe1a3c87bc",
+      "frame": 21,
+      "gPixels": 7095,
+      "paperProposalPixels": 2552,
+      "uncertainPixels": 44,
+      "gSHA256": "44a0d3906e970175f781fc3e7cd2d67e00eccfb9c44ce579288fdaa0dbea1baa"
+    },
+    {
+      "rgSHA256": "3dea01856af8ec2441f3342afd85a2d0aa51f68d18ce390737d87716db044ccc",
+      "frame": 22,
+      "gPixels": 7166,
+      "paperProposalPixels": 2449,
+      "uncertainPixels": 38,
+      "gSHA256": "238407086f3d5bb21396ef3478e0a9bea41abf3eebcd624e76bb71306105626f"
+    },
+    {
+      "rgSHA256": "ce930ab291be4eb682bf31400680999b738f49b6429626a42afbd1edbce8bd92",
+      "frame": 23,
+      "gPixels": 6601,
+      "paperProposalPixels": 2170,
+      "uncertainPixels": 60,
+      "gSHA256": "3cae0ad0ddced4497b50bbb0ca1f85a66d0eceb0f6548b76bff123ad8ffcbf8d"
+    },
+    {
+      "rgSHA256": "9e8e3b78869ea1bf794ad9f6adb1864984af78274acacf2bcd709c40d07395ae",
+      "frame": 24,
+      "gPixels": 6402,
+      "paperProposalPixels": 1782,
+      "uncertainPixels": 87,
+      "gSHA256": "62eef210cf70ea3a877629301b625d75830367a23843abd2f3448f9132714138"
+    },
+    {
+      "rgSHA256": "d27bc30d6bad0d42862e2ee7b4bcf2a84cc64a61586818c5b20a6620cc0a595c",
+      "frame": 25,
+      "gPixels": 6614,
+      "paperProposalPixels": 1276,
+      "uncertainPixels": 133,
+      "gSHA256": "ef0b0e3561edcc502ee5da19d95b5495f4ce55624c1584c1d42dd9e3573da313"
+    },
+    {
+      "rgSHA256": "d12d435089065fb49beb44f74c0a4139d7069b878e1dab89c10f798bfff724c3",
+      "frame": 26,
+      "gPixels": 6689,
+      "paperProposalPixels": 1050,
+      "uncertainPixels": 74,
+      "gSHA256": "c5cbec455d74a9fe0a462751a7f2f03e28b7faf7d8e368b0f2f6d9db789cae4a"
+    },
+    {
+      "rgSHA256": "b7b38a6653bcfc4e9c0a4456971db002e5846af533a3ae098467305e1e309c5f",
+      "frame": 27,
+      "gPixels": 6804,
+      "paperProposalPixels": 544,
+      "uncertainPixels": 4,
+      "gSHA256": "2f0ee79dd1123ce0cb465cba12f0e345a24043db536c5efc6759986e7b738b41"
+    },
+    {
+      "rgSHA256": "81cfb656fb0bacd07a01d9142feda104aa653cba66c1b36646853bcb5fa43192",
+      "frame": 28,
+      "gPixels": 6783,
+      "paperProposalPixels": 648,
+      "uncertainPixels": 24,
+      "gSHA256": "62b40d1a2dc3c3d66c6d49f234ac14d5ef3020e8fb8af22ec99363c6b7ba32ad"
+    },
+    {
+      "rgSHA256": "73f7401f4c58db2e0c16cea7be1815346864a6bc5dfa43d1365401dee0cc1331",
+      "frame": 29,
+      "gPixels": 6669,
+      "paperProposalPixels": 712,
+      "uncertainPixels": 55,
+      "gSHA256": "924737f661946d522e663a002dd8b1a1e047a4802416202bf088fb29cb8b7856"
+    },
+    {
+      "rgSHA256": "f8d6efa40de34bc2e564b61526d564a3e3103b8ca6a60e0ecbcb9060158abe50",
+      "frame": 30,
+      "gPixels": 6279,
+      "paperProposalPixels": 1019,
+      "uncertainPixels": 52,
+      "gSHA256": "442a6aca0a0dd525238251315da2acd5766327c1f8eb661984d0cda45330e8d6"
+    },
+    {
+      "rgSHA256": "cfb29f8da0abe223eec086e8f383223da12547c1e0c7bd2bb20fc1ff14d50ead",
+      "frame": 31,
+      "gPixels": 5861,
+      "paperProposalPixels": 1127,
+      "uncertainPixels": 87,
+      "gSHA256": "d11d0de7d346714301a56fc033efe893b9b5398daeba6ef00601fa204878f4c9"
+    },
+    {
+      "rgSHA256": "cf156b6231720586380514eeb0a6c758afe32c4a3c4aebdb92e24347a237b0ce",
+      "frame": 32,
+      "gPixels": 4543,
+      "paperProposalPixels": 1338,
+      "uncertainPixels": 190,
+      "gSHA256": "73b7579169d0ca92ffb4eb449498d655cc096a6351cbc34868a79514fe51a1d5"
+    },
+    {
+      "rgSHA256": "0ac7b6a69217f76d532c89fa8be478c7101c875b3c0163e6755d650ad6eccb78",
+      "frame": 33,
+      "gPixels": 3756,
+      "paperProposalPixels": 1228,
+      "uncertainPixels": 151,
+      "gSHA256": "faf83a9b2f4f084d33c0e3e47187278bbca8d51b657299d93cf50ab6f8b6096e"
+    },
+    {
+      "rgSHA256": "821a5398b6c8df4145b686fbe5959c8bca685eab655c8e2d92d3561cf2265bc0",
+      "frame": 34,
+      "gPixels": 3188,
+      "paperProposalPixels": 1248,
+      "uncertainPixels": 266,
+      "gSHA256": "5afaec598d4bb14915d0ba5c0c968be3e9e5afde8b3272032a9eb76f1ef08d90"
+    },
+    {
+      "rgSHA256": "b0fc1fe99260e30283a19e3c8ac5665c3425e07f740bf5a2d75c22f065393e14",
+      "frame": 35,
+      "gPixels": 3029,
+      "paperProposalPixels": 1121,
+      "uncertainPixels": 253,
+      "gSHA256": "0a6a6836f3b340b43c804a15ba9dc7111eb7d72673d9fdd02b4497f81c586c9b"
+    },
+    {
+      "rgSHA256": "93980264d2bef34fcea760861e29456e0c6cdf7765736b5ebca9005d6377c4d8",
+      "frame": 36,
+      "gPixels": 3137,
+      "paperProposalPixels": 1319,
+      "uncertainPixels": 308,
+      "gSHA256": "df68bbd6972e4547b509b0b6a5befbcea0a8d1ae6c6ec45f9a8fd91c8a110247"
+    },
+    {
+      "rgSHA256": "f4813d4f5782a1e1b36cb7fceb8647e8c870d9d4df3530ab9a628d062c7910d4",
+      "frame": 37,
+      "gPixels": 3406,
+      "paperProposalPixels": 1340,
+      "uncertainPixels": 249,
+      "gSHA256": "fd36db70a9a411a979423f9587e76686ba015bebe63f79dcc63d89f32af53303"
+    },
+    {
+      "rgSHA256": "8d1fd88b11961983788f72965df8fa002235cc73129f259494ad6f72ab5131d3",
+      "frame": 38,
+      "gPixels": 3690,
+      "paperProposalPixels": 1278,
+      "uncertainPixels": 238,
+      "gSHA256": "a493d3ec60087ce51db2506afe2aae567ea67f755a7490bc605d2c9e16f95f02"
+    },
+    {
+      "rgSHA256": "854f82ab918451798b3e75501f024c17b1e41581443f4ba9119ea72fc96083d1",
+      "frame": 39,
+      "gPixels": 3647,
+      "paperProposalPixels": 1947,
+      "uncertainPixels": 395,
+      "gSHA256": "aa2d8de51ca7143c7f29edd599f318ff84712ce0d660084b98c666c918312b32"
+    },
+    {
+      "rgSHA256": "814e56eecbaa2b996ec7f482a87362e02a946b7a27cd02fcb4468d6a2b692844",
+      "frame": 40,
+      "gPixels": 3505,
+      "paperProposalPixels": 2012,
+      "uncertainPixels": 371,
+      "gSHA256": "6750a1f5eb2e7302d3f7b0c0b2a8be4e510c3425a0dd9617124db3e50ac1ba9a"
+    },
+    {
+      "rgSHA256": "c58d28d8c7519a7da3590bec39a03fcb2b2fce344c120dd40634602d5cb83db0",
+      "frame": 41,
+      "gPixels": 3632,
+      "paperProposalPixels": 2142,
+      "uncertainPixels": 323,
+      "gSHA256": "078b0f6ba045d5753fde0686e5d555ccb8d85cce8d7911cb39ad5f52eaf5a3d0"
+    },
+    {
+      "rgSHA256": "35ac752b1ec855aad8af3afc82cfcfef74edf19772638cf0346cdee5fb0245f7",
+      "frame": 42,
+      "gPixels": 3603,
+      "paperProposalPixels": 2606,
+      "uncertainPixels": 278,
+      "gSHA256": "60dd78ff6c23c389db6a68321470704650b95b77867dc4b8384ba4e31b4bb334"
+    },
+    {
+      "rgSHA256": "c9f6cc10bae2bf75675abe926d664357745c00f7a8a18a423c9a61db928cdbfb",
+      "frame": 43,
+      "gPixels": 3974,
+      "paperProposalPixels": 2866,
+      "uncertainPixels": 516,
+      "gSHA256": "ed128a24e0325c74f22cd1cb941648a03029d4d8060cc449e93dd908e5ed663d"
+    },
+    {
+      "rgSHA256": "3be74f40f702e1738fb4cb50df649ad90d70672057826c285c7753ea8f7ef46c",
+      "frame": 44,
+      "gPixels": 4864,
+      "paperProposalPixels": 2320,
+      "uncertainPixels": 129,
+      "gSHA256": "700731819c295b711164fa89dbffe0ba9806b465a55a2ad92c3f65c677dfd715"
+    },
+    {
+      "rgSHA256": "b614c55efd12ad3b3c06b2c17511cf53bcee4dbeb765c6ac35bd379b92bf1e64",
+      "frame": 45,
+      "gPixels": 5337,
+      "paperProposalPixels": 1929,
+      "uncertainPixels": 216,
+      "gSHA256": "207356914ea3298cc1b9901fa4fc19208e018f99c68e34f5e75e034535f2846b"
+    },
+    {
+      "rgSHA256": "f88000d65442771edabc13009045442f5a631f939707f60df7bcf4b1b2282c2b",
+      "frame": 46,
+      "gPixels": 5733,
+      "paperProposalPixels": 2663,
+      "uncertainPixels": 220,
+      "gSHA256": "87f6acdc6c39df79a437f9cdf8c627ad3b051e1f6c1498b86bca6833346efb46"
+    },
+    {
+      "rgSHA256": "1aa0812ec7c1f4bd2b73605491e885832d5095a638f40e84351a3a98fc77e02d",
+      "frame": 47,
+      "gPixels": 6050,
+      "paperProposalPixels": 2300,
+      "uncertainPixels": 99,
+      "gSHA256": "ae41d394a09ce4b4f02440dd046c31b61df25a26895054d54adfdd04f7b73e44"
+    },
+    {
+      "rgSHA256": "133f1cd55d1b28aad7192b9040c07ab2accb92ddfe3917f3b55b708b99a10860",
+      "frame": 48,
+      "gPixels": 4900,
+      "paperProposalPixels": 3050,
+      "uncertainPixels": 130,
+      "gSHA256": "ae4774e44d546cf3d5a953934d5daa0658c8dce6822738b6318ef8ef44e06685"
+    },
+    {
+      "rgSHA256": "e840de61876923ac167df037703f8154cd994c6b042d141ff19008a53a64672c",
+      "frame": 49,
+      "gPixels": 5298,
+      "paperProposalPixels": 3054,
+      "uncertainPixels": 35,
+      "gSHA256": "cf50f9f22214ab447d2e5e078a2e763aaf0a00e09f5402099e4ab844a0f138ec"
+    },
+    {
+      "rgSHA256": "7c9a9c5dd5b2af38ab9fe094cb1d7498c93983ed1bc712c5eebd626c0ec8f402",
+      "frame": 50,
+      "gPixels": 5048,
+      "paperProposalPixels": 3705,
+      "uncertainPixels": 1,
+      "gSHA256": "9e5c2b961e1ca44758ddab94489400b2fa8602f0434e01612977e2b645885789"
+    },
+    {
+      "rgSHA256": "9f03d4faa284f7d75199cb9737c892ee1256047aa7991483975827f1d3ef2a16",
+      "frame": 51,
+      "gPixels": 5124,
+      "paperProposalPixels": 3828,
+      "uncertainPixels": 81,
+      "gSHA256": "1a683c7d4a10aa0d6a75ae220f3e07ec220dc96db11b8cd2c6722620468d548a"
+    },
+    {
+      "rgSHA256": "0f19190ebf2cebd439855935796d2bc928118044286eea7465ea52655b840f5f",
+      "frame": 52,
+      "gPixels": 4877,
+      "paperProposalPixels": 4218,
+      "uncertainPixels": 433,
+      "gSHA256": "3017d2d5af6869d582d0e091c7ecc4ce0c7181e42cc08719e19955105cc5f30d"
+    },
+    {
+      "rgSHA256": "e3e837f84e2e301aa4c89383b9ef812c4b26b31288b77bfe6981ea9f3bcafb5d",
+      "frame": 53,
+      "gPixels": 5212,
+      "paperProposalPixels": 3871,
+      "uncertainPixels": 170,
+      "gSHA256": "d00ae4b59699edbb2ef96d42d04855c31293678349220880d4a3b75b15b8b478"
+    },
+    {
+      "rgSHA256": "80d1d305197882d7cb8d560cea73c55d4cfeef5bdc1c69dc746c1baa20775fe5",
+      "frame": 54,
+      "gPixels": 4988,
+      "paperProposalPixels": 3949,
+      "uncertainPixels": 220,
+      "gSHA256": "295c0a7cef78ef2b15232a6b86c9681e5c05598094faa1e926257a01c717fdf1"
+    },
+    {
+      "rgSHA256": "a6a8543d3183be06263a23e9638a5d5b77340ce17aa4c6eae7a7e778a0938825",
+      "frame": 55,
+      "gPixels": 4807,
+      "paperProposalPixels": 4418,
+      "uncertainPixels": 380,
+      "gSHA256": "59dc4cbe25a30b88085d9244265fb3f2a8e80ff4d1cbf4f920f2661ec724b500"
+    },
+    {
+      "rgSHA256": "df9bf4befefe7a64256c0ada787fac4a7a89d0a3391a5fdb4e180880c283e947",
+      "frame": 56,
+      "gPixels": 4686,
+      "paperProposalPixels": 4652,
+      "uncertainPixels": 361,
+      "gSHA256": "5da01e21c98bbafe1decd04049da2f3193ff11607f9b463d5a3b93e3b92e8aca"
+    },
+    {
+      "rgSHA256": "e9d4b11203a23f98642efc8b9dcd4820c907ba524c428455938ebaff28e3bd92",
+      "frame": 57,
+      "gPixels": 4695,
+      "paperProposalPixels": 4701,
+      "uncertainPixels": 430,
+      "gSHA256": "f53b65ce9e9571be1aac5cc59418138756898ff23debd04c8cd29f2d814b7155"
+    },
+    {
+      "rgSHA256": "879cfe43260f9eaae507238bacd8de349dd186fe3f6c498e487d6cca63c26bb9",
+      "frame": 58,
+      "gPixels": 4701,
+      "paperProposalPixels": 4729,
+      "uncertainPixels": 446,
+      "gSHA256": "58a12e05f9e82c16b75c35a641882033675854465415a5a9c3bac32084ad4cc7"
+    },
+    {
+      "rgSHA256": "3fee12a97da21c6c527b6719ba85cbf7cc00ceda49eacb7f807634727d73b15b",
+      "frame": 59,
+      "gPixels": 4642,
+      "paperProposalPixels": 4603,
+      "uncertainPixels": 325,
+      "gSHA256": "0a665f2a4639b27e9be40f220aefce94d5116a7e1a08aa3e34440dcdb5c49574"
+    },
+    {
+      "rgSHA256": "68f7e0e23a50e7b9341438c82ad919cafb704c30d409d840fcccd1da803246f3",
+      "frame": 60,
+      "gPixels": 4384,
+      "paperProposalPixels": 4730,
+      "uncertainPixels": 365,
+      "gSHA256": "33ea57a1fd7d1bb7364aae5cd75444d8b90431cadfbf49ef3377930c98efc312"
+    },
+    {
+      "rgSHA256": "d9eb1f74fbd3cebf5117b14bb4c2814f4a42203c067430f6b65b440ee77569c3",
+      "frame": 61,
+      "gPixels": 3985,
+      "paperProposalPixels": 5176,
+      "uncertainPixels": 370,
+      "gSHA256": "ec5c2a0055f588f09d367ba315252dabe66882f0faae0116ac7849460070d3af"
+    },
+    {
+      "rgSHA256": "a2e1cdb95f2fd78b030dd0b537ee65bb5c247ea9ecacd71144532ec9995c0520",
+      "frame": 62,
+      "gPixels": 3088,
+      "paperProposalPixels": 5881,
+      "uncertainPixels": 361,
+      "gSHA256": "f6ccd57e9d1157d273c81af3fa4058a17684ab7a05cb48426637976f9cc46704"
+    },
+    {
+      "rgSHA256": "3f4c207db5565c7f7bfe69dc504dc6e8fa26065560d1ec8b7089aefca3e23b11",
+      "frame": 63,
+      "gPixels": 1667,
+      "paperProposalPixels": 6432,
+      "uncertainPixels": 370,
+      "gSHA256": "49d0154c136c7d7dcd92f11484f06b6d19e17749ea3c32ca6fd4a31b93570784"
+    },
+    {
+      "rgSHA256": "09997cd1702b289197a43e85b052be4fe49f542506194fba4daf3aacf28d6b44",
+      "frame": 64,
+      "gPixels": 0,
+      "paperProposalPixels": 6437,
+      "uncertainPixels": 398,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "5a305bf63453388bd51dce2dbe9c3ee2627695d1735441348d12f2b59c884feb",
+      "frame": 65,
+      "gPixels": 0,
+      "paperProposalPixels": 6448,
+      "uncertainPixels": 2,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "947f22daa585f3f755e41854709a90f66727e1a9bedf433cb7895eb38a21e1b6",
+      "frame": 66,
+      "gPixels": 0,
+      "paperProposalPixels": 6448,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "8d294d2f4ccfe366e2acb60719330f217a3899de976230a5c29c580c257e7bfb",
+      "frame": 67,
+      "gPixels": 0,
+      "paperProposalPixels": 6448,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "10c48927ab45c0232c4de9c1baf4e4bed9506fba9d77936ccd05fa210d9ca932",
+      "frame": 68,
+      "gPixels": 0,
+      "paperProposalPixels": 6446,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "d1a74b69393de061a9c50ab07522ee5c69e4a5f59f31bb6bfaabd7c3f3c52382",
+      "frame": 69,
+      "gPixels": 0,
+      "paperProposalPixels": 6445,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "58b85f3c0b74f6424d6eb594574dd4e71a6caf8d40649fae7fb1c31dfbc609d1",
+      "frame": 70,
+      "gPixels": 0,
+      "paperProposalPixels": 6443,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "ff504d3b44dab1808fb35b1c6e362c27b74f44c1f4ceaa1415cbe3e63523ee26",
+      "frame": 71,
+      "gPixels": 0,
+      "paperProposalPixels": 6436,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "142a3c68459a1d32dd1bd443726edec323c0f351fd56a867f8bfdbc5c9d629be",
+      "frame": 72,
+      "gPixels": 0,
+      "paperProposalPixels": 6433,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "9e5269a5db50950d1fb854180c79fc27b00cbc58cd23ca24a0468dbbf95e8ee1",
+      "frame": 73,
+      "gPixels": 0,
+      "paperProposalPixels": 6433,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "1a7478a6acec918b9b1854f984003aa2af399d8fb6c14bbff09467f1b1671711",
+      "frame": 74,
+      "gPixels": 0,
+      "paperProposalPixels": 6434,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "db2c8c5462c5ca46eba84f1f83066318a5c4cf95b9fa795ac75c7f685f3b39df",
+      "frame": 75,
+      "gPixels": 0,
+      "paperProposalPixels": 6433,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "249f70110a198a3d8692c0a1d76d15e7f15d98e1e8926775499ca61180c15322",
+      "frame": 76,
+      "gPixels": 0,
+      "paperProposalPixels": 6430,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "6690e7bdb1b56d1a9f002a8f47f3734078dfe902c6571ecd353fe5987c43802c",
+      "frame": 77,
+      "gPixels": 0,
+      "paperProposalPixels": 6429,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "1e3512bea4db04e41aa3d89bd8dab1dee6e973dc62b4bf91ce1b996b5e227da6",
+      "frame": 78,
+      "gPixels": 0,
+      "paperProposalPixels": 6428,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "62915793639c689fb963f6df2a70f0c261c7dee15abed685b5af927aaca13061",
+      "frame": 79,
+      "gPixels": 0,
+      "paperProposalPixels": 6431,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "f70d7bbc2c8c84c0ef614b2cea796ad01fa79067bf14c0c3a070c8beb54fb06f",
+      "frame": 80,
+      "gPixels": 0,
+      "paperProposalPixels": 6429,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "a56ac138939fe3966985213dcf6496245d348ca26cae71e0a3b5921fb8996929",
+      "frame": 81,
+      "gPixels": 0,
+      "paperProposalPixels": 6430,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "aac7e928f25ecc52bd917693366e0f8fa330bfd2d05d525c049898eda078d575",
+      "frame": 82,
+      "gPixels": 0,
+      "paperProposalPixels": 6431,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "f02a91e2203640dc9dcd1b86ba752880b5cce635ef2e3b7cc2b55c8322ee417e",
+      "frame": 83,
+      "gPixels": 0,
+      "paperProposalPixels": 6431,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "ebf7aacdfa24bffc8e3e3e3567ba42acef36d7ff611ba1ea8dceaab3e91187f5",
+      "frame": 84,
+      "gPixels": 0,
+      "paperProposalPixels": 6431,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "2d2d098010182648760d3d172443874ad0512661697aabfd391fb4bd7ed30426",
+      "frame": 85,
+      "gPixels": 0,
+      "paperProposalPixels": 6435,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "05a8653baaccf6439ec6fa9ca74df5ed24e53795dcbb8ed033cabe3f56915f34",
+      "frame": 86,
+      "gPixels": 0,
+      "paperProposalPixels": 6435,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "1829907fb8ed72196310d2d1ad49129d1622506143999abe574bc2f7616e24e3",
+      "frame": 87,
+      "gPixels": 0,
+      "paperProposalPixels": 6436,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "0af6998682544dbed0520e6e386173c1b0735953100043135dce692f09491bb8",
+      "frame": 88,
+      "gPixels": 0,
+      "paperProposalPixels": 6436,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "2860095e3bad5639c277c9515fd0a6e121990a70e65a341c3909f962509f173d",
+      "frame": 89,
+      "gPixels": 0,
+      "paperProposalPixels": 6438,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "c60ad91d16d831f5e4a15ae2103495d0f843ae670d97302abe154eea8386bca7",
+      "frame": 90,
+      "gPixels": 0,
+      "paperProposalPixels": 6435,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "a6b6bd7dbd187706bb513f86d1c1244e560d78ce0d81c5de590ad5ba95276bb9",
+      "frame": 91,
+      "gPixels": 0,
+      "paperProposalPixels": 6440,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "3411d52cd20b5a0e26eedb91687568ac692e5743ec5a179bbf1174444853d402",
+      "frame": 92,
+      "gPixels": 0,
+      "paperProposalPixels": 6435,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "6792e45b86e428c4e685a7eccadb8f971b9488cfd8cd69d3743c00fa1486d23b",
+      "frame": 93,
+      "gPixels": 0,
+      "paperProposalPixels": 6439,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "c17182b1288f3df641108820ffe0e369149a4573c261684dfd4783b3927fab6b",
+      "frame": 94,
+      "gPixels": 0,
+      "paperProposalPixels": 6438,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "082675dcfe9467a2e2bb4649698e22decee0bf16e58cde050ef5d1d52cf3c859",
+      "frame": 95,
+      "gPixels": 0,
+      "paperProposalPixels": 6439,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    },
+    {
+      "rgSHA256": "26171e1c24206556a82050743f1be1a82f8fd57980b06c4acb74960001f7e9cb",
+      "frame": 96,
+      "gPixels": 0,
+      "paperProposalPixels": 6438,
+      "uncertainPixels": 0,
+      "gSHA256": "f5fd445dac2a9559cfbfb66637efa6966a7ed4e1c18081c51695e854eb245461"
+    }
+  ]
+}

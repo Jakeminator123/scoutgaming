@@ -1,0 +1,513 @@
+{
+  "status": "STABLE inspected-key-frame draft, visual acceptance FAILED",
+  "manifestSHA256": "15c7e08c5bcdd8e11da0c1ee88bbbfd7c684a588ae056842cd16fc6ac8a59ff0",
+  "count": 97,
+  "channels": "PNG red=cleanActorR with source-derived paper contour delta removed; green=min(source-visible connected warm hand G,finalR); blue0",
+  "Gclock": "native0..63 inclusive, zero64..96; release63 retained as candidate for root ledger",
+  "sourceSHA256": "ac46fe3283544d40a7d80c6d9f7f1592fe4d9c566887a8abc73f250734419e0b",
+  "cleanRReceiptSHA256": "1802e3b959afe1582c79337caca47ab6f4f69d4c14903b696d77282c0be5f2bd",
+  "trajectorySHA256": "36d917e57844b51d02c7ca2cbd6eb8a7a712683a19e2d23b85b45bce4870355a",
+  "reviewedFrames": [
+    9,
+    12,
+    18,
+    30,
+    40,
+    48,
+    63
+  ],
+  "limits": [
+    "Source-bound automatic confidence masks, not every boundary manually measured",
+    "Residual source card border18 and feeding shoe fragments9",
+    "Warm blurred contact edges uncertain; uncertain masks retain flags",
+    "No sourceRGB changes; no hidden anatomy inferred",
+    "All97frames provided; dense native cadence review still required"
+  ],
+  "files": [
+    {
+      "frame": 0,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0000.png",
+      "sha256": "71eaeb8b83779dcf6ab9424c0ad07578db459d5047cf6f6d39a1b29733589b19"
+    },
+    {
+      "frame": 1,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0001.png",
+      "sha256": "5e0f13679447fcb0076ca1570e8c1374935923eee71be955671268d475de231b"
+    },
+    {
+      "frame": 2,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0002.png",
+      "sha256": "fb913b66a2789260ddf829880d84cd9d6a7bb43d707e74282cd0ea5fb762c1d3"
+    },
+    {
+      "frame": 3,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0003.png",
+      "sha256": "05b5d1eab2a371c1e8978d13069c9c88069f47b0bd848916570d9608ca5b29c2"
+    },
+    {
+      "frame": 4,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0004.png",
+      "sha256": "5369d5624b99554b47f9299b6e127a660d69e8c9d636233ed9eaf6d0e4bc0f93"
+    },
+    {
+      "frame": 5,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0005.png",
+      "sha256": "5048c290c93fc59a731f3f107ebd377769a0a749f020aef16dfcbd118aa3b811"
+    },
+    {
+      "frame": 6,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0006.png",
+      "sha256": "bbbc6ac4badd2daa586ea4b7513505565cdd0e1ab7b9aea3efac822f92538e04"
+    },
+    {
+      "frame": 7,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0007.png",
+      "sha256": "c0a10c884b82accfedbe624b0fd23db1aad60f8dafd2d1da65b222f905ea7069"
+    },
+    {
+      "frame": 8,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0008.png",
+      "sha256": "f9b56ce1ff2ba5ba4b4dc21bdb05caa576205dba3757548fd766686ab148bf7c"
+    },
+    {
+      "frame": 9,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0009.png",
+      "sha256": "c78b45b27a8f11e45dc7b6eab7dfdbea9aa8af92c30568e7d4edbbd7354d0480"
+    },
+    {
+      "frame": 10,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0010.png",
+      "sha256": "77e1e04c80ea4735e4119d1d0adc302acd2a88c30badac0f927b0ea5155a6990"
+    },
+    {
+      "frame": 11,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0011.png",
+      "sha256": "f38e16a4e280b243cccffdf9a49b2fac1b20904cf731c3ebb91a3d3bce429064"
+    },
+    {
+      "frame": 12,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0012.png",
+      "sha256": "21b91ba24f97b77a83fb91ab93743667298ad26bb105c87b449511ddddfc21a6"
+    },
+    {
+      "frame": 13,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0013.png",
+      "sha256": "f8c3011a0e23e9a3781796042f366a64a19cc4bea887d3271f98784fd21bca5a"
+    },
+    {
+      "frame": 14,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0014.png",
+      "sha256": "3aa8c473ba90303e5d3f5827cb34c454051f38bf6550f81d1a809f1c1bea8360"
+    },
+    {
+      "frame": 15,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0015.png",
+      "sha256": "42d343f114ce0cc8d2e8cddd69dc5d5e59e8d152b99e7a32aee4a408776c6121"
+    },
+    {
+      "frame": 16,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0016.png",
+      "sha256": "d3c9d7812ba1e8474a8c7cf15a77b02b8468d59eb4dc72641abde71195360cd0"
+    },
+    {
+      "frame": 17,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0017.png",
+      "sha256": "3d1912d8eb9c90083f10f37231e9220b9285de06889f1ae82d2d1b1991ea0b99"
+    },
+    {
+      "frame": 18,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0018.png",
+      "sha256": "beef39b2250d4e07afa9c387b0fd2f4d71d7dcd56955521766115deb1eb2b7e2"
+    },
+    {
+      "frame": 19,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0019.png",
+      "sha256": "b6eaeb3e61b840a1d3991a19fafe3fc25d92a5c4f6421f90cb768eb959adcd4f"
+    },
+    {
+      "frame": 20,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0020.png",
+      "sha256": "5f49d7e863788f87d3b091879c2bbecd4d7cdce5df81de5fa7518c2abe96547e"
+    },
+    {
+      "frame": 21,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0021.png",
+      "sha256": "9c40810237a1aeb7edb93b54ad961edc59067a1973e70311896b80fe1a3c87bc"
+    },
+    {
+      "frame": 22,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0022.png",
+      "sha256": "3dea01856af8ec2441f3342afd85a2d0aa51f68d18ce390737d87716db044ccc"
+    },
+    {
+      "frame": 23,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0023.png",
+      "sha256": "ce930ab291be4eb682bf31400680999b738f49b6429626a42afbd1edbce8bd92"
+    },
+    {
+      "frame": 24,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0024.png",
+      "sha256": "9e8e3b78869ea1bf794ad9f6adb1864984af78274acacf2bcd709c40d07395ae"
+    },
+    {
+      "frame": 25,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0025.png",
+      "sha256": "d27bc30d6bad0d42862e2ee7b4bcf2a84cc64a61586818c5b20a6620cc0a595c"
+    },
+    {
+      "frame": 26,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0026.png",
+      "sha256": "d12d435089065fb49beb44f74c0a4139d7069b878e1dab89c10f798bfff724c3"
+    },
+    {
+      "frame": 27,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0027.png",
+      "sha256": "b7b38a6653bcfc4e9c0a4456971db002e5846af533a3ae098467305e1e309c5f"
+    },
+    {
+      "frame": 28,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0028.png",
+      "sha256": "81cfb656fb0bacd07a01d9142feda104aa653cba66c1b36646853bcb5fa43192"
+    },
+    {
+      "frame": 29,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0029.png",
+      "sha256": "73f7401f4c58db2e0c16cea7be1815346864a6bc5dfa43d1365401dee0cc1331"
+    },
+    {
+      "frame": 30,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0030.png",
+      "sha256": "f8d6efa40de34bc2e564b61526d564a3e3103b8ca6a60e0ecbcb9060158abe50"
+    },
+    {
+      "frame": 31,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0031.png",
+      "sha256": "cfb29f8da0abe223eec086e8f383223da12547c1e0c7bd2bb20fc1ff14d50ead"
+    },
+    {
+      "frame": 32,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0032.png",
+      "sha256": "cf156b6231720586380514eeb0a6c758afe32c4a3c4aebdb92e24347a237b0ce"
+    },
+    {
+      "frame": 33,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0033.png",
+      "sha256": "0ac7b6a69217f76d532c89fa8be478c7101c875b3c0163e6755d650ad6eccb78"
+    },
+    {
+      "frame": 34,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0034.png",
+      "sha256": "821a5398b6c8df4145b686fbe5959c8bca685eab655c8e2d92d3561cf2265bc0"
+    },
+    {
+      "frame": 35,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0035.png",
+      "sha256": "b0fc1fe99260e30283a19e3c8ac5665c3425e07f740bf5a2d75c22f065393e14"
+    },
+    {
+      "frame": 36,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0036.png",
+      "sha256": "93980264d2bef34fcea760861e29456e0c6cdf7765736b5ebca9005d6377c4d8"
+    },
+    {
+      "frame": 37,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0037.png",
+      "sha256": "f4813d4f5782a1e1b36cb7fceb8647e8c870d9d4df3530ab9a628d062c7910d4"
+    },
+    {
+      "frame": 38,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0038.png",
+      "sha256": "8d1fd88b11961983788f72965df8fa002235cc73129f259494ad6f72ab5131d3"
+    },
+    {
+      "frame": 39,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0039.png",
+      "sha256": "854f82ab918451798b3e75501f024c17b1e41581443f4ba9119ea72fc96083d1"
+    },
+    {
+      "frame": 40,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0040.png",
+      "sha256": "814e56eecbaa2b996ec7f482a87362e02a946b7a27cd02fcb4468d6a2b692844"
+    },
+    {
+      "frame": 41,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0041.png",
+      "sha256": "c58d28d8c7519a7da3590bec39a03fcb2b2fce344c120dd40634602d5cb83db0"
+    },
+    {
+      "frame": 42,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0042.png",
+      "sha256": "35ac752b1ec855aad8af3afc82cfcfef74edf19772638cf0346cdee5fb0245f7"
+    },
+    {
+      "frame": 43,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0043.png",
+      "sha256": "c9f6cc10bae2bf75675abe926d664357745c00f7a8a18a423c9a61db928cdbfb"
+    },
+    {
+      "frame": 44,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0044.png",
+      "sha256": "3be74f40f702e1738fb4cb50df649ad90d70672057826c285c7753ea8f7ef46c"
+    },
+    {
+      "frame": 45,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0045.png",
+      "sha256": "b614c55efd12ad3b3c06b2c17511cf53bcee4dbeb765c6ac35bd379b92bf1e64"
+    },
+    {
+      "frame": 46,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0046.png",
+      "sha256": "f88000d65442771edabc13009045442f5a631f939707f60df7bcf4b1b2282c2b"
+    },
+    {
+      "frame": 47,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0047.png",
+      "sha256": "1aa0812ec7c1f4bd2b73605491e885832d5095a638f40e84351a3a98fc77e02d"
+    },
+    {
+      "frame": 48,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0048.png",
+      "sha256": "133f1cd55d1b28aad7192b9040c07ab2accb92ddfe3917f3b55b708b99a10860"
+    },
+    {
+      "frame": 49,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0049.png",
+      "sha256": "e840de61876923ac167df037703f8154cd994c6b042d141ff19008a53a64672c"
+    },
+    {
+      "frame": 50,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0050.png",
+      "sha256": "7c9a9c5dd5b2af38ab9fe094cb1d7498c93983ed1bc712c5eebd626c0ec8f402"
+    },
+    {
+      "frame": 51,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0051.png",
+      "sha256": "9f03d4faa284f7d75199cb9737c892ee1256047aa7991483975827f1d3ef2a16"
+    },
+    {
+      "frame": 52,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0052.png",
+      "sha256": "0f19190ebf2cebd439855935796d2bc928118044286eea7465ea52655b840f5f"
+    },
+    {
+      "frame": 53,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0053.png",
+      "sha256": "e3e837f84e2e301aa4c89383b9ef812c4b26b31288b77bfe6981ea9f3bcafb5d"
+    },
+    {
+      "frame": 54,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0054.png",
+      "sha256": "80d1d305197882d7cb8d560cea73c55d4cfeef5bdc1c69dc746c1baa20775fe5"
+    },
+    {
+      "frame": 55,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0055.png",
+      "sha256": "a6a8543d3183be06263a23e9638a5d5b77340ce17aa4c6eae7a7e778a0938825"
+    },
+    {
+      "frame": 56,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0056.png",
+      "sha256": "df9bf4befefe7a64256c0ada787fac4a7a89d0a3391a5fdb4e180880c283e947"
+    },
+    {
+      "frame": 57,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0057.png",
+      "sha256": "e9d4b11203a23f98642efc8b9dcd4820c907ba524c428455938ebaff28e3bd92"
+    },
+    {
+      "frame": 58,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0058.png",
+      "sha256": "879cfe43260f9eaae507238bacd8de349dd186fe3f6c498e487d6cca63c26bb9"
+    },
+    {
+      "frame": 59,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0059.png",
+      "sha256": "3fee12a97da21c6c527b6719ba85cbf7cc00ceda49eacb7f807634727d73b15b"
+    },
+    {
+      "frame": 60,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0060.png",
+      "sha256": "68f7e0e23a50e7b9341438c82ad919cafb704c30d409d840fcccd1da803246f3"
+    },
+    {
+      "frame": 61,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0061.png",
+      "sha256": "d9eb1f74fbd3cebf5117b14bb4c2814f4a42203c067430f6b65b440ee77569c3"
+    },
+    {
+      "frame": 62,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0062.png",
+      "sha256": "a2e1cdb95f2fd78b030dd0b537ee65bb5c247ea9ecacd71144532ec9995c0520"
+    },
+    {
+      "frame": 63,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0063.png",
+      "sha256": "3f4c207db5565c7f7bfe69dc504dc6e8fa26065560d1ec8b7089aefca3e23b11"
+    },
+    {
+      "frame": 64,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0064.png",
+      "sha256": "09997cd1702b289197a43e85b052be4fe49f542506194fba4daf3aacf28d6b44"
+    },
+    {
+      "frame": 65,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0065.png",
+      "sha256": "5a305bf63453388bd51dce2dbe9c3ee2627695d1735441348d12f2b59c884feb"
+    },
+    {
+      "frame": 66,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0066.png",
+      "sha256": "947f22daa585f3f755e41854709a90f66727e1a9bedf433cb7895eb38a21e1b6"
+    },
+    {
+      "frame": 67,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0067.png",
+      "sha256": "8d294d2f4ccfe366e2acb60719330f217a3899de976230a5c29c580c257e7bfb"
+    },
+    {
+      "frame": 68,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0068.png",
+      "sha256": "10c48927ab45c0232c4de9c1baf4e4bed9506fba9d77936ccd05fa210d9ca932"
+    },
+    {
+      "frame": 69,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0069.png",
+      "sha256": "d1a74b69393de061a9c50ab07522ee5c69e4a5f59f31bb6bfaabd7c3f3c52382"
+    },
+    {
+      "frame": 70,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0070.png",
+      "sha256": "58b85f3c0b74f6424d6eb594574dd4e71a6caf8d40649fae7fb1c31dfbc609d1"
+    },
+    {
+      "frame": 71,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0071.png",
+      "sha256": "ff504d3b44dab1808fb35b1c6e362c27b74f44c1f4ceaa1415cbe3e63523ee26"
+    },
+    {
+      "frame": 72,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0072.png",
+      "sha256": "142a3c68459a1d32dd1bd443726edec323c0f351fd56a867f8bfdbc5c9d629be"
+    },
+    {
+      "frame": 73,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0073.png",
+      "sha256": "9e5269a5db50950d1fb854180c79fc27b00cbc58cd23ca24a0468dbbf95e8ee1"
+    },
+    {
+      "frame": 74,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0074.png",
+      "sha256": "1a7478a6acec918b9b1854f984003aa2af399d8fb6c14bbff09467f1b1671711"
+    },
+    {
+      "frame": 75,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0075.png",
+      "sha256": "db2c8c5462c5ca46eba84f1f83066318a5c4cf95b9fa795ac75c7f685f3b39df"
+    },
+    {
+      "frame": 76,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0076.png",
+      "sha256": "249f70110a198a3d8692c0a1d76d15e7f15d98e1e8926775499ca61180c15322"
+    },
+    {
+      "frame": 77,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0077.png",
+      "sha256": "6690e7bdb1b56d1a9f002a8f47f3734078dfe902c6571ecd353fe5987c43802c"
+    },
+    {
+      "frame": 78,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0078.png",
+      "sha256": "1e3512bea4db04e41aa3d89bd8dab1dee6e973dc62b4bf91ce1b996b5e227da6"
+    },
+    {
+      "frame": 79,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0079.png",
+      "sha256": "62915793639c689fb963f6df2a70f0c261c7dee15abed685b5af927aaca13061"
+    },
+    {
+      "frame": 80,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0080.png",
+      "sha256": "f70d7bbc2c8c84c0ef614b2cea796ad01fa79067bf14c0c3a070c8beb54fb06f"
+    },
+    {
+      "frame": 81,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0081.png",
+      "sha256": "a56ac138939fe3966985213dcf6496245d348ca26cae71e0a3b5921fb8996929"
+    },
+    {
+      "frame": 82,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0082.png",
+      "sha256": "aac7e928f25ecc52bd917693366e0f8fa330bfd2d05d525c049898eda078d575"
+    },
+    {
+      "frame": 83,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0083.png",
+      "sha256": "f02a91e2203640dc9dcd1b86ba752880b5cce635ef2e3b7cc2b55c8322ee417e"
+    },
+    {
+      "frame": 84,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0084.png",
+      "sha256": "ebf7aacdfa24bffc8e3e3e3567ba42acef36d7ff611ba1ea8dceaab3e91187f5"
+    },
+    {
+      "frame": 85,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0085.png",
+      "sha256": "2d2d098010182648760d3d172443874ad0512661697aabfd391fb4bd7ed30426"
+    },
+    {
+      "frame": 86,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0086.png",
+      "sha256": "05a8653baaccf6439ec6fa9ca74df5ed24e53795dcbb8ed033cabe3f56915f34"
+    },
+    {
+      "frame": 87,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0087.png",
+      "sha256": "1829907fb8ed72196310d2d1ad49129d1622506143999abe574bc2f7616e24e3"
+    },
+    {
+      "frame": 88,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0088.png",
+      "sha256": "0af6998682544dbed0520e6e386173c1b0735953100043135dce692f09491bb8"
+    },
+    {
+      "frame": 89,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0089.png",
+      "sha256": "2860095e3bad5639c277c9515fd0a6e121990a70e65a341c3909f962509f173d"
+    },
+    {
+      "frame": 90,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0090.png",
+      "sha256": "c60ad91d16d831f5e4a15ae2103495d0f843ae670d97302abe154eea8386bca7"
+    },
+    {
+      "frame": 91,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0091.png",
+      "sha256": "a6b6bd7dbd187706bb513f86d1c1244e560d78ce0d81c5de590ad5ba95276bb9"
+    },
+    {
+      "frame": 92,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0092.png",
+      "sha256": "3411d52cd20b5a0e26eedb91687568ac692e5743ec5a179bbf1174444853d402"
+    },
+    {
+      "frame": 93,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0093.png",
+      "sha256": "6792e45b86e428c4e685a7eccadb8f971b9488cfd8cd69d3743c00fa1486d23b"
+    },
+    {
+      "frame": 94,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0094.png",
+      "sha256": "c17182b1288f3df641108820ffe0e369149a4573c261684dfd4783b3927fab6b"
+    },
+    {
+      "frame": 95,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0095.png",
+      "sha256": "082675dcfe9467a2e2bb4649698e22decee0bf16e58cde050ef5d1d52cf3c859"
+    },
+    {
+      "frame": 96,
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/card-pose-fit/hand-foreground-masks/rg/0096.png",
+      "sha256": "26171e1c24206556a82050743f1be1a82f8fd57980b06c4acb74960001f7e9cb"
+    }
+  ]
+}

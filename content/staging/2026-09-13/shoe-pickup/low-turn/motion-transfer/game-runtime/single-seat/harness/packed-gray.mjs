@@ -3,7 +3,9 @@ import {cardFaceArt} from '/card-art.mjs';
 export function packedGPU(canvas,video,settings={}){
  const width=1920,height=1080;
  // Exact decoded-source crop; actor pixels retain canonical source coordinates.
- const actorX=352,actorY=64,actorWidth=1072,actorHeight=752,actorCX=actorX+actorWidth/2,actorCY=actorY+actorHeight/2;
+ const crop=settings.crop??[352,64,1072,752];
+ if(!Array.isArray(crop)||crop.length!==4||!crop.every(Number.isFinite)||crop[0]<0||crop[1]<0||crop[2]<=0||crop[3]<=0||crop[0]+crop[2]>width||crop[1]+crop[3]>height)throw Error('Invalid native actor crop');
+ const [actorX,actorY,actorWidth,actorHeight]=crop,actorCX=actorX+actorWidth/2,actorCY=actorY+actorHeight/2;
  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});const outputWidth=settings.outputWidth||width;renderer.setSize(outputWidth,Math.round(height*outputWidth/width),false);renderer.setClearColor(0,0);renderer.outputColorSpace=THREE.SRGBColorSpace;
  const scene=new THREE.Scene(),camera=new THREE.OrthographicCamera(0,width,0,-height,.1,1000);camera.position.z=100;
  const textures=new Map(),planes=[];

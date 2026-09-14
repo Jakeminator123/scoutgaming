@@ -1,0 +1,28 @@
+{
+  "trajectorySha256": "36d917e57844b51d02c7ca2cbd6eb8a7a712683a19e2d23b85b45bce4870355a",
+  "mediaReady": true,
+  "frameCount": 97,
+  "pickup": 9,
+  "release": 63,
+  "land": 64,
+  "landPolicy": "Paint source release63 at final independent card plane; transfer to DOM on next frame64 (16.7ms at playback).",
+  "cornerErrors": [
+    0.9628415270118945,
+    0.9628415270117395,
+    0.9628415270118945,
+    0.9628415270117952
+  ],
+  "center": [
+    590.3876308767751,
+    745.6300238212791
+  ],
+  "requestedCenter": [
+    590.5673480227124,
+    742.8922209566484
+  ],
+  "sourceCentreToRequested": [
+    0.17971714593727484,
+    -2.7378028646306802
+  ],
+  "limits": "Source centre retained. Existing CSS landing must be explicitly registered; no blanket all-seat mapping. Mask readiness and visual acceptance remain separate."
+}
