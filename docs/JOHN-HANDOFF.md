@@ -1,3 +1,7 @@
+## 2026-09-14 — reference-use audit prevents duplicate motion generation
+
+Live Higgsfield MCP confirms one free Genjutsu attempt remains, but this is not an untried solution. The actual YouTube 4–9s reference already drove completed job d8214fb8-fef1-4810-a29e-70230d1baa20. Its independent review found better overlapping two-hand motion and rejected the transferred camera/table/background. Current model schema exposes resolution only, with no new camera-lock control. Do not repeat those same inputs at 720p merely because an attempt is free. No generation submitted, no credits spent, no gameplay/media change. Decision and source receipts: `content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/next-source-investigation/FREE-ATTEMPT-DECISION.md`. Full goal remains incomplete; this audit corrects the reference-use account, not visual acceptance.
+
 ## 2026-09-14 — release candidate GPU resources between rounds
 
 Isolated4190 now disposes each candidate renderer, its unique owned textures/materials/geometries and detached video decoder on terminal completion/failure. Late texture callbacks cannot revive rendering; cleanup is idempotent, including adapter-construction failure. No footage/identity/geometry changes in gameplay.
