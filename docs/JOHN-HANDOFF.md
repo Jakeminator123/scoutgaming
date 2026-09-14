@@ -1,3 +1,13 @@
+# Current: joined native sequence and first-delivery finger composite verified in browser
+
+Root /camera-cycle?working=1 now plays source0–109 plus return1–30, all140selected frames recorded in camera-working-browser.json, with source/return/trajectory SHAs. Native24fps only; first40 G enabled from manual-v3, later G disabled pending cleanup. Source107–109 fifth-paper alpha removal is included. Return pack SHA33095ed0a21577d56365f4012db2953eac35358acf4ca4eb9c81f54190803a86 repairs actual missing suit alpha and fingertip paper0–3; RGB unchanged and no body warp. Earlier body-drag suspicion was mask loss. No uniform colour correction: measured patches disagree.
+
+Current root4189server session21999. Browser53 /camera?contact=first40&mask=v3 inspected n20 grip/n27 faceup gameart and played all40frames; contact-v3-n20/n27.png and browserJSON saved. Manual-v3 pack SHAb0a698217061a976012c9d9a910d1ec128ae4fbce40f8c4a308a1a2e9f9f2dab. UpperR is byte-identical to edge-clean; root visual suspicion of reverted uppermask was disproved. Remaining body-edge fog/slivers are existing limitations, not restoration regression.
+
+New camera-card-fit shoe-mask is wired to GPU card-alpha only using source native gates1:4–11,2:31–37,3:55–62,4:83–89. No old sourcecoords; no live3D calibration claim. Trajectories now begin4/31/55/83, preserve genuine duplicate source holds, retain constant physical dimensions and allfour landings. Rigid quaternion/translation resampling contract ready for60fps; actor is not yet resampled.
+
+Agents active: gameplay_qa extending source-bound paper/G to cycles2–4 in camera-paper-all (unapproved, not yet packed); contact_integration supplies actualpaper/finger observations for those cycles; motion_review finishes exact speech/idle endpoint comparison then seven real game-target calibration. Existing speech crossed arms differ from new shoe-adjacent rest, direct cut rejected. Allpaidjobs terminal; no newgeneration. Fullseven positions, speechjoins,60fps and authoritative gameplay remain open. Goalactive; this turn is concrete progress, not completion.
+
 # Current continuation: return completed; source hold fixes and shoulder playback verified
 
 Return26f3a6e1-c6bf-4bfa-ae64-5dbb29cf2877 COMPLETED, preserved return-plan/return-source.mp4 (97native24fps). Root inspected release-dense.jpg: contact0–4, release5–6, emptyreturn6–23, settled24, no fifth draw; fourcards stay. Motion agent building native0–30Vision masks and seam registration. Alljobs terminal; do NOT regenerate this return.

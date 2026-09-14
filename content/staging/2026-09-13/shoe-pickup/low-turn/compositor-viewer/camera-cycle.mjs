@@ -1,0 +1,20 @@
+import {packedGPU} from '/packed-gpu.mjs';
+import {resolveFrameCards} from '/card-state.mjs';
+import {shoeMaskEnabled} from '/camera-shoe-contract.mjs';
+const [motion,table,join]=await Promise.all(['/camera-trajectory.json','/camera-table.json','/camera-return-join.json'].map(async url=>{const response=await fetch(url);if(!response.ok)throw Error(url);return response.json();}));
+const videos={deal:document.querySelector('#deal'),return:document.querySelector('#return')},status=document.querySelector('#status'),slider=document.querySelector('#frame');
+const working=new URLSearchParams(location.search).get('working')==='1';if(working)videos.deal.src='/camera-working.mp4';
+const gpu=packedGPU(document.querySelector('#scene'),videos.deal,{shoeMaskURL:'/camera-shoe-mask.png'}),matrix=join['source109-return0'].returnToReferenceSimilarity;
+const transform={scale:Math.hypot(matrix[0][0],matrix[1][0]),rotation:Math.atan2(matrix[1][0],matrix[0][0]),translation:[matrix[0][2],matrix[1][2]]};
+const deliveries=new Map([{r:'A',s:'♠'},{r:'7',s:'♥'},{r:'Q',s:'♣'},{r:'4',s:'♦'}].map((card,i)=>[i+1,{card,faceDown:false}]));
+const landed={cards:table.cards.map(card=>({id:card.cardId,quad:card.authoredFlatQuad,face:'front',status:'landed'}))};
+let generation=0,callbackId=null,callbackVideo=null;
+function paint(n){const returning=n>=110,source=returning?n-109:n,take=returning?'return':'deal';gpu.paint(null,{video:videos[take],transform:returning?transform:undefined,handMaskEnabled:returning?source<=6:working&&source<40,cards:resolveFrameCards(returning?landed:motion.frames.find(frame=>frame.nativeFrame===source),deliveries).map(card=>({...card,shoeOccluded:!returning&&shoeMaskEnabled({...card,nativeFrame:source})}))});slider.value=n;status.value=`Frame ${n}/139 · ${take} ${source} · native 24 fps · contact draft`;}
+function stop(){generation++;for(const video of Object.values(videos))video.pause();if(callbackId!==null)callbackVideo.cancelVideoFrameCallback(callbackId);callbackId=null;}
+async function seek(video,n){if(video.readyState<2)await new Promise((resolve,reject)=>{video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(Error('Video unavailable')),{once:true});});const time=n/24;if(Math.abs(video.currentTime-time)>.0001)await new Promise(resolve=>{video.addEventListener('seeked',resolve,{once:true});video.currentTime=time;});}
+document.querySelector('#stop').onclick=stop;slider.oninput=async()=>{stop();const token=generation,n=Number(slider.value);await seek(n>=110?videos.return:videos.deal,n>=110?n-109:n);if(token===generation)paint(n);};
+document.querySelector('#play').onclick=async()=>{stop();const token=generation;await Promise.all([seek(videos.deal,0),seek(videos.return,1)]);if(token!==generation)return;paint(110);paint(0);const frames=[0],samples=[];
+ async function segment(take,start,end,offset){if(token!==generation)return;const video=videos[take];await seek(video,start);if(token!==generation)return;async function next(_,meta){if(token!==generation)return;const decodedSource=Math.round(meta.mediaTime*24),source=Math.min(end,decodedSource),n=source+offset;if(source<start){callbackId=video.requestVideoFrameCallback(next);return;}if(decodedSource>end){video.pause();await seek(video,end);if(token!==generation)return;}paint(n);frames.push(n);samples.push({frame:n,source,time:video.currentTime,take,boundaryRecovery:decodedSource>end});if(source===end){video.pause();if(take==='deal'){segment('return',1,30,109).catch(error=>{status.value=error.message;});}else{status.dataset.frames=JSON.stringify([...new Set(frames)]);status.dataset.samples=JSON.stringify(samples);status.value+=' · ended';}return;}callbackVideo=video;callbackId=video.requestVideoFrameCallback(next);}callbackVideo=video;callbackId=video.requestVideoFrameCallback(next);await video.play();}
+ await segment('deal',0,109,0);
+};
+await Promise.all([seek(videos.deal,0),seek(videos.return,1)]);paint(110);paint(0);

@@ -7,8 +7,17 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
   '/':path.join(here,'index.html'),
+  '/camera-shoe-mask.png':path.resolve(here,'../motion-transfer/camera-card-fit/shoe-mask/card-allowed.png'),
+  '/camera-shoe-contract.mjs':path.resolve(here,'../motion-transfer/camera-card-fit/shoe-mask/contract.mjs'),
+  '/camera-working.mp4':path.resolve(here,'../motion-transfer/camera-working/camera-working-native.mp4'),
+  '/camera-cycle':path.join(here,'camera-cycle.html'),
+  '/camera-cycle.mjs':path.join(here,'camera-cycle.mjs'),
+  '/camera-return-packed.mp4':path.resolve(here,'../motion-transfer/camera-review/return-plan/return-packed-draft.mp4'),
+  '/camera-return-join.json':path.resolve(here,'../motion-transfer/camera-review/return-plan/join-metrics.json'),
   '/camera':path.join(here,'camera.html'),
   '/camera.mjs':path.join(here,'camera.mjs'),
+  '/camera-first40-v3.mp4':path.resolve(here,'../motion-transfer/camera-paper-first/camera-first40-manual-v3-draft.mp4'),
+  '/camera-first40.mp4':path.resolve(here,'../motion-transfer/camera-paper-first/camera-first40-manual-v2-draft.mp4'),
   '/camera-edge-packed.mp4':path.resolve(here,'../motion-transfer/camera-composite/camera-native-R-edge-draft.mp4'),
   '/camera-packed.mp4':path.resolve(here,'../motion-transfer/camera-composite/camera-native-R-only-draft.mp4'),
   '/camera-trajectory.json':path.resolve(here,'../motion-transfer/camera-card-fit/trajectories.json'),
