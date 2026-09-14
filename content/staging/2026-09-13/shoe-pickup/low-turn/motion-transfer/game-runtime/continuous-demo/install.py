@@ -2,18 +2,24 @@ from pathlib import Path
 import shutil,os
 here=Path(__file__).resolve().parent
 gr=here.parent;mt=gr.parent;public=gr/'runtime/public';target=public/'astrid-continuous';target.mkdir(exist_ok=True)
-shutil.copy2(here/'player.mjs',target/'player.mjs')
+for module in here.glob('*.mjs'):
+ if not module.name.endswith('.test.mjs'):shutil.copy2(module,target/module.name)
 for name,src in {'actor.mp4':mt/'camera60-draft/cadence-full/camera-joined60-background-mixed-v5-720.mp4','joined-ledger.json':mt/'camera60-draft/cadence-full/joined-ledger.json','shoe.png':mt/'camera-card-fit/shoe-mask/card-allowed.png'}.items():
  assert src.is_file(),src
  out=target/name
  if not out.exists():out.symlink_to(src)
  else:assert out.resolve()==src.resolve()
 gpu=(mt.parent/'compositor-viewer/packed-gpu.mjs').read_text()
-gpu=gpu.replace('return {paint(record,options={})','return {dispose(){const resources=new Set();scene.traverse(n=>{if(n.geometry)resources.add(n.geometry);if(n.material){resources.add(n.material);if(n.material.map)resources.add(n.material.map);}});for(const t of textures.values())resources.add(t);if(shoeMask)resources.add(shoeMask);for(const r of resources)r.dispose();renderer.dispose();renderer.forceContextLoss();},paint(record,options={})')
+gpu=gpu.replace(' const width=1920,height=1080;',' let disposed=false; const width=1920,height=1080;').replace('()=>renderer.render(scene,camera)','()=>{if(!disposed)renderer.render(scene,camera);}')
+gpu=gpu.replace(' const textures=new Map(),planes=[];'," const pending=[];function loadTexture(url){let resolve,reject;const ready=new Promise((a,b)=>{resolve=a;reject=b;});pending.push(ready);return new THREE.TextureLoader().load(url,()=>{if(!disposed)renderer.render(scene,camera);resolve();},undefined,()=>reject(Error('Required card texture unavailable')));} const textures=new Map(),planes=[];")
+gpu=gpu.replace("new THREE.TextureLoader().load('/assets/cardback.png',()=>{if(!disposed)renderer.render(scene,camera);})","loadTexture('/assets/cardback.png')").replace("new THREE.TextureLoader().load(settings.shoeMaskURL,()=>{if(!disposed)renderer.render(scene,camera);})","loadTexture(settings.shoeMaskURL)")
+gpu=gpu.replace('return {paint(record,options={})','return {ready:Promise.all(pending),dispose(){if(disposed)return;disposed=true;const resources=new Set();scene.traverse(n=>{if(n.geometry)resources.add(n.geometry);if(n.material){resources.add(n.material);if(n.material.map)resources.add(n.material.map);}});for(const t of textures.values())resources.add(t);for(const t of faceTextures.values())resources.add(t);resources.add(backTex);if(shoeMask)resources.add(shoeMask);for(const r of resources)r.dispose();renderer.dispose();renderer.forceContextLoss();},paint(record,options={})')
 (target/'packed-gpu.mjs').write_text(gpu)
 app=public/'app.mjs';assert not app.is_symlink();s=app.read_text()
 imp="import {playContinuousPass} from './astrid-continuous/player.mjs';\n"
 if imp not in s:s=imp+s
+queue_import="import {openingQueue,openingChunks} from './astrid-continuous/opening-queue.mjs';\n"
+if queue_import not in s:s=queue_import+s
 function_start=s.index('async function dealSequence()')
 end=s.index('  // side bets resolve',function_start)
 section=s[function_start:end]
@@ -27,13 +33,16 @@ else:
  original=s[start:end]
 if True:
  replacement='''  const live = round.live();
-  const continuousOpening=DEALER.key==='astrid'&&location.hostname==='astridsingleseat.localhost'&&location.port==='4190'&&new URLSearchParams(location.search).get('astridContinuous')!=='off'&&live.length===3;
+  const continuousOpening=DEALER.key==='astrid'&&location.hostname==='astridsingleseat.localhost'&&location.port==='4190'&&new URLSearchParams(location.search).get('astridContinuous')!=='off'&&live.length>=1&&live.length<=7;
   if(continuousOpening){
-    for(let pass=0;pass<2;pass++){
-      const deliveries=[];
-      const add=(container,card,faceDown,shoeDraw,cards)=>{const el=cardEl(card,faceDown),n=container.querySelectorAll('.card').length;el.style.setProperty('--ci',n);container.style.setProperty('--cn',n+1);container.style.setProperty('--fan',Math.min(1,3.2/Math.max(2,n+1)).toFixed(3));el.style.visibility='hidden';container.append(el);deliveries.push({el,card:faceDown?null:card,faceDown,shoeDraw,container,cards});};
-      for(let i=live.length-1;i>=0;i--)add(boxContainer(i),live[i].cards[pass],false,live[i].cards[pass].shoeDraw,live[i].cards.slice(0,pass+1));
-      add($('#dealer-cards'),pass?null:round.dealer[0],pass===1,pass?round.holeDraw:round.dealer[0].shoeDraw,[round.dealer[0]]);
+    const queue=openingQueue({hands:live,dealer:round.dealer,holeDraw:round.holeDraw});
+    for(const chunk of openingChunks(queue)){
+      if(chunk.length<4){
+        await beginDealingTake();
+        for(const item of chunk){const container=item.kind==='dealer'?$('#dealer-cards'):boxContainer(item.handIndex);await deliverCard(container,item.card,{faceDown:item.faceDown,shoeDraw:item.shoeDraw,continues:true});updateBadge(container,item.cards);}
+        await endDealingTake();continue;
+      }
+      const deliveries=chunk.map(item=>{const container=item.kind==='dealer'?$('#dealer-cards'):boxContainer(item.handIndex),el=cardEl(item.card,item.faceDown),n=container.querySelectorAll('.card').length;el.style.setProperty('--ci',n);container.style.setProperty('--cn',n+1);container.style.setProperty('--fan',Math.min(1,3.2/Math.max(2,n+1)).toFixed(3));el.style.visibility='hidden';container.append(el);return {...item,el,container};});
       const shown=new Set();const onLand=d=>{if(shown.has(d.shoeDraw))return;shown.add(d.shoeDraw);if(shoeState)showShoe({...shoeState,dealt:d.shoeDraw,remaining:shoeState.total-d.shoeDraw,cutReached:d.shoeDraw>=shoeState.cutAfter});updateBadge(d.container,d.cards);sfx.play('land');};
       try{await playContinuousPass({deliveries,onLand,suspend:()=>{performancePlayer?.cancel();performancePlayer?.release();return engine.suspendPresentation();}});}catch(error){console.warn('[continuous-demo]',error);for(const d of deliveries){d.el.style.visibility='';onLand(d);}}
     }

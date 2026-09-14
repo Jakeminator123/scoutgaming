@@ -1,6 +1,15 @@
 {
   "installerIdempotent": true,
   "singleOpeningBranch": true,
-  "landingCallbackIdempotent": true,
-  "appSHA256": "2a89c857af837a7893fc68712f55783248343efd28049981d7f4dccf0f704149"
+  "appSHA256": "211cd4276061395a46e1f263dcfb2e777b4cea514568f6e16399145f209948dd",
+  "seatCounts": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "endpointFrame": 333
 }
