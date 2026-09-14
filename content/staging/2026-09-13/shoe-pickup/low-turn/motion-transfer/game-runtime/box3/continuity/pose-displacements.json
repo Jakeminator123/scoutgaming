@@ -1,0 +1,130 @@
+[
+  {
+    "pair": "end144_to_contact0",
+    "patches": {
+      "face": {
+        "trackedFeatures": 44,
+        "medianDisplacement": [
+          4.3608245849609375,
+          0.175872802734375
+        ],
+        "medianMagnitude": 4.391334533691406,
+        "p90Magnitude": 17.13029670715332
+      },
+      "foldedHands": {
+        "trackedFeatures": 18,
+        "medianDisplacement": [
+          8.316291809082031,
+          -4.637117385864258
+        ],
+        "medianMagnitude": 18.560718536376953,
+        "p90Magnitude": 39.66185760498047
+      },
+      "deliveryHand": {
+        "trackedFeatures": 14,
+        "medianDisplacement": [
+          0.01773834228515625,
+          0.057163238525390625
+        ],
+        "medianMagnitude": 0.06923648715019226,
+        "p90Magnitude": 0.11683906614780426
+      }
+    }
+  },
+  {
+    "pair": "end144_to_centre0",
+    "patches": {
+      "face": {
+        "trackedFeatures": 43,
+        "medianDisplacement": [
+          -0.3628196716308594,
+          -2.0632476806640625
+        ],
+        "medianMagnitude": 2.097048759460449,
+        "p90Magnitude": 3.793732166290283
+      },
+      "foldedHands": {
+        "trackedFeatures": 29,
+        "medianDisplacement": [
+          -0.0939788818359375,
+          1.1092071533203125
+        ],
+        "medianMagnitude": 1.1965281963348389,
+        "p90Magnitude": 1.4673771858215332
+      },
+      "deliveryHand": {
+        "trackedFeatures": 14,
+        "medianDisplacement": [
+          0.1139059066772461,
+          3.0789480209350586
+        ],
+        "medianMagnitude": 3.0876216888427734,
+        "p90Magnitude": 3.1067073345184326
+      }
+    }
+  },
+  {
+    "pair": "centre23_to_contact0",
+    "patches": {
+      "face": {
+        "trackedFeatures": 45,
+        "medianDisplacement": [
+          -0.3166046142578125,
+          1.10516357421875
+        ],
+        "medianMagnitude": 1.256810188293457,
+        "p90Magnitude": 1.7274439334869385
+      },
+      "foldedHands": {
+        "trackedFeatures": 44,
+        "medianDisplacement": [
+          -0.2264556884765625,
+          -1.3204460144042969
+        ],
+        "medianMagnitude": 1.3672900199890137,
+        "p90Magnitude": 1.9100990295410156
+      },
+      "deliveryHand": {
+        "trackedFeatures": 34,
+        "medianDisplacement": [
+          -0.04614067077636719,
+          -3.6512985229492188
+        ],
+        "medianMagnitude": 3.6571130752563477,
+        "p90Magnitude": 3.736332416534424
+      }
+    }
+  },
+  {
+    "pair": "hold74_to_release93",
+    "patches": {
+      "face": {
+        "trackedFeatures": 44,
+        "medianDisplacement": [
+          -2.0910186767578125,
+          -6.5867919921875
+        ],
+        "medianMagnitude": 6.905563831329346,
+        "p90Magnitude": 10.8746337890625
+      },
+      "foldedHands": {
+        "trackedFeatures": 39,
+        "medianDisplacement": [
+          -4.4018096923828125,
+          0.04620361328125
+        ],
+        "medianMagnitude": 5.466873645782471,
+        "p90Magnitude": 13.503138542175293
+      },
+      "deliveryHand": {
+        "trackedFeatures": 20,
+        "medianDisplacement": [
+          0.04558563232421875,
+          0.004712104797363281
+        ],
+        "medianMagnitude": 0.23216786980628967,
+        "p90Magnitude": 12.734260559082031
+      }
+    }
+  }
+]

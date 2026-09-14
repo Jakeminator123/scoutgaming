@@ -1,0 +1,1 @@
+Evidence-only continuity audit complete. Keep existing centre entry prefix between contact144 and next contact0. Direct loop and74→93 inertial shortcut rejected. REVIEW.md records exact files, pose residuals, uncertainty and speech/waiting limits. No runtime changes, new media, paid calls or tests. Root independently agrees hold-cut rejection.
