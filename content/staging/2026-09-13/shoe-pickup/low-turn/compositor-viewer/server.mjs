@@ -6,6 +6,12 @@ import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
+  '/far-left-endpoint':path.join(here,'far-left-endpoint.html'),
+  '/far-left-endpoint.mjs':path.join(here,'far-left-endpoint.mjs'),
+  '/far-left-source.mp4':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/source.mp4'),
+  '/native-phase-review':path.join(here,'native-phase-review.html'),
+  '/native-phase-review.mjs':path.join(here,'native-phase-review.mjs'),
+  '/farleft-source.mp4':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/source.mp4'),
   '/native-opaque-709.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/opaque-174-233-yuv420-bt709.webm'),
   '/native-rear-joined709.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/rear-joined350-yuv420-bt709.webm'),
   '/native-front-joined709.webm':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/native-alpha-feasibility/front-joined350-yuv420-bt709.webm'),

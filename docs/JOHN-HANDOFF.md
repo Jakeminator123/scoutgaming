@@ -1,3 +1,19 @@
+## Release continuation completed; review underway — 2026-09-14
+
+Job2825e599-2346-478b-bb7f-12ca5aa518bc completed. Original97native24fps1920x1080silent frames saved intact to far-left-anchor/motion/release-continuation/source.mp4 with native-receipt.json (hash/PTS/sourceURL). Root inspected dense0–31 hand/table frames and fullscene every8thframe: apparentrelease13–15, emptyreturn31–40, thenunwantedarms-crossedchestpose48+. Sourcepaper footprint/printchanges0–6 needrigidcardphysical review. No acceptance; choose a usable earlyreturn only after contact/registration/target measurements. QA and motionagents assigned independent review and source96→new0 / earlyready→ownsource0 joins. No paidjob remains pending.
+
+Endpoint scene/phase-review staging code syntax and110requiredtests plusassetchecks pass. Exactscenereference changed0pixels outsidecardbounds relative browser source decode; separateFFmpegPNG comparison is not byteidentical (QAactorROI MAE1.304), so preserve that boundary. No publicgameplay change.
+
+## Far-left release continuation submitted — 2026-09-14
+
+Source96 still touches the card at center449.22,664.25; actualbox0 is434.77,693.12. Required finishing motion is approximately14.45px left/28.87px down plus supported table-flat rotation, visible release and empty return to this take's OWN native0 pose. Exact source refs/spec are in far-left-anchor/motion/regrip-assessment/full-source-extension/release-plan/.
+
+Two GPT Image endpoint stills failed target placement (v1 measured30.49px center error); retained unapproved in motion/release-continuation/. Root instead rendered original native0 plus independent gamecard at exactbox0 through repo-native far-left-endpoint.html/.mjs. Browser93 exported1920x1080 ready-scene-exact.png;0 changed pixels outside card bounds,6508 inside. This preserves actor pixels in the browser source domain. Upload usesquality92WebP; startingPNG fromremote same sourceframe96 differs from localffmpeg by RGBMAE0.6901,max2. Both actual upload bytes preserved, not claimedlossless matching.
+
+ONE paid Seedance2.0 std1080p4s silent continuation submitted:2825e599-2346-478b-bb7f-12ca5aa518bc. Params/fullprompt/uploadIDs/PUT200/confirmation in release-continuation/submission.json. Latestjobs_wait confirmed in_progress; no output or acceptance yet. Poll this samejob; do not restart from a timeout. It requests finishingplacement0–0.25s, release, emptyreturn~1.1s andgentlebreathing. Generationalone is not delivery.
+
+Staging4189 exec60882 adds endpoint scene and native-phase-review routes. The phase comparison UI is prepared but root has not yet inspected its static85/86/87 comparison; it does not measure moving presentation. Public4173gameplay unchanged. Fullseven-seat motion/integration remainsunfinished. Nativefullsource plane fit still ambiguous17→18 and55→56; agents recommend material/edge continuity and sharedfeltplane depth ratherthan attractive isolated low-RMS poses.
+
 ## Guarded card-clock checkpoint — 2026-09-14
 
 The optional staging display clock now holds stale rear anchors and records potentially visible front-layer stalls. Threshold is bounded50–100ms, derived from3 median RAF intervals with a3-source-frame minimum. Independent review confirmed the unlimited extrapolation issue is fixed; front freshness still does not prove media-time alignment.
