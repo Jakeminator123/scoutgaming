@@ -1,3 +1,13 @@
+## 2026-09-14 — bounded Astrid preparation and actual seven-seat round
+
+User requires delivery before further credits: no new generation or credit requests. Isolated4190 review link remains the active gameplay boundary; public4173 unchanged.
+
+Candidate metadata/body parsing is now bounded to5seconds and abortable from preparation start. The issued DOM card stays hidden during preparation and is restored exactly once on failure/cancellation. Late metadata cannot restart a cancelled candidate. Synced to4190.
+
+Verified in actual user tab at1091×837: seven $5 demo bets, two cards visibly present at every seat, all seven Stand decisions, dealer settlement, and return to PLEASE PLACE BETS without a stuck round. Wallet990→955 stake→960 settlement; returned5, net−30. Both box1 and box0v6 candidate playback occurred. Evidence lives in single-seat/seven-seat-preparation-trace.json and seven-seat-settlement-proof.json.14 focused tests, pre-commit and dealer-sync probe passed. This proves round continuity, not accepted lifelike movement or stable60fps.
+
+Still broken: new low shoe-extraction primitive is not integrated; existing14-source search found no compatible continuation. Only first cards for box0/box1 use current candidates; other cards retain legacy delivery. Hand/head jumps and source pickup defects remain visually unaccepted. No additional credits spent for this repair.
+
 ## Affordable explicit endpoint pickup trial running — 2026-09-14
 
 Seedance start/end request was unfunded at36credits versus live9.67balance. Ordinary Kling3.0 Pro supports a3s endpoint trial at5.25credits; submitted ONE jobbc9d45f0-b2a3-48c3-b850-fc5e0899fdcd with exact original0 start, low-contact anchor end, silent, explicit1080p. Root live jobs_wait confirms in_progress. This is ordinary Kling3.0, not previously failed OmniEdit. motion_review owns polling; verify actual dimensions and every native extraction frame. No further generation authorized for this trial. Exact request/preflight under next-source-investigation/kling-primitive-{submission,preflight}.json. No free allowance consumed, no public gameplay promotion, full goal remains open.
