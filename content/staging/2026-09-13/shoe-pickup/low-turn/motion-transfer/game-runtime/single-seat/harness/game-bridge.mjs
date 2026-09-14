@@ -1,4 +1,4 @@
-import {eligible,sourceFit,canonicalCorners,assertTarget,once,responsiveHandMatrix,basisChange,centerCalibration} from './game-contract.mjs';
+import {reviewQuery,eligible,sourceFit,canonicalCorners,assertTarget,once,responsiveHandMatrix,basisChange,centerCalibration} from './game-contract.mjs';
 import {createAstridSingleSeat} from './adapter.mjs';
 import {packedGPU} from './packed-gray.mjs';
 import {uniformRegistration} from '/performance-contact.mjs';
@@ -11,7 +11,7 @@ function fitReviewHand(hand,ratio){
 }
 export function tryAstridBox0({el,card,faceDown,tableVersion,dealer,suspend}){
  const p=new URLSearchParams(location.search),box=Number(el.closest('.seat')?.dataset.box),index=Number(el.style.getPropertyValue('--ci'));
- if(!eligible({hostname:location.hostname,port:location.port,query:p.get(box===1?'astridBox1':'astridBox0'),dealer,box,index,candidateBox:box,split:!!el.closest('.subhand')}))return null;
+ if(!eligible({hostname:location.hostname,port:location.port,query:reviewQuery(p,box),dealer,box,index,candidateBox:box,split:!!el.closest('.subhand')}))return null;
  return play();
  async function play(){
   const originalCardTransform=el.style.transform,originalHandTransform=el.parentElement.style.transform;const variant=box===1?'box1':p.get('astridVariant')==='v6'?'v6':'v2';const host=document.querySelector('#scene'),label=document.createElement('div');label.id='astrid-box0-review-status';label.textContent='Test: ny utdelning till vänster';Object.assign(label.style,{position:'fixed',top:'8px',left:'8px',zIndex:2000,background:'#17231fe6',color:'white',padding:'6px 10px',borderRadius:'6px',font:'11px system-ui'});document.querySelector('#astrid-box0-review-status')?.remove();document.body.append(label);

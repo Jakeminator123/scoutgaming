@@ -1,3 +1,4 @@
+export function reviewQuery(params,box){return box===1?(params.get('astridBox1')??params.get('astridBox0')):params.get('astridBox0');}
 export function eligible({hostname,port,query,dealer,box,index,split,candidateBox=0}){return port==='4190'&&hostname==='astridsingleseat.localhost'&&query==='review'&&dealer==='astrid'&&[0,1].includes(candidateBox)&&box===candidateBox&&index===0&&!split;}
 export function sourceFit(fit){const reference={scale:(720-136)/720,x:(1280-1280*((720-136)/720))/2,y:0};const captured={scale:.5421688741883204,x:121.01686751907214,y:.1039891799197603};const ratio=fit.scale/reference.scale;return {scale:ratio*captured.scale,x:fit.x+(captured.x-reference.x)*ratio,y:fit.y+(captured.y-reference.y)*ratio};}
 export function canonicalCorners(corners,fit){if(!corners||corners.length!==4)throw Error('Actual2D card corners required');return corners.map(([x,y])=>[(x-fit.x)/fit.scale,(y-fit.y)/fit.scale]);}
