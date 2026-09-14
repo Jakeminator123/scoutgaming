@@ -1,0 +1,2174 @@
+{
+  "status": "unapproved lossy High-profile crop experiment",
+  "sourceSha256": "e4a6797eea9c8586bfc8d3f15668f6b6881b2956cccdca6d643cfc23e762d3a5",
+  "losslessCropSha256": "7a9dc6f3a55ea13f0527417a062a3474649db9bc8035448b477323e9d6322f8c",
+  "outputSha256": "7b1582fcdcad243883c9f5ed7817d962b93b848ab3412daf18b9cf0a940d7ea5",
+  "bytes": 1053127,
+  "frames": 89,
+  "crop": [
+    352,
+    64,
+    1072,
+    752
+  ],
+  "codec": "libx264 High yuv420p CRF14 fast",
+  "probe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "profile": "High",
+        "width": 1072,
+        "height": 1504,
+        "pix_fmt": "yuv420p",
+        "bit_rate": "5669393",
+        "nb_read_frames": "89"
+      }
+    ]
+  },
+  "byteIdentical": false,
+  "summary": {
+    "frontAlphaMeanAbsolute": 0.0002226147295402724,
+    "rearAlphaMeanAbsolute": 0.0026317888662170446,
+    "alphaVisibilityChangedPixels": 2558.112359550562
+  },
+  "perFrame": [
+    {
+      "frame": 0,
+      "rgbMeanAbsolute": [
+        0.4690452326135281,
+        0.40519683828199426,
+        0.5519634209272785
+      ],
+      "rgbMaxAbsolute": 32,
+      "visibleRGBMeanAbsolute": [
+        0.6227926132122692,
+        0.5263042351970073,
+        0.7407335856479246
+      ],
+      "rgMeanAbsolute": [
+        0.07056803747221341,
+        0.024066419895204826
+      ],
+      "rgMaxAbsolute": 22,
+      "frontAlphaMeanAbsolute": 7.734715035585527e-05,
+      "frontAlphaMaxAbsolute": 0.07450980392156863,
+      "rearAlphaMeanAbsolute": 0.0002800050619903857,
+      "rearAlphaMaxAbsolute": 0.0862745098039216,
+      "alphaVisibilityChangedPixels": 1562
+    },
+    {
+      "frame": 1,
+      "rgbMeanAbsolute": [
+        0.4931773975865354,
+        0.4285115314385519,
+        0.5750548289139409
+      ],
+      "rgbMaxAbsolute": 18,
+      "visibleRGBMeanAbsolute": [
+        0.6828993963252287,
+        0.5847561136349657,
+        0.7891707599975396
+      ],
+      "rgMeanAbsolute": [
+        0.09995484677675452,
+        0.028254257303906002
+      ],
+      "rgMaxAbsolute": 36,
+      "frontAlphaMeanAbsolute": 9.2811715826375e-05,
+      "frontAlphaMaxAbsolute": 0.07058823529411765,
+      "rearAlphaMeanAbsolute": 0.0003976917570115278,
+      "rearAlphaMaxAbsolute": 0.14117647058823535,
+      "alphaVisibilityChangedPixels": 1860
+    },
+    {
+      "frame": 2,
+      "rgbMeanAbsolute": [
+        0.5052285943950461,
+        0.44233040250873296,
+        0.5871357970784375
+      ],
+      "rgbMaxAbsolute": 26,
+      "visibleRGBMeanAbsolute": [
+        0.6961387503977936,
+        0.6132474099218557,
+        0.8082369788904211
+      ],
+      "rgMeanAbsolute": [
+        0.08465981263893299,
+        0.02793421522705621
+      ],
+      "rgMaxAbsolute": 36,
+      "frontAlphaMeanAbsolute": 8.964972540302245e-05,
+      "frontAlphaMaxAbsolute": 0.07058823529411765,
+      "rearAlphaMeanAbsolute": 0.00033527404852567587,
+      "rearAlphaMaxAbsolute": 0.14117647058823524,
+      "alphaVisibilityChangedPixels": 1747
+    },
+    {
+      "frame": 3,
+      "rgbMeanAbsolute": [
+        0.5434401298031121,
+        0.4804054858685297,
+        0.635235144093363
+      ],
+      "rgbMaxAbsolute": 21,
+      "visibleRGBMeanAbsolute": [
+        0.8169734151329243,
+        0.733269868133418,
+        0.9481524575135745
+      ],
+      "rgMeanAbsolute": [
+        0.09989034217211813,
+        0.029492249523658306
+      ],
+      "rgMaxAbsolute": 38,
+      "frontAlphaMeanAbsolute": 9.72725546236278e-05,
+      "frontAlphaMaxAbsolute": 0.11764705882352942,
+      "rearAlphaMeanAbsolute": 0.0003966835443935172,
+      "rearAlphaMaxAbsolute": 0.159608843537415,
+      "alphaVisibilityChangedPixels": 1941
+    },
+    {
+      "frame": 4,
+      "rgbMeanAbsolute": [
+        0.555041034852334,
+        0.4929243410606542,
+        0.6485082069704668
+      ],
+      "rgbMaxAbsolute": 19,
+      "visibleRGBMeanAbsolute": [
+        0.8526473570515364,
+        0.7732486884450911,
+        0.9938191597231407
+      ],
+      "rgMeanAbsolute": [
+        0.09326373451889489,
+        0.028599108844077487
+      ],
+      "rgMaxAbsolute": 24,
+      "frontAlphaMeanAbsolute": 9.186311869936923e-05,
+      "frontAlphaMaxAbsolute": 0.054901960784313725,
+      "rearAlphaMeanAbsolute": 0.0003687227372405612,
+      "rearAlphaMaxAbsolute": 0.09945927088784226,
+      "alphaVisibilityChangedPixels": 1857
+    },
+    {
+      "frame": 5,
+      "rgbMeanAbsolute": [
+        0.53583106740235,
+        0.4743234459352175,
+        0.627289913464592
+      ],
+      "rgbMaxAbsolute": 20,
+      "visibleRGBMeanAbsolute": [
+        0.7813738790324002,
+        0.7066192145739002,
+        0.9162511672157719
+      ],
+      "rgMeanAbsolute": [
+        0.09997717529374404,
+        0.028229447840584312
+      ],
+      "rgMaxAbsolute": 38,
+      "frontAlphaMeanAbsolute": 9.095830297822525e-05,
+      "frontAlphaMaxAbsolute": 0.07058823529411765,
+      "rearAlphaMeanAbsolute": 0.00039741382754711644,
+      "rearAlphaMaxAbsolute": 0.17516004655899897,
+      "alphaVisibilityChangedPixels": 2157
+    },
+    {
+      "frame": 6,
+      "rgbMeanAbsolute": [
+        0.5404543108923467,
+        0.47882140163543985,
+        0.6252183232772308
+      ],
+      "rgbMaxAbsolute": 20,
+      "visibleRGBMeanAbsolute": [
+        0.8061742143033902,
+        0.7344805034114611,
+        0.9244706048714958
+      ],
+      "rgMeanAbsolute": [
+        0.09415811567164178,
+        0.029261521514766593
+      ],
+      "rgMaxAbsolute": 32,
+      "frontAlphaMeanAbsolute": 9.348303071625601e-05,
+      "frontAlphaMaxAbsolute": 0.0784313725490196,
+      "rearAlphaMeanAbsolute": 0.00037124672501751644,
+      "rearAlphaMaxAbsolute": 0.12561954953259302,
+      "alphaVisibilityChangedPixels": 2027
+    },
+    {
+      "frame": 7,
+      "rgbMeanAbsolute": [
+        0.5684083736900604,
+        0.5042362158621785,
+        0.6598300055573197
+      ],
+      "rgbMaxAbsolute": 32,
+      "visibleRGBMeanAbsolute": [
+        0.8620878248443041,
+        0.8024029216139447,
+        1.0147668530901008
+      ],
+      "rgMeanAbsolute": [
+        0.1083602929501429,
+        0.030876617577008575
+      ],
+      "rgMaxAbsolute": 37,
+      "frontAlphaMeanAbsolute": 0.00010265280294397848,
+      "frontAlphaMaxAbsolute": 0.10980392156862745,
+      "rearAlphaMeanAbsolute": 0.000431730138505783,
+      "rearAlphaMaxAbsolute": 0.14509803921568631,
+      "alphaVisibilityChangedPixels": 2223
+    },
+    {
+      "frame": 8,
+      "rgbMeanAbsolute": [
+        0.5828722908066053,
+        0.5188638754366466,
+        0.6758209451413147
+      ],
+      "rgbMaxAbsolute": 23,
+      "visibleRGBMeanAbsolute": [
+        0.9332220956820368,
+        0.8656672934820033,
+        1.0890607481173469
+      ],
+      "rgMeanAbsolute": [
+        0.10673279215624007,
+        0.032047624245792314
+      ],
+      "rgMaxAbsolute": 36,
+      "frontAlphaMeanAbsolute": 0.0001046229662077597,
+      "frontAlphaMaxAbsolute": 0.06274509803921569,
+      "rearAlphaMeanAbsolute": 0.00042334603317973615,
+      "rearAlphaMaxAbsolute": 0.15989051222148618,
+      "alphaVisibilityChangedPixels": 2098
+    },
+    {
+      "frame": 9,
+      "rgbMeanAbsolute": [
+        0.5736332466656081,
+        0.5090628969514132,
+        0.6646132700857416
+      ],
+      "rgbMaxAbsolute": 32,
+      "visibleRGBMeanAbsolute": [
+        0.9184180291648254,
+        0.8508970393283253,
+        1.0694564737074679
+      ],
+      "rgMeanAbsolute": [
+        0.1364942243569387,
+        0.07471617973959988
+      ],
+      "rgMaxAbsolute": 41,
+      "frontAlphaMeanAbsolute": 0.00030112364491684257,
+      "frontAlphaMaxAbsolute": 0.1568627450980392,
+      "rearAlphaMeanAbsolute": 0.004265736267297784,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2524
+    },
+    {
+      "frame": 10,
+      "rgbMeanAbsolute": [
+        0.5782354021117815,
+        0.5109645423150206,
+        0.6642845446967292
+      ],
+      "rgbMaxAbsolute": 27,
+      "visibleRGBMeanAbsolute": [
+        0.9394706041235257,
+        0.8490501485549653,
+        1.0711173134059602
+      ],
+      "rgMeanAbsolute": [
+        0.10923730747856462,
+        0.058628483248650366
+      ],
+      "rgMaxAbsolute": 41,
+      "frontAlphaMeanAbsolute": 0.00023761141881331762,
+      "frontAlphaMaxAbsolute": 0.15294117647058825,
+      "rearAlphaMeanAbsolute": 0.003733814737912486,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1899
+    },
+    {
+      "frame": 11,
+      "rgbMeanAbsolute": [
+        0.6073282192759606,
+        0.5357491961733883,
+        0.7037204271197205
+      ],
+      "rgbMaxAbsolute": 24,
+      "visibleRGBMeanAbsolute": [
+        0.996223194668894,
+        0.8908993517694697,
+        1.1392787754435023
+      ],
+      "rgMeanAbsolute": [
+        0.13162288623372498,
+        0.07385529136233725
+      ],
+      "rgMaxAbsolute": 42,
+      "frontAlphaMeanAbsolute": 0.00029768923685701655,
+      "frontAlphaMaxAbsolute": 0.1607843137254902,
+      "rearAlphaMeanAbsolute": 0.00562539098922947,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1929
+    },
+    {
+      "frame": 12,
+      "rgbMeanAbsolute": [
+        0.6196982176881549,
+        0.5487369502222927,
+        0.7183369224356939
+      ],
+      "rgbMaxAbsolute": 29,
+      "visibleRGBMeanAbsolute": [
+        1.076836408636708,
+        0.967132117988216,
+        1.2344988086662603
+      ],
+      "rgMeanAbsolute": [
+        0.13312013734518896,
+        0.06765788742457923
+      ],
+      "rgMaxAbsolute": 62,
+      "frontAlphaMeanAbsolute": 0.0002842337514554886,
+      "frontAlphaMaxAbsolute": 0.23921568627450984,
+      "rearAlphaMeanAbsolute": 0.00403265944784265,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1838
+    },
+    {
+      "frame": 13,
+      "rgbMeanAbsolute": [
+        0.627012047475389,
+        0.5520304064782471,
+        0.7252475984439505
+      ],
+      "rgbMaxAbsolute": 24,
+      "visibleRGBMeanAbsolute": [
+        1.1193928978315022,
+        0.9898526657269199,
+        1.276237279626161
+      ],
+      "rgMeanAbsolute": [
+        0.12979070736741824,
+        0.06997881271832328
+      ],
+      "rgMaxAbsolute": 49,
+      "frontAlphaMeanAbsolute": 0.0002865687597681181,
+      "frontAlphaMaxAbsolute": 0.16078431372549018,
+      "rearAlphaMeanAbsolute": 0.004651376550170013,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1920
+    },
+    {
+      "frame": 14,
+      "rgbMeanAbsolute": [
+        0.6539017842966021,
+        0.5758673388377262,
+        0.7556230648618609
+      ],
+      "rgbMaxAbsolute": 33,
+      "visibleRGBMeanAbsolute": [
+        1.219552983398942,
+        1.06167852009132,
+        1.3662473341538346
+      ],
+      "rgMeanAbsolute": [
+        0.12767942203874247,
+        0.0714065973324865
+      ],
+      "rgMaxAbsolute": 37,
+      "frontAlphaMeanAbsolute": 0.00029055286770154236,
+      "frontAlphaMaxAbsolute": 0.14509803921568626,
+      "rearAlphaMeanAbsolute": 0.004647181647759595,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2022
+    },
+    {
+      "frame": 15,
+      "rgbMeanAbsolute": [
+        0.6303848940139727,
+        0.5560346538583677,
+        0.7373384903937757
+      ],
+      "rgbMaxAbsolute": 26,
+      "visibleRGBMeanAbsolute": [
+        1.0714877764012798,
+        0.9479951159080579,
+        1.248028092441244
+      ],
+      "rgMeanAbsolute": [
+        0.14286653501111463,
+        0.07393220069863449
+      ],
+      "rgMaxAbsolute": 52,
+      "frontAlphaMeanAbsolute": 0.0003081043468514748,
+      "frontAlphaMaxAbsolute": 0.18823529411764706,
+      "rearAlphaMeanAbsolute": 0.0050610699092045715,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1820
+    },
+    {
+      "frame": 16,
+      "rgbMeanAbsolute": [
+        0.6301442422197523,
+        0.5542694605430295,
+        0.7361650027786599
+      ],
+      "rgbMaxAbsolute": 20,
+      "visibleRGBMeanAbsolute": [
+        1.113260544157788,
+        0.9677379589680374,
+        1.3178568283877785
+      ],
+      "rgMeanAbsolute": [
+        0.1165325301683074,
+        0.06505041282946968
+      ],
+      "rgMaxAbsolute": 41,
+      "frontAlphaMeanAbsolute": 0.00027168794637575576,
+      "frontAlphaMaxAbsolute": 0.13333333333333341,
+      "rearAlphaMeanAbsolute": 0.0041036353861966,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1609
+    },
+    {
+      "frame": 17,
+      "rgbMeanAbsolute": [
+        0.6386762166560813,
+        0.5626128830581136,
+        0.7460366882343601
+      ],
+      "rgbMaxAbsolute": 29,
+      "visibleRGBMeanAbsolute": [
+        1.0985928966500853,
+        0.9710665460743729,
+        1.2995095140362474
+      ],
+      "rgMeanAbsolute": [
+        0.14192873729755479,
+        0.07893875039695142
+      ],
+      "rgMaxAbsolute": 48,
+      "frontAlphaMeanAbsolute": 0.00032228465775004827,
+      "frontAlphaMaxAbsolute": 0.1647058823529412,
+      "rearAlphaMeanAbsolute": 0.00465688183339941,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1713
+    },
+    {
+      "frame": 18,
+      "rgbMeanAbsolute": [
+        0.6871228961575103,
+        0.6025275881232137,
+        0.7971565874087012
+      ],
+      "rgbMaxAbsolute": 36,
+      "visibleRGBMeanAbsolute": [
+        1.2917447212497775,
+        1.1296822154221728,
+        1.4962152356895222
+      ],
+      "rgMeanAbsolute": [
+        0.1403694625277866,
+        0.07915955462051445
+      ],
+      "rgMaxAbsolute": 50,
+      "frontAlphaMeanAbsolute": 0.00032345702650701444,
+      "frontAlphaMaxAbsolute": 0.1568627450980392,
+      "rearAlphaMeanAbsolute": 0.004250906076515715,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1938
+    },
+    {
+      "frame": 19,
+      "rgbMeanAbsolute": [
+        0.6453487218164496,
+        0.5702269073515401,
+        0.7575830124642744
+      ],
+      "rgbMaxAbsolute": 31,
+      "visibleRGBMeanAbsolute": [
+        1.0549828178694158,
+        0.9425179631365198,
+        1.2900820467288183
+      ],
+      "rgMeanAbsolute": [
+        0.15148534256906954,
+        0.08220863766275008
+      ],
+      "rgMaxAbsolute": 51,
+      "frontAlphaMeanAbsolute": 0.0003347866814239192,
+      "frontAlphaMaxAbsolute": 0.19215686274509802,
+      "rearAlphaMeanAbsolute": 0.004419276382345176,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2041
+    },
+    {
+      "frame": 20,
+      "rgbMeanAbsolute": [
+        0.6418989659415687,
+        0.5672683788504287,
+        0.7544334510955859
+      ],
+      "rgbMaxAbsolute": 27,
+      "visibleRGBMeanAbsolute": [
+        1.0833421564874617,
+        0.9674629223915363,
+        1.3319189138561527
+      ],
+      "rgMeanAbsolute": [
+        0.14856650920927278,
+        0.07970908423308987
+      ],
+      "rgMaxAbsolute": 48,
+      "frontAlphaMeanAbsolute": 0.0003385178301234753,
+      "frontAlphaMaxAbsolute": 0.16862745098039222,
+      "rearAlphaMeanAbsolute": 0.004157330373827714,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2171
+    },
+    {
+      "frame": 21,
+      "rgbMeanAbsolute": [
+        0.6477961753731343,
+        0.5709563055731979,
+        0.7603951651317878
+      ],
+      "rgbMaxAbsolute": 29,
+      "visibleRGBMeanAbsolute": [
+        1.0644911013997087,
+        0.9381531445943379,
+        1.2743128127177148
+      ],
+      "rgMeanAbsolute": [
+        0.14530778620196888,
+        0.054056099158463
+      ],
+      "rgMaxAbsolute": 50,
+      "frontAlphaMeanAbsolute": 0.0002105545099907222,
+      "frontAlphaMaxAbsolute": 0.15294117647058825,
+      "rearAlphaMeanAbsolute": 0.0019108911550097505,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1803
+    },
+    {
+      "frame": 22,
+      "rgbMeanAbsolute": [
+        0.6884067858844077,
+        0.6076085662114957,
+        0.7987084193394729
+      ],
+      "rgbMaxAbsolute": 28,
+      "visibleRGBMeanAbsolute": [
+        1.21164938889113,
+        1.0756000161348878,
+        1.4126900891452543
+      ],
+      "rgMeanAbsolute": [
+        0.1334215723245475,
+        0.05184061408383614
+      ],
+      "rgMaxAbsolute": 44,
+      "frontAlphaMeanAbsolute": 0.00019301276004209244,
+      "frontAlphaMaxAbsolute": 0.15294117647058825,
+      "rearAlphaMeanAbsolute": 0.0017902725892931899,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2105
+    },
+    {
+      "frame": 23,
+      "rgbMeanAbsolute": [
+        0.6615914774531597,
+        0.5864783463004128,
+        0.7721536102731026
+      ],
+      "rgbMaxAbsolute": 24,
+      "visibleRGBMeanAbsolute": [
+        1.0751187384194643,
+        0.9646414382924323,
+        1.276330800786465
+      ],
+      "rgMeanAbsolute": [
+        0.13328512027627817,
+        0.05103058510638298
+      ],
+      "rgMaxAbsolute": 42,
+      "frontAlphaMeanAbsolute": 0.0001918257974831724,
+      "frontAlphaMaxAbsolute": 0.1647058823529412,
+      "rearAlphaMeanAbsolute": 0.001888687459775742,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2273
+    },
+    {
+      "frame": 24,
+      "rgbMeanAbsolute": [
+        0.6598548150206415,
+        0.5860218521752938,
+        0.7686790449348999
+      ],
+      "rgbMaxAbsolute": 26,
+      "visibleRGBMeanAbsolute": [
+        1.1233692363548349,
+        1.0082536608979789,
+        1.333752874258744
+      ],
+      "rgMeanAbsolute": [
+        0.11465073237535725,
+        0.045866495315973324
+      ],
+      "rgMaxAbsolute": 41,
+      "frontAlphaMeanAbsolute": 0.00016888920541223795,
+      "frontAlphaMaxAbsolute": 0.16078431372549018,
+      "rearAlphaMeanAbsolute": 0.0017202430906787924,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1868
+    },
+    {
+      "frame": 25,
+      "rgbMeanAbsolute": [
+        0.6530322126071769,
+        0.5796495415211178,
+        0.7601421086059066
+      ],
+      "rgbMaxAbsolute": 29,
+      "visibleRGBMeanAbsolute": [
+        1.0491975645738412,
+        0.9527912037753996,
+        1.262664134518987
+      ],
+      "rgMeanAbsolute": [
+        0.1306788861543347,
+        0.05004440893934582
+      ],
+      "rgMaxAbsolute": 52,
+      "frontAlphaMeanAbsolute": 0.00018652338277324264,
+      "frontAlphaMaxAbsolute": 0.13725490196078427,
+      "rearAlphaMeanAbsolute": 0.0019838543403668005,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1827
+    },
+    {
+      "frame": 26,
+      "rgbMeanAbsolute": [
+        0.6777374761829152,
+        0.6030771177357891,
+        0.7910125238170848
+      ],
+      "rgbMaxAbsolute": 31,
+      "visibleRGBMeanAbsolute": [
+        1.1454113518032596,
+        1.03873055815378,
+        1.3686894188346894
+      ],
+      "rgMeanAbsolute": [
+        0.12026015203239124,
+        0.04976902389647507
+      ],
+      "rgMaxAbsolute": 37,
+      "frontAlphaMeanAbsolute": 0.00018846922303376737,
+      "frontAlphaMaxAbsolute": 0.14509803921568631,
+      "rearAlphaMeanAbsolute": 0.0015930136830754483,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1785
+    },
+    {
+      "frame": 27,
+      "rgbMeanAbsolute": [
+        0.661432696887901,
+        0.5876295053985392,
+        0.7711835602572246
+      ],
+      "rgbMaxAbsolute": 27,
+      "visibleRGBMeanAbsolute": [
+        1.0789996966735196,
+        0.9754137036163257,
+        1.295136665430892
+      ],
+      "rgMeanAbsolute": [
+        0.12332412075261988,
+        0.051664466894252144
+      ],
+      "rgMaxAbsolute": 45,
+      "frontAlphaMeanAbsolute": 0.00019794060050187115,
+      "frontAlphaMaxAbsolute": 0.1215686274509804,
+      "rearAlphaMeanAbsolute": 0.0018466945969521904,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1690
+    },
+    {
+      "frame": 28,
+      "rgbMeanAbsolute": [
+        0.6629014171165449,
+        0.5885003175611305,
+        0.7688303826611623
+      ],
+      "rgbMaxAbsolute": 27,
+      "visibleRGBMeanAbsolute": [
+        1.1560841053398563,
+        1.037212449255751,
+        1.3737118767565317
+      ],
+      "rgMeanAbsolute": [
+        0.10584833478882184,
+        0.046244839631629085
+      ],
+      "rgMaxAbsolute": 40,
+      "frontAlphaMeanAbsolute": 0.00017324302299516185,
+      "frontAlphaMaxAbsolute": 0.15686274509803924,
+      "rearAlphaMeanAbsolute": 0.0018113767952326182,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1544
+    },
+    {
+      "frame": 29,
+      "rgbMeanAbsolute": [
+        0.6572820736741822,
+        0.582472858447126,
+        0.7637233546363925
+      ],
+      "rgbMaxAbsolute": 22,
+      "visibleRGBMeanAbsolute": [
+        1.1057929724596391,
+        0.9856254856254856,
+        1.3107657774324442
+      ],
+      "rgMeanAbsolute": [
+        0.11575847491267069,
+        0.0480968660685932
+      ],
+      "rgMaxAbsolute": 42,
+      "frontAlphaMeanAbsolute": 0.00018286520308345635,
+      "frontAlphaMaxAbsolute": 0.14509803921568626,
+      "rearAlphaMeanAbsolute": 0.0023098012019318673,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 1695
+    },
+    {
+      "frame": 30,
+      "rgbMeanAbsolute": [
+        0.7001925214353764,
+        0.6217177080025404,
+        0.8109159157669101
+      ],
+      "rgbMaxAbsolute": 30,
+      "visibleRGBMeanAbsolute": [
+        1.2186562607841576,
+        1.0954580446497306,
+        1.4293222903559768
+      ],
+      "rgMeanAbsolute": [
+        0.13472406914893617,
+        0.07379078675770086
+      ],
+      "rgMaxAbsolute": 45,
+      "frontAlphaMeanAbsolute": 0.0003053072014769706,
+      "frontAlphaMaxAbsolute": 0.1764705882352941,
+      "rearAlphaMeanAbsolute": 0.004883825829188026,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2641
+    },
+    {
+      "frame": 31,
+      "rgbMeanAbsolute": [
+        0.6811686249603048,
+        0.6036316092410289,
+        0.7901020165131788
+      ],
+      "rgbMaxAbsolute": 27,
+      "visibleRGBMeanAbsolute": [
+        1.0809227868652131,
+        0.9758130684496273,
+        1.2972696960703873
+      ],
+      "rgMeanAbsolute": [
+        0.1341311229755478,
+        0.06975676802159415
+      ],
+      "rgMaxAbsolute": 44,
+      "frontAlphaMeanAbsolute": 0.00028372296838710085,
+      "frontAlphaMaxAbsolute": 0.16078431372549018,
+      "rearAlphaMeanAbsolute": 0.005284928668354004,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2382
+    },
+    {
+      "frame": 32,
+      "rgbMeanAbsolute": [
+        0.6918987178469356,
+        0.6156865274690377,
+        0.8022226798189902
+      ],
+      "rgbMaxAbsolute": 28,
+      "visibleRGBMeanAbsolute": [
+        1.1810516620614586,
+        1.0681905718831115,
+        1.4050908481955957
+      ],
+      "rgMeanAbsolute": [
+        0.12846340107970786,
+        0.06595347729437917
+      ],
+      "rgMaxAbsolute": 44,
+      "frontAlphaMeanAbsolute": 0.00026586501939613574,
+      "frontAlphaMaxAbsolute": 0.17254901960784313,
+      "rearAlphaMeanAbsolute": 0.004376332181037287,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2380
+    },
+    {
+      "frame": 33,
+      "rgbMeanAbsolute": [
+        0.6617763079549063,
+        0.5867785408066053,
+        0.7653186031279772
+      ],
+      "rgbMaxAbsolute": 27,
+      "visibleRGBMeanAbsolute": [
+        1.0338188736919263,
+        0.9329860732053461,
+        1.2311879103569814
+      ],
+      "rgMeanAbsolute": [
+        0.1654121348046999,
+        0.0829814524452207
+      ],
+      "rgMaxAbsolute": 41,
+      "frontAlphaMeanAbsolute": 0.0003273097902228532,
+      "frontAlphaMaxAbsolute": 0.1411764705882353,
+      "rearAlphaMeanAbsolute": 0.005408883803816473,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2469
+    },
+    {
+      "frame": 34,
+      "rgbMeanAbsolute": [
+        0.6570104100508097,
+        0.5829802119720546,
+        0.7569776615592252
+      ],
+      "rgbMaxAbsolute": 32,
+      "visibleRGBMeanAbsolute": [
+        1.0134099909784553,
+        0.9088135904218719,
+        1.1894753742411963
+      ],
+      "rgMeanAbsolute": [
+        0.14801946054302953,
+        0.0743862138774214
+      ],
+      "rgMaxAbsolute": 38,
+      "frontAlphaMeanAbsolute": 0.00030659145604891694,
+      "frontAlphaMaxAbsolute": 0.12549019607843134,
+      "rearAlphaMeanAbsolute": 0.0044183488302730126,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2471
+    },
+    {
+      "frame": 35,
+      "rgbMeanAbsolute": [
+        0.6508725488250238,
+        0.5764491207526199,
+        0.7533939345824071
+      ],
+      "rgbMaxAbsolute": 25,
+      "visibleRGBMeanAbsolute": [
+        0.9465117718991378,
+        0.847909539804653,
+        1.1291967865269414
+      ],
+      "rgMeanAbsolute": [
+        0.18088827802476976,
+        0.08655525563671007
+      ],
+      "rgMaxAbsolute": 44,
+      "frontAlphaMeanAbsolute": 0.0003504409663198402,
+      "frontAlphaMaxAbsolute": 0.17254901960784313,
+      "rearAlphaMeanAbsolute": 0.006014985570813605,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3012
+    },
+    {
+      "frame": 36,
+      "rgbMeanAbsolute": [
+        0.6515002282470626,
+        0.5781150762146713,
+        0.7524945915369958
+      ],
+      "rgbMaxAbsolute": 22,
+      "visibleRGBMeanAbsolute": [
+        0.9376059206741608,
+        0.8470466595145918,
+        1.1180403314831227
+      ],
+      "rgMeanAbsolute": [
+        0.16227745911400446,
+        0.07915707367418227
+      ],
+      "rgMaxAbsolute": 47,
+      "frontAlphaMeanAbsolute": 0.00031796002777103227,
+      "frontAlphaMaxAbsolute": 0.1843137254901961,
+      "rearAlphaMeanAbsolute": 0.004912938725824057,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2903
+    },
+    {
+      "frame": 37,
+      "rgbMeanAbsolute": [
+        0.661727929501429,
+        0.5867698574944427,
+        0.7621665608129565
+      ],
+      "rgbMaxAbsolute": 21,
+      "visibleRGBMeanAbsolute": [
+        0.9672452300913963,
+        0.876070037427489,
+        1.1402425545214083
+      ],
+      "rgMeanAbsolute": [
+        0.1782969295808193,
+        0.0885338103366148
+      ],
+      "rgMaxAbsolute": 48,
+      "frontAlphaMeanAbsolute": 0.00033995288731561224,
+      "frontAlphaMaxAbsolute": 0.1764705882352941,
+      "rearAlphaMeanAbsolute": 0.005396670325652488,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3216
+    },
+    {
+      "frame": 38,
+      "rgbMeanAbsolute": [
+        0.6406361642584948,
+        0.565891453636075,
+        0.7348203298666244
+      ],
+      "rgbMaxAbsolute": 23,
+      "visibleRGBMeanAbsolute": [
+        0.8898524091196233,
+        0.8021162349968415,
+        1.042683627175099
+      ],
+      "rgMeanAbsolute": [
+        0.16672455541441727,
+        0.0825336416322642
+      ],
+      "rgMaxAbsolute": 42,
+      "frontAlphaMeanAbsolute": 0.00033142524237386294,
+      "frontAlphaMaxAbsolute": 0.16470588235294115,
+      "rearAlphaMeanAbsolute": 0.004618274763800426,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3362
+    },
+    {
+      "frame": 39,
+      "rgbMeanAbsolute": [
+        0.6409599277548428,
+        0.5661147388059702,
+        0.7318097014925373
+      ],
+      "rgbMaxAbsolute": 29,
+      "visibleRGBMeanAbsolute": [
+        0.8849751565453894,
+        0.7944845422409007,
+        1.0198185408774976
+      ],
+      "rgMeanAbsolute": [
+        0.19836034256906954,
+        0.09299703278818673
+      ],
+      "rgMaxAbsolute": 47,
+      "frontAlphaMeanAbsolute": 0.0003637359198998749,
+      "frontAlphaMaxAbsolute": 0.18431372549019606,
+      "rearAlphaMeanAbsolute": 0.004791447233923252,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3579
+    },
+    {
+      "frame": 40,
+      "rgbMeanAbsolute": [
+        0.637511412353128,
+        0.5630036321054303,
+        0.7354653759129882
+      ],
+      "rgbMaxAbsolute": 29,
+      "visibleRGBMeanAbsolute": [
+        0.8461436918566277,
+        0.7630564220852758,
+        1.0015771226890289
+      ],
+      "rgMeanAbsolute": [
+        0.20264369641155922,
+        0.09455382661162273
+      ],
+      "rgMaxAbsolute": 56,
+      "frontAlphaMeanAbsolute": 0.00036522935229982756,
+      "frontAlphaMaxAbsolute": 0.18823529411764706,
+      "rearAlphaMeanAbsolute": 0.0054005913832520834,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3902
+    },
+    {
+      "frame": 41,
+      "rgbMeanAbsolute": [
+        0.6251835900285805,
+        0.5512997677834233,
+        0.7171386253572563
+      ],
+      "rgbMaxAbsolute": 20,
+      "visibleRGBMeanAbsolute": [
+        0.8570482704214241,
+        0.7737566122658853,
+        0.996604940445584
+      ],
+      "rgMeanAbsolute": [
+        0.16660422951730708,
+        0.07718472134010797
+      ],
+      "rgMaxAbsolute": 36,
+      "frontAlphaMeanAbsolute": 0.0003032640692034197,
+      "frontAlphaMaxAbsolute": 0.1333333333333333,
+      "rearAlphaMeanAbsolute": 0.0036546817395781187,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3719
+    },
+    {
+      "frame": 42,
+      "rgbMeanAbsolute": [
+        0.637600726421086,
+        0.560590911797396,
+        0.7330266056684662
+      ],
+      "rgbMaxAbsolute": 23,
+      "visibleRGBMeanAbsolute": [
+        0.832244458851944,
+        0.7473834951802164,
+        0.9708818102152338
+      ],
+      "rgMeanAbsolute": [
+        0.16189291243251827,
+        0.08216522110193712
+      ],
+      "rgMaxAbsolute": 52,
+      "frontAlphaMeanAbsolute": 0.0003195848043885703,
+      "frontAlphaMaxAbsolute": 0.20392156862745103,
+      "rearAlphaMeanAbsolute": 0.004507517253052111,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3293
+    },
+    {
+      "frame": 43,
+      "rgbMeanAbsolute": [
+        0.6520162650841537,
+        0.5715827445220705,
+        0.7536383077961257
+      ],
+      "rgbMaxAbsolute": 20,
+      "visibleRGBMeanAbsolute": [
+        0.8219841626418062,
+        0.7482730540267326,
+        0.9801401213074245
+      ],
+      "rgMeanAbsolute": [
+        0.18176901397268974,
+        0.08935004167989838
+      ],
+      "rgMaxAbsolute": 41,
+      "frontAlphaMeanAbsolute": 0.00034192791518004476,
+      "frontAlphaMaxAbsolute": 0.15294117647058825,
+      "rearAlphaMeanAbsolute": 0.004717208922532317,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3709
+    },
+    {
+      "frame": 44,
+      "rgbMeanAbsolute": [
+        0.6438601540171484,
+        0.5646658661479835,
+        0.7380530029374405
+      ],
+      "rgbMaxAbsolute": 19,
+      "visibleRGBMeanAbsolute": [
+        0.8279600334205675,
+        0.7444500452282473,
+        0.9690859751002963
+      ],
+      "rgMeanAbsolute": [
+        0.16516279969831693,
+        0.08024372816767228
+      ],
+      "rgMaxAbsolute": 35,
+      "frontAlphaMeanAbsolute": 0.0003073697921531267,
+      "frontAlphaMaxAbsolute": 0.13725490196078427,
+      "rearAlphaMeanAbsolute": 0.004253048473026663,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3655
+    },
+    {
+      "frame": 45,
+      "rgbMeanAbsolute": [
+        0.6642163186725945,
+        0.5851411162273737,
+        0.7633896673547158
+      ],
+      "rgbMaxAbsolute": 22,
+      "visibleRGBMeanAbsolute": [
+        0.8729976479757282,
+        0.7945388501523944,
+        1.0275701780023103
+      ],
+      "rgMeanAbsolute": [
+        0.1640860689901556,
+        0.07774541521117816
+      ],
+      "rgMaxAbsolute": 54,
+      "frontAlphaMeanAbsolute": 0.0003018095536086775,
+      "frontAlphaMaxAbsolute": 0.1333333333333333,
+      "rearAlphaMeanAbsolute": 0.004581154762588475,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2942
+    },
+    {
+      "frame": 46,
+      "rgbMeanAbsolute": [
+        0.6739354259288663,
+        0.5960610015084153,
+        0.7789836555255637
+      ],
+      "rgbMaxAbsolute": 25,
+      "visibleRGBMeanAbsolute": [
+        0.8816016233044252,
+        0.8068017567267067,
+        1.0480389704247275
+      ],
+      "rgMeanAbsolute": [
+        0.1847436686249603,
+        0.08415494006033661
+      ],
+      "rgMaxAbsolute": 51,
+      "frontAlphaMeanAbsolute": 0.0003264974019140842,
+      "frontAlphaMaxAbsolute": 0.16862745098039214,
+      "rearAlphaMeanAbsolute": 0.0052176970754487205,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3505
+    },
+    {
+      "frame": 47,
+      "rgbMeanAbsolute": [
+        0.718632155049222,
+        0.6337775881232137,
+        0.8190236483804383
+      ],
+      "rgbMaxAbsolute": 28,
+      "visibleRGBMeanAbsolute": [
+        1.030550917068356,
+        0.9270063616758046,
+        1.1742328467992185
+      ],
+      "rgMeanAbsolute": [
+        0.21089036201968878,
+        0.09734116981581455
+      ],
+      "rgMaxAbsolute": 42,
+      "frontAlphaMeanAbsolute": 0.000374258051108662,
+      "frontAlphaMaxAbsolute": 0.1568627450980392,
+      "rearAlphaMeanAbsolute": 0.004913820434728678,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 4391
+    },
+    {
+      "frame": 48,
+      "rgbMeanAbsolute": [
+        0.6767699071133694,
+        0.599124970228644,
+        0.7898229100508097
+      ],
+      "rgbMaxAbsolute": 22,
+      "visibleRGBMeanAbsolute": [
+        0.8556895972380532,
+        0.794184889673666,
+        1.0428325767408764
+      ],
+      "rgMeanAbsolute": [
+        0.18750992378532869,
+        0.08631088242299143
+      ],
+      "rgMaxAbsolute": 69,
+      "frontAlphaMeanAbsolute": 0.0003343634611672551,
+      "frontAlphaMaxAbsolute": 0.1843137254901961,
+      "rearAlphaMeanAbsolute": 0.005418761589387856,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3280
+    },
+    {
+      "frame": 49,
+      "rgbMeanAbsolute": [
+        0.675209391870435,
+        0.5972816271038425,
+        0.7855060634328358
+      ],
+      "rgbMaxAbsolute": 26,
+      "visibleRGBMeanAbsolute": [
+        0.8672891443986825,
+        0.7998729726367345,
+        1.0574242255586912
+      ],
+      "rgMeanAbsolute": [
+        0.16859022705620832,
+        0.07721325222292791
+      ],
+      "rgMaxAbsolute": 57,
+      "frontAlphaMeanAbsolute": 0.0003089361935628492,
+      "frontAlphaMaxAbsolute": 0.22352941176470587,
+      "rearAlphaMeanAbsolute": 0.0043199337333699045,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2968
+    },
+    {
+      "frame": 50,
+      "rgbMeanAbsolute": [
+        0.6659170073832963,
+        0.5871680493807558,
+        0.7765709352175294
+      ],
+      "rgbMaxAbsolute": 28,
+      "visibleRGBMeanAbsolute": [
+        0.8075981344733774,
+        0.741035108174634,
+        0.9891695815520145
+      ],
+      "rgMeanAbsolute": [
+        0.19353738289933312,
+        0.08776967886630677
+      ],
+      "rgMaxAbsolute": 59,
+      "frontAlphaMeanAbsolute": 0.0003436937652164709,
+      "frontAlphaMaxAbsolute": 0.19999999999999996,
+      "rearAlphaMeanAbsolute": 0.005538429307645881,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3233
+    },
+    {
+      "frame": 51,
+      "rgbMeanAbsolute": [
+        0.6666650127024453,
+        0.5899442283264529,
+        0.7759122439663385
+      ],
+      "rgbMaxAbsolute": 19,
+      "visibleRGBMeanAbsolute": [
+        0.8256526026259795,
+        0.7650176449218953,
+        1.006655768332555
+      ],
+      "rgMeanAbsolute": [
+        0.1871080104795173,
+        0.08190224079072722
+      ],
+      "rgMaxAbsolute": 40,
+      "frontAlphaMeanAbsolute": 0.00032745086364174126,
+      "frontAlphaMaxAbsolute": 0.1450980392156863,
+      "rearAlphaMeanAbsolute": 0.005039970662623988,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3129
+    },
+    {
+      "frame": 52,
+      "rgbMeanAbsolute": [
+        0.6632859637980312,
+        0.5866085959828516,
+        0.7755413424896792
+      ],
+      "rgbMaxAbsolute": 20,
+      "visibleRGBMeanAbsolute": [
+        0.8271540227444631,
+        0.7570960336522512,
+        1.014052734245412
+      ],
+      "rgMeanAbsolute": [
+        0.18149610987615117,
+        0.08243564425214354
+      ],
+      "rgMaxAbsolute": 47,
+      "frontAlphaMeanAbsolute": 0.0003263709222971501,
+      "frontAlphaMaxAbsolute": 0.1843137254901961,
+      "rearAlphaMeanAbsolute": 0.005109837425473335,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3247
+    },
+    {
+      "frame": 53,
+      "rgbMeanAbsolute": [
+        0.6695491128135916,
+        0.5941667989838044,
+        0.7792838500317562
+      ],
+      "rgbMaxAbsolute": 18,
+      "visibleRGBMeanAbsolute": [
+        0.8745498037950868,
+        0.8046551631457292,
+        1.045886416169435
+      ],
+      "rgMeanAbsolute": [
+        0.1633591517148301,
+        0.07810763337567482
+      ],
+      "rgMaxAbsolute": 40,
+      "frontAlphaMeanAbsolute": 0.00031077501260904494,
+      "frontAlphaMaxAbsolute": 0.1568627450980392,
+      "rearAlphaMeanAbsolute": 0.004569297334669303,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3283
+    },
+    {
+      "frame": 54,
+      "rgbMeanAbsolute": [
+        0.6658748312956494,
+        0.588918357018101,
+        0.776609389885678
+      ],
+      "rgbMaxAbsolute": 27,
+      "visibleRGBMeanAbsolute": [
+        0.8312110931787491,
+        0.7574519943348375,
+        1.0043542702809525
+      ],
+      "rgMeanAbsolute": [
+        0.17503944704668148,
+        0.08346027508732931
+      ],
+      "rgMaxAbsolute": 60,
+      "frontAlphaMeanAbsolute": 0.0003284432421746088,
+      "frontAlphaMaxAbsolute": 0.18823529411764703,
+      "rearAlphaMeanAbsolute": 0.00518931888298735,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3121
+    },
+    {
+      "frame": 55,
+      "rgbMeanAbsolute": [
+        0.6684885082565893,
+        0.5922775583518577,
+        0.7792391929977771
+      ],
+      "rgbMaxAbsolute": 21,
+      "visibleRGBMeanAbsolute": [
+        0.844525475510003,
+        0.7771886600308794,
+        1.0203804080023653
+      ],
+      "rgMeanAbsolute": [
+        0.17807240393775803,
+        0.08499970228644015
+      ],
+      "rgMaxAbsolute": 37,
+      "frontAlphaMeanAbsolute": 0.0003380167762563901,
+      "frontAlphaMaxAbsolute": 0.1215686274509804,
+      "rearAlphaMeanAbsolute": 0.005332584662130267,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2930
+    },
+    {
+      "frame": 56,
+      "rgbMeanAbsolute": [
+        0.6576529751508415,
+        0.5852366326611623,
+        0.7655890262781836
+      ],
+      "rgbMaxAbsolute": 19,
+      "visibleRGBMeanAbsolute": [
+        0.8529191879820318,
+        0.7933724816133011,
+        1.0244985590962243
+      ],
+      "rgMeanAbsolute": [
+        0.1751659753096221,
+        0.06294532986662432
+      ],
+      "rgMaxAbsolute": 50,
+      "frontAlphaMeanAbsolute": 0.000216747146619842,
+      "frontAlphaMaxAbsolute": 0.1764705882352941,
+      "rearAlphaMeanAbsolute": 0.0020702756501578363,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2921
+    },
+    {
+      "frame": 57,
+      "rgbMeanAbsolute": [
+        0.6611387047475389,
+        0.5882112873134329,
+        0.768195260400127
+      ],
+      "rgbMaxAbsolute": 20,
+      "visibleRGBMeanAbsolute": [
+        0.8748621154553254,
+        0.8101676547048464,
+        1.039375310441811
+      ],
+      "rgMeanAbsolute": [
+        0.15956950619244203,
+        0.05914203913940934
+      ],
+      "rgMaxAbsolute": 31,
+      "frontAlphaMeanAbsolute": 0.00020617150480389045,
+      "frontAlphaMaxAbsolute": 0.10196078431372549,
+      "rearAlphaMeanAbsolute": 0.0015302486291773987,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3141
+    },
+    {
+      "frame": 58,
+      "rgbMeanAbsolute": [
+        0.6798748114480787,
+        0.6049415489044141,
+        0.7939574071133694
+      ],
+      "rgbMaxAbsolute": 25,
+      "visibleRGBMeanAbsolute": [
+        0.8780447432420387,
+        0.8191107376141182,
+        1.0816876122082586
+      ],
+      "rgMeanAbsolute": [
+        0.18757318791679897,
+        0.06359781875198475
+      ],
+      "rgMaxAbsolute": 43,
+      "frontAlphaMeanAbsolute": 0.00021897999831879398,
+      "frontAlphaMaxAbsolute": 0.14901960784313728,
+      "rearAlphaMeanAbsolute": 0.0017966946683147667,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3252
+    },
+    {
+      "frame": 59,
+      "rgbMeanAbsolute": [
+        0.6978418247856463,
+        0.6218082625436646,
+        0.8113438790092092
+      ],
+      "rgbMaxAbsolute": 24,
+      "visibleRGBMeanAbsolute": [
+        0.930042363661961,
+        0.8582097193247411,
+        1.1258239156310395
+      ],
+      "rgMeanAbsolute": [
+        0.15221101937122897,
+        0.05649238845665291
+      ],
+      "rgMaxAbsolute": 28,
+      "frontAlphaMeanAbsolute": 0.00019633528228693827,
+      "frontAlphaMaxAbsolute": 0.1098039215686275,
+      "rearAlphaMeanAbsolute": 0.0014742110826679068,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 2632
+    },
+    {
+      "frame": 60,
+      "rgbMeanAbsolute": [
+        0.7013101877580185,
+        0.6250744283899651,
+        0.8170562579390283
+      ],
+      "rgbMaxAbsolute": 42,
+      "visibleRGBMeanAbsolute": [
+        0.9156710100000637,
+        0.8469054545223076,
+        1.105353948783888
+      ],
+      "rgMeanAbsolute": [
+        0.18738587646872024,
+        0.0643929620514449
+      ],
+      "rgMaxAbsolute": 38,
+      "frontAlphaMeanAbsolute": 0.00021683957403221686,
+      "frontAlphaMaxAbsolute": 0.14901960784313728,
+      "rearAlphaMeanAbsolute": 0.002126247791998092,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3591
+    },
+    {
+      "frame": 61,
+      "rgbMeanAbsolute": [
+        0.7414382542076849,
+        0.6599180791521118,
+        0.8556064425214354
+      ],
+      "rgbMaxAbsolute": 29,
+      "visibleRGBMeanAbsolute": [
+        1.0121705803937653,
+        0.9283223954060705,
+        1.1904417042657915
+      ],
+      "rgMeanAbsolute": [
+        0.1909175035725627,
+        0.06535805017465862
+      ],
+      "rgMaxAbsolute": 34,
+      "frontAlphaMeanAbsolute": 0.0002209793491864831,
+      "frontAlphaMaxAbsolute": 0.11372549019607847,
+      "rearAlphaMeanAbsolute": 0.0019055790055020846,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3625
+    },
+    {
+      "frame": 62,
+      "rgbMeanAbsolute": [
+        0.7263665052397587,
+        0.6483122122102255,
+        0.8431111563194665
+      ],
+      "rgbMaxAbsolute": 38,
+      "visibleRGBMeanAbsolute": [
+        0.9646590756694277,
+        0.894130494479178,
+        1.1560135130820173
+      ],
+      "rgMeanAbsolute": [
+        0.182330948316926,
+        0.06412501984757066
+      ],
+      "rgMaxAbsolute": 39,
+      "frontAlphaMeanAbsolute": 0.00021788546317224895,
+      "frontAlphaMaxAbsolute": 0.15294117647058825,
+      "rearAlphaMeanAbsolute": 0.0018605598219725912,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3528
+    },
+    {
+      "frame": 63,
+      "rgbMeanAbsolute": [
+        0.7182538107335662,
+        0.6425105192124484,
+        0.8335285011114639
+      ],
+      "rgbMaxAbsolute": 24,
+      "visibleRGBMeanAbsolute": [
+        0.9509929614482237,
+        0.8817805356478929,
+        1.1458416133540175
+      ],
+      "rgMeanAbsolute": [
+        0.16629411122578597,
+        0.06126945061924421
+      ],
+      "rgMaxAbsolute": 33,
+      "frontAlphaMeanAbsolute": 0.0002083605750969807,
+      "frontAlphaMaxAbsolute": 0.11372549019607847,
+      "rearAlphaMeanAbsolute": 0.0019402334765554138,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3002
+    },
+    {
+      "frame": 64,
+      "rgbMeanAbsolute": [
+        0.7169203020800254,
+        0.6388287948555097,
+        0.8331303092251509
+      ],
+      "rgbMaxAbsolute": 23,
+      "visibleRGBMeanAbsolute": [
+        0.9185800969329992,
+        0.8485898919998474,
+        1.1160906234496444
+      ],
+      "rgMeanAbsolute": [
+        0.18937931684661796,
+        0.0661978505080978
+      ],
+      "rgMaxAbsolute": 37,
+      "frontAlphaMeanAbsolute": 0.0002267925469648005,
+      "frontAlphaMaxAbsolute": 0.1215686274509804,
+      "rearAlphaMeanAbsolute": 0.00210893420850648,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3552
+    },
+    {
+      "frame": 65,
+      "rgbMeanAbsolute": [
+        0.7510556426643379,
+        0.6712770919339472,
+        0.8680372241187678
+      ],
+      "rgbMaxAbsolute": 22,
+      "visibleRGBMeanAbsolute": [
+        0.9901263165977706,
+        0.9212344983810486,
+        1.1813033518051628
+      ],
+      "rgMeanAbsolute": [
+        0.19289729874563352,
+        0.06776828953636074
+      ],
+      "rgMaxAbsolute": 37,
+      "frontAlphaMeanAbsolute": 0.00022699686019215563,
+      "frontAlphaMaxAbsolute": 0.1372549019607843,
+      "rearAlphaMeanAbsolute": 0.001925744398180478,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3445
+    },
+    {
+      "frame": 66,
+      "rgbMeanAbsolute": [
+        0.7389982434899969,
+        0.659084481184503,
+        0.8560877461098761
+      ],
+      "rgbMaxAbsolute": 28,
+      "visibleRGBMeanAbsolute": [
+        0.9474492951370513,
+        0.8735008511913491,
+        1.1482730698359465
+      ],
+      "rgMeanAbsolute": [
+        0.20008832168942522,
+        0.06848404255319149
+      ],
+      "rgMaxAbsolute": 35,
+      "frontAlphaMeanAbsolute": 0.00023382189490594587,
+      "frontAlphaMaxAbsolute": 0.12549019607843137,
+      "rearAlphaMeanAbsolute": 0.002074822555107474,
+      "rearAlphaMaxAbsolute": 1.0,
+      "alphaVisibilityChangedPixels": 3835
+    },
+    {
+      "frame": 67,
+      "rgbMeanAbsolute": [
+        0.7512814087805653,
+        0.6759387900920927,
+        0.8713592112575421
+      ],
+      "rgbMaxAbsolute": 21,
+      "visibleRGBMeanAbsolute": [
+        1.0216171638592708,
+        0.9614735256302029,
+        1.2491915479421811
+      ],
+      "rgMeanAbsolute": [
+        0.17533219871387742,
+        0.05214577048269292
+      ],
+      "rgMaxAbsolute": 36,
+      "frontAlphaMeanAbsolute": 0.000169171352250014,
+      "frontAlphaMaxAbsolute": 0.07450980392156864,
+      "rearAlphaMeanAbsolute": 0.0006942416742515188,
+      "rearAlphaMaxAbsolute": 0.15272523469244775,
+      "alphaVisibilityChangedPixels": 3033
+    },
+    {
+      "frame": 68,
+      "rgbMeanAbsolute": [
+        0.7366413444744363,
+        0.6583302734995237,
+        0.8523712885042871
+      ],
+      "rgbMaxAbsolute": 25,
+      "visibleRGBMeanAbsolute": [
+        0.9320321408682277,
+        0.8734121827680394,
+        1.151648147657058
+      ],
+      "rgMeanAbsolute": [
+        0.1916059661797396,
+        0.053812966417910446
+      ],
+      "rgMaxAbsolute": 40,
+      "frontAlphaMeanAbsolute": 0.0001729997929625963,
+      "frontAlphaMaxAbsolute": 0.08627450980392157,
+      "rearAlphaMeanAbsolute": 0.0007637856971156447,
+      "rearAlphaMaxAbsolute": 0.15598781345207402,
+      "alphaVisibilityChangedPixels": 3015
+    },
+    {
+      "frame": 69,
+      "rgbMeanAbsolute": [
+        0.7694952762781836,
+        0.6867792850905049,
+        0.8799742973959988
+      ],
+      "rgbMaxAbsolute": 27,
+      "visibleRGBMeanAbsolute": [
+        1.0197152746032783,
+        0.9283158100959968,
+        1.193665512962842
+      ],
+      "rgMeanAbsolute": [
+        0.18173676167037153,
+        0.0548313948872658
+      ],
+      "rgMaxAbsolute": 29,
+      "frontAlphaMeanAbsolute": 0.00017605476217162,
+      "frontAlphaMaxAbsolute": 0.07450980392156863,
+      "rearAlphaMeanAbsolute": 0.0007201605331541925,
+      "rearAlphaMaxAbsolute": 0.12357555128015399,
+      "alphaVisibilityChangedPixels": 3423
+    },
+    {
+      "frame": 70,
+      "rgbMeanAbsolute": [
+        0.7853150305652589,
+        0.6941836694188631,
+        0.9048271772785011
+      ],
+      "rgbMaxAbsolute": 25,
+      "visibleRGBMeanAbsolute": [
+        1.0486490631273702,
+        0.9443662168190944,
+        1.2773742471559224
+      ],
+      "rgMeanAbsolute": [
+        0.1810445776436964,
+        0.05045872697681804
+      ],
+      "rgMaxAbsolute": 40,
+      "frontAlphaMeanAbsolute": 0.00016177229465936898,
+      "frontAlphaMaxAbsolute": 0.07058823529411765,
+      "rearAlphaMeanAbsolute": 0.0007266435136244197,
+      "rearAlphaMaxAbsolute": 0.18153014034020898,
+      "alphaVisibilityChangedPixels": 2641
+    },
+    {
+      "frame": 71,
+      "rgbMeanAbsolute": [
+        0.7702122697681804,
+        0.6834833478882185,
+        0.8920527846141633
+      ],
+      "rgbMaxAbsolute": 23,
+      "visibleRGBMeanAbsolute": [
+        1.041906567592812,
+        0.927081735930072,
+        1.2965105742287155
+      ],
+      "rgMeanAbsolute": [
+        0.16587979318831375,
+        0.04631430612892982
+      ],
+      "rgMaxAbsolute": 32,
+      "frontAlphaMeanAbsolute": 0.0001578562911350631,
+      "frontAlphaMaxAbsolute": 0.06666666666666667,
+      "rearAlphaMeanAbsolute": 0.0006594445204727011,
+      "rearAlphaMaxAbsolute": 0.12549019607843137,
+      "alphaVisibilityChangedPixels": 2341
+    },
+    {
+      "frame": 72,
+      "rgbMeanAbsolute": [
+        0.7556081791838679,
+        0.6719791997459511,
+        0.8625654969831693
+      ],
+      "rgbMaxAbsolute": 25,
+      "visibleRGBMeanAbsolute": [
+        1.0242608899930947,
+        0.9086657222384373,
+        1.203975141130324
+      ],
+      "rgMeanAbsolute": [
+        0.1496928588440775,
+        0.04410006152746904
+      ],
+      "rgMaxAbsolute": 32,
+      "frontAlphaMeanAbsolute": 0.0001453737258637974,
+      "frontAlphaMaxAbsolute": 0.07450980392156863,
+      "rearAlphaMeanAbsolute": 0.0005937477643596805,
+      "rearAlphaMaxAbsolute": 0.12549019607843137,
+      "alphaVisibilityChangedPixels": 2318
+    },
+    {
+      "frame": 73,
+      "rgbMeanAbsolute": [
+        0.7269569704668148,
+        0.6487575420768498,
+        0.8345556128929819
+      ],
+      "rgbMaxAbsolute": 35,
+      "visibleRGBMeanAbsolute": [
+        0.9336166691740635,
+        0.8437565819166541,
+        1.1178501579659996
+      ],
+      "rgMeanAbsolute": [
+        0.13962145720863767,
+        0.040721012623054935
+      ],
+      "rgMaxAbsolute": 42,
+      "frontAlphaMeanAbsolute": 0.00013428730097945815,
+      "frontAlphaMaxAbsolute": 0.06666666666666667,
+      "rearAlphaMeanAbsolute": 0.0005568880508306675,
+      "rearAlphaMaxAbsolute": 0.1491725392536074,
+      "alphaVisibilityChangedPixels": 2086
+    },
+    {
+      "frame": 74,
+      "rgbMeanAbsolute": [
+        0.727061170212766,
+        0.649641999444268,
+        0.8277094414893617
+      ],
+      "rgbMaxAbsolute": 26,
+      "visibleRGBMeanAbsolute": [
+        0.908030465908831,
+        0.8171892988114026,
+        1.0730465146420867
+      ],
+      "rgMeanAbsolute": [
+        0.11353306605271515,
+        0.034658820260400125
+      ],
+      "rgMaxAbsolute": 28,
+      "frontAlphaMeanAbsolute": 0.00011418677108823841,
+      "frontAlphaMaxAbsolute": 0.06274509803921569,
+      "rearAlphaMeanAbsolute": 0.0004494541038775932,
+      "rearAlphaMaxAbsolute": 0.10002195871761088,
+      "alphaVisibilityChangedPixels": 1614
+    },
+    {
+      "frame": 75,
+      "rgbMeanAbsolute": [
+        0.7477299341060654,
+        0.6678174122737377,
+        0.8639225746268657
+      ],
+      "rgbMaxAbsolute": 21,
+      "visibleRGBMeanAbsolute": [
+        1.0398668142916023,
+        0.9278065574565408,
+        1.2499575713004194
+      ],
+      "rgMeanAbsolute": [
+        0.10106258931406796,
+        0.029990919736424263
+      ],
+      "rgMaxAbsolute": 30,
+      "frontAlphaMeanAbsolute": 9.985079296882296e-05,
+      "frontAlphaMaxAbsolute": 0.08235294117647059,
+      "rearAlphaMeanAbsolute": 0.00040326538820435775,
+      "rearAlphaMaxAbsolute": 0.13887127457197213,
+      "alphaVisibilityChangedPixels": 1695
+    },
+    {
+      "frame": 76,
+      "rgbMeanAbsolute": [
+        0.7440593740076215,
+        0.666294111225786,
+        0.8563494859479199
+      ],
+      "rgbMaxAbsolute": 22,
+      "visibleRGBMeanAbsolute": [
+        1.0192032100888506,
+        0.9154569824490415,
+        1.2370475275234771
+      ],
+      "rgMeanAbsolute": [
+        0.0843323277230867,
+        0.026470456891076532
+      ],
+      "rgMaxAbsolute": 31,
+      "frontAlphaMeanAbsolute": 8.702770565196545e-05,
+      "frontAlphaMaxAbsolute": 0.054901960784313725,
+      "rearAlphaMeanAbsolute": 0.0003346558832466903,
+      "rearAlphaMaxAbsolute": 0.12156862745098046,
+      "alphaVisibilityChangedPixels": 1609
+    },
+    {
+      "frame": 77,
+      "rgbMeanAbsolute": [
+        0.7472461495712924,
+        0.6683136015401715,
+        0.8641880358844077
+      ],
+      "rgbMaxAbsolute": 21,
+      "visibleRGBMeanAbsolute": [
+        1.0413123529754038,
+        0.9305503603401412,
+        1.2694280275637349
+      ],
+      "rgMeanAbsolute": [
+        0.1125940278659892,
+        0.03252892783423309
+      ],
+      "rgMaxAbsolute": 34,
+      "frontAlphaMeanAbsolute": 0.00010784819643957933,
+      "frontAlphaMaxAbsolute": 0.06274509803921569,
+      "rearAlphaMeanAbsolute": 0.0004510324271495419,
+      "rearAlphaMaxAbsolute": 0.15926014130348498,
+      "alphaVisibilityChangedPixels": 1899
+    },
+    {
+      "frame": 78,
+      "rgbMeanAbsolute": [
+        0.7904617537313433,
+        0.7073823039060019,
+        0.9056248015242935
+      ],
+      "rgbMaxAbsolute": 32,
+      "visibleRGBMeanAbsolute": [
+        1.2563368447259091,
+        1.1175486641666796,
+        1.463114817869202
+      ],
+      "rgMeanAbsolute": [
+        0.15150767108605906,
+        0.04825316568751985
+      ],
+      "rgMaxAbsolute": 39,
+      "frontAlphaMeanAbsolute": 0.00015406676722769133,
+      "frontAlphaMaxAbsolute": 0.07450980392156863,
+      "rearAlphaMeanAbsolute": 0.0006067698376251236,
+      "rearAlphaMaxAbsolute": 0.15294117647058814,
+      "alphaVisibilityChangedPixels": 3283
+    },
+    {
+      "frame": 79,
+      "rgbMeanAbsolute": [
+        0.7608839115592252,
+        0.6782969295808193,
+        0.8811564683232772
+      ],
+      "rgbMaxAbsolute": 26,
+      "visibleRGBMeanAbsolute": [
+        1.1011194948268985,
+        0.9690038278405377,
+        1.3308917765084323
+      ],
+      "rgMeanAbsolute": [
+        0.12649601063829788,
+        0.03806143815496983
+      ],
+      "rgMaxAbsolute": 35,
+      "frontAlphaMeanAbsolute": 0.00012155177647432424,
+      "frontAlphaMaxAbsolute": 0.0784313725490196,
+      "rearAlphaMeanAbsolute": 0.0005043248661220623,
+      "rearAlphaMaxAbsolute": 0.13725490196078438,
+      "alphaVisibilityChangedPixels": 1952
+    },
+    {
+      "frame": 80,
+      "rgbMeanAbsolute": [
+        0.7646425452524611,
+        0.6817913424896792,
+        0.8829650781994284
+      ],
+      "rgbMaxAbsolute": 21,
+      "visibleRGBMeanAbsolute": [
+        1.1527167459719008,
+        1.0126108323149328,
+        1.383663988489907
+      ],
+      "rgMeanAbsolute": [
+        0.09844022904096539,
+        0.03318761908542395
+      ],
+      "rgMaxAbsolute": 23,
+      "frontAlphaMeanAbsolute": 0.00010809629107279621,
+      "frontAlphaMaxAbsolute": 0.058823529411764705,
+      "rearAlphaMeanAbsolute": 0.00039037997913112584,
+      "rearAlphaMaxAbsolute": 0.09051724137931028,
+      "alphaVisibilityChangedPixels": 1676
+    },
+    {
+      "frame": 81,
+      "rgbMeanAbsolute": [
+        0.7609397328516989,
+        0.6785251766433789,
+        0.8792238111305176
+      ],
+      "rgbMaxAbsolute": 25,
+      "visibleRGBMeanAbsolute": [
+        1.1067108619821946,
+        0.9783593356819326,
+        1.3390052583169916
+      ],
+      "rgMeanAbsolute": [
+        0.12388481462369005,
+        0.03580501746586218
+      ],
+      "rgMaxAbsolute": 34,
+      "frontAlphaMeanAbsolute": 0.00011677960323538752,
+      "frontAlphaMaxAbsolute": 0.06666666666666667,
+      "rearAlphaMeanAbsolute": 0.0004959289944999638,
+      "rearAlphaMaxAbsolute": 0.13333333333333341,
+      "alphaVisibilityChangedPixels": 2299
+    },
+    {
+      "frame": 82,
+      "rgbMeanAbsolute": [
+        0.7991525087329311,
+        0.7131306565576373,
+        0.918173428072404
+      ],
+      "rgbMaxAbsolute": 28,
+      "visibleRGBMeanAbsolute": [
+        1.2584004785194047,
+        1.1140266000492594,
+        1.4879050701945744
+      ],
+      "rgMeanAbsolute": [
+        0.12035318751984757,
+        0.03769921999047317
+      ],
+      "rgMaxAbsolute": 37,
+      "frontAlphaMeanAbsolute": 0.00011941135218774713,
+      "frontAlphaMaxAbsolute": 0.06666666666666667,
+      "rearAlphaMeanAbsolute": 0.00047916042532391944,
+      "rearAlphaMaxAbsolute": 0.13532768073441287,
+      "alphaVisibilityChangedPixels": 2163
+    },
+    {
+      "frame": 83,
+      "rgbMeanAbsolute": [
+        0.7846526178945697,
+        0.7033954231502064,
+        0.9071046860114322
+      ],
+      "rgbMaxAbsolute": 23,
+      "visibleRGBMeanAbsolute": [
+        1.1247173451837364,
+        1.014030155667502,
+        1.357659836387606
+      ],
+      "rgMeanAbsolute": [
+        0.1180186170212766,
+        0.03353743251825977
+      ],
+      "rgMaxAbsolute": 36,
+      "frontAlphaMeanAbsolute": 0.00010896218998872968,
+      "frontAlphaMaxAbsolute": 0.08235294117647059,
+      "rearAlphaMeanAbsolute": 0.0004705381171891247,
+      "rearAlphaMaxAbsolute": 0.13931911163062538,
+      "alphaVisibilityChangedPixels": 2542
+    },
+    {
+      "frame": 84,
+      "rgbMeanAbsolute": [
+        0.7947984479199746,
+        0.7134556605271515,
+        0.9143527707208637
+      ],
+      "rgbMaxAbsolute": 23,
+      "visibleRGBMeanAbsolute": [
+        1.188133482972679,
+        1.0678024059201066,
+        1.4204924069722582
+      ],
+      "rgMeanAbsolute": [
+        0.10547123094633216,
+        0.03365031557637345
+      ],
+      "rgMaxAbsolute": 25,
+      "frontAlphaMeanAbsolute": 0.00010798440525781605,
+      "frontAlphaMaxAbsolute": 0.058823529411764705,
+      "rearAlphaMeanAbsolute": 0.00041755840940028017,
+      "rearAlphaMaxAbsolute": 0.0980392156862745,
+      "alphaVisibilityChangedPixels": 2057
+    },
+    {
+      "frame": 85,
+      "rgbMeanAbsolute": [
+        0.7827683391552874,
+        0.701377173308987,
+        0.9034229616544935
+      ],
+      "rgbMaxAbsolute": 24,
+      "visibleRGBMeanAbsolute": [
+        1.1123573861497107,
+        0.9924523015226737,
+        1.355302214400168
+      ],
+      "rgMeanAbsolute": [
+        0.11687366028898064,
+        0.034094404969831696
+      ],
+      "rgMaxAbsolute": 33,
+      "frontAlphaMeanAbsolute": 0.00011152096993131963,
+      "frontAlphaMaxAbsolute": 0.06666666666666667,
+      "rearAlphaMeanAbsolute": 0.000465917729605165,
+      "rearAlphaMaxAbsolute": 0.14436447224629761,
+      "alphaVisibilityChangedPixels": 2172
+    },
+    {
+      "frame": 86,
+      "rgbMeanAbsolute": [
+        0.8025762146713242,
+        0.7200140421562401,
+        0.9212758514607812
+      ],
+      "rgbMaxAbsolute": 23,
+      "visibleRGBMeanAbsolute": [
+        1.22090338439928,
+        1.083552082876081,
+        1.4444668802949827
+      ],
+      "rgMeanAbsolute": [
+        0.11786231740234995,
+        0.036930126627500795
+      ],
+      "rgMaxAbsolute": 29,
+      "frontAlphaMeanAbsolute": 0.00011779144017086034,
+      "frontAlphaMaxAbsolute": 0.07058823529411765,
+      "rearAlphaMeanAbsolute": 0.00046879559607131024,
+      "rearAlphaMaxAbsolute": 0.13973001942788238,
+      "alphaVisibilityChangedPixels": 2244
+    },
+    {
+      "frame": 87,
+      "rgbMeanAbsolute": [
+        0.8051960939980947,
+        0.7226401238488409,
+        0.9267140858208955
+      ],
+      "rgbMaxAbsolute": 28,
+      "visibleRGBMeanAbsolute": [
+        1.2073896872653618,
+        1.078375735563743,
+        1.4532644187955088
+      ],
+      "rgMeanAbsolute": [
+        0.12336877778659892,
+        0.03555320141314703
+      ],
+      "rgMaxAbsolute": 34,
+      "frontAlphaMeanAbsolute": 0.00011657529000803241,
+      "frontAlphaMaxAbsolute": 0.06666666666666667,
+      "rearAlphaMeanAbsolute": 0.0004926601579834874,
+      "rearAlphaMaxAbsolute": 0.13591178406846605,
+      "alphaVisibilityChangedPixels": 2471
+    },
+    {
+      "frame": 88,
+      "rgbMeanAbsolute": [
+        0.8193759427596062,
+        0.7387588321689426,
+        0.9405428806764052
+      ],
+      "rgbMaxAbsolute": 30,
+      "visibleRGBMeanAbsolute": [
+        1.2775074980818861,
+        1.1625165655297482,
+        1.5258073516077282
+      ],
+      "rgMeanAbsolute": [
+        0.13403808748809146,
+        0.0408996407589711
+      ],
+      "rgMaxAbsolute": 42,
+      "frontAlphaMeanAbsolute": 0.0001327257641703871,
+      "frontAlphaMaxAbsolute": 0.06666666666666668,
+      "rearAlphaMeanAbsolute": 0.0005376061733308059,
+      "rearAlphaMaxAbsolute": 0.172319041032734,
+      "alphaVisibilityChangedPixels": 2407
+    }
+  ],
+  "policy": "No resize. LossyRGBandRG alteralpha; localffmpegRGB comparison only, browserverificationrequired. Profile alone does not prove hardwaredecode."
+}

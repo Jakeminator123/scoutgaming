@@ -15,3 +15,21 @@ link=runtime/'actor.mp4'
 if link.exists():assert link.resolve()==source.resolve(),'Refusing to replace a different runtime media file'
 else:link.symlink_to(source)
 print(runtime)
+
+cropSource=source.with_name("actor-cropped-lossless-3x60.mp4")
+cropLink=runtime/"actor-cropped.mp4"
+if cropSource.is_file():
+ if cropLink.exists():assert cropLink.resolve()==cropSource.resolve()
+ else:cropLink.symlink_to(cropSource)
+
+highSource=source.with_name("actor-cropped-high-crf14-3x60.mp4")
+highLink=runtime/"actor-cropped-high.mp4"
+if highSource.is_file():
+ if highLink.exists():assert highLink.resolve()==highSource.resolve()
+ else:highLink.symlink_to(highSource)
+
+graySource=here/"gray-alpha/actor-rgb-rear-front-high14.mp4"
+grayLink=runtime/"actor-gray.mp4"
+if graySource.is_file():
+ if grayLink.exists():assert grayLink.resolve()==graySource.resolve()
+ else:grayLink.symlink_to(graySource)

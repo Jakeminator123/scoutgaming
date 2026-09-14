@@ -1,3 +1,11 @@
+## Grayscale alpha browser review — 2026-09-14
+
+Box1 job9dc93653-625a-4074-ad0b-f1e8a8fed51e is now COMPLETED. Source download/visual inspection is underway in box1-trial-spec; do not poll or resubmit this terminaljob. Result URL is https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_093110_9dc93653-625a-4074-ad0b-f1e8a8fed51e.mp4 .
+
+Opt-in isolated ?crop=gray uses cropped originalRGB and precomputed rear/front grayscale tiles. It avoids RG chroma mixing and division after decoding. Against originalPNG masks, combinedalpha meanabs error .000386 versus .002368 for the earlier lossyRG control; worsterror remains .2667, so no visualapproval. Sourcepipeline differs too, preventing attributing all improvement solely to tilelayout. Browser108 repeats reported6/7/12 drops and one authoritative4-diamonds landing each. Screenshot retains actor/card alignment; grip/shoulder artifacts remain. Evidence: single-seat/crop-gray-repeat-browser-review.json. No default/public promotion.
+
+Required pre-commit suites,28 scoped checks and dealer-sync probe passed. Codec experiments now pause pending actualgame integration review; a neutral-background harness is not fullgameplay acceptance. Allseven physical placements and speech/idle/dealing continuity remain unfinished.
+
 ## Box1 native motion trial and codec controls — 2026-09-14
 
 Submitted ONE Seedance2.0 std1080p4s silent high-bitrate box1 trial, job9dc93653-625a-4074-ad0b-f1e8a8fed51e. Start43039066 and new confirmed endpoint0dc1ddf8 preserve original actor/shoe/room; endpoint is original native0 plus one7-hearts at the actual second-seat CSS quad. Root inspected it. Exact request/result saved seven-targets/box1-trial-spec/submission.json; latest jobs_wait says waiting, not failed. Poll the samejob, do not restart. Four-second output must still demonstrate brisk pickup, supported placement, release and empty return; generation is not acceptance.
