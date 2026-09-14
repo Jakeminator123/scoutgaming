@@ -1,0 +1,259 @@
+{
+  "uniformRightToContact": [
+    [
+      1.0029568951529009,
+      0.0006839577122965377,
+      -2.0720607957031816
+    ],
+    [
+      -0.0006839577122965377,
+      1.0029568951529009,
+      -11.12555622605711
+    ]
+  ],
+  "rois": {
+    "face": [
+      850,
+      60,
+      1075,
+      280
+    ],
+    "hands": [
+      810,
+      420,
+      1130,
+      560
+    ],
+    "body": [
+      760,
+      280,
+      1170,
+      565
+    ]
+  },
+  "bestAndCurrent": [
+    {
+      "rightNative": 96,
+      "centreNative": 0,
+      "score": 60.36245257635883,
+      "metrics": {
+        "face": {
+          "rgbMAE": 25.073501683501682,
+          "tracked": 43,
+          "medianDelta": [
+            -14.717544555664062,
+            -4.020904541015625
+          ],
+          "medianDistance": 15.462964057922363,
+          "p90Distance": 19.17219352722168
+        },
+        "hands": {
+          "rgbMAE": 35.288950892857144,
+          "tracked": 6,
+          "medianDelta": [
+            49.25636291503906,
+            3.6819305419921875
+          ],
+          "medianDistance": 50.28099822998047,
+          "p90Distance": 76.3909912109375
+        },
+        "body": {
+          "rgbMAE": 26.692172300670375,
+          "tracked": 12,
+          "medianDelta": [
+            -11.498794555664062,
+            0.1417999267578125
+          ],
+          "medianDistance": 11.60407829284668,
+          "p90Distance": 22.866043090820312
+        }
+      }
+    },
+    {
+      "rightNative": 84,
+      "centreNative": 18,
+      "score": 46.673628051346796,
+      "metrics": {
+        "face": {
+          "rgbMAE": 17.3553468013468,
+          "tracked": 44,
+          "medianDelta": [
+            -4.375999450683594,
+            -0.3999977111816406
+          ],
+          "medianDistance": 5.921063423156738,
+          "p90Distance": 10.703784942626953
+        },
+        "hands": {
+          "rgbMAE": 29.31828125,
+          "tracked": 15,
+          "medianDelta": [
+            -0.4608306884765625,
+            -7.63214111328125
+          ],
+          "medianDistance": 19.528770446777344,
+          "p90Distance": 25.36701202392578
+        },
+        "body": {
+          "rgbMAE": 21.606940522036798,
+          "tracked": 13,
+          "medianDelta": [
+            -11.656158447265625,
+            0.33368682861328125
+          ],
+          "medianDistance": 11.922187805175781,
+          "p90Distance": 17.320964813232422
+        }
+      }
+    },
+    {
+      "rightNative": 84,
+      "centreNative": 19,
+      "score": 46.674814724627225,
+      "metrics": {
+        "face": {
+          "rgbMAE": 17.35453198653199,
+          "tracked": 44,
+          "medianDelta": [
+            -4.388359069824219,
+            -0.3665313720703125
+          ],
+          "medianDistance": 5.8094482421875,
+          "p90Distance": 10.766693115234375
+        },
+        "hands": {
+          "rgbMAE": 29.320282738095237,
+          "tracked": 15,
+          "medianDelta": [
+            -0.6298294067382812,
+            -7.7047271728515625
+          ],
+          "medianDistance": 19.37946128845215,
+          "p90Distance": 25.05402374267578
+        },
+        "body": {
+          "rgbMAE": 21.63219512195122,
+          "tracked": 13,
+          "medianDelta": [
+            -11.654388427734375,
+            0.3377685546875
+          ],
+          "medianDistance": 11.924912452697754,
+          "p90Distance": 17.397985458374023
+        }
+      }
+    },
+    {
+      "rightNative": 84,
+      "centreNative": 22,
+      "score": 46.69572013287638,
+      "metrics": {
+        "face": {
+          "rgbMAE": 17.40611447811448,
+          "tracked": 44,
+          "medianDelta": [
+            -4.4758453369140625,
+            -0.31098175048828125
+          ],
+          "medianDistance": 6.082942008972168,
+          "p90Distance": 10.765032768249512
+        },
+        "hands": {
+          "rgbMAE": 29.289605654761903,
+          "tracked": 15,
+          "medianDelta": [
+            0.0390777587890625,
+            -7.636711120605469
+          ],
+          "medianDistance": 18.864290237426758,
+          "p90Distance": 25.530961990356445
+        },
+        "body": {
+          "rgbMAE": 21.677786335758093,
+          "tracked": 13,
+          "medianDelta": [
+            -11.80303955078125,
+            0.36203765869140625
+          ],
+          "medianDistance": 11.8219575881958,
+          "p90Distance": 17.565641403198242
+        }
+      }
+    },
+    {
+      "rightNative": 84,
+      "centreNative": 23,
+      "score": 46.696893713924965,
+      "metrics": {
+        "face": {
+          "rgbMAE": 17.392020202020202,
+          "tracked": 44,
+          "medianDelta": [
+            -4.4918975830078125,
+            -0.3037567138671875
+          ],
+          "medianDistance": 6.119563102722168,
+          "p90Distance": 10.757925033569336
+        },
+        "hands": {
+          "rgbMAE": 29.304873511904763,
+          "tracked": 15,
+          "medianDelta": [
+            0.28804779052734375,
+            -7.6501922607421875
+          ],
+          "medianDistance": 18.285486221313477,
+          "p90Distance": 25.53069496154785
+        },
+        "body": {
+          "rgbMAE": 21.697421195264585,
+          "tracked": 13,
+          "medianDelta": [
+            -11.802032470703125,
+            0.36173248291015625
+          ],
+          "medianDistance": 11.827620506286621,
+          "p90Distance": 17.554779052734375
+        }
+      }
+    },
+    {
+      "rightNative": 84,
+      "centreNative": 20,
+      "score": 46.707888813732566,
+      "metrics": {
+        "face": {
+          "rgbMAE": 17.414875420875422,
+          "tracked": 44,
+          "medianDelta": [
+            -4.3549652099609375,
+            -0.349456787109375
+          ],
+          "medianDistance": 5.826252460479736,
+          "p90Distance": 10.781477928161621
+        },
+        "hands": {
+          "rgbMAE": 29.293013392857144,
+          "tracked": 15,
+          "medianDelta": [
+            -5.724784851074219,
+            -7.7520904541015625
+          ],
+          "medianDistance": 18.785114288330078,
+          "p90Distance": 24.822450637817383
+        },
+        "body": {
+          "rgbMAE": 21.64376836399943,
+          "tracked": 13,
+          "medianDelta": [
+            -11.65924072265625,
+            0.35840606689453125
+          ],
+          "medianDistance": 11.907004356384277,
+          "p90Distance": 17.43292236328125
+        }
+      }
+    }
+  ],
+  "uncertainty": "Sparse appearance flow not anatomical tracking; approx3px withinmatchedpose, largechangesrequirevisualcheck"
+}

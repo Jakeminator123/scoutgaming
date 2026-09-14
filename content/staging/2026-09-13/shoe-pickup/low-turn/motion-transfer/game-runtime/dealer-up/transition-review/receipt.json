@@ -1,0 +1,12 @@
+{
+  "sourcePath": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-09/cac-side-delivery/right/source.mp4",
+  "sourceSHA256": "4e0d75e55c35c5b42a1a81ae0067145f29ec1b2083b6598147469455c79b2dc3",
+  "mediaReceiptSHA256": "ebd4b7f244d9af47b480a5ddf9b694c8cfe55d7a88f3db1e9476e810d270d7ff",
+  "pacePlanSHA256": "f77ab1f78a74812bc13c386de5d1b4281b4b4daed1b5ca226f3e0aa8466fcb5d",
+  "proofHashes": {
+    "return-entry-comparison.jpg": "5effbe5a2b896469aed42ce80807045e124905c5dc384e27bf1c52d8879d88ec",
+    "earlier-return-paths.jpg": "19c375cee93f05ec8060ac20c768c7b8f31f4180085c1b0933da22623f364b3d",
+    "best-earlier-bridge.jpg": "cb7084cbffc8791e20ad8289fe51d61e8444aecc17b322f73e19988db9d286df",
+    "existing-return-candidates.jpg": "a86ee599d816bb536e0a16228bc08f869df4642ad5f876b7b610509cbf33be4a"
+  }
+}
