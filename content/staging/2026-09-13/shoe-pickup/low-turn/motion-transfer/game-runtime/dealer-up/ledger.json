@@ -3,7 +3,7 @@
   "dealer": "astrid",
   "fps": 60,
   "nativeFps": 24,
-  "sourceSha256": "2941792117a0bd6caad94efd189f1dc5ed7b7c03598c7c746fbd29f9d16674f3",
+  "sourceSha256": "c1afe678732a269e90609d699aff87606000a66d73b994c2cd5f9b8db29c5b97",
   "sourceBundleSHA256": "ca410041b66bad9aaba2276c2477d172b370c75788c56f939884df3e8733c669",
   "sourceRegistrations": {
     "centreEntry": {
@@ -1744,6 +1744,6 @@
   "review": {
     "status": "staged-reviewed",
     "evidence": "/astrid-dealer-up/REVIEW.md",
-    "payloadSha256": "e974392614830ce16d1275f4266cccd38eabc7be8be556014a92043d64d2c40c"
+    "payloadSha256": "d715155bb6764a56f325346112602fbb21f524457792d7ffbeb65788610087d3"
   }
 }
