@@ -1,0 +1,356 @@
+{
+  "playback": {
+    "faceDown": false,
+    "issuedCardId": "tableVersion:1:shoeDraw:2",
+    "landings": 1,
+    "observations": [
+      {
+        "frame": 0,
+        "mediaTime": 0
+      },
+      {
+        "frame": 3,
+        "mediaTime": 0.05
+      },
+      {
+        "frame": 4,
+        "mediaTime": 0.066667
+      },
+      {
+        "frame": 6,
+        "mediaTime": 0.1
+      },
+      {
+        "frame": 7,
+        "mediaTime": 0.116667
+      },
+      {
+        "frame": 8,
+        "mediaTime": 0.133333
+      },
+      {
+        "frame": 9,
+        "mediaTime": 0.15
+      },
+      {
+        "frame": 11,
+        "mediaTime": 0.183333
+      },
+      {
+        "frame": 12,
+        "mediaTime": 0.2
+      },
+      {
+        "frame": 13,
+        "mediaTime": 0.216667
+      },
+      {
+        "frame": 14,
+        "mediaTime": 0.233333
+      },
+      {
+        "frame": 15,
+        "mediaTime": 0.25
+      },
+      {
+        "frame": 16,
+        "mediaTime": 0.266667
+      },
+      {
+        "frame": 17,
+        "mediaTime": 0.283333
+      },
+      {
+        "frame": 18,
+        "mediaTime": 0.3
+      },
+      {
+        "frame": 19,
+        "mediaTime": 0.316667
+      },
+      {
+        "frame": 20,
+        "mediaTime": 0.333333
+      },
+      {
+        "frame": 22,
+        "mediaTime": 0.366667
+      },
+      {
+        "frame": 23,
+        "mediaTime": 0.383333
+      },
+      {
+        "frame": 24,
+        "mediaTime": 0.4
+      },
+      {
+        "frame": 25,
+        "mediaTime": 0.416667
+      },
+      {
+        "frame": 26,
+        "mediaTime": 0.433333
+      },
+      {
+        "frame": 27,
+        "mediaTime": 0.45
+      },
+      {
+        "frame": 28,
+        "mediaTime": 0.466667
+      },
+      {
+        "frame": 29,
+        "mediaTime": 0.483333
+      },
+      {
+        "frame": 30,
+        "mediaTime": 0.5
+      },
+      {
+        "frame": 32,
+        "mediaTime": 0.533333
+      },
+      {
+        "frame": 34,
+        "mediaTime": 0.566667
+      },
+      {
+        "frame": 35,
+        "mediaTime": 0.583333
+      },
+      {
+        "frame": 36,
+        "mediaTime": 0.6
+      },
+      {
+        "frame": 37,
+        "mediaTime": 0.616667
+      },
+      {
+        "frame": 38,
+        "mediaTime": 0.633333
+      },
+      {
+        "frame": 39,
+        "mediaTime": 0.65
+      },
+      {
+        "frame": 40,
+        "mediaTime": 0.666667
+      },
+      {
+        "frame": 41,
+        "mediaTime": 0.683333
+      },
+      {
+        "frame": 42,
+        "mediaTime": 0.7
+      },
+      {
+        "frame": 43,
+        "mediaTime": 0.716667
+      },
+      {
+        "frame": 44,
+        "mediaTime": 0.733333
+      },
+      {
+        "frame": 45,
+        "mediaTime": 0.75
+      },
+      {
+        "frame": 46,
+        "mediaTime": 0.766667
+      },
+      {
+        "frame": 47,
+        "mediaTime": 0.783333
+      },
+      {
+        "frame": 48,
+        "mediaTime": 0.8
+      },
+      {
+        "frame": 49,
+        "mediaTime": 0.816667
+      },
+      {
+        "frame": 50,
+        "mediaTime": 0.833333
+      },
+      {
+        "frame": 51,
+        "mediaTime": 0.85
+      },
+      {
+        "frame": 52,
+        "mediaTime": 0.866667
+      },
+      {
+        "frame": 53,
+        "mediaTime": 0.883333
+      },
+      {
+        "frame": 54,
+        "mediaTime": 0.9
+      },
+      {
+        "frame": 55,
+        "mediaTime": 0.916667
+      },
+      {
+        "frame": 56,
+        "mediaTime": 0.933333
+      },
+      {
+        "frame": 57,
+        "mediaTime": 0.95
+      },
+      {
+        "frame": 58,
+        "mediaTime": 0.966667
+      },
+      {
+        "frame": 59,
+        "mediaTime": 0.983333
+      },
+      {
+        "frame": 60,
+        "mediaTime": 1
+      },
+      {
+        "frame": 61,
+        "mediaTime": 1.016667
+      },
+      {
+        "frame": 62,
+        "mediaTime": 1.033333
+      },
+      {
+        "frame": 63,
+        "mediaTime": 1.05
+      },
+      {
+        "frame": 64,
+        "mediaTime": 1.066667
+      },
+      {
+        "frame": 65,
+        "mediaTime": 1.083333
+      },
+      {
+        "frame": 66,
+        "mediaTime": 1.1
+      },
+      {
+        "frame": 67,
+        "mediaTime": 1.116667
+      },
+      {
+        "frame": 68,
+        "mediaTime": 1.133333
+      },
+      {
+        "frame": 69,
+        "mediaTime": 1.15
+      },
+      {
+        "frame": 70,
+        "mediaTime": 1.166667
+      },
+      {
+        "frame": 71,
+        "mediaTime": 1.183333
+      },
+      {
+        "frame": 73,
+        "mediaTime": 1.216667
+      },
+      {
+        "frame": 74,
+        "mediaTime": 1.233333
+      },
+      {
+        "frame": 75,
+        "mediaTime": 1.25
+      },
+      {
+        "frame": 76,
+        "mediaTime": 1.266667
+      },
+      {
+        "frame": 77,
+        "mediaTime": 1.283333
+      },
+      {
+        "frame": 78,
+        "mediaTime": 1.3
+      },
+      {
+        "frame": 79,
+        "mediaTime": 1.316667
+      },
+      {
+        "frame": 80,
+        "mediaTime": 1.333333
+      },
+      {
+        "frame": 81,
+        "mediaTime": 1.35
+      },
+      {
+        "frame": 83,
+        "mediaTime": 1.383333
+      },
+      {
+        "frame": 84,
+        "mediaTime": 1.4
+      },
+      {
+        "frame": 85,
+        "mediaTime": 1.416667
+      },
+      {
+        "frame": 86,
+        "mediaTime": 1.433333
+      },
+      {
+        "frame": 88,
+        "mediaTime": 1.466667
+      }
+    ],
+    "outcome": {
+      "landed": true,
+      "state": "complete"
+    },
+    "visualAcceptance": "FAILED; isolated server-card rendering only"
+  },
+  "server": {
+    "bindingPolicy": "Optional slotBindings attaches an issued identity to the immutable reviewed slot; never rewrite its reviewed digest.",
+    "candidate": {
+      "available": true,
+      "review": "Independent packed actor; known finger holes/edge/shoe debris. Isolated rough review only.",
+      "visualAcceptance": "FAILED"
+    },
+    "delivery": {
+      "card": {
+        "r": "4",
+        "s": "♦"
+      },
+      "cardId": "tableVersion:1:shoeDraw:2",
+      "faceDown": false,
+      "provenance": {
+        "shoeDraw": 2,
+        "source": "same-origin /api/table visible round.hands[box0].cards[0]",
+        "tableVersion": 1
+      },
+      "seatId": "seat0",
+      "targetId": "box0"
+    },
+    "origin": "http://astridsingleseat.localhost:4190",
+    "serverPhase": "decisions",
+    "tableVersion": 1
+  }
+}

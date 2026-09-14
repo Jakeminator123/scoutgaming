@@ -79,3 +79,19 @@ test('invented large allowance and calibration for wrong source frame reject',as
  const f=await fixture();const c={cardId:'fourth',units:'canonical-pixels',sourceSha256:f.ledger.sourceSha256,frame:110,sourceCorners:corners,maxCornerErrorPixels:1,evidence:'synthetic wrong-frame evidence'};c.sha256=await ledgerDigest(c);f.landingCalibrations=[c];f.ledger.deliveries[0].landingCalibrationSha256=c.sha256;await resign(f);await assert.rejects(bindAstridSequence(f),/actual endpoint/);
  c.frame=111;c.maxCornerErrorPixels=700;delete c.sha256;c.sha256=await ledgerDigest(c);f.ledger.deliveries[0].landingCalibrationSha256=c.sha256;await resign(f);await assert.rejects(bindAstridSequence(f),/bounded landing/);
 });
+test('one immutable reviewed slot digest reuses distinct issued identities',async()=>{
+ const f=await fixture(),digest=f.ledger.review.payloadSha256;
+ for(const draw of ['shoeA:17','shoeB:93']){const b=await bindAstridSequence({...f,deliveries:[{...f.deliveries[0],cardId:draw,faceDown:true}],slotBindings:[{slotId:'fourth',cardId:draw}]});assert.equal(b.ledgerSha256,digest);assert.equal(b.present(109).moving[0].cardId,draw);assert.equal(b.present(112).newLandings[0].cardId,draw);assert.equal(b.present(114).landed[0].cardId,draw);}
+ assert.equal(await ledgerDigest(f.ledger),digest);
+});
+test('slot mapping rejects unknown slot/issued ID and mismatched target',async()=>{
+ const f=await fixture();await assert.rejects(bindAstridSequence({...f,slotBindings:[{slotId:'unknown',cardId:'fourth'}]}),/Unknown slot/);await assert.rejects(bindAstridSequence({...f,slotBindings:[{slotId:'fourth',cardId:'unknown'}]}),/Unknown slot/);
+ await assert.rejects(bindAstridSequence({...f,deliveries:[{...f.deliveries[0],targetId:'different'}],slotBindings:[{slotId:'fourth',cardId:'fourth'}]}),/exact seat/);
+});
+test('slot mapping cannot alias two slots or two issued cards',async()=>{
+ const f=await fixture();f.deliveries.push({...f.deliveries[0],cardId:'other'});f.ledger.deliveries.push({...f.ledger.deliveries[0],cardId:'other'});for(const row of f.ledger.frames)if(row.cards.length)row.cards.push({...row.cards[0],cardId:'other'});await resign(f);
+ for(const slotBindings of [[{slotId:'fourth',cardId:'fourth'},{slotId:'fourth',cardId:'other'}],[{slotId:'fourth',cardId:'fourth'},{slotId:'other',cardId:'fourth'}]])await assert.rejects(bindAstridSequence({...f,slotBindings}),/Duplicate slot or issued/);
+});
+test('slot snapshot is immutable during asynchronous digest validation',async()=>{
+ const f=await fixture();f.deliveries[0].cardId='shoe:1';f.deliveries[0].faceDown=true;const slotBindings=[{slotId:'fourth',cardId:'shoe:1'}];const pending=bindAstridSequence({...f,slotBindings});slotBindings[0].cardId='attacker';f.deliveries[0].faceDown=false;const b=await pending;assert.equal(b.present(109).moving[0].cardId,'shoe:1');assert.equal(b.present(110).moving[0].card,undefined);
+});

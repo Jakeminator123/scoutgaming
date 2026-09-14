@@ -6,6 +6,12 @@ import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
+  '/full-cycle-v4-packed.mp4':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/release-continuation/motion-registration/full-cycle-candidate-v4/web-surface/actor-packed-3x60.mp4'),
+  '/full-cycle-v4-ledger.json':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/release-continuation/motion-registration/full-cycle-candidate-v4/web-surface/receipt.json'),
+  '/full-cycle':path.join(here,'full-cycle.html'),
+  '/full-cycle.mjs':path.join(here,'full-cycle.mjs'),
+  '/full-cycle-packed.mp4':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/release-continuation/motion-registration/full-cycle-candidate-v2/web-surface/actor-packed-3x60.mp4'),
+  '/full-cycle-ledger.json':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/release-continuation/motion-registration/full-cycle-candidate-v2/web-surface/receipt.json'),
   '/far-left-pace3.mp4':path.resolve(here,'../cadence-comparison/far-left-timing/cut66-source-pace-3x.mp4'),
   '/far-left-pace25.mp4':path.resolve(here,'../cadence-comparison/far-left-timing/cut66-source-pace-2.5x.mp4'),
   '/real-dealer-cadence.mp4':path.resolve(here,'../cadence-comparison/consecutive-deals-native60.mp4'),

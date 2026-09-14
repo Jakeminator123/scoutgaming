@@ -17,3 +17,13 @@ Motion reviewer confirms continuation native0 is already felt-contact, clear rel
 ## Public PerformancePlayer compatibility
 
 Current public PerformancePlayer.play accepts card,faceDown,target,corners,onCue,onLand, aborts on resize/hidden and preserves a held ready layer on successful completion. It also has its own sample/release interpolation and callback landing behavior. Do not wrap both onLand paths together: the future adapter must own exactly one handoff emitter. Do not feed this ledger into the old player's release interpolation or generic source fallback, which would change its rigid quads/timing. This prototype disposes its own surface at complete; production needs an explicitly reviewed idle/ready ownership handoff rather than silently using an old idle splice.
+
+## Reusable reviewed slots (implemented)
+
+Optional `slotBindings:[{slotId,cardId}]` maps every immutable reviewed ledger slot exactly once to every already-issued delivery ID exactly once. Legacy absence preserves ID equality. The reviewed payload/digest is unchanged. Unknown/duplicate slots or issued IDs fail; exact seat/target and hidden-data allowlist remain enforced. Inputs are snapshotted before asynchronous digest. All rendered/landing/landed output IDs are issued IDs; calibration records still refer to reviewed slots.17 binder plus6 lifecycle tests pass.
+
+## Live isolated feed scaffold
+
+Open `http://astridsingleseat.localhost:4190/astrid-single-seat/index.html`. Copied files exist only in isolated runtime/public/astrid-single-seat. The hostname/port guard prevents use against4173. UI loads same-origin authenticated preview state and can start one $5 box0-only DEMO round, retaining all server rules and refusing replacement of an active round. Playback stays visibly disabled until the independent reviewed candidate is supplied. Do not promote the baked7hearts diagnostic to arbitrary real issued card playback.
+
+Verified actual livePID654 opens only this runtime/data/croupier.db and craig.db. Separate ephemeral HTTP preview session exercised state→start on4190 and received server2♠, shoeDraw2, version1. Receipt server-feed-receipt.json omits cookies/session secrets. This proves server feed plumbing, not visual integration. The UI's future slot binding must preserve a session/table-specific identity context; shoeDraw alone is only unique within its source shoe.
