@@ -1,0 +1,164 @@
+{
+  "endFrame": 39,
+  "registered": true,
+  "cameraMatrix": [
+    [
+      1.0009524055078547,
+      0.00037888419502186266,
+      -0.4739042201047578
+    ],
+    [
+      -0.00037888419502186266,
+      1.0009524055078547,
+      -6.02957533723412
+    ]
+  ],
+  "crop": [
+    640,
+    55,
+    960,
+    620
+  ],
+  "handoff": 6794,
+  "evidence": [
+    {
+      "take": "return",
+      "frame": 25,
+      "callbackTime": 6152.13,
+      "expectedDisplayTime": 6167.9
+    },
+    {
+      "take": "return",
+      "frame": 26,
+      "callbackTime": 6168.8,
+      "expectedDisplayTime": 6201.2
+    },
+    {
+      "take": "return",
+      "frame": 27,
+      "callbackTime": 6234.6,
+      "expectedDisplayTime": 6251.3
+    },
+    {
+      "take": "return",
+      "frame": 28,
+      "callbackTime": 6284.598,
+      "expectedDisplayTime": 6285.5
+    },
+    {
+      "take": "return",
+      "frame": 29,
+      "callbackTime": 6334.596,
+      "expectedDisplayTime": 6334.6
+    },
+    {
+      "take": "return",
+      "frame": 30,
+      "callbackTime": 6352.1,
+      "expectedDisplayTime": 6368.7
+    },
+    {
+      "take": "return",
+      "frame": 31,
+      "callbackTime": 6418.8,
+      "expectedDisplayTime": 6418.4
+    },
+    {
+      "take": "return",
+      "frame": 32,
+      "callbackTime": 6435.466,
+      "expectedDisplayTime": 6452.1
+    },
+    {
+      "take": "return",
+      "frame": 33,
+      "callbackTime": 6484.5,
+      "expectedDisplayTime": 6501.2
+    },
+    {
+      "take": "return",
+      "frame": 34,
+      "callbackTime": 6534.5,
+      "expectedDisplayTime": 6535.5
+    },
+    {
+      "take": "return",
+      "frame": 35,
+      "callbackTime": 6568.6,
+      "expectedDisplayTime": 6585.2
+    },
+    {
+      "take": "return",
+      "frame": 36,
+      "callbackTime": 6617.8,
+      "expectedDisplayTime": 6617.9
+    },
+    {
+      "take": "return",
+      "frame": 37,
+      "callbackTime": 6667.8,
+      "expectedDisplayTime": 6667.8
+    },
+    {
+      "take": "return",
+      "frame": 38,
+      "callbackTime": 6684.6,
+      "expectedDisplayTime": 6701.3
+    },
+    {
+      "take": "return",
+      "frame": 39,
+      "callbackTime": 6734.6,
+      "expectedDisplayTime": 6751.2
+    },
+    {
+      "take": "original",
+      "frame": 1,
+      "callbackTime": 6818.8,
+      "expectedDisplayTime": 6818.7
+    },
+    {
+      "take": "original",
+      "frame": 2,
+      "callbackTime": 6834.7,
+      "expectedDisplayTime": 6851.3
+    },
+    {
+      "take": "original",
+      "frame": 3,
+      "callbackTime": 6884.5,
+      "expectedDisplayTime": 6901.2
+    },
+    {
+      "take": "original",
+      "frame": 4,
+      "callbackTime": 6917.832,
+      "expectedDisplayTime": 6934.7
+    },
+    {
+      "take": "original",
+      "frame": 5,
+      "callbackTime": 6968,
+      "expectedDisplayTime": 6984.7
+    },
+    {
+      "take": "original",
+      "frame": 6,
+      "callbackTime": 7018.8,
+      "expectedDisplayTime": 7018.7
+    },
+    {
+      "take": "original",
+      "frame": 7,
+      "callbackTime": 7068.8,
+      "expectedDisplayTime": 7067.9
+    },
+    {
+      "take": "original",
+      "frame": 8,
+      "callbackTime": 7085.466,
+      "expectedDisplayTime": 7102
+    }
+  ],
+  "policy": "Hard cut. No colour adjustment, blend, or pose warp. Boundary frame held through its expected native duration; callback omissions remain in evidence. Actor crop excludes the far-left dealt card; not gameplay approval."
+}
