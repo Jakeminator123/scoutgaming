@@ -1,3 +1,13 @@
+## Actual viewport left-seat integration — 2026-09-14
+
+The user's actual Astrid tab111 at1091x837 rejected the new clip because fixed CSS card-hand dimensions did not follow the uniformly scaled table/film. Tests made in a newly created1280x720 tab had missed this. The isolated4190 installer now scales the local card hand about the unchanged seat anchor, leaving actor and shoe registration unchanged. Corner errors fell from3.5–7.2 native pixels to0.0035; a documented0.02-native-pixel rounding allowance replaces the impractical0.001 guard. Larger target mismatch still fails.
+
+Two actual1091x837 gameplay rounds now completed the candidate with exactly one authoritative DOM handoff at frame67. Ownership telemetry confirms the new actor canvas visible and legacy actor hidden during that clip. Evidence: single-seat/responsive-game-browser-review.json and actual-viewport-captures/receipt.json. The second run captured actor/card canvases0/16/40/67/88 directly after GPU paint; these exclude the room/table/landed DOM card and are not full-scene motion acceptance. Root inspected them and found shoulder background strips, shoe debris and remaining contact artifacts. First run dropped19 frames; diagnostic capture run dropped31, so smoothness is not accepted.
+
+Scope remains opt-in Astrid box0 FIRST card, using the existing v2 derivative. Subsequent deliveries still use legacy motion; the second fan card differs by up to66 native pixels at its corners, so reusing the same contact pose would detach the hand. Newer v5 masks and the newly generated box1 source are not yet wired into this gameplay route. The user complaint is only partially repaired; no full delivery or all-seat acceptance. Public4173, real database and other dealers were not changed. Compact Swedish test text replaces raw engineering errors; detailed data remains in receipts.
+
+Required pre-commit suites and four-dealer asset probe pass. Responsive geometry tests cover measured rounding and reject displacement above the bound. Persisted source/install script, not ignored runtime copies, owns this isolated integration.
+
 ## Grayscale alpha browser review — 2026-09-14
 
 Box1 job9dc93653-625a-4074-ad0b-f1e8a8fed51e is now COMPLETED. Source download/visual inspection is underway in box1-trial-spec; do not poll or resubmit this terminaljob. Result URL is https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_093110_9dc93653-625a-4074-ad0b-f1e8a8fed51e.mp4 .

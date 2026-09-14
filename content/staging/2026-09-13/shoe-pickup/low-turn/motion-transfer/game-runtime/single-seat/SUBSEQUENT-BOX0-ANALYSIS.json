@@ -1,0 +1,45 @@
+{
+  "basis": "Existing calibrated CSS, first --ci0 vs second --ci1, fan1. Matrix rounded computed style; analytical diagnostic not live measurement.",
+  "screenCornerDeltas": [
+    [
+      34.22748181291933,
+      10.58743875373846
+    ],
+    [
+      31.816670058107384,
+      13.03251598063747
+    ],
+    [
+      25.38672618708067,
+      9.514707246261544
+    ],
+    [
+      27.797537941892614,
+      7.069630019362531
+    ]
+  ],
+  "nativeCornerDeltas": [
+    [
+      63.13066544840149,
+      19.527935404976702
+    ],
+    [
+      58.68405873675437,
+      24.037742852996523
+    ],
+    [
+      46.824388849483604,
+      17.54934246364841
+    ],
+    [
+      51.27099556113072,
+      13.039535015628582
+    ]
+  ],
+  "maxNativeCornerDisplacement": 66.08192779526742,
+  "centroidScreenDelta": [
+    29.807104,
+    10.051073000000002
+  ],
+  "secondCardExtraRotationDegrees": 6.5
+}
