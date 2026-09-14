@@ -1,0 +1,115 @@
+{
+  "params": {
+    "model": "seedance_2_5",
+    "mode": "video_edit",
+    "count": 1,
+    "resolution": "1080p",
+    "bitrate_mode": "high",
+    "generate_audio": false,
+    "medias": [
+      {
+        "role": "video",
+        "value": "5ed4d179-a17c-46dd-a21a-0d5716877e91"
+      },
+      {
+        "role": "image",
+        "value": "149cbd41-1c1f-4fda-852a-e7162dac6266"
+      },
+      {
+        "role": "image",
+        "value": "ffe1b13a-ff74-400d-b978-3ea2651383df"
+      }
+    ],
+    "prompt": "Edit the supplied Astrid VIDEO's first card pickup only, preserving its exact identity, camera, lighting, body proportions, table, original shoe, later destination, release and empty return. The FIRST IMAGE is a specific LOW HAND/CARD CONTACT POSE reference: her drawing fingertips press one RED-BACK-UP face-down card low at the existing front mouth, sliding DOWN and OUT over the lip. Incorporate this low contact pose in the opening extraction instead of the video's upward lift off the inclined white stack. The SECOND IMAGE shows the exact original unobscured shoe: preserve that construction and location from the VIDEO, uninterrupted white stack ending above large black mouth with original thin sidewalls and bottom tray. Ignore the invented gray horizontal fascia in the FIRST IMAGE: it is not a shoe design reference. Start from the video's own ready pose, lower the drawing fingers along the front of the fixed stack, press the exposed card leading edge and slide exactly one card out through the low black mouth near felt level. Show continuous fingertip attachment and the card rear naturally occluded inside the mouth while extracting; the stack remains fixed. Reach the first image's low contact around0.45s, clear the shoe by0.65s, then a small low wrist turnover and two-hand transfer reconnects naturally with the existing reach by about1.1s. Allow the original early upright presentation to be replaced by this low turnover; do not rush or teleport to the old raised pose. Preserve remaining delivery to the same left-side destination, supported slide, release and empty return, with normal sleeve lengths and hand anatomy. No second card, card spawning above stack, vertical card lift, extra shoe, camera change, cut, dissolve or body stretch. The hand pose image is local motion guidance only; keep video framing, actor and shoe throughout."
+  },
+  "preflight": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Cost preflight for seedance_2_5: 36.37 credits (36.37 exact). No job submitted."
+      }
+    ],
+    "structuredContent": {
+      "cost": {
+        "credits": 36.37,
+        "credits_exact": 36.37
+      },
+      "adjustments": {
+        "medias[0].role": {
+          "requested": "video",
+          "used": "video_references",
+          "reason": "Seedance 2.5 backend expects schema-key media roles"
+        },
+        "medias[1].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Seedance 2.5 backend expects schema-key media roles"
+        },
+        "medias[2].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Seedance 2.5 backend expects schema-key media roles"
+        }
+      }
+    },
+    "isError": false
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "This tool provides an auto-updating generation widget for these jobs. Do not call job_display, show_generations, or show_generation_by_ids to display these jobs again, either before or after completion, unless the user explicitly requests a separate display. If you need to await completion, use jobs_wait with timeout_seconds <= 15. Use job_display only if the user explicitly requests a separate re-display of one specific job."
+      },
+      {
+        "type": "text",
+        "text": "Note: adjustments applied — medias[0].role: \"video\" → \"video_references\" (Seedance 2.5 backend expects schema-key media roles); medias[1].role: \"image\" → \"image_references\" (Seedance 2.5 backend expects schema-key media roles); medias[2].role: \"image\" → \"image_references\" (Seedance 2.5 backend expects schema-key media roles).\n\nSubmitted 1 job. If a widget is visible, it polls automatically — do not call job_status or show_generations as a follow-up poll. In text-only clients, use job_status with sync:true to poll for completion.\n- 3dd450da-2ca2-44c4-a2bb-4327c0f1cbb6  \"Edit the supplied Astrid VIDEO's first card pickup only, preserving its exact identity, camera, lighting, body proportions, table, original shoe, later destination, release and empty return. The FIRST IMAGE is a specific LOW HAND/CARD CONTACT POSE reference: her drawing fingertips press one RED-BACK-UP face-down card low at the existing front mouth, sliding DOWN and OUT over the lip. Incorporate this low contact pose in the opening extraction instead of the video's upward lift off the inclined white stack. The SECOND IMAGE shows the exact original unobscured shoe: preserve that construction and location from the VIDEO, uninterrupted white stack ending above large black mouth with original thin sidewalls and bottom tray. Ignore the invented gray horizontal fascia in the FIRST IMAGE: it is not a shoe design reference. Start from the video's own ready pose, lower the drawing fingers along the front of the fixed stack, press the exposed card leading edge and slide exactly one card out through the low black mouth near felt level. Show continuous fingertip attachment and the card rear naturally occluded inside the mouth while extracting; the stack remains fixed. Reach the first image's low contact around0.45s, clear the shoe by0.65s, then a small low wrist turnover and two-hand transfer reconnects naturally with the existing reach by about1.1s. Allow the original early upright presentation to be replaced by this low turnover; do not rush or teleport to the old raised pose. Preserve remaining delivery to the same left-side destination, supported slide, release and empty return, with normal sleeve lengths and hand anatomy. No second card, card spawning above stack, vertical card lift, extra shoe, camera change, cut, dissolve or body stretch. The hand pose image is local motion guidance only; keep video framing, actor and shoe throughout.\""
+      },
+      {
+        "type": "text",
+        "text": "If the user requests a combined display of multiple generations, including jobs submitted through separate generate_* calls, collect all requested job IDs, wait for the complete set with jobs_wait, then call show_generation_by_ids with jobs: [{\"index\":0,\"job_id\":\"<first actual job ID>\"},{\"index\":1,\"job_id\":\"<second actual job ID>\"}, ...]. job_display accepts only one id: never pass ids to it or loop over it to show a group. Do not create an extra display when the existing generation widgets already satisfy the request."
+      }
+    ],
+    "structuredContent": {
+      "results": [
+        {
+          "id": "3dd450da-2ca2-44c4-a2bb-4327c0f1cbb6",
+          "type": "video",
+          "status": "pending",
+          "model": "seedance_2_5",
+          "params": {
+            "prompt": "Edit the supplied Astrid VIDEO's first card pickup only, preserving its exact identity, camera, lighting, body proportions, table, original shoe, later destination, release and empty return. The FIRST IMAGE is a specific LOW HAND/CARD CONTACT POSE reference: her drawing fingertips press one RED-BACK-UP face-down card low at the existing front mouth, sliding DOWN and OUT over the lip. Incorporate this low contact pose in the opening extraction instead of the video's upward lift off the inclined white stack. The SECOND IMAGE shows the exact original unobscured shoe: preserve that construction and location from the VIDEO, uninterrupted white stack ending above large black mouth with original thin sidewalls and bottom tray. Ignore the invented gray horizontal fascia in the FIRST IMAGE: it is not a shoe design reference. Start from the video's own ready pose, lower the drawing fingers along the front of the fixed stack, press the exposed card leading edge and slide exactly one card out through the low black mouth near felt level. Show continuous fingertip attachment and the card rear naturally occluded inside the mouth while extracting; the stack remains fixed. Reach the first image's low contact around0.45s, clear the shoe by0.65s, then a small low wrist turnover and two-hand transfer reconnects naturally with the existing reach by about1.1s. Allow the original early upright presentation to be replaced by this low turnover; do not rush or teleport to the old raised pose. Preserve remaining delivery to the same left-side destination, supported slide, release and empty return, with normal sleeve lengths and hand anatomy. No second card, card spawning above stack, vertical card lift, extra shoe, camera change, cut, dissolve or body stretch. The hand pose image is local motion guidance only; keep video framing, actor and shoe throughout.",
+            "reference_images": [
+              "5ed4d179-a17c-46dd-a21a-0d5716877e91",
+              "149cbd41-1c1f-4fda-852a-e7162dac6266",
+              "ffe1b13a-ff74-400d-b978-3ea2651383df"
+            ],
+            "mode": "video_edit",
+            "resolution": "1080p",
+            "bitrate_mode": "high",
+            "generate_audio": false
+          }
+        }
+      ],
+      "adjustments": {
+        "medias[0].role": {
+          "requested": "video",
+          "used": "video_references",
+          "reason": "Seedance 2.5 backend expects schema-key media roles"
+        },
+        "medias[1].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Seedance 2.5 backend expects schema-key media roles"
+        },
+        "medias[2].role": {
+          "requested": "image",
+          "used": "image_references",
+          "reason": "Seedance 2.5 backend expects schema-key media roles"
+        }
+      }
+    },
+    "isError": false
+  },
+  "novelGrounding": "Explicit low card/fingertip pose; original unobscured source40 shoe reference. Replaces early upright presentation through1.1s rather than forcing old raised pose by0.75s.",
+  "status": "pending; no runtime acceptance"
+}
