@@ -1,7 +1,7 @@
 {
   "installerIdempotent": true,
   "singleOpeningBranch": true,
-  "appSHA256": "211cd4276061395a46e1f263dcfb2e777b4cea514568f6e16399145f209948dd",
+  "appSHA256": "3ed1cb446360e7d3f1800ac4b7afaa0bc1718d228b83b3049948c32b58f399bc",
   "seatCounts": [
     1,
     2,
@@ -11,5 +11,6 @@
     6,
     7
   ],
-  "endpointFrame": 333
+  "endpointFrame": 333,
+  "resourcePolicy": "one actor/video/GPU/engine lease per opening"
 }
