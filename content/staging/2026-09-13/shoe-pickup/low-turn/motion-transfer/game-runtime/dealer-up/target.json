@@ -1,0 +1,23 @@
+{
+  "targetId": "dealer-up",
+  "seatId": "dealer",
+  "corners": [
+    [
+      1094.2453137090959,
+      692.5072625564736
+    ],
+    [
+      1104.7641936717648,
+      738.1571275784922
+    ],
+    [
+      1013.7875288909293,
+      747.4113047546598
+    ],
+    [
+      1003.2686489282605,
+      701.7614397326412
+    ]
+  ],
+  "status": "Proposed source-supported first dealer upcard placement; actual layout must pass before playback"
+}
