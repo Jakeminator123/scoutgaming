@@ -7,6 +7,11 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
   '/':path.join(here,'index.html'),
+  '/camera':path.join(here,'camera.html'),
+  '/camera.mjs':path.join(here,'camera.mjs'),
+  '/camera-packed.mp4':path.resolve(here,'../motion-transfer/camera-composite/camera-native-R-only-draft.mp4'),
+  '/camera-trajectory.json':path.resolve(here,'../motion-transfer/camera-card-fit/trajectories.json'),
+  '/camera-table.json':path.resolve(here,'../motion-transfer/camera-card-fit/shared-table-camera.json'),
   '/cycle':path.join(here,'cycle.html'),
   '/continuous':path.join(here,'continuous.html'),
   '/continuous.mjs':path.join(here,'continuous.mjs'),
@@ -24,6 +29,7 @@ const routes={
   '/vendor/three/three.module.js':path.join(repo,'web/public/vendor/three/three.module.js'),
   '/vendor/three/three.core.min.js':path.join(repo,'web/public/vendor/three/three.core.min.js'),
   '/slide-packed.mp4':path.join(here,'slide-packed-draft.mp4'),
+  '/assets/cardback.png':path.join(repo,'web/public/assets/cardback.png'),
   '/card-art.mjs':path.join(repo,'web/public/card-art.mjs'),
   '/observations.json':path.resolve(here,'../../integration-diagnostic/slide-contact/observations.json'),
 };
