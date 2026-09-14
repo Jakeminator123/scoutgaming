@@ -1,3 +1,9 @@
+## 2026-09-14 — continuous four-card film now drives actual opening
+
+User rejected a render gallery and requested gameplay integration. New persisted `game-runtime/continuous-demo/install.py` installs the existing350-frame joined camera-locked four-delivery/return film into actual4190 opening flow for exactly three active player seats. Two passes show eight server-issued cards, fourth slot of pass2 is hole/back-only. Other counts and later decisions retain previous routes. `astridContinuous=off` restores previous opening. No new generation; abandoned gallery files were removed without installation.
+
+Actual1117x837 browser round at boxes2/3/4 recorded two complete passes,8 one-time landings, insurance→decisions→settlement→bets. Wallet920→905→917.50. See `continuous-demo/{actual-opening.json,settlement.txt,in-motion-2.jpg,README.md,media-receipt.json}`. In-motion screenshot from next round shows new actor with actual game cards. Required probe/precommit passed. This is rough integration: existing source trajectories while held, then explicit12-frame authored slide to true DOM destinations, not physically calibrated all-seat hand contact. No fabricated review status. Existing masks/joins remain imperfect; full originalgoal remains unfinished. Public4173/backend unchanged.
+
 ## 2026-09-14 — existing clips enabled together for requested demo
 
 User explicitly requested connecting existing renders, accepting a rough demonstrable game. The existing4190 Astrid URL (`astridBox0=review&astridVariant=v6`) now also enables first centre-card box3 and first dealer-upcard without extra flags, alongside existing box0v6/box1. Explicit off overrides, first-card/hole/split/identity gates and reviewed viewport/geometry constraints remain. Debug banners are hidden unless diagnostics/capture is requested; telemetry stays in DOM. No generation or media alteration.

@@ -1,0 +1,6 @@
+{
+  "installerIdempotent": true,
+  "singleOpeningBranch": true,
+  "landingCallbackIdempotent": true,
+  "appSHA256": "2a89c857af837a7893fc68712f55783248343efd28049981d7f4dccf0f704149"
+}

@@ -1,0 +1,11 @@
+# Continuous generated sequence in actual gameplay
+
+The user explicitly rejected a gallery and requested existing generated footage in gameplay, accepting a rough demonstration. This integrates the already-produced camera-locked four-delivery film and filmed return, using the existing 350-frame joined RG actor atlas and card ledger. No new generation or external spending.
+
+On isolated4190 Astrid, exactly three active player boxes select this opening route by default; `astridContinuous=off` restores previous routing. Each pass plays four source deliveries: three server-issued player cards and one dealer card. Two full passes produce the eight-card opening. The second dealer slot receives only faceDown/null artwork plus the authoritative hole draw ID. The original game continues with insurance, decisions, dealer reveal and settlement. Other player counts and subsequent hits currently retain prior delivery routes.
+
+This is intentionally rough: while held, card geometry follows the existing photographed trajectory. After the source release, an authored12-frame slide moves the card to its actual DOM target. This is NOT the exact calibrated-contact adapter, and no source was relabeled as visually approved. Actor RGB/body are not stretched to seat targets. Source mask defects, the transition between passes and mismatch in physical destination remain visible limitations.
+
+Actual gameplay proof: `actual-opening.json` records both complete passes with four one-time landings each, draws235–242; final draw is face down. Releases90/150/218/285, observed landings102/162/230/297. Three demo bets at boxes2/3/4, insurance declined, two Stand decisions (one player blackjack), dealer settlement and return to bets: wallet920→905→917.50. `settlement.txt` records it. A second actual round was started to capture `in-motion-2.jpg`, showing the new actor performing while game cards remain on the real table; it is not a standalone video overlay. `in-motion.jpg` is preceding speech, not motion proof.
+
+Existing source hashes are in `media-receipt.json`. Persisted installer changes isolated public app only and links existing source assets. No public4173 or backend rules/database code changes. Required precommit and dealer probe passed; they do not prove realistic motion. Full original seven-seat acceptance remains incomplete.
