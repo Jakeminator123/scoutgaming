@@ -1,0 +1,76 @@
+{
+  "params": {
+    "model": "kling3_0",
+    "mode": "pro",
+    "duration": 3,
+    "sound": "off",
+    "count": 1,
+    "aspect_ratio": "16:9",
+    "medias": [
+      {
+        "role": "start_image",
+        "value": "1047e9de-6501-4e1d-baa9-67e087ee8657"
+      },
+      {
+        "role": "end_image",
+        "value": "149cbd41-1c1f-4fda-852a-e7162dac6266"
+      }
+    ],
+    "prompt": "Continuous locked-camera close mechanical action from EXACT START frame to EXACT END hand/card pose. Astrid performs only the beginning of ONE card extraction. Her drawing fingertips travel DOWN along the front of the fixed white inclined card stack, press the exposed leading edge of a single red-backed face-down card, then pull it OUTWARD toward viewer-left/down through the LOW BLACK FRONT MOUTH over its low tray/lip, arriving at the end frame with the rear card still partly inside the mouth. Red BACK faces UP. Keep the card low near felt; no lifting above the white stack, no upright presentation, no wrist turnover yet, no complete deal or second draw. Make the down/out motion brisk and continuous within the first0.7s, then settle naturally in the exact end contact pose for the remainder of the3-second clip without releasing or moving the card again. Preserve exact Astrid identity, skin tone, hair, body proportions, black sleeves to wrists, other resting hand, original camera, table and lighting. White stack remains fixed throughout; no separate card appears on top of it. One rigid card, normal attached fingers, supported front-mouth extraction. No cuts, fades, camera movement, body stretch, additional hand or duplicate card. The original start shoe construction is authoritative; the end frame defines the low hand/card placement.",
+    "resolution": "1080p"
+  },
+  "preflight": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Cost preflight for kling3_0: 5.25 credits (5.25 exact). No job submitted."
+      }
+    ],
+    "structuredContent": {
+      "cost": {
+        "credits": 5.25,
+        "credits_exact": 5.25
+      }
+    },
+    "isError": false
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "This tool provides an auto-updating generation widget for these jobs. Do not call job_display, show_generations, or show_generation_by_ids to display these jobs again, either before or after completion, unless the user explicitly requests a separate display. If you need to await completion, use jobs_wait with timeout_seconds <= 15. Use job_display only if the user explicitly requests a separate re-display of one specific job."
+      },
+      {
+        "type": "text",
+        "text": "Submitted 1 job. If a widget is visible, it polls automatically — do not call job_status or show_generations as a follow-up poll. In text-only clients, use job_status with sync:true to poll for completion.\n- bc9d45f0-b2a3-48c3-b850-fc5e0899fdcd  \"Continuous locked-camera close mechanical action from EXACT START frame to EXACT END hand/card pose. Astrid performs only the beginning of ONE card extraction. Her drawing fingertips travel DOWN along the front of the fixed white inclined card stack, press the exposed leading edge of a single red-backed face-down card, then pull it OUTWARD toward viewer-left/down through the LOW BLACK FRONT MOUTH over its low tray/lip, arriving at the end frame with the rear card still partly inside the mouth. Red BACK faces UP. Keep the card low near felt; no lifting above the white stack, no upright presentation, no wrist turnover yet, no complete deal or second draw. Make the down/out motion brisk and continuous within the first0.7s, then settle naturally in the exact end contact pose for the remainder of the3-second clip without releasing or moving the card again. Preserve exact Astrid identity, skin tone, hair, body proportions, black sleeves to wrists, other resting hand, original camera, table and lighting. White stack remains fixed throughout; no separate card appears on top of it. One rigid card, normal attached fingers, supported front-mouth extraction. No cuts, fades, camera movement, body stretch, additional hand or duplicate card. The original start shoe construction is authoritative; the end frame defines the low hand/card placement.\""
+      },
+      {
+        "type": "text",
+        "text": "If the user requests a combined display of multiple generations, including jobs submitted through separate generate_* calls, collect all requested job IDs, wait for the complete set with jobs_wait, then call show_generation_by_ids with jobs: [{\"index\":0,\"job_id\":\"<first actual job ID>\"},{\"index\":1,\"job_id\":\"<second actual job ID>\"}, ...]. job_display accepts only one id: never pass ids to it or loop over it to show a group. Do not create an extra display when the existing generation widgets already satisfy the request."
+      }
+    ],
+    "structuredContent": {
+      "results": [
+        {
+          "id": "bc9d45f0-b2a3-48c3-b850-fc5e0899fdcd",
+          "type": "video",
+          "status": "pending",
+          "model": "kling3_0",
+          "params": {
+            "prompt": "Continuous locked-camera close mechanical action from EXACT START frame to EXACT END hand/card pose. Astrid performs only the beginning of ONE card extraction. Her drawing fingertips travel DOWN along the front of the fixed white inclined card stack, press the exposed leading edge of a single red-backed face-down card, then pull it OUTWARD toward viewer-left/down through the LOW BLACK FRONT MOUTH over its low tray/lip, arriving at the end frame with the rear card still partly inside the mouth. Red BACK faces UP. Keep the card low near felt; no lifting above the white stack, no upright presentation, no wrist turnover yet, no complete deal or second draw. Make the down/out motion brisk and continuous within the first0.7s, then settle naturally in the exact end contact pose for the remainder of the3-second clip without releasing or moving the card again. Preserve exact Astrid identity, skin tone, hair, body proportions, black sleeves to wrists, other resting hand, original camera, table and lighting. White stack remains fixed throughout; no separate card appears on top of it. One rigid card, normal attached fingers, supported front-mouth extraction. No cuts, fades, camera movement, body stretch, additional hand or duplicate card. The original start shoe construction is authoritative; the end frame defines the low hand/card placement.",
+            "aspect_ratio": "16:9",
+            "duration": 3,
+            "reference_images": [
+              "1047e9de-6501-4e1d-baa9-67e087ee8657",
+              "149cbd41-1c1f-4fda-852a-e7162dac6266"
+            ],
+            "mode": "pro",
+            "sound": "off",
+            "resolution": "1080p"
+          }
+        }
+      ]
+    },
+    "isError": false
+  }
+}

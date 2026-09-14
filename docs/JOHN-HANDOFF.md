@@ -1,3 +1,9 @@
+## Affordable explicit endpoint pickup trial running — 2026-09-14
+
+Seedance start/end request was unfunded at36credits versus live9.67balance. Ordinary Kling3.0 Pro supports a3s endpoint trial at5.25credits; submitted ONE jobbc9d45f0-b2a3-48c3-b850-fc5e0899fdcd with exact original0 start, low-contact anchor end, silent, explicit1080p. Root live jobs_wait confirms in_progress. This is ordinary Kling3.0, not previously failed OmniEdit. motion_review owns polling; verify actual dimensions and every native extraction frame. No further generation authorized for this trial. Exact request/preflight under next-source-investigation/kling-primitive-{submission,preflight}.json. No free allowance consumed, no public gameplay promotion, full goal remains open.
+
+Contact-viewer code and actual raw/clean browser exports are committed in6cd8ca3; syntax, required hook suites and dealer probe passed. The one-frame depth arrangement is plausible, but does not validate movement, all seats, or game3D depth. Existing user tab111 retains knownfirst-card box0v6/box1 rough gameplay.
+
 ## Source-owned shoe with low-contact actor pose — 2026-09-14
 
 Raw Vision matte on low-mouth-anchor excludes the invented gray fascia (inspected samples0alpha) and retains the drawing palm/fingertip (255alpha). Root inspected contact-proof.jpg; faint source-card/sidewall fragments and partial resting-hand alpha remain, requiring cleanup. Original shoe depth must be partitioned: tray behind card, original front face/walls in front of card, hand in front at contact. A whole opaque shoe silhouette would hide the extracted card. This is a viable pose-reference/compositor direction, not visual completion.
