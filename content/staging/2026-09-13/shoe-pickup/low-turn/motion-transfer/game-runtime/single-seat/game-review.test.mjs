@@ -14,3 +14,5 @@ test('responsive hand preserves seat anchor and uniformly scales all four local 
 });
 
 test('measured CSS rounding allowed but real endpoint displacement rejected',()=>{const q=[[1,2],[3,2],[3,4],[1,4]];assert.doesNotThrow(()=>assertTarget(q.map(([x,y])=>[x+.000521,y+.003462]),q));assert.throws(()=>assertTarget(q.map(([x,y])=>[x+.020001,y]),q),/target differs/);});
+import {basisChange} from './harness/game-contract.mjs';
+test('new photographed basis changes shape around unchanged card center',()=>{const a=[[0,0],[3,1],[2,5],[-1,4]],b=[[0,0],[4,2],[2,5],[-2,3]],m=basisChange(a,b);for(const i of [1,3]){assert.ok(Math.abs(m[0]*a[i][0]+m[2]*a[i][1]-b[i][0])<1e-10);assert.ok(Math.abs(m[1]*a[i][0]+m[3]*a[i][1]-b[i][1])<1e-10);}assert.throws(()=>basisChange([[0,0],[0,0],[0,0],[0,0]],b),/Degenerate/);});
