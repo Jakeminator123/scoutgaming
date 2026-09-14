@@ -4,6 +4,7 @@ import hashlib,json,subprocess,os,argparse
 import numpy as np
 from PIL import Image
 parser=argparse.ArgumentParser()
+parser.add_argument('--mask-dir',default='selected85-rg',help='Reviewed source-indexed mask directory beside this builder')
 parser.add_argument('--no-b-frames',action='store_true',help='Encode in presentation order for decode comparison')
 parser.add_argument('--crop',default='0,0,1920,1080',help='Exact native x,y,width,height; no scaling')
 args=parser.parse_args()
@@ -15,7 +16,7 @@ p=Path(__file__).resolve().parent
 root=next(q for q in p.parents if (q/'web/public').is_dir())
 hashfile=lambda q:hashlib.sha256(q.read_bytes()).hexdigest()
 plan=json.loads((p/'pace/plan.json').read_text())
-maskdir=p/'selected85-rg';manifest=json.loads((maskdir/'receipt.json').read_text())
+maskdir=p/args.mask_dir;manifest=json.loads((maskdir/'receipt.json').read_text())
 assert manifest['pacePlanSHA256']==hashfile(p/'pace/plan.json')
 assert len(plan['frames'])==85
 sources=[dict(role='centrePrepared',path='web/public/dealers/astrid/performance/centre-native-review.mp4'),dict(role='right',path='content/staging/2026-09-09/cac-side-delivery/right/source.mp4')]
@@ -60,6 +61,6 @@ finally:
 probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-count_frames','-show_entries','stream=nb_read_frames,width,height,r_frame_rate','-of','json',str(tmp)]))['streams'][0]
 assert (int(probe['nb_read_frames']),probe['width'],probe['height'],probe['r_frame_rate'])==(85,w,h*3,'60/1')
 os.replace(tmp,p/'actor-gray.mp4')
-receipt=dict(status='UNAPPROVED candidate; actual gameplay validation required',sourceBundleSHA256=bundle,sources=sources,outputSHA256=hashfile(p/'actor-gray.mp4'),maskReceiptSHA256=hashfile(maskdir/'receipt.json'),pacePlanSHA256=hashfile(p/'pace/plan.json'),frameCount=85,fps=60,crop=crop,atlasSize=[w,h*3],bFrames=0 if args.no_b_frames else 2,rows=rows,encoding='Selected original decoded RGB unchanged before lossy CRF14 atlas encoding; per-source uniform registration happens in renderer')
+receipt=dict(status='UNAPPROVED candidate; actual gameplay validation required',sourceBundleSHA256=bundle,sources=sources,outputSHA256=hashfile(p/'actor-gray.mp4'),maskDirectory=args.mask_dir,maskReceiptSHA256=hashfile(maskdir/'receipt.json'),pacePlanSHA256=hashfile(p/'pace/plan.json'),frameCount=85,fps=60,crop=crop,atlasSize=[w,h*3],bFrames=0 if args.no_b_frames else 2,rows=rows,encoding='Selected original decoded RGB unchanged before lossy CRF14 atlas encoding; per-source uniform registration happens in renderer')
 (p/'media-receipt.json').write_text(json.dumps(receipt,indent=2))
 print(json.dumps({k:v for k,v in receipt.items() if k!='rows'}))
