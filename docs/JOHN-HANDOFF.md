@@ -1,3 +1,7 @@
+## Corrected physical-contact anchor in progress — 2026-09-14
+
+After the ineffective Seedance edit, submitted ONE GPT Image2 high2k low-extraction anchor, job0c70e596-012c-4b0b-b3f7-c51eb3b45e22, quoted6.5credits. Root live jobs_wait confirms in_progress. motion_review owns polling. Uses exact original box1 native0 plus real lip-action crops. Target is a single red-back-up card half extracted low through existing black frontmouth; preserve original shoe, stack, actor and camera. Exact request is next-source-investigation/low-mouth-anchor-submission.json; geometry reasoning is LOW-MOUTH-ANCHOR-PLAN.md. Do not submit further video until the anchor itself is inspected. This is a reference candidate, not new gameplay or completed movement. All-seven-seat/full-round goal remains open.
+
 ## Existing Astrid review link includes the new second-left source — 2026-09-14
 
 The user's existing isolated4190 URL with astridBox0=review now enables the new box1 first-card source without requiring an additional astridBox1 flag. Explicit astridBox1=off still disables it. Host, Astrid identity, exact seat, first-card and no-split gates remain. Ten focused bridge tests pass. The installer writes atomically.
