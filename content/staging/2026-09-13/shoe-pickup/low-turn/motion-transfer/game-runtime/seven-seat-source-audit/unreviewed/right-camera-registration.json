@@ -1,0 +1,24 @@
+{
+  "source": "contact-proof47",
+  "destination": "uncorrected-right0",
+  "staticFeltROIMask": "x100:1800,y480:950 excluding x720:1400,y400:790 actor/shoe",
+  "similarity": [
+    [
+      0.9964718883798147,
+      0.00308272497374463,
+      1.0542584339883756
+    ],
+    [
+      -0.00308272497374463,
+      0.9964718883798147,
+      9.259161210397032
+    ]
+  ],
+  "inliers": 7,
+  "medianResidual": 0.4093574841744534,
+  "medianRawDisplacement": [
+    0.20361328125,
+    5.27154541015625
+  ],
+  "note": "Static feature registration diagnostic only, not applied to actor or card."
+}
