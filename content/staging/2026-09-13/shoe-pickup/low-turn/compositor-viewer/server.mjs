@@ -6,6 +6,10 @@ import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
+  '/far-left-pace3.mp4':path.resolve(here,'../cadence-comparison/far-left-timing/cut66-source-pace-3x.mp4'),
+  '/far-left-pace25.mp4':path.resolve(here,'../cadence-comparison/far-left-timing/cut66-source-pace-2.5x.mp4'),
+  '/real-dealer-cadence.mp4':path.resolve(here,'../cadence-comparison/consecutive-deals-native60.mp4'),
+  '/seven-seat-targets.json':path.resolve(here,'../motion-transfer/camera-review/seven-targets/isolated-game-targets.json'),
   '/return-join':path.join(here,'return-join.html'),
   '/return-join.mjs':path.join(here,'return-join.mjs'),
   '/far-left-return.mp4':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/release-continuation/source.mp4'),
