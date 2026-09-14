@@ -1,3 +1,9 @@
+## Fractional source-frame shoe-mask fix — 2026-09-14
+
+Independent rendered phase85/86/87 review found the shoe mask erroneously required integer nativeFrame. The60fps ledger contains fractional source positions, so52 active extraction rows lost the mask and exposed a broad card at the shoe. Changed only the staging shoe-mask contract to accept finite source positions inside the same calibrated windows. Two new tests cover all fractional windows, boundaries, invalid clocks, inactive cards and unsupported IDs. Fresh Chrome rendered QA confirms the broad exposure pop is gone across actor86/card85–87. Required110 tests, two new fractional-mask tests and dealer-sync probe pass; no global actor/card timing offset and no public player change.
+
+Timing review against the cached real dealer finds0.80–0.87s extraction-to-release versus4.17s in original+continuation footage. The long original64–96 contact hold is now being assessed for an earlier compatible cut. A60fps export alone does not create overlapping next-card motion. Full continuation0–39 actor/card draft exists with a single uniform transform and hard cuts; initial rendering has residual paper and a static plate seam, with cleanup underway. Full seven-seat gameplay remains unfinished.
+
 ## Far-left release and return join review — 2026-09-14
 
 Continuation native14 is the first independently verified clear release; empty return reaches its own ready pose around37–39. Full100-pair search against original0–9 found39→0 closest pose but37→0 smoother low-speed direction. No seamless cut is established. Motion review is building actor-only composite with a single uniform registration; early paper fragments0–4 still require cleanup without removing skin.
