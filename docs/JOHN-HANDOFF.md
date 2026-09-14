@@ -806,3 +806,9 @@ Third same-view isolated round finished: box3/gameplay-third-settlement.json rec
 Box3 diagnostic sample frames now target actual shoe extraction22/30/34/40. Root fullscene CUA observation saw hand at source shoe outlet, one face-upcard emerging beneath lip, then supportedslide. Saved box3/gameplay-shoe-contact.json contains receipts and honest inline-only scope; no continuousvideo/physicalturn/60fpsapproval inferred. Probe and fullpre-commit passed after this diagnostic-only change.
 
 Read-only second-card findings are saved in box3/SECOND-CARD-FINDING.md andsecond-card-geometry.json: actualtransformedindex1fan target differs27.524nativepx fromfilmedlanding; hitindex2 differs55.047px and hasonly.518screenpx betting-spotgap. Refittingwholehand wouldmoveexistingcards; postreleaseautofan lacksfilmedcontact. Keepfirstcard-only gate; futureextension needs actualplacement or arrangingmotion, preservingissuedcards/oldcardpositions. No generation spend or movement workaround implemented.
+
+### Persisted centre full-scene and source-coverage evidence
+
+box3/full-scene-proof now contains8full-scene JPGs at output22,30,34,40,63,64,75,84 plus index.html and receipt. Root verified currentrough-box3 ownership during capture; stale earlier84 attempt discarded. These show shoehand/singleface-upcard emergence, supportedslide, and stationarylandedcard while emptyhandreturns. Stillimages do not prove smooth60video or physicalturnover. No further source approval inferred.
+
+seven-seat-source-audit/MAP.md, provenance/endpointJSON and3smallsourcecontact sheets inventory existing actions. There are real left/centre/right directional sources and nearby box2/4 candidates; no seven calibrated/reviewed release/return actions. Box5 currently hastransit ratherthanitsownrelease; side-source seam/camera fitting remains required. This evidence does not justify new spending or relaxing exacttarget gates. No tests repeated for this documentation/evidence-only update.
