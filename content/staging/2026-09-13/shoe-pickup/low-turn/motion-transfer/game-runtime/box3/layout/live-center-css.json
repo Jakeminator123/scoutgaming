@@ -1,0 +1,35 @@
+{
+  "cardsStyle": null,
+  "cardsTransform": "matrix(0.999996, 0.00266162, -0.000330042, 0.620001, 0, 0)",
+  "props": {
+    "--card-dx": "19px",
+    "--card-dx-0": "0px",
+    "--card-dx-1": "0px",
+    "--card-dy": "-4px",
+    "--card-dy-0": "0px",
+    "--card-dy-1": "0px",
+    "--card-h": "",
+    "--card-rot": "6deg",
+    "--card-rot-0": "0deg",
+    "--card-rot-1": "0deg",
+    "--card-rot0": "-4deg",
+    "--card-w": "46px",
+    "--card-x0": "-32px",
+    "--cards-x": "54.74px",
+    "--cards-y": "-55.16px",
+    "--fan": "",
+    "--hand-rot": "0deg"
+  },
+  "seatStyle": "--arc-rot: 0deg; left: 545.5px; top: 186.081px;",
+  "seatTransform": "none",
+  "spot": {
+    "bottom": 570.046875,
+    "height": 44.3984375,
+    "left": 515.5,
+    "right": 575.5,
+    "top": 525.6484375,
+    "width": 60,
+    "x": 515.5,
+    "y": 525.6484375
+  }
+}

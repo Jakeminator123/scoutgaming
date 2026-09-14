@@ -1,0 +1,392 @@
+{
+  "status": "feasibility only; keypose correspondences and affine plane inferred;63x88 normalized units not measured metric size",
+  "basis": [
+    [
+      1.0555555555555556,
+      0.0625
+    ],
+    [
+      -0.031746031746031744,
+      0.7386363636363636
+    ]
+  ],
+  "records": [
+    {
+      "frame": 38,
+      "theta": 0.8409002748653744,
+      "center": [
+        1264.1407137036724,
+        600.6154517664984
+      ],
+      "corners": [
+        [
+          1273.2814274073448,
+          561.2309035329968
+        ],
+        [
+          1320.5575039828052,
+          594.5765581179995
+        ],
+        [
+          1255.0,
+          640.0
+        ],
+        [
+          1207.7239234245396,
+          606.6543454149972
+        ]
+      ],
+      "observedLeadingCornerEstimate": [
+        1255,
+        640
+      ],
+      "observationUncertaintyPixels": 4,
+      "hiddenCorners": "all rear corners inferred using native49 orientation and fixed plane; mouth silhouette must occlude card",
+      "status": "inferred extraction keypose only; no measured fullpaper shape"
+    },
+    {
+      "frame": 45,
+      "theta": 0.8409002748653744,
+      "center": [
+        1239.1407137036724,
+        621.6154517664984
+      ],
+      "corners": [
+        [
+          1248.2814274073448,
+          582.2309035329968
+        ],
+        [
+          1295.5575039828052,
+          615.5765581179995
+        ],
+        [
+          1230.0,
+          661.0
+        ],
+        [
+          1182.7239234245396,
+          627.6543454149972
+        ]
+      ],
+      "observedLeadingCornerEstimate": [
+        1230,
+        661
+      ],
+      "observationUncertaintyPixels": 3,
+      "hiddenCorners": "all rear corners inferred using native49 orientation and fixed plane; mouth silhouette must occlude card",
+      "status": "inferred extraction keypose only; no measured fullpaper shape"
+    },
+    {
+      "frame": 49,
+      "theta": 0.8409002748653744,
+      "center": [
+        1196.8610699068017,
+        658.6796312161842
+      ],
+      "corners": [
+        [
+          1206.0017836104741,
+          619.2950829826826
+        ],
+        [
+          1253.2778601859345,
+          652.6407375676854
+        ],
+        [
+          1187.7203562031293,
+          698.0641794496859
+        ],
+        [
+          1140.444279627669,
+          664.7185248646831
+        ]
+      ],
+      "observedCorners": {
+        "0": [
+          1208,
+          626
+        ],
+        "1": [
+          1251,
+          649
+        ],
+        "2": [
+          1188,
+          695
+        ]
+      },
+      "assignedTemplateIndices": [
+        0,
+        1,
+        2
+      ],
+      "rmsCoordinateResidual": 3.579101245771732,
+      "maxCornerResidual": 6.99634053977376,
+      "correspondenceNote": "material corner order preserved by continuous in-plane rotation; opposite corner indices may differ from raw independentfit"
+    },
+    {
+      "frame": 57,
+      "theta": 1.5520060636802684,
+      "center": [
+        1133.6740942423994,
+        733.9210258348706
+      ],
+      "corners": [
+        [
+          1177.4655276457456,
+          708.6696504826396
+        ],
+        [
+          1182.6518115194576,
+          755.1579483300928
+        ],
+        [
+          1089.8826608390532,
+          759.1724011871017
+        ],
+        [
+          1084.6963769653412,
+          712.6841033396485
+        ]
+      ],
+      "observedCorners": {
+        "1": [
+          1174,
+          715
+        ],
+        "2": [
+          1183,
+          753
+        ],
+        "3": [
+          1093,
+          755
+        ]
+      },
+      "assignedTemplateIndices": [
+        0,
+        1,
+        2
+      ],
+      "rmsCoordinateResidual": 3.741388294007237,
+      "maxCornerResidual": 7.2168696036005,
+      "correspondenceNote": "material corner order preserved by continuous in-plane rotation; opposite corner indices may differ from raw independentfit"
+    },
+    {
+      "frame": 72,
+      "theta": 2.8880435632888237,
+      "center": [
+        982.7499999999839,
+        815.75
+      ],
+      "corners": [
+        [
+          1028.7553518550103,
+          840.0561764973414
+        ],
+        [
+          965.3691594438399,
+          853.6648979724548
+        ],
+        [
+          936.7446481449573,
+          791.4438235026586
+        ],
+        [
+          1000.1308405561279,
+          777.8351020275452
+        ]
+      ],
+      "observedCorners": {
+        "0": [
+          937,
+          791
+        ],
+        "1": [
+          999,
+          778
+        ],
+        "2": [
+          1031,
+          841
+        ],
+        "3": [
+          964,
+          853
+        ]
+      },
+      "assignedTemplateIndices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "rmsCoordinateResidual": 1.1075937077453037,
+      "maxCornerResidual": 2.4350047431116812,
+      "correspondenceNote": "material corner order preserved by continuous in-plane rotation; opposite corner indices may differ from raw independentfit"
+    },
+    {
+      "frame": 84,
+      "theta": 3.135096129813447,
+      "center": [
+        961.0,
+        819.75
+      ],
+      "corners": [
+        [
+          997.2881756898976,
+          851.089106980075
+        ],
+        [
+          930.8151588777023,
+          853.3913724769196
+        ],
+        [
+          924.7118243101024,
+          788.410893019925
+        ],
+        [
+          991.1848411222977,
+          786.1086275230804
+        ]
+      ],
+      "observedCorners": {
+        "0": [
+          926,
+          788
+        ],
+        "1": [
+          990,
+          786
+        ],
+        "2": [
+          998,
+          851
+        ],
+        "3": [
+          930,
+          854
+        ]
+      },
+      "assignedTemplateIndices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "rmsCoordinateResidual": 0.7740658455376391,
+      "maxCornerResidual": 1.352120439112635,
+      "correspondenceNote": "material corner order preserved by continuous in-plane rotation; opposite corner indices may differ from raw independentfit"
+    },
+    {
+      "frame": 91,
+      "theta": 3.139305814058701,
+      "center": [
+        960.75,
+        819.75
+      ],
+      "corners": [
+        [
+          996.8516145541887,
+          851.1935153675919
+        ],
+        [
+          930.3607928622833,
+          853.2999260438407
+        ],
+        [
+          924.6483854458113,
+          788.3064846324081
+        ],
+        [
+          991.1392071377167,
+          786.2000739561593
+        ]
+      ],
+      "observedCorners": {
+        "0": [
+          926,
+          789
+        ],
+        "1": [
+          990,
+          786
+        ],
+        "2": [
+          998,
+          851
+        ],
+        "3": [
+          929,
+          853
+        ]
+      },
+      "assignedTemplateIndices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "rmsCoordinateResidual": 0.9316382166779733,
+      "maxCornerResidual": 1.5191528784756412,
+      "correspondenceNote": "material corner order preserved by continuous in-plane rotation; opposite corner indices may differ from raw independentfit"
+    },
+    {
+      "frame": 92,
+      "theta": 3.139305814058701,
+      "center": [
+        960.75,
+        819.75
+      ],
+      "corners": [
+        [
+          996.8516145541887,
+          851.1935153675919
+        ],
+        [
+          930.3607928622833,
+          853.2999260438407
+        ],
+        [
+          924.6483854458113,
+          788.3064846324081
+        ],
+        [
+          991.1392071377167,
+          786.2000739561593
+        ]
+      ],
+      "observedCorners": {
+        "0": [
+          926,
+          789
+        ],
+        "1": [
+          990,
+          786
+        ],
+        "2": [
+          998,
+          851
+        ],
+        "3": [
+          929,
+          853
+        ]
+      },
+      "assignedTemplateIndices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "rmsCoordinateResidual": 0.9316382166779733,
+      "maxCornerResidual": 1.5191528784756412,
+      "correspondenceNote": "material corner order preserved by continuous in-plane rotation; opposite corner indices may differ from raw independentfit"
+    }
+  ],
+  "orientation": "continuous0.84\u21923.139radian in-plane rotation; no normalflip",
+  "feasibility": "paper replacement plausible using original visible finger foreground; mask/pose integration remains unreviewed",
+  "sourceSHA256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
+}

@@ -786,3 +786,15 @@ Generation remains blocked: the connected Higgsfield Team workspace reported 3.0
 ## Conversation continuity
 
 The Codex conversation reader returned only the beginning, while the local session contained later messages and the repo retained later commits. A readable transcript was recovered. The app display itself was not repaired. Future work must update this handoff and Git independently of the chat UI. No process can guarantee that the app will never hide history again; these files make the project recoverable without it.
+
+## 2026-09-14 — isolated centre whole-action review
+
+Existing145-frame contact-proof source is now a separately opt-in box3 first-card candidate in isolated4190; no generation spend or public4173 promotion.85-frame60fps ledger preserves explicit packedNative/sourceNative mapping and binds only issued server card identity. Uses existingsource low shoe pickup, supported centre slide and emptyreturn; no physical turnover yet. Schema, source hashes, mask limitations and reproduction scripts live under content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/game-runtime/box3.
+
+Explicit astridBox3=contact AND astridBox0=review with dealer=astrid, exact1091×837 layout only. Whole .cards basis/translation aligns source-supported landing, betting spot shifts10screenpx before bets; actor is not warped. Realcornercheck remains.02nativepx; bottomgap≥3screenpx and neighborcell bounds enforced. Other viewports/splits/latercardindices remain excluded. Shoemask asset/path/hash and native38–48 range validated; playback waits for texture under bounded cancelable preparation. Existing GPU cleanup, nativeclock, hidden-card stripping and exactly-once landing remain.
+
+Root actualfirst-round evidence gameplay-first-round.json records completedcandidate, one land64,84callbacks1–84, zero dropped frames,11GPUresources disposed; maxcornererror~.000126native and shiftedspotgap~5.73screenpx. gameplay-settlement.json records returnedbettingstate and isolatedstake5 wallet980→975→985, returned10. These prove one scoped gameplay path, not seven-seat/fullmotion visualapproval. Actor seams, remaining maskfringes, no turnover, secondcardlegacy and broaderfan/responsiveclearance remain unaccepted.
+
+Validation:27focused integration/layout/loader/GPU/adaptertests, required audit-dealer-sync --probe and fullpre-commit passed; shoe/service197checks and split77checks passed. Shared other-dealer audit is regression baseline only; no unrelated dealer visualacceptance claimed. No publicmedia, walletauthority or realuserdatabase changed. Dirty unrelated audio/source/pipeline work preserved.
+
+Second actual round is saved in box3/gameplay-second-round.json: insurance declined, dealer blackjack, stake5/returned0, wallet985→980 and readybets. Root third-round inlinebrowser view saw supportedslide/hand contact afterframe40; pickupfirst30 not captured. No screenshotfiles persisted, and no visual60fpsapproval inferred. Subsequentcards/otherseats still legacy; seams remain unaccepted.

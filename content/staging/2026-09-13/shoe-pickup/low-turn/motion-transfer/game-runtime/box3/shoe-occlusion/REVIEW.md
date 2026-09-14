@@ -1,0 +1,11 @@
+# Source-specific shoe occlusion proposal
+
+`allowed-card.png` is1920×1080 grayscale:255 permits card drawing,0 blocks it behind source-observed hardware. Coordinates are native contact-proof source pixels, xright/ydown. Apply the same global registration as the source actor/card; do not reuse unrelated shoe calibration. It is card-only: actor R/G and RGB remain unchanged.
+
+Source0 exposes the shoe. Manually traced polygons cover the white stack/front-right face, both rails/sidewalls, and fixed black logo-bearing fascia. Crucially, the whole black rectangle is NOT treated as an open aperture: source38 shows the white paper edge emerging from its thin lower seam. Leaving that fascia open made the inferred full card paint a broad red panel, a rejected first diagnostic. The lower outlet seam stays open in the delivered proposal. Tray interior and its front rim remain behind the observed card as it emerges above them; blanket foreground masking of the tray would incorrectly cut the real paper.
+
+`early-proxy-proof.jpg` compares source38/45/49 against the independent fixed-plane proxy clipped by this mask. It uses the supplied keypose JSON without changing its geometry. At38 only a narrow sliver remains visible; at45 the exposed paper-sized front portion remains; at49 the card is outside. This is an occlusion/geometry overlay, not a finished actor/finger composite: translucent red also overlaps source fingers because no hand layer is reapplied in this diagnostic.
+
+Manual hardware boundaries have approximately2nativepx uncertainty, especially the lower black fascia seam. At38 the tiny sliver's exact boundary remains sensitive to that uncertainty and the inferred card pose. Do not adjust the mask to hide a materially wrong prop pose. The same source shoe is stable at38/45/49: SIFT static upper-shoe median translations relative0 are[.084,-.007],[.060,-.013],[.067,-.017]px (27/26/26 ratio-test matches). These are local evidence of stability, not a solved3D camera.
+
+Suggested initial frame gate is native38–48 inclusive; disable at49 once outside. The final trajectory must validate continuous entry/exit and actual source-paper overlap. No runtime integration, no actor edit, and no extraction/gameplay acceptance is claimed.

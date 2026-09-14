@@ -1,5 +1,5 @@
-export function reviewQuery(params,box){return box===1?(params.get('astridBox1')??params.get('astridBox0')):params.get('astridBox0');}
-export function eligible({hostname,port,query,dealer,box,index,split,candidateBox=0}){return port==='4190'&&hostname==='astridsingleseat.localhost'&&query==='review'&&dealer==='astrid'&&[0,1].includes(candidateBox)&&box===candidateBox&&index===0&&!split;}
+export function reviewQuery(params,box){if(box===3)return params.get('astridBox3')==='contact'&&params.get('astridBox0')==='review'?'review':null;return box===1?(params.get('astridBox1')??params.get('astridBox0')):params.get('astridBox0');}
+export function eligible({hostname,port,query,dealer,box,index,split,candidateBox=0}){return port==='4190'&&hostname==='astridsingleseat.localhost'&&query==='review'&&dealer==='astrid'&&[0,1,3].includes(candidateBox)&&box===candidateBox&&index===0&&!split;}
 export function sourceFit(fit){const reference={scale:(720-136)/720,x:(1280-1280*((720-136)/720))/2,y:0};const captured={scale:.5421688741883204,x:121.01686751907214,y:.1039891799197603};const ratio=fit.scale/reference.scale;return {scale:ratio*captured.scale,x:fit.x+(captured.x-reference.x)*ratio,y:fit.y+(captured.y-reference.y)*ratio};}
 export function canonicalCorners(corners,fit){if(!corners||corners.length!==4)throw Error('Actual2D card corners required');return corners.map(([x,y])=>[(x-fit.x)/fit.scale,(y-fit.y)/fit.scale]);}
 // Measured at 1091x837: responsive correction leaves <=.00351 native px
@@ -29,3 +29,16 @@ export function centerCalibration(actual,target,maxNative=4){
  if(distance>maxNative)throw Error(`Box1 center correction ${distance.toFixed(3)} native px exceeds4; responsive target unavailable`);
  return {delta,distance,maxNative,policy:'Card-only bounded center calibration; actor unchanged'};
 }
+
+export function sourceActorTransform(value){
+ if(value==null)return undefined;
+ if(Object.keys(value).some(k=>!['scale','translation','rotation'].includes(k))||!Number.isFinite(value.scale)||value.scale<=0||!Array.isArray(value.translation)||value.translation.length!==2||!value.translation.every(Number.isFinite)||(value.rotation!==undefined&&!Number.isFinite(value.rotation)))throw Error('Only explicit uniform actor registration is supported');
+ return {scale:value.scale,translation:[...value.translation],rotation:value.rotation??0};
+}
+
+export function shoeOcclusionContract(ledger,media){
+ const value=ledger.shoeOcclusion;
+ if(!value||value.src!=='/astrid-box3/shoe-allowed-canonical.png'||!(/^[a-f0-9]{64}$/).test(value.sha256)||value.sha256!==media.shoeMaskSHA256||value.startSource!==38||value.endSource!==48)throw Error('Box3 shoe mask provenance or range mismatch');
+ return value;
+}
+export function sourceShoeOccluded(sourceNative,contract){return Number.isInteger(sourceNative)&&sourceNative>=contract.startSource&&sourceNative<=contract.endSource;}
