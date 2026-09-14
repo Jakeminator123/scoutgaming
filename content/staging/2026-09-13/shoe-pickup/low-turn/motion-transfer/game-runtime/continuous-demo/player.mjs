@@ -1,4 +1,5 @@
 import {createPassLifecycle,safeDelivery,onceLand,assertMediaEndpoint} from './lifecycle.mjs';
+import {createCardGlide} from './card-glide.mjs';
 import {createPlaybackSession} from './session.mjs';
 import {packedGPU} from './packed-gpu.mjs';
 import {uniformRegistration} from '/performance-contact.mjs';
@@ -11,7 +12,7 @@ export function createContinuousSession({suspend,signal}){
  return {
   async play({deliveries,onLand}){
    if(deliveries.length!==4||deliveries.some(d=>!Number.isInteger(d?.shoeDraw)))throw Error('Four server-issued cards required');
-   const issued=deliveries,receipt={mode:'continuous-rough-gameplay',landings:[],cards:[],endpointPolicy:'Source hand contact then 12-frame authored slide to actual game card; not exact physical destination approval'};
+   const issued=deliveries,receipt={mode:'continuous-rough-gameplay',landings:[],cards:[],endpointPolicy:'Source hand contact then distance-aware decelerating glide to actual game card; not exact physical destination approval'};
    try{
     const safe=deliveries.map(safeDelivery);receipt.cards=safe.map(({shoeDraw,faceDown})=>({shoeDraw,faceDown}));
     await session.play({deliveries:safe,onLand:(i)=>onLand(issued[i]),receipt});receipt.state='complete';
@@ -57,15 +58,17 @@ async function prepareActor(lifecycle,suspend){
  return {async play({deliveries,onLand,receipt}){
   receipt.endFrame=lastFrame;receipt.releases=releases;receipt.sessionPass=++passNumber;
   const targets=deliveries.map(d=>canonicalCorners(cardLandingCorners(d.el),fit));
+  const glides=deliveries.map((d,i)=>createCardGlide(rows[releases[i]].cards.find(c=>c.id===i+1).quad,targets[i],releases[i],{fps,latestFrame:lastFrame}));
+  receipt.glides=glides.map(({distance,durationFrames,endFrame})=>({distance,durationFrames,endFrame}));
   const landed=onceLand((i,frame)=>{deliveries[i].el.style.visibility='';receipt.landings.push({slot:i+1,shoeDraw:deliveries[i].shoeDraw,frame});onLand(i);});
   function paint(frame){
    const row=rows[frame],cards=[];
    for(const pose of row.cards){
     const i=pose.id-1,d=deliveries[i];if(!d||landed.has(i))continue;
-    const release=releases[i],end=release+12;
+    const release=releases[i],end=glides[i].endFrame;
     if(frame>=end){landed.land(i,frame);continue;}
     let quad=pose.quad;
-    if(frame>=release){const start=rows[release].cards.find(c=>c.id===pose.id).quad,t=(frame-release)/12;quad=start.map((p,k)=>p.map((n,j)=>n+(targets[i][k][j]-n)*t));}
+    if(frame>=release)quad=glides[i].quadAt(frame);
     const face=d.faceDown||pose.face==='back'?'back':'front';
     cards.push({quad,face,card:face==='front'?{r:d.card.r,s:d.card.s}:undefined,shoeOccluded:row.take!=='return'&&pose.face==='back'});
    }

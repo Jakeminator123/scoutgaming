@@ -12,5 +12,6 @@
     7
   ],
   "endpointFrame": 333,
-  "resourcePolicy": "one actor/video/GPU/engine lease per opening"
+  "resourcePolicy": "one actor/video/GPU/engine lease per opening",
+  "glide": "distance-aware12\u201328frames, quadratic ease-out"
 }
