@@ -1,0 +1,1070 @@
+{
+  "status": "WORKING DRAFT: first40 contact only; later G unapproved, fifth paper removed107\u2013109",
+  "sourceSHA256": "c4e46c9cbde5383dacf87d22910a9a15eefb2c2b7e408785931795ac46d53664",
+  "outputSHA256": "c999853263c78f77bf4ff3e90f85fff0d4e0212b9eb0696d66e39e3591b37920",
+  "frameCount": 110,
+  "fps": 24,
+  "layout": "vertical1920x2160 topRGB bottomRG; force G off after39",
+  "frames": [
+    {
+      "nativeFrame": 0,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "ec5a1a34d4da027cb7c59a55d3f1dbaf2e3756d6e3f2674e62a6e597726e8483",
+      "maskInput": "camera-paper-first/manual-v3/rg/0000.png",
+      "maskInputSHA256": "d84c30e403d76de681bdbe177e2cb6dcbbde47d05be2f274b8f7ae4237d5b678",
+      "packedMaskSHA256": "d84c30e403d76de681bdbe177e2cb6dcbbde47d05be2f274b8f7ae4237d5b678"
+    },
+    {
+      "nativeFrame": 1,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "fe16d327079a845a38f46e8b5da44f0de03fd673a00266b82a73a329bea3fab1",
+      "maskInput": "camera-paper-first/manual-v3/rg/0001.png",
+      "maskInputSHA256": "80564ac61854b793c27d458751a5a8aa3d37c54e53a378ce8a0e87a82cc0aa90",
+      "packedMaskSHA256": "80564ac61854b793c27d458751a5a8aa3d37c54e53a378ce8a0e87a82cc0aa90"
+    },
+    {
+      "nativeFrame": 2,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "9ecdb709d9ebac6e1ff6129eb31d1d599a8a6105648dea1f2ed018cbe5efef09",
+      "maskInput": "camera-paper-first/manual-v3/rg/0002.png",
+      "maskInputSHA256": "014d4e2a6e36e08d48320b5ac97ba463213d51181b364d64d3e7978f2baab3df",
+      "packedMaskSHA256": "014d4e2a6e36e08d48320b5ac97ba463213d51181b364d64d3e7978f2baab3df"
+    },
+    {
+      "nativeFrame": 3,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "e17a9d03273f6aae624d03e55eeedb1304ee32a70bd524ab53398764e9d29bb4",
+      "maskInput": "camera-paper-first/manual-v3/rg/0003.png",
+      "maskInputSHA256": "cb6ca7ff21129c54fb90973d0c7eae22e84bab32b6c9ecd5b624b04bd0ad8852",
+      "packedMaskSHA256": "cb6ca7ff21129c54fb90973d0c7eae22e84bab32b6c9ecd5b624b04bd0ad8852"
+    },
+    {
+      "nativeFrame": 4,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "35be6ba74619ee404904d019c3a422cd08f48905d2b1893d6ecf7b82bfe02425",
+      "maskInput": "camera-paper-first/manual-v3/rg/0004.png",
+      "maskInputSHA256": "fb476c22fa410fa479bd5ee960a67b22399288922a9d71d2afd7a805c8000d57",
+      "packedMaskSHA256": "fb476c22fa410fa479bd5ee960a67b22399288922a9d71d2afd7a805c8000d57"
+    },
+    {
+      "nativeFrame": 5,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "ee9504e896feeed3fdf119a6ed76a41a64988c339c4125512c2c89b82d63f8e5",
+      "maskInput": "camera-paper-first/manual-v3/rg/0005.png",
+      "maskInputSHA256": "c2ae6269f70d02a9dc84a81d587f8c5a71921a057469b08c4b4dcb4009d4456d",
+      "packedMaskSHA256": "c2ae6269f70d02a9dc84a81d587f8c5a71921a057469b08c4b4dcb4009d4456d"
+    },
+    {
+      "nativeFrame": 6,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "8bd0334b94cc6762ad822ac8b1c28e5784a17687ac57465bd6bd5aff1c637991",
+      "maskInput": "camera-paper-first/manual-v3/rg/0006.png",
+      "maskInputSHA256": "c967117ff319e1f01f7f852d4f585c459ea9470157066b099a3ec48bb2836fd8",
+      "packedMaskSHA256": "c967117ff319e1f01f7f852d4f585c459ea9470157066b099a3ec48bb2836fd8"
+    },
+    {
+      "nativeFrame": 7,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "9d3cad827e2ebf993c4903fed4f0d1c5f47679bc05802b255ce3d845bafe05d2",
+      "maskInput": "camera-paper-first/manual-v3/rg/0007.png",
+      "maskInputSHA256": "cd21061bac5c5109fa52ea419b2aa4ab8eba447d0e9e549983650ff07cbadb00",
+      "packedMaskSHA256": "cd21061bac5c5109fa52ea419b2aa4ab8eba447d0e9e549983650ff07cbadb00"
+    },
+    {
+      "nativeFrame": 8,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "7dccb96f9de45537ab9a2d2ca7ec4756dbf306eb44129dd5deb5f41920b429fc",
+      "maskInput": "camera-paper-first/manual-v3/rg/0008.png",
+      "maskInputSHA256": "ae0fdb79bbafa1c1fea54b565c44a598ad90fde58f34db69ea3532a49dd7a484",
+      "packedMaskSHA256": "ae0fdb79bbafa1c1fea54b565c44a598ad90fde58f34db69ea3532a49dd7a484"
+    },
+    {
+      "nativeFrame": 9,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "4aa77173975384cf2c7da8e0cfdd1949724fa36e5e0a2c9f81fe9f9dc667bb52",
+      "maskInput": "camera-paper-first/manual-v3/rg/0009.png",
+      "maskInputSHA256": "43fbb020ddab5e50e0f329b72bf3985706feae631aef391580d77f4ae64827ed",
+      "packedMaskSHA256": "43fbb020ddab5e50e0f329b72bf3985706feae631aef391580d77f4ae64827ed"
+    },
+    {
+      "nativeFrame": 10,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "58300d434f386f227b65c3e34cc5e3f0f8c6eb597bfcb186bb0ea741c7e34226",
+      "maskInput": "camera-paper-first/manual-v3/rg/0010.png",
+      "maskInputSHA256": "f3238fb90895d92a053706ee647d275b6f0621f8216d39963a0a5be7d21762fd",
+      "packedMaskSHA256": "f3238fb90895d92a053706ee647d275b6f0621f8216d39963a0a5be7d21762fd"
+    },
+    {
+      "nativeFrame": 11,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "aa3223c7194b03c391750d2d311c518908baee6822b39e8129bb626196c00d9a",
+      "maskInput": "camera-paper-first/manual-v3/rg/0011.png",
+      "maskInputSHA256": "d76d4a7158c63de095899338a62f938da27bcf2d729e56ca6f07d7f5f51da3b2",
+      "packedMaskSHA256": "d76d4a7158c63de095899338a62f938da27bcf2d729e56ca6f07d7f5f51da3b2"
+    },
+    {
+      "nativeFrame": 12,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "17e988f6075a9ea1dac8d058631968e2a595f65d48d1cc8746434ec3a4285a36",
+      "maskInput": "camera-paper-first/manual-v3/rg/0012.png",
+      "maskInputSHA256": "aed28583ce1f35348b9c63c0e07456b26f55947f966f7e3e37b9efb3606e49d0",
+      "packedMaskSHA256": "aed28583ce1f35348b9c63c0e07456b26f55947f966f7e3e37b9efb3606e49d0"
+    },
+    {
+      "nativeFrame": 13,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "652df5398956ee57fbea466241a6b249ae05ca4b91ef7eb30870678c787e309c",
+      "maskInput": "camera-paper-first/manual-v3/rg/0013.png",
+      "maskInputSHA256": "45100e48f56f1f0543d4a3d97732b01b356fe333faac9619f6258bf1a1c8d6ee",
+      "packedMaskSHA256": "45100e48f56f1f0543d4a3d97732b01b356fe333faac9619f6258bf1a1c8d6ee"
+    },
+    {
+      "nativeFrame": 14,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "4bb505a73b2018164a47472816131b18d331c82e0518f4073b03810821f0f37d",
+      "maskInput": "camera-paper-first/manual-v3/rg/0014.png",
+      "maskInputSHA256": "17c45bff58530e3cb3d2b51f1a0e9f4ab76b2a5abce524b6a80fff2aca8fae30",
+      "packedMaskSHA256": "17c45bff58530e3cb3d2b51f1a0e9f4ab76b2a5abce524b6a80fff2aca8fae30"
+    },
+    {
+      "nativeFrame": 15,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "4120cafbcc9e22bf0f1e06002cf051959557ace626a30db7587f9e47b7b88958",
+      "maskInput": "camera-paper-first/manual-v3/rg/0015.png",
+      "maskInputSHA256": "085bb1f6952a07264601fefca8b6cd2cee1efd5a31c74cf69b00f00e8d9d13ac",
+      "packedMaskSHA256": "085bb1f6952a07264601fefca8b6cd2cee1efd5a31c74cf69b00f00e8d9d13ac"
+    },
+    {
+      "nativeFrame": 16,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "2fcfc0739d981c8b1d948e4794633a27c737d066f9496dc14987a19b2e6c2dfe",
+      "maskInput": "camera-paper-first/manual-v3/rg/0016.png",
+      "maskInputSHA256": "8bd95c26b4adee500c0ff3f2c3857018a858c4901af2b693f85be21d3e539a28",
+      "packedMaskSHA256": "8bd95c26b4adee500c0ff3f2c3857018a858c4901af2b693f85be21d3e539a28"
+    },
+    {
+      "nativeFrame": 17,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "2b693438070d97697d1df779842b9ff06712db2e538eb9cc0e4e0b450f3ebc30",
+      "maskInput": "camera-paper-first/manual-v3/rg/0017.png",
+      "maskInputSHA256": "ada7fa663c01b3dc319b1ea002e6e6a91a04e533a5ab786d9a509676fe0fd241",
+      "packedMaskSHA256": "ada7fa663c01b3dc319b1ea002e6e6a91a04e533a5ab786d9a509676fe0fd241"
+    },
+    {
+      "nativeFrame": 18,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "7a0a1816fc06f95375de58a9576547afc89f629841babe5fd16c682dbb7bb2b8",
+      "maskInput": "camera-paper-first/manual-v3/rg/0018.png",
+      "maskInputSHA256": "4127b4247efa1455c1b7c11f5a53b5aab73608fb6cc8417cc78e5424cc2a0d10",
+      "packedMaskSHA256": "4127b4247efa1455c1b7c11f5a53b5aab73608fb6cc8417cc78e5424cc2a0d10"
+    },
+    {
+      "nativeFrame": 19,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "464f391e42fc12d064959ae106945b489f94fb2c8c7c4714a92d311a0847111f",
+      "maskInput": "camera-paper-first/manual-v3/rg/0019.png",
+      "maskInputSHA256": "50499077bac949556229b76b06228555338304e0522a86584299198e8d68f926",
+      "packedMaskSHA256": "50499077bac949556229b76b06228555338304e0522a86584299198e8d68f926"
+    },
+    {
+      "nativeFrame": 20,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "b52359de5874b640624904d464861a0ce10280bd31af8dd4ded130b84cbac887",
+      "maskInput": "camera-paper-first/manual-v3/rg/0020.png",
+      "maskInputSHA256": "deb1f76e53ce03338f090bdfd07cab8cb74cd56edef28ff9854304d396f095d7",
+      "packedMaskSHA256": "deb1f76e53ce03338f090bdfd07cab8cb74cd56edef28ff9854304d396f095d7"
+    },
+    {
+      "nativeFrame": 21,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "d548df4ca82a6d864607e746bc0ad9fe2bda5ba8ece41342d8a4d24211959792",
+      "maskInput": "camera-paper-first/manual-v3/rg/0021.png",
+      "maskInputSHA256": "e860de95093130152c999e6e4e75fd6c70de52859e5ac4f36b342bbde5dccbf8",
+      "packedMaskSHA256": "e860de95093130152c999e6e4e75fd6c70de52859e5ac4f36b342bbde5dccbf8"
+    },
+    {
+      "nativeFrame": 22,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "28ef9c87d631b443c78eca908d14e3beec939171f4df02598b26ce2f0e5a783e",
+      "maskInput": "camera-paper-first/manual-v3/rg/0022.png",
+      "maskInputSHA256": "8d63fda56bfd39b94431ca2d4427abada95c2426f82d5865bde4c0b65c4a97e1",
+      "packedMaskSHA256": "8d63fda56bfd39b94431ca2d4427abada95c2426f82d5865bde4c0b65c4a97e1"
+    },
+    {
+      "nativeFrame": 23,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "fa6fd619a1b22628bb800b2caff6b81a30accd47b68d681b03c40f9af0053a52",
+      "maskInput": "camera-paper-first/manual-v3/rg/0023.png",
+      "maskInputSHA256": "863838d41f2208cf7102c4d4802d7c2da57dd8a3433b0affcb0b8c3ff61c4200",
+      "packedMaskSHA256": "863838d41f2208cf7102c4d4802d7c2da57dd8a3433b0affcb0b8c3ff61c4200"
+    },
+    {
+      "nativeFrame": 24,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "53aecfa71b07a7e62eb5fa67b07cb67e91856ebf9a5e99c3283c2fcf556b341c",
+      "maskInput": "camera-paper-first/manual-v3/rg/0024.png",
+      "maskInputSHA256": "1b2a59446d340fe3b614a742256f7f49716916be04f7f8b9c5f802352a76c105",
+      "packedMaskSHA256": "1b2a59446d340fe3b614a742256f7f49716916be04f7f8b9c5f802352a76c105"
+    },
+    {
+      "nativeFrame": 25,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "5083ffb3f470c8795df02a56f90ed281e8c5a837abf5309ef6009865af25148f",
+      "maskInput": "camera-paper-first/manual-v3/rg/0025.png",
+      "maskInputSHA256": "18b76867e9571179c0d642991c23d7e8134970fce9615e4fa0c07bcbf6be75ee",
+      "packedMaskSHA256": "18b76867e9571179c0d642991c23d7e8134970fce9615e4fa0c07bcbf6be75ee"
+    },
+    {
+      "nativeFrame": 26,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "d6dd5be2aa9510fc1f21d08f80f61bf95d18164ae5c3ff78e95875316f60ca95",
+      "maskInput": "camera-paper-first/manual-v3/rg/0026.png",
+      "maskInputSHA256": "9fd61483b89dfa77bac32b884e3de2b549fe202b05ef7639d8e2800f19e94c46",
+      "packedMaskSHA256": "9fd61483b89dfa77bac32b884e3de2b549fe202b05ef7639d8e2800f19e94c46"
+    },
+    {
+      "nativeFrame": 27,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "c4ecd11e0922cc4cea5d3402f38cb61efad0b51eeb689629f30613895fcfcab8",
+      "maskInput": "camera-paper-first/manual-v3/rg/0027.png",
+      "maskInputSHA256": "316c6b2dfe62960a41704167c284d16eceeb54424769a3b9d472044df8e0d551",
+      "packedMaskSHA256": "316c6b2dfe62960a41704167c284d16eceeb54424769a3b9d472044df8e0d551"
+    },
+    {
+      "nativeFrame": 28,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "861c6078e4ea22a288ebec72878f25d000109a7f17e287caff31f34c6330c2d8",
+      "maskInput": "camera-paper-first/manual-v3/rg/0028.png",
+      "maskInputSHA256": "034dc154c624781f250c9abd404298e738ac1e161601b3eb4ea677c9830db350",
+      "packedMaskSHA256": "034dc154c624781f250c9abd404298e738ac1e161601b3eb4ea677c9830db350"
+    },
+    {
+      "nativeFrame": 29,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "c9ba190e52b2f02e591dc9d9add5371b0e7bde2bb5e80f277f1823f1ab9dc82d",
+      "maskInput": "camera-paper-first/manual-v3/rg/0029.png",
+      "maskInputSHA256": "eabbed8ba6e99438efb1832c86bb6f170d0b33a03582c9dfff840ff1eac94d7d",
+      "packedMaskSHA256": "eabbed8ba6e99438efb1832c86bb6f170d0b33a03582c9dfff840ff1eac94d7d"
+    },
+    {
+      "nativeFrame": 30,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "03f95c627fe1fa480564ffcdf6e3ca2d046f1e6ec997918f3d43a77cae11b0f7",
+      "maskInput": "camera-paper-first/manual-v3/rg/0030.png",
+      "maskInputSHA256": "8fea40daf9e23b6268c31fc75b71533f20258c1c1b998ef85dd146b5323bc96b",
+      "packedMaskSHA256": "8fea40daf9e23b6268c31fc75b71533f20258c1c1b998ef85dd146b5323bc96b"
+    },
+    {
+      "nativeFrame": 31,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "034a6073e54ddaa6b0b49fe99efc614e8c40aa36b42d628201391079e6b481a3",
+      "maskInput": "camera-paper-first/manual-v3/rg/0031.png",
+      "maskInputSHA256": "69ce796202aafd84422efb9f461450d8e2895ed0e3b631e951080d0ec9d1fbaa",
+      "packedMaskSHA256": "69ce796202aafd84422efb9f461450d8e2895ed0e3b631e951080d0ec9d1fbaa"
+    },
+    {
+      "nativeFrame": 32,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "90dbc89cc32ff1bb5cbfbd6949b93b330873a1341d3ab33742b89499aeb75656",
+      "maskInput": "camera-paper-first/manual-v3/rg/0032.png",
+      "maskInputSHA256": "797f4afedd7a67f9e3f290f1230596d072ef6820851421f2f3930c47b0d10b38",
+      "packedMaskSHA256": "797f4afedd7a67f9e3f290f1230596d072ef6820851421f2f3930c47b0d10b38"
+    },
+    {
+      "nativeFrame": 33,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "0eb083f26d84b2eb22e156119febb61c58a85457012e93c76ca0000c5fe9a7d9",
+      "maskInput": "camera-paper-first/manual-v3/rg/0033.png",
+      "maskInputSHA256": "87966a3ab8231a5a2b8185df618eca1d107156b4f4ddce34eeb160b6afa19852",
+      "packedMaskSHA256": "87966a3ab8231a5a2b8185df618eca1d107156b4f4ddce34eeb160b6afa19852"
+    },
+    {
+      "nativeFrame": 34,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "cd0e8f625181bff7666784db7732ed2af2bae1264d697afb7869b7b01db5bc4a",
+      "maskInput": "camera-paper-first/manual-v3/rg/0034.png",
+      "maskInputSHA256": "41387b83e1bdb0d233cece9b195e58ed6d466dd91b7d273237823984d662da00",
+      "packedMaskSHA256": "41387b83e1bdb0d233cece9b195e58ed6d466dd91b7d273237823984d662da00"
+    },
+    {
+      "nativeFrame": 35,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "d76bf80451f0798ad60063c6b806f8db35e259e34e399820ff75379a620d61b4",
+      "maskInput": "camera-paper-first/manual-v3/rg/0035.png",
+      "maskInputSHA256": "c942b89070fdaffe8969c83d749dc1e90af01ac27725665c349b15fee1f6b474",
+      "packedMaskSHA256": "c942b89070fdaffe8969c83d749dc1e90af01ac27725665c349b15fee1f6b474"
+    },
+    {
+      "nativeFrame": 36,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "7a6624cc8dc2185ed61598d051bf1c85fb247d2508575de0d320299f68ac1f0f",
+      "maskInput": "camera-paper-first/manual-v3/rg/0036.png",
+      "maskInputSHA256": "9ebd9f28e815ec28bdbf2891af3381f8fb6e8aa6c02ba890c9f84328abc216be",
+      "packedMaskSHA256": "9ebd9f28e815ec28bdbf2891af3381f8fb6e8aa6c02ba890c9f84328abc216be"
+    },
+    {
+      "nativeFrame": 37,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "b821a81840a5f4e36903736c4e53184bd6c4f3126ec6d9c5048c04d8d1a27a5f",
+      "maskInput": "camera-paper-first/manual-v3/rg/0037.png",
+      "maskInputSHA256": "19f3bc6766c9dc7f09333180af6aaa87075e5ecd351dee101269ebb11b545f06",
+      "packedMaskSHA256": "19f3bc6766c9dc7f09333180af6aaa87075e5ecd351dee101269ebb11b545f06"
+    },
+    {
+      "nativeFrame": 38,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "f6e781702c76f7c0addbcb1d605cea8b524cf5c4da175588208b53bbecb918bb",
+      "maskInput": "camera-paper-first/manual-v3/rg/0038.png",
+      "maskInputSHA256": "13aa46b5b9a0a9b0f636e782a77ea89a25999c4084f551a2894620854714cada",
+      "packedMaskSHA256": "13aa46b5b9a0a9b0f636e782a77ea89a25999c4084f551a2894620854714cada"
+    },
+    {
+      "nativeFrame": 39,
+      "kind": "manual-v3-first40",
+      "handMaskValid": true,
+      "rgbSHA256": "ac4cb06eab51f68e73f6dfac4c7d3509e77fdda4254fc328ebf523ef489cd68a",
+      "maskInput": "camera-paper-first/manual-v3/rg/0039.png",
+      "maskInputSHA256": "49a8a398f08c9152443835d887814bfbc5ecaf40bcc09bfeed33727f869789b0",
+      "packedMaskSHA256": "49a8a398f08c9152443835d887814bfbc5ecaf40bcc09bfeed33727f869789b0"
+    },
+    {
+      "nativeFrame": 40,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "9463afb5e83ccf3193b56725b23746dd8a2d3afe0489b9357165e2f4c9402cfe",
+      "maskInput": "camera-composite/r-edge-clean/0040.png",
+      "maskInputSHA256": "a03d87bee8c7cecad7ec4ae183be9cd9429578c0e17b68a1beb0bc3d5f6c6874",
+      "packedMaskSHA256": "4b7c2ac225ed7bcee88b9d2bd6766144f806322d08f92e04aaaa1e3e90ca48b5"
+    },
+    {
+      "nativeFrame": 41,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "5cf61eedce39ecad88560304800ea522579d8ee2b1db3480e59d5af5cc813089",
+      "maskInput": "camera-composite/r-edge-clean/0041.png",
+      "maskInputSHA256": "18eee5446d5fb65690a049a16b0f689620e8fb6cb3877bd97eb161a3430bd0ba",
+      "packedMaskSHA256": "b384596a9a22950015da160e1a3a906542a82c048fe5abad4346d9c57da9d765"
+    },
+    {
+      "nativeFrame": 42,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "9919328ae7ff7bd3d7b809f317c138bc63ac9f4d732fab147f5aecdfc65beaaf",
+      "maskInput": "camera-composite/r-edge-clean/0042.png",
+      "maskInputSHA256": "196ace3e882f97ea6c6f12dbc2598d5966992e7ac2a4b26f6054d51b6056f093",
+      "packedMaskSHA256": "60ced70cd83ca6291dde9e26721a60afb9160817e273c0f075e30fb59fce01d4"
+    },
+    {
+      "nativeFrame": 43,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "07ac00a2dadbd55f878100affe71d4e62f1507084a0d9d0a7937b69500af923a",
+      "maskInput": "camera-composite/r-edge-clean/0043.png",
+      "maskInputSHA256": "84aa62e5dd0883e383cd9ecceb279fa72c9310e2428d91882e2ec9ccef2fbcf2",
+      "packedMaskSHA256": "75c3bf84679bf7223224b344639a859d6d6233495fb0f267b1d7acce6acca527"
+    },
+    {
+      "nativeFrame": 44,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "861fe2d3145f9bb65fb0961328e8c5510a3079fb0460a0b1c2bff102a25bcf54",
+      "maskInput": "camera-composite/r-edge-clean/0044.png",
+      "maskInputSHA256": "a3fe2bdb2e22780016bf2ff5006ffd0ec0a02942d1ada5ed802aedf3192b2ed4",
+      "packedMaskSHA256": "aeeb607ccbdf1011b037edcce97a0014c714074577dcb9030155c480e3b4d1f8"
+    },
+    {
+      "nativeFrame": 45,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "126e31ba853cd446c2bd52be2ebc3b3bd1f5c41613e11fb7b537c161a1bcf3be",
+      "maskInput": "camera-composite/r-edge-clean/0045.png",
+      "maskInputSHA256": "96494d6ebca8e75a5ad4fff9f645eac17dd3da26281f45c8ad83923d0ef6f87f",
+      "packedMaskSHA256": "c768529a9358dc56ef8617060e59699012a94bab92129dd535db52e6b1e714ff"
+    },
+    {
+      "nativeFrame": 46,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "f3344ed78ea8c681fe83399d0731f2436d96b9278952e0682c2ed805118da905",
+      "maskInput": "camera-composite/r-edge-clean/0046.png",
+      "maskInputSHA256": "8cf884a4ab94a2d9aef045398ac1752f921f0d1575da3b9c6405bcfc28308b2b",
+      "packedMaskSHA256": "9a47885902e0b2a158fa2a873115fcdc5aee46302335d1059e7da55ca83ab6ff"
+    },
+    {
+      "nativeFrame": 47,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "043f017f179ee405a9893503b28c0da9c8341e5fbd9f477020c7b19f20d5aa31",
+      "maskInput": "camera-composite/r-edge-clean/0047.png",
+      "maskInputSHA256": "b763affd73d481a5bd09233f088246df5496a64e695938ceb8909e890e9c24cd",
+      "packedMaskSHA256": "016c2014f81742879ad2cdc3fd2c8e6d15e0ed1e0ee73ff139b4349171687fcf"
+    },
+    {
+      "nativeFrame": 48,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "c5a24d434fad0b92f73c4341488520c8781f215c27b6e38cc70bcd10af6274b1",
+      "maskInput": "camera-composite/r-edge-clean/0048.png",
+      "maskInputSHA256": "a58693a4cc5d2798ab5d4391f5d92a0b3a55abbe5d4aa57f6dd9d17e8d29c5c0",
+      "packedMaskSHA256": "672e189850edf39fbddb28184b872066a29f458d0909701578c4af8299db2497"
+    },
+    {
+      "nativeFrame": 49,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "728768ea1627ccded57061f93efee1b1c19881da333b1c170f1fe89b995f726a",
+      "maskInput": "camera-composite/r-edge-clean/0049.png",
+      "maskInputSHA256": "0a3391c2460c66f5cfb0c2c363bb524ef8d441566ec447d8bd1797ab6ed9276c",
+      "packedMaskSHA256": "5dfceede30b1b3887221d0c02f5f5fbaa72a7896ff16a391ef1e4acf8180f651"
+    },
+    {
+      "nativeFrame": 50,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "966806bc3e526be04bbc1d83f21d9e434a3926f828d4065c0030a0a36e8ac253",
+      "maskInput": "camera-composite/r-edge-clean/0050.png",
+      "maskInputSHA256": "2cb130a3ceac359f3b8b7795524a6a321fa82c2554ff15d3b8cc375406f432f9",
+      "packedMaskSHA256": "e5a1012424f16658664c5e93d0d75acfb6ab9b62cc4f9dd137844b7196485cea"
+    },
+    {
+      "nativeFrame": 51,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "3cdff94aa9c9bb735d771e1bd070f1fb8408362bd1855861907196ead709702d",
+      "maskInput": "camera-composite/r-edge-clean/0051.png",
+      "maskInputSHA256": "1a8b75976b0375480acc1daf91cd0f2254b42e54b436f3eb84a85d18f10d2847",
+      "packedMaskSHA256": "41e3e37050f500ca96d6f60d442af982ae26a5d8f05b6c9fd1de0a6bf0f10256"
+    },
+    {
+      "nativeFrame": 52,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "c21452325fec30ca1b4b06c22533023152c61b407bde644c9e5712fc37de3816",
+      "maskInput": "camera-composite/r-edge-clean/0052.png",
+      "maskInputSHA256": "99813088312f468572769baf91ff326122f7733c13b4c8a28d9f339cf5f8756f",
+      "packedMaskSHA256": "318cfe075cfe140fd9615c620d9eadcdcf98da8624dcf6d505f2a310f02e89d6"
+    },
+    {
+      "nativeFrame": 53,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "c547c5bdae72f3b4d4adcd49fa3d475e1d22696f3371d05c92664399cc156b3e",
+      "maskInput": "camera-composite/r-edge-clean/0053.png",
+      "maskInputSHA256": "640590dad243cec63314582680a86e17943383c1e47fc4f29826007eb5c52057",
+      "packedMaskSHA256": "a673ce88b11458cd2011a4136d3d0dee6bb59137af653dd4522b067dd1890287"
+    },
+    {
+      "nativeFrame": 54,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "1cc05035b83c62bfc5dcdf0199d1c21f73f3ce9fe38e235c1d943b9ed547776c",
+      "maskInput": "camera-composite/r-edge-clean/0054.png",
+      "maskInputSHA256": "0d233d022c3adb8ae500ba384ba3e3e2ffbb73ec632332c86b57a4944323ecac",
+      "packedMaskSHA256": "ebd64b4b6391422e8a240b79880fa6b10a9559796f81071ba06b22636935d6dd"
+    },
+    {
+      "nativeFrame": 55,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "9edcbbecbd36124b5e6e274140df13c436ac6d0edd7d65a091526042c7cf6481",
+      "maskInput": "camera-composite/r-edge-clean/0055.png",
+      "maskInputSHA256": "d904ddf91d398978b8ae97d909e464d90f4e0f4852da239a2b9c6b47d72aae78",
+      "packedMaskSHA256": "21ce3bdfd301c2c563c9311eff782c9dd6b6f05983d038df36c5fe2935f7dbb5"
+    },
+    {
+      "nativeFrame": 56,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "6c3349820c53bcc8900f1e3f66563172a08c7ce99210b43cfa75bf764c1d6095",
+      "maskInput": "camera-composite/r-edge-clean/0056.png",
+      "maskInputSHA256": "6df70a5971777e97eaf1bdc802ff13749c0cfe01861096c00a84442e5e709f48",
+      "packedMaskSHA256": "ab925b89e7114d61f664959754170b29733f18767d63d24c336f6e31296f9aa9"
+    },
+    {
+      "nativeFrame": 57,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "4eb65fa10bd3349493f8931aceb74e330a148bc819e2c93b127ecbb2d9d71d7d",
+      "maskInput": "camera-composite/r-edge-clean/0057.png",
+      "maskInputSHA256": "dac1692b967784427e0ef1ce80d9d50b4739f7e71ade967b3c5276315742e084",
+      "packedMaskSHA256": "64704268592bbe486a9c58a613267c6c88c1f3e52967cde883fdca0a3c994199"
+    },
+    {
+      "nativeFrame": 58,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "cddd99f3a8d50cabb350a3f74cc8a9650b3e839b54006c9ebaa2612cf5b4fb37",
+      "maskInput": "camera-composite/r-edge-clean/0058.png",
+      "maskInputSHA256": "e43ff5479ecd7f707c90978ed20aa7feb69d5ca7df463d97eb58eb73af12ab28",
+      "packedMaskSHA256": "3edb35e5b68fb04516581e12221e6914c25495edc23a5fa07893abaa1904a0cb"
+    },
+    {
+      "nativeFrame": 59,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "165dc62d8a6da1e387a087e6ab3e5c70c43cb29c1f66011efe207fae23b2b082",
+      "maskInput": "camera-composite/r-edge-clean/0059.png",
+      "maskInputSHA256": "4f299c21ea4d4d2c658cb9c4ff486d1a1f9fe3a019bae824f239e2878c21d46d",
+      "packedMaskSHA256": "0dd6087277483fb0748d691f1b7254d64138eee4720cf5bf2979899572b74ec8"
+    },
+    {
+      "nativeFrame": 60,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "325544190c5340973389bf423527e7252f4cc45c404c8937f7fdc9f058958f82",
+      "maskInput": "camera-composite/r-edge-clean/0060.png",
+      "maskInputSHA256": "bf1c1689802782180c1a85ff2ab9724bd65639c2cbaa077255fdaf12336ad7c2",
+      "packedMaskSHA256": "5cbade36691610ae02173cbaf85277cf326e4ff6cb6d9b79251671a12122a536"
+    },
+    {
+      "nativeFrame": 61,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "cbdd51c9be6eccbaed5900e3870c3a9d409f7dbcedcaffaabc5bcdc184829afa",
+      "maskInput": "camera-composite/r-edge-clean/0061.png",
+      "maskInputSHA256": "fc0c37af26f1c497aee719c66f96a42155f5480823dc9834094df2626298d7f6",
+      "packedMaskSHA256": "207f3663a4a141bc24a3ca20809b5724ad000f0695ebd1a61fbe4c9ba29544f6"
+    },
+    {
+      "nativeFrame": 62,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "13cf445c58627a7918e2e1e4466606cd43d2c6471630d31f0ad1cc9cdb71bafb",
+      "maskInput": "camera-composite/r-edge-clean/0062.png",
+      "maskInputSHA256": "71a90eb85d04dd0ed01176119d1e0c4d28f432865741468514801557bfe8bb19",
+      "packedMaskSHA256": "f1296eaa07db3854c9d391fb7da7f9528f2e20f6c69e19438b9d6d8450de8f3d"
+    },
+    {
+      "nativeFrame": 63,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "b5d3208582121ab3d8a3531542d928b6864e4f8407f7d877fd2beb56c881ba61",
+      "maskInput": "camera-composite/r-edge-clean/0063.png",
+      "maskInputSHA256": "d5a87c7a0895b92e32d1524d5a2bfd4de20589427fa50e344c3818bda2a722e1",
+      "packedMaskSHA256": "1d16836c687e696794c148eff3b2a09b92c438f2e03d51df213167b204568e6b"
+    },
+    {
+      "nativeFrame": 64,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "a53580b560fbb2a3ccce5fc6a498d4ef0b74148ce5030b818dac49443a8467ec",
+      "maskInput": "camera-composite/r-edge-clean/0064.png",
+      "maskInputSHA256": "f6dc3ec45a435679c46cc7d2c85e5f8241a8bddc7dbd7e70a5679cc4893ff1bc",
+      "packedMaskSHA256": "d560a55da017ef9220501981cc8ea472bd58fb5b8339592fa79a89e9e216ba8b"
+    },
+    {
+      "nativeFrame": 65,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "bda4917a604143f4cd911d6371cf1a6267476b663184cd5a7fc8c942b289802e",
+      "maskInput": "camera-composite/r-edge-clean/0065.png",
+      "maskInputSHA256": "43e9b45e8bd9ad482247d7fff92263762e7caadf89cec501effc1d1c6358fe61",
+      "packedMaskSHA256": "6d9ebca0f67d1f772c2f08e5828cd9b12768090eda1d72a1986b9a94450a57ce"
+    },
+    {
+      "nativeFrame": 66,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "390d5031b7b182d07e5c3d2369c20a285890199b2000d44b16c69ab0505c2bd5",
+      "maskInput": "camera-composite/r-edge-clean/0066.png",
+      "maskInputSHA256": "cecab0a4a9e12212828cdeea966c14fd060388819684c8f56da65339eb563d9f",
+      "packedMaskSHA256": "0b57dddaaac9006601f03476c4be3699282393bae8ec4c16673335657412a122"
+    },
+    {
+      "nativeFrame": 67,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "961e762b065381fd890fec49e442e58982b13fdbed09db4b54c63e306cab08a9",
+      "maskInput": "camera-composite/r-edge-clean/0067.png",
+      "maskInputSHA256": "beaadca2bfd911952d26bf68a32e0a0ed668a3384032456ae79327ed80ec2007",
+      "packedMaskSHA256": "159078588735542c21ecd4948b7c8da2112133b558f3eedd3d6a9fad47b81945"
+    },
+    {
+      "nativeFrame": 68,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "d9fa9421e8c3a3b4f0f4d5ef6031ebb7c686a7b09094c8fede5edcdf47cee209",
+      "maskInput": "camera-composite/r-edge-clean/0068.png",
+      "maskInputSHA256": "09fc2e91d41107aefe9ef952ec65fe88386a3f58d923ed4f28ac3984e285c881",
+      "packedMaskSHA256": "77248569cb7036033c7467004ae1fc3670045b8ce2e91791cbc5b68b850630c2"
+    },
+    {
+      "nativeFrame": 69,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "4c69880cb3cb5a7186b56e7ed6208343b8f8b9d903c0f109e9f65ee06161f00f",
+      "maskInput": "camera-composite/r-edge-clean/0069.png",
+      "maskInputSHA256": "dae362528a63f0985f11237317485801ff71e46fe091fb470e7c27171b4667c5",
+      "packedMaskSHA256": "042371a5dbce0cb2d0094db74bd9d9dc65618a9e1b0f9ad48be3c2ad8ac9dd61"
+    },
+    {
+      "nativeFrame": 70,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "ba449ed715bcf173c1b9bb276e3688ffbb6b9de60ee0f583d87351979dfc1f40",
+      "maskInput": "camera-composite/r-edge-clean/0070.png",
+      "maskInputSHA256": "cd47084f08fdfb4815580ae2fbba77d8c420c511eb387fd9fe6a3092ca1359b7",
+      "packedMaskSHA256": "a1a76174b2338f2fe6d5d825165f3c87df8e2225b7cf86af3a193c664ffd46ec"
+    },
+    {
+      "nativeFrame": 71,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "4349c0408065a5f6736f03de2b59a73b51c1bc91808a880a645d0f5d686bc661",
+      "maskInput": "camera-composite/r-edge-clean/0071.png",
+      "maskInputSHA256": "d267088cd79e9dd1ea98b4d1ec1546a1048daae7bba5961a4656642dcf556ae5",
+      "packedMaskSHA256": "9ecd39ac51505455d25b86515da22c4acadfac96038ad321c566551725855944"
+    },
+    {
+      "nativeFrame": 72,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "3786d91f8eecf4488e902435e40f11b31f29daffb4e0a57fe84270e1cca2b7ac",
+      "maskInput": "camera-composite/r-edge-clean/0072.png",
+      "maskInputSHA256": "e6eaba7a7810f9abcef471707891cb09b97f46f16b0b33d48f557d5ece6f2ed2",
+      "packedMaskSHA256": "4c0e5cec5a835930155c8be01287c0378ea0a408cf024942755baa57ccd362d2"
+    },
+    {
+      "nativeFrame": 73,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "a5f3a24b979c64a6e6eafb39169812d0e164a01fb60edf2db3f0dfdd7a021375",
+      "maskInput": "camera-composite/r-edge-clean/0073.png",
+      "maskInputSHA256": "7c26e4d7b89df362ee39c85740b5b4e8b681711cbd37ee34c73d3abe9eedd91c",
+      "packedMaskSHA256": "c1c64a5bc4245cb2d5b133284a5ce44068c4ecf79606c3b3421c4b6d0be7426b"
+    },
+    {
+      "nativeFrame": 74,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "ede3ee108cd8e09c312aec178764a4beec70313f9f60e6dc1a92987fa9585f39",
+      "maskInput": "camera-composite/r-edge-clean/0074.png",
+      "maskInputSHA256": "e7b5b49bda478f249935c1ea00bd4b4c167c2b8d766e2ffcf3f9cd9329b49ee9",
+      "packedMaskSHA256": "fe8d14dcd866d9d9b4d37113ba8c6117c12efad856a84f3857523005228e3a25"
+    },
+    {
+      "nativeFrame": 75,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "c1c3ce8bcfc4f047de1d70ad9d7907ecf3797ae3ac3de8922a7dd15c88802b79",
+      "maskInput": "camera-composite/r-edge-clean/0075.png",
+      "maskInputSHA256": "d20e6875b88700fc542f0a87570500a716b53acff84053b5e92e1524d4bf19e4",
+      "packedMaskSHA256": "387cb694931f2d43fa9b6facccd66f1fef78bdbd4d11745e00f75ebb391f7fbe"
+    },
+    {
+      "nativeFrame": 76,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "f1a839e414a313d8efad57f6338b30b302aca237edab5af99958f2522fd6b82c",
+      "maskInput": "camera-composite/r-edge-clean/0076.png",
+      "maskInputSHA256": "805fa2a249404e6c761218791f5b5bed20a305717879db493fe47bd5062fe96a",
+      "packedMaskSHA256": "783ef539ff9ac21e2ebe9e2f9b1e4d161ebdb7cab61d2378eec9521b63373bed"
+    },
+    {
+      "nativeFrame": 77,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "30828bc8877fcab23b9e6bab059e2ee4d63eac2fb0890ac7c8d9856ad4e7f1d5",
+      "maskInput": "camera-composite/r-edge-clean/0077.png",
+      "maskInputSHA256": "5f2bb46dd4f469f578445ffc3824eee27d5b928e1ba2347db797de3d2bb809af",
+      "packedMaskSHA256": "c41f11629a497a1ac2562e8ca5ae649591b1c175c3250018ecfc59d67e9c5d9b"
+    },
+    {
+      "nativeFrame": 78,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "de104b9090f757d3c70567605d29861fe2a582d36390f673f33e6fdf6f38880a",
+      "maskInput": "camera-composite/r-edge-clean/0078.png",
+      "maskInputSHA256": "8d0b7f75e491c0235d4f172ddf6c74ba67a3efc1ffc35ddd32c147292d34587b",
+      "packedMaskSHA256": "990e99da629aaddecba351210e79384c430e7bb388cb966babc5697e07b78d22"
+    },
+    {
+      "nativeFrame": 79,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "857cd5ac3fd99422adaa8dfc08999fd674ad44f47093afe9591348e0fdbf78b1",
+      "maskInput": "camera-composite/r-edge-clean/0079.png",
+      "maskInputSHA256": "66ea3f7da927e18fd023de00518974633d87e751dc83db738afa04108c1297b6",
+      "packedMaskSHA256": "b2bfaea267cb855b09410ed8b34914cdf973a51e37917c4b102583d5c5f5bb81"
+    },
+    {
+      "nativeFrame": 80,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "a772fafffcd21c4a4b4ce9393c4547a5e20393a684ba3bdadff5efa1becab685",
+      "maskInput": "camera-composite/r-edge-clean/0080.png",
+      "maskInputSHA256": "0fca62bc423821b39034c05068c2d51766383081c9f7b78914a0b4368ab95ae9",
+      "packedMaskSHA256": "2ea862f74a40b1569281e7d84d6321b5e37a45deece5ec7bbdcb3f261f52f552"
+    },
+    {
+      "nativeFrame": 81,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "cc9a4425b988ecf7fa5bf0960afaaf0ec6b446ade7fd8502ff0b1beba414855c",
+      "maskInput": "camera-composite/r-edge-clean/0081.png",
+      "maskInputSHA256": "a9a8ff401e025aac2fa46e13d551b8c7d6de032cd3b49924ea28321be53511ad",
+      "packedMaskSHA256": "a52625252786f9317422a0d481c116d5b86c5d3e6f286020ca8f7d1c1fa0a6ae"
+    },
+    {
+      "nativeFrame": 82,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "0a1e750720daadd46d892e5d1317f9c40353004906752ffe5dbb7c09de431853",
+      "maskInput": "camera-composite/r-edge-clean/0082.png",
+      "maskInputSHA256": "934005761de0ffa8ae9b2ab1d2e20044025c543d611aa7f62cb2991fa81d78cd",
+      "packedMaskSHA256": "83d97e9047a5172a9fe2b6d55b91066b7f23b73e80a28ed06fdcb6e84bb929a8"
+    },
+    {
+      "nativeFrame": 83,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "6a366678e0bf402f9349bdc83c407ef30f1e6f8a180a40969981e13e6de892ad",
+      "maskInput": "camera-composite/r-edge-clean/0083.png",
+      "maskInputSHA256": "c3f7beed0f5897544171d5b971f075663619acae700a05d6432be0363cb7a1f9",
+      "packedMaskSHA256": "f39a51e49b9cc95a0b0aafeacfa7a1da8eac0ace3f193599b3cfb6293273b6af"
+    },
+    {
+      "nativeFrame": 84,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "cdf7dc6da1cdf03ff715695a7ed34931055a940d95be7144cea7f6b74070f736",
+      "maskInput": "camera-composite/r-edge-clean/0084.png",
+      "maskInputSHA256": "cd89b6fd40003561f2148d4f4baee79b7d226c538473e2bb1ea0de2162e6078c",
+      "packedMaskSHA256": "154c7992b38f1abe7ff6755ff5e0a6917f16e42f6ee6b0fd2c6e71bf105d60a0"
+    },
+    {
+      "nativeFrame": 85,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "912422cb1607818a2eec9dabf8e5f56ba646c589702cdb8012ea8b6c15e2e7e6",
+      "maskInput": "camera-composite/r-edge-clean/0085.png",
+      "maskInputSHA256": "8e932d7cac9e42cd8234adfcef34d07151bca6a5b94097ec39e62fa16ad630ce",
+      "packedMaskSHA256": "21d9b6d883f981008c8e5bef48a39f23390747f420773c75a938c9e79ac4ad14"
+    },
+    {
+      "nativeFrame": 86,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "17d3293abff5ef2805d96d45666a610530c1a8aa99292ee03722d17fbe0ca8cc",
+      "maskInput": "camera-composite/r-edge-clean/0086.png",
+      "maskInputSHA256": "9c8e088c126a8f04a014ff822a665cd58567f1d00ca3583d7af92f58119bf164",
+      "packedMaskSHA256": "c8f02220dccf86725149ee3bad45233131a7230eeba29afc684184d6779170d8"
+    },
+    {
+      "nativeFrame": 87,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "0abf4cfae28dae9ae3f45baa35aec60859679af94a47f13ce06ff0a9b03e1550",
+      "maskInput": "camera-composite/r-edge-clean/0087.png",
+      "maskInputSHA256": "9b671d9ed1423279d02899ebe153c55d2e19e7fe9c8af781903525a4c481dc41",
+      "packedMaskSHA256": "94c8aa38f5f6f8a9b4e131454dc53ad10939fd716983792804d5cab1eef5af2c"
+    },
+    {
+      "nativeFrame": 88,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "2cf057a6e797825838136a5c2e3fd57c262064a1916f64f19a1995c0c799667e",
+      "maskInput": "camera-composite/r-edge-clean/0088.png",
+      "maskInputSHA256": "3cac13bc1835fd1465346d417190b662cbe9c5635fbb618a9a4b5e1de140e7e0",
+      "packedMaskSHA256": "8322ff0662c2e0af5e0f7b705e4d9c2fc6bbb5147ad13e8aa5088242f5939832"
+    },
+    {
+      "nativeFrame": 89,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "5a8b5232ebf02c973c4cf512a55fafaed68c0d7632b128c1365a252d65a09319",
+      "maskInput": "camera-composite/r-edge-clean/0089.png",
+      "maskInputSHA256": "096cddc40093ae4908127ea6358c9725618070934ed804c959a0ee5612d8477a",
+      "packedMaskSHA256": "6b2335798fa8545b0c2834facc87e461b4b9a60c5760638d4fff0b28f7c4ffef"
+    },
+    {
+      "nativeFrame": 90,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "ca81f784029a272d6e12f38bb0183cccb08de229e2f4c927a9016516480fee0d",
+      "maskInput": "camera-composite/r-edge-clean/0090.png",
+      "maskInputSHA256": "b81efec130bd6e737a696b6228dc4c086fd65224fc8eac9fadd0ca1804bc2b2f",
+      "packedMaskSHA256": "7fd8604479fe414bd1a2c9f085e12af6584f739acec232e27c78e0db789b2d59"
+    },
+    {
+      "nativeFrame": 91,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "e57a8ca20ed2a103c2de705d5d183f0648867d30e8b052491ce9e65385351594",
+      "maskInput": "camera-composite/r-edge-clean/0091.png",
+      "maskInputSHA256": "065de1f1a6f536a420c05789d5460f743f183b26c63bc104b0d0b45e01b24d2e",
+      "packedMaskSHA256": "7e914df31bd7151ac2ca4368136819b65bcd6b67509f3d56d6f17411e69a490a"
+    },
+    {
+      "nativeFrame": 92,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "4944c9d2c0a6af1ecda40a5530e7bd23f56534da429ce32175c9aaff0cd8d2be",
+      "maskInput": "camera-composite/r-edge-clean/0092.png",
+      "maskInputSHA256": "6ed2d26dcc620d7723a50cb2aea53be8ca899edc88f52ff2aef8c272f3a10995",
+      "packedMaskSHA256": "44125d91f46479806330656d9bde6e01ec5873a373bf2f3a1fc84c522b488584"
+    },
+    {
+      "nativeFrame": 93,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "389948822c7bc2e4f1a2b08a0ede18fc660bf3879f5c565aee932babea02b147",
+      "maskInput": "camera-composite/r-edge-clean/0093.png",
+      "maskInputSHA256": "afe4692478e9db413e0157cdb87f4be0bbbca66c420ea0052686834c5328faeb",
+      "packedMaskSHA256": "7c972961271d3ce549360ba38b49fe7798e310910a5b90e33b285d4024160bf7"
+    },
+    {
+      "nativeFrame": 94,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "4f9ee76cb08c02732633e1a74e0c34039597879ab9341d2f8bae9316b6814d70",
+      "maskInput": "camera-composite/r-edge-clean/0094.png",
+      "maskInputSHA256": "7fcb7b9772a6b1c709e9ab61624522820db9fea3d46e06f53e3608bfcd88d49b",
+      "packedMaskSHA256": "a4304104d067e9339ef120a4507220690dd88f8305cf291feaf46fa129858d11"
+    },
+    {
+      "nativeFrame": 95,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "04386e3594688d27ce0fbdeea74484f0a13665506e5c058e22807f16abfa267c",
+      "maskInput": "camera-composite/r-edge-clean/0095.png",
+      "maskInputSHA256": "70fa829dba5889a4b8531cbca7961e15914e5d6162b45c23fe6382653aa93393",
+      "packedMaskSHA256": "d8e412acb78577cb6b4f69db1ff749e233b86db5d16c118ca87dd12eb8fa0288"
+    },
+    {
+      "nativeFrame": 96,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "32f231d801dfab541f730e5a6b6a1114139d529d11a0f9a6827a705683079aaa",
+      "maskInput": "camera-composite/r-edge-clean/0096.png",
+      "maskInputSHA256": "8f74107e1268c0f3a71734f29345093a1464a46e86b7478e5fcdc8cb4afb2443",
+      "packedMaskSHA256": "c7b4134e4448b8b96845eed214163662d3d8299ee05c0afbb4efec89a886c2dd"
+    },
+    {
+      "nativeFrame": 97,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "8b55632e9532831135e656b677e5e5a573b003fc06ba2818a4ed5c0860a7dfbf",
+      "maskInput": "camera-composite/r-edge-clean/0097.png",
+      "maskInputSHA256": "b6cbd4024ff753740a3a05ad1a508d2802c02cdfc84774416f8fd9bab90bd191",
+      "packedMaskSHA256": "61cecfcba375f521c9b64faeab57b28231aad8441774718419d3db0663364aff"
+    },
+    {
+      "nativeFrame": 98,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "d0af9559b01a4419d1eb5d27907a9c1c29c61d4eed40f16289b33a7c56a6c393",
+      "maskInput": "camera-composite/r-edge-clean/0098.png",
+      "maskInputSHA256": "d9b287142fe1c4b9437f1692dde80507930ba21ef1ff1b4df7666a44e2e35049",
+      "packedMaskSHA256": "1e3db51271a24d3248d4817097d777e486ab7ef0faeae29ad4d754eb56a437c2"
+    },
+    {
+      "nativeFrame": 99,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "7f8ab64c84b799d4a5380ae7b27189dd05c827cd83180ede806854b8d9e217c1",
+      "maskInput": "camera-composite/r-edge-clean/0099.png",
+      "maskInputSHA256": "47bca7412a1ab06703b96d7979b8623cda7a5506972356b0fd1bc7d533e91160",
+      "packedMaskSHA256": "e48fe025c5eca373f75639052302133522cc19424afc57fd351c6c3e4561c844"
+    },
+    {
+      "nativeFrame": 100,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "3c30f50064df2d2a96edf29952544865c09ea96209f2d31fd8323b3da0361679",
+      "maskInput": "camera-composite/r-edge-clean/0100.png",
+      "maskInputSHA256": "4fd9c2490fca5327cb5f770509fd5c7130def921cadf74e9b19c4d01e558a5b3",
+      "packedMaskSHA256": "b11f77f40d8460086cd20740467a31eb82ced44ce23e93bc329b24a77725c774"
+    },
+    {
+      "nativeFrame": 101,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "5c7c8414a23ac6c2bbbd19dc437682e22e1ccdea2db883851cdd7f61c79de10d",
+      "maskInput": "camera-composite/r-edge-clean/0101.png",
+      "maskInputSHA256": "34195443fb49036b397b03e3f68d2dfecdf0b7c4514dd8041fffe9ba5fa0952f",
+      "packedMaskSHA256": "39391796d250531d02172926156ef16603c5bbb8ab6c9af4e423876e1f9fc2bc"
+    },
+    {
+      "nativeFrame": 102,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "98be44b2a093057045ea014057a4f2fb27ad29547602be3fffe6659d3ad45ea9",
+      "maskInput": "camera-composite/r-edge-clean/0102.png",
+      "maskInputSHA256": "3fd0273b844a762a446f5fb364c3ce0b50bfd43581a656e874344c81c5090e8e",
+      "packedMaskSHA256": "e5d2b1e9244a817e04cf8c5e67d379d3079a0c403f8d86405f7e2887fea21de4"
+    },
+    {
+      "nativeFrame": 103,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "790fc5a5bac465c0bebf022c04d52601b549d57deb6bb3a5b0db3ec0908fb42e",
+      "maskInput": "camera-composite/r-edge-clean/0103.png",
+      "maskInputSHA256": "2b7877825922a9e779c82b06a02bc8ba8df64f003faf57e21201a74b75459d65",
+      "packedMaskSHA256": "a427d6fd6ebd2d2769b2219f65f075c449a28164176999fa8608464293e4d8db"
+    },
+    {
+      "nativeFrame": 104,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "345900fc002b7e5200caa74fe29665410f08af60aa7183b6d5b630685dff540e",
+      "maskInput": "camera-composite/r-edge-clean/0104.png",
+      "maskInputSHA256": "993fe0147a15c2336b0bac59517bf170a0ad6a4a93d6f6e914a2467ab3479c69",
+      "packedMaskSHA256": "0efbaf266d19266c459057ced41064c3f08be7d30b2aba761280dc135846e4db"
+    },
+    {
+      "nativeFrame": 105,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "bed380e99524f1931b5ae9146deab8e480f1ab6b6a2a0902e4d8ba63d9f83eec",
+      "maskInput": "camera-composite/r-edge-clean/0105.png",
+      "maskInputSHA256": "e561648dd598c08c9c26409d8671f23260179fa17d0e2f90d236ecd652f35f2f",
+      "packedMaskSHA256": "92d42196c5521dc969daa0b3b945dcf087e7bf8fa1f290b17709e11a0d0bc166"
+    },
+    {
+      "nativeFrame": 106,
+      "kind": "edge-R",
+      "handMaskValid": false,
+      "rgbSHA256": "520939f2ad0c2e55990d89931059b24037031a1506d2adcaf1b9386cf4de4dac",
+      "maskInput": "camera-composite/r-edge-clean/0106.png",
+      "maskInputSHA256": "678728b0c23754270090380861225c2de394b2498d4f005e762f936cf80b5632",
+      "packedMaskSHA256": "1de33e84886497d2042f6faf35ca37b3b3f84079a11af09d97aa1cb75cb87a84"
+    },
+    {
+      "nativeFrame": 107,
+      "kind": "fifth-paper-R",
+      "handMaskValid": false,
+      "rgbSHA256": "88213c32762ca7d2fd055275ca66020b7e03311f16a1ba0df85540860028e7dd",
+      "maskInput": "camera-fifth-paper/r/0107.png",
+      "maskInputSHA256": "e3df249029603058077cfe01369f82f521ac50c942f7d6347120a4bc5bad4b38",
+      "packedMaskSHA256": "b5bd1bb07889161bf00b1e86feb51ea7064848ce2c473c11f28ec134cde6967d"
+    },
+    {
+      "nativeFrame": 108,
+      "kind": "fifth-paper-R",
+      "handMaskValid": false,
+      "rgbSHA256": "486301fecfbc965eb6a75cb0e24c25d6347bc823c5129c8117644fee9872510a",
+      "maskInput": "camera-fifth-paper/r/0108.png",
+      "maskInputSHA256": "038a6fa1e04d7a81ee78fb030e2867885731ba1df8df5067ff998c9529330caf",
+      "packedMaskSHA256": "9c84f60408e7441e4f975ef1f0bcc4c5c0b28aa5d0c41998dab42dfe833bf03d"
+    },
+    {
+      "nativeFrame": 109,
+      "kind": "fifth-paper-R",
+      "handMaskValid": false,
+      "rgbSHA256": "fc04d694cfd699523aa877fe356996045b6813112ba71c92981a9a58d46410e1",
+      "maskInput": "camera-fifth-paper/r/0109.png",
+      "maskInputSHA256": "375cd2348789e9ce889aff6e35d06f64b410845b2f9922233a5bffdcbc3e5502",
+      "packedMaskSHA256": "caf58d85a86e043c72f1e039a6d4d26fd1baddcb50f7c7338e7340f53a2cc91a"
+    }
+  ],
+  "probe": [
+    {
+      "width": 1920,
+      "height": 2160,
+      "r_frame_rate": "24/1",
+      "nb_frames": "110",
+      "disposition": {
+        "default": 1,
+        "dub": 0,
+        "original": 0,
+        "comment": 0,
+        "lyrics": 0,
+        "karaoke": 0,
+        "forced": 0,
+        "hearing_impaired": 0,
+        "visual_impaired": 0,
+        "clean_effects": 0,
+        "attached_pic": 0,
+        "timed_thumbnails": 0,
+        "non_diegetic": 0,
+        "captions": 0,
+        "descriptions": 0,
+        "metadata": 0,
+        "dependent": 0,
+        "still_image": 0,
+        "multilayer": 0
+      },
+      "tags": {
+        "language": "und",
+        "handler_name": "VideoHandler",
+        "encoder": "Lavc62.28.102 libx264"
+      }
+    }
+  ],
+  "command": [
+    "ffmpeg",
+    "-v",
+    "error",
+    "-y",
+    "-framerate",
+    "24",
+    "-start_number",
+    "0",
+    "-i",
+    "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-mattes/frames/%04d.png",
+    "-framerate",
+    "24",
+    "-start_number",
+    "0",
+    "-i",
+    "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-working/rg/%04d.png",
+    "-filter_complex",
+    "[0:v][1:v]vstack=inputs=2[v]",
+    "-map",
+    "[v]",
+    "-frames:v",
+    "110",
+    "-an",
+    "-c:v",
+    "libx264",
+    "-crf",
+    "14",
+    "-pix_fmt",
+    "yuv420p",
+    "-bf",
+    "0",
+    "-movflags",
+    "+faststart",
+    "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-working/camera-working-native.mp4"
+  ]
+}
