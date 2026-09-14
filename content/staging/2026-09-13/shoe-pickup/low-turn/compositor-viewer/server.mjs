@@ -6,6 +6,9 @@ import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
+  '/return-join':path.join(here,'return-join.html'),
+  '/return-join.mjs':path.join(here,'return-join.mjs'),
+  '/far-left-return.mp4':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/release-continuation/source.mp4'),
   '/far-left-endpoint':path.join(here,'far-left-endpoint.html'),
   '/far-left-endpoint.mjs':path.join(here,'far-left-endpoint.mjs'),
   '/far-left-source.mp4':path.resolve(here,'../motion-transfer/camera-review/seven-targets/far-left-anchor/motion/source.mp4'),

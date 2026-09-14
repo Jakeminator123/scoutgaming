@@ -1,3 +1,13 @@
+## Far-left release and return join review — 2026-09-14
+
+Continuation native14 is the first independently verified clear release; empty return reaches its own ready pose around37–39. Full100-pair search against original0–9 found39→0 closest pose but37→0 smoother low-speed direction. No seamless cut is established. Motion review is building actor-only composite with a single uniform registration; early paper fragments0–4 still require cleanup without removing skin.
+
+Staging `/return-join?registered=1` compares native24fps return24–37 against original0–8. `end=39` enables the alternative cut. The boundary now holds through its intended native duration instead of cutting immediately in its callback. Saved browser receipt `return-join-held-browser.json` records43.0ms from frame37 expected display to handoff, with every requested callback25–37 and1–8 present. Explicitly drawn start frames24/0 are separate. This is an actor crop diagnostic, not full card or gameplay continuity proof.
+
+The dealer-sync probe and all110 required pre-commit tests passed for this staging change.
+
+The actual gamecard layout uses affine CSS rotate/skew/scaleY without perspective. Constant card quad plus screen translation is valid in that game-art plane;63×88 is a logical rectangle and must not be described as measured physical dimensions. The generated source paper growth remains rejected. All-seven-seat source motion and authoritative live integration remain unfinished; public4173 is unchanged.
+
 ## Release continuation completed; review underway — 2026-09-14
 
 Job2825e599-2346-478b-bb7f-12ca5aa518bc completed. Original97native24fps1920x1080silent frames saved intact to far-left-anchor/motion/release-continuation/source.mp4 with native-receipt.json (hash/PTS/sourceURL). Root inspected dense0–31 hand/table frames and fullscene every8thframe: apparentrelease13–15, emptyreturn31–40, thenunwantedarms-crossedchestpose48+. Sourcepaper footprint/printchanges0–6 needrigidcardphysical review. No acceptance; choose a usable earlyreturn only after contact/registration/target measurements. QA and motionagents assigned independent review and source96→new0 / earlyready→ownsource0 joins. No paidjob remains pending.
