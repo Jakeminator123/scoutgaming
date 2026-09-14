@@ -2,6 +2,7 @@ import {packedGPU} from '/packed-gpu.mjs';
 const [registration,join,table]=await Promise.all(['/speech-registration.json','/camera-return-join.json','/camera-table.json'].map(async u=>{const r=await fetch(u);if(!r.ok)throw Error(u);return r.json();}));
 const videos=Object.fromEntries(['return','bridge','idle'].map(k=>[k,document.querySelector(`#${k}-video`)])),status=document.querySelector('#status');
 if(new URLSearchParams(location.search).get('edge')==='1'){videos.bridge.src='/speech-bridge-edge.mp4';videos.bridge.load();}
+if(new URLSearchParams(location.search).get('edge')==='2'){videos.bridge.src='/speech-bridge-residual.mp4';videos.bridge.load();}
 const gpu=packedGPU(document.querySelector('#scene'),videos.bridge,{outputWidth:1280});
 function compose(a,b){return [[a[0][0]*b[0][0]+a[0][1]*b[1][0],a[0][0]*b[0][1]+a[0][1]*b[1][1],a[0][0]*b[0][2]+a[0][1]*b[1][2]+a[0][2]],[a[1][0]*b[0][0]+a[1][1]*b[1][0],a[1][0]*b[0][1]+a[1][1]*b[1][1],a[1][0]*b[0][2]+a[1][1]*b[1][2]+a[1][2]]];}
 function parameters(m){return {scale:Math.hypot(m[0][0],m[1][0]),rotation:Math.atan2(m[1][0],m[0][0]),translation:[m[0][2],m[1][2]]};}
