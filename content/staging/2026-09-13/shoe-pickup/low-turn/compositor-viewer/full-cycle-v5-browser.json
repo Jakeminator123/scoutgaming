@@ -1,0 +1,170 @@
+{
+  "candidateStatus": "unapproved-independent-surface-review",
+  "videoSha256": "d72bb46071b8911950134d3044d2c76f77b6b671d6a289e9b2796becacf093d6",
+  "lastPaintedFrame": 88,
+  "expectedFinalFrame": 88,
+  "quality": {
+    "totalVideoFrames": 93,
+    "droppedVideoFrames": 53,
+    "corruptedVideoFrames": 0
+  },
+  "frames": [
+    {
+      "frame": 1,
+      "mediaTime": 0.016667,
+      "expectedDisplayTime": 23830.6,
+      "callbackTime": 23841.2
+    },
+    {
+      "frame": 4,
+      "mediaTime": 0.066667,
+      "expectedDisplayTime": 23875.2,
+      "callbackTime": 23858.5
+    },
+    {
+      "frame": 5,
+      "mediaTime": 0.083333,
+      "expectedDisplayTime": 23907.5,
+      "callbackTime": 23890.9
+    },
+    {
+      "frame": 10,
+      "mediaTime": 0.166667,
+      "expectedDisplayTime": 23971.2,
+      "callbackTime": 23957.9
+    },
+    {
+      "frame": 13,
+      "mediaTime": 0.216667,
+      "expectedDisplayTime": 24025.2,
+      "callbackTime": 24008.6
+    },
+    {
+      "frame": 14,
+      "mediaTime": 0.233333,
+      "expectedDisplayTime": 24041.9,
+      "callbackTime": 24025.2
+    },
+    {
+      "frame": 15,
+      "mediaTime": 0.25,
+      "expectedDisplayTime": 24058.6,
+      "callbackTime": 24041.9
+    },
+    {
+      "frame": 17,
+      "mediaTime": 0.283333,
+      "expectedDisplayTime": 24091.9,
+      "callbackTime": 24075.1
+    },
+    {
+      "frame": 18,
+      "mediaTime": 0.3,
+      "expectedDisplayTime": 24108.5,
+      "callbackTime": 24091.8
+    },
+    {
+      "frame": 19,
+      "mediaTime": 0.316667,
+      "expectedDisplayTime": 24124.9,
+      "callbackTime": 24108.2
+    },
+    {
+      "frame": 20,
+      "mediaTime": 0.333333,
+      "expectedDisplayTime": 24140.9,
+      "callbackTime": 24124.2
+    },
+    {
+      "frame": 21,
+      "mediaTime": 0.35,
+      "expectedDisplayTime": 24158.6,
+      "callbackTime": 24141.9
+    },
+    {
+      "frame": 22,
+      "mediaTime": 0.366667,
+      "expectedDisplayTime": 24175.1,
+      "callbackTime": 24158.4
+    },
+    {
+      "frame": 23,
+      "mediaTime": 0.383333,
+      "expectedDisplayTime": 24190.9,
+      "callbackTime": 24174.2
+    },
+    {
+      "frame": 24,
+      "mediaTime": 0.4,
+      "expectedDisplayTime": 24207.6,
+      "callbackTime": 24191
+    },
+    {
+      "frame": 25,
+      "mediaTime": 0.416667,
+      "expectedDisplayTime": 24224.8,
+      "callbackTime": 24224.7
+    },
+    {
+      "frame": 27,
+      "mediaTime": 0.45,
+      "expectedDisplayTime": 24258.5,
+      "callbackTime": 24241.9
+    },
+    {
+      "frame": 28,
+      "mediaTime": 0.466667,
+      "expectedDisplayTime": 24274.9,
+      "callbackTime": 24258.1
+    },
+    {
+      "frame": 30,
+      "mediaTime": 0.5,
+      "expectedDisplayTime": 24307.7,
+      "callbackTime": 24291.1
+    },
+    {
+      "frame": 32,
+      "mediaTime": 0.533333,
+      "expectedDisplayTime": 24341.9,
+      "callbackTime": 24307.8
+    },
+    {
+      "frame": 33,
+      "mediaTime": 0.55,
+      "expectedDisplayTime": 24358.5,
+      "callbackTime": 24341.8
+    },
+    {
+      "frame": 47,
+      "mediaTime": 0.783333,
+      "expectedDisplayTime": 24590.9,
+      "callbackTime": 24624.6
+    },
+    {
+      "frame": 48,
+      "mediaTime": 0.8,
+      "expectedDisplayTime": 24631.7,
+      "callbackTime": 24641.3
+    },
+    {
+      "frame": 65,
+      "mediaTime": 1.083333,
+      "expectedDisplayTime": 24990.5,
+      "callbackTime": 24657.6
+    },
+    {
+      "frame": 66,
+      "mediaTime": 1.1,
+      "expectedDisplayTime": 25424.4,
+      "callbackTime": 25424.5
+    },
+    {
+      "frame": 88,
+      "mediaTime": 1.466667,
+      "expectedDisplayTime": 25771.2,
+      "callbackTime": 25774.5
+    }
+  ],
+  "policy": "Review only. Callback coverage is not visual contact or all-seven-seat gameplay acceptance."
+}
