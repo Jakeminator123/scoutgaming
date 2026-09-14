@@ -1,4 +1,4 @@
-export function eligible({hostname,port,query,dealer,box,index,split}){return port==='4190'&&hostname==='astridsingleseat.localhost'&&query==='review'&&dealer==='astrid'&&box===0&&index===0&&!split;}
+export function eligible({hostname,port,query,dealer,box,index,split,candidateBox=0}){return port==='4190'&&hostname==='astridsingleseat.localhost'&&query==='review'&&dealer==='astrid'&&[0,1].includes(candidateBox)&&box===candidateBox&&index===0&&!split;}
 export function sourceFit(fit){const reference={scale:(720-136)/720,x:(1280-1280*((720-136)/720))/2,y:0};const captured={scale:.5421688741883204,x:121.01686751907214,y:.1039891799197603};const ratio=fit.scale/reference.scale;return {scale:ratio*captured.scale,x:fit.x+(captured.x-reference.x)*ratio,y:fit.y+(captured.y-reference.y)*ratio};}
 export function canonicalCorners(corners,fit){if(!corners||corners.length!==4)throw Error('Actual2D card corners required');return corners.map(([x,y])=>[(x-fit.x)/fit.scale,(y-fit.y)/fit.scale]);}
 // Measured at 1091x837: responsive correction leaves <=.00351 native px
@@ -18,4 +18,13 @@ export function basisChange(from,to){
  const basis=q=>[q[1][0]-q[0][0],q[1][1]-q[0][1],q[3][0]-q[0][0],q[3][1]-q[0][1]];
  const [a,b,c,d]=basis(from),[e,f,g,h]=basis(to),det=a*d-b*c;if(Math.abs(det)<1e-8)throw Error('Degenerate card basis');
  return [(e*d-g*b)/det,(f*d-h*b)/det,(-e*c+g*a)/det,(-f*c+h*a)/det];
+}
+
+// Explicit small source-camera center calibration for box1 only, in native pixels.
+export function centerCalibration(actual,target,maxNative=4){
+ if(maxNative!==4||![actual,target].every(q=>q?.length===4&&q.every(p=>p?.length===2&&p.every(Number.isFinite))))throw Error('Invalid center calibration');
+ const center=q=>q.reduce((a,p)=>[a[0]+p[0]/4,a[1]+p[1]/4],[0,0]);
+ const a=center(actual),b=center(target),delta=[b[0]-a[0],b[1]-a[1]],distance=Math.hypot(...delta);
+ if(distance>maxNative)throw Error(`Box1 center correction ${distance.toFixed(3)} native px exceeds4; responsive target unavailable`);
+ return {delta,distance,maxNative,policy:'Card-only bounded center calibration; actor unchanged'};
 }
