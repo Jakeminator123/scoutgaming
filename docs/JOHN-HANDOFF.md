@@ -1,3 +1,11 @@
+## 2026-09-14 — release candidate GPU resources between rounds
+
+Isolated4190 now disposes each candidate renderer, its unique owned textures/materials/geometries and detached video decoder on terminal completion/failure. Late texture callbacks cannot revive rendering; cleanup is idempotent, including adapter-construction failure. No footage/identity/geometry changes in gameplay.
+
+Actual browser: two consecutive two-seat rounds without reload completed and returned to bets. Wallet960→970→980 after two10-unit stakes and20-unit returns. Public DOM receipts recorded10 owned resources disposed and context released for three observed candidate completions, including both routes in round2. First-round box1 disposal was not captured. Evidence: single-seat/gpu-consecutive-rounds.json. Focused lifecycle test, pre-commit and dealer-sync probe pass. This does not prove sustained60fps or acceptable physical dealing.
+
+Local existing-media experiment: pickup-composite restores original shoe pixels while preserving photographed hand and paper across25 selected frames; root inspected all25 dense pairs. Gray generated fascia is removed, but small finger notches and dark wrist edges remain, and final frame still only partially extracts a card. Not integrated or visually accepted. Pace canvas path dropped5–6 frames; direct video dropped0 then1, with fewer callbacks than encoded frames. No60fps presentation claim. No generation/credit requests or spending.
+
 ## 2026-09-14 — bounded Astrid preparation and actual seven-seat round
 
 User requires delivery before further credits: no new generation or credit requests. Isolated4190 review link remains the active gameplay boundary; public4173 unchanged.

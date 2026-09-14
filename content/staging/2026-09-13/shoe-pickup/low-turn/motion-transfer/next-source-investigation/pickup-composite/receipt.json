@@ -1,0 +1,206 @@
+{
+  "status": "temporal hand/shoe mask proof only, no authoritative card or delivery",
+  "sourceSHA256": "4e13a87e546312f2f75f31547fa35d128ba013f513c10a8eacdbf491b3637650",
+  "backgroundSHA256": "7e3e4836bd2a48148585121a9578ab4f6d1daa48b1879ebfe600c7594ed20df2",
+  "cleanMaskManifest": "05a071f2fdabbda654106f887ead0a3498ff819dbd9b2c6ffbfa0ffe36aafde4",
+  "backgroundToSource0Similarity": [
+    [
+      1.0000480403653718,
+      5.6417132731630165e-06,
+      -0.07454328875589043
+    ],
+    [
+      -5.6417132731630165e-06,
+      1.0000480403653718,
+      -0.21667548408826418
+    ]
+  ],
+  "registrationInliers": 397,
+  "registrationMedianErrorPx": 0.22607394327413716,
+  "registrationSameCoordinateMedianPx": 0.2823147475719452,
+  "policy": "Original current-frame RGB outside local shoe/paper domain; static source40 camera-registered shoe/table patch, then cleaned original actor alpha inside patch. No actor warp. Patch feather alpha only.",
+  "limits": [
+    "No independent card: intentionally shows removal of photographed sourcepaper.",
+    "Original fullframe room/actor outside contact domain preserved, not a full actor matte acceptance.",
+    "Single fixed background similarity from stationary room features, not exact shoe physical calibration.",
+    "Final source motion remains partial extraction; no continuation.",
+    "25selected sourceframes60fps,0.4167s; ordinary lossy video encoding."
+  ],
+  "rows": [
+    {
+      "outputFrame": 0,
+      "sourceNative": 0,
+      "sourcePTS": 0.0,
+      "outputPTS": 0.0,
+      "maskSHA256": "1a37a7682058eada52d0900a74241f9eda5af5b2c186ed0a1c1b5cf0251de4ae"
+    },
+    {
+      "outputFrame": 1,
+      "sourceNative": 3,
+      "sourcePTS": 0.125,
+      "outputPTS": 0.016666666666666666,
+      "maskSHA256": "7a4637c14e6d21d8eb777ebeffe70635c223e97b06325c8709547fa0304928ef"
+    },
+    {
+      "outputFrame": 2,
+      "sourceNative": 6,
+      "sourcePTS": 0.25,
+      "outputPTS": 0.03333333333333333,
+      "maskSHA256": "e7b9d51f38c2d60cb364e8eae72cf67dfaab17dcb326dcceb9cf574dfebf6a66"
+    },
+    {
+      "outputFrame": 3,
+      "sourceNative": 9,
+      "sourcePTS": 0.375,
+      "outputPTS": 0.05,
+      "maskSHA256": "d48dfc07f713c22880a53612782e91dc13fa75e276eb2a73b890fd124b3efb5b"
+    },
+    {
+      "outputFrame": 4,
+      "sourceNative": 12,
+      "sourcePTS": 0.5,
+      "outputPTS": 0.06666666666666667,
+      "maskSHA256": "ec373983d99657f89445e170a39df25b2ff7acd7a0991bf88a8f61d113d392b9"
+    },
+    {
+      "outputFrame": 5,
+      "sourceNative": 15,
+      "sourcePTS": 0.625,
+      "outputPTS": 0.08333333333333333,
+      "maskSHA256": "803428ec225a9c85beeff78a310cd4772d33ccefd558bf642b91fa4a538d0a4c"
+    },
+    {
+      "outputFrame": 6,
+      "sourceNative": 18,
+      "sourcePTS": 0.75,
+      "outputPTS": 0.1,
+      "maskSHA256": "6ad4a7c691312052dcc1d5b6e686c9a08413f7f38e2bd68a317fbb7d2549b760"
+    },
+    {
+      "outputFrame": 7,
+      "sourceNative": 21,
+      "sourcePTS": 0.875,
+      "outputPTS": 0.11666666666666667,
+      "maskSHA256": "13f98768a701968ec28c81c1447c9e9cd41f75ba9233f73212fcc2ef1bbffc5e"
+    },
+    {
+      "outputFrame": 8,
+      "sourceNative": 24,
+      "sourcePTS": 1.0,
+      "outputPTS": 0.13333333333333333,
+      "maskSHA256": "282b28f7f5db1872254e9694c4c61cb7787d0457e159dab08c6d073fc1159d3e"
+    },
+    {
+      "outputFrame": 9,
+      "sourceNative": 27,
+      "sourcePTS": 1.125,
+      "outputPTS": 0.15,
+      "maskSHA256": "d35f0eb9a0e59c47fecc7bfffb951dd99abd68f6e0b4d54088fc722c1642592e"
+    },
+    {
+      "outputFrame": 10,
+      "sourceNative": 30,
+      "sourcePTS": 1.25,
+      "outputPTS": 0.16666666666666666,
+      "maskSHA256": "f746faa72ac113db9711f2c50e3f158bada4ea3cb8d6760618bc082a3834fe64"
+    },
+    {
+      "outputFrame": 11,
+      "sourceNative": 33,
+      "sourcePTS": 1.375,
+      "outputPTS": 0.18333333333333332,
+      "maskSHA256": "7f357f48468fb4491aa7b21492f726b82ed66a7e31453af9c3740f75a1324fcc"
+    },
+    {
+      "outputFrame": 12,
+      "sourceNative": 36,
+      "sourcePTS": 1.5,
+      "outputPTS": 0.2,
+      "maskSHA256": "2a342266ea7c1db54ed0119378a1bca056c3cb57580480eaaaf1e7d7aef6f35a"
+    },
+    {
+      "outputFrame": 13,
+      "sourceNative": 39,
+      "sourcePTS": 1.625,
+      "outputPTS": 0.21666666666666667,
+      "maskSHA256": "f6fead550bc9ee6efa4f04cb96b5d7e99a4639a3c2af7dac3166c6d1d458e48f"
+    },
+    {
+      "outputFrame": 14,
+      "sourceNative": 42,
+      "sourcePTS": 1.75,
+      "outputPTS": 0.23333333333333334,
+      "maskSHA256": "648103f75689619b18999e5cc2110b586ee3053fc874a5a921cdb2f0c1bdea22"
+    },
+    {
+      "outputFrame": 15,
+      "sourceNative": 45,
+      "sourcePTS": 1.875,
+      "outputPTS": 0.25,
+      "maskSHA256": "b727ce06c7df9764ba754f6e39f42f794df667493814befbd4540a59b9d44d14"
+    },
+    {
+      "outputFrame": 16,
+      "sourceNative": 48,
+      "sourcePTS": 2.0,
+      "outputPTS": 0.26666666666666666,
+      "maskSHA256": "d930959e03a237b5557988d38240628789ea719a68a04eb8feda8b058be93133"
+    },
+    {
+      "outputFrame": 17,
+      "sourceNative": 51,
+      "sourcePTS": 2.125,
+      "outputPTS": 0.2833333333333333,
+      "maskSHA256": "94e8341b2502e7eccdd82f18788f37952da88842a3081d493ccea43de846c6b8"
+    },
+    {
+      "outputFrame": 18,
+      "sourceNative": 54,
+      "sourcePTS": 2.25,
+      "outputPTS": 0.3,
+      "maskSHA256": "a5b0b5fe1ad54da00928da944a1188360e53c1dc66902ad2bd95703b6dc8d054"
+    },
+    {
+      "outputFrame": 19,
+      "sourceNative": 57,
+      "sourcePTS": 2.375,
+      "outputPTS": 0.31666666666666665,
+      "maskSHA256": "7da667de99daeb257365784840c394e74c918d1e71aed3381dde9a3138362fe3"
+    },
+    {
+      "outputFrame": 20,
+      "sourceNative": 60,
+      "sourcePTS": 2.5,
+      "outputPTS": 0.3333333333333333,
+      "maskSHA256": "5060883666b5ea1f62cc05c7ac17ed3f8d38b654264daed27aea21be63b097bb"
+    },
+    {
+      "outputFrame": 21,
+      "sourceNative": 63,
+      "sourcePTS": 2.625,
+      "outputPTS": 0.35,
+      "maskSHA256": "57ad6d6e4a5e2ce84ea153357d42f3dc749f3b35b1674d98bec38a8f1716421e"
+    },
+    {
+      "outputFrame": 22,
+      "sourceNative": 66,
+      "sourcePTS": 2.75,
+      "outputPTS": 0.36666666666666664,
+      "maskSHA256": "38d8797f97da15a20c78f05e6a443e5d3d61b11025c30794c1c4d6ef5d3a3e91"
+    },
+    {
+      "outputFrame": 23,
+      "sourceNative": 69,
+      "sourcePTS": 2.875,
+      "outputPTS": 0.38333333333333336,
+      "maskSHA256": "272737e901d796336b4380bf410adb25ccd2357228b6974914ef73cdec435db9"
+    },
+    {
+      "outputFrame": 24,
+      "sourceNative": 72,
+      "sourcePTS": 3.0,
+      "outputPTS": 0.4,
+      "maskSHA256": "0d6f96247289ad209661733adf425ef4d252b60cceda009e5ee724d2588e5188"
+    }
+  ]
+}
