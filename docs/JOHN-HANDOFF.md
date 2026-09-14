@@ -1,3 +1,11 @@
+## Box1 native motion trial and codec controls — 2026-09-14
+
+Submitted ONE Seedance2.0 std1080p4s silent high-bitrate box1 trial, job9dc93653-625a-4074-ad0b-f1e8a8fed51e. Start43039066 and new confirmed endpoint0dc1ddf8 preserve original actor/shoe/room; endpoint is original native0 plus one7-hearts at the actual second-seat CSS quad. Root inspected it. Exact request/result saved seven-targets/box1-trial-spec/submission.json; latest jobs_wait says waiting, not failed. Poll the samejob, do not restart. Four-second output must still demonstrate brisk pickup, supported placement, release and empty return; generation is not acceptance.
+
+Lossless actor crop1072x1504 preserves all89 cropped decodedYUV frames exactly and reduces decodedarea61%, but browser repeats still dropped22/26/21 frames. High4:4:4Predictive profile may use a slower path; that is a hypothesis, not verified decoder telemetry. StandardHigh CRF14 crop is a separate lossy control with RG edge errors measured. No default/public promotion. Further experiment separates precomputed rear/front grayscale masks to avoid chroma mixing and postdecode division amplification.
+
+V6 conservative masks restore180 skin pixels and remove99 confirmed sourcepaperG pixels. A source-profile card-only blur proposal improves18–19 while retaining thin core geometry; actorRGB unchanged. These are still unapproved and need independent renderer integration plus moving hand review.
+
 ## Independent card lighting and repeat preparation comparison — 2026-09-14
 
 V5 is now available separately at staging4189/full-cycle?candidate=v5. The independent GPU card accepts linear light tint from source-paper measurements; actor RGB is unchanged and card backs remain untinted. The89-frame packed version retains final sequence105. Browser105 reached88 with the expected independent2-spades, but reported53 dropped frames under heavy system load. Shoulder fringe and hand boundary debris remain visible; this is a failed smoothness/visual review, not gameplay delivery.
