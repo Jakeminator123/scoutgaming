@@ -1,0 +1,26 @@
+{
+  "rightToContactUniform": [
+    [
+      1.0029568951529009,
+      0.0006839577122965377,
+      -2.0720607957031816
+    ],
+    [
+      -0.0006839577122965377,
+      1.0029568951529009,
+      -11.12555622605711
+    ]
+  ],
+  "inliers": 149,
+  "medianInlierPx": 0.593838095664978,
+  "sources": {
+    "contact": {
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-09/contact-proof/source.mp4",
+      "sha256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9"
+    },
+    "right": {
+      "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-09/cac-side-delivery/right/source.mp4",
+      "sha256": "4e0d75e55c35c5b42a1a81ae0067145f29ec1b2083b6598147469455c79b2dc3"
+    }
+  }
+}
