@@ -1,0 +1,29 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "jobs[1]{index,job_id,status,type,model,result_url}:\n  0,0c70e596-012c-4b0b-b3f7-c51eb3b45e22,completed,image,gpt_image_2,\"https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_112250_0c70e596-012c-4b0b-b3f7-c51eb3b45e22.png\"\nsummary:\n  total: 1\n  completed: 1\n  failed: 0\n  active: 0\n  errors: 0\nall_terminal: true"
+    }
+  ],
+  "structuredContent": {
+    "jobs": [
+      {
+        "index": 0,
+        "job_id": "0c70e596-012c-4b0b-b3f7-c51eb3b45e22",
+        "status": "completed",
+        "type": "image",
+        "model": "gpt_image_2",
+        "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_112250_0c70e596-012c-4b0b-b3f7-c51eb3b45e22.png"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "completed": 1,
+      "failed": 0,
+      "active": 0,
+      "errors": 0
+    },
+    "all_terminal": true
+  },
+  "isError": false
+}
