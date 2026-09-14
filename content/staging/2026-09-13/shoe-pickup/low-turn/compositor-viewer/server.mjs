@@ -6,6 +6,13 @@ import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(here,'../../../../../..');
 const routes={
+  '/bridge-review':path.join(here,'bridge-review.html'),
+  '/bridge-review.mjs':path.join(here,'bridge-review.mjs'),
+  '/speech-bridge-edge.mp4':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/mattes/edge-clean/bridge-native-R-edge-clean-draft.mp4'),
+  '/speech-bridge.mp4':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/mattes/bridge-native-R-only-draft.mp4'),
+  '/speech-idle-moving.mp4':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/original-idle-moving-packed.mp4'),
+  '/speech-idle-reference.mp4':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/idle0-reference-packed.mp4'),
+  '/speech-registration.json':path.resolve(here,'../motion-transfer/idle-registration/bridge-pair/review/endpoint-registration.json'),
   '/camera60':path.join(here,'camera60.html'),
   '/camera60.mjs':path.join(here,'camera60.mjs'),
   '/camera60.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-cadence60-draft.mp4'),
@@ -15,6 +22,7 @@ const routes={
   '/camera60-joined.json':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/joined-ledger.json'),
   '/camera60-joined.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-cleanup.mp4'),
   '/camera60-joined-720.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-cleanup-720.mp4'),
+  '/camera60-contour.mp4':path.resolve(here,'../motion-transfer/camera60-draft/cadence-full/camera-joined60-contour-v3-720.mp4'),
   '/':path.join(here,'index.html'),
   '/camera-shoe-mask.png':path.resolve(here,'../motion-transfer/camera-card-fit/shoe-mask/card-allowed.png'),
   '/camera-shoe-contract.mjs':path.resolve(here,'../motion-transfer/camera-card-fit/shoe-mask/contract.mjs'),
