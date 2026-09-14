@@ -800,3 +800,9 @@ Validation:27focused integration/layout/loader/GPU/adaptertests, required audit-
 Second actual round is saved in box3/gameplay-second-round.json: insurance declined, dealer blackjack, stake5/returned0, wallet985→980 and readybets. Root third-round inlinebrowser view saw supportedslide/hand contact afterframe40; pickupfirst30 not captured. No screenshotfiles persisted, and no visual60fpsapproval inferred. Subsequentcards/otherseats still legacy; seams remain unaccepted.
 
 Third same-view isolated round finished: box3/gameplay-third-settlement.json records stake5, stand, returned0, wallet980→975, readybets. Three finished same-view rounds now have persisted state evidence. Third motion observation was four inline CUA screenshots, not saved image artifacts; it does not establish pickup completeness, smooth60 visualapproval or all-seat/second-card delivery. Current isolated wallet975, gameplay ready for bets.
+
+### Centre shoe-contact diagnostic follow-up
+
+Box3 diagnostic sample frames now target actual shoe extraction22/30/34/40. Root fullscene CUA observation saw hand at source shoe outlet, one face-upcard emerging beneath lip, then supportedslide. Saved box3/gameplay-shoe-contact.json contains receipts and honest inline-only scope; no continuousvideo/physicalturn/60fpsapproval inferred. Probe and fullpre-commit passed after this diagnostic-only change.
+
+Read-only second-card findings are saved in box3/SECOND-CARD-FINDING.md andsecond-card-geometry.json: actualtransformedindex1fan target differs27.524nativepx fromfilmedlanding; hitindex2 differs55.047px and hasonly.518screenpx betting-spotgap. Refittingwholehand wouldmoveexistingcards; postreleaseautofan lacksfilmedcontact. Keepfirstcard-only gate; futureextension needs actualplacement or arrangingmotion, preservingissuedcards/oldcardpositions. No generation spend or movement workaround implemented.
