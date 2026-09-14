@@ -1,3 +1,4 @@
+import {playReturnBridge} from './return-bridge.mjs';
 import {createPassLifecycle,safeDelivery,onceLand,assertMediaEndpoint} from './lifecycle.mjs';
 import {createCardGlide} from './card-glide.mjs';
 import {createPlaybackSession} from './session.mjs';
@@ -6,22 +7,22 @@ import {uniformRegistration} from '/performance-contact.mjs';
 import {sourceFit,canonicalCorners} from '/astrid-single-seat/game-contract.mjs';
 import {cardLandingCorners} from '/performance-player.mjs';
 
-export function createContinuousSession({suspend,signal}){
+export function createContinuousSession({suspend,signal,prepareIdle}){
  const lifecycle=createPassLifecycle({signal});
- const session=createPlaybackSession(lifecycle,l=>prepareActor(l,suspend));
+ const session=createPlaybackSession(lifecycle,l=>prepareActor(l,suspend,prepareIdle));
  return {
-  async play({deliveries,onLand}){
+  async play({deliveries,onLand,finalReturn=false}){
    if(deliveries.length!==4||deliveries.some(d=>!Number.isInteger(d?.shoeDraw)))throw Error('Four server-issued cards required');
    const issued=deliveries,receipt={mode:'continuous-rough-gameplay',landings:[],cards:[],endpointPolicy:'Source hand contact then distance-aware decelerating glide to actual game card; not exact physical destination approval'};
    try{
     const safe=deliveries.map(safeDelivery);receipt.cards=safe.map(({shoeDraw,faceDown})=>({shoeDraw,faceDown}));
-    await session.play({deliveries:safe,onLand:(i)=>onLand(issued[i]),receipt});receipt.state='complete';
+    await session.play({deliveries:safe,onLand:(i)=>onLand(issued[i]),receipt,finalReturn});receipt.state='complete';
    }catch(error){receipt.state='fallback';receipt.error=error.message;session.dispose();throw error;}
    finally{
     deliveries.forEach(d=>{if(d?.el)d.el.style.visibility='';});
     const status=document.createElement('div');status.hidden=true;status.className='astrid-continuous-receipt';status.dataset.receipt=JSON.stringify(receipt);document.querySelector('#scene')?.append(status);
    }
-  },dispose(){session.dispose();}
+  },async finish(){try{await session.play({returnToIdle:true});}finally{session.dispose();}},dispose(){session.dispose();}
  };
 }
 
@@ -31,12 +32,12 @@ export async function playContinuousPass(options){
  try{await session.play(options);}finally{session.dispose();}
 }
 
-async function prepareActor(lifecycle,suspend){
+async function prepareActor(lifecycle,suspend,prepareIdle){
  const response=await fetch('/astrid-continuous/joined-ledger.json',{signal:lifecycle.signal});
  if(!response.ok)throw Error('Missing sequence');
  const source=await response.json();
  if(!lifecycle.active)throw Error('Sequence cancelled before video creation');
- const rows=source.ledger,fps=source.fps,lastFrame=Math.min(rows.length-1,333);
+ const rows=source.ledger,fps=source.fps;
  const releases=[1,2,3,4].map(id=>rows.findIndex(row=>row.cards.some(c=>c.id===id&&c.released===true)&&(id!==4||row.outputFrame>=285)));
  if(releases.some(n=>n<0))throw Error('Missing source release');
  const fit=sourceFit(uniformRegistration({width:1280,height:720},{width:innerWidth,height:innerHeight}));
@@ -55,7 +56,11 @@ async function prepareActor(lifecycle,suspend){
  if(!lifecycle.active)throw Error('Sequence cancelled before ownership');
  const resume=suspend();lifecycle.onCleanup(()=>resume?.());
  let mounted=false,passNumber=0;
- return {async play({deliveries,onLand,receipt}){
+ return {async play({deliveries,onLand,receipt,finalReturn=false,returnToIdle=false}){
+  if(returnToIdle){
+   await playReturnBridge({host,fit,signal:lifecycle.signal,onReady:()=>{layer.style.visibility='hidden';},onComplete:async()=>{resume();await prepareIdle?.();}});return;
+  }
+  const lastFrame=Math.min(rows.length-1,finalReturn?348:333);
   receipt.endFrame=lastFrame;receipt.releases=releases;receipt.sessionPass=++passNumber;
   const targets=deliveries.map(d=>canonicalCorners(cardLandingCorners(d.el),fit));
   const glides=deliveries.map((d,i)=>createCardGlide(rows[releases[i]].cards.find(c=>c.id===i+1).quad,targets[i],releases[i],{fps,latestFrame:lastFrame}));

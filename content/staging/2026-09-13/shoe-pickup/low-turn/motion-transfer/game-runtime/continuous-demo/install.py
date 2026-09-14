@@ -4,7 +4,7 @@ here=Path(__file__).resolve().parent
 gr=here.parent;mt=gr.parent;public=gr/'runtime/public';target=public/'astrid-continuous';target.mkdir(exist_ok=True)
 for module in here.glob('*.mjs'):
  if not module.name.endswith('.test.mjs'):shutil.copy2(module,target/module.name)
-for name,src in {'actor.mp4':mt/'camera60-draft/cadence-full/camera-joined60-background-mixed-v5-720.mp4','joined-ledger.json':mt/'camera60-draft/cadence-full/joined-ledger.json','shoe.png':mt/'camera-card-fit/shoe-mask/card-allowed.png'}.items():
+for name,src in {'actor.mp4':mt/'camera60-draft/cadence-full/camera-joined60-background-mixed-v5-720.mp4','joined-ledger.json':mt/'camera60-draft/cadence-full/joined-ledger.json','shoe.png':mt/'camera-card-fit/shoe-mask/card-allowed.png','return-bridge.mp4':mt/'idle-registration/bridge-pair/mattes/edge-clean/bridge-native-R-edge-clean-draft.mp4','return-bridge-registration.json':mt/'idle-registration/bridge-pair/review/endpoint-registration.json'}.items():
  assert src.is_file(),src
  out=target/name
  if not out.exists():out.symlink_to(src)
@@ -37,8 +37,9 @@ if True:
   const continuousOpening=DEALER.key==='astrid'&&location.hostname==='astridsingleseat.localhost'&&location.port==='4190'&&new URLSearchParams(location.search).get('astridContinuous')!=='off'&&live.length>=1&&live.length<=7;
   if(continuousOpening){
     const queue=openingQueue({hands:live,dealer:round.dealer,holeDraw:round.holeDraw});
-    const continuousSession=createContinuousSession({suspend:()=>{performancePlayer?.cancel();performancePlayer?.release();return engine.suspendPresentation();}});
-    try{for(const chunk of openingChunks(queue)){
+    const continuousSession=createContinuousSession({suspend:()=>{performancePlayer?.cancel();performancePlayer?.release();return engine.suspendPresentation();},prepareIdle:async()=>{await performancePlayer?.prepareIdle();}});
+    const chunks=openingChunks(queue);
+    try{for(const [chunkIndex,chunk] of chunks.entries()){
       if(chunk.length<4){
         continuousSession.dispose();
         await beginDealingTake();
@@ -47,8 +48,8 @@ if True:
       }
       const deliveries=chunk.map(item=>{const container=item.kind==='dealer'?$('#dealer-cards'):boxContainer(item.handIndex),el=cardEl(item.card,item.faceDown),n=container.querySelectorAll('.card').length;el.style.setProperty('--ci',n);container.style.setProperty('--cn',n+1);container.style.setProperty('--fan',Math.min(1,3.2/Math.max(2,n+1)).toFixed(3));el.style.visibility='hidden';container.append(el);return {...item,el,container};});
       const shown=new Set();const onLand=d=>{if(shown.has(d.shoeDraw))return;shown.add(d.shoeDraw);if(shoeState)showShoe({...shoeState,dealt:d.shoeDraw,remaining:shoeState.total-d.shoeDraw,cutReached:d.shoeDraw>=shoeState.cutAfter});updateBadge(d.container,d.cards);sfx.play('land');};
-      try{await continuousSession.play({deliveries,onLand});}catch(error){console.warn('[continuous-demo]',error);for(const d of deliveries){d.el.style.visibility='';onLand(d);}}
-    }}finally{continuousSession.dispose();}
+      try{await continuousSession.play({deliveries,onLand,finalReturn:chunkIndex===chunks.length-1});}catch(error){console.warn('[continuous-demo]',error);for(const d of deliveries){d.el.style.visibility='';onLand(d);}}
+    }if(queue.length%4===0){try{await continuousSession.finish();}catch(error){console.warn('[continuous-return]',error);}}}finally{continuousSession.dispose();}
   }else{
 '''+original.replace('  const live = round.live();\n','')+'  }\n'
  s=s[:start]+replacement+s[end:]
