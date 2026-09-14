@@ -33,3 +33,9 @@ grayLink=runtime/"actor-gray.mp4"
 if graySource.is_file():
  if grayLink.exists():assert grayLink.resolve()==graySource.resolve()
  else:grayLink.symlink_to(graySource)
+
+newGray=here/"gray-alpha-v6/actor-rgb-rear-front-high14.mp4"
+newLink=runtime/"actor-gray-v6.mp4"
+if newGray.is_file():
+ if newLink.exists():assert newLink.resolve()==newGray.resolve()
+ else:newLink.symlink_to(newGray)

@@ -1,0 +1,11 @@
+import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';import {ledgerDigest} from '../../sequence-binding.mjs';
+const here=path.dirname(fileURLToPath(import.meta.url)),single=path.dirname(here),motion=path.resolve(single,'../..'),base=path.join(motion,'camera-review/seven-targets/far-left-anchor/motion/release-continuation/motion-registration/full-cycle-candidate-v5');
+const read=p=>JSON.parse(fs.readFileSync(p)),source=read(path.join(base,'receipt.json')),map=read(path.join(base,'web-surface/receipt.json')),media=read(path.join(here,'receipt.json')),ledger=read(path.join(single,'harness/ledger.json'));
+const target={...read(path.join(single,'harness/target.json')),corners:source.ledger[80].cardCorners};
+ledger.sourceSha256=media.outputSHA256;ledger.sourceReceiptSha256=media.sourceReceiptSHA256;ledger.endpointNormalization=[];ledger.visualAcceptance='FAIL: v6 conservative masks/v5 source matched geometry and tint; shoulder strips and unresolved finger/prop coverage remain. Rough isolated review only.';
+ledger.deliveries[0].targetCorners=target.corners;
+ledger.frames=map.ledger.map(row=>{const r=source.ledger[row.sequenceFrame];return {frame:row.frame,source:r.source,native:r.native,sequenceFrame:row.sequenceFrame,cardTintLinear:r.cardTintLinear,cards:row.frame>=9&&row.frame<67?[{cardId:'box0-first',corners:r.cardCorners,faceUp:r.cardSide==='front'}]:[]};});
+if(JSON.stringify(ledger.frames[66].cards[0].corners)!==JSON.stringify(target.corners))throw Error('Last contact differs from release target');
+ledger.review={status:'staged-reviewed',evidence:'/astrid-single-seat/VISUAL-FAILS-v6.md',payloadSha256:await ledgerDigest(ledger)};
+for(const [name,value]of Object.entries({'ledger-v6.json':ledger,'target-v6.json':target,'crop-gray-v6-receipt.json':{...media,sourceSha256:media.outputSHA256,rows:undefined}}))fs.writeFileSync(path.join(single,'harness',name),JSON.stringify(value));
+console.log(ledger.review);

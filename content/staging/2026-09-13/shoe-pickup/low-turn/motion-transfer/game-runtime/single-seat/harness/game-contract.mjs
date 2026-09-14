@@ -13,3 +13,9 @@ export function responsiveHandMatrix({matrix,left,top,origin,anchor=[60,60],rati
  const [a,b,c,d,e,f]=matrix;
  return [a*ratio,b*ratio,c*ratio,d*ratio,e*ratio+(ratio-1)*(left+origin[0]-anchor[0]),f*ratio+(ratio-1)*(top+origin[1]-anchor[1])];
 }
+// Linear map only: preserve photographed landing center, replace local basis.
+export function basisChange(from,to){
+ const basis=q=>[q[1][0]-q[0][0],q[1][1]-q[0][1],q[3][0]-q[0][0],q[3][1]-q[0][1]];
+ const [a,b,c,d]=basis(from),[e,f,g,h]=basis(to),det=a*d-b*c;if(Math.abs(det)<1e-8)throw Error('Degenerate card basis');
+ return [(e*d-g*b)/det,(f*d-h*b)/det,(-e*c+g*a)/det,(-f*c+h*a)/det];
+}
