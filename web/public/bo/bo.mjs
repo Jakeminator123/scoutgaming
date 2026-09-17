@@ -90,6 +90,7 @@ async function render(id){
         <div style="padding:9px 11px">
           <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
           <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.status?' &middot; '+c.status:''}</div>
+          ${c.text?`<div style="font-size:11px;margin-top:5px;padding:6px 8px;border-left:2px solid var(--lime);background:rgba(214,255,58,.05)">&ldquo;${c.text}&rdquo;</div>`:''}${c.audio&&!c.src?`<audio src="/${c.audio}" controls preload="none" style="width:100%;height:26px;margin-top:5px"></audio>`:''}
           <div style="font-size:10px;color:var(--mut);margin-top:3px">${c.layout??''}${c.width?` &middot; ${c.width}&times;${c.height}`:''}${c.frames?` &middot; ${c.frames}f`:''}${c.fps?` @${c.fps}`:''}${c.route?`<br>route: <span class="mono">${c.route}</span>`:''}</div>
           <div style="margin-top:8px;display:flex;gap:6px;align-items:center"><select data-assign-part="${c.id}" style="flex:1"><option value="">Assign to&hellip;</option>${lib.parts.map(p=>`<option value="${p}" ${c.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><button data-assign="${c.id}">ASSIGN</button></div>
         </div></div>`).join('')}

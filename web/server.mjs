@@ -330,11 +330,12 @@ function clipScan() {
     try {
       const idx = JSON.parse(readSync(join(root, d.base, 'streams/index.json'), 'utf8'));
       const hands = existsSync(join(root, d.base === 'dealer' ? 'dealer' : d.base + '-hands', 'streams/index.json'));
+      let bank = {}; try { bank = JSON.parse(readSync(join(root, d.base, 'audio/en/bank.json'), 'utf8')); } catch {}
       for (const [k, c] of Object.entries(idx.clips)) {
         const key = k.split('/').pop();
         const preview = existsSync(join(root, d.base, 'preview', key + '.mp4')) ? `${d.base}/preview/${key}.mp4` : null;
         clips.push({ id: `${d.key}:${k}`, dealer: d.key, name: k, src: preview, stream: `${d.base}/streams/${c.file}`, part: k.includes('/actions/action-deal') ? 'box3' : k.includes('/idle/') ? 'idle' : k.includes('action-return') ? 'return' : null,
-          transparent: hands, layout: hands ? 'engine clip + hands matte (person-only band over felt)' : 'engine clip, baked over scene crop', width: idx.width, height: idx.height, frames: c.frameCount, fps: c.fps, kind: 'engine' });
+          text: bank[key]?.text ?? null, audio: existsSync(join(root, d.base, 'audio/en', key + '.mp3')) ? `${d.base}/audio/en/${key}.mp3` : null, transparent: hands, layout: hands ? 'engine clip + hands matte (person-only band over felt)' : 'engine clip, baked over scene crop', width: idx.width, height: idx.height, frames: c.frameCount, fps: c.fps, kind: 'engine' });
       }
     } catch {}
   }
