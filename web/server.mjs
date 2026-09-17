@@ -113,6 +113,7 @@ const BO_DEFAULTS = {
   ],
   pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
   clipAssignments: {},
+  neverAgain: {},
   tournaments: [
     { id: 't1', name: 'Midnight Privé Open', format: 'Elimination · 20 rounds', buyin: 100, pool: 25000, entries: 184, cap: 250, starts: 'Tonight 00:00', state: 'registering' },
     { id: 't2', name: 'High Roller Sprint', format: 'Points race · 1 hour', buyin: 1000, pool: 50000, entries: 31, cap: 64, starts: 'Fri 21:00', state: 'registering' },
@@ -359,7 +360,7 @@ function boApi(url) {
     return { tx: db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all() };
   }
   if (url === '/api/bo/config') return cfg;
-  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {} };
+  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {} };
   if (url === '/api/bo/users') {
     return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
   }
@@ -506,9 +507,22 @@ async function boPost(url, body, who) {
     boSave(cfg);
     return { ok: true };
   }
+  if (url === '/api/bo/clip-never') {
+    // "Never again": awful takes / failed prompts go to a bin so nobody re-reviews or re-assigns them.
+    const { clip, reason, undo } = body ?? {};
+    if (typeof clip !== 'string' || !clip) return { error: 'bad clip' };
+    cfg.neverAgain ??= {};
+    if (undo) delete cfg.neverAgain[clip];
+    else {
+      cfg.neverAgain[clip] = { reason: String(reason ?? '').slice(0, 300), by: who?.sub ?? who ?? null, at: new Date().toISOString() };
+      for (const d of Object.values(cfg.clipAssignments ?? {})) for (const [part, a] of Object.entries(d)) if (a?.clip === clip) delete d[part];
+    }
+    boSave(cfg); return { ok: true, neverAgain: cfg.neverAgain, assignments: cfg.clipAssignments ?? {} };
+  }
   if (url === '/api/bo/clip-assign') {
     const { dealer, part, clip } = body ?? {};
     if (!['vera','astrid','amira','mei'].includes(dealer) || !CLIP_PARTS.includes(part)) return { error: 'bad dealer/part' };
+    if (clip && cfg.neverAgain?.[clip]) return { error: 'clip is in Never again' };
     cfg.clipAssignments ??= {}; cfg.clipAssignments[dealer] ??= {};
     if (clip) cfg.clipAssignments[dealer][part] = { clip, by: who?.sub ?? who ?? null, at: new Date().toISOString() }; else delete cfg.clipAssignments[dealer][part];
     boSave(cfg); return { ok: true, assignments: cfg.clipAssignments };
