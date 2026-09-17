@@ -5,15 +5,19 @@
 import {sourceFit} from '/astrid-single-seat/game-contract.mjs';
 import {uniformRegistration} from '/performance-contact.mjs';
 export const CLIPS={0:{src:'/astrid-seven/box0.mp4',landAt:4.0,job:'ac2fa366'},1:{src:'/astrid-seven/box1.mp4',landAt:3.7,job:'d6f34e24'},2:{src:'/astrid-seven/box2.mp4',landAt:2.3,job:'a9fa1da6'},3:{src:'/astrid-seven/box3.mp4',landAt:2.3,job:'0f5d719c'},4:{src:'/astrid-seven/box4.mp4',landAt:2.3,job:'e1a12d04'}};
-let style;
+let style,bridgeConfig;
 export function tryAstridSeven({el,card,faceDown,tableVersion,dealer,suspend}){
  const p=new URLSearchParams(location.search);
  if(p.get('astridSeven')!=='review'||location.hostname!=='astridsingleseat.localhost'||location.port!=='4190'||dealer!=='astrid')return null;
  const box=Number(el.closest('.seat')?.dataset.box),index=Number(el.style.getPropertyValue('--ci'));
- const clip=CLIPS[box];
- if(!clip||index!==0||el.closest('.subhand'))return null;
- return play();
- async function play(){
+ if(index!==0||el.closest('.subhand'))return null;
+ return resolveClip(box).then(clip=>clip?play(clip):null);
+ async function resolveClip(box){
+  // BO assignment wins (Dealing Clips page); only full-scene route clips can play here.
+  try{const cfg=await (bridgeConfig??=fetch('/api/bo/config').then(r=>r.json()).catch(()=>({})));const a=cfg?.clipAssignments?.astrid?.[`box${box}`]?.clip;if(a){const m=/^astrid-seven-box(\d)$/.exec(a);if(m)return CLIPS[m[1]];return null;}}catch{}
+  return CLIPS[box]??null;
+ }
+ async function play(clip){
   const host=document.querySelector('#scene');
   const fit=sourceFit(uniformRegistration({width:1280,height:720},{width:innerWidth,height:innerHeight}));
   const hostRect=host.getBoundingClientRect();

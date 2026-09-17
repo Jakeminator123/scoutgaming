@@ -101,6 +101,7 @@ API['/api/table'] = ({ id, ...req }) => {
 // scanned from disk); a JSON store for what has no engine yet (tournaments,
 // pit-boss triggers, tier->dealer assignment - the last one steers the game).
 import { readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 const BO_PATH = join(dataDir, 'bo.json');
 const BO_DEFAULTS = {
   tiers: { classic: 'vera', high: 'vera', vip: 'vera' },
@@ -111,6 +112,7 @@ const BO_DEFAULTS = {
     { id: 'azure', name: 'Azure Venue', scene: 'Curved white · cyan glow', felt: 'Petrol', dealer: 'mei', state: 'pending' },
   ],
   pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
+  clipAssignments: {},
   tournaments: [
     { id: 't1', name: 'Midnight Privé Open', format: 'Elimination · 20 rounds', buyin: 100, pool: 25000, entries: 184, cap: 250, starts: 'Tonight 00:00', state: 'registering' },
     { id: 't2', name: 'High Roller Sprint', format: 'Points race · 1 hour', buyin: 1000, pool: 50000, entries: 31, cap: 64, starts: 'Fri 21:00', state: 'registering' },
@@ -280,6 +282,66 @@ function mintToken(username, kind, hours) {
   return t;
 }
 
+
+// ---------- dealing clip library (BO) ----------
+export const CLIP_PARTS = ['box0','box1','box2','box3','box4','box5','box6','dealer-up','dealer-hole','return','idle'];
+const probeCache = new Map();
+function probeVideo(rel) {
+  if (probeCache.has(rel)) return probeCache.get(rel);
+  let out = null;
+  try {
+    const abs = join(root, rel);
+    const txt = execFileSync('ffprobe', ['-v','error','-select_streams','v:0','-show_entries','stream=width,height,nb_frames,r_frame_rate','-of','csv=p=0', abs], { encoding: 'utf8', timeout: 4000 }).trim();
+    const [w, h, fps, n] = txt.split(',');
+    out = { width: +w, height: +h, frames: +n || null, fps: fps?.includes('/') ? Math.round(+fps.split('/')[0] / +fps.split('/')[1]) : +fps };
+  } catch { out = null; }
+  probeCache.set(rel, out); return out;
+}
+// Integration routes living under public/astrid-* (isolated 4190 runtime only).
+const ROUTE_CLIPS = [
+  { id: 'astrid-single-seat-v6', dealer: 'astrid', name: 'Box 0 first card (v6 masks)', src: 'astrid-single-seat/actor-gray-v6.mp4', part: 'box0', transparent: true, layout: 'packed gray atlas (RGB + person + card masks)', route: 'astridBox0=review&astridVariant=v6', kind: 'route' },
+  { id: 'astrid-single-seat-v2', dealer: 'astrid', name: 'Box 0 first card (v2 masks)', src: 'astrid-single-seat/actor-gray.mp4', part: 'box0', transparent: true, layout: 'packed gray atlas', route: 'astridBox0=review', kind: 'route' },
+  { id: 'astrid-box1', dealer: 'astrid', name: 'Box 1 first card', src: 'astrid-box1/actor-gray.mp4', part: 'box1', transparent: true, layout: 'packed gray atlas', route: 'astridBox0=review (box1 auto)', kind: 'route' },
+  { id: 'astrid-box3', dealer: 'astrid', name: 'Box 3 centre first card', src: 'astrid-box3/actor-gray.mp4', part: 'box3', transparent: true, layout: 'packed gray atlas + shoe mask', route: 'astridBox0=review (box3 auto, 1091x837)', kind: 'route' },
+  { id: 'astrid-dealer-up', dealer: 'astrid', name: 'Dealer upcard', src: 'astrid-dealer-up/actor-gray.mp4', part: 'dealer-up', transparent: true, layout: 'packed gray atlas + shoe mask', route: 'astridBox0=review (dealer auto)', kind: 'route' },
+  { id: 'astrid-continuous', dealer: 'astrid', name: 'Continuous 4-card opening (boxes 2-4 film)', src: 'astrid-continuous/actor.mp4', part: 'box2', transparent: true, layout: 'RGB + mask (1280x1440)', route: 'default on 4190; astridContinuous=off', kind: 'route' },
+  { id: 'astrid-return-bridge', dealer: 'astrid', name: 'Empty-hand return to idle', src: 'astrid-continuous/return-bridge.mp4', part: 'return', transparent: true, layout: 'RGB + mask (1920x2160)', route: 'after full 4-card group', kind: 'route' },
+  { id: 'astrid-seven-box0', dealer: 'astrid', name: 'Box 0 reach (Kling, full scene)', src: 'astrid-seven/box0.mp4', part: 'box0', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 4.0 },
+  { id: 'astrid-seven-box1', dealer: 'astrid', name: 'Box 1 reach (Kling, full scene)', src: 'astrid-seven/box1.mp4', part: 'box1', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 3.7 },
+  { id: 'astrid-seven-box2', dealer: 'astrid', name: 'Box 2 reach (Kling, full scene)', src: 'astrid-seven/box2.mp4', part: 'box2', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 2.3 },
+  { id: 'astrid-seven-box3', dealer: 'astrid', name: 'Box 3 reach (Kling, full scene)', src: 'astrid-seven/box3.mp4', part: 'box3', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 2.3 },
+  { id: 'astrid-seven-box4', dealer: 'astrid', name: 'Box 4 reach (Kling, full scene)', src: 'astrid-seven/box4.mp4', part: 'box4', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 2.3 },
+];
+const ACTION_PART = { 'deal-left': 'box1', 'deal-centre': 'box3', 'deal-right': 'box5', 'deal-dealer': 'dealer-up', 'return': 'return', 'hit-left': 'box1', 'hit-centre': 'box3', 'hit-right': 'box5' };
+function clipScan() {
+  const clips = [];
+  for (const d of dealerScan()) {
+    // 1. performance takes (staged player): packed RGB-over-mask atlases
+    try {
+      const m = JSON.parse(readSync(join(root, d.base, 'performance/manifest.json'), 'utf8'));
+      for (const t of [...(m.takes ?? []), ...(m.reviewCandidates ?? []), ...(m.continuations ?? [])]) {
+        if (!t?.media?.src) continue;
+        const layout = t.media.layout ?? '';
+        clips.push({ id: t.id, dealer: d.key, name: t.id, src: t.media.src, part: ACTION_PART[t.action] ?? null, action: t.action, status: t.status,
+          transparent: /mask|matte|alpha/i.test(layout), layout, width: t.media.width, height: t.media.height, frames: t.media.frames, fps: t.media.fps, events: t.events ?? null, kind: 'performance' });
+      }
+    } catch {}
+    // 2. engine streams (idle/actions/speak); previews exist only for speech lines
+    try {
+      const idx = JSON.parse(readSync(join(root, d.base, 'streams/index.json'), 'utf8'));
+      const hands = existsSync(join(root, d.base === 'dealer' ? 'dealer' : d.base + '-hands', 'streams/index.json'));
+      for (const [k, c] of Object.entries(idx.clips)) {
+        const key = k.split('/').pop();
+        const preview = existsSync(join(root, d.base, 'preview', key + '.mp4')) ? `${d.base}/preview/${key}.mp4` : null;
+        clips.push({ id: `${d.key}:${k}`, dealer: d.key, name: k, src: preview, stream: `${d.base}/streams/${c.file}`, part: k.includes('/actions/action-deal') ? 'box3' : k.includes('/idle/') ? 'idle' : k.includes('action-return') ? 'return' : null,
+          transparent: hands, layout: hands ? 'engine clip + hands matte (person-only band over felt)' : 'engine clip, baked over scene crop', width: idx.width, height: idx.height, frames: c.frameCount, fps: c.fps, kind: 'engine' });
+      }
+    } catch {}
+  }
+  for (const r of ROUTE_CLIPS) if (existsSync(join(root, r.src))) clips.push({ ...r, ...(probeVideo(r.src) ?? {}) });
+  for (const c of clips) if (c.src && c.width == null) Object.assign(c, probeVideo(c.src) ?? {});
+  return clips;
+}
 function boApi(url) {
   const cfg = boLoad();
   if (url === '/api/bo/overview') {
@@ -296,6 +358,7 @@ function boApi(url) {
     return { tx: db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all() };
   }
   if (url === '/api/bo/config') return cfg;
+  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {} };
   if (url === '/api/bo/users') {
     return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
   }
@@ -441,6 +504,13 @@ async function boPost(url, body, who) {
     else cfg.voiceReview[dealer][line] = verdict;
     boSave(cfg);
     return { ok: true };
+  }
+  if (url === '/api/bo/clip-assign') {
+    const { dealer, part, clip } = body ?? {};
+    if (!['vera','astrid','amira','mei'].includes(dealer) || !CLIP_PARTS.includes(part)) return { error: 'bad dealer/part' };
+    cfg.clipAssignments ??= {}; cfg.clipAssignments[dealer] ??= {};
+    if (clip) cfg.clipAssignments[dealer][part] = { clip, by: who?.sub ?? who ?? null, at: new Date().toISOString() }; else delete cfg.clipAssignments[dealer][part];
+    boSave(cfg); return { ok: true, assignments: cfg.clipAssignments };
   }
   if (url === '/api/bo/pitboss') { cfg.pitboss = { ...cfg.pitboss, ...body }; boSave(cfg); return { ok: true, pitboss: cfg.pitboss }; }
   if (url === '/api/bo/tournament') {
