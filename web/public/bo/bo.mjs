@@ -70,7 +70,8 @@ async function render(id){
     const cardBadge=c=>{const ps=assignedParts(c.id);return ps.length?`<span class="pill live" style="background:var(--lime);color:#111">&#10003; ASSIGNED &middot; ${ps.map(p=>PARTN[p].toUpperCase()).join(' + ')}</span>`:'';};
     const markCard=id=>{const el=C.querySelector(`[data-clip="${id}"]`);if(!el)return;const ps=assignedParts(id);el.style.borderColor=ps.length||st.selected===id?'var(--lime)':'var(--line)';el.style.boxShadow=ps.length?'0 0 0 2px rgba(214,255,58,.25)':'';el.querySelector('[data-badge]').innerHTML=cardBadge(byId[id]);};
     const draw=()=>{
-      let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent)));
+      const never=lib.neverAgain??{};
+      let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='never'?!!never[c.id]:!never[c.id]&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent))));
       const cmp={dealer:(a,b)=>a.dealer.localeCompare(b.dealer)||(a.part??'zz').localeCompare(b.part??'zz')||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),part:(a,b)=>(a.part??'zz').localeCompare(b.part??'zz')||a.dealer.localeCompare(b.dealer),frames:(a,b)=>(b.frames??0)-(a.frames??0)}[st.sort];
       list.sort(cmp);
       const asg=lib.assignments[st.dealer]??{};
@@ -79,7 +80,7 @@ async function render(id){
       <div class="panel"><div class="t">FILTERS &middot; ${list.length} OF ${lib.clips.length} CLIPS</div><div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <select id="cf-dealer"><option value="">All dealers</option>${lib.dealers.map(d=>`<option value="${d.key}" ${st.dealer===d.key?'selected':''}>${d.name}</option>`).join('')}</select>
         <select id="cf-part"><option value="">All table parts</option>${lib.parts.map(p=>`<option value="${p}" ${st.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select>
-        <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['transparent','TRANSPARENT ONLY'],['full','FULL-SCENE ONLY'],['all','ALL']].map(([k,l])=>`<button data-mode="${k}" style="border:0;border-radius:0;${st.mode===k?'background:rgba(214,255,58,.15);color:var(--lime)':''}">${l}</button>`).join('')}</span>
+        <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['transparent','TRANSPARENT ONLY'],['full','FULL-SCENE ONLY'],['all','ALL'],['never',`&#10006; NEVER AGAIN (${Object.keys(never).length})`]].map(([k,l])=>`<button data-mode="${k}" style="border:0;border-radius:0;${st.mode===k?(k==='never'?'background:rgba(255,80,80,.18);color:var(--red)':'background:rgba(214,255,58,.15);color:var(--lime)'):''}">${l}</button>`).join('')}</span>
         <select id="cf-sort">${[['dealer','Sort: dealer'],['part','Sort: table part'],['name','Sort: name'],['frames','Sort: length']].map(([k,l])=>`<option value="${k}" ${st.sort===k?'selected':''}>${l}</option>`).join('')}</select>
       </div></div>
       ${st.dealer?`<div class="panel"><div class="t">ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${sel?`&middot; <span style="color:var(--lime)">SELECTED: ${sel.name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}</div>
@@ -94,7 +95,9 @@ async function render(id){
           <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.status?' &middot; '+c.status:''}</div>
           ${c.text?`<div style="font-size:11px;margin-top:5px;padding:6px 8px;border-left:2px solid var(--lime);background:rgba(214,255,58,.05)">&ldquo;${c.text}&rdquo;</div>`:''}${c.audio&&!c.src?`<audio src="/${c.audio}" controls preload="none" style="width:100%;height:26px;margin-top:5px"></audio>`:''}
           <div style="font-size:10px;color:var(--mut);margin-top:3px">${c.layout??''}${c.width?` &middot; ${c.width}&times;${c.height}`:''}${c.frames?` &middot; ${c.frames}f`:''}${c.fps?` @${c.fps}`:''}${c.route?`<br>route: <span class="mono">${c.route}</span>`:''}</div>
-          <div style="margin-top:8px;display:flex;gap:6px;align-items:center"><select data-assign-part="${c.id}" style="flex:1"><option value="">Assign to&hellip;</option>${lib.parts.map(p=>`<option value="${p}" ${c.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><button data-assign="${c.id}">ASSIGN</button></div>
+          ${never[c.id]?`<div style="margin-top:8px;padding:6px 8px;border:1px solid var(--red);border-radius:6px;font-size:11px"><span class="mono" style="color:var(--red);font-size:9px;letter-spacing:.12em">NEVER AGAIN</span> ${never[c.id].reason?'&middot; '+never[c.id].reason:''}<div style="font-size:9px;color:var(--mut);margin-top:2px">${never[c.id].by??''} ${never[c.id].at?never[c.id].at.slice(0,16).replace('T',' '):''}</div><button data-restore="${c.id}" style="margin-top:6px;padding:2px 8px;font-size:9px">RESTORE</button></div>`
+          :`<div style="margin-top:8px;display:flex;gap:6px;align-items:center"><select data-assign-part="${c.id}" style="flex:1"><option value="">Assign to&hellip;</option>${lib.parts.map(p=>`<option value="${p}" ${c.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><button data-assign="${c.id}">ASSIGN</button></div>
+          <div data-never-row="${c.id}" style="margin-top:6px;display:flex;gap:6px;align-items:center"><input data-never-reason="${c.id}" placeholder="why it's awful (optional)" style="flex:1;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-never="${c.id}" style="border-color:rgba(255,80,80,.5);color:var(--red);font-size:10px">&#10006; NEVER AGAIN</button></div>`}
         </div></div>`).join('')}
       </div>`;
       $('#cf-dealer').onchange=e=>{st.dealer=e.target.value;st.selected=null;draw();};
@@ -110,6 +113,13 @@ async function render(id){
       C.querySelectorAll('[data-clip]').forEach(el=>el.onclick=e=>{if(e.target.closest('video,select,button'))return;const id=el.dataset.clip;if(!st.dealer||st.dealer!==byId[id].dealer){st.dealer=byId[id].dealer;st.selected=id;draw();return;}const old=st.selected;st.selected=st.selected===id?null:id;if(old)markCard(old);markCard(id);const on=!!st.selected;C.querySelectorAll('[data-part]').forEach(t=>{t.style.cursor=on?'pointer':'default';t.style.borderColor=on||(lib.assignments[st.dealer]??{})[t.dataset.part]?'var(--lime)':'var(--line)';});const head=C.querySelector('.panel:nth-of-type(2) .t');if(head)head.innerHTML=`ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${on?`&middot; <span style="color:var(--lime)">SELECTED: ${byId[id].name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}`;});
       C.querySelectorAll('[data-part]').forEach(el=>el.onclick=e=>{if(e.target.closest('button'))return;if(!st.selected)return;assign(st.dealer,el.dataset.part,st.selected);});
       C.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));
+      const neverAgain=async(id,undo)=>{const reason=C.querySelector(`[data-never-reason="${id}"]`)?.value??'';const r=await api('/api/bo/clip-never',{clip:id,reason,undo});if(!r.ok){toast(r.error||'failed');return;}lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;
+        const el=C.querySelector(`[data-clip="${id}"]`);if(el){el.animate([{opacity:1},{opacity:0,transform:'scale(.96)'}],{duration:350,fill:'forwards'});setTimeout(()=>el.remove(),360);}
+        C.querySelectorAll('[data-part]').forEach(t=>{t.innerHTML=tileInner(t.dataset.part);t.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));});
+        const nb=C.querySelector('[data-mode="never"]');if(nb)nb.innerHTML=`&#10006; NEVER AGAIN (${Object.keys(lib.neverAgain).length})`;
+        toast(undo?`restored ${byId[id]?.name??id}`:`never again: ${byId[id]?.name??id}`);};
+      C.querySelectorAll('[data-never]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.never,false));
+      C.querySelectorAll('[data-restore]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.restore,true));
       C.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const c=byId[b.dataset.assign];const part=C.querySelector(`[data-assign-part="${c.id}"]`).value;if(!part){toast('pick a table part first');return;}if(st.dealer!==c.dealer){st.dealer=c.dealer;draw();}assign(c.dealer,part,c.id,C.querySelector(`[data-assign="${c.id}"]`));});
     };
     draw();
