@@ -1,3 +1,9 @@
+## 2026-09-17 — seven-seat physical reach clips in isolated gameplay review
+
+User asked Astrid to physically deal to the seven existing seat positions. Generated per-seat Kling 3.0 start/end-frame clips from the ready pose to endpoint images rendered from actual isolated game card quads (content/staging/2026-09-17/seven-seat-reach). Boxes 0–4 pass frame review (hand carries card to target, releases there); boxes 5 and 6 failed twice (card teleports / wrong direction). Scout Gaming Group workspace credits 63.42→1.92; no more generation possible without top-up.
+
+New opt-in review route `astridSeven=review` (with `astridContinuous=off`) on isolated 4190 plays the full-scene clip for the first card of boxes 0–4 and reveals the DOM card at the clip's release time; boxes 5/6, later cards and dealer keep legacy delivery. Two headless rounds completed with all ten clips playing and settling. This is rough review, not mask/registration acceptance: idle→clip→idle cuts are abrupt and the clip's baked table sits over the CSS table. Public 4173 unchanged.
+
 ## 2026-09-14 — continuous four-card film now drives actual opening
 
 User rejected a render gallery and requested gameplay integration. New persisted `game-runtime/continuous-demo/install.py` installs the existing350-frame joined camera-locked four-delivery/return film into actual4190 opening flow for exactly three active player seats. Two passes show eight server-issued cards, fourth slot of pass2 is hole/back-only. Other counts and later decisions retain previous routes. `astridContinuous=off` restores previous opening. No new generation; abandoned gallery files were removed without installation.
