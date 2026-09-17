@@ -63,6 +63,12 @@ async function render(id){
     const st=render.clipState??={dealer:'astrid',part:'',mode:'transparent',sort:'dealer',selected:null};
     const PARTN={box0:'Box 0 (far left)',box1:'Box 1',box2:'Box 2',box3:'Box 3 (centre)',box4:'Box 4',box5:'Box 5',box6:'Box 6 (far right)','dealer-up':'Dealer upcard','dealer-hole':'Dealer hole card',return:'Return to idle',idle:'Idle'};
     const byId=Object.fromEntries(lib.clips.map(c=>[c.id,c]));
+    const assignedParts=id=>Object.entries(lib.assignments[st.dealer]??{}).filter(([,a])=>a.clip===id).map(([p])=>p);
+    const tileInner=p=>{const a=(lib.assignments[st.dealer]??{})[p];const c=a?byId[a.clip]:null;return `<div class="mono" style="font-size:9px;letter-spacing:.12em;color:var(--mut)">${PARTN[p].toUpperCase()}</div>
+          <div style="font-size:11px;margin-top:4px;${c?'':'color:var(--mut)'}">${c?c.name:a?'(missing '+a.clip+')':'legacy / none'}</div>
+          ${c?`<div style="margin-top:4px;display:flex;gap:4px;align-items:center">${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}<button data-clear="${p}" style="padding:1px 6px;font-size:9px">clear</button></div>`:''}`;};
+    const cardBadge=c=>{const ps=assignedParts(c.id);return ps.length?`<span class="pill live" style="background:var(--lime);color:#111">&#10003; ASSIGNED &middot; ${ps.map(p=>PARTN[p].toUpperCase()).join(' + ')}</span>`:'';};
+    const markCard=id=>{const el=C.querySelector(`[data-clip="${id}"]`);if(!el)return;const ps=assignedParts(id);el.style.borderColor=ps.length||st.selected===id?'var(--lime)':'var(--line)';el.style.boxShadow=ps.length?'0 0 0 2px rgba(214,255,58,.25)':'';el.querySelector('[data-badge]').innerHTML=cardBadge(byId[id]);};
     const draw=()=>{
       let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent)));
       const cmp={dealer:(a,b)=>a.dealer.localeCompare(b.dealer)||(a.part??'zz').localeCompare(b.part??'zz')||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),part:(a,b)=>(a.part??'zz').localeCompare(b.part??'zz')||a.dealer.localeCompare(b.dealer),frames:(a,b)=>(b.frames??0)-(a.frames??0)}[st.sort];
@@ -78,14 +84,10 @@ async function render(id){
       </div></div>
       ${st.dealer?`<div class="panel"><div class="t">ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${sel?`&middot; <span style="color:var(--lime)">SELECTED: ${sel.name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}</div>
       <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
-        ${lib.parts.map(p=>{const a=asg[p];const c=a?byId[a.clip]:null;return `<div data-part="${p}" style="border:1px solid ${sel?'var(--lime)':'var(--line)'};border-radius:8px;padding:8px 10px;cursor:${sel?'pointer':'default'};background:var(--panel2)">
-          <div class="mono" style="font-size:9px;letter-spacing:.12em;color:var(--mut)">${PARTN[p].toUpperCase()}</div>
-          <div style="font-size:11px;margin-top:4px;${c?'':'color:var(--mut)'}">${c?c.name:a?'(missing '+a.clip+')':'legacy / none'}</div>
-          ${c?`<div style="margin-top:4px;display:flex;gap:4px;align-items:center">${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}<button data-clear="${p}" style="padding:1px 6px;font-size:9px">clear</button></div>`:''}
-        </div>`;}).join('')}
+        ${lib.parts.map(p=>`<div data-part="${p}" style="border:1px solid ${sel?'var(--lime)':'var(--line)'};border-radius:8px;padding:8px 10px;cursor:${sel?'pointer':'default'};background:var(--panel2)">${tileInner(p)}</div>`).join('')}
       </div></div>`:''}
       <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
-      ${list.map(c=>`<div data-clip="${c.id}" style="border:1px solid ${st.selected===c.id?'var(--lime)':'var(--line)'};border-radius:10px;overflow:hidden;background:var(--panel2);cursor:pointer">
+      ${list.map(c=>`<div data-clip="${c.id}" style="border:1px solid ${st.selected===c.id||assignedParts(c.id).length?'var(--lime)':'var(--line)'};${assignedParts(c.id).length?'box-shadow:0 0 0 2px rgba(214,255,58,.25);':''}border-radius:10px;overflow:hidden;background:var(--panel2);cursor:pointer;position:relative"><div data-badge style="position:absolute;top:8px;left:8px;z-index:2">${cardBadge(c)}</div>
         ${c.src?`<video src="/${c.src}" preload="metadata" muted playsinline controls style="width:100%;max-height:220px;display:block;background:#000;object-fit:contain"></video>`:`<div style="height:90px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
         <div style="padding:9px 11px">
           <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
@@ -99,11 +101,16 @@ async function render(id){
       $('#cf-part').onchange=e=>{st.part=e.target.value;draw();};
       $('#cf-sort').onchange=e=>{st.sort=e.target.value;draw();};
       C.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{st.mode=b.dataset.mode;draw();});
-      const assign=async(dealer,part,clip)=>{const r=await api('/api/bo/clip-assign',{dealer,part,clip});if(r.ok){lib.assignments=r.assignments;toast(clip?`${dealer}/${part} ← ${clip}`:`${dealer}/${part} cleared`);st.selected=null;draw();}else toast(r.error||'failed');};
-      C.querySelectorAll('[data-clip]').forEach(el=>el.onclick=e=>{if(e.target.closest('video,select,button'))return;st.selected=st.selected===el.dataset.clip?null:el.dataset.clip;if(!st.dealer)st.dealer=byId[el.dataset.clip].dealer;draw();});
-      C.querySelectorAll('[data-part]').forEach(el=>el.onclick=e=>{if(e.target.closest('button'))return;if(!sel)return;assign(st.dealer,el.dataset.part,sel.id);});
+      const assign=async(dealer,part,clip,btn)=>{const prev=(lib.assignments[dealer]??{})[part]?.clip;const r=await api('/api/bo/clip-assign',{dealer,part,clip});if(!r.ok){toast(r.error||'failed');return;}
+        lib.assignments=r.assignments;toast(clip?`${PARTN[part]} ← ${byId[clip]?.name??clip}`:`${PARTN[part]} cleared`);
+        const tile=C.querySelector(`[data-part="${part}"]`);if(tile){tile.innerHTML=tileInner(part);tile.style.borderColor=clip?'var(--lime)':'var(--line)';tile.animate([{background:'rgba(214,255,58,.35)'},{background:'var(--panel2)'}],{duration:900});tile.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(dealer,b.dataset.clear,null));}
+        if(prev)markCard(prev);if(clip)markCard(clip);
+        if(btn){const t=btn.textContent;btn.textContent='✓ ASSIGNED';btn.style.background='var(--lime)';btn.style.color='#111';setTimeout(()=>{btn.textContent=t;btn.style.background='';btn.style.color='';},1500);}
+        if(st.selected){const old=st.selected;st.selected=null;markCard(old);C.querySelectorAll('[data-part]').forEach(t=>{t.style.cursor='default';if(!(lib.assignments[dealer]??{})[t.dataset.part])t.style.borderColor='var(--line)';});const head=C.querySelector('.panel:nth-of-type(2) .t');if(head)head.innerHTML=`ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} &middot; click a clip below, then a part here`;}};
+      C.querySelectorAll('[data-clip]').forEach(el=>el.onclick=e=>{if(e.target.closest('video,select,button'))return;const id=el.dataset.clip;if(!st.dealer||st.dealer!==byId[id].dealer){st.dealer=byId[id].dealer;st.selected=id;draw();return;}const old=st.selected;st.selected=st.selected===id?null:id;if(old)markCard(old);markCard(id);const on=!!st.selected;C.querySelectorAll('[data-part]').forEach(t=>{t.style.cursor=on?'pointer':'default';t.style.borderColor=on||(lib.assignments[st.dealer]??{})[t.dataset.part]?'var(--lime)':'var(--line)';});const head=C.querySelector('.panel:nth-of-type(2) .t');if(head)head.innerHTML=`ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${on?`&middot; <span style="color:var(--lime)">SELECTED: ${byId[id].name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}`;});
+      C.querySelectorAll('[data-part]').forEach(el=>el.onclick=e=>{if(e.target.closest('button'))return;if(!st.selected)return;assign(st.dealer,el.dataset.part,st.selected);});
       C.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));
-      C.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const c=byId[b.dataset.assign];const part=C.querySelector(`[data-assign-part="${c.id}"]`).value;if(!part){toast('pick a table part first');return;}assign(c.dealer,part,c.id);});
+      C.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const c=byId[b.dataset.assign];const part=C.querySelector(`[data-assign-part="${c.id}"]`).value;if(!part){toast('pick a table part first');return;}if(st.dealer!==c.dealer){st.dealer=c.dealer;draw();}assign(c.dealer,part,c.id,C.querySelector(`[data-assign="${c.id}"]`));});
     };
     draw();
     return;
