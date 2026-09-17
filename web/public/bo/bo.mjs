@@ -8,6 +8,7 @@ const api=async(p,body)=>{const r=await fetch(p,body?{method:'POST',headers:{'Co
 const SECTIONS=[
  ['ops','Operations','SCOUT LIVE CASINO · ALL SYSTEMS'],
  ['voice','Voice Lines','SYNC VERIFICATION · EVERY TAKE, AS THE GAME PLAYS IT'],
+ ['clips','Dealing Clips','CLIP LIBRARY · TRANSPARENT FILTER · ASSIGN TO TABLE PARTS'],
  ['emails','Emails','BRAND TEMPLATES · TRANSACTIONAL & LIFECYCLE'],
  ['users','Users','CRAIG · ROLES & INVITES'],
  ['rooms','Tables & Rooms','ROOMS · TIERS · RULES'],
@@ -18,7 +19,7 @@ const SECTIONS=[
  ['pay','Payments','WALLET · LEDGER'],
  ['shoes','Shoes & Decks','GAME INTEGRITY · RNG'],
 ];
-const ICONS={users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+const ICONS={clips:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9 l5 3 -5 3 Z"/>',users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
  rooms:'<ellipse cx="12" cy="12" rx="9" ry="6"/><path d="M5 16 v3 M19 16 v3"/>',
  dealers:'<circle cx="12" cy="9" r="4"/><path d="M4 21 c1.5-5 4.5-7 8-7 s6.5 2 8 7"/>',
  pit:'<path d="M12 3 L20 6 V12 C20 17 16.5 20 12 21.5 C7.5 20 4 17 4 12 V6 Z"/>',
@@ -55,6 +56,56 @@ async function render(id){
     <div class="panel"><div class="t">TIER ASSIGNMENTS &middot; LIVE GAME CONTROL</div><table><thead><tr><th>TIER</th><th>LIMITS</th><th>DEALER</th><th>ROOM</th><th>STATE</th></tr></thead><tbody>
     ${Object.entries(ov.tiers).map(([t,d])=>{const dd=ov.dealers.find(x=>x.key===d);const [lbl,cls]=DSTATE(dd);return `<tr><td class="mono">${TIERN[t]}</td><td class="mono" style="color:var(--mut)">${{classic:'$5 - $2,000',high:'$100 - $50,000',vip:'$1,000 - $1,000,000'}[t]}</td><td>${dd.name}</td><td style="color:var(--mut)">${dd.room}</td><td>${pill(lbl,cls)}</td></tr>`;}).join('')}
     </tbody></table></div>`;
+  }
+
+  if(id==='clips'){
+    const lib=await api('/api/bo/clips');
+    const st=render.clipState??={dealer:'astrid',part:'',mode:'transparent',sort:'dealer',selected:null};
+    const PARTN={box0:'Box 0 (far left)',box1:'Box 1',box2:'Box 2',box3:'Box 3 (centre)',box4:'Box 4',box5:'Box 5',box6:'Box 6 (far right)','dealer-up':'Dealer upcard','dealer-hole':'Dealer hole card',return:'Return to idle',idle:'Idle'};
+    const byId=Object.fromEntries(lib.clips.map(c=>[c.id,c]));
+    const draw=()=>{
+      let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent)));
+      const cmp={dealer:(a,b)=>a.dealer.localeCompare(b.dealer)||(a.part??'zz').localeCompare(b.part??'zz')||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),part:(a,b)=>(a.part??'zz').localeCompare(b.part??'zz')||a.dealer.localeCompare(b.dealer),frames:(a,b)=>(b.frames??0)-(a.frames??0)}[st.sort];
+      list.sort(cmp);
+      const asg=lib.assignments[st.dealer]??{};
+      const sel=st.selected?byId[st.selected]:null;
+      C.innerHTML=`
+      <div class="panel"><div class="t">FILTERS &middot; ${list.length} OF ${lib.clips.length} CLIPS</div><div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <select id="cf-dealer"><option value="">All dealers</option>${lib.dealers.map(d=>`<option value="${d.key}" ${st.dealer===d.key?'selected':''}>${d.name}</option>`).join('')}</select>
+        <select id="cf-part"><option value="">All table parts</option>${lib.parts.map(p=>`<option value="${p}" ${st.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select>
+        <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['transparent','TRANSPARENT ONLY'],['full','FULL-SCENE ONLY'],['all','ALL']].map(([k,l])=>`<button data-mode="${k}" style="border:0;border-radius:0;${st.mode===k?'background:rgba(214,255,58,.15);color:var(--lime)':''}">${l}</button>`).join('')}</span>
+        <select id="cf-sort">${[['dealer','Sort: dealer'],['part','Sort: table part'],['name','Sort: name'],['frames','Sort: length']].map(([k,l])=>`<option value="${k}" ${st.sort===k?'selected':''}>${l}</option>`).join('')}</select>
+      </div></div>
+      ${st.dealer?`<div class="panel"><div class="t">ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${sel?`&middot; <span style="color:var(--lime)">SELECTED: ${sel.name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}</div>
+      <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+        ${lib.parts.map(p=>{const a=asg[p];const c=a?byId[a.clip]:null;return `<div data-part="${p}" style="border:1px solid ${sel?'var(--lime)':'var(--line)'};border-radius:8px;padding:8px 10px;cursor:${sel?'pointer':'default'};background:var(--panel2)">
+          <div class="mono" style="font-size:9px;letter-spacing:.12em;color:var(--mut)">${PARTN[p].toUpperCase()}</div>
+          <div style="font-size:11px;margin-top:4px;${c?'':'color:var(--mut)'}">${c?c.name:a?'(missing '+a.clip+')':'legacy / none'}</div>
+          ${c?`<div style="margin-top:4px;display:flex;gap:4px;align-items:center">${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}<button data-clear="${p}" style="padding:1px 6px;font-size:9px">clear</button></div>`:''}
+        </div>`;}).join('')}
+      </div></div>`:''}
+      <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+      ${list.map(c=>`<div data-clip="${c.id}" style="border:1px solid ${st.selected===c.id?'var(--lime)':'var(--line)'};border-radius:10px;overflow:hidden;background:var(--panel2);cursor:pointer">
+        ${c.src?`<video src="/${c.src}" preload="metadata" muted playsinline controls style="width:100%;max-height:220px;display:block;background:#000;object-fit:contain"></video>`:`<div style="height:90px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
+        <div style="padding:9px 11px">
+          <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.status?' &middot; '+c.status:''}</div>
+          <div style="font-size:10px;color:var(--mut);margin-top:3px">${c.layout??''}${c.width?` &middot; ${c.width}&times;${c.height}`:''}${c.frames?` &middot; ${c.frames}f`:''}${c.fps?` @${c.fps}`:''}${c.route?`<br>route: <span class="mono">${c.route}</span>`:''}</div>
+          <div style="margin-top:8px;display:flex;gap:6px;align-items:center"><select data-assign-part="${c.id}" style="flex:1"><option value="">Assign to&hellip;</option>${lib.parts.map(p=>`<option value="${p}" ${c.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><button data-assign="${c.id}">ASSIGN</button></div>
+        </div></div>`).join('')}
+      </div>`;
+      $('#cf-dealer').onchange=e=>{st.dealer=e.target.value;st.selected=null;draw();};
+      $('#cf-part').onchange=e=>{st.part=e.target.value;draw();};
+      $('#cf-sort').onchange=e=>{st.sort=e.target.value;draw();};
+      C.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{st.mode=b.dataset.mode;draw();});
+      const assign=async(dealer,part,clip)=>{const r=await api('/api/bo/clip-assign',{dealer,part,clip});if(r.ok){lib.assignments=r.assignments;toast(clip?`${dealer}/${part} ← ${clip}`:`${dealer}/${part} cleared`);st.selected=null;draw();}else toast(r.error||'failed');};
+      C.querySelectorAll('[data-clip]').forEach(el=>el.onclick=e=>{if(e.target.closest('video,select,button'))return;st.selected=st.selected===el.dataset.clip?null:el.dataset.clip;if(!st.dealer)st.dealer=byId[el.dataset.clip].dealer;draw();});
+      C.querySelectorAll('[data-part]').forEach(el=>el.onclick=e=>{if(e.target.closest('button'))return;if(!sel)return;assign(st.dealer,el.dataset.part,sel.id);});
+      C.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));
+      C.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const c=byId[b.dataset.assign];const part=C.querySelector(`[data-assign-part="${c.id}"]`).value;if(!part){toast('pick a table part first');return;}assign(c.dealer,part,c.id);});
+    };
+    draw();
+    return;
   }
   if(id==='voice'){
     const vl=await api('/api/bo/voicelines');
