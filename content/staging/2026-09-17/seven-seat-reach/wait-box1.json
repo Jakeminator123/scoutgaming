@@ -1,0 +1,45 @@
+{
+  "created_at": "2026-09-17T16:20:55.592461Z",
+  "display_name": "Kling v3.0",
+  "id": "d9c797a1-63ab-4e48-80c6-7de2eb5b3790",
+  "job_type": "kling3_0",
+  "min_result_url": null,
+  "params": {
+    "aspect_ratio": "16:9",
+    "cfg_scale": 0.5,
+    "duration": 3,
+    "enhance_prompt": false,
+    "height": 720,
+    "kling_element_ids": [],
+    "kling_elements": [],
+    "medias": [
+      {
+        "data": {
+          "id": "5962e894-5efd-4181-a8f4-05470928358c",
+          "type": "media_input",
+          "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg"
+        },
+        "role": "start_image"
+      },
+      {
+        "data": {
+          "id": "50540350-747a-4a70-9564-2ce525ea4fe3",
+          "type": "media_input",
+          "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/50540350-747a-4a70-9564-2ce525ea4fe3.jpg"
+        },
+        "role": "end_image"
+      }
+    ],
+    "mode": "std",
+    "multi_prompt": [],
+    "multi_shot_mode": "custom",
+    "multi_shots": false,
+    "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the second player position from viewer-left. Extract the card low through the actual shoe mouth, transfer it to the receiving hand, turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers stay in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt afterwards. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction or extra card, no text or labels, no pose freeze, no hovering card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+    "reference_elements": [],
+    "sound": "off",
+    "width": 1280
+  },
+  "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162055_d9c797a1-63ab-4e48-80c6-7de2eb5b3790.mp4",
+  "status": "completed",
+  "thumbnail_url": "https://cdn.higgsfield.ai/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162055_d9c797a1-63ab-4e48-80c6-7de2eb5b3790_thumbnail.webp"
+}
