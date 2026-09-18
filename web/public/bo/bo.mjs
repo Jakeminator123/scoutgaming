@@ -76,11 +76,33 @@ async function render(id){
       </div></div>
       <div class="panel"><div class="t">KEYS &middot; ${d.keys.length}</div><table><thead><tr><th>NAME</th><th>KEY</th><th>SCOPES</th><th>WALLET</th><th>LAST USED</th><th>STATE</th><th></th></tr></thead><tbody>
       ${d.keys.map(k=>`<tr style="${k.revoked_at?'opacity:.45':''}"><td>${k.name}<div class="mono" style="font-size:9px;color:var(--mut)">by ${k.created_by??'?'} &middot; ${k.created_at.slice(0,10)}</div></td><td class="mono" style="font-size:10px">${k.key}</td><td style="font-size:10px">${k.scopes.join(', ')}</td><td style="font-size:10px">${k.wallet_url?'seamless':'internal'}</td><td class="mono" style="font-size:10px">${k.last_used?k.last_used.slice(0,16).replace('T',' '):'never'}</td><td>${k.revoked_at?pill('REVOKED','bad'):pill('ACTIVE','live')}</td>
-        <td style="white-space:nowrap">${k.revoked_at?'':`<button data-rotate="${k.id}" style="font-size:9px">ROTATE SECRET</button> <button data-revoke="${k.id}" style="font-size:9px;color:var(--red);border-color:rgba(255,80,80,.5)">REVOKE</button>`}</td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--mut)">no keys yet</td></tr>'}
+        <td style="white-space:nowrap">${k.revoked_at?'':`<button data-launch="${k.id}" style="font-size:9px;border-color:var(--lime);color:var(--lime)">MINT TEST TOKEN</button> <button data-rotate="${k.id}" style="font-size:9px">ROTATE SECRET</button> <button data-revoke="${k.id}" style="font-size:9px;color:var(--red);border-color:rgba(255,80,80,.5)">REVOKE</button>`}</td></tr>
+      ${k.revoked_at?'':`<tr data-launchrow="${k.id}" hidden><td colspan="7" style="background:var(--panel2)"></td></tr>`}`).join('')||'<tr><td colspan="7" style="color:var(--mut)">no keys yet</td></tr>'}
       </tbody></table></div>
       <div class="panel"><div class="t">INTEGRATION DOCS</div><div class="pad" style="font-size:12px">Partner API v1 documentation, signing example and wallet contract: <a href="/docs/partner-api.html" target="_blank" style="color:var(--lime)">/docs/partner-api.html</a></div></div>`;
       $('#k-create').onclick=async()=>{const scopes=[...C.querySelectorAll('[data-scope]:checked')].map(x=>x.dataset.scope);const r=await api('/api/bo/apikeys/create',{name:$('#k-name').value,walletUrl:$('#k-wallet').value.trim(),ipAllow:$('#k-ip').value.trim(),scopes});if(r.ok){toast('key created');const d2=await api('/api/bo/apikeys');d.keys=d2.keys;draw(r.key);}else toast(r.error||'failed');};
       C.querySelectorAll('[data-revoke]').forEach(b=>b.onclick=async()=>{if(!confirm('Revoke this key? The partner loses access immediately.'))return;const r=await api('/api/bo/apikeys/revoke',{id:b.dataset.revoke});if(r.ok){toast('revoked');render('apikeys');}});
+      C.querySelectorAll('[data-launch]').forEach(btn=>btn.onclick=async()=>{
+        const id=btn.dataset.launch, row=C.querySelector(`[data-launchrow="${id}"]`), cell=row.firstElementChild;
+        const r=await api('/api/bo/apikeys/launch',{id});
+        if(!r.ok){toast(r.error||'failed');return;}
+        row.hidden=false;
+        cell.innerHTML=`<div style="padding:10px 12px;font-size:12px;line-height:1.8">
+          <div class="mono" style="font-size:10px;letter-spacing:.1em;color:var(--mut)">TEST PLAYER ${r.playerId} &middot; ${r.currency} ${r.balance.toFixed(2)} &middot; TOKEN VALID 6 H</div>
+          <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <a href="${r.url}" target="_blank" style="color:var(--lime)">Open the game as this player &rarr;</a>
+            <button data-copyurl style="font-size:9px">COPY URL</button>
+            <input data-amount value="500" style="width:80px;font-size:11px;padding:3px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)">
+            <button data-credit style="font-size:9px">ADD DEMO FUNDS</button>
+          </div>
+          <div class="mono" style="margin-top:8px;font-size:10px;color:var(--mut)">Equivalent signed call (5 min validity). Signed string: <span style="color:var(--paper)">${(r.signedString||'').replace(/</g,'&lt;')}</span></div>
+          <pre style="margin:4px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:9px;font-size:10px;overflow:auto">${(r.curlLines||[]).join(' \\\n').replace(/</g,'&lt;')}</pre>
+          <button data-copycurl style="font-size:9px;margin-top:6px">COPY CURL</button></div>`;
+        const copy=async(el,text,label)=>{try{await navigator.clipboard.writeText(text);}catch{}toast(label);};
+        cell.querySelector('[data-copyurl]').onclick=()=>copy(null,r.url,'launch URL copied');
+        cell.querySelector('[data-copycurl]').onclick=()=>copy(null,(r.curlLines||[]).join(' \\\n'),'curl copied');
+        cell.querySelector('[data-credit]').onclick=async()=>{const amount=Number(cell.querySelector('[data-amount]').value);const c=await api('/api/bo/apikeys/credit',{id,playerId:r.playerId,amount});toast(c.ok?`${r.playerId}: ${c.balance} ${c.currency}`:(c.error||'failed'));};
+      });
       C.querySelectorAll('[data-rotate]').forEach(b=>b.onclick=async()=>{const r=await api('/api/bo/apikeys/rotate',{id:b.dataset.rotate});if(r.ok){toast('secret rotated');const d2=await api('/api/bo/apikeys');d.keys=d2.keys;const k=d.keys.find(x=>x.id===r.id);draw({name:k.name,key:k.key+' (unchanged)',secret:r.secret,scopes:k.scopes,walletUrl:k.wallet_url});}else toast(r.error||'failed');});
     };
     draw(null);

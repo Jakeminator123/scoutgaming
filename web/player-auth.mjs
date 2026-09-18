@@ -12,7 +12,8 @@ export function playerAuth(db, createPlayer, identity = null) {
     if (!token) return null;
     const session=db.prepare('SELECT player_id,source_stamp FROM player_sessions WHERE digest=? AND expires>?').get(digest(token),Date.now());
     if(!session)return null;
-    if(identity){const link=db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id);if(!link || !session.source_stamp || identity.stamp(link.craig_user_id)!==session.source_stamp)return null;}
+    // Partner-launched sessions belong to an operator's player, not a Craig user, so they carry a partner stamp instead of a Craig fingerprint.
+    if(identity && !String(session.source_stamp??'').startsWith('partner:')){const link=db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id);if(!link || !session.source_stamp || identity.stamp(link.craig_user_id)!==session.source_stamp)return null;}
     return session.player_id;
   }
   const cookie=(req,token,age)=>`player_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${(req.socket.encrypted || process.env.NODE_ENV==='production') ? '; Secure' : ''}`;

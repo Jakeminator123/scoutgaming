@@ -29,6 +29,29 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
         .run(id, name.trim().slice(0, 80), key, secret, JSON.stringify(sc), walletUrl || null, ipAllow || null, who ?? null, new Date().toISOString());
       return { id, name: name.trim(), key, secret, scopes: sc, walletUrl: walletUrl || null, note: 'Secret is shown ONCE. Store it now.' };
     },
+    mintLaunch(id, { playerId, currency, language } = {}) {
+      const row = boDb.prepare('SELECT * FROM api_keys WHERE id=? AND revoked_at IS NULL').get(id);
+      if (!row) throw new Error('unknown or revoked key');
+      const pid = String(playerId || 'test-' + randomBytes(3).toString('hex'));
+      const p = playerFor({ ...row, scopes: JSON.parse(row.scopes) }, pid, currency || 'EUR');
+      const tok = jwtSign({ sub: p.id, partner: row.id, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: null });
+      const ts = Math.floor(Date.now() / 1000), body = JSON.stringify({ playerId: pid, currency: currency || 'EUR' });
+      const sig = createHmac('sha256', row.secret).update(`${ts}.POST./api/v1/launch.${body}`).digest('hex');
+      return { playerId: pid, playerRef: p.id, balance: p.balance, currency: p.currency, expiresIn: 21600,
+        url: `${publicUrl}/?dealer=astrid&performance=staged&motion=smooth60&launch=${tok}`,
+        curlLines: [`curl -X POST ${publicUrl}/api/v1/launch`, `  -H 'Content-Type: application/json'`, `  -H 'X-Api-Key: ${row.key}'`, `  -H 'X-Timestamp: ${ts}'`, `  -H 'X-Signature: ${sig}'`, `  -d '${body}'`],
+        signedString: `${ts}.POST./api/v1/launch.${body}`,
+        curlNote: 'Signature valid 5 minutes. signedString is the exact input to HMAC-SHA256 with the key secret.' };
+    },
+    credit(id, { playerId, amount }) {
+      const row = boDb.prepare('SELECT * FROM api_keys WHERE id=? AND revoked_at IS NULL').get(id); if (!row) throw new Error('unknown or revoked key');
+      if (row.wallet_url) throw new Error('key uses a seamless wallet; fund the player in your own wallet');
+      if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) throw new Error('amount 0-100000');
+      const p = playerFor({ ...row, scopes: JSON.parse(row.scopes) }, String(playerId), null);
+      const nb = Math.round((p.balance + amount) * 100) / 100;
+      db.prepare('UPDATE players SET balance=? WHERE id=?').run(nb, p.id); logTx(p.id, 'deposit', amount, p.currency, `bo-demo:${row.name}`);
+      return { playerId, balance: nb, currency: p.currency };
+    },
     revoke(id) { boDb.prepare('UPDATE api_keys SET revoked_at=? WHERE id=? AND revoked_at IS NULL').run(new Date().toISOString(), id); return { ok: true }; },
     rotate(id) { const secret = 'cs_' + randomBytes(32).toString('base64url'); boDb.prepare('UPDATE api_keys SET secret=? WHERE id=? AND revoked_at IS NULL').run(secret, id); return { id, secret, note: 'New secret shown ONCE.' }; },
   };

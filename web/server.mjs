@@ -515,6 +515,8 @@ async function boPost(url, body, who) {
   }
   if (url === '/api/bo/apikeys/create') { try { return { ok: true, key: partner().keys.create(body, who?.sub ?? who ?? null) }; } catch (e) { return { error: e.message }; } }
   if (url === '/api/bo/apikeys/revoke') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return partner().keys.revoke(body.id); }
+  if (url === '/api/bo/apikeys/launch') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...partner().keys.mintLaunch(body.id, body) }; } catch (e) { return { error: e.message }; } }
+  if (url === '/api/bo/apikeys/credit') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...partner().keys.credit(body.id, body) }; } catch (e) { return { error: e.message }; } }
   if (url === '/api/bo/apikeys/rotate') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return { ok: true, ...partner().keys.rotate(body.id) }; }
   if (url === '/api/bo/clip-never') {
     // "Never again": awful takes / failed prompts go to a bin so nobody re-reviews or re-assigns them.
@@ -748,7 +750,7 @@ createServer(async (req, res) => {
     if(pathname==='/' && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!getPlayer(claims.sub)){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       const token=randomBytes(32).toString('hex'); const digest=createHash('sha256').update(token).digest('hex');
-      db.prepare('INSERT INTO player_sessions (digest,player_id,expires) VALUES (?,?,?)').run(digest,claims.sub,Date.now()+6*3600*1000);
+      db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp) VALUES (?,?,?,?)').run(digest,claims.sub,Date.now()+6*3600*1000,`partner:${claims.partner}`);
       u.searchParams.delete('launch'); const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
       res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':`player_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=21600${secure}`});res.end();return; } }
   try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
@@ -840,7 +842,7 @@ createServer(async (req, res) => {
     // least role that may perform each action
     const NEED = { '/api/bo/voiceline-review': 'staff', '/api/bo/tournament': 'staff',
                    '/api/bo/pitboss': 'admin', '/api/bo/tier': 'admin', '/api/bo/room': 'admin',
-                   '/api/bo/users/invite': 'superadmin', '/api/bo/apikeys/create': 'superadmin', '/api/bo/apikeys/revoke': 'superadmin', '/api/bo/apikeys/rotate': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin', '/api/bo/users/resend': 'superadmin' };
+                   '/api/bo/users/invite': 'superadmin', '/api/bo/apikeys/create': 'superadmin', '/api/bo/apikeys/launch': 'admin', '/api/bo/apikeys/credit': 'admin', '/api/bo/apikeys/revoke': 'superadmin', '/api/bo/apikeys/rotate': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin', '/api/bo/users/resend': 'superadmin' };
     const PUBLIC = ['/api/bo/reset-request', '/api/bo/set-password'];
     const who = boSessionOk(req);
     if (!PUBLIC.includes(req.url)) {
