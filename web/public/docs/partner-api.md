@@ -68,10 +68,47 @@ Every non-`state` call needs a unique `requestId` (idempotency: replays return t
 | `insurance` | `{ playerId, requestId, op:"insurance", take:true\|false }` | when dealer shows an ace |
 | `collect` | `{ playerId, requestId, op:"collect" }` | settles and returns balance |
 
-Response: `{ version, shoe:{ id, total, remaining, dealt, cutAfter, cutReached, shufflePending, decks, burn }, round:{ boxes, hands, dealer, phase, active, legalActions }, balance, requestId }`. Shoe order, burn card and the hole card are never exposed.
+Response: `{ version, shoe:{ id, total, remaining, dealt, cutAfter, cutReached, shufflePending, decks, burn }, round:{ boxes, hands, dealer, phase, active, holeDraw, legalActions }, balance, requestId, presentation:[…] }`. Shoe order, burn card and the hole card's identity are never exposed before reveal. See *Presentation events* below.
 
 ### POST /api/v1/demo-credit (scope: wallet, internal wallet only)
 `{ playerId, amount }` adds demo funds for integration testing. Not available on keys with a seamless wallet.
+
+
+### POST /api/v1/assets (scope: lobby)
+Everything a client needs to render our dealer yourself. `{ dealer:"astrid" }` →
+```json
+{ "dealer": { "key":"astrid", "name":"Astrid", "room":"Dark Hall" },
+  "scene": { "room":"…/scene.png", "table":"…/table.png", "cardBack":"…", "shoe":"…", "chip":"…" },
+  "camera": { "width":1920, "height":1080, "boxCentres":[[434.8,693.1],[590.6,742.9],[751.4,775.0],[931.0,783.7],[1144.6,777.8],[1287.4,763.5],[1431.2,720.3]] },
+  "streams": [{ "key":"idle-1/idle/idle", "kind":"idle", "url":"…/idle-1_idle_idle.h264", "codec":"avc1.4D4028", "width":1440, "height":1440, "fps":24, "frames":145, "handsMatte":{…}, "audio":null }, …],
+  "deals":   [{ "id":"astrid-centre-native-20260909", "action":"deal-centre", "url":"…/centre-native-review.mp4", "layout":"rgb-over-masks-r-actor-g-fingers", "fps":24, "frames":169, "events":{ "pickup":69, "release":116, "land":122, "rest":154 }, "landAtMs":5083 }, …],
+  "speech":  [{ "line":"goodluck", "text":"Bets are closed. Good luck at my table.", "audio":"…/goodluck.mp3", "lipsyncDelayMs":463, "clip":"idle-1/speak/goodluck" }, …],
+  "formats": { "h264":"raw Annex-B stream, decode with WebCodecs or ffmpeg", "packedAtlas":"RGB tile over mask tiles; use mask as alpha over your table" } }
+```
+`kind`: `idle` loops between actions; `speech` clips are lip-synced to their `audio` (start audio `lipsyncDelayMs` after the clip); `action` clips are dealer gestures. `deals` are the filmed card deliveries per direction (`deal-left` boxes 0–1, `deal-centre` 2–4, `deal-right` 5–6, `deal-dealer`). `landAtMs` is when the card touches the felt: place your DOM card at `boxCentres[box]` at that moment.
+
+### Presentation events (on every `table` response and on the event stream)
+Each non-`state` `table` response includes `presentation`: an ordered list of what our dealer does for that state change. Play them in order.
+
+| type | fields | meaning |
+|---|---|---|
+| `speak` | `line`, `blocking?` | play speech clip + audio for `line` (see assets.speech). `blocking` = wait before dealing |
+| `deal` | `to` (`box`/`dealer`), `box`, `handIndex`, `card` (`{r,s}` or null), `faceDown`, `shoeDraw`, `clip.action` | play the deal clip for `clip.action`, reveal `card` at `landAtMs` at `boxCentres[box]`. `faceDown` = show card back |
+| `reveal` | `to:"dealer"`, `card`, `shoeDraw` | flip the dealer's hole card |
+| `turn` | `box`, `handIndex`, `legalActions` | highlight the active hand, show its buttons |
+| `settle` | `dealerTotal`, `dealerBlackjack`, `hands[{box,stake,returned,outcome}]` | pay out. `outcome`: win / blackjack / push / lose |
+| `idle` | | return dealer to idle loop |
+
+Cards are ordered by `shoeDraw` (server draw order), so the sequence is exactly what a real table would do.
+
+### GET /api/v1/events (scope: play) — server-sent events
+Live stream of presentation events for one player, for clients that render in real time (bots, second screens, or your own UI driven by another process).
+
+```
+GET /api/v1/events?playerId=<id>&key=<X-Api-Key>&ts=<unix seconds>&sig=<hex>
+sig = HMAC-SHA256( `${ts}.GET./api/v1/events.${playerId}` , secret )
+```
+Events: `hello` on connect, then `round` with `{ op, requestId, version, phase, balance, events:[…presentation] }` after every `table` call for that player. Keep-alive comment every 25 s. Reconnect with a fresh `ts`/`sig` (5-minute window).
 
 ### POST /api/v1/balance (scope: wallet)
 `{ playerId }` → `{ playerId, balance, currency }`. With a seamless wallet configured, your wallet is the source of truth and this is informational.
@@ -110,7 +147,12 @@ Scout Gaming Group, Kevin Negash — kevin.negash@scoutgaminggroup.com
 
 Paste one of these together with this page ("Copy for LLM" at the top copies the whole page as Markdown).
 
-**Build a client**
+**Build a headless client (your own UI with our dealer)**
+```
+You are building a web client for the Croupier Partner API v1 (documentation pasted below). Using /api/v1/assets, decode the dealer's raw H.264 streams with WebCodecs, loop the idle clip, and on each `presentation` event from /api/v1/table or the SSE stream play the matching speech clip (audio offset by lipsyncDelayMs) or deal clip, placing a DOM card at camera.boxCentres[box] at landAtMs. Use the packed-atlas mask tile as alpha so hands render over the table. Vanilla TypeScript, no framework. Documentation:
+```
+
+**Build an API client**
 ```
 You are integrating the Croupier Partner API v1 (documentation pasted below). Write a small TypeScript module that: (1) signs requests with HMAC-SHA256 exactly as specified, (2) exposes ping(), lobby(), launch(playerId, currency, language), table(playerId, cmd) with automatic requestId generation and safe replay, history(filter). Use fetch, no dependencies. Include a 10-line usage example. Documentation:
 ```
