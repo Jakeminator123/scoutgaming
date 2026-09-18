@@ -7,6 +7,7 @@ import { playerAuth } from './player-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { isAgentFailure } from './agent-response.mjs';
+import { installPartnerApi } from './partner-api.mjs';
 import { readFileSync as readSync, writeFileSync as writeSync } from 'node:fs';
 import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
 import { join, normalize, extname } from 'node:path';
@@ -95,6 +96,10 @@ API['/api/table'] = ({ id, ...req }) => {
     db.exec('COMMIT'); return { ...view, balance };
   } catch (e) { db.exec('ROLLBACK'); throw e; }
 };
+
+// ---------- partner API v1 (operators / aggregators) ----------
+let partnerApi = null;
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se' }); }
 
 // ---------- backoffice (BO) ----------
 // Real data where it exists (players/transactions from SQLite, dealer assets
@@ -360,6 +365,7 @@ function boApi(url) {
     return { tx: db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all() };
   }
   if (url === '/api/bo/config') return cfg;
+  if (url === '/api/bo/apikeys') return { keys: partner().keys.list(), scopes: partner().SCOPES, docs: '/docs/partner-api.html' };
   if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {} };
   if (url === '/api/bo/users') {
     return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
@@ -507,6 +513,9 @@ async function boPost(url, body, who) {
     boSave(cfg);
     return { ok: true };
   }
+  if (url === '/api/bo/apikeys/create') { try { return { ok: true, key: partner().keys.create(body, who?.sub ?? who ?? null) }; } catch (e) { return { error: e.message }; } }
+  if (url === '/api/bo/apikeys/revoke') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return partner().keys.revoke(body.id); }
+  if (url === '/api/bo/apikeys/rotate') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return { ok: true, ...partner().keys.rotate(body.id) }; }
   if (url === '/api/bo/clip-never') {
     // "Never again": awful takes / failed prompts go to a bin so nobody re-reviews or re-assigns them.
     const { clip, reason, undo } = body ?? {};
@@ -734,9 +743,17 @@ function previewPlayer(req,res) {
   return p.id;
 }
 createServer(async (req, res) => {
-  try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
   const pathname=new URL(req.url,'http://local').pathname;
+  { const u=new URL(req.url,'http://local'); const launch=u.searchParams.get('launch');
+    if(pathname==='/' && launch){ const claims=jwtVerify(launch);
+      if(!claims?.sub||!claims.partner||!getPlayer(claims.sub)){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
+      const token=randomBytes(32).toString('hex'); const digest=createHash('sha256').update(token).digest('hex');
+      db.prepare('INSERT INTO player_sessions (digest,player_id,expires) VALUES (?,?,?)').run(digest,claims.sub,Date.now()+6*3600*1000);
+      u.searchParams.delete('launch'); const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
+      res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':`player_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=21600${secure}`});res.end();return; } }
+  try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
   if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
+  if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await partner().handle(req,res,pathname); return; }
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
   let authenticated=auth.user(req);
   const guest=guestPreview && !authenticated && !backoffice && (pathname.startsWith('/api/') || pathname==='/chat');
@@ -822,7 +839,7 @@ createServer(async (req, res) => {
     // least role that may perform each action
     const NEED = { '/api/bo/voiceline-review': 'staff', '/api/bo/tournament': 'staff',
                    '/api/bo/pitboss': 'admin', '/api/bo/tier': 'admin', '/api/bo/room': 'admin',
-                   '/api/bo/users/invite': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin', '/api/bo/users/resend': 'superadmin' };
+                   '/api/bo/users/invite': 'superadmin', '/api/bo/apikeys/create': 'superadmin', '/api/bo/apikeys/revoke': 'superadmin', '/api/bo/apikeys/rotate': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin', '/api/bo/users/resend': 'superadmin' };
     const PUBLIC = ['/api/bo/reset-request', '/api/bo/set-password'];
     const who = boSessionOk(req);
     if (!PUBLIC.includes(req.url)) {

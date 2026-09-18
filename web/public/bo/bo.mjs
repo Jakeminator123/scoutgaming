@@ -9,6 +9,7 @@ const SECTIONS=[
  ['ops','Operations','SCOUT LIVE CASINO · ALL SYSTEMS'],
  ['voice','Voice Lines','SYNC VERIFICATION · EVERY TAKE, AS THE GAME PLAYS IT'],
  ['clips','Dealing Clips','CLIP LIBRARY · TRANSPARENT FILTER · ASSIGN TO TABLE PARTS'],
+ ['apikeys','API Keys','PARTNER INTEGRATIONS · SIGNED KEYS · SEAMLESS WALLET'],
  ['emails','Emails','BRAND TEMPLATES · TRANSACTIONAL & LIFECYCLE'],
  ['users','Users','CRAIG · ROLES & INVITES'],
  ['rooms','Tables & Rooms','ROOMS · TIERS · RULES'],
@@ -19,7 +20,7 @@ const SECTIONS=[
  ['pay','Payments','WALLET · LEDGER'],
  ['shoes','Shoes & Decks','GAME INTEGRITY · RNG'],
 ];
-const ICONS={clips:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9 l5 3 -5 3 Z"/>',users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+const ICONS={apikeys:'<circle cx="8" cy="14" r="4"/><path d="M11 11 L20 2 M16 6 l2 2 M13 9 l2 2"/>',clips:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9 l5 3 -5 3 Z"/>',users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
  rooms:'<ellipse cx="12" cy="12" rx="9" ry="6"/><path d="M5 16 v3 M19 16 v3"/>',
  dealers:'<circle cx="12" cy="9" r="4"/><path d="M4 21 c1.5-5 4.5-7 8-7 s6.5 2 8 7"/>',
  pit:'<path d="M12 3 L20 6 V12 C20 17 16.5 20 12 21.5 C7.5 20 4 17 4 12 V6 Z"/>',
@@ -58,6 +59,33 @@ async function render(id){
     </tbody></table></div>`;
   }
 
+
+  if(id==='apikeys'){
+    const d=await api('/api/bo/apikeys');
+    const SC={launch:'Launch (get game URL for a player)',play:'Play (drive the table server-side)',wallet:'Wallet (balance queries)',history:'History (round log export)',lobby:'Lobby (tables, limits, rules)'};
+    const draw=(fresh)=>{C.innerHTML=`
+      ${fresh?`<div class="panel" style="border-color:var(--lime)"><div class="t" style="color:var(--lime)">NEW KEY &middot; ${fresh.name} &middot; SECRET SHOWN ONCE</div><div class="pad">
+        <div class="mono" style="font-size:12px;line-height:1.9;user-select:all">X-Api-Key: <b>${fresh.key}</b><br>Secret: <b>${fresh.secret}</b><br>Scopes: ${fresh.scopes.join(', ')}${fresh.walletUrl?`<br>Wallet URL: ${fresh.walletUrl}`:''}</div>
+        <div style="font-size:11px;color:var(--mut);margin-top:8px">Send both to the partner over a secure channel. The secret is not stored in readable form and cannot be shown again. Docs: <a href="/docs/partner-api.html" target="_blank" style="color:var(--lime)">/docs/partner-api.html</a></div></div></div>`:''}
+      <div class="panel"><div class="t">CREATE PARTNER KEY</div><div class="pad" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:760px">
+        <input id="k-name" placeholder="Partner name (e.g. Acme Aggregator)" style="grid-column:1/3">
+        <input id="k-wallet" placeholder="Seamless wallet URL (optional; blank = internal demo wallet)">
+        <input id="k-ip" placeholder="IP allowlist, comma separated (optional)">
+        <div style="grid-column:1/3;display:flex;gap:14px;flex-wrap:wrap">${d.scopes.map(sc=>`<label style="font-size:11px;display:flex;gap:6px;align-items:center"><input type="checkbox" data-scope="${sc}" checked> ${SC[sc]}</label>`).join('')}</div>
+        <button id="k-create" style="grid-column:1/3;justify-self:start">CREATE KEY</button>
+      </div></div>
+      <div class="panel"><div class="t">KEYS &middot; ${d.keys.length}</div><table><thead><tr><th>NAME</th><th>KEY</th><th>SCOPES</th><th>WALLET</th><th>LAST USED</th><th>STATE</th><th></th></tr></thead><tbody>
+      ${d.keys.map(k=>`<tr style="${k.revoked_at?'opacity:.45':''}"><td>${k.name}<div class="mono" style="font-size:9px;color:var(--mut)">by ${k.created_by??'?'} &middot; ${k.created_at.slice(0,10)}</div></td><td class="mono" style="font-size:10px">${k.key}</td><td style="font-size:10px">${k.scopes.join(', ')}</td><td style="font-size:10px">${k.wallet_url?'seamless':'internal'}</td><td class="mono" style="font-size:10px">${k.last_used?k.last_used.slice(0,16).replace('T',' '):'never'}</td><td>${k.revoked_at?pill('REVOKED','bad'):pill('ACTIVE','live')}</td>
+        <td style="white-space:nowrap">${k.revoked_at?'':`<button data-rotate="${k.id}" style="font-size:9px">ROTATE SECRET</button> <button data-revoke="${k.id}" style="font-size:9px;color:var(--red);border-color:rgba(255,80,80,.5)">REVOKE</button>`}</td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--mut)">no keys yet</td></tr>'}
+      </tbody></table></div>
+      <div class="panel"><div class="t">INTEGRATION DOCS</div><div class="pad" style="font-size:12px">Partner API v1 documentation, signing example and wallet contract: <a href="/docs/partner-api.html" target="_blank" style="color:var(--lime)">/docs/partner-api.html</a></div></div>`;
+      $('#k-create').onclick=async()=>{const scopes=[...C.querySelectorAll('[data-scope]:checked')].map(x=>x.dataset.scope);const r=await api('/api/bo/apikeys/create',{name:$('#k-name').value,walletUrl:$('#k-wallet').value.trim(),ipAllow:$('#k-ip').value.trim(),scopes});if(r.ok){toast('key created');const d2=await api('/api/bo/apikeys');d.keys=d2.keys;draw(r.key);}else toast(r.error||'failed');};
+      C.querySelectorAll('[data-revoke]').forEach(b=>b.onclick=async()=>{if(!confirm('Revoke this key? The partner loses access immediately.'))return;const r=await api('/api/bo/apikeys/revoke',{id:b.dataset.revoke});if(r.ok){toast('revoked');render('apikeys');}});
+      C.querySelectorAll('[data-rotate]').forEach(b=>b.onclick=async()=>{const r=await api('/api/bo/apikeys/rotate',{id:b.dataset.rotate});if(r.ok){toast('secret rotated');const d2=await api('/api/bo/apikeys');d.keys=d2.keys;const k=d.keys.find(x=>x.id===r.id);draw({name:k.name,key:k.key+' (unchanged)',secret:r.secret,scopes:k.scopes,walletUrl:k.wallet_url});}else toast(r.error||'failed');});
+    };
+    draw(null);
+    return;
+  }
   if(id==='clips'){
     const lib=await api('/api/bo/clips');
     const st=render.clipState??={dealer:'astrid',part:'',mode:'transparent',sort:'dealer',selected:null};
