@@ -1,27 +1,24 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><title>Croupier Partner API v1</title><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>:root{--bg:#0d0f12;--paper:#f2f1ed;--mut:#9a9d93;--lime:#d6ff3a;--line:#2a2e33;--panel:#15181c}body{margin:0;background:var(--bg);color:var(--paper);font:14px/1.6 Inter,-apple-system,Arial,sans-serif}main{max-width:900px;margin:0 auto;padding:40px 20px}h1{font-size:26px;margin:0 0 6px}h2{font-size:17px;margin:34px 0 10px;color:var(--lime);letter-spacing:.04em}h3{font-size:14px;margin:22px 0 6px}code{font:12px ui-monospace,Menlo,monospace;background:var(--panel);padding:1px 5px;border-radius:4px}pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto}pre code{background:none;padding:0}table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12.5px}th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600;font-size:11px;letter-spacing:.08em}a{color:var(--lime)}p{margin:8px 0}ul{padding-left:20px}.brand{font-size:10px;letter-spacing:.14em;color:var(--mut);margin-bottom:24px}</style></head>
-<body><main><div class="brand">SCOUT GAMING GROUP &middot; LIVE CASINO &middot; PARTNER DOCUMENTATION</div><h1>Croupier Partner API v1</h1>
-
+<style>:root{--bg:#0d0f12;--paper:#f2f1ed;--mut:#9a9d93;--lime:#d6ff3a;--line:#2a2e33;--panel:#15181c}body{margin:0;background:var(--bg);color:var(--paper);font:14px/1.6 Inter,-apple-system,Arial,sans-serif}main{max-width:920px;margin:0 auto;padding:40px 20px}h1{font-size:26px;margin:0 0 6px}h2{font-size:17px;margin:38px 0 10px;color:var(--lime);letter-spacing:.04em;display:flex;align-items:center;gap:12px;flex-wrap:wrap}h3{font-size:14px;margin:22px 0 6px}code{font:12px ui-monospace,Menlo,monospace;background:var(--panel);padding:1px 5px;border-radius:4px}pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;margin:0}pre code{background:none;padding:0;white-space:pre}.codewrap{position:relative;margin:10px 0}.copybtn{position:absolute;top:8px;right:8px}table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12.5px}th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600;font-size:11px;letter-spacing:.08em}a{color:var(--lime)}p{margin:8px 0}ul{padding-left:20px}.brand{font-size:10px;letter-spacing:.14em;color:var(--mut);margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}button{background:transparent;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:3px 9px;font:10px/1.6 ui-monospace,Menlo,monospace;letter-spacing:.06em;cursor:pointer}button:hover{color:var(--paper);border-color:var(--paper)}button.ok{color:#111;background:var(--lime);border-color:var(--lime)}.tools{display:inline-flex;gap:6px;margin-left:auto}.mdview{margin:10px 0}</style></head>
+<body><main><div class="brand"><span>SCOUT GAMING GROUP &middot; LIVE CASINO &middot; PARTNER DOCUMENTATION</span><span class="tools"><button data-copy-all>Copy whole page for LLM</button><a href="/docs/partner-api.md" download style="font-size:10px">Download .md</a></span></div>
+<section data-section="0"><h1>Croupier Partner API v1</h1>
 <p>Server-owned AI-dealer blackjack. The game engine (shoe, rules, outcomes, payouts) runs on our server. The AI dealer only presents the game. Partners integrate through this API.</p>
+<p>Base URL: <code>https://bettalotto.se</code> (production). All endpoints are <code>POST</code> with a JSON body.</p><div class="mdview" data-mdview="0" hidden><pre><code># Croupier Partner API v1
 
-<p>Base URL: <code>https://bettalotto.se</code> (production). All endpoints are <code>POST</code> with a JSON body.</p>
+Server-owned AI-dealer blackjack. The game engine (shoe, rules, outcomes, payouts) runs on our server. The AI dealer only presents the game. Partners integrate through this API.
 
-<h2>1. Authentication (every request)</h2>
-
+Base URL: `https://bettalotto.se` (production). All endpoints are `POST` with a JSON body.
+</code></pre></div></section><section data-section="1"><h2>1. Authentication (every request)<span class="tools"><button data-copy-section="1">Copy for LLM</button><button data-view-md="1">View as Markdown</button></span></h2>
 <p>Each partner gets an API key and a secret from the Scout backoffice. Every request carries three headers:</p>
-
 <table>
 <tr><th>Header</th><th>Value</th></tr>
 <tr><td><code>X-Api-Key</code></td><td>your key, e.g. <code>ck_live_…</code></td></tr>
 <tr><td><code>X-Timestamp</code></td><td>Unix seconds, must be within 5 minutes of server time</td></tr>
 <tr><td><code>X-Signature</code></td><td>hex HMAC-SHA256 over <code>${timestamp}.${METHOD}.${path}.${rawBody}</code> using the secret</td></tr>
 </table>
-
 <p><code>path</code> is the URL path only (e.g. <code>/api/v1/table</code>). <code>rawBody</code> is the exact JSON string you send (empty string if no body).</p>
-
 <p>Node.js example:</p>
-
-<pre><code>
+<div class="codewrap"><button class="copybtn" data-copy-code>Copy</button><pre><code>
 import { createHmac } from &#x27;node:crypto&#x27;;
 const KEY = &#x27;ck_live_…&#x27;, SECRET = &#x27;cs_…&#x27;, BASE = &#x27;https://bettalotto.se&#x27;;
 async function call(path, payload) {
@@ -33,77 +30,205 @@ async function call(path, payload) {
   return r.json();
 }
 console.log(await call(&#x27;/api/v1/ping&#x27;));
-</code></pre>
+</code></pre></div>
+<p>Errors are JSON <code>{ &quot;error&quot;: &quot;…&quot; }</code> with HTTP 400/401/403/404. Key scopes: <code>launch</code>, <code>play</code>, <code>wallet</code>, <code>history</code>, <code>lobby</code>.</p><div class="mdview" data-mdview="1" hidden><pre><code>## 1. Authentication (every request)
 
-<p>Errors are JSON <code>{ &quot;error&quot;: &quot;…&quot; }</code> with HTTP 400/401/403/404. Key scopes: <code>launch</code>, <code>play</code>, <code>wallet</code>, <code>history</code>, <code>lobby</code>.</p>
+Each partner gets an API key and a secret from the Scout backoffice. Every request carries three headers:
 
-<h2>2. Endpoints</h2>
+| Header | Value |
+|---|---|
+| `X-Api-Key` | your key, e.g. `ck_live_…` |
+| `X-Timestamp` | Unix seconds, must be within 5 minutes of server time |
+| `X-Signature` | hex HMAC-SHA256 over `${timestamp}.${METHOD}.${path}.${rawBody}` using the secret |
 
+`path` is the URL path only (e.g. `/api/v1/table`). `rawBody` is the exact JSON string you send (empty string if no body).
+
+Node.js example:
+
+```js
+import { createHmac } from &#x27;node:crypto&#x27;;
+const KEY = &#x27;ck_live_…&#x27;, SECRET = &#x27;cs_…&#x27;, BASE = &#x27;https://bettalotto.se&#x27;;
+async function call(path, payload) {
+  const body = JSON.stringify(payload ?? {});
+  const ts = String(Math.floor(Date.now() / 1000));
+  const sig = createHmac(&#x27;sha256&#x27;, SECRET).update(`${ts}.POST.${path}.${body}`).digest(&#x27;hex&#x27;);
+  const r = await fetch(BASE + path, { method: &#x27;POST&#x27;, body,
+    headers: { &#x27;Content-Type&#x27;: &#x27;application/json&#x27;, &#x27;X-Api-Key&#x27;: KEY, &#x27;X-Timestamp&#x27;: ts, &#x27;X-Signature&#x27;: sig } });
+  return r.json();
+}
+console.log(await call(&#x27;/api/v1/ping&#x27;));
+```
+
+Errors are JSON `{ &quot;error&quot;: &quot;…&quot; }` with HTTP 400/401/403/404. Key scopes: `launch`, `play`, `wallet`, `history`, `lobby`.
+</code></pre></div></section><section data-section="2"><h2>2. Endpoints<span class="tools"><button data-copy-section="2">Copy for LLM</button><button data-view-md="2">View as Markdown</button></span></h2>
 <h3>POST /api/v1/ping</h3>
 <p>Returns <code>{ ok, key, scopes, serverTime }</code>. Use to verify signing.</p>
-
 <h3>POST /api/v1/lobby (scope: lobby)</h3>
 <p>Lists tables, dealers, limits and rules.</p>
-<pre><code>
+<div class="codewrap"><button class="copybtn" data-copy-code>Copy</button><pre><code>
 { &quot;tables&quot;: [{ &quot;id&quot;: &quot;astrid-blackjack&quot;, &quot;game&quot;: &quot;blackjack&quot;, &quot;dealer&quot;: &quot;astrid&quot;, &quot;decks&quot;: 8, &quot;cutAfter&quot;: 312, &quot;boxes&quot;: 7, &quot;minBet&quot;: 5, &quot;maxBet&quot;: 2000, &quot;sideBets&quot;: [&quot;perfectPairs&quot;,&quot;21+3&quot;], &quot;blackjackPays&quot;: &quot;3:2&quot;, &quot;dealerStandsSoft17&quot;: true, &quot;aiDealer&quot;: true }] }
-</code></pre>
-
+</code></pre></div>
 <h3>POST /api/v1/launch (scope: launch)</h3>
 <p>Get a game URL for one of your players. Open it in an iframe or a new tab. The session lasts 6 hours.</p>
-<pre><code>
+<div class="codewrap"><button class="copybtn" data-copy-code>Copy</button><pre><code>
 // request
 { &quot;playerId&quot;: &quot;your-player-123&quot;, &quot;currency&quot;: &quot;EUR&quot;, &quot;language&quot;: &quot;sv&quot;, &quot;returnUrl&quot;: &quot;https://your-site/lobby&quot; }
 // response
 { &quot;url&quot;: &quot;https://bettalotto.se/?dealer=astrid&amp;…&amp;launch=&lt;token&gt;&quot;, &quot;expiresIn&quot;: 21600, &quot;playerRef&quot;: &quot;…&quot; }
-</code></pre>
+</code></pre></div>
 <p><code>playerId</code> is your identifier. We map it to an internal player on first use.</p>
-
 <h3>POST /api/v1/table (scope: play)</h3>
 <p>Drive the table server-side without the UI (for your own front end, bots, or QA). Same engine as the UI.</p>
-
 <p>Every non-<code>state</code> call needs a unique <code>requestId</code> (idempotency: replays return the original response).</p>
-
 <table>
 <tr><th>op</th><th>body</th><th>notes</th></tr>
 <tr><td><code>state</code></td><td><code>{ playerId, op:&quot;state&quot; }</code></td><td>current view, no requestId needed</td></tr>
-<tr><td><code>start</code></td><td><code>{ playerId, requestId, op:&quot;start&quot;, bets:[{box:3, main:10, pp:0, tp:0}] }</code></td><td>places bets and deals. <code>box</code> 0–6</td></tr>
+<tr><td><code>start</code></td><td><code>{ playerId, requestId, op:&quot;start&quot;, bets:[{box:3, main:10, pp:0, tp:0}] }</code></td><td>places bets and deals. <code>box</code> 0–6, sparse list is fine. Optional <code>version</code> for optimistic locking</td></tr>
 <tr><td><code>act</code></td><td>`{ playerId, requestId, op:&quot;act&quot;, action:&quot;hit&quot;\</td><td>&quot;stand&quot;\</td><td>&quot;double&quot;\</td><td>&quot;split&quot; }`</td><td>for the active hand</td></tr>
 <tr><td><code>insurance</code></td><td>`{ playerId, requestId, op:&quot;insurance&quot;, take:true\</td><td>false }`</td><td>when dealer shows an ace</td></tr>
 <tr><td><code>collect</code></td><td><code>{ playerId, requestId, op:&quot;collect&quot; }</code></td><td>settles and returns balance</td></tr>
 </table>
-
 <p>Response: <code>{ version, shoe:{ id, total, remaining, dealt, cutAfter, cutReached, shufflePending, decks, burn }, round:{ boxes, hands, dealer, phase, active, legalActions }, balance, requestId }</code>. Shoe order, burn card and the hole card are never exposed.</p>
-
+<h3>POST /api/v1/demo-credit (scope: wallet, internal wallet only)</h3>
+<p><code>{ playerId, amount }</code> adds demo funds for integration testing. Not available on keys with a seamless wallet.</p>
 <h3>POST /api/v1/balance (scope: wallet)</h3>
 <p><code>{ playerId }</code> → <code>{ playerId, balance, currency }</code>. With a seamless wallet configured, your wallet is the source of truth and this is informational.</p>
-
 <h3>POST /api/v1/history (scope: history)</h3>
-<p><code>{ playerId?, from?, to?, limit? }</code> (ISO timestamps, limit ≤ 1000) → <code>{ rounds:[{ id, playerId, tableVersion, shoeId, op, requestId, stake, delta, currency, round, at }] }</code>. Every bet, action and settlement is logged with the full round state at that moment. Use this for reconciliation and regulator exports.</p>
+<p><code>{ playerId?, from?, to?, limit? }</code> (ISO timestamps, limit ≤ 1000) → <code>{ rounds:[{ id, playerId, tableVersion, shoeId, op, requestId, stake, delta, currency, round, at }] }</code>. Every bet, action and settlement is logged with the full round state at that moment. Use this for reconciliation and regulator exports.</p><div class="mdview" data-mdview="2" hidden><pre><code>## 2. Endpoints
 
-<h2>3. Seamless wallet (recommended for production)</h2>
+### POST /api/v1/ping
+Returns `{ ok, key, scopes, serverTime }`. Use to verify signing.
 
+### POST /api/v1/lobby (scope: lobby)
+Lists tables, dealers, limits and rules.
+```json
+{ &quot;tables&quot;: [{ &quot;id&quot;: &quot;astrid-blackjack&quot;, &quot;game&quot;: &quot;blackjack&quot;, &quot;dealer&quot;: &quot;astrid&quot;, &quot;decks&quot;: 8, &quot;cutAfter&quot;: 312, &quot;boxes&quot;: 7, &quot;minBet&quot;: 5, &quot;maxBet&quot;: 2000, &quot;sideBets&quot;: [&quot;perfectPairs&quot;,&quot;21+3&quot;], &quot;blackjackPays&quot;: &quot;3:2&quot;, &quot;dealerStandsSoft17&quot;: true, &quot;aiDealer&quot;: true }] }
+```
+
+### POST /api/v1/launch (scope: launch)
+Get a game URL for one of your players. Open it in an iframe or a new tab. The session lasts 6 hours.
+```json
+// request
+{ &quot;playerId&quot;: &quot;your-player-123&quot;, &quot;currency&quot;: &quot;EUR&quot;, &quot;language&quot;: &quot;sv&quot;, &quot;returnUrl&quot;: &quot;https://your-site/lobby&quot; }
+// response
+{ &quot;url&quot;: &quot;https://bettalotto.se/?dealer=astrid&amp;…&amp;launch=&lt;token&gt;&quot;, &quot;expiresIn&quot;: 21600, &quot;playerRef&quot;: &quot;…&quot; }
+```
+`playerId` is your identifier. We map it to an internal player on first use.
+
+### POST /api/v1/table (scope: play)
+Drive the table server-side without the UI (for your own front end, bots, or QA). Same engine as the UI.
+
+Every non-`state` call needs a unique `requestId` (idempotency: replays return the original response).
+
+| op | body | notes |
+|---|---|---|
+| `state` | `{ playerId, op:&quot;state&quot; }` | current view, no requestId needed |
+| `start` | `{ playerId, requestId, op:&quot;start&quot;, bets:[{box:3, main:10, pp:0, tp:0}] }` | places bets and deals. `box` 0–6, sparse list is fine. Optional `version` for optimistic locking |
+| `act` | `{ playerId, requestId, op:&quot;act&quot;, action:&quot;hit&quot;\|&quot;stand&quot;\|&quot;double&quot;\|&quot;split&quot; }` | for the active hand |
+| `insurance` | `{ playerId, requestId, op:&quot;insurance&quot;, take:true\|false }` | when dealer shows an ace |
+| `collect` | `{ playerId, requestId, op:&quot;collect&quot; }` | settles and returns balance |
+
+Response: `{ version, shoe:{ id, total, remaining, dealt, cutAfter, cutReached, shufflePending, decks, burn }, round:{ boxes, hands, dealer, phase, active, legalActions }, balance, requestId }`. Shoe order, burn card and the hole card are never exposed.
+
+### POST /api/v1/demo-credit (scope: wallet, internal wallet only)
+`{ playerId, amount }` adds demo funds for integration testing. Not available on keys with a seamless wallet.
+
+### POST /api/v1/balance (scope: wallet)
+`{ playerId }` → `{ playerId, balance, currency }`. With a seamless wallet configured, your wallet is the source of truth and this is informational.
+
+### POST /api/v1/history (scope: history)
+`{ playerId?, from?, to?, limit? }` (ISO timestamps, limit ≤ 1000) → `{ rounds:[{ id, playerId, tableVersion, shoeId, op, requestId, stake, delta, currency, round, at }] }`. Every bet, action and settlement is logged with the full round state at that moment. Use this for reconciliation and regulator exports.
+</code></pre></div></section><section data-section="3"><h2>3. Seamless wallet (recommended for production)<span class="tools"><button data-copy-section="3">Copy for LLM</button><button data-view-md="3">View as Markdown</button></span></h2>
 <p>If your key has a <b>wallet URL</b>, we never hold player money. Before each play call we ask your wallet for the balance, and on every debit/credit we call you:</p>
-
-<pre><code>
+<div class="codewrap"><button class="copybtn" data-copy-code>Copy</button><pre><code>
 POST &lt;your wallet URL&gt;
 Headers: X-Api-Key, X-Timestamp, X-Signature   (signed with the same secret, path &quot;/wallet&quot;)
 Body: { &quot;type&quot;: &quot;balance&quot;|&quot;bet&quot;|&quot;win&quot;, &quot;playerId&quot;, &quot;currency&quot;, &quot;amount&quot;, &quot;transactionId&quot;, &quot;roundId&quot;, &quot;at&quot; }
 Response (200): { &quot;balance&quot;: 123.45 }
-</code></pre>
-<ul><li><code>transactionId</code> is unique per debit/credit. If you see it again, return the same result (do not double-book).</li>
+</code></pre></div>
+<ul>
+<li><code>transactionId</code> is unique per debit/credit. If you see it again, return the same result (do not double-book).</li>
 <li>Reject a <code>bet</code> with a non-200 status if funds are insufficient; the round will not start.</li>
-<li>Timeout is 8 seconds. On timeout or non-200 the play call fails with an error and nothing is booked on our side.</li></ul>
+<li>Timeout is 8 seconds. On timeout or non-200 the play call fails with an error and nothing is booked on our side.</li>
+</ul>
+<p>Without a wallet URL the key uses our internal demo wallet (starts at 0; use for integration testing only).</p><div class="mdview" data-mdview="3" hidden><pre><code>## 3. Seamless wallet (recommended for production)
 
-<p>Without a wallet URL the key uses our internal demo wallet (starts at 0; use for integration testing only).</p>
+If your key has a **wallet URL**, we never hold player money. Before each play call we ask your wallet for the balance, and on every debit/credit we call you:
 
-<h2>4. Regulatory notes</h2>
+```
+POST &lt;your wallet URL&gt;
+Headers: X-Api-Key, X-Timestamp, X-Signature   (signed with the same secret, path &quot;/wallet&quot;)
+Body: { &quot;type&quot;: &quot;balance&quot;|&quot;bet&quot;|&quot;win&quot;, &quot;playerId&quot;, &quot;currency&quot;, &quot;amount&quot;, &quot;transactionId&quot;, &quot;roundId&quot;, &quot;at&quot; }
+Response (200): { &quot;balance&quot;: 123.45 }
+```
+- `transactionId` is unique per debit/credit. If you see it again, return the same result (do not double-book).
+- Reject a `bet` with a non-200 status if funds are insufficient; the round will not start.
+- Timeout is 8 seconds. On timeout or non-200 the play call fails with an error and nothing is booked on our side.
 
+Without a wallet URL the key uses our internal demo wallet (starts at 0; use for integration testing only).
+</code></pre></div></section><section data-section="4"><h2>4. Regulatory notes<span class="tools"><button data-copy-section="4">Copy for LLM</button><button data-view-md="4">View as Markdown</button></span></h2>
+<ul>
 <li>Game engine and AI dealer are separate. The dealer layer has no write access to shoe, outcomes, payouts or balances.</li>
 <li>RNG: cryptographic OS random (<code>crypto.getRandomValues</code>), Fisher-Yates shuffle without modulo bias, 8 decks, cut card at 312, one burn card, no mid-round shuffle.</li>
 <li>Rounds are ≥ 3 seconds and every state transition is logged (see history).</li>
-<li>Clear &quot;AI DEALER&quot; label in the UI.</li></ul>
+<li>Clear &quot;AI DEALER&quot; label in the UI.</li>
+</ul><div class="mdview" data-mdview="4" hidden><pre><code>## 4. Regulatory notes
 
-<h2>5. Support</h2>
+- Game engine and AI dealer are separate. The dealer layer has no write access to shoe, outcomes, payouts or balances.
+- RNG: cryptographic OS random (`crypto.getRandomValues`), Fisher-Yates shuffle without modulo bias, 8 decks, cut card at 312, one burn card, no mid-round shuffle.
+- Rounds are ≥ 3 seconds and every state transition is logged (see history).
+- Clear &quot;AI DEALER&quot; label in the UI.
+</code></pre></div></section><section data-section="5"><h2>5. Support<span class="tools"><button data-copy-section="5">Copy for LLM</button><button data-view-md="5">View as Markdown</button></span></h2>
+<p>Scout Gaming Group, Kevin Negash — kevin.negash@scoutgaminggroup.com</p><div class="mdview" data-mdview="5" hidden><pre><code>## 5. Support
 
-<p>Scout Gaming Group, Kevin Negash — kevin.negash@scoutgaminggroup.com</p>
-</main></body></html>
+Scout Gaming Group, Kevin Negash — kevin.negash@scoutgaminggroup.com
+</code></pre></div></section><section data-section="6"><h2>6. Prompts for ChatGPT / Claude<span class="tools"><button data-copy-section="6">Copy for LLM</button><button data-view-md="6">View as Markdown</button></span></h2>
+<p>Paste one of these together with this page (&quot;Copy for LLM&quot; at the top copies the whole page as Markdown).</p>
+<p><b>Build a client</b></p>
+<div class="codewrap"><button class="copybtn" data-copy-code>Copy</button><pre><code>
+You are integrating the Croupier Partner API v1 (documentation pasted below). Write a small TypeScript module that: (1) signs requests with HMAC-SHA256 exactly as specified, (2) exposes ping(), lobby(), launch(playerId, currency, language), table(playerId, cmd) with automatic requestId generation and safe replay, history(filter). Use fetch, no dependencies. Include a 10-line usage example. Documentation:
+</code></pre></div>
+<p><b>Implement the seamless wallet</b></p>
+<div class="codewrap"><button class="copybtn" data-copy-code>Copy</button><pre><code>
+You are the operator side of the Croupier Partner API v1 (documentation pasted below). Implement the seamless wallet endpoint we must expose: verify the HMAC signature, handle type = balance | bet | win, enforce idempotency on transactionId, reject a bet with a non-200 status when funds are insufficient, and return { balance }. Target: Node.js + Express + Postgres. Include the SQL schema and tests for double-delivery of the same transactionId. Documentation:
+</code></pre></div>
+<p><b>Reconcile rounds</b></p>
+<div class="codewrap"><button class="copybtn" data-copy-code>Copy</button><pre><code>
+Using the /api/v1/history endpoint from the Croupier Partner API v1 (documentation pasted below), write a nightly reconciliation job that pulls every round for the last 24 hours, sums stake and delta per playerId and currency, compares with our wallet ledger, and prints mismatches. Documentation:
+</code></pre></div>
+<p><b>Explain it to a non-developer</b></p>
+<div class="codewrap"><button class="copybtn" data-copy-code>Copy</button><pre><code>
+Explain the Croupier Partner API v1 (documentation pasted below) to a product manager in under 200 words: what the operator must build, what Croupier owns, how money flows, and what is logged for regulators. Documentation:
+</code></pre></div><div class="mdview" data-mdview="6" hidden><pre><code>## 6. Prompts for ChatGPT / Claude
+
+Paste one of these together with this page (&quot;Copy for LLM&quot; at the top copies the whole page as Markdown).
+
+**Build a client**
+```
+You are integrating the Croupier Partner API v1 (documentation pasted below). Write a small TypeScript module that: (1) signs requests with HMAC-SHA256 exactly as specified, (2) exposes ping(), lobby(), launch(playerId, currency, language), table(playerId, cmd) with automatic requestId generation and safe replay, history(filter). Use fetch, no dependencies. Include a 10-line usage example. Documentation:
+```
+
+**Implement the seamless wallet**
+```
+You are the operator side of the Croupier Partner API v1 (documentation pasted below). Implement the seamless wallet endpoint we must expose: verify the HMAC signature, handle type = balance | bet | win, enforce idempotency on transactionId, reject a bet with a non-200 status when funds are insufficient, and return { balance }. Target: Node.js + Express + Postgres. Include the SQL schema and tests for double-delivery of the same transactionId. Documentation:
+```
+
+**Reconcile rounds**
+```
+Using the /api/v1/history endpoint from the Croupier Partner API v1 (documentation pasted below), write a nightly reconciliation job that pulls every round for the last 24 hours, sums stake and delta per playerId and currency, compares with our wallet ledger, and prints mismatches. Documentation:
+```
+
+**Explain it to a non-developer**
+```
+Explain the Croupier Partner API v1 (documentation pasted below) to a product manager in under 200 words: what the operator must build, what Croupier owns, how money flows, and what is logged for regulators. Documentation:
+```
+</code></pre></div></section></main>
+<script>
+const MD=["# Croupier Partner API v1\n\nServer-owned AI-dealer blackjack. The game engine (shoe, rules, outcomes, payouts) runs on our server. The AI dealer only presents the game. Partners integrate through this API.\n\nBase URL: `https://bettalotto.se` (production). All endpoints are `POST` with a JSON body.\n", "## 1. Authentication (every request)\n\nEach partner gets an API key and a secret from the Scout backoffice. Every request carries three headers:\n\n| Header | Value |\n|---|---|\n| `X-Api-Key` | your key, e.g. `ck_live_\u2026` |\n| `X-Timestamp` | Unix seconds, must be within 5 minutes of server time |\n| `X-Signature` | hex HMAC-SHA256 over `${timestamp}.${METHOD}.${path}.${rawBody}` using the secret |\n\n`path` is the URL path only (e.g. `/api/v1/table`). `rawBody` is the exact JSON string you send (empty string if no body).\n\nNode.js example:\n\n```js\nimport { createHmac } from 'node:crypto';\nconst KEY = 'ck_live_\u2026', SECRET = 'cs_\u2026', BASE = 'https://bettalotto.se';\nasync function call(path, payload) {\n  const body = JSON.stringify(payload ?? {});\n  const ts = String(Math.floor(Date.now() / 1000));\n  const sig = createHmac('sha256', SECRET).update(`${ts}.POST.${path}.${body}`).digest('hex');\n  const r = await fetch(BASE + path, { method: 'POST', body,\n    headers: { 'Content-Type': 'application/json', 'X-Api-Key': KEY, 'X-Timestamp': ts, 'X-Signature': sig } });\n  return r.json();\n}\nconsole.log(await call('/api/v1/ping'));\n```\n\nErrors are JSON `{ \"error\": \"\u2026\" }` with HTTP 400/401/403/404. Key scopes: `launch`, `play`, `wallet`, `history`, `lobby`.\n", "## 2. Endpoints\n\n### POST /api/v1/ping\nReturns `{ ok, key, scopes, serverTime }`. Use to verify signing.\n\n### POST /api/v1/lobby (scope: lobby)\nLists tables, dealers, limits and rules.\n```json\n{ \"tables\": [{ \"id\": \"astrid-blackjack\", \"game\": \"blackjack\", \"dealer\": \"astrid\", \"decks\": 8, \"cutAfter\": 312, \"boxes\": 7, \"minBet\": 5, \"maxBet\": 2000, \"sideBets\": [\"perfectPairs\",\"21+3\"], \"blackjackPays\": \"3:2\", \"dealerStandsSoft17\": true, \"aiDealer\": true }] }\n```\n\n### POST /api/v1/launch (scope: launch)\nGet a game URL for one of your players. Open it in an iframe or a new tab. The session lasts 6 hours.\n```json\n// request\n{ \"playerId\": \"your-player-123\", \"currency\": \"EUR\", \"language\": \"sv\", \"returnUrl\": \"https://your-site/lobby\" }\n// response\n{ \"url\": \"https://bettalotto.se/?dealer=astrid&\u2026&launch=<token>\", \"expiresIn\": 21600, \"playerRef\": \"\u2026\" }\n```\n`playerId` is your identifier. We map it to an internal player on first use.\n\n### POST /api/v1/table (scope: play)\nDrive the table server-side without the UI (for your own front end, bots, or QA). Same engine as the UI.\n\nEvery non-`state` call needs a unique `requestId` (idempotency: replays return the original response).\n\n| op | body | notes |\n|---|---|---|\n| `state` | `{ playerId, op:\"state\" }` | current view, no requestId needed |\n| `start` | `{ playerId, requestId, op:\"start\", bets:[{box:3, main:10, pp:0, tp:0}] }` | places bets and deals. `box` 0\u20136, sparse list is fine. Optional `version` for optimistic locking |\n| `act` | `{ playerId, requestId, op:\"act\", action:\"hit\"\\|\"stand\"\\|\"double\"\\|\"split\" }` | for the active hand |\n| `insurance` | `{ playerId, requestId, op:\"insurance\", take:true\\|false }` | when dealer shows an ace |\n| `collect` | `{ playerId, requestId, op:\"collect\" }` | settles and returns balance |\n\nResponse: `{ version, shoe:{ id, total, remaining, dealt, cutAfter, cutReached, shufflePending, decks, burn }, round:{ boxes, hands, dealer, phase, active, legalActions }, balance, requestId }`. Shoe order, burn card and the hole card are never exposed.\n\n### POST /api/v1/demo-credit (scope: wallet, internal wallet only)\n`{ playerId, amount }` adds demo funds for integration testing. Not available on keys with a seamless wallet.\n\n### POST /api/v1/balance (scope: wallet)\n`{ playerId }` \u2192 `{ playerId, balance, currency }`. With a seamless wallet configured, your wallet is the source of truth and this is informational.\n\n### POST /api/v1/history (scope: history)\n`{ playerId?, from?, to?, limit? }` (ISO timestamps, limit \u2264 1000) \u2192 `{ rounds:[{ id, playerId, tableVersion, shoeId, op, requestId, stake, delta, currency, round, at }] }`. Every bet, action and settlement is logged with the full round state at that moment. Use this for reconciliation and regulator exports.\n", "## 3. Seamless wallet (recommended for production)\n\nIf your key has a **wallet URL**, we never hold player money. Before each play call we ask your wallet for the balance, and on every debit/credit we call you:\n\n```\nPOST <your wallet URL>\nHeaders: X-Api-Key, X-Timestamp, X-Signature   (signed with the same secret, path \"/wallet\")\nBody: { \"type\": \"balance\"|\"bet\"|\"win\", \"playerId\", \"currency\", \"amount\", \"transactionId\", \"roundId\", \"at\" }\nResponse (200): { \"balance\": 123.45 }\n```\n- `transactionId` is unique per debit/credit. If you see it again, return the same result (do not double-book).\n- Reject a `bet` with a non-200 status if funds are insufficient; the round will not start.\n- Timeout is 8 seconds. On timeout or non-200 the play call fails with an error and nothing is booked on our side.\n\nWithout a wallet URL the key uses our internal demo wallet (starts at 0; use for integration testing only).\n", "## 4. Regulatory notes\n\n- Game engine and AI dealer are separate. The dealer layer has no write access to shoe, outcomes, payouts or balances.\n- RNG: cryptographic OS random (`crypto.getRandomValues`), Fisher-Yates shuffle without modulo bias, 8 decks, cut card at 312, one burn card, no mid-round shuffle.\n- Rounds are \u2265 3 seconds and every state transition is logged (see history).\n- Clear \"AI DEALER\" label in the UI.\n", "## 5. Support\n\nScout Gaming Group, Kevin Negash \u2014 kevin.negash@scoutgaminggroup.com\n", "## 6. Prompts for ChatGPT / Claude\n\nPaste one of these together with this page (\"Copy for LLM\" at the top copies the whole page as Markdown).\n\n**Build a client**\n```\nYou are integrating the Croupier Partner API v1 (documentation pasted below). Write a small TypeScript module that: (1) signs requests with HMAC-SHA256 exactly as specified, (2) exposes ping(), lobby(), launch(playerId, currency, language), table(playerId, cmd) with automatic requestId generation and safe replay, history(filter). Use fetch, no dependencies. Include a 10-line usage example. Documentation:\n```\n\n**Implement the seamless wallet**\n```\nYou are the operator side of the Croupier Partner API v1 (documentation pasted below). Implement the seamless wallet endpoint we must expose: verify the HMAC signature, handle type = balance | bet | win, enforce idempotency on transactionId, reject a bet with a non-200 status when funds are insufficient, and return { balance }. Target: Node.js + Express + Postgres. Include the SQL schema and tests for double-delivery of the same transactionId. Documentation:\n```\n\n**Reconcile rounds**\n```\nUsing the /api/v1/history endpoint from the Croupier Partner API v1 (documentation pasted below), write a nightly reconciliation job that pulls every round for the last 24 hours, sums stake and delta per playerId and currency, compares with our wallet ledger, and prints mismatches. Documentation:\n```\n\n**Explain it to a non-developer**\n```\nExplain the Croupier Partner API v1 (documentation pasted below) to a product manager in under 200 words: what the operator must build, what Croupier owns, how money flows, and what is logged for regulators. Documentation:\n```\n"];
+const flash=(b,t='Copied')=>{const o=b.textContent;b.textContent=t;b.classList.add('ok');setTimeout(()=>{b.textContent=o;b.classList.remove('ok');},1400);};
+const copy=async(b,text)=>{try{await navigator.clipboard.writeText(text);flash(b);}catch{const ta=document.createElement('textarea');ta.value=text;document.body.append(ta);ta.select();document.execCommand('copy');ta.remove();flash(b);}};
+document.querySelectorAll('[data-copy-all]').forEach(b=>b.onclick=()=>copy(b,MD.join('\n\n')));
+document.querySelectorAll('[data-copy-section]').forEach(b=>b.onclick=()=>copy(b,MD[+b.dataset.copySection]));
+document.querySelectorAll('[data-copy-code]').forEach(b=>b.onclick=()=>copy(b,b.nextElementSibling.textContent));
+document.querySelectorAll('[data-view-md]').forEach(b=>b.onclick=()=>{const v=document.querySelector(`[data-mdview="${b.dataset.viewMd}"]`);v.hidden=!v.hidden;b.textContent=v.hidden?'View as Markdown':'Hide Markdown';});
+</script></body></html>
