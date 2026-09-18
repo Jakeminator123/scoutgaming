@@ -556,7 +556,7 @@ const noStore = file => LIVE.has(extname(file))
   : {};
 
 const MIME = {
-  '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript',
+  '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript', '.md': 'text/markdown; charset=utf-8',
   '.css': 'text/css', '.json': 'application/json', '.png': 'image/png',
   '.webp': 'image/webp', '.h264': 'application/octet-stream', '.mp3': 'audio/mpeg',
   '.webm': 'video/webm', '.mp4': 'video/mp4',

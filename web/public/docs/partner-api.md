@@ -105,3 +105,27 @@ Without a wallet URL the key uses our internal demo wallet (starts at 0; use for
 ## 5. Support
 
 Scout Gaming Group, Kevin Negash — kevin.negash@scoutgaminggroup.com
+
+## 6. Prompts for ChatGPT / Claude
+
+Paste one of these together with this page ("Copy for LLM" at the top copies the whole page as Markdown).
+
+**Build a client**
+```
+You are integrating the Croupier Partner API v1 (documentation pasted below). Write a small TypeScript module that: (1) signs requests with HMAC-SHA256 exactly as specified, (2) exposes ping(), lobby(), launch(playerId, currency, language), table(playerId, cmd) with automatic requestId generation and safe replay, history(filter). Use fetch, no dependencies. Include a 10-line usage example. Documentation:
+```
+
+**Implement the seamless wallet**
+```
+You are the operator side of the Croupier Partner API v1 (documentation pasted below). Implement the seamless wallet endpoint we must expose: verify the HMAC signature, handle type = balance | bet | win, enforce idempotency on transactionId, reject a bet with a non-200 status when funds are insufficient, and return { balance }. Target: Node.js + Express + Postgres. Include the SQL schema and tests for double-delivery of the same transactionId. Documentation:
+```
+
+**Reconcile rounds**
+```
+Using the /api/v1/history endpoint from the Croupier Partner API v1 (documentation pasted below), write a nightly reconciliation job that pulls every round for the last 24 hours, sums stake and delta per playerId and currency, compares with our wallet ledger, and prints mismatches. Documentation:
+```
+
+**Explain it to a non-developer**
+```
+Explain the Croupier Partner API v1 (documentation pasted below) to a product manager in under 200 words: what the operator must build, what Croupier owns, how money flows, and what is logged for regulators. Documentation:
+```
