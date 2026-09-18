@@ -241,10 +241,21 @@ function boSessionOk(req) {
 }
 
 // ---------- brand emails (per design-kit/ScoutBrand.dc.html) ----------
+// Secrets live outside the repo. Look in the service env file, then a per-user
+// file, then the legacy desktop path, so the same build works on the box and locally.
+const SECRET_FILES = [process.env.CROUPIER_ENV_FILE, '/etc/croupier/agent.env',
+  join(process.env.HOME ?? '', '.config/croupier/agent.env'),
+  join(process.env.HOME ?? '', 'Desktop/Axelio-Platform/.env')].filter(Boolean);
+function secretFromFiles(name) {
+  for (const file of SECRET_FILES) {
+    try { const v = readSync(file, 'utf8').match(new RegExp(`^${name}=(.+)$`, 'm'))?.[1]?.trim(); if (v) return v.replace(/^["']|["']$/g, ''); } catch { /* next */ }
+  }
+  return '';
+}
 const MAIL_FROM = 'Scout Backoffice <bo@axelio.io>';
 let RESEND_KEY = process.env.RESEND_API_KEY ?? '';
 if (!RESEND_KEY) {
-  try { RESEND_KEY = (readSync('/Users/solvifyab/Desktop/Axelio-Platform/.env', 'utf8').match(/^RESEND_API_KEY=(.+)$/m)?.[1]?.trim() ?? '').replace(/^["']|["']$/g, ''); } catch {}
+  RESEND_KEY = secretFromFiles('RESEND_API_KEY');
 }
 function brandEmail({ preheader, headline, intro, rows = [], cta, ctaUrl, footer }) {
   const kv = rows.length ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px">' + rows.map(([k, v]) =>
@@ -574,12 +585,8 @@ const AGENT_URLS = process.env.AXEL_AGENT_URL
   ? [process.env.AXEL_AGENT_URL]
   : ['http://localhost:3100/agent', 'https://scout-agent.axelio.io/agent'];
 let AGENT_TOKEN = process.env.AXEL_AGENT_TOKEN ?? '';
-if (!AGENT_TOKEN) {
-  try {
-    const env = readSync('/Users/solvifyab/Desktop/Axelio-Platform/.env', 'utf8');
-    AGENT_TOKEN = env.match(/^AXEL_AGENT_TOKEN=(.+)$/m)?.[1]?.trim() ?? '';
-  } catch { /* stays empty; /chat returns the canned fallback */ }
-}
+if (!AGENT_TOKEN) AGENT_TOKEN = secretFromFiles('AXEL_AGENT_TOKEN');
+if (!AGENT_TOKEN) console.warn('[vera] no agent token found in', SECRET_FILES.join(', '), '- dealer chat will answer with the canned fallback');
 // plain-text answers for take ids the model remembers but that have no
 // recording (spoken as caption only)
 const FALLBACK_LINES = {
