@@ -591,6 +591,9 @@ if (!AGENT_TOKEN) console.warn('[vera] no agent token found in', SECRET_FILES.jo
 // recording (spoken as caption only)
 const FALLBACK_LINES = {
   rules_split: "You can split any pair here, up to four hands. Split aces take one card each, and you can double after a split.",
+  // Recorded takes disabled below still need words, or she answers with the generic prompt.
+  rules_decks: "Eight decks in a persistent shoe, cut card at seventy-five percent. We finish the round, then reshuffle.",
+  fair_rng: "The shoe is shuffled by the server, not by me. I only deal what it hands me.",
 };
 
 const VERA_SYSTEM = `You are Vera, the AI dealer at Scout Gaming's "Prive Blackjack" table. Character: warm, wry, unflappable; a veteran croupier who has seen everything and enjoys good company; dry one-liners, never cruel; slightly old-school manners.
