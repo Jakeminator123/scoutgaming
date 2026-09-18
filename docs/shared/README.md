@@ -12,4 +12,4 @@ https://gitlab.com/scout-gg/croupier/-/wikis/home
 
 Lokal read-only-kopia av referensen: `C:\Users\jakem\Projects\ref\spelsajt` (`emil-branch` för Emil).
 
-Den här filen finns på `jakeminator123/work` så att branchen pekar på wikin. Wiki-sidorna kan Kevin och Jakob redigera utan merge till `main`.
+Wikin är den gemensamma ytan för dokumentation, canvaser och anteckningar. Den här filen finns på `jakeminator123/work` så att branchen hittar dit.

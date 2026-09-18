@@ -2,33 +2,24 @@
 
 Öppna: https://gitlab.com/scout-gg/croupier/-/issues/new
 
-**Titel:** Jakob igång — egen branch, wiki, referensrepon (läsåtkomst)
+**Titel:** Jakob igång — egen branch, wiki, referensrepon
 
 **Beskrivning:**
 
-Hej Kevin,
+Hej Kevin!
 
-Tack för Maintainer på `scout-gg/croupier`. Jag är igång som **Jakeminator123**.
+Tack för Maintainer — jag är igång som Jakeminator123.
 
-### Arbetssätt
-- All min kod ligger på `jakeminator123/work`.
-- Merge requests jag öppnar går tillbaka till den branchen, inte till `main`, så länge jag inte skriver uttryckligen att de ska in i `main`.
-- `main` rör jag inte.
-- Gemensam dokumentation: https://gitlab.com/scout-gg/croupier/-/wikis/home
-- Vi pratar här på GitLab. Jag speglar inte Scout-repot till mitt GitHub.
+Jag kör allt Croupier-jobb på branchen `jakeminator123/work`. MR:ar jag öppnar stannar där, så länge jag inte säger att de ska till `main`. `main` petar jag inte i.
 
-### Referensrepon (inspiration, inte arbete)
-Jag har det privata GitHub-repot https://github.com/Jakeminator123/spelsajt (play-money blackjack/roulette). Branchen `emil-branch` är en orörd import av Emils `EmaCodeHero/ava-live-blackjack`.
+Docs, canvaser och sånt slänger jag i wikin: https://gitlab.com/scout-gg/croupier/-/wikis/home
+Det är vår gemensamma yta — anteckningar, skisser, status. Inte inne i produktkoden.
 
-Det är inte Croupier. Jag jobbar inte i de träden. Jag tittar där när jag vill låna en presentation/event-idé och bygger om det i Croupiers struktur på min branch. Ingen MCP, ingen masskopiering, ingen submodule.
+Jag har ett eget repo på GitHub: https://github.com/Jakeminator123/spelsajt
+Där ligger också Emils grej som egen branch (`emil-branch`, import av `ava-live-blackjack`). Det är referens, inte Croupier. Jag tittar där när jag vill låna en idé och bygger om det hos oss. Inget slås ihop.
 
-Karta: https://gitlab.com/scout-gg/croupier/-/wikis/reference-repos
+Smidigast vore om du skaffar ett GitHub-konto (eller använder ett du redan har) så kan jag bjuda in dig som läsare på mitt och Emils projekt. Då kan du kika när du vill, utan att vi mejlar zippar.
 
-Jag vill att du kan läsa `spelsajt` och `emil-branch` (read-only). **Svara med ditt GitHub-användarnamn** så bjuder jag in dig.
-
-### Önskemål
-1. Skydda `main` (ingen force-push, bara via MR).
-2. Dra tillbaka den hängande inbjudan till `jakob@dg97.se`.
-3. Skicka GitHub-användarnamn.
+Kan du också låsa `main` (bara MR, ingen force-push) och slänga den gamla inbjudan till jakob@dg97.se? Det här kontot är det jag faktiskt använder.
 
 /Jakob
