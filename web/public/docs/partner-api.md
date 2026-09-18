@@ -55,6 +55,10 @@ Get a game URL for one of your players. Open it in an iframe or a new tab. The s
 ```
 `playerId` is your identifier. We map it to an internal player on first use.
 
+
+### Getting a test session without writing code
+In the Scout backoffice, **API Keys → MINT TEST TOKEN** creates a test player for your key and gives you: a ready launch URL (valid 6 h), an **ADD DEMO FUNDS** button (internal-wallet keys only), and the exact signed `curl` for `/api/v1/launch` including the signed string, so you can verify your own HMAC implementation byte for byte.
+
 ### POST /api/v1/table (scope: play)
 Drive the table server-side without the UI (for your own front end, bots, or QA). Same engine as the UI.
 
