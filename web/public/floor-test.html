@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Casino floor load test</title>
+<style>html,body{margin:0;background:#07080a;color:#d6ff3a;font:12px ui-monospace,Menlo,monospace}
+#hud{position:fixed;top:10px;left:10px;z-index:9;white-space:pre;background:#0b0d10cc;padding:10px 12px;border:1px solid #2a2e33;border-radius:8px;line-height:1.7}
+canvas{display:block}</style></head><body><div id="hud">loading…</div><canvas id="c"></canvas>
+<script type="module">
+import * as T from './vendor/three/three.module.js';
+import {GLTFLoader} from './vendor/three/GLTFLoader.js';
+const hud=document.getElementById('hud'), canvas=document.getElementById('c');
+const renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=T.SRGBColorSpace; renderer.toneMapping=T.ACESFilmicToneMapping;
+const scene=new T.Scene(); scene.background=new T.Color(0x07080a);
+const cam=new T.PerspectiveCamera(50,innerWidth/innerHeight,.05,200);
+const t0=performance.now(); let loaded=null, report={};
+new GLTFLoader().load('/assets/casino-floor.glb', g=>{
+  const ms=performance.now()-t0; loaded=g.scene; scene.add(loaded);
+  let tris=0,meshes=0,mats=new Set(),texes=new Set();
+  loaded.traverse(o=>{ if(o.isMesh){ meshes++; const geo=o.geometry;
+    tris += geo.index? geo.index.count/3 : geo.attributes.position.count/3;
+    for (const m of [].concat(o.material)) { if(!m) continue; mats.add(m.uuid);
+      for (const k of ['map','normalMap','roughnessMap','metalnessMap','emissiveMap','aoMap']) if(m[k]) texes.add(m[k].uuid); } } });
+  // frame the whole floor, then sit at a table
+  const box=new T.Box3().setFromObject(loaded), size=box.getSize(new T.Vector3()), c=box.getCenter(new T.Vector3());
+  const anchors=[]; loaded.traverse(o=>{ if(/Player_Anchor/.test(o.name)) anchors.push(o); });
+  if(anchors.length){ const p=new T.Vector3(); anchors[0].getWorldPosition(p); cam.position.copy(p).add(new T.Vector3(0,1.15,0));
+    const d=new T.Vector3(); (loaded.getObjectByName(anchors[0].name.replace('Player','Dealer'))||anchors[0]).getWorldPosition(d); cam.lookAt(d.x,d.y+1.1,d.z); }
+  else { cam.position.set(c.x, c.y+2.2, c.z+size.z*0.55); cam.lookAt(c.x,c.y,c.z); }
+  report={loadMs:Math.round(ms), triangles:Math.round(tris), meshes, materials:mats.size, textures:texes.size,
+    anchors:anchors.length, sizeM:[size.x,size.y,size.z].map(v=>+v.toFixed(1)).join(' x ')};
+  window.__report=report;
+}, undefined, e=>{ hud.textContent='LOAD FAILED: '+e; window.__report={error:String(e)}; });
+let frames=0, fpsT=performance.now(), fps=0, worst=999, samples=[];
+function loop(){ requestAnimationFrame(loop);
+  if(loaded) loaded.rotation.y += 0.0015;
+  renderer.render(scene,cam); frames++;
+  const now=performance.now();
+  if(now-fpsT>=1000){ fps=Math.round(frames*1000/(now-fpsT)); samples.push(fps); if(fps<worst)worst=fps; frames=0; fpsT=now;
+    const info=renderer.info;
+    hud.textContent=[`load        ${report.loadMs??'—'} ms`,`triangles   ${(report.triangles??0).toLocaleString()}`,
+      `meshes      ${report.meshes??'—'}`,`materials   ${report.materials??'—'}`,`textures    ${report.textures??'—'}`,
+      `anchors     ${report.anchors??'—'}`,`size        ${report.sizeM??'—'} m`,'',
+      `fps         ${fps}   (worst ${worst})`,`draw calls  ${info.render.calls}`,`gpu tris    ${info.render.triangles.toLocaleString()}`].join('\n');
+    window.__fps={fps,worst,samples,calls:info.render.calls}; }
+}
+loop();
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();});
+</script></body></html>
