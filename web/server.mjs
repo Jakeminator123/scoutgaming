@@ -99,7 +99,7 @@ API['/api/table'] = ({ id, ...req }) => {
 
 // ---------- partner API v1 (operators / aggregators) ----------
 let partnerApi = null;
-function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se' }); }
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', root }); }
 
 // ---------- backoffice (BO) ----------
 // Real data where it exists (players/transactions from SQLite, dealer assets
@@ -753,6 +753,7 @@ createServer(async (req, res) => {
       res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':`player_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=21600${secure}`});res.end();return; } }
   try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
   if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
+  if(pathname==='/api/v1/events'&&req.method==='GET'){ partner().handleEvents(req,res,new URL(req.url,'http://local')); return; }
   if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await partner().handle(req,res,pathname); return; }
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
   let authenticated=auth.user(req);

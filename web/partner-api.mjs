@@ -2,8 +2,12 @@
 // Auth: X-Api-Key + X-Timestamp + X-Signature (HMAC-SHA256 hex of `${ts}.${method}.${path}.${body}` with the key's secret).
 // Wallet: "seamless" — when a key has walletUrl set, we call the partner for bet/win/rollback; otherwise the internal demo wallet is used.
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { buildAssetsManifest, presentationEvents } from './partner-presentation.mjs';
 
-export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl }) {
+export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root }) {
+  // SSE subscribers per (key,player): partner clients receive presentation events as they happen.
+  const subs = new Map(); const chan = (k, pid) => `${k}:${pid}`;
+  function publish(k, pid, payload) { const set = subs.get(chan(k, pid)); if (!set) return; const line = `id: ${Date.now()}\nevent: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`; for (const res of set) { try { res.write(line); } catch {} } }
   boDb.exec(`CREATE TABLE IF NOT EXISTS api_keys (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, key TEXT UNIQUE NOT NULL, secret TEXT NOT NULL,
     scopes TEXT NOT NULL, wallet_url TEXT, ip_allow TEXT, created_by TEXT, created_at TEXT NOT NULL, last_used TEXT, revoked_at TEXT)`);
@@ -47,6 +51,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
   }
   const need = (k, scope) => k.scopes.includes(scope) ? null : { error: `scope ${scope} required`, status: 403 };
 
+  function gameViewOf(savedRow) { try { const g = JSON.parse(savedRow.state); const { view } = shoeCommand(g, { op: 'state' }, 0); return view.round; } catch { return null; } }
   function playerFor(k, partnerPlayer, currency) {
     const m = db.prepare('SELECT player_id FROM partner_players WHERE key_id=? AND partner_player=?').get(k.id, partnerPlayer);
     if (m) return getPlayer(m.player_id);
@@ -67,6 +72,22 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
     return j.balance;
   }
 
+  function handleEvents(req, res, url) {
+    // GET /api/v1/events?playerId=..&key=..&ts=..&sig=..   sig = HMAC(`${ts}.GET./api/v1/events.${playerId}`)
+    const key = url.searchParams.get('key'), ts = url.searchParams.get('ts'), sig = url.searchParams.get('sig'), playerId = url.searchParams.get('playerId');
+    const fail = (st, m) => { res.writeHead(st, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: m })); };
+    if (!key || !ts || !sig || !playerId) return fail(401, 'key, ts, sig, playerId required');
+    const row = boDb.prepare('SELECT * FROM api_keys WHERE key=? AND revoked_at IS NULL').get(key); if (!row) return fail(401, 'unknown or revoked key');
+    if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return fail(401, 'timestamp outside 5 min window');
+    const expected = createHmac('sha256', row.secret).update(`${ts}.GET./api/v1/events.${playerId}`).digest('hex');
+    if (expected.length !== String(sig).length || !timingSafeEqual(Buffer.from(expected), Buffer.from(String(sig)))) return fail(401, 'bad signature');
+    if (!JSON.parse(row.scopes).includes('play')) return fail(403, 'scope play required');
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+    res.write(`event: hello\ndata: ${JSON.stringify({ playerId, serverTime: new Date().toISOString() })}\n\n`);
+    const c = chan(row.id, playerId); if (!subs.has(c)) subs.set(c, new Set()); subs.get(c).add(res);
+    const ping = setInterval(() => { try { res.write(': ping\n\n'); } catch {} }, 25000);
+    req.on('close', () => { clearInterval(ping); subs.get(c)?.delete(res); });
+  }
   async function handle(req, res, pathname) {
     let body = '';
     for await (const c of req) { body += c; if (body.length > 20000) { res.writeHead(413); res.end(); return; } }
@@ -77,6 +98,8 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
     let input = {}; try { input = body ? JSON.parse(body) : {}; } catch { return send(400, { error: 'invalid json' }); }
     try {
       if (pathname === '/api/v1/ping') return send(200, { ok: true, key: k.name, scopes: k.scopes, serverTime: new Date().toISOString() });
+      if (pathname === '/api/v1/assets') { const e = need(k, 'lobby'); if (e) return send(e.status, e);
+        try { return send(200, buildAssetsManifest(root, input.dealer ?? 'astrid', publicUrl)); } catch (err) { return send(400, { error: err.message }); } }
       if (pathname === '/api/v1/lobby') { const e = need(k, 'lobby'); if (e) return send(e.status, e);
         return send(200, { tables: [{ id: 'astrid-blackjack', game: 'blackjack', dealer: 'astrid', name: 'Dark Hall', decks: 8, cutAfter: 312, boxes: 7, minBet: 5, maxBet: 2000, sideBets: ['perfectPairs', '21+3'], blackjackPays: '3:2', dealerStandsSoft17: true, aiDealer: true }] }); }
       if (pathname === '/api/v1/launch') { const e = need(k, 'launch'); if (e) return send(e.status, e);
@@ -97,7 +120,9 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
         const req = { ...cmd, requestId: requestId ?? 'state', version: cmd.version ?? g.version };
         if (req.op === 'start' && Array.isArray(req.bets) && req.bets.length !== 7) { const full = Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 }));
           for (const b of req.bets) { if (!Number.isInteger(b?.box) || b.box < 0 || b.box > 6) throw new Error('bet.box must be 0-6'); full[b.box] = { main: Number(b.main) || 0, pp: Number(b.pp) || 0, tp: Number(b.tp) || 0 }; } req.bets = full; }
+        const prevView = { round: (() => { try { return saved ? JSON.parse(saved.state) : null; } catch { return null; } })() ? gameViewOf(saved) : null };
         const { delta, view } = shoeCommand(g, req, balance);
+        const presentation = cmd.op === 'state' ? [] : presentationEvents(prevView, view, cmd.op, { action: cmd.action });
         let newBalance = Math.round((balance + delta) * 100) / 100;
         if (k.wallet_url && delta) newBalance = await walletCall(k, delta < 0 ? 'bet' : 'win', { playerId, currency: p.currency, amount: Math.abs(delta), transactionId: `${k.id}:${requestId}`, roundId: `${g.shoe?.id}:${g.version}` });
         db.exec('BEGIN IMMEDIATE');
@@ -105,11 +130,11 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
           db.prepare('INSERT INTO blackjack_tables VALUES (?,?) ON CONFLICT(player_id) DO UPDATE SET state=excluded.state').run(p.id, JSON.stringify(g));
           db.prepare('UPDATE players SET balance=? WHERE id=?').run(newBalance, p.id);
           if (delta) logTx(p.id, cmd.op, delta, p.currency, `partner:${k.name}`);
-          const out = { ...view, balance: newBalance, requestId: requestId ?? null };
+          const out = { ...view, balance: newBalance, requestId: requestId ?? null, presentation };
           if (cmd.op !== 'state') { db.prepare('INSERT INTO partner_rounds (key_id,player_id,partner_player,table_version,shoe_id,op,request_id,stake,delta,currency,view,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
             .run(k.id, p.id, playerId, g.version, g.shoe?.id ?? null, cmd.op, requestId, cmd.op === 'start' ? -delta : null, delta, p.currency, JSON.stringify(view.round), new Date().toISOString());
             db.prepare('INSERT OR IGNORE INTO partner_idem VALUES (?,?,?)').run(k.id, requestId, JSON.stringify(out)); }
-          db.exec('COMMIT'); return send(200, out);
+          db.exec('COMMIT'); if (presentation.length) { publish(k.id, playerId, { type: 'round', op: cmd.op, requestId, version: view.version, phase: view.round?.phase ?? null, balance: newBalance, events: presentation }); } return send(200, out);
         } catch (e) { db.exec('ROLLBACK'); throw e; } }
       if (pathname === '/api/v1/history') { const e = need(k, 'history'); if (e) return send(e.status, e);
         const { playerId, from, to, limit } = input; const n = Math.min(Number(limit) || 100, 1000);
@@ -124,5 +149,5 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       return send(404, { error: 'unknown endpoint' });
     } catch (e) { return send(400, { error: String(e.message || e) }); }
   }
-  return { keys, handle, SCOPES };
+  return { keys, handle, handleEvents, SCOPES };
 }
