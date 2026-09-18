@@ -1,0 +1,1345 @@
+  Evaluation report for SverigeLotto Ltd
+regarding SIFS 2022:3 “Spelinspektionens
+foreskrifter och allmanna rad om tekniska
+ krav samt ackreditering av organ for den
+ som ska kontrollera, prova och certifiera
+    spelverksamhet” (polarlotto.com,
+     polarlotto.se, miljardlotteriet.se,
+     impactwin.se, lottoexperten.se)
+                Report ID # 122-26701
+
+
+
+
+Page 1 of 28
+                                             FORCE Technology
+                                                    Park Allé 345
+                                          2605 Brøndby, Danmark
+                                                 +45 43 25 00 00
+                                                 +45 43 25 00 10
+                                         info@forcetechnology.dk
+                                        www.forcetechnology.com
+Licensee applicant
+SverigeLotto Ltd
+Att. Anna Zakipour
+20 Tadworth Parade
+GB-RM12 5AS Hornchurch
+United Kingdom
+
+Test Institute
+Address
+FORCE Certification
+Park Alle 345
+2605 Brøndby
+Denmark
+CVR: DK-31617677
+
+FORCE Certification is accredited to certify for the Swedish Online Gambling Market.
+
+Version
+This version of the report is in English, and it is version 0.
+ Version Number Date                               Change                              Creator
+ 0                    22nd June 2026               Original Version                    Morten Bech Højgaard
+
+Scope
+Evaluation of webpage polarlotto.com, polarlotto.se, miljardlotteriet.se, impactwin.se, lottoexperten.se in
+accordance with SIFS 2022:3.
+
+Conclusion
+FORCE Certification has passed and certified SverigeLotto Ltd for the Swedish Online Gambling Market. Based
+upon “Gambling Act 2018:1138”, “Gambling Ordinance (2018:1475)” and “SIFS 2022:3 The Swedish Gambling
+Authority’s regulations and general advice on technical requirements and accreditation of bodies for inspection,
+testing and certification of gambling service providers”.
+
+According to the test results, FORCE Certification confirms that the item submitted from SverigeLotto Ltd is
+compliant with the regulations.
+
+
+
+                              _________________________________________
+
+                              Morten Bech Højgaard
+                              Engineer
+                              FORCE Certification
+                              22nd June 2026
+
+
+
+Page 2 of 28
+                                                                                                             FORCE Technology
+                                                                                                                    Park Allé 345
+                                                                                                          2605 Brøndby, Danmark
+                                                                                                                 +45 43 25 00 00
+                                                                                                                 +45 43 25 00 10
+                                                                                                         info@forcetechnology.dk
+                                                                                                        www.forcetechnology.com
+Table of Contents
+   Licensee applicant .................................................................................................................................................................2
+   Test Institute ..........................................................................................................................................................................2
+       Address ..............................................................................................................................................................................2
+   Version ....................................................................................................................................................................................2
+   Scope .......................................................................................................................................................................................2
+   Conclusion..............................................................................................................................................................................2
+   Table of Contents..................................................................................................................................................................3
+SIFS 2022-3 - Swedish Gambling Authority’s regulations and general advice on technical requirements and
+accreditation of bodies for inspection, testing and certification of gambling service providers ..................................4
+   Chapter 4 The license holder’s information security .......................................................................................................4
+   Chapter 5 The license holder’s risk and vulnerability management ..............................................................................8
+   Chapter 6 The license holder’s system changes ............................................................................................................ 10
+   Chapter 7 Functions for the license holder’s game administration............................................................................ 11
+   Chapter 8 Information that a gambling system must be able to generate ................................................................ 13
+   Chapter 9 Functional requirements for the license holder in relation to the players .............................................. 17
+   Chapter 10 Payout percentage ......................................................................................................................................... 19
+   Chapter 11 Game instructions, payout table and pot................................................................................................... 20
+   Chapter 12 Abnormal gambling patterns and cheating ............................................................................................... 21
+   Chapter 13 Functional requirements for random number generators ...................................................................... 22
+   Chapter 14 Functional requirements when agent terminals are used for bets and control ................................... 24
+   Chapter 15 Functional requirements for online games ................................................................................................ 25
+Appendix A – Documentation............................................................................................................................................. 27
+Appendix B – Game list (Casino games)............................................................................................................................ 28
+Appendix C – RNG .......................................................................................................... Error! Bookmark not defined.
+
+
+
+
+Page 3 of 28
+                                                                                                                                                                                  FORCE Technology
+                                                                                                                                                                                         Park Allé 345
+                                                                                                                                                                               2605 Brøndby, Danmark
+                                                                                                                                                                                      +45 43 25 00 00
+                                                                                                                                                                                      +45 43 25 00 10
+                                                                                                                                                                              info@forcetechnology.dk
+                                                                                                                                                                             www.forcetechnology.com
+SIFS 2022-3 - Swedish Gambling Authority’s regulations and general
+advice on technical requirements and accreditation of bodies for
+inspection, testing and certification of gambling service providers
+
+Chapter 4 The license holder’s information security
+                                                                                     Comment
+ Requirement
+                                                                                     (In “…” is mentioned documentation)
+
+ 1 § Important information must be protected from physical and logical               Pass, FORCE Technology
+ breaches and other external influence, and the information must be available        received documentation to
+ when needed.                                                                        fulfill the paragraph
+
+                                                                                     Pass, FORCE Technology
+ 2 § There must be a policy and procedures to regulate employee authorisations       received documentation to
+ in gambling and ERP systems.                                                        fulfill the paragraph.
+ A corresponding policy, establishment of access descriptions and procedures         Documentation: “Acceptable
+ as described in the first paragraph, must be written for other persons who          User Policy” and “Data
+ need access to gambling and ERP systems.                                            Protection Policy” - “System
+ Policies and procedures must be documented and regularly updated.                   Access Control Policy” -
+                                                                                     “Physical Security Policy”
+ Access restrictions
+ 3 § The gambling and ERP systems must be placed in an area adapted for the          Pass, FORCE Technology
+ purpose.                                                                            received documentation to
+                                                                                     fulfill the paragraph
+ All entry points to the area where the gambling and ERP systems are handled
+ or stored must be guarded by personnel or technical equipment for access            Documentation: “Acceptable
+ control.                                                                            User Policy” and “Data
+                                                                                     Protection Policy” - “System
+ The scope of this access control must be adapted to the regulations regarding
+                                                                                     Access Control Policy” -
+ risk and vulnerability analyses set out in Chapter 5.                               “Physical Security Policy”
+ Passcards codes and keys to areas where the gambling and ERP systems are
+ being handled or stored must be controlled to ensure that there is no
+ unauthorised access.
+                                                                                     Pass, FORCE Technology
+                                                                                     received documentation to
+ 4 § Systems for operation and testing must be logically separated.                  fulfill the paragraph.
+
+ Systems for testing of generation and validation, as well as actual generation      Documentation: “Acceptable
+ and validation of bases for physical lottery tickets must be logically separated.   User Policy” and “Data
+                                                                                     Protection Policy” - “System
+                                                                                     Access Control Policy” -
+                                                                                     “Physical Security Policy”
+ Authentication
+
+
+Page 4 of 28
+                                                                                                               FORCE Technology
+                                                                                                                      Park Allé 345
+                                                                                                            2605 Brøndby, Danmark
+                                                                                                                   +45 43 25 00 00
+                                                                                                                   +45 43 25 00 10
+                                                                                                           info@forcetechnology.dk
+                                                                                                          www.forcetechnology.com
+                                                                                   Comment
+ Requirement
+                                                                                   (In “…” is mentioned documentation)
+
+                                                                                   Pass, during audit this was
+                                                                                   demonstrated during audit to
+ 5 § Gambling and ERP systems must be equipped with technical and                  FORCE Certification.
+ administrative measures to identify the user, the user’s system authorisation
+ and registration of the user’s activities.                                        Documentation: “Software
+ All access to the gambling and ERP systems must be registered.                    Development Life Cycle Policy”
+                                                                                   & “System changes” &
+ Codes, passwords or equivalent for the gambling and ERP systems are               Information Security Policy”
+ personal and may not be disclosed or shared, and they must be provided with
+ a level of protection appropriate for the information.
+
+
+ 6 § The gambling and ERP systems must have a function that continuously           Pass, during audit this was
+ registers user identity, date and time of login and logout, and any other         demonstrated during audit to
+ activities of relevance to information security.                                  FORCE Certification.
+                                                                                   Pass, during audit this was
+                                                                                   demonstrated during audit to
+ 7 § Events outside the technical equipment that have an impact on the             FORCE Certification.
+ gambling and ERP systems must be registered.
+                                                                                   Documentation: “Physical
+                                                                                   Security Policy”
+ Communication and operation
+
+ 8 § It must be possible to safely shut down the gambling and ERP systems in       Pass, FORCE Technology
+ the event of disruption or failure in the electricity supply or communications.   received documentation to
+                                                                                   fulfill the paragraph.
+ There must be an auxiliary power system to safeguard data integrity, register
+ history, backup data and allow games that are in progress to come to an end.
+
+                                                                                   Pass, during audit this was
+ 9 § The gambling and ERP systems must have a function that registers all          demonstrated during audit to
+ attempts at unauthorised access to the system and other events, and which         FORCE Certification.
+ creates event reports with time stamps.
+                                                                                   FORCE have seen examples.
+                                                                                   Pass, FORCE Technology
+ 10 § The gambling and ERP systems must be protected against unauthorised          received documentation to
+ intrusion and the insertion of unauthorised and malicious code.                   fulfill the paragraph.
+
+ The gambling and ERP systems must have a function to discover malicious           Documentation: “System
+ code.                                                                             Access Control Policy &
+                                                                                   Software Development Life
+ There must be documented procedures for updating protection against
+                                                                                   Cycle Policy”
+ unauthorised and malicious code.
+
+
+
+Page 5 of 28
+                                                                                                             FORCE Technology
+                                                                                                                    Park Allé 345
+                                                                                                          2605 Brøndby, Danmark
+                                                                                                                 +45 43 25 00 00
+                                                                                                                 +45 43 25 00 10
+                                                                                                         info@forcetechnology.dk
+                                                                                                        www.forcetechnology.com
+                                                                                  Comment
+ Requirement
+                                                                                  (In “…” is mentioned documentation)
+
+                                                                                  Pass, during audit this was
+                                                                                  demonstrated during audit to
+ 11 § All system changes in accordance with Chapter 6 and any other               FORCE Certification.
+ discrepancies in the gambling and ERP systems must be monitored and
+ registered.                                                                      Documentation: “Software
+                                                                                  Development Life Cycle Policy”
+                                                                                  & “System changes”
+ 12 § The gambling and ERP systems must be backed up at least once per day.       Pass, during audit this was
+                                                                                  demonstrated during audit to
+ It must be ensured that the systems can be restored from the latest backup
+                                                                                  FORCE Certification.
+ point to the time of a possible disruption
+ 13 § The gambling and ERP systems must be equipped with appropriate              Pass, during audit this was
+ firewalls.                                                                       demonstrated during audit to
+                                                                                  FORCE Certification.
+ Firewalls must be set up to ensure that no other equipment in the same
+ network can create alternative network paths.                                    Documentation: “Software
+ Firewall access must be documented in work descriptions and access               Development Life Cycle Policy”
+                                                                                  & “System changes” &
+ descriptions.
+                                                                                  “Information Security Policy”
+ All access to a firewall must be registered.
+                                                                                  Screen shot: “PolarlottoFirewall
+ All incidents that affect or are intended to affect the firewalls must be        (1)”
+ registered.
+ 14 § Information must be stored and transferred securely.                        Pass, during audit this was
+                                                                                  demonstrated during audit to
+ Files containing information revealing winnings must be handled so that no
+                                                                                  FORCE Certification.
+ unauthorised user can copy or otherwise misuse or damage the data.
+ If a public network is used for the transfer, the data must be encrypted, and
+ the separate subsystems must verify the dispatch and reception and also be
+ protected from incomplete transfers, disruption and copying and sending of
+ unauthorised replies.
+                                                                                  Pass, FORCE Technology
+ 15 § There must be documented procedures for the handling of portable data       received documentation to
+ media.                                                                           fulfill the paragraph.
+
+ If information revealing winnings is sent on data media by post, or equivalent   Documentation: System Access
+ manner, a transport option must be selected that meets the requirements set      Control Policy & Software
+ out in Section 14, second paragraph.                                             Development Life Cycle Policy
+                                                                                  & Physical Security Policy
+
+
+
+
+Page 6 of 28
+                                                                                                            FORCE Technology
+                                                                                                                   Park Allé 345
+                                                                                                         2605 Brøndby, Danmark
+                                                                                                                +45 43 25 00 00
+                                                                                                                +45 43 25 00 10
+                                                                                                        info@forcetechnology.dk
+                                                                                                       www.forcetechnology.com
+                                                                                Comment
+ Requirement
+                                                                                (In “…” is mentioned documentation)
+
+ 16 § Only functions that are necessary for the purpose of installing new       Pass, FORCE Technology
+ software shall be activated.                                                   received documentation to
+                                                                                fulfill the paragraph.
+ Maintenance and updating of applications in a gambling and ERP system must
+ be done in a secure and controlled manner.
+                                                                                Pass, FORCE Technology
+ 17 § Software must be identifiable by name and version number.                 received documentation to
+ The source code of the gambling system must have comments explaining the       fulfill the paragraph.
+ function of the code.
+
+ Storage of registered information, events and logs
+ 18 § Registered information, events and logs are to be stored in accordance    Pass, during audit this was
+ with Chapter 5, Section 5 of the Gambling Act (2018:1138), kept unchanged      demonstrated during audit to
+ and be protected from unauthorised access.                                     FORCE Certification.
+ Registered information in accordance with Section 13, fourth paragraph, must
+ be stored for at least three months.
+ Time reference
+ 19 § The gambling system must register time.                                   Pass, during audit this was
+                                                                                demonstrated during audit to
+ All information, events and logs are to be registered in real time.
+                                                                                FORCE Certification.
+ UTC is to be used as the time reference system.
+
+
+
+
+Page 7 of 28
+                                                                                                          FORCE Technology
+                                                                                                                 Park Allé 345
+                                                                                                       2605 Brøndby, Danmark
+                                                                                                              +45 43 25 00 00
+                                                                                                              +45 43 25 00 10
+                                                                                                      info@forcetechnology.dk
+                                                                                                     www.forcetechnology.com
+Chapter 5 The license holder’s risk and vulnerability management
+ Requirement                                                                        Comment
+                                                                                    Pass, FORCE Certification
+                                                                                    have seen risk and
+                                                                                    vulnerability analysis
+                                                                                    procedure
+ 1 § The license holder must carry out a risk and vulnerability analysis to
+                                                                                    Documentation: “Asset
+ systematically identify and document in a list the information assets of the
+ gambling and ERP systems.                                                          Management Policy” -
+                                                                                    “Information asset list” -
+ This work also includes considering the operation’s dependence on external         “Reports of security and
+ activities. The choice of method for the risk and vulnerability analysis must be
+ documented.                                                                        information security
+                                                                                    incidents” - “Incidents
+                                                                                    Response Plan” – “Risk
+                                                                                    assessment policy”
+
+
+
+ 2 § For each information asset in the list, the following information must be      Pass, FORCE Certification
+ provided                                                                           have seen evidence to fulfil
+ 1. a definition of the information asset;                                          the criteria.
+ 2. a unique identification number;                                                 Documentation: “Asset
+ 3. a version number;                                                               Management Policy” -
+                                                                                    “Information asset list” -
+ 4. identifying features of the information asset;
+                                                                                    “Reports of security and
+ 5. decision maker entitled to make decisions regarding changes in the              information security
+ information asset;
+                                                                                    incidents” - “Incidents
+ 6. internal risk evaluation;                                                       Response Plan”
+ 7. checksum for information assets classified in accordance with Section 3,
+ second paragraph, points 2–3; and
+ 8. the geographical location of physical information assets.
+
+
+
+
+Page 8 of 28
+                                                                                                            FORCE Technology
+                                                                                                                   Park Allé 345
+                                                                                                         2605 Brøndby, Danmark
+                                                                                                                +45 43 25 00 00
+                                                                                                                +45 43 25 00 10
+                                                                                                        info@forcetechnology.dk
+                                                                                                       www.forcetechnology.com
+ Requirement                                                                           Comment
+ 3 § Each information asset defined in accordance with Section 2 must be               Pass, FORCE Certification
+ classified according to the following four criteria:                                  have seen evidence to fulfil
+ 1. player information – information worthy of protection;                             the criteria.
+ 2. integrity of the gambling and ERP systems;                                         Documentation: “Asset
+ 3. availability of player information; or                                             Management Policy” and
+ 4. traceability.                                                                      “Information asset list”
+
+ Each classification must be assessed according to the following:
+ 1. no relevance (the information asset has no impact on the respective criteria
+ of points 1–4 in the first paragraph);
+ 2. some relevance (the information asset may have an impact on the respective
+ criteria of points 1–4 in the first paragraph); or
+ 3. high relevance (the respective criteria of points 1–4 in the first paragraph are
+ dependent on the information asset).
+
+ 4 § The license holder must appoint a decision maker responsible for risk and         Pass, during audit this was
+ vulnerability analysis as well as management of information and incidents that        demonstrated during audit to
+ may arise in accordance with this chapter.                                            FORCE Certification
+ There must be documented procedures for monitoring, detection, analysis,              “Asset Managment Policy”,
+ management, reporting and registration of security and information security           “Information asset list”,
+ incidents.                                                                            “Assessment Policy”
+                                                                                       Pass, during audit this was
+                                                                                       demonstrated during audit to
+                                                                                       FORCE Certification
+ 5 § There must be a function and documented procedures for the
+ management of breaches and attempted breaches of the gambling and ERP                 Documentation: “Risk
+ systems.                                                                              assessment Policy”,
+ All intrusions and attempted intrusions of the gambling and ERP systems               “Responsible Disclosure
+ must be registered.                                                                   Policy”, “Vulnerability
+                                                                                       Management Policy”
+
+
+
+
+Page 9 of 28
+                                                                                                               FORCE Technology
+                                                                                                                      Park Allé 345
+                                                                                                            2605 Brøndby, Danmark
+                                                                                                                   +45 43 25 00 00
+                                                                                                                   +45 43 25 00 10
+                                                                                                           info@forcetechnology.dk
+                                                                                                          www.forcetechnology.com
+Chapter 6 The license holder’s system changes
+Requirement                                                                     Comment
+                                                                                Passed, FORCE Technology.
+1 § There must be a documented process for version management and a
+                                                                                Have seen “Change Management
+version management system for updates or changes of the information assets
+                                                                                Procedure” and “Information
+listed in accordance with Chapter 5, Section 2.
+                                                                                assets list”
+2 § Updates or changes to an information asset classified as critical and of    Pass, there are no operational
+high relevance in accordance with Chapter 5, Section 3, second paragraph,       examples yet, but the Change
+must immediately be reviewed by an accredited body.                             Management Procedure is
+                                                                                reviewed.
+Updates or changes to an information asset that has been classified as having
+some relevance in accordance with Chapter 5, Section 3, second paragraph,
+must be reviewed in conjunction with the regular certification process
+pursuant to Chapter 2, Section 3, first paragraph.
+3 § If there is an internal function managing quality assurance of updates or   Pass
+changes to information assets, the accredited body may approve changes
+being made without review pursuant to Section 2, first paragraph, provided
+that
+    1. the function is organisationally separate from the function
+       implementing the updates or changes, and
+    2. the function has personnel with adequate training and experience.
+Updates or changes to an information asset in accordance with the first
+paragraph must be reviewed in conjunction with the regular certification
+process pursuant to Chapter 2, Section 3, first paragraph
+
+4 § In case of update or changes to information assets in accordance with       Pass.
+Section 1, a risk and vulnerability analysis must be carried out.
+
+                                                                                Passed, FORCE Technology.
+5 § There must be a decision maker appointed to take responsibility for and     Have seen Change Management
+make decisions regarding each update or change to an information asset.         Procedure.
+
+
+
+                                                                                Passed, FORCE Technology.
+6 § A version management system must contain information regarding              Have seen Change Management
+requests for changes, approved changes and implemented changes to               Procedure.
+information assets.
+                                                                              Documentation: Software
+Previous versions of information assets must be stored and made available for Development Life Cycle Policy
+audit.
+
+
+
+
+Page 10 of 28
+                                                                                                          FORCE Technology
+                                                                                                                 Park Allé 345
+                                                                                                       2605 Brøndby, Danmark
+                                                                                                              +45 43 25 00 00
+                                                                                                              +45 43 25 00 10
+                                                                                                      info@forcetechnology.dk
+                                                                                                     www.forcetechnology.com
+Chapter 7 Functions for the license holder’s game administration
+ #       Requirement                                                                Remarks
+         Activation and deactivation of games
+       The licence holder must be able to immediately activate or deactivate        Pass, have seen the procedure on
+ 7.1.1 each game or its players; either one or more games, or an individual         how to do it.
+       player or all players at once.
+                                                                                    Documentation: Screen shots and
+                                                                                    System Access Control Policy
+         Measures pursuant to the first paragraph must be registered and
+ 7.1.2
+         documented.                                                                FORCE will need to see it with
+                                                                                    live data.
+ 7.2.1 It must be possible to finish playing a game that has been deactivated       Pass. There are no games with
+                                                                                    several steps.
+         For games played in several steps, it must be possible to finish playing
+ 7.2.2
+         the game when the player next logs in.
+
+         Interrupted games
+         It must be possible to finish playing an interrupted game, unless          Pass.
+ 7.3.1
+         otherwise specified in the rules of the game.
+                                                                                    It is not possible to interrupt this
+         An interrupted game must be shown to the player, along with any            kind of game, as it is betting on
+ 7.3.2
+         bets made, once the gambling system is reconnected.                        lotteries.
+       Bets referred to in the second paragraph must be kept separate and
+ 7.3.3 be separately reported in the player’s player account until the game is
+       finished.
+         If an interrupted game is not finished within 90 days, it must be          Pass, the game rules states what
+ 7.4.1
+         terminated                                                                 happens if a game is interrupted.
+
+                                                                                    It is not possible to interrupt this
+       The rules of the game must clearly state what will happen to a player’s      kind of game.
+ 7.4.2
+       bet if a game is terminated before being finished.
+                                                                                    .
+         Fault management
+         There must be documented procedures for all games on how to                Pass, during audit this was
+ 7.5.1                                                                              demonstrated during audit to
+         manage faults and deficiencies
+                                                                                    FORCE Certification
+         The rules of the game must clearly state what applies in relation to the
+ 7.5.2                                                                            Documentation: Software
+         player in the event of faults and deficiencies.
+                                                                                  Development Life Cycle Policy
+ 7.6.1 Any errors and faults that arise must be registered and documented           Pass
+         Causes and solutions of errors and faults in the first paragraph must      Documentation: Incident
+ 7.6.2
+         be registered and documented.                                              Response Plan
+         It must be ensured that an interrupted game or other errors and faults
+ 7.7.1
+         will not negatively affect a player’s player account or game balance
+
+
+
+Page 11 of 28
+                                                                                                               FORCE Technology
+                                                                                                                      Park Allé 345
+                                                                                                            2605 Brøndby, Danmark
+                                                                                                                   +45 43 25 00 00
+                                                                                                                   +45 43 25 00 10
+                                                                                                           info@forcetechnology.dk
+                                                                                                          www.forcetechnology.com
+ #      Requirement                                                              Remarks
+
+       In the event that a player is unable to finish a game due to errors and   Pass, it is stated in the
+ 7.7.2 faults, there must be a function calculating the amount that will be      documentation
+       returned to the player.
+
+                                                                                 N/A – no pot
+ 7.8.1 The value of a pot must not be affected by errors and faults.
+
+
+
+
+Page 12 of 28
+                                                                                                             FORCE Technology
+                                                                                                                    Park Allé 345
+                                                                                                          2605 Brøndby, Danmark
+                                                                                                                 +45 43 25 00 00
+                                                                                                                 +45 43 25 00 10
+                                                                                                         info@forcetechnology.dk
+                                                                                                        www.forcetechnology.com
+Chapter 8 Information that a gambling system must be able to generate
+ #          Requirement                                                 Remarks
+            It must be possible to create reports, in the gambling      Pass, documentation showed to FORCE
+            system or manually, regarding suspected cheating, as        Certification.
+ 8.1.1
+            referred to in Chapter 19, Section 6 of the Gambling
+            Act (2018:1138).
+                                                                        Documentation: “Using the Polarlotto Back-
+            It must be possible to create reports, in the gambling      office”, “Using the polarlotto Admin App”
+            system or manually, regarding suspected cheating,
+ 8.1.2      collusion between players, attempted cheating and
+            collusion between players, as well as other registered
+            violations of the terms of use and rules of the game.
+            It must be possible to create reports, in the gambling
+ 8.1.3      system or manually, regarding illicit manipulation of
+            the outcome of a game subject to betting.
+            The gambling system must have a function for                Pass, documentation showed to FORCE
+            generating reports regarding deviations or changes in       Certification.
+ 8.2.1
+            a player’s gambling habits and gambling patterns
+            which result in responsible gambling measures.
+            The gambling system must have a function to                 Pass, documentation showed to FORCE
+ 8.3.1
+            generate reports for all player registrations.              Certification.
+            The gambling system must have a function to
+            generate reports for all open and closed temporary
+ 8.3.2
+            player accounts referred to in Chapter 13, Section 4,
+            first paragraph of the Gambling Act (2018:1138).
+            The gambling system must have a function to                 Pass, documentation showed to FORCE
+ 8.4.1      generate reports for all registered players, the players’   Certification.
+            account information and registration dates.
+            The gambling system must have a function to                 Pass, documentation showed to FORCE
+            generate reports of all players that have excluded          Certification.
+            themselves from gambling for 24 hours, for a certain
+ 8.5.1
+            period of time or indefinitely, in accordance with
+            Chapter 14, Section 12 of the Gambling Act
+            (2018:1138).
+            The gambling system must have a function to                 Pass, documentation showed to FORCE
+ 8.6.1      generate reports of all players who have set limits in      Certification.
+            terms of time, bets or deposits to their player account.
+            The gambling system must also have a function to            Pass, documentation showed to FORCE
+            generate reports on the number of players who have          Certification.
+ 8.6.2
+            lowered or raised their limits in terms of time, bets or
+            deposits to their player account.
+                                                                        Pass, documentation showed to FORCE
+            The gambling system must have a function to
+ 8.7.1                                                                  Certification.
+            generate reports on inactive player accounts.
+
+
+
+Page 13 of 28
+                                                                                                          FORCE Technology
+                                                                                                                 Park Allé 345
+                                                                                                       2605 Brøndby, Danmark
+                                                                                                              +45 43 25 00 00
+                                                                                                              +45 43 25 00 10
+                                                                                                      info@forcetechnology.dk
+                                                                                                     www.forcetechnology.com
+ #           Requirement                                               Remarks
+             The gambling system must have a function to               Pass, documentation showed to FORCE
+ 8.8.1       generate reports on all player accounts that have been    Certification.
+             closed.
+             If a player account has been closed, it must be
+ 8.8.2       indicated why it was closed and whether it was closed
+             by the player or the licence holder.
+             The gambling system must have a function to               Pass, documentation showed to FORCE
+             generate reports on all player accounts with a positive   Certification.
+ 8.9.1
+             balance which have been closed for more than five
+             working days.
+                                                                       Pass, documentation showed to FORCE
+             The gambling system must have a function to
+ 8.10.1                                                                Certification.
+             generate a report for each player account.
+
+             The gambling system must have a function to register      Pass, documentation showed to FORCE
+ 8.11.1
+             the full login session of an individual player.           Certification.
+             It must be possible to provide the following in one or
+ 8.11.2
+             more reports in accordance with the first paragraph
+ 8.11.2.1    1. player ID;
+ 8.11.2.2    2. start and end time of the login session;
+ 8.11.2.3    3. player equipment;
+ 8.11.2.4    4. total bets during the login session;
+ 8.11.2.5    5. total winnings paid out during the login session;
+             6. total deposits to player account during the login
+ 8.11.2.6
+             session (time-stamped);
+             7. total withdrawals from player account during the
+ 8.11.2.7
+             login session (time-stamped);
+ 8.11.2.8    8. time of final confirmation during the login session;
+ 8.11.2.9    9. reason for terminating a session; and
+             10. identification of games and versions played during
+ 8.11.2.10
+             the login session.
+             The gambling system must have a function to register
+ 8.12.1      and generate one or more reports with information on
+             the player’s transactions during the login session.
+             It must be possible to provide the following in one or    Pass, documentation showed to FORCE
+ 8.12.2
+             more reports in accordance with the first paragraph       Certification.
+ 8.12.2.1    1. player ID;
+ 8.12.2.2    2. start time of the game;
+ 8.12.2.3    3. the player’s balance at the start of the game;
+ 8.12.2.4    4. bet (timestamped);
+
+Page 14 of 28
+                                                                                                       FORCE Technology
+                                                                                                              Park Allé 345
+                                                                                                    2605 Brøndby, Danmark
+                                                                                                           +45 43 25 00 00
+                                                                                                           +45 43 25 00 10
+                                                                                                   info@forcetechnology.dk
+                                                                                                  www.forcetechnology.com
+ #           Requirement                                              Remarks
+ 8.12.2.5    5. contribution to the pot;
+ 8.12.2.6    6. status of the game;
+ 8.12.2.7    7. outcome of the game (timestamped);
+ 8.12.2.8    8. distribution of the pot;
+ 8.12.2.9    9. end time of the game;
+ 8.12.2.10 10. winnings;
+ 8.12.2.11 11. the player’s balance at the end of the game; and
+             12. all interrupted games and the reason why they
+ 8.12.2.12
+             were not finished.
+             The gambling system must have a function to register     Pass, documentation showed to FORCE
+ 8.13.1      and generate one or more reports regarding events in     Certification
+             the gambling system.
+             It must be possible to provide the following in one or
+ 8.13.2
+             more reports in accordance with the first paragraph
+ 8.13.2.1    1. substantial winnings;
+ 8.13.2.2    2. large transfers of funds;
+ 8.13.2.3    3. changed terms of a game;
+ 8.13.2.4    4. changed terms of a pot;
+ 8.13.2.5    5. new pots;
+ 8.13.2.6    6. player participation in the pot;
+ 8.13.2.7    7. distribution of the pot; and
+ 8.13.2.8    8. interrupted games with a pot.
+             The gambling system must have a function to register     Pass, documentation showed to FORCE
+ 8.14.1      and generate individual and aggregate reports on one     Certification.
+             or more of the licence holders rounds.
+             It must be possible to provide the following in one or   The payout percentage is equal to the
+ 8.14.2
+             more reports in accordance with the first paragraph      lotteries payout percentage, which is
+ 8.14.2.1    1. name and serial number of the round;                  coherent with the ods.
+
+ 8.14.2.2    2. start time of the round;
+ 8.14.2.3    3. end time of the round;
+ 8.14.2.4    4. total turnover;
+ 8.14.2.5    5. number of bets;
+ 8.14.2.6    6. licence holder’s bet;
+ 8.14.2.7    7. financing of the pot;
+ 8.14.2.8    8. value of the pot before the start of the game;
+
+
+Page 15 of 28
+                                                                                                          FORCE Technology
+                                                                                                                 Park Allé 345
+                                                                                                       2605 Brøndby, Danmark
+                                                                                                              +45 43 25 00 00
+                                                                                                              +45 43 25 00 10
+                                                                                                      info@forcetechnology.dk
+                                                                                                     www.forcetechnology.com
+ #           Requirement                                      Remarks
+ 8.14.2.9    9. value of the pot at the end of the game;
+ 8.14.2.10 10. possible outcomes;
+ 8.14.2.11 11. actual outcome;
+ 8.14.2.12 12. total amount of winnings;
+ 8.14.2.13 13. total number of winners;
+ 8.14.2.14 14. number of winners at each level;
+ 8.14.2.15 15. number of right answers;
+ 8.14.2.16 16. total payout; and
+             17. number of players who did not complete the
+ 8.14.2.17
+             round and the reasons for this.
+
+
+
+
+Page 16 of 28
+                                                                             FORCE Technology
+                                                                                    Park Allé 345
+                                                                          2605 Brøndby, Danmark
+                                                                                 +45 43 25 00 00
+                                                                                 +45 43 25 00 10
+                                                                         info@forcetechnology.dk
+                                                                        www.forcetechnology.com
+Chapter 9 Functional requirements for the license holder in relation to the players
+ #       Requirement                                                        Remarks
+         Registration of the player and access to the gambling
+         system
+         The gambling system must have a function to register               Pass, documentation showed to
+ 9.1.1
+         players.                                                           FORCE Certification. (“Specifications
+         The player’s access must be authorised using a personal and        of the Betting System”)
+ 9.1.2   unique access code every time they log in to the gambling
+         system.
+         The gambling system must have a function to verify the             Pass, documentation showed to
+ 9.2.1
+         player’s age.                                                      FORCE Certification
+                                                                            Pass, documentation showed to
+         If a PEP check has been performed in accordance with               FORCE Certification
+         Chapter 3, Section 10 of the Anti-Money Laundering Act
+ 9.3.1
+         (2017:630), the check must be registered in the gambling           Documentation: “Anti-Money
+         system.                                                            Laudering (AML) Procedures”, “4.7
+                                                                            Player Registration & KYC Procedures”
+         All logins to a player account and all attempted logins must       Pass, documentation showed to
+ 9.4.1
+         be registered.                                                     FORCE Certification
+         The gambling system must have a function to detect any
+ 9.4.2                                                                      Documentation: “Using the Polarlotto
+         attempts at unauthorised access to a player account.
+                                                                            Back-office, “Using the polarlotto
+         If an unauthorised person has attempted to access a player         Admin App”
+         account, the player must be informed immediately and
+ 9.4.3
+         thereafter in accordance with the agreement between the
+         licence holder and the player.
+         A player's identity, and the date and time must be registered      Pass, documentation showed to
+ 9.5.1
+         each time they log in and out.                                     FORCE Certification
+
+         When a player logs in to the gambling system, the time and         Documentation: “Using the Polarlotto
+ 9.5.2                                                                      Back-office, “Using the polarlotto
+         date of their latest login must be available to the player.
+                                                                            Admin App”
+         The gambling system must have a function and documented            Pass, documentation showed to
+ 9.6.1
+         procedures for the secure change of access codes.                  FORCE Certification
+
+         It must not be possible for the licence holder to unilaterally
+ 9.6.2                                                                      Documentation: Software Development
+         change a player’s access code.
+                                                                            Life Cycle Policy
+         Player account
+         The gambling system must have a function to manage and             Pass, documentation showed to
+         register all financial transactions going in and out of a player   FORCE Certification
+ 9.7.1
+         account in accordance with Chapter 13, Section 3 of the
+         Gambling Act (2018:1138).
+
+
+
+Page 17 of 28
+                                                                                                            FORCE Technology
+                                                                                                                   Park Allé 345
+                                                                                                         2605 Brøndby, Danmark
+                                                                                                                +45 43 25 00 00
+                                                                                                                +45 43 25 00 10
+                                                                                                        info@forcetechnology.dk
+                                                                                                       www.forcetechnology.com
+ #        Requirement                                                     Remarks
+          When funds are deposited into a player account, the licence     Pass, documentation showed to
+          holder must be able to verify that the account holder for the   FORCE Certification
+ 9.8.1
+          provided bank card/bank account or other payment service
+          is the same person as the holder of the player account.
+          The first paragraph still applies if a player changes bank
+ 9.8.2
+          cards, bank accounts or other payment service.
+          A player must be able to see their balance in the player        Pass, documentation showed to
+ 9.9.1
+          account immediately after each completed transaction.           FORCE Certification
+          There must be a function to show the player which games
+          they have participated in, all the bets made and all the
+ 9.9.2
+          winnings paid out in accordance with Chapter 13, Section 3,
+          first paragraph of the Gambling Act (2018:1138).
+          Limitations of deposits, losses and login sessions
+        For online games, there must be a function for the player to      Pass, documentation showed to
+ 9.10.1 easily set a limit for deposits that can be made each day,        FORCE Certification
+        week and month.
+          A player who has not set limits for deposits in accordance
+ 9.10.2
+          with the first paragraph may not gamble.
+          For online games, there must be a function where the player     Pass, documentation showed to
+ 9.11.1
+          can easily limit the time they spend logged in.                 FORCE Certification
+        There must be a function that can give the player warning         Pass, documentation showed to
+        messages regarding winnings and losses during the login           FORCE Certification
+ 9.12.1
+        session as well as information on how long the player has
+        been logged in.
+          Only the player himself shall be able to set the limits         Pass, documentation showed to
+ 9.13.1
+          pursuant to Sections 10 and 11.                                 FORCE Certification
+          Exclusion from gambling
+        The gambling system must have a function that allows              Pass, documentation showed to
+ 9.14.1 players to easily exclude themselves temporarily or               FORCE Certification
+        permanently from a game.
+        The gambling system must have a function checking for             Pass, documentation showed to
+ 9.15.1 self-exclusion or restricted gambling every time a player         FORCE Certification
+        registers or logs in to the gambling system.
+          Initiated game
+        During gambling, there must be a function and documented          Pass, documentation showed to
+        procedures to prevent the placing of a bet once the time set      FORCE Certification
+ 9.16.1
+        by the licence holder for lot-drawing or an event which will
+        yield a future result has begun.
+
+
+
+
+Page 18 of 28
+                                                                                                         FORCE Technology
+                                                                                                                Park Allé 345
+                                                                                                      2605 Brøndby, Danmark
+                                                                                                             +45 43 25 00 00
+                                                                                                             +45 43 25 00 10
+                                                                                                     info@forcetechnology.dk
+                                                                                                    www.forcetechnology.com
+Chapter 10 Payout percentage
+ #          Requirement                                               Remarks
+                                                                      Pass, as there is no progressive
+                                                                      winnings.
+
+                                                                      The game provided is betting on
+            For games with progressive winnings, the minimum          lotteries, so there is no payout
+ 10.1.1
+            payout percentage must be indicated to the player.        percentage.
+
+                                                                      The payout percentage is equal to the
+                                                                      lotteries payout percentage, which is
+                                                                      coherent with the odds.
+            The gambling system must have a function to monitor the   Pass.
+ 10.2.1
+            payout percentage of each individual game.
+                                                                      The game provided is betting on
+                                                                      lotteries, so there is no payout
+                                                                      percentage.
+            Data that is generated in accordance with the first
+ 10.2.2
+            paragraph must be stored and kept available for audit.    The payout percentage is equal to the
+                                                                      lotteries payout percentage, which is
+                                                                      coherent with the odds.
+
+
+
+
+Page 19 of 28
+                                                                                                       FORCE Technology
+                                                                                                              Park Allé 345
+                                                                                                    2605 Brøndby, Danmark
+                                                                                                           +45 43 25 00 00
+                                                                                                           +45 43 25 00 10
+                                                                                                   info@forcetechnology.dk
+                                                                                                  www.forcetechnology.com
+Chapter 11 Game instructions, payout table and pot
+ #          Requirement                                                    Remarks
+            Game Instruction
+                                                                           Pass - FORCE Certification have been
+                                                                           though the documentation, and it fulfils
+            Game instructions must be complete, unambiguous and
+ 11.1.1                                                                    the requirement. (“Specifications of the
+            non-deceptive.
+                                                                           betting system”). Also tested on
+                                                                           webpage.
+                                                                           Pass - FORCE Certification have been
+                                                                           though the documentation, and it fulfils
+            Game instructions and rules must be available without
+ 11.2.1                                                                    the requirement. (“Specifications of the
+            placing a bet.
+                                                                           betting system”). Also tested on
+                                                                           webpage.
+            Game instructions must be available through the same           Pass - FORCE Certification have been
+ 11.3.1
+            type of medium as the game.                                    though the documentation, and it fulfils
+                                                                           the requirement. (“Specifications of the
+ 11.3.2     Game instructions must be easily accessible.                   betting system”). Also tested on
+                                                                           webpage.
+            Payout table
+            There must be documented quality assurance procedures          Pass - FORCE Certification have been
+ 11.4.1     to ensure that the configuration of payout tables is           though the documentation, and it fulfils
+            correct.                                                       the requirement.
+
+                                                                           The payout percentage is equal to the
+                                                                           lotteries payout percentage, which is
+            There must be documented procedures to ensure that the
+ 11.4.2                                                                    coherent with the odds.
+            calculations of payout tables are correct.
+                                                                           Documentation: QA Procedure
+                                                                           configuration of pay-out tables
+            Pot
+ 11.5.1     There must be rules for how a player can win a pot.            N/A – No pot
+            It must be clearly stated how the pot is financed and
+ 11.5.2
+            distributed.
+            It must be clear from the rules how a pot will be divided if
+ 11.6.1                                                                    N/A – No pot
+            there is more than one winner.
+            It must be clear from the rules how a licence holder can       N/A – No pot
+ 11.7.1
+            cancel or terminate a pot.
+
+
+
+
+Page 20 of 28
+                                                                                                           FORCE Technology
+                                                                                                                  Park Allé 345
+                                                                                                        2605 Brøndby, Danmark
+                                                                                                               +45 43 25 00 00
+                                                                                                               +45 43 25 00 10
+                                                                                                       info@forcetechnology.dk
+                                                                                                      www.forcetechnology.com
+Chapter 12 Abnormal gambling patterns and cheating
+This chapter is covered partly by the SGA. Procedures to detect and counteract violations of the terms of use
+and rules of the game are not included in the assessment of the accredited body but fall under the Swedish
+Gambling Authority’s supervisory responsibilities. The evaluation of whether the licence holder has the relevant
+competence to make the necessary assessments also fall under the Swedish Gambling Authority’s supervisory
+responsibilities
+
+ #          Requirement                                                        Remarks
+
+ 12.1       The gambling system must have a function, and there must be        Pass.
+            documented procedures, to detect the occurrence of cheating
+            and collusion between players, attempted cheating and collusion    Neither customers nor
+            between players, and other violations of the terms of use and      SverigeLotto's own staff can cheat
+            rules of the game                                                  in a game, because all results are
+                                                                               both independent of the bets made
+ 12.2       The gambling system must have a function that allows players       and determined externally in the
+            to easily and immediately report suspected cheating, cheating,     underlying lotteries, not by
+            and collusion between players, attempted cheating and collusion    SverigeLotto.
+            between players, and other violations of the terms of use and
+            rules of the game                                                  All lines of numbers betted on are
+                                                                               also registered with an insurance
+ 12.3       There must be a function for analysing and producing data for      company before the draw.
+            reports on illicit manipulation of the outcome of a game subject
+            to betting                                                         There is also no opportunity for
+                                                                               collusion as all bets are separate
+ 12.4       There must be documented procedures to detect and                  entries and don't affect each other.
+            counteract deviations and abnormal gambling resulting from
+            manipulation of games and software
+
+
+
+
+Page 21 of 28
+                                                                                                           FORCE Technology
+                                                                                                                  Park Allé 345
+                                                                                                        2605 Brøndby, Danmark
+                                                                                                               +45 43 25 00 00
+                                                                                                               +45 43 25 00 10
+                                                                                                       info@forcetechnology.dk
+                                                                                                      www.forcetechnology.com
+Chapter 13 Functional requirements for random number generators
+ #          Requirement                                            Remarks
+ 13.1.1     The results from a random number generator must        N/A – there is no RNG used by SverigeLotto
+            be random, statistically independent, have a correct   Ltd.
+            standard deviation and correct probability
+            distribution.                                          The RNG used by the different lotteries is
+            The results yielded by the random number               approved by the lottery provider.
+            generator must not be predictable without
+            knowledge of the applied algorithm,                    All testing of programming has been
+            implementation and initial values.                     performed in-house. As all the lotteries used
+                                                                   are tested, inspected and approved by third-
+                                                                   party organisations, and as there is no RNG
+                                                                   involved on any betting outcome anywhere
+                                                                   within our system, we have not required third-
+                                                                   party testing of our own.
+                                                                   For example, Camelot (who run the UK
+                                                                   Lotto), are regulated directly by the UK
+                                                                   Gambling Commission:
+                                                                   https://www.gamblingcommission.gov.uk/for-
+                                                                   the-public/National-Lottery/How-we-regulate-
+                                                                   the-National-Lottery.aspx
+ 13.2.1     There must be a documented reference to a well-        N/A – there is no RNG used by SverigeLotto
+            established algorithm and any source code as well      Ltd.
+            as to the recalculation procedure of the random
+            number generator.                                      The RNG used by the different lotteries is
+            If the random number generator is built in to the      approved by the lottery provider.
+            software, it must be possible to present the entire
+            source code, along with comments and
+            documentation.
+ 13.3.1     The random number generator must be able to            N/A – there is no RNG used by SverigeLotto
+            withstand the set maximum load.                        Ltd.
+
+                                                                   The RNG used by the different lotteries is
+                                                                   approved by the lottery provider.
+ 13.4.1     Functions that do not generate outcomes in games       N/A – there is no RNG used by SverigeLotto
+            but which depend on random elements must be            Ltd.
+            based on the results of the random number
+            generator.                                             The RNG used by the different lotteries is
+                                                                   approved by the lottery provider.
+ 13.5.1     Calculations based on a random number generator        N/A – there is no RNG used by SverigeLotto
+            must have a correct standard deviation and correct     Ltd.
+            probability distribution.
+            The numbers, symbols or events resulting from the      The RNG used by the different lotteries is
+            random number generator must correspond with           approved by the lottery provider.
+            the rules set for the game involved.
+
+
+
+
+Page 22 of 28
+                                                                                                         FORCE Technology
+                                                                                                                Park Allé 345
+                                                                                                      2605 Brøndby, Danmark
+                                                                                                             +45 43 25 00 00
+                                                                                                             +45 43 25 00 10
+                                                                                                     info@forcetechnology.dk
+                                                                                                    www.forcetechnology.com
+ #          Requirement                                            Remarks
+ 13.6.1     The calculations of the random number generator        N/A – there is no RNG used by SverigeLotto
+            must correspond to the events registered in the        Ltd.
+            gambling system
+                                                                   The RNG used by the different lotteries is
+                                                                   approved by the lottery provider.
+ 13.7.1     If the rules of the game requires a sequence from a    N/A – there is no RNG used by SverigeLotto
+            random number generator to be set in advance, it is    Ltd.
+            only allowed to generate new sequences if this is
+            stated in the rules                                    The RNG used by the different lotteries is
+                                                                   approved by the lottery provider.
+ 13.8.1     Unless otherwise specified in the rules of the game,   N/A – there is no RNG used by SverigeLotto
+            the results from a random number generate must         Ltd.
+            always be independent of events in the current or
+            previous games.                                        The RNG used by the different lotteries is
+                                                                   approved by the lottery provider.
+            Drawing equipment without a random number
+            generator
+ 13.9.1     The results from drawing equipment without a           N/A – there is no RNG used by SverigeLotto
+            random number generator must be random,                Ltd.
+            statistically independent, have a correct standard
+            deviation and correct probability distribution.        The RNG used by the different lotteries is
+                                                                   approved by the lottery provider.
+ 13.10.1    Independent drawing equipment without a random         N/A – there is no RNG used by SverigeLotto
+            number generator must be kept locked in with           Ltd.
+            limited access.
+                                                                   The RNG used by the different lotteries is
+                                                                   approved by the lottery provider.
+
+            Drawing equipment for live casino games
+ 13.11.1    Drawing equipment used in live casino games must       N/A – there is no RNG used by SverigeLotto
+            be monitored and recorded                              Ltd.
+ 13.11.2    The recorded material must show compliance with
+                                                                   The RNG used by the different lotteries is
+            the rules of the game.
+                                                                   approved by the lottery provider.
+ 13.11.3    The recording must register date and time.
+
+ 13.12.1    There must be physical access control for the          N/A – there is no RNG used by SverigeLotto
+            premises used for live casino games and any            Ltd.
+            associated areas.
+                                                                   The RNG used by the different lotteries is
+ 13.12.2    There must separate access control, at least for
+                                                                   approved by the lottery provider.
+            different employee categories.
+
+
+
+
+Page 23 of 28
+                                                                                                         FORCE Technology
+                                                                                                                Park Allé 345
+                                                                                                      2605 Brøndby, Danmark
+                                                                                                             +45 43 25 00 00
+                                                                                                             +45 43 25 00 10
+                                                                                                     info@forcetechnology.dk
+                                                                                                    www.forcetechnology.com
+Chapter 14 Functional requirements when agent terminals are used for bets and control
+ #         Requirement                                                     Remarks
+           Agent terminal
+           The gambling system must be able to clearly identify an agent   N/A – SverigeLotto Ltd do not
+ 14.1.1
+           terminal.                                                       operate any terminals
+           Communication between an agent terminal and the other           N/A – SverigeLotto Ltd do not
+ 14.2.1    parts of the gambling system must be protected during           operate any terminals
+           transfer by encryption or equivalent.
+           Player or payment transactions sent from an agent terminal to   N/A – SverigeLotto Ltd do not
+ 14.3.1    other parts of the gambling system must be validated by the     operate any terminals
+           terminal at the end of the transaction before printout
+           Agent terminal for validation of winnings
+           If an agent terminal is used to validate winnings, it must be   N/A – SverigeLotto Ltd do not
+ 14.4.1    fitted with a screen intended to communicate information to     operate any terminals
+           the player
+           The following information must be displayed on the screen       N/A – SverigeLotto Ltd do not
+ 14.4.2
+           that is turned towards the player                               operate any terminals
+ 14.4.2.1 1. form of gambling;
+ 14.4.2.2 2. bet;
+ 14.4.2.3 3. cancellation;
+ 14.4.2.4 4. amount won, or “no win”; and
+ 14.4.2.5 5. game closed.
+
+
+
+
+Page 24 of 28
+                                                                                                       FORCE Technology
+                                                                                                              Park Allé 345
+                                                                                                    2605 Brøndby, Danmark
+                                                                                                           +45 43 25 00 00
+                                                                                                           +45 43 25 00 10
+                                                                                                   info@forcetechnology.dk
+                                                                                                  www.forcetechnology.com
+Chapter 15 Functional requirements for online games
+ #         Requirement                                                          Remarks
+           Game design
+           Games with interactive options must have illustrations that          N/A – no interactive games
+           clearly show current and possible bets.
+ 15.1.1    Games in accordance with the first paragraph must clearly
+           illustrate the possibility of changing or resetting the current
+           bet.
+                                                                                Pass - FORCE Certification have been
+           Each round must last for at least three seconds.
+ 15.2.1                                                                         though the documentation, and it
+           The first paragraph also applies to autoplay functions.
+                                                                                fulfils the requirement
+           A player’s participation in a game, and the choices made by          Pass - FORCE Certification have been
+           the player in the gambling system, must be optional.                 though the documentation, and it
+           A player must be given a reasonable period of time to                fulfils the requirement
+ 15.3.1
+           consider the consequences of a choice.
+           Repeated choices made by a player in the gambling system
+           must not be able to be placed in a queue
+           Visual presentation
+                                                                                Pass - FORCE Certification have been
+           The name of the game must be displayed on all pages
+ 15.4.1                                                                         though the documentation, and it
+           associated with that particular game.
+                                                                                fulfils the requirement
+                                                                                Pass - FORCE Certification have been
+           The gambling system must have a function that continuously
+ 15.5.1                                                                         though the documentation, and it
+           shows the player how long they have been logged in.
+                                                                                fulfils the requirement
+                                                                                Pass - FORCE Certification have been
+           The gambling system must have a function that continuously
+ 15.6.1                                                                         though the documentation, and it
+           shows the player their balance throughout the session
+                                                                                fulfils the requirement
+           The bet on a game must be clearly displayed.                         Pass - FORCE Certification have been
+           The player’s possible and actual bets, as well as the minimum        though the documentation, and it
+ 15.7.1    and maximum bets, must be clearly displayed.                         fulfils the requirement
+           The gambling system must have a function that clearly
+           visualises the player’s bet, including the total bets in the game.
+           A player must be informed that there are factors beyond their        N/A – for this kind of game.
+ 15.8.1
+           control, which may affect the game and its outcome.
+                                                                                Pass - FORCE Certification have been
+           The outcome of a game must remain visible for a reasonable
+ 15.9.1                                                                         though the documentation, and it
+           period of time.
+                                                                                fulfils the requirement
+           Computer-simulated gambling machines must clearly indicate           N/A – no computer simulated games
+ 15.10.1
+           or illustrate which symbols represent a win.
+           If different combinations of symbols lead to a win, these must
+ 15.10.2
+           be clearly indicated or illustrated.
+
+
+
+
+Page 25 of 28
+                                                                                                             FORCE Technology
+                                                                                                                    Park Allé 345
+                                                                                                          2605 Brøndby, Danmark
+                                                                                                                 +45 43 25 00 00
+                                                                                                                 +45 43 25 00 10
+                                                                                                         info@forcetechnology.dk
+                                                                                                        www.forcetechnology.com
+ #         Requirement                                                       Remarks
+                                                                             Pass, FORCE Certification received
+           If the characteristics of a game change temporarily the game      documentation to fulfill the paragraph.
+ 15.11.1
+           must clearly indicate the current status before the next game.    The approval is based on game
+                                                                             certificates from game supplier
+           A symbol that is used in a gambling system must have the          N/A
+ 15.12.1
+           same shape and colour throughout that particular game.
+           The number of active decks as well as which cards are             N/A – not card game
+ 15.13.1
+           included in a particular game must be clearly indicated.
+ 15.13.2 The front of the card must clearly show its suit and rank.
+           The rules of the game must clearly state when the cards will be
+ 15.13.3
+           shuffled.
+           If a non-traditional die is used in a dice game, this must be     N/A – no dices
+ 15.14.1
+           made clear to the player.
+ 15.14.2 It must be clearly indicated which side of a die wins a game.
+           A gambling system must have a function to prevent players         N/A – not possible
+ 15.15.1
+           playing against themselves
+         A gambling system must have a function to discover and              Pass - FORCE Certification have been
+ 15.15.2 prevent one or more players using the same gambling                 though the documentation, and it
+         equipment at the same time.                                         fulfils the requirement
+           The current pot amount must be visible to all participating       N/A – no pot
+ 15.16.1
+           players.
+ 15.17.1 A player must immediately be informed of winning the pot            N/A – no pot
+           Once a pot has been won, all players must be informed of its
+ 15.17.2
+           new value.
+         Information pursuant to the second paragraph must also be
+ 15.17.3 available to players who have not participated in the specified
+         pot.
+ 15.18.1 It must be clearly stated if a pot is not available to a player     N/A – no pot
+           It must be ensured that all information given to the players is
+ 15.18.2
+           correct, regardless of whether or not a pot is available.
+
+
+
+
+Page 26 of 28
+                                                                                                           FORCE Technology
+                                                                                                                  Park Allé 345
+                                                                                                        2605 Brøndby, Danmark
+                                                                                                               +45 43 25 00 00
+                                                                                                               +45 43 25 00 10
+                                                                                                       info@forcetechnology.dk
+                                                                                                      www.forcetechnology.com
+Appendix A – Documentation
+Acceptable Use Policy
+Data Protection Policy
+System Access Control Policy
+Change Management Procedures
+Physical Security Policy
+Anti-Money Laudering (AML) Procedures
+Information Security Policy
+Software Development Life Cycle Policy
+Risk Assessment Policy
+ Vulnerability Management Policy
+Responsible Disclosure Policy
+Information Assets
+Player Registration & KYC Procedures
+Asset Management Policy
+Incident Response Plan
+PL Ansvarsfullt Spelande 260527- applies to all SverigeLotto Ltd brands
+Specifications of the Betting System
+
+
+
+
+Page 27 of 28
+                                                                               FORCE Technology
+                                                                                      Park Allé 345
+                                                                            2605 Brøndby, Danmark
+                                                                                   +45 43 25 00 00
+                                                                                   +45 43 25 00 10
+                                                                           info@forcetechnology.dk
+                                                                          www.forcetechnology.com
+Appendix B – Game list (Lotto games)
+    •   Euromillions
+    •   Powerball
+    •   MegaMillions
+    •   6 Aus 49
+    •   SuperEnaLotto
+    •   Finnish Lotto
+    •   Polish Lotto
+    •   Austiran Lotto
+    •   Irish Lotto
+    •   Mega Sena
+    •   La Primitiva
+    •   France Lotto
+    •   Canadian Lotto
+    •   Uk National Lottery
+    •   El Gordo
+    •   South African Powerball
+    •   Australian Powerball
+    •   Australian Monday and Wednesday Lottery
+    •   Australian Oz Lottery
+    •   South African Lotto
+    •   Bonolotto
+    •   New York Lotto
+    •   Florida Lotto
+    •   California Superlotto Plus
+    •   Australian Saturday Lotto
+    •   Thunderball
+
+
+
+
+Page 28 of 28
+                                                       FORCE Technology
+                                                              Park Allé 345
+                                                    2605 Brøndby, Danmark
+                                                           +45 43 25 00 00
+                                                           +45 43 25 00 10
+                                                   info@forcetechnology.dk
+                                                  www.forcetechnology.com
+
