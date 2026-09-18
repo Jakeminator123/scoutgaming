@@ -1,0 +1,109 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Croupier Partner API v1</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>:root{--bg:#0d0f12;--paper:#f2f1ed;--mut:#9a9d93;--lime:#d6ff3a;--line:#2a2e33;--panel:#15181c}body{margin:0;background:var(--bg);color:var(--paper);font:14px/1.6 Inter,-apple-system,Arial,sans-serif}main{max-width:900px;margin:0 auto;padding:40px 20px}h1{font-size:26px;margin:0 0 6px}h2{font-size:17px;margin:34px 0 10px;color:var(--lime);letter-spacing:.04em}h3{font-size:14px;margin:22px 0 6px}code{font:12px ui-monospace,Menlo,monospace;background:var(--panel);padding:1px 5px;border-radius:4px}pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto}pre code{background:none;padding:0}table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12.5px}th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600;font-size:11px;letter-spacing:.08em}a{color:var(--lime)}p{margin:8px 0}ul{padding-left:20px}.brand{font-size:10px;letter-spacing:.14em;color:var(--mut);margin-bottom:24px}</style></head>
+<body><main><div class="brand">SCOUT GAMING GROUP &middot; LIVE CASINO &middot; PARTNER DOCUMENTATION</div><h1>Croupier Partner API v1</h1>
+
+<p>Server-owned AI-dealer blackjack. The game engine (shoe, rules, outcomes, payouts) runs on our server. The AI dealer only presents the game. Partners integrate through this API.</p>
+
+<p>Base URL: <code>https://bettalotto.se</code> (production). All endpoints are <code>POST</code> with a JSON body.</p>
+
+<h2>1. Authentication (every request)</h2>
+
+<p>Each partner gets an API key and a secret from the Scout backoffice. Every request carries three headers:</p>
+
+<table>
+<tr><th>Header</th><th>Value</th></tr>
+<tr><td><code>X-Api-Key</code></td><td>your key, e.g. <code>ck_live_…</code></td></tr>
+<tr><td><code>X-Timestamp</code></td><td>Unix seconds, must be within 5 minutes of server time</td></tr>
+<tr><td><code>X-Signature</code></td><td>hex HMAC-SHA256 over <code>${timestamp}.${METHOD}.${path}.${rawBody}</code> using the secret</td></tr>
+</table>
+
+<p><code>path</code> is the URL path only (e.g. <code>/api/v1/table</code>). <code>rawBody</code> is the exact JSON string you send (empty string if no body).</p>
+
+<p>Node.js example:</p>
+
+<pre><code>
+import { createHmac } from &#x27;node:crypto&#x27;;
+const KEY = &#x27;ck_live_…&#x27;, SECRET = &#x27;cs_…&#x27;, BASE = &#x27;https://bettalotto.se&#x27;;
+async function call(path, payload) {
+  const body = JSON.stringify(payload ?? {});
+  const ts = String(Math.floor(Date.now() / 1000));
+  const sig = createHmac(&#x27;sha256&#x27;, SECRET).update(`${ts}.POST.${path}.${body}`).digest(&#x27;hex&#x27;);
+  const r = await fetch(BASE + path, { method: &#x27;POST&#x27;, body,
+    headers: { &#x27;Content-Type&#x27;: &#x27;application/json&#x27;, &#x27;X-Api-Key&#x27;: KEY, &#x27;X-Timestamp&#x27;: ts, &#x27;X-Signature&#x27;: sig } });
+  return r.json();
+}
+console.log(await call(&#x27;/api/v1/ping&#x27;));
+</code></pre>
+
+<p>Errors are JSON <code>{ &quot;error&quot;: &quot;…&quot; }</code> with HTTP 400/401/403/404. Key scopes: <code>launch</code>, <code>play</code>, <code>wallet</code>, <code>history</code>, <code>lobby</code>.</p>
+
+<h2>2. Endpoints</h2>
+
+<h3>POST /api/v1/ping</h3>
+<p>Returns <code>{ ok, key, scopes, serverTime }</code>. Use to verify signing.</p>
+
+<h3>POST /api/v1/lobby (scope: lobby)</h3>
+<p>Lists tables, dealers, limits and rules.</p>
+<pre><code>
+{ &quot;tables&quot;: [{ &quot;id&quot;: &quot;astrid-blackjack&quot;, &quot;game&quot;: &quot;blackjack&quot;, &quot;dealer&quot;: &quot;astrid&quot;, &quot;decks&quot;: 8, &quot;cutAfter&quot;: 312, &quot;boxes&quot;: 7, &quot;minBet&quot;: 5, &quot;maxBet&quot;: 2000, &quot;sideBets&quot;: [&quot;perfectPairs&quot;,&quot;21+3&quot;], &quot;blackjackPays&quot;: &quot;3:2&quot;, &quot;dealerStandsSoft17&quot;: true, &quot;aiDealer&quot;: true }] }
+</code></pre>
+
+<h3>POST /api/v1/launch (scope: launch)</h3>
+<p>Get a game URL for one of your players. Open it in an iframe or a new tab. The session lasts 6 hours.</p>
+<pre><code>
+// request
+{ &quot;playerId&quot;: &quot;your-player-123&quot;, &quot;currency&quot;: &quot;EUR&quot;, &quot;language&quot;: &quot;sv&quot;, &quot;returnUrl&quot;: &quot;https://your-site/lobby&quot; }
+// response
+{ &quot;url&quot;: &quot;https://bettalotto.se/?dealer=astrid&amp;…&amp;launch=&lt;token&gt;&quot;, &quot;expiresIn&quot;: 21600, &quot;playerRef&quot;: &quot;…&quot; }
+</code></pre>
+<p><code>playerId</code> is your identifier. We map it to an internal player on first use.</p>
+
+<h3>POST /api/v1/table (scope: play)</h3>
+<p>Drive the table server-side without the UI (for your own front end, bots, or QA). Same engine as the UI.</p>
+
+<p>Every non-<code>state</code> call needs a unique <code>requestId</code> (idempotency: replays return the original response).</p>
+
+<table>
+<tr><th>op</th><th>body</th><th>notes</th></tr>
+<tr><td><code>state</code></td><td><code>{ playerId, op:&quot;state&quot; }</code></td><td>current view, no requestId needed</td></tr>
+<tr><td><code>start</code></td><td><code>{ playerId, requestId, op:&quot;start&quot;, bets:[{box:3, main:10, pp:0, tp:0}] }</code></td><td>places bets and deals. <code>box</code> 0–6</td></tr>
+<tr><td><code>act</code></td><td>`{ playerId, requestId, op:&quot;act&quot;, action:&quot;hit&quot;\</td><td>&quot;stand&quot;\</td><td>&quot;double&quot;\</td><td>&quot;split&quot; }`</td><td>for the active hand</td></tr>
+<tr><td><code>insurance</code></td><td>`{ playerId, requestId, op:&quot;insurance&quot;, take:true\</td><td>false }`</td><td>when dealer shows an ace</td></tr>
+<tr><td><code>collect</code></td><td><code>{ playerId, requestId, op:&quot;collect&quot; }</code></td><td>settles and returns balance</td></tr>
+</table>
+
+<p>Response: <code>{ version, shoe:{ id, total, remaining, dealt, cutAfter, cutReached, shufflePending, decks, burn }, round:{ boxes, hands, dealer, phase, active, legalActions }, balance, requestId }</code>. Shoe order, burn card and the hole card are never exposed.</p>
+
+<h3>POST /api/v1/balance (scope: wallet)</h3>
+<p><code>{ playerId }</code> → <code>{ playerId, balance, currency }</code>. With a seamless wallet configured, your wallet is the source of truth and this is informational.</p>
+
+<h3>POST /api/v1/history (scope: history)</h3>
+<p><code>{ playerId?, from?, to?, limit? }</code> (ISO timestamps, limit ≤ 1000) → <code>{ rounds:[{ id, playerId, tableVersion, shoeId, op, requestId, stake, delta, currency, round, at }] }</code>. Every bet, action and settlement is logged with the full round state at that moment. Use this for reconciliation and regulator exports.</p>
+
+<h2>3. Seamless wallet (recommended for production)</h2>
+
+<p>If your key has a <b>wallet URL</b>, we never hold player money. Before each play call we ask your wallet for the balance, and on every debit/credit we call you:</p>
+
+<pre><code>
+POST &lt;your wallet URL&gt;
+Headers: X-Api-Key, X-Timestamp, X-Signature   (signed with the same secret, path &quot;/wallet&quot;)
+Body: { &quot;type&quot;: &quot;balance&quot;|&quot;bet&quot;|&quot;win&quot;, &quot;playerId&quot;, &quot;currency&quot;, &quot;amount&quot;, &quot;transactionId&quot;, &quot;roundId&quot;, &quot;at&quot; }
+Response (200): { &quot;balance&quot;: 123.45 }
+</code></pre>
+<ul><li><code>transactionId</code> is unique per debit/credit. If you see it again, return the same result (do not double-book).</li>
+<li>Reject a <code>bet</code> with a non-200 status if funds are insufficient; the round will not start.</li>
+<li>Timeout is 8 seconds. On timeout or non-200 the play call fails with an error and nothing is booked on our side.</li></ul>
+
+<p>Without a wallet URL the key uses our internal demo wallet (starts at 0; use for integration testing only).</p>
+
+<h2>4. Regulatory notes</h2>
+
+<li>Game engine and AI dealer are separate. The dealer layer has no write access to shoe, outcomes, payouts or balances.</li>
+<li>RNG: cryptographic OS random (<code>crypto.getRandomValues</code>), Fisher-Yates shuffle without modulo bias, 8 decks, cut card at 312, one burn card, no mid-round shuffle.</li>
+<li>Rounds are ≥ 3 seconds and every state transition is logged (see history).</li>
+<li>Clear &quot;AI DEALER&quot; label in the UI.</li></ul>
+
+<h2>5. Support</h2>
+
+<p>Scout Gaming Group, Kevin Negash — kevin.negash@scoutgaminggroup.com</p>
+</main></body></html>
