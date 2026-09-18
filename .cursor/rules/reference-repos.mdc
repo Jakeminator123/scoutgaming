@@ -12,4 +12,4 @@ alwaysApply: true
 - Look there on request, or when a Croupier task is explicitly about borrowing a presentation/event idea.
 - If you port something: reimplement in Croupier's structure on `jakeminator123/work`, say what you looked at, and do not copy their game engine, wallet, RNG, or whole trees.
 - Croupier `main` is Scout's product. Do not add those repos as submodules or extra git remotes here.
-- No MCP or mass copy of those trees into `docs/`. The map lives in the GitLab wiki page `reference-repos`.
+- No MCP or mass copy of those trees into `docs/`. Docs, canvases and notes go in the GitLab wiki. The map is the wiki page `reference-repos`.
