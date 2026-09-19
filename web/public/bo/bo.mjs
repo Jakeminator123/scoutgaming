@@ -9,6 +9,7 @@ const SECTIONS=[
  ['ops','Operations','SCOUT LIVE CASINO · ALL SYSTEMS'],
  ['voice','Voice Lines','SYNC VERIFICATION · EVERY TAKE, AS THE GAME PLAYS IT'],
  ['clips','Dealing Clips','CLIP LIBRARY · TRANSPARENT FILTER · ASSIGN TO TABLE PARTS'],
+ ['gens','Generations','EVERY HIGGSFIELD VIDEO · WITH ITS PROMPT'],
  ['apikeys','API Keys','PARTNER INTEGRATIONS · SIGNED KEYS · SEAMLESS WALLET'],
  ['emails','Emails','BRAND TEMPLATES · TRANSACTIONAL & LIFECYCLE'],
  ['users','Users','CRAIG · ROLES & INVITES'],
@@ -20,7 +21,7 @@ const SECTIONS=[
  ['pay','Payments','WALLET · LEDGER'],
  ['shoes','Shoes & Decks','GAME INTEGRITY · RNG'],
 ];
-const ICONS={apikeys:'<circle cx="8" cy="14" r="4"/><path d="M11 11 L20 2 M16 6 l2 2 M13 9 l2 2"/>',clips:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9 l5 3 -5 3 Z"/>',users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+const ICONS={gens:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 9 l5 3 -5 3 z"/>',apikeys:'<circle cx="8" cy="14" r="4"/><path d="M11 11 L20 2 M16 6 l2 2 M13 9 l2 2"/>',clips:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9 l5 3 -5 3 Z"/>',users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
  rooms:'<ellipse cx="12" cy="12" rx="9" ry="6"/><path d="M5 16 v3 M19 16 v3"/>',
  dealers:'<circle cx="12" cy="9" r="4"/><path d="M4 21 c1.5-5 4.5-7 8-7 s6.5 2 8 7"/>',
  pit:'<path d="M12 3 L20 6 V12 C20 17 16.5 20 12 21.5 C7.5 20 4 17 4 12 V6 Z"/>',
@@ -106,6 +107,38 @@ async function render(id){
       C.querySelectorAll('[data-rotate]').forEach(b=>b.onclick=async()=>{const r=await api('/api/bo/apikeys/rotate',{id:b.dataset.rotate});if(r.ok){toast('secret rotated');const d2=await api('/api/bo/apikeys');d.keys=d2.keys;const k=d.keys.find(x=>x.id===r.id);draw({name:k.name,key:k.key+' (unchanged)',secret:r.secret,scopes:k.scopes,walletUrl:k.wallet_url});}else toast(r.error||'failed');});
     };
     draw(null);
+    return;
+  }
+  if(id==='gens'){
+    const gens=await fetch('/bo/generations.json').then(r=>r.json());
+    const st=render.genState??={q:'',model:'',croupier:true};
+    const models=[...new Set(gens.map(g=>g.model))].sort();
+    const esc=t=>String(t??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+    const thumb=g=>g.thumb?`/bo/gen/${g.id}-thumb${(g.thumb.match(/\.\w+$/)||['.jpg'])[0]}`:'';
+    const draw=()=>{
+      const q=st.q.toLowerCase();
+      const list=gens.filter(g=>(!st.croupier||g.croupier)&&(!st.model||g.model===st.model)&&(!q||g.prompt.toLowerCase().includes(q)||g.id.includes(q)));
+      C.innerHTML=`<div class="panel"><div class="t">FILTERS &middot; ${list.length} OF ${gens.length} GENERATIONS</div><div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input id="g-q" value="${esc(st.q)}" placeholder="search prompts" style="flex:1;min-width:200px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)">
+        <select id="g-model"><option value="">All models</option>${models.map(m=>`<option ${st.model===m?'selected':''}>${m}</option>`).join('')}</select>
+        <label style="font-size:11px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="g-cr" ${st.croupier?'checked':''}> Croupier only</label>
+      </div></div>
+      <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+      ${list.map(g=>`<div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel2)">
+        <video src="/bo/gen/${g.id}.mp4" poster="${thumb(g)}" preload="none" controls muted playsinline style="width:100%;aspect-ratio:16/9;display:block;background:#000;object-fit:contain"></video>
+        <div style="padding:9px 11px">
+          <div style="display:flex;justify-content:space-between;gap:6px"><span class="mono" style="font-size:10px">${g.at.replace('T',' ')}</span>${pill(g.model,'live')}</div>
+          <div style="font-size:10px;color:var(--mut);margin-top:3px">${g.duration?g.duration+'s':''}${g.aspect?' &middot; '+g.aspect:''} &middot; <span class="mono">${g.id.slice(0,8)}</span></div>
+          <div data-p style="font-size:11px;margin-top:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer" title="click to expand">${esc(g.prompt)||'<span style="color:var(--mut)">no prompt</span>'}</div>
+          <div style="margin-top:6px;display:flex;gap:6px"><button data-copy="${g.id}" style="font-size:9px">COPY PROMPT</button><a href="/bo/gen/${g.id}.mp4" download style="font-size:9px" class="mono">MP4</a></div>
+        </div></div>`).join('')}</div>`;
+      $('#g-q').oninput=e=>{st.q=e.target.value;clearTimeout(draw.t);draw.t=setTimeout(()=>{draw();const i=$('#g-q');i.focus();i.setSelectionRange(i.value.length,i.value.length);},250);};
+      $('#g-model').onchange=e=>{st.model=e.target.value;draw();};
+      $('#g-cr').onchange=e=>{st.croupier=e.target.checked;draw();};
+      C.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>{el.style.webkitLineClamp=el.style.webkitLineClamp==='unset'?'5':'unset';});
+      C.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(gens.find(g=>g.id===b.dataset.copy).prompt);}catch{}toast('prompt copied');});
+    };
+    draw();
     return;
   }
   if(id==='clips'){
