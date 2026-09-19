@@ -3,8 +3,8 @@ import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {selectGreenTake,shouldUseGreenBoxCard,shouldUseGreenDealerCard} from '../web/public/astrid-green-dealer.mjs';
-import {validateContactTake,uniformRegistration} from '../web/public/performance-contact.mjs';
+import {selectGreenTake,shouldUseGreenBoxCard,shouldUseGreenDealerCard,greenRestCardQuad} from '../web/public/astrid-green-dealer.mjs';
+import {validateContactTake,uniformRegistration,presentationLandFrame,settledContactCard} from '../web/public/performance-contact.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
 const reviewDir=path.resolve(dir,'../web/public/review/astrid-table-v2');
@@ -16,6 +16,36 @@ const syntheticBox=box=>({...dealerTake,id:`synthetic-box${box}`,action:'deal-ri
 const boxTake=syntheticBox(5);
 const takes=[dealerTake,boxTake];
 const base={dealer:'astrid',enabled:true,containerId:'',box:5,split:false,faceDown:false,existingCards:0};
+const blueTake=JSON.parse(fs.readFileSync(path.resolve(reviewDir,'../astrid-blue-box4/take.json')));
+
+test('only the opted-in Box 4 opening pair reuses the blue take',()=>{
+  assert.deepEqual(validateContactTake(blueTake),[]);
+  for(const existingCards of [0,1])assert.equal(selectGreenTake([dealerTake,boxTake,blueTake],{...base,box:4,existingCards}),blueTake);
+  for(const existingCards of [-1,2,3,1.5])assert.equal(selectGreenTake([blueTake],{...base,box:4,existingCards}),null);
+  for(const override of [{box:5},{split:true},{faceDown:true},{dealer:'mei'},{enabled:false}])assert.equal(selectGreenTake([blueTake],{...base,box:4,existingCards:1,...override}),null);
+  assert.equal(selectGreenTake([dealerTake,boxTake],{...base,box:4,existingCards:1}),null);
+});
+
+test('settled presentation enlarges the table plane without changing pickup or the first slot',()=>{
+  const quad=[[0,0],[72,0],[72,103],[0,103]];
+  const first=greenRestCardQuad(quad,0,blueTake.tracking.presentation);
+  const second=greenRestCardQuad(quad,1,blueTake.tracking.presentation);
+  assert.equal(first[1][0]-first[0][0],90);
+  assert.equal(first[3][1]-first[0][1],128.75);
+  assert.ok(second[0][0]>first[0][0]&&second[0][0]<first[1][0],'readable overlapping fan');
+  assert.deepEqual(greenRestCardQuad(quad,0,blueTake.tracking.presentation),first,'first slot is independent of the second');
+  const end=greenRestCardQuad(blueTake.frames[blueTake.events.land].card.corners,1,blueTake.tracking.presentation).map(p=>[...p,0]);
+  for(const sample of blueTake.frames.slice(0,blueTake.events.land+1))assert.deepEqual(settledContactCard(blueTake,sample,end),sample.card,`source frame ${sample.frame}`);
+  const at=presentationLandFrame(blueTake);
+  assert.deepEqual(settledContactCard(blueTake,blueTake.frames[at],end).corners,end,'canvas reaches the exact DOM quad');
+  assert.equal(presentationLandFrame(boxTake),boxTake.events.land,'other takes do not change');
+});
+
+test('presentation cannot begin during contact or extend past the return',()=>{
+  for(const presentation of [{scale:2,fanStep:.48,settleFrames:8},{scale:1.25,fanStep:.48,settleFrames:50}]){
+    assert.ok(validateContactTake({...blueTake,tracking:{...blueTake.tracking,presentation}}).includes('Invalid settled-card presentation'));
+  }
+});
 
 test('only the FIRST card of the configured box selects the box take',()=>{
   assert.equal(selectGreenTake(takes,base),boxTake);

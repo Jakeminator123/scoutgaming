@@ -116,3 +116,17 @@ These used GPT Image2.5,2k,quality=low, one image each. Preflight was one
 credit each (three submitted image jobs); the original approved plate had
 quality=high. No further Higgsfield image generation is authorized by this
 review. No claim that low quality alone caused every visual defect.
+
+### Accepted live trial: opening pair
+
+The user accepted the live result and requested larger resting cards and both
+opening deliveries. `install-preview.mjs` now binds `openingCards: 2` and an
+explicit settled presentation: 1.25 scale, .48 card-width fan step, 8 frames.
+Source camera, packed actor bytes and tracked corners remain unchanged.
+The presentation starts after photographed landing; it is authored UI
+readability, not measured source motion. Box 4 remains opt-in.
+
+`gameplay-pair-qa/` records the actual 5-spades/2-clubs opening pair and the
+separate 8-clubs/8-hearts replay/settlement test. On the second delivery,
+the first card stays visible with the same quad throughout. The revised
+replay button plays both existing server cards; it does not deal new cards.

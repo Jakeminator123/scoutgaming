@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js';
-import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame} from './performance-contact.mjs';
+import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,presentationLandFrame,settledContactCard} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
 import {edgeBlendGLSL,edgeUniforms,createSceneSampler} from './actor-edge-blend.mjs';
@@ -145,6 +145,8 @@ export class PerformancePlayer {
       const end=(corners??[[target.x,target.y],[target.right,target.y],[target.right,target.bottom],[target.x,target.bottom]])
         .map(([x,y])=>[(x-fit.x)/fit.width,(y-fit.y)/fit.height,0]);
       const release=take.frames[take.events.release].card;
+      const landingFrame=presentationLandFrame(take);
+      layer.dataset.landingFrame=String(landingFrame);
       // The new photographic motion stays rigid. Only the released card
       // travels to its fan; stretching source pixels changes body proportions.
       const retarget=canRetargetTake(take,new URLSearchParams(location.search).get('reach')==='tracked');
@@ -176,7 +178,7 @@ export class PerformancePlayer {
             const atRest=!take.continuation&&sample.frame>=take.events.rest;
             if(sample.frame<startFrame){frameRequest=video.requestVideoFrameCallback(paint);return;}
             layer.dataset.frame=String(sample.frame);
-            layer.dataset.phase=sample.frame<take.events.pickup?'reach':sample.frame<take.events.release?'contact':sample.frame<take.events.land?'release':'return';
+            layer.dataset.phase=sample.frame<take.events.pickup?'reach':sample.frame<take.events.release?'contact':sample.frame<landingFrame?'release':'return';
             const reach=retarget?deliveryReach(take,sample.frame,end):null;
             let sampleCard=reach?shiftCard(sample.card,reach.delta):sample.card;
             if(!take.tracking?.keepSourceLanding&&sample.frame>=take.events.release&&sample.frame<=take.events.land) {
@@ -186,10 +188,11 @@ export class PerformancePlayer {
             }
             // Hand the landed card back once, so the resting transition cannot
             // fade, duplicate or pop its face/rotation at the end of the video.
-            if(sample.frame>=take.events.land){if(!landed)onLand();sampleCard=null;}
+            if(take.tracking?.presentation)sampleCard=settledContactCard(take,sample,end);
+            if(sample.frame>=landingFrame){if(!landed)onLand();sampleCard=null;}
             visual.paint(sampleCard,reach);
             if(!painted){painted=true;this.held?.dispose();this.held=null;layer.style.visibility='';this.host.classList.add('performance-playing');this.onState(`Dealing ${take.action==='deal-dealer'?'to Astrid':'to player'}${faceDown?' · face down':''}`);}
-            landed ||= sample.frame>=take.events.land;
+            landed ||= sample.frame>=landingFrame;
             cue(sample.frame,{visible:!document.hidden});
             if(atRest){video.pause();clean();resolve();return;}
             frameRequest=video.requestVideoFrameCallback(paint);

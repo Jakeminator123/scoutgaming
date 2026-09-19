@@ -7,10 +7,11 @@ export function shouldUseGreenDealerCard({dealer,enabled,containerId,faceDown,ex
   return dealer==='astrid'&&enabled===true&&containerId==='dealer-cards'&&faceDown===false&&existingCards===0;
 }
 
-// A box take depicts the FIRST card of one specific box, never a split hand,
-// a hole card or a later card. Dealer and box takes never share an event.
+// Takes default to one card. A reviewed opening pair explicitly opts in to
+// two; hits, split hands and dealer cards retain their existing routes.
 export function shouldUseGreenBoxCard(take,{dealer,enabled,box,split,faceDown,existingCards}) {
-  return dealer==='astrid'&&enabled===true&&Number.isInteger(take?.box)&&Number(box)===take.box&&split!==true&&faceDown===false&&existingCards===0;
+  const count=take?.tracking?.openingCards===2?2:1;
+  return dealer==='astrid'&&enabled===true&&Number.isInteger(take?.box)&&box!=null&&Number(box)===take.box&&split!==true&&faceDown===false&&Number.isInteger(existingCards)&&existingCards>=0&&existingCards<count;
 }
 export function selectGreenTake(takes,context) {
   if(!Array.isArray(takes))return null;
@@ -107,6 +108,18 @@ export function quadMatrix(quad,width,height) {
     (x3-x0+h*x3)/height,(y3-y0+h*y3)/height,0,h/height,
     0,0,1,0,x0,y0,0,1];
 }
+
+// Scale and fan in the photographed table plane, not the screen plane.
+// The first slot is independent of card count, so a second delivery cannot
+// move the first card. This changes only the requested settled presentation.
+export function greenRestCardQuad(quad,index,{scale=1,fanStep=.48}={}) {
+  const m=quadMatrix(quad,1,1),offset=index*fanStep;
+  return [[0,0],[1,0],[1,1],[0,1]].map(([u,v])=>{
+    const x=.5+(u-.5)*scale+offset,y=.5+(v-.5)*scale+index*.04;
+    const w=m[3]*x+m[7]*y+1;
+    return [(m[0]*x+m[4]*y+m[12])/w,(m[1]*x+m[5]*y+m[13])/w];
+  });
+}
 export function layoutGreenDealerCards(container,take) {
   if(!container||!take)return;
   const parent=container.parentElement.getBoundingClientRect();
@@ -115,7 +128,7 @@ export function layoutGreenDealerCards(container,take) {
   const quad=take.frames[take.events.land].card.corners.map(([x,y])=>[fit.x+x*fit.width,fit.y+y*fit.height]);
   const scale=fit.scale;
   [...container.querySelectorAll('.card')].forEach((el,i)=>{
-    const shifted=quad.map(([x,y])=>[x+i*42*scale,y+i*4*scale]);
+    const shifted=take.tracking?.presentation?greenRestCardQuad(quad,i,take.tracking.presentation):quad.map(([x,y])=>[x+i*42*scale,y+i*4*scale]);
     Object.assign(el.style,{left:'0',top:'0',width:'100px',height:'140px',border:'0',transformOrigin:'0 0',animation:'none',transform:`matrix3d(${quadMatrix(shifted,100,140).join(',')})`});
     el.dataset.greenSlot=String(i);
     el.dataset.feltCard='true';

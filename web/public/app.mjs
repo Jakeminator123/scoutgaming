@@ -183,17 +183,24 @@ if(astridGreenBoxTakes.length){
   addEventListener('resize',layoutGreenBoxCards);
   if(tableScene?.layoutCards){const feltLayout=tableScene.layoutCards.bind(tableScene);tableScene.layoutCards=()=>{feltLayout();layoutGreenBoxCards();};}
   astridGreenBoxTakes.forEach((take,i)=>{
-    const replay=document.createElement('button');replay.id=`green-box${take.box}-replay`;replay.textContent=`Replay box ${take.box} first card`;replay.disabled=true;
+    const openingCards=take.tracking?.openingCards===2?2:1;
+    const replay=document.createElement('button');replay.id=`green-box${take.box}-replay`;replay.textContent=`Replay box ${take.box} ${openingCards===2?'both cards':'first card'}`;replay.disabled=true;
     Object.assign(replay.style,{position:'absolute',right:'16px',top:`${112+i*40}px`,zIndex:70,padding:'10px 14px',border:'1px solid #d6ff3a',borderRadius:'18px',background:'#111c',color:'#d6ff3a',font:'12px Arial'});
     $('#scene').append(replay);
     replay.onclick=async()=>{
-      const el=$(`.seat[data-box="${take.box}"] .cards > .card:first-child`);
-      const card=round?.live?.().find(h=>h.box===take.box)?.cards?.[0];
-      if(busy||speaking||!el||!card||!performancePlayer)return;
-      busy=true;replay.disabled=true;await astridWaiting?.holdAtBoundary();el.style.visibility='hidden';
-      try{await performancePlayer.play(take,{card,target:el.getBoundingClientRect(),corners:performanceCardCorners(el),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}});}
+      const elements=[...document.querySelectorAll(`.seat[data-box="${take.box}"] .cards > .card`)].slice(0,openingCards);
+      const cards=round?.live?.().find(h=>h.box===take.box)?.cards??[];
+      if(busy||speaking||!elements.length||!cards[0]||!performancePlayer)return;
+      busy=true;replay.disabled=true;
+      try{
+        await astridWaiting?.holdAtBoundary();
+        elements.forEach(el=>{el.style.visibility='hidden';});
+        for(const [index,el] of elements.entries()){
+          await performancePlayer.play(take,{card:cards[index],target:el.getBoundingClientRect(),corners:performanceCardCorners(el),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}});
+        }
+      }
       catch(error){console.warn('[green box]',error.message);}
-      finally{el.style.visibility='';try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
+      finally{elements.forEach(el=>{el.style.visibility='';});try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
     };
   });
 }

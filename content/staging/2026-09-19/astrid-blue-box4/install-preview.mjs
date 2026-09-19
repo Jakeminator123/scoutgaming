@@ -13,10 +13,10 @@ const sha=createHash('sha256').update(bytes).digest('hex');
 if(sha!==mask.actorPackedSha256||track.sourceSha256!==mask.sourceSha256)throw Error('Source/matte mismatch');
 const [x,y,width,height]=mask.crop,events=track.authoredEvents;
 const take={version:1,id:'astrid-blue-box4-c01866d1-live-experiment',dealer:'astrid',action:'deal-right',box:4,status:'review',enabled:true,
- cameraApproval:'User approved built-in plates and explicitly asked to try the imperfect take live. Original framing preserved.',
+ cameraApproval:'User accepted the live take and requested larger settled cards and both opening cards at Box 4. Original framing preserved.',
  media:{src:'review/astrid-blue-box4/actor-packed.mp4',sha256:sha,layout:'rgb-over-masks-r-actor-g-fingers',width,height,fps:24,frames:97},
  camera:{width,height,shoeOutlet:[(1265.5-x)/width,(673.5-y)/height],placement:{...base.camera.placement,x,y}},events,
- tracking:{kind:'chroma-card',sourceSha256:track.sourceSha256,jobId:track.jobId,keepSourceLanding:true,scope:'first-card-of-box4-only-opt-in-live-experiment',limitations:track.limits},
+ tracking:{kind:'chroma-card',sourceSha256:track.sourceSha256,jobId:track.jobId,keepSourceLanding:true,scope:'opening-pair-of-box4-only-opt-in-live-experiment',openingCards:2,presentation:{scale:1.25,fanStep:.48,settleFrames:8},limitations:track.limits},
  frames:track.frames.map(f=>({frame:f.frame,card:f.frame<events.pickup||f.frame>events.land?null:{corners:f.quad.map(([u,v])=>[(u-x)/width,(v-y)/height,0]),faceUp:f.faceUp},tracking:{method:f.method,confidence:f.confidence,inferredCorners:f.inferredCorners}}))};
 take.calibrationSha256=createHash('sha256').update(calibrationPayload(take)).digest('hex');
 const errors=validateContactTake(take);if(errors.length)throw Error(errors.join('\n'));
