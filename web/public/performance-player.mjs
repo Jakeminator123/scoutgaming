@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js';
-import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,presentationLandFrame,settledContactCard} from './performance-contact.mjs';
+import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,dealingCardSample} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
 import {edgeBlendGLSL,edgeUniforms,createSceneSampler} from './actor-edge-blend.mjs';
@@ -145,8 +145,9 @@ export class PerformancePlayer {
       const end=(corners??[[target.x,target.y],[target.right,target.y],[target.right,target.bottom],[target.x,target.bottom]])
         .map(([x,y])=>[(x-fit.x)/fit.width,(y-fit.y)/fit.height,0]);
       const release=take.frames[take.events.release].card;
-      const landingFrame=presentationLandFrame(take);
+      const landingFrame=take.events.land;
       layer.dataset.landingFrame=String(landingFrame);
+      layer.dataset.dealingScale=String(take.tracking?.dealingPresentation?.scale??1);
       // The new photographic motion stays rigid. Only the released card
       // travels to its fan; stretching source pixels changes body proportions.
       const retarget=canRetargetTake(take,new URLSearchParams(location.search).get('reach')==='tracked');
@@ -186,9 +187,10 @@ export class PerformancePlayer {
               const released=reach?shiftCard(release,reach.delta):release;
               sampleCard={...released,corners:released.corners.map((p,i)=>p.map((v,k)=>v+(end[i][k]-v)*u)),faceUp:!faceDown};
             }
-            // Hand the landed card back once, so the resting transition cannot
-            // fade, duplicate or pop its face/rotation at the end of the video.
-            if(take.tracking?.presentation)sampleCard=settledContactCard(take,sample,end);
+            // Resting-card enlargement belongs to the table layout only.
+            // Apply the separate fixed dealing scale throughout contact;
+            // hand over once down and released, without a growth animation.
+            sampleCard=dealingCardSample(take,sampleCard);
             if(sample.frame>=landingFrame){if(!landed)onLand();sampleCard=null;}
             visual.paint(sampleCard,reach);
             if(!painted){painted=true;this.held?.dispose();this.held=null;layer.style.visibility='';this.host.classList.add('performance-playing');this.onState(`Dealing ${take.action==='deal-dealer'?'to Astrid':'to player'}${faceDown?' · face down':''}`);}

@@ -130,3 +130,11 @@ readability, not measured source motion. Box 4 remains opt-in.
 separate 8-clubs/8-hearts replay/settlement test. On the second delivery,
 the first card stays visible with the same quad throughout. The revised
 replay button plays both existing server cards; it does not deal new cards.
+
+### Size correction after user clarification
+
+The eight-frame resize described above has been removed. Resting cards alone
+use1.25 scale; the moving card uses a constant0.80 scale around its grip on
+the left edge. Both opening cards use the correction. Hand-over is again at
+source frame56. Actor/camera/media and stored measured/inferred source
+corners are unchanged. Runtime evidence: `gameplay-size-qa/`.

@@ -1178,3 +1178,24 @@ Focused routing/presentation tests7/7, pre-commit checks and dealer-sync
 --probe passed. Existing source pickup/turn limitations and hard idle/action
 joins remain; this is the user's accepted live experiment, not all-seat
 visual acceptance. Unrelated work, including app.mjs blank line, preserved.
+
+## 2026-09-19 — Separate moving and resting Box 4 card sizes
+
+User clarified the enlargement applies only to cards lying on the felt, and
+asked to reduce the moving Box 4 card. Removed the eight-frame growth
+animation. The source landing again hands over at56, with settled layout
+still1.25 and both opening deliveries enabled. The moving replacement now
+uses one constant0.80 display scale, anchored one quarter along its left
+grip edge so it does not pull away from the fingers. Actor pixels, hands,
+camera, stored source corners and the resting-card quads are unchanged.
+This is explicit presentation sizing, not a new measured physical track.
+Calibration SHA4e050362bed9039d51e09fe322a7e904c9a929b5d2b803879322d0cf854c98c5.
+
+Replayed both authoritative5-spades/2-clubs cards in current live tab22.
+Inspected the wrist turn, contact and release for both. Runtime showed0.8
+throughout, landing56, first card visible with one unchanged quad during
+second delivery; final quads exactly match the prior larger resting layout.
+No console warnings/errors. Existing guest balance985 and bet5 preserved.
+Evidence: astrid-blue-box4/gameplay-size-qa. Focused tests8/8, required
+pre-commit and sync --probe passed. Scope remains the opt-in Box4 preview;
+existing choreography/idle joins and imperfect tracking are not newly solved.
