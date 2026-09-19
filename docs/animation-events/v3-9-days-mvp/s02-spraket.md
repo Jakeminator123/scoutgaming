@@ -1,6 +1,6 @@
 # Animation events V3 · s02 språket
 
-> **V3 · 9-dagars MVP.** Språket på den här sidan ska göra Kevins befintliga Croupier-motor lättare att diskutera. Det skapar inte en ny RNG, döper inte om runtime och blir inte ett kontrakt förrän motsvarande symbol är verifierad och Kevin har accepterat förändringen.
+> **V3.** Språket på den här sidan ska göra Kevins befintliga Croupier-motor lättare att diskutera. Det skapar inte en ny RNG, döper inte om runtime och blir inte ett kontrakt förrän motsvarande symbol är verifierad och Kevin har accepterat förändringen.
 
 Grundregeln är enkel: **kodens exakta namn är canonical; våra svenska ord förklarar vad namnen betyder.** Ett praktiskt alias i ett diagram får aldrig presenteras som om servern redan emitterar det.
 
@@ -71,7 +71,8 @@ De här orden hjälper oss att rita och granska systemet. Kolumnen “nivå” h
 | take | En sammanhållen, identifierad mediaprestation med video, ljud, hash, frame-/eventdata och granskningsstatus. | Gemensamt mediaord | Ett objekt i performance-manifestet. |
 | landning | Det kalibrerade ögonblick då den visuella handlingen når sitt mål. | Gemensamt mediaord | `events.land` och härledd `landAtMs`. |
 | fallback | En redan säker presentation som används när en föreslagen take eller variant inte kan spelas. | Gemensamt säkerhetsord | Befintlig slide/DOM eller godkänd bastake. |
-| katalog | Kevins publicerade manifest/index över godkända assets och metadata. | **BESLUTAT** | Assetmanifest byggt från branchens filer. |
+| katalog | Kevins publicerade manifest/index över katalogiserade assets, status och metadata. | **VERIFIERAT** | Assetmanifest byggt från branchens filer. |
+| statuspolicy | Regeln för vilka katalogstatusar som får användas i review, rehearsal respektive live. | **BESLUT KRÄVS** | `draft` eller `review` är inte automatiskt visuellt godkänd. |
 | etapp | En avgränsad leverans som Jakob går igenom med Kevin innan nästa integrationssteg. | **BESLUTAT** | Verklighetskarta → eventträd → rehearsal. |
 
 ## Namnregler för V3
@@ -94,10 +95,10 @@ Detta är en arbetslista för Jakobs kartläggning, inte en lista över verkliga
 | Kort visas | Presentationstyp `deal`. | Kontrollera mål, face-down-regel, ordning och fallback för varje väg. | **VERIFIERAS** |
 | Hålkort visas | Presentationstyp `reveal`. | Lås publiceringsgräns och verifiera att ingen tidigare nod läcker rank/suit. | **VERIFIERAS** |
 | Spelaren ska agera | Presentationstyp `turn`. | Kontrollera dubletter, timing och hur aktiv hand byts. | **VERIFIERAS** |
-| Försäkring öppnas | `phase === "insurance"` ger en `speak`-rad i nuvarande presentation. | Avgör om MVP behöver en egen visuell familj eller bara befintligt tal. | **BESLUT KRÄVS** |
+| Försäkring öppnas | `phase === "insurance"` ger en `speak`-rad i nuvarande presentation. | Avgör om den första avgränsade etappen behöver en egen visuell familj eller bara befintligt tal. | **BESLUT KRÄVS** |
 | Resultat presenteras | `settle` följt av `speak` i nuvarande mappning. | Fastställ vilka variationer som kan väljas enbart från publicerad settle-data. | **VERIFIERAS** |
 | Ny bettingcykel | Command `collect` ger i dag `speak` och `idle`. | Kontrollera önskad ordning och visuell återställning. | **VERIFIERAS** |
-| Shoe byts | Publik shoe view har shufflefält. | Avgör om en presentation behövs i 9-dagars MVP. | **BESLUT KRÄVS** |
+| Shoe byts | Publik shoe view har shufflefält. | Avgör om en presentation behövs i den första V3-leveransen. | **BESLUT KRÄVS** |
 
 ## Mall för varje eventrad
 
@@ -124,7 +125,7 @@ Använd följande fält när s03-eventträdet fylls i:
 | “Emils klipp ska in i Jakobs index.” | “Kevin och Emil lägger godkänd media i Kevins branch; Jakob läser kataloghandoffen.” | Den tunna samarbetsgränsen bevaras. |
 | “Videon avgör vilken händelse det blev.” | “Motorn avgör händelsen; presentationen väljer en tillåten take.” | Backend förblir auktoritativ. |
 | “Det här gäller eftersom wikin säger det.” | “Det här är verifierat i aktuell kod” eller “det här är ett förslag”. | Dokumentation och runtime blandas inte. |
-| “OpenClaw väljer.” | “9-dagars MVP använder en kodad, verifierbar policy; AI-regissör ligger utanför kärnan.” | MVP:n hålls avgränsad. |
+| “OpenClaw väljer.” | “Den första V3-leveransen använder en kodad, verifierbar policy; AI-regissör ligger utanför kärnan.” | Leveransen hålls avgränsad. |
 
 ## Ord som bevaras från V2
 
@@ -135,7 +136,7 @@ Använd följande fält när s03-eventträdet fylls i:
 - Ingen av dem får ändra spelmotorns utfall.
 - Cooldown, budget och deterministiskt urval är möjliga regler, inte verifierad Croupier-runtime; de kräver separat beslut.
 
-## Utanför språkets kärna för 9-dagars MVP
+## Utanför språkets kärna för den första V3-leveransen
 
 - personbetyg och vinnare mellan Kevin, Jakob och Emil,
 - ett nytt “ultimativt” RNG-språk,

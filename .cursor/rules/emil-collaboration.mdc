@@ -19,5 +19,8 @@ alwaysApply: true
 - Shared context: GitLab wiki, `docs/shared/WORKFLOW.md` and
   `docs/animation-events/v3-9-days-mvp/`. V2 is historical at
   `docs/animation-events/archive/v2-long-term-goal-best-rng/`.
+- The interactive documentation canvas is versioned in
+  `Jakeminator123/animation-events-v1`; it does not change where Kevin and Emil
+  land production media.
 - Each handoff records owner, branch/commit, affected assets, tests or visual
   review and remaining gaps. Credentials are always separate and private.

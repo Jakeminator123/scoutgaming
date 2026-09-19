@@ -1,103 +1,65 @@
-# Canvas · V3-eventträdet
+# Canvas och publiceringsflöde · V3
 
-> Diagrammet skiljer verifierad Croupier-runtime från Jakobs förslag och Kevin + Emils videoflöde. Det är en mänsklig dokumentationsyta och ändrar inga branches eller agentregler.
+Den riktiga interaktiva canvasen hör till GitHub-repot
+[`Jakeminator123/animation-events-v1` · `v3-9-days-mvp`](https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp).
+V3 byggs på en separat branch så att den publicerade V2-versionen kan ligga kvar
+tills V3 har granskats.
 
-## Helheten
+## V2-upplägget som V3 behåller
 
-```mermaid
-flowchart TD
-  K["Kevin äger Croupier-motorn<br/>RNG · state · saldo · payout"]
-  C{"Table command<br/>start · act · insurance · collect"}
-  V["Publicerad round view<br/>phase · hands · dealer · legalActions"]
-  P{"presentation[]"}
+1. Sju redigerbara textsidor: `s00`–`s06`.
+2. En självbärande `index.html` med navigation, visuella flöden och samma
+   sakmodell som textsidorna.
+3. Ett GitHub-repo som versionsstyr canvas och dokumentation.
+4. En GitLab-wiki som gör samma V3 tillgänglig för Kevin, Jakob, Emil och
+   deras agenter.
+5. En repo-nära kopia här i Croupier så att dokumentationen kan granskas mot
+   koden den beskriver.
 
-  E1["deal"]
-  E2["reveal"]
-  E3["turn"]
-  E4["settle"]
-  E5["speak"]
-  E6["idle"]
-
-  J["Jakobs läsande adapter/eventträd<br/>separerat på jakeminator123/work"]
-  T{"Publicerad trigger sann?"}
-  B["Baspresentation"]
-  W["Tillåten variant"]
-
-  M["Kevin + Emil<br/>godkända takes och metadata<br/>på Kevins branch"]
-  G{"Katalog · status · hash<br/>kalibrering · landning"}
-  X["Spela godkänd take"]
-  F["Fallback<br/>annan kandidat → bas → neutral → UI-only"]
-  D{"Etappbeslut med Kevin"}
-
-  K --> C --> V --> P
-  P --> E1
-  P --> E2
-  P --> E3
-  P --> E4
-  P --> E5
-  P --> E6
-
-  E1 & E2 & E3 & E4 & E5 & E6 --> J
-  J --> T
-  T -- nej --> B
-  T -- ja --> W
-  M --> G
-  B --> G
-  W --> G
-  G -- giltig --> X
-  G -- saknas eller underkänd --> F
-  X --> D
-  F --> D
-
-  classDef runtime fill:#dbeafe,stroke:#2563eb,color:#111827,stroke-width:2px;
-  classDef proposal fill:#fef3c7,stroke:#d97706,color:#111827,stroke-width:2px;
-  classDef media fill:#dcfce7,stroke:#16a34a,color:#111827,stroke-width:2px;
-  classDef decision fill:#f3e8ff,stroke:#9333ea,color:#111827,stroke-width:2px;
-
-  class K,C,V,P,E1,E2,E3,E4,E5,E6 runtime;
-  class J,T,B,W proposal;
-  class M,G,X,F media;
-  class D decision;
-```
-
-## Ett avgränsat exempel: resultat med flera videor
-
-Det här exemplet visar formen användaren efterfrågade: ett event kan leda till tre basvideor eller två varianter med två videor vardera. Antalen, namnen och triggernivåerna är **Jakobs förslag**, inte nuvarande runtime.
+## Källor med olika ansvar
 
 ```mermaid
 flowchart LR
-  S["VERIFIERAT<br/>presentation: settle"]
-  N["JAKOBS FÖRSLAG<br/>semantisk nod: round-result"]
-  Q{"Vilka publicerade triggers<br/>är sanna?"}
+  K["GitLab Croupier<br/>motor · RNG · events · media"]
+  W["GitLab-wiki<br/>beslut · workflow · handoff"]
+  G["GitHub animation-events-v1<br/>interaktiv Canvas-källa"]
+  V["Vercel<br/>publicerad presentation"]
+  R["Croupier docs<br/>repo-nära granskningskopia"]
 
-  BASE["Bas · 3 godkända takes"]
-  B1["result-base-a"]
-  B2["result-base-b"]
-  B3["result-base-c"]
-
-  VA["Variant A · 2 takes"]
-  A1["result-a-1"]
-  A2["result-a-2"]
-
-  VB["Variant B · 2 takes"]
-  C1["result-b-1"]
-  C2["result-b-2"]
-
-  SAFE["Katalogkontroll + säker fallback"]
-
-  S --> N --> Q
-  Q -- ingen --> BASE
-  Q -- trigger A --> VA
-  Q -- trigger B --> VB
-  BASE --> B1 & B2 & B3
-  VA --> A1 & A2
-  VB --> C1 & C2
-  B1 & B2 & B3 & A1 & A2 & C1 & C2 --> SAFE
+  K -->|runtimefakta| W
+  K -->|runtimefakta| R
+  W <-->|samma beslutade V3| R
+  R <-->|s00–s06| G
+  G -->|medveten publicering| V
 ```
 
-## Färgförklaring
+GitHub/Vercel får aldrig bli källa för spelutfall. GitLab-wikin får aldrig
+låtsas att ett canvasförslag redan finns i runtime.
 
-- **Blå:** verifierat i Croupier på revisionen i `RUNTIME-EVIDENCE.md`.
-- **Gul:** Jakobs separata förslag.
-- **Grön:** Kevin + Emils video-/assetflöde och fallback.
-- **Lila:** mänsklig etappgrind där Kevin fattar integrationsbeslut.
+## V3:s huvudflöde
+
+```mermaid
+flowchart TD
+  K["Kevin<br/>projektledning · repo · motor · integration"]
+  E["Emil<br/>video nära Kevin"]
+  J["Jakob<br/>backend · logik · eventträd"]
+  M["Kevins RNG och publicerade events"]
+  A["Jakobs avgränsade adapter/förslag"]
+  H["Manifest · asset-id · metadata · evidens"]
+  D{"Etapp klar?"}
+  I["Kevin: införliva · justera · håll separat"]
+
+  K --> M --> A --> D --> I
+  K --> E --> H --> A
+  J --> A
+  E -. tunn artefaktlänk .-> J
+```
+
+## Publiceringsregel
+
+- Den publicerade V2-versionen och V2-arkivet ändras inte.
+- V3 granskas på sin GitHub-branch innan eventuell promotion till `main` och
+  Vercel.
+- Wiki och Croupier-kopia uppdateras i samma leverans som GitHub-canvasen.
+- En publicerad canvas är presentation; commit- och filreferenser i
+  [runtime-verifieringen](RUNTIME-EVIDENCE.md) är det tekniska kvittot.

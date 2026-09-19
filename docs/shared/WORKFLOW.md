@@ -9,11 +9,14 @@ regel.
 1. GitLab-repot `scout-gg/croupier`: kod, motor, media och verifierad runtime.
 2. [GitLab-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home): gemensamma
    beslut, kartor och handoff.
-3. `docs/animation-events/v3-9-days-mvp/`: Jakobs aktiva V3-underlag.
-4. `docs/animation-events/archive/v2-long-term-goal-best-rng/`: oförändrat
+3. [GitHub `animation-events-v1` · V3](https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp):
+   källrepo för den interaktiva V3-canvasen och den publika presentationen.
+4. `docs/animation-events/v3-9-days-mvp/`: repo-nära V3-underlag.
+5. `docs/animation-events/archive/v2-long-term-goal-best-rng/`: oförändrat
    V2-arkiv.
 
-GitHub och Vercel får spegla presentationen efteråt, men är inte facit.
+Canvasen är facit för hur presentationen är uppbyggd. Croupier är fortsatt
+facit för motor, RNG, events, media och faktisk runtime.
 
 ## Roller efter beslutsmötet
 
@@ -45,5 +48,36 @@ GitHub och Vercel får spegla presentationen efteråt, men är inte facit.
 - Uppgiftsspecifik diskussion hör till relevant issue eller merge request.
 - Videoöverlämning från Emil går till Kevin; Jakob konsumerar den verifierade
   artefakten och dess kontrakt när den är tillgänglig.
+
+Inboxregeln kan vara inläst i varje agenttur utan att ett GitLab-anrop görs.
+Själva kontrollen sker bara efter ett uttryckligt `/ping-croupier` eller vid en
+relevant start-, handoff- eller integrationskontrollpunkt, högst en gång per
+kontrollpunkt. Ingen automatisk kontroll görs efter varje användarmeddelande.
+
+`.agents/skills/ping-croupier/SKILL.md` är Codex-källan. Den byte-identiska
+`.cursor/skills/ping-croupier/SKILL.md` behålls som kompatibilitetskopia för
+Cursor och ska uppdateras i samma commit när skillen ändras.
+
+## Aktiv arbetsstatus i Jira CAC
+
+GitLab-repot är källan för kod och runtime, GitLab-wikin är källan för
+gemensamma beslut och dokumentation och Jira CAC är den aktiva work-trackern
+för implementation och QA.
+
+Innan implementation läser Jakob aktuell issue description, Expected Result
+och custom fields, upptäcker tillgängliga transitions och flyttar arbetet till
+**In Dev**. **Ready for QA** används först när fix och reproduktionsevidens är
+klara. **In Testing** används endast medan faktisk QA pågår. **Done** används
+först när hela Expected Result är verifierat; misslyckad QA går tillbaka till
+**In Dev**.
+
+## Canvas-synk
+
+När sakmodellen ändras uppdateras i samma leverans:
+
+1. s00–s06 och den interaktiva `index.html` i GitHub-canvasens V3-branch;
+2. motsvarande V3-sidor i Croupier och GitLab-wikin;
+3. beslutslogg och teknisk runtime-verifiering när fakta eller revisionsankare
+   ändras.
 
 Workflow-wiki: https://gitlab.com/scout-gg/croupier/-/wikis/workflow

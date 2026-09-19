@@ -1,6 +1,6 @@
 # Animation events V3 · s03 eventträdet
 
-> **V3 · 9-dagars MVP.** Detta är Jakobs separata backend-/logikförslag ovanpå Kevins befintliga Croupier-motor. Det är inte en ny RNG och det skriver inte om Kevins events. Kevins aktuella kod avgör spel, saldo och publiceringsgräns; Kevin avgör vid varje etapp om någon del ska införlivas.
+> **V3.** Detta är Jakobs separata backend-/logikförslag ovanpå Kevins befintliga Croupier-motor. Det är inte en ny RNG och det skriver inte om Kevins events. Kevins aktuella kod avgör spel, saldo och publiceringsgräns; Kevin avgör vid varje etapp om någon del ska införlivas.
 
 Eventträdets uppgift är att svara på en begränsad fråga:
 
@@ -66,14 +66,14 @@ Följande beteende är bekräftat mot revisionen i `RUNTIME-EVIDENCE.md` och kan
 
 ### Verifierade presentationstyper
 
-| Typ | Nuvarande betydelse | MVP-fråga | Status |
+| Typ | Nuvarande betydelse | Fråga för första etappen | Status |
 | --- | --- | --- | --- |
 | `speak` | Spela en namngiven talrad; kan vara blocking. | Kan flera visuellt godkända takes höra till samma exakta line utan att talet ändras? | **BESLUT KRÄVS** |
 | `deal` | Visa ett redan draget kort till publicerat mål, med action/prefer/fallback. | Vilka befintliga actionfamiljer kan få fler kalibrerade takes? | **VERIFIERAS** |
-| `reveal` | Visa dealerns tidigare dolda kort när det blivit publikt. | Behövs mer än befintlig presentation i MVP? | **BESLUT KRÄVS** |
+| `reveal` | Visa dealerns tidigare dolda kort när det blivit publikt. | Behövs mer än befintlig presentation i den första etappen? | **BESLUT KRÄVS** |
 | `settle` | Publicera dealerresultat och handutfall för presentation. | Första kandidat för ett litet variantträd, eftersom payloaden är explicit. | **JAKOBS FÖRSLAG** |
 | `turn` | Visa aktiv box/hand och legal actions. | Kan idle/think få variation utan att störa turordning eller deadline? | **VERIFIERAS** |
-| `idle` | Återgå till väntande presentation. | Behövs variation i 9-dagars MVP eller räcker befintlig loop? | **BESLUT KRÄVS** |
+| `idle` | Återgå till väntande presentation. | Behövs variation i den första V3-leveransen eller räcker befintlig loop? | **BESLUT KRÄVS** |
 
 ## Vad en föreslagen nod måste innehålla
 
@@ -126,9 +126,9 @@ alla vägar ──► [KEVIN + EMIL] katalogkontroll, kalibrering, review
            ──► saknad/underkänd take: befintlig säker presentation
 ```
 
-Exemplet visar önskad form — ett event kan ha tre basvideor och två varianter med två videor vardera — men binder inte Kevin till just dessa antal eller namn. Dag 5-grinden avgör om trädet är rätt avgränsat.
+Exemplet visar önskad form — ett event kan ha tre basvideor och två varianter med två videor vardera — men binder inte Kevin till just dessa antal eller namn. Etappavstämningen avgör om trädet är rätt avgränsat.
 
-## Kandidatträd för MVP:n
+## Kandidatträd för den första avgränsade etappen
 
 | Rot | Baslinje i dag | Minsta möjliga V3-utvidgning | Ägare | Status |
 | --- | --- | --- | --- | --- |
@@ -146,7 +146,7 @@ Det här är inte implementerad runtime. Varje punkt behöver Kevin-beslut innan
 1. Motorn producerar först sitt vanliga command-resultat och `presentation[]`.
 2. Adaptern hittar en nod via exakt `sourceRef`; okänd källa ger omedelbart befintlig presentation.
 3. Varianten är valbar bara om dess trigger kan avgöras från eventets publicerade payload.
-4. Högst en variant väljs för eventet i MVP:n.
+4. Högst en variant väljs för eventet i den första avgränsade etappen.
 5. Om ingen variant är valbar används linjen/baslinjen.
 6. En take får bara väljas om dess katalogstatus och kalibrering tillåter det aktuella körläget.
 7. Ett misslyckat assetval går tillbaka till befintlig presentation; eventet stoppas inte.
@@ -173,7 +173,7 @@ Nya videor går genom Kevin och Emil och hamnar i Kevins branch. Jakob ska inte 
 
 ## Felfall
 
-| Felfall | Krav i MVP |
+| Felfall | Krav i första etappen |
 | --- | --- |
 | Okänd source reference | Använd befintlig presentation; logga att nod saknas. |
 | Trigger kräver dolt fält | Varianten är ogiltig och får inte erbjudas. |
@@ -195,7 +195,7 @@ Nya videor går genom Kevin och Emil och hamnar i Kevins branch. Jakob ska inte 
 - En variant för fysisk handling måste ärva målpunkt och verifierad landning från sin familj.
 - Assetbaseline är regressionsskydd, inte bevis på korrekt lipsync.
 - En ny katalog eller take får inte slå ut en fungerande fallback.
-- Ingen AI-regissör är del av kärnan i 9-dagars MVP.
+- Ingen AI-regissör är del av kärnan i den första V3-leveransen.
 
 ## Tester för första vertikala skivan
 
@@ -211,16 +211,16 @@ Nya videor går genom Kevin och Emil och hamnar i Kevins branch. Jakob ska inte 
 | Två följande spelningar | Ingen loop-, reset- eller restpose-regression mellan uppspelningar. |
 | Adapter avstängd | Produkten beter sig som före V3-förslaget. |
 
-## 9-dagars leverans för eventträdet
+## Föreslagen etappsekvens för eventträdet
 
-| Dag | Resultat | Grind |
+| Etapp | Resultat | Grind |
 | --- | --- | --- |
 | 1 | Frys V2 som historik och samla mötesbeslut. | Inget gammalt alias kallas runtime. |
 | 2 | Verifiera commands, publicerad view, presentationstyper och manifestvägar. | Källreferenser dokumenterade. |
 | 3 | Rita skelettet: sourceRef → semantisk nod → baslinje → fallback. | Ingen variant ännu. |
 | 4 | Lägg första lilla variantträdet på ett verifierat event. | Bara publicerad payload används. |
 | 5 | Samtal Jakob–Kevin. | Kevin väljer fortsätt, justera eller avstå. |
-| 6 | Kevin och Emil inventerar/producerar den avgränsade takepoolen i Kevins branch. | Stabilt id, status och mediahash. |
+| 6 | Kevin och Emil inventerar/producerar den avgränsade takepoolen i Kevins valda flöde. | Stabilt id, status och mediahash. |
 | 7 | Koppla kataloghandoff och negativa tester i Jakobs spår. | Saknad/underkänd media faller tillbaka. |
 | 8 | Rehearsal i faktisk spelare och dokumenterad gapplista. | Spelutfall oförändrat; visuell evidens sparad. |
 | 9 | Slutlig etappgenomgång med Kevin. | MR/integration bara om Kevin väljer det. |
@@ -231,10 +231,10 @@ Nya videor går genom Kevin och Emil och hamnar i Kevins branch. Jakob ska inte 
 2. Är `presentation[]` det långsiktiga canonical inflödet till adaptern?
 3. Vilka katalogstatusar får användas i rehearsal respektive live?
 4. Ska takevalet vara exakt, deterministiskt hashat eller en annan kodad policy?
-5. Vilka triggers är tillåtna i MVP:n, och vilka publicerade fält får de läsa?
+5. Vilka triggers är tillåtna i den första etappen, och vilka publicerade fält får de läsa?
 6. Ska flera visuella takes dela exakt samma speech-line och ljud, eller ska varje take vara ett komplett separat paket?
 7. Vilken evidens krävs innan en video från Bettalotto flyttas från generation/review till Kevins produktbranch?
-8. Ska förslaget integreras, fortsätta separat eller avslutas efter dag 9?
+8. Ska förslaget integreras, fortsätta separat eller avslutas efter etappgenomgången?
 
 ## Utanför kärnan
 

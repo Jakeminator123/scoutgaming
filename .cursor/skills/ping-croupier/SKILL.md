@@ -8,8 +8,8 @@ disable-model-invocation: true
 
 Lightning check only. Do not read `AGENTS.md`, handoff, or the wiki.
 
-Thread: https://gitlab.com/scout-gg/croupier/-/work_items/1  
-`project_id`: `scout-gg/croupier` · `work_item_iid`: `1`  
+Thread: https://gitlab.com/scout-gg/croupier/-/work_items/1
+`project_id`: `scout-gg/croupier` · `work_item_iid`: `1`
 Seen file: `.cursor/ping-croupier-seen.json` (gitignored).
 
 ## Check (default)

@@ -4,7 +4,7 @@ This file guides agents only when the current branch is exactly
 `jakeminator123/work`. On any other branch, ignore the Jakob workflow below.
 Never copy or merge this file into Kevin's branch as an agent instruction.
 
-- GitLab `scout-gg/croupier` is the canonical repository. Work only on
+- GitLab `scout-gg/croupier` is the canonical runtime repository. Work only on
   `jakeminator123/work`; never push `main` or force-push.
 - Kevin owns the repository, Croupier engine and integration decisions. Build
   Jakob's backend/event work on Kevin's verified RNG, events, Partner API and
@@ -14,6 +14,8 @@ Never copy or merge this file into Kevin's branch as an agent instruction.
 - Active V3 docs: `docs/animation-events/v3-9-days-mvp/`. Frozen V2:
   `docs/animation-events/archive/v2-long-term-goal-best-rng/`.
 - Shared human docs: https://gitlab.com/scout-gg/croupier/-/wikis/home
+- Interactive documentation canvas source:
+  https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp
 - Inbox: use `/ping-croupier` at a natural checkpoint, not continuously. Thread:
   https://gitlab.com/scout-gg/croupier/-/work_items/1
 - Historical references only: `C:\Users\jakem\Projects\ref\spelsajt`. Do not

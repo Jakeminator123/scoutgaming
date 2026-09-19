@@ -9,8 +9,9 @@ alwaysApply: true
   `jakeminator123/work`. On every other branch, ignore the workflow below.
 - This rule configures Jakob's agent only. Never copy, merge or reinterpret it
   as an instruction for Kevin's branch or Kevin's agents.
-- GitLab `scout-gg/croupier` and its wiki are canonical. GitHub and Vercel are
-  optional presentation mirrors.
+- GitLab `scout-gg/croupier` is canonical for runtime. Its wiki is the shared
+  decision/handoff surface. GitHub `animation-events-v1` is the source repo for
+  the interactive canvas, never for RNG, wallet or game rules.
 - Kevin owns the repository, Croupier engine and integration decisions. Build
   Jakob's backend, logic and event work on the engine and events Kevin uses.
 - Work in bounded stages on `jakeminator123/work`. Fetch and compare Kevin's
@@ -24,3 +25,5 @@ alwaysApply: true
 - Never push `main`, rebase shared branches or force-push. Do not create an
   integration MR until its target has been explicitly agreed.
 - Inbox check: `/ping-croupier` at natural checkpoints; never poll continuously.
+- Jira CAC is the active implementation/QA tracker. V3 document status never
+  replaces the issue's real workflow status.

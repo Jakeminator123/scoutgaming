@@ -10,7 +10,7 @@
 | **[GEMENSAMT BEGREPP]** | Ordet beskriver hur vi pratar om lösningen men är inte nödvändigtvis ett fält eller en symbol i koden. |
 | **[JAKOBS FÖRSLAG]** | Arbetsnamn för designen på Jakobs branch. Det blir inte ett kontrakt förrän Kevin godkänt det och koden använder det. |
 | **[ATT VERIFIERA]** | Exakt namn eller beteende ska läsas ur Kevins aktuella branch innan implementation. |
-| **[SENARE]** | Utanför nio-stegs-MVP:n. |
+| **[SENARE]** | Utanför den första V3-leveransen. |
 
 ## Kevins runtimeord
 
@@ -73,4 +73,4 @@ Följande uttryck kan finnas kvar i det arkiverade V2-materialet men ska inte f�
 - “ultimativ RNG”, “bästa RNG” eller en fristående presentations-RNG.
 - den gamla tiodagarsplanen och påståenden om att OpenClaw redan är en del av Croupier-runtime.
 
-**[BESLUTAT FÖR V3]** När ett gammalt ord och Kevins faktiska kod skiljer sig vinner koden. Wiki och dessa sidor uppdateras därefter. OpenClaw behandlas som **[SENARE]**, inte som en förutsättning för MVP:n.
+**[BESLUTAT FÖR V3]** När ett gammalt ord och Kevins faktiska kod skiljer sig vinner koden. Wiki och dessa sidor uppdateras därefter. OpenClaw behandlas som **[SENARE]**, inte som en förutsättning för den första V3-etappen.

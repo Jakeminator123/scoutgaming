@@ -26,8 +26,10 @@ historik, inte som aktiv arkitektur.
   branch Kevin anger.
 - Jakob har en tunn koppling till Emil genom verifierade assets, manifest,
   event-/asset-id och handoff; skapa inte ett parallellt videosamarbete.
-- GitLab-repot och [wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home)
-  är kanoniska. GitHub/Vercel är endast valfria presentationsspeglar.
+- GitLab-repot är runtimekälla och
+  [wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home) är gemensam
+  besluts-/handoffyta. GitHub `animation-events-v1` är källrepo för den
+  interaktiva canvasen, inte för RNG eller spelregler.
 
 ## Arbetsregel
 
@@ -40,6 +42,8 @@ historik, inte som aktiv arkitektur.
   Kevins eller Jakobs uttryckliga beslut om målbranch.
 - Vid färdig etapp: dokumentera kontrakt, tester/evidens och kvarvarande gap;
   stäm därefter av med Kevin innan eventuell inkorporering.
+- Håll Jira CAC:s faktiska status uppdaterad; dokumentstatus i V3 ersätter inte
+  `In Dev`, `Ready for QA`, `In Testing` eller verifierad `Done`.
 
 ## Kommunikation
 

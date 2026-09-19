@@ -1,27 +1,76 @@
 # Croupier
 
-Recreation of the Sentient Studios "Privé Blackjack" AI-dealer demo, built from scratch with our own Higgsfield-generated dealer persona.
+Croupier is the working blackjack demo with server-owned game state and a
+shared playback path for four AI dealers. It is a development product, not a
+certified RNG/RGS or a real-money system.
 
-Architecture (mirrors the audited demo, see `reference/`):
-- Dealer video = a library of short clips, each starting and ending on the same canonical pose, shipped as raw Annex-B `.h264` elementary streams (one IDR at frame 0) plus a per-frame `[offset,size]` index. The browser splices clips with WebCodecs, owning the clock.
-- Speech is never baked into video: audio + viseme timings drive a composited mouth layer (v2).
-- Cards/chips/table are UI, never generated video. The client renders; in production the server decides (see the build scope's RGS rule).
+## Sources of truth
 
-## Layout
-- `pipeline/` - content pipeline: Higgsfield clip -> 1440x1440@24 raw .h264 -> streams index.json
-- `web/` - the game client recreation: table UI, blackjack demo logic, WebCodecs dealer engine
-- `content/` - generated persona stills + raw clips (not committed)
-- `reference/` - captured public manifests/schemas from the live demo (schema reference only)
+- This GitLab repository is the source for game code, RNG, wallet, media and
+  runtime behavior.
+- The [GitLab wiki](https://gitlab.com/scout-gg/croupier/-/wikis/home) records
+  shared decisions, workflow and handoffs.
+- [`Jakeminator123/animation-events-v1` · V3](https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp)
+  is the source repository for the interactive documentation canvas. It does
+  not own game outcomes or runtime contracts.
+- The active repo-near V3 documentation is under
+  [`docs/animation-events/v3-9-days-mvp/`](docs/animation-events/v3-9-days-mvp/README.md).
+  The path is historical; V3 is staged work, not a nine-day promise.
 
-## Run
+Jakob works on `jakeminator123/work`. Kevin owns integration decisions and the
+current Croupier engine; do not push documentation work to `main` or Kevin's
+branch without an agreed integration step.
+
+## Runtime map
+
+| Area | Main implementation |
+| --- | --- |
+| Blackjack rules and cryptographic demo shuffle | `web/public/blackjack.mjs` |
+| Persistent shoe, commands and public game view | `web/shoe-game.mjs` |
+| Wallet, persistence and HTTP server | `web/server.mjs` |
+| Partner transport and presentation events | `web/partner-api.mjs`, `web/partner-presentation.mjs` |
+| Dealer playback | `web/public/dealer-engine.mjs`, `web/public/performance-player.mjs` |
+| Media build and validation | `pipeline/` |
+
+The verified public flow is:
+
+`Round/RNG` → `shoe-game command` → `public gameView` →
+`Partner API presentation[]` → status-filtered player/media.
+
+Internal round events are implementation details unless a public contract
+explicitly exposes them.
+
+## Run locally
+
+Normal authenticated server:
+
+```sh
+node web/server.mjs
 ```
-node pipeline/build-index.mjs content/encoded web/public/dealer
-node web/server.mjs   # http://localhost:4173
+
+Temporary guest access for local product development:
+
+```sh
+sh web/preview.sh
 ```
 
-## Status
-- [x] Reference schemas captured (streams index, viseme JSON, atlas blueprint)
-- [ ] Persona canonical pose + first clip set (Higgsfield)
-- [ ] Encode + index pipeline
-- [ ] WebCodecs splice engine
-- [ ] Blackjack table UI + demo round logic
+The default local URL is `http://127.0.0.1:4173/`.
+
+## Validation
+
+The repository hook runs the media/player audits and regression suites:
+
+```sh
+.githooks/pre-commit
+```
+
+For any media or player change, also run:
+
+```sh
+node pipeline/audit-dealer-sync.mjs --probe
+```
+
+Passing hashes and tests protect against regressions but do not prove visual
+quality, lip sync or physical card contact. See
+[`docs/JOHN-HANDOFF.md`](docs/JOHN-HANDOFF.md) for the latest verified state and
+known gaps.

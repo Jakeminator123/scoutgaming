@@ -1,3 +1,49 @@
+## 2026-09-20 — V3 documentation and canvas correction
+
+Documentation-only correction of the Animation events V3 model; no gameplay,
+dealer media, calibration, database or runtime file was changed. The revised
+pages now record the meeting decision accurately: Kevin owns the Croupier
+engine and integration, Jakob works in bounded backend/logic stages on
+`jakeminator123/work`, Emil works closely with Kevin on video, and Jakob–Emil
+coordination is a thin artifact handoff. The old nine-day/nine-step wording is
+explicitly a proposal, not a meeting decision. The directory name
+`v3-9-days-mvp` remains only as a historical path.
+
+The source roles are separated: GitLab Croupier is runtime truth, the GitLab
+wiki is the shared decision/handoff surface, and GitHub
+`Jakeminator123/animation-events-v1` is the source repo for the interactive
+canvas and public presentation, never for RNG, cards, wallet or game rules.
+The inbox rule may remain `alwaysApply` so its guardrails are loaded, but it
+checks the Jakob–Kevin thread only on explicit `/ping-croupier` requests or a
+relevant workflow checkpoint and never polls every turn.
+
+Runtime verification pinned `jakeminator123/work` at `b0435c3`, Kevin's
+`codex/restore-casino-environment` and MR !1 at `626554d`, and their common
+base at `b147659`. Core blackjack, shoe, Partner API, presentation and dealer
+engine blobs are identical on the two branches, so Jakob's branch does not
+lack the engine. The former sole anchor `eaffbb8` was invalid for its claims:
+`partner-presentation.mjs` arrived in `d188236` and `generations-api.mjs` in
+`e718546`. The latter is a read-only media API, not the game engine.
+
+The interactive canvas was published without touching GitHub `main`: branch
+`v3-9-days-mvp` at `0d5f737`. The synchronized GitLab wiki was published at
+`0ec502b`. Eleven V3 source documents match between Croupier and the wiki;
+the GitHub canvas and both wiki HTML copies share SHA-256
+`FEE5708DF7CA117F2DB1A2649F694DF811C550AC503DF9306FD80484FB9C1C49`.
+The existing Vercel deployment still shows V2 until an explicit promotion is
+approved.
+
+Verification for this documentation delivery: remote branch/MR heads checked
+with `git ls-remote`; `git diff --check` passed on all three repositories; all
+changed local Markdown links resolve; code fences and Markdown tables are
+balanced; `node build-static.mjs --check` reproduces the seven-page,
+52-section HTML; and the embedded browser script compiles. A local visual
+browser pass was blocked by the browser surface's `file://` URL policy and was
+not bypassed; perform the visual pass from an HTTPS preview before promoting
+V3 to Vercel. No gameplay or dealer-media test was claimed because those files
+were not touched. Do not treat this documentation correction as a runtime
+merge, visual approval or completion of any Jira CAC issue.
+
 ## 2026-09-17 — seven-seat physical reach clips in isolated gameplay review
 
 User asked Astrid to physically deal to the seven existing seat positions. Generated per-seat Kling 3.0 start/end-frame clips from the ready pose to endpoint images rendered from actual isolated game card quads (content/staging/2026-09-17/seven-seat-reach). Boxes 0–4 pass frame review (hand carries card to target, releases there); boxes 5 and 6 failed twice (card teleports / wrong direction). Scout Gaming Group workspace credits 63.42→1.92; no more generation possible without top-up.
