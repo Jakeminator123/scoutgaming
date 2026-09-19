@@ -1199,3 +1199,37 @@ No console warnings/errors. Existing guest balance985 and bet5 preserved.
 Evidence: astrid-blue-box4/gameplay-size-qa. Focused tests8/8, required
 pre-commit and sync --probe passed. Scope remains the opt-in Box4 preview;
 existing choreography/idle joins and imperfect tracking are not newly solved.
+
+## 2026-09-19 — Extend accepted Box 4 v1 to hits, splits and dealer draws
+
+User accepted v1 and asked for hits/splits at Box 4 and Astrid's own cards.
+The same opt-in `astridBlue=box4` now routes every face-up card added at
+zero-based Box 4 through c01866d1, including hits, doubles and split hands.
+It also loads an explicit repeatable dealer manifest that reuses the original
+de1f90a9 media for the upcard, face-down hole card and subsequent dealer draws.
+Ordinary manifests keep their prior first-card/opening-pair boundaries.
+No generation, new media bytes, camera change or server logic change.
+
+V1 moving Box 4 scale remains 0.80; unsplit resting scale remains 1.25.
+Split hands are separate compact fans on the calibrated felt plane, with
+bounded horizontal spread for later hits. Existing cards remain visible while
+the incoming card is supplied by the performance layer. The hole card uses
+the back artwork and carries no rank label before reveal.
+
+Rendered QA used an isolated guest runtime on4199, with a reordered test
+shoe preserving its undealt card multiset. Captured both split deliveries
+(8S/3D and8H/2C), the added4D on a split hand, and a filmed5H double on the
+other. Test round settled a15 loss to985. Some longer captures were interrupted
+by disappearing tabs; no visual acceptance was inferred from those gaps.
+The final continuous capture verified normal hit5S/2H +3D, stand, hole reveal,
+then filmed dealer draws4S and6H (5D/6C/4S/6H=21), settlement985->980,
+totalbet0. Own-card takes were observed across both complete draw animations,
+including contact and return. Opening hole-card contact was captured separately.
+No browser warnings/errors. Evidence: astrid-blue-box4/gameplay-actions-qa/.
+
+Focused tests15/15; pre-commit and dealer-sync --probe passed. New Box4
+calibration SHA0155d1c4f4696ab59d4222b04dde7b1bd70b371374b36c898c9aaf1b602831c4.
+This reuses the accepted source and photographed landing point; it does not
+create new hand choreography for each split fan. Existing idle/action joins,
+source pickup limitations and the v1 size change at landing remain. Other
+seats are not newly supported. Unrelated dirty work is preserved.

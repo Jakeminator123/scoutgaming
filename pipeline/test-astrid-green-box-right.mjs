@@ -17,13 +17,34 @@ const boxTake=syntheticBox(5);
 const takes=[dealerTake,boxTake];
 const base={dealer:'astrid',enabled:true,containerId:'',box:5,split:false,faceDown:false,existingCards:0};
 const blueTake=JSON.parse(fs.readFileSync(path.resolve(reviewDir,'../astrid-blue-box4/take.json')));
+const repeatDealer=JSON.parse(fs.readFileSync(path.resolve(reviewDir,'../astrid-blue-box4/dealer-take.json')));
 
-test('only the opted-in Box 4 opening pair reuses the blue take',()=>{
+test('opted-in Box 4 take covers opening cards, hits, doubles and split hands',()=>{
   assert.deepEqual(validateContactTake(blueTake),[]);
-  for(const existingCards of [0,1])assert.equal(selectGreenTake([dealerTake,boxTake,blueTake],{...base,box:4,existingCards}),blueTake);
-  for(const existingCards of [-1,2,3,1.5])assert.equal(selectGreenTake([blueTake],{...base,box:4,existingCards}),null);
-  for(const override of [{box:5},{split:true},{faceDown:true},{dealer:'mei'},{enabled:false}])assert.equal(selectGreenTake([blueTake],{...base,box:4,existingCards:1,...override}),null);
+  for(const split of [false,true])for(const existingCards of [0,1,2,3,7])assert.equal(selectGreenTake([dealerTake,boxTake,blueTake],{...base,box:4,split,existingCards}),blueTake);
+  for(const existingCards of [-1,1.5,undefined,'2'])assert.equal(selectGreenTake([blueTake],{...base,box:4,existingCards}),null);
+  for(const override of [{box:5},{faceDown:true},{dealer:'mei'},{enabled:false}])assert.equal(selectGreenTake([blueTake],{...base,box:4,existingCards:1,...override}),null);
   assert.equal(selectGreenTake([dealerTake,boxTake],{...base,box:4,existingCards:1}),null);
+});
+
+test('opted-in dealer take covers the hidden hole card and later draws without consuming player cards',()=>{
+  assert.deepEqual(validateContactTake(repeatDealer),[]);
+  for(const existingCards of [0,1,2,3,6])for(const faceDown of [false,true])assert.equal(selectGreenTake([repeatDealer,blueTake],{...base,containerId:'dealer-cards',box:null,existingCards,faceDown}),repeatDealer);
+  for(const box of [0,1,2,3,5,6])assert.equal(selectGreenTake([repeatDealer,blueTake],{...base,box,existingCards:2}),null);
+  assert.equal(selectGreenTake([dealerTake],{...base,containerId:'dealer-cards',box:null,existingCards:2}),null,'ordinary table keeps its first-upcard-only route');
+});
+
+test('two to four split fans remain separate and on the same table plane',()=>{
+  const quad=[[0,0],[72,0],[72,103],[0,103]],p=blueTake.tracking.presentation;
+  for(const hands of [2,3,4]){
+    let previousRight=-Infinity;
+    for(let hand=0;hand<hands;hand++){
+      const cards=Array.from({length:6},(_,i)=>greenRestCardQuad(quad,i,p,hand,hands));
+      const left=Math.min(...cards.flat().map(p=>p[0])),right=Math.max(...cards.flat().map(p=>p[0]));
+      assert.ok(left>previousRight,'split hands do not overlap');previousRight=right;
+      assert.ok(cards.flat().every(p=>p[1]>=0&&p[1]<135),'cards stay near the original felt depth');
+    }
+  }
 });
 
 test('settled presentation enlarges the table plane without changing pickup or the first slot',()=>{

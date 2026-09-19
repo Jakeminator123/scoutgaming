@@ -1,6 +1,7 @@
 {
   "version": 1,
   "takes": [
-    "take.json"
+    "take.json",
+    "dealer-take.json"
   ]
 }
