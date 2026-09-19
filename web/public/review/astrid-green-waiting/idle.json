@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "id": "astrid-table-v2-waiting-15777d5f",
+  "dealer": "astrid",
+  "action": "idle",
+  "status": "review",
+  "enabled": true,
+  "jobId": "15777d5f-4085-484e-a170-eb5c9a13d7b0",
+  "src": "review/astrid-green-waiting/actor-packed.mp4",
+  "sha256": "217de02ecd9b9e0c4f19b2c682d8dc1bf6e4d510ddddf26656aa0e50f865c858",
+  "layout": "rgb-over-straight-alpha",
+  "width": 754,
+  "height": 678,
+  "fps": 24,
+  "frames": 121,
+  "sourceSha256": "849b241e6a9b769bef1cd40299516c25f1a5aba28bf865b2d3593854731765bf",
+  "crop": [
+    560,
+    0,
+    754,
+    678
+  ],
+  "camera": {
+    "width": 754,
+    "height": 678,
+    "placement": {
+      "width": 1920,
+      "height": 1080,
+      "scale": 1,
+      "x": 560,
+      "y": 0,
+      "framingScale": 0.85
+    }
+  },
+  "readyFrames": [
+    0,
+    41,
+    90,
+    120
+  ],
+  "segments": {
+    "base": {
+      "start": 90,
+      "end": 120,
+      "note": "calm breathing, longest near-still span; forward loop 120->90"
+    },
+    "glanceLeft": {
+      "start": 0,
+      "end": 41,
+      "note": "glance toward viewer-left (her right), back to ready at 41"
+    },
+    "glanceRight": {
+      "start": 41,
+      "end": 90,
+      "note": "glance toward viewer-right (her left) with a blink, back to ready at 90"
+    },
+    "full": {
+      "start": 0,
+      "end": 120,
+      "note": "the whole clip"
+    }
+  },
+  "scheduler": {
+    "glanceProbability": 0.4,
+    "maxBaseRun": 3,
+    "holdLoops": [
+      1,
+      3
+    ],
+    "glances": [
+      "glanceLeft",
+      "glanceRight",
+      "full"
+    ]
+  },
+  "measured": {
+    "headCrop": [
+      870,
+      26,
+      180,
+      200
+    ],
+    "method": "phase correlation of the head crop against frame 0 (dx px) plus mean abs grey difference; motion/head-motion.json, head-motion.png, head-sheet.jpg",
+    "observed": "frames 0-5 ready; 6-40 head turns toward viewer-LEFT (her right, dx to -31 px at 23-28) and returns by 41; 42-89 head turns toward viewer-RIGHT (her left, dx to +30 px at 54-64) and returns by 90; 90-120 calm breathing, dx under 0.4 px. The README order (left first) is by viewer direction; the hands settle 1.4 px after frame 5 and stay.",
+    "seamsMeanAbsDiff(full,head)": {
+      "0-120": [
+        1.44,
+        4.31
+      ],
+      "0-41": [
+        1.31,
+        4.51
+      ],
+      "0-90": [
+        1.35,
+        3.57
+      ],
+      "41-90": [
+        0.94,
+        4.95
+      ],
+      "90-120": [
+        0.84,
+        3.43
+      ],
+      "41-120": [
+        1.07,
+        4.47
+      ],
+      "96-120": [
+        0.79,
+        2.46
+      ]
+    }
+  },
+  "note": "Waiting idle for the Blender table; plays segment by segment under a randomized scheduler; any dealing take holds it at the running segment end (ready pose)."
+}

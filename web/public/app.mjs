@@ -9,6 +9,8 @@ import { placeActions } from './action-placement.mjs';
 import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
 import {shouldUseGreenDealerCard,selectGreenTake,loadGreenTakes,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame,installGreenIdle,quadMatrix} from './astrid-green-dealer.mjs';
+import {loadGreenWaiting,installGreenWaiting} from './astrid-green-waiting.mjs';
+let astridWaiting=null;
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -153,7 +155,7 @@ if(astridGreenTake){
   replay.onclick=async()=>{
     const el=$('#dealer-cards .card:not(.back)');
     if(busy||speaking||!el||!round?.dealer?.[0]||!performancePlayer)return;
-    busy=true;replay.disabled=true;el.style.visibility='hidden';
+    busy=true;replay.disabled=true;await astridWaiting?.holdAtBoundary();el.style.visibility='hidden';
     try{await performancePlayer.play(astridGreenTake,{card:round.dealer[0],target:el.getBoundingClientRect(),corners:performanceCardCorners(el),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}});}
     catch(error){console.warn('[green upcard]',error.message);}
     finally{el.style.visibility='';try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
@@ -181,7 +183,7 @@ if(astridGreenBoxTakes.length){
       const el=$(`.seat[data-box="${take.box}"] .cards > .card:first-child`);
       const card=round?.live?.().find(h=>h.box===take.box)?.cards?.[0];
       if(busy||speaking||!el||!card||!performancePlayer)return;
-      busy=true;replay.disabled=true;el.style.visibility='hidden';
+      busy=true;replay.disabled=true;await astridWaiting?.holdAtBoundary();el.style.visibility='hidden';
       try{await performancePlayer.play(take,{card,target:el.getBoundingClientRect(),corners:performanceCardCorners(el),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}});}
       catch(error){console.warn('[green box]',error.message);}
       finally{el.style.visibility='';try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
@@ -221,7 +223,11 @@ engine.onIdlePick = () => {
 const trigger = k => { if (!performanceStaged && engineUp && !speaking && speechQueue.pending === 0 && engine.index.clips[k]) engine.trigger(k); };
 
 if(astridRestart){
-  if(astridGreenTake)try{await installGreenIdle($('#scene'),astridGreenTake);}
+  // The green waiting clip with its randomized scheduler is preferred; the
+  // plain elevated loop stays as the fallback when it is absent or fails.
+  if(astridGreenTake)try{const waiting=await loadGreenWaiting();if(waiting)astridWaiting=await installGreenWaiting($('#scene'),waiting);}
+  catch(error){console.warn('[waiting idle]',error.message);}
+  if(astridGreenTake&&!astridWaiting)try{await installGreenIdle($('#scene'),astridGreenTake);}
   catch(error){console.warn('[elevated idle]',error.message);}
 }else try {
   await engine.init();
@@ -1332,6 +1338,9 @@ async function deliverCard(container, card, options={}) {
       motion={handoff:{x:r.x+r.width*cue.x,y:r.y+r.height*cue.y},duration:dealingCues.durationMs,releaseFraction:dealingCues.releaseFraction};
     }
   }
+  // A filmed take hides the waiting idle; ask for the hold first so the cut
+  // lands on a ready-pose frame, never mid-glance.
+  if(motion?.green)await astridWaiting?.holdAtBoundary();
   await dealCardTo(container,card,{...options,motion}).dealt;
 }
 
