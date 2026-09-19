@@ -1,6 +1,7 @@
 # Run from Croupier root:
 # docker compose --env-file .env -f open-claw/lab/deploy/compose.yaml up --build
-# Only the narrow Director is published, and only on the laptop loopback.
+# Only the Director is published, and only on the laptop loopback. It can
+# optionally forward the native password/pairing-protected OpenClaw dashboard.
 name: croupier-openclaw-lab
 services:
   director:
@@ -19,6 +20,8 @@ services:
       OPENCLAW_AGENT: openclaw/croupier-director
       OPENCLAW_CHAT_AGENT: openclaw/croupier-chat
       OPENCLAW_TIMEOUT_MS: ${OPENCLAW_TIMEOUT_MS:-2500}
+      OPENCLAW_DASHBOARD_ORIGIN: ${OPENCLAW_DASHBOARD_ORIGIN:-}
+      OPENCLAW_DASHBOARD_ALLOW_LOOPBACK: ${OPENCLAW_DASHBOARD_ALLOW_LOOPBACK:-false}
     volumes:
       - lab-catalog:/data/catalog
     depends_on:
@@ -38,6 +41,8 @@ services:
       OPENCLAW_GATEWAY_PORT: 18789
       OPENCLAW_STATE_DIR: /data/openclaw
       OPENCLAW_CONFIG_PATH: /data/openclaw/openclaw.json
+      OPENCLAW_DASHBOARD_ORIGIN: ${OPENCLAW_DASHBOARD_ORIGIN:-}
+      OPENCLAW_DASHBOARD_ALLOW_LOOPBACK: ${OPENCLAW_DASHBOARD_ALLOW_LOOPBACK:-false}
     volumes:
       - openclaw-state:/data/openclaw
     healthcheck:

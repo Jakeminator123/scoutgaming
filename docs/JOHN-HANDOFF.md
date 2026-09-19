@@ -1,3 +1,38 @@
+## 2026-09-20 — native OpenClaw dashboard ingress (local, awaiting rollout)
+
+Jakob clarified that he wants OpenClaw's real Control UI for chat/tools/settings,
+not the lab editor or another login frontend. Implemented `/openclaw` HTTP and
+WebSocket forwarding through the existing public Director to the private
+Gateway. Native password auth uses the existing OPENCLAWAPI_KEY; no server key
+is injected into browser traffic. Exact Origin/Host, bounded transport, native
+CSP/cookies, no public /v1 forwarding and normal device pairing are retained.
+
+Gateway config is now editable/persistent. First-run seed or exact legacy-only
+backup/migration preserves sessions and workspaces; custom configurations are
+not broadly replaced. Three separate no-tools agents include croupier-operator
+for later deliberate admin configuration. Startup reconciles auth/origin policy
+and validates before atomic save. Native hot reload is not a continuous policy
+lock; Director ingress checks remain independent. Added DASHBOARD-SV.md and
+updated setup/source docs; llms.txt remains on-demand with no runtime fetching.
+
+Verification: 54 Node tests pass, including real HTTP/raw-WebSocket proxy tests,
+native credential non-injection, origin/traversal rejection, timeout/teardown,
+config migration/persistence and existing engine/server tests. Catalog check:
+16 nodes, 32 assets, 33 fixture events. Independent bounded code/source review
+found no blocking issue. No product gameplay/media/database changes. Advanced
+root-mounted MCP OAuth/Board/plugin routes are intentionally not exposed.
+
+Read-only Render inspection found both existing lab services Live on 3622515;
+Director URL is https://croupier-lab-director.onrender.com. That verifies the old
+deployment, not this new dashboard/config revision or a live model response.
+Blueprint Auto Sync is still Yes. No cloud settings, credentials, pairing or
+deployment changed by this task. Publication/activation awaits confirmation
+because YAML push can trigger sync. Actual native browser login, container
+validation of this revision, model call and restart persistence remain rollout
+acceptance steps. Existing separate video-registry work is not authorized for
+publication; an isolated ignored worktree prepares only our OpenClaw commits
+above remote 3622515. Main checkout and that other work remain intact.
+
 ## 2026-09-20 — on-demand documentation and dashboard access boundary
 
 Added the short `open-claw/lab/docs/README.md` requested by Jakob. Codex/Cursor

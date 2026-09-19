@@ -89,6 +89,11 @@ Vi kan senare slå på automatik uttryckligen när första installationen är te
 
 ## 6. Koppla din lokala labbyta
 
+För **OpenClaws egen admin-dashboard**, följ först
+[dashboard-guiden](DASHBOARD-SV.md). Den öppnas direkt på Directors HTTPS-adress
+med `/openclaw/` på slutet och använder OpenClaws egen inloggning. Du behöver
+inte starta det lokala labbet för att använda denna dashboard.
+
 När båda tjänsterna är **Live**, öppna Director-tjänsten och hämta dess publika
 HTTPS-adress samt dess `LAB_API_TOKEN` från Environment. Lägg bara dessa värden
 lokalt i Croupier-rotens `.env`, under följande namn:
