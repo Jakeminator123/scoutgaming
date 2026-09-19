@@ -1,0 +1,31 @@
+{
+  "status": "draft-not-approved-for-video",
+  "source": "content/staging/2026-09-19/astrid-elevated-camera/start.png",
+  "requestedDimensions": [
+    2688,
+    1520
+  ],
+  "mode": "built-in image_gen, independent edits of original master",
+  "observations": [
+    "Face appears closer to original than previous aged drafts; user likeness review remains required.",
+    "Requested native output resolution was not delivered.",
+    "After image has an extra green card remnant at the shoe and incorrect landing position. Reject it for video."
+  ],
+  "videoSubmitted": false,
+  "files": {
+    "before.png": {
+      "dimensions": [
+        1668,
+        943
+      ],
+      "sha256": "706584b10d0afa4cb951f911c042ff4d6c857f705f7487e7f90929f1d4d930a7"
+    },
+    "after-rejected.png": {
+      "dimensions": [
+        1668,
+        943
+      ],
+      "sha256": "56d8a7b64b044c9ae2bd86012630cf80b934d4b7f3920344e5519071b2e0f9a1"
+    }
+  }
+}
