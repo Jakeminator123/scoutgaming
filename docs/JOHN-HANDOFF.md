@@ -1233,3 +1233,25 @@ This reuses the accepted source and photographed landing point; it does not
 create new hand choreography for each split fan. Existing idle/action joins,
 source pickup limitations and the v1 size change at landing remain. Other
 seats are not newly supported. Unrelated dirty work is preserved.
+
+## 2026-09-19 — Box 3 reference retry, not approved
+
+The user requested a new center Box 3 before/after pair for MiniMax H3, then
+rejected the generated face and image quality. Retried with two independent
+built-in GPT image edits of the original elevated 2688x1520 start plate;
+no chained edits of the rejected face drafts. The requested change was the
+blue tracking card, preserving Astrid, the camera and table.
+
+Evidence and exact prompts are in
+`content/staging/2026-09-19/astrid-h3-box3-v1/original-master-retry/`.
+Both outputs are only 1668x943 despite requesting the source dimensions.
+The face looks closer to the original but remains unapproved. The after
+image also retains a green card remnant at the shoe and misses the measured
+center-seat target; reject it for video. Do not use these outputs as approved
+H3 references or claim the resolution problem is fixed.
+
+Validation was visual image inspection and dimension/hash measurements.
+No H3 video was submitted, no reference was installed, and no gameplay/player
+files were changed. Accepted Box 4 v1 remains unchanged. The commit hook's
+checks and dealer-sync --probe passed; neither establishes image acceptance.
+Rendered gameplay QA was not rerun for this uninstalled image experiment.
