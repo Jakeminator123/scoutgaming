@@ -1,0 +1,51 @@
+{
+  "frameCount": 97,
+  "fps": "24/1",
+  "crop": [
+    560,
+    0,
+    960,
+    760
+  ],
+  "nativeRgbDifferentChannelValues": 0,
+  "brightMagentaPropMaxAlpha": 0,
+  "faceInteriorMinimumAlpha": 255,
+  "backgroundRegionsMaxAlpha": 0,
+  "unoccludedShoeRegionMaxAlpha": 0,
+  "actorBoundsUnion": [
+    656,
+    22,
+    1306,
+    678
+  ],
+  "packedProbe": {
+    "width": 960,
+    "height": 1520,
+    "has_b_frames": 0,
+    "avg_frame_rate": "24/1",
+    "nb_read_frames": "97"
+  },
+  "decodedSamples": [
+    {
+      "frame": 0,
+      "faceEncodedRgbMae": 1.8300456621004566,
+      "alphaMeanAbsoluteError": 0.0018319143446852365
+    },
+    {
+      "frame": 16,
+      "faceEncodedRgbMae": 2.033881278538813,
+      "alphaMeanAbsoluteError": 0.001826044891640861
+    },
+    {
+      "frame": 36,
+      "faceEncodedRgbMae": 1.908904109589041,
+      "alphaMeanAbsoluteError": 0.0020458215084279254
+    },
+    {
+      "frame": 96,
+      "faceEncodedRgbMae": 2.0922374429223742,
+      "alphaMeanAbsoluteError": 0.0019801556587547234
+    }
+  ],
+  "scope": "Native masking/encoding verified. Source motion and rendered-game visual acceptance are separate."
+}

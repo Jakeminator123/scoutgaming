@@ -5,7 +5,7 @@ import * as THREE from './vendor/three/three.module.js';
 
 // Fixed camera: the dealer film, mesh rail and DOM hit targets share one
 // projection. Camera parallax would break contact with the recorded hands.
-export function createTableScene(canvas, dealer, {contactProof=false}={}) {
+export function createTableScene(canvas, dealer, {contactProof=false,shoeRegistration=null}={}) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   renderer.setClearColor(0x000000, 0);
@@ -139,6 +139,14 @@ export function createTableScene(canvas, dealer, {contactProof=false}={}) {
     shoeModel.root.position.set(shoeX,5,shoeZ);
     shoeModel.root.rotation.y=-.62;
     group.add(shoeModel.root);
+    if(shoeRegistration){
+      scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
+      const target=shoeRegistration(),outlet=shoeModel.outlet.getWorldPosition(new THREE.Vector3()).project(camera);
+      const dx=(target.x-(outlet.x+1)*innerWidth/2)/group.scale.x;
+      const dz=(target.y-(1-outlet.y)*innerHeight/2)*Math.SQRT2/group.scale.z;
+      shoeModel.root.position.x+=dx;shoeModel.root.position.z+=dz;
+      shadow.position.x+=dx;shadow.position.z+=dz;
+    }
   }
   function project(x, z) {
     const p = new THREE.Vector3(x * rx, 1, z * depth).applyMatrix4(group.matrixWorld).project(camera);

@@ -178,7 +178,7 @@ export class PerformancePlayer {
             layer.dataset.phase=sample.frame<take.events.pickup?'reach':sample.frame<take.events.release?'contact':sample.frame<take.events.land?'release':'return';
             const reach=retarget?deliveryReach(take,sample.frame,end):null;
             let sampleCard=reach?shiftCard(sample.card,reach.delta):sample.card;
-            if(sample.frame>=take.events.release&&sample.frame<=take.events.land) {
+            if(!take.tracking?.keepSourceLanding&&sample.frame>=take.events.release&&sample.frame<=take.events.land) {
               const t=(sample.frame-take.events.release)/Math.max(1,take.events.land-take.events.release),u=1-(1-t)**2;
               const released=reach?shiftCard(release,reach.delta):release;
               sampleCard={...released,corners:released.corners.map((p,i)=>p.map((v,k)=>v+(end[i][k]-v)*u)),faceUp:!faceDown};

@@ -19,7 +19,11 @@ export function validateContactTake(take, {approved=false}={}) {
   check(['draft','review','rejected','contact-approved','approved'].includes(take.status), 'Unknown review status');
   check(take.dealer==='astrid', 'This capture belongs to Astrid');
   const proxy=take.tracking?.kind==='hand-proxy';
-  if(take.tracking){
+  const chroma=take.tracking?.kind==='chroma-card';
+  if(chroma){
+    check(take.status==='review'&&!approved,'Chroma tracking is restricted to staged review');
+    check(hash(take.tracking.sourceSha256)&&take.tracking.keepSourceLanding===true,'Chroma source and filmed landing required');
+  }else if(take.tracking){
     check(proxy&&take.status==='review'&&!approved, 'Hand proxies are restricted to staged review');
     check(hash(take.tracking.sourceSha256)&&integer(take.tracking.sourceStart)&&integer(take.tracking.sourceStop)&&take.tracking.sourceStop>take.tracking.sourceStart,'Invalid proxy source binding');
     check(Array.isArray(take.tracking.shoulder)&&take.tracking.shoulder.length===2&&take.tracking.shoulder.every(x=>finite(x)&&x>=0&&x<=1),'Invalid proxy shoulder');
@@ -32,6 +36,7 @@ export function validateContactTake(take, {approved=false}={}) {
   check(integer(m.width)&&m.width>0&&integer(m.height)&&m.height>0, 'Invalid source dimensions');
   check(finite(m.fps)&&m.fps>0&&m.fps<=60&&integer(m.frames)&&m.frames>1, 'Invalid media frame count or rate');
   check(c.width===m.width&&c.height===m.height, 'Camera and source frame dimensions differ');
+  if(c.placement){const p=c.placement;check(chroma&&['width','height','scale'].every(k=>finite(p[k])&&p[k]>0)&&['x','y'].every(k=>finite(p[k])), 'Invalid rigid source placement');}
   check(hash(take.calibrationSha256), 'Calibration SHA-256 is required');
   check(Array.isArray(c.shoeOutlet)&&c.shoeOutlet.length===2&&c.shoeOutlet.every(x=>finite(x)&&x>=0&&x<=1), 'Measured shoe outlet is required');
   const ordered=['pickup','release','land','rest'];
@@ -44,7 +49,8 @@ export function validateContactTake(take, {approved=false}={}) {
     const card=frame?.card;
     check(card && Array.isArray(card.corners)&&card.corners.length===4 && card.corners.every(p=>Array.isArray(p)&&p.length===3&&p.every(finite)&&p[0]>=0&&p[0]<=1&&p[1]>=0&&p[1]<=1), `Frame ${i}: four measured card corners required`);
     check(typeof card?.faceUp==='boolean', `Frame ${i}: card orientation required`);
-    if(i<=e.release) check((proxy?frame?.contact?.measured===false&&typeof frame.contact.method==='string':frame?.contact?.measured===true) && Array.isArray(frame.contact.finger)&&frame.contact.finger.length===2&&frame.contact.finger.every(finite), `Frame ${i}: measured grip or explicit review proxy required`);
+    if(chroma)check(typeof frame.tracking?.method==='string'&&finite(frame.tracking?.confidence)&&frame.tracking.confidence>=0&&frame.tracking.confidence<=1&&Array.isArray(frame.tracking.inferredCorners),`Frame ${i}: source tracking evidence required`);
+    else if(i<=e.release) check((proxy?frame?.contact?.measured===false&&typeof frame.contact.method==='string':frame?.contact?.measured===true) && Array.isArray(frame.contact.finger)&&frame.contact.finger.length===2&&frame.contact.finger.every(finite), `Frame ${i}: measured grip or explicit review proxy required`);
   }
   if(approved) {
     check(['contact-approved','approved'].includes(take.status), 'Take has not passed contact review');
@@ -164,6 +170,10 @@ export function contactCueClock(events, emit, {fps=24,playbackRate=1}={}) {
 }
 
 export function uniformRegistration(source, viewport) {
+  if(source.placement){
+    const p=source.placement,base=uniformRegistration({width:p.width,height:p.height},viewport),scale=base.scale*p.scale;
+    return {x:base.x+p.x*base.scale,y:base.y+p.y*base.scale,width:source.width*scale,height:source.height*scale,scale};
+  }
   const portrait=viewport.width<861&&viewport.height>viewport.width;
   // Reserve a real control band under the scene. Without it, placing totals
   // below the chips forces actions over cards or the wallet at 720px height.

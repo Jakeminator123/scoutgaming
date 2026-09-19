@@ -8,6 +8,7 @@ import { handValue } from './blackjack.mjs';
 import { placeActions } from './action-placement.mjs';
 import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
+import {shouldUseGreenDealerCard,greenShoeOutlet,layoutGreenDealerCards} from './astrid-green-dealer.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -61,6 +62,8 @@ const riggedReview=DEALER.key==='astrid'&&new URLSearchParams(location.search).g
 const performanceStaged=!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
 const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
 const performanceMotion=new URLSearchParams(location.search).get('motion');
+const astridGreenReview=performanceStaged&&new URLSearchParams(location.search).get('astridGreen')==='review';
+const astridGreenTake=astridGreenReview?await fetch('review/astrid-elevated-table/take.json').then(r=>r.ok?r.json():null).then(t=>t?.status==='review'&&t?.enabled!==false?t:null).catch(()=>null):null;
 const performanceRhythm=performanceStaged&&['rhythm','smooth60'].includes(performanceMotion);
 const actorProvenance=performanceStaged?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
 let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,selectSequencePerformance=null,performanceCardCorners=null;
@@ -119,10 +122,27 @@ try {
   const { createTableScene } = await import('./table-scene.mjs');
   tableScene = createTableScene($('#table-canvas'), DEALER.key, {
     contactProof: DEALER.key === 'astrid' && new URLSearchParams(location.search).get('performance') === 'staged',
+    shoeRegistration:astridGreenTake?()=>greenShoeOutlet(astridGreenTake):null,
   });
   }
   document.documentElement.classList.add('table-3d');
 } catch (error) { console.warn('[table] Using image fallback:', error.message); }
+if(astridGreenTake){
+  document.documentElement.dataset.astridGreen='dealer-upcard';
+  addEventListener('resize',()=>layoutGreenDealerCards($('#dealer-cards'),astridGreenTake));
+  performancePlayer?.preload([astridGreenTake]).catch(error=>console.warn('[green upcard]',error.message));
+  const replay=document.createElement('button');replay.id='green-upcard-replay';replay.textContent='Replay Astrid’s first card';replay.disabled=true;
+  Object.assign(replay.style,{position:'absolute',right:'16px',top:'72px',zIndex:70,padding:'10px 14px',border:'1px solid #d6ff3a',borderRadius:'18px',background:'#111c',color:'#d6ff3a',font:'12px Arial'});
+  $('#scene').append(replay);
+  replay.onclick=async()=>{
+    const el=$('#dealer-cards .card:not(.back)');
+    if(busy||speaking||!el||!round?.dealer?.[0]||!performancePlayer)return;
+    busy=true;replay.disabled=true;el.style.visibility='hidden';
+    try{await performancePlayer.play(astridGreenTake,{card:round.dealer[0],target:el.getBoundingClientRect(),corners:performanceCardCorners(el),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}});}
+    catch(error){console.warn('[green upcard]',error.message);}
+    finally{el.style.visibility='';try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
+  };
+}
 
 // a dealer without clips still stands at her table: her canonical poster
 // fills the dealer frame instead of an empty room
@@ -621,6 +641,7 @@ async function prepareTable() {
     const dc = $('#dealer-cards');
     round.dealer.forEach((c,i)=>{ const el=cardEl(c); el.style.setProperty('--ci',i); dc.appendChild(el); });
     if (round.dealer.length === 1) { const el=cardEl(null,true); el.style.setProperty('--ci',1); dc.appendChild(el); }
+    if(astridGreenTake){layoutGreenDealerCards(dc,astridGreenTake);$('#green-upcard-replay').disabled=false;}
     updateBadge(dc,round.dealer); renderBets();
     if (round.phase === 'insurance') { $('#insurance').hidden=false; busy=false; }
     else if (round.phase === 'settled') { busy=true; await finish(); }
@@ -1056,10 +1077,10 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
     const corners=performanceCardCorners(el);
     const box=el.closest('[data-box]')?.dataset.box;
     const part=box!=null?'box'+box:faceDown?'dealer-hole':'dealer-up';
-    const assigned=[...(performanceManifest.takes??[]),...(performanceManifest.continuations??[])].find(t=>t.id===clipAssignments[part]);
+    const assigned=!cardMotion.green&&[...(performanceManifest.takes??[]),...(performanceManifest.continuations??[])].find(t=>t.id===clipAssignments[part]);
     const delivery=cardMotion.performance.action==='deal-dealer'?cardMotion.performance:
       selectPlayerPerformance(performanceManifest,{x:target.x+target.width/2,y:target.y+target.height/2},{width:innerWidth,height:innerHeight},{staged:performanceStaged})??cardMotion.performance;
-    const take=assigned??selectSequencePerformance(performanceManifest,delivery,{staged:performanceContinuity,continues:cardMotion.continues});
+    const take=cardMotion.green?cardMotion.performance:assigned??selectSequencePerformance(performanceManifest,delivery,{staged:performanceContinuity,continues:cardMotion.continues});
     if(assigned)console.info('[performance] backoffice pick',part,assigned.id);
     return performancePlayer.play(take,{target,card,faceDown,corners,
       origin:tableScene.shoeOutlet(),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}})
@@ -1216,16 +1237,18 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
   container.style.setProperty('--cn', total);
   container.style.setProperty('--fan', Math.min(1, 3.2 / Math.max(2, total)).toFixed(3));
   container.appendChild(el);
+  if(astridGreenTake&&container.id==='dealer-cards')layoutGreenDealerCards(container,astridGreenTake);
   el.dealt = flyFromShoe(el, card, faceDown, motion);
   return el;
 }
 async function deliverCard(container, card, options={}) {
   let motion;
+  const green=!!astridGreenTake&&shouldUseGreenDealerCard({dealer:DEALER.key,enabled:true,containerId:container.id,faceDown:options.faceDown===true,existingCards:container.querySelectorAll('.card').length});
   const centre=container.getBoundingClientRect().x+container.getBoundingClientRect().width/2;
   const action=container.id==='dealer-cards'?'deal-dealer':centre<innerWidth*.42?'deal-left':centre>innerWidth*.58?'deal-right':'deal-centre';
-  const performanceTake=selectPerformance?.(performanceManifest,action,{staged:performanceStaged});
+  const performanceTake=green?astridGreenTake:selectPerformance?.(performanceManifest,action,{staged:performanceStaged});
   if(performanceTake && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    motion={performance:performanceTake,continues:options.continues===true};
+    motion={performance:performanceTake,continues:options.continues===true,green};
   } else if (dealingActive && dealingCues && canUseDealingTake() && !document.hidden) {
     const current=engine.presentation;
     const lead=dealingCues.leadFrames;
@@ -1251,6 +1274,7 @@ async function endDealingTake() {
     const returning='idle-1/actions/action-return';
     engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);
   }
+  if(astridGreenTake&&$('#dealer-cards .card:not(.back)'))$('#green-upcard-replay').disabled=false;
 }
 async function revealHole(container, card) {
   const back = container.querySelector('.card.back');
@@ -1260,8 +1284,10 @@ async function revealHole(container, card) {
   el.style.setProperty('--ci', back.style.getPropertyValue('--ci') || 1);
   el.classList.add('flip');
   back.replaceWith(el);
+  if(astridGreenTake&&container.id==='dealer-cards')layoutGreenDealerCards(container,astridGreenTake);
 }
 function clearTable() {
+  if(astridGreenTake)$('#green-upcard-replay').disabled=true;
   document.querySelectorAll('.cards').forEach(c => (c.innerHTML = ''));
   document.querySelectorAll('.hand-total').forEach(b => b.remove());
   document.querySelectorAll('.result, .sideresult').forEach(r => { r.textContent = ''; r.className = r.className.split(' ')[0]; });
