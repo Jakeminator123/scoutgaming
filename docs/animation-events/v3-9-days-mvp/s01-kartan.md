@@ -9,6 +9,7 @@ Kartan har en ryggrad: **Kevins spelmotor avgör spelet och publicerar det som p
 | Markering | Betydelse |
 | --- | --- |
 | **BESLUTAT** | Beslutat i mötet och grund för V3-arbetssättet. |
+| **GEMENSAMT SPRÅK** | Begrepp som Kevin har bekräftat i inboxen, utan att det gör dem till kodnamn. |
 | **VERIFIERAT** | Bekräftat i aktuell kod på Croupier-branchen. |
 | **VERIFIERAS** | Rimlig kandidat från V2 eller äldre dokumentation, men måste kontrolleras mot aktuell kod innan den får kallas canonical. |
 | **JAKOBS FÖRSLAG** | Adapter, nod, regel eller visualisering som Jakob arbetar med utanför Kevins motor. |
@@ -23,12 +24,12 @@ Kartan har en ryggrad: **Kevins spelmotor avgör spelet och publicerar det som p
 [VERIFIERAT] serverägd shoe, spelstatus, saldo och payout
         │
         ▼
-[VERIFIERAT] publicerad table view + presentation[] från Partner API
-        │
-        ├──────────────► befintlig spelare och befintliga fallback-vägar
-        │
-        ▼
-[JAKOBS FÖRSLAG] läsande adapter + eventträd
+[VERIFIERAT] publicerad gameView
+        ├──► /api/table ──► vanlig webbklient och befintlig uppspelning
+        └──► Partner API ──► presentation[] för en partnerbyggd klient
+
+[JAKOBS FÖRSLAG] välj integrationsyta ovan + läsande adapter/eventträd
+        │              kopplingen är ännu inte införd
         │              inga nya spelutfall, ingen ny RNG
         ▼
 presentationens behov: baslinje, tillåtna variationer och fallback
@@ -45,6 +46,11 @@ Kevins branch, manifest/index, kalibrering och rehearsal
 
 Jakobs arbete ligger alltså **efter** att Kevins motor har bestämt utfallet och **före** eller bredvid presentationens val. Adaptern får läsa publicerad information men får aldrig bli en alternativ spelmotor.
 
+`presentation[]` är ett verifierat Partner-API-kontrakt. Den vanliga
+`web/public/app.mjs` använder `/api/table`, inte denna presentationslista.
+Pilen från en framtida adapter till den befintliga spelaren är därför ett
+integrationsarbete, inte något som dokumentationen redan har bevisat fungerar.
+
 ## Det som är verifierat i den förankrade Croupier-revisionen
 
 Följande symboler är canonical för den revision som är dokumenterad i `RUNTIME-EVIDENCE.md`. Om Kevin ändrar koden ska evidensankaret och sidan uppdateras; dokumentationen får inte hålla fast vid äldre namn.
@@ -59,12 +65,20 @@ Följande symboler är canonical för den revision som är dokumenterad i `RUNTI
 | Publik round view | `phase`, `hands`, `dealer`, `active`, `holeDraw`, `legalActions` | Det publicerade underlag som klient och Partner API får använda. | `web/shoe-game.mjs` |
 | Presentationstyper | `speak`, `deal`, `reveal`, `settle`, `turn`, `idle` | Ordnade presentationshändelser som byggs från föregående och ny publik vy. | `web/partner-presentation.mjs` |
 | Partnertransport | `presentation[]` | Returneras från `/api/v1/table` och publiceras även i SSE-objektet `round`. | `web/partner-api.mjs` |
-| Assetkatalog | `buildAssetsManifest(...)` | Bygger publicerad katalog över streams, deal-takes, speech och kalibrering. | `web/partner-presentation.mjs` |
+| Assetkatalog | `buildAssetsManifest(...)` | Bygger streams, deal-takes, speech och viss kalibreringsdata. Filtrerar bort `rejected`; skickar inte med take-status i `deals[]`. | `web/partner-presentation.mjs` |
+| Befintlig kontaktuppspelning | `selectContactTake(...)`, `PerformancePlayer` | Har egna staged-/review-/godkännandekontroller som inte följer automatiskt av att en take finns i Partner-katalogen. | `web/public/performance-contact.mjs`, `web/public/performance-player.mjs` |
 | Astrid-performance | `web/public/dealers/astrid/performance/manifest.json` | Har status, take-id, action, mediahash, bilddata och event-/landningsdata. | aktuell branch |
 
 ### Verifierad säkerhetsgräns
 
 `gameView(...)` publicerar inte shoe-ordning, burn, privat hålkort eller interna eventpayloads. Partnerpresentationen arbetar på den publika vyn och beskriver **hur** ett redan avgjort spel ska visas. Den gränsen ska finnas kvar oavsett hur eventträdet utvecklas.
+
+### Gemensamt språk, ännu inte färdig adapter
+
+Kevin har [bekräftat `rng`/`show` samt linje, variant, trigger och take](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3869829140).
+De orden är alltså inte enbart Jakobs påhitt eller något V3 ska kasta bort.
+Kevins förslag till dealerträd, YAML och `want`/`no`-intag tas vidare som
+arbetsförslag i s03. Exakt schema, urvalspolicy och spelarkoppling återstår.
 
 ## Det som fortfarande måste verifieras
 
@@ -75,6 +89,7 @@ V2 använde många egna namn och jämförde tre repon. De namnen är inte automa
 | Interna round-events | Vilka verifierade interna events ska bli stabila publika kontrakt, om några? | **BESLUT KRÄVS** |
 | Exakta phase-transitioner | Vilka övergångar kan presentationen observera utan att härleda dold information? | **VERIFIERAS** |
 | `presentation[]`-ordningen | Vilka kombinationer av `reveal`, `settle`, `speak` och `turn` är stabila kontrakt? | **VERIFIERAS** |
+| Adapterns integrationsyta | Ska första etappen ansluta till Partner-API:et eller till den vanliga webbklientens befintliga kodväg? | **BESLUT KRÄVS** |
 | Assetval per event | Vilka val gör spelaren i dag och vilka finns bara i review/staging? | **VERIFIERAS** |
 | Flera takes per presentationsläge | Har live-indexet redan pooler eller krävs en ny kompatibel katalogform? | **VERIFIERAS** |
 | Video från Bettalotto | Vilket generation-id, godkännandestatus och manifest-id ska följa med in i Kevins branch? | **VERIFIERAS** |

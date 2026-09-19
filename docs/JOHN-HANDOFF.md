@@ -86,6 +86,37 @@ assets; real video-bank activation needs complete take hashes, speech bundles,
 calibration and shared-player acceptance. See the lab README, deployment guide
 and `media/README.md` for the staged plan and video register fields.
 
+## 2026-09-20 — unified V3 wiki and webcanvas publication
+
+Documentation-only follow-up requested by Jakob. The eleven V3 source
+documents under docs/animation-events/v3-9-days-mvp are the editable semantic
+source. GitHub animation-events-v1 owns the HTML generator and mirrors those
+documents; the wiki mirrors are generated with wiki-specific link paths.
+The historical repo name is retained for stable links, not as a V1 label.
+
+Corrected: the regular app uses /api/table, not Partner presentation[];
+the Partner asset manifest excludes rejected takes but does not publish
+take status/hash, so it is not a proof of approved playback. Kevin's inbox
+note 3869829140 confirms rng/show and line/variant/trigger/take vocabulary;
+his disk tree, YAML and want/no intake are proposals, not implemented schema.
+The named inbox workflow is linked from the documentation and webcanvas.
+
+Publication targets: GitHub main and Vercel's usual animation-events-v1
+address for V3, plus the GitLab wiki. V2 is preserved separately from the
+original GitHub 871bd7c HTML and the existing wiki archive. Wiki HTML files
+are downloadable source copies, not the runnable webcanvas; main navigation
+now directs readers to Vercel. GitHub has an offline sync/hash checker and
+CI/build checks; these do not claim automatic remote GitLab synchronization.
+
+Verification before source commit: git diff --check; five engine blobs and
+the API/player paths rechecked against published Jakob 51aea06 and Kevin
+626554d. Seventeen focused generation/sync/archive tests passed; all 44
+mirrored files match, all seven pages and search were exercised in the local
+browser, and checked wiki links resolve to files. Live publication checks
+follow separately. No gameplay, media, calibration or live database changes.
+No CAC issue is marked done. OpenClaw was published independently by its
+owning agent at 7ea6758 during this work; this commit preserves those files.
+
 ## 2026-09-20 — named agents and per-user-turn shared inbox
 
 Jakob explicitly replaced the earlier checkpoint-only ping policy. The
