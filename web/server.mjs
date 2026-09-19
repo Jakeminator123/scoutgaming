@@ -119,6 +119,7 @@ const BO_DEFAULTS = {
   pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
   clipAssignments: {},
   neverAgain: {},
+  clipLandings: {},
   tournaments: [
     { id: 't1', name: 'Midnight Privé Open', format: 'Elimination · 20 rounds', buyin: 100, pool: 25000, entries: 184, cap: 250, starts: 'Tonight 00:00', state: 'registering' },
     { id: 't2', name: 'High Roller Sprint', format: 'Points race · 1 hour', buyin: 1000, pool: 50000, entries: 31, cap: 64, starts: 'Fri 21:00', state: 'registering' },
@@ -378,7 +379,7 @@ function boApi(url) {
   if (url === '/api/bo/config') return cfg;
   if (url === '/api/bo/apikeys') return { keys: partner().keys.list(), scopes: partner().SCOPES, docs: '/docs/partner-api.html' };
   if (url === '/api/bo/gen-verdicts') return { genVerdicts: cfg.genVerdicts ?? {} };
-  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {} };
+  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {}, landings: cfg.clipLandings ?? {} };
   if (url === '/api/bo/users') {
     return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
   }
@@ -530,6 +531,15 @@ async function boPost(url, body, who) {
   if (url === '/api/bo/apikeys/launch') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...partner().keys.mintLaunch(body.id, body) }; } catch (e) { return { error: e.message }; } }
   if (url === '/api/bo/apikeys/credit') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...partner().keys.credit(body.id, body) }; } catch (e) { return { error: e.message }; } }
   if (url === '/api/bo/apikeys/rotate') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return { ok: true, ...partner().keys.rotate(body.id) }; }
+  if (url === '/api/bo/clip-landing') {
+    // Human-verified observation: which table part the card in this clip actually went to. Separate from assignment.
+    const { clip, part, note } = body ?? {};
+    if (typeof clip !== 'string' || !clip) return { error: 'bad clip' };
+    cfg.clipLandings ??= {};
+    if (!part) delete cfg.clipLandings[clip];
+    else { if (!CLIP_PARTS.includes(part)) return { error: 'bad part' }; cfg.clipLandings[clip] = { part, note: String(note ?? '').slice(0, 200), by: who?.sub ?? who ?? null, at: new Date().toISOString() }; }
+    boSave(cfg); return { ok: true, landings: cfg.clipLandings };
+  }
   if (url === '/api/bo/clip-never') {
     // "Never again": awful takes / failed prompts go to a bin so nobody re-reviews or re-assigns them.
     const { clip, reason, undo } = body ?? {};
