@@ -1,8 +1,9 @@
 # Croupier continuity and dealer regression rules
 
 For OpenClaw installation, configuration, Gateway, MCP or runtime work, first
-read `open-claw/lab/docs/OPENCLAW-DOCS.md`. Use its official-source and
-deployed-version policy; it also indexes the local configuration files.
+read `open-claw/lab/docs/README.md`. It routes to the official-source and
+deployed-version index. Fetch external documentation only when the current
+question needs it, not on every turn or runtime event.
 
 If this checkout is branch `jakeminator123/work`: do not push `main`. At the start of every new user turn, run the quick Croupier inbox check once using `.agents/skills/ping-croupier/SKILL.md`. Keep a stable chat-derived agent name and a separate read cursor per conversation. Stay silent if nothing is relevant; continue the user's task. No polling between turns. Wiki: https://gitlab.com/scout-gg/croupier/-/wikis/home
 

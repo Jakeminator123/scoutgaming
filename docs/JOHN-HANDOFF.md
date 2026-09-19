@@ -1,3 +1,20 @@
+## 2026-09-20 — on-demand documentation and dashboard access boundary
+
+Added the short `open-claw/lab/docs/README.md` requested by Jakob. Codex/Cursor
+guidance now begins with this local note and fetches official docs/llms.txt only
+when a current question needs them. No periodic indexing, crawling, vector DB
+or runtime model-prompt loading was installed; runtime source/deploy/UI searches
+found no documentation-fetch references. Existing verified links remain indexed.
+
+Reviewed native dashboard access against official docs and pinned v2026.9.5
+sources. A single password/token field is supported, but a new remote browser
+normally still needs initial device approval. Current Gateway remains private
+with Control UI disabled; no auth weakening, public admin endpoint or cloud
+change was made. Jakob was asked whether to add a separate HTTPS dashboard
+entry while retaining the private Gateway. That access decision and actual
+container/model verification remain pending. This is documentation/rule work,
+not gameplay, media or player-chat integration.
+
 ## 2026-09-20 — official OpenClaw documentation index for IDE agents
 
 Added `open-claw/lab/docs/OPENCLAW-DOCS.md` with official documentation links,
