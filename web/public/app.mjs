@@ -8,7 +8,7 @@ import { handValue } from './blackjack.mjs';
 import { placeActions } from './action-placement.mjs';
 import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
-import {shouldUseGreenDealerCard,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame,installGreenIdle,quadMatrix} from './astrid-green-dealer.mjs';
+import {shouldUseGreenDealerCard,selectGreenTake,loadGreenTakes,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame,installGreenIdle,quadMatrix} from './astrid-green-dealer.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -71,7 +71,11 @@ const performanceContinuity=performanceStaged&&new URLSearchParams(location.sear
 const performanceMotion=new URLSearchParams(location.search).get('motion');
 const astridGreenReview=astridRestart;
 const astridBlender=astridRestart;
-const astridGreenTake=astridGreenReview?await fetch(`review/${astridBlender?'astrid-table-v2':'astrid-elevated-table'}/take.json`).then(r=>r.ok?r.json():null).then(t=>t?.status==='review'&&t?.enabled!==false?t:null).catch(()=>null):null;
+// One review directory may hold several green takes: the dealer's first upcard
+// and the first card of one specific box. Each is selected by action and box.
+const astridGreenTakes=astridGreenReview?await loadGreenTakes(`review/${astridBlender?'astrid-table-v2':'astrid-elevated-table'}`):[];
+const astridGreenTake=astridGreenTakes.find(t=>t.action==='deal-dealer')??null;
+const astridGreenBoxTakes=astridGreenTakes.filter(t=>Number.isInteger(t.box));
 const performanceRhythm=performanceStaged&&['rhythm','smooth60'].includes(performanceMotion);
 const actorProvenance=performanceStaged&&!astridRestart?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
 let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,selectSequencePerformance=null,performanceCardCorners=null;
@@ -155,6 +159,36 @@ if(astridGreenTake){
     finally{el.style.visibility='';try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
   };
 }
+// The filmed landing spot is that box's first-card position: its DOM fan is
+// registered to the landed quad, exactly as the dealer's upcard is. A split
+// box re-renders through the ordinary layout and keeps no filmed registration.
+function layoutGreenBoxCards(){
+  for(const take of astridGreenBoxTakes){
+    const container=$(`.seat[data-box="${take.box}"] .cards`);
+    if(container&&!container.querySelector(':scope > .subhand'))layoutGreenDealerCards(container,take);
+  }
+}
+if(astridGreenBoxTakes.length){
+  document.documentElement.dataset.astridGreen=[astridGreenTake?'dealer-upcard':null,...astridGreenBoxTakes.map(t=>`box${t.box}`)].filter(Boolean).join('+');
+  performancePlayer?.preload(astridGreenBoxTakes).catch(error=>console.warn('[green box]',error.message));
+  addEventListener('resize',layoutGreenBoxCards);
+  if(tableScene?.layoutCards){const feltLayout=tableScene.layoutCards.bind(tableScene);tableScene.layoutCards=()=>{feltLayout();layoutGreenBoxCards();};}
+  astridGreenBoxTakes.forEach((take,i)=>{
+    const replay=document.createElement('button');replay.id=`green-box${take.box}-replay`;replay.textContent=`Replay box ${take.box} first card`;replay.disabled=true;
+    Object.assign(replay.style,{position:'absolute',right:'16px',top:`${112+i*40}px`,zIndex:70,padding:'10px 14px',border:'1px solid #d6ff3a',borderRadius:'18px',background:'#111c',color:'#d6ff3a',font:'12px Arial'});
+    $('#scene').append(replay);
+    replay.onclick=async()=>{
+      const el=$(`.seat[data-box="${take.box}"] .cards > .card:first-child`);
+      const card=round?.live?.().find(h=>h.box===take.box)?.cards?.[0];
+      if(busy||speaking||!el||!card||!performancePlayer)return;
+      busy=true;replay.disabled=true;el.style.visibility='hidden';
+      try{await performancePlayer.play(take,{card,target:el.getBoundingClientRect(),corners:performanceCardCorners(el),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}});}
+      catch(error){console.warn('[green box]',error.message);}
+      finally{el.style.visibility='';try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
+    };
+  });
+}
+const greenBoxReplays=(enabled)=>{for(const take of astridGreenBoxTakes){const button=$(`#green-box${take.box}-replay`);if(button)button.disabled=!enabled||!$(`.seat[data-box="${take.box}"] .cards > .card:first-child`);}};
 // a dealer without clips still stands at her table: her canonical poster
 // fills the dealer frame instead of an empty room
 function showPoster() {
@@ -658,6 +692,7 @@ async function prepareTable() {
     round.dealer.forEach((c,i)=>{ const el=cardEl(c); el.style.setProperty('--ci',i); dc.appendChild(el); });
     if (round.dealer.length === 1) { const el=cardEl(null,true); el.style.setProperty('--ci',1); dc.appendChild(el); }
     if(astridGreenTake){layoutGreenDealerCards(dc,astridGreenTake);$('#green-upcard-replay').disabled=false;}
+    greenBoxReplays(true);
     updateBadge(dc,round.dealer); renderBets();
     if (round.phase === 'insurance') { $('#insurance').hidden=false; busy=false; }
     else if (round.phase === 'settled') { busy=true; await finish(); }
@@ -1269,16 +1304,19 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
   container.style.setProperty('--fan', Math.min(1, 3.2 / Math.max(2, total)).toFixed(3));
   container.appendChild(el);
   if(astridGreenTake&&container.id==='dealer-cards')layoutGreenDealerCards(container,astridGreenTake);
+  if(astridGreenBoxTakes.length)layoutGreenBoxCards();
   tableScene?.layoutCards?.();
   el.dealt = flyFromShoe(el, card, faceDown, motion);
   return el;
 }
 async function deliverCard(container, card, options={}) {
   let motion;
-  const green=!!astridGreenTake&&shouldUseGreenDealerCard({dealer:DEALER.key,enabled:true,containerId:container.id,faceDown:options.faceDown===true,existingCards:container.querySelectorAll('.card').length});
+  const seatBox=container.closest('[data-box]')?.dataset.box;
+  const greenTake=selectGreenTake(astridGreenTakes,{dealer:DEALER.key,enabled:true,containerId:container.id,box:seatBox==null?null:Number(seatBox),split:container.classList.contains('subhand'),faceDown:options.faceDown===true,existingCards:container.querySelectorAll('.card').length});
+  const green=!!greenTake;
   const centre=container.getBoundingClientRect().x+container.getBoundingClientRect().width/2;
   const action=container.id==='dealer-cards'?'deal-dealer':centre<innerWidth*.42?'deal-left':centre>innerWidth*.58?'deal-right':'deal-centre';
-  const performanceTake=green?astridGreenTake:selectPerformance?.(performanceManifest,action,{staged:performanceStaged});
+  const performanceTake=green?greenTake:selectPerformance?.(performanceManifest,action,{staged:performanceStaged});
   if(performanceTake && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     motion={performance:performanceTake,continues:options.continues===true,green};
   } else if (dealingActive && dealingCues && canUseDealingTake() && !document.hidden) {
@@ -1307,6 +1345,7 @@ async function endDealingTake() {
     engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);
   }
   if(astridGreenTake&&$('#dealer-cards .card:not(.back)'))$('#green-upcard-replay').disabled=false;
+  greenBoxReplays(true);
 }
 async function revealHole(container, card) {
   const back = container.querySelector('.card.back');
@@ -1320,6 +1359,7 @@ async function revealHole(container, card) {
 }
 function clearTable() {
   if(astridGreenTake)$('#green-upcard-replay').disabled=true;
+  greenBoxReplays(false);
   document.querySelectorAll('.cards').forEach(c => (c.innerHTML = ''));
   document.querySelectorAll('.hand-total').forEach(b => b.remove());
   document.querySelectorAll('.result, .sideresult').forEach(r => { r.textContent = ''; r.className = r.className.split(' ')[0]; });
