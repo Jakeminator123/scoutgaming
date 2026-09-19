@@ -21,7 +21,8 @@ agentregler eller beslut om produktintegration.
 - [Arbetssätt](https://gitlab.com/scout-gg/croupier/-/wikis/workflow)
 - [Animationsevents](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events)
 - [Canvas och synkregel](https://gitlab.com/scout-gg/croupier/-/wikis/canvas-workflow)
-- [Ping Jakob ↔ Kevin](https://gitlab.com/scout-gg/croupier/-/wikis/ping)
+- [Gemensam inbox för Kevin, Jakob, Emil och våra agenter](AGENT-INBOX.md)
+- [Inbox i wikin](https://gitlab.com/scout-gg/croupier/-/wikis/ping)
 
 V3 beskriver Jakobs backend-, logik- och eventarbete ovanpå Kevins befintliga
 motor. Emil arbetar nära Kevin med video. Jakobs koppling till Emil går i första
