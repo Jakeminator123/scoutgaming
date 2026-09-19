@@ -187,9 +187,11 @@ the lab's frozen public event contract is the integration boundary.
 - Local deployment checks cover JavaScript syntax, secret separation, distinct
   chat/decision workspaces and denied tools. The startup wrapper invokes real
   `openclaw config validate --json` in the image before serving traffic.
-- Docker is unavailable on the current Windows workspace, so the image build,
-  generated config's actual pinned-runtime validation, persistent-disk
-  permissions on Render and live provider call remain deployment checks.
+- Local Docker remains unavailable. On 2026-09-20, both Render deployments of
+  `7ec4e17` were Live; the real Gateway CLI validated its migrated config on the
+  persistent disk and startup reached ready. The native browser login page
+  reached the Gateway and requested its password. Authenticated model calls,
+  first browser pairing and live restart-persistence acceptance remain pending.
 
 ## Authoritative references
 
