@@ -7,6 +7,24 @@ export function shouldUseGreenDealerCard({dealer,enabled,containerId,faceDown,ex
   return dealer==='astrid'&&enabled===true&&containerId==='dealer-cards'&&faceDown===false&&existingCards===0;
 }
 
+// A box take depicts the FIRST card of one specific box, never a split hand,
+// a hole card or a later card. Dealer and box takes never share an event.
+export function shouldUseGreenBoxCard(take,{dealer,enabled,box,split,faceDown,existingCards}) {
+  return dealer==='astrid'&&enabled===true&&Number.isInteger(take?.box)&&Number(box)===take.box&&split!==true&&faceDown===false&&existingCards===0;
+}
+export function selectGreenTake(takes,context) {
+  if(!Array.isArray(takes))return null;
+  return takes.find(take=>take?.action==='deal-dealer'?shouldUseGreenDealerCard({...context,containerId:context.containerId}):shouldUseGreenBoxCard(take,context))??null;
+}
+// takes.json lists the review takes beside the original single take.json; a
+// directory without it still serves only take.json. Disabled or non-review
+// takes are dropped here so gameplay never sees them.
+export async function loadGreenTakes(dir){
+  const list=await fetch(`${dir}/takes.json`).then(r=>r.ok?r.json():null).then(m=>Array.isArray(m?.takes)?m.takes:['take.json']).catch(()=>['take.json']);
+  const takes=await Promise.all(list.map(file=>fetch(`${dir}/${file}`).then(r=>r.ok?r.json():null).catch(()=>null)));
+  return takes.filter(t=>t?.status==='review'&&t?.enabled!==false);
+}
+
 export const GREEN_PLACEMENT={width:1920,height:1080,scale:.58,x:403,y:18};
 export function greenSourcePoint([x,y],viewport={width:innerWidth,height:innerHeight}) {
   const p=GREEN_PLACEMENT,fit=uniformRegistration(p,viewport);
