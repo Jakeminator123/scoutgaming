@@ -197,7 +197,7 @@ async function render(id){
   }
   if(id==='clips'){
     const lib=await api('/api/bo/clips');
-    const st=render.clipState??={dealer:'astrid',part:'',mode:'transparent',sort:'dealer',selected:null};
+    const st=render.clipState??={dealer:'astrid',part:'',mode:'transparent',sort:'dealer',selected:null,landing:''};
     const PARTN={box0:'Box 0 (far left)',box1:'Box 1',box2:'Box 2',box3:'Box 3 (centre)',box4:'Box 4',box5:'Box 5',box6:'Box 6 (far right)','dealer-up':'Dealer upcard','dealer-hole':'Dealer hole card',return:'Return to idle',idle:'Idle'};
     const byId=Object.fromEntries(lib.clips.map(c=>[c.id,c]));
     const assignedParts=id=>Object.entries(lib.assignments[st.dealer]??{}).filter(([,a])=>a.clip===id).map(([p])=>p);
@@ -207,8 +207,8 @@ async function render(id){
     const cardBadge=c=>{const ps=assignedParts(c.id);return ps.length?`<span class="pill live" style="background:var(--lime);color:#111">&#10003; ASSIGNED &middot; ${ps.map(p=>PARTN[p].toUpperCase()).join(' + ')}</span>`:'';};
     const markCard=id=>{const el=C.querySelector(`[data-clip="${id}"]`);if(!el)return;const ps=assignedParts(id);el.style.borderColor=ps.length||st.selected===id?'var(--lime)':'var(--line)';el.style.boxShadow=ps.length?'0 0 0 2px rgba(214,255,58,.25)':'';el.querySelector('[data-badge]').innerHTML=cardBadge(byId[id]);};
     const draw=()=>{
-      const never=lib.neverAgain??{};
-      let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='never'?!!never[c.id]:!never[c.id]&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent))));
+      const never=lib.neverAgain??{};const land=lib.landings??{};
+      let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='never'?!!never[c.id]:!never[c.id]&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent)))&&(!st.landing||(st.landing==='verified'?!!land[c.id]:st.landing==='unverified'?!land[c.id]:land[c.id]?.part===st.landing)));
       const cmp={dealer:(a,b)=>a.dealer.localeCompare(b.dealer)||(a.part??'zz').localeCompare(b.part??'zz')||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),part:(a,b)=>(a.part??'zz').localeCompare(b.part??'zz')||a.dealer.localeCompare(b.dealer),frames:(a,b)=>(b.frames??0)-(a.frames??0)}[st.sort];
       list.sort(cmp);
       const asg=lib.assignments[st.dealer]??{};
@@ -218,6 +218,7 @@ async function render(id){
         <select id="cf-dealer"><option value="">All dealers</option>${lib.dealers.map(d=>`<option value="${d.key}" ${st.dealer===d.key?'selected':''}>${d.name}</option>`).join('')}</select>
         <select id="cf-part"><option value="">All table parts</option>${lib.parts.map(p=>`<option value="${p}" ${st.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select>
         <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['transparent','TRANSPARENT ONLY'],['full','FULL-SCENE ONLY'],['all','ALL'],['never',`&#10006; NEVER AGAIN (${Object.keys(never).length})`]].map(([k,l])=>`<button data-mode="${k}" style="border:0;border-radius:0;${st.mode===k?(k==='never'?'background:rgba(255,80,80,.18);color:var(--red)':'background:rgba(214,255,58,.15);color:var(--lime)'):''}">${l}</button>`).join('')}</span>
+        <select id="cf-landing"><option value="">Landed at: any</option><option value="verified" ${st.landing==='verified'?'selected':''}>Landed at: verified only</option><option value="unverified" ${st.landing==='unverified'?'selected':''}>Landed at: not yet marked</option>${lib.parts.map(p=>`<option value="${p}" ${st.landing===p?'selected':''}>Landed at: ${PARTN[p]}</option>`).join('')}</select>
         <select id="cf-sort">${[['dealer','Sort: dealer'],['part','Sort: table part'],['name','Sort: name'],['frames','Sort: length']].map(([k,l])=>`<option value="${k}" ${st.sort===k?'selected':''}>${l}</option>`).join('')}</select>
         ${st.mode!=='never'&&list.length?`<button id="cf-swipe" style="margin-left:auto;background:var(--lime);color:#111;border-color:var(--lime)">&#8646; SWIPE MODE (${list.length})</button>`:''}
       </div></div>
@@ -229,18 +230,20 @@ async function render(id){
       ${list.map(c=>`<div data-clip="${c.id}" style="border:1px solid ${st.selected===c.id||assignedParts(c.id).length?'var(--lime)':'var(--line)'};${assignedParts(c.id).length?'box-shadow:0 0 0 2px rgba(214,255,58,.25);':''}border-radius:10px;overflow:hidden;background:var(--panel2);cursor:pointer;position:relative"><div data-badge style="position:absolute;top:8px;left:8px;z-index:2">${cardBadge(c)}</div>
         ${c.src?`<video src="/${c.src}" preload="metadata" muted playsinline controls style="width:100%;max-height:220px;display:block;background:#000;object-fit:contain"></video>`:`<div style="height:90px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
         <div style="padding:9px 11px">
-          <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
+          <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span><span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}<span data-landbadge="${c.id}">${land[c.id]?`<span class="pill live" style="background:#7cc6ff;color:#111">&#9673; LANDED &middot; ${PARTN[land[c.id].part].toUpperCase()}</span>`:''}</span></span></div>
           <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.status?' &middot; '+c.status:''}</div>
           ${c.text?`<div style="font-size:11px;margin-top:5px;padding:6px 8px;border-left:2px solid var(--lime);background:rgba(214,255,58,.05)">&ldquo;${c.text}&rdquo;</div>`:''}${c.audio&&!c.src?`<audio src="/${c.audio}" controls preload="none" style="width:100%;height:26px;margin-top:5px"></audio>`:''}
           <div style="font-size:10px;color:var(--mut);margin-top:3px">${c.layout??''}${c.width?` &middot; ${c.width}&times;${c.height}`:''}${c.frames?` &middot; ${c.frames}f`:''}${c.fps?` @${c.fps}`:''}${c.route?`<br>route: <span class="mono">${c.route}</span>`:''}</div>
           ${never[c.id]?`<div style="margin-top:8px;padding:6px 8px;border:1px solid var(--red);border-radius:6px;font-size:11px"><span class="mono" style="color:var(--red);font-size:9px;letter-spacing:.12em">NEVER AGAIN</span> ${never[c.id].reason?'&middot; '+never[c.id].reason:''}<div style="font-size:9px;color:var(--mut);margin-top:2px">${never[c.id].by??''} ${never[c.id].at?never[c.id].at.slice(0,16).replace('T',' '):''}</div><button data-restore="${c.id}" style="margin-top:6px;padding:2px 8px;font-size:9px">RESTORE</button></div>`
           :`<div style="margin-top:8px;display:flex;gap:6px;align-items:center"><select data-assign-part="${c.id}" style="flex:1"><option value="">Assign to&hellip;</option>${lib.parts.map(p=>`<option value="${p}" ${c.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><button data-assign="${c.id}">ASSIGN</button></div>
+          <div data-land-row="${c.id}" style="margin-top:6px;display:flex;gap:6px;align-items:center"><span class="mono" style="font-size:9px;letter-spacing:.1em;color:var(--mut);white-space:nowrap">LANDED AT</span><select data-land-part="${c.id}" style="flex:1"><option value="">not marked</option>${lib.parts.map(p=>`<option value="${p}" ${land[c.id]?.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><input data-land-note="${c.id}" value="${(land[c.id]?.note??'').replace(/"/g,'&quot;')}" placeholder="note" style="width:110px;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-land="${c.id}" style="border-color:#7cc6ff;color:#7cc6ff;font-size:10px">MARK</button></div>
           <div data-never-row="${c.id}" style="margin-top:6px;display:flex;gap:6px;align-items:center"><input data-never-reason="${c.id}" placeholder="why it's awful (optional)" style="flex:1;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-never="${c.id}" style="border-color:rgba(255,80,80,.5);color:var(--red);font-size:10px">&#10006; NEVER AGAIN</button></div>`}
         </div></div>`).join('')}
       </div>`;
       $('#cf-dealer').onchange=e=>{st.dealer=e.target.value;st.selected=null;draw();};
       $('#cf-part').onchange=e=>{st.part=e.target.value;draw();};
       $('#cf-sort').onchange=e=>{st.sort=e.target.value;draw();};
+      $('#cf-landing').onchange=e=>{st.landing=e.target.value;draw();};
       C.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{st.mode=b.dataset.mode;draw();});
       const swb=$('#cf-swipe');if(swb)swb.onclick=()=>swipe(list.map(c=>c.id));
       const assign=async(dealer,part,clip,btn)=>{const prev=(lib.assignments[dealer]??{})[part]?.clip;const r=await api('/api/bo/clip-assign',{dealer,part,clip});if(!r.ok){toast(r.error||'failed');return;}
@@ -257,6 +260,7 @@ async function render(id){
         C.querySelectorAll('[data-part]').forEach(t=>{t.innerHTML=tileInner(t.dataset.part);t.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));});
         const nb=C.querySelector('[data-mode="never"]');if(nb)nb.innerHTML=`&#10006; NEVER AGAIN (${Object.keys(lib.neverAgain).length})`;
         toast(undo?`restored ${byId[id]?.name??id}`:`never again: ${byId[id]?.name??id}`);};
+      C.querySelectorAll('[data-land]').forEach(b=>b.onclick=async()=>{const id=b.dataset.land;const part=C.querySelector(`[data-land-part="${id}"]`).value;const note=C.querySelector(`[data-land-note="${id}"]`).value;const r=await api('/api/bo/clip-landing',{clip:id,part:part||null,note});if(!r.ok){toast(r.error||'failed');return;}lib.landings=r.landings;const bd=C.querySelector(`[data-landbadge="${id}"]`);if(bd)bd.innerHTML=r.landings[id]?`<span class="pill live" style="background:#7cc6ff;color:#111">&#9673; LANDED &middot; ${PARTN[r.landings[id].part].toUpperCase()}</span>`:'';const t=b.textContent;b.textContent='\u2713 MARKED';b.style.background='#7cc6ff';b.style.color='#111';setTimeout(()=>{b.textContent=t;b.style.background='';b.style.color='';},1400);toast(part?`${byId[id]?.name??id} landed at ${PARTN[part]}`:`landing cleared`);});
       C.querySelectorAll('[data-never]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.never,false));
       C.querySelectorAll('[data-restore]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.restore,true));
       C.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const c=byId[b.dataset.assign];const part=C.querySelector(`[data-assign-part="${c.id}"]`).value;if(!part){toast('pick a table part first');return;}if(st.dealer!==c.dealer){st.dealer=c.dealer;draw();}assign(c.dealer,part,c.id,C.querySelector(`[data-assign="${c.id}"]`));});
