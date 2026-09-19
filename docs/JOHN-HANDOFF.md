@@ -1,3 +1,21 @@
+## 2026-09-20 — official OpenClaw documentation index for IDE agents
+
+Added `open-claw/lab/docs/OPENCLAW-DOCS.md` with official documentation links,
+the live `llms.txt` index/Markdown lookup path, local configuration-file mapping
+and a deployed-version policy. The root AGENTS.md points OpenClaw work to this
+index; `.cursor/rules/openclaw-docs.mdc` scopes the same guidance to `open-claw/**`.
+Both OpenClaw READMEs link to the index. Existing project rules remain intact.
+
+Verified the official install, setup/onboard, MCP, documentation index and config
+CLI pages. MCP runtime conversation access is not a documentation search service;
+no MCP server, integration or installer was added. No claim is made that a
+separate official documentation MCP cannot exist. Container config remains
+version-pinned and read-only. IDE inbox, operator chat and player-chat integration
+retain their separate boundaries. No secrets, gameplay/media or Render resources
+were changed; live container/model verification remains pending.
+Local checks passed for 26 index links (official URL authority/local targets),
+the Cursor rule's scope/frontmatter/length, pinned-version link and whitespace.
+
 ## 2026-09-20 — V3 video inventory and placement map
 
 Read the Bettalotto Generations API using the user-authorized local

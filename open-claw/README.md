@@ -5,6 +5,9 @@ lokal editor, fryst Croupier-eventkontrakt, enkla animationer, OpenClaw-adapter
 och Render-blueprint. Starta med `npm --prefix open-claw/lab start`.
 Det är ännu inte inkopplat i den vanliga spelklienten.
 
+För agenter och konfiguration: börja med
+[OpenClaws officiella dokumentation och lokala källindex](lab/docs/OPENCLAW-DOCS.md).
+
 > **V2-referens, inte del av V3:s 9-dagars MVP.** Paketet är fryst som historiskt implementationsunderlag. Aktiv riktning finns i `docs/animation-events/v3-9-days-mvp/`; där är OpenClaw uttryckligen ett möjligt experiment efter MVP och kräver ett separat Kevin-beslut.
 
 Den här mappen samlar dokumentationsunderlag för en möjlig OpenClaw-integration i Croupier. Inget här är inkopplat i spelets runtime.

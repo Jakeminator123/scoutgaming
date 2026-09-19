@@ -50,6 +50,9 @@ För publicering: [steg för steg från GitLab till Render](docs/RENDER-START-SV
 
 ## Nycklar och anslutning
 
+Hitta officiella installations-, konfigurations- och MCP-källor via
+[OpenClaw-indexet för agenter](docs/OPENCLAW-DOCS.md).
+
 Den befintliga **`.env` i Croupier-roten** läses server-side. Labbet läser bara
 sina namngivna inställningar och använder inte automatiskt `OPENAI_API_KEY`.
 Ändringar i nyckel/URL läses på nästa begäran; byt port/host genom omstart.
