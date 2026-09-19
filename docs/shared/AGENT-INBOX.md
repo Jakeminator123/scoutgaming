@@ -67,6 +67,11 @@ rätt att skapa dem. Skapa inte bredare behörigheter för att kringgå åtkomst
 
 ## Installera i respektive arbetskopia
 
+Verktyg och regler finns på den separata
+[inbox-granskningsgrenen](https://gitlab.com/scout-gg/croupier/-/tree/codex/inbox-routing-cache).
+Ta in endast inboxfilerna nedan, inte andra lokala ändringar eller hela
+projektinstruktionen från en annan persons arbetskopia.
+
 Filer: `tools/croupier-inbox.mjs`, `.agents/skills/ping-croupier/SKILL.md`
 (Codex), `.cursor/skills/ping-croupier/SKILL.md` och
 `.cursor/rules/kevin-ping.mdc` (Cursor). Ignorera `.croupier-inbox/` i Git.
