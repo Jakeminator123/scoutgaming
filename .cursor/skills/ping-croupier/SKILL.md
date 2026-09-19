@@ -1,6 +1,6 @@
 ---
 name: ping-croupier
-description: Check the Croupier GitLab inbox once per new user turn using shared cache and per-chat routing. Handle explicit /ping-croupier, setup and scoped replies; never trigger on agent/tool updates.
+description: Set up Croupier inbox identity and handle explicit /ping-croupier, routing problems or scoped replies. Ordinary turn-start checks use the command in AGENTS.md directly; no skill reload or trigger on agent/tool updates.
 ---
 
 # Croupier inbox
