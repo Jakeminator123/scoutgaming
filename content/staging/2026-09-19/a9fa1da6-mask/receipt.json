@@ -1,0 +1,114 @@
+{
+  "sourceJob": "a9fa1da6-066c-47f4-8466-7f4924a3bfe2",
+  "sourceFile": "content/staging/2026-09-17/seven-seat-reach/box2-reach.mp4",
+  "sourceSha256": "3dfe60814a6b0f5c090e26b8637e34f13a4104932aef2fede15b66b9eb5908f0",
+  "sourceProbe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 720,
+        "r_frame_rate": "24/1",
+        "nb_read_frames": "73",
+        "tags": {}
+      }
+    ],
+    "format": {
+      "duration": "3.041667"
+    }
+  },
+  "scope": "Astrid and original dealt card; room, table and shoe removed. Standalone review, no gameplay assignment.",
+  "processing": "Apple Vision person segmentation followed by source-colour GrabCut and bounded source-observed shoe, shoulder, rail and card masks. Native frames preserved.",
+  "frames": 73,
+  "fps": 24,
+  "rgbPngsUnchanged": true,
+  "newGenerationJobs": 0,
+  "outputs": {
+    "astrid-transparent.webm": {
+      "sha256": "0026a715e9e76dfeea9dbd78aff6cf85449082d53ca85b00f5bf35031907afe9",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "vp9",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "73",
+            "tags": {
+              "alpha_mode": "1"
+            }
+          }
+        ],
+        "format": {
+          "duration": "3.042000"
+        }
+      }
+    },
+    "astrid-packed.mp4": {
+      "sha256": "03fa12e05d98c9786c365d442408c6f20f9fc02070202f76255c59ec2ea54337",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 1440,
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "73",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "3.041667"
+        }
+      }
+    },
+    "preview.mp4": {
+      "sha256": "425135de41b334b6551ad9b0551b6c4e3d6eb5c26c27b7474eb6918a25b52114",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "73",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "3.041667"
+        }
+      }
+    }
+  },
+  "maskArchiveSha256": "0314049075d7255c6da1737b5f23a803a59e5a8145623fc37ab3b7b058962d6d",
+  "review": "All 73 frames inspected in contact sheets; actual transparent playback reviewed separately. Original generated motion/shape defects and small edge imperfections may remain; not gameplay acceptance.",
+  "browserReview": {
+    "url": "http://127.0.0.1:4198/",
+    "nativeVideoWidth": 1280,
+    "nativeVideoHeight": 720,
+    "duration": 3.042,
+    "playing": true,
+    "backgrounds": [
+      "checkerboard",
+      "light",
+      "dark"
+    ],
+    "evidence": [
+      "review-light.jpg",
+      "review-dark.jpg"
+    ]
+  },
+  "requiredChecks": {
+    "preCommit": "passed",
+    "auditDealerSyncProbe": "passed"
+  }
+}
