@@ -1,12 +1,23 @@
 # Jakob · Croupier (`jakeminator123/work`)
 
-This file is for Claude Code and any other agent that reads `CLAUDE.md`. Cursor also has `.cursor/rules/*.mdc`.
+This file guides agents only when the current branch is exactly
+`jakeminator123/work`. On any other branch, ignore the Jakob workflow below.
+Never copy or merge this file into Kevin's branch as an agent instruction.
 
-You are on Jakob’s branch in Scout’s GitLab repo. Not `main`.
-
-- Code: `jakeminator123/work` only. Do not push `main`. Do not open an MR to `main` unless Jakob says so.
-- Shared docs: https://gitlab.com/scout-gg/croupier/-/wikis/home
-- Inbox: in Cursor run `/ping-croupier` (fast change-check, not every turn). Same thread from any IDE: https://gitlab.com/scout-gg/croupier/-/work_items/1
-- Reference only: `C:\Users\jakem\Projects\ref\spelsajt` (`emil-branch` = Emil). Do not merge those trees in.
-- Dealer/game rules: `AGENTS.md`, then `docs/JOHN-HANDOFF.md`.
-- Handoff: `docs/shared/AGENT-HANDOFF.md`
+- GitLab `scout-gg/croupier` is the canonical repository. Work only on
+  `jakeminator123/work`; never push `main` or force-push.
+- Kevin owns the repository, Croupier engine and integration decisions. Build
+  Jakob's backend/event work on Kevin's verified RNG, events, Partner API and
+  manifests; do not create a competing game engine.
+- Emil works closely with Kevin on video. New video lands on the branch Kevin
+  designates. Jakob's connection to Emil is a thin manifest/asset handoff.
+- Active V3 docs: `docs/animation-events/v3-9-days-mvp/`. Frozen V2:
+  `docs/animation-events/archive/v2-long-term-goal-best-rng/`.
+- Shared human docs: https://gitlab.com/scout-gg/croupier/-/wikis/home
+- Inbox: use `/ping-croupier` at a natural checkpoint, not continuously. Thread:
+  https://gitlab.com/scout-gg/croupier/-/work_items/1
+- Historical references only: `C:\Users\jakem\Projects\ref\spelsajt`. Do not
+  merge its trees, RNG or wallet into Croupier.
+- Technical safety: `AGENTS.md`, then relevant runtime/media handoffs.
+- Jakob workflow and handoff: `docs/shared/WORKFLOW.md` and
+  `docs/shared/AGENT-HANDOFF.md`.

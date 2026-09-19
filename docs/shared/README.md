@@ -1,18 +1,27 @@
-# Gemensam dokumentation
+# Gemensam dokumentation för Jakobs Croupier-arbete
 
-Den gemensamma ytan ligger i GitLab-wikin, inte i `main`:
+Den här pekaren tillhör `jakeminator123/work`. Den ändrar inte Kevins branch,
+agentregler eller beslut om produktintegration.
 
-https://gitlab.com/scout-gg/croupier/-/wikis/home
+## Källor som gäller
 
+- GitLab-repot `scout-gg/croupier` är produktens kanoniska kod- och mediekälla.
+- [GitLab-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home) är den
+  gemensamma ytan för beslut, kartor och handoff.
+- Körande kod, Partner API, manifester och verifierad runtime väger alltid tyngre
+  än ett diagram eller en plan.
+- GitHub- och Vercel-versioner är valfria presentationsspeglar, inte en andra
+  sanning.
+
+## Aktiva och arkiverade dokument
+
+- Aktivt V3-underlag: `docs/animation-events/v3-9-days-mvp/`
+- Arkiverad V2: `docs/animation-events/archive/v2-long-term-goal-best-rng/`
 - [Arbetssätt](https://gitlab.com/scout-gg/croupier/-/wikis/workflow)
-- [Ping](https://gitlab.com/scout-gg/croupier/-/wikis/ping)
-- [Agent-handoff](https://gitlab.com/scout-gg/croupier/-/wikis/agent-handoff)
-- [Canvas — workflow](https://gitlab.com/scout-gg/croupier/-/wikis/canvas-workflow)
-- [Meddelande till Kevin](https://gitlab.com/scout-gg/croupier/-/wikis/note-to-kevin)
-- [Referensrepon](https://gitlab.com/scout-gg/croupier/-/wikis/reference-repos)
-- [Slack till Kevin](https://gitlab.com/scout-gg/croupier/-/wikis/slack-till-kevin)
-- [spelsajt och Emil](https://gitlab.com/scout-gg/croupier/-/wikis/spelsajt-and-emil)
+- [Animationsevents](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events)
+- [Canvas och synkregel](https://gitlab.com/scout-gg/croupier/-/wikis/canvas-workflow)
+- [Ping Jakob ↔ Kevin](https://gitlab.com/scout-gg/croupier/-/wikis/ping)
 
-Lokal read-only-kopia av referensen: `C:\Users\jakem\Projects\ref\spelsajt` (`emil-branch` för Emil).
-
-Wikin är den gemensamma ytan för dokumentation, canvaser och anteckningar. Den här filen finns på `jakeminator123/work` så att branchen hittar dit.
+V3 beskriver Jakobs backend-, logik- och eventarbete ovanpå Kevins befintliga
+motor. Emil arbetar nära Kevin med video. Jakobs koppling till Emil går i första
+hand via avgränsade artefakter, manifest och handoff.

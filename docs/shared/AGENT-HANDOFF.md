@@ -1,41 +1,50 @@
-# Handoff — nästa agent (Jakob / Croupier)
+# Handoff — nästa agent på Jakobs Croupier-branch
 
-Läs detta först, sedan `AGENTS.md`, `docs/PROJECT-PROMPT.md` och senaste toppen av `docs/JOHN-HANDOFF.md`. Jobba bara på `jakeminator123/work`. Pusha inte `main`. Skapa inte MR mot `main` om Jakob inte sagt det.
+## Omfattning
 
-## Vem och var
+Den här handoffen gäller endast `jakeminator123/work`. Den ska inte ändra eller
+ersätta Kevins branch, agentregler eller integrationsbeslut.
 
-- Produkt: Scout Live Casino, repo `scout-gg/croupier` på GitLab.
-- Jakob: GitLab/GitHub `Jakeminator123`. Branch `jakeminator123/work`. Lokal kopia `C:\Users\jakem\Projects\croupier`.
-- Kevin: GitLab [`Kevinnegash1`](https://gitlab.com/Kevinnegash1), Owner. Mejl `kevin.negash@scoutgaminggroup.com`. Inget hittat GitHub-konto.
-- Emil: GitHub `EmaCodeHero`. Referens, inte Croupier-arbetsyta.
+Läs i denna ordning:
 
-## Vad som är uppsatt
+1. `AGENTS.md` för tekniska säkerhets- och regressionsregler.
+2. `docs/shared/WORKFLOW.md` för Jakobs V3-arbetssätt.
+3. `docs/animation-events/v3-9-days-mvp/` för det aktiva underlaget.
+4. Senaste relevanta del av `docs/JOHN-HANDOFF.md` och
+   `docs/ENVIRONMENT-RESTORATION.md` för verifierad runtime och mediahistorik.
 
-- SSH till GitLab fungerar. Origin är bara GitLab, inte Jakobs GitHub.
-- Gemensam yta: https://gitlab.com/scout-gg/croupier/-/wikis/home
-- Workflow (första canvasen, speglad i wikin): https://gitlab.com/scout-gg/croupier/-/wikis/workflow
-- Canvas i Cursor: `C:\Users\jakem\.cursor\projects\c-Users-jakem-Projects-croupier\canvases\jakob-workflow.canvas.tsx`
-- Referens, read-only: `C:\Users\jakem\Projects\ref\spelsajt` (push avstängd). `emil-branch` = import av `EmaCodeHero/ava-live-blackjack`. Titta, bygg om i Croupier. Ingen submodule, ingen dump.
-- Cursor alwaysApply är tre rader. Inbox: `/ping-croupier` (skill), inte poll varje tur.
-- Claude Code: `CLAUDE.md`. Kevin kan svara från valfri IDE.
-- Lokal `.git/hooks/pre-push` stoppar push till `main`
-- MR-mall: `.gitlab/merge_request_templates/Jakob.md`
+V2 finns oförändrad i
+`docs/animation-events/archive/v2-long-term-goal-best-rng/`. Använd den som
+historik, inte som aktiv arkitektur.
 
-## Ping
+## Roller och källor
 
-https://gitlab.com/scout-gg/croupier/-/work_items/1
+- Kevin äger `scout-gg/croupier`, motorn och beslut om produktintegration.
+- Jakob utvecklar backend, logik och eventpusslet på `jakeminator123/work` och
+  håller sig etappvis ajour med Kevins branch.
+- Emil arbetar nära Kevin med video och variationer. Nya videor landar på den
+  branch Kevin anger.
+- Jakob har en tunn koppling till Emil genom verifierade assets, manifest,
+  event-/asset-id och handoff; skapa inte ett parallellt videosamarbete.
+- GitLab-repot och [wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home)
+  är kanoniska. GitHub/Vercel är endast valfria presentationsspeglar.
 
-Kommentar + `@Kevinnegash1`. Svara i samma tråd. Fortsätt annat arbete. Inte Slack-bot. Inte nytt issue för en snabb fråga. Jira CAC för riktiga dealer-ärenden.
+## Arbetsregel
 
-## Inte klart / rör inte utan orsak
+- Kontrollera aktuell branch före ändringar. Arbeta inte vidare om den inte är
+  `jakeminator123/work` utan ett nytt uttryckligt uppdrag.
+- Bygg ovanpå Kevins faktiska RNG, events, Partner API och manifest. En nod som
+  inte kan beläggas i runtime ska märkas **föreslagen**.
+- Bevara orelaterade worktree-ändringar och committa endast uppgiftsägda filer.
+- Pusha inte `main`, force-pusha inte och skapa inte en integrations-MR utan
+  Kevins eller Jakobs uttryckliga beslut om målbranch.
+- Vid färdig etapp: dokumentera kontrakt, tester/evidens och kvarvarande gap;
+  stäm därefter av med Kevin innan eventuell inkorporering.
 
-- Kevin har inte skyddat `main` på GitLab än — be honom.
-- Inbjudan till `jakob@dg97.se` ska slängas (Kevin).
-- Emil måste acceptera GitHub-inbjudan till `spelsajt`.
-- Kevin saknar GitHub — han ska skaffa/peka ut konto för läs på `spelsajt`.
-- Slack-texten till Kevin är skriven men måste skickas av Jakob (wikin notifierar inte).
-- Spelet / media / dealer-sync är Kevins produktspår. Följ `AGENTS.md`. Isolerad databas. Inga påhittade visuella godkännanden.
+## Kommunikation
 
-## Kevin-meddelande (om det inte gått iväg)
-
-Se https://gitlab.com/scout-gg/croupier/-/wikis/note-to-kevin och `docs/shared` / wikin Slack-sidan.
+- Jakob–Kevin: https://gitlab.com/scout-gg/croupier/-/work_items/1
+- Använd `/ping-croupier` vid ett naturligt kontrolltillfälle, inte kontinuerlig
+  polling.
+- Uppgiftsspecifika frågor hör till relevant issue eller merge request.
+- Lägg aldrig tokens, lösenord eller privata mediefiler i wiki, issue eller Git.
