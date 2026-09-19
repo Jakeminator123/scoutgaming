@@ -1,0 +1,96 @@
+TAP version 13
+# (node:29155) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only the FIRST card of the configured box selects the box take
+ok 1 - only the FIRST card of the configured box selects the box take
+  ---
+  duration_ms: 2.268167
+  type: 'test'
+  ...
+# Subtest: the dealer upcard keeps its own take and never the box take
+ok 2 - the dealer upcard keeps its own take and never the box take
+  ---
+  duration_ms: 0.217042
+  type: 'test'
+  ...
+# Subtest: a box take keeps the filmed landing like the dealer take; the contract still rejects giving it up
+ok 3 - a box take keeps the filmed landing like the dealer take; the contract still rejects giving it up
+  ---
+  duration_ms: 1.649334
+  type: 'test'
+  ...
+# Subtest: every installed review take validates and shares the plate registration
+ok 4 - every installed review take validates and shares the plate registration
+  ---
+  duration_ms: 5.920584
+  type: 'test'
+  ...
+# (node:29156) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: approved green action owns only the first face-up Astrid dealer card
+ok 5 - approved green action owns only the first face-up Astrid dealer card
+  ---
+  duration_ms: 0.700459
+  type: 'test'
+  ...
+# Subtest: player cards and other dealers cannot consume the approved upcard action
+ok 6 - player cards and other dealers cannot consume the approved upcard action
+  ---
+  duration_ms: 0.203917
+  type: 'test'
+  ...
+# Subtest: missing or non-numeric card counts do not accidentally enable the action
+ok 7 - missing or non-numeric card counts do not accidentally enable the action
+  ---
+  duration_ms: 0.06475
+  type: 'test'
+  ...
+# Subtest: shoe registration follows the selected take and cropped source placement
+ok 8 - shoe registration follows the selected take and cropped source placement
+  ---
+  duration_ms: 0.62025
+  type: 'test'
+  ...
+# Subtest: pulling back the shot keeps the filmed shoe and Blender table in the same frame
+ok 9 - pulling back the shot keeps the filmed shoe and Blender table in the same frame
+  ---
+  duration_ms: 0.592917
+  type: 'test'
+  ...
+# Subtest: the waiting cadence never glances twice in a row and never idles more than 3 base loops
+ok 10 - the waiting cadence never glances twice in a row and never idles more than 3 base loops
+  ---
+  duration_ms: 48.52825
+  type: 'test'
+  ...
+# Subtest: the cadence is not periodic: base holds vary in length
+ok 11 - the cadence is not periodic: base holds vary in length
+  ---
+  duration_ms: 1.248625
+  type: 'test'
+  ...
+# Subtest: segments only start and end on ready-pose frames, so an interrupt waits for the segment end
+ok 12 - segments only start and end on ready-pose frames, so an interrupt waits for the segment end
+  ---
+  duration_ms: 0.652334
+  type: 'test'
+  ...
+# Subtest: the installed idle manifest validates against the takes it cuts to
+ok 13 - the installed idle manifest validates against the takes it cuts to
+  ---
+  duration_ms: 5.707667
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 165.167333

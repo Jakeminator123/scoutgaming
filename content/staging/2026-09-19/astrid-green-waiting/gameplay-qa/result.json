@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-19",
+  "scope": "Green waiting clip 15777d5f installed as Astrid's idle on the Blender table with a randomized segment scheduler; de1f90a9 dealer upcard and 6a378270 box-5 takes retained",
+  "qaUrl": "http://astridboxright.localhost:4190/?dealer=astrid&table=blender",
+  "isolatedDemo": true,
+  "generationJobs": 0,
+  "productionDeployment": false,
+  "segments": {"base": [90, 120], "glanceLeft": [0, 41], "glanceRight": [41, 90], "full": [0, 120], "readyFrames": [0, 41, 90, 120]},
+  "scheduler": {"glanceProbability": 0.4, "maxBaseRun": 3, "holdLoops": [1, 3], "seedObserved": 3129236474},
+  "idleWatch62s": {
+    "transitions": "0.0 base, 0.7 full, 5.2 base, 7.7 full, 12.7 base, 16.5 glanceLeft, 18.2 base, 21.9 glanceLeft, 23.6 base, 27.4 glanceRight, 29.4 base, 33.2 glanceRight, 35.3 base, 38.9 glanceLeft, 40.6 base, 44.4 full, 49.4 base, 50.7 full, 55.6 base, 56.9 full, 61.8 base",
+    "sequenceFromPageLoad": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base,full,base,base,full,base,base,base,glanceLeft,base,base,base,glanceLeft,base,base,base,glanceRight,base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base,full,base,full,base,full,base",
+    "recoveries": 0,
+    "screenshots": ["idle-base (frame 114)", "idle-glanceLeft (frame 16)", "idle-glanceRight (frame 56)", "idle-full (frame 22)"]
+  },
+  "round": {
+    "bets": "box 5 $5, box 2 $5",
+    "holdAtBoundary": "0.76 s after Deal Now the idle held at base frame 120 (ready pose); the box-5 take started 0.73 s later and the idle canvas hid",
+    "takes": ["astrid-table-v2-first-card-box5-6a378270", "astrid-table-v2-first-upcard-de1f90a9"],
+    "resume": "12.19 s: both takes done, idle visible again, restarted with base",
+    "opening": {"box5": ["A♦", "7♥"], "dealer": ["10♦", "hole"]},
+    "play": "hit box 5, stand box 2, settled 967.50 -> 957.50 -> 977.50, back to bets, idle kept glancing",
+    "consoleErrorsOrWarnings": 0,
+    "screenshots": ["round-01-held-at-boundary", "round-02-take-1", "round-02-take-2", "round-03-idle-resumed", "round-04-settled-idle"]
+  },
+  "note": "The Playwright browser context is shared with another Claude session on this machine; an unrelated box-4 round was open when this QA started and was stood out first.",
+  "checks": {"dealerSyncProbe": "dealer-sync.txt", "preCommit": "pre-commit.txt", "focusedTests": "focused-tests.txt"},
+  "caveats": [
+    "Segment boundaries are ready-pose frames with about 1 px full-frame difference, but the head is not identical at 0/41/90/120 (head-crop mean diff 3.4-5 grey levels); a small pose pop can show at each splice, and the hands settle 1.4 px after frame 5.",
+    "Seeking to a segment start costs one presented-frame hitch in the browser.",
+    "The hold delays a deal by up to the running segment's remainder (up to 5 s during 'full').",
+    "The waiting clip's ready pose is not identical to the dealing takes' frame 0 (hands already reaching the shoe in de1f90a9); the cut is still hard.",
+    "Replay buttons also wait for the boundary; a take started any other way pauses the idle mid-segment.",
+    "Not visual acceptance: Kevin reviews."
+  ]
+}

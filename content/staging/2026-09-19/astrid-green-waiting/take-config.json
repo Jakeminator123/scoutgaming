@@ -1,0 +1,95 @@
+{
+  "jobId": "15777d5f-4085-484e-a170-eb5c9a13d7b0",
+  "generationId": "15777d5f",
+  "sourceSha256": "849b241e6a9b769bef1cd40299516c25f1a5aba28bf865b2d3593854731765bf",
+  "action": "idle",
+  "status": "Kevin 2026-09-19 ~19:00: green-screen waiting loop, to be installed as Astrid's in-game idle with a randomized scheduler. Zero generation here.",
+  "readyPose": "frame 0 and frame 120 (mean abs diff 1.44 per README)",
+  "crop": [
+    560,
+    0,
+    754,
+    678
+  ],
+  "measured": {
+    "headCrop": [
+      870,
+      26,
+      180,
+      200
+    ],
+    "method": "phase correlation of the head crop against frame 0 (dx px) plus mean abs grey difference; motion/head-motion.json, head-motion.png, head-sheet.jpg",
+    "observed": "frames 0-5 ready; 6-40 head turns toward viewer-LEFT (her right, dx to -31 px at 23-28) and returns by 41; 42-89 head turns toward viewer-RIGHT (her left, dx to +30 px at 54-64) and returns by 90; 90-120 calm breathing, dx under 0.4 px. The README order (left first) is by viewer direction; the hands settle 1.4 px after frame 5 and stay.",
+    "seamsMeanAbsDiff(full,head)": {
+      "0-120": [
+        1.44,
+        4.31
+      ],
+      "0-41": [
+        1.31,
+        4.51
+      ],
+      "0-90": [
+        1.35,
+        3.57
+      ],
+      "41-90": [
+        0.94,
+        4.95
+      ],
+      "90-120": [
+        0.84,
+        3.43
+      ],
+      "41-120": [
+        1.07,
+        4.47
+      ],
+      "96-120": [
+        0.79,
+        2.46
+      ]
+    }
+  },
+  "segments": {
+    "base": {
+      "start": 90,
+      "end": 120,
+      "note": "calm breathing, longest near-still span; forward loop 120->90"
+    },
+    "glanceLeft": {
+      "start": 0,
+      "end": 41,
+      "note": "glance toward viewer-left (her right), back to ready at 41"
+    },
+    "glanceRight": {
+      "start": 41,
+      "end": 90,
+      "note": "glance toward viewer-right (her left) with a blink, back to ready at 90"
+    },
+    "full": {
+      "start": 0,
+      "end": 120,
+      "note": "the whole clip"
+    }
+  },
+  "readyFrames": [
+    0,
+    41,
+    90,
+    120
+  ],
+  "scheduler": {
+    "glanceProbability": 0.4,
+    "maxBaseRun": 3,
+    "holdLoops": [
+      1,
+      3
+    ],
+    "glances": [
+      "glanceLeft",
+      "glanceRight",
+      "full"
+    ]
+  }
+}
