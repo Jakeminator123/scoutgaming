@@ -1,0 +1,78 @@
+# In Croupier, select Blueprint path open-claw/lab/render.yaml.
+# When splitting lab/ into its own repository, remove open-claw/lab/ from
+# dockerfilePath, dockerContext, and buildFilter paths in both services.
+services:
+  - type: web
+    name: croupier-lab-director
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./open-claw/lab/Dockerfile
+    dockerContext: ./open-claw/lab
+    autoDeployTrigger: "off"
+    healthCheckPath: /healthz
+    disk:
+      name: lab-catalog
+      mountPath: /data/catalog
+      sizeGB: 1
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "4188"
+      - key: LAB_DATA_DIR
+        value: /data/catalog
+      - key: LAB_API_TOKEN
+        generateValue: true
+      - key: OPENCLAWAPI_KEY
+        fromService:
+          name: croupier-lab-openclaw
+          type: pserv
+          envVarKey: OPENCLAWAPI_KEY
+      - key: OPENCLAW_HOSTPORT
+        fromService:
+          name: croupier-lab-openclaw
+          type: pserv
+          property: hostport
+      - key: OPENCLAW_AGENT
+        value: openclaw/croupier-director
+      - key: OPENCLAW_CHAT_AGENT
+        value: openclaw/croupier-chat
+      - key: OPENCLAW_TIMEOUT_MS
+        value: "2500"
+    buildFilter:
+      paths:
+        - open-claw/lab/**
+  - type: pserv
+    name: croupier-lab-openclaw
+    runtime: docker
+    region: frankfurt
+    plan: standard
+    dockerfilePath: ./open-claw/lab/deploy/Dockerfile.gateway
+    dockerContext: ./open-claw/lab
+    autoDeployTrigger: "off"
+    disk:
+      name: openclaw-state
+      mountPath: /data/openclaw
+      sizeGB: 1
+    envVars:
+      - key: OPENCLAWAPI_KEY
+        sync: false
+      - key: OPENCLAW_MODEL_API_KEY
+        sync: false
+      - key: OPENCLAW_MODEL_BASE_URL
+        value: https://api.openai.com/v1
+      - key: OPENCLAW_MODEL_ID
+        value: gpt-5.4-mini
+      - key: OPENCLAW_MODEL_API
+        value: openai-responses
+      - key: OPENCLAW_GATEWAY_PORT
+        value: "18789"
+      - key: OPENCLAW_STATE_DIR
+        value: /data/openclaw
+      - key: OPENCLAW_CONFIG_PATH
+        value: /data/openclaw/openclaw.json
+    buildFilter:
+      paths:
+        - open-claw/lab/deploy/**
+        - open-claw/lab/render.yaml

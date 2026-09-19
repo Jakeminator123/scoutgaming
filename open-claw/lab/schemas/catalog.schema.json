@@ -1,0 +1,623 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://croupier.invalid/lab/catalog.schema.json",
+  "title": "Croupier lab event/trigger/asset catalog v1",
+  "description": "Runtime types and the safe predicate DSL are frozen. Semantic nodes, labels, predicates and lab assets are editable. validateCatalog additionally checks unique IDs, references, six-type coverage and unconditional baselines.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "revision",
+    "events",
+    "assets"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
+    },
+    "sourceNote": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "triggerSources": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "description",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600
+          },
+          "status": {
+            "enum": [
+              "verified",
+              "lab",
+              "proposed"
+            ]
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "description",
+          "sourceType",
+          "sourceRef",
+          "match",
+          "baselineVariantId",
+          "variants"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600
+          },
+          "sourceType": {
+            "enum": [
+              "speak",
+              "deal",
+              "reveal",
+              "settle",
+              "turn",
+              "idle"
+            ]
+          },
+          "sourceRef": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "sourceStatus": {
+            "enum": [
+              "verified",
+              "proposed"
+            ]
+          },
+          "match": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "line": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "blocking": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "to": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "box": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "handIndex": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "faceDown": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "shoeDraw": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "clip.action": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "card.r": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "card.s": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "dealerTotal": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "dealerBlackjack": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "hands.outcome": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "hands.box": {
+                "$ref": "#/$defs/matchValue"
+              },
+              "legalActions": {
+                "$ref": "#/$defs/matchValue"
+              }
+            }
+          },
+          "exampleEvent": {
+            "$ref": "event.schema.json"
+          },
+          "baselineVariantId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
+          },
+          "variants": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "label",
+                "priority",
+                "when",
+                "assetId"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "priority": {
+                  "type": "integer",
+                  "minimum": -100,
+                  "maximum": 100
+                },
+                "when": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "all"
+                  ],
+                  "properties": {
+                    "all": {
+                      "type": "array",
+                      "maxItems": 16,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "path",
+                          "op",
+                          "value"
+                        ],
+                        "properties": {
+                          "path": {
+                            "enum": [
+                              "event.type",
+                              "event.line",
+                              "event.blocking",
+                              "event.to",
+                              "event.box",
+                              "event.handIndex",
+                              "event.faceDown",
+                              "event.shoeDraw",
+                              "event.clip.action",
+                              "event.card.r",
+                              "event.card.s",
+                              "event.dealerTotal",
+                              "event.dealerBlackjack",
+                              "event.hands.outcome",
+                              "event.hands.box",
+                              "event.legalActions",
+                              "context.chat.signal",
+                              "context.playerHistory.returning",
+                              "context.playerHistory.preferredLanguage",
+                              "context.session.recentWins",
+                              "context.session.recentLosses"
+                            ]
+                          },
+                          "op": {
+                            "enum": [
+                              "eq",
+                              "ne",
+                              "gt",
+                              "gte",
+                              "lt",
+                              "lte",
+                              "includes",
+                              "all_eq",
+                              "in",
+                              "exists"
+                            ]
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 100
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 32,
+                                "items": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 100
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "allOf": [
+                          {
+                            "if": {
+                              "properties": {
+                                "op": {
+                                  "const": "in"
+                                }
+                              }
+                            },
+                            "then": {
+                              "properties": {
+                                "value": {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "maxItems": 32,
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 100
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "op": {
+                                  "const": "exists"
+                                }
+                              }
+                            },
+                            "then": {
+                              "properties": {
+                                "value": {
+                                  "type": "boolean"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "op": {
+                                  "enum": [
+                                    "gt",
+                                    "gte",
+                                    "lt",
+                                    "lte"
+                                  ]
+                                }
+                              }
+                            },
+                            "then": {
+                              "properties": {
+                                "value": {
+                                  "type": "number"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "op": {
+                                  "enum": [
+                                    "eq",
+                                    "ne",
+                                    "includes",
+                                    "all_eq"
+                                  ]
+                                }
+                              }
+                            },
+                            "then": {
+                              "properties": {
+                                "value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 100
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "assetId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "animation",
+          "color"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "kind": {
+            "const": "animation"
+          },
+          "animation": {
+            "enum": [
+              "wave",
+              "nod",
+              "deal-left",
+              "deal-centre",
+              "deal-right",
+              "deal-dealer",
+              "reveal",
+              "point",
+              "celebrate",
+              "reassure",
+              "neutral",
+              "idle"
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 10000
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "matchValue": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "eq": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "ne": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "gt": {
+              "type": "number"
+            },
+            "gte": {
+              "type": "number"
+            },
+            "lt": {
+              "type": "number"
+            },
+            "lte": {
+              "type": "number"
+            },
+            "includes": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "all_eq": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "in": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "exists": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

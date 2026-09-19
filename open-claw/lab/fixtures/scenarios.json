@@ -1,0 +1,587 @@
+[
+  {
+    "id": "round.sequence",
+    "label": "En hel demonstrationsrunda",
+    "description": "En syntetisk, ordnad presentation[]-sekvens: startfras, fyra kort, spelarens tur, reveal, ett dealer-kort, settle, resultatreplik och idle. Ingen spelmotor eller RNG körs i denna fixture.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "speak",
+        "line": "goodluck",
+        "blocking": true
+      },
+      {
+        "type": "deal",
+        "to": "box",
+        "box": 0,
+        "handIndex": 0,
+        "card": {
+          "r": "8",
+          "s": "♣"
+        },
+        "faceDown": false,
+        "shoeDraw": 1,
+        "clip": {
+          "action": "deal-left"
+        }
+      },
+      {
+        "type": "deal",
+        "to": "dealer",
+        "box": null,
+        "handIndex": null,
+        "card": {
+          "r": "6",
+          "s": "♠"
+        },
+        "faceDown": false,
+        "shoeDraw": 2,
+        "clip": {
+          "action": "deal-dealer"
+        }
+      },
+      {
+        "type": "deal",
+        "to": "box",
+        "box": 0,
+        "handIndex": 0,
+        "card": {
+          "r": "K",
+          "s": "♥"
+        },
+        "faceDown": false,
+        "shoeDraw": 3,
+        "clip": {
+          "action": "deal-left"
+        }
+      },
+      {
+        "type": "deal",
+        "to": "dealer",
+        "box": null,
+        "handIndex": null,
+        "card": null,
+        "faceDown": true,
+        "shoeDraw": 4,
+        "clip": {
+          "action": "deal-dealer"
+        }
+      },
+      {
+        "type": "turn",
+        "box": 0,
+        "handIndex": 0,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      },
+      {
+        "type": "reveal",
+        "to": "dealer",
+        "card": {
+          "r": "K",
+          "s": "♠"
+        },
+        "shoeDraw": 4
+      },
+      {
+        "type": "deal",
+        "to": "dealer",
+        "box": null,
+        "handIndex": null,
+        "card": {
+          "r": "5",
+          "s": "♥"
+        },
+        "faceDown": false,
+        "shoeDraw": 5,
+        "clip": {
+          "action": "deal-dealer"
+        }
+      },
+      {
+        "type": "settle",
+        "dealerTotal": 21,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 0,
+            "outcome": "lose"
+          }
+        ]
+      },
+      {
+        "type": "speak",
+        "line": "lose"
+      },
+      {
+        "type": "speak",
+        "line": "placebets"
+      },
+      {
+        "type": "idle"
+      }
+    ],
+    "context": {
+      "session": {
+        "recentLosses": 2
+      }
+    },
+    "mode": "off"
+  },
+  {
+    "id": "example.speak.goodluck",
+    "label": "Lycka till",
+    "description": "Källtyp speak. Startfrasen från presentation[]; tidigare språkönskemål är en separat, simulerad preferens.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "speak",
+        "line": "goodluck",
+        "blocking": true
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.speak.insurance",
+    "label": "Försäkring erbjuds",
+    "description": "Källtyp speak. Spelmotorn har publicerat insurance; labbet ändrar bara hur informationen presenteras.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "speak",
+        "line": "insurance"
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.speak.double",
+    "label": "Dubbling bekräftad",
+    "description": "Källtyp speak. Frasen double kommer efter accepterad spelhandling, inte som ett råd att dubbla.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "speak",
+        "line": "double"
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.speak.other",
+    "label": "Övrig spelreplik",
+    "description": "Källtyp speak. Säker standard för övriga publicerade line-namn, inklusive resultat och placebets. Exakt källreplik bevaras.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "speak",
+        "line": "placebets"
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.deal.player.left",
+    "label": "Kort till vänster",
+    "description": "Källtyp deal. Publicerad deal med clip.action=deal-left, box 0–1. Varianten behåller samma destination.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "deal",
+        "to": "box",
+        "box": 0,
+        "handIndex": 0,
+        "card": {
+          "r": "8",
+          "s": "♣"
+        },
+        "faceDown": false,
+        "shoeDraw": 2,
+        "clip": {
+          "action": "deal-left"
+        }
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.deal.player.centre",
+    "label": "Kort till mitten",
+    "description": "Källtyp deal. Publicerad deal med clip.action=deal-centre, box 2–4. Labbrörelsen är en platshållare, inte kalibrerad video.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "deal",
+        "to": "box",
+        "box": 3,
+        "handIndex": 0,
+        "card": {
+          "r": "A",
+          "s": "♥"
+        },
+        "faceDown": false,
+        "shoeDraw": 3,
+        "clip": {
+          "action": "deal-centre"
+        }
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.deal.player.right",
+    "label": "Kort till höger",
+    "description": "Källtyp deal. Publicerad deal med clip.action=deal-right, box 5–6. Varianten behåller samma kort och destination.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "deal",
+        "to": "box",
+        "box": 6,
+        "handIndex": 0,
+        "card": {
+          "r": "4",
+          "s": "♦"
+        },
+        "faceDown": false,
+        "shoeDraw": 4,
+        "clip": {
+          "action": "deal-right"
+        }
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.deal.dealer",
+    "label": "Kort till croupiern",
+    "description": "Källtyp deal. Även hålkortet kommer som deal. När faceDown=true projiceras card alltid till null.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "deal",
+        "to": "dealer",
+        "box": null,
+        "handIndex": null,
+        "card": null,
+        "faceDown": true,
+        "shoeDraw": 5,
+        "clip": {
+          "action": "deal-dealer"
+        }
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.reveal.dealer",
+    "label": "Visa croupierns kort",
+    "description": "Källtyp reveal. reveal innehåller först nu det publicerade hålkortets rank och färg.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "reveal",
+        "to": "dealer",
+        "card": {
+          "r": "K",
+          "s": "♠"
+        },
+        "shoeDraw": 5
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.turn.player",
+    "label": "Spelarens tur",
+    "description": "Källtyp turn. turn markerar box, handIndex och legalActions som motorn redan har beslutat.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "turn",
+        "box": 3,
+        "handIndex": 0,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.settle.blackjack",
+    "label": "Publicerad blackjack",
+    "description": "Källtyp settle. Semantisk mappning av settle.hands[].outcome=blackjack. Inga framtida kort eller odds används.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 18,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "blackjack"
+          }
+        ]
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.settle.dealerBust",
+    "label": "Croupiern över 21",
+    "description": "Källtyp settle. Semantisk mappning av det publicerade dealerTotal. Enskilda handresultat bevaras.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 23,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "win"
+          }
+        ]
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.settle.win",
+    "label": "Publicerad vinst",
+    "description": "Källtyp settle. Minst en publicerad hand har outcome=win. Detta är presentation, inte spelråd.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 18,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "win"
+          }
+        ]
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.settle.push",
+    "label": "Oavgjort",
+    "description": "Källtyp settle. Alla publicerade handresultat är push. Tomma eller blandade resultat går till övrigt resultat.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 20,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "push"
+          }
+        ]
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.settle.other",
+    "label": "Övrigt resultat / förlust",
+    "description": "Källtyp settle. Säker standard för förlust, dealer-blackjack, tomma eller blandade resultat. Resultatet ändras aldrig.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 20,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "lose"
+          }
+        ]
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "example.idle.ready",
+    "label": "Bordet väntar",
+    "description": "Källtyp idle. Publicerad idle. En återvändande spelare är simulerad kontext tills en riktig livscykelkoppling finns.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "idle"
+      }
+    ],
+    "context": {},
+    "mode": "off"
+  },
+  {
+    "id": "returning-german",
+    "label": "Återbesök · tysk hälsning",
+    "description": "Visar en simulerad trigger. OpenClaw får endast välja en variant som villkoret redan har gjort tillåten.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "speak",
+        "line": "goodluck",
+        "blocking": true
+      }
+    ],
+    "context": {
+      "playerHistory": {
+        "returning": true,
+        "preferredLanguage": "de"
+      }
+    },
+    "mode": "shadow"
+  },
+  {
+    "id": "praise",
+    "label": "Chatt · beröm",
+    "description": "Visar en simulerad trigger. OpenClaw får endast välja en variant som villkoret redan har gjort tillåten.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 23,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "win"
+          }
+        ]
+      }
+    ],
+    "context": {
+      "chat": {
+        "signal": "praise"
+      }
+    },
+    "mode": "shadow"
+  },
+  {
+    "id": "inappropriate",
+    "label": "Chatt · lugn gräns",
+    "description": "Visar en simulerad trigger. OpenClaw får endast välja en variant som villkoret redan har gjort tillåten.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 20,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "lose"
+          }
+        ]
+      }
+    ],
+    "context": {
+      "chat": {
+        "signal": "inappropriate"
+      }
+    },
+    "mode": "shadow"
+  },
+  {
+    "id": "recent-wins",
+    "label": "Tre publicerade vinster",
+    "description": "Visar en simulerad trigger. OpenClaw får endast välja en variant som villkoret redan har gjort tillåten.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 18,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "win"
+          }
+        ]
+      }
+    ],
+    "context": {
+      "session": {
+        "recentWins": 3
+      }
+    },
+    "mode": "shadow"
+  },
+  {
+    "id": "recent-losses",
+    "label": "Två publicerade förluster",
+    "description": "Visar en simulerad trigger. OpenClaw får endast välja en variant som villkoret redan har gjort tillåten.",
+    "source": "synthetic-public-shape",
+    "contextSource": "lab-simulated",
+    "events": [
+      {
+        "type": "settle",
+        "dealerTotal": 20,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "push"
+          }
+        ]
+      }
+    ],
+    "context": {
+      "session": {
+        "recentLosses": 2
+      }
+    },
+    "mode": "shadow"
+  }
+]

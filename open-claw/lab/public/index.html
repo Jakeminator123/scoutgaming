@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Croupier · OpenClaw Lab</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script type="module" src="/app.mjs"></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="Croupier lab, startsida"><span class="brand-mark" aria-hidden="true">C<span>↗</span></span><span>CROUPIER <small>OPENCLAW LAB</small></span></a>
+      <div class="connection"><span id="provider-dot" class="status-dot"></span><span id="provider-status">Ansluter till labbet…</span><span class="lab-tag">ISOLERAD TESTMILJÖ</span></div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div><p class="eyebrow">FRÅN SPELHÄNDELSE TILL UTTRYCK</p><h1 id="page-title">Ett litet labb för stora personligheter.</h1><p class="lede">Se vad spelmotorn säger, vilka villkor som passar och hur OpenClaw väljer inom ramen.</p></div>
+        <div class="intro-note"><span class="tiny-label">SAMMA KONTRAKT, OLIKA YTA</span><p>Enkla animationer nu.<br>Exakta videotagningar sedan.</p></div>
+      </section>
+
+      <div id="global-message" class="message" role="status" hidden></div>
+
+      <section class="toolbar" aria-label="Uppspelning">
+        <div class="scenario-control"><label for="scenario-select" class="tiny-label">SCENARIO</label><select id="scenario-select"><option value="">Laddar scenarier…</option></select></div>
+        <button id="play-scenario" class="button primary" disabled><span aria-hidden="true">▶</span> Spela scenario</button>
+        <button id="step-scenario" class="button secondary" disabled>Stega <span aria-hidden="true">→</span></button>
+        <button id="stop-playback" class="button subtle" disabled>Stoppa</button>
+        <fieldset class="mode-switch"><legend>OpenClaw-läge</legend><label><input type="radio" name="mode" value="off" checked><span>Standardlinje</span></label><label><input type="radio" name="mode" value="shadow"><span>Shadow</span></label><label><input type="radio" name="mode" value="active"><span>Aktiv</span></label></fieldset>
+      </section>
+      <p id="mode-description" class="mode-description">Standardlinje: kodens standardval spelas. OpenClaw anropas inte.</p>
+
+      <div class="workspace">
+        <aside class="event-panel panel" aria-labelledby="events-title">
+          <div class="panel-heading"><div><p class="tiny-label">01 · SPELMOTORN</p><h2 id="events-title">Händelser <span id="event-count" class="count">0</span></h2></div></div>
+          <label class="search-box"><span class="sr-only">Sök händelser</span><input id="event-search" type="search" placeholder="Sök namn eller kod…"><span aria-hidden="true">⌕</span></label>
+          <nav id="event-tree" class="event-tree" aria-label="Händelsekatalog"></nav>
+          <div class="source-note"><span class="verified-dot"></span><p>Sex källtyper från Croupier.<br>Namnen i trädet är labbets presentationer av dem.</p></div>
+        </aside>
+
+        <section class="lab-column" aria-label="Animation och beslut">
+          <div class="stage-panel panel">
+            <div class="panel-heading"><div><p class="tiny-label">02 · PRESENTATION</p><h2 id="stage-title">Redo när du är.</h2></div><span id="playback-counter" class="code-badge">LAB</span></div>
+            <div id="animation-stage" class="animation-stage" role="img" aria-label="En enkel animerad croupier vid ett spelbord">
+              <div class="stage-grid" aria-hidden="true"></div>
+              <div id="stage-caption" class="stage-caption">Välj en händelse eller spela ett scenario.</div>
+              <svg id="dealer-scene" class="dealer-scene" viewBox="0 0 640 360" aria-hidden="true">
+                <defs><linearGradient id="felt" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e5e9dc"/><stop offset="1" stop-color="#d9dfcc"/></linearGradient><pattern id="card-pattern" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 4 4 0 8 4 4 8Z" fill="none" stroke="#f4f2eb" stroke-width=".6"/></pattern></defs>
+                <ellipse class="table-shadow" cx="320" cy="311" rx="269" ry="35" fill="#303a2210"/>
+                <g id="dealer-body"><path d="M250 241v-65c0-25 28-40 70-40s70 15 70 40v65" fill="#ece9e1" stroke="#242d3c" stroke-width="2"/><path class="vest" d="m278 143 42 31 42-31 18 96H260Z" fill="var(--asset-color, #315ae8)"/><path d="m301 145 19 29 19-29" fill="#fffdf5"/><path d="m314 156 6 4 6-4-2 15h-8Z" fill="#242d3c"/><g id="dealer-head"><rect x="307" y="123" width="26" height="27" rx="11" fill="#dba98c"/><ellipse cx="320" cy="95" rx="41" ry="45" fill="#efc3a5" stroke="#242d3c" stroke-width="2"/><path d="M279 97V82c0-34 24-47 46-45 32 2 48 27 37 58l-8-18c-16 5-32-4-40-14-5 12-19 21-34 20Z" fill="#242d3c"/><path d="M298 95h8m28 0h8" stroke="#242d3c" stroke-width="3" stroke-linecap="round"/><path class="mouth" d="M309 114q11 9 22 0" stroke="#92563e" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="290" cy="110" r="5" fill="#eaa184" opacity=".55"/><circle cx="350" cy="110" r="5" fill="#eaa184" opacity=".55"/></g><g id="arm-left"><path d="M260 167q-27 27-20 64l50 11" fill="none" stroke="#f5f1e7" stroke-width="25" stroke-linecap="round"/><ellipse cx="296" cy="242" rx="18" ry="11" fill="#efc3a5" stroke="#242d3c" stroke-width="1.5"/></g><g id="arm-right"><path d="M380 167q27 27 20 64l-50 11" fill="none" stroke="#f5f1e7" stroke-width="25" stroke-linecap="round"/><ellipse cx="344" cy="242" rx="18" ry="11" fill="#efc3a5" stroke="#242d3c" stroke-width="1.5"/></g></g>
+                <path d="M75 242Q320 197 565 242l34 63q-279 59-558 0Z" fill="url(#felt)" stroke="#687354" stroke-width="2"/><path d="M88 247q232-39 464 0" fill="none" stroke="#fcfcf1" stroke-width="2"/>
+                <path d="M150 289q170 34 340 0" fill="none" stroke="#a4ad95" stroke-width="1.5" stroke-dasharray="4 5"/>
+                <g class="seat-labels" fill="#6e7862" font-size="10" font-family="monospace" letter-spacing="1"><text x="143" y="328">LEFT</text><text x="300" y="345">CENTRE</text><text x="463" y="328">RIGHT</text></g>
+                <g class="shoe"><path d="m445 222 51 8-9 37-51-8Z" fill="#eeece5" stroke="#7c8271" stroke-width="1.5"/><path d="m447 230 40 6-5 19-40-6Z" fill="#315ae8"/><path d="m447 230 40 6-5 19-40-6Z" fill="url(#card-pattern)"/></g>
+                <g id="moving-card"><rect x="305" y="233" width="30" height="43" rx="4" fill="#315ae8" stroke="#fcfbf7" stroke-width="2"/><rect x="309" y="237" width="22" height="35" rx="2" fill="url(#card-pattern)"/></g>
+                <g id="reveal-card"><rect x="305" y="233" width="30" height="43" rx="4" fill="#fffdf5" stroke="#bcc0b4"/><text x="311" y="248" fill="#bc4c43" font-size="12" font-family="serif">A</text><text x="315" y="265" fill="#bc4c43" font-size="17">♥</text></g>
+                <g id="chips"><ellipse cx="212" cy="278" rx="14" ry="5" fill="#2447c2"/><path d="M198 272v6m28-6v6" stroke="#2447c2" stroke-width="2"/><ellipse cx="212" cy="272" rx="14" ry="5" fill="#6180ec" stroke="#2447c2"/><ellipse cx="212" cy="272" rx="8" ry="2.5" fill="none" stroke="#f5f5f7"/></g>
+                <g id="sparkles" fill="var(--asset-color, #315ae8)"><path d="m236 103 4 9 9 4-9 4-4 9-4-9-9-4 9-4Z"/><path d="m413 80 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/><circle cx="417" cy="139" r="4"/><circle cx="232" cy="68" r="3"/></g>
+              </svg>
+              <video id="asset-video" playsinline preload="none" hidden></video>
+              <div class="stage-footer"><span id="stage-event" class="code-badge">presentation[]</span><span id="asset-kind">Schematisk animation</span></div>
+            </div>
+            <div class="selection-summary"><div><span class="tiny-label">VALD VARIANT</span><strong id="selected-variant">Ingen händelse ännu</strong><code id="selected-asset">—</code></div><span id="gate-result" class="pill">Väntar</span></div>
+          </div>
+
+          <section class="context-panel panel" aria-labelledby="context-title">
+            <div class="compact-heading"><h2 id="context-title">Kontext att prova</h2><span class="pill muted">LABBDATA</span></div>
+            <div class="context-grid"><label>Chattsignal<select id="chat-signal"><option value="none">Ingen särskild signal</option><option value="praise">Beröm till croupiern</option><option value="inappropriate">Olämpligt språk</option></select></label><label>Språkpreferens<select id="preferred-language"><option value="">Ingen preferens</option><option value="de">Tyska · de</option><option value="sv">Svenska · sv</option><option value="en">Engelska · en</option></select></label><label>Vinster i följd<input id="recent-wins" type="number" value="0" min="0" max="100"></label><label>Förluster i följd<input id="recent-losses" type="number" value="0" min="0" max="100"></label></div>
+            <label class="checkbox-label"><input id="returning-player" type="checkbox"> Återkommande spelare</label>
+            <p class="field-help">Simulerade signaler som du styr. Spelutfall kommer fortfarande från händelsen.</p>
+          </section>
+
+          <section class="trace-panel panel" aria-labelledby="trace-title"><div class="compact-heading"><h2 id="trace-title">Beslutet, steg för steg</h2><button id="clear-trace" class="text-button">Rensa</button></div><ol id="decision-trace" class="decision-trace"><li class="empty-state">Spela en händelse för att följa vägen genom mellanlagret.</li></ol><details class="payload-details"><summary>Visa händelse och beslut som JSON</summary><pre id="decision-json">{}</pre></details></section>
+
+          <details class="import-panel panel"><summary>Prova presentation[] från källkontraktet</summary><p>Klistra in en publik Partner API-respons med <code>presentation</code>, en händelse eller en array. Labbets kontext används även här. Detta är en manuell kontraktsimport; labbet är inte kopplat till en aktiv spelklient.</p><label for="import-events" class="sr-only">Presentation JSON</label><textarea id="import-events" rows="5" spellcheck="false" placeholder='[{"type":"speak","line":"goodluck","blocking":true}]'></textarea><button id="play-import" class="button secondary">Spela inlästa händelser</button><p id="import-result" class="field-help" role="status"></p></details>
+        </section>
+
+        <aside class="inspector-column" aria-label="Katalogeditor och chatt">
+          <section class="editor-panel panel" aria-labelledby="editor-title"><div class="panel-heading"><div><p class="tiny-label">03 · REDIGERBAR KATALOG</p><h2 id="editor-title">Händelse → variant</h2></div><span id="dirty-indicator" class="dirty-indicator" hidden>Osparat</span></div><div id="event-editor" class="event-editor"><p class="empty-state">Välj en händelse i listan.</p></div><div class="editor-footer"><button id="save-catalog" class="button primary" disabled>Spara katalog</button><span id="catalog-revision" class="field-help">revision —</span></div><div id="save-message" class="save-message" role="status"></div></section>
+          <section class="chat-panel panel" aria-labelledby="chat-title"><div class="compact-heading"><div><p class="tiny-label">SEPARAT SAMTAL</p><h2 id="chat-title">Prata med OpenClaw</h2></div><span class="chat-symbol" aria-hidden="true">✳</span></div><p class="chat-intro">Diskutera en variant eller fråga om katalogen. Ändringar gör du i editorn.</p><div id="chat-messages" class="chat-messages" role="log" aria-live="polite"><p class="chat-system">Chatten kopplas till din OpenClaw Gateway när den är konfigurerad.</p></div><form id="chat-form"><label for="chat-input" class="sr-only">Meddelande till OpenClaw</label><textarea id="chat-input" rows="2" maxlength="4000" placeholder="Hur skulle ett tyskt välkomnande kunna se ut?" required></textarea><button id="send-chat" class="button secondary" type="submit">Skicka <span aria-hidden="true">↗</span></button></form></section>
+        </aside>
+      </div>
+      <footer class="page-footer"><span>Croupier / OpenClaw Lab</span><p>RNG → händelse → show · standardlinje → trigger → variant → take.</p><span id="service-info">localhost</span></footer>
+    </main>
+  </body>
+</html>

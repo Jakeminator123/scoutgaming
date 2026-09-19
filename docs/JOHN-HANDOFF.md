@@ -1,3 +1,70 @@
+## 2026-09-20 — isolated OpenClaw presentation lab and Render blueprint
+
+Implemented `open-claw/lab/` on Jakob's explicit request as a separate, runnable
+experiment. It starts with `npm --prefix open-claw/lab start` at
+`http://localhost:4188`. No Croupier gameplay, media/player, calibration or real
+database file was changed. No GitHub repo, Render resource or wiki update was
+created. Integration into Kevin's product remains a separate decision.
+
+The lab freezes the six actual `presentation[]` source types from
+`web/partner-presentation.mjs`: speak, deal, reveal, settle, turn, idle. Its 16
+semantic nodes each have a standard lane and contextual variant (32 animation
+assets). Swedish labels accompany exact code names. The JSON catalog, schemas,
+safe trigger DSL, example scenarios, linked editor, SVG presentation stage,
+decision trace, ordered import endpoint and separate operator chat live together
+in this self-contained folder. Editable revisions persist under ignored `data/`
+with previous snapshots in `data/history/`. Browser editing was exercised by
+changing a label, saving, reloading to verify persistence and restoring it.
+
+Modes are off, shadow and active. Only eligible variant IDs may be advised by
+OpenClaw; request ID and catalog revision are checked. Missing, late, malformed,
+foreign or ineligible advice falls back. In-flight catalog changes invalidate
+advice. Inputs project out hidden game data, identities, money and free-form
+chat instructions; face-down card ranks/suits never reach the director. Batch
+requests have a shared 25-second advice budget. Duplicate request IDs reuse a
+bounded in-memory decision, but conflicting input is rejected. The local server
+rejects foreign origins and non-loopback Host values. Public listeners require
+the separate lab bearer token, including when .env is changed while running.
+
+OpenClaw adapter uses the official HTTP endpoint with separate no-tools
+presentation/chat agents. `OPENCLAWAPI_KEY` is the user's chosen variable for
+Gateway authentication, read server-side from the root `.env`; it is not an
+implicit alias for an inherited `OPENAI_API_KEY`. The Gateway requires a
+separate provider credential (`OPENCLAW_MODEL_API_KEY`). Render blueprint
+declares public Director + private Gateway and persistent disks; Docker Compose
+can expose the Director at loopback:4189 behind the local browser server:4188.
+The official Gateway image is pinned to 2026.9.5 and its verified OCI digest.
+The local server initiates the Render connection with `LAB_REMOTE_URL` and
+`LAB_REMOTE_TOKEN`; no inbound laptop tunnel is required.
+
+Validation: 28 Node tests passed covering the real Croupier event producer,
+projection, triggers, schema cross-references, all gate modes, stale revisions,
+HTTP auth/origin checks, editor conflicts, idempotency, bounded batches, remote
+relay and deployment secret separation. `npm run check` validates 16 nodes,
+32 assets and 33 fixture events. JavaScript syntax and `git diff --check`
+passed. Codex in-app browser showed the UI and exercised the full 12-event
+round through idle, a German-preference trigger (2 eligible choices), active
+mode's genuine unconfigured-Gateway fallback, manual alternative preview and
+save/reload. A background-tab RAF completion delay found during that pass was
+fixed with an independent wall-clock deadline and cancelled stale frames;
+editor/context mutation is locked during playback/save. No product-media
+approval or lipsync result is implied by these lab checks.
+
+Remaining: actual OpenClaw/provider credential and Gateway URL were not
+configured at validation time, so real model chat/advice are not verified.
+Docker is unavailable on this machine; image build, pinned CLI config
+validation, Render mount permissions and cloud deployment remain to test.
+Jira CAC was inaccessible in the signed-out browser and no matching issue or
+transition was claimed. Player history/chat classification are simulated; no
+production memory or moderation pipeline exists here. The normal game client
+does not directly consume Partner `presentation[]`; this lab is a separate
+consumer contract, not a claim of existing product integration. Kevin's reported
+YAML/event/take and Generations API want/no proposal is recorded as future
+intake before a reviewed catalog. The current catalog accepts simple animation
+assets; real video-bank activation needs complete take hashes, speech bundles,
+calibration and shared-player acceptance. See the lab README, deployment guide
+and `media/README.md` for the staged plan and video register fields.
+
 ## 2026-09-20 — V3 documentation and canvas correction
 
 Documentation-only correction of the Animation events V3 model; no gameplay,

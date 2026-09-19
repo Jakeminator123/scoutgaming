@@ -1,0 +1,477 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://croupier.invalid/lab/event.schema.json",
+  "title": "Public presentation event — minimal lab projection",
+  "description": "Allowlisted projection of Croupier presentation[]. This schema describes lab input after normalization, not all fields of the upstream Partner API. Private state and financial amounts are discarded.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "line"
+      ],
+      "properties": {
+        "type": {
+          "const": "speak"
+        },
+        "line": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+        },
+        "blocking": {
+          "type": "boolean"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "to",
+        "box",
+        "card",
+        "faceDown",
+        "clip"
+      ],
+      "properties": {
+        "type": {
+          "const": "deal"
+        },
+        "to": {
+          "enum": [
+            "box",
+            "dealer"
+          ]
+        },
+        "box": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "handIndex": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "card": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "r",
+                "s"
+              ],
+              "properties": {
+                "r": {
+                  "enum": [
+                    "A",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7",
+                    "8",
+                    "9",
+                    "10",
+                    "J",
+                    "Q",
+                    "K"
+                  ]
+                },
+                "s": {
+                  "enum": [
+                    "♠",
+                    "♥",
+                    "♦",
+                    "♣"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "faceDown": {
+          "type": "boolean"
+        },
+        "shoeDraw": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "clip": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ],
+          "properties": {
+            "action": {
+              "enum": [
+                "deal-left",
+                "deal-centre",
+                "deal-right",
+                "deal-dealer"
+              ]
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "faceDown": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "card": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "card": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "r",
+                  "s"
+                ],
+                "properties": {
+                  "r": {
+                    "enum": [
+                      "A",
+                      "2",
+                      "3",
+                      "4",
+                      "5",
+                      "6",
+                      "7",
+                      "8",
+                      "9",
+                      "10",
+                      "J",
+                      "Q",
+                      "K"
+                    ]
+                  },
+                  "s": {
+                    "enum": [
+                      "♠",
+                      "♥",
+                      "♦",
+                      "♣"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "to": {
+                "const": "dealer"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "box": {
+                "type": "null"
+              },
+              "clip": {
+                "properties": {
+                  "action": {
+                    "const": "deal-dealer"
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "box": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "to": {
+                "const": "box"
+              },
+              "box": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "clip": {
+                "properties": {
+                  "action": {
+                    "const": "deal-left"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "to": {
+                "const": "box"
+              },
+              "box": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 4
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "clip": {
+                "properties": {
+                  "action": {
+                    "const": "deal-centre"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "to": {
+                "const": "box"
+              },
+              "box": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 6
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "clip": {
+                "properties": {
+                  "action": {
+                    "const": "deal-right"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "to",
+        "card"
+      ],
+      "properties": {
+        "type": {
+          "const": "reveal"
+        },
+        "to": {
+          "const": "dealer"
+        },
+        "card": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "r",
+            "s"
+          ],
+          "properties": {
+            "r": {
+              "enum": [
+                "A",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "J",
+                "Q",
+                "K"
+              ]
+            },
+            "s": {
+              "enum": [
+                "♠",
+                "♥",
+                "♦",
+                "♣"
+              ]
+            }
+          }
+        },
+        "shoeDraw": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "dealerTotal",
+        "dealerBlackjack",
+        "hands"
+      ],
+      "properties": {
+        "type": {
+          "const": "settle"
+        },
+        "dealerTotal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        },
+        "dealerBlackjack": {
+          "type": "boolean"
+        },
+        "hands": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "box",
+              "outcome"
+            ],
+            "properties": {
+              "box": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6
+              },
+              "outcome": {
+                "enum": [
+                  "blackjack",
+                  "win",
+                  "push",
+                  "lose"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "box",
+        "handIndex",
+        "legalActions"
+      ],
+      "properties": {
+        "type": {
+          "const": "turn"
+        },
+        "box": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "handIndex": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legalActions": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "hit",
+              "stand",
+              "double",
+              "split"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "idle"
+        }
+      }
+    }
+  ]
+}
