@@ -60,6 +60,18 @@ service**, with its Control UI, terminal, browser and cron disabled. This dedica
 Gateway is not the operator's general-purpose personal OpenClaw installation.
 Its configuration is externally managed (`OPENCLAW_CONFIG_READONLY=1`).
 
+### Dashboard access is not enabled yet
+
+The native OpenClaw dashboard is not the lab editor. This blueprint currently
+keeps its Control UI disabled and the Gateway private, so it does not create a
+public OpenClaw dashboard URL. The desired operator experience is a single
+password/secret field, without adding a separate SSO or MFA flow. Native remote
+browser access still normally needs one initial device approval; switching to
+password mode does not remove that requirement. See the
+[pinned sign-in and pairing guide](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/web/control-ui/connect-and-pair.md).
+An SSH tunnel or a separately reviewed HTTPS entry is a follow-up access choice,
+not a change already made by these docs. No auth bypass is configured.
+
 ## Render setup
 
 1. Make the lab files available on the intended repository branch. In the Render
