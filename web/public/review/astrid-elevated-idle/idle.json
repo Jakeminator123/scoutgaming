@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "jobId": "87fc5852-f3a5-4046-a93f-f1ac21e35b0d",
+  "model": "seedance_2_0",
+  "src": "review/astrid-elevated-idle/actor-packed.mp4",
+  "width": 960,
+  "height": 760,
+  "fps": 24,
+  "frames": 145,
+  "sourceSha256": "93e4f6ee4b3bdbddbada796526f81505a2abe10ac7fde0629d41b5dd1503028f",
+  "sha256": "f7ef00558bb312157ca9d5a46f4fdde282f4d3e973b8a843a406e04af0494b1b",
+  "crop": [
+    560,
+    0,
+    960,
+    760
+  ],
+  "cameraSource": "de1f90a9-b8db-4a64-a46d-7c8f9d0665ef native frame 96",
+  "status": "gameplay-review"
+}

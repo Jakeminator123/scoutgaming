@@ -1,12 +1,13 @@
 import { movementCues } from './movement-cues.mjs';
 import { animateProgress } from './animation-clock.mjs';
 import * as THREE from './vendor/three/three.module.js';
+import {cardFaceArt} from './card-art.mjs';
 
 // Physical card faces, paper edge and a lit turnover; the resting hand stays
 // in the existing accessible DOM. One short render loop per dealt card.
-export function createDealingCard({scene, camera, renderer,viewport=null,surfaceHeight=0,unitScale=1}) {
+export function createDealingCard({scene, camera, renderer,viewport=null,surfaceHeight=0,unitScale=1,cardBackTexture=null}) {
   const textures = new Map();
-  const back = texture(null);
+  const back = cardBackTexture??texture(null);
   function texture(card) {
     const c=document.createElement('canvas'); c.width=280; c.height=392;
     const x=c.getContext('2d');
@@ -31,10 +32,10 @@ export function createDealingCard({scene, camera, renderer,viewport=null,surface
     const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((x-view.x)/view.width*2-1,1-(y-view.y)/view.height*2),camera);
     return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-height),new THREE.Vector3());
   }
-  return async function deal({origin, target, card, faceDown, handoff, duration=680, releaseFraction=.38, onCue=()=>{}}) {
+  return async function deal({origin, target, card, faceDown, handoff, worldCorners, duration=680, releaseFraction=.38, onCue=()=>{}}) {
     const cardHeight=surfaceHeight+4*unitScale;
-    const w=viewport?atScreen(target.x,target.y,cardHeight).distanceTo(atScreen(target.x+target.width,target.y,cardHeight)):target.width;
-    const h=viewport?atScreen(target.x,target.y,cardHeight).distanceTo(atScreen(target.x,target.y+target.height,cardHeight)):target.height*Math.SQRT2;
+    const w=worldCorners?worldCorners[0].distanceTo(worldCorners[1]):viewport?atScreen(target.x,target.y,cardHeight).distanceTo(atScreen(target.x+target.width,target.y,cardHeight)):target.width;
+    const h=worldCorners?worldCorners[0].distanceTo(worldCorners[3]):viewport?atScreen(target.x,target.y,cardHeight).distanceTo(atScreen(target.x,target.y+target.height,cardHeight)):target.height*Math.SQRT2;
     const shape=new THREE.Shape();const r=Math.min(w,h)*.055;
     shape.moveTo(-w/2+r,-h/2);shape.lineTo(w/2-r,-h/2);shape.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);
     shape.lineTo(w/2,h/2-r);shape.quadraticCurveTo(w/2,h/2,w/2-r,h/2);shape.lineTo(-w/2+r,h/2);shape.quadraticCurveTo(-w/2,h/2,-w/2,h/2-r);shape.lineTo(-w/2,-h/2+r);shape.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
@@ -43,7 +44,9 @@ export function createDealingCard({scene, camera, renderer,viewport=null,surface
     // ShapeGeometry UVs are world units; register the artwork to the card.
     const p=geo.attributes.position,uv=geo.attributes.uv;
     for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)+w/2)/w,1-(p.getZ(i)+h/2)/h);
-    const frontMat=new THREE.MeshStandardMaterial({map:card?textures.get(key):back,roughness:.64,metalness:0});
+    let feltArt;
+    if(worldCorners&&card){feltArt=new THREE.CanvasTexture(cardFaceArt(card).canvas);feltArt.colorSpace=THREE.SRGBColorSpace;}
+    const frontMat=new THREE.MeshStandardMaterial({map:feltArt??(card?textures.get(key):back),roughness:.64,metalness:0});
     const backMat=new THREE.MeshStandardMaterial({map:back,roughness:.64,side:THREE.BackSide});
     const root=new THREE.Group();const face=new THREE.Mesh(geo,frontMat);face.position.y=.4*unitScale;face.castShadow=true;root.add(face);
     const reverse=new THREE.Mesh(geo,backMat);reverse.position.y=-.4*unitScale;reverse.castShadow=true;root.add(reverse);
@@ -51,7 +54,8 @@ export function createDealingCard({scene, camera, renderer,viewport=null,surface
     edgeGeo.rotateX(-Math.PI/2);edgeGeo.translate(0,-.35*unitScale,0);
     const edgeMat=new THREE.MeshStandardMaterial({color:'#dfdbcf',roughness:.9});
     const paper=new THREE.Mesh(edgeGeo,edgeMat);paper.castShadow=true;root.add(paper);scene.add(root);
-    const start=origin.clone(),mid=handoff ? atScreen(handoff.x,handoff.y,surfaceHeight+14*unitScale) : start.clone(),end=atScreen(target.x+target.width/2,target.y+target.height/2,cardHeight);
+    const start=origin.clone(),mid=handoff ? atScreen(handoff.x,handoff.y,surfaceHeight+14*unitScale) : start.clone(),end=worldCorners?worldCorners.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).multiplyScalar(.25):atScreen(target.x+target.width/2,target.y+target.height/2,cardHeight);
+    const edge=worldCorners?.[1].clone().sub(worldCorners[0]),yaw=edge?Math.atan2(-edge.z,edge.x):0;
     const cues=movementCues(onCue);
     try {
       await animateProgress(duration,t=>{
@@ -61,12 +65,12 @@ export function createDealingCard({scene, camera, renderer,viewport=null,surface
         root.position.y+=Math.sin(t*Math.PI)*12*unitScale;
         // Back shows at the shoe. Turn face up only after the handoff.
         const flip=Math.max(0,Math.min(1,(t-split)/.4));
-        root.rotation.set(0,-.45*(1-t),faceDown?Math.PI:Math.PI*(1-flip));
+        root.rotation.set(0,yaw-.45*(1-t),faceDown?Math.PI:Math.PI*(1-flip));
         root.scale.setScalar(.8+.2*t);renderer.render(scene,camera);
         cues(t, !document.hidden);
       });
     } finally {
-    scene.remove(root);geo.dispose();edgeGeo.dispose();frontMat.dispose();backMat.dispose();edgeMat.dispose();renderer.render(scene,camera);
+    scene.remove(root);geo.dispose();edgeGeo.dispose();frontMat.dispose();backMat.dispose();edgeMat.dispose();feltArt?.dispose();renderer.render(scene,camera);
     }
   };
 }
