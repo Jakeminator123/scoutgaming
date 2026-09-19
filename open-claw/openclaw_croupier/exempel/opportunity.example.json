@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "presentation-opportunity.v1",
+  "opportunityId": "opp-demo-104",
+  "tableId": "table-demo-1",
+  "roundId": "round-demo-8",
+  "eventId": "event-demo-104",
+  "showEvent": "show.hand.think",
+  "publicSeq": 104,
+  "expectedShowSeq": 26,
+  "epoch": 2,
+  "policyRevision": "policy-demo-7",
+  "catalogRevision": "catalog-demo-3",
+  "expiresAtMs": 1790000000000,
+  "contextDigest": "sha256:e6248e4ba9c5ac2530a756177591bad02119f35210a38c7a7d1a42c320de621e",
+  "context": {
+    "personaId": "astrid",
+    "locale": "sv-SE",
+    "publicSummary": "Rundan väntar på ett spelarbeslut. Ingen ny kortinformation är offentliggjord.",
+    "chatText": "Hej, hör du mig?",
+    "senderSeat": 2
+  },
+  "allowedCandidates": [
+    {
+      "id": "candidate-neutral-a",
+      "description": "Behåll godkänd neutral väntan utan tal."
+    },
+    {
+      "id": "candidate-attention-a",
+      "description": "Godkänd diskret uppmärksamhet mot verifierad box 2; ingen ny replik."
+    }
+  ]
+}
