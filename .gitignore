@@ -9,4 +9,5 @@ content/bake/frames/
 content/bake/masks/
 content/cutout/
 .lipsync-venv/
+.env
 vendor/
