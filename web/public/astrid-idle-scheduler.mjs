@@ -29,18 +29,25 @@ export function createIdleScheduler({segments,random=Math.random,glanceProbabili
   };
 }
 
-// Segments must start and end on ready-pose frames so any order splices.
+// The base loop is its own media; glance segments live in the waiting clip and
+// must start and end on its ready-pose frames so any order splices.
 export function idleSegmentErrors(take){
-  const errors=[],ready=new Set(take?.readyFrames??[]);
-  for(const [name,s] of Object.entries(take?.segments??{})){
+  const errors=[],glances=take?.glances,ready=new Set(glances?.readyFrames??[]);
+  if(!take?.base?.src||!Number.isInteger(take?.base?.frames))errors.push('base media missing');
+  if(!glances?.src||!Number.isInteger(glances?.frames))errors.push('glance media missing');
+  const segments=take?.segments??{};
+  if(segments.base)errors.push('base must be the base media loop, not a segment of the waiting clip');
+  if(!Object.keys(segments).length)errors.push('no glance segments');
+  for(const [name,s] of Object.entries(segments)){
     if(!Number.isInteger(s?.start)||!Number.isInteger(s?.end)||s.start>=s.end)errors.push(`${name}: invalid range`);
     else{
       if(!ready.has(s.start))errors.push(`${name}: start ${s.start} is not a ready-pose frame`);
       if(!ready.has(s.end))errors.push(`${name}: end ${s.end} is not a ready-pose frame`);
-      if(s.end>=take.frames)errors.push(`${name}: end ${s.end} beyond ${take.frames} frames`);
+      if(glances&&s.end>=glances.frames)errors.push(`${name}: end ${s.end} beyond ${glances.frames} frames`);
     }
   }
-  if(!take?.segments?.base)errors.push('base segment missing');
+  const offset=take?.spliceOffset;
+  if(offset!==undefined&&!(Array.isArray(offset)&&offset.length===2&&offset.every(Number.isFinite)))errors.push('spliceOffset must be [dx,dy] source pixels');
   return errors;
 }
 

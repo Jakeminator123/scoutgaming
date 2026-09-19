@@ -6,9 +6,11 @@ import {fileURLToPath} from 'node:url';
 import {createIdleScheduler,idleSegmentErrors,interruptFrame,mulberry32} from '../web/public/astrid-idle-scheduler.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
-const idlePath=path.resolve(dir,'../web/public/review/astrid-green-waiting/idle.json');
+const root=path.resolve(dir,'../web/public');
+const idlePath=path.join(root,'review/astrid-green-waiting/idle.json');
 const idle=fs.existsSync(idlePath)?JSON.parse(fs.readFileSync(idlePath)):null;
-const segments=idle?.segments??{base:{start:90,end:120},glanceLeft:{start:0,end:41},glanceRight:{start:41,end:90},full:{start:0,end:120}};
+const glanceSegments=idle?.segments??{glanceLeft:{start:0,end:41},glanceRight:{start:41,end:90},full:{start:0,end:120}};
+const segments={base:{start:0,end:192},...glanceSegments};
 
 test('the waiting cadence never glances twice in a row and never idles more than 3 base loops',()=>{
   for(const seed of [1,7,42,2026,987654]){
@@ -35,19 +37,26 @@ test('the cadence is not periodic: base holds vary in length',()=>{
   assert.ok(new Set(runs).size>=3,'base run lengths 1, 2 and 3 all occur');
 });
 
-test('segments only start and end on ready-pose frames, so an interrupt waits for the segment end',()=>{
-  const take={frames:121,readyFrames:[0,41,90,120],segments};
+test('glance segments only start and end on the waiting clip ready-pose frames; base is its own loop',()=>{
+  const take={base:{src:'b.mp4',frames:193},glances:{src:'g.mp4',frames:121,readyFrames:[0,41,90,120]},segments:glanceSegments,spliceOffset:[0,15.3]};
   assert.deepEqual(idleSegmentErrors(take),[]);
-  for(const s of Object.values(segments))assert.ok(take.readyFrames.includes(interruptFrame(s)));
-  assert.ok(idleSegmentErrors({...take,segments:{...segments,bad:{start:10,end:41}}}).some(e=>e.includes('bad')));
-  assert.ok(idleSegmentErrors({...take,segments:{glanceLeft:segments.glanceLeft}}).some(e=>e.includes('base')));
+  for(const s of Object.values(glanceSegments))assert.ok(take.glances.readyFrames.includes(interruptFrame(s)));
+  assert.ok(idleSegmentErrors({...take,segments:{...glanceSegments,bad:{start:10,end:41}}}).some(e=>e.includes('bad')));
+  assert.ok(idleSegmentErrors({...take,segments:{...glanceSegments,base:{start:90,end:120}}}).some(e=>e.includes('base must be')));
+  assert.ok(idleSegmentErrors({...take,base:undefined}).some(e=>e.includes('base media')));
+  assert.ok(idleSegmentErrors({...take,spliceOffset:[1]}).some(e=>e.includes('spliceOffset')));
 });
 
-test('the installed idle manifest validates against the takes it cuts to',{skip:!idle},()=>{
-  const dealer=JSON.parse(fs.readFileSync(path.resolve(dir,'../web/public/review/astrid-table-v2/take.json')));
-  assert.equal(idle.action,'idle');assert.equal(idle.frames,121);assert.equal(idle.fps,24);
-  assert.deepEqual(idle.camera.placement,dealer.camera.placement);
-  assert.deepEqual(idleSegmentErrors(idle),[]);
-  assert.equal(idle.segments.base.end,idle.frames-1);
-  assert.match(idle.sha256,/^[a-f0-9]{64}$/);
+test('the installed idle keeps the eye-contact loop as base and splices 15777d5f glances with the measured offset',{skip:!idle},()=>{
+  const dealer=JSON.parse(fs.readFileSync(path.join(root,'review/astrid-table-v2/take.json')));
+  const elevated=JSON.parse(fs.readFileSync(path.join(root,'review/astrid-elevated-idle/idle.json')));
+  assert.equal(idle.action,'idle');assert.deepEqual(idleSegmentErrors(idle),[]);
+  assert.equal(idle.base.jobId,'2a721f7d-c2da-4e7a-9812-9d9b4a087232');
+  assert.equal(idle.base.src,elevated.src);assert.equal(idle.base.sha256,elevated.sha256);assert.equal(idle.base.frames,193);
+  assert.equal(idle.glances.jobId,'15777d5f-4085-484e-a170-eb5c9a13d7b0');assert.equal(idle.glances.frames,121);
+  assert.ok(!idle.segments.base,'no waiting-clip frames are used as base');
+  assert.deepEqual(Object.keys(idle.segments).sort(),['full','glanceLeft','glanceRight']);
+  assert.deepEqual(idle.camera.placement,dealer.camera.placement);assert.deepEqual(idle.glances.camera.placement,dealer.camera.placement);
+  assert.deepEqual(idle.base.crop.slice(0,2),idle.glances.crop.slice(0,2),'shared crop origin');
+  assert.equal(idle.spliceOffset[0],0);assert.ok(Math.abs(idle.spliceOffset[1]-15.3)<1e-9);
 });

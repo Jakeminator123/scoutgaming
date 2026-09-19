@@ -3,7 +3,7 @@
   "generationId": "15777d5f",
   "sourceSha256": "849b241e6a9b769bef1cd40299516c25f1a5aba28bf865b2d3593854731765bf",
   "action": "idle",
-  "status": "Kevin 2026-09-19 ~19:00: green-screen waiting loop, to be installed as Astrid's in-game idle with a randomized scheduler. Zero generation here.",
+  "status": "Kevin 2026-09-19 (correction): COMBINE, not swap. The eye-contact loop 2a721f7d that was already playing stays the base idle; 15777d5f only contributes the glance segments, spliced at the base loop boundary. Zero generation.",
   "readyPose": "frame 0 and frame 120 (mean abs diff 1.44 per README)",
   "crop": [
     560,
@@ -52,11 +52,6 @@
     }
   },
   "segments": {
-    "base": {
-      "start": 90,
-      "end": 120,
-      "note": "calm breathing, longest near-still span; forward loop 120->90"
-    },
     "glanceLeft": {
       "start": 0,
       "end": 41,
@@ -91,5 +86,74 @@
       "glanceRight",
       "full"
     ]
-  }
+  },
+  "base": {
+    "jobId": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+    "manifest": "web/public/review/astrid-elevated-idle/idle.json",
+    "src": "review/astrid-eye-contact-idle/actor-packed.mp4",
+    "sha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+    "sourceSha256": "67d9ee9800577ae4fa336c66b02f95bdd7a2a847fccb01b613322fccbeadfa42",
+    "frames": 193,
+    "fps": 24,
+    "crop": [
+      560,
+      0,
+      960,
+      760
+    ],
+    "loopSeam": "frame 0 vs 192 rgb mean diff 2.75, alpha 0.52 (packed)"
+  },
+  "spliceMeasurement": {
+    "method": "packed frames compared in the shared crop origin (560,0): silhouette centroid and phase correlation of head (rows 20-240) and torso (rows 20-600) regions, base frame 0 versus 15777d5f frames 0/41/90/120",
+    "headShiftPx": {
+      "0": [
+        0.08,
+        -15.37
+      ],
+      "41": [
+        -0.14,
+        -15.05
+      ],
+      "90": [
+        0.49,
+        -15.1
+      ],
+      "120": [
+        0.17,
+        -14.74
+      ]
+    },
+    "torsoShiftPx": {
+      "0": [
+        -0.11,
+        -15.82
+      ],
+      "41": [
+        0.17,
+        -15.33
+      ],
+      "90": [
+        0.05,
+        -15.82
+      ],
+      "120": [
+        -0.02,
+        -15.53
+      ]
+    },
+    "silhouetteCentroidDeltaPx": [
+      -0.4,
+      -13.7
+    ],
+    "silhouetteTopRowBaseVsGlance": [
+      44,
+      26
+    ],
+    "maskedRgbMeanDiff": 14.0,
+    "conclusion": "the waiting clip sits about 15 px higher in the frame than the base loop with no horizontal offset; rigid offset applied to the glance layer at splice: +15.3 px down, 0 px across (source pixels, scaled with the fit)"
+  },
+  "spliceOffset": [
+    0,
+    15.3
+  ]
 }
