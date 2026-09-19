@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {selectGreenTake,shouldUseGreenBoxCard,shouldUseGreenDealerCard,greenRestCardQuad} from '../web/public/astrid-green-dealer.mjs';
-import {validateContactTake,uniformRegistration,presentationLandFrame,settledContactCard} from '../web/public/performance-contact.mjs';
+import {validateContactTake,uniformRegistration,contactFrame,dealingCardSample} from '../web/public/performance-contact.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
 const reviewDir=path.resolve(dir,'../web/public/review/astrid-table-v2');
@@ -34,17 +34,29 @@ test('settled presentation enlarges the table plane without changing pickup or t
   assert.equal(first[3][1]-first[0][1],128.75);
   assert.ok(second[0][0]>first[0][0]&&second[0][0]<first[1][0],'readable overlapping fan');
   assert.deepEqual(greenRestCardQuad(quad,0,blueTake.tracking.presentation),first,'first slot is independent of the second');
-  const end=greenRestCardQuad(blueTake.frames[blueTake.events.land].card.corners,1,blueTake.tracking.presentation).map(p=>[...p,0]);
-  for(const sample of blueTake.frames.slice(0,blueTake.events.land+1))assert.deepEqual(settledContactCard(blueTake,sample,end),sample.card,`source frame ${sample.frame}`);
-  const at=presentationLandFrame(blueTake);
-  assert.deepEqual(settledContactCard(blueTake,blueTake.frames[at],end).corners,end,'canvas reaches the exact DOM quad');
-  assert.equal(presentationLandFrame(boxTake),boxTake.events.land,'other takes do not change');
+  for(const sample of blueTake.frames)assert.deepEqual(contactFrame(blueTake,sample.frame/blueTake.media.fps).card,sample.card,`dealing frame ${sample.frame} retains its original size`);
+  assert.equal(blueTake.events.land,56,'no extra animation after filmed placement');
+  assert.equal(blueTake.tracking.presentation.scope,'settled-only');
 });
 
-test('presentation cannot begin during contact or extend past the return',()=>{
-  for(const presentation of [{scale:2,fanStep:.48,settleFrames:8},{scale:1.25,fanStep:.48,settleFrames:50}]){
+test('resting-card size cannot opt into a dealing resize animation',()=>{
+  for(const presentation of [{scope:'settled-only',scale:2,fanStep:.48},{scope:'settled-only',scale:1.25,fanStep:.48,settleFrames:8},{scale:1.25,fanStep:.48}]){
     assert.ok(validateContactTake({...blueTake,tracking:{...blueTake.tracking,presentation}}).includes('Invalid settled-card presentation'));
   }
+});
+
+test('Box 4 moving cards stay 20% smaller at every frame with the grip fixed',()=>{
+  const distance=(a,b)=>Math.hypot(...a.map((v,k)=>v-b[k]));
+  const grip=c=>c.corners[0].map((v,k)=>v+(c.corners[3][k]-v)*.25);
+  for(const f of blueTake.frames){
+    const card=dealingCardSample(blueTake,f.card);
+    if(!f.card){assert.equal(card,null);continue;}
+    assert.ok(distance(grip(card),grip(f.card))<1e-12,`frame ${f.frame}: fixed finger contact`);
+    for(let edge=0;edge<4;edge++)assert.ok(Math.abs(distance(card.corners[edge],card.corners[(edge+1)%4])/distance(f.card.corners[edge],f.card.corners[(edge+1)%4])-.8)<1e-12,`frame ${f.frame}: uniform scale`);
+    assert.equal(card.faceUp,f.card.faceUp);
+    assert.equal(dealingCardSample(boxTake,f.card),f.card,'other takes stay unchanged');
+  }
+  assert.equal(blueTake.tracking.presentation.scale,1.25,'laid cards retain their larger size');
 });
 
 test('only the FIRST card of the configured box selects the box take',()=>{

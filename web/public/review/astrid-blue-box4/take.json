@@ -46,9 +46,13 @@
     "scope": "opening-pair-of-box4-only-opt-in-live-experiment",
     "openingCards": 2,
     "presentation": {
+      "scope": "settled-only",
       "scale": 1.25,
-      "fanStep": 0.48,
-      "settleFrames": 8
+      "fanStep": 0.48
+    },
+    "dealingPresentation": {
+      "scale": 0.8,
+      "gripAlongLeftEdge": 0.25
     },
     "limitations": [
       "User explicitly requested a live experiment after source rejection; this is not accepted choreography.",
@@ -2546,5 +2550,5 @@
       }
     }
   ],
-  "calibrationSha256": "86666241db588fce78a85b6bdf9fd2b22ddcd3416ef1238545d13c7759f9faca"
+  "calibrationSha256": "4e050362bed9039d51e09fe322a7e904c9a929b5d2b803879322d0cf854c98c5"
 }

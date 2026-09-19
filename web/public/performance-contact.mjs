@@ -33,7 +33,9 @@ export function validateContactTake(take, {approved=false}={}) {
   const m=take.media ?? {}, c=take.camera ?? {}, e=take.events ?? {};
   if(take.tracking?.openingCards!==undefined)check(chroma&&Number.isInteger(take.box)&&[1,2].includes(take.tracking.openingCards),'Invalid opening-card routing');
   const presentation=take.tracking?.presentation;
-  if(presentation)check(chroma&&finite(presentation.scale)&&presentation.scale>=1&&presentation.scale<=1.5&&finite(presentation.fanStep)&&presentation.fanStep>0&&presentation.fanStep<=1&&integer(presentation.settleFrames)&&presentation.settleFrames>0&&e.land+presentation.settleFrames<e.rest,'Invalid settled-card presentation');
+  if(presentation)check(chroma&&presentation.scope==='settled-only'&&finite(presentation.scale)&&presentation.scale>=1&&presentation.scale<=1.5&&finite(presentation.fanStep)&&presentation.fanStep>0&&presentation.fanStep<=1&&presentation.settleFrames===undefined,'Invalid settled-card presentation');
+  const dealing=take.tracking?.dealingPresentation;
+  if(dealing)check(chroma&&finite(dealing.scale)&&dealing.scale>=.5&&dealing.scale<=1&&finite(dealing.gripAlongLeftEdge)&&dealing.gripAlongLeftEdge>=0&&dealing.gripAlongLeftEdge<=1,'Invalid dealing-card presentation');
   check(asset(m.src) && hash(m.sha256), 'Packed media path and SHA-256 are required');
   check(m.layout==='rgb-over-masks-r-actor-g-fingers', 'A single clock must carry RGB and both masks');
   check(integer(m.width)&&m.width>0&&integer(m.height)&&m.height>0, 'Invalid source dimensions');
@@ -83,19 +85,14 @@ export function calibrationPayload(take) {
   return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.colourGain?{colourGain:take.colourGain}:{}),...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate}),...(take.continuation?{continuation:take.continuation}:{}),...(take.tracking?{tracking:take.tracking}:{})});
 }
 
-export function presentationLandFrame(take){
-  return take.events.land+(take.tracking?.presentation?.settleFrames??0);
-}
-
-// Preserve every tracked pickup/grip/turn frame. Only after the photographed
-// landing, ease the released card into its larger, readable table fan. This
-// is a presentation adjustment, not a measurement of the source motion.
-export function settledContactCard(take,sample,end){
-  if(!take.tracking?.presentation||sample.frame<take.events.land)return sample.card;
-  const card=take.frames[take.events.land].card;
-  const t=Math.min(1,(sample.frame-take.events.land)/take.tracking.presentation.settleFrames);
-  const u=t*t*(3-2*t);
-  return {...card,corners:card.corners.map((p,i)=>p.map((v,k)=>v+(end[i][k]-v)*u))};
+// One fixed display scale for the whole delivery. Anchor it at the filmed
+// grip instead of the centre so shrinking the card does not pull it away
+// from the fingers. Resting-card layout has its own independent scale.
+export function dealingCardSample(take,card){
+  const p=take.tracking?.dealingPresentation;
+  if(!p||!card)return card;
+  const anchor=card.corners[0].map((v,k)=>v+(card.corners[3][k]-v)*p.gripAlongLeftEdge);
+  return {...card,corners:card.corners.map(c=>c.map((v,k)=>anchor[k]+(v-anchor[k])*p.scale))};
 }
 
 // An empty-hand return may replace only the tail after a measured landing.
