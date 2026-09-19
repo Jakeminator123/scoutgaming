@@ -1,15 +1,8 @@
 ---
-description: spelsajt and Emil's ava-live-blackjack are read-only inspiration, not work trees
-alwaysApply: true
+description: Read-only inspiration from spelsajt and emil-branch. Apply when those repos are mentioned.
+alwaysApply: false
 ---
 
-# Reference repos (not work trees)
+# Reference repos
 
-`Jakeminator123/spelsajt` and `EmaCodeHero/ava-live-blackjack` (imported as `emil-branch` on spelsajt) are **inspiration only**.
-
-- Do not open PRs, commit, or merge those repos into Croupier.
-- Local checkout: `C:\Users\jakem\Projects\ref\spelsajt`. Push is disabled. Switch to `emil-branch` only to read Emil's snapshot.
-- Look there on request, or when a Croupier task is explicitly about borrowing a presentation/event idea.
-- If you port something: reimplement in Croupier's structure on `jakeminator123/work`, say what you looked at, and do not copy their game engine, wallet, RNG, or whole trees.
-- Croupier `main` is Scout's product. Do not add those repos as submodules or extra git remotes here.
-- No MCP or mass copy of those trees into `docs/`. Docs, canvases and notes go in the GitLab wiki. The map is the wiki page `reference-repos`.
+`Jakeminator123/spelsajt` and `emil-branch` (from `EmaCodeHero/ava-live-blackjack`) are inspiration only. Local: `C:\Users\jakem\Projects\ref\spelsajt`, push disabled. Reimplement in Croupier on `jakeminator123/work`. No submodule, no dump, no copy of their engine/wallet/RNG.

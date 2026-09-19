@@ -1,15 +1,8 @@
 ---
-description: Start here on jakeminator123/work — branch, wiki, ping, no main
+description: Tiny start card for jakeminator123/work. Do not expand.
 alwaysApply: true
 ---
 
-# Start · Jakob work branch
+# Start
 
-You are on `jakeminator123/work` in `scout-gg/croupier`. Kevin (GitLab `Kevinnegash1`) owns `main`.
-
-- Push and MR only this branch. Ignore GitLab’s “Create merge request” (it targets `main`) unless Jakob explicitly says otherwise.
-- Docs, canvases, notes: GitLab wiki, not a copy of `spelsajt`.
-- Need Kevin? Comment on https://gitlab.com/scout-gg/croupier/-/work_items/1 with `@Kevinnegash1`, then keep working. Any IDE works; it is GitLab inbox, not Cursor-only.
-- `spelsajt` / `emil-branch` are read-only inspiration. See `reference-repos.mdc`.
-- Gameplay/media: `AGENTS.md` and `docs/JOHN-HANDOFF.md`. Isolated DB only.
-- Full brief: `docs/shared/AGENT-HANDOFF.md` and https://gitlab.com/scout-gg/croupier/-/wikis/agent-handoff
+Branch `jakeminator123/work`. Never push `main`. Inbox check: `/ping-croupier` only — do not poll GitLab every turn. Do not merge `spelsajt`.
