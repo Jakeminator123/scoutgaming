@@ -70,7 +70,8 @@ const performanceStaged=astridRestart;
 const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
 const performanceMotion=new URLSearchParams(location.search).get('motion');
 const astridGreenReview=astridRestart;
-const astridGreenTake=astridGreenReview?await fetch('review/astrid-elevated-table/take.json').then(r=>r.ok?r.json():null).then(t=>t?.status==='review'&&t?.enabled!==false?t:null).catch(()=>null):null;
+const astridBlender=astridRestart;
+const astridGreenTake=astridGreenReview?await fetch(`review/${astridBlender?'astrid-table-v2':'astrid-elevated-table'}/take.json`).then(r=>r.ok?r.json():null).then(t=>t?.status==='review'&&t?.enabled!==false?t:null).catch(()=>null):null;
 const performanceRhythm=performanceStaged&&['rhythm','smooth60'].includes(performanceMotion);
 const actorProvenance=performanceStaged&&!astridRestart?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
 let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,selectSequencePerformance=null,performanceCardCorners=null;
@@ -125,6 +126,9 @@ try {
     const css=document.createElement('link');css.rel='stylesheet';css.href='rigged-review.css';document.head.append(css);
     document.documentElement.classList.add('rigged-review');
     const status=document.createElement('div');status.id='rig-review-status';status.textContent=tableScene.facial?'Astrid likeness review · measured speech, visual acceptance pending':'3D contact review · face and speech animation unfinished';$('#scene').append(status);
+  }else if(astridBlender){
+    const {createBlenderTableScene}=await import('./blender-table-scene.mjs');
+    tableScene=await createBlenderTableScene($('#table-canvas'),{frame:astridGreenTake?.camera.placement});
   }else{
   const { createTableScene } = await import('./table-scene.mjs');
   tableScene = createTableScene($('#table-canvas'), DEALER.key, {
