@@ -1,0 +1,94 @@
+{
+ "source-f0000": {
+  "baseIdle": {
+   "head": {
+    "dx": -1,
+    "dy": 21,
+    "meanAbsDiff": 30.08
+   },
+   "torso": {
+    "dx": 0,
+    "dy": 20,
+    "meanAbsDiff": 12.85
+   },
+   "leftHand": {
+    "dx": 0,
+    "dy": 6,
+    "meanAbsDiff": 22.12
+   },
+   "shoeHand": {
+    "dx": -2,
+    "dy": 10,
+    "meanAbsDiff": 20.41
+   }
+  },
+  "dealerTake": {
+   "head": {
+    "dx": 22,
+    "dy": 16,
+    "meanAbsDiff": 35.22
+   },
+   "torso": {
+    "dx": 187,
+    "dy": 0,
+    "meanAbsDiff": 47.14
+   },
+   "leftHand": {
+    "dx": 0,
+    "dy": -8,
+    "meanAbsDiff": 38.31
+   },
+   "shoeHand": {
+    "dx": 0,
+    "dy": 0,
+    "meanAbsDiff": 32.11
+   }
+  }
+ },
+ "source-f0115": {
+  "baseIdle": {
+   "head": {
+    "dx": -1,
+    "dy": 19,
+    "meanAbsDiff": 28.38
+   },
+   "torso": {
+    "dx": 0,
+    "dy": 18,
+    "meanAbsDiff": 11.68
+   },
+   "leftHand": {
+    "dx": 0,
+    "dy": 8,
+    "meanAbsDiff": 21.22
+   },
+   "shoeHand": {
+    "dx": -3,
+    "dy": 10,
+    "meanAbsDiff": 19.41
+   }
+  },
+  "dealerTake": {
+   "head": {
+    "dx": 22,
+    "dy": 14,
+    "meanAbsDiff": 34.11
+   },
+   "torso": {
+    "dx": 1,
+    "dy": 0,
+    "meanAbsDiff": 46.01
+   },
+   "leftHand": {
+    "dx": -15,
+    "dy": 0,
+    "meanAbsDiff": 38.09
+   },
+   "shoeHand": {
+    "dx": 0,
+    "dy": 0,
+    "meanAbsDiff": 31.09
+   }
+  }
+ }
+}

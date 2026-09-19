@@ -10,8 +10,9 @@ import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
 import {shouldUseGreenDealerCard,selectGreenTake,loadGreenTakes,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame,installGreenIdle,quadMatrix} from './astrid-green-dealer.mjs';
 import {loadGreenWaiting,installGreenWaiting} from './astrid-green-waiting.mjs';
+import {loadGreenSpeak,installGreenSpeak} from './astrid-green-speak.mjs';
 import {installEdgeHud} from './actor-edge-blend.mjs';
-let astridWaiting=null;
+let astridWaiting=null,astridSpeak=null;
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -207,6 +208,7 @@ if(astridGreenBoxTakes.length){
   });
 }
 const greenBoxReplays=(enabled)=>{for(const take of astridGreenBoxTakes){const button=$(`#green-box${take.box}-replay`);if(button)button.disabled=!enabled||!$(`.seat[data-box="${take.box}"] .cards > .card:first-child`);}};
+
 // a dealer without clips still stands at her table: her canonical poster
 // fills the dealer frame instead of an empty room
 function showPoster() {
@@ -245,6 +247,10 @@ if(astridRestart){
   catch(error){console.warn('[waiting idle]',error.message);}
   if(astridGreenTake&&!astridWaiting)try{await installGreenIdle($('#scene'),astridGreenTake);}
   catch(error){console.warn('[elevated idle]',error.message);}
+  // Keyed green speak takes (Blender table only): the greeting plays over the
+  // held idle with its recorded line; other lines stay silent as before.
+  if(astridGreenTake&&astridBlender)try{const speak=await loadGreenSpeak();if(speak)astridSpeak=await installGreenSpeak($('#scene'),speak,{waiting:()=>astridWaiting});}
+  catch(error){console.warn('[speak]',error.message);}
 }else try {
   await engine.init();
   if(engine.fullActor){
@@ -307,7 +313,12 @@ const voice = {
     }
   },
   say(t, { force = false } = {}) {
-    if(astridRestart)return;
+    if(astridRestart){
+      if(!astridSpeak?.has(t)||this.muted||speaking)return;
+      console.info('[voice]', t, 'green speak take', 'muted=' + this.muted, 'force=' + force);
+      speaking=true;
+      return astridSpeak.say(t,{onStart:text=>showCaption(text,Math.min(13000,3500+text.length*70)),onFinish:()=>{speaking=false;$('#caption').classList.remove('show');}}).finally(()=>{speaking=false;});
+    }
     // one honest line per decision - silence must never be a mystery again
     console.info('[voice]', t, 'muted=' + this.muted, 'dead=' + this.dead.has(t), 'busy=' + speechQueue.pending, 'force=' + force);
     if (this.muted) return;
@@ -1956,7 +1967,7 @@ $('#gate-enter').onclick = () => {
   $('#gate').classList.add('hidden');
   voice.greeted = true;
   sfx.startAmbience();
-  voice.say('greeting', { force: true });
+  voice.say('greeting', { force: true })?.catch(error=>console.warn('[speak] greeting',error.message));
   // personalized follow-up once the generic voice greeting has landed
   setTimeout(() => {
     void veraEvent(`${player?.name ?? 'A player'} just sat down at your table with a balance of ${fmt(balance)}. Greet them by name.`, { minGap: 0 });
@@ -2126,5 +2137,15 @@ if (!astridRestart&&new URLSearchParams(location.search).has('rehearsal')) {
 
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
+// The guest table has no entry gate. Astrid greets once her table is ready;
+// when the browser refuses autoplay, the greeting waits for the first gesture.
+if(astridSpeak)tableReady.then(()=>{
+  const greet=()=>{voice.greeted=true;return voice.say('greeting',{force:true});};
+  return Promise.resolve(greet()).catch(error=>{
+    console.info('[speak] greeting deferred to the first gesture:',error.message);
+    const once=()=>{removeEventListener('pointerdown',once);removeEventListener('keydown',once);greet()?.catch(e=>console.warn('[speak] greeting',e.message));};
+    addEventListener('pointerdown',once);addEventListener('keydown',once);
+  });
+}).catch(()=>{});
 
 document.querySelector('#sign-out').onclick=async()=>{await api('/api/auth/logout',{});location.reload();};
