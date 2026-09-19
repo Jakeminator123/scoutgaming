@@ -16,7 +16,8 @@ Läs detta först, sedan `AGENTS.md`, `docs/PROJECT-PROMPT.md` och senaste toppe
 - Workflow (första canvasen, speglad i wikin): https://gitlab.com/scout-gg/croupier/-/wikis/workflow
 - Canvas i Cursor: `C:\Users\jakem\.cursor\projects\c-Users-jakem-Projects-croupier\canvases\jakob-workflow.canvas.tsx`
 - Referens, read-only: `C:\Users\jakem\Projects\ref\spelsajt` (push avstängd). `emil-branch` = import av `EmaCodeHero/ava-live-blackjack`. Titta, bygg om i Croupier. Ingen submodule, ingen dump.
-- Cursor-regler: `.cursor/rules/jakob-workflow.mdc`, `reference-repos.mdc`, `kevin-ping.mdc`
+- Start för Cursor: `.cursor/rules/jakob-workflow.mdc` (alwaysApply). Ping: `kevin-ping.mdc`. Referens: `reference-repos.mdc`.
+- Start för Claude Code / andra: `CLAUDE.md` i reporoten. Pinget är GitLab, så Kevin kan svara från vilken IDE som helst.
 - Lokal `.git/hooks/pre-push` stoppar push till `main`
 - MR-mall: `.gitlab/merge_request_templates/Jakob.md`
 
