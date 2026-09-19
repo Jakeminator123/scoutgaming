@@ -36,7 +36,7 @@ export function validateContactTake(take, {approved=false}={}) {
   check(integer(m.width)&&m.width>0&&integer(m.height)&&m.height>0, 'Invalid source dimensions');
   check(finite(m.fps)&&m.fps>0&&m.fps<=60&&integer(m.frames)&&m.frames>1, 'Invalid media frame count or rate');
   check(c.width===m.width&&c.height===m.height, 'Camera and source frame dimensions differ');
-  if(c.placement){const p=c.placement;check(chroma&&['width','height','scale'].every(k=>finite(p[k])&&p[k]>0)&&['x','y'].every(k=>finite(p[k])), 'Invalid rigid source placement');}
+  if(c.placement){const p=c.placement;check(chroma&&['width','height','scale'].every(k=>finite(p[k])&&p[k]>0)&&['x','y'].every(k=>finite(p[k])), 'Invalid rigid source placement');check(p.framingScale===undefined||(finite(p.framingScale)&&p.framingScale>0&&p.framingScale<=1),'Invalid shared composition framing');}
   check(hash(take.calibrationSha256), 'Calibration SHA-256 is required');
   check(Array.isArray(c.shoeOutlet)&&c.shoeOutlet.length===2&&c.shoeOutlet.every(x=>finite(x)&&x>=0&&x<=1), 'Measured shoe outlet is required');
   const ordered=['pickup','release','land','rest'];
@@ -171,7 +171,7 @@ export function contactCueClock(events, emit, {fps=24,playbackRate=1}={}) {
 
 export function uniformRegistration(source, viewport) {
   if(source.placement){
-    const p=source.placement,base=uniformRegistration({width:p.width,height:p.height},viewport),scale=base.scale*p.scale;
+    const p=source.placement,base=uniformRegistration({width:p.width,height:p.height,framingScale:p.framingScale},viewport),scale=base.scale*p.scale;
     return {x:base.x+p.x*base.scale,y:base.y+p.y*base.scale,width:source.width*scale,height:source.height*scale,scale};
   }
   const portrait=viewport.width<861&&viewport.height>viewport.width;
@@ -179,8 +179,8 @@ export function uniformRegistration(source, viewport) {
   // below the chips forces actions over cards or the wallet at 720px height.
   // Table, actor, shoe and tracked card all use this same transform.
   const sceneHeight=portrait?viewport.height:Math.max(1,viewport.height-136);
-  const scale=portrait?Math.min(viewport.height*.65/source.height,viewport.width/(source.width*.48))
-    :Math.min(viewport.width/source.width,sceneHeight/source.height);
+  const scale=(portrait?Math.min(viewport.height*.65/source.height,viewport.width/(source.width*.48))
+    :Math.min(viewport.width/source.width,sceneHeight/source.height))*(source.framingScale??1);
   return {scale,x:(viewport.width-source.width*scale)/2,y:portrait?viewport.height*.08:(sceneHeight-source.height*scale)/2,
     width:source.width*scale,height:source.height*scale};
 }

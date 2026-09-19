@@ -4,7 +4,7 @@ import * as THREE from './vendor/three/three.module.js';
 
 // Physical card faces, paper edge and a lit turnover; the resting hand stays
 // in the existing accessible DOM. One short render loop per dealt card.
-export function createDealingCard({scene, camera, renderer}) {
+export function createDealingCard({scene, camera, renderer,viewport=null,surfaceHeight=0,unitScale=1}) {
   const textures = new Map();
   const back = texture(null);
   function texture(card) {
@@ -27,11 +27,14 @@ export function createDealingCard({scene, camera, renderer}) {
     const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());return t;
   }
   function atScreen(x,y,height) {
-    const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(x/innerWidth*2-1,1-y/innerHeight*2),camera);
+    const view=viewport?.()??{x:0,y:0,width:innerWidth,height:innerHeight};
+    const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((x-view.x)/view.width*2-1,1-(y-view.y)/view.height*2),camera);
     return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-height),new THREE.Vector3());
   }
   return async function deal({origin, target, card, faceDown, handoff, duration=680, releaseFraction=.38, onCue=()=>{}}) {
-    const w=target.width, h=target.height*Math.SQRT2;
+    const cardHeight=surfaceHeight+4*unitScale;
+    const w=viewport?atScreen(target.x,target.y,cardHeight).distanceTo(atScreen(target.x+target.width,target.y,cardHeight)):target.width;
+    const h=viewport?atScreen(target.x,target.y,cardHeight).distanceTo(atScreen(target.x,target.y+target.height,cardHeight)):target.height*Math.SQRT2;
     const shape=new THREE.Shape();const r=Math.min(w,h)*.055;
     shape.moveTo(-w/2+r,-h/2);shape.lineTo(w/2-r,-h/2);shape.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);
     shape.lineTo(w/2,h/2-r);shape.quadraticCurveTo(w/2,h/2,w/2-r,h/2);shape.lineTo(-w/2+r,h/2);shape.quadraticCurveTo(-w/2,h/2,-w/2,h/2-r);shape.lineTo(-w/2,-h/2+r);shape.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
@@ -42,20 +45,20 @@ export function createDealingCard({scene, camera, renderer}) {
     for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)+w/2)/w,1-(p.getZ(i)+h/2)/h);
     const frontMat=new THREE.MeshStandardMaterial({map:card?textures.get(key):back,roughness:.64,metalness:0});
     const backMat=new THREE.MeshStandardMaterial({map:back,roughness:.64,side:THREE.BackSide});
-    const root=new THREE.Group();const face=new THREE.Mesh(geo,frontMat);face.position.y=.4;face.castShadow=true;root.add(face);
-    const reverse=new THREE.Mesh(geo,backMat);reverse.position.y=-.4;reverse.castShadow=true;root.add(reverse);
-    const edgeGeo=new THREE.ExtrudeGeometry(shape,{depth:.7,bevelEnabled:false,steps:1});
-    edgeGeo.rotateX(-Math.PI/2);edgeGeo.translate(0,-.35,0);
+    const root=new THREE.Group();const face=new THREE.Mesh(geo,frontMat);face.position.y=.4*unitScale;face.castShadow=true;root.add(face);
+    const reverse=new THREE.Mesh(geo,backMat);reverse.position.y=-.4*unitScale;reverse.castShadow=true;root.add(reverse);
+    const edgeGeo=new THREE.ExtrudeGeometry(shape,{depth:.7*unitScale,bevelEnabled:false,steps:1});
+    edgeGeo.rotateX(-Math.PI/2);edgeGeo.translate(0,-.35*unitScale,0);
     const edgeMat=new THREE.MeshStandardMaterial({color:'#dfdbcf',roughness:.9});
     const paper=new THREE.Mesh(edgeGeo,edgeMat);paper.castShadow=true;root.add(paper);scene.add(root);
-    const start=origin.clone(),mid=handoff ? atScreen(handoff.x,handoff.y,14) : start.clone(),end=atScreen(target.x+w/2,target.y+target.height/2,4);
+    const start=origin.clone(),mid=handoff ? atScreen(handoff.x,handoff.y,surfaceHeight+14*unitScale) : start.clone(),end=atScreen(target.x+target.width/2,target.y+target.height/2,cardHeight);
     const cues=movementCues(onCue);
     try {
       await animateProgress(duration,t=>{
         const split=handoff ? releaseFraction : 0;
         if(t<split){const u=t/split;root.position.lerpVectors(start,mid,u*u*(3-2*u));}
         else{const u=(t-split)/(1-split);root.position.lerpVectors(mid,end,1-(1-u)**2);}
-        root.position.y+=Math.sin(t*Math.PI)*12;
+        root.position.y+=Math.sin(t*Math.PI)*12*unitScale;
         // Back shows at the shoe. Turn face up only after the handoff.
         const flip=Math.max(0,Math.min(1,(t-split)/.4));
         root.rotation.set(0,-.45*(1-t),faceDown?Math.PI:Math.PI*(1-flip));
