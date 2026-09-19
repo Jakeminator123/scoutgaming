@@ -132,6 +132,7 @@ async function render(id){
         <select id="cf-part"><option value="">All table parts</option>${lib.parts.map(p=>`<option value="${p}" ${st.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select>
         <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['transparent','TRANSPARENT ONLY'],['full','FULL-SCENE ONLY'],['all','ALL'],['never',`&#10006; NEVER AGAIN (${Object.keys(never).length})`]].map(([k,l])=>`<button data-mode="${k}" style="border:0;border-radius:0;${st.mode===k?(k==='never'?'background:rgba(255,80,80,.18);color:var(--red)':'background:rgba(214,255,58,.15);color:var(--lime)'):''}">${l}</button>`).join('')}</span>
         <select id="cf-sort">${[['dealer','Sort: dealer'],['part','Sort: table part'],['name','Sort: name'],['frames','Sort: length']].map(([k,l])=>`<option value="${k}" ${st.sort===k?'selected':''}>${l}</option>`).join('')}</select>
+        ${st.mode!=='never'&&list.length?`<button id="cf-swipe" style="margin-left:auto;background:var(--lime);color:#111;border-color:var(--lime)">&#8646; SWIPE MODE (${list.length})</button>`:''}
       </div></div>
       ${st.dealer?`<div class="panel"><div class="t">ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${sel?`&middot; <span style="color:var(--lime)">SELECTED: ${sel.name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}</div>
       <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
@@ -154,6 +155,7 @@ async function render(id){
       $('#cf-part').onchange=e=>{st.part=e.target.value;draw();};
       $('#cf-sort').onchange=e=>{st.sort=e.target.value;draw();};
       C.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{st.mode=b.dataset.mode;draw();});
+      const swb=$('#cf-swipe');if(swb)swb.onclick=()=>swipe(list.map(c=>c.id));
       const assign=async(dealer,part,clip,btn)=>{const prev=(lib.assignments[dealer]??{})[part]?.clip;const r=await api('/api/bo/clip-assign',{dealer,part,clip});if(!r.ok){toast(r.error||'failed');return;}
         lib.assignments=r.assignments;toast(clip?`${PARTN[part]} ← ${byId[clip]?.name??clip}`:`${PARTN[part]} cleared`);
         const tile=C.querySelector(`[data-part="${part}"]`);if(tile){tile.innerHTML=tileInner(part);tile.style.borderColor=clip?'var(--lime)':'var(--line)';tile.animate([{background:'rgba(214,255,58,.35)'},{background:'var(--panel2)'}],{duration:900});tile.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(dealer,b.dataset.clear,null));}
@@ -171,6 +173,52 @@ async function render(id){
       C.querySelectorAll('[data-never]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.never,false));
       C.querySelectorAll('[data-restore]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.restore,true));
       C.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const c=byId[b.dataset.assign];const part=C.querySelector(`[data-assign-part="${c.id}"]`).value;if(!part){toast('pick a table part first');return;}if(st.dealer!==c.dealer){st.dealer=c.dealer;draw();}assign(c.dealer,part,c.id,C.querySelector(`[data-assign="${c.id}"]`));});
+    };
+    // Swipe mode: one clip at a time, left = never again, right = keep, up = assign to the chosen part, Z = undo.
+    const swipe=ids=>{
+      let i=0;const hist=[];const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;touch-action:none';
+      document.body.appendChild(ov);
+      const close=()=>{document.removeEventListener('keydown',key);ov.remove();draw();};
+      const show=()=>{
+        if(i>=ids.length){ov.innerHTML=`<div class="mono" style="letter-spacing:.14em;color:var(--lime)">ALL ${ids.length} CLIPS SWIPED</div><div style="display:flex;gap:10px">${hist.length?'<button data-u>&#8630; UNDO</button>':''}<button data-x>CLOSE</button></div>`;ov.querySelector('[data-x]').onclick=close;const u=ov.querySelector('[data-u]');if(u)u.onclick=undo;return;}
+        const c=byId[ids[i]];const cur=(lib.assignments[c.dealer]??{});
+        ov.innerHTML=`<div class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--mut)">${i+1} / ${ids.length} &middot; &larr; NEVER AGAIN &middot; &rarr; KEEP &middot; &uarr; ASSIGN &middot; Z UNDO &middot; ESC CLOSE</div>
+          <div data-card style="width:min(720px,100%);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel2);transition:transform .22s,opacity .22s;position:relative;cursor:grab">
+            <div style="position:absolute;top:16px;left:16px;right:16px;z-index:2;display:flex;justify-content:space-between;pointer-events:none"><span data-l class="mono" style="opacity:0;border:2px solid var(--red);color:var(--red);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">NEVER AGAIN</span><span data-r class="mono" style="opacity:0;border:2px solid var(--lime);color:var(--lime);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">KEEP</span></div>
+            ${c.src?`<video src="/${c.src}" autoplay loop muted playsinline style="width:100%;max-height:60vh;display:block;background:#000;object-fit:contain;pointer-events:none"></video>`:`<div style="height:200px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:9px;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
+            <div style="padding:10px 14px"><div style="display:flex;justify-content:space-between;gap:8px"><span class="mono" style="font-size:11px;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
+            <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.frames?` &middot; ${c.frames}f`:''}${assignedParts(c.id).length?` &middot; <span style="color:var(--lime)">ASSIGNED ${assignedParts(c.id).map(p=>PARTN[p]).join(' + ')}</span>`:''}</div></div>
+          </div>
+          <div style="display:flex;gap:8px;width:min(720px,100%)"><input data-reason placeholder="why it's awful (optional)" style="flex:1;font-size:12px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><select data-part>${lib.parts.map(p=>`<option value="${p}" ${(c.part??'')===p?'selected':''}>${PARTN[p]}${cur[p]?' (taken)':''}</option>`).join('')}</select></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button data-a="left" style="border-color:rgba(255,80,80,.5);color:var(--red);padding:10px 18px">&#10006; NEVER AGAIN</button><button data-a="up" style="padding:10px 18px">&#8593; ASSIGN</button><button data-a="right" style="border-color:var(--lime);color:var(--lime);padding:10px 18px">&#10003; KEEP</button><button data-u ${hist.length?'':'disabled'}>&#8630; UNDO</button><button data-x>CLOSE</button></div>`;
+        ov.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>act(b.dataset.a));
+        ov.querySelector('[data-u]').onclick=undo;ov.querySelector('[data-x]').onclick=close;
+        const card=ov.querySelector('[data-card]');let x0=null,y0=0,dx=0,dy=0;
+        card.onpointerdown=e=>{x0=e.clientX;y0=e.clientY;card.setPointerCapture(e.pointerId);card.style.transition='none';};
+        card.onpointermove=e=>{if(x0===null)return;dx=e.clientX-x0;dy=e.clientY-y0;card.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/20}deg)`;ov.querySelector('[data-l]').style.opacity=Math.max(0,-dx/120);ov.querySelector('[data-r]').style.opacity=Math.max(0,dx/120);};
+        card.onpointerup=()=>{if(x0===null)return;x0=null;card.style.transition='';if(dx>120)act('right');else if(dx<-120)act('left');else if(dy<-120)act('up');else{card.style.transform='';ov.querySelectorAll('[data-l],[data-r]').forEach(e=>e.style.opacity=0);}dx=dy=0;};
+      };
+      let busy=false;
+      const act=async dir=>{
+        const c=byId[ids[i]];if(!c||busy)return;busy=true;
+        try{
+          if(dir==='left'){const reason=ov.querySelector('[data-reason]').value;const r=await api('/api/bo/clip-never',{clip:c.id,reason});if(!r.ok){toast(r.error||'failed');return;}lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;hist.push({k:'never',id:c.id});toast(`never again: ${c.name}`);}
+          else if(dir==='up'){const part=ov.querySelector('[data-part]').value;const prev=(lib.assignments[c.dealer]??{})[part]?.clip??null;const r=await api('/api/bo/clip-assign',{dealer:c.dealer,part,clip:c.id});if(!r.ok){toast(r.error||'failed');return;}lib.assignments=r.assignments;hist.push({k:'assign',dealer:c.dealer,part,prev});toast(`${PARTN[part]} ← ${c.name}`);}
+          else hist.push({k:'keep'});
+          const card=ov.querySelector('[data-card]');card.style.transform={left:'translateX(-120vw) rotate(-25deg)',right:'translateX(120vw) rotate(25deg)',up:'translateY(-120vh)'}[dir];card.style.opacity=0;
+          await new Promise(r=>setTimeout(r,220));i++;show();
+        }finally{busy=false;}
+      };
+      const undo=async()=>{
+        const h=hist.pop();if(!h)return;
+        if(h.k==='never'){const r=await api('/api/bo/clip-never',{clip:h.id,undo:true});if(r.ok){lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;}}
+        if(h.k==='assign'){const r=await api('/api/bo/clip-assign',{dealer:h.dealer,part:h.part,clip:h.prev});if(r.ok)lib.assignments=r.assignments;}
+        i--;show();toast('undone');
+      };
+      const key=e=>{if(e.target.matches('input,select'))return;if(e.key==='ArrowLeft')act('left');else if(e.key==='ArrowRight')act('right');else if(e.key==='ArrowUp'){e.preventDefault();act('up');}else if(e.key==='z'||e.key==='Backspace')undo();else if(e.key==='Escape')close();};
+      document.addEventListener('keydown',key);
+      show();
     };
     draw();
     return;
