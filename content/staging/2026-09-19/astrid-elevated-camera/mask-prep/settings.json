@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "purpose": "Elevated Astrid camera actor matte; no colour or geometry changes",
+  "greenExcessOpaque": 0.025,
+  "greenExcessTransparent": 0.155,
+  "markerWorkAreaNormalized": [0.0, 0.28, 1.0, 1.0],
+  "markerColor": {"minimumRed": 125, "minimumBlue": 75, "minimumRedMinusGreen": 30, "minimumBlueMinusGreen": 8, "minimumBlueGreenRatio": 1.15},
+  "provisionalCropNormalized": [0.2916666666666667, 0.0, 0.5, 0.7037037037037037],
+  "provisionalCropAt1920x1080": [560, 0, 960, 760],
+  "cropStatus": "Provisional only. Every actual video frame and tracked card quad must be checked before cropping.",
+  "sourceRearRailTopYNormalized": 0.5,
+  "sourceRearRailBottomYNormalized": 0.522,
+  "foregroundDepth": "Torso lower edge behind table rear rail; filmed forearms/hands in front of felt; tracked replacement card behind retained fingers"
+}
