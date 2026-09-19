@@ -1,8 +1,21 @@
-# V3 · 9-dagars MVP
+# Animation events · V3
 
-> Det här är Jakobs dokumentations- och integrationsunderlag. Det ändrar inte Kevins branch, motor eller agentregler automatiskt.
+> V3 beskriver arbetssättet efter beslutsrundan mellan Jakob, Emil och Kevin.
+> Kevins befintliga Croupier-motor, RNG och events är grunden. V3 ersätter
+> varken motorn eller Kevins integrationsbeslut.
 
-V3 utgår från Kevins befintliga Croupier-motor, RNG och events. Målet är att på nio avgränsade arbetssteg skapa ett verifierbart eventträd och en säker mappning till videovarianter, utan att konstruera en konkurrerande spelmotor.
+## Samma V3 på fyra ytor
+
+| Yta | Roll |
+| --- | --- |
+| GitLab `scout-gg/croupier` | Kod, motor, media och verifierbar runtime. |
+| GitLab-wikin | Gemensamma beslut, arbetsdokument och handoff. |
+| GitHub `Jakeminator123/animation-events-v1` | Källrepo för den interaktiva V3-canvasen och den publika presentationsversionen. |
+| Den här katalogen | Repo-nära kopia som gör V3 granskningsbar tillsammans med Croupier-koden. |
+
+GitHub-canvasen är alltså en riktig del av dokumentationsflödet, men den är
+inte källa för RNG, wallet, kort eller spelregler. De kommer alltid från
+Croupier.
 
 ## Läsordning
 
@@ -12,15 +25,22 @@ V3 utgår från Kevins befintliga Croupier-motor, RNG och events. Målet är att
 4. [s03 · eventträdet](s03-eventtradet.md)
 5. [s04 · säker presentation](s04-saker-presentation.md)
 6. [s05 · ordlistan](s05-ordlista.md)
-7. [s06 · 9 dagar](s06-plan.md)
+7. [s06 · etappplanen](s06-plan.md)
 8. [Beslutslogg](DECISIONS.md)
-9. [Verifierad runtime-evidens](RUNTIME-EVIDENCE.md)
-10. [Visuell canvas · eventträdet](CANVAS.md)
+9. [Teknisk runtime-verifiering](RUNTIME-EVIDENCE.md)
+10. [Canvas och publiceringsflöde](CANVAS.md)
+
+## Statusord
+
+- **Mötesbeslut:** kommer från beslutsrundan och styr V3:s riktning.
+- **Verifierat i runtime:** belagt med branch, commit och fil/symbol.
+- **Arbetsförslag:** Jakobs modell eller plan; inte automatiskt en del av motorn.
+- **Beslut krävs:** Kevin eller annan uttrycklig ägare behöver ta ställning.
 
 ## Klart när
 
-- Varje rot i eventträdet kan spåras till verifierad Croupier-kod, payload eller snapshot.
-- Föreslagna/deriverade noder är tydligt märkta och påverkar inte RNG, kort, wallet eller payout.
-- Video och metadata har en ägare, en källa och en säker fallback.
-- Jakob kan visa en reproducerbar rehearsal och en gapplista.
-- Kevin har vid en etapp valt att införliva, justera eller låta arbetet fortsätta separat.
+- alla runtimepåståenden kan följas till rätt Croupier-revision;
+- wiki, repo och GitHub-canvas berättar samma V3 utan att blanda in V2 som nutid;
+- Jakob kan arbeta etappvis ovanpå Kevins motor och lämna ett avgränsat underlag;
+- Kevin kan införliva, justera eller avstå utan att dokumentationen redan har
+  behandlat ett förslag som produktkod.

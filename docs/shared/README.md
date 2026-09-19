@@ -10,8 +10,9 @@ agentregler eller beslut om produktintegration.
   gemensamma ytan för beslut, kartor och handoff.
 - Körande kod, Partner API, manifester och verifierad runtime väger alltid tyngre
   än ett diagram eller en plan.
-- GitHub- och Vercel-versioner är valfria presentationsspeglar, inte en andra
-  sanning.
+- [GitHub `animation-events-v1` · V3](https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp)
+  är källrepo för den interaktiva canvasen. Den får beskriva runtime men aldrig
+  ersätta Croupier som källa för motor och spelregler.
 
 ## Aktiva och arkiverade dokument
 

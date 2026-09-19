@@ -2,12 +2,12 @@
 
 Det här är den versionsstyrda källan för Jakobs arbete med event, triggers och videovarianter i Croupier.
 
-## Sanning och spegling
+## Ytor med olika ansvar
 
-1. **GitLab `scout-gg/croupier`** är huvudrepo.
+1. **GitLab `scout-gg/croupier`** är källan för motor, spelkod, media och runtime.
 2. Jakob arbetar på **`jakeminator123/work`**.
-3. Den gemensamma mänskliga ytan är [GitLab-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home).
-4. GitHub/Vercel-presentationen är endast en spegling och uppdateras efter att GitLab-versionen är sammanhängande och granskad.
+3. [GitLab-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home) är den gemensamma ytan för beslut, workflow och handoff.
+4. [GitHub `animation-events-v1` · V3](https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp) är källbranch för den interaktiva canvasen och dess V3-presentation.
 
 Runtime-sanning kommer alltid från Kevins aktuella Croupier-kod, manifest och verifierade testresultat. Dokumentationen får beskriva förslag, men ska märka dem som förslag.
 
@@ -16,7 +16,7 @@ Runtime-sanning kommer alltid från Kevins aktuella Croupier-kod, manifest och v
 | Version | Status | Sökväg |
 | --- | --- | --- |
 | `v2-long-term-goal-best-rng` | Fryst historiskt underlag | `archive/v2-long-term-goal-best-rng/` |
-| `v3-9-days-mvp` | Aktiv dokumentationsversion | `v3-9-days-mvp/` |
+| `v3-9-days-mvp` | Aktiv V3-branch/sökväg; namnet är historiskt och innebär inte ett beslutat niodagarslöfte | `v3-9-days-mvp/` |
 
 V3 är ett dokumentnamn, inte en ny kodbranch. Aktiv kodbranch är fortsatt `jakeminator123/work`.
 
@@ -30,7 +30,8 @@ V3 är ett dokumentnamn, inte en ny kodbranch. Aktiv kodbranch är fortsatt `jak
 - Märk skillnaden mellan **mötesbeslut**, **verifierad runtime**, **Jakobs förslag**, **Kevin + Emil videoarbete** och **beslut krävs**.
 - Lägg aldrig hemligheter, tokens eller `.env`-värden i dokumentationen.
 - Pusha inte V3-regler till Kevins branch. Vanlig dokumentation styr inte hans agenter automatiskt.
-- GitHub/Vercel uppdateras sist och får inte bli en parallell källa till sanning.
+- GitHub-canvasen uppdateras tillsammans med repo och wiki. Den är källa för
+  presentationen, men får inte bli en parallell spelmotor eller runtimekälla.
 
 ## Ansvar
 

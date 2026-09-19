@@ -1,6 +1,6 @@
 # Croupier continuity and dealer regression rules
 
-If this checkout is branch `jakeminator123/work`: do not push `main`. Inbox: `/ping-croupier` (do not poll every turn). Wiki: https://gitlab.com/scout-gg/croupier/-/wikis/home
+If this checkout is branch `jakeminator123/work`: do not push `main`. Keep the inbox rule loaded, but read the GitLab thread only on explicit `/ping-croupier` requests or relevant workflow checkpoints; never poll in a loop. Wiki: https://gitlab.com/scout-gg/croupier/-/wikis/home
 
 Read `docs/JOHN-HANDOFF.md` and `docs/ENVIRONMENT-RESTORATION.md` before changing gameplay or media. This repository is the working product; the older checkout nested inside Scout-Gaming is not the current source.
 

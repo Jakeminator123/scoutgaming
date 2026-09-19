@@ -1,6 +1,6 @@
 # Animation events V3 · s01 kartan
 
-> **V3 · 9-dagars MVP.** Kevins Croupier-runtime, Partner API och den kod som faktiskt körs är teknisk sanning. Verifierade påståenden på den här sidan är förankrade i revisionen som anges i `RUNTIME-EVIDENCE.md`; de ska kontrolleras på nytt när Kevins branch flyttar sig. Sidan ändrar inte Kevins motor, branch eller agentregler.
+> **V3.** Kevins Croupier-runtime, Partner API och den kod som faktiskt körs är teknisk sanning. Verifierade påståenden på den här sidan är förankrade i revisionerna som anges i `RUNTIME-EVIDENCE.md`; de ska kontrolleras på nytt när någon av brancherna flyttar sig. Sidan ändrar inte Kevins motor, branch eller agentregler.
 
 Kartan har en ryggrad: **Kevins spelmotor avgör spelet och publicerar det som presentationen får känna till.** Jakob kartlägger ett eventträd ovanpå den ryggraden. Kevin och Emil producerar och granskar videovarianter som motorn kan använda. Ingen dokumentationsmodell ersätter Croupiers RNG eller regler.
 
@@ -72,7 +72,7 @@ V2 använde många egna namn och jämförde tre repon. De namnen är inte automa
 
 | Kandidat att kontrollera | Fråga till aktuell branch | Status efter kontroll |
 | --- | --- | --- |
-| Interna round-events | Vilka interna events finns faktiskt, vilka lämnar servern och vilka är bara implementation? | **VERIFIERAS** |
+| Interna round-events | Vilka verifierade interna events ska bli stabila publika kontrakt, om några? | **BESLUT KRÄVS** |
 | Exakta phase-transitioner | Vilka övergångar kan presentationen observera utan att härleda dold information? | **VERIFIERAS** |
 | `presentation[]`-ordningen | Vilka kombinationer av `reveal`, `settle`, `speak` och `turn` är stabila kontrakt? | **VERIFIERAS** |
 | Assetval per event | Vilka val gör spelaren i dag och vilka finns bara i review/staging? | **VERIFIERAS** |
@@ -99,16 +99,16 @@ Jakob och Emil behöver dela ett litet, stabilt underlag — inte arbeta i samma
 | Förslag till vilka publicerade fält en variation får läsa. | Vilka variationer som faktiskt går att producera och kalibrera. | Varianten påverkar aldrig kort, saldo, payout eller turordning. |
 | Testfall och förväntad fallback. | Rehearsal-/reviewresultat och kvarvarande visuella fel. | Kevin avgör om kopplingen går vidare. |
 
-## V3-kartan för 9-dagars MVP
+## V3-kartan för etappbaserat arbete
 
 | Etapp | Kartans resultat | Ägare | Grind |
 | --- | --- | --- | --- |
-| Dag 1–2 | Verifierad karta över commands, publicerad view, `presentation[]` och assetvägar. | Jakob kartlägger; Kevin är källa. | Inga kandidatnamn presenteras som canonical. |
-| Dag 3–4 | Första separata eventträdet med source reference, publik payload, presentationsbehov och fallback. | Jakob. | Ingen alternativ RNG och ingen dold data. |
-| Dag 5 | Etappsamtal med Kevin om kartan och trädet. | Kevin + Jakob. | Kevin väljer fortsätt, justera eller avstå. |
-| Dag 6–7 | Videovarianter och katalogkoppling för den avgränsade MVP-delen. | Kevin + Emil; Jakob läser handoffen. | Nya videor finns i Kevins branch och är granskningsbara. |
-| Dag 8 | Rehearsal och fel-/gapplista mot faktisk spelare. | Alla i sina respektive spår. | Spelutfall och befintlig fallback är oförändrade. |
-| Dag 9 | Integrationsbeslut och dokumenterad nästa etapp. | Kevin beslutar; Jakob dokumenterar. | Ingen automatisk merge eller ändring av main. |
+| Verklighetsbild | Verifierad karta över commands, publicerad view, `presentation[]` och assetvägar. | Jakob kartlägger; Kevin är källa. | Inga kandidatnamn presenteras som canonical. |
+| Första förslag | Separat eventträd med source reference, publik payload, presentationsbehov och fallback. | Jakob. | Ingen alternativ RNG och ingen dold data. |
+| Avstämning | Samtal med Kevin om kartan och trädet. | Kevin + Jakob. | Kevin väljer fortsätt, justera eller avstå. |
+| Mediahandoff | Videovarianter och katalogkoppling för den avgränsade leveransen. | Kevin + Emil; Jakob läser handoffen. | Nya videor finns i Kevins valda flöde och är granskningsbara. |
+| Rehearsal | Fel-/gapplista mot faktisk spelare. | Alla i sina respektive spår. | Spelutfall och befintlig fallback är oförändrade. |
+| Integrationsbeslut | Granskad patch/MR och dokumenterad nästa etapp. | Kevin beslutar; Jakob dokumenterar. | Ingen automatisk merge eller ändring av main. |
 
 ## Regler som gäller hela kartan
 

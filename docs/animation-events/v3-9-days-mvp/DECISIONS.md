@@ -1,29 +1,36 @@
-# Beslutslogg · V3 9-dagars MVP
+# Beslutslogg · Animation events V3
 
-Dokumenterat 19 september 2026 från Jakobs sammanfattning efter mötet med Kevin, där Emil deltog.
+Dokumenterat 19 september 2026 från Jakobs sammanfattning efter mötet med Kevin
+och Emil. Formuleringarna nedan är den auktoritativa grunden för V3.
 
 ## Beslutade ramar
 
 | ID | Beslut | Konsekvens |
 | --- | --- | --- |
-| D01 | Kevin är chef och äger GitLab-repot, motorn och integrationsbeslutet. | V3 skrivs som underlag, inte som order till Kevin. |
-| D02 | Kevins befintliga RNG och events är basen. | Ingen alternativ eller "ultimativ" RNG byggs i MVP:n. |
-| D03 | Jakob ansvarar för backend/logik och eventpusslet på sin branch. | Varje nod härleds till runtime eller märks som förslag. |
-| D04 | Emil arbetar nära Kevin med videoproduktion och variationer. | Nya videor och deras metadata går till Kevins branch/flöde. |
-| D05 | Jakob och Emil har en tunn koppling. | Handoff sker genom manifest, metadata och beslutade artefakter. |
-| D06 | Jakob stämmer av vid färdiga etapper. | Kevin väljer införliva, justera eller behåll separat. |
-| D07 | Bettalotto är backoffice. | API-data används enligt behörighet; hemligheter dokumenteras aldrig. |
-| D08 | GitLab Croupier och wikin är canonical. | GitHub/Vercel är en senare presentationsspegel. |
-| D09 | Den passerade tiodagarsplanen ersätts av en niostegs-MVP. | S06 beskriver relativ ordning, inte automatiska kalenderorder. |
+| D01 | Kevin är projektledare och äger Croupier-repot samt integrationsbeslutet. | V3 är underlag till Kevin, inte en order till hans branch eller agenter. |
+| D02 | Kevins befintliga RNG, spelmotor och events är grunden. | Jakob bygger inte en konkurrerande eller ”bättre” RNG. |
+| D03 | Jakob bistår som backend-/logikkonsult. | Han sorterar spel- och eventlogik på `jakeminator123/work` och arbetar utanför Kevins branch tills en etapp granskas. |
+| D04 | Emil bistår Kevin nära med videogenerering, takes och variationer. | Ny media går till den branch och det flöde Kevin väljer. |
+| D05 | Jakob och Emil har en tunn koppling. | Kopplingen går genom avgränsade assets, manifest, metadata och handoff — inte ett parallellt gemensamt utvecklingsspår. |
+| D06 | Jakob stämmer av med Kevin när en etapp är färdig. | Kevin väljer att införliva, justera eller låta arbetet fortsätta separat. |
+| D07 | Bettalotto är backoffice. | Behörig data och media får användas som underlag; hemligheter hör aldrig hemma i Git, wiki eller canvas. |
+| D08 | Dokumentationen har flera ytor med olika roller. | GitLab Croupier är runtimekälla, wikin är gemensam arbetsyta och GitHub-repot är källa för den interaktiva canvasen. |
 
-## Inte beslutat ännu
+## Arbetsförslag — inte mötesbeslut
 
-- Exakta runtime-event och payloadfält för varje gren; de måste verifieras mot färsk Kevin-revision.
-- Vilka delar av Jakobs eventträd som ska införlivas i Kevins motor eller ligga som adapter.
-- Slutlig video-/variantkatalog och vilka takes som är godkända.
-- Om OpenClaw alls ska provas efter MVP:n. Det är inte en förutsättning för V3.
-- Produktionsdatum eller merge till `main`.
+Följande får finnas i V3, men ska inte beskrivas som beslutade enbart för att de
+står i dokumentationen:
+
+- den exakta formen på Jakobs eventträd och adapter;
+- en niostegsplan eller andra tids-/etappindelningar;
+- exakta event- och payloadnamn som inte har verifierats i aktuell kod;
+- slutlig katalog över video, varianter och godkända takes;
+- OpenClaw eller annan AI-regi;
+- hur Kevins senare branchändringar ska införlivas i `jakeminator123/work`;
+- datum för merge, publicering eller produktion.
 
 ## Ändringsregel
 
-Nya beslut läggs till med datum, källa och påverkade sidor. Ett förslag blir inte "beslutat" bara för att det står i en canvas, wiki eller agentfil.
+Ett nytt beslut får status **Mötesbeslut** först när källa, datum och berörda
+ytor är dokumenterade. Ett diagram, en agentregel eller en canvas kan förklara
+ett beslut men kan inte skapa beslutet på egen hand.

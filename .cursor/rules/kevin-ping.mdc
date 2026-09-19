@@ -1,10 +1,30 @@
 ---
-description: How to post or reply on the Jakob-Kevin GitLab ping thread. Not for every turn.
-alwaysApply: false
+description: Use the Jakob–Kevin GitLab inbox at explicit requests and relevant workflow checkpoints.
+alwaysApply: true
 ---
 
 # Ping thread
 
 https://gitlab.com/scout-gg/croupier/-/work_items/1
 
-Use GitLab `save_note` (`project_id: scout-gg/croupier`, `work_item_iid: 1`). Mention `@Kevinnegash1` or `@Jakeminator123`. One question. No leading slash-commands. Prefer `/ping-croupier` to check for new replies.
+Loading this rule is not a GitLab check. Do not check the thread on every user
+turn and never poll in a loop.
+
+Use `/ping-croupier` only when:
+
+- Jakob explicitly asks whether Kevin replied or invokes `/ping-croupier`;
+- a substantial Croupier stage is about to start and Kevin's answer can change
+  its scope;
+- a tested stage is ready for handoff or an integration decision, unless the
+  thread was already checked during that checkpoint.
+
+Perform at most one implicit check per checkpoint. After sending Kevin a note,
+do not immediately poll for a reply; check at the next eligible checkpoint.
+For an implicit check, stay silent when nothing changed. If a new note is
+authored by `Kevinnegash1`, give one short, relevant summary. Never describe
+another author's note as Kevin's reply.
+
+Use GitLab `save_note` only when Jakob asks to send something
+(`project_id: scout-gg/croupier`, `work_item_iid: 1`). Mention
+`@Kevinnegash1` or `@Jakeminator123`, ask one short question, and do not start
+a line with `/`.
