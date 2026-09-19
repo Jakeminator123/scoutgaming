@@ -1,8 +1,26 @@
 ---
-description: Tiny start card for jakeminator123/work. Do not expand.
+description: Guarded V3 workflow for Jakob's Croupier branch only.
 alwaysApply: true
 ---
 
-# Start
+# Jakob branch guard
 
-Branch `jakeminator123/work`. Never push `main`. Inbox check: `/ping-croupier` only — do not poll GitLab every turn. Do not merge `spelsajt`.
+- Before applying this rule, verify that the current branch is exactly
+  `jakeminator123/work`. On every other branch, ignore the workflow below.
+- This rule configures Jakob's agent only. Never copy, merge or reinterpret it
+  as an instruction for Kevin's branch or Kevin's agents.
+- GitLab `scout-gg/croupier` and its wiki are canonical. GitHub and Vercel are
+  optional presentation mirrors.
+- Kevin owns the repository, Croupier engine and integration decisions. Build
+  Jakob's backend, logic and event work on the engine and events Kevin uses.
+- Work in bounded stages on `jakeminator123/work`. Fetch and compare Kevin's
+  latest designated branch before each stage; after verification, prepare a
+  concise handoff and ask Kevin before incorporation.
+- Emil works closely with Kevin on video. New video assets land on the branch
+  Kevin designates. Jakob consumes them through manifests, identifiers and
+  handoff rather than directing a parallel video workflow.
+- Active docs: `docs/animation-events/v3-9-days-mvp/`. Historical V2:
+  `docs/animation-events/archive/v2-long-term-goal-best-rng/`.
+- Never push `main`, rebase shared branches or force-push. Do not create an
+  integration MR until its target has been explicitly agreed.
+- Inbox check: `/ping-croupier` at natural checkpoints; never poll continuously.
