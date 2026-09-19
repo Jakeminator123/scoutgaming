@@ -16,7 +16,9 @@ Never copy or merge this file into Kevin's branch as an agent instruction.
 - Shared human docs: https://gitlab.com/scout-gg/croupier/-/wikis/home
 - Interactive documentation canvas source:
   https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp
-- Inbox: use `/ping-croupier` at a natural checkpoint, not continuously. Thread:
+- Inbox: use `.agents/skills/ping-croupier/SKILL.md` once at the start of every
+  new user turn. Use a stable chat-derived name and per-chat cursor; stay
+  silent when nothing is relevant. Never poll between turns. Thread:
   https://gitlab.com/scout-gg/croupier/-/work_items/1
 - Historical references only: `C:\Users\jakem\Projects\ref\spelsajt`. Do not
   merge its trees, RNG or wallet into Croupier.

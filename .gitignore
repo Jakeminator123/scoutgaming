@@ -4,6 +4,7 @@ content/encoded/
 .DS_Store
 .claude/
 .cursor/ping-croupier-seen.json
+.croupier-inbox/
 web/data/
 content/bake/frames/
 content/bake/masks/
