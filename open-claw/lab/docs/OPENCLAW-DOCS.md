@@ -27,6 +27,7 @@ installera, driftsätta, ändra behörigheter eller lämna ut hemligheter.
 | Konfigurationsfält | [Configuration reference](https://docs.openclaw.ai/gateway/configuration-reference) |
 | Schema, validering och skrivskyddad konfiguration | [Config CLI](https://docs.openclaw.ai/cli/config) |
 | HTTP-anrop, autentisering och agentval | [OpenAI-compatible HTTP API](https://docs.openclaw.ai/gateway/openai-http-api) |
+| OpenClaws egen dashboard | [Control UI](https://docs.openclaw.ai/web/control-ui) |
 | Flera agenter och separata arbetsytor | [Agent entries](https://docs.openclaw.ai/gateway/config-agents/entries-and-multi-agent) |
 | Tillåtna/nekade verktyg | [Tool policy](https://docs.openclaw.ai/gateway/config-tools/tool-policy) |
 | Modellleverantör och base URL | [Custom providers](https://docs.openclaw.ai/gateway/config-tools/custom-providers) |
@@ -68,10 +69,10 @@ flaggor och beteende finns på respektive sida. Installationsguiden beskriver
 Windows Hub, PowerShell och WSL2 samt installation på macOS/Linux. Inga
 installer-skript körs genom att lägga till detta index.
 
-Vår Render-Gateway använder i stället genererad, skrivskyddad konfiguration
-(`OPENCLAW_CONFIG_READONLY=1`). Kör inte onboarding eller muterande
-konfigurationskommandon där som en genväg. Ändra den granskade konfigurationskoden,
-validera den i rätt container och gör sedan en avsiktlig deployment.
+Vår Render-Gateway får en startkonfiguration och sparar sedan UI-ändringar på
+sin beständiga disk. Deploymenten äger fortfarande nätväg, Gateway-inloggning
+och tillåtet dashboard-ursprung. Kör inte onboarding som en genväg för att
+ersätta denna konfiguration. Se [dashboard-guiden](DASHBOARD-SV.md).
 
 ## Kontrollera alltid den driftsatta versionen
 
@@ -99,6 +100,7 @@ att deploymenten fungerar.
 | Uppgift | Lokal fil |
 | --- | --- |
 | Steg för steg: GitLab → Render | [RENDER-START-SV.md](RENDER-START-SV.md) |
+| Native dashboard, inloggning och pairing | [DASHBOARD-SV.md](DASHBOARD-SV.md) |
 | Nätväg och nycklarnas separata roller | [DEPLOYMENT.md](DEPLOYMENT.md) |
 | Render-tjänster, diskar och miljöreferenser | [render.yaml](../render.yaml) |
 | OpenClaw-image och versionslås | [Dockerfile.gateway](../deploy/Dockerfile.gateway) |
