@@ -1,5 +1,25 @@
 # Box 4 blue tracking-card take — motion review failed
 
+## User-requested live experiment
+
+Kevin subsequently said “try it lets see live”. The same source is now
+available ONLY with `?dealer=astrid&table=blender&astridBlue=box4`, e.g.
+http://astridbluebox4.localhost:4190/?dealer=astrid&table=blender&astridBlue=box4.
+This explicitly authorised preview supersedes the earlier decision to keep
+it entirely offline; it does not change the failed choreography assessment.
+
+The blue prop and generated Box4 label are removed from the actor matte.
+Game-owned card artwork is drawn below the filmed fingers, at fixed physical
+72x103mm size. Frames0–27 use provisional body-outline fits; frames28–30 use
+rigid pose interpolation through the ambiguous turn. Front/back flips at29
+between observed back and front. Frames31–96 reuse the bounded marker fit.
+No retiming, new generation, actor warp, or colour change was performed.
+
+`build-preview-mask.py`, `build-preview-track.py`, `install-preview.mjs`
+reproduce the preview. Media/manifest live in web/public/review/astrid-blue-box4.
+The ordinary takes.json stays unchanged; only the explicit query loads Box4.
+The take still applies to that box's first card only, with a replay control.
+
 Approved pair: `builtin/start.png` and `builtin/end.png`.
 Generated using the built-in image_gen tool after Kevin explicitly requested
 GPT images here rather than paying Higgsfield image credits. The existing

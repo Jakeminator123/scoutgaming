@@ -77,6 +77,11 @@ const astridBlender=astridRestart;
 // One review directory may hold several green takes: the dealer's first upcard
 // and the first card of one specific box. Each is selected by action and box.
 const astridGreenTakes=astridGreenReview?await loadGreenTakes(`review/${astridBlender?'astrid-table-v2':'astrid-elevated-table'}`):[];
+// Explicitly requested live experiment. The ordinary table keeps its takes.
+if(astridBlender&&new URLSearchParams(location.search).get('astridBlue')==='box4'){
+  const preview=await loadGreenTakes('review/astrid-blue-box4');
+  astridGreenTakes.push(...preview.filter(t=>t.box===4));
+}
 const astridGreenTake=astridGreenTakes.find(t=>t.action==='deal-dealer')??null;
 const astridGreenBoxTakes=astridGreenTakes.filter(t=>Number.isInteger(t.box));
 const performanceRhythm=performanceStaged&&['rhythm','smooth60'].includes(performanceMotion);
