@@ -1,12 +1,13 @@
 import {uniformRegistration} from './performance-contact.mjs';
 import {createActorCompositor} from './actor-compositor.mjs';
 import {waitForAudio} from './speech-playback.mjs';
+import {capturePacked,createSpeechJoin,loadJoinImage} from './astrid-speech-join.mjs';
 
 // Astrid's spoken lines on the Blender table: one keyed green take per line
 // (ElevenLabs creatify-aurora lip sync over the approved elevated plate) plays
-// over the held waiting idle. Each line is cut in at its first frame and out
-// at its last, both plate ready poses; the recorded mp3 starts on the first
-// presented frame plus the measured audio offset. Opt-in through speak.json.
+// over the held waiting idle. Silent, motion-aligned joins surround the
+// untouched recording; its mp3 starts on the first presented speech frame
+// plus the measured audio offset. Opt-in through speak.json.
 export async function loadGreenSpeak(src='review/astrid-green-speak/speak.json'){
   const take=await fetch(src).then(r=>r.ok?r.json():null).catch(()=>null);
   if(!take||take.status!=='review'||take.enabled===false)return null;
@@ -30,6 +31,8 @@ export function speakManifestErrors(take){
     if(!line?.audio||typeof line.text!=='string')errors.push(`${id}: audio or text missing`);
     if(!Number.isInteger(line?.cutIn)||!Number.isInteger(line?.cutOut)||line.cutIn<0||line.cutOut<=line.cutIn||line.cutOut>(m?.frames??0)-1)errors.push(`${id}: cut range invalid`);
     if(!Number.isFinite(line?.audioOffsetSeconds))errors.push(`${id}: audioOffsetSeconds missing`);
+    const j=line?.transition;
+    if(j&&(!(j.durationMs>=100&&j.durationMs<=400)||j.width<m.width||j.height<m.height||j.mediaSha256!==m.sha256||!j.idleSha256||!j.enter?.src||!j.exit?.src))errors.push(`${id}: transition binding invalid`);
   }
   return errors;
 }
@@ -73,23 +76,47 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
     audio.volume=0;await audio.play();audio.pause();audio.currentTime=0;audio.volume=1;
     const controller=new AbortController();active=controller;
     const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});
-    let actor,frameRequest,videoDone=false,audioDone=false,audioStarted=false,delta=null,settled=null,timer,resolveDone;
+    let actor,join,idle,joinMaps,frameRequest,videoDone=false,audioDone=false,audioStarted=false,delta=null,settled=null,timer,resolveDone,finishing=false;
     const done=new Promise(resolve=>{resolveDone=resolve;});
-    const finish=()=>{
+    const cleanup=()=>{
       if(active!==controller)return;active=null;current=null;
       clearTimeout(timer);signal?.removeEventListener('abort',abort);
       if(frameRequest!==undefined)video.cancelVideoFrameCallback(frameRequest);
       video.pause();audio.pause();audio.removeEventListener('ended',onAudioEnded);video.removeEventListener('ended',onVideoEnded);
       layer.style.visibility='hidden';layer.dataset.speakState='idle';
       actor?.canvas.remove();actor?.dispose();
+      join?.canvas.remove();join?.dispose();
+      const wasPerforming=host.classList.contains('performance-playing');
       if(!host.querySelector('.performance-layer'))host.classList.remove('performance-playing');
+      // The class observer owns normal resume. Calling it again here races
+      // two play/seek requests when consecutive lines follow immediately.
+      if(!wasPerforming)idle?.resume();
       try{onFinish();}finally{resolveDone();}
+    };
+    const transition=async(edge,from,to)=>{
+      const spec=line.transition;
+      actor.canvas.style.visibility='hidden';join.canvas.style.display='';
+      layer.dataset.speakState=edge;layer.dataset.speakJoinProgress='0';
+      await join.play(from,to,joinMaps[edge],{durationMs:spec.durationMs,signal:controller.signal,onFrame:t=>{layer.dataset.speakJoinProgress=t.toFixed(3);}});
+      controller.signal.throwIfAborted();
+      join.canvas.style.display='none';actor.canvas.style.visibility='';
+    };
+    const finish=async()=>{
+      if(finishing||active!==controller)return;finishing=true;
+      try{
+        if(join){
+          const destination=await idle.prepareResume();controller.signal.throwIfAborted();
+          const source=capturePacked(video,media.width,media.height,line.transition.width,line.transition.height);
+          await transition('exit',source,destination);
+        }
+      }catch(error){if(!controller.signal.aborted)console.warn('[speak] exit',error.message);}
+      finally{cleanup();}
     };
     const onAudioEnded=()=>{audioDone=true;if(videoDone)finish();};
     // Some browsers deliver ended before the final video-frame callback; the
     // decoded last image is still there, so present it as the cut-out frame.
     const onVideoEnded=()=>{if(!videoDone){if(video.readyState>=2)actor.paint(video,null,{packed:true});layer.dataset.speakFrame=String(line.cutOut);videoDone=true;}if(audioDone||audio.ended)finish();};
-    controller.signal.addEventListener('abort',finish,{once:true});
+    controller.signal.addEventListener('abort',cleanup,{once:true});
     timer=setTimeout(abort,20000);
     const audioClock=mediaTime=>mediaTime-line.cutIn/fps+line.audioOffsetSeconds;
     const paint=(_,metadata)=>{
@@ -121,11 +148,16 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
       frameRequest=video.requestVideoFrameCallback(paint);
     };
     try{
-      await waiting()?.holdAtBoundary();
       await entry.ready;
       if(video.videoWidth!==media.width||video.videoHeight!==media.height*2)throw new Error(`${id}: packed speak media dimensions are invalid`);
       if(Math.abs(video.duration-media.frames/fps)>2/fps)throw new Error(`${id}: speak media duration does not match its manifest`);
       await waitForAudio(audio,controller.signal);
+      idle=waiting();
+      if(line.transition&&idle?.sourceSha256===line.transition.idleSha256){
+        entry.joinReady??=Promise.all(['enter','exit'].map(edge=>loadJoinImage(line.transition[edge].src)));
+        const maps=await entry.joinReady;joinMaps={enter:maps[0],exit:maps[1]};
+      }
+      await idle?.holdAtBoundary();
       const target=(line.cutIn+.5)/fps;
       if(Math.abs(video.currentTime-target)>=.5/fps)await new Promise(resolve=>{video.addEventListener('seeked',()=>resolve(),{once:true});video.currentTime=target;});
       controller.signal.throwIfAborted();
@@ -134,7 +166,17 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
       layer.replaceChildren(actor.canvas);current=entry;resize();
       actor.paint(video,null,{packed:true});
       layer.style.visibility='';layer.dataset.speakState='playing';layer.dataset.speakLine=id;layer.dataset.speakJob=line.jobId??'';
+      if(joinMaps){
+        const spec=line.transition;join=createSpeechJoin(spec.width,spec.height);
+        Object.assign(join.canvas.style,{position:'absolute',left:'0',top:'0',width:`${spec.width/media.width*100}%`,height:`${spec.height/media.height*100}%`});
+        layer.append(join.canvas);
+      }
       host.classList.add('performance-playing');
+      if(join){
+        const source=idle.captureFrame(),destination=capturePacked(video,media.width,media.height,line.transition.width,line.transition.height);
+        await transition('enter',source,destination);
+        layer.dataset.speakState='playing';
+      }
       audio.addEventListener('ended',onAudioEnded,{once:true});video.addEventListener('ended',onVideoEnded,{once:true});
       log(id,`${line.jobId} ${line.cutIn}-${line.cutOut}`);
       onStart(line.text);
@@ -148,6 +190,7 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
     layer,
     lines:[...lines.keys()],
     has:id=>lines.has(id),
+    text:id=>take.lines[id]?.text,
     say,
     cancel(){active?.abort();},
     dispose(){stopped=true;active?.abort();observer.disconnect();removeEventListener('resize',resize);

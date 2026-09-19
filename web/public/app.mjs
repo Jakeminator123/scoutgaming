@@ -2094,7 +2094,7 @@ setBanner('PLEASE PLACE BETS');
 
 // Optional rehearsal uses the exact in-game playback path, with no generation
 // or chat request. This lets every dealer and recorded line be checked locally.
-if (!astridRestart&&new URLSearchParams(location.search).has('rehearsal')) {
+if ((!astridRestart||astridSpeak)&&new URLSearchParams(location.search).has('rehearsal')) {
   const panel = document.createElement('details'); panel.id = 'rehearsal'; panel.open = true;
   panel.addEventListener('toggle', () => { if(round&&!busy)activeBoxHighlight(); });
   panel.innerHTML = `<summary>Dealer rehearsal</summary>
@@ -2110,6 +2110,7 @@ if (!astridRestart&&new URLSearchParams(location.search).has('rehearsal')) {
   const lineSelect = panel.querySelector('#rehearsal-line');
   const bank = await fetch(`${DEALER.base}/audio/en/bank.json`).then(r => r.json());
   for (const id of new Set([...VOICE_LINES, ...Object.keys(bank)])) {
+    if (astridSpeak&&!astridSpeak.has(id)) continue;
     if (voice.dead.has(id) && !bank[id]) continue;
     lineSelect.add(new Option(id.replaceAll('_', ' '), id));
   }
@@ -2118,17 +2119,30 @@ if (!astridRestart&&new URLSearchParams(location.search).has('rehearsal')) {
     const id = lineSelect.value;
     const matched = !!engine.index?.clips?.[`idle-1/speak/${id}`];
     const native=speechMedia[DEALER.key]?.[id];
-    status.textContent = (native?.text ?? bank[id]?.text ?? LINES[id] ?? id) + (native ? ' — video with embedded audio.' : matched ? ' — matching clip available.' : ' — voice only; matching clip missing.');
+    status.textContent = (astridSpeak?.text(id) ?? native?.text ?? bank[id]?.text ?? LINES[id] ?? id) + (astridSpeak?.has(id) ? ' — green-screen take used in gameplay.' : native ? ' — video with embedded audio.' : matched ? ' — matching clip available.' : ' — voice only; matching clip missing.');
   };
   lineSelect.onchange = update; update();
-  const play = () => {
+  const play = async () => {
     const id = lineSelect.value;
     setMuted(false);
+    if (astridSpeak?.has(id)) return voice.say(id,{force:true});
     return speechTurn(signal => playRecorded(id, new Audio(`${DEALER.base}/audio/en/${id}.mp3`), bank[id]?.text ?? LINES[id] ?? id, signal));
   };
-  panel.querySelector('#rehearsal-play').onclick = play;
-  panel.querySelector('#rehearsal-repeat').onclick = () => { play(); play(); };
-  if (DEALER.key === 'astrid') {
+  const review = async count => {
+    const controls=[...panel.querySelectorAll('button,select')];
+    controls.forEach(control=>control.disabled=true);
+    try { for(let i=0;i<count;i++){
+      // The first gesture can unlock the automatic greeting. Queue the
+      // requested review behind it instead of silently dropping both plays.
+      while(speaking)await new Promise(resolve=>setTimeout(resolve,50));
+      await play();
+    } }
+    catch(error){status.textContent=`Playback failed: ${error.message}`;}
+    finally{controls.forEach(control=>control.disabled=false);}
+  };
+  panel.querySelector('#rehearsal-play').onclick = () => review(1);
+  panel.querySelector('#rehearsal-repeat').onclick = () => review(2);
+  if (DEALER.key === 'astrid'&&!astridRestart) {
     const { installPerformanceAuthoring } = await import('./performance-authoring.mjs');
     installPerformanceAuthoring({panel,tableScene});
     if(performanceStaged){const stage=document.createElement('div');stage.id='performance-stage-banner';stage.textContent='ASTRID · STAGED GAMEPLAY';$('#scene').append(stage);

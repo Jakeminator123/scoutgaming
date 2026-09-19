@@ -34,7 +34,7 @@ for(const [id,dir] of Object.entries(lineDirs)){
   const fps=Number(mask.fps.split('/')[0])/Number(mask.fps.split('/')[1]??1);
   lines[id]={
     jobId:config.generationId,packedSource:packed,
-    media:{src:`review/astrid-green-speak/${id}.mp4`,sha256:mask.actorPackedSha256,layout:'rgb-over-alpha',width:cw,height:ch,fps,frames:mask.frameCount,
+    media:{src:`review/astrid-green-speak/${mask.faceRepair?`${id}-face-${mask.actorPackedSha256.slice(0,12)}`:id}.mp4`,sha256:mask.actorPackedSha256,...(mask.faceRepair?{matteRevision:'opaque-head-interior-v2'}:{}),layout:'rgb-over-alpha',width:cw,height:ch,fps,frames:mask.frameCount,
       sourceSha256:config.sourceSha256,nativeTakeSha256:config.nativeTakeSha256,crop:mask.crop},
     camera:{width:cw,height:ch,placement:{...dealer.camera.placement,x:cx,y:cy}},
     audio,audioSha256:sha(path.join(pub,audio)),text,
@@ -43,6 +43,19 @@ for(const [id,dir] of Object.entries(lineDirs)){
       takeOnsetSec:audioSync.takeOnsetSec,lineOnsetSec:audioSync.lineOnsetSec??audioSync.greetingOnsetSec},
     registration:config.registration,readyPose:config.readyPose,
   };
+  const joinPath=path.join(here,'transitions',`${id}.json`);
+  if(fs.existsSync(joinPath)){
+    const join=JSON.parse(fs.readFileSync(joinPath));
+    const idle=JSON.parse(fs.readFileSync(path.join(pub,'review/astrid-green-waiting/idle.json')));
+    if(join.mediaSha256!==mask.actorPackedSha256||join.idleSha256!==idle.base.sha256)throw new Error(`${id}: stale transition fit`);
+    lines[id].transition=join;
+    for(const edge of ['enter','exit']){
+      const image=path.join(here,'transitions',join[edge].flow);
+      if(sha(image)!==join[edge].sha256)throw new Error(`${id}: transition image mismatch`);
+      join[edge].src=`review/astrid-green-speak/${id}-${edge}-${join[edge].sha256.slice(0,12)}.png`;
+      if(process.argv.includes('--install'))fs.copyFileSync(image,path.join(pub,join[edge].src));
+    }
+  }
 }
 const greetingSplice=JSON.parse(fs.readFileSync(path.join(here,'registration/splice.json')));
 const take={
@@ -54,15 +67,14 @@ const take={
   spliceOffset:[0,0],
   spliceMeasurement:{method:'greeting frame 0/115 against the base eye-contact idle frame 0 and the dealer take frame 0; phase correlation of head/torso/hand windows, dx/dy in source px',
     windows:{head:[870,26,1050,226],torso:[760,240,1200,520],leftHand:[760,560,960,700],shoeHand:[1080,540,1330,700]},...greetingSplice,
-    note:'Props register at (0,15) (applied in every source.mp4). Against the base idle the takes sit higher: head ~20 px, hands 6-10 px. A pose difference, not a rigid residual, so no further offset; a cut pop of that size remains.'},
+    note:'Props register at (0,15). The ready poses differ: head ~20 px and hands 6-10 px. Per-line bidirectional motion fields bridge this difference only during the silent 220 ms joins. The speech frames keep their original placement.'},
   lines:Object.fromEntries(Object.entries(lines).map(([id,{packedSource,...line}])=>[id,line])),
-  note:'Each line cuts in at frame 0 and out at its last frame, both plate ready poses; the recorded line starts on the first presented frame plus audioOffsetSeconds. Speak plays over the held waiting idle; base idle resumes afterwards.',
+  note:'Each full recording keeps frame 0 through its last frame with unchanged paired audio. A 220 ms motion-aligned silent join enters and leaves it; the recorded line starts on the first presented speech frame plus audioOffsetSeconds. The destination idle frame is painted before idle resumes.',
 };
 console.log(Object.entries(lines).map(([id,l])=>`${id}: ${l.media.frames} frames, crop ${l.media.crop.join(',')}, audio offset ${l.audioOffsetSeconds}s (peak ${l.audioMeasurement.normalisedPeak})`).join('\n'));
 if(process.argv.includes('--install')){
   fs.mkdirSync(out,{recursive:true});
-  for(const old of fs.readdirSync(out))if(old.endsWith('.mp4')&&!(old.slice(0,-4) in lines))fs.unlinkSync(path.join(out,old));
-  for(const [id,line] of Object.entries(lines))fs.copyFileSync(line.packedSource,path.join(out,`${id}.mp4`));
+  for(const line of Object.values(lines))fs.copyFileSync(line.packedSource,path.join(out,path.basename(line.media.src)));
   fs.writeFileSync(path.join(out,'speak.json'),JSON.stringify(take,null,2)+'\n');
   fs.writeFileSync(path.join(here,'speak.json'),JSON.stringify(take,null,2)+'\n');
   console.log('installed',Object.keys(lines).length,'lines to',out);

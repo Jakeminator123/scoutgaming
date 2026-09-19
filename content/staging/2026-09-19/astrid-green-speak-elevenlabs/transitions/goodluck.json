@@ -1,0 +1,17 @@
+{
+  "width": 960,
+  "height": 760,
+  "durationMs": 220,
+  "flowRange": 64,
+  "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+  "mediaSha256": "d45d9dfd609b04f508100214975656181b135b8a2f6c06033d4a03a46e25cb7f",
+  "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+  "enter": {
+    "flow": "goodluck-enter-flow.png",
+    "sha256": "4827ff40c8dded77ede8ba3fe98463a4cb110c6678ab54b6f983bfd00e4aba88"
+  },
+  "exit": {
+    "flow": "goodluck-exit-flow.png",
+    "sha256": "1e6d1f95be768afa150b717f0bf723093f3ab4efb87aa2a074c6e2ce29d93e3d"
+  }
+}
