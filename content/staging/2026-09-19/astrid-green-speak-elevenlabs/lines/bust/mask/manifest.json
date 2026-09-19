@@ -1,0 +1,521 @@
+{
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/bust/source.mp4",
+  "sourceSha256": "d7e2441e3f1a435bb35b899eab553d3ad75563ce57f3b4e9cff90a126bcd58f0",
+  "generationId": "JXaFT7JI1SFy2rfwISk5",
+  "jobId": "JXaFT7JI1SFy2rfwISk5",
+  "box": null,
+  "sourceDimensions": [
+    1920,
+    1080
+  ],
+  "frameCount": 36,
+  "fps": "24/1",
+  "actorUnionBounds": [
+    659,
+    19,
+    1305,
+    673
+  ],
+  "includedCardRegion": [
+    659,
+    19,
+    1305,
+    673
+  ],
+  "crop": [
+    560,
+    0,
+    754,
+    682
+  ],
+  "previousTakeCrop": [
+    560,
+    0,
+    960,
+    760
+  ],
+  "cropPolicy": "Measured actor alpha union plus 8px, extended to the included card region, even-aligned; previous origin kept where it still contains the actor",
+  "packedDimensions": [
+    754,
+    1364
+  ],
+  "packing": "RGB upper half; straight grayscale alpha lower half",
+  "sourceToCropRowMajor3x3": [
+    1,
+    0,
+    -560,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "cropToSourceRowMajor3x3": [
+    1,
+    0,
+    560,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "packedTopLeftPixelRects": {
+    "rgb": [
+      0,
+      0,
+      754,
+      682
+    ],
+    "alpha": [
+      0,
+      682,
+      754,
+      682
+    ]
+  },
+  "actorPackedSha256": "b13fe12f20c0750ff4308cb15ea77a392344347751d748a4ee634d8c247944b4",
+  "restNativeFrame": 35,
+  "restFullSha256": "5b3d88185e8c95115aee8c24f55ed27f63ba218fb27b2ed5626d63ac0f70b6f1",
+  "restCropSha256": "9836f4b8f73ccc9aa70f6e0b743d922a7e67cf773bace82953431415376cc20d",
+  "matteImplementation": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-19/astrid-elevated-camera/mask-prep/key.py",
+  "matteImplementationSha256": "579e44faf1829ed8aa06d4d3c20bd312dd7f23a2424b859e9fe3d58f9338783e",
+  "settings": {
+    "schema": 1,
+    "purpose": "Elevated Astrid camera actor matte; no colour or geometry changes",
+    "greenExcessOpaque": 0.025,
+    "greenExcessTransparent": 0.155,
+    "markerWorkAreaNormalized": [
+      0.0,
+      0.28,
+      1.0,
+      1.0
+    ],
+    "markerColor": {
+      "minimumRed": 125,
+      "minimumBlue": 75,
+      "minimumRedMinusGreen": 30,
+      "minimumBlueMinusGreen": 8,
+      "minimumBlueGreenRatio": 1.15
+    },
+    "provisionalCropNormalized": [
+      0.2916666666666667,
+      0.0,
+      0.5,
+      0.7037037037037037
+    ],
+    "provisionalCropAt1920x1080": [
+      560,
+      0,
+      960,
+      760
+    ],
+    "cropStatus": "Provisional only. Every actual video frame and tracked card quad must be checked before cropping.",
+    "sourceRearRailTopYNormalized": 0.5,
+    "sourceRearRailBottomYNormalized": 0.522,
+    "foregroundDepth": "Torso lower edge behind table rear rail; filmed forearms/hands in front of felt; tracked replacement card behind retained fingers"
+  },
+  "semanticMasks": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/bust/mask/vision",
+  "rgbPolicy": "Fresh native source RGB, no recolouring, retime, interpolation, spatial warp or face repair; ordinary lossy H264 encoding only",
+  "frames": [
+    {
+      "frame": 0,
+      "seconds": 0.0,
+      "alphaBounds": [
+        659,
+        21,
+        1305,
+        672
+      ],
+      "alphaSha256": "a84ac183b65464c0f3b95c280e9fcaa475d13b7c4065dc81706f7bae0dee7617"
+    },
+    {
+      "frame": 1,
+      "seconds": 0.041666666666666664,
+      "alphaBounds": [
+        660,
+        22,
+        1305,
+        673
+      ],
+      "alphaSha256": "bd679922f2f9ebe5335422b3e4b95b0bcca3af92083f3f082fdc0d6c40b1c911"
+    },
+    {
+      "frame": 2,
+      "seconds": 0.08333333333333333,
+      "alphaBounds": [
+        660,
+        21,
+        1304,
+        673
+      ],
+      "alphaSha256": "454e155ed435281c7fc40d9e683efe7e74e6a7a68a6841cd52708bb1459f55d6"
+    },
+    {
+      "frame": 3,
+      "seconds": 0.125,
+      "alphaBounds": [
+        660,
+        21,
+        1304,
+        673
+      ],
+      "alphaSha256": "58fad835cb35dbe13182faddcc19271e62ba59b3f0a9d756c9fe8f774df9fb0e"
+    },
+    {
+      "frame": 4,
+      "seconds": 0.16666666666666666,
+      "alphaBounds": [
+        660,
+        21,
+        1304,
+        673
+      ],
+      "alphaSha256": "9bd2fb4536296d6c8d14d3af9335a568912594a54c4c9eff4c4df7cd159d9a47"
+    },
+    {
+      "frame": 5,
+      "seconds": 0.20833333333333334,
+      "alphaBounds": [
+        659,
+        21,
+        1304,
+        673
+      ],
+      "alphaSha256": "bab7c8f2fe26a7e913d89f8631bccc7851ef1e6467b0648d901337e81bcb2393"
+    },
+    {
+      "frame": 6,
+      "seconds": 0.25,
+      "alphaBounds": [
+        659,
+        21,
+        1304,
+        673
+      ],
+      "alphaSha256": "caec98c60a152344001d1970bdf8ea5ea765edacb7e072f68df7048bd41fac81"
+    },
+    {
+      "frame": 7,
+      "seconds": 0.2916666666666667,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "e8cfd9ca22fd1f7157695f0713c29c813accc021711afaac52eb288348d84741"
+    },
+    {
+      "frame": 8,
+      "seconds": 0.3333333333333333,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "c8a8cafa3ab06c98831f74ed06a6eb5ca80c47bc35f745414d9db5e99dd8ff95"
+    },
+    {
+      "frame": 9,
+      "seconds": 0.375,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "62b4c511c77dc22c7de1ac23ea8cbe91a977dc196b0d692650fae5c3590f8f78"
+    },
+    {
+      "frame": 10,
+      "seconds": 0.4166666666666667,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "1d8dcdcf53b29455bede1db6584350897f26408a9f8f35f5eb629193a229a598"
+    },
+    {
+      "frame": 11,
+      "seconds": 0.4583333333333333,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "5b2afe13a8cb54c9845989cb31698121016593d73a7caeb60cdf6539f2c0b101"
+    },
+    {
+      "frame": 12,
+      "seconds": 0.5,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "23f16aa8082d8e86f27fdf96387b2e59bd6b3de032e2d45c5cc851d8b4a10aa3"
+    },
+    {
+      "frame": 13,
+      "seconds": 0.5416666666666666,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "71cbca6a74088422c78a3777df0b8c275d452bfb7ad9b0b57dc325c92e47798c"
+    },
+    {
+      "frame": 14,
+      "seconds": 0.5833333333333334,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "e49bc76db95d0a40b349998a5b5073737415186768b0a6958f04ed095d7daa03"
+    },
+    {
+      "frame": 15,
+      "seconds": 0.625,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "d732c53a327bbc92c66ce3f053094f87539cd50fdf6735d1825bdb461bb05edb"
+    },
+    {
+      "frame": 16,
+      "seconds": 0.6666666666666666,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "96b024b79641e76ae5269cf08fa989173bbce8232e2f551488e02ff32919eb15"
+    },
+    {
+      "frame": 17,
+      "seconds": 0.7083333333333334,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "d11707d7d0a69c4bfb07cf6d8b8fc29a303e5520f641908114d1a35ecfde783a"
+    },
+    {
+      "frame": 18,
+      "seconds": 0.75,
+      "alphaBounds": [
+        659,
+        19,
+        1304,
+        672
+      ],
+      "alphaSha256": "cb5f854c6cf48838a2c906c0b34ac6ad7abbbc8b048da14ca4b7afef6b1e7adc"
+    },
+    {
+      "frame": 19,
+      "seconds": 0.7916666666666666,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "0ce8a5ab29e57e12dc85390ecf90995aa54badfbadc690d59581384ae0d1390c"
+    },
+    {
+      "frame": 20,
+      "seconds": 0.8333333333333334,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        673
+      ],
+      "alphaSha256": "4cdc70a5feee9128077b1edbe42c3563624ca6f2eed5e309b8215bf1faa3f8a6"
+    },
+    {
+      "frame": 21,
+      "seconds": 0.875,
+      "alphaBounds": [
+        659,
+        19,
+        1304,
+        673
+      ],
+      "alphaSha256": "3489d8afb837c14b50b35c3c0d4e1cd5d344cf587514949ebbeb8660db5b7799"
+    },
+    {
+      "frame": 22,
+      "seconds": 0.9166666666666666,
+      "alphaBounds": [
+        659,
+        20,
+        1305,
+        673
+      ],
+      "alphaSha256": "fa2795edf78c25a2f23613228e862ff2a15aab989a81646580220f37c11ded66"
+    },
+    {
+      "frame": 23,
+      "seconds": 0.9583333333333334,
+      "alphaBounds": [
+        659,
+        20,
+        1305,
+        672
+      ],
+      "alphaSha256": "cd5f8f7637d3eb31cdb69e9b1f2fa84dc9152e17be9344213d7b981bebccac69"
+    },
+    {
+      "frame": 24,
+      "seconds": 1.0,
+      "alphaBounds": [
+        659,
+        20,
+        1305,
+        672
+      ],
+      "alphaSha256": "98b762ee77db929658cffbc6b22efc034ac8b1dd6a4b7f34ae588b34a9b32fe2"
+    },
+    {
+      "frame": 25,
+      "seconds": 1.0416666666666667,
+      "alphaBounds": [
+        659,
+        20,
+        1305,
+        672
+      ],
+      "alphaSha256": "c80b4fcd32e58296e17a86657c6e854fa98e6471a2d19600ab92061b65d83437"
+    },
+    {
+      "frame": 26,
+      "seconds": 1.0833333333333333,
+      "alphaBounds": [
+        659,
+        20,
+        1305,
+        672
+      ],
+      "alphaSha256": "687c5a957dbd9e3cd0ae0aa41adc4dc2000e22aef0a7096d1990ae9126903f7b"
+    },
+    {
+      "frame": 27,
+      "seconds": 1.125,
+      "alphaBounds": [
+        659,
+        20,
+        1305,
+        672
+      ],
+      "alphaSha256": "e62efde0a9e88d5f4b78fcf5d280963c284635935df011834542d50a7fa08618"
+    },
+    {
+      "frame": 28,
+      "seconds": 1.1666666666666667,
+      "alphaBounds": [
+        659,
+        20,
+        1305,
+        672
+      ],
+      "alphaSha256": "da6087120a82983a6691befc360f9947612139cd9ab32890bbeb58f167ec4434"
+    },
+    {
+      "frame": 29,
+      "seconds": 1.2083333333333333,
+      "alphaBounds": [
+        659,
+        20,
+        1305,
+        672
+      ],
+      "alphaSha256": "d06b7229c4e6336e9ddef73ff766c2153e843a2b87b60605ebd44fa5a3693bb1"
+    },
+    {
+      "frame": 30,
+      "seconds": 1.25,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "440121427ef5896a706462a3b0534ad35dca7578e672d307119412046f16181c"
+    },
+    {
+      "frame": 31,
+      "seconds": 1.2916666666666667,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "087acc979a436542e51f31762716af7dcfd2db574c8f1080912a6df2b1806f33"
+    },
+    {
+      "frame": 32,
+      "seconds": 1.3333333333333333,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "4e8bbf63e9ae139f90300bca2e7fb01c5ade95dc624bed09a5c15f80c19d4705"
+    },
+    {
+      "frame": 33,
+      "seconds": 1.375,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "96280da8960b3e90784cb9593b8f4c45da1f9a0974ff2c2360649074d59cedef"
+    },
+    {
+      "frame": 34,
+      "seconds": 1.4166666666666667,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "61edf2e071ca9768c86f98eb04f59a4708432f0cf000c4c53b5ed4116ac9fcd7"
+    },
+    {
+      "frame": 35,
+      "seconds": 1.4583333333333333,
+      "alphaBounds": [
+        659,
+        20,
+        1304,
+        672
+      ],
+      "alphaSha256": "bd4326e25dcc73ef2432b163ae2bae6857ed645e63a98ec77799fb2d664df1cd"
+    }
+  ],
+  "status": "Box candidate matte. Card tracking, take composition and rendered gameplay are separate steps."
+}

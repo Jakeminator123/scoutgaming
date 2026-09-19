@@ -1,0 +1,13 @@
+{
+ "line": "farewell",
+ "takeSamples": 84992,
+ "lineSamples": 84672,
+ "sampleRate": 44100,
+ "lagSamples": 0,
+ "lagSeconds": 0.0,
+ "normalisedPeak": 1.0,
+ "takeOnsetSec": 0.10294784580498866,
+ "lineOnsetSec": 0.10294784580498866,
+ "takeDurationSec": 1.9272562358276644,
+ "lineDurationSec": 1.92
+}

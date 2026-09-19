@@ -249,7 +249,9 @@ if(astridRestart){
   catch(error){console.warn('[elevated idle]',error.message);}
   // Keyed green speak takes (Blender table only): the greeting plays over the
   // held idle with its recorded line; other lines stay silent as before.
-  if(astridGreenTake&&astridBlender)try{const speak=await loadGreenSpeak();if(speak)astridSpeak=await installGreenSpeak($('#scene'),speak,{waiting:()=>astridWaiting});}
+  if(astridGreenTake&&astridBlender)try{const speak=await loadGreenSpeak();if(speak){astridSpeak=await installGreenSpeak($('#scene'),speak,{waiting:()=>astridWaiting});
+    // Review hook, like window.astridEdge: window.astridSay('win') plays a line.
+    window.astridSay=id=>voice.say(id,{force:true});}}
   catch(error){console.warn('[speak]',error.message);}
 }else try {
   await engine.init();

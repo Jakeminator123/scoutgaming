@@ -1,58 +1,18 @@
 {
-  "version": 1,
-  "id": "astrid-green-speak-greeting-Mn2vLqTOAmDaJKBYJeKy",
+  "version": 2,
+  "id": "astrid-green-speak-creatify-aurora",
   "dealer": "astrid",
   "action": "speak",
   "status": "review",
   "enabled": true,
-  "jobId": "Mn2vLqTOAmDaJKBYJeKy",
   "provider": "ElevenLabs Image & Video API, model creatify-aurora 720p",
-  "approval": "Kevin 2026-09-19: approved SPEAK take, 'mount it, it was perfect'. Zero generation.",
-  "media": {
-    "src": "review/astrid-green-speak/actor-packed.mp4",
-    "sha256": "0ff04351e45cce68162299a96a63a4c0f5d1b5357620028a714b63f0775e3c6c",
-    "layout": "rgb-over-alpha",
-    "width": 754,
-    "height": 682,
-    "fps": 24,
-    "frames": 116,
-    "sourceSha256": "9fea307b1eec12493aefa116e78b967b86c8ef9a7a411fafaca892ee245bd848",
-    "nativeTakeSha256": "9548226ec97315537bef200e5677726807309c03113e0b953fd5f04791f703a7",
-    "crop": [
-      560,
-      0,
-      754,
-      682
-    ]
-  },
-  "camera": {
-    "width": 754,
-    "height": 682,
-    "placement": {
-      "width": 1920,
-      "height": 1080,
-      "scale": 1,
-      "x": 560,
-      "y": 0,
-      "framingScale": 0.85
-    }
-  },
+  "approval": "Kevin 2026-09-19: greeting \"mount it, it was perfect\"; then all other Astrid lines the same way. Zero generation.",
   "spliceOffset": [
     0,
     0
   ],
-  "registration": {
-    "method": "phase correlation of gradient images (actor masked out) against frame 0 of assets/astrid-3d/greenscreen/take-dealer-first-card.mp4 (1920x1080, the runtime placement basis); windows leftRail/rightRail/shoe agree at dx 0/-1, dy 15 for scale 1.5; frontRail dy 9 (generative drift, not corrected)",
-    "scale": 1.5,
-    "offset": [
-      0,
-      15
-    ],
-    "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept for lip sync), audio copied",
-    "sourceFrames": 116
-  },
   "spliceMeasurement": {
-    "method": "phase correlation of head/torso/hand windows, source frame 0 and 115 against the base eye-contact idle frame 0 (the layer shown right before the cut) and the dealer take frame 0; dx/dy in source px",
+    "method": "greeting frame 0/115 against the base eye-contact idle frame 0 and the dealer take frame 0; phase correlation of head/torso/hand windows, dx/dy in source px",
     "windows": {
       "head": [
         870,
@@ -171,10 +131,41 @@
         }
       }
     },
-    "note": "Props register at (0,15) (applied in source.mp4). Against the base idle the take still sits higher: head ~20 px, torso ~20 px, hands 6-10 px. That is a pose difference, not a rigid residual, so no further offset is applied; a cut pop of that size remains."
+    "note": "Props register at (0,15) (applied in every source.mp4). Against the base idle the takes sit higher: head ~20 px, hands 6-10 px. A pose difference, not a rigid residual, so no further offset; a cut pop of that size remains."
   },
   "lines": {
     "greeting": {
+      "jobId": "Mn2vLqTOAmDaJKBYJeKy",
+      "media": {
+        "src": "review/astrid-green-speak/greeting-face-5b1f348737ef.mp4",
+        "sha256": "5b1f348737efd4374f498b23e21be935d8cdd450172af79e944a36845ca9dd75",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 116,
+        "sourceSha256": "9fea307b1eec12493aefa116e78b967b86c8ef9a7a411fafaca892ee245bd848",
+        "nativeTakeSha256": "9548226ec97315537bef200e5677726807309c03113e0b953fd5f04791f703a7",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "matteRevision": "opaque-head-interior-v2"
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
       "audio": "dealers/astrid/audio/en/greeting.mp3",
       "audioSha256": "84a5345cdba72e722c37d7abd5baec0ee46fbdb9a443414ff6d28044acf6690e",
       "text": "Welcome to Privé Blackjack. Take a seat, I'll be your dealer tonight.",
@@ -182,14 +173,920 @@
       "cutOut": 115,
       "audioOffsetSeconds": 0,
       "audioMeasurement": {
-        "method": "cross-correlation of the take's embedded AAC track against greeting.mp3 (44.1 kHz mono)",
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
         "lagSamples": 0,
         "normalisedPeak": 1,
         "takeOnsetSec": 0.09045351473922902,
-        "greetingOnsetSec": 0.09047619047619047
+        "lineOnsetSec": 0.09047619047619047
+      },
+      "registration": {
+        "method": "phase correlation of gradient images (actor masked out) against frame 0 of assets/astrid-3d/greenscreen/take-dealer-first-card.mp4 (1920x1080, the runtime placement basis); windows leftRail/rightRail/shoe agree at dx 0/-1, dy 15 for scale 1.5; frontRail dy 9 (generative drift, not corrected)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept for lip sync), audio copied",
+        "sourceFrames": 116
       },
       "readyPose": "frame 0 and the last frame (both the plate ready pose; hands, shoe and card stationary)"
+    },
+    "blackjack": {
+      "jobId": "aIoxUD7sBZg1JuRHxIJv",
+      "media": {
+        "src": "review/astrid-green-speak/blackjack.mp4",
+        "sha256": "13b9f040c58741c5c0f14186ea7017a5216d6950e6f7a3263cd81d0bac757f45",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 93,
+        "sourceSha256": "1057ee03f9308b23edfbf8c5156601af9bd26b2fb78d2a5669d378809238ea84",
+        "nativeTakeSha256": "d760770518e7d5e0451981b1ea8e85f37f453db671e4f607f33d8ea027014b93",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/blackjack.mp3",
+      "audioSha256": "fe1a7682a7a11ed3f56d0177cf44899f0e95e27ea8076b5664c288772535f30f",
+      "text": "Blackjack! That is beautifully done. Congratulations!",
+      "cutIn": 0,
+      "cutOut": 92,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.057006802721088434,
+        "lineOnsetSec": 0.057006802721088434
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 93
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "bust": {
+      "jobId": "JXaFT7JI1SFy2rfwISk5",
+      "media": {
+        "src": "review/astrid-green-speak/bust.mp4",
+        "sha256": "b13fe12f20c0750ff4308cb15ea77a392344347751d748a4ee634d8c247944b4",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 36,
+        "sourceSha256": "d7e2441e3f1a435bb35b899eab553d3ad75563ce57f3b4e9cff90a126bcd58f0",
+        "nativeTakeSha256": "b7035322a521557614705b5cec2ab8af928e34b71220c4173e1f62653b138494",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/bust.mp3",
+      "audioSha256": "4f62c572de418db93fcfc228415f07e05c0efc30638dab8434fb81457ab6488d",
+      "text": "Bust. I'm sorry, that hand is over.",
+      "cutIn": 0,
+      "cutOut": 35,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 0.9996,
+        "takeOnsetSec": 0,
+        "lineOnsetSec": 0
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 36
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "chatter1": {
+      "jobId": "jRivECKXGLbqv84rmVpH",
+      "media": {
+        "src": "review/astrid-green-speak/chatter1.mp4",
+        "sha256": "61f3f1a0c0c696f2528034ce6dcebbe57ed704532bc731a6a501dffb66a2cea9",
+        "layout": "rgb-over-alpha",
+        "width": 752,
+        "height": 682,
+        "fps": 24,
+        "frames": 70,
+        "sourceSha256": "69db3fd6e40e1f6511474ae3121e94daa7445ece6505b457c296c025f1a90375",
+        "nativeTakeSha256": "1aca9ec340f8dedcf6d86b98dc6878668d7fec7d685830216a8132907b41073c",
+        "crop": [
+          560,
+          0,
+          752,
+          682
+        ]
+      },
+      "camera": {
+        "width": 752,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/chatter1.mp3",
+      "audioSha256": "985d836207cf99959aae54236b07b439899472ea33486a746fe035e4cfa6e2f8",
+      "text": "The cards have been kind tonight.",
+      "cutIn": 0,
+      "cutOut": 69,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.10843537414965987,
+        "lineOnsetSec": 0.10843537414965987
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 70
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "chatter2": {
+      "jobId": "A8sn5azPbSIBi5ixLIRk",
+      "media": {
+        "src": "review/astrid-green-speak/chatter2.mp4",
+        "sha256": "3d5dacda07916c82da0bc57dfc2d32491c3ae35265fcc11a3e608169e88277bf",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 62,
+        "sourceSha256": "933e9ec90e696d204709ee66e350d7f03107fc48d5e01aa8df7fa1199ef6cf87",
+        "nativeTakeSha256": "911596e837fded2c66eeb6ef98551e7483f9559cb62df4535127948f20b87a81",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/chatter2.mp3",
+      "audioSha256": "bdbc0a775627d758bd60e83139e7cb54af1b4406386db474bea36644c02139b8",
+      "text": "Take your time. There's no rush at my table.",
+      "cutIn": 0,
+      "cutOut": 61,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.03841269841269841,
+        "lineOnsetSec": 0.03841269841269841
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 62
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "dealerblackjack": {
+      "jobId": "8mEKMKBomCk526p7Gkad",
+      "media": {
+        "src": "review/astrid-green-speak/dealerblackjack.mp4",
+        "sha256": "4ccdc27998c90e358835ed53967b2b45d9133e3a3c95c670fdd196c0411bb126",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "60b6ded71d80066a259e6b6a6f8d8afa2db127b738cef6450521f6f416562843",
+        "nativeTakeSha256": "92f85f591bc85f246998f1abc961a54c73b1b4018a98f2435383e96f479545c2",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/dealerblackjack.mp3",
+      "audioSha256": "5830b3bd57e53d85ae82c32a0478ec41adcc8d1e86949960adcbfb799f199f09",
+      "text": "Dealer has blackjack. This round goes to the house.",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.0004308390022675737,
+        "lineOnsetSec": 0.0004308390022675737
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "dealerbust": {
+      "jobId": "n0XUXKw6zM0cT2ZeL7ON",
+      "media": {
+        "src": "review/astrid-green-speak/dealerbust.mp4",
+        "sha256": "c49af339cc4a9adc641c12fc7bc04097ae87ac4e4d6356463575a7d19ee95b6d",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 85,
+        "sourceSha256": "51f8e43704a9da3c4821e2034c98afb1c3c6f7f43feda1365c1ed9b8ac3dc99e",
+        "nativeTakeSha256": "9fb758f825de7852e1173319f3279a8cb146797aa6df135fe3186f9c7c8591a0",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/dealerbust.mp3",
+      "audioSha256": "0cb1a5f12e0269fed94c2985570a3c7afe02bb7f02544a1d0019d791a7dbcc55",
+      "text": "Dealer busts! Congratulations, the table wins.",
+      "cutIn": 0,
+      "cutOut": 84,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.06764172335600907,
+        "lineOnsetSec": 0.06764172335600907
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 85
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "double": {
+      "jobId": "xJrgoE5julUV1agzVGWs",
+      "media": {
+        "src": "review/astrid-green-speak/double.mp4",
+        "sha256": "907ba87d9f96ff2b10a0e88975cc26178fbfc5b5e8440147ef90707d12efbda4",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "606baad0d4a8df98225cb5d5afe5fe54236194bf7b14f9d5794c2ac6eefe50d6",
+        "nativeTakeSha256": "5f4fc4bfd8f5afbca8ed4cf0cfba5d43b07d15a942eccda6f1751aeef84df5e1",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/double.mp3",
+      "audioSha256": "c4c30b73267ad6af635a21449d7942d0142da6647ab8e7e8ecca52841b1b56fc",
+      "text": "Doubling down. One card, let's make it count.",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.08775510204081632,
+        "lineOnsetSec": 0.08775510204081632
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "farewell": {
+      "jobId": "cuAeX41T0nLE0q9gG86w",
+      "media": {
+        "src": "review/astrid-green-speak/farewell.mp4",
+        "sha256": "490561fd165125296627e8bb1fa9465d19bed658d0ca3dec06d211d0a282fb0b",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 47,
+        "sourceSha256": "6e73191d76ba894701ac131bf9294114d0f94543a8bf05a20e711bb84ec8d0c2",
+        "nativeTakeSha256": "d61feb25c1b1278f92c1f954e73b8b741f0bafbc9e3ea5b130c6f9a293435340",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/farewell.mp3",
+      "audioSha256": "cb22f40ecbdf5fba352d983522cd50ccaa3138b10d63299c1dac3308f785d04a",
+      "text": "Thanks for playing with me. Come back soon.",
+      "cutIn": 0,
+      "cutOut": 46,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.10294784580498866,
+        "lineOnsetSec": 0.10294784580498866
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 47
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "goodluck": {
+      "jobId": "gUoli6tA6QtpwAbwP1xq",
+      "media": {
+        "src": "review/astrid-green-speak/goodluck.mp4",
+        "sha256": "5e7b9d637bd02e3c0ac0f1ca0d60f9c5e87e9313fbfb764c2b8075dc7143659f",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "2e684f0559987e33526eb64afd5c27322152a7cbec28a7083ad5e8123981e1e0",
+        "nativeTakeSha256": "186bab84114187baf551aa94aa16c66844e218040eb11e4995de346bb81ca743",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/goodluck.mp3",
+      "audioSha256": "4ab3706389183bedd27fdcf278e388da9fddf4fcf3a950cac371132dd3bc3efd",
+      "text": "Bets are closed. Good luck at my table!",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.11206349206349206,
+        "lineOnsetSec": 0.11206349206349206
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "insurance": {
+      "jobId": "Poc0uboe25IctsbKmH8d",
+      "media": {
+        "src": "review/astrid-green-speak/insurance.mp4",
+        "sha256": "03c3f371d8404436069fbfb693d17a399b01d12f387e1451bcd15f986585dcfc",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "503e283a6106e50e8661e967fc419100a4436a8377b1b61e1c2f71427ea28ea5",
+        "nativeTakeSha256": "e49eb768e71bb4c64c856f1dd18ebc725039209b0ad2e2fe5572cb8d7ebe3074",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/insurance.mp3",
+      "audioSha256": "ce5863ac64782ae3c45e44ca09e0fc3b6e1fbd33f7610c3dbbf3a4f76c2f2a86",
+      "text": "Insurance is open. Would you like to protect your hand?",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.114421768707483,
+        "lineOnsetSec": 0.11439909297052155
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "lose": {
+      "jobId": "IHh6jAgPIe1LiPVBzbM7",
+      "media": {
+        "src": "review/astrid-green-speak/lose.mp4",
+        "sha256": "2a7a38184dd1487d0358275f944419197f99b44a01c9d6ac8d1852b7b15c53a5",
+        "layout": "rgb-over-alpha",
+        "width": 752,
+        "height": 682,
+        "fps": 24,
+        "frames": 39,
+        "sourceSha256": "44c674de71baddf2d6028b3a5078965e10fa266e8700cdfed3091fa5e5cc3414",
+        "nativeTakeSha256": "0512fbe5a557832b3d0f6eff500b1862f3e797841b5c1995af72e526db04a564",
+        "crop": [
+          560,
+          0,
+          752,
+          682
+        ]
+      },
+      "camera": {
+        "width": 752,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/lose.mp3",
+      "audioSha256": "2f2925cbee67be7451ac110f6e603003ef7b9f05e3b49bef8b44324414ac888f",
+      "text": "Dealer wins this one. Better luck next round.",
+      "cutIn": 0,
+      "cutOut": 38,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.10165532879818594,
+        "lineOnsetSec": 0.10165532879818594
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 39
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "peek": {
+      "jobId": "P2CbnCJePYCpwGYwP5P4",
+      "media": {
+        "src": "review/astrid-green-speak/peek.mp4",
+        "sha256": "5993ac785cb2ae5fcc89aa051712d40b2f51848f05946ec3623f23b13f01cee9",
+        "layout": "rgb-over-alpha",
+        "width": 752,
+        "height": 682,
+        "fps": 24,
+        "frames": 66,
+        "sourceSha256": "9e7011916b3ed971330b52b95df392385532a2f990860b53e19a5e40368cc2e1",
+        "nativeTakeSha256": "bc0193a0b662a8e5e374804cdaf5fc64251767d01d0137597e48a9f842a2772c",
+        "crop": [
+          560,
+          0,
+          752,
+          682
+        ]
+      },
+      "camera": {
+        "width": 752,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/peek.mp3",
+      "audioSha256": "7f86eeb07f9d4fec544035ae845890cce081dd5096ed55499bf0948138c11e1a",
+      "text": "Let me take a look at my hand.",
+      "cutIn": 0,
+      "cutOut": 65,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.05920634920634921,
+        "lineOnsetSec": 0.05920634920634921
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 66
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "placebets": {
+      "jobId": "wXrifkkD3tgxGuOyPv36",
+      "media": {
+        "src": "review/astrid-green-speak/placebets.mp4",
+        "sha256": "29cd0b974065370f70fb3f9af45a6fa9fd006d00b253ca6799df15c4530ccf07",
+        "layout": "rgb-over-alpha",
+        "width": 752,
+        "height": 682,
+        "fps": 24,
+        "frames": 55,
+        "sourceSha256": "5d0a20be14de8d2516bdf1a80a9ebd90dc063ce5ce8c71678396d781a9994d8e",
+        "nativeTakeSha256": "08ae7e114480dbbe1e7012d4f5314bd72a9ffad43194f3f022caf27c2b71a11d",
+        "crop": [
+          560,
+          0,
+          752,
+          682
+        ]
+      },
+      "camera": {
+        "width": 752,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/placebets.mp3",
+      "audioSha256": "a25740b33d92067e66173f535cb246ed212cab79748de9574f19131a038c6770",
+      "text": "Place your bets, please.",
+      "cutIn": 0,
+      "cutOut": 54,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 0.9999,
+        "takeOnsetSec": 0.08378684807256236,
+        "lineOnsetSec": 0.08378684807256236
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 55
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "push": {
+      "jobId": "obV9gn6nWg569kfeMeUu",
+      "media": {
+        "src": "review/astrid-green-speak/push.mp4",
+        "sha256": "7bc88c741ef27cd7bd378d3cd6311262f5ff3fd06b13c76b048cfd9c29a9eb30",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 47,
+        "sourceSha256": "33089981819ccc31a8ee35d0446b5567e97bf72c6d325df1f46ec8574eee8430",
+        "nativeTakeSha256": "97ef7e9dd33f0482a19c6121f6f7b0a88cc0b3a3885ec5b0bf63951d9249d72a",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/push.mp3",
+      "audioSha256": "a440d0c435369d7a8c020b5be2358e130c7aaeecb6ede9df3ae6d45a22d327a6",
+      "text": "It's a push. Your stake is returned.",
+      "cutIn": 0,
+      "cutOut": 46,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.0954421768707483,
+        "lineOnsetSec": 0.0954421768707483
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 47
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "sidebet": {
+      "jobId": "dNQBzah6jqH1zbGxKCPZ",
+      "media": {
+        "src": "review/astrid-green-speak/sidebet.mp4",
+        "sha256": "38a67151d605f2d9624649c5294ebe0fd04edae2ee7ccccffb35f5bae6921a71",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "b0fad20fb9eeeedec792255ee32b0034f80effdc94478ac0bf15b0d4ce4d1cba",
+        "nativeTakeSha256": "e2e806eb18b996be2271838a351291d5885ff2b2aa3c20fcdfd931c91482c626",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/sidebet.mp3",
+      "audioSha256": "d29b7d5c2803318e587f06bef6a81202f8fd9538facb99840fb6621116d68808",
+      "text": "Your side bet pays! Nicely done.",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 0.9999,
+        "takeOnsetSec": 0.11229024943310657,
+        "lineOnsetSec": 0.11229024943310657
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
+    },
+    "win": {
+      "jobId": "8DAy8aReZIWwp4p4zpvd",
+      "media": {
+        "src": "review/astrid-green-speak/win.mp4",
+        "sha256": "ad51e49fc317df82e933304d7abd249da33a22bd9e820d36a1d8d13156c34917",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 89,
+        "sourceSha256": "8f0fc3203509c8b54991e1155fa2281285b5c32d5de76cbd64923294ac54a8e5",
+        "nativeTakeSha256": "0cb38ae7b936323b44c06e697970b77e065a6750229758b73bad70dfcb394cd3",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ]
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/win.mp3",
+      "audioSha256": "5c0352e834d1a16e9d72fc081b59828b44ee8b7df207dc15e17658caa861140b",
+      "text": "Well played! Enjoy your winnings.",
+      "cutIn": 0,
+      "cutOut": 88,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.04673469387755102,
+        "lineOnsetSec": 0.04673469387755102
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 89
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)"
     }
   },
-  "note": "Cut in at frame 0 and out at the last frame, both plate ready poses; the recorded line starts on the first presented frame plus audioOffsetSeconds. Speak plays over the held waiting idle; base idle resumes afterwards."
+  "note": "Each line cuts in at frame 0 and out at its last frame, both plate ready poses; the recorded line starts on the first presented frame plus audioOffsetSeconds. Speak plays over the held waiting idle; base idle resumes afterwards."
 }
