@@ -10,6 +10,7 @@ import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
 import {shouldUseGreenDealerCard,selectGreenTake,loadGreenTakes,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame,installGreenIdle,quadMatrix} from './astrid-green-dealer.mjs';
 import {loadGreenWaiting,installGreenWaiting} from './astrid-green-waiting.mjs';
+import {installEdgeHud} from './actor-edge-blend.mjs';
 let astridWaiting=null;
 
 const $ = s => document.querySelector(s);
@@ -170,6 +171,7 @@ function layoutGreenBoxCards(){
     if(container&&!container.querySelector(':scope > .subhand'))layoutGreenDealerCards(container,take);
   }
 }
+if(astridGreenTake)installEdgeHud($('#scene'));
 if(astridGreenBoxTakes.length){
   document.documentElement.dataset.astridGreen=[astridGreenTake?'dealer-upcard':null,...astridGreenBoxTakes.map(t=>`box${t.box}`)].filter(Boolean).join('+');
   performancePlayer?.preload(astridGreenBoxTakes).catch(error=>console.warn('[green box]',error.message));

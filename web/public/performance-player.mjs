@@ -2,6 +2,7 @@ import * as THREE from './vendor/three/three.module.js';
 import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
+import {edgeBlendGLSL,edgeUniforms,createSceneSampler} from './actor-edge-blend.mjs';
 import {deliveryReach,shiftCard,canRetargetTake} from './dealer-reach.mjs';
 import {selectSceneJoin,validateSceneJoin,sceneJoinPayload} from './scene-join.mjs';
 
@@ -284,7 +285,7 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
   const planes=[];
   for(const foreground of [false,true]) {
     const material=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-      uniforms:{reachShoulder:{value:new THREE.Vector2()},reachAnchor:{value:new THREE.Vector2()},reachDelta:{value:new THREE.Vector2()},sourceSize:{value:new THREE.Vector2(width,height)},actorColourGain:{value:new THREE.Vector3(...colourGain)},source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)}},
+      uniforms:{reachShoulder:{value:new THREE.Vector2()},reachAnchor:{value:new THREE.Vector2()},reachDelta:{value:new THREE.Vector2()},sourceSize:{value:new THREE.Vector2(width,height)},actorColourGain:{value:new THREE.Vector3(...colourGain)},source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)},...edgeUniforms()},
       vertexShader:`varying vec2 v; uniform vec2 reachAnchor,reachDelta,reachShoulder,sourceSize;
         void main(){v=uv;vec2 sourcePoint=vec2(uv.x,1.0-uv.y);
         vec2 arm=(reachAnchor-reachShoulder)*sourceSize;
@@ -298,7 +299,8 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
         float actorAt(vec2 uv){return texture2D(source,vec2(uv.x,uv.y*0.5)).r;}
         vec3 rgbAt(vec2 uv){return texture2D(source,vec2(uv.x,0.5+uv.y*0.5)).rgb;}
         ${actorEdgeGLSL}
-        void main(){vec4 actor=cleanActor(v);
+        ${edgeBlendGLSL}
+        void main(){vec4 actor=blendEdge(v,cleanActor(v));
         vec3 masks=texture2D(source,vec2(v.x,v.y*0.5)).rgb;
         // Split the same actor coverage around the card. Painting fingers
         // over a second complete actor made soft edges more opaque in action
@@ -323,10 +325,11 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
   // lighting made it cream in motion, then white when the DOM took over.
   const mat=new THREE.MeshBasicMaterial({map:front,transparent:true,alphaTest:.01,toneMapped:false,side:THREE.DoubleSide});
   const mesh=new THREE.Mesh(geo,mat);mesh.frustumCulled=false;mesh.renderOrder=1;scene.add(mesh);
-  return {paint(sample,reach){for(const plane of planes){plane.material.uniforms.reachShoulder.value.set(...(reach?.shoulder??[0,0]));plane.material.uniforms.reachAnchor.value.set(...(reach?.anchor??[0,0]));plane.material.uniforms.reachDelta.value.set(...(reach?.delta??[0,0]));}videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
+  const sceneSampler=createSceneSampler();
+  return {paint(sample,reach){for(const plane of planes){plane.material.uniforms.reachShoulder.value.set(...(reach?.shoulder??[0,0]));plane.material.uniforms.reachAnchor.value.set(...(reach?.anchor??[0,0]));plane.material.uniforms.reachDelta.value.set(...(reach?.delta??[0,0]));if(canvas.isConnected)sceneSampler.update(plane.material.uniforms,canvas);}videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
     for(let i=0;i<4;i++){const p=sample.corners[i];geo.attributes.position.setXYZ(i,p[0]*width,-p[1]*height,p[2]);}
     geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();mat.map=faceDown||!sample.faceUp?back:front;mat.needsUpdate=true;
-  }renderer.render(scene,camera);},dispose(){geo.dispose();mat.dispose();front.dispose();back.dispose();videoTexture.dispose();for(const plane of planes){plane.geometry.dispose();plane.material.dispose();}renderer.dispose();renderer.forceContextLoss();}};
+  }renderer.render(scene,camera);},dispose(){sceneSampler.dispose();geo.dispose();mat.dispose();front.dispose();back.dispose();videoTexture.dispose();for(const plane of planes){plane.geometry.dispose();plane.material.dispose();}renderer.dispose();renderer.forceContextLoss();}};
 }
 
 // The table's hands use affine CSS transforms (fan rotation, skew and felt
