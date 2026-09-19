@@ -117,6 +117,10 @@ html[data-performance-capture="true"] #scene > :not(#room):not(#room2):not(#deal
 .performance-layer {position:absolute;z-index:24;pointer-events:none;}
 .performance-layer canvas {position:absolute;inset:0;width:100%;height:100%;}
 .astrid-rest-frame {position:absolute;z-index:24;pointer-events:none;}
+html[data-blender-table="true"] .seat-inner {transform:scale(var(--blender-seat-scale,1));}
+@media (min-width:861px) {
+  html[data-blender-table="true"] #hud-bottom {padding-bottom:0;}
+}
 html[data-astrid-rebuild="true"] #dealer-wrap,
 html[data-astrid-rebuild="true"] #dealer-hands-wrap,
 .performance-playing .astrid-rest-frame {visibility:hidden;}
