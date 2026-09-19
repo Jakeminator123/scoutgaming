@@ -1,14 +1,16 @@
-# Teknisk runtime-verifiering
+# Tekniskt kvitto · motor, API och öppna integrationssteg
 
 ”Runtime-evidence” är inte en separat motor. Det är ett tekniskt kvitto som
 visar vilken Croupier-kod ett dokumentationspåstående bygger på. Syftet är att
 förhindra att en plan eller gammal canvas råkar beskrivas som redan införd kod.
+Det betyder här **källkodsverifiering**, inte att en komplett runtime har
+startats eller att hela V3-flödet har körtestats.
 
-## Revisionsbild · 19 september 2026
+## Revisionsbild · kontrollerad 20 september 2026
 
 | Yta | Verifierad revision | Vad revisionen betyder |
 | --- | --- | --- |
-| Jakobs branch | `origin/jakeminator123/work` vid `b0435c3680e363ee19c500f2842fab64fb822a61` | Din lokala checkout och GitLab-branchen pekade på samma commit före denna dokumentationsrättning. |
+| Jakobs publicerade branch | `origin/jakeminator123/work` vid `51aea06e1f56fb01dceac022c22713de7d25d035` | Revisionsankare före denna dokumentationsleverans. Lokala opushade commits kan finnas separat. |
 | Kevins aktuella arbetsbranch | `origin/codex/restore-casino-environment` vid `626554db9e859ba7a374819b96099b7437dea818` | Senaste verifierade Kevin-head och head för MR !1 vid granskningen. |
 | Gemensam bas | `b14765971ca9f697a7fa14ffc0ea13570453b789` | Punkten där Jakobs och Kevins senare arbete delar historik. |
 
@@ -29,8 +31,22 @@ Kevins verifierade branch:
 | Dealeruppspelning | `web/public/dealer-engine.mjs` | `5f7c19f0fd8601eec0ad790f2eed8093433fce89` |
 
 `web/generations-api.mjs` finns däremot på Kevins `626554d` och inte i den
-granskade `b0435c3`-versionen av Jakobs branch. Det är ett read-only media-API,
+granskade `51aea06`-versionen av Jakobs publicerade branch. Det är ett read-only media-API,
 inte RNG- eller blackjackmotorn.
+
+## Vad Kevins senare arbete tillför
+
+Kevins 32 commits efter den gemensamma basen rör främst media, Astrids
+video-/3D-/kameraflöde, klient, backoffice och QA. De fem kärnfilerna ovan är
+oförändrade mellan de granskade brancherna. Det finns alltså inte 32 nya
+RNG- eller spelevent som Jakob måste ersätta sin motor med.
+
+| Skillnad | Relevans för V3 |
+| --- | --- |
+| `GET /api/v1/generations` och `GET /api/v1/generations/:id/video` i `web/generations-api.mjs` | Nytt read-only medieintag med generation-id, metadata och video. Kräver rätt behörighet; ändrar inte spelutfall. |
+| `cfg.clipAssignments` i Kevins `web/public/app.mjs` | Kopplar valda klipp till dealer-/presentationsdelar. Relevant när Jakobs föreslagna träd ska hitta sin integrationspunkt. |
+| Mediacues som `pickup`, `release`, `land` och `rest` | Bildrute-/kalibreringshändelser för uppspelning, inte nya publika RNG-events. |
+| Nya video-/kamera-/3D-assets och granskningsunderlag | Relevanta för Kevin och Emils mediaflöde; inte automatiskt media som Jakob ska kopiera eller godkänna. |
 
 ## Verifierade spel- och presentationskontrakt
 
@@ -44,12 +60,34 @@ På den gemensamma kärnan finns bland annat:
 - presentationstyperna `speak`, `deal`, `reveal`, `settle`, `turn` och `idle`.
 
 Interna events är inte automatiskt publika payloads. Jakobs adapter får endast
-läsa det som den valda integrationsytan faktiskt publicerar. Det verifierade
-publika flödet är:
+läsa det som den valda integrationsytan faktiskt publicerar. Två befintliga
+kodvägar ska hållas isär:
 
-`Round/RNG` → `shoe-game command` → `publicerad gameView` →
-`Partner API presentation[]` → `föreslagen variantmappning` →
-`statusfiltrerad spelare/media`.
+| Kodväg | Verifierad kedja | Gräns |
+| --- | --- | --- |
+| Partner-/headless-API | `command(...)` → publik `gameView(...)` → `presentationEvents(...)` → `presentation[]` i `/api/v1/table`-svaret och `events` i SSE-objektet `round`. | Ett kontrakt för en partnerbyggd klient, inte bevis på vad den vanliga webbklienten konsumerar. |
+| Croupiers webbklient | `web/public/app.mjs` → `/api/table` → serverns tabellsvar → appens befintliga spel- och uppspelningskod. | Den granskade `app.mjs` konsumerar inte Partner-API:ets `presentation[]`. |
+
+Steget `presentation[]` → variantadapter → en vald spelare är därför ett
+**integrationsförslag**, inte en redan verifierad end-to-end-kedja. Vilken
+kodväg första etappen ansluter till behöver stämmas av med Kevin.
+
+## Assetkatalog är inte samma sak som godkänd uppspelning
+
+- `buildAssetsManifest(...)` i `web/partner-presentation.mjs` filtrerar bort
+  `rejected` från performance-takes. Den publicerade `deals[]`-posten tar inte
+  med `status`, mediahash eller komplett granskningsunderlag. Katalogen ensam
+  bevisar därför inte att en take är livegodkänd.
+- `selectContactTake(...)` i `web/public/performance-contact.mjs` har separata
+  kontroller för staged review respektive godkänd uppspelning. Utan staged-läge
+  krävs bland annat godkänt manifest, godkända takes och föreskrivna reviews.
+- `PerformancePlayer` i `web/public/performance-player.mjs` validerar en take
+  utifrån sitt staged-läge och kontrollerar media/kalibrering. Detta är en
+  annan kontrollpunkt än Partner-API:ets katalogbyggare.
+- V3:s föreslagna variantadapter behöver en uttrycklig statuspolicy och ett
+  tillräckligt metadataunderlag. Den får inte tolka ”finns i API-katalogen” som
+  ”visuellt godkänd för live”. Ingen sådan ny adapter eller policy har införts
+  genom denna dokumentationsändring.
 
 ## Det tidigare ankarets fel
 

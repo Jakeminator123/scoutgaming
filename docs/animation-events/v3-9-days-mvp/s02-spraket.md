@@ -9,9 +9,11 @@ Grundregeln är enkel: **kodens exakta namn är canonical; våra svenska ord fö
 | Markering | Användning |
 | --- | --- |
 | **BESLUTAT** | Roll, arbetsgräns eller riktning beslutad i mötet. |
+| **GEMENSAMT SPRÅK** | Begrepp som Kevin har bekräftat i inboxen; inte automatiskt ett runtimefält. |
 | **VERIFIERAT** | Exakt symbol eller beteende bekräftat i aktuell Croupier-kod. |
 | **VERIFIERAS** | Kandidat från äldre dokumentation som ännu inte är bekräftad i aktuell branch. |
 | **JAKOBS FÖRSLAG** | Dokumentationsord eller adapterbegrepp ovanpå Kevins motor. |
+| **KEVINS FÖRSLAG** | Kevins föreslagna träd-/metadataform; ännu inte verifierad implementation. |
 | **BESLUT KRÄVS** | Föreslagen ändring som Kevin behöver ta ställning till vid en etapp. |
 
 Statusen ska stå bredvid saken den gäller. En hel sida får inte kallas “verifierad” bara för att några av dess ord finns i koden.
@@ -40,7 +42,7 @@ Tabellen nedan använder bara symboler som finns på revisionen som anges i `RUN
 | Table-command | `collect` | Boka resultatet efter att rundan är settled. | **VERIFIERAT** |
 | Publicerad vy | `phase` | Rundans aktuella publika fas. | **VERIFIERAT** |
 | Publicerad vy | `hands`, `dealer`, `active`, `holeDraw`, `legalActions` | Det publika underlaget för spelare och presentation. | **VERIFIERAT** |
-| Presentation | `speak` | Spela en verifierad talrad. | **VERIFIERAT** |
+| Presentation | `speak` | Anger en namngiven talrad som en klient ska spela; är inte i sig en uppspelning. | **VERIFIERAT** |
 | Presentation | `deal` | Visa ett redan serverbestämt kort till publicerat mål. | **VERIFIERAT** |
 | Presentation | `reveal` | Visa ett tidigare dolt dealerkort när publiceringsgränsen passerats. | **VERIFIERAT** |
 | Presentation | `settle` | Beskriv publicerade handresultat för presentationen. | **VERIFIERAT** |
@@ -51,6 +53,11 @@ Tabellen nedan använder bara symboler som finns på revisionen som anges i `RUN
 | Kalibrering | `events.land` / härledd `landAtMs` | Landningsdata som Partner API:s assetmanifest räknar fram. | **VERIFIERAT** |
 
 Källorna för tabellen är sammanställda i `RUNTIME-EVIDENCE.md` och pekar vidare till `web/shoe-game.mjs`, `web/partner-api.mjs`, `web/partner-presentation.mjs` och `web/public/dealers/astrid/performance/manifest.json`.
+
+Partner-API:ets `presentation[]` och den vanliga webbklientens `/api/table` är
+olika kodvägar. Att ett presentationsobjekt finns i API:et betyder inte att
+det redan driver `web/public/app.mjs`. På samma sätt är `takes[].status` i
+råmanifestet inte ett fält i Partner-API:ets publicerade `deals[]`.
 
 ## Gemensamma förklaringsord
 
@@ -63,15 +70,16 @@ De här orden hjälper oss att rita och granska systemet. Kolumnen “nivå” h
 | command | En begäran till table-endpointen. Använd exakt `state`, `start`, `act`, `insurance` eller `collect` när det är den symbolen som avses. | **VERIFIERAT** | `act` med en handling. |
 | publicerad vy | Den information motorn avsiktligt lämnar ut efter ett command. | **VERIFIERAT** | `phase` och `legalActions`. |
 | presentationsevent | Ett objekt i `presentation[]` som säger vad klienten ska presentera. | **VERIFIERAT** | `deal` eller `turn`. |
-| faktum | Mänskligt samlingsord för något motorn redan har avgjort och publicerat. Inte ett nytt `rng.*`-namespace. | **JAKOBS FÖRSLAG** | “Ett kort har publicerats till boxen.” |
+| `rng` / `show` | Gemensam uppdelning mellan spelauktoritet och presentation. Inte ett påstående att servern redan emitterar alla namn med dessa prefix. | **GEMENSAMT SPRÅK** | Motorn avgör; show beskriver vad som visas. |
+| faktum | Mänskligt samlingsord för något motorn redan har avgjort och publicerat. | Förklaringsord | “Ett kort har publicerats till boxen.” |
 | semantisk nod | Jakobs dokumentations-/adapternod som pekar tillbaka på en exakt verifierad källa. | **JAKOBS FÖRSLAG** | `sourceRef` till ett `deal`-objekt. |
-| linjen | En föreslagen baspool av godkända takes som alltid kan användas för samma presentationsbehov. | **JAKOBS FÖRSLAG** | Tre likvärdiga godkända takes. |
-| variant | En föreslagen undergren som bara är valbar när ett verifierbart villkor är sant. | **JAKOBS FÖRSLAG** | En lugnare resultattake när publicerad data räcker för villkoret. |
-| trigger | Villkoret som gör en variant valbar. Den får bara läsa publicerade fält. | **JAKOBS FÖRSLAG** | Ett publicerat `outcome`, inte dolt hålkort. |
-| take | En sammanhållen, identifierad mediaprestation med video, ljud, hash, frame-/eventdata och granskningsstatus. | Gemensamt mediaord | Ett objekt i performance-manifestet. |
+| linjen | Baspresentationen eller baspoolen för samma presentationsbehov; exakt pool/schema återstår att fastställa. | **GEMENSAMT SPRÅK** | Likvärdiga, godkända takes för ett grundläge. |
+| variant | En alternativ undergren som bara ska vara valbar när dess dokumenterade villkor är sant. | **GEMENSAMT SPRÅK** | En lugnare resultattake när publicerad data räcker för villkoret. |
+| trigger | Villkoret som gör en variant valbar. Den får bara läsa tillåten publicerad information. | **GEMENSAMT SPRÅK** | Ett publicerat `outcome`, inte dolt hålkort. |
+| take | En identifierad mediaprestation med tillhörande metadata; statusen avgör om den bara är råmaterial, review eller godkänd. | **GEMENSAMT SPRÅK** | Ett objekt i performance-manifestet. |
 | landning | Det kalibrerade ögonblick då den visuella handlingen når sitt mål. | Gemensamt mediaord | `events.land` och härledd `landAtMs`. |
 | fallback | En redan säker presentation som används när en föreslagen take eller variant inte kan spelas. | Gemensamt säkerhetsord | Befintlig slide/DOM eller godkänd bastake. |
-| katalog | Kevins publicerade manifest/index över katalogiserade assets, status och metadata. | **VERIFIERAT** | Assetmanifest byggt från branchens filer. |
+| katalog | Ett manifest/index över assets. Råmanifestet och det publicerade Partner-manifestet innehåller olika metadata. | **VERIFIERAT** | `buildAssetsManifest(...)` utelämnar status i `deals[]`; förekomst är inte godkännande. |
 | statuspolicy | Regeln för vilka katalogstatusar som får användas i review, rehearsal respektive live. | **BESLUT KRÄVS** | `draft` eller `review` är inte automatiskt visuellt godkänd. |
 | etapp | En avgränsad leverans som Jakob går igenom med Kevin innan nästa integrationssteg. | **BESLUTAT** | Verklighetskarta → eventträd → rehearsal. |
 
@@ -79,7 +87,7 @@ De här orden hjälper oss att rita och granska systemet. Kolumnen “nivå” h
 
 1. Skriv den exakta runtime-symbolen i kodstil när den är verifierad: exempelvis `presentation[]` eller `deal`.
 2. Sätt **VERIFIERAS** efter ett namn som kommer från V2, minnet eller en extern referens.
-3. Skapa inte ett parallellt `rng.*`- eller `show.*`-kontrakt i dokumentationen.
+3. Använd gärna det överenskomna `rng`/`show`-språket i diagram. Märk exakta alias som exempel eller föreslagna katalognamn tills de har en kod-/schemamappning; kalla dem inte befintliga serverevents.
 4. Om ett svenskt namn behövs i ett diagram ska noden även ha en `sourceRef` till canonical symbol eller texten “källa ej verifierad”.
 5. Asset-/take-id:n hör hemma i katalogen. Servern ska inte ta emot ett videonamn som spelbeslut.
 6. En trigger får aldrig förutsätta shoe-ordning, kommande kort, privat hålkort eller saldo som inte redan publicerats för rätt mottagare.
@@ -129,12 +137,15 @@ Använd följande fält när s03-eventträdet fylls i:
 
 ## Ord som bevaras från V2
 
-`linjen`, `variant`, `trigger`, `take`, `landning` och `fallback` är användbara, men deras status har ändrats:
+`linjen`, `variant`, `trigger`, `take`, `landning` och `fallback` bevaras.
+[Kevin bekräftade `rng`/`show` och linje/variant/trigger/take den 19 september](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3869829140).
+Vi skiljer därför på bekräftade begrepp och den implementation som återstår:
 
 - `take`, `landning` och manifestmetadata har stöd i nuvarande mediaflöde.
-- `linjen`, `variant` och `trigger` är Jakobs modell för att organisera en möjlig utvidgning.
+- `linjen`, `variant`, `trigger` och `take` är gemensamt accepterat språk, inte enbart Jakobs förslag.
+- Kevins dealerträd och YAML per event/take är ett konkret arbetsförslag; exakt schema och integration återstår.
 - Ingen av dem får ändra spelmotorns utfall.
-- Cooldown, budget och deterministiskt urval är möjliga regler, inte verifierad Croupier-runtime; de kräver separat beslut.
+- Cooldown finns med i Kevins metadataförslag. Budget och deterministiskt urval är möjliga regler; ingen av dem blir verifierad runtime enbart genom dokumentationen.
 
 ## Utanför språkets kärna för den första V3-leveransen
 

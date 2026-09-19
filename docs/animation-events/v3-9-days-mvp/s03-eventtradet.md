@@ -1,6 +1,6 @@
 # Animation events V3 · s03 eventträdet
 
-> **V3.** Detta är Jakobs separata backend-/logikförslag ovanpå Kevins befintliga Croupier-motor. Det är inte en ny RNG och det skriver inte om Kevins events. Kevins aktuella kod avgör spel, saldo och publiceringsgräns; Kevin avgör vid varje etapp om någon del ska införlivas.
+> **V3.** Här samlas Jakobs adapterförslag och Kevins träd-/metadataförslag ovanpå Kevins befintliga Croupier-motor. Språket linje/variant/trigger/take är bekräftat gemensamt. Schema och integration är inte färdiga bara för att de visas här. Kevins kod avgör spel, saldo och publiceringsgräns; Kevin avgör vad som införlivas.
 
 Eventträdets uppgift är att svara på en begränsad fråga:
 
@@ -13,6 +13,8 @@ Eventträdets uppgift är att svara på en begränsad fråga:
 | **VERIFIERAT** | Finns i aktuell Croupier-kod eller aktuellt manifest. |
 | **VERIFIERAS** | Kandidat som måste kontrolleras mot aktuell branch och tester. |
 | **JAKOBS FÖRSLAG** | Nod, trigger, urval eller test som ligger ovanpå runtime. |
+| **KEVINS FÖRSLAG** | Diskträd och metadataidé från Kevins daterade inboxnotering, ännu inte färdig integration. |
+| **GEMENSAMT SPRÅK** | `rng`/`show` och linje/variant/trigger/take är bekräftade begrepp, inte automatiskt kodsymboler. |
 | **KEVIN + EMIL** | Video-/takearbete, katalogstatus, kalibrering och visuell granskning. |
 | **BESLUT KRÄVS** | Kevin avgör om förslaget ska in i produkten. |
 
@@ -22,17 +24,16 @@ Eventträdets uppgift är att svara på en begränsad fråga:
                  KEVINS AUKTORITATIVA RUNTIME
 
 command ──► shoe + Round + regler ──► publik gameView
-   │                 │                       │
-   │                 └── kort/saldo/payout   └── ingen shoe-ordning,
-   │                     avgörs här              inget privat hålkort
-   ▼
-presentationEvents(prevView, view, op)
-   │
-   └──► presentation[]: speak · deal · reveal · settle · turn · idle
-                              │
-                              ▼
-                 JAKOBS LÄSANDE EVENTTRÄD
-                 sourceRef + publik payload
+                     │                       │
+                     └── kort/saldo/payout   ├──► /api/table
+                         avgörs här          │    vanlig webbklient
+                                             └──► Partner API
+                                                  presentationEvents(...)
+                                                  presentation[]
+
+                 FÖRESLAGEN KOPPLING — INTE INFÖRD
+                 välj integrationsyta + sourceRef
+                 Jakobs läsande adapter/eventträd
                               │
                     ┌─────────┴─────────┐
                     ▼                   ▼
@@ -45,10 +46,15 @@ presentationEvents(prevView, view, op)
                        kalibrering/fallback
                               │
                               ▼
-                    befintlig presentation
+                 mål: kompatibel befintlig spelare
 ```
 
 Det finns ingen pil tillbaka från video eller eventträd till shoe, `Round`, legal actions, saldo eller payout.
+
+Partner-API:ets lista är verifierad; en adapter som driver den vanliga
+webbklienten med den är det inte. `web/public/app.mjs` använder i dag
+`/api/table`. Kevin behöver avgöra anslutningspunkten innan något nytt flöde
+kan beskrivas som sammanhängande och körtestat.
 
 ## Den verifierade ryggraden
 
@@ -64,7 +70,44 @@ Följande beteende är bekräftat mot revisionen i `RUNTIME-EVIDENCE.md` och kan
 | `web/public/dealers/astrid/performance/manifest.json` | Beskriver review-takes med id, action, status, mediahash, camera och eventframes. | Bara poster som katalogpolicyn tillåter för aktuellt läge. |
 | `buildAssetsManifest(...)` | Samlar streams, deal-takes, speech och härledd `landAtMs`. | Publicerad katalog, aldrig godtycklig filsökning i runtime. |
 
-### Verifierade presentationstyper
+Katalogbyggaren utesluter `rejected` men skickar inte take-status eller
+komplett granskningsunderlag i `deals[]`. Den befintliga kontaktspelaren har
+andra staged-/godkännandekontroller. Adapterförslaget behöver därför en egen
+uttrycklig metadata- och statuskoppling; ”finns i katalogen” räcker inte.
+
+## Kevins förslag: dealerträd och metadata
+
+Källa: [Kevins notering 19 september, 20:31:39 UTC](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3869829140).
+Kevin bekräftar språket `rng`/`show`, linje, variant, trigger och take, och
+föreslår följande diskbaserade organisering. Exemplet är **KEVINS FÖRSLAG**,
+inte en katalog som denna dokumentationsleverans skapar:
+
+```text
+dealers/astrid/
+  show.deal.centre/
+    line/                 bastakes, exempelvis a.mp4
+    variant.attentive/    alternativa takes
+  show.line.lose/
+    line/
+    variant.near/
+    variant.unlucky/
+```
+
+YAML per event eller take kan enligt förslaget bära prompt, modell,
+Higgsfield-id, `landAt`, frame-index, kalibrering, trigger, cooldown och
+verdict. Fältnamn, enheter, schema och koppling till befintliga JSON-manifest
+behöver fastställas före implementation; inget gammalt index ska ersättas
+bara för att exemplet använder YAML.
+
+Backoffice-intaget är tänkt som `want`/`no`: utvalt material går vidare till
+trädet och metadata, övrigt stannar utanför. `want` betyder då ett urval till
+flödet, **inte** att filen är kalibrerad eller godkänd för liveuppspelning.
+Kevins read-only Generations-API är en befintlig byggsten på hans branch;
+hela intags-/trädflödet är fortfarande ett förslag. Kevin har bett Jakob ta
+ställning till schema/träd på arbetsbranchen för granskning, inte gett en
+automatisk mergeorder.
+
+## Verifierade presentationstyper
 
 | Typ | Nuvarande betydelse | Fråga för första etappen | Status |
 | --- | --- | --- | --- |
@@ -143,7 +186,7 @@ Exemplet visar önskad form — ett event kan ha tre basvideor och två variante
 
 Det här är inte implementerad runtime. Varje punkt behöver Kevin-beslut innan integration.
 
-1. Motorn producerar först sitt vanliga command-resultat och `presentation[]`.
+1. Motorn producerar sitt vanliga command-resultat. Om etappen väljer Partner-API:et finns också dess `presentation[]`; den vanliga webbklientens kodväg får inte antas vara samma.
 2. Adaptern hittar en nod via exakt `sourceRef`; okänd källa ger omedelbart befintlig presentation.
 3. Varianten är valbar bara om dess trigger kan avgöras från eventets publicerade payload.
 4. Högst en variant väljs för eventet i den första avgränsade etappen.
@@ -211,30 +254,24 @@ Nya videor går genom Kevin och Emil och hamnar i Kevins branch. Jakob ska inte 
 | Två följande spelningar | Ingen loop-, reset- eller restpose-regression mellan uppspelningar. |
 | Adapter avstängd | Produkten beter sig som före V3-förslaget. |
 
-## Föreslagen etappsekvens för eventträdet
+## Etappsekvensen finns på ett ställe
 
-| Etapp | Resultat | Grind |
-| --- | --- | --- |
-| 1 | Frys V2 som historik och samla mötesbeslut. | Inget gammalt alias kallas runtime. |
-| 2 | Verifiera commands, publicerad view, presentationstyper och manifestvägar. | Källreferenser dokumenterade. |
-| 3 | Rita skelettet: sourceRef → semantisk nod → baslinje → fallback. | Ingen variant ännu. |
-| 4 | Lägg första lilla variantträdet på ett verifierat event. | Bara publicerad payload används. |
-| 5 | Samtal Jakob–Kevin. | Kevin väljer fortsätt, justera eller avstå. |
-| 6 | Kevin och Emil inventerar/producerar den avgränsade takepoolen i Kevins valda flöde. | Stabilt id, status och mediahash. |
-| 7 | Koppla kataloghandoff och negativa tester i Jakobs spår. | Saknad/underkänd media faller tillbaka. |
-| 8 | Rehearsal i faktisk spelare och dokumenterad gapplista. | Spelutfall oförändrat; visuell evidens sparad. |
-| 9 | Slutlig etappgenomgång med Kevin. | MR/integration bara om Kevin väljer det. |
+[S06 · etappplanen](s06-plan.md) beskriver ordningen från källkodskarta och
+avgränsning till adapter, media, fallback, rehearsal och Kevin-avstämning.
+Denna sida definierar trädets innehåll, inte en andra parallell tidsplan.
+Namnet `v3-9-days-mvp` innebär inget mötesbeslut om nio dagars leveranstid.
 
 ## Beslutspunkter för Kevin
 
 1. Vilken presentationsfamilj är den första vertikala skivan: `settle`, `deal`, `turn` eller något annat?
-2. Är `presentation[]` det långsiktiga canonical inflödet till adaptern?
+2. Ska första adapteretappen använda Partner-API:ets `presentation[]` eller den vanliga webbklientens kodväg, och hur ska kopplingen verifieras?
 3. Vilka katalogstatusar får användas i rehearsal respektive live?
 4. Ska takevalet vara exakt, deterministiskt hashat eller en annan kodad policy?
 5. Vilka triggers är tillåtna i den första etappen, och vilka publicerade fält får de läsa?
 6. Ska flera visuella takes dela exakt samma speech-line och ljud, eller ska varje take vara ett komplett separat paket?
 7. Vilken evidens krävs innan en video från Bettalotto flyttas från generation/review till Kevins produktbranch?
 8. Ska förslaget integreras, fortsätta separat eller avslutas efter etappgenomgången?
+9. Vilket minsta disk-/YAML-schema ska provas, och hur följer status och godkännande med från `want`-urval till manifest och spelare?
 
 ## Utanför kärnan
 
