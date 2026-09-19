@@ -16,6 +16,23 @@ export function greenShoeOutlet(take,viewport={width:innerWidth,height:innerHeig
   return {x:fit.x+x*fit.width,y:fit.y+y*fit.height};
 }
 
+// Frame 96 from this same masked take is a temporary still, not a new idle.
+// Share the action's registration so returning to rest cannot resize Astrid.
+export function installGreenRestFrame(host,take){
+  const image=document.createElement('img');
+  image.className='astrid-rest-frame';
+  image.src=new URL('rest.png',new URL(take.media.src,document.baseURI)).href;
+  image.alt='Astrid';
+  image.draggable=false;
+  const resize=()=>{
+    const fit=uniformRegistration(take.camera,{width:innerWidth,height:innerHeight});
+    Object.assign(image.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});
+  };
+  resize();host.append(image);
+  addEventListener('resize',resize);
+  return ()=>{removeEventListener('resize',resize);image.remove();};
+}
+
 // A homography preserves the filmed card plane, including its fixed UV order.
 // The authoritative DOM card remains in dealer-cards for reveal/settlement.
 export function quadMatrix(quad,width,height) {
