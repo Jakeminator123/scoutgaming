@@ -1147,3 +1147,34 @@ hard idle/action joins. No claim of smooth60 or complete source acceptance.
 Focused green-box routing tests4/4, pre-commit and sync --probe passed. Scope
 is Astrid only. Other dealers were covered by shared regression checks, not
 opened or changed. Unrelated app.mjs blank-line edit preserved unstaged.
+
+## 2026-09-19 — Box 4 opening pair and larger settled cards
+
+User accepted the live blue-card take and requested larger laid cards plus the
+same action for both opening cards. The opt-in `astridBlue=box4` now routes
+only the first two unsplit, face-up Box 4 cards through c01866d1. Other takes
+retain their previous routing; hits and split cards retain the ordinary path.
+No generation, media re-encode, actor scale, camera or wallet changes.
+
+Box 4 resting cards are 25% larger in the photographed table plane. The
+original tracked pickup/turn/release is preserved through source landing56;
+a separate 8-frame presentation adjustment settles the released card into
+its larger fan. DOM takes over at64 with the same final corners. The second
+card uses its own offset, with no movement or hiding of the first card.
+Replay now plays both authoritative cards sequentially. Source/media hashes
+are unchanged; calibration SHA is now
+86666241db588fce78a85b6bdf9fd2b22ddcd3416ef1238545d13c7759f9faca.
+
+Verified in rendered gameplay on isolated4190 guests. QA host
+astridbluepairqa: opening8-clubs/8-hearts, replayed both, hit and settled loss,
+balance1000->995, totalbet0. User preview astridbluebox4: actual opening
+5-spades/2-clubs, both c01866d1 deliveries observed; second frames2–96,
+first card visible throughout with exactly one unchanged quad. Larger pair
+remains on felt and clear of its chip. No warnings/errors on either guest.
+Left that live round open with `Replay box 4 both cards` available.
+Evidence: content/staging/2026-09-19/astrid-blue-box4/gameplay-pair-qa/.
+
+Focused routing/presentation tests7/7, pre-commit checks and dealer-sync
+--probe passed. Existing source pickup/turn limitations and hard idle/action
+joins remain; this is the user's accepted live experiment, not all-seat
+visual acceptance. Unrelated work, including app.mjs blank line, preserved.
