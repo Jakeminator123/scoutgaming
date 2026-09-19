@@ -1298,3 +1298,43 @@ Runtime generalized rather than repeated: `speak.json` is version 2 with one med
 Found and fixed during the check: Chrome can deliver the video's `ended` before the last frame's callback, which left the greeting held at frame 114 for the 20 s timeout in one run; the runtime now presents the decoded last image as the cut-out frame on `ended` (the same guard `PerformancePlayer` has). Verified afterwards in two headless SwiftShader passes of `astridboxright.localhost:4190/?dealer=astrid&table=blender`: greeting on load, then win and bust through the hook, idle held and base resumed each time, no app warnings or errors. Five focused speak tests (now over all lines), 24 focused, dealer-sync probe and full pre-commit pass. No gameplay QA per Kevin.
 
 Still open: the cut pop into and out of each take (~20 px head vs the base idle) on every line; audio/video delta on real hardware unmeasured (console `[speak] <line> audio/video start delta`); a line said while a deal starts is cut off; SwiftShader timings in `runtime-check/result.json` are not representative.
+
+## 2026-09-19 — greeting eye holes repaired after user rejection
+
+The user reported disappearing eyes in the first masked lipsync. The original
+green-excess key partially removed the blue-green irises. Earlier claims
+that this greeting mask was clean are superseded by that rejection.
+`astrid-green-speak-elevenlabs/mask-face-repair/` reconstructs the original
+key and protects the enclosed high-confidence head interior; source RGB,
+outer silhouette, camera, crop, timing and paired greeting audio stay unchanged.
+Across 116 frames, 2,300 alpha pixels were repaired; restored pixels are255
+lossless and at least253 after H264 decoding. New packed SHA
+5b1f348737efd4374f498b23e21be935d8cdd450172af79e944a36845ca9dd75.
+Canonical greeting mask updated so future multi-line builds inherit it.
+Current greeting media uses a content-addressed filename to avoid stale cache.
+
+IAB rendered QA on isolated guest port4211 verified two greeting plays,
+mask visibility, waiting held during speech and resumed afterward. First
+repaired play reached frame115; measured start delta-25ms, settled-49ms.
+Evidence: hardware-review/face-repair-*. The pose jump at the speech/idle
+join remains; this is not a claim of perfect perceptual lip sync. User's
+existing port4190 round was left alone. Other concurrently installed speech
+lines have not received this specific eye repair/review. Five speak tests
+and dealer-sync --probe passed; full checks run on commit. No generation.
+The concurrent all-lines commit picked up the repair code and canonical
+mask while work was underway; this delivery adds its remaining media file,
+review notes and second-play evidence without reverting that work.
+
+## 2026-09-19 — approved Box3 H3 test ended in provider failure
+
+The user approved the softer Astrid face, requested Scout/card references,
+then authorized one test. `astrid-h3-box3-v1/test-01/` saves the full-scene
+start/end pair, distinct-marker card close-up, separate Scout cardback,
+exact requests, hashes and receipt. H3 rejects extra reference media when
+start/end keyframes are present (preflight had allowed it); the rejected
+request created no job. One corrected 4s 2K 16:9 keyframe-only job was
+submitted: d2295b53-09dc-4eb4-bffa-6ce4847a8897, estimated8credits.
+It returned terminal FAILED with no output URL or reason. Actual charge or
+refund is unknown. No duplicate submission, source video or gameplay install.
+Box4 v1 remains unchanged. Tell the user this failed; do not call it a render
+waiting for review and do not resubmit automatically.
