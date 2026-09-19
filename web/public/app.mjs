@@ -8,7 +8,7 @@ import { handValue } from './blackjack.mjs';
 import { placeActions } from './action-placement.mjs';
 import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
-import {shouldUseGreenDealerCard,greenShoeOutlet,layoutGreenDealerCards} from './astrid-green-dealer.mjs';
+import {shouldUseGreenDealerCard,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame} from './astrid-green-dealer.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -57,26 +57,33 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
   if (disclosure) disclosure.textContent = disclosure.textContent.replace('Vera', DEALER.name);
 }
 
-const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
 const riggedReview=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('scene')==='rigged-review';
-const performanceStaged=!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
+// Astrid is being rebuilt from the accepted green-screen take. The retired
+// bank stays on disk but must not load through idle, speech or action fallbacks.
+const astridRestart=DEALER.key==='astrid'&&!riggedReview;
+if(astridRestart){
+  document.documentElement.dataset.astridRebuild='true';
+  document.documentElement.dataset.actorIsolated='true';
+}
+const speechMedia = astridRestart?{}:await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+const performanceStaged=astridRestart;
 const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
 const performanceMotion=new URLSearchParams(location.search).get('motion');
-const astridGreenReview=performanceStaged&&new URLSearchParams(location.search).get('astridGreen')==='review';
+const astridGreenReview=astridRestart;
 const astridGreenTake=astridGreenReview?await fetch('review/astrid-elevated-table/take.json').then(r=>r.ok?r.json():null).then(t=>t?.status==='review'&&t?.enabled!==false?t:null).catch(()=>null):null;
 const performanceRhythm=performanceStaged&&['rhythm','smooth60'].includes(performanceMotion);
-const actorProvenance=performanceStaged?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
+const actorProvenance=performanceStaged&&!astridRestart?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
 let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,selectSequencePerformance=null,performanceCardCorners=null;
 if(performanceStaged) {
   try {
     const [{PerformancePlayer,cardLandingCorners},{selectContactTake,selectPlayerDelivery,selectSequenceTake},manifest]=await Promise.all([
       import('./performance-player.mjs'),import('./performance-contact.mjs'),
-      fetch(`dealers/astrid/performance/${performanceRhythm?`${performanceMotion}/`:''}manifest.json`).then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
+      astridRestart?Promise.resolve({status:'review',takes:[],reviewCandidates:[]}):fetch(`dealers/astrid/performance/${performanceRhythm?`${performanceMotion}/`:''}manifest.json`).then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
     ]);
     performanceManifest=manifest;selectPerformance=selectContactTake;performanceCardCorners=cardLandingCorners;
     selectPlayerPerformance=selectPlayerDelivery;
     selectSequencePerformance=selectSequenceTake;
-    const sceneJoins=performanceMotion==='smooth60'&&new URLSearchParams(location.search).get('joins')!=='off'
+    const sceneJoins=!astridRestart&&performanceMotion==='smooth60'&&new URLSearchParams(location.search).get('joins')!=='off'
       ?await fetch('dealers/astrid/performance/joins/manifest.json').then(r=>r.ok?r.json():null):null;
     let readyMotion=null;
     if(sceneJoins&&new URLSearchParams(location.search).get('ready')!=='off'){
@@ -100,7 +107,7 @@ if(performanceStaged) {
   }catch(error){console.info('[performance]',error.message);}
 }
 let dealingCues = null;
-if (DEALER.dealingCues) {
+if (!astridRestart&&DEALER.dealingCues) {
   try {
     const response = await fetch(DEALER.dealingCues);
     if (response.ok) dealingCues = await response.json();
@@ -121,7 +128,7 @@ try {
   }else{
   const { createTableScene } = await import('./table-scene.mjs');
   tableScene = createTableScene($('#table-canvas'), DEALER.key, {
-    contactProof: DEALER.key === 'astrid' && new URLSearchParams(location.search).get('performance') === 'staged',
+    contactProof: performanceStaged,
     shoeRegistration:astridGreenTake?()=>greenShoeOutlet(astridGreenTake):null,
   });
   }
@@ -129,6 +136,7 @@ try {
 } catch (error) { console.warn('[table] Using image fallback:', error.message); }
 if(astridGreenTake){
   document.documentElement.dataset.astridGreen='dealer-upcard';
+  installGreenRestFrame($('#scene'),astridGreenTake);
   addEventListener('resize',()=>layoutGreenDealerCards($('#dealer-cards'),astridGreenTake));
   performancePlayer?.preload([astridGreenTake]).catch(error=>console.warn('[green upcard]',error.message));
   const replay=document.createElement('button');replay.id='green-upcard-replay';replay.textContent='Replay Astrid’s first card';replay.disabled=true;
@@ -175,7 +183,7 @@ engine.onIdlePick = () => {
 };
 const trigger = k => { if (!performanceStaged && engineUp && !speaking && speechQueue.pending === 0 && engine.index.clips[k]) engine.trigger(k); };
 
-try {
+if(!astridRestart)try {
   await engine.init();
   if(engine.fullActor){
     document.documentElement.dataset.actorIsolated='true';
@@ -196,7 +204,7 @@ try {
 }
 
 // debug HUD (?debug)
-if (location.search.includes('debug')) {
+if (!astridRestart&&location.search.includes('debug')) {
   document.body.classList.add('debug');
   setInterval(() => {
     $('#engine-hud').textContent =
@@ -214,7 +222,7 @@ const VOICE_LINES = Object.keys(LINES);
 // lines, chat takes, chat commentary) runs as a queued turn; without this
 // they overlap at round settle and the captions stomp each other.
 const speechQueue = createSpeechQueue({
-  canPlay: () => !voice.muted && !document.hidden,
+  canPlay: () => !astridRestart && !voice.muted && !document.hidden,
   beforePlay: () => { if(!performancePlayer?.ready)performancePlayer?.cancel(); },
 });
 const speechTurn = fn => speechQueue.enqueue(fn);
@@ -226,6 +234,7 @@ const voice = {
   greeted: false,
   dead: new Set(),
   load() {
+    if(astridRestart)return;
     for (const t of VOICE_LINES) {
       const a = new Audio(`${DEALER.base}/audio/en/${t}.mp3`);
       a.preload = 'auto';
@@ -236,6 +245,7 @@ const voice = {
     }
   },
   say(t, { force = false } = {}) {
+    if(astridRestart)return;
     // one honest line per decision - silence must never be a mystery again
     console.info('[voice]', t, 'muted=' + this.muted, 'dead=' + this.dead.has(t), 'busy=' + speechQueue.pending, 'force=' + force);
     if (this.muted) return;
@@ -568,7 +578,7 @@ fetch('/api/bo/config').then(r => r.ok ? r.json() : null).then(cfg => {
   if (!cfg) return;
   // Dealing Clips page: the clip picked per table part for this dealer (Never again never plays)
   const picked = cfg.clipAssignments?.[DEALER.key] ?? {};
-  for (const [part, a] of Object.entries(picked)) if (a?.clip && !cfg.neverAgain?.[a.clip]) clipAssignments[part] = a.clip;
+  if(!astridRestart)for (const [part, a] of Object.entries(picked)) if (a?.clip && !cfg.neverAgain?.[a.clip]) clipAssignments[part] = a.clip;
   const idle = clipAssignments.idle?.startsWith(DEALER.key + ':') ? clipAssignments.idle.slice(DEALER.key.length + 1) : null;
   if (idle?.includes("/idle/") && !performanceStaged) CLIP.idle = idle;
   if (!cfg.tiers) return;
@@ -1666,7 +1676,7 @@ function chatLog(role, text, pending = false) {
 // voice would break the illusion worse than staying quiet.
 const VERA_BANK_URL = `${DEALER.base}/audio/en`;
 let veraBank = {};
-const bankReady = fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => {
+const bankReady = (astridRestart?Promise.resolve({}):fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {})).then(b => {
   delete b.rules_decks; delete b.fair_rng;
   veraBank = b;
   // the caption must show what THIS dealer actually says
@@ -1707,7 +1717,7 @@ async function cutToTake(clip, signal) {
 
 let activeSpeech = null;
 async function playRecorded(id, audio, text, signal) {
-  if (voice.muted || document.hidden || signal?.aborted) return Promise.resolve();
+  if (astridRestart || voice.muted || document.hidden || signal?.aborted) return Promise.resolve();
   if(performancePlayer?.joins)await performancePlayer.prepareSpeech(signal);
   if(voice.muted||document.hidden||signal?.aborted)return;
   const originalNative = speechMedia[DEALER.key]?.[id];
@@ -1790,6 +1800,7 @@ async function playRecorded(id, audio, text, signal) {
 }
 
 function sayLine(id) {
+  if(astridRestart)return false;
   const line = veraBank[id];
   if (!line) return false;
   if (voice.muted) { showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70)); return true; }
@@ -1802,6 +1813,7 @@ function sayLine(id) {
 }
 
 function speakFor(text) {
+  if(astridRestart)return;
   // free text has no recorded take and no audio - a talking mouth with no
   // sound reads as broken, so she considers instead: think/gesture clips
   // while the caption carries the words
@@ -1982,7 +1994,7 @@ setBanner('PLEASE PLACE BETS');
 
 // Optional rehearsal uses the exact in-game playback path, with no generation
 // or chat request. This lets every dealer and recorded line be checked locally.
-if (new URLSearchParams(location.search).has('rehearsal')) {
+if (!astridRestart&&new URLSearchParams(location.search).has('rehearsal')) {
   const panel = document.createElement('details'); panel.id = 'rehearsal'; panel.open = true;
   panel.addEventListener('toggle', () => { if(round&&!busy)activeBoxHighlight(); });
   panel.innerHTML = `<summary>Dealer rehearsal</summary>

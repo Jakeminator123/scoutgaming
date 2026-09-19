@@ -116,6 +116,10 @@ html[data-dealer="astrid"] #room2::after { display:none; }
 html[data-performance-capture="true"] #scene > :not(#room):not(#room2):not(#dealer-wrap):not(#dealer-hands-wrap):not(#table-canvas) { visibility:hidden!important; }
 .performance-layer {position:absolute;z-index:24;pointer-events:none;}
 .performance-layer canvas {position:absolute;inset:0;width:100%;height:100%;}
+.astrid-rest-frame {position:absolute;z-index:24;pointer-events:none;}
+html[data-astrid-rebuild="true"] #dealer-wrap,
+html[data-astrid-rebuild="true"] #dealer-hands-wrap,
+.performance-playing .astrid-rest-frame {visibility:hidden;}
 html[data-performance-staged="true"] #table2d {top:var(--performance-rear);height:var(--performance-table-height);bottom:auto;}
 html[data-performance-staged="true"] #deal-now {top:calc(var(--performance-rear) + var(--performance-table-height) * .8 + 20px);bottom:auto;}
 html[data-performance-staged="true"] #room2 {clip-path:inset(0 0 calc(100vh - var(--performance-rear)) 0);}
