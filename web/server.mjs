@@ -377,6 +377,7 @@ function boApi(url) {
   }
   if (url === '/api/bo/config') return cfg;
   if (url === '/api/bo/apikeys') return { keys: partner().keys.list(), scopes: partner().SCOPES, docs: '/docs/partner-api.html' };
+  if (url === '/api/bo/gen-verdicts') return { genVerdicts: cfg.genVerdicts ?? {} };
   if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {} };
   if (url === '/api/bo/users') {
     return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
@@ -540,6 +541,16 @@ async function boPost(url, body, who) {
       for (const d of Object.values(cfg.clipAssignments ?? {})) for (const [part, a] of Object.entries(d)) if (a?.clip === clip) delete d[part];
     }
     boSave(cfg); return { ok: true, neverAgain: cfg.neverAgain, assignments: cfg.clipAssignments ?? {} };
+  }
+  if (url === '/api/bo/gen-verdict') {
+    // Generations page: want / don't want per Higgsfield video, so nobody re-reviews the same output.
+    const { id, verdict, reason } = body ?? {};
+    if (typeof id !== 'string' || !id) return { error: 'bad id' };
+    cfg.genVerdicts ??= {};
+    if (!verdict) delete cfg.genVerdicts[id];
+    else if (verdict === 'want' || verdict === 'no') cfg.genVerdicts[id] = { verdict, reason: String(reason ?? '').slice(0, 300), by: who?.sub ?? who ?? null, at: new Date().toISOString() };
+    else return { error: 'bad verdict' };
+    boSave(cfg); return { ok: true, genVerdicts: cfg.genVerdicts };
   }
   if (url === '/api/bo/clip-assign') {
     const { dealer, part, clip } = body ?? {};
