@@ -6,7 +6,7 @@
   "box": 4,
   "status": "review",
   "enabled": true,
-  "cameraApproval": "User accepted the live take and requested larger settled cards and both opening cards at Box 4. Original framing preserved.",
+  "cameraApproval": "User accepted v1 and requested Box 4 hits and split hands plus dealer cards. Original framing and separate moving/resting sizes preserved.",
   "media": {
     "src": "review/astrid-blue-box4/actor-packed.mp4",
     "sha256": "0a7beface3055fbe01523b9c6f3a88aedcae8eaf55279abe6e06b7a8eb3a9fab",
@@ -43,7 +43,8 @@
     "sourceSha256": "38dad95f8ad60819bbb2604f85b4ce424d4db425324bdbd0aceca91eb759215a",
     "jobId": "c01866d1-7c93-43a4-9493-73f7c66d3725",
     "keepSourceLanding": true,
-    "scope": "opening-pair-of-box4-only-opt-in-live-experiment",
+    "scope": "box4-opening-hit-double-split-opt-in-v1",
+    "deliveries": "all-box-cards",
     "openingCards": 2,
     "presentation": {
       "scope": "settled-only",
@@ -2550,5 +2551,5 @@
       }
     }
   ],
-  "calibrationSha256": "4e050362bed9039d51e09fe322a7e904c9a929b5d2b803879322d0cf854c98c5"
+  "calibrationSha256": "0155d1c4f4696ab59d4222b04dde7b1bd70b371374b36c898c9aaf1b602831c4"
 }

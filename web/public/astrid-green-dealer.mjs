@@ -2,20 +2,23 @@ import {uniformRegistration} from './performance-contact.mjs';
 import {createActorCompositor} from './actor-compositor.mjs';
 import {createIdleVideoLoop} from './idle-video-loop.mjs';
 
-// A green take depicts exactly one event, never a player-seat delivery.
-export function shouldUseGreenDealerCard({dealer,enabled,containerId,faceDown,existingCards}) {
-  return dealer==='astrid'&&enabled===true&&containerId==='dealer-cards'&&faceDown===false&&existingCards===0;
+// Dealer takes stay at the dealer position. Repeated draws require an
+// explicit opt-in; existing manifests keep their first-upcard-only route.
+export function shouldUseGreenDealerCard({dealer,enabled,containerId,faceDown,existingCards},take) {
+  const all=take?.tracking?.deliveries==='all-dealer-cards';
+  return dealer==='astrid'&&enabled===true&&containerId==='dealer-cards'&&Number.isInteger(existingCards)&&existingCards>=0&&(all||faceDown===false&&existingCards===0);
 }
 
-// Takes default to one card. A reviewed opening pair explicitly opts in to
-// two; hits, split hands and dealer cards retain their existing routes.
+// Box takes default to one card. Opening pairs and all added cards have
+// separate opt-ins, keeping unreviewed takes out of hits and split hands.
 export function shouldUseGreenBoxCard(take,{dealer,enabled,box,split,faceDown,existingCards}) {
   const count=take?.tracking?.openingCards===2?2:1;
-  return dealer==='astrid'&&enabled===true&&Number.isInteger(take?.box)&&box!=null&&Number(box)===take.box&&split!==true&&faceDown===false&&Number.isInteger(existingCards)&&existingCards>=0&&existingCards<count;
+  const all=take?.tracking?.deliveries==='all-box-cards';
+  return dealer==='astrid'&&enabled===true&&Number.isInteger(take?.box)&&box!=null&&Number(box)===take.box&&(all||split!==true)&&faceDown===false&&Number.isInteger(existingCards)&&existingCards>=0&&(all||existingCards<count);
 }
 export function selectGreenTake(takes,context) {
   if(!Array.isArray(takes))return null;
-  return takes.find(take=>take?.action==='deal-dealer'?shouldUseGreenDealerCard({...context,containerId:context.containerId}):shouldUseGreenBoxCard(take,context))??null;
+  return takes.find(take=>take?.action==='deal-dealer'?shouldUseGreenDealerCard(context,take):shouldUseGreenBoxCard(take,context))??null;
 }
 // takes.json lists the review takes beside the original single take.json; a
 // directory without it still serves only take.json. Disabled or non-review
@@ -112,10 +115,15 @@ export function quadMatrix(quad,width,height) {
 // Scale and fan in the photographed table plane, not the screen plane.
 // The first slot is independent of card count, so a second delivery cannot
 // move the first card. This changes only the requested settled presentation.
-export function greenRestCardQuad(quad,index,{scale=1,fanStep=.48}={}) {
-  const m=quadMatrix(quad,1,1),offset=index*fanStep;
+export function greenRestCardQuad(quad,index,{scale=1,fanStep=.48}={},hand=0,hands=1) {
+  // Preserve v1 for one hand. Compact split fans side by side within this
+  // box; adding a card never moves cards already on the felt.
+  const m=quadMatrix(quad,1,1),compact=hands>1?Math.min(.72,1.6/hands):1;
+  const cardScale=scale*compact,pitch=hands>1?2.6/hands:0;
+  const step=hands>1?Math.min(fanStep*compact,Math.max(0,pitch*.95-cardScale)/2):fanStep;
+  const offset=(hand-(hands-1)/2)*pitch+Math.min(index,2)*step;
   return [[0,0],[1,0],[1,1],[0,1]].map(([u,v])=>{
-    const x=.5+(u-.5)*scale+offset,y=.5+(v-.5)*scale+index*.04;
+    const x=.5+(u-.5)*cardScale+offset,y=.5+(v-.5)*cardScale+index*.04;
     const w=m[3]*x+m[7]*y+1;
     return [(m[0]*x+m[4]*y+m[12])/w,(m[1]*x+m[5]*y+m[13])/w];
   });
@@ -127,11 +135,16 @@ export function layoutGreenDealerCards(container,take) {
   const fit=uniformRegistration(take.camera,{width:innerWidth,height:innerHeight});
   const quad=take.frames[take.events.land].card.corners.map(([x,y])=>[fit.x+x*fit.width,fit.y+y*fit.height]);
   const scale=fit.scale;
-  [...container.querySelectorAll('.card')].forEach((el,i)=>{
-    const shifted=take.tracking?.presentation?greenRestCardQuad(quad,i,take.tracking.presentation):quad.map(([x,y])=>[x+i*42*scale,y+i*4*scale]);
+  const split=[...container.querySelectorAll(':scope > .subhand')];
+  const hands=split.length?split:[container];
+  hands.forEach((hand,hi)=>{
+  if(hand!==container)Object.assign(hand.style,{left:'0px',top:'0px',transform:'none'});
+  [...hand.querySelectorAll(':scope > .card')].forEach((el,i)=>{
+    const shifted=take.tracking?.presentation?greenRestCardQuad(quad,i,take.tracking.presentation,hi,hands.length):quad.map(([x,y])=>[x+Math.min(i,5)*42*scale,y+i*4*scale]);
     Object.assign(el.style,{left:'0',top:'0',width:'100px',height:'140px',border:'0',transformOrigin:'0 0',animation:'none',transform:`matrix3d(${quadMatrix(shifted,100,140).join(',')})`});
     el.dataset.greenSlot=String(i);
     el.dataset.feltCard='true';
     el.dataset.feltCorners=JSON.stringify(shifted);
+  });
   });
 }

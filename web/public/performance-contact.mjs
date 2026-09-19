@@ -31,6 +31,7 @@ export function validateContactTake(take, {approved=false}={}) {
   check(take.playbackRate===undefined||(finite(take.playbackRate)&&take.playbackRate>=1&&take.playbackRate<=2), 'Invalid silent-action playback rate');
   check(take.colourGain===undefined||(Array.isArray(take.colourGain)&&take.colourGain.length===3&&take.colourGain.every(v=>finite(v)&&v>=.5&&v<=1.5)), 'Invalid actor colour correction');
   const m=take.media ?? {}, c=take.camera ?? {}, e=take.events ?? {};
+  if(take.tracking?.deliveries!==undefined)check(chroma&&(take.action==='deal-dealer'?take.tracking.deliveries==='all-dealer-cards':Number.isInteger(take.box)&&take.tracking.deliveries==='all-box-cards'),'Invalid repeated-card routing');
   if(take.tracking?.openingCards!==undefined)check(chroma&&Number.isInteger(take.box)&&[1,2].includes(take.tracking.openingCards),'Invalid opening-card routing');
   const presentation=take.tracking?.presentation;
   if(presentation)check(chroma&&presentation.scope==='settled-only'&&finite(presentation.scale)&&presentation.scale>=1&&presentation.scale<=1.5&&finite(presentation.fanStep)&&presentation.fanStep>0&&presentation.fanStep<=1&&presentation.settleFrames===undefined,'Invalid settled-card presentation');

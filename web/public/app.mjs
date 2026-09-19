@@ -80,6 +80,8 @@ const astridGreenTakes=astridGreenReview?await loadGreenTakes(`review/${astridBl
 // Explicitly requested live experiment. The ordinary table keeps its takes.
 if(astridBlender&&new URLSearchParams(location.search).get('astridBlue')==='box4'){
   const preview=await loadGreenTakes('review/astrid-blue-box4');
+  const dealer=preview.find(t=>t.action==='deal-dealer');
+  if(dealer){const index=astridGreenTakes.findIndex(t=>t.action==='deal-dealer');if(index>=0)astridGreenTakes.splice(index,1,dealer);else astridGreenTakes.push(dealer);}
   astridGreenTakes.push(...preview.filter(t=>t.box===4));
 }
 const astridGreenTake=astridGreenTakes.find(t=>t.action==='deal-dealer')??null;
@@ -168,12 +170,12 @@ if(astridGreenTake){
   };
 }
 // The filmed landing spot is that box's first-card position: its DOM fan is
-// registered to the landed quad, exactly as the dealer's upcard is. A split
-// box re-renders through the ordinary layout and keeps no filmed registration.
+// registered to the landed quad, exactly as the dealer's upcard is. Takes
+// enabled for split hands retain that registration for each separate hand.
 function layoutGreenBoxCards(){
   for(const take of astridGreenBoxTakes){
     const container=$(`.seat[data-box="${take.box}"] .cards`);
-    if(container&&!container.querySelector(':scope > .subhand'))layoutGreenDealerCards(container,take);
+    if(container&&(take.tracking?.deliveries==='all-box-cards'||!container.querySelector(':scope > .subhand')))layoutGreenDealerCards(container,take);
   }
 }
 if(astridGreenTake)installEdgeHud($('#scene'));
