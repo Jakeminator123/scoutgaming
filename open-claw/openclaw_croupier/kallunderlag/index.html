@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>animation-events-v1 — inofficiell</title>
+<style>
+:root {
+  --bg: #141414; --fg: #f0f0f0; --muted: #b4b4b4; --dim: #8a8a8a;
+  --line: rgba(240,240,240,.12); --fill: rgba(240,240,240,.07);
+  --accent: #6b9eff; --on: #141414;
+  --blue: #6b9eff; --purple: #c084fc; --green: #4ade80; --orange: #fb923c;
+  --yellow: #facc15; --cyan: #22d3ee; --pink: #f472b6; --red: #f87171; --gray: #9ca3af;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+a { color: var(--accent); }
+main { max-width: 1100px; margin: 0 auto; padding: 32px 22px 80px; }
+h1 { font-size: 24px; font-weight: 650; margin: 0 0 8px; line-height: 1.2; }
+h2 { font-size: 18px; font-weight: 650; margin: 32px 0 10px; }
+h3 { font-size: 15px; font-weight: 650; margin: 22px 0 8px; }
+p, li { color: var(--muted); }
+.lead { color: var(--muted); margin: 0 0 14px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 650; letter-spacing: .04em; padding: 2px 8px; border: 1px solid var(--line); background: var(--fill); vertical-align: middle; margin-left: 6px; }
+.warn { border-left: 3px solid var(--yellow); padding: 10px 14px; background: var(--fill); margin: 14px 0 20px; color: var(--muted); }
+.info { border-left: 3px solid var(--blue); padding: 10px 14px; background: var(--fill); margin: 14px 0 20px; color: var(--muted); }
+.ok { border-left: 3px solid var(--green); padding: 10px 14px; background: var(--fill); margin: 14px 0 20px; color: var(--muted); }
+.nav, .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 20px; }
+.nav a, .tabs button { color: var(--fg); text-decoration: none; background: var(--fill); border: 1px solid var(--line); padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.nav a.on, .tabs button.on { background: var(--accent); color: var(--on); border-color: var(--accent); }
+.stats { display: flex; flex-wrap: wrap; gap: 18px; margin: 16px 0 8px; }
+.stat { min-width: 90px; }
+.stat b { display: block; font-size: 22px; font-weight: 650; }
+.stat span { color: var(--dim); font-size: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px 16px; margin: 12px 0 8px; }
+.legend span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 12px; }
+.scores { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 18px; }
+.score { border: 1.5px solid var(--line); padding: 3px; border-radius: 10px; min-width: 148px; }
+.score > div { background: var(--bg); border-radius: 7px; padding: 8px 10px; }
+.score b { display: block; font-size: 20px; }
+.score span { color: var(--dim); font-size: 12px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+.card { border: 1px solid var(--line); background: var(--fill); padding: 12px 14px; }
+.card h3 { margin-top: 0; }
+.table-wrap { overflow-x: auto; margin: 10px 0 18px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--dim); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+tr.tone-info td:first-child { box-shadow: inset 3px 0 0 var(--blue); }
+tr.tone-warn td:first-child { box-shadow: inset 3px 0 0 var(--yellow); }
+tr.tone-ok td:first-child { box-shadow: inset 3px 0 0 var(--green); }
+tr.tone-bad td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+code, pre { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+code { background: var(--fill); padding: 1px 5px; }
+pre { background: var(--fill); border: 1px solid var(--line); padding: 12px 14px; overflow-x: auto; color: var(--fg); line-height: 1.55; }
+.page { display: none; }
+.page.on { display: block; }
+.pane { display: none; }
+.pane.on { display: block; }
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 20px; }
+.chip { border: 1.5px solid; padding: 8px 10px; border-radius: 8px; min-width: 120px; background: rgba(255,255,255,.04); }
+.chip b { display: block; font-size: 12px; }
+.chip span { color: var(--dim); font-size: 11px; }
+.arrow { color: var(--dim); }
+.foot { color: var(--dim); font-size: 12px; margin-top: 36px; }
+</style>
+</head>
+<body>
+<main>
+<div class="page on" id="page-s00">
+  <h1>animation-events-v1 · helheten <span class="badge">inofficiell</span></h1>
+  <p class="lead">Tre sidor, ett system. s01 säger vad som finns i dag. s02 säger vad vi kallar det. s03 säger hur det borde fungera.</p>
+  <nav class="nav"><a href="#s00" class="on" data-page="s00">s00 helheten</a><a href="#s01" class="" data-page="s01">s01 kartan</a><a href="#s02" class="" data-page="s02">s02 språket</a><a href="#s03" class="" data-page="s03">s03 motorn</a></nav>
+  <div class="stats">
+    <div class="stat"><b>3</b><span>repon lästa</span></div>
+    <div class="stat"><b>64</b><span>facit · 29 rng + 35 show</span></div>
+    <div class="stat"><b>35</b><span>events i motorn</span></div>
+    <div class="stat"><b>106</b><span>takes / dealer</span></div>
+    <div class="stat"><b>0</b><span>nya rng-events</span></div>
+    <div class="stat"><b>4</b><span>dealers, ett bibliotek</span></div>
+  </div>
+  <div class="warn"><strong>Inofficiellt.</strong> Partner-API och koden är sanningen. Kevin-accept efter att Jakob pratat med Kevin. Ingen ping ännu.</div>
+  <div class="tabs" data-tabs="s00"><button type="button" data-pane="s00-kedjan" class="on">Kedjan</button><button type="button" data-pane="s00-ord" class="">Orden</button><button type="button" data-pane="s00-betyg" class="">Alla betyg</button><button type="button" data-pane="s00-tre" class="">Kevin · Jakob · Emil</button><button type="button" data-pane="s00-nasta" class="">Status & nästa</button></div>
+  <div class="pane on" id="s00-kedjan">
+    <h2>Från tre repon till en dealer som känns levande</h2>
+    <div class="flow">
+      <div class="chip" style="border-color:var(--blue)"><b>s01 kartan</b><span>vad finns i dag</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--purple)"><b>s02 språket</b><span>64 facit-namn</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--orange)"><b>s03 motorn</b><span>linjen · variant · trigger</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--yellow)"><b>Kevin-samtal</b><span>Jakob tar det själv</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--green)"><b>accepterat?</b><span>s02 runtime-ord</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--pink)"><b>första skivan</b><span>linjen lose/win Astrid</span></div>
+    </div>
+    <div class="info"><strong>Den ena meningen.</strong> Servern säger vad som hände. Motorn bestämmer hur hon visar det. Inget av det hon känner — otur, natt, någon som skriker i chatten — får bli ett nytt rng-event.</div>
+    <div class="grid">
+      <div class="card"><h3>s01 kartan</h3><p>Visual = Kevin mot Emil. RNG = Kevin mot Jakob. Referenserna korsar inte.</p><p>Kevin 17 talrader + 4 deal-riktningar. Emil 12 klipp. Jakob 16 GameEventV2 → 24 cues.</p></div>
+      <div class="card"><h3>s02 språket</h3><p><code>lager.ämne.verb</code>. rng i dåtid, show i infinitiv. Tom kolumn = lucka, namnet finns ändå.</p><p>29 rng + 35 show. 37 finns bara hos en av oss.</p></div>
+    </div>
+    <div class="card" style="margin-top:12px"><h3>s03 motorn</h3><p>Ett event, en linje, noll eller flera varianter. Trigger öppnar. Take spelas. Landningen ärvs.</p><p>v2: tyst take, personlighet per dealer, eftertrigger, minne, budget, fallback, mätbar naturlighet.</p></div>
+  </div>
+  <div class="pane" id="s00-ord">
+    <h2>Sju ord, samma på alla sidor</h2>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--blue)"></i>faktum</span>
+      <span><i class="sw" style="background:var(--purple)"></i>event</span>
+      <span><i class="sw" style="background:var(--green)"></i>linjen</span>
+      <span><i class="sw" style="background:var(--orange)"></i>variant</span>
+      <span><i class="sw" style="background:var(--yellow)"></i>trigger</span>
+      <span><i class="sw" style="background:var(--cyan)"></i>take</span>
+      <span><i class="sw" style="background:var(--pink)"></i>landning</span>
+    </div>
+    <div class="table-wrap"><table>
+<thead><tr><th>Ord</th><th>Betyder</th><th>Exempel</th></tr></thead>
+<tbody><tr class="tone-info"><td>faktum</td><td>rng.* — något servern räknat</td><td>rng.round.settled</td></tr><tr><td>event</td><td>show.* — något dealern ska göra</td><td>show.line.lose</td></tr><tr class="tone-ok"><td>linjen</td><td>standard-takes under ett event, en tyst</td><td>lose-a, lose-b, lose-c, tyst</td></tr><tr class="tone-warn"><td>variant</td><td>triggad gren under ett event, döpt efter triggern</td><td>otur, nära, ett-ögonblick</td></tr><tr class="tone-warn"><td>trigger</td><td>det som öppnar en variant: spel, session, chatt, tid</td><td>3 förluster i rad</td></tr><tr class="tone-info"><td>take</td><td>en hel inspelning: text, ljud, video, frames</td><td>astrid/lose-otur-a</td></tr><tr><td>landning</td><td>samma kort, samma ruta, samma frame</td><td>landAt</td></tr></tbody>
+</table></div>
+    <h3>Tre ord vi slutade säga</h3>
+    <div class="table-wrap"><table>
+<thead><tr><th>Inte</th><th>Utan</th><th>Varför</th></tr></thead>
+<tbody><tr><td>variant 4.2 som eventnamn</td><td>variant otur, under show.line.lose</td><td>Variant är en gren med trigger</td></tr><tr><td>grundtake / specialtake</td><td>linjen / variant</td><td>Jakobs ord var enklare</td></tr><tr><td>hysch</td><td>ett ögonblick</td><td>Finger mot munnen skäller</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s00-betyg">
+    <h2>Alla betyg på ett ställe</h2>
+    <p>Skala 1–10. Kevin / Jakob / Emil mot det gemensamma.</p>
+    <div class="table-wrap"><table>
+<thead><tr><th>Vad</th><th>Kevin</th><th>Jakob</th><th>Emil</th><th>Från</th></tr></thead>
+<tbody><tr><td>Visual · bild och röst</td><td>6.7</td><td>—</td><td>6.0</td><td>s01</td></tr><tr><td>RNG · fakta och pengar</td><td>6.8</td><td>7.8</td><td>—</td><td>s01</td></tr><tr><td>Mot motorn · visual</td><td>3.3</td><td>—</td><td>3.3</td><td>s01</td></tr><tr><td>Mot motorn · fakta</td><td>7.0</td><td>7.8</td><td>—</td><td>s01</td></tr><tr><td>Namnhygien</td><td>7</td><td>8</td><td>5</td><td>s02</td></tr></tbody>
+</table></div>
+    <div class="scores">
+      <div class="score" style="border-color:var(--purple)"><div><b>8 / 10</b><span>facit som språk · s02</span></div></div>
+      <div class="score" style="border-color:var(--green)"><div><b>8 / 10</b><span>linjen · variant · chatt</span></div></div>
+      <div class="score" style="border-color:var(--red)"><div><b>4 / 10</b><span>hysch-gesten (bytt)</span></div></div>
+      <div class="score" style="border-color:var(--orange)"><div><b>8 → 9</b><span>motorn v1 → v2</span></div></div>
+      <div class="score" style="border-color:var(--orange)"><div><b>7 → 9</b><span>fyra dealers känns olika</span></div></div>
+      <div class="score" style="border-color:var(--yellow)"><div><b>4 → 6</b><span>chatt-latens · Kevin-fråga</span></div></div>
+    </div>
+    <h3>Sidorna själva</h3>
+    <div class="scores">
+      <div class="score" style="border-color:var(--blue)"><div><b>8 / 10</b><span>s01 kartan</span></div></div>
+      <div class="score" style="border-color:var(--purple)"><div><b>8 / 10</b><span>s02 språket</span></div></div>
+      <div class="score" style="border-color:var(--orange)"><div><b>9 / 10</b><span>s03 motorn</span></div></div>
+    </div>
+    <div class="table-wrap"><table>
+<thead><tr><th>Sida</th><th>Betyg</th><th>Vad som skulle höja det</th></tr></thead>
+<tbody><tr class="tone-info"><td>s01</td><td>8</td><td>Emil räknas som 12 klipp fast katalogen har 16. Bra: referenserna korsar inte.</td></tr><tr><td>s02</td><td>8</td><td>35 show-rader blir många. En topp-12 för Kevin-samtalet skulle hjälpa.</td></tr><tr class="tone-warn"><td>s03</td><td>9</td><td>Personlighetstalen är gissningar. Chatt-latensen är benämnd, inte löst.</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s00-tre">
+    <h2>Var de tre står, och vad vi lånar</h2>
+    <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="card"><h3>Kevin · Croupier</h3><p><strong>Styrka.</strong> Landningen. landAt, frame-index, kalibrering. Fyra dealers. Live mot riktig shoe.</p><p><strong>Lucka.</strong> En take per event. Talar på varje resultat. Ingen chatt in i spelaren.</p><p>Det är produkten. Motorn byggs här.</p></div>
+      <div class="card"><h3>Jakob · spelsajt</h3><p><strong>Styrka.</strong> Fakta-kedjan. GameEventV2, Zod, hand.settled med payout. Aldrig klippnamn på wiren.</p><p><strong>Lucka.</strong> Video licensblockad. En dealer.</p><p><strong>Lånar</strong> payload: marginal, dealer drew, payout per hand.</p></div>
+      <div class="card"><h3>Emil · video</h3><p><strong>Styrka.</strong> Clip-kanalen. react_win_big är redan en variant. wait_decision_a/b är en linje. Enda med chatt.</p><p><strong>Lucka.</strong> Ingen namnregel. deal_pos1–7 aldrig kopplade.</p><p><strong>Lånar</strong> nod_confirm, bets_open, clear_table. Inte motorn.</p></div>
+    </div>
+  </div>
+  <div class="pane" id="s00-nasta">
+    <h2>Status och nästa steg</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Vad</th><th>Var</th><th>Status</th></tr></thead>
+<tbody><tr class="tone-ok"><td>s01, s02 som wiki-sidor</td><td>GitLab wiki</td><td>uppe, märkta inofficiella</td></tr><tr class="tone-warn"><td>s03 motorn</td><td>lokal canvas + den här mappen</td><td>inte på wikin ännu</td></tr><tr class="tone-warn"><td>s00 helheten</td><td>lokal canvas + den här mappen</td><td>inte på wikin ännu</td></tr><tr><td>Kevin</td><td>Jakob tar samtalet själv</td><td>ingen ping förrän Jakob säger till</td></tr><tr class="tone-info"><td>Kod</td><td>jakeminator123/work</td><td>ingenting ändrat</td></tr></tbody>
+</table></div>
+    <h3>Om Kevin säger ja — i den här ordningen</h3>
+    <div class="table-wrap"><table>
+<thead><tr><th>Steg</th><th>Vad</th><th>Varför först</th></tr></thead>
+<tbody><tr><td>1</td><td>s02 blir det gemensamma språket i wiki och handoff</td><td>Kostar noll.</td></tr><tr><td>2</td><td>Linjen för lose och win på Astrid: 3 tal + 1 tyst, cooldown 3, hash på shoeDraw</td><td>Det spelaren ser varje runda.</td></tr><tr><td>3</td><td>Rehearsal 20 rundor med acceptanskraven från s03</td><td>Så att “känns bra” blir mätbart.</td></tr><tr><td>4</td><td>Variant nära och otur på lose, comeback armad på win</td><td>Första triggern och första minnet.</td></tr><tr><td>5</td><td>Personlighetstal för alla fyra</td><td>Noll takes.</td></tr><tr><td>6</td><td>Chatt in i spelaren → uppmärksam på think</td><td>Kevin-fråga om latens. Deal-varianten är fas 2.</td></tr></tbody>
+</table></div>
+    <div class="warn"><strong>Vad som inte får hända.</strong> Ingen take efter längd. Ingen mun ovanpå. Ingen variant utan att linjens landning ärvs. Ingen ny rng-typ för en stämning. Ingen ändring i baseline utan granskad take.</div>
+  </div>
+</div>
+
+<div class="page" id="page-s01">
+  <h1>animation-events-v1-s01 · kartan <span class="badge">inofficiell</span></h1>
+  <p class="lead">Vad som finns i dag. Visual = Kevin mot Emil. RNG = Kevin mot Jakob. I motorns ord: faktum är RNG, event är Visual.</p>
+  <nav class="nav"><a href="#s00" class="" data-page="s00">s00 helheten</a><a href="#s01" class="on" data-page="s01">s01 kartan</a><a href="#s02" class="" data-page="s02">s02 språket</a><a href="#s03" class="" data-page="s03">s03 motorn</a></nav>
+  <div class="tabs" data-tabs="s01"><button type="button" data-pane="s01-visual" class="on">Visual · Kevin + Emil</button><button type="button" data-pane="s01-rng" class="">RNG · Kevin + Jakob</button><button type="button" data-pane="s01-motor" class="">Mot motorn</button></div>
+  <div class="pane on" id="s01-visual">
+    <div class="stats"><div class="stat"><b>6.7</b><span>Kevin visual</span></div><div class="stat"><b>6.0</b><span>Emil visual</span></div><div class="stat"><b>17</b><span>Kevin talrader</span></div><div class="stat"><b>12</b><span>Emil bordsklipp</span></div></div>
+    <div class="table-wrap"><table>
+<thead><tr><th>Dimension</th><th>Kevin</th><th>Emil</th></tr></thead>
+<tbody><tr><td>Clip-kanal</td><td>7</td><td>9</td></tr><tr><td>Tal / line-id</td><td>8</td><td>5</td></tr><tr><td>Kortdelning</td><td>7</td><td>7</td></tr><tr><td>Chip / payout</td><td>4</td><td>2</td></tr><tr><td>Bordstäckning</td><td>6</td><td>7</td></tr><tr><td>Körbart live</td><td>8</td><td>6</td></tr></tbody>
+</table></div>
+    <h3>Kevin · Croupier visual</h3>
+    <div class="table-wrap"><table>
+<thead><tr><th>Event</th><th>Hur det startar</th><th>Vad som syns</th></tr></thead>
+<tbody><tr><td>greeting</td><td>Grind Enter</td><td>Tal + caption</td></tr><tr><td>goodluck</td><td>op start</td><td>Blocking tal, sen deal</td></tr><tr><td>deal-left</td><td>Kort, ruta 0–1</td><td>CLIP.deal eller staged take</td></tr><tr><td>deal-centre</td><td>Kort, ruta 2–4</td><td>Samma deal-väg</td></tr><tr><td>deal-right</td><td>Kort, ruta 5–6</td><td>Samma deal-väg</td></tr><tr><td>deal-dealer</td><td>Dealer up / hål</td><td>deal-dealer take</td></tr><tr><td>insurance</td><td>Fas insurance</td><td>Tal insurance</td></tr><tr><td>think</td><td>Fas decisions</td><td>CLIP.think + seat.active</td></tr><tr><td>double</td><td>act double</td><td>Tal, sen ett kort</td></tr><tr><td>bust</td><td>Hit över 21</td><td>Tal bust</td></tr><tr><td>split</td><td>act split</td><td>550 ms fläkt + chip-ljud</td></tr><tr><td>reveal</td><td>Settled / stand klar</td><td>CSS flip, ev. 3D</td></tr><tr><td>sidebet</td><td>PP/TP träff efter deal</td><td>Burst + tal</td></tr><tr><td>win / lose / push / BJ</td><td>finish()</td><td>Resultat-tal + gest/tilt</td></tr><tr><td>placebets + idle</td><td>op collect</td><td>Banner + idle-loop</td></tr><tr><td>chip-fly</td><td>placeBet</td><td>CSS 480 ms, ingen payout-flyg</td></tr></tbody>
+</table></div>
+    <h3>Emil · video-dealer visual</h3>
+    <div class="table-wrap"><table>
+<thead><tr><th>Klipp</th><th>Hur det startar</th><th>Vad som syns</th></tr></thead>
+<tbody><tr><td>bets_open</td><td>Första betting-fönstret</td><td>Talk-klipp</td></tr><tr><td>no_more_bets</td><td>Timer med minst en insats</td><td>Talk, outPoint 3.2 s</td></tr><tr><td>deal_player</td><td>Spelarkort / hit / double / split</td><td>Klipp + uiTakeoverAt ~2.6 s</td></tr><tr><td>deal_self</td><td>Dealer up eller dealer-drag</td><td>Samma kanal</td></tr><tr><td>nod_confirm</td><td>Stand, kanal ledig</td><td>Gesture-klipp</td></tr><tr><td>react_blackjack</td><td>Payout, spelare BJ</td><td>Högst prio</td></tr><tr><td>react_dealer_bust</td><td>Dealer spricker</td><td>Näst högst</td></tr><tr><td>react_win_big</td><td>Vinst och insats ≥ 100</td><td>Före vanlig vinst</td></tr><tr><td>react_win</td><td>Någon vinst</td><td>Efter big</td></tr><tr><td>react_push</td><td>Alla push</td><td>Före lose</td></tr><tr><td>react_lose</td><td>Övrig payout</td><td>Lägst react</td></tr><tr><td>clear_table</td><td>Efter react</td><td>uiClearAt 1.8 s, sweep</td></tr></tbody>
+</table></div>
+    <p>Inte i de 12: greet_new · shuffle · wait_decision_a/b · goodbye / place_bets / deal_pos1–7.</p>
+  </div>
+  <div class="pane" id="s01-rng">
+    <div class="stats"><div class="stat"><b>6.8</b><span>Kevin RNG</span></div><div class="stat"><b>7.8</b><span>Jakob RNG</span></div><div class="stat"><b>10</b><span>Kevin interna emit</span></div><div class="stat"><b>16</b><span>Jakob GameEventV2</span></div></div>
+    <div class="table-wrap"><table>
+<thead><tr><th>Dimension</th><th>Kevin</th><th>Jakob</th></tr></thead>
+<tbody><tr><td>Eventmodell</td><td>5</td><td>9</td></tr><tr><td>Shoe / kort sanning</td><td>8</td><td>8</td></tr><tr><td>Täckning av fakta</td><td>6</td><td>9</td></tr><tr><td>Hål / peek</td><td>7</td><td>8</td></tr><tr><td>Plånbok / ledger</td><td>7</td><td>8</td></tr><tr><td>Körbart live</td><td>8</td><td>5</td></tr></tbody>
+</table></div>
+    <h3>Kevin · Croupier RNG</h3>
+    <div class="table-wrap"><table>
+<thead><tr><th>Event / op</th><th>Hur det startar</th><th>Vad som räknas</th></tr></thead>
+<tbody><tr><td>start</td><td>HTTP POST /api/table</td><td>Ny Round, deal(), shoeDraw på varje kort</td></tr><tr><td>act hit</td><td>Fas decisions, legal</td><td>card.dealt, ev. bust</td></tr><tr><td>act stand</td><td>Fas decisions</td><td>Nästa hand eller dealer-turn</td></tr><tr><td>act double</td><td>Fas decisions + balans</td><td>En extra card.dealt, hand klar</td></tr><tr><td>act split</td><td>Par + balans</td><td>hand.split + två card.dealt</td></tr><tr><td>insurance</td><td>Dealer ess uppe</td><td>insurance.offered → take true/false</td></tr><tr><td>collect</td><td>Fas settled</td><td>Wallet += result + sideReturn</td></tr><tr><td>state</td><td>Resume / reload</td><td>Snapshot, aldrig shoe-ordning</td></tr><tr><td>round.dealt</td><td>Efter opening deal</td><td>Internt emit, når inte UI</td></tr><tr><td>dealer.peek</td><td>Ess eller tio uppe</td><td>Internt, peek-tal oanvänt</td></tr><tr><td>dealer.reveal / draw</td><td>Dealer-fas</td><td>Hål vänds, S17-drag</td></tr><tr><td>round.settled</td><td>Payout räknad</td><td>Internt. Klienten ser phase=settled</td></tr></tbody>
+</table></div>
+    <h3>Jakob · spelsajt RNG</h3>
+    <div class="table-wrap"><table>
+<thead><tr><th>Command / event</th><th>Hur det startar</th><th>Vad som räknas</th></tr></thead>
+<tbody><tr><td>PREPARE_ROUND</td><td>HTTP command</td><td>round.prepared</td></tr><tr><td>BLACKJACK_PLACE_BET</td><td>HTTP command</td><td>bet.accepted + 4 card.dealt + round.started</td></tr><tr><td>BLACKJACK_ACTION</td><td>hit/stand/double/split</td><td>action.accepted, sen kort/split/turn</td></tr><tr><td>ROULETTE_PLACE_BETS</td><td>HTTP command</td><td>bet.placed</td></tr><tr><td>ROULETTE_SPIN</td><td>En burst</td><td>LOCK_BETS + spin + result + SETTLE</td></tr><tr><td>blackjack.card.dealt</td><td>Deal / hit / double / split / dealer</td><td>Kort-id, hål utan rank</td></tr><tr><td>blackjack.card.revealed</td><td>revealDealerHoleCard</td><td>Samma visualId, nu face-up</td></tr><tr><td>blackjack.turn.changed</td><td>Spelare / dealer / settled</td><td>activeHand + legal actions</td></tr><tr><td>blackjack.hand.settled</td><td>Per hand i resolveRound</td><td>Resultat + payout-intent</td></tr><tr><td>round.settled</td><td>win / loss / push / mixed</td><td>Ledger blackjack.payout</td></tr><tr><td>roulette.result</td><td>Samma spin-transition</td><td>Pocket från servern</td></tr><tr><td>roulette.bet.settled</td><td>SETTLE per insats</td><td>Ledger roulette.round.settle</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s01-motor">
+    <h2>Hur nära motorn står bilden i dag?</h2>
+    <h3>Visual</h3>
+    <div class="table-wrap"><table>
+<thead><tr><th>Dimension</th><th>Kevin</th><th>Emil</th></tr></thead>
+<tbody><tr><td>Linjen (flera takes / event)</td><td>2</td><td>4</td></tr><tr><td>Variant med trigger</td><td>1</td><td>4</td></tr><tr><td>Tyst take</td><td>1</td><td>3</td></tr><tr><td>Trigger utanför spelet</td><td>1</td><td>2</td></tr><tr><td>Landning att ärva</td><td>9</td><td>6</td></tr><tr><td>Fyra dealers</td><td>6</td><td>1</td></tr></tbody>
+</table></div>
+    <p>Emil har redan en variant: <code>react_win_big</code> = <code>react_win</code> + trigger insats ≥ 100. Kevins landning är det varianter måste ärva.</p>
+    <h3>Fakta</h3>
+    <div class="table-wrap"><table>
+<thead><tr><th>Dimension</th><th>Kevin</th><th>Jakob</th></tr></thead>
+<tbody><tr><td>Fakta för spel-triggers</td><td>6</td><td>8</td></tr><tr><td>Marginal / dealer drew synligt</td><td>5</td><td>7</td></tr><tr><td>Payout per hand</td><td>6</td><td>9</td></tr><tr><td>Hash-bar nyckel (shoeDraw)</td><td>9</td><td>6</td></tr><tr><td>Servern fri från take-namn</td><td>9</td><td>9</td></tr></tbody>
+</table></div>
+  </div>
+  <p class="foot">s00 helheten · s01 kartan · s02 språket · s03 motorn. Inofficiellt.</p>
+</div>
+
+<div class="page" id="page-s02">
+  <h1>animation-events-v1-s02 · språket <span class="badge">inofficiell</span></h1>
+  <p class="lead">Facit-namn så Kevin, Jakob och Emil menar samma sak. <code>rng</code> är fakta. <code>show</code> är event. Linjen, variant, take, trigger ligger under varje show-event (s03).</p>
+  <nav class="nav"><a href="#s00" class="" data-page="s00">s00 helheten</a><a href="#s01" class="" data-page="s01">s01 kartan</a><a href="#s02" class="on" data-page="s02">s02 språket</a><a href="#s03" class="" data-page="s03">s03 motorn</a></nav>
+  <div class="stats"><div class="stat"><b>65</b><span>facit-namn</span></div><div class="stat"><b>21</b><span>bara Kevin</span></div><div class="stat"><b>9</b><span>bara Jakob</span></div><div class="stat"><b>7</b><span>bara Emil</span></div></div>
+  <div class="tabs" data-tabs="s02"><button type="button" data-pane="s02-regel" class="on">Regeln</button><button type="button" data-pane="s02-rng" class="">rng.*</button><button type="button" data-pane="s02-show" class="">show.*</button><button type="button" data-pane="s02-ensamma" class="">Bara en av oss</button><button type="button" data-pane="s02-betyg" class="">Betyg</button></div>
+  <div class="pane on" id="s02-regel">
+    <div class="info"><strong>Namnregeln.</strong> <code>lager.ämne.verb</code> och ibland ett fjärde led för riktning. rng = dåtid. show = infinitiv. Ordet <strong>variant</strong> används inte i event-namn — det är motorns ord för en triggad gren, t.ex. <code>show.line.lose</code> → variant <code>otur</code>.</div>
+    <div class="table-wrap"><table>
+<thead><tr><th>Säg</th><th>Inte</th><th>Varför</th></tr></thead>
+<tbody><tr class="tone-info"><td>faktum (rng.*)</td><td>game event / domain event</td><td>Något servern räknat</td></tr><tr class="tone-info"><td>event (show.*)</td><td>presentation / cue / clip</td><td>Vad dealern ska göra</td></tr><tr class="tone-ok"><td>linjen</td><td>standard / default / grund</td><td>Poolen som alltid får spelas</td></tr><tr class="tone-warn"><td>variant</td><td>mood / stämning / 4.2</td><td>En triggad gren, döpt efter triggern</td></tr><tr class="tone-ok"><td>take</td><td>clip / video / mening</td><td>En hel inspelning: text, ljud, video, frames</td></tr><tr class="tone-warn"><td>trigger</td><td>villkor / regel / flag</td><td>Det som öppnar en variant</td></tr><tr><td>command</td><td>action (löst)</td><td>action är både hit och CLIP.deal</td></tr><tr><td>box 0–6</td><td>seat (i Croupier)</td><td>Emil/Jakob säger seat</td></tr><tr><td>line</td><td>mening / prompt</td><td>Exakt id, inte AI-text</td></tr><tr><td>collect</td><td>settle (om pengar)</td><td>settle = räknat, collect = bokat</td></tr><tr><td>landning</td><td>ungefär när det ser klart ut</td><td>Det en variant måste ärva</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s02-rng">
+    <h2>rng.* — fakta</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Facit</th><th>Betyder</th><th>Kevin</th><th>Jakob</th><th>Emil</th></tr></thead>
+<tbody><tr class="tone-warn"><td>rng.round.prepared</td><td>Bord nollställt, ingen insats än</td><td>—</td><td>round.prepared</td><td>—</td></tr><tr><td>rng.round.started</td><td>Rundan är igång, kort kommer</td><td>op start (implicite)</td><td>round.started</td><td>—</td></tr><tr><td>rng.bet.accepted</td><td>En huvudinsats är tagen</td><td>placeBet, sen start</td><td>blackjack.bet.accepted</td><td>bet på state</td></tr><tr><td>rng.card.dealt</td><td>Ett kort lämnade shoen</td><td>card.dealt + shoeDraw</td><td>blackjack.card.dealt</td><td>deal i clip-payload</td></tr><tr><td>rng.hole.dealt</td><td>Hålkort draget, ingen rank ute</td><td>holeDraw face-down</td><td>card.dealt faceDown</td><td>finns ej (europeisk)</td></tr><tr><td>rng.hole.revealed</td><td>Hålets rank är nu sann</td><td>dealer.reveal</td><td>blackjack.card.revealed</td><td>—</td></tr><tr class="tone-info"><td>rng.dealer.peeked</td><td>Dealer tittade på hål (ess/tio)</td><td>dealer.peek</td><td>—</td><td>—</td></tr><tr class="tone-info"><td>rng.dealer.blackjack</td><td>Hål + up = BJ, runda död</td><td>dealer.blackjack</td><td>resolve utan player turn</td><td>—</td></tr><tr><td>rng.dealer.drew</td><td>Dealer tog extra kort (S17)</td><td>dealer.draw</td><td>card.dealt dealer</td><td>deal_self</td></tr><tr><td>rng.hand.thinking</td><td>Den här handen ska agera</td><td>hand.thinking</td><td>turn.changed phase=player</td><td>PLAYER_TURNS</td></tr><tr><td>rng.hand.split</td><td>En box blev två händer</td><td>hand.split</td><td>blackjack.hand.split</td><td>split i table</td></tr><tr class="tone-info"><td>rng.hand.busted</td><td>Hand över 21</td><td>flagga busted, inget emit</td><td>följer card.dealt</td><td>—</td></tr><tr class="tone-warn"><td>rng.action.accepted</td><td>hit/stand/double/split giltig</td><td>op act (inget emit)</td><td>action.accepted (ignore show)</td><td>action()</td></tr><tr><td>rng.turn.changed</td><td>Vems tur + legal actions</td><td>phase + partner turn</td><td>blackjack.turn.changed</td><td>turnFor</td></tr><tr class="tone-info"><td>rng.insurance.offered</td><td>Dealer ess, fönster öppet</td><td>insurance.offered</td><td>—</td><td>—</td></tr><tr class="tone-info"><td>rng.insurance.resolved</td><td>take true/false räknat</td><td>op insurance</td><td>—</td><td>—</td></tr><tr class="tone-info"><td>rng.side.settled</td><td>PP / 21+3 uträknat vid deal</td><td>settleSideBets</td><td>—</td><td>—</td></tr><tr class="tone-warn"><td>rng.hand.settled</td><td>En hands resultat + payout</td><td>hand.result i snapshot</td><td>blackjack.hand.settled</td><td>—</td></tr><tr><td>rng.round.settled</td><td>Hela rundan är räknad</td><td>round.settled</td><td>round.settled win/loss/push/mixed</td><td>PAYOUT</td></tr><tr><td>rng.wallet.collected</td><td>Pengar bokförda, runda paid</td><td>op collect</td><td>ledger payout</td><td>balance på state</td></tr><tr><td>rng.shoe.shuffled</td><td>Ny shoe efter cut</td><td>out.shuffled</td><td>—</td><td>draw/cut</td></tr><tr class="tone-ok"><td>rng.seat.taken</td><td>Någon satte sig</td><td>—</td><td>—</td><td>playerSat (3D)</td></tr><tr class="tone-ok"><td>rng.seat.left</td><td>Någon lämnade stolen</td><td>—</td><td>—</td><td>playerLeftSeat (3D)</td></tr><tr class="tone-warn"><td>rng.bets.opened</td><td>Bord tar roulette-insatser</td><td>—</td><td>roulette.betting.opened</td><td>—</td></tr><tr class="tone-warn"><td>rng.bet.placed</td><td>En roulette-markör accepterad</td><td>—</td><td>roulette.bet.placed</td><td>—</td></tr><tr class="tone-warn"><td>rng.bets.locked</td><td>Inga fler roulette-insatser</td><td>—</td><td>roulette.bets.locked</td><td>—</td></tr><tr class="tone-warn"><td>rng.wheel.spun</td><td>Hjul + kula i rörelse</td><td>—</td><td>roulette.spin.started</td><td>—</td></tr><tr class="tone-warn"><td>rng.wheel.landed</td><td>Serverns pocket är känd</td><td>—</td><td>roulette.result</td><td>—</td></tr><tr class="tone-warn"><td>rng.roulette.settled</td><td>En roulette-insats avgjord</td><td>—</td><td>roulette.bet.settled</td><td>—</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s02-show">
+    <h2>show.* — bild och röst</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Facit</th><th>Betyder</th><th>Kevin</th><th>Jakob</th><th>Emil</th></tr></thead>
+<tbody><tr><td>show.line.greeting</td><td>Välkomst-tal</td><td>greeting</td><td>—</td><td>greet_new (om idle)</td></tr><tr class="tone-info"><td>show.line.placebets</td><td>Be om insatser</td><td>placebets</td><td>—</td><td>place_bets (saknas i manifest)</td></tr><tr class="tone-info"><td>show.line.goodluck</td><td>Bets stängda, lycka till</td><td>goodluck</td><td>round-start “Cards coming out.”</td><td>—</td></tr><tr class="tone-info"><td>show.line.insurance</td><td>Försäkring öppen</td><td>insurance</td><td>—</td><td>—</td></tr><tr class="tone-info"><td>show.line.peek</td><td>Tittar på hålet</td><td>peek (bank, oanvänd live)</td><td>—</td><td>—</td></tr><tr class="tone-info"><td>show.line.double</td><td>Doubling down</td><td>double</td><td>action-double (okopplad)</td><td>—</td></tr><tr class="tone-info"><td>show.line.bust</td><td>Spelaren sprack</td><td>bust</td><td>—</td><td>—</td></tr><tr><td>show.line.blackjack</td><td>Spelare naturlig 21</td><td>blackjack</td><td>—</td><td>react_blackjack</td></tr><tr><td>show.line.dealerbust</td><td>Dealer sprack</td><td>dealerbust</td><td>—</td><td>react_dealer_bust</td></tr><tr class="tone-info"><td>show.line.dealerblackjack</td><td>Dealer har BJ</td><td>dealerblackjack</td><td>—</td><td>—</td></tr><tr><td>show.line.win</td><td>Spelaren vann</td><td>win</td><td>react-win</td><td>react_win</td></tr><tr><td>show.line.lose</td><td>Huset tog</td><td>lose</td><td>react-loss</td><td>react_lose</td></tr><tr><td>show.line.push</td><td>Oavgjort, stake tillbaka</td><td>push</td><td>react-push</td><td>react_push</td></tr><tr class="tone-info"><td>show.line.sidebet</td><td>PP/21+3 träff</td><td>sidebet</td><td>—</td><td>—</td></tr><tr><td>show.line.chatter</td><td>Smalltalk, inte rundstyrd</td><td>chatter1 / chatter2</td><td>—</td><td>LLM-chat / MuseTalk</td></tr><tr><td>show.line.farewell</td><td>Hejdå</td><td>farewell (bank)</td><td>—</td><td>goodbye (aldrig spelad)</td></tr><tr class="tone-info"><td>show.deal.left</td><td>Kort till box 0–1</td><td>deal-left</td><td>deal-player</td><td>deal_player (alla säten)</td></tr><tr class="tone-info"><td>show.deal.centre</td><td>Kort till box 2–4</td><td>deal-centre</td><td>deal-player</td><td>deal_player</td></tr><tr class="tone-info"><td>show.deal.right</td><td>Kort till box 5–6</td><td>deal-right</td><td>deal-player</td><td>deal_player</td></tr><tr><td>show.deal.dealer</td><td>Kort till dealer</td><td>deal-dealer</td><td>deal-self</td><td>deal_self</td></tr><tr><td>show.deal.hole</td><td>Hål delas framsida ner</td><td>deal-dealer faceDown</td><td>deal faceDown</td><td>—</td></tr><tr><td>show.hole.flip</td><td>Vänd hålet på filten</td><td>reveal / .flip</td><td>reveal-hole</td><td>—</td></tr><tr><td>show.hand.think</td><td>Väntar på beslut</td><td>CLIP.think</td><td>wait-decision</td><td>lokal idle</td></tr><tr class="tone-ok"><td>show.hand.nod</td><td>Bekräfta stand</td><td>—</td><td>action-stand (okopplad)</td><td>nod_confirm</td></tr><tr><td>show.hand.split</td><td>Visa fläkt till två händer</td><td>animateSplit</td><td>split-hand</td><td>samma deal_player</td></tr><tr class="tone-info"><td>show.chip.fly</td><td>Chip från bricka till spot</td><td>chip-fly 480 ms</td><td>chipMotion place (3D död)</td><td>statisk .betchip</td></tr><tr><td>show.chip.payout</td><td>Chip tillbaka vid vinst</td><td>saknas</td><td>chipMotion payout (oanvänd)</td><td>saknas</td></tr><tr class="tone-ok"><td>show.bets.open</td><td>Öppna betting-fönster i bild</td><td>—</td><td>—</td><td>bets_open</td></tr><tr class="tone-ok"><td>show.bets.close</td><td>Inga fler bets i bild</td><td>goodluck täcker talet</td><td>—</td><td>no_more_bets</td></tr><tr class="tone-ok"><td>show.table.clear</td><td>Sopa bort kort efter payout</td><td>bara i rigged-review</td><td>clear-table (blockad)</td><td>clear_table</td></tr><tr><td>show.table.idle</td><td>Vänteloop, ingen handling</td><td>CLIP.idle</td><td>idle-neutral</td><td>wait_decision_a/b lokal</td></tr><tr><td>show.shoe.shuffle</td><td>Visa shoe-byte</td><td>banner 1800 ms</td><td>—</td><td>shuffle om idle</td></tr><tr class="tone-ok"><td>show.react.big</td><td>Stor vinst-reaktion</td><td>sfx.bigwin</td><td>—</td><td>react_win_big (≥100)</td></tr><tr class="tone-info"><td>show.gest.tilt</td><td>Huvudlutning, inte tal</td><td>CLIP.headTilt</td><td>—</td><td>—</td></tr><tr class="tone-info"><td>show.gest.hand</td><td>Gesticulera</td><td>CLIP.gest</td><td>—</td><td>—</td></tr><tr class="tone-info"><td>show.deal.watch</td><td>Titta på deal, inte bära kort</td><td>CLIP.dealWatch</td><td>—</td><td>—</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s02-ensamma">
+    <h2>Finns bara hos en</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Facit</th><th>Vem</th><th>Deras namn</th><th>Betyder</th></tr></thead>
+<tbody><tr class="tone-warn"><td>rng.round.prepared</td><td>Jakob</td><td>round.prepared</td><td>Bord nollställt, ingen insats än</td></tr><tr class="tone-info"><td>rng.dealer.peeked</td><td>Kevin</td><td>dealer.peek</td><td>Dealer tittade på hål (ess/tio)</td></tr><tr class="tone-info"><td>rng.dealer.blackjack</td><td>Kevin</td><td>dealer.blackjack</td><td>Hål + up = BJ, runda död</td></tr><tr class="tone-info"><td>rng.hand.busted</td><td>Kevin</td><td>flagga busted, inget emit</td><td>Hand över 21</td></tr><tr class="tone-warn"><td>rng.action.accepted</td><td>Jakob</td><td>action.accepted (ignore show)</td><td>hit/stand/double/split giltig</td></tr><tr class="tone-info"><td>rng.insurance.offered</td><td>Kevin</td><td>insurance.offered</td><td>Dealer ess, fönster öppet</td></tr><tr class="tone-info"><td>rng.insurance.resolved</td><td>Kevin</td><td>op insurance</td><td>take true/false räknat</td></tr><tr class="tone-info"><td>rng.side.settled</td><td>Kevin</td><td>settleSideBets</td><td>PP / 21+3 uträknat vid deal</td></tr><tr class="tone-warn"><td>rng.hand.settled</td><td>Jakob</td><td>blackjack.hand.settled</td><td>En hands resultat + payout</td></tr><tr class="tone-ok"><td>rng.seat.taken</td><td>Emil</td><td>playerSat (3D)</td><td>Någon satte sig</td></tr><tr class="tone-ok"><td>rng.seat.left</td><td>Emil</td><td>playerLeftSeat (3D)</td><td>Någon lämnade stolen</td></tr><tr class="tone-warn"><td>rng.bets.opened</td><td>Jakob</td><td>roulette.betting.opened</td><td>Bord tar roulette-insatser</td></tr><tr class="tone-warn"><td>rng.bet.placed</td><td>Jakob</td><td>roulette.bet.placed</td><td>En roulette-markör accepterad</td></tr><tr class="tone-warn"><td>rng.bets.locked</td><td>Jakob</td><td>roulette.bets.locked</td><td>Inga fler roulette-insatser</td></tr><tr class="tone-warn"><td>rng.wheel.spun</td><td>Jakob</td><td>roulette.spin.started</td><td>Hjul + kula i rörelse</td></tr><tr class="tone-warn"><td>rng.wheel.landed</td><td>Jakob</td><td>roulette.result</td><td>Serverns pocket är känd</td></tr><tr class="tone-warn"><td>rng.roulette.settled</td><td>Jakob</td><td>roulette.bet.settled</td><td>En roulette-insats avgjord</td></tr><tr class="tone-info"><td>show.line.placebets</td><td>Kevin</td><td>placebets</td><td>Be om insatser</td></tr><tr class="tone-info"><td>show.line.goodluck</td><td>Kevin</td><td>goodluck</td><td>Bets stängda, lycka till</td></tr><tr class="tone-info"><td>show.line.insurance</td><td>Kevin</td><td>insurance</td><td>Försäkring öppen</td></tr><tr class="tone-info"><td>show.line.peek</td><td>Kevin</td><td>peek (bank, oanvänd live)</td><td>Tittar på hålet</td></tr><tr class="tone-info"><td>show.line.double</td><td>Kevin</td><td>double</td><td>Doubling down</td></tr><tr class="tone-info"><td>show.line.bust</td><td>Kevin</td><td>bust</td><td>Spelaren sprack</td></tr><tr class="tone-info"><td>show.line.dealerblackjack</td><td>Kevin</td><td>dealerblackjack</td><td>Dealer har BJ</td></tr><tr class="tone-info"><td>show.line.sidebet</td><td>Kevin</td><td>sidebet</td><td>PP/21+3 träff</td></tr><tr class="tone-info"><td>show.deal.left</td><td>Kevin</td><td>deal-left</td><td>Kort till box 0–1</td></tr><tr class="tone-info"><td>show.deal.centre</td><td>Kevin</td><td>deal-centre</td><td>Kort till box 2–4</td></tr><tr class="tone-info"><td>show.deal.right</td><td>Kevin</td><td>deal-right</td><td>Kort till box 5–6</td></tr><tr class="tone-ok"><td>show.hand.nod</td><td>Emil</td><td>nod_confirm</td><td>Bekräfta stand</td></tr><tr class="tone-info"><td>show.chip.fly</td><td>Kevin</td><td>chip-fly 480 ms</td><td>Chip från bricka till spot</td></tr><tr class="tone-ok"><td>show.bets.open</td><td>Emil</td><td>bets_open</td><td>Öppna betting-fönster i bild</td></tr><tr class="tone-ok"><td>show.bets.close</td><td>Emil</td><td>no_more_bets</td><td>Inga fler bets i bild</td></tr><tr class="tone-ok"><td>show.table.clear</td><td>Emil</td><td>clear_table</td><td>Sopa bort kort efter payout</td></tr><tr class="tone-ok"><td>show.react.big</td><td>Emil</td><td>react_win_big (≥100)</td><td>Stor vinst-reaktion</td></tr><tr class="tone-info"><td>show.gest.tilt</td><td>Kevin</td><td>CLIP.headTilt</td><td>Huvudlutning, inte tal</td></tr><tr class="tone-info"><td>show.gest.hand</td><td>Kevin</td><td>CLIP.gest</td><td>Gesticulera</td></tr><tr class="tone-info"><td>show.deal.watch</td><td>Kevin</td><td>CLIP.dealWatch</td><td>Titta på deal, inte bära kort</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s02-betyg">
+    <h2>Betyg på namnen</h2>
+    <div class="scores">
+      <div class="score" style="border-color:var(--blue)"><div><b>7 / 10</b><span>Kevin · namnhygien</span></div></div>
+      <div class="score" style="border-color:var(--yellow)"><div><b>8 / 10</b><span>Jakob · namnhygien</span></div></div>
+      <div class="score" style="border-color:var(--green)"><div><b>5 / 10</b><span>Emil · namnhygien</span></div></div>
+      <div class="score" style="border-color:var(--purple)"><div><b>8 / 10</b><span>facit som språk</span></div></div>
+    </div>
+    <div class="info">Namnhygien är inte kvalitet på dealern. Emils klipp är bäst i bild trots sämst namn.</div>
+  </div>
+  <p class="foot">s00 helheten · s01 kartan · s02 språket · s03 motorn. Inofficiellt.</p>
+</div>
+
+<div class="page" id="page-s03">
+  <h1>animation-events-v1-s03 · motorn <span class="badge">inofficiell</span> <span class="badge">v2</span></h1>
+  <p class="lead">Hur det borde fungera. Ett event. En linje. Noll eller flera varianter. En trigger öppnar. En take spelas. Landningen ärvs.</p>
+  <nav class="nav"><a href="#s00" class="" data-page="s00">s00 helheten</a><a href="#s01" class="" data-page="s01">s01 kartan</a><a href="#s02" class="" data-page="s02">s02 språket</a><a href="#s03" class="on" data-page="s03">s03 motorn</a></nav>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--blue)"></i>faktum</span>
+    <span><i class="sw" style="background:var(--purple)"></i>event</span>
+    <span><i class="sw" style="background:var(--green)"></i>linjen</span>
+    <span><i class="sw" style="background:var(--orange)"></i>variant</span>
+    <span><i class="sw" style="background:var(--yellow)"></i>trigger</span>
+    <span><i class="sw" style="background:var(--cyan)"></i>take</span>
+    <span><i class="sw" style="background:var(--pink)"></i>landning</span>
+  </div>
+  <div class="tabs" data-tabs="s03"><button type="button" data-pane="s03-modell" class="on">Modellen</button><button type="button" data-pane="s03-v2" class="">Nytt i v2</button><button type="button" data-pane="s03-idag" class="">Idag</button><button type="button" data-pane="s03-varfor" class="">Trigger → varför</button><button type="button" data-pane="s03-hysch" class="">Hysch-exemplet</button><button type="button" data-pane="s03-matris" class="">Matrisen</button><button type="button" data-pane="s03-dealers" class="">Fyra dealers</button><button type="button" data-pane="s03-betyg" class="">Betyg</button><button type="button" data-pane="s03-regler" class="">Regler</button></div>
+  <div class="pane on" id="s03-modell">
+    <h2>Ett event. En linje. Noll eller flera varianter.</h2>
+    <div class="flow">
+      <div class="chip" style="border-color:var(--blue)"><b>faktum</b><span>rng.round.settled lose</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--purple)"><b>event</b><span>show.line.lose</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--green)"><b>linjen</b><span>3 + tyst</span></div>
+      <span class="arrow">eller</span>
+      <div class="chip" style="border-color:var(--orange)"><b>variant otur</b><span>trigger: 3 förluster</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--cyan)"><b>take</b><span>lose-otur-a</span></div>
+      <span class="arrow">→</span>
+      <div class="chip" style="border-color:var(--pink)"><b>landning</b><span>samma landAt</span></div>
+    </div>
+<pre>event    show.line.lose
+linjen   lose-a  lose-b  lose-c  tyst
+variant  nära       trigger: skillnad &lt;= 1
+variant  dealer-21  trigger: hon drog till 21
+variant  otur       trigger: 3 förluster i rad
+                    armar: comeback på nästa win</pre>
+  </div>
+  <div class="pane" id="s03-v2">
+    <h2>Sju saker som gör motorn bättre</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>#</th><th>Nytt</th><th>Vad det gör</th><th>Lyft</th></tr></thead>
+<tbody><tr class="tone-ok"><td>1</td><td>Tyst take i linjen</td><td>Resultat får en take utan rad. Dealers kommenterar inte varje hand.</td><td>9</td></tr><tr class="tone-ok"><td>2</td><td>Personlighet per dealer</td><td>Vera, Astrid, Amira, Mei: tystnad, benägenhet, tempo. 0 takes.</td><td>9</td></tr><tr class="tone-info"><td>3</td><td>Eftertrigger (armar)</td><td>otur i går → comeback i dag. Hon minns.</td><td>8</td></tr><tr class="tone-info"><td>4</td><td>Minne som klingar av</td><td>otur försvinner efter 2 rundor utan förlust.</td><td>8</td></tr><tr class="tone-info"><td>5</td><td>Variantbudget</td><td>Max 3 session/chatt/tid-varianter per 10 rundor.</td><td>8</td></tr><tr class="tone-ok"><td>6</td><td>Fallback-trappa</td><td>variant → linjen → tyst → bara DOM. Kortet landar alltid.</td><td>9</td></tr><tr class="tone-info"><td>7</td><td>Mätbar naturlighet</td><td>20 rundor i rehearsal med krav.</td><td>8</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s03-idag">
+    <h2>Var står Kevin och Jakob?</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Lager</th><th>Kevin</th><th>Jakob</th></tr></thead>
+<tbody><tr class="tone-ok"><td>faktum</td><td>POST /api/table + Partner API</td><td>GameEventV2, 16 typer</td></tr><tr class="tone-ok"><td>event</td><td>CLIP + 17 speech-lines</td><td>24 PresentationCues</td></tr><tr class="tone-warn"><td>linjen</td><td>1 take per line</td><td>1 cue → 1 klipp</td></tr><tr class="tone-bad"><td>tyst take</td><td>Talar på varje resultat</td><td>Cue på varje resultat</td></tr><tr class="tone-bad"><td>variant</td><td>Saknas</td><td>Saknas</td></tr><tr class="tone-bad"><td>trigger: session / chatt</td><td>Saknas</td><td>Saknas</td></tr><tr class="tone-ok"><td>urval</td><td>Exakt nyckel eller hash. Aldrig längd</td><td>Deterministiskt per cue</td></tr><tr class="tone-ok"><td>landning</td><td>landAt + frame-index</td><td>Cue-duration</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s03-varfor">
+    <h2>Varför en trigger ger just den reaktionen</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Trigger</th><th>Variant</th><th>Varför det känns äkta</th><th>När</th></tr></thead>
+<tbody><tr class="tone-info"><td>Skillnad ≤ 1</td><td>nära</td><td>Det är exakt vad spelaren känner. Hon speglar det.</td><td>samma event</td></tr><tr class="tone-info"><td>Hon drog till 21</td><td>dealer-21</td><td>Hon “gjorde” det. En människa markerar det.</td><td>samma event</td></tr><tr><td>3 förluster i rad</td><td>otur</td><td>Samma rad fyra gånger är en maskin.</td><td>samma · armar comeback</td></tr><tr class="tone-warn"><td>VERSALER i chatten när dealen startar</td><td>ett-ögonblick</td><td>Hon hör bordet men tappar inte korten.</td><td>samma event</td></tr><tr class="tone-warn"><td>Chatt mitt i en take</td><td>uppmärksam</td><td>Människor reagerar med fördröjning.</td><td>nästa event</td></tr><tr class="tone-bad"><td>Spam eller otrevligt</td><td>ingen</td><td>Dealern är inte polis.</td><td>—</td></tr><tr><td>Efter 23</td><td>natt</td><td>Ton följer tid på dygnet.</td><td>samma event</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s03-hysch">
+    <h2>Ditt exempel: någon skriker i chatten medan hon delar</h2>
+    <div class="grid">
+      <div class="card"><h3>Rätt</h3><p>Chatten är spelarens enda bord. Kortet landar ändå. Varianten har ett namn efter triggern. Inget nytt rng-event.</p></div>
+      <div class="card"><h3>Ändrat</h3><p>Inte hysch — pekfinger upp, “ett ögonblick”. Byt bara om triggern var sann när dealen startade. Annars arma uppmärksam på nästa event.</p></div>
+    </div>
+    <div class="warn"><strong>Kostnad.</strong> En deal-variant är tre nya kalibrerade takes per dealer. Gör “uppmärksam” på think först. Deal-varianten är fas 2.</div>
+  </div>
+  <div class="pane" id="s03-matris">
+    <h2>Matrisen: event · linjen · varianter</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Event</th><th>Enkelt</th><th>Linjen</th><th>Varianter — trigger</th><th>Prio</th></tr></thead>
+<tbody><tr class="tone-info"><td>show.line.lose</td><td>Huset tog</td><td>3 + tyst</td><td>nära (2) — skillnad ≤ 1 · dealer-21 (1) — hon drog själv till 21 · otur (2) — 3 förluster i rad</td><td>1</td></tr><tr class="tone-info"><td>show.line.win</td><td>Spelaren vann</td><td>3 + tyst</td><td>stor (2) — vinst ≥ 3× · double (1) — vann på double · comeback (1) — armad av otur</td><td>1</td></tr><tr class="tone-info"><td>show.line.dealerbust</td><td>Hon sprack</td><td>2 + tyst</td><td>femkort (1) — 5 kort på hand · efter-otur (1) — armad av otur</td><td>1</td></tr><tr class="tone-info"><td>show.line.bust</td><td>Spelaren sprack</td><td>2 + tyst</td><td>otur (1) — sprack på 12–13</td><td>1</td></tr><tr class="tone-warn"><td>show.line.push</td><td>Lika</td><td>2 + tyst</td><td>igen (1) — lika två gånger i rad</td><td>2</td></tr><tr class="tone-warn"><td>show.line.blackjack</td><td>Spelaren har 21</td><td>2</td><td>första (1) — första BJ i sessionen</td><td>2</td></tr><tr class="tone-warn"><td>show.line.dealerblackjack</td><td>Hon har 21</td><td>2</td><td>försäkrad (1) — spelaren tog försäkring</td><td>2</td></tr><tr class="tone-info"><td>show.line.placebets</td><td>Satsa</td><td>3</td><td>dröjer (1) — ingen insats på 15 s · tomt (1) — ingen vid bordet</td><td>1</td></tr><tr class="tone-info"><td>show.line.goodluck</td><td>Lycka till</td><td>2 + tyst</td><td>storinsats (1) — insats ≥ 10× snitt</td><td>1</td></tr><tr><td>show.line.insurance</td><td>Försäkring?</td><td>2</td><td>—</td><td>2</td></tr><tr><td>show.line.double</td><td>Dubblar</td><td>2</td><td>—</td><td>2</td></tr><tr class="tone-warn"><td>show.line.sidebet</td><td>Sidobet träff</td><td>2</td><td>trips (1) — suited trips</td><td>3</td></tr><tr class="tone-info"><td>show.line.greeting</td><td>Hej</td><td>2</td><td>ny (1) — första besöket · namn (1) — återvändare med namn · natt (1) — efter 23</td><td>1</td></tr><tr class="tone-warn"><td>show.line.farewell</td><td>Hejdå</td><td>2</td><td>plus (1) — gick plus · minus (1) — gick minus</td><td>3</td></tr><tr class="tone-warn"><td>show.line.chatter</td><td>Småprat</td><td>4</td><td>svar (2) — någon skriver till henne · tröst (1) — otur + tyst bord · natt (1) — efter 23</td><td>2</td></tr><tr class="tone-info"><td>show.deal.left</td><td>Kort åt vänster</td><td>1</td><td>ett-ögonblick (1) — VERSALER i chatten när dealen startar (fas 2)</td><td>1</td></tr><tr class="tone-info"><td>show.deal.centre</td><td>Kort i mitten</td><td>1</td><td>ett-ögonblick (1) — VERSALER i chatten när dealen startar (fas 2)</td><td>1</td></tr><tr class="tone-info"><td>show.deal.right</td><td>Kort åt höger</td><td>1</td><td>ett-ögonblick (1) — VERSALER i chatten när dealen startar (fas 2)</td><td>1</td></tr><tr class="tone-info"><td>show.deal.dealer</td><td>Kort till sig</td><td>1</td><td>—</td><td>1</td></tr><tr class="tone-info"><td>show.deal.hole</td><td>Hålkort</td><td>1</td><td>—</td><td>1</td></tr><tr class="tone-warn"><td>show.hole.flip</td><td>Vänder hålet</td><td>1</td><td>dealer-bj (1) — flippen ger henne 21</td><td>2</td></tr><tr class="tone-info"><td>show.hand.think</td><td>Väntar på beslut</td><td>2</td><td>tålmodig (1) — beslut &gt; 10 s · uppmärksam (1) — armad av chatt mitt i förra eventet</td><td>1</td></tr><tr class="tone-warn"><td>show.deal.watch</td><td>Tittar på deal</td><td>2</td><td>uppmärksam (1) — armad av chatt mitt i förra eventet</td><td>2</td></tr><tr class="tone-info"><td>show.table.idle</td><td>Vänteloop</td><td>3</td><td>natt (1) — efter 23 · tomt (1) — ingen vid bordet</td><td>1</td></tr><tr class="tone-warn"><td>show.hand.nod</td><td>Nick vid stand</td><td>1</td><td>gillar (1) — stand på 20–21</td><td>3</td></tr><tr class="tone-warn"><td>show.react.big</td><td>Stor reaktion</td><td>1</td><td>jackpot (1) — sidobet ≥ 100×</td><td>2</td></tr><tr><td>show.bets.open</td><td>Bets öppna i bild</td><td>1</td><td>—</td><td>3</td></tr><tr><td>show.bets.close</td><td>Inga fler bets i bild</td><td>1</td><td>—</td><td>3</td></tr><tr><td>show.table.clear</td><td>Sopar bordet</td><td>1</td><td>—</td><td>2</td></tr><tr><td>show.shoe.shuffle</td><td>Ny shoe</td><td>1</td><td>—</td><td>3</td></tr><tr><td>show.chip.fly</td><td>Chip till ruta</td><td>1</td><td>—</td><td>2</td></tr><tr><td>show.chip.payout</td><td>Chip tillbaka</td><td>1</td><td>—</td><td>3</td></tr><tr><td>show.hand.split</td><td>Dela hand</td><td>1</td><td>—</td><td>3</td></tr><tr><td>show.gest.tilt</td><td>Huvudlutning</td><td>2</td><td>—</td><td>3</td></tr><tr><td>show.gest.hand</td><td>Gest</td><td>2</td><td>—</td><td>3</td></tr></tbody>
+</table></div>
+  </div>
+  <div class="pane" id="s03-dealers">
+    <h2>Fyra dealers, samma motor</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Dealer</th><th>Tyst</th><th>Tar variant</th><th>Tempo</th><th>Chatt</th><th>Karaktär</th></tr></thead>
+<tbody><tr class="tone-info"><td>Vera</td><td>30 %</td><td>0.7</td><td>normalt</td><td>gärna</td><td>Värdinnan. Pratar mest.</td></tr><tr class="tone-ok"><td>Astrid</td><td>45 %</td><td>0.5</td><td>lugnt</td><td>sparsamt</td><td>Den lugna. Säger mindre.</td></tr><tr class="tone-warn"><td>Amira</td><td>25 %</td><td>0.8</td><td>snabbt</td><td>gärna</td><td>Den snabba. Stora gester.</td></tr><tr><td>Mei</td><td>40 %</td><td>0.6</td><td>lugnt</td><td>sparsamt</td><td>Den precisa. Nickar mer.</td></tr></tbody>
+</table></div>
+    <div class="grid">
+      <div class="card"><h3>Samma runda, Astrid</h3><p>Fjärde förlusten, 20 mot 21. r = 0.62. Benägenhet 0.5 → tar inte varianten. Säger lose-b lågmält.</p></div>
+      <div class="card"><h3>Samma runda, Amira</h3><p>Samma r. Benägenhet 0.8 → tar nära. lose-nara-a med grimasen. Otur armar comeback.</p></div>
+    </div>
+  </div>
+  <div class="pane" id="s03-betyg">
+    <h2>Betyg</h2>
+    <div class="scores">
+      <div class="score" style="border-color:var(--green)"><div><b>9 / 10</b><span>linjen + variant + take</span></div></div>
+      <div class="score" style="border-color:var(--green)"><div><b>9 / 10</b><span>variant döpt efter trigger</span></div></div>
+      <div class="score" style="border-color:var(--green)"><div><b>8 / 10</b><span>chatt som trigger</span></div></div>
+      <div class="score" style="border-color:var(--yellow)"><div><b>6 / 10</b><span>variant mitt i dealen</span></div></div>
+      <div class="score" style="border-color:var(--red)"><div><b>4 / 10</b><span>hysch-gesten</span></div></div>
+      <div class="score" style="border-color:var(--orange)"><div><b>8 → 9</b><span>motorn v1 → v2</span></div></div>
+    </div>
+  </div>
+  <div class="pane" id="s03-regler">
+    <h2>Tio regler</h2>
+    <div class="table-wrap"><table>
+<thead><tr><th>Regel</th><th>Varför</th></tr></thead>
+<tbody><tr><td>En variant ärver linjens landning</td><td>Kortet landar på samma frame.</td></tr><tr><td>Fallback-trappa: variant → linjen → tyst → DOM</td><td>Aldrig tyst av misstag.</td></tr><tr><td>Trigger kollas när eventet startar</td><td>Kommer den mitt i: arma nästa.</td></tr><tr><td>En variant per event, spel före chatt före tid</td><td>Hon kan inte vara ledsen och busig samtidigt.</td></tr><tr><td>Cooldown 3 rundor per take</td><td>Tre takes ska kännas som tre.</td></tr><tr><td>Budget: 3 extra-varianter per 10 rundor</td><td>För många reaktioner är onaturligt.</td></tr><tr><td>Otur klingar av efter 2 rundor utan förlust</td><td>Människor släpper saker.</td></tr><tr><td>Dealerns tal styr tystnad, inte nya takes</td><td>Fyra personligheter ur ett bibliotek.</td></tr><tr><td>Aldrig välja efter längd, aldrig mun ovanpå</td><td>Så läppsynken redan gått sönder.</td></tr><tr><td>Servern skickar fakta, aldrig take-namn</td><td>Otur och chatt är motorns sak.</td></tr></tbody>
+</table></div>
+  </div>
+  <p class="foot">s00 helheten · s01 kartan · s02 språket · s03 motorn. Inofficiellt. Inget byter kod förrän Kevin accepterat.</p>
+</div>
+</main>
+<script>
+function showPage(id) {
+  document.querySelectorAll(".page").forEach((p) => p.classList.toggle("on", p.id === "page-" + id));
+  document.querySelectorAll(".nav a").forEach((a) => a.classList.toggle("on", a.dataset.page === id));
+}
+function showPane(paneId) {
+  const group = paneId.split("-")[0];
+  document.querySelectorAll('[data-tabs="' + group + '"] button').forEach((b) => b.classList.toggle("on", b.dataset.pane === paneId));
+  document.querySelectorAll('[id^="' + group + '-"]').forEach((p) => p.classList.toggle("on", p.id === paneId));
+}
+document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", () => showPage(a.dataset.page)));
+document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => showPane(b.dataset.pane)));
+const hash = (location.hash || "#s00").slice(1);
+if (["s00","s01","s02","s03"].includes(hash)) showPage(hash);
+window.addEventListener("hashchange", () => {
+  const id = location.hash.slice(1);
+  if (["s00","s01","s02","s03"].includes(id)) showPage(id);
+});
+</script>
+</body>
+</html>
