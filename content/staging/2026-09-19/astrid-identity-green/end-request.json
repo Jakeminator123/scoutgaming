@@ -1,0 +1,18 @@
+{
+  "model": "gpt_image_2_5",
+  "aspect_ratio": "16:9",
+  "resolution": "2k",
+  "quality": "high",
+  "count": 1,
+  "medias": [
+    {
+      "role": "image",
+      "value": "75d580c2-3243-4df9-ad43-83483de11250"
+    },
+    {
+      "role": "image",
+      "value": "b2c16866-56c4-4406-bbb1-7fed713ca485"
+    }
+  ],
+  "prompt": "Create the end frame of the FIRST green-screen studio image. Preserve its exact camera, framing, body size, green work surface, green background and small green card shoe. The SECOND photograph is Astrid's authoritative face identity: preserve her exact features, age, soft natural skin, blonde hairstyle, small gold earrings, black blazer and ivory blouse. This is the same woman, with her gaze now slightly down toward the shoe. A single lime-green card with four magenta corner dots has been dealt and now lies flat on the green work surface, its centre at 35 percent of image width and 94 percent of image height, fully inside the image. Keep its physical playing-card size and thin rigid shape. The card is no longer in the shoe outlet. Both hands are EMPTY: her left hand stays resting beside the shoe, while her right forearm crosses naturally in front of her to finish its return beside the shoe, with a small natural torso turn toward it. Preserve real anatomical proportions and complete fingers. Only one card, no new draw, no casino environment, no text. Do not alter Astrid's face, invent wrinkles, change lighting, zoom or crop. Single photographic frame."
+}
