@@ -19,6 +19,7 @@ const jobs=JSON.parse(fs.readFileSync(path.join(here,'jobs.json')));
 const lineDirs={greeting:here,...Object.fromEntries(Object.keys(jobs).map(id=>[id,path.join(here,'lines',id)]))};
 const out=path.join(pub,'review/astrid-green-speak');
 const lines={};
+const alignment=JSON.parse(fs.readFileSync(path.join(here,'registration/actor-offset.json')));
 for(const [id,dir] of Object.entries(lineDirs)){
   if(!fs.existsSync(path.join(dir,'mask/manifest.json'))){console.warn('skipping',id,'no matte yet');continue;}
   const config=JSON.parse(fs.readFileSync(path.join(dir,'take-config.json')));
@@ -48,6 +49,7 @@ for(const [id,dir] of Object.entries(lineDirs)){
     const join=JSON.parse(fs.readFileSync(joinPath));
     const idle=JSON.parse(fs.readFileSync(path.join(pub,'review/astrid-green-waiting/idle.json')));
     if(join.mediaSha256!==mask.actorPackedSha256||join.idleSha256!==idle.base.sha256)throw new Error(`${id}: stale transition fit`);
+    if(alignment.idleSha256!==idle.base.sha256||JSON.stringify(join.actorOffset)!==JSON.stringify(alignment.offset))throw new Error(`${id}: stale actor placement`);
     lines[id].transition=join;
     for(const edge of ['enter','exit']){
       const image=path.join(here,'transitions',join[edge].flow);
@@ -65,9 +67,10 @@ const take={
   // Rigid 2D translation applied at runtime on top of the source registration
   // (source px, scaled with the fit); tune without re-encoding. 0 = props.
   spliceOffset:[0,0],
+  actorOffset:alignment.offset,
   spliceMeasurement:{method:'greeting frame 0/115 against the base eye-contact idle frame 0 and the dealer take frame 0; phase correlation of head/torso/hand windows, dx/dy in source px',
     windows:{head:[870,26,1050,226],torso:[760,240,1200,520],leftHand:[760,560,960,700],shoeHand:[1080,540,1330,700]},...greetingSplice,
-    note:'Props register at (0,15). The ready poses differ: head ~20 px and hands 6-10 px. Per-line bidirectional motion fields bridge this difference only during the silent 220 ms joins. The speech frames keep their original placement.'},
+    note:'Props register at (0,15). The actor is translated down 20 source pixels to match the idle head and torso height. Both playback and silent join endpoints share this rigid offset; size, source frames and audio are unchanged. The small residual hand-pose difference is interpolated during joins.'},
   lines:Object.fromEntries(Object.entries(lines).map(([id,{packedSource,...line}])=>[id,line])),
   note:'Each full recording keeps frame 0 through its last frame with unchanged paired audio. A 220 ms motion-aligned silent join enters and leaves it; the recorded line starts on the first presented speech frame plus audioOffsetSeconds. The destination idle frame is painted before idle resumes.',
 };

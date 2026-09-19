@@ -1,0 +1,528 @@
+[
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "0.014",
+      "speakLine": "greeting",
+      "speakState": "enter"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "0.220",
+      "speakLine": "greeting",
+      "speakState": "enter"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "0.650",
+      "speakLine": "greeting",
+      "speakState": "enter"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "0.853",
+      "speakLine": "greeting",
+      "speakState": "enter"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "0.999",
+      "speakLine": "greeting",
+      "speakState": "enter"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "1",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "2",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "4",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "5",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "6",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "7",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "8",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "9",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "10",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "11",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "12",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "13",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "14",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "15",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "16",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "17",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "18",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "19",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  },
+  {
+    "busy": true,
+    "idle": {
+      "engine": "three.js r180",
+      "idleFrame": "154",
+      "idleJob": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "idleKind": "waiting-base",
+      "idleLoops": "8",
+      "idleSeed": "3151304034",
+      "idleSegment": "base",
+      "idleSequence": "base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base",
+      "idleState": "held"
+    },
+    "speech": {
+      "speakFrame": "20",
+      "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+      "speakJoinProgress": "1.000",
+      "speakLine": "greeting",
+      "speakSettledDeltaMs": "-27",
+      "speakStartDeltaMs": "-31",
+      "speakState": "playing"
+    }
+  }
+]

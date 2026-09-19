@@ -155,5 +155,6 @@
   "spliceOffset": [
     0,
     15.3
-  ]
+  ],
+  "restManifest": "../../2026-09-20/astrid-calm-rest/runtime/rest.json"
 }

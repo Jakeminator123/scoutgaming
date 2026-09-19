@@ -48,6 +48,12 @@ export function idleSegmentErrors(take){
   }
   const offset=take?.spliceOffset;
   if(offset!==undefined&&!(Array.isArray(offset)&&offset.length===2&&offset.every(Number.isFinite)))errors.push('spliceOffset must be [dx,dy] source pixels');
+  if(take?.rest){
+    const rest=take.rest;
+    if(rest.readySha256!==take.base?.sha256)errors.push('folded rest ready pose mismatch');
+    if(rest.width!==take.base?.width||rest.height!==take.base?.height)errors.push('folded rest crop mismatch');
+    for(const kind of ['loop','out','back'])if(!rest[kind]?.src||!rest[kind]?.sha256||!Number.isInteger(rest[kind]?.frames)||rest[kind].frames<2||!(rest[kind]?.fps>0))errors.push(`folded rest ${kind} media missing`);
+  }
   return errors;
 }
 

@@ -1,0 +1,23 @@
+(node:6003) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the installed speak manifest is valid and every line's media and recording are the reviewed bytes (58.003417ms)
+✔ every line cuts in at the first frame and out at the last, both ready poses, on the dealer take placement (0.564541ms)
+✔ audio starts on the first presented frame: each offset is the cross-correlation lag of the embedded track (0.197709ms)
+✔ speech joins are bound to the current repaired take and waiting source, without replacing speech frames (10.110625ms)
+✔ the validator rejects broken manifests (0.998667ms)
+✔ the runtime is opt-in for Astrid on the Blender table only and generic over lines (1.37825ms)
+✔ folded resting clips bind to the current ready pose and retain a filmed bridge in both directions (8.482375ms)
+✔ the waiting cadence never glances twice in a row and never idles more than 3 base loops (5.418708ms)
+✔ the cadence is not periodic: base holds vary in length (0.284625ms)
+✔ glance segments only start and end on the waiting clip ready-pose frames; base is its own loop (0.173916ms)
+✔ the installed idle keeps the eye-contact loop as base and splices 15777d5f glances with the measured offset (1.327708ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 229.101625

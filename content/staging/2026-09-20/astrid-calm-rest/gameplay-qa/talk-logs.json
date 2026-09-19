@@ -1,0 +1,152 @@
+[
+  {
+    "level": "info",
+    "message": "[speak] greeting Mn2vLqTOAmDaJKBYJeKy 0-115",
+    "timestamp": "2026-09-19T22:42:54.089Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] greeting audio/video start delta -31 ms ",
+    "timestamp": "2026-09-19T22:42:54.140Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] greeting audio/video settled delta -27 ms",
+    "timestamp": "2026-09-19T22:42:54.572Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck gUoli6tA6QtpwAbwP1xq 0-50",
+    "timestamp": "2026-09-19T22:42:59.374Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video start delta -39 ms ",
+    "timestamp": "2026-09-19T22:42:59.423Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video settled delta -69 ms",
+    "timestamp": "2026-09-19T22:42:59.859Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck gUoli6tA6QtpwAbwP1xq 0-50",
+    "timestamp": "2026-09-19T22:43:01.997Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video start delta -25 ms ",
+    "timestamp": "2026-09-19T22:43:02.041Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video settled delta -59 ms",
+    "timestamp": "2026-09-19T22:43:02.458Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck gUoli6tA6QtpwAbwP1xq 0-50",
+    "timestamp": "2026-09-19T22:43:32.253Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video start delta -42 ms ",
+    "timestamp": "2026-09-19T22:43:32.322Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video settled delta -84 ms",
+    "timestamp": "2026-09-19T22:43:32.706Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck gUoli6tA6QtpwAbwP1xq 0-50",
+    "timestamp": "2026-09-19T22:43:34.841Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video start delta -28 ms ",
+    "timestamp": "2026-09-19T22:43:34.889Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video settled delta -59 ms",
+    "timestamp": "2026-09-19T22:43:35.322Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] greeting deferred to the first gesture: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD",
+    "timestamp": "2026-09-19T23:18:47.165Z",
+    "url": "http://astridmaskall.localhost:4211/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] greeting Mn2vLqTOAmDaJKBYJeKy 0-115",
+    "timestamp": "2026-09-19T23:20:30.333Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] greeting audio/video start delta -38 ms ",
+    "timestamp": "2026-09-19T23:20:30.405Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] greeting audio/video settled delta -52 ms",
+    "timestamp": "2026-09-19T23:20:30.816Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck gUoli6tA6QtpwAbwP1xq 0-50",
+    "timestamp": "2026-09-19T23:20:35.602Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video start delta -33 ms ",
+    "timestamp": "2026-09-19T23:20:35.656Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video settled delta -32 ms",
+    "timestamp": "2026-09-19T23:20:36.083Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck gUoli6tA6QtpwAbwP1xq 0-50",
+    "timestamp": "2026-09-19T23:20:38.169Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video start delta -29 ms ",
+    "timestamp": "2026-09-19T23:20:38.218Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speak] goodluck audio/video settled delta -59 ms",
+    "timestamp": "2026-09-19T23:20:38.650Z",
+    "url": "http://astridmaskall.localhost:4211/astrid-green-speak.mjs"
+  }
+]
