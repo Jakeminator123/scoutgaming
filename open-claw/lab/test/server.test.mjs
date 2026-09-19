@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { request } from 'node:http';
+import { request, createServer } from 'node:http';
 import { createLabServer } from '../src/server.mjs';
 import { LAB_ROOT, readSettings, gatewayEndpoint } from '../src/settings.mjs';
 import { askDirector } from '../src/openclaw.mjs';
@@ -31,6 +31,47 @@ test('only the named OpenClaw credential is used; no implicit OpenAI fallback', 
   assert.equal(readSettings({ env: { OPENAI_API_KEY: 'do-not-use' }, envFiles: [] }).gatewayKey, '');
   assert.equal(gatewayEndpoint('http://localhost:18789/v1'), 'http://localhost:18789/v1/chat/completions');
   assert.throws(() => gatewayEndpoint('https://user:pass@example.com'));
+});
+
+test('dashboard origin is explicit, or opted in to the Render web service origin', () => {
+  const env = { RENDER_EXTERNAL_URL: 'https://lab.example', OPENCLAW_DASHBOARD_ALLOW_LOOPBACK: 'true' };
+  assert.equal(readSettings({ env, envFiles: [] }).dashboardOrigin, '');
+  assert.equal(readSettings({ env: { ...env, OPENCLAW_DASHBOARD_ENABLED: 'true' }, envFiles: [] }).dashboardOrigin, 'https://lab.example');
+  const explicit = readSettings({ env: { ...env, OPENCLAW_DASHBOARD_ORIGIN: 'http://localhost:4189' }, envFiles: [] });
+  assert.equal(explicit.dashboardOrigin, 'http://localhost:4189');
+  assert.equal(explicit.dashboardAllowLoopback, true);
+});
+
+test('native dashboard uses its own auth path; lab APIs still require the lab token', async t => {
+  let seenHeaders;
+  const upstream = createServer((req, res) => {
+    seenHeaders = req.headers;
+    res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Security-Policy': "default-src 'none'" });
+    res.end('<title>Native OpenClaw fixture</title>');
+  });
+  await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => upstream.close(resolve)));
+  const { base, config } = await running(t, { host: '0.0.0.0', apiToken: 'lab-secret', gatewayKey: 'never-inject',
+    baseUrl: `http://127.0.0.1:${upstream.address().port}`, dashboardOrigin: 'https://lab.example' });
+  const response = await new Promise((resolve, reject) => {
+    const req = request(base + '/openclaw/', { headers: { Host: 'lab.example' } }, res => {
+      res.resume(); res.on('end', () => resolve(res));
+    });
+    req.on('error', reject); req.end();
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.headers['content-security-policy'], "default-src 'none'");
+  assert.equal(seenHeaders.authorization, undefined);
+  assert.equal((await fetch(base + '/api/catalog')).status, 401);
+  config.dashboardOrigin = 'https://evil.example';
+  assert.equal((await fetch(base + '/openclaw/', { headers: { Origin: 'https://evil.example' } })).status, 403);
+});
+
+test('dashboard defaults off and a local remote relay does not expose the admin proxy', async t => {
+  const local = await running(t);
+  assert.equal((await fetch(local.base + '/openclaw/')).status, 503);
+  const relay = await running(t, { remoteUrl: 'https://lab.example', dashboardOrigin: 'https://lab.example', baseUrl: 'invalid-unused' });
+  assert.equal((await fetch(relay.base + '/openclaw/')).status, 503);
 });
 
 test('lab runs without gateway and reports real fallback; chat is never simulated', async t => {

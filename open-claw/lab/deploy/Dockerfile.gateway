@@ -5,7 +5,6 @@ RUN mkdir -p /data/openclaw /opt/croupier-gateway && chown -R node:node /data/op
 COPY --chown=node:node deploy/gateway-config.mjs deploy/start-gateway.mjs /opt/croupier-gateway/
 ENV OPENCLAW_STATE_DIR=/data/openclaw \
     OPENCLAW_CONFIG_PATH=/data/openclaw/openclaw.json \
-    OPENCLAW_CONFIG_READONLY=1 \
     OPENCLAW_GATEWAY_PORT=18789
 USER node
 EXPOSE 18789
