@@ -1,0 +1,38 @@
+{
+  "start.png": {
+    "source": "content/staging/2026-09-19/astrid-h3-box3-v1/soft-identity-review/before-soft-identity.png",
+    "dimensions": [
+      1667,
+      943
+    ],
+    "bytes": 1411150,
+    "sha256": "3a9024711863f2b610dd768fec8a20857aedd2fe5cfca18035194a3bc98710fa"
+  },
+  "end.png": {
+    "source": "/Users/solvifyab/.codex/generated_images/01a089d2-0743-7fa2-8827-24888c70a8a2/exec-561708b5-2949-4a0b-a6e3-d7c10d51f60d.png",
+    "dimensions": [
+      1667,
+      943
+    ],
+    "bytes": 1439207,
+    "sha256": "62c00ab96f55b0e4b2f284216f35dc7ed12ae761ebd07bcee08bdd7484ed70ff"
+  },
+  "tracking-card-details.png": {
+    "source": "content/staging/2026-09-19/astrid-h3-box3-v1/card-details.png",
+    "dimensions": [
+      1482,
+      1061
+    ],
+    "bytes": 1686690,
+    "sha256": "819e99e0c302f19eef78329b016f5fdf021d229125d7bd50a3024b008fbed63d"
+  },
+  "scout-cardback.png": {
+    "source": "web/public/assets/cardback.png",
+    "dimensions": [
+      209,
+      280
+    ],
+    "bytes": 97393,
+    "sha256": "3a1337600e182ba9ff697f30da08c34d5094d5d343d85910093f08dadc3cb267"
+  }
+}

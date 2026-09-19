@@ -2,7 +2,10 @@
 
 User approved Box 4 v1 and requested center Box 3 using MiniMax H3, with full-scene before/after keyframes and close-ups of the card. Box 4 runtime must remain unchanged.
 
-No H3 video has been submitted. Images are drafts, not generation-approved references.
+Current state: the user approved `soft-identity-review/before-soft-identity.png`
+and requested one H3 test. See `test-01/` for the new card reference pack,
+submitted job and terminal failure receipt. No motion output was returned.
+Earlier rejected images below stay rejected.
 
 The user REJECTED the generated end face on 2026-09-19: it looked much older than approved Astrid. The end-position-draft, end-correction-draft and end-identity-rejected images must not be used for video or gameplay. A matching card position alone is not acceptance. Restore identity from /Users/solvifyab/Desktop/ref-identity.png before considering the pair.
 
@@ -29,3 +32,8 @@ This is a likeness-review draft, not an approved face restoration. Output is
 and blue shoe card appear consistent, but the images are not pixel-identical.
 No video submitted or gameplay asset replaced. The earlier after plate remains
 rejected. Exact prompts and measurements are saved with the drafts.
+
+Update: the user subsequently approved the latest softer face. That approval
+supersedes its pending likeness status above. The new end plate in `test-01`
+removes the shoe remnant and lands the blue card at center Box 3. The H3 test
+uses that pair; the earlier after images remain excluded.
