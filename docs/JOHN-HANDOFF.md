@@ -1,3 +1,39 @@
+## 2026-09-20 — V3 video inventory and placement map
+
+Read the Bettalotto Generations API using the user-authorized local
+BETTALOTTO_API variable without exposing it. Snapshot: 224 generations,
+17 want, 52 no, 155 unrated. Located the existing full download archive at
+`C:/Users/jakem/CroupierAssets/bettalotto-generations`; all 224 MP4 files
+match API byte sizes and SHA-256 (1,022,561,047 bytes total). No download,
+move, generation, gameplay/media/calibration or database change was made.
+The user explicitly chose Kevin's existing performance placement as the
+starting point; the proposed tree references it instead of moving media.
+
+Delivered `docs/animation-events/v3-video-map/README.md`, a private local
+interactive HTML map with video previews, an SDK canvas and derived JSON.
+The report records their absolute locations and preview restart command.
+Raw API snapshots and helper scripts stay under ignored
+`.croupier-inbox/v3-video-audit/`. The map separates six real Partner
+presentation types, the lab's 16 semantic nodes / two variants / 32 simple
+animations, and the proposed four-dealer / three-variant-slot tree (192
+slots before subevents; 324 in the explicit 27-family example).
+
+Evidence: 59 generation hashes match 60 tracked MP4 files; 67 IDs have
+tracked textual references. Public stream indexes total 89 (local 90 due
+to Astrid's additional action-return). Public Astrid performance contains
+four base takes and two continuations, all review. Flagged want-versus-
+rejection conflict and no-marked historical source dependencies. None of
+these counts prove active gameplay usage or visual acceptance.
+
+Validation: all archive hashes, data counts/cross-references, report links,
+secret exclusion, HTML JavaScript syntax and strict canvas TypeScript
+passed. Browser checked dealer/subevent selection, missing Mei push,
+register filtering/search and local video playback through its end. No product
+rehearsal or lipsync acceptance is claimed. Current BO assignments and
+deployed app source remain unverified: both HTTP 401 and signed-out BO
+browser. Kevin code reference remains locally cached 626554d; SSH access
+prevented remote-head refresh. No Jira CAC issue was implemented or closed.
+
 ## 2026-09-20 — native OpenClaw dashboard published and live
 
 Jakob explicitly approved publishing and activating the native dashboard.
