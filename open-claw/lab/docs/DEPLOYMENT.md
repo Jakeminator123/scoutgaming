@@ -42,11 +42,17 @@ Browser on laptop
 
 The laptop initiates the connection. Render needs no inbound tunnel to the
 laptop. The Director owns catalog validation, trigger evaluation and the final
-gate; OpenClaw suggests only an eligible variant. Chat uses the independent
+gate; OpenClaw suggests only an eligible variant. The lab's operator chat uses the independent
 `croupier-chat` agent, while decisions use `croupier-director`. Both agents deny
 all tools and have separate workspaces. Chat cannot write the catalog, run shell
 commands, access the game server or change OpenClaw configuration. The editor's
 validated API performs explicit catalog edits.
+
+This operator endpoint is not a player-chat integration. Actual Croupier player
+chat still needs a separate authenticated, moderated adapter to the bounded
+`context.chat.signal` contract; the current lab sets those signals manually.
+The development team's GitLab IDE-agent inbox is an entirely separate system
+and must never be routed through this OpenClaw deployment.
 
 OpenClaw's HTTP API is normally disabled. The managed configuration enables only
 the Chat Completions route used by this adapter. The Gateway is a **private
@@ -60,7 +66,12 @@ Its configuration is externally managed (`OPENCLAW_CONFIG_READONLY=1`).
    Blueprint creation screen select `open-claw/lab/render.yaml` as the Blueprint
    path. Review the services and cost before creating them: the file declares a
    Starter Director, a Standard private Gateway, and two 1 GB persistent disks,
-   all in Frankfurt. Automatic deployment is disabled.
+   all in Frankfurt. Service automatic code deployment is disabled with
+   `autoDeployTrigger: off`. Blueprint **Auto Sync is a separate setting** and
+   defaults to on: after creation, set Blueprint Settings → Auto Sync → No
+   for this initially manual rollout. Otherwise a pushed YAML change can still
+   update resources. Use Manual Sync for reviewed infrastructure changes and
+   Manual Deploy for a reviewed code-only release.
 2. Supply `OPENCLAWAPI_KEY` and `OPENCLAW_MODEL_API_KEY` when prompted. Adjust the
    model route if needed. The Director references the Gateway's shared bearer;
    it never receives the provider credential.
@@ -150,6 +161,7 @@ the lab's frozen public event contract is the integration boundary.
 - [Custom model provider configuration](https://docs.openclaw.ai/gateway/config-tools/custom-providers)
 - [Strict validation and externally managed config](https://docs.openclaw.ai/cli/config)
 - [Render Blueprint fields](https://render.com/docs/blueprint-spec)
+- [Render Blueprint creation and Auto Sync](https://render.com/docs/infrastructure-as-code)
 - [Render private services](https://render.com/docs/private-services)
 - [Render persistent disks](https://render.com/docs/disks)
 
