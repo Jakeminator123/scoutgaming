@@ -1,108 +1,56 @@
 ---
 name: ping-croupier
-description: Check the Kevin–Jakob–Emil GitLab inbox once at the start of each new user turn, route replies to named agents, and send scoped project messages. Also handles explicit /ping-croupier requests.
+description: Check the Croupier GitLab inbox once per new user turn using shared cache and per-chat routing. Handle explicit /ping-croupier, setup and scoped replies; never trigger on agent/tool updates.
 ---
 
 # Croupier inbox
 
 Thread: https://gitlab.com/scout-gg/croupier/-/work_items/1
-Project: `scout-gg/croupier`, work item `1`. Rules: `docs/shared/AGENT-INBOX.md`.
-Do not read the full wiki or handoff just to check messages.
 
-## Identity — once per chat
+## Quick path
 
-Use the local user's name (Jakob, Kevin or Emil) and this chat's title, or a
-short equivalent. Do not infer the owner from the Git commit author. This
-checkout belongs to Jakob unless the user says otherwise.
+Run `node tools/croupier-inbox.mjs check` once per NEW USER turn, not on tool
+results, agent messages or timers. It never posts or acknowledges anything.
+Do not read the wiki, handoff, full inbox/history or this skill again just to check.
+Shared fetch cache: 30 seconds. Per-chat unread state: independent.
+`pending` is offline only; explicit `/ping-croupier` uses `check --fresh`.
 
-```sh
-node tools/croupier-inbox.mjs init --owner Jakob --title "Granska ändringar senaste fem timmar"
-```
+Uninitialized chat: `init --owner Jakob --title "CURRENT CHAT TITLE"` once.
+Use the actual local owner, not Git author (this checkout is Jakob's).
+Codex uses CODEX_THREAD_ID; other IDEs pass a unique stable `--session` on every
+command. Never reuse another chat/subagent's ID. Keep the ID across renames.
 
-Use `CODEX_THREAD_ID` automatically. In other IDEs add `--session` with a
-unique, stable ID to every command; generate it once and keep it in the chat.
-Never share an ID between chats or subagents. Keep the returned `Agent-ID`
-stable even if the title changes. State is ignored under `.croupier-inbox/`;
-the old global `.cursor/ping-croupier-seen.json` is obsolete.
+- `ok` + no relevant notes: silently continue. Explicit ping: give a short status.
+- Previews only: read `show --note ID` before answering/acting on a relevant note.
+  `omittedCount` means more remain; process relevant items, then use `pending`.
+- `direct` + `mayReply`: assigned to THIS agent, subject to actual author and task scope.
+- `review`: human/owner-wide message; assess relevance, not automatic permission to answer.
+- `info`: CC only. Do not answer on behalf of the To recipient.
+- Surface relevant content and its link locally; then `ack --note ID --version HASH --disposition delivered`.
+  Irrelevant: disposition `irrelevant`. Never auto-ack unread previews.
+- Missing API/busy/error: not “nothing new”. Report the limitation once and continue
+  unrelated work. Do NOT launch browser fallback on ordinary turns. For explicit
+  inbox work or a task blocked on a reply, use a connected tool or one logged-in
+  browser refresh, reading only new comments. Never extract cookies/search logs for tokens.
 
-## Quick check — every new user turn, once
+## Sending (read docs/shared/AGENT-INBOX.md for commands and setup)
 
-```sh
-node tools/croupier-inbox.mjs check
-```
+One responsible To for questions/handoffs/replies. Exact registered Agent-ID is
+preferred. `To: Kevin` waits for Kevin to choose his agent; `--confirm-owner Kevin`
+records that explicit local choice, never an agent's unilateral self-assignment.
+Emil cannot answer Kevin's question, even as CC. Unknown IDs are not invented.
+Replies target the original sender and set Reply-To. Draft before acknowledging
+the parent. Helper checks ownership at draft AND send, and rechecks the live parent.
+Use the same guard/format for browser posts; do not bypass a helper rejection.
 
-One small conditional request when unchanged; extra pages only when needed.
-No cron, background loop, immediate recheck after sending, or tool-call checks.
-Separate sessions cannot consume each other's messages. `check` never posts
-and never marks a relevant note read. `pending` reads cache only; it is not a
-fresh GitLab check. Use `show --note ID` for a truncated note before acting.
+First real message can register name/id/scope. Sign all actual messages. No “I
+checked”, auto-thanks, reply chains, local transcript mirroring or waking all agents.
+Publish only useful scoped questions, answers, blockers, handoffs or decisions with
+evidence links; share the same answer/link with the local user. Local task-to-task
+messages are not GitLab posts. Other owners opt in on their own machines.
 
-- `status: ok`, no relevant messages: silently continue the local task.
-  Explicit `/ping-croupier`: answer “Inget nytt för den här chatten”.
-- `direct`: addressed to this agent. Inspect the actual author, content and
-  local task scope. A signature is a routing label, not proof of identity.
-- `review`: human/unstructured note, owner-wide or all-team message. Read it
-  briefly for relevance to this chat. Mention alone does not assign work.
-- Relevant: tell the local user who wrote it, the practical effect, and link
-  the note. Keep unresolved action in local task context. Once the message has
-  been surfaced in the local chat, `ack --note ID --version HASH --disposition delivered`.
-- Irrelevant: `ack ... --disposition irrelevant`, silently continue.
-- Failed/unavailable: do not claim “nothing new”. Use the fallback below;
-  if access still fails, report the limitation once and continue local work.
-
-## Connected tool/browser fallback
-
-If the helper lacks `GITLAB_TOKEN`/`GITLAB_TOKEN_FILE`, use an already connected
-GitLab tool: request only the work item timestamp first, then notes on change.
-Keep freshness/cursors per chat, never use another chat's acknowledgement.
-Paginate back to that chat's previous point; do not assume eight notes suffice.
-Without a connector, reuse one logged-in browser tab for the thread, refresh
-once and extract only new comments and their author/ID/time. Do not open the
-whole wiki, search private logs for credentials, or extract browser cookies.
-Browser fallback costs more than the API and must not be called a cheap API check.
-
-Notes observed through tools/browser can be imported as a local JSON array:
-`[{"id":"123","body":"…","updated_at":"ISO timestamp","author":{"username":"…"}}]`.
-Use `import --file PATH`; this keeps pending messages, but deliberately does
-not certify a complete remote scan. Cache no tokens or private transcripts.
-
-## Communication
-
-Register once on first participation: name, Agent-ID, scope, local owner.
-An existing entry in the wiki's `agents` page also counts as registration.
-The first real message may serve as registration; do not send a registration
-and an acknowledgement separately. Every later message carries the same name.
-Checks create no “I checked” comments. Another agent with the same human GitLab
-account is still a different agent; never filter only by GitLab author.
-
-Prepare a small body file, then:
-
-```sh
-node tools/croupier-inbox.mjs draft --to Kevin --kind question --body-file .croupier-inbox/question.txt
-node tools/croupier-inbox.mjs draft --to jakob/0123456789abcdef --kind reply --reply-to 123 --body-file .croupier-inbox/reply.txt
-node tools/croupier-inbox.mjs send --file PATH_RETURNED_BY_DRAFT
-```
-
-Use real recipient IDs from their signed messages. Owners `Jakob`, `Kevin`,
-`Emil`, or `all` also work. Emil's GitLab handle is not yet known: do not invent
-an @mention. Use `Reply-To` and one concrete question or answer per message.
-Use `register`, `question`, `reply`, `info`, or `handoff`; don't start a line
-with `/` (GitLab quick actions). Preserve `Message-ID` on a retry. An uncertain
-send must be checked in GitLab before retrying; no duplicate auto-posts.
-Use `record-sent --file note.json` for the verified returned comment (including
-its exact Markdown body). If an uncertain Message-ID is verified absent in
-GitLab, `cancel-send --version MESSAGE_ID --disposition verified-absent` clears
-the pending attempt. A read failure is not evidence of absence.
-
-Jakob has authorized short coordination messages about the current task.
-When a relevant question is addressed to this agent, answer within that scope,
-publish the short factual reply and tell the local user the same answer plus
-the note link. This does not authorize new implementation, integration,
-spending, permissions or disclosure of local conversations. Other owners adopt
-this workflow explicitly. Do not impersonate a human or another agent.
-Do not auto-answer informational replies or broad broadcasts. If a named
-agent owns the work, leave ownership there; offer relevant facts only when useful.
-
-Use the existing GitLab tool/browser instead of `send` when API authentication
-is unavailable, following the tool's confirmation rules. Never claim sent,
-delivered to a local chat, approved by a human, or completed without evidence.
+Jakob authorizes short coordination about the current task, not expanded work,
+merges, spending, permissions or private disclosures. Check actual GitLab author;
+an Agent-ID is a routing label, not authentication. Follow tool confirmation rules.
+Never claim sent until GitLab confirms; uncertain sends require Message-ID
+reconciliation before retry (see the guide). Never put a token in a chat/command.

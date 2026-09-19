@@ -5,7 +5,7 @@ read `open-claw/lab/docs/README.md`. It routes to the official-source and
 deployed-version index. Fetch external documentation only when the current
 question needs it, not on every turn or runtime event.
 
-If this checkout is branch `jakeminator123/work`: do not push `main`. At the start of every new user turn, run the quick Croupier inbox check once using `.agents/skills/ping-croupier/SKILL.md`. Keep a stable chat-derived agent name and a separate read cursor per conversation. Stay silent if nothing is relevant; continue the user's task. No polling between turns. Wiki: https://gitlab.com/scout-gg/croupier/-/wikis/home
+If this checkout is branch `jakeminator123/work`: do not push `main`. At each new user turn, run `node tools/croupier-inbox.mjs check` once; initialize via `ping-croupier` if needed. Shared fetch cache lasts 30 seconds; read cursors stay per chat. Nothing relevant: continue silently. No polling or checks on agent/tool updates. Missing API: report once, no automatic browser fallback on ordinary turns. Only the addressed agent answers; CC/all is informational. Read `ping-croupier` for replies/setup. Wiki: https://gitlab.com/scout-gg/croupier/-/wikis/home
 
 Read `docs/JOHN-HANDOFF.md` and `docs/ENVIRONMENT-RESTORATION.md` before changing gameplay or media. This repository is the working product; the older checkout nested inside Scout-Gaming is not the current source.
 

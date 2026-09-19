@@ -26,6 +26,35 @@ Logs also note memory-core dreaming reconciliation lacks an agent-less cron
 owner; cron/heartbeat are intentionally disabled, so no scheduling feature is
 claimed. No gameplay/media/database or IDE-inbox integration was changed.
 
+## 2026-09-20 — bounded, addressed GitLab inbox
+
+Optimized only inbox tooling/instructions: 30-second per-repo/credential fetch
+cache with a process lock; per-conversation unread/ack state remains independent.
+At most five 280-character previews, bounded result size, direct questions first;
+full notes on demand. No ordinary-turn browser fallback when API auth is absent,
+no checks on agent/tool updates, background polling or automatic local broadcasts.
+
+Questions/handoffs have one To recipient; optional CC is informational. Replies
+are guarded at draft and send against the parent question, original sender and
+live parent version. Owner-wide questions need that owner's explicit assignment;
+an Emil agent cannot reply to Kevin's question. These are cooperating-client
+rules, not GitLab ACLs or authentication. Other installations must opt in.
+
+Verification: 23 Node tests pass (routing, owner/CC restrictions, bounded output,
+shared cache expiry/force/concurrency, independent acknowledgements, failed fetch
+preservation, changed-parent rejection and idempotent send). Empty pending result
+is 112 characters before freshness metadata, not a measured token/billing figure.
+Skill copies match; frontmatter/links reviewed. Bundled Python skill validator
+could not run because PyYAML is absent; no dependency was installed for it.
+No gameplay/media/database changes. Jira connector/current issue unavailable;
+no Jira status was changed or completion claimed there.
+
+Rollout: publish this scoped change on codex/inbox-routing-cache and the matching
+guide on the GitLab wiki, without pushing this checkout's unrelated video/merge
+history. GITLAB_TOKEN/GITLAB_TOKEN_FILE is still unconfigured locally, so real
+API checks/sends remain unverified; mock transport tests are not a live check.
+Kevin/Emil must install the files and register their own actual agent IDs.
+
 ## 2026-09-20 — native OpenClaw dashboard ingress (local, awaiting rollout)
 
 Jakob clarified that he wants OpenClaw's real Control UI for chat/tools/settings,
