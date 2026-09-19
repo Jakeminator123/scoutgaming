@@ -2,10 +2,22 @@
  "samples": [
   {
    "t": 1,
-   "speak": null,
+   "speak": {
+    "visible": false,
+    "rect": {
+     "x": 0,
+     "y": 0,
+     "width": 0,
+     "height": 0,
+     "top": 0,
+     "right": 0,
+     "bottom": 0,
+     "left": 0
+    }
+   },
    "idle": {
     "state": "playing",
-    "frame": "4",
+    "frame": "23",
     "segment": "base"
    },
    "performing": false,
@@ -14,23 +26,21 @@
   {
    "t": 2,
    "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "visible": false,
     "rect": {
-     "x": 430.953125,
-     "y": 49.796875,
-     "width": 394.03125,
-     "height": 356.40625,
-     "top": 49.796875,
-     "right": 824.984375,
-     "bottom": 406.203125,
-     "left": 430.953125
+     "x": 0,
+     "y": 0,
+     "width": 0,
+     "height": 0,
+     "top": 0,
+     "right": 0,
+     "bottom": 0,
+     "left": 0
     }
    },
    "idle": {
-    "state": "held",
-    "frame": "26",
+    "state": "playing",
+    "frame": "41",
     "segment": "base"
    },
    "performing": false,
@@ -39,11 +49,9 @@
   {
    "t": 3,
    "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakState": "playing",
     "speakLine": "greeting",
-    "speakFrame": "1",
+    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "visible": true,
     "rect": {
      "x": 430.953125,
@@ -58,7 +66,7 @@
    },
    "idle": {
     "state": "held",
-    "frame": "26",
+    "frame": "65",
     "segment": "base"
    },
    "performing": true,
@@ -67,13 +75,12 @@
   {
    "t": 4,
    "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakState": "playing",
     "speakLine": "greeting",
-    "speakFrame": "31",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
+    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+    "speakFrame": "21",
+    "speakStartDeltaMs": "162",
+    "speakSettledDeltaMs": "116",
     "visible": true,
     "rect": {
      "x": 430.953125,
@@ -88,7 +95,7 @@
    },
    "idle": {
     "state": "held",
-    "frame": "26",
+    "frame": "65",
     "segment": "base"
    },
    "performing": true,
@@ -97,13 +104,12 @@
   {
    "t": 5,
    "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakState": "playing",
     "speakLine": "greeting",
-    "speakFrame": "55",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
+    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+    "speakFrame": "49",
+    "speakStartDeltaMs": "162",
+    "speakSettledDeltaMs": "116",
     "visible": true,
     "rect": {
      "x": 430.953125,
@@ -118,7 +124,7 @@
    },
    "idle": {
     "state": "held",
-    "frame": "26",
+    "frame": "65",
     "segment": "base"
    },
    "performing": true,
@@ -127,13 +133,12 @@
   {
    "t": 6,
    "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakState": "playing",
     "speakLine": "greeting",
-    "speakFrame": "79",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
+    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+    "speakFrame": "71",
+    "speakStartDeltaMs": "162",
+    "speakSettledDeltaMs": "116",
     "visible": true,
     "rect": {
      "x": 430.953125,
@@ -148,7 +153,7 @@
    },
    "idle": {
     "state": "held",
-    "frame": "26",
+    "frame": "65",
     "segment": "base"
    },
    "performing": true,
@@ -157,13 +162,12 @@
   {
    "t": 7,
    "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakState": "playing",
     "speakLine": "greeting",
-    "speakFrame": "104",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
+    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
+    "speakFrame": "97",
+    "speakStartDeltaMs": "162",
+    "speakSettledDeltaMs": "116",
     "visible": true,
     "rect": {
      "x": 430.953125,
@@ -178,7 +182,7 @@
    },
    "idle": {
     "state": "held",
-    "frame": "26",
+    "frame": "65",
     "segment": "base"
    },
    "performing": true,
@@ -187,13 +191,12 @@
   {
    "t": 8,
    "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakState": "idle",
     "speakLine": "greeting",
+    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakFrame": "115",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
+    "speakStartDeltaMs": "162",
+    "speakSettledDeltaMs": "116",
     "visible": false,
     "rect": {
      "x": 430.953125,
@@ -208,7 +211,7 @@
    },
    "idle": {
     "state": "playing",
-    "frame": "7",
+    "frame": "65",
     "segment": "base"
    },
    "performing": false,
@@ -217,13 +220,12 @@
   {
    "t": 9,
    "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakState": "idle",
     "speakLine": "greeting",
+    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
     "speakFrame": "115",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
+    "speakStartDeltaMs": "162",
+    "speakSettledDeltaMs": "116",
     "visible": false,
     "rect": {
      "x": 430.953125,
@@ -238,113 +240,157 @@
    },
    "idle": {
     "state": "playing",
-    "frame": "36",
+    "frame": "22",
     "segment": "base"
    },
    "performing": false,
    "caption": "Welcome to Privé Blackjack. Take a seat, I'll be your dealer tonight."
   },
   {
-   "t": 10,
-   "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
-    "speakState": "idle",
-    "speakLine": "greeting",
-    "speakFrame": "115",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
-    "visible": false,
-    "rect": {
-     "x": 430.953125,
-     "y": 49.796875,
-     "width": 394.03125,
-     "height": 356.40625,
-     "top": 49.796875,
-     "right": 824.984375,
-     "bottom": 406.203125,
-     "left": 430.953125
-    }
-   },
-   "idle": {
-    "state": "playing",
-    "frame": "63",
-    "segment": "base"
-   },
-   "performing": false,
-   "caption": "Welcome to Privé Blackjack. Take a seat, I'll be your dealer tonight."
+   "line": "win",
+   "during": {
+    "speak": {
+     "speakState": "idle",
+     "speakLine": "win",
+     "speakJob": "8DAy8aReZIWwp4p4zpvd",
+     "speakFrame": "88",
+     "speakStartDeltaMs": "64",
+     "speakSettledDeltaMs": "19",
+     "visible": false,
+     "rect": {
+      "x": 430.953125,
+      "y": 49.796875,
+      "width": 394.03125,
+      "height": 356.40625,
+      "top": 49.796875,
+      "right": 824.984375,
+      "bottom": 406.203125,
+      "left": 430.953125
+     }
+    },
+    "idle": {
+     "state": "playing",
+     "frame": "28",
+     "segment": "base"
+    },
+    "performing": false,
+    "caption": "Well played! Enjoy your winnings."
+   }
   },
   {
-   "t": 11,
-   "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
-    "speakState": "idle",
-    "speakLine": "greeting",
-    "speakFrame": "115",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
-    "visible": false,
-    "rect": {
-     "x": 430.953125,
-     "y": 49.796875,
-     "width": 394.03125,
-     "height": 356.40625,
-     "top": 49.796875,
-     "right": 824.984375,
-     "bottom": 406.203125,
-     "left": 430.953125
-    }
-   },
-   "idle": {
-    "state": "playing",
-    "frame": "90",
-    "segment": "base"
-   },
-   "performing": false,
-   "caption": "Welcome to Privé Blackjack. Take a seat, I'll be your dealer tonight."
+   "line": "win",
+   "after": {
+    "speak": {
+     "speakState": "idle",
+     "speakLine": "win",
+     "speakJob": "8DAy8aReZIWwp4p4zpvd",
+     "speakFrame": "88",
+     "speakStartDeltaMs": "64",
+     "speakSettledDeltaMs": "19",
+     "visible": false,
+     "rect": {
+      "x": 430.953125,
+      "y": 49.796875,
+      "width": 394.03125,
+      "height": 356.40625,
+      "top": 49.796875,
+      "right": 824.984375,
+      "bottom": 406.203125,
+      "left": 430.953125
+     }
+    },
+    "idle": {
+     "state": "playing",
+     "frame": "153",
+     "segment": "base"
+    },
+    "performing": false,
+    "caption": "Well played! Enjoy your winnings."
+   }
   },
   {
-   "t": 12,
-   "speak": {
-    "engine": "three.js r180",
-    "speakJob": "Mn2vLqTOAmDaJKBYJeKy",
-    "speakState": "idle",
-    "speakLine": "greeting",
-    "speakFrame": "115",
-    "speakStartDeltaMs": "-250",
-    "speakSettledDeltaMs": "-106",
-    "visible": false,
-    "rect": {
-     "x": 430.953125,
-     "y": 49.796875,
-     "width": 394.03125,
-     "height": 356.40625,
-     "top": 49.796875,
-     "right": 824.984375,
-     "bottom": 406.203125,
-     "left": 430.953125
-    }
-   },
-   "idle": {
-    "state": "playing",
-    "frame": "113",
-    "segment": "base"
-   },
-   "performing": false,
-   "caption": "Welcome to Privé Blackjack. Take a seat, I'll be your dealer tonight."
+   "line": "bust",
+   "during": {
+    "speak": {
+     "speakState": "idle",
+     "speakLine": "bust",
+     "speakJob": "JXaFT7JI1SFy2rfwISk5",
+     "speakFrame": "35",
+     "speakStartDeltaMs": "183",
+     "speakSettledDeltaMs": "126",
+     "visible": false,
+     "rect": {
+      "x": 430.953125,
+      "y": 49.796875,
+      "width": 394.03125,
+      "height": 356.40625,
+      "top": 49.796875,
+      "right": 824.984375,
+      "bottom": 406.203125,
+      "left": 430.953125
+     }
+    },
+    "idle": {
+     "state": "playing",
+     "frame": "24",
+     "segment": "base"
+    },
+    "performing": false,
+    "caption": "Bust. I'm sorry, that hand is over."
+   }
+  },
+  {
+   "line": "bust",
+   "after": {
+    "speak": {
+     "speakState": "idle",
+     "speakLine": "bust",
+     "speakJob": "JXaFT7JI1SFy2rfwISk5",
+     "speakFrame": "35",
+     "speakStartDeltaMs": "183",
+     "speakSettledDeltaMs": "126",
+     "visible": false,
+     "rect": {
+      "x": 430.953125,
+      "y": 49.796875,
+      "width": 394.03125,
+      "height": 356.40625,
+      "top": 49.796875,
+      "right": 824.984375,
+      "bottom": 406.203125,
+      "left": 430.953125
+     }
+    },
+    "idle": {
+     "state": "playing",
+     "frame": "160",
+     "segment": "base"
+    },
+    "performing": false,
+    "caption": "Bust. I'm sorry, that hand is over."
+   }
   }
  ],
  "console": [
-  "warning [.WebGL-0x10c000d4a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
-  "warning [.WebGL-0x10c000d4a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
-  "warning [.WebGL-0x10c000d4a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
-  "warning [.WebGL-0x10c000d4a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)",
+  "warning [.WebGL-0x134000d2c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+  "warning [.WebGL-0x134000d2c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+  "warning [.WebGL-0x134000d2c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+  "warning [.WebGL-0x134000d2c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)",
   "info [idle] base 2a721f7d 0-192",
   "info [voice] greeting green speak take muted=false force=true",
   "info [speak] greeting Mn2vLqTOAmDaJKBYJeKy 0-115",
-  "info [speak] greeting audio/video start delta -250 ms (audio clock nudged)",
-  "info [speak] greeting audio/video settled delta -106 ms",
+  "info [speak] greeting audio/video start delta 162 ms ",
+  "info [speak] greeting audio/video settled delta 116 ms",
+  "info [idle] base 2a721f7d 0-192",
+  "info [voice] win green speak take muted=false force=true",
+  "info [speak] win 8DAy8aReZIWwp4p4zpvd 0-88",
+  "info [speak] win audio/video start delta 64 ms ",
+  "info [speak] win audio/video settled delta 19 ms",
+  "info [idle] base 2a721f7d 0-192",
+  "info [voice] bust green speak take muted=false force=true",
+  "info [speak] bust JXaFT7JI1SFy2rfwISk5 0-35",
+  "info [speak] bust audio/video start delta 183 ms ",
+  "info [speak] bust audio/video settled delta 126 ms",
   "info [idle] base 2a721f7d 0-192"
  ]
 }
