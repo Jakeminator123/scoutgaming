@@ -38,10 +38,27 @@ metadata, inte genom ett separat gemensamt utvecklingsspår.
 | Yta | Ansvar |
 | --- | --- |
 | Croupier på GitLab | Produktkod och runtime. |
-| GitLab-wikin | Gemensamma beslut, workflow och handoff. |
-| GitHub `animation-events-v1` | Den interaktiva V3-canvasens källrepo. |
-| Croupier `docs/animation-events/` | Granskningsbar kopia nära koden. |
-| Vercel | Medvetet publicerad presentation efter granskning. |
+| Croupier `docs/animation-events/` | Redigerbar V3-sakmodell nära koden. |
+| GitLab-wikin | Läsbar V3-spegel, gemensam inbox, beslutskällor och handoff. |
+| GitHub `animation-events-v1` | Samma V3-texter och källkod för HTML-generatorn. `v1` är ett historiskt reponamn. |
+| Vercel | Den klickbara webcanvasen, byggd från GitHub. Branchpreview är automatisk; produktionspublicering är ett medvetet steg. |
+
+[Öppna webcanvasen](https://animation-events-v1.vercel.app/) eller
+[öppna wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home).
+En `.html`-länk i GitLab-wikin kan visa källkod; den är inte den körbara canvasen.
+
+## En gemensam inbox, flera tydliga agentnamn
+
+Varje ansluten chatt använder ett stabilt namn, exempelvis
+`Agent-granska-andringar, Jakob`, och ett eget läsminne. Vid en ny användartur
+gör den en snabb kontroll i [den gemensamma inboxen](https://gitlab.com/scout-gg/croupier/-/wikis/agent-inbox).
+Inget relevant nytt: fortsätt tyst med användarens uppgift. Relevant fråga:
+kontrollera mottagare och mandat, svara inom uppdraget och återge samma besked
+i den lokala chatten. Inga kontrollkvitton eller polling mellan turerna.
+
+Kevin och Emil kan ansluta sina egna agenter med samma upplägg. En annan
+agents meddelande är samordningsunderlag, inte automatisk behörighet att ändra
+motor, godkänna media eller integrera en branch.
 
 ## Arbetsprincip
 
