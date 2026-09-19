@@ -1,6 +1,7 @@
 import {uniformRegistration} from './performance-contact.mjs';
 import {createActorCompositor} from './actor-compositor.mjs';
 import {createIdleScheduler,idleSegmentErrors,mulberry32} from './astrid-idle-scheduler.mjs';
+import {capturePacked} from './astrid-speech-join.mjs';
 
 // Astrid's waiting idle: the eye-contact loop that was already playing stays
 // the BASE (Kevin: combine, not swap); the green waiting clip 15777d5f only
@@ -50,8 +51,11 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
   const playBase=async()=>{
     current='base';showGlance(false);record('base');log('base',`${base.jobId.slice(0,8)} 0-${base.frames-1}`);
     baseMedia.video.currentTime=0;previousBaseTime=-1;lastProgress=performance.now();
-    await baseMedia.video.play().catch(error=>{baseCanvas.dataset.idleState='error';console.warn('[waiting idle]',error.message);});
-    baseCanvas.dataset.idleState='playing';
+    await baseMedia.video.play().catch(error=>{
+      if(error.name==='AbortError'&&(held||stopped||baseMedia.video.paused))return;
+      baseCanvas.dataset.idleState='error';console.warn('[waiting idle]',error.message);
+    });
+    if(!held&&!stopped&&!baseMedia.video.paused)baseCanvas.dataset.idleState='playing';
   };
   const playGlance=async name=>{
     const segment=take.segments[name];glance={name,...segment};current=name;record(name);log(name,`${glances.jobId.slice(0,8)} ${segment.start}-${segment.end}`);
@@ -109,6 +113,20 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
   observer.observe(host,{attributes:true,attributeFilter:['class']});
   return {
     canvas:baseCanvas,glanceCanvas,sequence,
+    sourceSha256:base.sha256,
+    captureFrame(){
+      const isBase=current==='base',media=isBase?base:glances;
+      return capturePacked(isBase?baseMedia.video:glanceMedia.video,media.width,media.height,base.width,base.height,isBase?0:offsetX,isBase?0:offsetY);
+    },
+    async prepareResume(){
+      // Paint the destination before revealing the idle; otherwise the old
+      // held frame flashes for one refresh while the video seeks back to 0.
+      const video=baseMedia.video;video.pause();
+      const target=.5/base.fps;
+      if(Math.abs(video.currentTime-target)>=.5/base.fps)await new Promise(resolve=>{video.addEventListener('seeked',resolve,{once:true});video.currentTime=target;});
+      current='base';glance=null;showGlance(false);baseActor.paint(video,null,{packed:true});
+      return capturePacked(video,base.width,base.height);
+    },
     // A base loop can be held at once (every base frame is a ready pose); a
     // running glance is held only at its end frame.
     holdAtBoundary(){

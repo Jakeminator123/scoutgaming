@@ -1,0 +1,17 @@
+{
+  "width": 960,
+  "height": 760,
+  "durationMs": 220,
+  "flowRange": 64,
+  "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+  "mediaSha256": "80c938468af8cfdbd0a828603b57b489c53dd0ab1ab5ab7c89e93dc148aca019",
+  "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+  "enter": {
+    "flow": "insurance-enter-flow.png",
+    "sha256": "63de5a3d848f468de8d2cb9fe404b4569cd672e8b4fc39617ec6fe48812554df"
+  },
+  "exit": {
+    "flow": "insurance-exit-flow.png",
+    "sha256": "ded287a45cdb8c0cf169f8058376ba68f7cd2b3fea79c0dcc6bf3790caef353c"
+  }
+}

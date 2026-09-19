@@ -50,6 +50,21 @@ test('audio starts on the first presented frame: each offset is the cross-correl
   }
 });
 
+test('speech joins are bound to the current repaired take and waiting source, without replacing speech frames',()=>{
+  const idle=JSON.parse(fs.readFileSync(path.join(root,'review/astrid-green-waiting/idle.json')));
+  for(const [id,line] of Object.entries(speak.lines)){
+    const j=line.transition;
+    assert.equal(j.mediaSha256,line.media.sha256,id);
+    assert.equal(j.idleSha256,idle.base.sha256,id);
+    assert.equal(j.width,idle.base.width,id);assert.equal(j.height,idle.base.height,id);
+    assert.deepEqual(line.media.crop.slice(0,2),idle.base.crop.slice(0,2),id);
+    assert.equal(j.durationMs,220,id);
+    for(const edge of ['enter','exit'])assert.equal(sha(path.join(root,j[edge].src)),j[edge].sha256,`${id}: ${edge} motion map`);
+  }
+  const stale=structuredClone(speak);stale.lines.goodluck.transition.mediaSha256='old';
+  assert.ok(speakManifestErrors(stale).some(e=>e.includes('transition binding')));
+});
+
 test('the validator rejects broken manifests',()=>{
   const broken=structuredClone(speak);
   broken.lines.greeting.cutOut=broken.lines.greeting.media.frames;

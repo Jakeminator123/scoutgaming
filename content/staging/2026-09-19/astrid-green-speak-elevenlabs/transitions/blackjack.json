@@ -1,0 +1,17 @@
+{
+  "width": 960,
+  "height": 760,
+  "durationMs": 220,
+  "flowRange": 64,
+  "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+  "mediaSha256": "6052f1d41755014712019d260d2b4713ee40262769e29c7a726c60ff883220b2",
+  "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+  "enter": {
+    "flow": "blackjack-enter-flow.png",
+    "sha256": "56a00345445dcc75b1fbc7b626047b0e4f136de1cc0f1a3cbd5e582d9c75468b"
+  },
+  "exit": {
+    "flow": "blackjack-exit-flow.png",
+    "sha256": "b0f43fcdcc299308d5892a951f7549afad977799f2e5af6a7aa2fe59eee89261"
+  }
+}
