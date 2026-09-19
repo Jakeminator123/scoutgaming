@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three/three.module.js';
+import {edgeBlendGLSL,edgeUniforms,createSceneSampler} from './actor-edge-blend.mjs';
 
 // Source-pixel cleanup, shared by stream speech, embedded speech and dealing.
 // Opaque skin/hair pixels remain unchanged. At the segmentation boundary only,
@@ -35,18 +36,21 @@ export function createActorCompositor(width,height){
   const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:false});renderer.setSize(width,height,false);renderer.setClearColor(0,0);
   const scene=new THREE.Scene(),camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,2);camera.position.z=1;
   const material=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-    uniforms:{rgb:{value:rgb},mask:{value:alpha},actorPixel:{value:new THREE.Vector2(1/width,1/height)}},
+    uniforms:{rgb:{value:rgb},mask:{value:alpha},actorPixel:{value:new THREE.Vector2(1/width,1/height)},...edgeUniforms()},
     vertexShader:'varying vec2 v; void main(){v=uv;gl_Position=vec4(position.xy,0.0,1.0);}',
     fragmentShader:`uniform sampler2D rgb; uniform sampler2D mask; varying vec2 v;
       float actorAt(vec2 uv){return texture2D(mask,uv).r;}
       vec3 rgbAt(vec2 uv){return texture2D(rgb,uv).rgb;}
       ${actorEdgeGLSL}
-      void main(){gl_FragColor=cleanActor(v);}`});
+      ${edgeBlendGLSL}
+      void main(){gl_FragColor=blendEdge(v,cleanActor(v));}`});
   const geometry=new THREE.PlaneGeometry(2,2);scene.add(new THREE.Mesh(geometry,material));
+  const sceneSampler=createSceneSampler();
   return {canvas,paint(frame,matte,{packed=false}={}){
     s.clearRect(0,0,width,height);m.clearRect(0,0,width,height);
     if(packed){s.drawImage(frame,0,0,width,height,0,0,width,height);m.drawImage(frame,0,height,width,height,0,0,width,height);}
     else{s.drawImage(frame,0,0,width,height);m.drawImage(matte,0,0,width,height);}
+    if(canvas.isConnected)sceneSampler.update(material.uniforms,canvas);
     rgb.needsUpdate=alpha.needsUpdate=true;renderer.render(scene,camera);
-  },dispose(){rgb.dispose();alpha.dispose();geometry.dispose();material.dispose();renderer.dispose();renderer.forceContextLoss();}};
+  },dispose(){sceneSampler.dispose();rgb.dispose();alpha.dispose();geometry.dispose();material.dispose();renderer.dispose();renderer.forceContextLoss();}};
 }

@@ -1068,3 +1068,11 @@ round QA is not claimed for uninstalled reference stills.
 Earlier Box5 fixed-physical-size trial stays isolated/uninstalled under
 astrid-box5-rigid-track. It retained visible source/hand mismatch and cannot
 be described as accepted; no Box5 runtime replacement was made this turn.
+
+## 2026-09-19 — edge blend for the keyed Astrid, render side
+
+Kevin: the keyed edges look too sharp against the 3D environment. `web/public/actor-edge-blend.mjs` adds a `blendEdge` GLSL stage to both compositors (waiting idle in `actor-compositor.mjs`, takes in `performance-player.mjs`): erode the matte 1 px, feather the alpha 2 px (gaussian on alpha only, bounded by the cleaned matte), and wrap the outer band up to 15 % toward the colour behind her. RGB is never blurred. Defaults `edge=1,2,0.15`, URL-tunable, `?edgeHud=1` sliders, `window.astridEdge.set()` live. The wrap colour comes from a 4 Hz capture of the table canvas when available; since the Blender renderer keeps no drawing buffer and the room is CSS, it currently falls back to a wall tone above the rear rail and a felt tone below. Applied identically to the dealer upcard, the box-5 take and the idle. Zero generation, no re-masking.
+
+Evidence in `content/staging/2026-09-19/astrid-edge-blend`: before/after idle frames at base 104, 2x crops of hair, shoulder line, fingers on felt and the hand at the shoe, and the box-5 slide/landing and dealer landing with the blend on; no console warnings or errors; three focused tests (param parsing, clamps, shader contract), the dealer-sync probe and the full pre-commit pass.
+
+Still open: at the defaults the softening is subtle, and the wrap is a two-tone approximation rather than the true scene pixels; capturing the table canvas needs `preserveDrawingBuffer` or a render hook in `blender-table-scene.mjs`, which belongs to the other session's work. Not visual acceptance; Kevin tunes with the HUD.
