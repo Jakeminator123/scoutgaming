@@ -111,8 +111,10 @@ async function render(id){
   }
   if(id==='gens'){
     const [gens,vr]=await Promise.all([fetch('/bo/generations.json').then(r=>r.json()),api('/api/bo/gen-verdicts')]);
-    let verdicts=vr.genVerdicts??{};
-    const st=render.genState??={q:'',model:'',croupier:true,v:'todo'};
+    let verdicts=vr.genVerdicts??{};let landings=vr.genLandings??{};const GPARTS=vr.parts??['box0','box1','box2','box3','box4','box5','box6','dealer-up','dealer-hole','return','idle'];
+    const GP={box0:'Box 0 (far left)',box1:'Box 1',box2:'Box 2',box3:'Box 3 (centre)',box4:'Box 4',box5:'Box 5',box6:'Box 6 (far right)','dealer-up':'Dealer upcard','dealer-hole':'Dealer hole card',return:'Return to idle',idle:'Idle'};
+    const landBadge=id=>landings[id]?`<span class="pill live" style="background:#7cc6ff;color:#111">&#9673; LANDED &middot; ${(GP[landings[id].part]||landings[id].part).toUpperCase()}</span>`:'';
+    const st=render.genState??={q:'',model:'',croupier:true,v:'todo',land:''};
     const models=[...new Set(gens.map(g=>g.model))].sort();
     const byId=Object.fromEntries(gens.map(g=>[g.id,g]));
     const esc=t=>String(t??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
@@ -121,24 +123,26 @@ async function render(id){
     const setVerdict=async(id,verdict,reason)=>{const r=await api('/api/bo/gen-verdict',{id,verdict,reason});if(!r.ok){toast(r.error||'failed');return false;}verdicts=r.genVerdicts;return true;};
     const draw=()=>{
       const q=st.q.toLowerCase();
-      const base=gens.filter(g=>(!st.croupier||g.croupier)&&(!st.model||g.model===st.model)&&(!q||g.prompt.toLowerCase().includes(q)||g.id.includes(q)));
+      const base=gens.filter(g=>(!st.croupier||g.croupier)&&(!st.model||g.model===st.model)&&(!q||g.prompt.toLowerCase().includes(q)||g.id.includes(q))&&(!st.land||(st.land==='verified'?!!landings[g.id]:st.land==='unmarked'?!landings[g.id]:landings[g.id]?.part===st.land)));
       const count=k=>base.filter(g=>k==='all'||(k==='todo'?!verdicts[g.id]:verdicts[g.id]?.verdict===k)).length;
       const list=base.filter(g=>st.v==='all'||(st.v==='todo'?!verdicts[g.id]:verdicts[g.id]?.verdict===st.v));
       C.innerHTML=`<div class="panel"><div class="t">FILTERS &middot; ${list.length} OF ${gens.length} GENERATIONS</div><div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <input id="g-q" value="${esc(st.q)}" placeholder="search prompts" style="flex:1;min-width:200px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)">
         <select id="g-model"><option value="">All models</option>${models.map(m=>`<option ${st.model===m?'selected':''}>${m}</option>`).join('')}</select>
         <label style="font-size:11px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="g-cr" ${st.croupier?'checked':''}> Croupier only</label>
+        <select id="g-land"><option value="">Landed at: any</option><option value="verified" ${st.land==='verified'?'selected':''}>Landed at: marked</option><option value="unmarked" ${st.land==='unmarked'?'selected':''}>Landed at: not marked</option>${GPARTS.map(p=>`<option value="${p}" ${st.land===p?'selected':''}>Landed at: ${GP[p]||p}</option>`).join('')}</select>
         <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['todo','UNREVIEWED'],['want','&#10003; WANT'],['no',"&#10006; DON'T WANT"],['all','ALL']].map(([k,l])=>`<button data-v="${k}" style="border:0;border-radius:0;${st.v===k?(k==='no'?'background:rgba(255,80,80,.18);color:var(--red)':'background:rgba(214,255,58,.15);color:var(--lime)'):''}">${l} (${count(k)})</button>`).join('')}</span>
         ${list.length?`<button id="g-swipe" style="margin-left:auto;background:var(--lime);color:#111;border-color:var(--lime)">&#8646; SWIPE MODE (${list.length})</button>`:''}
       </div></div>
       <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
       ${list.map(g=>`<div data-g="${g.id}" style="border:1px solid ${verdicts[g.id]?.verdict==='want'?'var(--lime)':verdicts[g.id]?.verdict==='no'?'var(--red)':'var(--line)'};border-radius:10px;overflow:hidden;background:var(--panel2);position:relative">
-        <div style="position:absolute;top:8px;left:8px;z-index:2">${badge(g)}</div>
+        <div style="position:absolute;top:8px;left:8px;z-index:2;display:flex;gap:4px">${badge(g)}<span data-gland-badge="${g.id}">${landBadge(g.id)}</span></div>
         <video src="/bo/gen/${g.id}.mp4" poster="${thumb(g)}" preload="none" controls muted playsinline style="width:100%;aspect-ratio:16/9;display:block;background:#000;object-fit:contain"></video>
         <div style="padding:9px 11px">
           <div style="display:flex;justify-content:space-between;gap:6px"><span class="mono" style="font-size:10px">${g.at.replace('T',' ')}</span>${pill(g.model,'live')}</div>
           <div style="font-size:10px;color:var(--mut);margin-top:3px">${g.duration?g.duration+'s':''}${g.aspect?' &middot; '+g.aspect:''} &middot; <span class="mono">${g.id.slice(0,8)}</span>${verdicts[g.id]?.reason?` &middot; ${esc(verdicts[g.id].reason)}`:''}</div>
           <div data-p style="font-size:11px;margin-top:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer" title="click to expand">${esc(g.prompt)||'<span style="color:var(--mut)">no prompt</span>'}</div>
+          <div style="margin-top:8px;display:flex;gap:6px;align-items:center"><span class="mono" style="font-size:9px;letter-spacing:.1em;color:var(--mut);white-space:nowrap">LANDED AT</span><select data-gland-part="${g.id}" style="flex:1"><option value="">not marked</option>${GPARTS.map(p=>`<option value="${p}" ${landings[g.id]?.part===p?'selected':''}>${GP[p]||p}</option>`).join('')}</select><input data-gland-note="${g.id}" value="${esc(landings[g.id]?.note)}" placeholder="note" style="width:100px;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-gland="${g.id}" style="border-color:#7cc6ff;color:#7cc6ff;font-size:9px">MARK</button></div>
           <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
             ${verdicts[g.id]?`<button data-set="${g.id}" data-to="" style="font-size:9px">&#8630; RESET</button>`:`<button data-set="${g.id}" data-to="want" style="font-size:9px;border-color:var(--lime);color:var(--lime)">&#10003; WANT</button><button data-set="${g.id}" data-to="no" style="font-size:9px;border-color:rgba(255,80,80,.5);color:var(--red)">&#10006; DON'T WANT</button>`}
             <button data-copy="${g.id}" style="font-size:9px">COPY PROMPT</button><a href="/bo/gen/${g.id}.mp4" download style="font-size:9px" class="mono">MP4</a></div>
@@ -146,6 +150,8 @@ async function render(id){
       $('#g-q').oninput=e=>{st.q=e.target.value;clearTimeout(draw.t);draw.t=setTimeout(()=>{draw();const i=$('#g-q');i.focus();i.setSelectionRange(i.value.length,i.value.length);},250);};
       $('#g-model').onchange=e=>{st.model=e.target.value;draw();};
       $('#g-cr').onchange=e=>{st.croupier=e.target.checked;draw();};
+      $('#g-land').onchange=e=>{st.land=e.target.value;draw();};
+      C.querySelectorAll('[data-gland]').forEach(b=>b.onclick=async()=>{const id=b.dataset.gland;const part=C.querySelector(`[data-gland-part="${id}"]`).value;const note=C.querySelector(`[data-gland-note="${id}"]`).value;const r=await api('/api/bo/gen-landing',{id,part:part||null,note});if(!r.ok){toast(r.error||'failed');return;}landings=r.genLandings;const bd=C.querySelector(`[data-gland-badge="${id}"]`);if(bd)bd.innerHTML=landBadge(id);const t=b.textContent;b.textContent='\u2713 MARKED';b.style.background='#7cc6ff';b.style.color='#111';setTimeout(()=>{b.textContent=t;b.style.background='';b.style.color='';},1400);toast(part?`${id.slice(0,8)} landed at ${GP[part]||part}`:'landing cleared');});
       C.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{st.v=b.dataset.v;draw();});
       C.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>{el.style.webkitLineClamp=el.style.webkitLineClamp==='unset'?'5':'unset';});
       C.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(byId[b.dataset.copy].prompt);}catch{}toast('prompt copied');});

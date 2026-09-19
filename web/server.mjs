@@ -120,6 +120,7 @@ const BO_DEFAULTS = {
   clipAssignments: {},
   neverAgain: {},
   clipLandings: {},
+  genLandings: {},
   tournaments: [
     { id: 't1', name: 'Midnight Privé Open', format: 'Elimination · 20 rounds', buyin: 100, pool: 25000, entries: 184, cap: 250, starts: 'Tonight 00:00', state: 'registering' },
     { id: 't2', name: 'High Roller Sprint', format: 'Points race · 1 hour', buyin: 1000, pool: 50000, entries: 31, cap: 64, starts: 'Fri 21:00', state: 'registering' },
@@ -378,7 +379,7 @@ function boApi(url) {
   }
   if (url === '/api/bo/config') return cfg;
   if (url === '/api/bo/apikeys') return { keys: partner().keys.list(), scopes: partner().SCOPES, docs: '/docs/partner-api.html' };
-  if (url === '/api/bo/gen-verdicts') return { genVerdicts: cfg.genVerdicts ?? {} };
+  if (url === '/api/bo/gen-verdicts') return { genVerdicts: cfg.genVerdicts ?? {}, genLandings: cfg.genLandings ?? {}, parts: CLIP_PARTS };
   if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {}, landings: cfg.clipLandings ?? {} };
   if (url === '/api/bo/users') {
     return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
@@ -551,6 +552,15 @@ async function boPost(url, body, who) {
       for (const d of Object.values(cfg.clipAssignments ?? {})) for (const [part, a] of Object.entries(d)) if (a?.clip === clip) delete d[part];
     }
     boSave(cfg); return { ok: true, neverAgain: cfg.neverAgain, assignments: cfg.clipAssignments ?? {} };
+  }
+  if (url === '/api/bo/gen-landing') {
+    // Generations page: which table part the card in this video actually went to, marked by a human.
+    const { id, part, note } = body ?? {};
+    if (typeof id !== 'string' || !id) return { error: 'bad id' };
+    cfg.genLandings ??= {};
+    if (!part) delete cfg.genLandings[id];
+    else { if (!CLIP_PARTS.includes(part)) return { error: 'bad part' }; cfg.genLandings[id] = { part, note: String(note ?? '').slice(0, 200), by: who?.sub ?? who ?? null, at: new Date().toISOString() }; }
+    boSave(cfg); return { ok: true, genLandings: cfg.genLandings };
   }
   if (url === '/api/bo/gen-verdict') {
     // Generations page: want / don't want per Higgsfield video, so nobody re-reviews the same output.
