@@ -6,7 +6,7 @@
   "status": "review",
   "enabled": true,
   "provider": "ElevenLabs Image & Video API, model creatify-aurora 720p",
-  "approval": "Kevin 2026-09-19: greeting \"mount it, it was perfect\"; then all other Astrid lines the same way. Zero generation.",
+  "approval": "Review revision: fixed per-source color and uniform registration. Previous mask approval does not imply approval of these display copies.",
   "spliceOffset": [
     0,
     0
@@ -135,14 +135,14 @@
         }
       }
     },
-    "note": "Props register at (0,15). The actor is translated down 20 source pixels to match the idle head and torso height. Both playback and silent join endpoints share this rigid offset; size, source frames and audio are unchanged. The small residual hand-pose difference is interpolated during joins."
+    "note": "Source registration and actorOffset remain bound to the original take. The display copy adds the fixed uniform transform and RGB gain recorded in media.displayCalibration; entry/exit maps are measured from those calibrated pixels."
   },
   "lines": {
     "greeting": {
       "jobId": "Mn2vLqTOAmDaJKBYJeKy",
       "media": {
-        "src": "review/astrid-green-speak/greeting-face-5b1f348737ef.mp4",
-        "sha256": "5b1f348737efd4374f498b23e21be935d8cdd450172af79e944a36845ca9dd75",
+        "src": "review/astrid-seam-repair/greeting-f1b704dc282d.mp4",
+        "sha256": "f1b704dc282dc7b7ab39fd0d83181cb08dcf1baca5fe8b471b8710c1f0d3606b",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -156,7 +156,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "5b1f348737efd4374f498b23e21be935d8cdd450172af79e944a36845ca9dd75",
+        "displayCalibration": {
+          "scale": 0.9815906286239624,
+          "offset": [
+            7.050079345703125,
+            2.979766845703125
+          ],
+          "gain": [
+            1.0132077185549737,
+            1.0055654682730593,
+            1.0964734270488738
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -172,7 +188,7 @@
       },
       "audio": "dealers/astrid/audio/en/greeting.mp3",
       "audioSha256": "84a5345cdba72e722c37d7abd5baec0ee46fbdb9a443414ff6d28044acf6690e",
-      "text": "Welcome to Privé Blackjack. Take a seat, I'll be your dealer tonight.",
+      "text": "Welcome to Priv\u00e9 Blackjack. Take a seat, I'll be your dealer tonight.",
       "cutIn": 0,
       "cutOut": 115,
       "audioOffsetSeconds": 0,
@@ -204,25 +220,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "5b1f348737efd4374f498b23e21be935d8cdd450172af79e944a36845ca9dd75",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "f1b704dc282dc7b7ab39fd0d83181cb08dcf1baca5fe8b471b8710c1f0d3606b",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "greeting-enter-flow.png",
-          "sha256": "f1c60b8397e008a2cee528d2412b4eba9f8cba143aecb6b1f6db798d7eb53a13",
-          "src": "review/astrid-green-speak/greeting-enter-f1c60b8397e0.png"
+          "flow": "greeting-enter.png",
+          "sha256": "ff2bd8389de9dcd2ebe752c75308693cf6c702962d51c6a4f4b1250514c41cf2",
+          "src": "review/astrid-seam-repair/greeting-enter-ff2bd8389de9.png"
         },
         "exit": {
-          "flow": "greeting-exit-flow.png",
-          "sha256": "af455f608b267f486a6b7dcef08ab8688596fb657ee288505abc6fc446ca7c54",
-          "src": "review/astrid-green-speak/greeting-exit-af455f608b26.png"
+          "flow": "greeting-exit.png",
+          "sha256": "e7036f4cd4dddd5ce2305432d8f4c506dcc3a8bedd081e6d577b94e5988825a9",
+          "src": "review/astrid-seam-repair/greeting-exit-e7036f4cd4dd.png"
         }
       }
     },
     "blackjack": {
       "jobId": "aIoxUD7sBZg1JuRHxIJv",
       "media": {
-        "src": "review/astrid-green-speak/blackjack-face-6052f1d41755.mp4",
-        "sha256": "6052f1d41755014712019d260d2b4713ee40262769e29c7a726c60ff883220b2",
+        "src": "review/astrid-seam-repair/blackjack-e41444ea1fb3.mp4",
+        "sha256": "e41444ea1fb31f1315d7de9d0f8fc633d07ae3df019ab1e85b478fed4ecdb73b",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -236,7 +252,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "6052f1d41755014712019d260d2b4713ee40262769e29c7a726c60ff883220b2",
+        "displayCalibration": {
+          "scale": 0.977397620677948,
+          "offset": [
+            8.467041015625,
+            3.8459930419921875
+          ],
+          "gain": [
+            1.0218362724970844,
+            1.0224968573442363,
+            1.1088741570635055
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -284,25 +316,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "6052f1d41755014712019d260d2b4713ee40262769e29c7a726c60ff883220b2",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "e41444ea1fb31f1315d7de9d0f8fc633d07ae3df019ab1e85b478fed4ecdb73b",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "blackjack-enter-flow.png",
-          "sha256": "90c170f4e55b97ed3ec4805ad36ebf18555aa9add157fd8dabf5d7edae504f67",
-          "src": "review/astrid-green-speak/blackjack-enter-90c170f4e55b.png"
+          "flow": "blackjack-enter.png",
+          "sha256": "c28caf86480921d241da38b1531a2e969df5f949de466215d5ece28c49941071",
+          "src": "review/astrid-seam-repair/blackjack-enter-c28caf864809.png"
         },
         "exit": {
-          "flow": "blackjack-exit-flow.png",
-          "sha256": "5ed0c206cd20e829f7ef5146b2c524337b544854c3391a7f5d25df81aed7719a",
-          "src": "review/astrid-green-speak/blackjack-exit-5ed0c206cd20.png"
+          "flow": "blackjack-exit.png",
+          "sha256": "e101a49433f6e72c60c891a44308e32ea126e9d892844c5086391028d96e78cb",
+          "src": "review/astrid-seam-repair/blackjack-exit-e101a49433f6.png"
         }
       }
     },
     "bust": {
       "jobId": "JXaFT7JI1SFy2rfwISk5",
       "media": {
-        "src": "review/astrid-green-speak/bust-face-1811e6e0ac57.mp4",
-        "sha256": "1811e6e0ac57c4daabe45d822ca22a6d9e4e1eb47956bb1992829130dd098cf9",
+        "src": "review/astrid-seam-repair/bust-2b5a7d064bc9.mp4",
+        "sha256": "2b5a7d064bc95d48d09684be9e03eb90427c86b4d9e891193161bbfe2c4227ad",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -316,7 +348,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "1811e6e0ac57c4daabe45d822ca22a6d9e4e1eb47956bb1992829130dd098cf9",
+        "displayCalibration": {
+          "scale": 0.9779354333877563,
+          "offset": [
+            8.259185791015625,
+            3.65283203125
+          ],
+          "gain": [
+            1.0565136299179567,
+            1.0475339700072044,
+            1.1082917394532692
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -364,25 +412,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "1811e6e0ac57c4daabe45d822ca22a6d9e4e1eb47956bb1992829130dd098cf9",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "2b5a7d064bc95d48d09684be9e03eb90427c86b4d9e891193161bbfe2c4227ad",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "bust-enter-flow.png",
-          "sha256": "afcc43d1b9d1cb181b4876435344b4353d85cc1b3bfd4f28e5475e6d29e6400a",
-          "src": "review/astrid-green-speak/bust-enter-afcc43d1b9d1.png"
+          "flow": "bust-enter.png",
+          "sha256": "bddfa9ff984fd8332ffdbd58ce8a5736f94d0a27e4b17f813af1d315940886d4",
+          "src": "review/astrid-seam-repair/bust-enter-bddfa9ff984f.png"
         },
         "exit": {
-          "flow": "bust-exit-flow.png",
-          "sha256": "3671af65181da5db44fc12b5bb4ec118878ad85078d6b9803dd826bf7125fdb8",
-          "src": "review/astrid-green-speak/bust-exit-3671af65181d.png"
+          "flow": "bust-exit.png",
+          "sha256": "799c26ae7e96b56d7b0f746b7f6b93a326638902c18ea5b53c9140d1a2db376b",
+          "src": "review/astrid-seam-repair/bust-exit-799c26ae7e96.png"
         }
       }
     },
     "chatter1": {
       "jobId": "jRivECKXGLbqv84rmVpH",
       "media": {
-        "src": "review/astrid-green-speak/chatter1-face-baa85a529b30.mp4",
-        "sha256": "baa85a529b30c1ee235b1821b1034f183f442f4febb64b2779d0be634ed359c7",
+        "src": "review/astrid-seam-repair/chatter1-71f85776ec7e.mp4",
+        "sha256": "71f85776ec7eaa836375c247864255cdd86eebc02aa832030b5d42772036f98f",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 752,
@@ -396,7 +444,23 @@
           0,
           752,
           682
-        ]
+        ],
+        "parentPackedSha256": "baa85a529b30c1ee235b1821b1034f183f442f4febb64b2779d0be634ed359c7",
+        "displayCalibration": {
+          "scale": 0.9811879396438599,
+          "offset": [
+            7.20123291015625,
+            3.218414306640625
+          ],
+          "gain": [
+            1.0528166026128238,
+            1.0397087110388503,
+            1.097009531554889
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 752,
@@ -444,25 +508,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "baa85a529b30c1ee235b1821b1034f183f442f4febb64b2779d0be634ed359c7",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "71f85776ec7eaa836375c247864255cdd86eebc02aa832030b5d42772036f98f",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "chatter1-enter-flow.png",
-          "sha256": "14112b38c864eb3b585956e19bf4ce097278312549b711aa58395af960e1042f",
-          "src": "review/astrid-green-speak/chatter1-enter-14112b38c864.png"
+          "flow": "chatter1-enter.png",
+          "sha256": "f8dca175d8192d88103f57ceefc0aaeace2c9f4f37eb47d6b8f6062c465171c5",
+          "src": "review/astrid-seam-repair/chatter1-enter-f8dca175d819.png"
         },
         "exit": {
-          "flow": "chatter1-exit-flow.png",
-          "sha256": "34ec891b2b1cc57c66d4ea36f05c99a1dfbe1d2486c61b9ecde4cb1937ca2ca9",
-          "src": "review/astrid-green-speak/chatter1-exit-34ec891b2b1c.png"
+          "flow": "chatter1-exit.png",
+          "sha256": "481341ce8b9cdfffb6515e0a5c582f06a0f761a28ede0df95c3dc4772110f1fa",
+          "src": "review/astrid-seam-repair/chatter1-exit-481341ce8b9c.png"
         }
       }
     },
     "chatter2": {
       "jobId": "A8sn5azPbSIBi5ixLIRk",
       "media": {
-        "src": "review/astrid-green-speak/chatter2-face-738d7d5230b9.mp4",
-        "sha256": "738d7d5230b958bc4c895bc2f1cb6cba00d0f9643f890add4986fe1e7006efe3",
+        "src": "review/astrid-seam-repair/chatter2-bc8fa6f18a98.mp4",
+        "sha256": "bc8fa6f18a98ca9d31594a1b9e51f5a6e30ddb45db6ffc0a50bf2d58ac4b951e",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -476,7 +540,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "738d7d5230b958bc4c895bc2f1cb6cba00d0f9643f890add4986fe1e7006efe3",
+        "displayCalibration": {
+          "scale": 0.9787300825119019,
+          "offset": [
+            7.997406005859375,
+            3.711273193359375
+          ],
+          "gain": [
+            1.0560723943346129,
+            1.0468955616944546,
+            1.1081553701695652
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -524,25 +604,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "738d7d5230b958bc4c895bc2f1cb6cba00d0f9643f890add4986fe1e7006efe3",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "bc8fa6f18a98ca9d31594a1b9e51f5a6e30ddb45db6ffc0a50bf2d58ac4b951e",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "chatter2-enter-flow.png",
-          "sha256": "0538959f0c416d2fc92aaba61e48550cb6c029518a733617905eebfaafaf29ec",
-          "src": "review/astrid-green-speak/chatter2-enter-0538959f0c41.png"
+          "flow": "chatter2-enter.png",
+          "sha256": "1ceb305b2b7a382d356e15b478b45328f772c28e4972e444bd07b9417b1f1ae5",
+          "src": "review/astrid-seam-repair/chatter2-enter-1ceb305b2b7a.png"
         },
         "exit": {
-          "flow": "chatter2-exit-flow.png",
-          "sha256": "d1dbfd9623af457dcb735ecd72c8b4a68d094905699c88c7cc4ab8e95748c460",
-          "src": "review/astrid-green-speak/chatter2-exit-d1dbfd9623af.png"
+          "flow": "chatter2-exit.png",
+          "sha256": "eaf942781922da32678f871db68f028a65fa0457bf1a0f80186b0b8847e07707",
+          "src": "review/astrid-seam-repair/chatter2-exit-eaf942781922.png"
         }
       }
     },
     "dealerblackjack": {
       "jobId": "8mEKMKBomCk526p7Gkad",
       "media": {
-        "src": "review/astrid-green-speak/dealerblackjack-face-4e591a1bb640.mp4",
-        "sha256": "4e591a1bb640db6a177e244c8c5e6c16a7294e53e77460e69de0b834552f924b",
+        "src": "review/astrid-seam-repair/dealerblackjack-b4857292a4ae.mp4",
+        "sha256": "b4857292a4ae0fb9ab5638cf9d8d9047d841ebac9b1723ee4ccb97073d560188",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -556,7 +636,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "4e591a1bb640db6a177e244c8c5e6c16a7294e53e77460e69de0b834552f924b",
+        "displayCalibration": {
+          "scale": 0.9787924289703369,
+          "offset": [
+            8.020477294921875,
+            3.7678680419921875
+          ],
+          "gain": [
+            1.0640180691092311,
+            1.0594976950847788,
+            1.1223962308077984
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -604,25 +700,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "4e591a1bb640db6a177e244c8c5e6c16a7294e53e77460e69de0b834552f924b",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "b4857292a4ae0fb9ab5638cf9d8d9047d841ebac9b1723ee4ccb97073d560188",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "dealerblackjack-enter-flow.png",
-          "sha256": "3dcd7ed6348849360b5501630dbd49e433decfbbc45d214029259ca526e9cca4",
-          "src": "review/astrid-green-speak/dealerblackjack-enter-3dcd7ed63488.png"
+          "flow": "dealerblackjack-enter.png",
+          "sha256": "c601c50093dcc18d86a129530b4e05bf5ae18469d584aa2c81640c215d6f9dc7",
+          "src": "review/astrid-seam-repair/dealerblackjack-enter-c601c50093dc.png"
         },
         "exit": {
-          "flow": "dealerblackjack-exit-flow.png",
-          "sha256": "d419f42683e5e6ac5eaf75129de3d19b6316a5a3096feef26aae2cec80e8b58a",
-          "src": "review/astrid-green-speak/dealerblackjack-exit-d419f42683e5.png"
+          "flow": "dealerblackjack-exit.png",
+          "sha256": "f2ce160b0e31694b576b1418b1f20af0b2db17d04d9fcf50b7342e49fe5e19cc",
+          "src": "review/astrid-seam-repair/dealerblackjack-exit-f2ce160b0e31.png"
         }
       }
     },
     "dealerbust": {
       "jobId": "n0XUXKw6zM0cT2ZeL7ON",
       "media": {
-        "src": "review/astrid-green-speak/dealerbust-face-f4bc28973851.mp4",
-        "sha256": "f4bc28973851987340094e7e3a7c51162f0a4a04b456b5abe82bdd8bdf727c86",
+        "src": "review/astrid-seam-repair/dealerbust-e67e33d66fe9.mp4",
+        "sha256": "e67e33d66fe984015d1665700bc8d4d70b55181a6c77fbeb752d964b2581e5da",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -636,7 +732,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "f4bc28973851987340094e7e3a7c51162f0a4a04b456b5abe82bdd8bdf727c86",
+        "displayCalibration": {
+          "scale": 0.9757319092750549,
+          "offset": [
+            9.289520263671875,
+            4.0795440673828125
+          ],
+          "gain": [
+            1.0278396698835897,
+            1.0296430514668962,
+            1.124185794498486
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -684,25 +796,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "f4bc28973851987340094e7e3a7c51162f0a4a04b456b5abe82bdd8bdf727c86",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "e67e33d66fe984015d1665700bc8d4d70b55181a6c77fbeb752d964b2581e5da",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "dealerbust-enter-flow.png",
-          "sha256": "24dff62116c887016fdce3525e6f5af4a0af614b0a2235f13e5d3e38b5cd74f7",
-          "src": "review/astrid-green-speak/dealerbust-enter-24dff62116c8.png"
+          "flow": "dealerbust-enter.png",
+          "sha256": "83e8093ad341f7be1402e1706b398f740e84b6453cee2cf5e926b89f261309e4",
+          "src": "review/astrid-seam-repair/dealerbust-enter-83e8093ad341.png"
         },
         "exit": {
-          "flow": "dealerbust-exit-flow.png",
-          "sha256": "eeab68ab45bda0234c3c0016002529559b797628eb1f01e15b097ee0ad351949",
-          "src": "review/astrid-green-speak/dealerbust-exit-eeab68ab45bd.png"
+          "flow": "dealerbust-exit.png",
+          "sha256": "ab1e2bb870f3471841decf2b0a052ea7dcba3dd356695d540a72f2f98229d1bb",
+          "src": "review/astrid-seam-repair/dealerbust-exit-ab1e2bb870f3.png"
         }
       }
     },
     "double": {
       "jobId": "xJrgoE5julUV1agzVGWs",
       "media": {
-        "src": "review/astrid-green-speak/double-face-c27d613e68e0.mp4",
-        "sha256": "c27d613e68e0fa41fce79fcfd951a93f9f57d5d3959fe8edf0577d5d9a5da415",
+        "src": "review/astrid-seam-repair/double-4abde0594548.mp4",
+        "sha256": "4abde059454839aea6d9491999d688f66c42607ad152da53d8e9483f9190992c",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -716,7 +828,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "c27d613e68e0fa41fce79fcfd951a93f9f57d5d3959fe8edf0577d5d9a5da415",
+        "displayCalibration": {
+          "scale": 0.980525016784668,
+          "offset": [
+            7.340667724609375,
+            3.4857177734375
+          ],
+          "gain": [
+            1.0484211408717103,
+            1.0343899595977422,
+            1.087168524748083
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -764,25 +892,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "c27d613e68e0fa41fce79fcfd951a93f9f57d5d3959fe8edf0577d5d9a5da415",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "4abde059454839aea6d9491999d688f66c42607ad152da53d8e9483f9190992c",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "double-enter-flow.png",
-          "sha256": "ed8225af20b2149ad8aaa5210506b56907257e0d04caef22fa6813d98d0a79e4",
-          "src": "review/astrid-green-speak/double-enter-ed8225af20b2.png"
+          "flow": "double-enter.png",
+          "sha256": "531a4465a0b65a7a3dfd9e65f9c415f3a230bc85310bf60b622a39bda71d90b1",
+          "src": "review/astrid-seam-repair/double-enter-531a4465a0b6.png"
         },
         "exit": {
-          "flow": "double-exit-flow.png",
-          "sha256": "cd829dc6d36921a7b0b8c2d32d2ed49aa6b850c307f808a9a840817609e6bca8",
-          "src": "review/astrid-green-speak/double-exit-cd829dc6d369.png"
+          "flow": "double-exit.png",
+          "sha256": "a3e9d30379ba5f092193b375d53fb665a94bc29f5a389b397273c28fa5b2f6ab",
+          "src": "review/astrid-seam-repair/double-exit-a3e9d30379ba.png"
         }
       }
     },
     "farewell": {
       "jobId": "cuAeX41T0nLE0q9gG86w",
       "media": {
-        "src": "review/astrid-green-speak/farewell-face-68bf0168d8ce.mp4",
-        "sha256": "68bf0168d8ce71bd64b7aaae0ad3151edd7d8f83e99949719f1e0051f90578b6",
+        "src": "review/astrid-seam-repair/farewell-9c941998c255.mp4",
+        "sha256": "9c941998c255adf77d40e31652b23879b11c09ef5d32d6fe6e5073bff70cf682",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -796,7 +924,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "68bf0168d8ce71bd64b7aaae0ad3151edd7d8f83e99949719f1e0051f90578b6",
+        "displayCalibration": {
+          "scale": 0.9806561470031738,
+          "offset": [
+            7.2916259765625,
+            3.1269989013671875
+          ],
+          "gain": [
+            1.0576000671039902,
+            1.0505732452544798,
+            1.104691411458123
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -844,25 +988,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "68bf0168d8ce71bd64b7aaae0ad3151edd7d8f83e99949719f1e0051f90578b6",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "9c941998c255adf77d40e31652b23879b11c09ef5d32d6fe6e5073bff70cf682",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "farewell-enter-flow.png",
-          "sha256": "93e4feec608647771fffdb12760702dfcce2b0b5be4e70d58cbae72a9a15849b",
-          "src": "review/astrid-green-speak/farewell-enter-93e4feec6086.png"
+          "flow": "farewell-enter.png",
+          "sha256": "d1965f22fdc5a4e06c1b30b1164999c846d0cbeb96df81a838b0aab9b77814a2",
+          "src": "review/astrid-seam-repair/farewell-enter-d1965f22fdc5.png"
         },
         "exit": {
-          "flow": "farewell-exit-flow.png",
-          "sha256": "dccfd4c47e5a643328ce71892e03a30c7e9fa23f05d9dbddbbe1281adb156647",
-          "src": "review/astrid-green-speak/farewell-exit-dccfd4c47e5a.png"
+          "flow": "farewell-exit.png",
+          "sha256": "c427a40db92c2e0c6da640f4e1e157402f6c47ab9a1dc2f9581deebb11481651",
+          "src": "review/astrid-seam-repair/farewell-exit-c427a40db92c.png"
         }
       }
     },
     "goodluck": {
       "jobId": "gUoli6tA6QtpwAbwP1xq",
       "media": {
-        "src": "review/astrid-green-speak/goodluck-face-d45d9dfd609b.mp4",
-        "sha256": "d45d9dfd609b04f508100214975656181b135b8a2f6c06033d4a03a46e25cb7f",
+        "src": "review/astrid-seam-repair/goodluck-baedca28d5e7.mp4",
+        "sha256": "baedca28d5e71e4d68169db1d8f2b4ca23ac09e64c3faf97f1888696b7cc4431",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -876,7 +1020,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "d45d9dfd609b04f508100214975656181b135b8a2f6c06033d4a03a46e25cb7f",
+        "displayCalibration": {
+          "scale": 0.9829754829406738,
+          "offset": [
+            6.3231201171875,
+            3.039215087890625
+          ],
+          "gain": [
+            1.0500466731069236,
+            1.0355995688799653,
+            1.0922630670496876
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -924,25 +1084,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "d45d9dfd609b04f508100214975656181b135b8a2f6c06033d4a03a46e25cb7f",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "baedca28d5e71e4d68169db1d8f2b4ca23ac09e64c3faf97f1888696b7cc4431",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "goodluck-enter-flow.png",
-          "sha256": "41f6d3a0ef58ed82e893e39f60ed4df0a9d4fbd2e92c5d7c27580498da99fcb5",
-          "src": "review/astrid-green-speak/goodluck-enter-41f6d3a0ef58.png"
+          "flow": "goodluck-enter.png",
+          "sha256": "da2375a0a76eb7fcc00ff82e79d057eefe47e1cd5c9f5aba725386aa3396b20d",
+          "src": "review/astrid-seam-repair/goodluck-enter-da2375a0a76e.png"
         },
         "exit": {
-          "flow": "goodluck-exit-flow.png",
-          "sha256": "ff33cb19ee1c116f8f25c02c97d5405183f0cb86ce5cf0c0d9d4bf37cee08315",
-          "src": "review/astrid-green-speak/goodluck-exit-ff33cb19ee1c.png"
+          "flow": "goodluck-exit.png",
+          "sha256": "356ff52d4ee7dbda6e0d576710f9cbce2748dc4ed7177420f782da8d78b782a7",
+          "src": "review/astrid-seam-repair/goodluck-exit-356ff52d4ee7.png"
         }
       }
     },
     "insurance": {
       "jobId": "Poc0uboe25IctsbKmH8d",
       "media": {
-        "src": "review/astrid-green-speak/insurance-face-80c938468af8.mp4",
-        "sha256": "80c938468af8cfdbd0a828603b57b489c53dd0ab1ab5ab7c89e93dc148aca019",
+        "src": "review/astrid-seam-repair/insurance-4f04a79a9bbc.mp4",
+        "sha256": "4f04a79a9bbc081a52fbda261bd4d0c8856891a95efbb24ee8c338b48ef52b10",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -956,7 +1116,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "80c938468af8cfdbd0a828603b57b489c53dd0ab1ab5ab7c89e93dc148aca019",
+        "displayCalibration": {
+          "scale": 0.9773990511894226,
+          "offset": [
+            8.353759765625,
+            3.8189544677734375
+          ],
+          "gain": [
+            1.0658371067819101,
+            1.0634623315506309,
+            1.123962538059978
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -1004,25 +1180,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "80c938468af8cfdbd0a828603b57b489c53dd0ab1ab5ab7c89e93dc148aca019",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "4f04a79a9bbc081a52fbda261bd4d0c8856891a95efbb24ee8c338b48ef52b10",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "insurance-enter-flow.png",
-          "sha256": "7f3e26844842f6e886619a76cdb665082ebda583e6180591f424f734a57eba2f",
-          "src": "review/astrid-green-speak/insurance-enter-7f3e26844842.png"
+          "flow": "insurance-enter.png",
+          "sha256": "de610df4a7327d11302692cf63f9aede68902bb2212f8bb867d52de433bf9946",
+          "src": "review/astrid-seam-repair/insurance-enter-de610df4a732.png"
         },
         "exit": {
-          "flow": "insurance-exit-flow.png",
-          "sha256": "aedcf74ab74667731e0c7dd0a4668b9eaecd662f1abffde2700d42aa6edb6fae",
-          "src": "review/astrid-green-speak/insurance-exit-aedcf74ab746.png"
+          "flow": "insurance-exit.png",
+          "sha256": "382f06077f8d67adc5c79179c214651028362fd4db5d2abde4802fa22cec0efa",
+          "src": "review/astrid-seam-repair/insurance-exit-382f06077f8d.png"
         }
       }
     },
     "lose": {
       "jobId": "IHh6jAgPIe1LiPVBzbM7",
       "media": {
-        "src": "review/astrid-green-speak/lose-face-2ac791b2f1a4.mp4",
-        "sha256": "2ac791b2f1a41817a30e5b29a56559cec2b73141d1726d7b1a1451e7a5686157",
+        "src": "review/astrid-seam-repair/lose-64a958bf9337.mp4",
+        "sha256": "64a958bf933727a5076aad9d9065e3ec3e39277522e02a703af71b238ee1963b",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 752,
@@ -1036,7 +1212,23 @@
           0,
           752,
           682
-        ]
+        ],
+        "parentPackedSha256": "2ac791b2f1a41817a30e5b29a56559cec2b73141d1726d7b1a1451e7a5686157",
+        "displayCalibration": {
+          "scale": 0.9796735048294067,
+          "offset": [
+            7.643157958984375,
+            3.34417724609375
+          ],
+          "gain": [
+            1.053295497517814,
+            1.041610528258908,
+            1.098970401928789
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 752,
@@ -1084,25 +1276,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "2ac791b2f1a41817a30e5b29a56559cec2b73141d1726d7b1a1451e7a5686157",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "64a958bf933727a5076aad9d9065e3ec3e39277522e02a703af71b238ee1963b",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "lose-enter-flow.png",
-          "sha256": "3bdfb14d7a3ad39d59565e4a40a6db86d45a747f984f748ca7eab221b272fcac",
-          "src": "review/astrid-green-speak/lose-enter-3bdfb14d7a3a.png"
+          "flow": "lose-enter.png",
+          "sha256": "38995a3fac8e2816e5e80bf9effe62f68072b90d1e5b416188b064d1a7449c57",
+          "src": "review/astrid-seam-repair/lose-enter-38995a3fac8e.png"
         },
         "exit": {
-          "flow": "lose-exit-flow.png",
-          "sha256": "0549a15e57938a99233bb7d802f3b0e4d73bec23880ffa67adcf3593da73feff",
-          "src": "review/astrid-green-speak/lose-exit-0549a15e5793.png"
+          "flow": "lose-exit.png",
+          "sha256": "7ccea38a05385a3195576a7d130313905ee541a022848c0a16d30a82ab4a8307",
+          "src": "review/astrid-seam-repair/lose-exit-7ccea38a0538.png"
         }
       }
     },
     "peek": {
       "jobId": "P2CbnCJePYCpwGYwP5P4",
       "media": {
-        "src": "review/astrid-green-speak/peek-face-671dcff986a4.mp4",
-        "sha256": "671dcff986a4f6967bf3efb0e5e1bc756c7fce216f42da2bf4a28bee3eb378f7",
+        "src": "review/astrid-seam-repair/peek-494c4aefaf5f.mp4",
+        "sha256": "494c4aefaf5f954a723133fdc1ff25cf2069dea94ae5b496a8cb04a903cd8fe6",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 752,
@@ -1116,7 +1308,23 @@
           0,
           752,
           682
-        ]
+        ],
+        "parentPackedSha256": "671dcff986a4f6967bf3efb0e5e1bc756c7fce216f42da2bf4a28bee3eb378f7",
+        "displayCalibration": {
+          "scale": 0.9826794862747192,
+          "offset": [
+            6.488067626953125,
+            3.11236572265625
+          ],
+          "gain": [
+            1.0573893943942765,
+            1.0516990107766357,
+            1.1112491359902223
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 752,
@@ -1164,25 +1372,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "671dcff986a4f6967bf3efb0e5e1bc756c7fce216f42da2bf4a28bee3eb378f7",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "494c4aefaf5f954a723133fdc1ff25cf2069dea94ae5b496a8cb04a903cd8fe6",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "peek-enter-flow.png",
-          "sha256": "88afab54439166c4c539512133e03e5fb899606e37cb2fd1db919d97605e68d0",
-          "src": "review/astrid-green-speak/peek-enter-88afab544391.png"
+          "flow": "peek-enter.png",
+          "sha256": "4fb048eac4010ab2e7d2ab6f3bf8ab65607cb5eb6a99ae5005c78eb87747d9fa",
+          "src": "review/astrid-seam-repair/peek-enter-4fb048eac401.png"
         },
         "exit": {
-          "flow": "peek-exit-flow.png",
-          "sha256": "ead411ac0ea30b22a553dc7025af30dc0a49f3c5f9c41bd0a9c4bc1b3b5401d0",
-          "src": "review/astrid-green-speak/peek-exit-ead411ac0ea3.png"
+          "flow": "peek-exit.png",
+          "sha256": "11feb1dce5d00d699dd1b020e9ee7563f662d7cd32d2c050621e0cbc8f432b67",
+          "src": "review/astrid-seam-repair/peek-exit-11feb1dce5d0.png"
         }
       }
     },
     "placebets": {
       "jobId": "wXrifkkD3tgxGuOyPv36",
       "media": {
-        "src": "review/astrid-green-speak/placebets-face-fdf802a1592e.mp4",
-        "sha256": "fdf802a1592e1db7c764f049eb8fc2ccca5daca69ce7512ff86816aa769c3751",
+        "src": "review/astrid-seam-repair/placebets-a3d48dd3fceb.mp4",
+        "sha256": "a3d48dd3fceb67f89e59575887f3c20d469df03a00f612910beaacda4f60f5dc",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 752,
@@ -1196,7 +1404,23 @@
           0,
           752,
           682
-        ]
+        ],
+        "parentPackedSha256": "fdf802a1592e1db7c764f049eb8fc2ccca5daca69ce7512ff86816aa769c3751",
+        "displayCalibration": {
+          "scale": 0.9812428951263428,
+          "offset": [
+            7.0960693359375,
+            3.3370513916015625
+          ],
+          "gain": [
+            1.0579863951559774,
+            1.0516514741758014,
+            1.1133939195019256
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 752,
@@ -1244,25 +1468,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "fdf802a1592e1db7c764f049eb8fc2ccca5daca69ce7512ff86816aa769c3751",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "a3d48dd3fceb67f89e59575887f3c20d469df03a00f612910beaacda4f60f5dc",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "placebets-enter-flow.png",
-          "sha256": "87b453d914d928e08093526c04d7a364a7b2e4345c602141d05532c02602bc65",
-          "src": "review/astrid-green-speak/placebets-enter-87b453d914d9.png"
+          "flow": "placebets-enter.png",
+          "sha256": "fc2a4b75d456e05e591763f0248e2f8ad06dd6b585ee0758fa8533f849e8652a",
+          "src": "review/astrid-seam-repair/placebets-enter-fc2a4b75d456.png"
         },
         "exit": {
-          "flow": "placebets-exit-flow.png",
-          "sha256": "bfc7c8290ff7d25339df10541d8950e9631eb6b6ace8dee61c9d425a448d41de",
-          "src": "review/astrid-green-speak/placebets-exit-bfc7c8290ff7.png"
+          "flow": "placebets-exit.png",
+          "sha256": "6c8c6baf7f239491a032357a3f048b7a7da2046f15aa7caf5bda31666a18b958",
+          "src": "review/astrid-seam-repair/placebets-exit-6c8c6baf7f23.png"
         }
       }
     },
     "push": {
       "jobId": "obV9gn6nWg569kfeMeUu",
       "media": {
-        "src": "review/astrid-green-speak/push-face-b31ee86831c9.mp4",
-        "sha256": "b31ee86831c9aa0df8a5f97611de7a31d00cc8481e2d2477735af26d42354e4f",
+        "src": "review/astrid-seam-repair/push-f08a746fce0e.mp4",
+        "sha256": "f08a746fce0e52e74bc280824d468f08520215ac5056ca4e120eebb16f6a8dfb",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -1276,7 +1500,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "b31ee86831c9aa0df8a5f97611de7a31d00cc8481e2d2477735af26d42354e4f",
+        "displayCalibration": {
+          "scale": 0.9813721776008606,
+          "offset": [
+            6.965240478515625,
+            3.4580230712890625
+          ],
+          "gain": [
+            1.0581544594123975,
+            1.0478375972973297,
+            1.1064638882472586
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -1324,25 +1564,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "b31ee86831c9aa0df8a5f97611de7a31d00cc8481e2d2477735af26d42354e4f",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "f08a746fce0e52e74bc280824d468f08520215ac5056ca4e120eebb16f6a8dfb",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "push-enter-flow.png",
-          "sha256": "85867337f6d60ed539ab088709f395736e40b994d34bde803497601388214367",
-          "src": "review/astrid-green-speak/push-enter-85867337f6d6.png"
+          "flow": "push-enter.png",
+          "sha256": "7f187f71930dc402b09f0492f46d208c8acfa581c472d02a97a4bdb821785dfe",
+          "src": "review/astrid-seam-repair/push-enter-7f187f71930d.png"
         },
         "exit": {
-          "flow": "push-exit-flow.png",
-          "sha256": "588e66c577278d945b5e6ef26db72be7931b760ca494c21176d2d9c5c9025a6d",
-          "src": "review/astrid-green-speak/push-exit-588e66c57727.png"
+          "flow": "push-exit.png",
+          "sha256": "0b0a1c9c43d1b21a9c7b1802b4690268109a5291dea0bc9fe5caa36cfd70fcf9",
+          "src": "review/astrid-seam-repair/push-exit-0b0a1c9c43d1.png"
         }
       }
     },
     "sidebet": {
       "jobId": "dNQBzah6jqH1zbGxKCPZ",
       "media": {
-        "src": "review/astrid-green-speak/sidebet-face-6ef921569fa3.mp4",
-        "sha256": "6ef921569fa3d301d09bd00f548baaaf0b98fd7ad239ff84b47458010bb10953",
+        "src": "review/astrid-seam-repair/sidebet-84c6ce4af9a5.mp4",
+        "sha256": "84c6ce4af9a51fac73f9da5f5fa422575e6da412d7ef2e1ddc27a351ac2063c1",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -1356,7 +1596,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "6ef921569fa3d301d09bd00f548baaaf0b98fd7ad239ff84b47458010bb10953",
+        "displayCalibration": {
+          "scale": 0.9804690480232239,
+          "offset": [
+            7.33447265625,
+            3.466583251953125
+          ],
+          "gain": [
+            1.0588580655859008,
+            1.053106868910585,
+            1.1143527224459089
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -1404,25 +1660,25 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "6ef921569fa3d301d09bd00f548baaaf0b98fd7ad239ff84b47458010bb10953",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "84c6ce4af9a51fac73f9da5f5fa422575e6da412d7ef2e1ddc27a351ac2063c1",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "sidebet-enter-flow.png",
-          "sha256": "d0978f71a91a6fae9c64a7a3358ded2d625332da9a059fe86b6d1a79e6977084",
-          "src": "review/astrid-green-speak/sidebet-enter-d0978f71a91a.png"
+          "flow": "sidebet-enter.png",
+          "sha256": "6799699d3e3863fcb22b0af96a2dd837eca46e5ac91bf0998e28402057199253",
+          "src": "review/astrid-seam-repair/sidebet-enter-6799699d3e38.png"
         },
         "exit": {
-          "flow": "sidebet-exit-flow.png",
-          "sha256": "1c52db526e830e51917d413af20f72736c78beddf7cd121bbc6d19ba0edad119",
-          "src": "review/astrid-green-speak/sidebet-exit-1c52db526e83.png"
+          "flow": "sidebet-exit.png",
+          "sha256": "9c2f2d417269a4acd74f00578978eecfad3558814734b6c64ebf8ed26d0f60af",
+          "src": "review/astrid-seam-repair/sidebet-exit-9c2f2d417269.png"
         }
       }
     },
     "win": {
       "jobId": "8DAy8aReZIWwp4p4zpvd",
       "media": {
-        "src": "review/astrid-green-speak/win-face-f1fb10e61552.mp4",
-        "sha256": "f1fb10e61552d8a953a43f715ea7d63bb82964408c823369c5d35db4a08f8a3f",
+        "src": "review/astrid-seam-repair/win-999997e6ddbc.mp4",
+        "sha256": "999997e6ddbc3c0cab1fa65f02b1e3ed81a7f5fd7d94347b5de5b72983cd7461",
         "matteRevision": "opaque-head-interior-v2",
         "layout": "rgb-over-alpha",
         "width": 754,
@@ -1436,7 +1692,23 @@
           0,
           754,
           682
-        ]
+        ],
+        "parentPackedSha256": "f1fb10e61552d8a953a43f715ea7d63bb82964408c823369c5d35db4a08f8a3f",
+        "displayCalibration": {
+          "scale": 0.978755533695221,
+          "offset": [
+            8.087890625,
+            3.763702392578125
+          ],
+          "gain": [
+            1.0198276885087751,
+            1.0215151402221019,
+            1.1082422515459505
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
       },
       "camera": {
         "width": 754,
@@ -1484,20 +1756,21 @@
           20
         ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
-        "mediaSha256": "f1fb10e61552d8a953a43f715ea7d63bb82964408c823369c5d35db4a08f8a3f",
-        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "mediaSha256": "999997e6ddbc3c0cab1fa65f02b1e3ed81a7f5fd7d94347b5de5b72983cd7461",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
         "enter": {
-          "flow": "win-enter-flow.png",
-          "sha256": "6b83017d5b005e8b1a4514a54c5427070495063957fcbae8f21dc919f7e311e3",
-          "src": "review/astrid-green-speak/win-enter-6b83017d5b00.png"
+          "flow": "win-enter.png",
+          "sha256": "f19f549c9c89ab59ad95a0f52e244183b4b840e79333bbec2781f58ca6281cad",
+          "src": "review/astrid-seam-repair/win-enter-f19f549c9c89.png"
         },
         "exit": {
-          "flow": "win-exit-flow.png",
-          "sha256": "09d6e00529234b22652461636ca9d6e4c217731be512ff9f707ccbbbe813e92c",
-          "src": "review/astrid-green-speak/win-exit-09d6e0052923.png"
+          "flow": "win-exit.png",
+          "sha256": "c2d79db0d5299eb778549f2f934392020427d01622a8692c509f9485c488d2e2",
+          "src": "review/astrid-seam-repair/win-exit-c2d79db0d529.png"
         }
       }
     }
   },
-  "note": "Each full recording keeps frame 0 through its last frame with unchanged paired audio. A 220 ms motion-aligned silent join enters and leaves it; the recorded line starts on the first presented speech frame plus audioOffsetSeconds. The destination idle frame is painted before idle resumes."
+  "note": "Each original recording and its mp3 stay unchanged on disk. The display copy applies one fixed measured RGB grade and uniform scale/translation, retaining native fps, frame count and audio offset. Joins are remeasured against the calibrated display copies. No generated replacement or per-frame color pumping.",
+  "visualRevision": "seam-repair-v1"
 }

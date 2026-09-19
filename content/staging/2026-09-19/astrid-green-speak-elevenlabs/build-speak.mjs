@@ -59,6 +59,29 @@ for(const [id,dir] of Object.entries(lineDirs)){
     }
   }
 }
+// A reviewed display revision is optional. Validate every parent source and
+// paired recording before reusing its calibrated copy on a later rebuild.
+const displayPath=path.join(here,'registration/display-revision.json');
+let displayRevision=null;
+if(fs.existsSync(displayPath)){
+  const binding=JSON.parse(fs.readFileSync(displayPath));
+  const manifest=path.resolve(here,binding.manifest),folder=path.dirname(manifest);
+  if(sha(manifest)!==binding.sha256)throw new Error('Display revision manifest changed');
+  displayRevision=JSON.parse(fs.readFileSync(manifest));
+  if(Object.keys(displayRevision.lines).sort().join()!==Object.keys(lines).sort().join())throw new Error('Display revision line set is stale');
+  for(const [id,line] of Object.entries(lines)){
+    const revised=displayRevision.lines[id];
+    if(revised.media.parentPackedSha256!==line.media.sha256||revised.audioSha256!==line.audioSha256||revised.audioOffsetSeconds!==line.audioOffsetSeconds||revised.cutIn!==line.cutIn||revised.cutOut!==line.cutOut)throw new Error(`${id}: stale display revision`);
+    const packed=path.join(folder,`${id}.mp4`);
+    if(sha(packed)!==revised.media.sha256)throw new Error(`${id}: display media changed`);
+    lines[id]={...revised,packedSource:packed};
+    for(const edge of ['enter','exit']){
+      const fit=revised.transition[edge],image=path.join(folder,fit.flow);
+      if(sha(image)!==fit.sha256)throw new Error(`${id}: display flow changed`);
+      if(process.argv.includes('--install'))fs.copyFileSync(image,path.join(pub,fit.src));
+    }
+  }
+}
 const greetingSplice=JSON.parse(fs.readFileSync(path.join(here,'registration/splice.json')));
 const take={
   version:2,id:'astrid-green-speak-creatify-aurora',dealer:'astrid',action:'speak',status:'review',enabled:true,
@@ -74,10 +97,11 @@ const take={
   lines:Object.fromEntries(Object.entries(lines).map(([id,{packedSource,...line}])=>[id,line])),
   note:'Each full recording keeps frame 0 through its last frame with unchanged paired audio. A 220 ms motion-aligned silent join enters and leaves it; the recorded line starts on the first presented speech frame plus audioOffsetSeconds. The destination idle frame is painted before idle resumes.',
 };
+if(displayRevision)Object.assign(take,{spliceMeasurement:displayRevision.spliceMeasurement,visualRevision:displayRevision.visualRevision,approval:displayRevision.approval,note:displayRevision.note});
 console.log(Object.entries(lines).map(([id,l])=>`${id}: ${l.media.frames} frames, crop ${l.media.crop.join(',')}, audio offset ${l.audioOffsetSeconds}s (peak ${l.audioMeasurement.normalisedPeak})`).join('\n'));
 if(process.argv.includes('--install')){
   fs.mkdirSync(out,{recursive:true});
-  for(const line of Object.values(lines))fs.copyFileSync(line.packedSource,path.join(out,path.basename(line.media.src)));
+  for(const line of Object.values(lines)){const target=path.join(pub,line.media.src);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(line.packedSource,target);}
   fs.writeFileSync(path.join(out,'speak.json'),JSON.stringify(take,null,2)+'\n');
   fs.writeFileSync(path.join(here,'speak.json'),JSON.stringify(take,null,2)+'\n');
   console.log('installed',Object.keys(lines).length,'lines to',out);

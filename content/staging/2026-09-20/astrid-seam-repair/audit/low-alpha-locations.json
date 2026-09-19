@@ -1,0 +1,220 @@
+{
+  "chatter1": [
+    {
+      "frame": 35,
+      "xy": [
+        425,
+        40
+      ],
+      "alpha": 201,
+      "sourceXY": [
+        425.81,
+        37.87
+      ],
+      "originalAlphaAtInversePoint": 205.0,
+      "pixelsBelow250": 13
+    },
+    {
+      "frame": 33,
+      "xy": [
+        420,
+        40
+      ],
+      "alpha": 204,
+      "sourceXY": [
+        420.71,
+        37.87
+      ],
+      "originalAlphaAtInversePoint": 204.0,
+      "pixelsBelow250": 10
+    },
+    {
+      "frame": 34,
+      "xy": [
+        418,
+        40
+      ],
+      "alpha": 205,
+      "sourceXY": [
+        418.67,
+        37.87
+      ],
+      "originalAlphaAtInversePoint": 206.0,
+      "pixelsBelow250": 10
+    },
+    {
+      "frame": 32,
+      "xy": [
+        419,
+        40
+      ],
+      "alpha": 221,
+      "sourceXY": [
+        419.69,
+        37.87
+      ],
+      "originalAlphaAtInversePoint": 227.0,
+      "pixelsBelow250": 7
+    }
+  ],
+  "blackjack": [
+    {
+      "frame": 55,
+      "xy": [
+        395,
+        40
+      ],
+      "alpha": 232,
+      "sourceXY": [
+        395.47,
+        37.45
+      ],
+      "originalAlphaAtInversePoint": 228.0,
+      "pixelsBelow250": 1
+    },
+    {
+      "frame": 60,
+      "xy": [
+        416,
+        40
+      ],
+      "alpha": 245,
+      "sourceXY": [
+        416.96,
+        37.45
+      ],
+      "originalAlphaAtInversePoint": 252.0,
+      "pixelsBelow250": 4
+    },
+    {
+      "frame": 54,
+      "xy": [
+        417,
+        40
+      ],
+      "alpha": 247,
+      "sourceXY": [
+        417.98,
+        37.45
+      ],
+      "originalAlphaAtInversePoint": 251.0,
+      "pixelsBelow250": 3
+    }
+  ],
+  "farewell": [
+    {
+      "frame": 38,
+      "xy": [
+        401,
+        40
+      ],
+      "alpha": 233,
+      "sourceXY": [
+        401.47,
+        37.99
+      ],
+      "originalAlphaAtInversePoint": 235.0,
+      "pixelsBelow250": 10
+    },
+    {
+      "frame": 39,
+      "xy": [
+        417,
+        40
+      ],
+      "alpha": 244,
+      "sourceXY": [
+        417.79,
+        37.99
+      ],
+      "originalAlphaAtInversePoint": 253.0,
+      "pixelsBelow250": 5
+    },
+    {
+      "frame": 30,
+      "xy": [
+        425,
+        40
+      ],
+      "alpha": 247,
+      "sourceXY": [
+        425.95,
+        37.99
+      ],
+      "originalAlphaAtInversePoint": 253.0,
+      "pixelsBelow250": 1
+    },
+    {
+      "frame": 42,
+      "xy": [
+        391,
+        40
+      ],
+      "alpha": 247,
+      "sourceXY": [
+        391.28,
+        37.99
+      ],
+      "originalAlphaAtInversePoint": 253.0,
+      "pixelsBelow250": 1
+    }
+  ],
+  "placebets": [
+    {
+      "frame": 17,
+      "xy": [
+        378,
+        40
+      ],
+      "alpha": 229,
+      "sourceXY": [
+        377.99,
+        37.75
+      ],
+      "originalAlphaAtInversePoint": 232.0,
+      "pixelsBelow250": 3
+    },
+    {
+      "frame": 39,
+      "xy": [
+        381,
+        40
+      ],
+      "alpha": 245,
+      "sourceXY": [
+        381.05,
+        37.75
+      ],
+      "originalAlphaAtInversePoint": 253.0,
+      "pixelsBelow250": 3
+    },
+    {
+      "frame": 13,
+      "xy": [
+        382,
+        40
+      ],
+      "alpha": 246,
+      "sourceXY": [
+        382.07,
+        37.75
+      ],
+      "originalAlphaAtInversePoint": 253.0,
+      "pixelsBelow250": 2
+    },
+    {
+      "frame": 14,
+      "xy": [
+        383,
+        40
+      ],
+      "alpha": 246,
+      "sourceXY": [
+        383.09,
+        37.75
+      ],
+      "originalAlphaAtInversePoint": 253.0,
+      "pixelsBelow250": 1
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+__pycache__/
+gameplay-qa/*.png
+gameplay-qa/after-frames.json
+gameplay-qa/greeting-frames.json
+gameplay-qa/return-frames.json
