@@ -1,0 +1,166 @@
+TAP version 13
+# (node:81709) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: opted-in Box 4 take covers opening cards, hits, doubles and split hands
+ok 1 - opted-in Box 4 take covers opening cards, hits, doubles and split hands
+  ---
+  duration_ms: 1.445625
+  type: 'test'
+  ...
+# Subtest: opted-in dealer take covers the hidden hole card and later draws without consuming player cards
+ok 2 - opted-in dealer take covers the hidden hole card and later draws without consuming player cards
+  ---
+  duration_ms: 0.2555
+  type: 'test'
+  ...
+# Subtest: two to four split fans remain separate and on the same table plane
+ok 3 - two to four split fans remain separate and on the same table plane
+  ---
+  duration_ms: 0.535291
+  type: 'test'
+  ...
+# Subtest: settled presentation enlarges the table plane without changing pickup or the first slot
+ok 4 - settled presentation enlarges the table plane without changing pickup or the first slot
+  ---
+  duration_ms: 0.276833
+  type: 'test'
+  ...
+# Subtest: resting-card size cannot opt into a dealing resize animation
+ok 5 - resting-card size cannot opt into a dealing resize animation
+  ---
+  duration_ms: 0.379792
+  type: 'test'
+  ...
+# Subtest: Box 4 moving cards stay 20% smaller at every frame with the grip fixed
+ok 6 - Box 4 moving cards stay 20% smaller at every frame with the grip fixed
+  ---
+  duration_ms: 0.878458
+  type: 'test'
+  ...
+# Subtest: only the FIRST card of the configured box selects the box take
+ok 7 - only the FIRST card of the configured box selects the box take
+  ---
+  duration_ms: 0.107708
+  type: 'test'
+  ...
+# Subtest: the dealer upcard keeps its own take and never the box take
+ok 8 - the dealer upcard keeps its own take and never the box take
+  ---
+  duration_ms: 0.060625
+  type: 'test'
+  ...
+# Subtest: a box take keeps the filmed landing like the dealer take; the contract still rejects giving it up
+ok 9 - a box take keeps the filmed landing like the dealer take; the contract still rejects giving it up
+  ---
+  duration_ms: 0.484334
+  type: 'test'
+  ...
+# Subtest: every installed review take validates and shares the plate registration
+ok 10 - every installed review take validates and shares the plate registration
+  ---
+  duration_ms: 1.55575
+  type: 'test'
+  ...
+# (node:81710) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: approved green action owns only the first face-up Astrid dealer card
+ok 11 - approved green action owns only the first face-up Astrid dealer card
+  ---
+  duration_ms: 0.443167
+  type: 'test'
+  ...
+# Subtest: player cards and other dealers cannot consume the approved upcard action
+ok 12 - player cards and other dealers cannot consume the approved upcard action
+  ---
+  duration_ms: 0.131833
+  type: 'test'
+  ...
+# Subtest: missing or non-numeric card counts do not accidentally enable the action
+ok 13 - missing or non-numeric card counts do not accidentally enable the action
+  ---
+  duration_ms: 0.058833
+  type: 'test'
+  ...
+# Subtest: shoe registration follows the selected take and cropped source placement
+ok 14 - shoe registration follows the selected take and cropped source placement
+  ---
+  duration_ms: 0.413666
+  type: 'test'
+  ...
+# Subtest: pulling back the shot keeps the filmed shoe and Blender table in the same frame
+ok 15 - pulling back the shot keeps the filmed shoe and Blender table in the same frame
+  ---
+  duration_ms: 0.208291
+  type: 'test'
+  ...
+# (node:81711) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: the installed greeting speak manifest is valid and its media is the reviewed bytes
+ok 16 - the installed greeting speak manifest is valid and its media is the reviewed bytes
+  ---
+  duration_ms: 2.716291
+  type: 'test'
+  ...
+# Subtest: the greeting cuts in at the first frame and out at the last, both ready poses, on the dealer take placement
+ok 17 - the greeting cuts in at the first frame and out at the last, both ready poses, on the dealer take placement
+  ---
+  duration_ms: 0.158542
+  type: 'test'
+  ...
+# Subtest: audio starts on the first presented frame: the measured offset is the cross-correlation lag of the embedded track
+ok 18 - audio starts on the first presented frame: the measured offset is the cross-correlation lag of the embedded track
+  ---
+  duration_ms: 0.114792
+  type: 'test'
+  ...
+# Subtest: the validator rejects broken manifests
+ok 19 - the validator rejects broken manifests
+  ---
+  duration_ms: 0.218792
+  type: 'test'
+  ...
+# Subtest: the runtime is opt-in for Astrid on the Blender table only
+ok 20 - the runtime is opt-in for Astrid on the Blender table only
+  ---
+  duration_ms: 2.016792
+  type: 'test'
+  ...
+# Subtest: the waiting cadence never glances twice in a row and never idles more than 3 base loops
+ok 21 - the waiting cadence never glances twice in a row and never idles more than 3 base loops
+  ---
+  duration_ms: 5.999834
+  type: 'test'
+  ...
+# Subtest: the cadence is not periodic: base holds vary in length
+ok 22 - the cadence is not periodic: base holds vary in length
+  ---
+  duration_ms: 0.350084
+  type: 'test'
+  ...
+# Subtest: glance segments only start and end on the waiting clip ready-pose frames; base is its own loop
+ok 23 - glance segments only start and end on the waiting clip ready-pose frames; base is its own loop
+  ---
+  duration_ms: 0.501958
+  type: 'test'
+  ...
+# Subtest: the installed idle keeps the eye-contact loop as base and splices 15777d5f glances with the measured offset
+ok 24 - the installed idle keeps the eye-contact loop as base and splices 15777d5f glances with the measured offset
+  ---
+  duration_ms: 0.822709
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 71.673917
