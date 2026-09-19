@@ -1025,3 +1025,46 @@ Runtime: `astrid-idle-scheduler.mjs` (pure, seeded mulberry32) draws base loops 
 Verified in `astridboxright.localhost:4190` (`astrid-green-waiting/gameplay-qa`): 62 s watch logged base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base,full,base,base,full,… with screenshots of base and each glance; one round held the idle at frame 120 0.76 s after Deal Now, played the box-5 and dealer takes, resumed with base, hit/stand and settled 967.50 -> 977.50; no console warnings or errors. Four scheduler tests, the earlier nine, the dealer-sync probe and the full pre-commit pass.
 
 Still broken: a small head pop at each splice (ready frames are close, not identical) and a one-frame seek hitch at segment starts; the hold can delay a deal by up to 5 s during `full`; the waiting ready pose is not the dealing takes' frame 0, so those cuts stay hard; a take started outside the green path pauses the idle mid-segment. The Playwright browser is shared with another session on this machine. Not visual acceptance.
+
+## 2026-09-19 — Box 4 blue-card reference pair, built-in images after rejection
+
+Kevin asked root to take over Claude's Box4 plan: blue card/white border,
+magenta-yellow-cyan-white face corners, one white back-centre dot, physical
+size fixed on the table plane. Plates must be shown before a Seedance take.
+Box4 means zero-based, one seat viewer-right of centre. Current runtime
+PlateCam-lower-review and ordinary 72x103mm card layout yield native target
+corners1091.76/690.47,1154.09/683.44,1178.22/740.01,1113.72/747.56;
+centre59.09%/66.24%, above its chip. Generator source camera/framing remains
+approved269f8943; no camera, actor transform or game layout changed.
+
+Three Higgsfield GPTImage2.5 low-quality2k image jobs were submitted:
+start2ad17459, rejected-end9e7df4f0 (wrong rotation, duplicate magenta), and
+correction9b95f4a1 using a deterministic placement-guide reference. All
+completed, archived and UNAPPROVED. One-credit preflight each. User rejected
+photographic quality and explicitly directed GPT images to be generated here
+instead of spending Higgsfield credits. Do not reuse those images as inputs.
+
+Built-in image_gen then made a fresh pair directly from original approved
+plate269f8943 and exact /Users/solvifyab/Desktop/ref-identity.png for start;
+end uses that fresh start plus the projected card guide. Current candidate:
+content/staging/2026-09-19/astrid-blue-box4/builtin/start.png and end.png,
+1668x943 each. Full prompts and original output paths in builtin/prompts.json.
+StartSHA493c5f9b00516a219fde328dd8caf1147d86410fda47880c4f8a06d619bf42f0;
+endSHAba88f6be46e9ac9af0bd7ede6f6e7be492ff29ea628f26b7e5c5559fb66c09de.
+Both shown inline. One blue card per image; four distinct end marker colours
+observed. End blue-inner-boundary error against requested OUTER white border
+averages2.71native-equivalentpx,max3.24px. This is a geometry check, not
+acceptance. Outputs are generated edits, not pixel-identical preservation of
+Astrid or a higher-resolution master. User appearance/plate review pending.
+
+No Seedance job submitted, no gameplay/media-manifest installation, no wallet,
+database, existing source or other dealer change. Future tracking uses raw
+RGB before keying, fixed physical size; on-felt X/Z/yaw, lifted card rigid3D
+pose. Two dots alone do not uniquely solve unrestricted3D orientation;
+ambiguous frames require outline/temporal evidence or explicit inference.
+Repository pre-commit checks and audit-dealer-sync --probe passed. Browser
+round QA is not claimed for uninstalled reference stills.
+
+Earlier Box5 fixed-physical-size trial stays isolated/uninstalled under
+astrid-box5-rigid-track. It retained visible source/hand mismatch and cannot
+be described as accepted; no Box5 runtime replacement was made this turn.
