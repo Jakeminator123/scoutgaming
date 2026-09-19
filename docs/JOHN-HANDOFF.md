@@ -1422,3 +1422,37 @@ Small skin-tone/texture differences remain between independently generated sourc
 The reverse bridge is not a separately filmed return. No new broad visual acceptance
 of speech, lipsync or all seven seats is implied. User4190 session/database untouched;
 no production deployment or push. Review remains Astrid on port4211.
+
+## 2026-09-20 — Astrid color/scale and loop seam correction
+
+User rejected visible skin-tone/size shifts and broken loops in the folded-rest
+revision. Repaired from existing sources only; no new generation jobs.
+Staging: `content/staging/2026-09-20/astrid-seam-repair/`.
+
+All17 speech display copies now use a fixed first-plate uniform scale/translation
+and fixed measured RGB balance against the existing ready source. Exact text,
+original recordings, mp3 hashes, frame counts/fps and audio offsets stay unchanged.
+New enter/exit maps bind to the display hashes. They are review assets; previous
+visual acceptance is not inherited. Source build scripts follow hash-bound display
+revision/rest manifests so normal rebuilds cannot quietly restore old copies.
+
+Folded idle has a 12-frame motion-aligned moving overlap and adjacent-frame wrap.
+Out/back share that loop entry. Player waits for the boundary before unfolding,
+coalesces callers, and avoids an idle flash when readiness is requested during
+folding. Old full-head-turn glances are omitted from this folded cycle; native
+breathing/eyes remain. Pending holds/seeks settle on disposal.
+
+Rendered isolated guest4211: all17 lines, greeting/goodluck twice, multiple complete
+idle wraps, full Box4 round 5H+6H hit6D=17, insurance declined, stand, dealer bust,
+stake5/return10/balance1010 and resumed folded rest. No new warnings/errors. Shared
+Vera/Amira/Mei goodluck twice in a separate hidden rehearsal, unchanged media.
+Focused lifecycle/speech checks, full pre-commit and dealer-sync --probe passed.
+Independent audit:1060 speech frames, eye alpha>=250, no new opaque crop loss;
+loop wrap head difference25.32->1.91. Visual sheets and captured transition video
+retained. These measurements are not blanket source/lipsync/all-seat acceptance.
+
+Limits: waiting for a safe exit can add up to2.54s before unfolding. Return still
+reverses the silent bridge. Generated facial texture/expression differences remain;
+this correction addresses tone, scale and cuts, not a new identity generation.
+User4190 database/session untouched. No production deployment or push. CAC-9 remains
+In Dev: this seam work does not close its broader hand/fingertip masking expectation.

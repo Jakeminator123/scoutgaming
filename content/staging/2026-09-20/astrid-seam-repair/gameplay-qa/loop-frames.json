@@ -1,0 +1,1487 @@
+[
+  {
+    "file": "loop-000.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-001.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-002.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "48",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-003.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "49",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-004.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "49",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-005.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "51",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-006.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-007.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-008.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-009.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "54",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-010.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-011.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-012.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-013.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "57",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-014.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "58",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-015.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "58",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-016.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-017.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-018.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "62",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-019.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-020.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-021.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "3",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-022.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-023.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-024.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-025.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "6",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-026.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-027.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-028.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-029.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "10",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-030.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "10",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-031.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "12",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-032.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "13",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-033.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "13",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-034.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "13",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-035.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "15",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-036.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "16",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-037.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "16",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-038.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "18",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-039.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "18",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-040.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "19",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-041.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "19",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-042.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "21",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-043.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "22",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-044.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "22",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-045.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "22",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-046.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "24",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-047.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-048.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-049.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-050.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "28",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-051.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "28",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-052.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "30",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-053.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "30",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-054.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "31",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-055.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "31",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-056.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "34",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-057.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "34",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-058.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "34",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-059.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "37",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-060.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "37",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-061.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "39",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-062.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "40",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-063.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "40",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-064.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "42",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-065.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "43",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-066.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "43",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-067.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "45",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-068.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-069.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-070.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-071.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "48",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-072.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "49",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-073.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "49",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-074.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "49",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-075.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "51",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-076.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-077.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-078.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-079.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "54",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-080.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-081.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-082.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "57",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-083.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "57",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-084.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "58",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-085.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "58",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-086.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-087.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "63",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-088.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "0",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-089.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-090.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-091.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "3",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-092.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-093.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-094.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-095.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "6",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-096.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "6",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-097.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-098.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-099.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "9",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-100.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "10",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-101.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "10",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-102.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "10",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-103.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "13",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-104.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "13",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-105.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "13",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-106.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "15",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-107.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "16",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-108.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "16",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-109.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "18",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-110.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "18",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-111.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "19",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-112.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "21",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-113.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "22",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-114.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "22",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-115.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "24",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-116.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-117.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-118.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-119.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "27",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-120.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "28",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-121.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "28",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-122.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "30",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-123.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "30",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-124.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "31",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-125.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "31",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-126.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "31",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-127.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "33",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-128.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "34",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-129.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "34",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-130.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "36",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-131.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "36",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-132.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "37",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-133.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "37",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-134.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "39",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-135.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "40",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-136.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "40",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-137.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "42",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-138.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "42",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-139.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "43",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-140.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "43",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-141.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "43",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-142.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-143.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "48",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-144.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "48",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-145.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "51",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-146.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-147.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-148.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-149.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-150.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-151.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "57",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-152.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "58",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-153.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "58",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-154.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-155.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "64",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-156.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-157.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-158.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-159.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "3",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-160.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-161.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-162.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-163.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "6",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  },
+  {
+    "file": "loop-164.png",
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "65",
+      "restState": "rest"
+    }
+  }
+]

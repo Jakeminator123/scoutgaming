@@ -36,11 +36,18 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
   baseCanvas.setAttribute('aria-label','Astrid waiting');glanceCanvas.setAttribute('aria-hidden','true');
   const random=mulberry32(seed);
   const scheduler=createIdleScheduler({segments:{base:{start:0,end:base.frames-1},...take.segments},random,...(take.scheduler??{})});
-  const eps=1e-4,sequence=[];
+  const eps=1e-4,sequence=[],seekWaiters=new Set();
   let stopped=false,held=false,holdWaiters=[],current='base',glance=null,previousBaseTime=-1,baseLoops=0,lastProgress=performance.now(),watchdog,baseRequest,glanceRequest;
   const [offsetX,offsetY]=take.spliceOffset??[0,0];
   const record=name=>{sequence.push(name);if(sequence.length>60)sequence.shift();baseCanvas.dataset.idleSegment=name;baseCanvas.dataset.idleSequence=sequence.join(',');};
   const settleHold=()=>{held=true;baseCanvas.dataset.idleState='held';for(const done of holdWaiters.splice(0))done();};
+  const seek=async(video,target,tolerance)=>{
+    if(Math.abs(video.currentTime-target)<tolerance)return;
+    await new Promise(resolve=>{
+      const finish=()=>{video.removeEventListener('seeked',finish);seekWaiters.delete(finish);resolve();};
+      seekWaiters.add(finish);video.addEventListener('seeked',finish,{once:true});video.currentTime=target;
+    });
+  };
   const resize=()=>{
     const fit=uniformRegistration(take.camera,{width:innerWidth,height:innerHeight});
     Object.assign(baseCanvas.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});
@@ -61,7 +68,7 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
     const segment=take.segments[name];glance={name,...segment};current=name;record(name);log(name,`${glances.jobId.slice(0,8)} ${segment.start}-${segment.end}`);
     baseMedia.video.pause();
     const target=(segment.start+.5)/glances.fps;
-    if(Math.abs(glanceMedia.video.currentTime-target)>=.5/glances.fps){await new Promise(resolve=>{glanceMedia.video.addEventListener('seeked',()=>resolve(),{once:true});glanceMedia.video.currentTime=target;});}
+    await seek(glanceMedia.video,target,.5/glances.fps);
     if(stopped||held)return;
     glanceActor.paint(glanceMedia.video,null,{packed:true});showGlance(true);lastProgress=performance.now();
     await glanceMedia.video.play().catch(error=>{baseCanvas.dataset.idleState='error';console.warn('[waiting idle]',error.message);});
@@ -129,7 +136,7 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
       // held frame flashes for one refresh while the video seeks back to 0.
       const video=baseMedia.video;video.pause();
       const target=.5/base.fps;
-      if(Math.abs(video.currentTime-target)>=.5/base.fps)await new Promise(resolve=>{video.addEventListener('seeked',resolve,{once:true});video.currentTime=target;});
+      await seek(video,target,.5/base.fps);if(stopped)return;
       current='base';glance=null;showGlance(false);baseActor.paint(video,null,{packed:true});
       return capturePacked(video,base.width,base.height);
     },
@@ -142,6 +149,8 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
     },
     resume(){if(held&&!stopped&&!host.classList.contains('performance-playing')){held=false;glance=null;playBase();}},
     dispose(){stopped=true;clearInterval(watchdog);observer.disconnect();removeEventListener('resize',resize);
+      for(const done of holdWaiters.splice(0))done();
+      for(const finish of [...seekWaiters])finish();
       for(const [m,r] of [[baseMedia,baseRequest],[glanceMedia,glanceRequest]]){m.video.pause();if(r!==undefined)m.video.cancelVideoFrameCallback(r);m.video.removeAttribute('src');m.video.load();}
       baseCanvas.remove();glanceCanvas.remove();baseActor.dispose();glanceActor.dispose();},
   };
