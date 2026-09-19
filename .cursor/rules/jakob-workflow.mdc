@@ -24,6 +24,7 @@ alwaysApply: true
   `docs/animation-events/archive/v2-long-term-goal-best-rng/`.
 - Never push `main`, rebase shared branches or force-push. Do not create an
   integration MR until its target has been explicitly agreed.
-- Inbox check: `/ping-croupier` at natural checkpoints; never poll continuously.
+- Inbox: one quick `/ping-croupier` check at the start of every new user turn;
+  use a named agent and a per-chat cursor. No polling between turns.
 - Jira CAC is the active implementation/QA tracker. V3 document status never
   replaces the issue's real workflow status.

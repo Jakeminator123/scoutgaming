@@ -47,8 +47,11 @@ historik, inte som aktiv arkitektur.
 
 ## Kommunikation
 
-- Jakob–Kevin: https://gitlab.com/scout-gg/croupier/-/work_items/1
-- Använd `/ping-croupier` vid ett naturligt kontrolltillfälle, inte kontinuerlig
-  polling.
+- Kevin–Jakob–Emil: https://gitlab.com/scout-gg/croupier/-/work_items/1
+- Läs [inbox-workflowet](AGENT-INBOX.md). Kontrollera `/ping-croupier` en gång
+  i början av varje ny användartur. Använd ett stabilt agentnamn från chatten
+  och en egen läsmarkering; ignorera den gamla gemensamma seen-filen.
+- Var tyst om inget relevant hänt. Återge relevanta svar och agentens egna
+  publicerade svar för den lokala användaren. Ingen polling mellan turerna.
 - Uppgiftsspecifika frågor hör till relevant issue eller merge request.
 - Lägg aldrig tokens, lösenord eller privata mediefiler i wiki, issue eller Git.
