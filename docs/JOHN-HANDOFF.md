@@ -1084,3 +1084,33 @@ Kevin: combine, not swap. The idle that was already playing, the eye-contact loo
 Splice offset measured in the shared crop origin (560,0), base frame 0 against waiting frames 0/41/90/120: head phase-correlation dy -15.4/-15.1/-15.1/-14.7 px, torso -15.8/-15.3/-15.8/-15.5 px, dx within 0.5 px, silhouette top row 44 versus 26. The waiting clip sits about 15 px higher, so the glance layer is translated down 15.3 source px (scaled with the fit), no warping. Residual masked RGB difference about 14 grey levels: a pop remains at each splice.
 
 Runtime (`astrid-green-waiting.mjs`): the base video loops on its own canvas; at each loop boundary the scheduler (unchanged: 1-3 loop holds, p=0.4, never two glances in a row, forced after 3 loops) may switch to the glance canvas for one segment and back to base frame 0. A dealing take holds a glance at its end frame; base is held at once since every base frame is a ready pose. Verified in `astridboxright.localhost:4190` (`astrid-green-waiting/gameplay-qa`): 90 s log base,glanceRight,base,base,full,base,base,base,base,glanceLeft,base,base,base with glances at loops 1, 3 and 6 (a base loop is 8 s), screenshots of base and each glance with the offset applied (glance layer top 51.7 px versus base 44.6 px at the QA fit), and a round: held at base frame 121 within 40 ms of Deal Now, box-5 and dealer takes played, base resumed at frame 0, settled. No console warnings or errors; 16 focused tests, probe and pre-commit pass. Still: the splice pop, glance holds of up to 5 s before a deal, hard cuts into the dealing takes, shared Playwright browser. Not visual acceptance.
+
+## 2026-09-19 — approved built-in Box 4 pair tested once; motion not accepted
+
+Kevin approved the built-in pair with “Awesome” then “great”. Submitted one
+Seedance2.0 4s/1080p/std/high-bitrate/silent16:9 job via MCP: c01866d1-7c93-43a4-9493-73f7c66d3725,
+36-credit preflight. Start upload2d404615, endac6a5ea5, extra identityb2c16866.
+Exact request, receipt and source are in astrid-blue-box4. No Higgsfield image
+jobs this turn. No extra video submitted after reviewing the outcome.
+
+Source completed1920x1080,24fps,97frames, SHA38dad95f8ad60819bbb2604f85b4ce424d4db425324bdbd0aceca91eb759215a.
+Inspected native frame contact sheets, full-frame overview and browser replay.
+Blue card visibly extracts from the shoe, turns through edge-on frame28,
+shows front corner dots, lands at the intended Box4 target, and stays after
+empty return. But the same hand does all actions, no hand-to-hand transfer;
+a long presentation gesture replaces the quick turn/direct slide, release
+aroundframe55/2.29s, empty returnaroundframe68. Unwanted white Box4 text is
+also generated. Source fails the choreography gate: not masked or installed.
+
+Built inspect-source.py and check-rigid-fit.py solely in that staging folder.
+Blue-body evidence96/97frames missesframe28. False colour candidates include
+finger-edge ringing and cyan bleaching; not all detections are real dots.
+Bounded fixed72x103mm fit over FACE-UP frames31–96 gives stable landing
+(0.26px marker residual) without scaling, using runtime target camera.
+This residual uses marker offsets calibrated from the same finalframe;
+it is not independent accuracy. Partial-marker lifted poses remain inferred;
+frame43 edge mismatch persists. No pickup/turnover replacement track or
+complete-gameplay acceptance claimed. See source-review/review.json,
+rigid-fit.jpg and raw contact sheets. Retain approved plates, not failed
+choreography, for future work. No game, manifests, server cards/wallet/database,
+idle scheduler, or otherdealer changes made. Pre-commit and sync --probe pass.

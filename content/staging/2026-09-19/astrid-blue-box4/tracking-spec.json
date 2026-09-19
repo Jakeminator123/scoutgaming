@@ -2,7 +2,7 @@
   "version": 1,
   "box": 4,
   "indexing": "zero-based; one position viewer-right of centre",
-  "scope": "one first player card; plate review only; no video submission yet",
+  "scope": "one first player card; approved plates tested in job c01866d1; choreography failed review; diagnostic tracking only",
   "cameraReferenceJob": "269f8943-e9ba-473e-9167-13774c61dd9f",
   "identityReference": "ref-identity.png",
   "identityMediaId": "b2c16866-56c4-4406-bbb1-7fed713ca485",

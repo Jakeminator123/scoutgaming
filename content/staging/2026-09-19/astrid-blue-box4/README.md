@@ -1,11 +1,49 @@
-# Box 4 blue tracking-card plates — awaiting review
+# Box 4 blue tracking-card take — motion review failed
 
-Current proposed pair: `builtin/start.png` and `builtin/end.png`.
+Approved pair: `builtin/start.png` and `builtin/end.png`.
 Generated using the built-in image_gen tool after Kevin explicitly requested
 GPT images here rather than paying Higgsfield image credits. The existing
 Higgsfield-derived start/end files in this folder are rejected/archive only.
-No Seedance job has been submitted for this pair. No gameplay files, live
+Kevin approved the pair and one video with “Awesome” then “great”. One
+Seedance 2.0 job c01866d1-7c93-43a4-9493-73f7c66d3725 was submitted:
+4 seconds, 1080p, standard mode, high bitrate, silent, 16:9, 36-credit
+preflight. Exact request and receipt are saved alongside this document.
+It uses the two built-in plates plus ref-identity.png as identity only.
+No gameplay files, live
 media manifests, dealer source, server cards, wallet or database changed.
+
+## Completed take and decision
+
+`source.mp4`: job c01866d1, 1920x1080, 24fps, 97 frames, SHA256
+38dad95f8ad60819bbb2604f85b4ce424d4db425324bdbd0aceca91eb759215a.
+One card visibly leaves the actual shoe, turns through a thin edge and lands
+at the intended target. The hand returns empty. However the same hand does
+everything (no requested transfer), with an upright presentation gesture
+and release only around frame55/2.29s. White “Box 4” text was generated on
+the table despite the no-text instruction. Do not install this take as an
+accepted realistic deal. No second video job was submitted.
+
+Raw inspection: `inspect-source.py`, `source-review/overview.jpg`, and
+`source-review/contact-*.jpg`. Full decoded PNGs are locally reproducible
+and ignored by Git. Blue body detection succeeds on96/97frames, missing
+thin-edge frame28. Candidate colours alone are not marker correspondence:
+magenta finger-edge ringing and bleached cyan cause false positives/gaps.
+
+`check-rigid-fit.py` performs a bounded diagnostic on face-up frames31–96.
+The card stays72x103mm with no scale parameter; on-felt fits are X/Z/yaw,
+lifted poses have temporal priors and a25cm maximum centre lift. Finger
+occlusion is explicitly excluded from the far-left marker beforeframe56.
+Results: `source-review/rigid-fit.json` and `rigid-fit.jpg`. Landed-marker
+mean residual is0.26px against marker offsets calibrated from the SAME end
+frame; this measures stability, not independent accuracy or unique3Dpose.
+The orange outline mostly follows the face-up card. Frame43 still shows
+a visible edge/pose mismatch. Pickup/turnover were not solved, and no claim
+of a complete replacement track, 60fps output, masking, or gameplay QA is made.
+
+The repository pre-commit checks and dealer-sync --probe passed. Evidence,
+requests and results are retained for the user's hands-on review. Any next
+paid take needs a concrete revised choreography, not reuse of this failed
+motion as an accepted baseline.
 
 ## Current input provenance
 
@@ -36,7 +74,7 @@ component size and expected corner region, not every white pixel.
 
 Both outputs are 1668 x 943. They are newly generated photographic edits,
 not byte-identical preservation of Astrid or a higher-resolution master.
-Identity, photographic quality and framing still need Kevin's review.
+Kevin accepted this pair for the single motion test.
 Static detection/geometry checks do not establish reliable motion, finger
 contact, pickup, turnover, release or looping.
 
