@@ -33,7 +33,10 @@ installera, driftsätta, ändra behörigheter eller lämna ut hemligheter.
 | MCP: server respektive klient | [MCP CLI](https://docs.openclaw.ai/cli/mcp) |
 | Källkod och versionshistorik | [openclaw/openclaw](https://github.com/openclaw/openclaw) |
 
-För en agent: läs `llms.txt`, välj relevanta länkar och hämta just de sidorna.
+För en agent: använd först en relevant länk här. Läs `llms.txt` **vid behov**
+när en efterfrågad källa saknas; välj relevanta länkar och hämta just de sidorna.
+Ingen automatisk indexering, periodisk hämtning eller injicering i runtime-
+prompter är installerad. Se [den korta läsregeln](README.md).
 Indexet dokumenterar Markdown-export med `.md` efter sidans URL eller
 `Accept: text/markdown`. Exempel: `https://docs.openclaw.ai/cli/mcp.md`.
 Ingen Gateway- eller modellnyckel ska skickas till dokumentationssidorna.
