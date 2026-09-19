@@ -44,15 +44,20 @@ facit för motor, RNG, events, media och faktisk runtime.
 
 ## Kommunikation
 
-- Kort Jakob–Kevin-fråga: [work item #1](https://gitlab.com/scout-gg/croupier/-/work_items/1).
+- Kevin–Jakob–Emil och deras namngivna agenter:
+  [work item #1](https://gitlab.com/scout-gg/croupier/-/work_items/1).
 - Uppgiftsspecifik diskussion hör till relevant issue eller merge request.
 - Videoöverlämning från Emil går till Kevin; Jakob konsumerar den verifierade
   artefakten och dess kontrakt när den är tillgänglig.
 
-Inboxregeln kan vara inläst i varje agenttur utan att ett GitLab-anrop görs.
-Själva kontrollen sker bara efter ett uttryckligt `/ping-croupier` eller vid en
-relevant start-, handoff- eller integrationskontrollpunkt, högst en gång per
-kontrollpunkt. Ingen automatisk kontroll görs efter varje användarmeddelande.
+På Jakobs begäran kontrolleras inboxen nu en gång i början av varje ny
+användartur. Agenten har ett namn som liknar chatttiteln och en egen
+läsmarkering. Inget relevant nytt ger ingen extra text i den lokala chatten.
+Ett relevant svar återges kort med avsändare och länk; agentens svar om den
+aktuella uppgiften återges både i GitLab och för den lokala användaren.
+Ingen polling sker mellan turerna och ingen kommentar skickas bara för att
+agenten har läst. Se [hela inbox-workflowet](AGENT-INBOX.md), inklusive snabb
+API-kontroll, webbläsarreserv och hur Kevin/Emil ansluter sina egna agenter.
 
 `.agents/skills/ping-croupier/SKILL.md` är Codex-källan. Den byte-identiska
 `.cursor/skills/ping-croupier/SKILL.md` behålls som kompatibilitetskopia för

@@ -65,6 +65,40 @@ assets; real video-bank activation needs complete take hashes, speech bundles,
 calibration and shared-player acceptance. See the lab README, deployment guide
 and `media/README.md` for the staged plan and video register fields.
 
+## 2026-09-20 — named agents and per-user-turn shared inbox
+
+Jakob explicitly replaced the earlier checkpoint-only ping policy. The
+current rule now requests one inbox check at the beginning of each new user
+turn, with a stable chat-derived agent name and a separate cursor per chat.
+No timer/background polling or comments for empty checks. Relevant replies
+and scoped outgoing answers are also reported to the local user.
+
+Implementation: tools/croupier-inbox.mjs, matching Codex/Cursor ping skills,
+AGENTS.md/CLAUDE.md and inbox rules, docs/shared/AGENT-INBOX.md. The helper uses
+one small conditional GitLab Notes API GET when unchanged, pagination on
+changes, pending messages until explicit acknowledgement, versioned edits,
+signed drafts and explicit send/reconciliation. It does not filter agents
+solely by their shared human account. Credentials/cursors/drafts are ignored
+under .croupier-inbox; the old global seen file is no longer used.
+
+Verified: 15 focused Node tests covering per-chat isolation, routing,
+pagination of 205 messages, pending delivery, edited notes, failed fetches,
+signed send recovery and locks; git diff --check. The two skill copies are
+byte-identical; frontmatter was inspected manually because the bundled skill
+validator's PyYAML dependency is absent in the system Python. Browser fallback successfully
+read work item #1. No GitLab API credential/connector is available in this
+environment, so the live cheap API path and live API sending are NOT verified
+or enabled here. Follow the browser fallback until an authorized GitLab API
+connection is configured. Do not claim missing authentication means no new
+messages. The rule guides agents; no IDE event hook was installed.
+
+The shared wiki gets the same inbox workflow, onboarding for Kevin/Emil and
+this agent's identity. Kevin/Emil must adopt it in their own working copies;
+publishing docs does not change their agent permissions or branches. Jira CAC
+continues to track implementation/QA; this delivery does not mark any CAC
+issue done. Gameplay/media were not changed. Concurrent OpenClaw work belongs
+to its other local agent and is excluded from this commit.
+
 ## 2026-09-20 — V3 documentation and canvas correction
 
 Documentation-only correction of the Animation events V3 model; no gameplay,
