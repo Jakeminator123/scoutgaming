@@ -47,6 +47,7 @@ Beständigt minne och eventuella text-/talsvar till spelare kräver egna kontrak
 det är inte levererat bara för att operatörssamtalet fungerar.
 
 För publicering: [steg för steg från GitLab till Render](docs/RENDER-START-SV.md).
+För OpenClaws egna verktyg och inställningar: [native admin-dashboard](docs/DASHBOARD-SV.md).
 
 ## Nycklar och anslutning
 
@@ -56,10 +57,12 @@ inte automatiskt för varje spel-event eller chattmeddelande.
 
 Den befintliga **`.env` i Croupier-roten** läses server-side. Labbet läser bara
 sina namngivna inställningar och använder inte automatiskt `OPENAI_API_KEY`.
-Ändringar i nyckel/URL läses på nästa begäran; byt port/host genom omstart.
+Ändringar i runtime-nyckel/URL läses på nästa begäran. Port, host och dashboardens
+ursprung/upstream är däremot låsta till startkonfigurationen och kräver omstart.
 
-`OPENCLAWAPI_KEY` är i denna integration bearer-nyckeln mellan Director och
-OpenClaw Gateway. Till en lokal Gateway behövs också `OPENCLAW_BASE_URL`.
+`OPENCLAWAPI_KEY` är lösenordet till native dashboarden och används även som
+Bearer-credential mellan Director och OpenClaw Gateway. Till en lokal Gateway
+behövs också `OPENCLAW_BASE_URL`.
 När Gateway körs privat på Render ligger nyckeln där och på Render-Director.
 Den lokala servern använder då `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN` för
 utgående HTTPS till Director. Render behöver ingen tunnel till datorn.

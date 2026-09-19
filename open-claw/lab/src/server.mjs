@@ -7,6 +7,7 @@ import { LAB_ROOT, readSettings, isLoopback } from './settings.mjs';
 import { catalogStore } from './store.mjs';
 import { normalizeInput, prepareDecision, finalizeDecision } from './engine.mjs';
 import { askDirector, chatWithDirector, providerStatus, boundedJson, GatewayError } from './openclaw.mjs';
+import { createDashboardProxy } from './dashboard-proxy.mjs';
 
 const SOURCE_TYPES = ['speak', 'deal', 'reveal', 'settle', 'turn', 'idle'];
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
@@ -69,6 +70,11 @@ async function relay(path, method, body, settings, fetchImpl) {
 export async function createLabServer({ settings: settingsProvider = readSettings, fetchImpl = fetch, root = LAB_ROOT, batchBudgetMs = 25000 } = {}) {
   const initial = { ...settingsProvider() };
   if (!isLoopback(initial.host) && !initial.apiToken) throw new Error('LAB_API_TOKEN is required when HOST is not loopback.');
+  // This is a native-auth transport, never a relay authenticated with our keys.
+  // Snapshot at startup: editing .env cannot widen a running public listener.
+  const dashboard = initial.dashboardOrigin && !initial.remoteUrl ? createDashboardProxy({
+    baseUrl: initial.baseUrl, origin: initial.dashboardOrigin, allowLoopbackHttp: initial.dashboardAllowLoopback,
+  }) : null;
   const store = await catalogStore(join(root, 'config/catalog.json'), initial.dataDir);
   const scenarios = JSON.parse(await readFile(join(root, 'fixtures/scenarios.json'), 'utf8'));
   const decisions = new Map();
@@ -114,6 +120,8 @@ export async function createLabServer({ settings: settingsProvider = readSetting
     try { return await promise; } catch (error) { decisions.delete(key); throw error; }
   };
   const server = createServer(async (req, res) => {
+    if (dashboard?.handles(req)) return dashboard.handleRequest(req, res);
+    if (/^\/openclaw(?:[/?]|$)/.test(req.url || '')) return respond(res, 503, { error: 'dashboard_not_configured' });
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob: https:; frame-ancestors 'none'; base-uri 'none'");
@@ -180,6 +188,12 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   });
   server.requestTimeout = 45000;
   server.headersTimeout = 10000;
+  server.on('upgrade', (req, socket, head) => {
+    if (!dashboard?.handleUpgrade(req, socket, head)) socket.destroy();
+  });
+  // Upgraded sockets are not covered by Node's closeAllConnections().
+  const closeServer = server.close.bind(server);
+  server.close = callback => { dashboard?.close(); return closeServer(callback); };
   return { server, store };
 }
 
