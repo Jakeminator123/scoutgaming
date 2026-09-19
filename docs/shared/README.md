@@ -5,6 +5,8 @@ Den gemensamma ytan ligger i GitLab-wikin, inte i `main`:
 https://gitlab.com/scout-gg/croupier/-/wikis/home
 
 - [Arbetssätt](https://gitlab.com/scout-gg/croupier/-/wikis/workflow)
+- [Ping](https://gitlab.com/scout-gg/croupier/-/wikis/ping)
+- [Agent-handoff](https://gitlab.com/scout-gg/croupier/-/wikis/agent-handoff)
 - [Canvas — workflow](https://gitlab.com/scout-gg/croupier/-/wikis/canvas-workflow)
 - [Meddelande till Kevin](https://gitlab.com/scout-gg/croupier/-/wikis/note-to-kevin)
 - [Referensrepon](https://gitlab.com/scout-gg/croupier/-/wikis/reference-repos)

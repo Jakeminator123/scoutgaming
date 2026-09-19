@@ -9,3 +9,4 @@ alwaysApply: true
 - Merge requests Jakob opens target `jakeminator123/work`, not `main`, unless he explicitly says otherwise. Ignore GitLab’s “Create merge request” banner (it aims at `main`).
 - Documentation, canvases and notes belong in the GitLab wiki, not as a second copy of `spelsajt` inside this repo.
 - Kevin on GitLab is `Kevinnegash1` (Owner). Do not invent a GitHub account for him.
+- Quick questions: comment on https://gitlab.com/scout-gg/croupier/-/work_items/1 and mention `@Kevinnegash1`. See `kevin-ping.mdc`.
