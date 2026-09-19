@@ -1,3 +1,31 @@
+## 2026-09-20 — native OpenClaw dashboard published and live
+
+Jakob explicitly approved publishing and activating the native dashboard.
+Pushed and verified 7ec4e17f86e596c6f1c67fc250859250f1003335 on GitLab
+jakeminator123/work from the isolated publication checkout. Only our three
+OpenClaw commits were published above 3622515; the separate 11538a9 video
+registry and local merge remain unpublished and intact in the main checkout.
+Do not push the shared main checkout's HEAD without reviewing that distinction.
+
+Render Director deployment dep-danhsvbtqb8s73bvr6n0 is Live on 7ec4e17.
+Set OPENCLAW_DASHBOARD_ORIGIN=https://croupier-lab-director.onrender.com on
+the existing private Gateway and used Save, rebuild, and deploy. Gateway
+deployment dep-danhtartqb8s73bvs8f0 is Live on the same commit. The real pinned
+CLI validation passed, legacy configuration migration retained its backup,
+and runtime logs reached gateway ready. No new resources or credentials were
+created. Blueprint Auto Sync remains Yes; its setting was not changed.
+
+Verified native UI at https://croupier-lab-director.onrender.com/openclaw/chat:
+it displays "This Gateway expects its password" and reports the Gateway
+reachable, with wss://croupier-lab-director.onrender.com/openclaw selected.
+No secret file was read, no login credential entered and no device approved.
+User next enters their existing OPENCLAWAPI_KEY into Gateway secret. Initial
+browser pairing may follow. Authenticated chat/model call, settings edits and
+restart-persistence acceptance remain unverified live (54 local tests passed).
+Logs also note memory-core dreaming reconciliation lacks an agent-less cron
+owner; cron/heartbeat are intentionally disabled, so no scheduling feature is
+claimed. No gameplay/media/database or IDE-inbox integration was changed.
+
 ## 2026-09-20 — native OpenClaw dashboard ingress (local, awaiting rollout)
 
 Jakob clarified that he wants OpenClaw's real Control UI for chat/tools/settings,
