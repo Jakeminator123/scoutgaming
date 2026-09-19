@@ -35,6 +35,7 @@ const take={
   camera:{width:baseManifest.width,height:baseManifest.height,placement},
   spliceOffset:config.spliceOffset,spliceMeasurement:config.spliceMeasurement,
   segments:config.segments,scheduler:config.scheduler,measured:config.measured,
+  ...(config.restManifest?{rest:JSON.parse(fs.readFileSync(path.resolve(dir,config.restManifest)))}:{}),
   note:'Base = the eye-contact loop already in play (every base frame is a ready pose, held at once); glance segments from the waiting clip splice in at the base loop boundary with a rigid 2D offset; no warping.',
 };
 const errors=idleSegmentErrors(take);if(errors.length)throw new Error(errors.join('\n'));

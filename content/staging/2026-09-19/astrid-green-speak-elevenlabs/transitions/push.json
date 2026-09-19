@@ -3,15 +3,19 @@
   "height": 760,
   "durationMs": 220,
   "flowRange": 64,
+  "actorOffset": [
+    0,
+    20
+  ],
   "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
   "mediaSha256": "b31ee86831c9aa0df8a5f97611de7a31d00cc8481e2d2477735af26d42354e4f",
-  "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+  "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
   "enter": {
     "flow": "push-enter-flow.png",
-    "sha256": "996b52d8c11ca32633606e0d99566a1889d66b9fb37e038e097b28f929a12d0a"
+    "sha256": "85867337f6d60ed539ab088709f395736e40b994d34bde803497601388214367"
   },
   "exit": {
     "flow": "push-exit-flow.png",
-    "sha256": "60d9cbfc5d4a028bbc70045d810307c5a05c374289e257718325e7a2d7690f34"
+    "sha256": "588e66c577278d945b5e6ef26db72be7931b760ca494c21176d2d9c5c9025a6d"
   }
 }

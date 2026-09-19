@@ -1384,3 +1384,41 @@ These checks do not establish perceptual lip-sync approval. Measured settled
 clock deltas in the runs ranged roughly -35 to -127ms; this task does not claim
 sample-perfect playback sync or native source quality beyond the supplied takes.
 User's existing localhost4190/Amira session and live database were left alone.
+
+## 2026-09-20 — Folded resting pose, physical bridge and speech height
+
+User chose folded hands like the original f599e503 idle and explicitly requested
+a transition from its end into the current ready pose. Implemented in
+`content/staging/2026-09-20/astrid-calm-rest/`; exact requests and receipts retained.
+One built-in GPT Image plate, Seedance2.5 folded idle744a9e34, rejected Seedance2.5
+bridge d51c19ba, corrected Seedance2.0 bridge92521ca6. No other generation jobs.
+
+New folded loop uses native frames72–144, omitting prolonged closed eyes at source
+start. Bridge retains native empty-hand unfolding frames40–96 at1.5x; six-frame
+silent optical-flow endpoint joins close small residual pose differences. Reverse
+playback gives the folded return. Rigid actor translations align the heads;
+camera, actor scale and table stay unchanged. No masks consume the eyes (encoded
+head alpha255; no repair pixels needed). The first bridge was rejected before
+installation for changed starting arm geometry.
+
+`astrid-folded-rest.mjs` wraps the existing ready/glance player. Folded breathing
+loops, unfolds into an existing glance every third loop, folds back, and waits
+for the physical bridge before speech/card actions. Consecutive speech keeps the
+ready pose. Assets bind to the current ready source hash. Optional manifest makes
+fallback to the existing waiting player possible if rest media cannot load.
+
+Also fixed speech rising: actor offset[0,20] applied uniformly to all17 recorded
+takes and their rebuilt entry/exit maps. No source speech RGB/audio changes.
+
+Actual isolated guest4211 rendered checks: repeated rest/bridge/glance/return,
+greeting and consecutive goodluck, request during folding, complete zero-based
+Box4 round (4H+8H, hit7S =19; dealer bust; $5 stake/$10 return/balance1005),
+dealerbust speech and resumed folded idle. Final log has no new warning/error.
+Vera/Amira/Mei two-play goodluck regression retained. 11 focused checks,
+full pre-commit and dealer-sync --probe passed. See the staging README and
+height-qa/gameplay-qa contact sheets/logs for evidence and source decisions.
+
+Small skin-tone/texture differences remain between independently generated sources.
+The reverse bridge is not a separately filmed return. No new broad visual acceptance
+of speech, lipsync or all seven seats is implied. User4190 session/database untouched;
+no production deployment or push. Review remains Astrid on port4211.

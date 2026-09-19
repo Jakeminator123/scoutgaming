@@ -11,6 +11,10 @@
     0,
     0
   ],
+  "actorOffset": [
+    0,
+    20
+  ],
   "spliceMeasurement": {
     "method": "greeting frame 0/115 against the base eye-contact idle frame 0 and the dealer take frame 0; phase correlation of head/torso/hand windows, dx/dy in source px",
     "windows": {
@@ -131,7 +135,7 @@
         }
       }
     },
-    "note": "Props register at (0,15). The ready poses differ: head ~20 px and hands 6-10 px. Per-line bidirectional motion fields bridge this difference only during the silent 220 ms joins. The speech frames keep their original placement."
+    "note": "Props register at (0,15). The actor is translated down 20 source pixels to match the idle head and torso height. Both playback and silent join endpoints share this rigid offset; size, source frames and audio are unchanged. The small residual hand-pose difference is interpolated during joins."
   },
   "lines": {
     "greeting": {
@@ -195,18 +199,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "5b1f348737efd4374f498b23e21be935d8cdd450172af79e944a36845ca9dd75",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "greeting-enter-flow.png",
-          "sha256": "5768c83c9ad16fc53ae81ade7097af8d58ffc52de9b5d5064c287e33b9b97f29",
-          "src": "review/astrid-green-speak/greeting-enter-5768c83c9ad1.png"
+          "sha256": "f1c60b8397e008a2cee528d2412b4eba9f8cba143aecb6b1f6db798d7eb53a13",
+          "src": "review/astrid-green-speak/greeting-enter-f1c60b8397e0.png"
         },
         "exit": {
           "flow": "greeting-exit-flow.png",
-          "sha256": "c2ea7c08eda30b2150df9dff6bf0e30aaea2ec6798e2aeb75d98b48fce68162d",
-          "src": "review/astrid-green-speak/greeting-exit-c2ea7c08eda3.png"
+          "sha256": "af455f608b267f486a6b7dcef08ab8688596fb657ee288505abc6fc446ca7c54",
+          "src": "review/astrid-green-speak/greeting-exit-af455f608b26.png"
         }
       }
     },
@@ -271,18 +279,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "6052f1d41755014712019d260d2b4713ee40262769e29c7a726c60ff883220b2",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "blackjack-enter-flow.png",
-          "sha256": "56a00345445dcc75b1fbc7b626047b0e4f136de1cc0f1a3cbd5e582d9c75468b",
-          "src": "review/astrid-green-speak/blackjack-enter-56a00345445d.png"
+          "sha256": "90c170f4e55b97ed3ec4805ad36ebf18555aa9add157fd8dabf5d7edae504f67",
+          "src": "review/astrid-green-speak/blackjack-enter-90c170f4e55b.png"
         },
         "exit": {
           "flow": "blackjack-exit-flow.png",
-          "sha256": "b0f43fcdcc299308d5892a951f7549afad977799f2e5af6a7aa2fe59eee89261",
-          "src": "review/astrid-green-speak/blackjack-exit-b0f43fcdcc29.png"
+          "sha256": "5ed0c206cd20e829f7ef5146b2c524337b544854c3391a7f5d25df81aed7719a",
+          "src": "review/astrid-green-speak/blackjack-exit-5ed0c206cd20.png"
         }
       }
     },
@@ -347,18 +359,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "1811e6e0ac57c4daabe45d822ca22a6d9e4e1eb47956bb1992829130dd098cf9",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "bust-enter-flow.png",
-          "sha256": "a514924772209750a0ed6261fe80805313401795f83dba6dfbfa4265e2675f38",
-          "src": "review/astrid-green-speak/bust-enter-a51492477220.png"
+          "sha256": "afcc43d1b9d1cb181b4876435344b4353d85cc1b3bfd4f28e5475e6d29e6400a",
+          "src": "review/astrid-green-speak/bust-enter-afcc43d1b9d1.png"
         },
         "exit": {
           "flow": "bust-exit-flow.png",
-          "sha256": "a50e48460c6076050b214c5c4432e0e2abaf916e9c803976342495ee44b3d5f0",
-          "src": "review/astrid-green-speak/bust-exit-a50e48460c60.png"
+          "sha256": "3671af65181da5db44fc12b5bb4ec118878ad85078d6b9803dd826bf7125fdb8",
+          "src": "review/astrid-green-speak/bust-exit-3671af65181d.png"
         }
       }
     },
@@ -423,18 +439,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "baa85a529b30c1ee235b1821b1034f183f442f4febb64b2779d0be634ed359c7",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "chatter1-enter-flow.png",
-          "sha256": "6745791efd4616e4e72700fb39707ba92e4da3a49ccf52de184b9e664410c104",
-          "src": "review/astrid-green-speak/chatter1-enter-6745791efd46.png"
+          "sha256": "14112b38c864eb3b585956e19bf4ce097278312549b711aa58395af960e1042f",
+          "src": "review/astrid-green-speak/chatter1-enter-14112b38c864.png"
         },
         "exit": {
           "flow": "chatter1-exit-flow.png",
-          "sha256": "e6965845f3726e9f67517c9bf020f3691bbec76c9350aec587734088c9139df5",
-          "src": "review/astrid-green-speak/chatter1-exit-e6965845f372.png"
+          "sha256": "34ec891b2b1cc57c66d4ea36f05c99a1dfbe1d2486c61b9ecde4cb1937ca2ca9",
+          "src": "review/astrid-green-speak/chatter1-exit-34ec891b2b1c.png"
         }
       }
     },
@@ -499,18 +519,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "738d7d5230b958bc4c895bc2f1cb6cba00d0f9643f890add4986fe1e7006efe3",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "chatter2-enter-flow.png",
-          "sha256": "75b9680a3ee54affe0df9fb9648f1662b5a8114bbca8200ccbcf9838b1010d39",
-          "src": "review/astrid-green-speak/chatter2-enter-75b9680a3ee5.png"
+          "sha256": "0538959f0c416d2fc92aaba61e48550cb6c029518a733617905eebfaafaf29ec",
+          "src": "review/astrid-green-speak/chatter2-enter-0538959f0c41.png"
         },
         "exit": {
           "flow": "chatter2-exit-flow.png",
-          "sha256": "54706973fb0cb4b2d017e10fc2ed2dc4ae07ea009d1480f33f26a7ffbaf7e9c6",
-          "src": "review/astrid-green-speak/chatter2-exit-54706973fb0c.png"
+          "sha256": "d1dbfd9623af457dcb735ecd72c8b4a68d094905699c88c7cc4ab8e95748c460",
+          "src": "review/astrid-green-speak/chatter2-exit-d1dbfd9623af.png"
         }
       }
     },
@@ -575,18 +599,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "4e591a1bb640db6a177e244c8c5e6c16a7294e53e77460e69de0b834552f924b",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "dealerblackjack-enter-flow.png",
-          "sha256": "846dcdf7e41474549169c40913f626555cded99989179d33fdef51a739e7e1bc",
-          "src": "review/astrid-green-speak/dealerblackjack-enter-846dcdf7e414.png"
+          "sha256": "3dcd7ed6348849360b5501630dbd49e433decfbbc45d214029259ca526e9cca4",
+          "src": "review/astrid-green-speak/dealerblackjack-enter-3dcd7ed63488.png"
         },
         "exit": {
           "flow": "dealerblackjack-exit-flow.png",
-          "sha256": "762df95949991f6e2e31ace16145ced85f4d16617a85b53216fcabb3a0dca2ed",
-          "src": "review/astrid-green-speak/dealerblackjack-exit-762df9594999.png"
+          "sha256": "d419f42683e5e6ac5eaf75129de3d19b6316a5a3096feef26aae2cec80e8b58a",
+          "src": "review/astrid-green-speak/dealerblackjack-exit-d419f42683e5.png"
         }
       }
     },
@@ -651,18 +679,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "f4bc28973851987340094e7e3a7c51162f0a4a04b456b5abe82bdd8bdf727c86",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "dealerbust-enter-flow.png",
-          "sha256": "33973695665f7b44df2985c6e77b92c029d0a879a9bef5b74cda2dba58e0bc42",
-          "src": "review/astrid-green-speak/dealerbust-enter-33973695665f.png"
+          "sha256": "24dff62116c887016fdce3525e6f5af4a0af614b0a2235f13e5d3e38b5cd74f7",
+          "src": "review/astrid-green-speak/dealerbust-enter-24dff62116c8.png"
         },
         "exit": {
           "flow": "dealerbust-exit-flow.png",
-          "sha256": "b9df191f2118d8182a42c0829afc89c47333fa892c712bab2a540868146bc456",
-          "src": "review/astrid-green-speak/dealerbust-exit-b9df191f2118.png"
+          "sha256": "eeab68ab45bda0234c3c0016002529559b797628eb1f01e15b097ee0ad351949",
+          "src": "review/astrid-green-speak/dealerbust-exit-eeab68ab45bd.png"
         }
       }
     },
@@ -727,18 +759,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "c27d613e68e0fa41fce79fcfd951a93f9f57d5d3959fe8edf0577d5d9a5da415",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "double-enter-flow.png",
-          "sha256": "a3679b2a16c7e5d72731bda05ad02ce6a372ee75f032b9fc4b6aa81205eaca10",
-          "src": "review/astrid-green-speak/double-enter-a3679b2a16c7.png"
+          "sha256": "ed8225af20b2149ad8aaa5210506b56907257e0d04caef22fa6813d98d0a79e4",
+          "src": "review/astrid-green-speak/double-enter-ed8225af20b2.png"
         },
         "exit": {
           "flow": "double-exit-flow.png",
-          "sha256": "e5e5e9cce12b550ca16b4815b95d9c8ffb90e2c299aad65b529116abef63bfe6",
-          "src": "review/astrid-green-speak/double-exit-e5e5e9cce12b.png"
+          "sha256": "cd829dc6d36921a7b0b8c2d32d2ed49aa6b850c307f808a9a840817609e6bca8",
+          "src": "review/astrid-green-speak/double-exit-cd829dc6d369.png"
         }
       }
     },
@@ -803,18 +839,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "68bf0168d8ce71bd64b7aaae0ad3151edd7d8f83e99949719f1e0051f90578b6",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "farewell-enter-flow.png",
-          "sha256": "9fa470ee836944e3aa21c02589dcca1d550292708422c1801999622b79b00b87",
-          "src": "review/astrid-green-speak/farewell-enter-9fa470ee8369.png"
+          "sha256": "93e4feec608647771fffdb12760702dfcce2b0b5be4e70d58cbae72a9a15849b",
+          "src": "review/astrid-green-speak/farewell-enter-93e4feec6086.png"
         },
         "exit": {
           "flow": "farewell-exit-flow.png",
-          "sha256": "40e44772e64390645b234ec8342410f98787910ec86e60a43120c24348c01c66",
-          "src": "review/astrid-green-speak/farewell-exit-40e44772e643.png"
+          "sha256": "dccfd4c47e5a643328ce71892e03a30c7e9fa23f05d9dbddbbe1281adb156647",
+          "src": "review/astrid-green-speak/farewell-exit-dccfd4c47e5a.png"
         }
       }
     },
@@ -879,18 +919,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "d45d9dfd609b04f508100214975656181b135b8a2f6c06033d4a03a46e25cb7f",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "goodluck-enter-flow.png",
-          "sha256": "4827ff40c8dded77ede8ba3fe98463a4cb110c6678ab54b6f983bfd00e4aba88",
-          "src": "review/astrid-green-speak/goodluck-enter-4827ff40c8dd.png"
+          "sha256": "41f6d3a0ef58ed82e893e39f60ed4df0a9d4fbd2e92c5d7c27580498da99fcb5",
+          "src": "review/astrid-green-speak/goodluck-enter-41f6d3a0ef58.png"
         },
         "exit": {
           "flow": "goodluck-exit-flow.png",
-          "sha256": "1e6d1f95be768afa150b717f0bf723093f3ab4efb87aa2a074c6e2ce29d93e3d",
-          "src": "review/astrid-green-speak/goodluck-exit-1e6d1f95be76.png"
+          "sha256": "ff33cb19ee1c116f8f25c02c97d5405183f0cb86ce5cf0c0d9d4bf37cee08315",
+          "src": "review/astrid-green-speak/goodluck-exit-ff33cb19ee1c.png"
         }
       }
     },
@@ -955,18 +999,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "80c938468af8cfdbd0a828603b57b489c53dd0ab1ab5ab7c89e93dc148aca019",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "insurance-enter-flow.png",
-          "sha256": "63de5a3d848f468de8d2cb9fe404b4569cd672e8b4fc39617ec6fe48812554df",
-          "src": "review/astrid-green-speak/insurance-enter-63de5a3d848f.png"
+          "sha256": "7f3e26844842f6e886619a76cdb665082ebda583e6180591f424f734a57eba2f",
+          "src": "review/astrid-green-speak/insurance-enter-7f3e26844842.png"
         },
         "exit": {
           "flow": "insurance-exit-flow.png",
-          "sha256": "ded287a45cdb8c0cf169f8058376ba68f7cd2b3fea79c0dcc6bf3790caef353c",
-          "src": "review/astrid-green-speak/insurance-exit-ded287a45cdb.png"
+          "sha256": "aedcf74ab74667731e0c7dd0a4668b9eaecd662f1abffde2700d42aa6edb6fae",
+          "src": "review/astrid-green-speak/insurance-exit-aedcf74ab746.png"
         }
       }
     },
@@ -1031,18 +1079,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "2ac791b2f1a41817a30e5b29a56559cec2b73141d1726d7b1a1451e7a5686157",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "lose-enter-flow.png",
-          "sha256": "6632264b6458e6ed4810a8f3173cab6ba43569b32ee7a962da9759e4b90675d7",
-          "src": "review/astrid-green-speak/lose-enter-6632264b6458.png"
+          "sha256": "3bdfb14d7a3ad39d59565e4a40a6db86d45a747f984f748ca7eab221b272fcac",
+          "src": "review/astrid-green-speak/lose-enter-3bdfb14d7a3a.png"
         },
         "exit": {
           "flow": "lose-exit-flow.png",
-          "sha256": "a2da8d820298cac8697a35f4338aa8aa8757d2e4d5ea605628ca3d928e36822d",
-          "src": "review/astrid-green-speak/lose-exit-a2da8d820298.png"
+          "sha256": "0549a15e57938a99233bb7d802f3b0e4d73bec23880ffa67adcf3593da73feff",
+          "src": "review/astrid-green-speak/lose-exit-0549a15e5793.png"
         }
       }
     },
@@ -1107,18 +1159,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "671dcff986a4f6967bf3efb0e5e1bc756c7fce216f42da2bf4a28bee3eb378f7",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "peek-enter-flow.png",
-          "sha256": "25836c542f280f462b5271239e1b7649b95a8b8781d5ba14567f4a1d96e76a85",
-          "src": "review/astrid-green-speak/peek-enter-25836c542f28.png"
+          "sha256": "88afab54439166c4c539512133e03e5fb899606e37cb2fd1db919d97605e68d0",
+          "src": "review/astrid-green-speak/peek-enter-88afab544391.png"
         },
         "exit": {
           "flow": "peek-exit-flow.png",
-          "sha256": "84863f9ec4dae93e7197ca25d76c2508d1d358f7df5d3e5e8caba626cda01c37",
-          "src": "review/astrid-green-speak/peek-exit-84863f9ec4da.png"
+          "sha256": "ead411ac0ea30b22a553dc7025af30dc0a49f3c5f9c41bd0a9c4bc1b3b5401d0",
+          "src": "review/astrid-green-speak/peek-exit-ead411ac0ea3.png"
         }
       }
     },
@@ -1183,18 +1239,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "fdf802a1592e1db7c764f049eb8fc2ccca5daca69ce7512ff86816aa769c3751",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "placebets-enter-flow.png",
-          "sha256": "93741fc1f7d7879334f17a92a2b9170e06a44eb8d46bd8a6bc632fef815656cf",
-          "src": "review/astrid-green-speak/placebets-enter-93741fc1f7d7.png"
+          "sha256": "87b453d914d928e08093526c04d7a364a7b2e4345c602141d05532c02602bc65",
+          "src": "review/astrid-green-speak/placebets-enter-87b453d914d9.png"
         },
         "exit": {
           "flow": "placebets-exit-flow.png",
-          "sha256": "64dbde5ccc6be80681e2e6779e03042c11f906e7f5f6d9e948cb316486e8d1ae",
-          "src": "review/astrid-green-speak/placebets-exit-64dbde5ccc6b.png"
+          "sha256": "bfc7c8290ff7d25339df10541d8950e9631eb6b6ace8dee61c9d425a448d41de",
+          "src": "review/astrid-green-speak/placebets-exit-bfc7c8290ff7.png"
         }
       }
     },
@@ -1259,18 +1319,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "b31ee86831c9aa0df8a5f97611de7a31d00cc8481e2d2477735af26d42354e4f",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "push-enter-flow.png",
-          "sha256": "996b52d8c11ca32633606e0d99566a1889d66b9fb37e038e097b28f929a12d0a",
-          "src": "review/astrid-green-speak/push-enter-996b52d8c11c.png"
+          "sha256": "85867337f6d60ed539ab088709f395736e40b994d34bde803497601388214367",
+          "src": "review/astrid-green-speak/push-enter-85867337f6d6.png"
         },
         "exit": {
           "flow": "push-exit-flow.png",
-          "sha256": "60d9cbfc5d4a028bbc70045d810307c5a05c374289e257718325e7a2d7690f34",
-          "src": "review/astrid-green-speak/push-exit-60d9cbfc5d4a.png"
+          "sha256": "588e66c577278d945b5e6ef26db72be7931b760ca494c21176d2d9c5c9025a6d",
+          "src": "review/astrid-green-speak/push-exit-588e66c57727.png"
         }
       }
     },
@@ -1335,18 +1399,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "6ef921569fa3d301d09bd00f548baaaf0b98fd7ad239ff84b47458010bb10953",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "sidebet-enter-flow.png",
-          "sha256": "c09b03237bbcd94a2b9be2112a38cbc68bfd823513c64324b9be5b9ef6dd0438",
-          "src": "review/astrid-green-speak/sidebet-enter-c09b03237bbc.png"
+          "sha256": "d0978f71a91a6fae9c64a7a3358ded2d625332da9a059fe86b6d1a79e6977084",
+          "src": "review/astrid-green-speak/sidebet-enter-d0978f71a91a.png"
         },
         "exit": {
           "flow": "sidebet-exit-flow.png",
-          "sha256": "afe8321c656ae9ec298a704005e30cd1abb45f8d0b3f339bb0908e335665766a",
-          "src": "review/astrid-green-speak/sidebet-exit-afe8321c656a.png"
+          "sha256": "1c52db526e830e51917d413af20f72736c78beddf7cd121bbc6d19ba0edad119",
+          "src": "review/astrid-green-speak/sidebet-exit-1c52db526e83.png"
         }
       }
     },
@@ -1411,18 +1479,22 @@
         "height": 760,
         "durationMs": 220,
         "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
         "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
         "mediaSha256": "f1fb10e61552d8a953a43f715ea7d63bb82964408c823369c5d35db4a08f8a3f",
-        "method": "Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+        "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
         "enter": {
           "flow": "win-enter-flow.png",
-          "sha256": "f4e3213c34c548068eadc5bb54584221c36eccb57e3a5dbd4485faaf3c43a1db",
-          "src": "review/astrid-green-speak/win-enter-f4e3213c34c5.png"
+          "sha256": "6b83017d5b005e8b1a4514a54c5427070495063957fcbae8f21dc919f7e311e3",
+          "src": "review/astrid-green-speak/win-enter-6b83017d5b00.png"
         },
         "exit": {
           "flow": "win-exit-flow.png",
-          "sha256": "8982250430ecfbaaf553a9edf432ee324b009f0e9e685890f171de15c8894c7b",
-          "src": "review/astrid-green-speak/win-exit-8982250430ec.png"
+          "sha256": "09d6e00529234b22652461636ca9d6e4c217731be512ff9f707ccbbbe813e92c",
+          "src": "review/astrid-green-speak/win-exit-09d6e0052923.png"
         }
       }
     }

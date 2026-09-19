@@ -59,10 +59,13 @@ test('speech joins are bound to the current repaired take and waiting source, wi
     assert.equal(j.width,idle.base.width,id);assert.equal(j.height,idle.base.height,id);
     assert.deepEqual(line.media.crop.slice(0,2),idle.base.crop.slice(0,2),id);
     assert.equal(j.durationMs,220,id);
+    assert.deepEqual(j.actorOffset,speak.actorOffset,`${id}: playback and join endpoints share one placement`);
     for(const edge of ['enter','exit'])assert.equal(sha(path.join(root,j[edge].src)),j[edge].sha256,`${id}: ${edge} motion map`);
   }
   const stale=structuredClone(speak);stale.lines.goodluck.transition.mediaSha256='old';
   assert.ok(speakManifestErrors(stale).some(e=>e.includes('transition binding')));
+  const moved=structuredClone(speak);moved.actorOffset=[0,999];
+  assert.ok(speakManifestErrors(moved).some(e=>e.includes('placement binding')),'a changed speech placement must invalidate old joins');
 });
 
 test('the validator rejects broken manifests',()=>{

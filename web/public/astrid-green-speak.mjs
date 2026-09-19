@@ -22,6 +22,8 @@ export function speakManifestErrors(take){
   if(take?.dealer!=='astrid'||take?.action!=='speak')errors.push('not an Astrid speak take');
   const offset=take?.spliceOffset??[0,0];
   if(!Array.isArray(offset)||offset.length!==2||!offset.every(Number.isFinite))errors.push('spliceOffset invalid');
+  const actorOffset=take?.actorOffset??[0,0];
+  if(!Array.isArray(actorOffset)||actorOffset.length!==2||!actorOffset.every(Number.isFinite))errors.push('actorOffset invalid');
   const lines=take?.lines;
   if(!lines||typeof lines!=='object'||!Object.keys(lines).length)errors.push('no lines');
   else for(const [id,line] of Object.entries(lines)){
@@ -32,6 +34,7 @@ export function speakManifestErrors(take){
     if(!Number.isInteger(line?.cutIn)||!Number.isInteger(line?.cutOut)||line.cutIn<0||line.cutOut<=line.cutIn||line.cutOut>(m?.frames??0)-1)errors.push(`${id}: cut range invalid`);
     if(!Number.isFinite(line?.audioOffsetSeconds))errors.push(`${id}: audioOffsetSeconds missing`);
     const j=line?.transition;
+    if(j&&JSON.stringify(j.actorOffset??[0,0])!==JSON.stringify(actorOffset))errors.push(`${id}: transition placement binding invalid`);
     if(j&&(!(j.durationMs>=100&&j.durationMs<=400)||j.width<m.width||j.height<m.height||j.mediaSha256!==m.sha256||!j.idleSha256||!j.enter?.src||!j.exit?.src))errors.push(`${id}: transition binding invalid`);
   }
   return errors;
@@ -48,6 +51,7 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
   const errors=speakManifestErrors(take);
   if(errors.length)throw new Error(`Speak take invalid: ${errors.join('; ')}`);
   const [offsetX,offsetY]=take.spliceOffset??[0,0];
+  const [actorX,actorY]=take.actorOffset??[0,0];
   // One decoded video and one recording per line; the compositor is created
   // per utterance at that line's crop size and disposed with it.
   const lines=new Map(Object.entries(take.lines).map(([id,line])=>{
@@ -106,7 +110,7 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
       try{
         if(join){
           const destination=await idle.prepareResume();controller.signal.throwIfAborted();
-          const source=capturePacked(video,media.width,media.height,line.transition.width,line.transition.height);
+          const source=capturePacked(video,media.width,media.height,line.transition.width,line.transition.height,actorX,actorY);
           await transition('exit',source,destination);
         }
       }catch(error){if(!controller.signal.aborted)console.warn('[speak] exit',error.message);}
@@ -162,7 +166,7 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
       if(Math.abs(video.currentTime-target)>=.5/fps)await new Promise(resolve=>{video.addEventListener('seeked',()=>resolve(),{once:true});video.currentTime=target;});
       controller.signal.throwIfAborted();
       actor=createActorCompositor(media.width,media.height);
-      Object.assign(actor.canvas.style,{position:'absolute',inset:'0',width:'100%',height:'100%'});
+      Object.assign(actor.canvas.style,{position:'absolute',left:`${actorX/media.width*100}%`,top:`${actorY/media.height*100}%`,width:'100%',height:'100%'});
       layer.replaceChildren(actor.canvas);current=entry;resize();
       actor.paint(video,null,{packed:true});
       layer.style.visibility='';layer.dataset.speakState='playing';layer.dataset.speakLine=id;layer.dataset.speakJob=line.jobId??'';
@@ -173,7 +177,7 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
       }
       host.classList.add('performance-playing');
       if(join){
-        const source=idle.captureFrame(),destination=capturePacked(video,media.width,media.height,line.transition.width,line.transition.height);
+        const source=idle.captureFrame(),destination=capturePacked(video,media.width,media.height,line.transition.width,line.transition.height,actorX,actorY);
         await transition('enter',source,destination);
         layer.dataset.speakState='playing';
       }

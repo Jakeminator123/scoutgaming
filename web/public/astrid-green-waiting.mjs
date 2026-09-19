@@ -24,7 +24,7 @@ function packedVideo(src){
   video.src=src;return {video,ready};
 }
 
-export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(...a)=>console.info('[idle]',...a)}={}){
+export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(...a)=>console.info('[idle]',...a),externalLifecycle=false}={}){
   if(!HTMLVideoElement.prototype.requestVideoFrameCallback)throw new Error('Presented video frames are unavailable');
   const base=take.base,glances=take.glances;
   const baseMedia=packedVideo(base.src),glanceMedia=packedVideo(glances.src);
@@ -110,10 +110,16 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
     if(next){if(!held){baseMedia.video.pause();glanceMedia.video.pause();held=true;baseCanvas.dataset.idleState='held';}}
     else{held=false;glance=null;playBase();}
   });
-  observer.observe(host,{attributes:true,attributeFilter:['class']});
+  if(!externalLifecycle)observer.observe(host,{attributes:true,attributeFilter:['class']});
   return {
     canvas:baseCanvas,glanceCanvas,sequence,
+    restoreLifecycle(){observer.observe(host,{attributes:true,attributeFilter:['class']});},
     sourceSha256:base.sha256,
+    async glanceOnce(name){
+      if(stopped||!take.segments[name])return;
+      held=false;await playGlance(name);
+      if(!stopped)await new Promise(resolve=>holdWaiters.push(resolve));
+    },
     captureFrame(){
       const isBase=current==='base',media=isBase?base:glances;
       return capturePacked(isBase?baseMedia.video:glanceMedia.video,media.width,media.height,base.width,base.height,isBase?0:offsetX,isBase?0:offsetY);

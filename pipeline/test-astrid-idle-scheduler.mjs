@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {createIdleScheduler,idleSegmentErrors,interruptFrame,mulberry32} from '../web/public/astrid-idle-scheduler.mjs';
 
@@ -11,6 +12,16 @@ const idlePath=path.join(root,'review/astrid-green-waiting/idle.json');
 const idle=fs.existsSync(idlePath)?JSON.parse(fs.readFileSync(idlePath)):null;
 const glanceSegments=idle?.segments??{glanceLeft:{start:0,end:41},glanceRight:{start:41,end:90},full:{start:0,end:120}};
 const segments={base:{start:0,end:192},...glanceSegments};
+test('folded resting clips bind to the current ready pose and retain a filmed bridge in both directions',{skip:!idle?.rest},()=>{
+  const rest=idle.rest;assert.deepEqual(idleSegmentErrors(idle),[]);
+  for(const key of ['loop','out','back']){
+    const media=rest[key];assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,media.src))).digest('hex'),media.sha256,key);
+  }
+  assert.equal(rest.out.sourceSha256,rest.back.sourceSha256);
+  assert.deepEqual(rest.out.sourceFrames,[...rest.back.sourceFrames].reverse());
+  const stale=structuredClone(idle);stale.rest.readySha256='another-pose';
+  assert.ok(idleSegmentErrors(stale).includes('folded rest ready pose mismatch'));
+});
 
 test('the waiting cadence never glances twice in a row and never idles more than 3 base loops',()=>{
   for(const seed of [1,7,42,2026,987654]){

@@ -10,6 +10,7 @@ import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
 import {shouldUseGreenDealerCard,selectGreenTake,loadGreenTakes,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame,installGreenIdle,quadMatrix} from './astrid-green-dealer.mjs';
 import {loadGreenWaiting,installGreenWaiting} from './astrid-green-waiting.mjs';
+import {installFoldedRest} from './astrid-folded-rest.mjs';
 import {loadGreenSpeak,installGreenSpeak} from './astrid-green-speak.mjs';
 import {installEdgeHud} from './actor-edge-blend.mjs';
 let astridWaiting=null,astridSpeak=null;
@@ -243,8 +244,14 @@ const trigger = k => { if (!performanceStaged && engineUp && !speaking && speech
 if(astridRestart){
   // The green waiting clip with its randomized scheduler is preferred; the
   // plain elevated loop stays as the fallback when it is absent or fails.
-  if(astridGreenTake)try{const waiting=await loadGreenWaiting();if(waiting)astridWaiting=await installGreenWaiting($('#scene'),waiting);}
-  catch(error){console.warn('[waiting idle]',error.message);}
+  if(astridGreenTake)try{
+    const waiting=await loadGreenWaiting();
+    if(waiting){
+      astridWaiting=await installGreenWaiting($('#scene'),waiting,{externalLifecycle:!!waiting.rest});
+      if(waiting.rest)try{astridWaiting=await installFoldedRest($('#scene'),waiting.rest,astridWaiting);}
+      catch(error){astridWaiting.restoreLifecycle();astridWaiting.resume();throw error;}
+    }
+  }catch(error){console.warn('[waiting idle]',error.message);}
   if(astridGreenTake&&!astridWaiting)try{await installGreenIdle($('#scene'),astridGreenTake);}
   catch(error){console.warn('[elevated idle]',error.message);}
   // Keyed green speak takes (Blender table only): the greeting plays over the

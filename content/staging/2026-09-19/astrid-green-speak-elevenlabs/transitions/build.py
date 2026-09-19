@@ -22,6 +22,9 @@ def packed_frame(path,n,w,h):
  rgb=cv2.cvtColor(b[:h],cv2.COLOR_BGR2RGB);alpha=cv2.cvtColor(b[h:h*2],cv2.COLOR_BGR2GRAY)
  a=np.zeros((H,W,4),np.uint8);a[:h,:w,:3]=rgb;a[:h,:w,3]=alpha;return a
 base=packed_frame(base_path,0,W,H)
+alignment=json.loads((ROOT/'registration/actor-offset.json').read_text())
+assert alignment['idleSha256']==sha(base_path),'actor offset needs remeasurement for this idle'
+offset=alignment['offset']
 def grey(a):
  # Dark neutral backing prevents the keyed green from driving flow.
  rgb=a[...,:3]*(a[...,3:4]/255)+48*(1-a[...,3:4]/255)
@@ -53,9 +56,10 @@ for line in sys.argv[1:] or jobs:
  if line=='greeting':mask=d/'mask'
  m=json.loads((mask/'manifest.json').read_text());cw,ch=m['crop'][2:]
  assert m['crop'][:2]==[560,0]
- info={'width':W,'height':H,'durationMs':220,'flowRange':64,'idleSha256':sha(base_path),'mediaSha256':m['actorPackedSha256'],'method':'Bidirectional DIS optical flow over the whole keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.'}
+ info={'width':W,'height':H,'durationMs':220,'flowRange':64,'actorOffset':offset,'idleSha256':sha(base_path),'mediaSha256':m['actorPackedSha256'],'method':'Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.'}
  for part,n in [('enter',0),('exit',m['frameCount']-1)]:
   speak=packed_frame(mask/'actor-packed.mp4',n,cw,ch)
+  speak=cv2.warpAffine(speak,np.float32([[1,0,offset[0]],[0,1,offset[1]]]),(W,H),flags=cv2.INTER_LINEAR)
   a,b=(base,speak) if part=='enter' else (speak,base)
   ab,ba=flow(a,b),flow(b,a)
   encoded=[]
