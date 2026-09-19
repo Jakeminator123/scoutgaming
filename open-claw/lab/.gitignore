@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+data/
+media/*
+!media/README.md
+node_modules/
+*.log
