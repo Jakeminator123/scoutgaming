@@ -542,9 +542,16 @@ const TABLES = [
   { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000], dealer: 'vera' },
 ];
 let table = TABLES[0];
+const clipAssignments = {};
 // the backoffice owns tier->dealer assignment; apply it before anyone switches
 fetch('/api/bo/config').then(r => r.ok ? r.json() : null).then(cfg => {
-  if (!cfg?.tiers) return;
+  if (!cfg) return;
+  // Dealing Clips page: the clip picked per table part for this dealer (Never again never plays)
+  const picked = cfg.clipAssignments?.[DEALER.key] ?? {};
+  for (const [part, a] of Object.entries(picked)) if (a?.clip && !cfg.neverAgain?.[a.clip]) clipAssignments[part] = a.clip;
+  const idle = clipAssignments.idle?.startsWith(DEALER.key + ':') ? clipAssignments.idle.slice(DEALER.key.length + 1) : null;
+  if (idle?.includes("/idle/") && !performanceStaged) CLIP.idle = idle;
+  if (!cfg.tiers) return;
   for (const t of TABLES) if (cfg.tiers[t.id]) t.dealer = cfg.tiers[t.id];
 }).catch(() => {});
 let CHIPS = table.chips;
@@ -1047,9 +1054,13 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
   if(cardMotion?.performance && performancePlayer && tableScene) {
     const target=el.getBoundingClientRect();el.style.visibility='hidden';
     const corners=performanceCardCorners(el);
+    const box=el.closest('[data-box]')?.dataset.box;
+    const part=box!=null?'box'+box:faceDown?'dealer-hole':'dealer-up';
+    const assigned=[...(performanceManifest.takes??[]),...(performanceManifest.continuations??[])].find(t=>t.id===clipAssignments[part]);
     const delivery=cardMotion.performance.action==='deal-dealer'?cardMotion.performance:
       selectPlayerPerformance(performanceManifest,{x:target.x+target.width/2,y:target.y+target.height/2},{width:innerWidth,height:innerHeight},{staged:performanceStaged})??cardMotion.performance;
-    const take=selectSequencePerformance(performanceManifest,delivery,{staged:performanceContinuity,continues:cardMotion.continues});
+    const take=assigned??selectSequencePerformance(performanceManifest,delivery,{staged:performanceContinuity,continues:cardMotion.continues});
+    if(assigned)console.info('[performance] backoffice pick',part,assigned.id);
     return performancePlayer.play(take,{target,card,faceDown,corners,
       origin:tableScene.shoeOutlet(),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}})
       .catch(error=>{console.warn('[performance]',error.message);const status=$('#performance-status');if(status)status.textContent=error.message;})
