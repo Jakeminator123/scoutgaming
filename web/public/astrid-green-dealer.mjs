@@ -1,5 +1,6 @@
 import {uniformRegistration} from './performance-contact.mjs';
 import {createActorCompositor} from './actor-compositor.mjs';
+import {createIdleVideoLoop} from './idle-video-loop.mjs';
 
 // A green take depicts exactly one event, never a player-seat delivery.
 export function shouldUseGreenDealerCard({dealer,enabled,containerId,faceDown,existingCards}) {
@@ -42,34 +43,37 @@ export async function installGreenIdle(host,take){
   const video=document.createElement('video');video.muted=true;video.playsInline=true;video.loop=true;video.preload='auto';
   const actor=createActorCompositor(manifest.width,manifest.height),canvas=actor.canvas;
   canvas.className='astrid-green-idle';canvas.dataset.idleJob=manifest.jobId;canvas.setAttribute('aria-label','Astrid waiting');
-  let request,cycle=0,previous=-1;
-  const paint=(_,metadata)=>{
-    if(video.readyState<2)return;
-    const t=metadata?.mediaTime??video.currentTime;
+  let cycle=0,previous=-1;
+  const loop=createIdleVideoLoop(video,{fps:manifest.fps,onFrame:t=>{
     if(t<previous)cycle++;previous=t;
     actor.paint(video,null,{packed:true});
     canvas.dataset.idleFrame=String(Math.floor(t*manifest.fps));canvas.dataset.idleCycle=String(cycle);
-    request=video.requestVideoFrameCallback(paint);
-  };
+    canvas.dataset.idleState='playing';
+  },onRecovery:reason=>{
+    canvas.dataset.idleRecoveries=String(Number(canvas.dataset.idleRecoveries??0)+1);
+    canvas.dataset.idleRecoveryReason=reason;
+  },onError:error=>{
+    canvas.dataset.idleState='error';console.warn('[elevated idle]',error.message);
+  }});
   const resize=()=>{
     const fit=uniformRegistration(take.camera,{width:innerWidth,height:innerHeight});
     Object.assign(canvas.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});
   };
   const ready=new Promise((resolve,reject)=>{video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Elevated idle media unavailable')),{once:true});});
   video.src=manifest.src;
-  try{await ready;await video.play();paint();}
-  catch(error){actor.dispose();throw error;}
+  try{await ready;await loop.resume();}
+  catch(error){loop.stop();actor.dispose();throw error;}
   resize();host.append(canvas);addEventListener('resize',resize);
   document.documentElement.dataset.astridIdle='green';
   let performing=false;
   const observer=new MutationObserver(()=>{
     const next=host.classList.contains('performance-playing');
     if(next===performing)return;performing=next;
-    if(next){video.pause();video.currentTime=0;}
-    else video.play().catch(()=>{document.documentElement.dataset.astridIdle='offline';});
+    if(next){loop.pause({reset:true});canvas.dataset.idleState='dealing';}
+    else loop.resume().catch(()=>{document.documentElement.dataset.astridIdle='offline';});
   });
   observer.observe(host,{attributes:true,attributeFilter:['class']});
-  return ()=>{observer.disconnect();removeEventListener('resize',resize);video.pause();video.cancelVideoFrameCallback(request);video.removeAttribute('src');video.load();canvas.remove();actor.dispose();};
+  return ()=>{observer.disconnect();removeEventListener('resize',resize);loop.stop();video.removeAttribute('src');video.load();canvas.remove();actor.dispose();};
 }
 
 // A homography preserves the filmed card plane, including its fixed UV order.
