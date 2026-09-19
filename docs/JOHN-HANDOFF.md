@@ -1255,3 +1255,20 @@ No H3 video was submitted, no reference was installed, and no gameplay/player
 files were changed. Accepted Box 4 v1 remains unchanged. The commit hook's
 checks and dealer-sync --probe passed; neither establishes image acceptance.
 Rendered gameplay QA was not rerun for this uninstalled image experiment.
+
+## 2026-09-19 — Astrid softer identity draft
+
+The user said the latest face still looked stern and older than the original
+Astrid, supplying an older video screenshot. Made two independent built-in
+GPT image edits of the current before plate, using Desktop/ref-identity.png
+as the face reference and the screenshot as additional reference in attempt 1.
+Saved both and the exact prompts under astrid-h3-box3-v1/soft-identity-review.
+The latest before-soft-identity.png has a softer mouth and slight smile;
+the angular face and stronger facial shadows still differ from the original.
+User likeness acceptance is pending. Dimensions are 1667x943, so no claim
+of restoring the native 2688x1520 master or exact pixel registration.
+
+Visual review covered face, framing, hands, shoe and card. The preceding
+after plate is still rejected. No H3 submission, gameplay installation,
+or changes to accepted Box 4. Commit-hook checks and dealer-sync --probe
+run for the saved media experiment; no rendered gameplay QA is implied.

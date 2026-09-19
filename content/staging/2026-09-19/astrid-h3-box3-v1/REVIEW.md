@@ -15,3 +15,17 @@ Measured target: center seat zero-based Box 3, first-card center at 49.208745% w
 ## User-requested original-master retry
 
 `original-master-retry/` contains two independent built-in image edits of the original2688x1520 master, not edits of degraded drafts. The face appears closer to the original; user likeness approval remains pending. Both outputs are still1668x943 despite requesting native size. The AFTER output additionally retains a green card remnant at the shoe and misses the specified target. It is REJECTED for video. Do not describe the resolution problem as fixed or call this pair H3-ready. Prompts and dimension/hash measurements are saved beside the images. No video submitted; Box4 unchanged.
+
+## Softer original identity review
+
+The user found the retry better but still too stern and old-looking, and supplied
+a screenshot of the older Astrid. `soft-identity-review/` records two built-in
+image edits using `ref-identity.png`, plus that screenshot in the first attempt.
+Both independently edit the preceding before plate. The latest
+`before-soft-identity.png` has a softer mouth and slight closed-mouth smile,
+but remains more angular and strongly shaded than the original portrait.
+This is a likeness-review draft, not an approved face restoration. Output is
+1667x943; the first expression draft is 1668x943. The elevated wide composition
+and blue shoe card appear consistent, but the images are not pixel-identical.
+No video submitted or gameplay asset replaced. The earlier after plate remains
+rejected. Exact prompts and measurements are saved with the drafts.
