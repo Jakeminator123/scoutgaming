@@ -28,6 +28,26 @@ använda. Spåret visar att OpenClaw saknas. Chatten visar anslutningsfel; den
 ersätts aldrig med en påhittad modell. Direkt förhandsvisning av en variant är
 en manuell labbfunktion, inte ett OpenClaw-beslut.
 
+## IDE-inboxen är inte spelarchatten
+
+- **IDE-agenternas gemensamma inbox** samordnar utvecklingsarbetet i GitLab.
+  Den är ett separat projektsystem och har ingen koppling till OpenClaw-runtime.
+- **Croupier-spelets användar-/spelarchatt** hör till produkten. OpenClaw ska
+  kunna använda kontrollerade signaler från den för croupierns reaktioner och
+  presentationsval. Den riktiga spelarchatten är **inte inkopplad i detta labb**.
+  Här väljer operatören ännu `context.chat.signal` manuellt.
+
+Labbets ruta "Prata med OpenClaw" är ett operatörssamtal om katalogen, inte en
+ersättning för spelarchatten. Den matar inte automatiskt beslutsmotorns
+chattsignaler. Nästa integrationssteg behöver en separat serveradapter för
+spelarchatten: autentiserat meddelande → moderering/klassificering → validerad
+signal → tillåtna varianter → OpenClaw-råd → slutlig validering. Spelartext är
+indata, aldrig instruktioner som får ändra spelregler, katalog eller behörigheter.
+Beständigt minne och eventuella text-/talsvar till spelare kräver egna kontrakt;
+det är inte levererat bara för att operatörssamtalet fungerar.
+
+För publicering: [steg för steg från GitLab till Render](docs/RENDER-START-SV.md).
+
 ## Nycklar och anslutning
 
 Den befintliga **`.env` i Croupier-roten** läses server-side. Labbet läser bara

@@ -1,3 +1,24 @@
+## 2026-09-20 — OpenClaw publication and chat-boundary clarification
+
+Jakob authorized publishing the reviewed OpenClaw work to GitLab's
+`jakeminator123/work`, not `main`, and requested guided Render setup.
+Added `open-claw/lab/docs/RENDER-START-SV.md` with exact repository, branch,
+Blueprint path, two-service resource review, key placement, local connection
+and end-to-end acceptance steps. Clarified that Blueprint Auto Sync must be
+disabled separately from service `autoDeployTrigger: off` for a manual rollout.
+
+The GitLab IDE-agent inbox is unrelated to OpenClaw. Product/player chat is
+intended to supply bounded presentation context, but its actual server adapter,
+moderation and player memory are not implemented. The existing OpenClaw chat
+is an operator conversation about the catalog, not a delivered player-chat
+system. README and deployment docs now make this distinction explicit.
+
+Verification before publication: all 28 lab tests passed again; catalog check
+validated 16 nodes, 32 assets and 33 fixture events. Real Gateway connection
+remains unconfigured. No runtime/gameplay/media code, secrets or cloud resources
+were changed for this clarification. Docker build and Render live acceptance
+remain pending; unrelated working-tree files are excluded.
+
 ## 2026-09-20 — isolated OpenClaw presentation lab and Render blueprint
 
 Implemented `open-claw/lab/` on Jakob's explicit request as a separate, runnable
