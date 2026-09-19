@@ -3,10 +3,11 @@
 Detta är OpenClaws **Control UI** för agentchatt, tools, sessions och inställningar,
 inte labbets katalogeditor och inte IDE-agenternas GitLab-inbox.
 
-Den befintliga Director-adressen verifierades i Render den 2026-09-20:
-`https://croupier-lab-director.onrender.com`. Dashboardens adress blir då
-`https://croupier-lab-director.onrender.com/openclaw/` **efter** uppdatering och
-aktivering. Att den gamla tjänsten är Live bevisar inte att dashboarden är aktiv.
+Dashboarden driftsattes och inloggningsvyn verifierades **2026-09-20**:
+[Öppna OpenClaw](https://croupier-lab-director.onrender.com/openclaw/).
+Båda Render-tjänsterna kör dashboard-koden från `7ec4e17`. UI:t når Gatewayen
+och ber om lösenord. Inloggad chatt/modellanrop och första browser-pairing
+återstår att prova med operatören; inget lösenord har lästs ur `secret.txt`.
 
 ## Render: en adress, OpenClaws egen inloggning
 
