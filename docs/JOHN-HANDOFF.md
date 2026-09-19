@@ -1114,3 +1114,36 @@ complete-gameplay acceptance claimed. See source-review/review.json,
 rigid-fit.jpg and raw contact sheets. Retain approved plates, not failed
 choreography, for future work. No game, manifests, server cards/wallet/database,
 idle scheduler, or otherdealer changes made. Pre-commit and sync --probe pass.
+
+## 2026-09-19 — user requested live Box4 experiment despite source limitations
+
+Kevin said “try it lets see live”. Implemented an opt-in runtime route:
+http://astridbluebox4.localhost:4190/?dealer=astrid&table=blender&astridBlue=box4.
+Only that query appends review/astrid-blue-box4/take.json; ordinary take lists
+and Box5/dealer-upcard files remain unchanged. This is explicit user review
+of the previously rejected motion, not visual approval or another generation.
+
+Staging astrid-blue-box4 has build-preview-mask.py, build-preview-track.py,
+install-preview.mjs. Person matte plus approved green key removes background;
+blue card hull/border/dots removed except skin, preserving fingers above the
+replacement. Box4 text is removed with background. RGB unchanged. Crop560,0,
+960,800 shares approved .85 framing. Fixed72x103mm rigid model throughout:
+0–27 partial-body approximations,28–30 inferred rigid turn,31–96 prior marker
+fit. Back/front changes at29 between visible back/front evidence. Pickup0,
+release55,land56,rest96. Original24fps speed. Actor-packed SHA0a7beface3055fbe01523b9c6f3a88aedcae8eaf55279abe6e06b7a8eb3a9fab,
+calibrationdc45b2c93709c32f5c95b8fb5fb7dcef6a74926fba80d09c586ba29c529dd0f3.
+
+Verified actual guest gameplay in the visible IAB: $5 on zero-basedBox4,
+server cards K-diamonds/2-clubs (12), hit2-hearts (14), stand, loss settled
+1000->995 with totalbet0 and lastwin0. Replayed twice, captured presented
+frames6–79 including pickup25,front32,contact45,land56. New take ID observed
+on performance-layer, retarget=false; blue/text absent, game card under
+filmed fingers and target fan aligned. No console errors/warnings. Evidence
+under gameplay-qa. A second $5 Box4 round started and left open for replay.
+
+Remaining visual issues: source's slow upright presentation, missing hand
+transfer, approximate early pickup/turn, frame43 edge mismatch, and existing
+hard idle/action joins. No claim of smooth60 or complete source acceptance.
+Focused green-box routing tests4/4, pre-commit and sync --probe passed. Scope
+is Astrid only. Other dealers were covered by shared regression checks, not
+opened or changed. Unrelated app.mjs blank-line edit preserved unstaged.
