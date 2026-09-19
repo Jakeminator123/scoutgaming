@@ -91,9 +91,9 @@ node /app/openclaw.mjs --version
 node /app/openclaw.mjs config validate --json
 ```
 
-Containerstart och den verkliga modellanslutningen återstår att verifiera på
-Render. Att en dokumentationssida eller ett lokalt test fungerar bevisar inte
-att deploymenten fungerar.
+Containerstart och native inloggningsvy verifierades på Render 2026-09-20
+för `7ec4e17`; verkligt autentiserat modellanrop återstår. Att en
+dokumentationssida eller ett lokalt test fungerar bevisar inte hela kedjan.
 
 ## Var ändrar vi i Croupier?
 
