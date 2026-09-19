@@ -1,18 +1,10 @@
 ---
-description: Ping Kevin (and Jakob) via the standing GitLab issue, then keep working
-alwaysApply: true
+description: How to post or reply on the Jakob-Kevin GitLab ping thread. Not for every turn.
+alwaysApply: false
 ---
 
-# Jakob ↔ Kevin ping
+# Ping thread
 
-When Jakob or an agent needs Kevin, or Kevin’s answer is blocking a decision:
+https://gitlab.com/scout-gg/croupier/-/work_items/1
 
-1. Comment on https://gitlab.com/scout-gg/croupier/-/work_items/1
-2. Mention `@Kevinnegash1`. One short question per comment. No slash-commands at the start of a line.
-3. Use GitLab MCP `save_note` with `project_id: scout-gg/croupier` and `work_item_iid: 1`.
-4. Do not wait idle. Keep building everything that does not depend on the answer.
-5. Do not open a new issue for a quick question. CAC/Jira stays the tracker for real dealer work.
-
-Vice versa: if Kevin comments there and mentions `@Jakeminator123`, treat it as inbox. Reply in that thread.
-
-This is not Slack and not a side chat app. Do not invent another channel.
+Use GitLab `save_note` (`project_id: scout-gg/croupier`, `work_item_iid: 1`). Mention `@Kevinnegash1` or `@Jakeminator123`. One question. No leading slash-commands. Prefer `/ping-croupier` to check for new replies.
