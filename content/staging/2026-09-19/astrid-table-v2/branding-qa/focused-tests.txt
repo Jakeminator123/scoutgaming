@@ -1,0 +1,24 @@
+✔ approved green action owns only the first face-up Astrid dealer card (0.816334ms)
+✔ player cards and other dealers cannot consume the approved upcard action (0.202ms)
+✔ missing or non-numeric card counts do not accidentally enable the action (0.295833ms)
+✔ shoe registration follows the selected take and cropped source placement (1.781459ms)
+✔ pulling back the shot keeps the filmed shoe and Blender table in the same frame (0.168917ms)
+(node:1579) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ imported shoe stack follows authoritative counts and stays inside the shell (2.98025ms)
+(node:1580) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ full-canvas rendering reveals the base without moving registered source pixels (2.040958ms)
+✔ lower table camera preserves actor rear-edge registration and filmed shoe contact (0.725583ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 144.075292

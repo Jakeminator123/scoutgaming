@@ -2,13 +2,16 @@ import * as THREE from './vendor/three/three.module.js';
 import {GLTFLoader} from './vendor/three/GLTFLoader.js';
 import {uniformRegistration} from './performance-contact.mjs';
 import {createDealingCard} from './dealing-card.mjs';
+import {createFeltBranding,createBlenderCardStack,createFeltBettingBoxes,BET_BOX_SIZE} from './blender-table-details.mjs';
+import {layoutFeltCards} from './blender-card-layout.mjs';
 
 // Keep the native actor unwarped. The table camera is fitted at the rear edge,
 // and the shoe outlet is registered to the filmed pickup after that camera fit.
 export async function createBlenderTableScene(canvas,{frame}={}){
-  const [asset,registration]=await Promise.all([
+  const [asset,registration,cardBack]=await Promise.all([
     new GLTFLoader().loadAsync('review/astrid-table-v2/table.glb'),
     fetch('review/astrid-table-v2/registration.json').then(r=>{if(!r.ok)throw new Error('Table registration unavailable');return r.json();}),
+    new THREE.TextureLoader().loadAsync('assets/cardback.png'),
   ]);
   const camera=asset.cameras.find(c=>c.name==='PlateCam');
   if(!camera?.isPerspectiveCamera)throw new Error('Blender PlateCam is missing');
@@ -36,6 +39,15 @@ export async function createBlenderTableScene(canvas,{frame}={}){
   const surfaceHeight=bounds[2][1],radius=(bounds[0][1]-bounds[0][0])/2;
   const rear=-bounds[1][1],depth=bounds[1][1]-bounds[1][0];
   const outlet=new THREE.Vector3(...registration.anchors.outlet.worldGLTF);
+  cardBack.colorSpace=THREE.SRGBColorSpace;cardBack.anisotropy=8;
+  const [shoeMin,shoeMax]=registration.anchors.shoeLocalBounds;
+  const cardStack=createBlenderCardStack({width:shoeMax[0]-shoeMin[0],length:shoeMax[1]-shoeMin[1],height:shoeMax[2]-shoeMin[2]},cardBack);
+  const shoe=asset.scene.getObjectByName('PRP_Shoe');
+  shoe.add(cardStack.root);
+  // Transparent acrylic must not hide its contents or cast an opaque box shadow.
+  shoe.material.depthWrite=false;
+  scene.add(createFeltBranding({radius,depth,rear,surfaceHeight}));
+  const bettingBoxes=createFeltBettingBoxes({radius,depth,rear,surfaceHeight});scene.add(bettingBoxes.group);
   const filmedOutlet=outlet.clone().project(camera);
   fitTableCamera(camera,new THREE.Vector3(0,surfaceHeight,rear));
   const sourceProjection=camera.projectionMatrix.clone();
@@ -43,7 +55,7 @@ export async function createBlenderTableScene(canvas,{frame}={}){
   const shoeOffset=alignedOutlet.clone().sub(outlet);
   for(const name of ['PRP_Shoe','PRP_ShoeStripe'])asset.scene.getObjectByName(name)?.position.add(shoeOffset);
   outlet.copy(alignedOutlet);
-  asset.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+  asset.scene.traverse(o=>{if(o.isMesh){o.castShadow=!o.material.transparent;o.receiveShadow=true;}});
   const base=asset.scene.getObjectByName('PRP_WalnutBase');
   const floorY=new THREE.Box3().setFromObject(base).min.y;
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.ShadowMaterial({opacity:.38}));
@@ -75,16 +87,34 @@ export async function createBlenderTableScene(canvas,{frame}={}){
     render();
   }
   resize();
-  const deal=createDealingCard({scene,camera,renderer,viewport:()=>({x:0,y:0,width:innerWidth,height:innerHeight}),surfaceHeight,unitScale:.001});
+  const deal=createDealingCard({scene,camera,renderer,viewport:()=>({x:0,y:0,width:innerWidth,height:innerHeight}),surfaceHeight,unitScale:.001,cardBackTexture:cardBack});
   canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();document.documentElement.classList.remove('table-3d');});
   canvas.addEventListener('webglcontextrestored',()=>{resize();document.documentElement.classList.add('table-3d');});
   return {resize,render,
+    layoutCards(){layoutFeltCards((id,quad,index,hands)=>{
+      const m=bettingBoxes.meshes[id];if(!m?.visible)return null;
+      return quad.map(([x,y])=>{
+        const point=m.localToWorld(new THREE.Vector3(x,y,.0003*(index+1)));
+        // Keep outer fans in front of their own boxes, clear of the shoe.
+        // Rotating the whole offset towards centre put box 6 below the shoe.
+        point.x-=m.matrixWorld.elements[4]*.126;
+        if(hands>1&&Math.abs(m.position.x)>radius*.6)point.x+=Math.sign(m.position.x)*.045;
+        return projectPoint(point);
+      });
+    });},
+    setBettingBoxes(boxes){bettingBoxes.update(boxes);render();},
+    bettingBoxQuad(id){const m=bettingBoxes.meshes[id],w=BET_BOX_SIZE.width/2,h=BET_BOX_SIZE.height/2;
+      if(!m?.visible)return null;
+      return [[-w,h],[w,h],[w,-h],[-w,-h]].map(([x,y])=>projectPoint(m.localToWorld(new THREE.Vector3(x,y,0))));
+    },
     project(x,z){return projectPoint(new THREE.Vector3(x*radius,surfaceHeight,rear+z*depth));},
     shoeOutlet(){return projectPoint(outlet);},
-    dealCard(options){return deal({...options,origin:outlet});},
-    // Authoritative remaining-card status stays in the existing HUD. The
-    // supplied hollow shoe has no animated stack, so never invent its count.
-    setShoe(){render();},
+    dealCard(options){
+      const quad=options.element?.dataset.feltCorners;
+      const worldCorners=quad?JSON.parse(quad).map(([x,y])=>pointOnSurface(camera,new THREE.Vector2(x/innerWidth*2-1,1-y/innerHeight*2),surfaceHeight+.001)):null;
+      return deal({...options,origin:outlet,worldCorners});
+    },
+    setShoe(state){cardStack.update(state);canvas.dataset.shoeRemaining=cardStack.root.userData.remaining??'';render();},
     registration(){return {version:1,source:registration.sourceSha256,camera:{type:'perspective',projection:camera.projectionMatrix.toArray(),world:camera.matrixWorld.toArray()},viewport:{x:0,y:0,width:innerWidth,height:innerHeight},sourceFrame:fit,shoe:{outlet:outlet.toArray(),screen:projectPoint(outlet)}};},
   };
 }

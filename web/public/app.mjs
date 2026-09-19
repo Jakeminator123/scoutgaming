@@ -8,7 +8,7 @@ import { handValue } from './blackjack.mjs';
 import { placeActions } from './action-placement.mjs';
 import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
-import {shouldUseGreenDealerCard,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame} from './astrid-green-dealer.mjs';
+import {shouldUseGreenDealerCard,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame,installGreenIdle,quadMatrix} from './astrid-green-dealer.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -58,8 +58,8 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
 }
 
 const riggedReview=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('scene')==='rigged-review';
-// Astrid is being rebuilt from the accepted green-screen take. The retired
-// bank stays on disk but must not load through idle, speech or action fallbacks.
+// Astrid's replacement waiting loop uses the approved elevated green camera.
+// Old frontal idle, speech and dealing fallbacks stay retired.
 const astridRestart=DEALER.key==='astrid'&&!riggedReview;
 if(astridRestart){
   document.documentElement.dataset.astridRebuild='true';
@@ -155,7 +155,6 @@ if(astridGreenTake){
     finally{el.style.visibility='';try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
   };
 }
-
 // a dealer without clips still stands at her table: her canonical poster
 // fills the dealer frame instead of an empty room
 function showPoster() {
@@ -187,7 +186,10 @@ engine.onIdlePick = () => {
 };
 const trigger = k => { if (!performanceStaged && engineUp && !speaking && speechQueue.pending === 0 && engine.index.clips[k]) engine.trigger(k); };
 
-if(!astridRestart)try {
+if(astridRestart){
+  if(astridGreenTake)try{await installGreenIdle($('#scene'),astridGreenTake);}
+  catch(error){console.warn('[elevated idle]',error.message);}
+}else try {
   await engine.init();
   if(engine.fullActor){
     document.documentElement.dataset.actorIsolated='true';
@@ -731,6 +733,11 @@ for (let i = 0; i < SEATS; i++) {
     <div class="result"></div>
   </div>`;
   seatsEl.appendChild(el);
+  if(tableScene?.setBettingBoxes){
+    const controls=document.createElement('div');controls.className='felt-bet-controls';
+    for(const node of el.querySelectorAll('.sidearcs,.spot,.side-chip'))controls.append(node);
+    el.append(controls);
+  }
   seatEls.push(el);
 }
 // screen-space seat positions measured from the expected-results screenshot:
@@ -769,6 +776,10 @@ function layoutSeats() {
   const boxes = playedBoxes();
   const span = compactSeats && tableScene ? 40 : num('--arc-span', compactSeats ? 84 : 110);   // leave room for the outer card fans on phones
   const step = span / (boxes.length - 1);
+  tableScene?.setBettingBoxes?.(boxes.map((i,k)=>{
+    const phi=(90+span/2-k*step)*Math.PI/180;
+    return {id:i,x:.83*Math.cos(phi),z:.78*Math.sin(phi),rotation:(phi-Math.PI/2)*.65};
+  }));
   seatEls.forEach((el, i) => el.classList.toggle('seat-off', !boxes.includes(i)));
   boxes.forEach((i, k) => {
     const phi = (90 + span / 2 - k * step) * Math.PI / 180;
@@ -779,7 +790,12 @@ function layoutSeats() {
     seatEls[i].style.left = `${(p?.x ?? img.left + fx * img.width) - table.left}px`;
     seatEls[i].style.top = `${(p?.y ?? img.top + fy * img.height) - table.top}px`;
     seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(fx - 0.5) * 61}deg`);
+    const quad=tableScene?.bettingBoxQuad?.(i),controls=seatEls[i].querySelector('.felt-bet-controls');
+    if(quad&&controls){
+      controls.style.transform=`matrix3d(${quadMatrix(quad.map(v=>[v.x-p.x,v.y-p.y]),128,100).join(',')})`;
+    }
   });
+  tableScene?.layoutCards?.();
   layoutHandTotals();
 }
 layoutSeats();
@@ -1108,7 +1124,7 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
     const handoff = canUseDealingTake()
       ? cardMotion?.handoff ?? {x:dealerRect.x+dealerRect.width*.55,y:dealerRect.y+dealerRect.height*.93}
       : null;
-    return tableScene.dealCard({target,card,faceDown,handoff,onCue:phase=>sfx.play(phase),duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
+    return tableScene.dealCard({target,element:el,card,faceDown,handoff,onCue:phase=>sfx.play(phase),duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
       .catch(error=>console.warn('[deal]',error.message)).finally(()=>{el.style.visibility='';});
   }
   const fallback = $('#shoe2d').getBoundingClientRect();
@@ -1132,6 +1148,7 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
   });
 }
 function updateBadge(container, cards) {
+  tableScene?.layoutCards?.();
   // the badge is parented OUTSIDE the cards container: inside it, it inherited
   // the hand's rotation and flattening and drifted whenever the hand was posed
   const isSub = container.classList?.contains('subhand');
@@ -1252,6 +1269,7 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
   container.style.setProperty('--fan', Math.min(1, 3.2 / Math.max(2, total)).toFixed(3));
   container.appendChild(el);
   if(astridGreenTake&&container.id==='dealer-cards')layoutGreenDealerCards(container,astridGreenTake);
+  tableScene?.layoutCards?.();
   el.dealt = flyFromShoe(el, card, faceDown, motion);
   return el;
 }

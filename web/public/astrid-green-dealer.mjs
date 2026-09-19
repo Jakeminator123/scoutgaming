@@ -1,4 +1,5 @@
 import {uniformRegistration} from './performance-contact.mjs';
+import {createActorCompositor} from './actor-compositor.mjs';
 
 // A green take depicts exactly one event, never a player-seat delivery.
 export function shouldUseGreenDealerCard({dealer,enabled,containerId,faceDown,existingCards}) {
@@ -33,6 +34,44 @@ export function installGreenRestFrame(host,take){
   return ()=>{removeEventListener('resize',resize);image.remove();};
 }
 
+// The new idle and retained upcard share source dimensions, crop and camera.
+// RGB and alpha are decoded together and the pose resets while the action
+// hides this layer, so its empty-hand return meets the supplied idle endpoint.
+export async function installGreenIdle(host,take){
+  const manifest=await fetch('review/astrid-elevated-idle/idle.json').then(r=>{if(!r.ok)throw new Error('Elevated idle manifest unavailable');return r.json();});
+  const video=document.createElement('video');video.muted=true;video.playsInline=true;video.loop=true;video.preload='auto';
+  const actor=createActorCompositor(manifest.width,manifest.height),canvas=actor.canvas;
+  canvas.className='astrid-green-idle';canvas.dataset.idleJob=manifest.jobId;canvas.setAttribute('aria-label','Astrid waiting');
+  let request,cycle=0,previous=-1;
+  const paint=(_,metadata)=>{
+    if(video.readyState<2)return;
+    const t=metadata?.mediaTime??video.currentTime;
+    if(t<previous)cycle++;previous=t;
+    actor.paint(video,null,{packed:true});
+    canvas.dataset.idleFrame=String(Math.floor(t*manifest.fps));canvas.dataset.idleCycle=String(cycle);
+    request=video.requestVideoFrameCallback(paint);
+  };
+  const resize=()=>{
+    const fit=uniformRegistration(take.camera,{width:innerWidth,height:innerHeight});
+    Object.assign(canvas.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});
+  };
+  const ready=new Promise((resolve,reject)=>{video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Elevated idle media unavailable')),{once:true});});
+  video.src=manifest.src;
+  try{await ready;await video.play();paint();}
+  catch(error){actor.dispose();throw error;}
+  resize();host.append(canvas);addEventListener('resize',resize);
+  document.documentElement.dataset.astridIdle='green';
+  let performing=false;
+  const observer=new MutationObserver(()=>{
+    const next=host.classList.contains('performance-playing');
+    if(next===performing)return;performing=next;
+    if(next){video.pause();video.currentTime=0;}
+    else video.play().catch(()=>{document.documentElement.dataset.astridIdle='offline';});
+  });
+  observer.observe(host,{attributes:true,attributeFilter:['class']});
+  return ()=>{observer.disconnect();removeEventListener('resize',resize);video.pause();video.cancelVideoFrameCallback(request);video.removeAttribute('src');video.load();canvas.remove();actor.dispose();};
+}
+
 // A homography preserves the filmed card plane, including its fixed UV order.
 // The authoritative DOM card remains in dealer-cards for reveal/settlement.
 export function quadMatrix(quad,width,height) {
@@ -57,5 +96,7 @@ export function layoutGreenDealerCards(container,take) {
     const shifted=quad.map(([x,y])=>[x+i*42*scale,y+i*4*scale]);
     Object.assign(el.style,{left:'0',top:'0',width:'100px',height:'140px',border:'0',transformOrigin:'0 0',animation:'none',transform:`matrix3d(${quadMatrix(shifted,100,140).join(',')})`});
     el.dataset.greenSlot=String(i);
+    el.dataset.feltCard='true';
+    el.dataset.feltCorners=JSON.stringify(shifted);
   });
 }

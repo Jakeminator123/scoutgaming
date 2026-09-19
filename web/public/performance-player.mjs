@@ -333,6 +333,10 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
 // flattening). Preserve the four actual corners instead of landing on their
 // axis-aligned bounding rectangle and snapping to the fan afterward.
 export function cardLandingCorners(element) {
+  if(element.dataset?.feltCorners){
+    const quad=JSON.parse(element.dataset.feltCorners);
+    if(quad.length===4&&quad.every(p=>p.length===2&&p.every(Number.isFinite)))return quad;
+  }
   const bounds=element.getBoundingClientRect();let matrix=new DOMMatrix();
   for(let node=element;node instanceof Element;node=node.parentElement){
     const transform=getComputedStyle(node).transform;
