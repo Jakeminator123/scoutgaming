@@ -110,33 +110,87 @@ async function render(id){
     return;
   }
   if(id==='gens'){
-    const gens=await fetch('/bo/generations.json').then(r=>r.json());
-    const st=render.genState??={q:'',model:'',croupier:true};
+    const [gens,vr]=await Promise.all([fetch('/bo/generations.json').then(r=>r.json()),api('/api/bo/gen-verdicts')]);
+    let verdicts=vr.genVerdicts??{};
+    const st=render.genState??={q:'',model:'',croupier:true,v:'todo'};
     const models=[...new Set(gens.map(g=>g.model))].sort();
+    const byId=Object.fromEntries(gens.map(g=>[g.id,g]));
     const esc=t=>String(t??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
     const thumb=g=>g.thumb?`/bo/gen/${g.id}-thumb${(g.thumb.match(/\.\w+$/)||['.jpg'])[0]}`:'';
+    const badge=g=>{const v=verdicts[g.id]?.verdict;return v==='want'?pill('&#10003; WANT','live'):v==='no'?`<span class="pill" style="border-color:var(--red);color:var(--red)">&#10006; DON'T WANT</span>`:'';};
+    const setVerdict=async(id,verdict,reason)=>{const r=await api('/api/bo/gen-verdict',{id,verdict,reason});if(!r.ok){toast(r.error||'failed');return false;}verdicts=r.genVerdicts;return true;};
     const draw=()=>{
       const q=st.q.toLowerCase();
-      const list=gens.filter(g=>(!st.croupier||g.croupier)&&(!st.model||g.model===st.model)&&(!q||g.prompt.toLowerCase().includes(q)||g.id.includes(q)));
+      const base=gens.filter(g=>(!st.croupier||g.croupier)&&(!st.model||g.model===st.model)&&(!q||g.prompt.toLowerCase().includes(q)||g.id.includes(q)));
+      const count=k=>base.filter(g=>k==='all'||(k==='todo'?!verdicts[g.id]:verdicts[g.id]?.verdict===k)).length;
+      const list=base.filter(g=>st.v==='all'||(st.v==='todo'?!verdicts[g.id]:verdicts[g.id]?.verdict===st.v));
       C.innerHTML=`<div class="panel"><div class="t">FILTERS &middot; ${list.length} OF ${gens.length} GENERATIONS</div><div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <input id="g-q" value="${esc(st.q)}" placeholder="search prompts" style="flex:1;min-width:200px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)">
         <select id="g-model"><option value="">All models</option>${models.map(m=>`<option ${st.model===m?'selected':''}>${m}</option>`).join('')}</select>
         <label style="font-size:11px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="g-cr" ${st.croupier?'checked':''}> Croupier only</label>
+        <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['todo','UNREVIEWED'],['want','&#10003; WANT'],['no',"&#10006; DON'T WANT"],['all','ALL']].map(([k,l])=>`<button data-v="${k}" style="border:0;border-radius:0;${st.v===k?(k==='no'?'background:rgba(255,80,80,.18);color:var(--red)':'background:rgba(214,255,58,.15);color:var(--lime)'):''}">${l} (${count(k)})</button>`).join('')}</span>
+        ${list.length?`<button id="g-swipe" style="margin-left:auto;background:var(--lime);color:#111;border-color:var(--lime)">&#8646; SWIPE MODE (${list.length})</button>`:''}
       </div></div>
       <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
-      ${list.map(g=>`<div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel2)">
+      ${list.map(g=>`<div data-g="${g.id}" style="border:1px solid ${verdicts[g.id]?.verdict==='want'?'var(--lime)':verdicts[g.id]?.verdict==='no'?'var(--red)':'var(--line)'};border-radius:10px;overflow:hidden;background:var(--panel2);position:relative">
+        <div style="position:absolute;top:8px;left:8px;z-index:2">${badge(g)}</div>
         <video src="/bo/gen/${g.id}.mp4" poster="${thumb(g)}" preload="none" controls muted playsinline style="width:100%;aspect-ratio:16/9;display:block;background:#000;object-fit:contain"></video>
         <div style="padding:9px 11px">
           <div style="display:flex;justify-content:space-between;gap:6px"><span class="mono" style="font-size:10px">${g.at.replace('T',' ')}</span>${pill(g.model,'live')}</div>
-          <div style="font-size:10px;color:var(--mut);margin-top:3px">${g.duration?g.duration+'s':''}${g.aspect?' &middot; '+g.aspect:''} &middot; <span class="mono">${g.id.slice(0,8)}</span></div>
+          <div style="font-size:10px;color:var(--mut);margin-top:3px">${g.duration?g.duration+'s':''}${g.aspect?' &middot; '+g.aspect:''} &middot; <span class="mono">${g.id.slice(0,8)}</span>${verdicts[g.id]?.reason?` &middot; ${esc(verdicts[g.id].reason)}`:''}</div>
           <div data-p style="font-size:11px;margin-top:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer" title="click to expand">${esc(g.prompt)||'<span style="color:var(--mut)">no prompt</span>'}</div>
-          <div style="margin-top:6px;display:flex;gap:6px"><button data-copy="${g.id}" style="font-size:9px">COPY PROMPT</button><a href="/bo/gen/${g.id}.mp4" download style="font-size:9px" class="mono">MP4</a></div>
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            ${verdicts[g.id]?`<button data-set="${g.id}" data-to="" style="font-size:9px">&#8630; RESET</button>`:`<button data-set="${g.id}" data-to="want" style="font-size:9px;border-color:var(--lime);color:var(--lime)">&#10003; WANT</button><button data-set="${g.id}" data-to="no" style="font-size:9px;border-color:rgba(255,80,80,.5);color:var(--red)">&#10006; DON'T WANT</button>`}
+            <button data-copy="${g.id}" style="font-size:9px">COPY PROMPT</button><a href="/bo/gen/${g.id}.mp4" download style="font-size:9px" class="mono">MP4</a></div>
         </div></div>`).join('')}</div>`;
       $('#g-q').oninput=e=>{st.q=e.target.value;clearTimeout(draw.t);draw.t=setTimeout(()=>{draw();const i=$('#g-q');i.focus();i.setSelectionRange(i.value.length,i.value.length);},250);};
       $('#g-model').onchange=e=>{st.model=e.target.value;draw();};
       $('#g-cr').onchange=e=>{st.croupier=e.target.checked;draw();};
+      C.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{st.v=b.dataset.v;draw();});
       C.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>{el.style.webkitLineClamp=el.style.webkitLineClamp==='unset'?'5':'unset';});
-      C.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(gens.find(g=>g.id===b.dataset.copy).prompt);}catch{}toast('prompt copied');});
+      C.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(byId[b.dataset.copy].prompt);}catch{}toast('prompt copied');});
+      C.querySelectorAll('[data-set]').forEach(b=>b.onclick=async()=>{if(await setVerdict(b.dataset.set,b.dataset.to||null)){toast(b.dataset.to==='want'?'want':b.dataset.to==='no'?"don't want":'reset');draw();}});
+      const sw=$('#g-swipe');if(sw)sw.onclick=()=>swipe(list.map(g=>g.id));
+    };
+    // Swipe mode: right = want, left = don't want, Z = undo, Esc = close.
+    const swipe=ids=>{
+      let i=0,busy=false;const hist=[];const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;touch-action:none';
+      document.body.appendChild(ov);
+      const close=()=>{document.removeEventListener('keydown',key);ov.remove();draw();};
+      const show=()=>{
+        if(i>=ids.length){ov.innerHTML=`<div class="mono" style="letter-spacing:.14em;color:var(--lime)">ALL ${ids.length} SWIPED</div><div style="display:flex;gap:10px">${hist.length?'<button data-u>&#8630; UNDO</button>':''}<button data-x>CLOSE</button></div>`;ov.querySelector('[data-x]').onclick=close;const u=ov.querySelector('[data-u]');if(u)u.onclick=undo;return;}
+        const g=byId[ids[i]];
+        ov.innerHTML=`<div class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--mut)">${i+1} / ${ids.length} &middot; &larr; DON'T WANT &middot; &rarr; WANT &middot; Z UNDO &middot; ESC CLOSE</div>
+          <div data-card style="width:min(820px,100%);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel2);transition:transform .22s,opacity .22s;position:relative;cursor:grab">
+            <div style="position:absolute;top:16px;left:16px;right:16px;z-index:2;display:flex;justify-content:space-between;pointer-events:none"><span data-l class="mono" style="opacity:0;border:2px solid var(--red);color:var(--red);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">DON'T WANT</span><span data-r class="mono" style="opacity:0;border:2px solid var(--lime);color:var(--lime);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">WANT</span></div>
+            <video src="/bo/gen/${g.id}.mp4" poster="${thumb(g)}" autoplay loop muted playsinline style="width:100%;max-height:55vh;display:block;background:#000;object-fit:contain;pointer-events:none"></video>
+            <div style="padding:10px 14px"><div style="display:flex;justify-content:space-between;gap:8px"><span class="mono" style="font-size:10px">${g.at.replace('T',' ')} &middot; ${g.duration?g.duration+'s':''} &middot; ${g.id.slice(0,8)}</span>${pill(g.model,'live')}</div>
+            <div style="font-size:11px;margin-top:6px;line-height:1.45;max-height:16vh;overflow:auto">${esc(g.prompt)}</div></div>
+          </div>
+          <input data-reason placeholder="why not (optional)" style="width:min(820px,100%);font-size:12px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button data-a="left" style="border-color:rgba(255,80,80,.5);color:var(--red);padding:10px 18px">&#10006; DON'T WANT</button><button data-a="skip" style="padding:10px 18px">SKIP</button><button data-a="right" style="border-color:var(--lime);color:var(--lime);padding:10px 18px">&#10003; WANT</button><button data-u ${hist.length?'':'disabled'}>&#8630; UNDO</button><button data-x>CLOSE</button></div>`;
+        ov.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>act(b.dataset.a));
+        ov.querySelector('[data-u]').onclick=undo;ov.querySelector('[data-x]').onclick=close;
+        const card=ov.querySelector('[data-card]');let x0=null,dx=0;
+        card.onpointerdown=e=>{x0=e.clientX;card.setPointerCapture(e.pointerId);card.style.transition='none';};
+        card.onpointermove=e=>{if(x0===null)return;dx=e.clientX-x0;card.style.transform=`translateX(${dx}px) rotate(${dx/20}deg)`;ov.querySelector('[data-l]').style.opacity=Math.max(0,-dx/120);ov.querySelector('[data-r]').style.opacity=Math.max(0,dx/120);};
+        card.onpointerup=()=>{if(x0===null)return;x0=null;card.style.transition='';if(dx>120)act('right');else if(dx<-120)act('left');else{card.style.transform='';ov.querySelectorAll('[data-l],[data-r]').forEach(e=>e.style.opacity=0);}dx=0;};
+      };
+      const act=async dir=>{
+        const g=byId[ids[i]];if(!g||busy)return;busy=true;
+        try{
+          const prev=verdicts[g.id]?.verdict??null;
+          if(dir!=='skip'){const ok=await setVerdict(g.id,dir==='right'?'want':'no',dir==='left'?ov.querySelector('[data-reason]').value:'');if(!ok)return;}
+          hist.push({id:g.id,prev,skip:dir==='skip'});
+          const card=ov.querySelector('[data-card]');card.style.transform=dir==='left'?'translateX(-120vw) rotate(-25deg)':dir==='right'?'translateX(120vw) rotate(25deg)':'translateY(-120vh)';card.style.opacity=0;
+          await new Promise(r=>setTimeout(r,220));i++;show();
+        }finally{busy=false;}
+      };
+      const undo=async()=>{const h=hist.pop();if(!h)return;if(!h.skip)await setVerdict(h.id,h.prev);i--;show();toast('undone');};
+      const key=e=>{if(e.target.matches('input,select'))return;if(e.key==='ArrowLeft')act('left');else if(e.key==='ArrowRight')act('right');else if(e.key==='ArrowDown'||e.key===' '){e.preventDefault();act('skip');}else if(e.key==='z'||e.key==='Backspace')undo();else if(e.key==='Escape')close();};
+      document.addEventListener('keydown',key);
+      show();
     };
     draw();
     return;
