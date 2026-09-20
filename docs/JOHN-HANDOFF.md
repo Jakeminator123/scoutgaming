@@ -26,6 +26,14 @@ Logs also note memory-core dreaming reconciliation lacks an agent-less cron
 owner; cron/heartbeat are intentionally disabled, so no scheduling feature is
 claimed. No gameplay/media/database or IDE-inbox integration was changed.
 
+## 2026-09-20 — lightweight personal documentation
+
+Added only `random-stuff-jakob/jakob-docs/README.md` as Jakob's requested thin,
+temporary summary of V3 and inbox work. Clarified that previews are truncated,
+not GitLab originals, and local cache retention is not yet age-bounded. No
+history deleted, runtime changed or new documentation automation installed.
+Verified file scope and `git diff --check`; documentation-only, no runtime test.
+
 ## 2026-09-20 — bounded, addressed GitLab inbox
 
 Optimized only inbox tooling/instructions: 30-second per-repo/credential fetch
