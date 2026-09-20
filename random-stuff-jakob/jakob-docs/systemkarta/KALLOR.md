@@ -8,6 +8,24 @@ uppdaterade eventregister och nya situationsdokument lästes också medan
 denna dokumentationsleverans skrevs. Annat parallellt arbete kan därefter
 ändra källorna; det har inte automatiskt granskats här.
 
+## Senare dokumentationsöversyn och arkivering
+
+Efter den ursprungliga kartläggningen lästes även leveransen
+[OpenClaw-instruktioner och röstpanel](../arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md)
+(`0a1f9cb`/`7be5844`) och
+[videoladdningsfyndet med Kevin-ping](../arkiv/2026-09-20/2026-09-20-videoladdning-och-kevin-ping.md)
+(`bf4e82e`). De senare handoffnotiserna och relevanta kodställen granskades
+också. Det tillför daterad drift-/röststatus och loaderfynd till ämnena;
+det är ingen ny full kod-, media- eller remoteaudit.
+
+Åtta arbetsrapporter och en datoragentprompt flyttades till
+[arkivet](../arkiv/README.md). Även det tidigare rotindexet bevarades som
+ögonblicksbild. Nedanstående ursprungliga källista har fått nya länkar;
+den historiska läsomfattningen är oförändrad. Aktiva modelldokument behåller
+sina stabila sökvägar, inklusive den som runtimepaketet refererar till.
+Öppna fynd sammanställs i [docs/findings](../../../docs/findings/README.md),
+med åtskild evidens och triage samt källor till beslut.
+
 ## Hur dagens underlag valdes
 
 Inventeringen använde Git-historiken från `2026-09-20T00:00:00+02:00` och
@@ -33,13 +51,13 @@ avgränsningen av den långa handoffen nedan.
 - [Index](../README.md)
 - [Eventregister och mental modell](../2026-09-20-eventregister-och-mental-modell.md)
 - [Situationer, variantfamiljer och takes](../2026-09-20-situationer-variantfamiljer-och-takes.md)
-- [Labbets mappar och tester](../2026-09-20-labbets-mappar-och-tester.md)
-- [Nodträd, rörelser och anslutning](../2026-09-20-nodtrad-rorelser-anslutning.md)
-- [OpenClaw och labbet](../2026-09-20-openclaw-och-labb.md)
-- [Röstprov och urvalsmodell](../2026-09-20-rostprov-och-urvalsmodell.md)
-- [V3-videoregister och placering](../2026-09-20-v3-videoregister-och-placering.md)
-- [Windows-medietester](../2026-09-20-windows-medietester.md)
-- [Prompt för Windows/Cursor/Bash](../PROMPT-windows-cursor-bash.md)
+- [Labbets mappar och tester](../arkiv/2026-09-20/2026-09-20-labbets-mappar-och-tester.md)
+- [Nodträd, rörelser och anslutning](../arkiv/2026-09-20/2026-09-20-nodtrad-rorelser-anslutning.md)
+- [OpenClaw och labbet](../arkiv/2026-09-20/2026-09-20-openclaw-och-labb.md)
+- [Röstprov och urvalsmodell](../arkiv/2026-09-20/2026-09-20-rostprov-och-urvalsmodell.md)
+- [V3-videoregister och placering](../arkiv/2026-09-20/2026-09-20-v3-videoregister-och-placering.md)
+- [Windows-medietester](../arkiv/2026-09-20/2026-09-20-windows-medietester.md)
+- [Prompt för Windows/Cursor/Bash](../arkiv/2026-09-20/PROMPT-windows-cursor-bash.md)
 
 ### Projekt, studio och verifiering
 
@@ -151,5 +169,6 @@ hashbunden takeacceptans är fortsatt öppna kontroller.
 - Nya parallella förändringar efter källankaret blir inte automatiskt fakta
   i kartan. Läs deras senare handoff och commit innan nästa integration.
 
-Originaldokumenten har inte flyttats eller kopierats. Denna mapp samlar
-läsordning, samband och källpekare för fortsatt arbete.
+Ämneskartan kopierar inte originaldokumentens fulla innehåll. Rapporternas
+arkivflytt beskrivs ovan; denna mapp samlar läsordning, samband och
+källpekare för fortsatt arbete.

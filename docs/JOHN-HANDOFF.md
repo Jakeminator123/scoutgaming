@@ -1,3 +1,30 @@
+## 2026-09-20 — documentation archive and repository findings register
+
+Reorganized Jakob's documentation after an independent classification audit.
+Moved eight dated reports and one historical Windows-agent prompt from
+jakob-docs/ into jakob-docs/arkiv/2026-09-20/, preserving their content with
+archive labels and corrected relative links. Saved the previous README as
+an archival snapshot so its inline V3/inbox/chef notes remain discoverable.
+The new archive index maps old filenames to their locations and active topics.
+Historical path mentions below refer to their original delivery locations;
+use random-stuff-jakob/jakob-docs/arkiv/README.md to locate moved reports.
+
+Kept the two active event/situation model documents at their stable paths,
+including the reference used by OpenClaw's versioned runtime knowledge.
+Refreshed system-map topics from dated 0a1f9cb/7be5844 voice/runtime evidence
+and bf4e82e loader findings. No new deployment or product acceptance claimed.
+Added docs/findings/README.md and REGISTER.md with seven stable F-001..F-007
+observations, separate evidence/triage fields, source links, next steps and
+decision dependencies. Jira CAC remains the implementation/QA work tracker.
+F-001/F-002 still await Kevin's explicit A/B approval; archiving does not
+resolve them. No Jira issue/status, code, media, data or runtime bundle changed
+by this task. Parallel lab/runtime changes belong to the OPENCLAW task.
+
+Navigation now reaches system-map, findings and archive from repo/lab/shared
+entry points. Validated local links, moved-report content preservation and
+documentation diffs; no gameplay/media test rerun is claimed for Markdown.
+Local documentation commit only; no push or deployment in this delivery.
+
 ## 2026-09-20 — reproduced media-loader race; Kevin approval requested
 
 At Jakob's explicit request, sent one signed ping-croupier question to Kevin:

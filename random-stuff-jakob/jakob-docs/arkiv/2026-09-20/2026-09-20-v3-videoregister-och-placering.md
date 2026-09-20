@@ -1,3 +1,5 @@
+> Arkiverad arbetsrapport/prompt från 20 september 2026. Uppgifter och instruktioner är daterat underlag; arkivering innebär inte att öppna frågor är lösta. Se [arkivindexet](../README.md), [systemkartan](../../systemkarta/README.md) och [findings](../../../../docs/findings/README.md) för fortsatt läsning.
+
 # Arbetsrapport: V3, videoregister och placering
 
 Dokumenterad 20 september 2026. Avser uppgiften **Kartlägg V3:s videohändelser**
@@ -17,10 +19,10 @@ laddades ner på nytt eller godkändes visuellt genom detta arbete. Ingen
 spel-, player-, kalibrerings-, databas- eller OpenClaw-runtimekod ändrades.
 
 Den fullständiga tekniska rapporten med källreferenser finns i
-[V3-videokartans README](../../docs/animation-events/v3-video-map/README.md).
+[V3-videokartans README](../../../../docs/animation-events/v3-video-map/README.md).
 Den här arbetsrapporten beskriver vad vi gjorde och hur arbetet kan fortsätta.
 
-Rapportens avsnitt [Samlad översikt över register, manifest och föreslagna scheman](../../docs/animation-events/v3-video-map/README.md#samlad-översikt-över-register-manifest-och-föreslagna-scheman)
+Rapportens avsnitt [Samlad översikt över register, manifest och föreslagna scheman](../../../../docs/animation-events/v3-video-map/README.md#samlad-översikt-över-register-manifest-och-föreslagna-scheman)
 samlar generationsregistret, lokala `catalog.json`, `streams/index.json`,
 performance-manifest/proveniens, labbkatalogen, BO:s `clipAssignments` och
 förslagen `event.yaml`/`take.yaml`. Befintliga register, okända live-val och
@@ -168,15 +170,15 @@ cachebara mediefiler. Separat medielagring/CDN är ett senare steg.
 ## Levererade filer och hur kartan startas
 
 Allt som behövs för den portabla kartan finns i
-[`docs/animation-events/v3-video-map`](../../docs/animation-events/v3-video-map/README.md):
+[`docs/animation-events/v3-video-map`](../../../../docs/animation-events/v3-video-map/README.md):
 
 | Fil | Innehåll |
 | --- | --- |
-| [README.md](../../docs/animation-events/v3-video-map/README.md) | Full teknisk rapport, källor, begränsningar och uppföljning. |
-| [map.html](../../docs/animation-events/v3-video-map/map.html) | Interaktiv nodkarta, register och placeringsförslag. |
-| [snapshot.json](../../docs/animation-events/v3-video-map/snapshot.json) | Härledda data för 224 poster, noder, dealers, takes och fynd. |
-| [map-template.html](../../docs/animation-events/v3-video-map/map-template.html) och [build.mjs](../../docs/animation-events/v3-video-map/build.mjs) | Mall och deterministisk ombyggnad av HTML från snapshot. |
-| [serve.mjs](../../docs/animation-events/v3-video-map/serve.mjs) | Lokal läsande previewserver med kontroll av id, storlek, SHA-256 och byteintervall. |
+| [README.md](../../../../docs/animation-events/v3-video-map/README.md) | Full teknisk rapport, källor, begränsningar och uppföljning. |
+| [map.html](../../../../docs/animation-events/v3-video-map/map.html) | Interaktiv nodkarta, register och placeringsförslag. |
+| [snapshot.json](../../../../docs/animation-events/v3-video-map/snapshot.json) | Härledda data för 224 poster, noder, dealers, takes och fynd. |
+| [map-template.html](../../../../docs/animation-events/v3-video-map/map-template.html) och [build.mjs](../../../../docs/animation-events/v3-video-map/build.mjs) | Mall och deterministisk ombyggnad av HTML från snapshot. |
+| [serve.mjs](../../../../docs/animation-events/v3-video-map/serve.mjs) | Lokal läsande previewserver med kontroll av id, storlek, SHA-256 och byteintervall. |
 
 Kör från `C:\Users\jakem\Projects\croupier` med Node 22 eller senare:
 
@@ -245,7 +247,7 @@ gjordes av den här uppgiften.
 OPENCLAW-uppgiften fick den efterfrågade överlämningen om original/kopior/
 bearbetade takes, eventmodell, hashspårning och separata statusar. Dess eget
 labb-, integrations- och driftarbete är separat och ska inte tillskrivas
-denna inventering. Den gemensamma [handoffen](../../docs/JOHN-HANDOFF.md)
+denna inventering. Den gemensamma [handoffen](../../../../docs/JOHN-HANDOFF.md)
 innehåller också daterade leveransnotiser.
 
 Före faktisk koppling till spelaren återstår:

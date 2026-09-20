@@ -13,6 +13,8 @@ serialiserade tillsammans. JSON-filerna beskriver olika ansvar:
 | [studio-model.mjs](../../../../lab/lib/studio-model.mjs) | Extra referens-/kontraktsvalidering och katalogkonvertering |
 | `lab/data/project.json` | Användarens sparade projekt, lokalt och Git-ignorerat |
 | `lab/data/history/` | Tidigare sparade revisioner |
+| `lab/data/voice-cache/` | Den manuella studiopanelens MP3-prov, identifierade av text/röst/modell/inställningar |
+| `lab/data/voice-previews/` | Äldre fristående CLI-prov; separat från panelens cache |
 | [project-store.mjs](../../../../lab/lib/project-store.mjs) | Laddning, revisionskontroll, historik och atomisk sparning |
 | [animations/index.json](../../../../lab/animations/index.json) och 16 eventfiler | 64 syntetiska rörelser med numeriska poser/timing |
 | [video-registry.mjs](../../../../lab/lib/video-registry.mjs) | Läser befintlig originalinventering för labbpreview |
@@ -46,6 +48,6 @@ Directors sparade katalog.
 Läs [studions guide](../../../../lab/README.md),
 [policyernas ansvar](../../../../lab/policies/README.md),
 [rörelseformatet](../../../../lab/animations/README.md) och
-[den första förklaringen av mapparna](../../2026-09-20-labbets-mappar-och-tester.md).
+[den första förklaringen av mapparna](../../arkiv/2026-09-20/2026-09-20-labbets-mappar-och-tester.md).
 Starta via [Start-Labb.cmd](../../../../Start-Labb.cmd) när du vill använda
 editorn. Denna dokumentationsmapp startar inga processer och ändrar inget projekt.

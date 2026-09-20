@@ -3,7 +3,11 @@
 Den nya Next.js-arbetsytan. Den riktiga spelklienten och OpenClaws egen
 dashboard är separata. Inget du sparar här publiceras automatiskt.
 
-[Enkel förklaring för Jakob: mappar, tester och videokoppling](../random-stuff-jakob/jakob-docs/2026-09-20-labbets-mappar-och-tester.md).
+[Historisk arbetsrapport: mappar, tester och videokoppling](../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-labbets-mappar-och-tester.md).
+
+Aktuell läsväg: [systemkartan](../random-stuff-jakob/jakob-docs/systemkarta/README.md).
+Buggar, förbättringar och öppna kontroller för labbet och övriga repot finns i
+[findings](../docs/findings/README.md); implementation och QA följs i Jira CAC.
 
 ## Starta
 
@@ -76,7 +80,7 @@ Fristående ElevenLabs-prov (inte scen-/chattintegration):
 `node tools/elevenlabs-lab-preview.mjs --check` från repots rot, eller
 `--generate` för ett kort debiterbart röstprov. MP3 + text/röst/hash-metadata
 sparas lokalt i `lab/data/voice-previews/`, utanför Git. Ingen produktmedia
-eller lipsync ersätts. [Status och urvalsmodell](../random-stuff-jakob/jakob-docs/2026-09-20-rostprov-och-urvalsmodell.md).
+eller lipsync ersätts. [Status och urvalsmodell](../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-rostprov-och-urvalsmodell.md).
 
 Spel → croupier → eventnod → linje → standard/alternativ → animation/videofil.
 En linje hör till en croupier och ett event. Starten har 64 linjer med en

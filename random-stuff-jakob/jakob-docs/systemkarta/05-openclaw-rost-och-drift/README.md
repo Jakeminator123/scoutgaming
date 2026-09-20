@@ -22,20 +22,33 @@ Kodvalidering → labbanimation eller separat originalpreview
 | Director | Beslutskontrakt, rådskontroll, operatörschatt och dashboard-ingång |
 | Privat Gateway | Kör OpenClaw och ansluter till konfigurerad modell |
 | Native dashboard | Administrationsyta; separat från studio och spelarchatt |
-| ElevenLabs-provverktyg | Fristående röstprov; ännu inte automatisk röst i studion |
+| ElevenLabs-röstprov | Manuell studiopanel med lokal MP3-cache samt ett separat äldre CLI-prov; ingen automatisk spelarröst |
 | IDE-agenternas inbox | Samarbete om projektet; separat från alla ovanstående runtime-samtal |
 
-**Tidigare verifierat 20 september:** Director `7f056f7` gav riktigt aktivt
-variantval, shadow-råd med standarduppspelning och operatörschattsvar via
-lokal studio. Ett första rådanrop nådde 2,5-sekundersgränsen och använde
-fallback; senare prov lyckades. Detta är ett daterat anslutningsprov.
-Kartan gör inga nya modell-, deployment- eller tillgänglighetskontroller.
+**Senaste daterade driftunderlag i denna översyn:**
+[rapporten om instruktioner och röstpanel](../../arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md)
+redovisar Director och Gateway på `0a1f9cb`, med upstream OpenClaw fortsatt
+`2026.9.5`. Rådgränsen ändrades till **8000 ms**; operatörschatt och talprov
+har egna gränser. Chat, active och shadow verifierades i den leveransen.
+Den tidigare 2500-ms-gränsen och provet på `7f056f7` är historiska steg.
+Denna dokumentationsöversyn gör inga nya drift- eller modellkontroller.
 
-Det senare fristående ElevenLabs-provet gav en svensk Sarah-MP3 och sparade
-exakt text, röst-/modell-ID och hash lokalt. Det är bevis för det anropet,
-inte för automatisk röst, godkänt uttal eller läppsynk i en dealerfilm.
-Riktig spelarchatt, moderering, spelarminne och produktspelarens variantadapter
-återstår enligt de aktuella handoffnotiserna.
+Ett versionsmärkt [runtimepaket](../../../../open-claw/lab/deploy/runtime-bundle/README.md),
+`2026-09-20.1`, installerar korta rollinstruktioner och källsammanfattningar
+i agenternas arbetsytor via hanterade `AGENTS.md`-block. Manuella texter
+bevaras. Paketet är medvetet begränsat: ingen extern crawl, vektordatabas
+eller automatisk tillgång till hela Git-repot ingår.
+
+Studions manuella röstpanel kan generera tre exempel, egen text eller ett
+kopierat operatörssvar via ElevenLabs. Samma text/röst/modell/inställningar
+återanvänder `lab/data/voice-cache/`. Ett knapptryck kan använda krediter;
+talprovets cache är separat från äldre CLI-provens `voice-previews/`.
+Chrome-uppspelning verifierades i rapporten; Codex inbyggda webbvy kraschade
+vid ljudprovet. Följdrättningen `7be5844` hanterar direkt labbnavigering.
+
+Riktig spelarchatt, moderering, spelarminne, automatisk spelarröst,
+produktspelarens variantadapter och ny lipsync-acceptans återstår enligt
+underlaget. En manuell MP3-panel levererar inte dessa integrationer.
 
 Driftfilerna ligger kvar i `open-claw/lab/`, med
 [render.yaml](../../../../open-claw/lab/render.yaml).
@@ -50,12 +63,13 @@ automatisk dokumentcrawl eller dokumentations-MCP ingår i detta flöde.
 
 Fortsatt läsning:
 
-- [Senare nod-/Render-notering](../../2026-09-20-nodtrad-rorelser-anslutning.md)
-- [Röstprov och urvalsmodell](../../2026-09-20-rostprov-och-urvalsmodell.md)
+- [Senare nod-/Render-notering](../../arkiv/2026-09-20/2026-09-20-nodtrad-rorelser-anslutning.md)
+- [Röstprov och urvalsmodell](../../arkiv/2026-09-20/2026-09-20-rostprov-och-urvalsmodell.md)
+- [Senare runtimepaket och röstpanel](../../arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md)
 - [Variablernas namn och placeringar](../../../../_ENVIROMENT-INFO.md)
 - [Driftguiden](../../../../open-claw/lab/docs/DEPLOYMENT.md) och [dashboard-guiden](../../../../open-claw/lab/docs/DASHBOARD-SV.md)
 - [Äldre OpenClaw/labb-guide](../../../../open-claw/lab/README.md), vars editor och katalog är separata
 
 Äldre guider har kvar tidigare steg där modellprov anges som återstående.
-Använd den senare daterade handoffen för vad som därefter faktiskt provades;
+Använd den senare daterade leveransrapporten för vad som därefter provades;
 anta inte att alla andra öppna integrationsfrågor därmed är lösta.

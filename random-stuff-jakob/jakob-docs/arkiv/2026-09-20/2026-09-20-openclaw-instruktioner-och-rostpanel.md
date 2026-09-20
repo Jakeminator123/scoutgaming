@@ -1,6 +1,8 @@
+> Arkiverad arbetsrapport/prompt från 20 september 2026. Uppgifter och instruktioner är daterat underlag; arkivering innebär inte att öppna frågor är lösta. Se [arkivindexet](../README.md), [systemkartan](../../systemkarta/README.md) och [findings](../../../../docs/findings/README.md) för fortsatt läsning.
+
 # OpenClaw-instruktioner, situationer och röstprov
 
-Den här senare iterationen bygger vidare på [systemkartan](systemkarta/README.md).
+Den här senare iterationen bygger vidare på [systemkartan](../../systemkarta/README.md).
 Inga RNG-regler, produktvideor eller sparade labbprojekt ändras.
 
 - **Nodträdet:** konkret situation visas före variantval. Kortplats, hand och

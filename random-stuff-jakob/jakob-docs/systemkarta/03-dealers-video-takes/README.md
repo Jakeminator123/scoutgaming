@@ -50,7 +50,24 @@ Ett känt `videoGenerationId` i labbet ger endast originalpreview. En
 standardbindning gör inte en inkompatibel eller ogranskad film godkänd.
 
 Fortsätt med [videoinventeringen](../../../../docs/animation-events/v3-video-map/README.md)
-och [dagens arbetsrapport](../../2026-09-20-v3-videoregister-och-placering.md).
+och [dagens arbetsrapport](../../arkiv/2026-09-20/2026-09-20-v3-videoregister-och-placering.md).
 De beskriver även kvarstående statuskonflikter, 13 saknade bank→speak-index-
 matchningar och okända aktuella BO-bindningar. Detta arbete granskar inte
 videorna visuellt och ger inget nytt takegodkännande.
+
+## Laddning och öppna fynd
+
+De granskade spelklippen serveras från produktens `web/public` via HTTP;
+PerformancePlayer skapar sedan lokala Blob-URL:er efter hämtning och
+hashkontroll. Det är inte Vercel Blob. Samtidiga laddningar med samma hash
+har ett isolerat reproducerat race som ger två skapade URL:er men en
+cachepost. Det belägger inte orsaken till visuell dubbelbild.
+
+[Findings-registret](../../../../docs/findings/REGISTER.md) samlar F-001
+(samtidighet/städning), F-002 (staged-förladdning), F-003 (HTTP-cache),
+F-004 (QA-paketering), F-006 (exakt taltäckning) och F-007 (aktuella
+videobindningar). F-001/F-002 inväntar Kevins uttryckliga besked enligt
+[pinget](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3870554825).
+Den [daterade undersökningen](../../arkiv/2026-09-20/2026-09-20-videoladdning-och-kevin-ping.md)
+bevarar reproduktion och föreslagen kontrollplan. Inga player- eller
+medieändringar följer av att fynden har fått registerposter.

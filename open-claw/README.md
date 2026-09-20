@@ -5,7 +5,7 @@
 - **OpenClaw och Render:** [lab/](lab/README.md) — Gateway, adapter och Docker.
   Blueprinten ligger i [lab/render.yaml](lab/render.yaml). Sökvägen behålls
   för befintlig drift; den äldre editorn är inte den nya lokala studion.
-- **För Jakob:** [dagens korta arbetsnotering](../random-stuff-jakob/jakob-docs/2026-09-20-openclaw-och-labb.md).
+- **För Jakob:** [systemkartan om OpenClaw, röst och drift](../random-stuff-jakob/jakob-docs/systemkarta/05-openclaw-rost-och-drift/README.md). Den [äldre arbetsnoteringen](../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-openclaw-och-labb.md) finns i arkivet.
 - **Teknisk dokumentation:** [läs vid behov](lab/docs/README.md).
 - **Historik, inte runtime:** [archive/](archive/README.md). Det äldre
   dokumentationspaketet är samlat där; den identiska lokala dubbletten är borttagen.

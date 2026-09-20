@@ -101,7 +101,7 @@ lokal studio → Render → OpenClaw svarade med korrekt paketversion, källor o
 ansvarsgränser. Aktivt variantval och shadow gav riktiga råd på cirka två
 sekunder i varsitt prov; Director rapporterade 8000 ms testgräns.
 Detta är daterad anslutningsevidens, inte en kontinuerlig hälsokontroll eller
-garanti för framtida svarstid. Se [arbetsnoteringen](../../../random-stuff-jakob/jakob-docs/2026-09-20-openclaw-instruktioner-och-rostpanel.md).
+garanti för framtida svarstid. Se [arbetsnoteringen](../../../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md).
 
 ## Var ändrar vi i Croupier?
 

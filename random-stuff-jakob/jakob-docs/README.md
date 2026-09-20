@@ -1,82 +1,50 @@
-# Jakobs snabbnoteringar
+# Jakobs dokumentation
 
-Jakobs minnesnoteringar och arbetsrapporter. Den gemensamma dokumentationen finns fortsatt i GitLab-wikin; tekniska rapporter länkas nedan. Konversationsexporter hör inte hemma här.
+Börja i [systemkartan](systemkarta/README.md) för att förstå delarna och deras
+samband. Daterade leveranser finns i [arkivet](arkiv/README.md). Öppna buggar,
+förbättringar och granskningsbehov samlas i repots [findings](../../docs/findings/README.md).
 
-## Börja här — system och gemensamt språk
+```text
+jakob-docs/
+├── README.md                         Start och dokumentationsregler
+├── systemkarta/                      Ämnesindelad systembeskrivning
+├── 2026-09-20-eventregister-…md       Aktiv registerreferens, daterat källankare
+├── 2026-09-20-situationer-…md         Aktiv begreppsmodell
+└── arkiv/
+    ├── README.md                     Index och gamla → nya sökvägar
+    └── 2026-09-20/                   Arbetsrapporter, kvitton och historisk prompt
 
-[Systemkartan](systemkarta/README.md) ordnar dagens dokumentation efter
-systemdelar och länkar tillbaka till källorna: spelmotor, event/urval,
-dealer/media, studio/JSON, OpenClaw/röst/drift och arbetssätt/verifiering.
-De daterade originalrapporterna ligger kvar nedan.
+../../docs/findings/                  Gemensamt för hela repot
+```
 
-[Situationer, variantfamiljer och takes](2026-09-20-situationer-variantfamiljer-och-takes.md)
-förklarar Jakobs mappmodell och hur destination, hand, första/andra kortet och
-rörelsesekvens påverkar videotäckningen. Skiljer tio interna eventtyper,
-sex presentationstyper och 16 labbnoder; ger ett gemensamt språk för agenternas
-fortsatta arbete. Mappvyn och föreslagen fysisk JSON-uppdelning är olika saker.
+## Aktiva modeller
 
-## 2026-09-20 — Videoladdning och fråga till Kevin
+- [Situationer, variantfamiljer och takes](2026-09-20-situationer-variantfamiljer-och-takes.md):
+  spel → dealer → presentationsbehov → konkret situation → variantfamilj → kompatibel take.
+- [Eventregister och mental mappmodell](2026-09-20-eventregister-och-mental-modell.md):
+  interna händelser, presentationstyper, labbnoder, triggers och JSON-förslag.
 
-[Reproducerad dubbelhämtning, cachelager och Kevin-ping](2026-09-20-videoladdning-och-kevin-ping.md):
-samtidiga laddningar skapar två Blob-URL:er men bara en cachepost. Skiljer
-detta fynd från visuell dubbelbild, förklarar filernas ursprung och föreslår
-prioriterad staged-förladdning. **Kevins godkännande inväntas före lokala
-player-/videoändringar.** OPENCLAW-uppgiften är informerad.
+Dessa två dokument är aktiva referenser med daterad faktagrund. Deras stabila
+sökvägar behålls; situationsmodellen refereras av OpenClaws versionsmärkta
+kunskapspaket. Senare driftuppgifter finns i systemkartans
+[OpenClaw-del](systemkarta/05-openclaw-rost-och-drift/README.md).
 
-## 2026-09-20 — Windows-testerna
+## Var nytt material hör hemma
 
-[Reparerade media-/spelartester](2026-09-20-windows-medietester.md): portabla sökvägar, Git Bash utan WSL, verifierade användarlokala testverktyg och CRLF-hantering utan ändrade medier/baseline. Alla begärda testkommandon passerar.
+| Material | Placering |
+| --- | --- |
+| Hur en systemdel fungerar, med källa och verifieringsdatum | Befintligt ämne i `systemkarta/`; ny ämnesmapp endast om ansvar saknas |
+| Bugg, förbättring eller obesvarad kontroll | [Findings-registret](../../docs/findings/REGISTER.md), med stabilt ID och underlag |
+| Vad en uppgift gjorde och testade vid en viss tidpunkt | `arkiv/ÅÅÅÅ-MM-DD/`, länkat från arkivindexet |
+| Gemensamt leveranskvitto | [JOHN-HANDOFF](../../docs/JOHN-HANDOFF.md), kort notis med länkar |
+| Beslut och samarbete | [GitLab-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home) och [inboxguiden](../../docs/shared/AGENT-INBOX.md) |
+| Implementation och QA-status | Jira CAC; findings pekar dit när ett issue finns |
 
-## 2026-09-20 — API-inbox ansluten
+Arkivering betyder att en rapport är historiskt underlag, inte att dess
+öppna problem är lösta. Lyft först bestående kunskap och öppna fynd, bevara
+sedan rapporten med datum och källrevision. Uppdatera inkommande och utgående
+länkar vid flytt. Gamla Git-permalänkar är fortfarande historiska källor.
 
-Jakobs egen token är installerad i en separat åtkomstskyddad lokal fil utanför Git; `GITLAB_TOKEN_FILE` är sparad i Windows användarmiljö. API-läsning och publicering verifierade. Starta om IDE:n för automatisk miljöinläsning; sandboxad åtkomst kan kräva godkänd körning. [Anslutningsinfo skickad till Kevin, CC Emil](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3870229815): egna tokens, samma gemensamma tråd. Deras anslutning/läsning är inte bekräftad. Originalfilen lämnades orörd; inga hemligheter finns i Git.
-
-## 2026-09-20 — Chefrollen
-
-`/chef` gör den aktuella chatten till samordnare: lägesbild → avgränsad samordning → beställd integration/test → verifierad överlämning. `/chef status` läser bara; `/chef av` släpper rollen. I Codex kan rollen väljas med `$chef`. En lokal chef per repo och dess worktrees, ingen bakgrundsagent eller automatisk push. [Rolldefinition](../../.agents/skills/chef/SKILL.md).
-
-## 2026-09-20 — OpenClaw och labbet
-
-[Senare iteration: instruktioner, situationer och röstpanel](2026-09-20-openclaw-instruktioner-och-rostpanel.md):
-versionsmärkt kunskap hos OpenClaw, 8-sekunders testgräns, situationsförklaring
-i nodträdet och separata ElevenLabs-prov i studion. Skiljer levererat labb från
-framtida spelarchatt, live-tal och godkända videotakes.
-
-[ElevenLabs-röstprov och urvalsmodell](2026-09-20-rostprov-och-urvalsmodell.md):
-verifierad nyckel och svensk Sarah-MP3; ännu inte automatisk röst i studion.
-Skillnaden mellan familj, take, trigger, ersättning och efterföljande klipp;
-procentslump är ett förslag, ingen ändring av Kevins motor eller nodträdet.
-
-[Eventregister och mental mappmodell](2026-09-20-eventregister-och-mental-modell.md):
-Jakobs provisoriska träd för spel → dealer → presentationsbehov → variant → take.
-Samlar motorhändelser och publik rådata, sex presentationstyper, 16 labbnoder,
-alla nio starttriggers och fem nya triggerförslag, 256 variantposter samt
-hur projekt-JSON, scheman, rörelser, originalvideor och OpenClaw hänger ihop.
-Trädet är en logisk vy; inga medier flyttas.
-
-[Nodträd, 64 rörelser och verifierad Render-anslutning](2026-09-20-nodtrad-rorelser-anslutning.md): hur labbet följer Kevins motor, vad som bara är exempel, vad som är testat och en separat Windows/Cursor-prompt.
-
-[Startfil och miljöregister](../../_ENVIROMENT-INFO.md): dubbelklicka `Start-Labb.cmd` i repots rot. Alla labb-/OpenClaw-variabelnamn och deras placeringar, utan hemliga värden. Lokal `LAB_REMOTE_TOKEN` är samma värde som Directors `LAB_API_TOKEN`; inga automatiska nyckelbyten.
-
-[Kort arbetsnotering](2026-09-20-openclaw-och-labb.md): vad som byggts, dashboard och labbeditor, Render, nycklarnas olika roller, kvarvarande integration och städningen av gamla OpenClaw-mappar.
-
-[Mappar, tester och videokoppling](2026-09-20-labbets-mappar-och-tester.md): enkla förklaringar av policies/schema/data/test, varför inget nytt manifest behövs, Windows-felen och hur riktig OpenClaw ska verifieras.
-
-## 2026-09-20 — Videoregister, V3-karta och lagring
-
-[Arbetsrapport: V3, videoregister och placering](2026-09-20-v3-videoregister-och-placering.md) samlar vad vi undersökte och levererade, var de 224 originalvideorna finns, hur kartan startas, beslut om eventträdet, lagringsbedömning, kontroller, publicerade commits och vad som återstår inför verklig integration. Rapporten skiljer inventeringen från OPENCLAW-uppgiftens eget arbete.
-
-## 2026-09-20 — V3 och agentkommunikation
-
-- **Grund:** Kevins befintliga Croupier-motor/RNG används. Granskningen visade att motorn inte saknades; ”runtime-verifiering” betyder tekniskt belägg för vad som faktiskt körs.
-- **Roller:** Kevin leder/integrerar, Jakob hjälper med backend och logik, Emil arbetar nära Kevin med video. Avstämning med Kevin vid etapper.
-- **Canvas:** V3 korrigerades i GitHub-repot `animation-events-v1` och publicerades på [Vercel](https://animation-events-v1.vercel.app/). Namnets v1 är historiskt; V2 finns kvar som arkiv.
-- **Synk:** Croupier-dokumentationen är underlag för wiki/GitHub; publicerad GitHub-version blir Vercel-sidan. Kontrollerat vid leverans, men inte automatisk dubbelriktad synk mellan tre redigerbara källor.
-- **Inbox:** namngivna agenter, exakt mottagare, CC bara för kännedom. Svar kontrolleras mot originalfrågan; Emil svarar inte åt Kevin. [Gemensam guide](https://gitlab.com/scout-gg/croupier/-/wikis/agent-inbox).
-- **Kostnad:** delad hämtcache i 30 sekunder, egen läsmarkering per chatt, högst fem förhandsvisningar à 280 tecken. Ingen automatisk agentväckning eller hel historik till alla. 23 tester passerade.
-- **Historik:** förhandsvisningar förkortas; GitLab-original raderas inte. Hanterade meddelanden lämnar chattens olästa kö. Lokal cache/läsmarkeringar har ännu ingen automatisk åldersrensning.
-- **Kvar:** anslut befintlig GitLab-token lokalt, utan att skriva hemligheten här. Kevin/Emil behöver aktivera reglerna själva. Inboxändringen finns på `codex/inbox-routing-cache`; annan lokal kod följde inte med den publiceringen.
-
-Lägg daterade arbetsrapporter här. `systemkarta/` är den ämnesindelade
-läsvyn med egna undermappar och källhänvisningar; den flyttar eller ersätter
-inte originalrapporterna. Uppdatera kartans länkar när nya källor tillkommer.
+Det tidigare rotindexets löpande anteckningar är bevarade i
+[indexet före arkivering](arkiv/2026-09-20/index-fore-arkivering.md).
+Privata loginnoter, hemligheter och konversationsexporter ingår inte i arkivet.

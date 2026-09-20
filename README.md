@@ -26,6 +26,12 @@ Jakob works on `jakeminator123/work`. Kevin owns integration decisions and the
 current Croupier engine; do not push documentation work to `main` or Kevin's
 branch without an agreed integration step.
 
+## Documentation navigation
+
+- [System map](random-stuff-jakob/jakob-docs/systemkarta/README.md): explanations by system area.
+- [Findings](docs/findings/README.md): evidenced bugs, improvement proposals and open checks across this repository; implementation and QA remain in Jira CAC.
+- [Jakob's report archive](random-stuff-jakob/jakob-docs/arkiv/README.md): dated delivery evidence and investigation history.
+
 ## Runtime map
 
 | Area | Main implementation |

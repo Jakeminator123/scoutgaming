@@ -1,3 +1,5 @@
+> Arkiverad arbetsrapport/prompt från 20 september 2026. Uppgifter och instruktioner är daterat underlag; arkivering innebär inte att öppna frågor är lösta. Se [arkivindexet](../README.md), [systemkartan](../../systemkarta/README.md) och [findings](../../../../docs/findings/README.md) för fortsatt läsning.
+
 # Videoladdning: reproducerat fynd och fråga till Kevin
 
 20 september 2026. **Status: Kevins godkännande inväntas.** Jakob har
@@ -17,11 +19,11 @@ Ingen annan agent har därmed fått ett nytt medieuppdrag.
 ## 1. Den konkreta buggen
 
 Den lokala koden vid `7be5844` har samma berörda filer som publicerade
-`998016a`. [PerformancePlayer.source](../../web/public/performance-player.mjs)
+`998016a`. [PerformancePlayer.source](../../../../web/public/performance-player.mjs)
 kontrollerar sin Map före hämtningen, men fyller den först efter fetch,
 SHA-256 och skapad Blob-URL. Två samtidiga anrop kan därför båda passera.
 
-I [smooth60-manifestet](../../web/public/dealers/astrid/performance/smooth60/manifest.json)
+I [smooth60-manifestet](../../../../web/public/dealers/astrid/performance/smooth60/manifest.json)
 refererar centre och dealer till `deal-centre-edge-v2.mp4` respektive
 `deal-dealer-edge-v2.mp4`. Båda är 598 735 byte och verifierades mot samma hash:
 
@@ -60,13 +62,13 @@ Repo: web/public/dealers/... eller web/public/dealer/...
     → komprimerade bytes och lokal uppspelning
 ```
 
-[web/server.mjs](../../web/server.mjs) har `web/public` som statisk rot.
+[web/server.mjs](../../../../web/server.mjs) har `web/public` som statisk rot.
 Vid lokal körning hämtas filerna från den lokala servern. I de kontrollerade
 liveanropen hämtades exempelvis `/dealers/astrid/performance/centre-native-review.mp4`
 från `bettalotto.se`. Spelaren hämtar inte dessa filer direkt från GitLab.
 Filerna i en faktiskt driftsatt revision behöver inte matcha lokal HEAD.
 
-- [DealerEngine](../../web/public/dealer-engine.mjs) hämtar `streams/index.json`
+- [DealerEngine](../../../../web/public/dealer-engine.mjs) hämtar `streams/index.json`
   och efterfrågade hela H.264-filer till ArrayBuffers för WebCodecs.
 - PerformancePlayer hämtar hela MP4-filen från `take.media.src`, verifierar
   hash och skapar en lokal `blob:`-adress till videodata för uppspelning.
@@ -103,7 +105,7 @@ mediefiler kan ersättas under samma namn. [MDN om Cache-Control](https://develo
 ## 4. Första bilden och QA-paketering
 
 I `dealer=astrid&performance=staged&motion=smooth60` startar
-[app.mjs](../../web/public/app.mjs) 18 förladdningsposter om 9 035 338 byte
+[app.mjs](../../../../web/public/app.mjs) 18 förladdningsposter om 9 035 338 byte
 innan `engine.init()`. Anropen inväntas inte; de kan konkurrera om nät och
 CPU medan första idle laddas. Förladdning av alla dessa poster är en särskild
 staged-väg, inte beteendet för samtliga dealers i det vanliga spelet.

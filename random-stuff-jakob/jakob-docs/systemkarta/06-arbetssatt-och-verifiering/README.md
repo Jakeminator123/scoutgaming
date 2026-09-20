@@ -11,7 +11,8 @@ inspelningar och befintligt material utan att bestämma fysisk filplacering.
 | Croupier-repot | Produktkod, kontrakt, media och kontrollerbar implementation |
 | [Gemensamma wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home) | Beslut, samarbete och handoff |
 | [Aktiv V3-dokumentation](../../../../docs/animation-events/v3-9-days-mvp/README.md) | Repo-nära sakmodell och förslag för produktintegration |
-| [Jakobs daterade noter](../../README.md) | Begripliga arbetsrapporter och lokala resonemang |
+| [Jakobs arkiv](../../arkiv/README.md) | Daterade arbetsrapporter och underlag |
+| [Findings](../../../../docs/findings/README.md) | Buggar, förbättringar och granskningsbehov med separat evidens och triage |
 | [JOHN-HANDOFF](../../../../docs/JOHN-HANDOFF.md) | Daterade leveranser, testresultat och kvarstående gap |
 | [GitHub/Vercel-canvasens källguide](../../../../docs/animation-events/v3-9-days-mvp/CANVAS.md) | Presentation av dokumentationen |
 | Jira CAC | Implementation och faktisk QA-status |
@@ -39,12 +40,27 @@ av alla fyra dealers i riktig rehearsal. Dokumentationens kartläggning
 godkänner inga nya takes.
 
 **Tidigare verifierat:** Windows-rapporten dokumenterar 113 hooktester och
-90 stream-prober. Senare nod-/röstleveranser utökade studions testsuite;
-den senaste röstnoteringen redovisar 114 studiotester. Dessa siffror hör
-till respektive leverans och är inga nykörningar gjorda av systemkartan.
+90 stream-prober. CLI-röstprovet redovisade 114 studiotester; den senare
+[runtime-/röstpanelleveransen](../../arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md)
+redovisar 138 labbtester, 79 runtime-tester samt typecheck och bygge.
+Dessa siffror hör till respektive leverans och är inga nykörningar gjorda
+av systemkartan.
+
+## Dokumentation som går att fortsätta arbeta i
+
+Lägg systemförklaringar i rätt ämne, observationer i findings och daterade
+arbetskvitton i arkivet. Behåll ett fynds ID när slutsatsen ändras och länka
+dess Jira-issue när sådan finns. Ett arkiverat underlag kan fortfarande
+beskriva ett öppet problem. F-001/F-002 inväntar Kevins särskilda besked;
+denna omorganisation ändrar inte det villkoret.
+
+JOHN-HANDOFF behåller sin kanoniska plats och historik. Senare notiser har
+ibland lagts längst ned, så toppens placering ensam fastställer inte senaste
+läget. Använd länkad leveransrapport, datum och revision. Nya korta handoff-
+notiser bör läggas överst och länka till rätt ämne, fynd och arkivrapport.
 
 För Windows-frågor, läs [testreparationen](../../../../docs/WINDOWS-MEDIA-TESTS.md)
-och [den separata datoragentens diagnosprompt](../../PROMPT-windows-cursor-bash.md).
+och [den separata datoragentens diagnosprompt](../../arkiv/2026-09-20/PROMPT-windows-cursor-bash.md).
 Ett gammalt process-PATH eller nekad sandboxåtkomst är inte automatiskt ett
 nytt produktfel eller skäl att installera om verktyg.
 

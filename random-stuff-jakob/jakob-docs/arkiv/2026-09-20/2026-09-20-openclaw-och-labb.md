@@ -1,3 +1,5 @@
+> Arkiverad arbetsrapport/prompt från 20 september 2026. Uppgifter och instruktioner är daterat underlag; arkivering innebär inte att öppna frågor är lösta. Se [arkivindexet](../README.md), [systemkartan](../../systemkarta/README.md) och [findings](../../../../docs/findings/README.md) för fortsatt läsning.
+
 # 20 september 2026 — OpenClaw och labbet
 
 ## Vad vi har gjort
@@ -5,7 +7,7 @@
 - Jämfört ZIP-underlagen: V2:s fem filer var identiska med motsvarande V1-filer.
   V1 gav dessutom användbara scheman, kontrollkod och tester. Äldre föreslagna
   eventnamn blev inte nya krav på spelmotorn.
-- Byggt ett separat labb i [open-claw/lab](../../open-claw/lab/README.md):
+- Byggt ett separat labb i [open-claw/lab](../../../../open-claw/lab/README.md):
   editor, scenarier, stegvis uppspelning och enkla animationer. Sex riktiga
   presentationstyper (`speak`, `deal`, `reveal`, `settle`, `turn`, `idle`) ligger
   bakom 16 begripliga noder, med två varianter per nod och 32 enkla animationer.
@@ -21,7 +23,7 @@
 
 ## Nytt lokalt labb — fortsättningen samma dag
 
-- Den gamla lokala servern stoppades. Nya [Next.js-studion ligger i `lab/`](../../lab/README.md),
+- Den gamla lokala servern stoppades. Nya [Next.js-studion ligger i `lab/`](../../../../lab/README.md),
   bredvid `open-claw/`. Starta: `npm --prefix lab run dev`; öppna `http://127.0.0.1:4188`.
 - Tre sidor: **Eventstudion**, **Videobanken**, **OpenClaw**. Fyra croupierer,
   16 labbnoder över sex motortyper; redigerbara namn, triggers och upp till fyra
@@ -52,7 +54,7 @@
   lokal anslutning använder `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN`.
   Spara aldrig nyckelvärden i dokumentation eller Git.
 - Nya webbläsare kan behöva ett engångsgodkännande. Det är redan gjort för
-  webbläsaren vi använde. [Inloggningsguide](../../open-claw/lab/docs/DASHBOARD-SV.md).
+  webbläsaren vi använde. [Inloggningsguide](../../../../open-claw/lab/docs/DASHBOARD-SV.md).
 
 ## Viktiga gränser och kvar att göra
 
@@ -74,7 +76,7 @@
 ## Dokumentation och städning
 
 Officiella OpenClaw-källor och konfiguration hittas via
-[tekniskt index](../../open-claw/lab/docs/README.md). `llms.txt` är bara en
+[tekniskt index](../../../../open-claw/lab/docs/README.md). `llms.txt` är bara en
 länklista som läses vid behov; ingen automatisk dokumentcrawl eller separat
 dokumentations-MCP är installerad.
 
