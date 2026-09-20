@@ -1,6 +1,6 @@
 import type { StudioAsset, StudioVariant } from '../lib/studio-model.mjs';
 
-export type StudioView = 'lab' | 'videos' | 'openclaw';
+export type StudioView = 'tree' | 'lab' | 'videos' | 'openclaw';
 export type DirectorMode = 'off' | 'rules' | 'shadow' | 'active';
 
 export interface VideoEntry {
@@ -64,7 +64,12 @@ export interface SimulationResult {
   [key: string]: unknown;
 }
 
-export const viewPaths: Record<StudioView, string> = { lab: '/', videos: '/videos', openclaw: '/openclaw' };
+export const viewPaths: Record<StudioView, string> = { tree: '/tree', lab: '/', videos: '/videos', openclaw: '/openclaw' };
+
+export function studioViewForPath(path: string): StudioView {
+  const segment = path.split('/').filter(Boolean)[0];
+  return segment === 'tree' || segment === 'videos' || segment === 'openclaw' ? segment : 'lab';
+}
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });

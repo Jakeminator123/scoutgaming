@@ -11,7 +11,9 @@ export class StudioError extends Error {
 export function createProjectStore(dataDir = resolve(process.cwd(), 'data')) {
   const file = join(dataDir, 'project.json');
   const load = async () => {
-    try { return validateProject(JSON.parse(await readFile(file, 'utf8'))); }
+    // Old editors permitted incompatible motion bindings. Keep those files
+    // readable for explicit UI repair; save and simulation remain strict.
+    try { return validateProject(JSON.parse(await readFile(file, 'utf8')), { allowIncompatibleAnimations: true }); }
     catch (error) {
       if (error.code === 'ENOENT') return createSeedProject();
       throw new StudioError('Den sparade projektfilen är ogiltig. Originalet har inte ersatts.', 422);

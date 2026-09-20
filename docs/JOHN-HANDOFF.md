@@ -1,3 +1,52 @@
+## 2026-09-20 — node tree, synthetic motions and live Render relay
+
+Added root lab /tree with four dealers sharing sixteen semantic lab groupings
+over the six unchanged Partner presentation types. Click-through editing and
+history navigation retain the draft. Trigger UI groups deterministic vs
+social/temperament; the underlying predicate contract remains unchanged.
+The default seed now has four variants including baseline per line (256
+dealer-specific variant records), backed by 64 shared silent synthetic motion
+clips. JSON files under lab/animations use finite numeric pose tracks, stable
+asset IDs, cancellation, neutral endpoints and reduced-motion handling.
+Existing saved projects are never expanded or overwritten automatically.
+
+Kevin compatibility audit added 12 actual presentationEvents regression tests
+and lab/COMPATIBILITY.md. Source event order, hidden cards, seven boxes and
+exact speak.line stay authoritative. Result grouping is not speech selection;
+speak.other is not a valid catch-all production speech take. Corrected overly
+broad seed descriptions without changing any source IDs, matches or examples.
+Synthetic card actions cannot be crossed with incompatible event types.
+Previously valid but incompatible saved bindings can still open for explicit
+repair; simulations/saves reject them until corrected, with no auto-rewrite.
+No game engine, product playback, raw video, calibration or baseline edits.
+
+With Jakob's explicit approval, manually deployed ONLY Render Director to
+origin/work 7f056f7f81cfdc9a05f503cc44f8323fa10cbdd2, deploy
+dep-danjucmgekts7397j7t0, confirmed Live. The previously missing studio advice
+and chat capabilities are present. Existing credentials retained unchanged.
+Real local Next -> Director -> Gateway tests: active accepted an eligible ID,
+shadow received valid advice but retained baseline, chat responded in Swedish,
+and project contents stayed unchanged. First advice request hit the existing
+2500ms deadline and correctly fell back; retry succeeded. This is not a latency
+guarantee or a live-game integration. No player memory/chat/moderation connected.
+
+Validation: 108 lab tests + 62 Director tests, TypeScript and production build
+passed. All twelve pre-commit commands and dealer --probe (90 streams) passed
+using already-installed tools with approved host execution; sandbox attempts
+could not launch ffmpeg/ffprobe, not a new code failure. No software installation
+or permanent PATH change. Known 13 missing product speech takes and human visual
+acceptance remain unresolved; no takes approved by this task.
+Browser QA covered /tree, draft rename/back navigation, variant selection,
+motion replay/event interruption, compatible action picker and a real operator
+chat. Not all 64 gestures were individually visually reviewed. Temporary QA
+4194 stopped; updated ordinary studio serves 127.0.0.1:4188 (also /tree).
+
+Thin Jakob note: 2026-09-20-nodtrad-rorelser-anslutning.md. External computer
+agent prompt: PROMPT-windows-cursor-bash.md. Native dashboard, lab operator chat,
+future player chat and IDE inbox remain distinct. No CAC issue supplied; no Jira
+status transition. Local delivery commit only; new tree/motions not pushed or
+deployed to Render (Next studio stays local).
+
 ## 2026-09-20 — one-click lab start and environment inventory
 
 Added root Start-Labb.cmd / Start-Labb.ps1: starts the local Next studio from

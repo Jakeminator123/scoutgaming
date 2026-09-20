@@ -16,6 +16,8 @@ Jakobs egen token är installerad i en separat åtkomstskyddad lokal fil utanfö
 
 ## 2026-09-20 — OpenClaw och labbet
 
+[Nodträd, 64 rörelser och verifierad Render-anslutning](2026-09-20-nodtrad-rorelser-anslutning.md): hur labbet följer Kevins motor, vad som bara är exempel, vad som är testat och en separat Windows/Cursor-prompt.
+
 [Startfil och miljöregister](../../_ENVIROMENT-INFO.md): dubbelklicka `Start-Labb.cmd` i repots rot. Alla labb-/OpenClaw-variabelnamn och deras placeringar, utan hemliga värden. Lokal `LAB_REMOTE_TOKEN` är samma värde som Directors `LAB_API_TOKEN`; inga automatiska nyckelbyten.
 
 [Kort arbetsnotering](2026-09-20-openclaw-och-labb.md): vad som byggts, dashboard och labbeditor, Render, nycklarnas olika roller, kvarvarande integration och städningen av gamla OpenClaw-mappar.

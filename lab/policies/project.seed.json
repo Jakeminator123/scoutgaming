@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "studio.2026-09-20.1",
+  "revision": "studio.2026-09-20.2",
   "gameId": "blackjack",
   "dealers": [
     {
@@ -70,7 +70,7 @@
     {
       "id": "speak.other",
       "label": "Övrig spelreplik",
-      "description": "Säker standard för övriga publicerade line-namn, inklusive resultat och placebets. Exakt källreplik bevaras.",
+      "description": "Labbgrupp för flera publicerade line-namn, inklusive resultat och placebets. Exakt källreplik bevaras. En gemensam labbvideo är inte ett godkänt talpaket för alla dessa repliker.",
       "sourceType": "speak",
       "sourceRef": "web/partner-presentation.mjs#presentationEvents",
       "sourceStatus": "verified",
@@ -293,7 +293,7 @@
     {
       "id": "settle.push",
       "label": "Oavgjort",
-      "description": "Alla publicerade handresultat är push. Tomma eller blandade resultat går till övrigt resultat.",
+      "description": "Labbgrupp när alla publicerade handresultat är push. Motorns separata speak.line bevaras; exempelvis kan dealer-blackjack ge denna resultatgrupp men en annan talrad.",
       "sourceType": "settle",
       "sourceRef": "web/partner-presentation.mjs#presentationEvents",
       "sourceStatus": "verified",
@@ -317,7 +317,7 @@
     {
       "id": "settle.other",
       "label": "Övrigt resultat / förlust",
-      "description": "Säker standard för förlust, dealer-blackjack, tomma eller blandade resultat. Resultatet ändras aldrig.",
+      "description": "Labbets fallback när tidigare resultatgrupper inte matchar. Blandade händer kan träffa tidigare grupper. Exakta handresultat och motorns separata speak.line bevaras.",
       "sourceType": "settle",
       "sourceRef": "web/partner-presentation.mjs#presentationEvents",
       "sourceStatus": "verified",
@@ -411,6 +411,14 @@
       "path": "context.temperament.mood",
       "op": "eq",
       "value": "calm"
+    },
+    {
+      "id": "playful-mood",
+      "label": "Lekfull framtoning (labbexempel)",
+      "category": "temperament",
+      "path": "context.temperament.mood",
+      "op": "eq",
+      "value": "playful"
     }
   ],
   "lines": [
@@ -438,6 +446,28 @@
           ],
           "assetId": "speak.goodluck.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.goodluck.motion3",
+          "label": "Rodnande tack · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.goodluck.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.goodluck.motion4",
+          "label": "Lekfull dubbelvink · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.goodluck.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -463,6 +493,28 @@
             "recent-losses"
           ],
           "assetId": "speak.insurance.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.insurance.motion3",
+          "label": "Varmt tack · öppen hand · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.insurance.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.insurance.motion4",
+          "label": "Lätt nick · tydlig information · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.insurance.motion4",
           "videoGenerationId": null
         }
       ]
@@ -490,6 +542,28 @@
           ],
           "assetId": "speak.double.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.double.motion3",
+          "label": "Hand på hjärtat · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.double.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.double.motion4",
+          "label": "Dubbel nickning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.double.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -515,6 +589,28 @@
             "chat-boundary"
           ],
           "assetId": "speak.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.other.motion3",
+          "label": "Generat leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.other.motion4",
+          "label": "Lekfull huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.other.motion4",
           "videoGenerationId": null
         }
       ]
@@ -542,6 +638,28 @@
           ],
           "assetId": "deal.player.left.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.left.motion3",
+          "label": "Varm blick åt vänster · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.left.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.left.motion4",
+          "label": "Lätt svep åt vänster · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.left.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -567,6 +685,28 @@
             "chat-praise"
           ],
           "assetId": "deal.player.centre.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.centre.motion3",
+          "label": "Tacksam nick mot mitten · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.centre.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.centre.motion4",
+          "label": "Litet studsande svep · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.centre.motion4",
           "videoGenerationId": null
         }
       ]
@@ -594,6 +734,28 @@
           ],
           "assetId": "deal.player.right.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.right.motion3",
+          "label": "Leende åt höger · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.right.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.right.motion4",
+          "label": "Lätt svep åt höger · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.right.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -619,6 +781,28 @@
             "recent-losses"
           ],
           "assetId": "deal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.dealer.motion3",
+          "label": "Varm nick · eget kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.dealer.motion4",
+          "label": "Liten cirkelgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.dealer.motion4",
           "videoGenerationId": null
         }
       ]
@@ -646,6 +830,28 @@
           ],
           "assetId": "reveal.dealer.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "astrid.reveal.dealer.motion3",
+          "label": "Mjuk blick · visa kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "reveal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.reveal.dealer.motion4",
+          "label": "Lätt presenterande gest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "reveal.dealer.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -671,6 +877,28 @@
             "returning-player"
           ],
           "assetId": "turn.player.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.turn.player.motion3",
+          "label": "Varm inbjudan · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "turn.player.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.turn.player.motion4",
+          "label": "Två lätta pekningar · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "turn.player.motion4",
           "videoGenerationId": null
         }
       ]
@@ -698,6 +926,28 @@
           ],
           "assetId": "settle.blackjack.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.blackjack.motion3",
+          "label": "Tacksam bugning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.blackjack.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.blackjack.motion4",
+          "label": "Lätt dubbelhälsning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -723,6 +973,28 @@
             "chat-praise"
           ],
           "assetId": "settle.dealerBust.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.dealerBust.motion3",
+          "label": "Rodnande leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.dealerBust.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.dealerBust.motion4",
+          "label": "Litet axelryck · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.dealerBust.motion4",
           "videoGenerationId": null
         }
       ]
@@ -750,6 +1022,28 @@
           ],
           "assetId": "settle.win.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.win.motion3",
+          "label": "Varm gratulation · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.win.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.win.motion4",
+          "label": "Lätt öppen-handsgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.win.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -775,6 +1069,28 @@
             "recent-losses"
           ],
           "assetId": "settle.push.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.push.motion3",
+          "label": "Vänligt leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.push.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.push.motion4",
+          "label": "Lekfull balansgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.push.motion4",
           "videoGenerationId": null
         }
       ]
@@ -802,6 +1118,28 @@
           ],
           "assetId": "settle.other.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.other.motion3",
+          "label": "Vänlig omtanke · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.other.motion4",
+          "label": "Mjuk huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.other.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -827,6 +1165,28 @@
             "returning-player"
           ],
           "assetId": "idle.ready.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.idle.ready.motion3",
+          "label": "Generad hälsning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "idle.ready.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.idle.ready.motion4",
+          "label": "Liten hälsningsdans · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "idle.ready.motion4",
           "videoGenerationId": null
         }
       ]
@@ -855,6 +1215,28 @@
           ],
           "assetId": "speak.goodluck.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.goodluck.motion3",
+          "label": "Rodnande tack · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.goodluck.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.goodluck.motion4",
+          "label": "Lekfull dubbelvink · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.goodluck.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -880,6 +1262,28 @@
             "recent-losses"
           ],
           "assetId": "speak.insurance.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.insurance.motion3",
+          "label": "Varmt tack · öppen hand · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.insurance.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.insurance.motion4",
+          "label": "Lätt nick · tydlig information · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.insurance.motion4",
           "videoGenerationId": null
         }
       ]
@@ -907,6 +1311,28 @@
           ],
           "assetId": "speak.double.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.double.motion3",
+          "label": "Hand på hjärtat · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.double.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.double.motion4",
+          "label": "Dubbel nickning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.double.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -932,6 +1358,28 @@
             "chat-boundary"
           ],
           "assetId": "speak.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.other.motion3",
+          "label": "Generat leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.other.motion4",
+          "label": "Lekfull huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.other.motion4",
           "videoGenerationId": null
         }
       ]
@@ -959,6 +1407,28 @@
           ],
           "assetId": "deal.player.left.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.left.motion3",
+          "label": "Varm blick åt vänster · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.left.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.left.motion4",
+          "label": "Lätt svep åt vänster · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.left.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -984,6 +1454,28 @@
             "chat-praise"
           ],
           "assetId": "deal.player.centre.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.centre.motion3",
+          "label": "Tacksam nick mot mitten · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.centre.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.centre.motion4",
+          "label": "Litet studsande svep · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.centre.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1011,6 +1503,28 @@
           ],
           "assetId": "deal.player.right.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.right.motion3",
+          "label": "Leende åt höger · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.right.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.right.motion4",
+          "label": "Lätt svep åt höger · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.right.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1036,6 +1550,28 @@
             "recent-losses"
           ],
           "assetId": "deal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.dealer.motion3",
+          "label": "Varm nick · eget kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.dealer.motion4",
+          "label": "Liten cirkelgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.dealer.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1063,6 +1599,28 @@
           ],
           "assetId": "reveal.dealer.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "vera.reveal.dealer.motion3",
+          "label": "Mjuk blick · visa kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "reveal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.reveal.dealer.motion4",
+          "label": "Lätt presenterande gest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "reveal.dealer.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1088,6 +1646,28 @@
             "returning-player"
           ],
           "assetId": "turn.player.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.turn.player.motion3",
+          "label": "Varm inbjudan · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "turn.player.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.turn.player.motion4",
+          "label": "Två lätta pekningar · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "turn.player.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1115,6 +1695,28 @@
           ],
           "assetId": "settle.blackjack.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.blackjack.motion3",
+          "label": "Tacksam bugning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.blackjack.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.blackjack.motion4",
+          "label": "Lätt dubbelhälsning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1140,6 +1742,28 @@
             "chat-praise"
           ],
           "assetId": "settle.dealerBust.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.dealerBust.motion3",
+          "label": "Rodnande leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.dealerBust.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.dealerBust.motion4",
+          "label": "Litet axelryck · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.dealerBust.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1167,6 +1791,28 @@
           ],
           "assetId": "settle.win.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.win.motion3",
+          "label": "Varm gratulation · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.win.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.win.motion4",
+          "label": "Lätt öppen-handsgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.win.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1192,6 +1838,28 @@
             "recent-losses"
           ],
           "assetId": "settle.push.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.push.motion3",
+          "label": "Vänligt leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.push.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.push.motion4",
+          "label": "Lekfull balansgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.push.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1219,6 +1887,28 @@
           ],
           "assetId": "settle.other.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.other.motion3",
+          "label": "Vänlig omtanke · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.other.motion4",
+          "label": "Mjuk huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.other.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1244,6 +1934,28 @@
             "returning-player"
           ],
           "assetId": "idle.ready.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.idle.ready.motion3",
+          "label": "Generad hälsning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "idle.ready.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.idle.ready.motion4",
+          "label": "Liten hälsningsdans · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "idle.ready.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1272,6 +1984,28 @@
           ],
           "assetId": "speak.goodluck.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.goodluck.motion3",
+          "label": "Rodnande tack · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.goodluck.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.goodluck.motion4",
+          "label": "Lekfull dubbelvink · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.goodluck.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1297,6 +2031,28 @@
             "recent-losses"
           ],
           "assetId": "speak.insurance.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.insurance.motion3",
+          "label": "Varmt tack · öppen hand · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.insurance.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.insurance.motion4",
+          "label": "Lätt nick · tydlig information · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.insurance.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1324,6 +2080,28 @@
           ],
           "assetId": "speak.double.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.double.motion3",
+          "label": "Hand på hjärtat · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.double.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.double.motion4",
+          "label": "Dubbel nickning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.double.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1349,6 +2127,28 @@
             "chat-boundary"
           ],
           "assetId": "speak.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.other.motion3",
+          "label": "Generat leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.other.motion4",
+          "label": "Lekfull huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.other.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1376,6 +2176,28 @@
           ],
           "assetId": "deal.player.left.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.left.motion3",
+          "label": "Varm blick åt vänster · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.left.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.left.motion4",
+          "label": "Lätt svep åt vänster · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.left.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1401,6 +2223,28 @@
             "chat-praise"
           ],
           "assetId": "deal.player.centre.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.centre.motion3",
+          "label": "Tacksam nick mot mitten · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.centre.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.centre.motion4",
+          "label": "Litet studsande svep · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.centre.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1428,6 +2272,28 @@
           ],
           "assetId": "deal.player.right.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.right.motion3",
+          "label": "Leende åt höger · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.right.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.right.motion4",
+          "label": "Lätt svep åt höger · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.right.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1453,6 +2319,28 @@
             "recent-losses"
           ],
           "assetId": "deal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.dealer.motion3",
+          "label": "Varm nick · eget kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.dealer.motion4",
+          "label": "Liten cirkelgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.dealer.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1480,6 +2368,28 @@
           ],
           "assetId": "reveal.dealer.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "amira.reveal.dealer.motion3",
+          "label": "Mjuk blick · visa kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "reveal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.reveal.dealer.motion4",
+          "label": "Lätt presenterande gest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "reveal.dealer.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1505,6 +2415,28 @@
             "returning-player"
           ],
           "assetId": "turn.player.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.turn.player.motion3",
+          "label": "Varm inbjudan · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "turn.player.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.turn.player.motion4",
+          "label": "Två lätta pekningar · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "turn.player.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1532,6 +2464,28 @@
           ],
           "assetId": "settle.blackjack.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.blackjack.motion3",
+          "label": "Tacksam bugning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.blackjack.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.blackjack.motion4",
+          "label": "Lätt dubbelhälsning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1557,6 +2511,28 @@
             "chat-praise"
           ],
           "assetId": "settle.dealerBust.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.dealerBust.motion3",
+          "label": "Rodnande leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.dealerBust.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.dealerBust.motion4",
+          "label": "Litet axelryck · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.dealerBust.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1584,6 +2560,28 @@
           ],
           "assetId": "settle.win.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.win.motion3",
+          "label": "Varm gratulation · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.win.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.win.motion4",
+          "label": "Lätt öppen-handsgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.win.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1609,6 +2607,28 @@
             "recent-losses"
           ],
           "assetId": "settle.push.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.push.motion3",
+          "label": "Vänligt leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.push.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.push.motion4",
+          "label": "Lekfull balansgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.push.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1636,6 +2656,28 @@
           ],
           "assetId": "settle.other.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.other.motion3",
+          "label": "Vänlig omtanke · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.other.motion4",
+          "label": "Mjuk huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.other.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1661,6 +2703,28 @@
             "returning-player"
           ],
           "assetId": "idle.ready.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.idle.ready.motion3",
+          "label": "Generad hälsning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "idle.ready.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.idle.ready.motion4",
+          "label": "Liten hälsningsdans · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "idle.ready.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1689,6 +2753,28 @@
           ],
           "assetId": "speak.goodluck.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.goodluck.motion3",
+          "label": "Rodnande tack · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.goodluck.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.goodluck.motion4",
+          "label": "Lekfull dubbelvink · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.goodluck.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1714,6 +2800,28 @@
             "recent-losses"
           ],
           "assetId": "speak.insurance.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.insurance.motion3",
+          "label": "Varmt tack · öppen hand · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.insurance.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.insurance.motion4",
+          "label": "Lätt nick · tydlig information · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.insurance.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1741,6 +2849,28 @@
           ],
           "assetId": "speak.double.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.double.motion3",
+          "label": "Hand på hjärtat · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.double.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.double.motion4",
+          "label": "Dubbel nickning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.double.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1766,6 +2896,28 @@
             "chat-boundary"
           ],
           "assetId": "speak.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.other.motion3",
+          "label": "Generat leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.other.motion4",
+          "label": "Lekfull huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.other.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1793,6 +2945,28 @@
           ],
           "assetId": "deal.player.left.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.left.motion3",
+          "label": "Varm blick åt vänster · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.left.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.left.motion4",
+          "label": "Lätt svep åt vänster · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.left.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1818,6 +2992,28 @@
             "chat-praise"
           ],
           "assetId": "deal.player.centre.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.centre.motion3",
+          "label": "Tacksam nick mot mitten · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.centre.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.centre.motion4",
+          "label": "Litet studsande svep · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.centre.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1845,6 +3041,28 @@
           ],
           "assetId": "deal.player.right.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.right.motion3",
+          "label": "Leende åt höger · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.right.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.right.motion4",
+          "label": "Lätt svep åt höger · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.right.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1870,6 +3088,28 @@
             "recent-losses"
           ],
           "assetId": "deal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.dealer.motion3",
+          "label": "Varm nick · eget kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.dealer.motion4",
+          "label": "Liten cirkelgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.dealer.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1897,6 +3137,28 @@
           ],
           "assetId": "reveal.dealer.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "mei.reveal.dealer.motion3",
+          "label": "Mjuk blick · visa kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "reveal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.reveal.dealer.motion4",
+          "label": "Lätt presenterande gest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "reveal.dealer.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1922,6 +3184,28 @@
             "returning-player"
           ],
           "assetId": "turn.player.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.turn.player.motion3",
+          "label": "Varm inbjudan · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "turn.player.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.turn.player.motion4",
+          "label": "Två lätta pekningar · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "turn.player.motion4",
           "videoGenerationId": null
         }
       ]
@@ -1949,6 +3233,28 @@
           ],
           "assetId": "settle.blackjack.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.blackjack.motion3",
+          "label": "Tacksam bugning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.blackjack.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.blackjack.motion4",
+          "label": "Lätt dubbelhälsning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -1974,6 +3280,28 @@
             "chat-praise"
           ],
           "assetId": "settle.dealerBust.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.dealerBust.motion3",
+          "label": "Rodnande leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.dealerBust.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.dealerBust.motion4",
+          "label": "Litet axelryck · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.dealerBust.motion4",
           "videoGenerationId": null
         }
       ]
@@ -2001,6 +3329,28 @@
           ],
           "assetId": "settle.win.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.win.motion3",
+          "label": "Varm gratulation · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.win.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.win.motion4",
+          "label": "Lätt öppen-handsgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.win.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -2026,6 +3376,28 @@
             "recent-losses"
           ],
           "assetId": "settle.push.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.push.motion3",
+          "label": "Vänligt leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.push.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.push.motion4",
+          "label": "Lekfull balansgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.push.motion4",
           "videoGenerationId": null
         }
       ]
@@ -2053,6 +3425,28 @@
           ],
           "assetId": "settle.other.contextual",
           "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.other.motion3",
+          "label": "Vänlig omtanke · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.other.motion4",
+          "label": "Mjuk huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.other.motion4",
+          "videoGenerationId": null
         }
       ]
     },
@@ -2078,6 +3472,28 @@
             "returning-player"
           ],
           "assetId": "idle.ready.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.idle.ready.motion3",
+          "label": "Generad hälsning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "idle.ready.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.idle.ready.motion4",
+          "label": "Liten hälsningsdans · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "idle.ready.motion4",
           "videoGenerationId": null
         }
       ]
@@ -2339,6 +3755,262 @@
       "animation": "wave",
       "color": "#d6b574",
       "durationMs": 1700
+    },
+    {
+      "id": "speak.goodluck.motion3",
+      "label": "Rodnande tack · labb",
+      "kind": "animation",
+      "animation": "wave",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "speak.goodluck.motion4",
+      "label": "Lekfull dubbelvink · labb",
+      "kind": "animation",
+      "animation": "wave",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "speak.insurance.motion3",
+      "label": "Varmt tack · öppen hand · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "speak.insurance.motion4",
+      "label": "Lätt nick · tydlig information · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "speak.double.motion3",
+      "label": "Hand på hjärtat · labb",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "speak.double.motion4",
+      "label": "Dubbel nickning · labb",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "speak.other.motion3",
+      "label": "Generat leende · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "speak.other.motion4",
+      "label": "Lekfull huvudlutning · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "deal.player.left.motion3",
+      "label": "Varm blick åt vänster · labb",
+      "kind": "animation",
+      "animation": "deal-left",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "deal.player.left.motion4",
+      "label": "Lätt svep åt vänster · labb",
+      "kind": "animation",
+      "animation": "deal-left",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "deal.player.centre.motion3",
+      "label": "Tacksam nick mot mitten · labb",
+      "kind": "animation",
+      "animation": "deal-centre",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "deal.player.centre.motion4",
+      "label": "Litet studsande svep · labb",
+      "kind": "animation",
+      "animation": "deal-centre",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "deal.player.right.motion3",
+      "label": "Leende åt höger · labb",
+      "kind": "animation",
+      "animation": "deal-right",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "deal.player.right.motion4",
+      "label": "Lätt svep åt höger · labb",
+      "kind": "animation",
+      "animation": "deal-right",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "deal.dealer.motion3",
+      "label": "Varm nick · eget kort · labb",
+      "kind": "animation",
+      "animation": "deal-dealer",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "deal.dealer.motion4",
+      "label": "Liten cirkelgest · labb",
+      "kind": "animation",
+      "animation": "deal-dealer",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "reveal.dealer.motion3",
+      "label": "Mjuk blick · visa kort · labb",
+      "kind": "animation",
+      "animation": "reveal",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "reveal.dealer.motion4",
+      "label": "Lätt presenterande gest · labb",
+      "kind": "animation",
+      "animation": "reveal",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "turn.player.motion3",
+      "label": "Varm inbjudan · labb",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "turn.player.motion4",
+      "label": "Två lätta pekningar · labb",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.blackjack.motion3",
+      "label": "Tacksam bugning · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.blackjack.motion4",
+      "label": "Lätt dubbelhälsning · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.dealerBust.motion3",
+      "label": "Rodnande leende · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.dealerBust.motion4",
+      "label": "Litet axelryck · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.win.motion3",
+      "label": "Varm gratulation · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.win.motion4",
+      "label": "Lätt öppen-handsgest · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.push.motion3",
+      "label": "Vänligt leende · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.push.motion4",
+      "label": "Lekfull balansgest · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.other.motion3",
+      "label": "Vänlig omtanke · labb",
+      "kind": "animation",
+      "animation": "reassure",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.other.motion4",
+      "label": "Mjuk huvudlutning · labb",
+      "kind": "animation",
+      "animation": "reassure",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "idle.ready.motion3",
+      "label": "Generad hälsning · labb",
+      "kind": "animation",
+      "animation": "idle",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "idle.ready.motion4",
+      "label": "Liten hälsningsdans · labb",
+      "kind": "animation",
+      "animation": "idle",
+      "color": "#ab9cdb",
+      "durationMs": 2300
     }
   ]
 }

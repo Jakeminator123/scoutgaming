@@ -29,7 +29,12 @@ ska inte köras samtidigt på samma port. För byggd version: `npm --prefix lab
 run build`, därefter `npm --prefix lab start`. Studion är avsiktligt endast
 för localhost; öppna den inte mot internet eller ett publikt nätverk.
 
-## Tre arbetsytor
+## Fyra arbetsytor
+
+- **Nodträdet (`/tree`):** spel → dealer → labbnod → linje → variant →
+  animation/videoreferens. Alla fyra dealers använder samma eventkontrakt.
+  Triggers är villkor för varianter, inte nya motor-events. Klicka vidare till
+  editorn för att ändra den valda delen utan att tappa osparat arbete.
 
 - **Eventstudion:** välj croupier/event, redigera namn, linje, varianter och
   triggers. Testa ett publicerat exempel med simulerad chatt, historik och
@@ -47,6 +52,7 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
 lab/
   policies/project.seed.json   startprojekt: blackjack, 4 dealers, 16 noder
   schemas/studio.schema.json   struktur och tillåtna värden
+  animations/                 64 tysta, syntetiska rörelsesekvenser i JSON
   lib/studio-model.mjs         kontrakt, referenser, validering och konvertering
   data/project.json           ditt sparade projekt (lokalt, Git-ignorerat)
   data/history/               tidigare sparade revisioner (Git-ignorerat)
@@ -57,11 +63,15 @@ lab/
 
 `policies` betyder här startregler; `schemas` beskriver strukturkraven.
 `data/` skapas vid sparning och ersätter inte startprojektet i Git. Ingen separat
-manifestfil behövs nu. `.next/` och `node_modules/` är genererade verktygsmappar.
+projektmanifest behövs. Rörelsebibliotekets lilla `animations/index.json`
+listar däremot vilka rörelsefiler som ingår. `.next/` och `node_modules/` är
+genererade verktygsmappar. [Rörelsernas format](animations/README.md).
 
 Spel → croupier → eventnod → linje → standard/alternativ → animation/videofil.
 En linje hör till en croupier och ett event. Starten har 64 linjer med en
-standard och ett alternativ vardera. Högst fyra alternativ plus standard.
+standard och tre labbalternativ vardera (256 dealer-specifika variantposter,
+64 gemensamma rörelser). Högst fyra alternativ plus standard kan redigeras.
+Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
 Roulette är bara en synlig framtida plats, inte implementerat.
 
 Motorns **sex typer** är `speak`, `deal`, `reveal`, `turn`, `settle`, `idle`.
@@ -72,7 +82,8 @@ kan läggas till och tas bort; använda triggers måste först kopplas loss.
 
 Triggerkategorier: `deterministic` (publicerat spel/avgjord historik), `social`
 (simulerad chatt/preferens), `temperament` (croupierns framtoning, inte en
-diagnos av spelaren). Alla valda villkor måste stämma. Inga villkor betyder
+diagnos av spelaren). I nodträdet visas två huvudgrupper: **spelstyrda** och
+**sociala/uttryck** (social + temperament). Alla valda villkor måste stämma. Inga villkor betyder
 alltid tillåten. [Detaljer om policyerna](policies/README.md).
 
 **Spara projekt** validerar, kontrollerar revision och skriver atomiskt med
@@ -110,8 +121,12 @@ Den här ändringen tillför `/api/studio/advice` och `/api/studio/chat` i
 Director. De behöver driftsättas innan nya studion kan använda Render med
 sin tillfälliga katalog. Anropen sparar **inte** utkastet i Render. Direkt
 lokal Gateway stöds också via `OPENCLAW_BASE_URL` och `OPENCLAWAPI_KEY`.
-Konfigurerad betyder inte hälsotestad; ett riktigt modellsvar återstår att
-verifiera. [Officiellt OpenClaw-index](../open-claw/lab/docs/README.md).
+Konfigurerad betyder inte automatiskt hälsotestad. Den 20 september 2026
+driftsattes Director `7f056f7`: aktivt val, shadow och operatörschatt gav
+riktiga modellsvar via lokal Next-server. Första rådanropet fick timeout;
+fallback fungerade och omprovet gav giltigt råd. Detta är ett daterat
+anslutningsprov, inte en garanti för svarstiden i spelet.
+[Officiellt OpenClaw-index](../open-claw/lab/docs/README.md).
 
 ## Video och kvarvarande integration
 
@@ -126,7 +141,20 @@ Spelarminne, riktig spelarchatt/moderering och integration med produktens
 gemensamma videospelare återstår. Labbet har ännu bara manuella testvärden.
 IDE-agenternas GitLab-inbox hör inte hit. Videor måste granskas per take
 med text/ljud, hash och kalibrering innan de aktiveras i spelet. Nästa
-nodträdsdesign kan ändra editorns översikt utan att ändra motorns kontrakt.
+nodträdsdesign ändrar editorns översikt utan att ändra motorns kontrakt.
+
+### Samstämmighet med Croupier
+
+[Kompatibilitet och gränser](COMPATIBILITY.md) skiljer verifierade källfält
+från labbpolicy och från godkända videotakes. `settle` är inte `speak`:
+resultatgrupperingen får aldrig ersätta motorns exakta `speak.line`.
+`speak.other` samlar flera repliker och kan inte användas som en gemensam
+godkänd talvideo. En labbrörelse byter inte språk eller inspelat ljud.
+
+Labbets JSON-animation får inte ändra delningsriktning eller ta bort en
+kortvändning. En videoreferens kontrolleras mot registret men är fortfarande
+en **ogranskad labbpreview**, inte automatiskt rätt dealer/action/talrad.
+Produktionskopplingen måste granskas separat tillsammans med Kevin.
 
 ## Kontroller
 

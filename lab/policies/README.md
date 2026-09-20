@@ -2,7 +2,10 @@
 
 `project.seed.json` är startprojektet: blackjack, fyra croupierer, 16 semantiska
 eventnoder och en standardlinje per croupier/event. Varje linje börjar med en
-ovillkorlig standardvariant och ett alternativ. Högst fyra alternativ får finnas.
+ovillkorlig standardvariant och tre labbalternativ. Högst fyra alternativ får finnas.
+De två nya rörelseexemplen prövar beröm + varm framtoning respektive redan
+avgjorda vinster + lekfull framtoning. Detta är redigerbara demoregler, inte
+beslutade produktregler eller slutsatser om spelarens känslor.
 
 Visningsnamn får ändras; tekniska ID:n och motorns sex presentationstyper är
 inte samma sak som namnen. `match`, källtyp och eventordning hålls låsta.
