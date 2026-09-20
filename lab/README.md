@@ -67,6 +67,12 @@ projektmanifest behövs. Rörelsebibliotekets lilla `animations/index.json`
 listar däremot vilka rörelsefiler som ingår. `.next/` och `node_modules/` är
 genererade verktygsmappar. [Rörelsernas format](animations/README.md).
 
+Fristående ElevenLabs-prov (inte scen-/chattintegration):
+`node tools/elevenlabs-lab-preview.mjs --check` från repots rot, eller
+`--generate` för ett kort debiterbart röstprov. MP3 + text/röst/hash-metadata
+sparas lokalt i `lab/data/voice-previews/`, utanför Git. Ingen produktmedia
+eller lipsync ersätts. [Status och urvalsmodell](../random-stuff-jakob/jakob-docs/2026-09-20-rostprov-och-urvalsmodell.md).
+
 Spel → croupier → eventnod → linje → standard/alternativ → animation/videofil.
 En linje hör till en croupier och ett event. Starten har 64 linjer med en
 standard och tre labbalternativ vardera (256 dealer-specifika variantposter,

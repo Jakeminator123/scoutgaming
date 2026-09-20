@@ -16,6 +16,11 @@ Jakobs egen token är installerad i en separat åtkomstskyddad lokal fil utanfö
 
 ## 2026-09-20 — OpenClaw och labbet
 
+[ElevenLabs-röstprov och urvalsmodell](2026-09-20-rostprov-och-urvalsmodell.md):
+verifierad nyckel och svensk Sarah-MP3; ännu inte automatisk röst i studion.
+Skillnaden mellan familj, take, trigger, ersättning och efterföljande klipp;
+procentslump är ett förslag, ingen ändring av Kevins motor eller nodträdet.
+
 [Eventregister och mental mappmodell](2026-09-20-eventregister-och-mental-modell.md):
 Jakobs provisoriska träd för spel → dealer → presentationsbehov → variant → take.
 Samlar motorhändelser och publik rådata, sex presentationstyper, 16 labbnoder,
