@@ -135,6 +135,12 @@ Vid fler förhandsvisningar: använd `pending`, inte ett nytt nätverksanrop.
 
 ## Delning och säkerhet
 
+För lokal integration finns nu en uttrycklig **chefroll**: `/chef` aktiverar
+den aktuella chatten, `/chef status` läser och `/chef av` släpper rollen.
+I Codex kan `$chef` användas som skillval. Rollen delas av samma repos lokala
+worktrees, inte andra kloner/datorer. Ingen bakgrundsbevakning eller automatisk
+merge/push. [Rolldefinition och gränser](https://gitlab.com/scout-gg/croupier/-/blob/jakeminator123/work/.agents/skills/chef/SKILL.md).
+
 Dela korta, betydelsefulla resultat: fråga/svar, beslut, blockerare eller
 överlämning, med fil/commit/länk. Information till alla bara när den faktiskt
 berör alla tre. Inga närvaropingar, privata chattloggar, breda lokala

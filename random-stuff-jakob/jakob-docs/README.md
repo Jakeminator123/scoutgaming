@@ -2,6 +2,10 @@
 
 Jakobs minnesnoteringar och arbetsrapporter. Den gemensamma dokumentationen finns fortsatt i GitLab-wikin; tekniska rapporter länkas nedan. Konversationsexporter hör inte hemma här.
 
+## 2026-09-20 — Chefrollen
+
+`/chef` gör den aktuella chatten till samordnare: lägesbild → avgränsad samordning → beställd integration/test → verifierad överlämning. `/chef status` läser bara; `/chef av` släpper rollen. I Codex kan rollen väljas med `$chef`. En lokal chef per repo och dess worktrees, ingen bakgrundsagent eller automatisk push. [Rolldefinition](../../.agents/skills/chef/SKILL.md).
+
 ## 2026-09-20 — OpenClaw och labbet
 
 [Kort arbetsnotering](2026-09-20-openclaw-och-labb.md): vad som byggts, dashboard och labbeditor, Render, nycklarnas olika roller, kvarvarande integration och städningen av gamla OpenClaw-mappar.

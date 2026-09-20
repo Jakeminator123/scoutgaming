@@ -1,5 +1,7 @@
 # Croupier continuity and dealer regression rules
 
+Explicit `/chef` or `$chef`: follow `.agents/skills/chef/SKILL.md`. Before shared integration/push, run `node tools/croupier-chef.mjs status`; coordinate with the registered owner if another chat holds the role. No automatic role activation, polling or broad agent wakeups.
+
 For OpenClaw installation, configuration, Gateway, MCP or runtime work, first
 read `open-claw/lab/docs/README.md`. It routes to the official-source and
 deployed-version index. Fetch external documentation only when the current
