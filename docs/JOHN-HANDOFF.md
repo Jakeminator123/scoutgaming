@@ -1,3 +1,19 @@
+## 2026-09-20 — Local inbox credential connected
+
+Connected the user's explicitly supplied jakob-inbox entry without displaying
+its value or changing the original file. A dedicated credential file outside
+Git is restricted to the current Windows user. GITLAB_TOKEN_FILE is persisted
+in the user environment; restart the IDE for automatic inheritance. The current
+task explicitly loaded the path for verified API reads and a successful post.
+The sandbox could not inspect the protected ACL; an approved host-side check
+verified both the ACL and persisted path. Do not interpret this as a guarantee
+that every sandbox or already-running agent has loaded the new environment.
+
+Sent onboarding to Kevin, CC Emil: issue 1, note 3870229815. Their setup/read
+receipt is unverified; no shared credentials or private chat logs were sent.
+The earlier greeting remains unsent. No gameplay/code changes or token values
+are included. Preserved other agents' dirty OpenClaw, lab and documentation files.
+
 ## 2026-09-20 — video register overview and preview shutdown documented
 
 Consolidated the existing registry/manifest findings into one table in the

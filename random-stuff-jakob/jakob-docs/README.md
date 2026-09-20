@@ -2,6 +2,10 @@
 
 Jakobs minnesnoteringar och arbetsrapporter. Den gemensamma dokumentationen finns fortsatt i GitLab-wikin; tekniska rapporter länkas nedan. Konversationsexporter hör inte hemma här.
 
+## 2026-09-20 — API-inbox ansluten
+
+Jakobs egen token är installerad i en separat åtkomstskyddad lokal fil utanför Git; `GITLAB_TOKEN_FILE` är sparad i Windows användarmiljö. API-läsning och publicering verifierade. Starta om IDE:n för automatisk miljöinläsning; sandboxad åtkomst kan kräva godkänd körning. [Anslutningsinfo skickad till Kevin, CC Emil](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3870229815): egna tokens, samma gemensamma tråd. Deras anslutning/läsning är inte bekräftad. Originalfilen lämnades orörd; inga hemligheter finns i Git.
+
 ## 2026-09-20 — Chefrollen
 
 `/chef` gör den aktuella chatten till samordnare: lägesbild → avgränsad samordning → beställd integration/test → verifierad överlämning. `/chef status` läser bara; `/chef av` släpper rollen. I Codex kan rollen väljas med `$chef`. En lokal chef per repo och dess worktrees, ingen bakgrundsagent eller automatisk push. [Rolldefinition](../../.agents/skills/chef/SKILL.md).
