@@ -3,7 +3,7 @@ import contract from '../policies/studio-contract.json';
 import type { StudioView } from './studio-types';
 import styles from './studio-guide.module.css';
 
-const viewLabels: Record<StudioView, string> = { tree: 'Nodträdet', lab: 'Eventstudion', videos: 'Videobanken', activity: 'Händelselogg', openclaw: 'OpenClaw', guide: 'Guide' };
+const viewLabels: Record<StudioView, string> = { tree: 'Nodträdet', lab: 'Eventstudion', videos: 'Videobanken', activity: 'Händelselogg', openclaw: 'Chatt & OpenClaw', guide: 'Guide' };
 
 export function StudioGuide({ onNavigate }: { onNavigate: (view: StudioView) => void }) {
   return <article className={styles.guide}>

@@ -43,6 +43,8 @@ test('event test has one mode selector, explicit run action and result only afte
   const props = { open: true, onOpen() {}, mode: 'off', onMode() {}, configured: false, context: {}, onContext() {}, dealer: 'Astrid', eventLabel: 'Bordet väntar', sourceType: 'idle', result: null, previewKind: null, busy: false, onRun() {} };
   const html = renderToStaticMarkup(React.createElement(EventTestPanel, props));
   assert.equal((html.match(/<option /g) ?? []).length, 5);
+  assert.match(html, /<details><summary>Avancerade jämförelsetester/);
+  assert.match(html, /Återgå till OpenClaw/);
   assert.match(html, /Inget test kört/);
   assert.doesNotMatch(html, /VALD VARIANT|Tekniskt beslutsspår/);
   assert.match(html, /Lokalt test. Inget modellanrop/);
@@ -117,7 +119,10 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.match(html, /<strong>Testa event<\/strong>/);
   assert.match(html, /Urvalsläge för eventtest/);
   assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
-  assert.match(html, /Prova spelarchatten → Astrids vänteläge/);
+  assert.match(html, /Spelarchatt med Astrid →/);
+  assert.match(html, /Fråga OpenClaw om labbet →/);
+  assert.match(html, /<option value="active" selected="">OpenClaw/);
+  assert.match(html, /ett modellanrop kan göras när du trycker/);
   assert.doesNotMatch(html, /Din regi|En tydlig kedja, hela vägen/);
   const { TestContextPanel, neutralContext } = loadComponent('./test-context.tsx');
   const contextHtml = renderToStaticMarkup(React.createElement(TestContextPanel, { value: neutralContext, onChange() {} }));

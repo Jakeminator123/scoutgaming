@@ -1,6 +1,6 @@
 {
   "title": "Från indata till synligt resultat.",
-  "intro": "Nodträdet visar vad som kan hända. Eventstudion provar ditt val. Händelseloggen visar vad som faktiskt kom in, vem som beslutade och hur uppspelningen gick.",
+  "intro": "Välj nod, koppla material och prova OpenClaws variantval. Händelseloggen visar indata, beslut och uppspelning. Spelarchatt och operatörschatt har tydliga egna ingångar.",
   "steps": [
     {
       "view": "tree",
@@ -15,7 +15,7 @@
     {
       "view": "lab",
       "title": "3. Prova och spara",
-      "body": "Spela vald variant visar ditt markerade material. Testa event kör urvalet med simulerad kontext. Nya alternativ är manuella tills du tillåter regler, modell eller slump. Spara projekt sparar lokalt."
+      "body": "Spela vald variant visar ditt markerade material. Testa event låter OpenClaw välja bland tillåtna varianter med simulerad kontext. Modellanrop sker först när du trycker. Standard är reserv vid fel. Jämförelselägen finns under Avancerade jämförelsetester."
     },
     {
       "view": "activity",
@@ -28,6 +28,7 @@
     "De fyra presentationssätten är en vy över befintliga sex källtyper och 16 grupper. Tekniska ID:n och sparade projekt behålls. Idle är ett bakgrundsbehov, men videopreview spelas fortfarande en gång; redigerbara loopar och takepooler är inte införda.",
     "Eventets kort och box kommer från källan. Box 0–6 betyder bordsplats 1–7, inte en identifierad spelare. Återbesök, språk, chattsignal och historik är separat simulerad kontext i eventtestet. Kortposition kan behöva härledas. Variant-ID väljs efteråt; längd och landningstid hör till materialets metadata.",
     "Standard är också en variant. Linje är den tekniska behållaren för en dealers standard och alternativ, inte en talad replik. Want, filhash och kategorisering bevisar varken visuell kvalitet eller läppsynk. Full täckning för senare kort, split och övergångar återstår.",
+    "2D-biblioteket har 64 olika rörelsefiler: fyra per nuvarande eventgrupp, delade av fyra dealers. Därutöver finns en separat social rörelsefil. Det är schematiska gester och exempel, inte full täckning för varje kort, plats, split, övergång eller talad replik. Riktig läppsynk saknas.",
     "Socialt prov finns för Astrid i vänteläget: ett textsvar och valfri röst, högst sex sekunder tal. Socialt svar och handlingsprov får inte äga scenen samtidigt. Blinkningar startar inte om svaret. För långa ljud avvisas; stopp eller fel markeras som avbrutna prov. Riktig läppsynk och produktkoppling återstår.",
     "Händelseloggen lagrar högst 150 poster i flikens minne och töms vid omladdning. Ett modellförslag, en vald fil och en faktiskt avslutad uppspelning är skilda loggsteg. Inga exempelrader visas som mottagna live-events.",
     "Vanliga spelet använder /api/table och egen koreografi. Partner använder /api/v1/table med presentation[] och en SSE-ström för samma API-nyckel och partner-playerId. Loggens observer kräver serverkonfiguration och en uttrycklig anslutning. BO-inloggning ansluter den inte. Strömmen saknar replay; avbrott kan ge luckor.",
@@ -51,8 +52,8 @@
       "purpose": "Aktuell fliks indata, beslut och uppspelning med tid, källa, vem och varför. Filtrera stegen eller öppna faktisk JSON. Här finns också valfri läsande Partner-observation; mottagna instruktioner spelas inte automatiskt."
     },
     {
-      "name": "OpenClaw",
-      "purpose": "Anslutning, urvalsläge, operatörschatt och fristående röstprov. Gateway-dashboarden är driftverktyget. Operatörschatt är skild från Astrids spelarchatt och eventtestets simulerade chattsignal."
+      "name": "Chatt & OpenClaw",
+      "purpose": "Två tydliga chattvägar: Chatta med Astrid öppnar spelarchatten i hennes vänteläge. Operatörschatten svarar om det sparade labbprojektet. Anslutning, jämförelsetester och fristående röstprov finns kvar. Gateway-dashboarden är separat driftverktyg."
     }
   ],
   "storage": "Projekt och social policy sparas lokalt och separat. Originalfiler ligger i generationsarkivet eller lokala uppladdningar; kategorisering ändrar bara metadata. Händelseloggen finns enbart i flikens minne. Partner-hemligheter stannar på den lokala servern. Render är extern Director/OpenClaw-drift; lokala ändringar publiceras inte dit automatiskt.",
