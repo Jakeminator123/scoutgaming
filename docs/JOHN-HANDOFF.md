@@ -1,3 +1,23 @@
+## 2026-09-20 — prepare private Partner settings and clarify variant testing
+
+At Jakob's request, created the ignored `lab/.env.local` with blank canonical
+Partner key/secret fields and his supplied example `jakob-lab-1` playerId.
+The masked credentials were not treated as usable values. Existing root
+environment settings remain unchanged. Verified parsing, empty secret fields
+and Git exclusion; no server restart, authentication attempt or round was run.
+Kevin describes this key as launch + events; actual play-scope authorization
+must still be verified when the complete pair is supplied.
+
+Clarified the screenshot's two areas: the green table is a 2D placeholder
+when a variant has no bound video; Testa event simulates context before
+choosing a variant, rather than adding a social animation layer to its clip.
+Jakob's intended normal flow is event/presentation routing, then OpenClaw
+selection among allowed prepared variants, then the chosen variant's bound
+material. Standard/rules/random/shadow are diagnostic comparison modes;
+standard remains the fallback. The existing lab still initially selects
+standard mode and only active mode applies a validated OpenClaw choice.
+This clarification did not change those defaults or activate model requests.
+
 ## 2026-09-20 — clarify environment boundary and reject Partner placeholders
 
 Confirmed that the previous lab change did not edit real environment files or
