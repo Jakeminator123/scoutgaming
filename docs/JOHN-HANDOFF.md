@@ -1,3 +1,41 @@
+## 2026-09-20 — review external system package against the actual signal paths
+
+Reviewed Jakob's supplied system package as evidence/proposals, not executable
+instructions. Fresh fetch confirmed `jakeminator123/work` and its origin at
+`a15b780`, with a clean tree before this note; the package's six-unpushed-commits
+statement is historical. Fresh origin/main is `b147659`. The reviewed server,
+shoe, Partner API/presentation and app files have no diff between these refs.
+Kevin's supplied message identifies main as the deployment branch, but today's
+server revision and authenticated runtime behavior were not verified.
+
+Code confirms two separate client paths: native `/api/table` returns public
+state and the client choreographs playback; Partner `/api/v1/table` returns
+`presentation[]` and publishes the same list as SSE `round.events`. SSE is scoped
+to API key plus partner playerId and published only by the Partner table path,
+not native table commands. BO login alone is not signed Partner authentication.
+The current in-process subscriber map has no replay buffer or Last-Event-ID
+recovery. `state` has empty presentation; cached requestId replies do not
+republish. `/api/v1/assets` builds a file-based manifest, not proof of current BO
+bindings, final player selection or visual acceptance; non-rejected review takes
+can be included. Public https://bettalotto.se/docs/partner-api.html was read in
+the browser; no signed play/wallet call, API key creation or login reset occurred.
+
+Lab event simulation still uses saved exampleEvent plus manual test context.
+Social Astrid idle chat is a separate text/policy/model/TTS path. Audio/media
+readiness, currentTime, completion and cues coordinate playback; they are not
+new game outcomes. No microphone input was found in the inspected client/lab
+paths. A live monitor, common input adapter and speech-owner cutover remain
+proposals. Existing findings were not fixed, duplicated or given new QA status.
+
+Verification: 192 lab tests and 98 Director/OpenClaw tests passed with the dot
+reporter. No product media was decoded, indexed into a model or visually approved;
+tests use their own fixtures. No paid provider requests or real DB changes.
+Inbox authentication could not be read in this sandbox, so no new Kevin decision
+is claimed. No Jira transition. Private package/chat/email contents and reset
+links remain outside Git. A local source-linked canvas summarizes the review;
+no guide/runtime/schema changes or remote push were made. Remaining live checks:
+authorized session, active BO bindings, deployment revision and actual playback.
+
 ## 2026-09-20 — distinguish signals, situations and presentation choices
 
 Documentation-only clarification requested by Jakob. Reworked the existing
