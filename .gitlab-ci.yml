@@ -1,6 +1,21 @@
 stages:
   - test
 
+presentation-studio:
+  image: node:22-bookworm
+  stage: test
+  script:
+    - npm --prefix lab ci
+    - npm --prefix lab test
+    - npm --prefix lab run build
+    - npm --prefix open-claw/lab test
+    - npm --prefix open-claw/lab run check
+  rules:
+    - changes:
+        - lab/**/*
+        - open-claw/lab/**/*
+        - docs/animation-events/v3-video-map/snapshot.json
+
 agent-inbox:
   image: node:22-bookworm
   stage: test

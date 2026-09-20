@@ -4,6 +4,9 @@ Croupier is the working blackjack demo with server-owned game state and a
 shared playback path for four AI dealers. It is a development product, not a
 certified RNG/RGS or a real-money system.
 
+For the separate local presentations editor, see [Croupier Studio in `lab/`](lab/README.md).
+OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
+
 ## Sources of truth
 
 - This GitLab repository is the source for game code, RNG, wallet, media and

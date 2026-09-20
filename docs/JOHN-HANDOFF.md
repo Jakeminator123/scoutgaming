@@ -1,3 +1,58 @@
+## 2026-09-20 — separate Next.js presentation studio
+
+Jakob requested stopping the old local lab and rebuilding a clearer, editable
+studio alongside open-claw. Stopped the verified old lab process on 4188;
+Render was not stopped. New lab/ is a localhost-only Next.js app with three
+views: event studio, video registry, and OpenClaw responsibilities/operator
+chat. Six engine presentation types remain unchanged. The seed has 16 semantic
+nodes, four dealers, 64 lines, one protected baseline plus up to four alternatives.
+Editable labels, priority, shared typed triggers and exact generation bindings
+live in a validated JSON project. Save uses revision conflict detection, an
+atomic file replacement, recoverable stale writer locks and local history.
+No existing catalog/data/media was moved or overwritten.
+
+Deterministic, social and temperament predicates use only public/projected
+events and explicit simulated context. Rules mode needs no LLM; shadow/active
+reuse the existing eligible-ID gate. A hash of the complete draft plus dealer
+invalidates stale advice, including binding edits. UI also drops late responses
+when the selection/context/draft changes. Real player chat, memory, moderation,
+roulette and product integration are not implemented; IDE inbox is separate.
+
+Video inventory reuses the existing sanitized V3 snapshot and local original
+archive, read-only. Known ID, realpath, size, SHA-256 and Range/HEAD handling
+protect previews. Want/no are intake judgments, never runtime acceptance.
+The isolated lab player can show the exact selected generation, not the
+product's calibrated shared playback path. No take was approved or changed.
+
+Existing deployment stays at open-claw/lab/render.yaml. Added authenticated
+ephemeral /api/studio/advice and /api/studio/chat Director endpoints, plus
+bounded temperament projection and bundler-safe settings path resolution.
+These endpoints do not save drafts on Render. They are locally tested, not
+deployed or verified against a real model. Local configuration still lacks
+OPENCLAW_BASE_URL / Render relay settings; the UI reports disconnected.
+No secrets or account settings changed. A separate studio CI job was added.
+
+Validation: 69 studio tests, 62 existing/extended Director tests, catalog check,
+TypeScript and Next production build passed. Browser QA used a separate ignored
+data directory: renamed labels, added/prioritized a mood-gated variant, saved
+and reloaded, selected the German-return variant, then bound a known original.
+Exact bound preview loaded at 1920x1080, readyState 4, muted playback without
+media error. Navigation and explicit disconnected OpenClaw status verified.
+QA server on 4190 was stopped; the replacement production preview runs on
+127.0.0.1:4188 with the normal seed, not the isolated QA edits.
+
+Broader product checks are NOT all green: all 12 pre-commit commands were
+attempted; Node groups passed 99/110. Failures: five existing Windows URL/path
+handling errors, one missing ffmpeg, four missing ffprobe, and one WSL/Bash
+access error. Dealer audit also reports Astrid cue bytes changed: normalizing
+CRLF to LF matches the recorded baseline exactly. Cue files and baseline are
+unchanged; no baseline was regenerated. The --probe audit remains blocked by
+missing ffprobe. Performance, Astrid actor and blackjack asset checks passed.
+
+Remaining: Jakob's incoming node-tree specification, real Render advice/chat
+round-trip after deployment, and separate reviewed take/product integration.
+See lab/README.md and Jakobs thin 2026-09-20-openclaw-och-labb.md note.
+
 ## 2026-09-20 — Local inbox credential connected
 
 Connected the user's explicitly supplied jakob-inbox entry without displaying

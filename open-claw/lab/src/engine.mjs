@@ -6,7 +6,7 @@ export const MODES = Object.freeze(['off', 'shadow', 'active']);
 export const ANIMATIONS = Object.freeze(['wave', 'nod', 'deal-left', 'deal-centre', 'deal-right', 'deal-dealer', 'reveal', 'point', 'celebrate', 'reassure', 'neutral', 'idle']);
 export const CONDITION_OPERATORS = Object.freeze(['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'includes', 'all_eq', 'in', 'exists']);
 const EVENT_PATHS = Object.freeze(['type', 'line', 'blocking', 'to', 'box', 'handIndex', 'faceDown', 'shoeDraw', 'clip.action', 'card.r', 'card.s', 'dealerTotal', 'dealerBlackjack', 'hands.outcome', 'hands.box', 'legalActions']);
-export const CONDITION_PATHS = Object.freeze([...EVENT_PATHS.map(p => `event.${p}`), 'context.chat.signal', 'context.playerHistory.returning', 'context.playerHistory.preferredLanguage', 'context.session.recentWins', 'context.session.recentLosses']);
+export const CONDITION_PATHS = Object.freeze([...EVENT_PATHS.map(p => `event.${p}`), 'context.chat.signal', 'context.playerHistory.returning', 'context.playerHistory.preferredLanguage', 'context.session.recentWins', 'context.session.recentLosses', 'context.temperament.mood']);
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 const SUITS = ['♠', '♥', '♦', '♣'];
@@ -89,7 +89,13 @@ function projectContext(value) {
   requireInput(value === undefined || record(value), 'context must be an object.');
   const source = value ?? {};
   const context = { chat: { signal: 'none' }, playerHistory: { returning: false, preferredLanguage: null }, session: { recentWins: 0, recentLosses: 0 } };
-  for (const key of ['chat', 'playerHistory', 'session']) requireInput(!own(source, key) || record(source[key]), `context.${key} must be an object.`);
+  for (const key of ['chat', 'playerHistory', 'session', 'temperament']) requireInput(!own(source, key) || record(source[key]), `context.${key} must be an object.`);
+  // An explicit bounded lab signal, not an inferred emotional diagnosis or memory.
+  if (own(source, 'temperament')) {
+    const mood = source.temperament.mood ?? 'calm';
+    requireInput(['calm', 'warm', 'playful', 'reserved'].includes(mood), 'temperament.mood must be calm, warm, playful or reserved.');
+    context.temperament = { mood };
+  }
   if (own(source.chat ?? {}, 'signal')) {
     requireInput(SIGNALS.includes(source.chat.signal), 'context.chat.signal must be none, praise or inappropriate.');
     context.chat.signal = source.chat.signal;

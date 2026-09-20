@@ -19,14 +19,34 @@
   har beständiga diskar. Webbläsaren godkändes och den inloggade dashboarden
   verifierades; inget riktigt modell-/chattsvar har ännu verifierats där.
 
-## Så använder jag det
+## Nytt lokalt labb — fortsättningen samma dag
+
+- Den gamla lokala servern stoppades. Nya [Next.js-studion ligger i `lab/`](../../lab/README.md),
+  bredvid `open-claw/`. Starta: `npm --prefix lab run dev`; öppna `http://127.0.0.1:4188`.
+- Tre sidor: **Eventstudion**, **Videobanken**, **OpenClaw**. Fyra croupierer,
+  16 labbnoder över sex motortyper; redigerbara namn, triggers och upp till fyra
+  alternativ per standardlinje. Tydligare animerad scen och beslutskedja.
+- Dina sparade regler ligger i `lab/data/project.json`, med lokal historik.
+  Startprojektet finns i `lab/policies/`, strukturen i `lab/schemas/`.
+- Videobanken läser de 224 befintliga originalen. En variant kan bindas till
+  en exakt fil och förhandsvisas, men blir inte därmed godkänd för spelet.
+- Blueprinten ligger fortfarande i **`open-claw/lab/render.yaml`**. Den nya
+  sajten är lokal; inget i detta steg har driftsatts på Render. Nya endpoints
+  för modellråd/chatt är förberedda men behöver publiceras och verifieras.
+- Regelläget fungerar utan modell. Chatt, historik och temperament testas
+  med simulerade signaler; riktigt spelarminne återstår. Nästa steg är ditt
+  nodträdsunderlag och en verifierad OpenClaw-koppling.
+- Kontrollerat: 69 studiotester + 62 Director-tester, produktionsbygge och
+  webbläsartest av redigering/sparning, variantval och exakt videouppspelning.
+  Äldre produkttester har separata Windows-/verktygsfel; se tekniska handoffen.
+
+## Dashboard och Render
 
 - [OpenClaw-dashboard](https://croupier-lab-director.onrender.com/openclaw/):
   agenter, chatt, tools och inställningar. Bokmärk länken. Från Render: välj
   **croupier-lab-director**, öppna webbadressen och lägg till `/openclaw/`.
-- [Labbets editor](https://croupier-lab-director.onrender.com/): events, triggers
-  och testanimationer. Lokalt: `npm --prefix open-claw/lab start`, sedan
-  `http://localhost:4188`. Den lokala servern kan anropa Render via utgående HTTPS.
+- Render visar fortfarande den äldre editorn. Den nya lokala studion startas
+  från `lab/` enligt ovan och kan anslutas till Director via utgående HTTPS.
 - Dashboardens lösenord är `OPENCLAWAPI_KEY`. `OPENCLAW_MODEL_API_KEY` är
   OpenAI-/modellnyckeln och stannar på Gatewayen. `LAB_API_TOKEN` skyddar labb-API:t;
   lokal anslutning använder `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN`.
@@ -58,7 +78,8 @@ Officiella OpenClaw-källor och konfiguration hittas via
 länklista som läses vid behov; ingen automatisk dokumentcrawl eller separat
 dokumentations-MCP är installerad.
 
-Aktivt arbete ligger kvar i `open-claw/lab/`. Äldre underlag finns enbart i
+Nya UI-arbetet ligger i `lab/`; Gateway/Render-koden är kvar i `open-claw/lab/`.
+Äldre underlag finns enbart i
 `open-claw/archive/croupier-proposal-v2/`; en verifierad lokal dubblett raderades.
 Arkivets innehåll är bevarat. Den här sidan är Jakobs korta minnesanteckning,
 inte en ny parallell teknisk dokumentationsyta.

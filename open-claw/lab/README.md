@@ -1,5 +1,10 @@
 # Croupier · OpenClaw-labb
 
+> **Ny lokal arbetsyta:** använd [Next.js-studion i repots `lab/`](../../lab/README.md).
+> Den här mappen behåller Render Director, Gateway-adapter, Docker/blueprint
+> och den äldre editorn för befintlig drift. Instruktionerna nedan gäller den
+> äldre tjänsten; dess katalog är separat från studions `lab/data/project.json`.
+
 Ett fristående labb för att redigera och spela kedjan
 `presentationsevent → semantisk nod → standardlinje/variant → trigger → OpenClaw-råd → validering → animation`.
 

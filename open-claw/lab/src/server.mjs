@@ -141,11 +141,16 @@ export async function createLabServer({ settings: settingsProvider = readSetting
         const allowed = {
           '/api/status': ['GET'], '/api/catalog': ['GET', 'PUT'], '/api/scenarios': ['GET'],
           '/api/decide': ['POST'], '/api/chat': ['POST'], '/api/presentation': ['POST'],
+          '/api/studio/advice': ['POST'], '/api/studio/chat': ['POST'],
         };
         if (!allowed[path]) throw new GatewayError('not_found', 404);
         if (!allowed[path].includes(req.method)) throw new GatewayError('method_not_allowed', 405);
         let body = ['POST', 'PUT'].includes(req.method) ? await bodyJson(req) : undefined;
         if (settings.remoteUrl && path !== '/api/scenarios') {
+          if (path.startsWith('/api/studio/')) {
+            const prepared = prepareDecision(body?.catalog, { ...body?.input, mode: 'active' });
+            body = { catalog: body.catalog, input: { requestId: prepared.requestId, event: prepared.event, context: prepared.context, mode: 'active' }, message: body.message, conversationId: body.conversationId };
+          }
           if (path === '/api/decide') body = normalizeInput(body);
           if (path === '/api/presentation') {
             if (!Array.isArray(body?.presentation) || body.presentation.length > 64) throw new GatewayError('presentation_array_required_max_64', 400);
@@ -155,7 +160,22 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           if (path === '/api/status') data.remote = { configured: true, status: 'connected' };
           return respond(res, 200, data);
         }
-        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES });
+        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1'] });
+        // A studio sends an ephemeral validated catalog; it never overwrites the
+        // deployed catalog. Only projected input and eligible candidates reach AI.
+        if (path === '/api/studio/advice' || path === '/api/studio/chat') {
+          const prepared = prepareDecision(body?.catalog, { ...body?.input, mode: 'active' });
+          if (path === '/api/studio/chat') {
+            if (activeChat >= 2) throw new GatewayError('chat_busy', 429);
+            activeChat++;
+            try { return respond(res, 200, await chatWithDirector(body, settings, fetchImpl, body.catalog)); }
+            finally { activeChat--; }
+          }
+          if (activeAdvice >= 4) return respond(res, 200, { advice: null, provider: { status: 'busy_baseline' } });
+          activeAdvice++;
+          try { return respond(res, 200, await askDirector(prepared, settings, fetchImpl)); }
+          finally { activeAdvice--; }
+        }
         if (path === '/api/catalog') return respond(res, 200, req.method === 'GET' ? await store.load() : await store.save(body?.catalog, body?.expectedRevision));
         if (path === '/api/scenarios') return respond(res, 200, scenarios);
         if (path === '/api/decide') return respond(res, 200, await decide(body, settings));
