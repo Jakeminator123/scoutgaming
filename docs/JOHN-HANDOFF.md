@@ -1,3 +1,67 @@
+## 2026-09-20 — publish portable V3 video map to Jakob work
+
+Jakob authorized pushing this task's work to jakeminator123/work. Prepared
+an isolated checkout on the current remote work branch so other agents'
+unpublished commits and original working files remain separate. Preserved
+the remote handoff entries while applying the video inventory report.
+
+Added a portable docs/animation-events/v3-video-map/map.html, sanitized
+snapshot.json, HTML template, deterministic build command and read-only
+localhost preview server. The server takes --archive PATH, verifies size
+and SHA-256, supports byte ranges and only serves allowlisted generation
+IDs. No API key, complete raw prompt, original MP4 or conversation export
+is included. The report now records the storage/fetch follow-up and startup
+instructions. This remains an inventory and proposal, not runtime integration.
+
+Validation: deterministic rebuild, embedded-data equality, secret exclusion
+and JavaScript syntax passed. Fifteen HTTP checks passed, including local
+hash/range handling and rejection of corrupt test copies. Browser loaded the
+portable map and a 1920x1080 local preview with readyState 4 and no media or
+console errors. No product player/media acceptance is claimed.
+
+The OPENCLAW task received the user's requested coordination handoff:
+original server archive versus identical local copies versus processed
+runtime takes; generationId/sourceHash to take/mediaHash to event mapping;
+and separate intakeVerdict, reviewStatus and activeBinding. Actual BO
+assignments, per-take visual acceptance and final trigger definitions remain
+unverified. Existing gameplay, media and OpenClaw runtime are untouched.
+
+## 2026-09-20 — V3 video inventory and placement map
+
+Read the Bettalotto Generations API using the user-authorized local
+BETTALOTTO_API variable without exposing it. Snapshot: 224 generations,
+17 want, 52 no, 155 unrated. Located the existing full download archive at
+`C:/Users/jakem/CroupierAssets/bettalotto-generations`; all 224 MP4 files
+match API byte sizes and SHA-256 (1,022,561,047 bytes total). No download,
+move, generation, gameplay/media/calibration or database change was made.
+The user explicitly chose Kevin's existing performance placement as the
+starting point; the proposed tree references it instead of moving media.
+
+Delivered `docs/animation-events/v3-video-map/README.md`, a private local
+interactive HTML map with video previews, an SDK canvas and derived JSON.
+The report records their absolute locations and preview restart command.
+Raw API snapshots and helper scripts stay under ignored
+`.croupier-inbox/v3-video-audit/`. The map separates six real Partner
+presentation types, the lab's 16 semantic nodes / two variants / 32 simple
+animations, and the proposed four-dealer / three-variant-slot tree (192
+slots before subevents; 324 in the explicit 27-family example).
+
+Evidence: 59 generation hashes match 60 tracked MP4 files; 67 IDs have
+tracked textual references. Public stream indexes total 89 (local 90 due
+to Astrid's additional action-return). Public Astrid performance contains
+four base takes and two continuations, all review. Flagged want-versus-
+rejection conflict and no-marked historical source dependencies. None of
+these counts prove active gameplay usage or visual acceptance.
+
+Validation: all archive hashes, data counts/cross-references, report links,
+secret exclusion, HTML JavaScript syntax and strict canvas TypeScript
+passed. Browser checked dealer/subevent selection, missing Mei push,
+register filtering/search and local video playback through its end. No product
+rehearsal or lipsync acceptance is claimed. Current BO assignments and
+deployed app source remain unverified: both HTTP 401 and signed-out BO
+browser. Kevin code reference remains locally cached 626554d; SSH access
+prevented remote-head refresh. No Jira CAC issue was implemented or closed.
+
 ## 2026-09-20 — native OpenClaw dashboard published and live
 
 Jakob explicitly approved publishing and activating the native dashboard.
@@ -132,42 +196,6 @@ retain their separate boundaries. No secrets, gameplay/media or Render resources
 were changed; live container/model verification remains pending.
 Local checks passed for 26 index links (official URL authority/local targets),
 the Cursor rule's scope/frontmatter/length, pinned-version link and whitespace.
-
-## 2026-09-20 — V3 video inventory and placement map
-
-Read the Bettalotto Generations API using the user-authorized local
-BETTALOTTO_API variable without exposing it. Snapshot: 224 generations,
-17 want, 52 no, 155 unrated. Located the existing full download archive at
-`C:/Users/jakem/CroupierAssets/bettalotto-generations`; all 224 MP4 files
-match API byte sizes and SHA-256 (1,022,561,047 bytes total). No download,
-move, generation, gameplay/media/calibration or database change was made.
-The user explicitly chose Kevin's existing performance placement as the
-starting point; the proposed tree references it instead of moving media.
-
-Delivered `docs/animation-events/v3-video-map/README.md`, a private local
-interactive HTML map with video previews, an SDK canvas and derived JSON.
-The report records their absolute locations and preview restart command.
-Raw API snapshots and helper scripts stay under ignored
-`.croupier-inbox/v3-video-audit/`. The map separates six real Partner
-presentation types, the lab's 16 semantic nodes / two variants / 32 simple
-animations, and the proposed four-dealer / three-variant-slot tree (192
-slots before subevents; 324 in the explicit 27-family example).
-
-Evidence: 59 generation hashes match 60 tracked MP4 files; 67 IDs have
-tracked textual references. Public stream indexes total 89 (local 90 due
-to Astrid's additional action-return). Public Astrid performance contains
-four base takes and two continuations, all review. Flagged want-versus-
-rejection conflict and no-marked historical source dependencies. None of
-these counts prove active gameplay usage or visual acceptance.
-
-Validation: all archive hashes, data counts/cross-references, report links,
-secret exclusion, HTML JavaScript syntax and strict canvas TypeScript
-passed. Browser checked dealer/subevent selection, missing Mei push,
-register filtering/search and local video playback through its end. No product
-rehearsal or lipsync acceptance is claimed. Current BO assignments and
-deployed app source remain unverified: both HTTP 401 and signed-out BO
-browser. Kevin code reference remains locally cached 626554d; SSH access
-prevented remote-head refresh. No Jira CAC issue was implemented or closed.
 
 ## 2026-09-20 — OpenClaw publication and chat-boundary clarification
 
