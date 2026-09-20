@@ -1,3 +1,31 @@
+## 2026-09-21 — node code labels, verified SSE and next-agent handoff
+
+Added subdued `(sourceType · id)` labels from project data to all 16 event
+nodes in both the studio sidebar and Nodträdet. Source types (e.g. idle)
+are distinguished from lab node IDs (idle.ready); no contract or variant
+bindings changed. Updated VIDEO-LIBRARY's outdated default-mode sentence.
+
+Created the linked Jakob handoff at
+random-stuff-jakob/jakob-docs/HANDOFF-2026-09-21-LIVE-OCH-2D.md. It records
+the implemented boundaries, credentials' configuration locations without
+values, known playback/media gaps and the next implementation steps.
+Following Jakob's latest steering, first observe actual clips and sequence
+in the existing demo client, then reproduce its presentation in 2D while
+retaining server authority. Launch, Partner-table and SSE are distinct paths;
+ordinary client play does not publish to Partner-SSE in the local code.
+
+Live read-only validation: /api/inputs was configured with no missing/invalid
+fields. The observer reached "Partner-ström ansluten" against Bettalotto;
+the connection was then explicitly closed. No round events arrived during
+the short check. No launch/table/wallet request was made. /api/videos reported
+224/224 locally available entries; this was metadata availability, not visual
+acceptance or a complete inventory of Kevin's current remote media.
+
+Validation: 20 existing studio/tree component tests and TypeScript passed;
+browser checked both label surfaces, sidebar layout and successful SSE
+connection/disconnection. No gameplay/media/env/project data changed. The
+previously recorded video hash-cache test failure remains outside this task.
+
 ## 2026-09-21 — clarify simulated context and selected event
 
 Replaced the “Återbesök · tyska” test preset with “Återkommande spelare”.

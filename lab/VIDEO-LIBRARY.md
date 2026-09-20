@@ -47,8 +47,9 @@ samma val i Eventstudions varianteditor.
 
 Triggers är frivilliga extra villkor. Inga triggers betyder inga extra
 villkor, inte att en variant är avstängd. Alla valda triggers måste matcha.
-Det riktiga eventet krävs alltid. **Bara standard** är studions startläge
-och spelar standard oavsett vilka alternativa urval som är aktiverade.
+Det riktiga eventet krävs alltid. **OpenClaw** är studions startläge.
+**Bara standard** är ett jämförelseläge som spelar standard oavsett vilka
+alternativa urval som är aktiverade.
 Slumpläget väljer med lika sannolikhet bland standard och uttryckligen
 slumpaktiverade alternativ som uppfyller sina triggers. Detta använder en
 separat lokal presentationsslump och påverkar inga kort, pengar eller utfall.
