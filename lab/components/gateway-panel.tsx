@@ -5,7 +5,7 @@ import type { ConnectionStatus, DirectorMode } from './studio-types';
 import { requestJson } from './studio-types';
 import { VoicePreviewPanel } from './voice-preview-panel';
 
-export const modeLabels: Record<DirectorMode, string> = { off: 'Standardlinje', rules: 'Regler', shadow: 'Skuggläge', active: 'OpenClaw' };
+export const modeLabels: Record<DirectorMode, string> = { off: 'Bara standard', rules: 'Regler', shadow: 'Skuggläge', active: 'OpenClaw' };
 export const modeExplanations: Record<DirectorMode, string> = {
   off: 'Alltid standardvarianten. Ingen modell kontaktas.',
   rules: 'Högst prioriterade tillåtna variant väljs deterministiskt. Ingen modell kontaktas.',

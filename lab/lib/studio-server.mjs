@@ -27,7 +27,7 @@ export async function studioInitialData() {
   return { project, videos, status: connectionStatus() };
 }
 
-async function remoteRequest(path, body, settings, fetchImpl, timeoutMs) {
+export async function remoteRequest(path, body, settings, fetchImpl, timeoutMs) {
   let url;
   try { url = new URL(settings.remoteUrl); } catch { throw new StudioError('Ogiltig Render-adress.', 503); }
   if (url.username || url.password || url.search || url.hash || !(url.protocol === 'https:' || url.protocol === 'http:' && ['127.0.0.1','localhost'].includes(url.hostname))) throw new StudioError('Render-anslutningen kräver HTTPS.', 503);

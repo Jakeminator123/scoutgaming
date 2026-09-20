@@ -22,19 +22,18 @@ Kodvalidering → labbanimation eller separat originalpreview
 | Director | Beslutskontrakt, rådskontroll, operatörschatt och dashboard-ingång |
 | Privat Gateway | Kör OpenClaw och ansluter till konfigurerad modell |
 | Native dashboard | Administrationsyta; separat från studio och spelarchatt |
-| ElevenLabs-röstprov | Manuell studiopanel med lokal MP3-cache samt ett separat äldre CLI-prov; ingen automatisk spelarröst |
+| Social labbchatt | Isolerad Astrid-roll, sparad social policy och idle-reaktion; inte produktchatten |
+| ElevenLabs-röstprov | Lokal MP3-cache; explicit talval i social labbchatt eller manuell röstpanel |
 | IDE-agenternas inbox | Samarbete om projektet; separat från alla ovanstående runtime-samtal |
 
-**Senaste daterade driftunderlag i denna översyn:**
-[rapporten om instruktioner och röstpanel](../../arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md)
-redovisar Director och Gateway på `0a1f9cb`, med upstream OpenClaw fortsatt
-`2026.9.5`. Rådgränsen ändrades till **8000 ms**; operatörschatt och talprov
-har egna gränser. Chat, active och shadow verifierades i den leveransen.
-Den tidigare 2500-ms-gränsen och provet på `7f056f7` är historiska steg.
-Denna dokumentationsöversyn gör inga nya drift- eller modellkontroller.
+**Senaste verifierade drift:** [socialchatt-leveransen](../../arkiv/2026-09-20/2026-09-20-astrid-social-chatt.md)
+har Director och Gateway på `6797b6a`, upstream fortsatt `2026.9.5`.
+Rådgränsen är **8000 ms**. Interaktiv social chatt har separat 30-sekundersbudget,
+talprov egen gräns. Sociala fasta/fria svar och verkligt ElevenLabs-tal har provats.
+Äldre `0a1f9cb`/`7f056f7` är historiska verifieringssteg, inte nuvarande deploy.
 
 Ett versionsmärkt [runtimepaket](../../../../open-claw/lab/deploy/runtime-bundle/README.md),
-`2026-09-20.1`, installerar korta rollinstruktioner och källsammanfattningar
+`2026-09-20.2`, installerar korta rollinstruktioner och källsammanfattningar
 i agenternas arbetsytor via hanterade `AGENTS.md`-block. Manuella texter
 bevaras. Paketet är medvetet begränsat: ingen extern crawl, vektordatabas
 eller automatisk tillgång till hela Git-repot ingår.
@@ -43,12 +42,17 @@ Studions manuella röstpanel kan generera tre exempel, egen text eller ett
 kopierat operatörssvar via ElevenLabs. Samma text/röst/modell/inställningar
 återanvänder `lab/data/voice-cache/`. Ett knapptryck kan använda krediter;
 talprovets cache är separat från äldre CLI-provens `voice-previews/`.
-Chrome-uppspelning verifierades i rapporten; Codex inbyggda webbvy kraschade
-vid ljudprovet. Följdrättningen `7be5844` hanterar direkt labbnavigering.
+Det tidigare röstprovet hade problem i Codex-webview. Senaste sociala leveransen
+har både Chrome-prov och synlig rörelse/ljudstart i Codex-webview.
 
-Riktig spelarchatt, moderering, spelarminne, automatisk spelarröst,
-produktspelarens variantadapter och ny lipsync-acceptans återstår enligt
-underlaget. En manuell MP3-panel levererar inte dessa integrationer.
+Eventstudion har nu ett verkligt, isolerat **spelarchattprov** för Astrid i
+vänteläge: sparad policy → OpenClaw `croupier-social` → validerad text/reaktion
+→ valfritt exakt ElevenLabs-tal och syntetisk rörelse. [Användarguide](../../../../lab/SOCIAL-CHAT.md).
+Produktchatten, moderering, bestående spelarminne, produktspelarens adapter
+och ny lipsync-acceptans återstår. Ett framtida dealerprofilpaket (t.ex. SOUL.md)
+ska beskriva personlighet; det är inte samma sak som testkontext eller spelarminne.
+OpenClaw får använda avgränsade minnesuppgifter när den kopplingen byggts;
+spelet behåller alltid kort, regler och utfall.
 
 Driftfilerna ligger kvar i `open-claw/lab/`, med
 [render.yaml](../../../../open-claw/lab/render.yaml).

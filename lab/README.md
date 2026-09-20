@@ -6,6 +6,7 @@ dashboard är separata. Inget du sparar här publiceras automatiskt.
 [Historisk arbetsrapport: mappar, tester och videokoppling](../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-labbets-mappar-och-tester.md).
 
 Aktuell läsväg: [systemkartan](../random-stuff-jakob/jakob-docs/systemkarta/README.md).
+Praktiskt nytt prov: [chatta med Astrid, Ledsen och sparat tal](SOCIAL-CHAT.md).
 Buggar, förbättringar och öppna kontroller för labbet och övriga repot finns i
 [findings](../docs/findings/README.md); implementation och QA följs i Jira CAC.
 
@@ -43,6 +44,9 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
 - **Eventstudion:** välj croupier/event, redigera namn, linje, varianter och
   triggers. Testa ett publicerat exempel med simulerad chatt, historik och
   framtoning. Den animerade scenen och beslutsspåret visar vad som händer.
+  **Förhandsvisa vald variant** spelar ditt markerade klipp direkt;
+  **Testa event** kör regler/modell. I Astrids vänteläge finns också separat
+  riktig OpenClaw-spelarchatt med redigerbar social policy och valfritt tal.
 - **Videobanken:** inspektera original och bind vald variant till ett exakt
   `videoGenerationId`. Efter ett eventtest kan scenen växla till just den
   videofilen. Detta är en labbkoppling, inte ett runtime-godkännande.
@@ -59,11 +63,15 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
 ```text
 lab/
   policies/project.seed.json   startprojekt: blackjack, 4 dealers, 16 noder
+  policies/social.seed.json    startpolicy för Astrids sociala chattprov
   schemas/studio.schema.json   struktur och tillåtna värden
-  animations/                 64 tysta, syntetiska rörelsesekvenser i JSON
+  schemas/social.schema.json   format för den separata sociala policyn
+  animations/                 64 eventrörelser + separat social.ledsen i JSON
   lib/studio-model.mjs         kontrakt, referenser, validering och konvertering
   data/project.json           ditt sparade projekt (lokalt, Git-ignorerat)
   data/history/               tidigare sparade revisioner (Git-ignorerat)
+  data/social-policy.json     sparad social policy, separat från eventprojektet
+  data/social-history/        tidigare sociala policyrevisioner
   data/voice-cache/            text/röst/modell-indexerade MP3-prov och metadata
   test/                       automatiska regler-, lagrings-, API- och videotester
   app/                        Next.js-sidor och lokalt API

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "revision": "social.2026-09-20.1",
+  "trigger": {
+    "id": "social.ledsen",
+    "label": "Ledsen",
+    "enabled": true,
+    "directive": "Välj Ledsen när spelarens senaste meddelande är tydligt oförskämt eller personligt nedsättande mot Astrid. Bedöm sammanhanget: vänlig jargong, citat, frågor om ett ord och saklig kritik ska inte räcka. Vid osäkerhet: inget uttrycksbyte. Detta är Astrids spelade reaktion, inte en slutsats om spelarens känslor. Svara lugnt och kort, utan att skamma eller uppmuntra mer spel.",
+    "threshold": 0.75
+  },
+  "response": {
+    "mode": "fixed",
+    "fixedText": "Oj, nu var du oförskämd."
+  },
+  "cooldownMs": 10000
+}

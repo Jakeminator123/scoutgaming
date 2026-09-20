@@ -9,6 +9,10 @@ rapporter kan ersätta äldre statusuppgifter. Arkivering stänger inga fynd.
 
 ## 20 september 2026
 
+Ny leverans: [Astrids sociala chatt, ljud och synlig reaktion](2026-09-20/2026-09-20-astrid-social-chatt.md).
+Den ersätter tidigare status där all spelarchatt saknades; produktintegration
+och bestående spelarminne återstår fortfarande.
+
 Följande nio filer låg tidigare direkt i `jakob-docs/`. Filnamnen är
 oförändrade; de ligger nu i `arkiv/2026-09-20/`. Relativa länkar har justerats.
 

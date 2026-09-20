@@ -1,0 +1,295 @@
+{
+  "schemaVersion": 1,
+  "scope": "social-lab",
+  "clips": [
+    {
+      "assetId": "social.ledsen",
+      "scope": "social-lab",
+      "reactionId": "ledsen",
+      "label": "Lite ledsen → händer framför ansiktet → neutral",
+      "durationMs": 4200,
+      "tracks": [
+        {
+          "target": "actor",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.16,
+              "x": 0,
+              "y": 3,
+              "rotate": 0
+            },
+            {
+              "at": 0.32,
+              "x": 0,
+              "y": 7,
+              "rotate": 0
+            },
+            {
+              "at": 0.48,
+              "x": 0,
+              "y": 8,
+              "rotate": -2
+            },
+            {
+              "at": 0.69,
+              "x": -2,
+              "y": 7,
+              "rotate": 2
+            },
+            {
+              "at": 0.83,
+              "x": 0,
+              "y": 3,
+              "rotate": 0
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "face",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.16,
+              "x": 0,
+              "y": 3,
+              "rotate": -4
+            },
+            {
+              "at": 0.32,
+              "x": 0,
+              "y": 7,
+              "rotate": 0
+            },
+            {
+              "at": 0.48,
+              "x": 0,
+              "y": 8,
+              "rotate": -3
+            },
+            {
+              "at": 0.69,
+              "x": 0,
+              "y": 8,
+              "rotate": 3
+            },
+            {
+              "at": 0.83,
+              "x": 0,
+              "y": 3,
+              "rotate": 0
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "leftArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": 20,
+              "opacity": 1
+            },
+            {
+              "at": 0.16,
+              "rotate": 12,
+              "opacity": 1
+            },
+            {
+              "at": 0.32,
+              "rotate": -34,
+              "opacity": 1
+            },
+            {
+              "at": 0.48,
+              "rotate": -45,
+              "opacity": 0
+            },
+            {
+              "at": 0.69,
+              "rotate": -45,
+              "opacity": 0
+            },
+            {
+              "at": 0.83,
+              "rotate": -20,
+              "opacity": 1
+            },
+            {
+              "at": 1,
+              "rotate": 20,
+              "opacity": 1
+            }
+          ]
+        },
+        {
+          "target": "rightArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": -20,
+              "opacity": 1
+            },
+            {
+              "at": 0.16,
+              "rotate": -12,
+              "opacity": 1
+            },
+            {
+              "at": 0.32,
+              "rotate": 34,
+              "opacity": 1
+            },
+            {
+              "at": 0.48,
+              "rotate": 45,
+              "opacity": 0
+            },
+            {
+              "at": 0.69,
+              "rotate": 45,
+              "opacity": 0
+            },
+            {
+              "at": 0.83,
+              "rotate": 20,
+              "opacity": 1
+            },
+            {
+              "at": 1,
+              "rotate": -20,
+              "opacity": 1
+            }
+          ]
+        },
+        {
+          "target": "blush",
+          "frames": [
+            {
+              "at": 0,
+              "opacity": 0
+            },
+            {
+              "at": 0.16,
+              "opacity": 0
+            },
+            {
+              "at": 0.32,
+              "opacity": 0
+            },
+            {
+              "at": 0.48,
+              "opacity": 0
+            },
+            {
+              "at": 0.69,
+              "opacity": 0
+            },
+            {
+              "at": 0.83,
+              "opacity": 0
+            },
+            {
+              "at": 1,
+              "opacity": 0
+            }
+          ]
+        },
+        {
+          "target": "sadFace",
+          "frames": [
+            {
+              "at": 0,
+              "opacity": 0
+            },
+            {
+              "at": 0.16,
+              "opacity": 0.7
+            },
+            {
+              "at": 0.32,
+              "opacity": 1
+            },
+            {
+              "at": 0.48,
+              "opacity": 1
+            },
+            {
+              "at": 0.69,
+              "opacity": 1
+            },
+            {
+              "at": 0.83,
+              "opacity": 0.4
+            },
+            {
+              "at": 1,
+              "opacity": 0
+            }
+          ]
+        },
+        {
+          "target": "coverHands",
+          "frames": [
+            {
+              "at": 0,
+              "opacity": 0,
+              "y": 40
+            },
+            {
+              "at": 0.16,
+              "opacity": 0,
+              "y": 40
+            },
+            {
+              "at": 0.32,
+              "opacity": 0,
+              "y": 35
+            },
+            {
+              "at": 0.48,
+              "opacity": 1,
+              "y": 0
+            },
+            {
+              "at": 0.69,
+              "opacity": 1,
+              "y": 0
+            },
+            {
+              "at": 0.83,
+              "opacity": 0.2,
+              "y": 25
+            },
+            {
+              "at": 1,
+              "opacity": 0,
+              "y": 40
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
