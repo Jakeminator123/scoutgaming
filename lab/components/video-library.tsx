@@ -6,6 +6,31 @@ import type { VideoInventory } from './studio-types';
 
 const verdictLabels = { want: 'Want · utvald', no: 'No · bortvald', unrated: 'Ej bedömd' };
 
+/** Same binding as Videobanken, in the existing variant editor. No upload or AI. */
+export function VariantVideoBinding({ inventory, dealerId, variant, isBaseline, onBind, onInspect }: {
+  inventory: VideoInventory; dealerId: string; variant: StudioVariant; isBaseline: boolean;
+  onBind: (id: string | null) => void; onInspect: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const needle = useDeferredValue(query).trim().toLocaleLowerCase('sv');
+  const selected = inventory.videos.find(video => video.id === variant.videoGenerationId);
+  const candidates = inventory.videos.filter(video => video.available && (!video.dealer || video.dealer === dealerId)
+    && `${video.label} ${video.id}`.toLocaleLowerCase('sv').includes(needle));
+  return <div className="variant-binding">
+    <span className="eyebrow">{isBaseline ? 'STANDARDVARIANTENS VIDEO' : 'ALTERNATIVETS VIDEO'}</span>
+    <label className="field">Hitta video<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Namn eller generation-ID…" /></label>
+    <label className="field">Kopplad video<select value={variant.videoGenerationId ?? ''} onChange={event => onBind(event.target.value || null)}>
+      <option value="">Ingen video — använd 2D-reserv</option>
+      {variant.videoGenerationId && !candidates.some(video => video.id === variant.videoGenerationId) ? <option value={variant.videoGenerationId}>{selected?.label ?? variant.videoGenerationId}{selected?.available ? '' : ' · fil saknas'}</option> : null}
+      {candidates.map(video => <option key={video.id} value={video.id}>{video.label} · {video.id.slice(0, 8)} · {verdictLabels[video.verdict]}</option>)}
+    </select></label>
+    <p className="helper">Video om denna variant har en koppling, annars dess 2D-rörelse. Ingen annan variants video lånas.</p>
+    {variant.videoGenerationId ? <button type="button" className="text-button" onClick={() => onBind(null)}>Koppla loss video</button> : null}
+    <button type="button" className="text-button" onClick={onInspect}>Granska original i Videobanken ↗</button>
+    <small className="helper">Manuell labbkoppling · innehåll, riktning och tal måste matcha. Sparas med Spara projekt.</small>
+  </div>;
+}
+
 export function VideoLibrary({ inventory, dealer, eventLabel, line, variant, onSelectVariant, onBind }: {
   inventory: VideoInventory;
   dealer: string;

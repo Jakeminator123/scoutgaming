@@ -5,7 +5,7 @@ spelarchattprov, inte OpenClaw-sidans operatörschatt eller IDE-agenternas inbox
 
 ## Två skilda prov
 
-- **Förhandsvisa vald variant** spelar det du markerat, utan regler eller modell.
+- **Spela vald variant** spelar det du markerat, utan regler eller modell.
 - **Testa event** kör urvalet. Läget **Bara standard** väljer alltid standarden,
   även om du redigerar ett alternativ. Det är inte samma sak som variantfamiljen.
 

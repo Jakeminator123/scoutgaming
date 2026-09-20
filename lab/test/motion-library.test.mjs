@@ -134,13 +134,13 @@ test('Stage keeps exact videos separate and owns cleanup for selection, replay a
   assert.match(source, /preference\.removeEventListener\('change', reduce\); playback\.cancel\(\)/);
   assert.match(source, /\[clip, durationMs, event\.id, dealer, shouldAnimate, playId, showVideo\]/);
   assert.match(source, /const shouldAnimate = hasResult \|\| previewing/);
-  assert.match(source, /Förhandsvisa vald variant/);
-  assert.match(source, /onClick=\{onPreview\}/);
-  assert.match(source, /onClick=\{onPlay\}/);
+  assert.match(source, /Spela vald variant/);
+  assert.match(source, /setFailedVideo\(''\); onPreview\(\)/);
+  assert.match(source, /setFailedVideo\(''\); onPlay\(\)/);
   assert.match(source, /onEnded=\{onPlaybackEnd\}/);
-  assert.match(source, /src=\{videoUrl\} controls autoPlay muted playsInline/);
+  assert.match(source, /src=\{videoUrl\} controls preload="metadata" autoPlay=\{playing\} muted playsInline/);
   assert.doesNotMatch(source, /<video[^>]*\bloop\b/);
-  assert.match(source, /Tyst 2D-exempel/);
+  assert.match(source, /visar 2D-reserv/);
 });
 
 test('social.ledsen is separate from all 64 game clips and saved project bindings', async () => {

@@ -88,7 +88,8 @@ function text(value, max = 100) {
 }
 
 function publicEntry(entry, available, integrity) {
-  const dealer = DEALERS.has(entry.placement?.dealer) ? entry.placement.dealer : undefined;
+  const dealerHint = text(entry.placement?.dealer, 40).toLowerCase();
+  const dealer = DEALERS.has(dealerHint) ? dealerHint : undefined;
   const hint = text(entry.placement?.label, 80);
   const eventId = text(entry.placement?.node, 80);
   return {

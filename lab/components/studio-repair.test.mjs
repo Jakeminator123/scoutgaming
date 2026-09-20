@@ -15,7 +15,7 @@ const mocks = {
   './stage': { Stage: empty },
   './social-chat-panel': { SocialChatPanel: empty },
   './trigger-editor': { TriggerEditor: empty, categoryLabels: {}, defaultValue: () => null },
-  './video-library': { VideoLibrary: empty },
+  './video-library': { VideoLibrary: empty, VariantVideoBinding: empty },
   './gateway-panel': { GatewayPanel: empty, ModeSelector: empty, modeLabels: { rules: 'Regler' } },
   './test-context': { TestContextPanel: empty, neutralContext: {} },
 };
@@ -73,11 +73,13 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.match(html, /Redigera vald nod/);
   assert.match(html, /Samma nod som i nodträdet/);
   assert.match(html, /Så väljs variant när du testar ett event/);
+  assert.match(html, /<details class="event-test-tools"><summary>Regeltest &amp; OpenClaw/);
+  assert.match(html, /Prova spelarchatten → Astrids vänteläge/);
   assert.doesNotMatch(html, /Din regi|En tydlig kedja, hela vägen/);
   const { TestContextPanel, neutralContext } = loadComponent('./test-context.tsx');
   const contextHtml = renderToStaticMarkup(React.createElement(TestContextPanel, { value: neutralContext, onChange() {} }));
   assert.match(contextHtml, /Simulera kontext för eventtest/);
   assert.match(contextHtml, /inte OpenClaws verkliga minne eller Astrids personlighet/);
-  assert.match(contextHtml, /spelarchatten med Astrid ovan använder inte dessa fält/);
+  assert.match(contextHtml, /spelarchatten med Astrid använder inte dessa fält/);
   assert.doesNotMatch(contextHtml, /Vad vet croupiern just nu/);
 });

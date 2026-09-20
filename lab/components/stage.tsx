@@ -12,7 +12,7 @@ function PlayingCard({ rank, suit, back = false, className = '' }: { rank: strin
   </div>;
 }
 
-export function Stage({ event, asset, dealer, variantLabel, playId, playing, hasResult, onPlay, busy, videoUrl, videoName, onPreview, previewing = false, previewLabel = 'Förhandsvisa vald variant', onPlaybackEnd }: {
+export function Stage({ event, asset, dealer, variantLabel, playId, playing, hasResult, onPlay, busy, videoUrl, videoName, videoMissing = false, onPreview, previewing = false, previewLabel = 'Spela vald variant', onPlaybackEnd }: {
   event: StudioEvent;
   asset?: StudioAsset;
   dealer: string;
@@ -24,12 +24,14 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
   busy: boolean;
   videoUrl?: string;
   videoName?: string;
+  videoMissing?: boolean;
   onPreview?: () => void;
   previewing?: boolean;
   previewLabel?: string;
   onPlaybackEnd?: () => void;
 }) {
-  const [preview, setPreview] = useState<'animation' | 'video'>('animation');
+  const [preview, setPreview] = useState<'animation' | 'video'>('video');
+  const [failedVideo, setFailedVideo] = useState('');
   const sceneRef = useRef<HTMLDivElement>(null);
   const actorRef = useRef<HTMLDivElement>(null);
   const faceRef = useRef<HTMLDivElement>(null);
@@ -38,7 +40,8 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
   const blushRef = useRef<HTMLSpanElement>(null);
   const sadFaceRef = useRef<HTMLSpanElement>(null);
   const coverHandsRef = useRef<HTMLDivElement>(null);
-  const showVideo = preview === 'video' && Boolean(videoUrl);
+  const showVideo = preview === 'video' && Boolean(videoUrl) && failedVideo !== videoUrl;
+  const fallbackReason = preview === 'animation' ? 'Bara 2D valt' : failedVideo && failedVideo === videoUrl ? 'Videon kunde inte spelas · visar 2D-reserv' : videoMissing ? 'Kopplad fil saknas · visar 2D-reserv' : 'Ingen video kopplad · visar 2D-reserv';
   const requestedClip = getMotionClip(asset?.id);
   const clip = motionAllowedForSource(requestedClip, event.sourceType) ? requestedClip : undefined;
   const durationMs = asset?.durationMs ?? clip?.durationMs ?? 1700;
@@ -73,8 +76,8 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
   }, [clip, durationMs, event.id, dealer, shouldAnimate, playId, showVideo]);
 
   return <section className="stage-panel" aria-label="Animerad labbförhandsvisning">
-    <div className="stage-overline"><span><i className="live-dot" /> {showVideo ? 'VIDEOFIL · LABBPREVIEW' : 'SYNTHETIC STAGE'}</span>{videoUrl ? <div className="stage-preview-tabs" role="group" aria-label="Förhandsvisningstyp"><button aria-pressed={!showVideo} onClick={() => setPreview('animation')}>Animation</button><button aria-pressed={showVideo} onClick={() => setPreview('video')}>Videofil</button></div> : <span>Blackjack <span className="separator">/</span> {dealer}</span>}</div>
-    {showVideo ? <div className="stage-video"><video key={`${videoUrl}-${playId}`} src={videoUrl} controls autoPlay muted playsInline onEnded={onPlaybackEnd} aria-label={`Exakt labbkopplat original: ${videoName ?? 'video'}`} /><span>Originalvideo · ljud av från start · inte runtime-godkänd</span></div> : <div ref={sceneRef} className={`stage-scene ${motionStyles.scene} ${shouldAnimate ? 'is-playing' : ''} motion-${animation}`} key={`${event.id}-${playId}`} data-motion-asset={clip?.assetId} style={{ '--motion-duration': `${durationMs}ms`, '--asset-color': asset?.color ?? '#a5d9cb' } as CSSProperties} aria-hidden="true">
+    <div className="stage-overline"><span><i className="live-dot" /> {showVideo ? 'KOPPLAD VIDEO · LABB' : '2D-RESERV · LABB'}</span><div className="stage-preview-tabs" role="group" aria-label="Förhandsvisningstyp"><button aria-pressed={preview === 'video'} onClick={() => setPreview('video')}>Video / 2D-reserv</button><button aria-pressed={preview === 'animation'} onClick={() => setPreview('animation')}>Bara 2D</button></div></div>
+    {showVideo ? <div className="stage-video"><video key={`${videoUrl}-${playId}`} src={videoUrl} controls preload="metadata" autoPlay={playing} muted playsInline onEnded={onPlaybackEnd} onError={() => setFailedVideo(videoUrl ?? '')} aria-label={`Exakt labbkopplat original: ${videoName ?? 'video'}`} /><span>Originalvideo · eget ljud av från start · inte runtime-godkänd</span></div> : <div ref={sceneRef} className={`stage-scene ${motionStyles.scene} ${shouldAnimate ? 'is-playing' : ''} motion-${animation}`} key={`${event.id}-${playId}`} data-motion-asset={clip?.assetId} style={{ '--motion-duration': `${durationMs}ms`, '--asset-color': asset?.color ?? '#a5d9cb' } as CSSProperties} aria-hidden="true">
       <div className="stage-halo" />
       <div className="stage-lines" />
       <div className="dealer-presence">
@@ -93,6 +96,6 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
       <div className="turn-indicator" />
       <div className="stage-sparkles"><i /><i /><i /><i /><i /><i /></div>
     </div>}
-    <div className="stage-bottom"><div className="stage-caption"><span className="eyebrow">{showVideo ? 'EXAKT KOPPLAD VIDEOGENERERING' : playing || previewing ? 'SPELAR LABBANIMATION' : 'REDO FÖR FÖRHANDSVISNING'}</span><strong>{variantLabel}</strong><span className={motionStyles.motionLabel}>{showVideo ? videoName : clip ? <>Tyst 2D-exempel · {clip.label} · <code>{clip.assetId}</code></> : 'Illustrerad rörelse · ingen spelmotor eller produktionsspelare'}</span></div><div className={motionStyles.actions}>{onPreview ? <button type="button" className={motionStyles.previewButton} onClick={onPreview} disabled={busy}><span aria-hidden="true">▷ </span>{previewLabel}</button> : null}<button type="button" className="play-button" onClick={onPlay} disabled={busy}><span aria-hidden="true">{busy ? '◌' : '▶'}</span>{busy ? 'Beräknar…' : 'Testa event'}</button></div></div>
+    <div className="stage-bottom"><div className="stage-caption"><span className="eyebrow">{showVideo ? 'EXAKT KOPPLAD VIDEOGENERERING' : playing || previewing ? 'SPELAR LABBANIMATION' : 'REDO FÖR FÖRHANDSVISNING'}</span><strong>{variantLabel}</strong><span className={motionStyles.motionLabel}>{showVideo ? videoName : <>{fallbackReason}{clip ? <> · {clip.label}</> : null}</>}</span></div><div className={motionStyles.actions}>{onPreview ? <button type="button" className={motionStyles.previewButton} onClick={() => { setFailedVideo(''); onPreview(); }} disabled={busy}><span aria-hidden="true">▷ </span>{previewLabel}</button> : null}<button type="button" className="play-button" onClick={() => { setFailedVideo(''); onPlay(); }} disabled={busy}><span aria-hidden="true">{busy ? '◌' : '▶'}</span>{busy ? 'Beräknar…' : 'Testa event'}</button></div></div>
   </section>;
 }
