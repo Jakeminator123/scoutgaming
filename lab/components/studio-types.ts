@@ -64,6 +64,12 @@ export interface SimulationResult {
   [key: string]: unknown;
 }
 
+// A real test result owns its media choice, including an explicit lack of video.
+// Never borrow the editor selection's film for another variant or social reply.
+export function previewVideoIdFor(variant: StudioVariant, result: SimulationResult | null, social: boolean) {
+  return social ? undefined : result ? result.videoGenerationId : variant.videoGenerationId;
+}
+
 export const viewPaths: Record<StudioView, string> = { tree: '/tree', lab: '/', videos: '/videos', openclaw: '/openclaw' };
 
 export function studioViewForPath(path: string): StudioView {

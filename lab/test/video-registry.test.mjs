@@ -50,6 +50,14 @@ test('inventory has safe bounded metadata; want never implies approval', async t
   assert.ok(!json.includes('archiveDir'));
 });
 
+test('dealer labels normalize case without upgrading an intake to approval', async t => {
+  const options = await fixture(t, { placement: { dealer: ' Astrid ', node: 'deal.player.right', label: 'Höger' } });
+  const { videos } = await loadVideoRegistry(options);
+  assert.equal(videos[0].dealer, 'astrid');
+  assert.match(videos[0].label, /^Astrid/);
+  assert.equal(videos[0].reviewStatus, 'unreviewed');
+});
+
 test('preview verifies full hash then serves bytes; subsequent metadata marks verified', async t => {
   const options = await fixture(t);
   const response = await getVideoResponse(id, request(), options);

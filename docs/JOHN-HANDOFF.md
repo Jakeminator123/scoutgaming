@@ -5,6 +5,31 @@ and linked it from the archive index. Captures the model, docs/findings split,
 Kevin approval dependency and later OPENCLAW commits at HEAD 11d751a.
 Checked local links; documentation only, no runtime/media change or test claim.
 
+## 2026-09-20 — video-first Eventstudio with per-variant 2D fallback
+
+The existing variant inspector now binds/unbinds an exact local generation ID.
+Default preview shows that variant's video, otherwise its own synthetic motion;
+missing/decode-failed video is labelled and falls back to 2D. A rule-selected
+alternative never borrows the editor selection's standard video. Direct replay
+is labelled "Spela vald variant"; event tests remain separate. Video completion
+uses its own ended event, not the motion duration, and recorded clips never loop.
+Rules, decision trace and simulated context are grouped in one closed-by-default
+disclosure. Player chat remains at Astrid idle, with a compact navigation action
+elsewhere. Registry normalizes dealer labels such as Astrid to astrid.
+
+Verification: 177/177 lab tests and production Next build/typecheck pass.
+Codex webview played local a9fa1da6-066c-47f4-8466-7f4924a3bfe2 to its 3.041667s
+end and replayed it; direct and rules-selected contextual centre variants showed
+deal.player.centre.contextual with no video element. The example binding is an
+unsaved lab draft, not a saved migration or product take approval.
+224 available local video entries are metadata, not model embeddings; video
+search/binding/playback makes no model or ElevenLabs calls. No paid provider calls
+were made for this change. Unsupported session-flags features.thread_tools was
+not found in user config; its injection source is unconfirmed. Global config
+was not changed. No product media/player, event contracts, Render deployment,
+keys or saved policies changed. Jira unavailable; no status change claimed.
+Usage and current video workflow: lab/README.md.
+
 ## 2026-09-20 — live Astrid social lab chat and explicit variant preview
 
 Both Render services now live on 6797b6a: Director dep-danlaejtqb8s73c9v5l0,

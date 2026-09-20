@@ -42,7 +42,7 @@ Kör `node --test lab/test/motion-library.test.mjs`. Testerna kontrollerar antal
 ID-kopplingar, skilda poser, validering, avbrott och minskad rörelse.
 Webbläsarkontroll behövs fortfarande för att bedöma hur rörelserna ser ut.
 
-Scenens **Testa event** kör regelvalet. **Förhandsvisa vald variant** visar
+Scenens **Testa event** kör regelvalet. **Spela vald variant** visar
 det valda klippet direkt utan modell-/regelval; den ändrar inte spelutfallet.
 Avslutscallback skickas en gång efter uppspelning, inte efter avbruten rörelse.
 

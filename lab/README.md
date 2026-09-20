@@ -44,12 +44,16 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
 - **Eventstudion:** välj croupier/event, redigera namn, linje, varianter och
   triggers. Testa ett publicerat exempel med simulerad chatt, historik och
   framtoning. Den animerade scenen och beslutsspåret visar vad som händer.
-  **Förhandsvisa vald variant** spelar ditt markerade klipp direkt;
-  **Testa event** kör regler/modell. I Astrids vänteläge finns också separat
+  **Spela vald variant** spelar ditt markerade klipp direkt: kopplad video,
+  annars just den variantens 2D-reserv. Välj fil direkt under **Standardvariantens
+  video** i varianteditorn och spara med **Spara projekt**. Alternativ får egna
+  kopplingar; de lånar aldrig standardens film. **Bara 2D** är ett manuellt
+  förhandsvisningsval. **Testa event** kör regler/modell. Beslutsmodell och
+  simulerad kontext ligger samlade under **Regeltest & OpenClaw**. I Astrids vänteläge finns separat
   riktig OpenClaw-spelarchatt med redigerbar social policy och valfritt tal.
 - **Videobanken:** inspektera original och bind vald variant till ett exakt
-  `videoGenerationId`. Efter ett eventtest kan scenen växla till just den
-  videofilen. Detta är en labbkoppling, inte ett runtime-godkännande.
+  `videoGenerationId`. Samma koppling kan redigeras direkt i Eventstudion.
+  Detta är en labbkoppling, inte ett runtime-godkännande.
 - **OpenClaw:** ansvar, anslutningsstatus och operatörschatt om det senast
   sparade projektet. Länk till den befintliga, separata native-dashboarden.
   Chatt kräver en konfigurerad anslutning; inga modellsvar fejkas.
@@ -160,8 +164,15 @@ På Jakobs Windows hittas originalarkivet automatiskt; annars anges
 Servern tillåter bara kända generation-ID:n och kontrollerar storlek och
 SHA-256 före uppspelning. `want` är intake, inte visuell acceptans.
 
-Spelarminne, riktig spelarchatt/moderering och integration med produktens
-gemensamma videospelare återstår. Labbet har ännu bara manuella testvärden.
+Registret är lokal filmetadata, inte AI-indexering av filmernas innehåll.
+Att söka, koppla och spela video gör inga modell-/ElevenLabs-anrop.
+Saknad eller ospelbar fil ger en märkt 2D-reserv. Filmer spelas till sitt eget
+slut, inte animationens testlängd, och loopas inte. Inga 16 filmer väljs
+automatiskt: exakt situation, dealer, riktning och eventuell talrad måste matcha.
+
+Bestående spelarminne, produktens spelarchatt/moderering och integration med
+produktens gemensamma videospelare återstår. Astrids separata idle-chattprov
+använder verkliga modellsvar; eventtestets kontext är fortfarande simulerad.
 IDE-agenternas GitLab-inbox hör inte hit. Videor måste granskas per take
 med text/ljud, hash och kalibrering innan de aktiveras i spelet. Nästa
 nodträdsdesign ändrar editorns översikt utan att ändra motorns kontrakt.
