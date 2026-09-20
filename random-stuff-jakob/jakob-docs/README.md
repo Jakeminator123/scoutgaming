@@ -15,6 +15,14 @@ rörelsesekvens påverkar videotäckningen. Skiljer tio interna eventtyper,
 sex presentationstyper och 16 labbnoder; ger ett gemensamt språk för agenternas
 fortsatta arbete. Mappvyn och föreslagen fysisk JSON-uppdelning är olika saker.
 
+## 2026-09-20 — Videoladdning och fråga till Kevin
+
+[Reproducerad dubbelhämtning, cachelager och Kevin-ping](2026-09-20-videoladdning-och-kevin-ping.md):
+samtidiga laddningar skapar två Blob-URL:er men bara en cachepost. Skiljer
+detta fynd från visuell dubbelbild, förklarar filernas ursprung och föreslår
+prioriterad staged-förladdning. **Kevins godkännande inväntas före lokala
+player-/videoändringar.** OPENCLAW-uppgiften är informerad.
+
 ## 2026-09-20 — Windows-testerna
 
 [Reparerade media-/spelartester](2026-09-20-windows-medietester.md): portabla sökvägar, Git Bash utan WSL, verifierade användarlokala testverktyg och CRLF-hantering utan ändrade medier/baseline. Alla begärda testkommandon passerar.
