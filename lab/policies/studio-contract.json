@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "croupier.lab.v1",
-  "description": "Canonical vocabulary and allowed lab capabilities. Engine source contract remains web/partner-presentation.mjs.",
+  "description": "Canonical vocabulary and current lab capabilities. Lab examples use the Partner presentation contract in web/partner-presentation.mjs; this is not the complete engine/player signal model or Kevin's native playback integration.",
   "dealers": [
     "astrid",
     "vera",
@@ -74,27 +74,27 @@
     {
       "id": "event",
       "label": "Event",
-      "definition": "En publicerad presentation från spelet: speak, deal, reveal, turn, settle eller idle."
+      "definition": "Här i labbkontraktet: en presentationsinstruktion av typen speak, deal, reveal, turn, settle eller idle. Inte samlingsnamnet för alla motor- och spelarsignaler."
     },
     {
       "id": "group",
       "label": "Eventgrupp",
-      "definition": "En av labbets 16 grupper. Inte ett nytt event i spelmotorn."
+      "definition": "En av labbets 16 genvägar för presentationsbehov. Inte ett nytt event i spelmotorn eller en universell videofil."
     },
     {
       "id": "situation",
       "label": "Situation",
-      "definition": "Exakt målplats eller replik inom en eventgrupp."
+      "definition": "De omständigheter som är relevanta för behovet, inte ett obligatoriskt extra trädsteg. Dagens videoregister stödjer främst målplats/exakt replik; full hand-, kortpositions- och sekvenstäckning återstår."
     },
     {
       "id": "line",
       "label": "Linje",
-      "definition": "En dealers uppsättning standard och alternativ för en eventgrupp."
+      "definition": "En dealers uppsättning standard och alternativ för ett presentationsbehov, idag knuten till en eventgrupp. En behållare, inte en videofil."
     },
     {
       "id": "variant",
       "label": "Variant",
-      "definition": "Standard eller alternativ inom linjen. Äger urvalstillåtelser och extra villkor."
+      "definition": "Standard eller alternativt uttryck inom linjen. Äger urvalstillåtelser och villkor. Idag högst en videoreferens och en 2D-reserv; flera takes per variant är förslag."
     },
     {
       "id": "video",
@@ -104,7 +104,7 @@
     {
       "id": "trigger",
       "label": "Trigger",
-      "definition": "Extra villkor för ett alternativ. Skapar inte ett nytt spel-event."
+      "definition": "Extra villkor som gör ett alternativ valbart. Skapar inte ett nytt spel-event eller automatiskt en extra scen efter standarden."
     },
     {
       "id": "schema",

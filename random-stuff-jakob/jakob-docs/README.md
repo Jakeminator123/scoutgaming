@@ -25,7 +25,8 @@ jakob-docs/
 ## Aktiva modeller
 
 - [Situationer, variantfamiljer och takes](2026-09-20-situationer-variantfamiljer-och-takes.md):
-  spel → dealer → presentationsbehov → konkret situation → variantfamilj → kompatibel take.
+  signal- och begreppskarta: spelfakta, relevanta situationer, linjer/varianter,
+  kompatibla takes och ett samlat talspår. Befintligt och förslag hålls isär.
 - [Eventregister och mental mappmodell](2026-09-20-eventregister-och-mental-modell.md):
   interna händelser, presentationstyper, labbnoder, triggers och JSON-förslag.
 

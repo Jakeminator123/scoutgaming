@@ -14,3 +14,8 @@ kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 
 Historiska analyser och permanenta källankare ligger kvar i jakob-docs.
 De är fördjupning, inte ytterligare en startyta. Privata anteckningar lämnas orörda.
+
+[Signal- och begreppskartan](../../random-stuff-jakob/jakob-docs/2026-09-20-situationer-variantfamiljer-och-takes.md)
+förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna,
+relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
+nuvarande kod från nästa steg; den aktiverar inte nya funktioner.
