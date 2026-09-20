@@ -94,9 +94,14 @@ node /app/openclaw.mjs --version
 node /app/openclaw.mjs config validate --json
 ```
 
-Containerstart och native inloggningsvy verifierades på Render 2026-09-20
-för `7ec4e17`; verkligt autentiserat modellanrop återstår. Att en
-dokumentationssida eller ett lokalt test fungerar bevisar inte hela kedjan.
+Senast verifierat 2026-09-20: Director och Gateway driftsattes från `0a1f9cb`.
+Startloggen visade runtimepaket `2026-09-20.1` installerat för alla tre roller,
+med `contextInjection: always` och utan budgetvarning. En ny operatörschatt via
+lokal studio → Render → OpenClaw svarade med korrekt paketversion, källor och
+ansvarsgränser. Aktivt variantval och shadow gav riktiga råd på cirka två
+sekunder i varsitt prov; Director rapporterade 8000 ms testgräns.
+Detta är daterad anslutningsevidens, inte en kontinuerlig hälsokontroll eller
+garanti för framtida svarstid. Se [arbetsnoteringen](../../../random-stuff-jakob/jakob-docs/2026-09-20-openclaw-instruktioner-och-rostpanel.md).
 
 ## Var ändrar vi i Croupier?
 

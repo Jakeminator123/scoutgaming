@@ -3,12 +3,18 @@ import { StudioValidationError } from './studio-model.mjs';
 import { LabInputError } from '../../open-claw/lab/src/engine.mjs';
 import { GatewayError } from '../../open-claw/lab/src/openclaw.mjs';
 
-export function assertLocalRequest(request) {
+function localHost(request) {
   const url = new URL(request.url);
   const host = request.headers.get('host') || url.host;
   let parsed;
   try { parsed = new URL(`http://${host}`); } catch { throw new StudioError('Ogiltig lokal adress.', 403); }
-  if (!['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname)) throw new StudioError('Studion är endast tillgänglig lokalt.', 403);
+  const loopback = ['localhost', '127.0.0.1', '[::1]'];
+  if (!loopback.includes(parsed.hostname) || !loopback.includes(url.hostname) || !['http:', 'https:'].includes(url.protocol)) throw new StudioError('Studion är endast tillgänglig lokalt.', 403);
+  return host;
+}
+
+export function assertLocalRequest(request) {
+  const host = localHost(request);
   const origin = request.headers.get('origin');
   if (origin) {
     let from;
@@ -16,6 +22,18 @@ export function assertLocalRequest(request) {
     if (from.host !== host || !['http:', 'https:'].includes(from.protocol)) throw new StudioError('Begäran måste komma från labbet.', 403);
   }
   if (request.headers.get('sec-fetch-site') === 'cross-site') throw new StudioError('Begäran måste komma från labbet.', 403);
+}
+
+// Opening the page from a bookmark, extension or external link is not an API call.
+// Only top-level document GET navigation gets the cross-site exception. Fetch/RSC
+// requests retain the strict origin checks, and this guard is never used by APIs.
+export function assertLocalPageRequest(request) {
+  localHost(request);
+  if (request.method !== 'GET' || request.headers.has('next-action')) throw new StudioError('Labbsidan öppnas med en vanlig GET-navigering.', 403);
+  const destination = request.headers.get('sec-fetch-dest');
+  if (['iframe', 'frame', 'embed', 'object'].includes(destination)) throw new StudioError('Öppna labbet som en egen sida.', 403);
+  if (request.headers.get('sec-fetch-mode') === 'navigate' && destination === 'document') return;
+  assertLocalRequest(request);
 }
 
 export async function readLocalJson(request) {

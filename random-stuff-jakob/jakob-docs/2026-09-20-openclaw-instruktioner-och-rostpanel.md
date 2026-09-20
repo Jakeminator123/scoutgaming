@@ -34,4 +34,30 @@ live-tal, lipsync, procentslumpade takepooler eller komplett kompatibilitetsfilt
 för produktvideor. De tre fraserna är labbexempel, inte nya motor-events eller
 ersättningar för den exakta `speak.goodluck`-raden.
 
-Drift- och testresultat kompletteras efter omdeploy och verkligt anslutningsprov.
+## Verifierat efter omdeploy
+
+GitLab-arbetsbranchen: `jakeminator123/work`. Både Director och OpenClaw blev
+live på `0a1f9cb`; den låsta upstream-versionen är fortfarande **2026.9.5**.
+Vi har uppdaterat vår integration och instruktioner, inte bytt OpenClaw-release.
+
+- Blueprint-synk ändrade väntetiden till **8000 ms**, verifierat i Directors API.
+- Alla tre roller fick paket `2026-09-20.1`, hash
+  `d4008a2d889f447ecf79a907de1511d46ce97ff40cd6acd9c61f5e77ade0459f`.
+  Ingen konflikt eller budgetvarning i startloggen; `contextInjection: always`.
+- En ny chatt via hela kedjan svarade med rätt paketversion, officiella källor
+  och gränser (cirka 4,8 s). Aktivt råd godkändes på cirka 2,0 s; shadow gav råd
+  men behöll standard på cirka 1,9 s. Ett prov under själva omstarten fick 503;
+  det räknas inte som ett lyckat modellsvar.
+- Alla tre korta standardfraser finns nu som verkligt genererade lokala MP3-prov.
+  Välkommen-provet spelade färdigt i Chrome (2,229 s, inget ljudfel).
+  Cacheåterbruk verifierades i panelen. Codex inbyggda webbvy kraschade vid play;
+  använd vanlig Chrome för ljudprovet tills den separata webbvysfrågan är löst.
+- Tester: labb **138/138**, OpenClaw/Director **79/79**, typecheck och produktionsbygge.
+  Oberoende kodgranskning fann och fick rättat en återstartskant före deploy.
+
+En liten följdrättning låter labbsidan öppnas direkt från en extern länk i
+Chrome utan fel eller manuell omladdning (verifierat efter nytt bygge);
+API-kontrollerna behåller samma avgränsning.
+Inga nycklar roterades, inga originalvideor eller sparade projekt ändrades.
+Generering som redan skickats till ElevenLabs kan fortfarande debiteras om
+man lämnar sidan; cacheåterbruk gör däremot inget nytt leverantörsanrop.
