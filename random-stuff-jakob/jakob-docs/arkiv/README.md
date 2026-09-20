@@ -34,6 +34,8 @@ V3-publicering. Det är en ögonblicksbild, inte det aktuella rotindexet.
 
 ## Lägg till nästa rapport
 
+Senare arbetsöverlämning: [återstart för dokumentation och videofynd](2026-09-20/2026-09-20-aterstart-dokumentation-och-videofynd.md).
+
 1. Spara med datum i rätt datummapp och ange källrevision/verifieringstid.
 2. För över en bestående förklaring till rätt ämne i systemkartan.
 3. Lägg öppna problem i befintlig findings-post eller skapa ett nytt stabilt ID.
