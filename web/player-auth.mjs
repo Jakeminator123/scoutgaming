@@ -45,9 +45,10 @@ export function playerAuth(db, createPlayer, identity = null) {
       reply(200,{ok:true},{'Set-Cookie':cookie(req,'',0)});return true;
     }
     if(identity && req.url==='/api/auth/register'){reply(403,{error:'Use your existing Scout account. New accounts are managed in the backoffice.'});return true;}
-    const ip=req.socket.remoteAddress, now=Date.now();
+    // behind Caddy the socket is always 127.0.0.1: key on the forwarded client IP instead
+    const ip=(req.headers['x-forwarded-for']??'').split(',')[0].trim()||req.socket.remoteAddress, now=Date.now();
     for(const [key,v] of attempts) if(now-v.at>600000)attempts.delete(key);
-    const limit=attempts.get(ip)??{at:now,n:0};limit.n++;attempts.set(ip,limit);
+    const limit=attempts.get(ip)??{at:now,n:0};limit.n++;limit.at=now;attempts.set(ip,limit);
     if(limit.n>12){reply(429,{error:'Too many attempts. Try again in 10 minutes.'});return true;}
     try {
       let raw='';for await(const part of req){raw+=part;if(raw.length>4096)throw Error('Request too large');}

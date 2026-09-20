@@ -72,13 +72,20 @@ export class PerformancePlayer {
   async source(take,signal) {
     const key=take.media.sha256;
     if(this.assets.has(key))return this.assets.get(key);
-    const response=await fetch(take.media.src,{signal});
-    if(!response.ok)throw new Error('Performance media is unavailable');
-    const bytes=await response.arrayBuffer();
-    const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
-    if(digest!==key)throw new Error('Performance media changed since review');
-    const url=URL.createObjectURL(new Blob([bytes],{type:'video/mp4'}));
-    this.assets.set(key,url);return url;
+    // One in-flight load per hash: two takes that share bytes (centre/dealer edge-v2) must not
+    // fetch, hash and mint a Blob URL twice, or the second URL is never revoked.
+    this.loading??=new Map();
+    if(this.loading.has(key))return this.loading.get(key);
+    const job=(async()=>{
+      const response=await fetch(take.media.src,{signal});
+      if(!response.ok)throw new Error('Performance media is unavailable');
+      const bytes=await response.arrayBuffer();
+      const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
+      if(digest!==key)throw new Error('Performance media changed since review');
+      const url=URL.createObjectURL(new Blob([bytes],{type:'video/mp4'}));
+      this.assets.set(key,url);return url;
+    })().finally(()=>{this.loading.delete(key);});
+    this.loading.set(key,job);return job;
   }
   async play(take,{card,faceDown=false,target,corners,origin,onCue=()=>{},onLand=()=>{}}) {
     const errors=validateContactTake(take,{approved:!(this.staged&&take.status==='review')});

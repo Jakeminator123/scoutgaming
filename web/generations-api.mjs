@@ -10,7 +10,7 @@ import { join } from 'node:path';
 
 const ID = /^[0-9a-f-]{36}$/;
 
-export function installGenerationsApi({ catalogPath, genDir, verdicts = () => ({}), tokenDigests = () => [], publicUrl = '' }) {
+export function installGenerationsApi({ catalogPath, genDir, verdicts = () => ({}), tokenDigests = () => [], publicUrl = '', mapping = () => null }) {
   const load = () => { try { return JSON.parse(readFileSync(catalogPath, 'utf8')); } catch { return []; } };
   const meta = new Map();
   const fileMeta = id => {
@@ -45,6 +45,7 @@ export function installGenerationsApi({ catalogPath, genDir, verdicts = () => ({
       });
       json(res, 200, { count: items.length, items }); return true;
     }
+    if (pathname === '/api/v1/generations/mapping') { const out = mapping(); if (!out) { json(res, 404, { error: 'no mapping' }); return true; } json(res, 200, out); return true; }
     const m = /^\/api\/v1\/generations\/([^/]+)\/video$/.exec(pathname);
     if (!m) { json(res, 404, { error: 'not found' }); return true; }
     const id = m[1];

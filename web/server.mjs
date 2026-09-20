@@ -10,6 +10,9 @@ import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { isAgentFailure } from './agent-response.mjs';
 import { installPartnerApi } from './partner-api.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
+import { clipMapping } from './clip-mapping.mjs';
+import { loginLimiter } from './login-limiter.mjs';
+const boLogins = loginLimiter();
 import { readFileSync as readSync, writeFileSync as writeSync } from 'node:fs';
 import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
 import { join, normalize, extname } from 'node:path';
@@ -103,7 +106,8 @@ API['/api/table'] = ({ id, ...req }) => {
 let partnerApi = null;
 const generationsApi = installGenerationsApi({ catalogPath: join(root, 'bo/generations.json'), genDir: join(root, 'bo/gen'),
   verdicts: () => boLoad().genVerdicts ?? {}, tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
-  publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se' });
+  publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se',
+  mapping: () => clipMapping({ root, bo: boLoad(), publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) });
 function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', root }); }
 
 // ---------- backoffice (BO) ----------
@@ -856,8 +860,11 @@ createServer(async (req, res) => {
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
     req.on('end', () => {
       let who = null, uname = '';
-      try { const { user, pass } = JSON.parse(body || '{}'); uname = user; who = boCheckLogin(user, pass); } catch {}
-      if (!who) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
+      try { uname = JSON.parse(body || '{}').user; } catch {}
+      if (boLogins.blocked(req, uname)) { res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '900' }); res.end('{"error":"too many login attempts, try again in 15 minutes"}'); return; }
+      try { const { user, pass } = JSON.parse(body || '{}'); who = boCheckLogin(user, pass); } catch {}
+      if (!who) { boLogins.fail(req, uname); console.warn('[bo] failed login', uname, boLogins.ipOf(req)); res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
+      boLogins.ok(req, uname);
       const tok = jwtSign({ sub: uname, role: who.role, aud:'backoffice', source_stamp:scoutIdentity.find(uname)?.stamp, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
       const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control':'no-store', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}` });
