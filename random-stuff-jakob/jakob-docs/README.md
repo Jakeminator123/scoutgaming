@@ -29,6 +29,11 @@ Jakobs egen token är installerad i en separat åtkomstskyddad lokal fil utanfö
 
 ## 2026-09-20 — OpenClaw och labbet
 
+[Senare iteration: instruktioner, situationer och röstpanel](2026-09-20-openclaw-instruktioner-och-rostpanel.md):
+versionsmärkt kunskap hos OpenClaw, 8-sekunders testgräns, situationsförklaring
+i nodträdet och separata ElevenLabs-prov i studion. Skiljer levererat labb från
+framtida spelarchatt, live-tal och godkända videotakes.
+
 [ElevenLabs-röstprov och urvalsmodell](2026-09-20-rostprov-och-urvalsmodell.md):
 verifierad nyckel och svensk Sarah-MP3; ännu inte automatisk röst i studion.
 Skillnaden mellan familj, take, trigger, ersättning och efterföljande klipp;

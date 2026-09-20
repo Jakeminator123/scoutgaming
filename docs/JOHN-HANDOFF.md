@@ -1639,3 +1639,35 @@ Fresh Higgsfield history review found completed31828ef9, already stored under id
 Final full opening group ends348 (exact raw return30), then plays existingbridge0..96 and waits behind its visible final actor until actual engine idle0 is presented. Intermediate groups still end333. Session resources dispose afterward; failures are bounded. Applies when opening ends with fullgroup (1/3/5/7 seats); even-seat individual remainders retain their existingreturn.
 
 Actual one-seat and three-seat rounds both played the bridge and settled:882.50→877.50→887.50 and887.50→872.50→902.50. First trace includes all97nativeframes; return-qa contains actual motion/idle screenshots, receipts andsettlements. All26 focusedtests and requiredprobe/precommit passed. Residual source edge fringes/colour differences remain; initial crossed-idle→dealing entry remains unsolved. A silent empty-hand reverse of this same bridge is a reasonable future entry candidate, but its initial hold must be shortened and actual handoff reviewed; no entry derivative has been made. Full goal remains active.
+## 2026-09-20 — later OpenClaw context, situation UI and local voice panel
+
+Bounded lab/deployment iteration, not gameplay or production media changes.
+Pinned OpenClaw stays 2026.9.5. Versioned runtime-bundle installs compact role
+instructions (director/chat/operator) into managed AGENTS blocks, with official
+source index and shared situation/family/take model for chat/operator. Runs even
+when native config is reused; preserves human text, SOUL/IDENTITY, backups and
+permissions. Independent review caught/fixed interrupted immutable-file writes.
+Missing systemAgent/Talk ownership defaults use the existing operator only;
+human ownership choices survive. No cron, tools or voice permissions enabled.
+
+Blueprint and local test config use 8000ms advice timeout; local relay adds
+1500ms transport margin, operator chat remains 30s. No credential changes.
+HTTP role prompts distinguish 6 public types, 16 lab groups, concrete situation,
+eligibility, exact speech and proposals. Native config is validated before use.
+
+Node tree shows factual concrete example fields before expression choice,
+including zero/false/null, and separates two trigger groups from OpenClaw.
+No schema, catalog, saved project, seed or product media modification.
+Local OpenClaw page adds explicit ElevenLabs Sarah voice preview: 3 demo phrases,
+custom text or copied operator reply, 500 chars, 30s, bounded MP3, hash-indexed
+local cache and deduplication. No autoplay or automatic player speech/lipsync.
+One actual welcome generation succeeded; cached UI replay reused it; ffprobe
+reports valid MP3, mono 44.1kHz, 2.229116s. Codex IAB tab crashed on pressing
+the native audio play button; browser playback verification still pending.
+
+Tests so far: lab 133/133, typecheck and production build pass. Runtime suite
+and actual Render deployment/probes are being verified separately; this
+pre-deployment note is not proof of successful rollout. Current user asked
+for redeployment and small real probes. Branch is jakeminator123/work only.
+No CAC issue supplied/closed. Product missing takes and compatibility gaps remain.
+Thin note: jakob-docs/2026-09-20-openclaw-instruktioner-och-rostpanel.md.

@@ -5,8 +5,12 @@ I det här projektet läser en IDE-agent den **bara när en aktuell OpenClaw-fr�
 behöver en källa som inte redan finns här**. Sedan läser agenten relevanta sidor.
 
 Ingen automatisk crawl, bakgrundssynk eller vektordatabas är installerad.
-Dokumentationen hämtas inte vid spel-events, dashboard-inloggning eller varje
-chattmeddelande och läggs inte automatiskt i OpenClaws modellprompter.
+Extern dokumentation hämtas inte vid spel-events, dashboard-inloggning eller
+varje chattmeddelande. Ett litet versionsmärkt, lokalt
+[kunskapspaket](../deploy/runtime-bundle/README.md) läggs däremot avsiktligt i
+rollernas AGENTS-kontext efter redeploy: kort kontrakt för Director, även
+begreppsmodell/källindex för chat och operator. Det är ingen full docs-kopia,
+ingen hämtning av länkarnas innehåll och ingen ny verktygsbehörighet.
 Återanvänd redan kontrollerade källor inom uppgiften; kontrollera på nytt när
 versionen eller sakfrågan kräver det.
 
@@ -14,3 +18,4 @@ versionen eller sakfrågan kräver det.
 - [Starta på Render](RENDER-START-SV.md)
 - [Logga in i OpenClaws egen dashboard](DASHBOARD-SV.md)
 - [Teknisk drift och nycklar](DEPLOYMENT.md)
+- [Runtimekunskap: roller, versionshash, bevarade agentfiler](../deploy/runtime-bundle/README.md)

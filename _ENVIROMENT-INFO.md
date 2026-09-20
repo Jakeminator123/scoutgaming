@@ -30,7 +30,7 @@ för att starta om labbet. [Renders beskrivning](https://render.com/docs/bluepri
 | `OPENCLAW_GATEWAY_PASSWORD` | Gateway-processen, sätts automatiskt av startkoden | Samma `OPENCLAWAPI_KEY`, under OpenClaws interna variabelnamn. Fyll inte i ännu ett separat lösenord. |
 | `OPENCLAW_MODEL_API_KEY` | Render → `croupier-lab-openclaw` → Environment | Din befintliga modellleverantörsnyckel; inte dashboard-lösenordet eller labbnyckeln. |
 | `OPENAI_API_KEY` | Kan redan finnas lokalt för andra verktyg | Labbet kopierar/använder inte denna automatiskt. När OpenAI är leverantör ligger den valda OpenAI-nyckeln hos Gatewayen under namnet `OPENCLAW_MODEL_API_KEY`. |
-| `ELEVENLABS_API_KEY` | Lokalt → repots `.env` | ElevenLabs-nyckel för det fristående röstprovet `tools/elevenlabs-lab-preview.mjs`. Inte ännu inkopplad i studions scen/chatt. |
+| `ELEVENLABS_API_KEY` | Lokalt → repots `.env` | ElevenLabs-nyckel för studions separata röstprov och CLI-provverktyget. Inte automatiskt spelartal eller videolipsync. |
 | `ELEVENLABS_OC_API` | Valfritt alias i samma lokala `.env` | Provverktyget accepterar samma värde som ovan. Båda behövs inte; om båda finns måste de överensstämma. Namnet konfigurerar inte OpenClaw automatiskt. |
 
 "Samma" gäller kopiorna i respektive koppling ovan. Modellleverantörens nyckel
@@ -73,7 +73,7 @@ går före båda. Starta om den lokala servern efter miljöändringar. Startfile
 | `OPENCLAW_BASE_URL` | Director: skapas från privat adress av startkoden om inte uttryckligen satt. |
 | `OPENCLAW_AGENT` | Director: agenten som föreslår presentationsvarianter. |
 | `OPENCLAW_CHAT_AGENT` | Director: separat agent för labbchatten. |
-| `OPENCLAW_TIMEOUT_MS` | Director: väntetid för modellråd. Kan också anges lokalt för anslutningen. |
+| `OPENCLAW_TIMEOUT_MS` | Director och lokalt: testgräns för presentationsråd, nu 8000 ms i Blueprint/exempel. Lokal reläanslutning får dessutom 1500 ms transportmarginal. Operatörschatt har separat 30-sekundersgräns. |
 | `OPENCLAW_DASHBOARD_ENABLED` | Director: om den befintliga dashboard-ingången används. |
 | `RENDER_EXTERNAL_URL` | Director: publik adress, tillhandahålls av Render. |
 | `OPENCLAW_DASHBOARD_ORIGIN` | Gateway: Directors exakta HTTPS-ursprung. Kan även anges uttryckligen på Director. |
@@ -109,6 +109,13 @@ efter Director-deploy av `7f056f7`; första rådet nådde tidsgränsen och föll
 tillbaka på standard. Detta är inte en kontinuerlig hälsokontroll.
 
 ## Fristående röstprov — ingen Render-ändring behövs
+
+Studions **OpenClaw → Prova rösten** har tre labbfraser och egen text.
+Det senaste operatörssvaret kan kopieras som text, men tal genereras bara
+vid ett uttryckligt knapptryck. Högst 500 tecken; samma text/röst/modell
+återanvänder `lab/data/voice-cache/`. Nytt ljud kan förbruka ElevenLabs-krediter.
+Denna cache innehåller MP3 samt exakt text, röst, modell och ljudets kontrollsumma.
+Det är inte en automatiskt publicerad eller visuellt godkänd dealer-take.
 
 `node tools/elevenlabs-lab-preview.mjs --check` kontrollerar att den valda
 standardrösten finns. `--generate` skapar dessutom **ett kort, debiterbart**

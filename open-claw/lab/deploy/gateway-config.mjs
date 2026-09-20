@@ -148,11 +148,29 @@ export function gatewayConfig(env) {
   operator.workspace = path.join(stateDir, 'workspaces', 'croupier-operator');
   operator.agentDir = path.join(stateDir, 'agents', 'croupier-operator', 'agent');
   config.agents.entries['croupier-operator'] = operator;
-  const configured = applyDashboardPolicy(config, env);
+  const configured = applyOwnershipDefaults(applyDashboardPolicy(config, env));
   configured.gateway.auth.rateLimit = {
     maxAttempts: 10, windowMs: 60000, lockoutMs: 300000, exemptLoopback: false,
   };
   return configured;
+}
+
+// OpenClaw 2026.9.5 requires an explicit owner for agent-less system/Talk work.
+// Fill only absent owners, and only when our operator is actually configured.
+// This does not enable cron, Talk audio, tools, or any new agent permissions.
+export function applyOwnershipDefaults(config) {
+  const next = structuredClone(config);
+  if (!isObject(next.agents?.entries?.['croupier-operator'])) return next;
+  if (next.agents.defaults === undefined) next.agents.defaults = {};
+  if (isObject(next.agents.defaults)) {
+    if (next.agents.defaults.systemAgent === undefined) next.agents.defaults.systemAgent = {};
+    if (isObject(next.agents.defaults.systemAgent) && next.agents.defaults.systemAgent.agentId === undefined) {
+      next.agents.defaults.systemAgent.agentId = 'croupier-operator';
+    }
+  }
+  if (next.talk === undefined) next.talk = {};
+  if (isObject(next.talk) && next.talk.agentId === undefined) next.talk.agentId = 'croupier-operator';
+  return next;
 }
 
 export function isLegacyGeneratedConfig(config, env) {
@@ -186,6 +204,9 @@ export function planGatewayConfig(existing, env) {
       }),
     };
   }
-  const config = applyDashboardPolicy(existing, env);
-  return { action: isDeepStrictEqual(config, existing) ? 'reuse' : 'reconcile-ingress', config };
+  const ingress = applyDashboardPolicy(existing, env);
+  const config = applyOwnershipDefaults(ingress);
+  const action = isDeepStrictEqual(config, existing) ? 'reuse'
+    : isDeepStrictEqual(ingress, existing) ? 'reconcile-ownership' : 'reconcile-ingress';
+  return { action, config };
 }

@@ -53,6 +53,8 @@ test('exact legacy migration keeps a private backup and does not alter workspace
   old.gateway.auth = { mode: 'token', token: '${OPENCLAW_GATEWAY_TOKEN}' };
   old.gateway.controlUi = { enabled: false };
   delete old.agents.entries['croupier-operator'];
+  delete old.agents.defaults;
+  delete old.talk;
   old.tools.deny = ['*'];
   const original = `${JSON.stringify(old, null, 2)}\n`;
   await writeFile(env.OPENCLAW_CONFIG_PATH, original);
@@ -65,6 +67,23 @@ test('exact legacy migration keeps a private backup and does not alter workspace
   assert.equal(await readFile(result.backupPath, 'utf8'), original);
   assert.equal(await readFile(retainedFile, 'utf8'), 'existing-session-state');
   assert.equal(result.config.gateway.controlUi.enabled, false);
+  assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
+});
+
+test('adding explicit ownership backs up native config and preserves human tool/model choices', async (t) => {
+  const env = await fixture(t);
+  const existing = gatewayConfig(env);
+  delete existing.agents.defaults;
+  delete existing.talk;
+  existing.agents.entries['croupier-operator'].tools = { profile: 'minimal', allow: ['session_status'] };
+  const original = JSON.stringify(existing);
+  await writeFile(env.OPENCLAW_CONFIG_PATH, original);
+  const result = await prepareGatewayConfig(env, { validateConfig: validateFixture });
+  assert.equal(result.action, 'reconcile-ownership');
+  assert.equal(await readFile(result.backupPath, 'utf8'), original);
+  assert.ok(result.backupPath.endsWith('.pre-ownership-migration.bak'));
+  assert.deepEqual(result.config.agents.entries, existing.agents.entries);
+  assert.deepEqual(result.config.models, existing.models);
   assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
 });
 

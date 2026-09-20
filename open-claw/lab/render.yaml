@@ -39,7 +39,7 @@ services:
       - key: OPENCLAW_CHAT_AGENT
         value: openclaw/croupier-chat
       - key: OPENCLAW_TIMEOUT_MS
-        value: "2500"
+        value: "8000"
       # Uses this web service's Render-provided HTTPS origin. Native Gateway
       # login stays disabled until the matching origin is set on the pserv.
       - key: OPENCLAW_DASHBOARD_ENABLED
