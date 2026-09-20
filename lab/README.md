@@ -203,6 +203,12 @@ och starta om labbservern:
 - `BETTALOTTO_PARTNER_BASE_URL`: valfritt; standard är `https://bettalotto.se`.
   En uttryckligen konfigurerad loopback-adress stöds för isolerade tester.
 
+Detta är en ny, valfri anslutning. Den använder Next-serverns miljö, som läser
+`lab/.env.local`; observatören läser inte automatiskt reporotens `.env`.
+Befintlig läsning av Director-/OpenClaw-inställningar från rotens `.env` är
+oförändrad. Flytta eller döp inte om de befintliga tjänsternas uppgifter för
+att aktivera Partner-loggen.
+
 `play` ger även behörighet till Partner-API:ts bordskommandon. Nyckeln är
 alltså inte begränsad till läsning bara för att denna observatör enbart
 anropar `GET /api/v1/events` och inte skickar spelhandlingar.
@@ -227,6 +233,9 @@ har inte verifierats här.
 Nycklar skapas i backoffice under API Keys. **Anslut läsande** gör en faktisk
 anslutning; ”konfigurerad” bevisar inte behörighet eller trafik. Saknade
 uppgifter visas som saknade. Loggen fylls aldrig med låtsad live-trafik.
+Ofullständiga nycklar och secrets stoppas av en lokal formatkontroll innan
+anslutning. Godkänt format bevisar inte att paret är giltigt, har rätt scope
+eller använder rätt playerId; det kan bara verifieras mot Bettalotto.
 
 Strömmen avser samma API-nyckel och partner-playerId. Den vanliga klientens
 `/api/table`-anrop ingår inte. En backoffice-inloggning ansluter inte labbet.
