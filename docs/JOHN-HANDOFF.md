@@ -1,3 +1,17 @@
+## 2026-09-20 — durable work record in Jakobs docs
+
+Added random-stuff-jakob/jakob-docs/2026-09-20-v3-videoregister-och-placering.md
+and linked it from that folder's README at Jakob's request. The authored
+record covers the V3 video inventory, existing archive, storage/fetch audit,
+placement decisions, portable map startup, validation, published commits
+and OPENCLAW handoff. It distinguishes verified findings from proposed
+bindings and the other task's implementation. It includes remaining work
+and links to the full technical report rather than a conversation export.
+
+Documentation-only addition; existing media, gameplay and runtime are unchanged.
+Validation: relative file links and git diff whitespace/conflict checks.
+No new dealer playback or visual acceptance is claimed.
+
 ## 2026-09-20 — publish portable V3 video map to Jakob work
 
 Jakob authorized pushing this task's work to jakeminator123/work. Prepared
