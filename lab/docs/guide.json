@@ -15,7 +15,7 @@
   ],
   "surfaces": [
     {"name":"Nodträdet","purpose":"Överblick av sambandet event → linje → variant. Samma data som Eventstudion, ingen separat konfiguration."},
-    {"name":"Eventstudion","purpose":"Redigera en linje, granska standard och alternativ, och testa regler. Testverktygen fälls ut när du behöver dem."},
+    {"name":"Eventstudion","purpose":"Redigera en linje och granska varianter. Testa event: välj urvalsläge, välj testsituation och kör. Chatta med Astrid: separat spelarchatt i Astrids vänteläge, med egna reaktionsinställningar. Testvärdena används inte av chatten. Detaljer och ljudverktyg fälls ut vid behov."},
     {"name":"Videobanken","purpose":"Original, kategorisering och kopplingar. Visar först filmer för vald eventgrupp. Inkorg innehåller material som ännu behöver kategoriseras."},
     {"name":"OpenClaw","purpose":"Anslutning, urvalsläge och operatörschatt. Den externa Gateway-dashboarden är driftverktyget, inte ytterligare dokumentation."}
   ],

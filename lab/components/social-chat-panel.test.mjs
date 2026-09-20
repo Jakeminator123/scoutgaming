@@ -55,6 +55,21 @@ function typeMessage(instance, value) { messageField(instance.render()).props.on
 function submit(instance) { find(instance.render(), node => node.type === 'form').props.onSubmit({ preventDefault() {} }); }
 const replyFor = (body, extra = {}) => ({ requestId: body.requestId, policyRevision: body.policyRevision, reply: policy.response.fixedText, triggerId: 'social.ledsen', confidence: 0.9, provider: 'responded', assetId: 'social.ledsen', ...extra });
 
+test('chat keeps the composer primary and settings/audio collapsed without enabling speech or sending', async () => {
+  const instance = await ready(), tree = instance.render();
+  assert.match(text(tree), /Chatta med Astrid/);
+  for (const label of ['Reaktion och svar', 'Standardfrasens ljud', 'Om chatten och kostnader']) {
+    const details = find(tree, node => node.type === 'details' && text(node).includes(label));
+    assert.ok(details); assert.notEqual(details.props.open, true);
+  }
+  const voice = find(tree, node => node.type === 'input' && node.props.type === 'checkbox' && node.props.checked === false);
+  assert.ok(voice);
+  assert.match(text(tree), /nytt tal kan kosta ElevenLabs-krediter/);
+  assert.equal(button(tree, 'Skicka till Astrid').props.disabled, true);
+  assert.equal(instance.requests.filter(item => item.init.method).length, 0);
+  instance.unmount();
+});
+
 test('only Astrid idle exposes an enabled player chat; other scenes offer explicit navigation', async () => {
   for (const options of [{ dealerId: 'vera' }, { eventId: 'deal.player.left' }]) {
     const instance = await ready(options), tree = instance.render();
@@ -176,7 +191,7 @@ test('studio uses a distinct direct-preview state, cancellation and separate soc
   assert.match(studio, /onPreview=\{previewSelected\}/);
   assert.match(studio, /signal: controller\.signal/);
   assert.match(studio, /cancelSocial\.current\?\.\(\)/);
-  assert.match(studio, /Det är inget godkänt regelbeslut/);
+  assert.match(readFileSync(new URL('./event-test-panel.tsx', import.meta.url), 'utf8'), /Det är inget godkänt regelbeslut/);
   assert.match(studio, /<SocialChatPanel/);
   assert.match(studio, /aria-live="polite" aria-atomic="true"/);
   assert.match(studio, /<p>\{socialReply\}<\/p>/);
