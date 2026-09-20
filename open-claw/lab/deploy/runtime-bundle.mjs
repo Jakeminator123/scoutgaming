@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DEFAULT_BUNDLE = fileURLToPath(new URL('./runtime-bundle/', import.meta.url));
-const ROLES = ['croupier-director', 'croupier-chat', 'croupier-operator'];
+const ROLES = ['croupier-director', 'croupier-chat', 'croupier-operator', 'croupier-social'];
 const BEGIN = '<!-- BEGIN CROUPIER MANAGED RUNTIME -->';
 const END = '<!-- END CROUPIER MANAGED RUNTIME -->';
 const digest = (text) => createHash('sha256').update(text).digest('hex');
@@ -88,7 +88,7 @@ export async function loadRuntimeBundle(bundleDir = DEFAULT_BUNDLE) {
     const body = `Croupier runtime package ${manifest.version}; SHA-256 ${sha256}.\n`
       + `Snapshot: .croupier-runtime/${snapshot}/. Edit personal instructions outside this managed block.\n\n`
       + manifest.roles[role].map((source) => files[source].trim()).join('\n\n') + '\n';
-    if (body.length > (role === 'croupier-director' ? 2400 : 11000)) throw new Error('Runtime role context exceeds its compact budget.');
+    if (body.length > (['croupier-director', 'croupier-social'].includes(role) ? 2400 : 11000)) throw new Error('Runtime role context exceeds its compact budget.');
     blocks[role] = `${BEGIN}\n<!-- content-sha256: ${digest(body)} -->\n${body}${END}`;
   }
   return { version: manifest.version, openclawVersion: manifest.openclawVersion, sha256, snapshot, files, blocks };

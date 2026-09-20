@@ -1,3 +1,22 @@
+## 2026-09-20 — isolated social OpenClaw role prepared for rollout
+
+Added dedicated croupier-social and authenticated /api/studio/social-chat,
+separate from operator chat and the IDE inbox. Only Astrid/idle.ready is
+accepted; semantic model choice returns bounded text and social.ledsen/null.
+Fixed phrase is policy-owned; free text is canonicalized before exact-text TTS.
+No native MCP tool or product event integration is claimed. No key changes.
+Persistent Gateway config adds only the isolated no-tools social role with
+an atomic backup; custom conflicting state fails without being overwritten.
+Runtime bundle 2026-09-20.2: 597309781863e78e2b31d855e7dab69aa0e6475cfdd2b1cff12892fe759b2758.
+
+Validation before rollout: 98/98 OpenClaw tests, including auth, scene gates,
+canonical text, malformed replies, isolated sessions and additive startup.
+Local Next social policy/chat/TTS integration is being verified separately.
+Saved real ElevenLabs fixed phrase locally: 27629-byte MP3, 1.671837 seconds,
+Sarah, exact text 'Oj, nu var du oförskämd.'; ignored voice-cache contains
+metadata and hash. No product media/player/calibration/database changes.
+This entry records implementation, NOT successful deployment/live social QA.
+
 ## 2026-09-20 — documentation archive and repository findings register
 
 Reorganized Jakob's documentation after an independent classification audit.

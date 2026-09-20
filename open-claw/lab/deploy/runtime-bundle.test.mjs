@@ -10,7 +10,7 @@ import { prepareGatewayRuntime } from './start-gateway.mjs';
 import { loadRuntimeBundle, planManagedAgents, syncRuntimeBundle } from './runtime-bundle.mjs';
 
 const sourceDir = fileURLToPath(new URL('./runtime-bundle/', import.meta.url));
-const roles = ['croupier-director', 'croupier-chat', 'croupier-operator'];
+const roles = ['croupier-director', 'croupier-chat', 'croupier-operator', 'croupier-social'];
 const sha = (text) => createHash('sha256').update(text).digest('hex');
 
 async function fixture(t) {
@@ -31,6 +31,10 @@ test('package provides real compact context, with full source index only for cha
   assert.ok(bundle.blocks['croupier-director'].length < 2400);
   assert.match(bundle.blocks['croupier-director'], /ONLY JSON.*exactly requestId, catalogRevision, variantId/);
   assert.doesNotMatch(bundle.blocks['croupier-director'], /https:\/\/docs\.openclaw\.ai/);
+  assert.match(bundle.blocks['croupier-social'], /choose_social_response/);
+  assert.match(bundle.blocks['croupier-social'], /NOT an installed MCP tool/);
+  assert.match(bundle.blocks['croupier-social'], /idle\.ready/);
+  assert.ok(bundle.blocks['croupier-social'].length < 2400);
   for (const role of ['croupier-chat', 'croupier-operator']) {
     assert.match(bundle.blocks[role], /https:\/\/docs\.openclaw\.ai\/llms\.txt/);
     assert.match(bundle.blocks[role], /not vector search, embeddings/);
@@ -46,7 +50,7 @@ test('first sync installs versioned files and injected AGENTS content without ch
   const bundle = await loadRuntimeBundle();
   const status = await syncRuntimeBundle(config, stateDir);
   assert.deepEqual(config, before);
-  assert.deepEqual(status.roles.map((role) => role.status), ['installed', 'installed', 'installed']);
+  assert.deepEqual(status.roles.map((role) => role.status), roles.map(() => 'installed'));
   for (const id of roles) {
     assert.deepEqual(config.agents.entries[id].tools.deny, ['*']);
     const workspace = config.agents.entries[id].workspace;
@@ -90,14 +94,14 @@ test('package upgrade replaces only managed text and preserves both surrounding 
   await cp(sourceDir, bundleDir, { recursive: true });
   const manifestPath = path.join(bundleDir, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  manifest.version = '2026-09-20.2';
+  manifest.version = '2026-09-20.3';
   await writeFile(manifestPath, JSON.stringify(manifest));
   const result = await syncRuntimeBundle(config, stateDir, { bundleDir });
   assert.equal(result.roles.find((role) => role.id === 'croupier-chat').status, 'updated');
   const next = await readFile(path.join(workspace, 'AGENTS.md'), 'utf8');
   assert.ok(next.startsWith('# Extra instruction above\r\n'));
   assert.ok(next.endsWith('\n\r\n# Extra instruction below\r\n'));
-  assert.match(next, /package 2026-09-20\.2/);
+  assert.match(next, /package 2026-09-20\.3/);
   assert.equal(await readFile(path.join(workspace, '.croupier-runtime', 'backups', `AGENTS.${sha(human)}.md`), 'utf8'), human);
   assert.equal((await readdir(path.join(workspace, '.croupier-runtime'))).filter((name) => name.startsWith('2026-')).length, 2);
 });
@@ -140,6 +144,7 @@ test('sync does not create missing roles or touch unrelated agent workspaces', a
 
 test('custom external or shared/nested workspaces are reported and not rewritten', async (t) => {
   const { dir, stateDir, config, workspace } = await fixture(t);
+  delete config.agents.entries['croupier-social'];
   config.agents.entries['croupier-operator'].workspace = path.join(dir, 'external');
   config.agents.entries['croupier-director'].workspace = path.join(workspace, 'nested');
   const status = await syncRuntimeBundle(config, stateDir);
@@ -211,7 +216,7 @@ test('manual injection mode and low budgets are preserved but explicitly surface
   const status = await syncRuntimeBundle(config, stateDir);
   assert.deepEqual(config, before);
   assert.deepEqual(status.roles.map((role) => role.warning), [
-    'context_injection_disabled', 'agents_context_may_be_truncated', 'fresh_session_recommended',
+    'context_injection_disabled', 'agents_context_may_be_truncated', 'fresh_session_recommended', null,
   ]);
 });
 
