@@ -1493,3 +1493,37 @@ The boundary is still visible; no seamless-transition or all-line lip-sync appro
 Speech waits up to5.04s for the front-facing idle endpoint. No raw/source assets,
 user4190/live DB, production or remote deployment changed. CAC-9 stays In Dev;
 Amira work does not close that broader Astrid report.
+
+## 2026-09-20 — Amira composite and idle/speech boundary repair
+
+Amira now uses opt-in `actor-composite-scene.mjs` / `actor-grade.mjs` with editable
+`review/amira-composite/profile.json`: fixed luminance-first speech/waiting grades,
+warm measured room/felt edge wrap, source-frame hand/forearm contact shadows,
+softened lower silhouette cast shadow, frontal soft table key and shared finish.
+No camera/actor scale/source matte/MP3 changes. Skin ROI median-luma gap .0693 to
+.0123; native1K speech softness remains. The common finish is browser GPU
+backdrop/grain/vignette, actor and shadows are WebGL. Local waiting measured
+rAF median16.7ms/p9518.0ms, not a universal60fps/source-resolution claim.
+
+User then specifically rejected Amira idle/speech transitions. Added34 fitted
+silent320ms joins, source-hash-bound, with both endpoints captured from the actual
+graded compositor. Native speech frames/clock/audio remain intact; no regeneration
+or re-key. Contact anchors and cast alpha follow the join. Waiting frame0 is
+prepared before reveal. Fixed existing registration converts into common crop
+space; actor perspective/size does not change. Other dealers retain their prior
+ungraded/packed-join branch.
+
+Evidence: `content/staging/2026-09-20/amira-composite/` (JSON, measured samples,
+same-frame hair/shoulder/hand before/after crops, actual guest hit/bust/settlement)
+and `amira-transitions/` (build, endpoint samples, real GPU entry/return sequences,
+all17 playback results, all-four two-play regression). No shader/playback errors.
+Seven focused tests, full pre-commit and dealer-sync --probe pass; legacy probe
+missing-take gaps unchanged. User visual acceptance still required; source pose
+and sharpness differences can remain perceptible. Speech can wait up to5s for
+the waiting endpoint. No credits, source regeneration, live DB, production or
+remote deployment. No broader Astrid/CAC-9 completion claim.
+
+Follow-up: user requested softer hair edges. Added opt-in Amira dark-hair-region
+alpha feather3.4px/75% and wrap19%, adjusted for native crop width. Face/eyes and
+all source RGB stay sharp; no new matte. Composited transition endpoints inherit
+the same treatment. Hair before/after evidence is in the composite directory.

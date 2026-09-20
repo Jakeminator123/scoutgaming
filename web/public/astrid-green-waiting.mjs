@@ -24,13 +24,13 @@ function packedVideo(src){
   video.src=src;return {video,ready};
 }
 
-export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(...a)=>console.info('[idle]',...a),externalLifecycle=false}={}){
+export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(...a)=>console.info('[idle]',...a),externalLifecycle=false,composite=null}={}){
   if(!HTMLVideoElement.prototype.requestVideoFrameCallback)throw new Error('Presented video frames are unavailable');
   const singleLoop=take.mode==='loop';
   const base=take.base,glances=take.glances??{...base,camera:take.camera};
   const baseMedia=packedVideo(base.src),glanceMedia=packedVideo(glances.src);
   baseMedia.video.loop=true;
-  const baseActor=createActorCompositor(base.width,base.height),glanceActor=createActorCompositor(glances.width,glances.height);
+  const baseActor=createActorCompositor(base.width,base.height,{composite:composite?.actor('waiting','waiting',base.sha256)}),glanceActor=createActorCompositor(glances.width,glances.height);
   const baseCanvas=baseActor.canvas,glanceCanvas=glanceActor.canvas;
   baseCanvas.className='astrid-green-idle';baseCanvas.dataset.idleKind='waiting-base';baseCanvas.dataset.idleJob=base.jobId;baseCanvas.dataset.idleSeed=String(seed);
   glanceCanvas.className='astrid-green-idle astrid-green-glance';glanceCanvas.dataset.idleKind='waiting-glance';glanceCanvas.dataset.idleJob=glances.jobId;
@@ -87,7 +87,7 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
     baseRequest=baseMedia.video.requestVideoFrameCallback(paintBase);
     if(held||current!=='base'||baseMedia.video.readyState<2)return;
     const t=metadata.mediaTime;lastProgress=performance.now();
-    baseActor.paint(baseMedia.video,null,{packed:true});baseCanvas.dataset.idleFrame=String(Math.floor(t*base.fps+eps));
+    baseActor.paint(baseMedia.video,null,{packed:true,frameIndex:Math.floor(t*base.fps+eps)});baseCanvas.dataset.idleFrame=String(Math.floor(t*base.fps+eps));
     if(previousBaseTime>=0&&t<previousBaseTime){baseLoops++;baseCanvas.dataset.idleLoops=String(baseLoops);atBoundary();}
     previousBaseTime=t;
   };
@@ -132,13 +132,14 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
       const isBase=current==='base',media=isBase?base:glances;
       return capturePacked(isBase?baseMedia.video:glanceMedia.video,media.width,media.height,base.width,base.height,isBase?0:offsetX,isBase?0:offsetY);
     },
+    captureComposite(registration){return baseActor.snapshot(registration);},
     async prepareResume(){
       // Paint the destination before revealing the idle; otherwise the old
       // held frame flashes for one refresh while the video seeks back to 0.
       const video=baseMedia.video;video.pause();
       const target=.5/base.fps;
       await seek(video,target,.5/base.fps);if(stopped)return;
-      current='base';glance=null;showGlance(false);baseActor.paint(video,null,{packed:true});
+      current='base';glance=null;showGlance(false);baseActor.paint(video,null,{packed:true,frameIndex:0});baseCanvas.dataset.idleFrame='0';
       return capturePacked(video,base.width,base.height);
     },
     // A base loop can be held at once (every base frame is a ready pose); a

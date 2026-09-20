@@ -38,6 +38,7 @@ export function setEdgeParams(next){
 // Requires actorAt(uv), rgbAt(uv) and actorPixel from the host shader.
 export const edgeBlendGLSL=`
   uniform float edgeErode,edgeFeather,edgeWrap,sceneReady;
+  uniform float hairFeather,hairAmount,hairWrap;uniform vec4 hairRegion;
   uniform sampler2D sceneTex; uniform vec4 sceneRect; uniform vec3 wrapColour,feltColour; uniform float feltFromV;
   float erodedAt(vec2 uv){
     float a=actorAt(uv);
@@ -50,12 +51,19 @@ export const edgeBlendGLSL=`
   }
   vec4 blendEdge(vec2 uv,vec4 actor){
     float centre=erodedAt(uv),soft=centre;
-    if(edgeFeather>0.0){
+    // Amira-only optional hair matte treatment. No RGB blur: skin and the
+    // opaque face interior retain their original pixels and alpha.
+    vec2 p=vec2(uv.x,1.0-uv.y);
+    float hair=hairAmount*smoothstep(hairRegion.x,hairRegion.x+.035,p.x)*(1.0-smoothstep(hairRegion.y-.035,hairRegion.y,p.x))
+      *(1.0-smoothstep(hairRegion.w-.045,hairRegion.w,p.y))
+      *(1.0-smoothstep(.16,.32,dot(rgbAt(uv),vec3(.2126,.7152,.0722))));
+    float feather=mix(edgeFeather,max(edgeFeather,hairFeather),hair);
+    if(feather>0.0){
       // Small gaussian on the (eroded) alpha only: centre plus an 8-tap ring.
       float sum=centre*0.25;
       for(int i=0;i<8;i++){
         float ang=float(i)*0.7853982;
-        sum+=erodedAt(uv+vec2(cos(ang),sin(ang))*actorPixel*edgeFeather)*0.09375;
+        sum+=erodedAt(uv+vec2(cos(ang),sin(ang))*actorPixel*feather)*0.09375;
       }
       soft=sum;
     }
@@ -72,13 +80,14 @@ export const edgeBlendGLSL=`
       vec3 fallback=mix(wrapColour,feltColour,step(uv.y,feltFromV));
       vec3 behind=mix(fallback,scene.rgb,sceneReady*scene.a);
       // Light wrap: 0 in the interior, up to edgeWrap at the outermost pixels.
-      rgb=mix(rgb,behind,edgeWrap*(1.0-soft));
+      rgb=mix(rgb,behind,mix(edgeWrap,hairWrap,hair)*(1.0-soft));
     }
     return vec4(rgb,alpha);
   }`;
 
 export function edgeUniforms(){
   return {edgeErode:{value:edgeParams.erode},edgeFeather:{value:edgeParams.feather},edgeWrap:{value:edgeParams.wrap},
+    hairFeather:{value:0},hairAmount:{value:0},hairWrap:{value:0},hairRegion:{value:new THREE.Vector4(.28,.70,0,.5)},
     sceneReady:{value:0},sceneTex:{value:null},sceneRect:{value:new THREE.Vector4(0,0,1,1)},wrapColour:{value:new THREE.Vector3(.13,.11,.08)},feltColour:{value:new THREE.Vector3(.12,.40,.33)},feltFromV:{value:0}};
 }
 
