@@ -8,8 +8,8 @@ chattsignal är separata flöden.
 
 ## Ett svar i idle
 
-Ett meddelande ger ett textsvar och, när **Läs upp svaret** är valt, ett
-talprov. Scenen visar `idle.ready.standard`. Modellen kan fortfarande föreslå
+Ett meddelande ger ett fritt textsvar. **Ljud** är förvalt och låter
+ElevenLabs läsa exakt samma text; avmarkera det för enbart text. Scenen visar `idle.ready.standard`. Modellen kan fortfarande föreslå
 exempelvis `social.ledsen`; förslaget loggas men startar ingen hand- eller
 kroppsrörelse under svaret. Vanliga idle-blinkningar avbryter inte talet.
 
@@ -34,8 +34,9 @@ Chatt → sparad lokal social policy → Director → OpenClaw `croupier-social`
 
 Modellen får kontraktet `choose_social_response`: text och ett uttrycks-ID
 eller inget uttrycksbyte. Det är validerad JSON, inte en installerad MCP-tool.
-Serverns policy kan hålla tillbaka en reaktion under cooldown. En sådan paus
-visas som systemmeddelande och utger sig inte för att vara Astrids svar.
+Serverns policy kan hålla tillbaka ett uttryck under cooldown. I fritt läge
+fortsätter text och tal ändå; pausen gäller bara uttrycksvalet. I läget med
+fast standardfras hålls även den upprepade frasen tillbaka som tidigare.
 
 **Händelseloggen** visar begärans ID, vald policyrevision, modellens förslag,
 faktiskt visat idle-material samt ljudets laddning, start, slut, fel eller
@@ -46,14 +47,26 @@ fliken, högst 150 poster; omladdning tömmer den.
 
 `social.ledsen` heter **Ledsen** från början. Namn, instruktion, tröskel,
 cooldown och fast replik går att redigera separat från eventprojektet.
-**Fritt svar** låter modellen föreslå text. Tröskeln avser modellens bedömning,
+**Fritt svar** är standard och låter modellen formulera texten oberoende av
+om Ledsen föreslås. **Standardfras när uttrycket triggas** är ett valbart
+undantag för en återkommande replik. Vanliga frågor besvaras fritt även i
+det läget när uttryckets villkor inte matchar. Tröskeln avser modellens bedömning,
 inte en uppmätt känsla hos spelaren. Sparade projekt migreras inte automatiskt.
 
-Tal är ett uttryckligt val och kan kosta ElevenLabs-krediter. Samma exakta
+Tal är förvalt men skapas först när du skickar och kan kosta ElevenLabs-krediter. Samma exakta
 text/röst/modell kan återanvända ljudcachen. För långt genererat tal kan
 avvisas efter att det skapats; sexsekunderskontrollen är ingen kostnadsgräns.
 Det görs ingen automatisk regenerering. Inspelade produktvideor används inte
 med nya ord utan ett matchande granskat talpaket.
+
+## Uttrycksvideo är en separat uppgift
+
+Den sociala vägen har i dag Ledsen eller neutralt idle som tillåtna uttrycksval.
+Den väljer inte fritt bland alla Eventstudions videovarianter. Kö, exakt
+koppling till ett socialt videoklipp och start vid nästa grundposition återstår.
+Med nuvarande regel om tal enbart i idle måste ett separat uttrycksklipp
+och talet köras i följd. Ett klipp med inspelad munrörelse kan inte få
+godtyckligt nya ord utan fungerande läppsynk.
 
 ## Filer och lagring
 

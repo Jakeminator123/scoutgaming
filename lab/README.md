@@ -62,7 +62,8 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
   när du trycker. **Avancerade jämförelsetester** innehåller standard, regler,
   slump och skuggläge. Testsituationen påverkar variantvalet, inte en extra
   animation ovanpå den kopplade videon. I Astrids vänteläge finns separat
-  riktig OpenClaw-spelarchatt med redigerbar social policy och valfritt tal.
+  riktig OpenClaw-spelarchatt med fritt svar och ElevenLabs-ljud förvalt.
+  En enda Inställningar-länk samlar social policy och valfria standardfraser.
   Socialt svar och handlingspreview har en gemensam spärr: ett textsvar och
   högst sex sekunder tal i neutralt idle. Modellens uttrycksförslag loggas
   separat; ingen hand- eller kroppsrörelse läggs ovanpå talet. Riktig läppsynk

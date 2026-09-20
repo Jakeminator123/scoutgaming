@@ -27,7 +27,7 @@ function request(path, method, body, headers = {}) { return new Request(`http://
 test('separate seed is editable and never creates or changes the main project', async t => {
   const { store, dir } = await fixture(t);
   await writeFile(join(dir, 'project.json'), 'user project bytes');
-  const seed = await store.load(); assert.equal(seed.trigger.label, 'Ledsen');
+  const seed = await store.load(); assert.equal(seed.trigger.label, 'Ledsen'); assert.equal(seed.response.mode, 'free');
   const next = structuredClone(seed); next.trigger.directive = 'Endast vid tydliga förolämpningar.';
   const saved = await store.save(next, seed.revision);
   assert.notEqual(saved.revision, seed.revision);
@@ -61,7 +61,7 @@ test('noncanonical free replies cannot spend TTS credits before UI rejects text 
   }
 });
 
-test('real-path adapter validates model reply and synthesizes its exact fixed text once', async t => {
+test('real-path adapter validates model reply and synthesizes its exact text once', async t => {
   const { store } = await fixture(t); let calls = 0; let speech = 0;
   const service = createSocialService({ store, settings, fetchImpl: fakeModel({}, () => calls++), generateVoice: async ({ text }) => { speech++; assert.equal(text, 'Oj, nu var du oförskämd.'); return audio(text); } });
   const [first, again] = await Promise.all([service.chat(input()), service.chat(input())]);
@@ -80,6 +80,42 @@ test('free response keeps exact model words and neutral expression when no trigg
   assert.equal(result.assetId, 'idle.ready.standard'); assert.equal(result.audio.text, 'Hej! Trevligt att du tittar förbi.');
 });
 
+test('free text and speech remain independent of the selected expression and its cooldown', async t => {
+  const { store } = await fixture(t);
+  const replies = ['Vi kan väl prata vänligt med varandra?', 'Jag hör dig. Vad vill du veta?', 'Det vet jag inte säkert.'];
+  let turn = 0;
+  const spoken = [];
+  const service = createSocialService({ store, settings, now: () => 1000,
+    fetchImpl: async (url, options) => Response.json(response(JSON.parse(options.body), {
+      reply: replies[turn], triggerId: turn++ < 2 ? 'social.ledsen' : null,
+    })),
+    generateVoice: async ({ text }) => { spoken.push(text); return audio(text); },
+  });
+  const first = await service.chat(input());
+  const second = await service.chat(input({ requestId: 'request_456' }));
+  const factual = await service.chat(input({ requestId: 'request_789', message: 'Hur många bultar finns i Ölandsbron?' }));
+  assert.equal(first.triggerId, 'social.ledsen');
+  assert.notEqual(first.reply, createSocialPolicy().response.fixedText);
+  assert.equal(second.triggerId, null);
+  assert.equal(second.suppressed, 'cooldown');
+  assert.equal(second.systemNotice, undefined);
+  assert.equal(second.reply, replies[1]);
+  assert.equal(factual.assetId, 'idle.ready.standard');
+  assert.equal(factual.reply, replies[2]);
+  assert.deepEqual(spoken, replies);
+  for (const result of [first, second, factual]) assert.equal(result.audio.text, result.reply);
+});
+
+test('an explicitly configured fixed phrase is still exact and rejects paraphrases before speech', async t => {
+  const { store: original } = await fixture(t);
+  const policy = await original.load(); policy.response.mode = 'fixed';
+  const store = { load: async () => structuredClone(policy) };
+  const service = createSocialService({ store, settings,
+    fetchImpl: fakeModel({ reply: 'En annan formulering.' }), generateVoice: noCall,
+  });
+  await assert.rejects(service.chat(input()), error => error.statusCode === 502);
+});
+
 test('scene/dealer/stale revision rejected before contacting model or voice', async t => {
   const { store } = await fixture(t);
   const service = createSocialService({ store, settings, fetchImpl: noCall, generateVoice: noCall });
@@ -88,7 +124,7 @@ test('scene/dealer/stale revision rejected before contacting model or voice', as
 
 test('malformed/untrusted remote reply never becomes speech or a fallback success', async t => {
   const { store } = await fixture(t);
-  for (const patch of [{ requestId: 'other_id' }, { policyRevision: 'old' }, { triggerId: 'deal' }, { confidence: 0.2 }, { reply: 'wrong fixed text' }, { reply: 'bad\0text' }, { provider: 'fake' }, { extraTool: 'run-shell' }]) {
+  for (const patch of [{ requestId: 'other_id' }, { policyRevision: 'old' }, { triggerId: 'deal' }, { confidence: 0.2 }, { reply: 'bad\0text' }, { provider: 'fake' }, { extraTool: 'run-shell' }]) {
     const service = createSocialService({ store, settings, fetchImpl: fakeModel(patch), generateVoice: noCall });
     await assert.rejects(service.chat(input()), error => error.statusCode === 502);
   }
@@ -116,8 +152,10 @@ test('voice failure keeps a genuine text result with an explicit no-audio notice
   assert.ok(!JSON.stringify(result).includes('private'));
 });
 
-test('cooldown suppresses repeated gesture AND speech, then permits a later test', async t => {
-  const { store } = await fixture(t); let time = 1000; let speech = 0;
+test('fixed-phrase cooldown suppresses repeated gesture AND speech, then permits a later test', async t => {
+  const { store: original } = await fixture(t);
+  const policy = await original.load(); policy.response.mode = 'fixed';
+  const store = { load: async () => structuredClone(policy) }; let time = 1000; let speech = 0;
   const service = createSocialService({ store, settings, now: () => time, fetchImpl: fakeModel(), generateVoice: async ({ text }) => { speech++; return audio(text); } });
   await service.chat(input());
   const skipped = await service.chat(input({ requestId: 'request_456' }));

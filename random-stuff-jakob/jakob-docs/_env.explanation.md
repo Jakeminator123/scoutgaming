@@ -116,7 +116,8 @@ kopplas inte automatiskt in som Gatewayens modellnyckel.
 talprov. `ELEVENLABS_OC_API` är ett valfritt alias. Finns båda måste deras
 värden stämma överens. Processmiljön går före filen.
 
-Nytt tal genereras vid ett uttryckligt prov och kan använda krediter. Befintligt
+Spelarchattens Ljud-reglage är förvalt på; du kan avmarkera det för enbart
+text. Nytt tal genereras när du skickar/provar och kan använda krediter. Befintligt
 ljud kan återanvändas från lokal cache. Det ger inte automatisk videoläppsynk
 och konfigurerar inte en ny röstintegration på Render.
 
