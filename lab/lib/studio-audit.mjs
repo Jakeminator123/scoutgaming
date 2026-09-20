@@ -15,14 +15,14 @@ export function auditStudio(project, videos = []) {
       if (v.videoGenerationId) {
         const video = inventory.get(v.videoGenerationId);
         if (!video) problems.push(`${v.id}: videoreferensen saknas i banken`);
-        else if (!videoFitsLine(video, line.dealerId, line.eventId)) problems.push(`${v.id}: videon är kategoriserad för en annan dealer/event`);
+        else if (!videoFitsLine(video, line.dealerId, line.eventId)) problems.push(`${v.id}: videon saknar giltig kategorisering för denna dealer/event`);
         else if (!video.available) problems.push(`${v.id}: videofilen är inte tillgänglig`);
       }
     }
     const standard = line.variants.find(v => v.id === line.baselineVariantId);
     const video = inventory.get(standard?.videoGenerationId);
     return { dealerId: line.dealerId, eventId: line.eventId, label: event?.label ?? line.eventId,
-      standardVideo: video?.label ?? null, standardAvailable: Boolean(video?.available),
+      standardVideo: video?.label ?? null, standardAvailable: Boolean(video?.available && videoFitsLine(video, line.dealerId, line.eventId)),
       situation: video?.classification?.situation ?? '',
       alternatives: line.variants.length - 1, boundAlternatives: line.variants.filter(v => v.id !== line.baselineVariantId && v.videoGenerationId).length };
   });

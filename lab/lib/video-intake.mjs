@@ -1,33 +1,32 @@
 import seed from '../policies/project.seed.json' with { type: 'json' };
+import contract from '../policies/studio-contract.json' with { type: 'json' };
+import schema from '../schemas/video.schema.json' with { type: 'json' };
 
-export const MAX_VIDEO_BYTES = 128 * 1024 * 1024;
-export const VIDEO_KINDS = { idle: 'Idle / vänteläge', action: 'Action / korthandling', speech: 'Tal / exakt replik', reaction: 'Reaktion / tur / resultat' };
-export const DEFAULT_SELECTION = Object.freeze({ rules: true, model: true, random: false });
-export const MANUAL_SELECTION = Object.freeze({ rules: false, model: false, random: false });
+export const MAX_VIDEO_BYTES = contract.limits.videoBytes;
+export const VIDEO_KINDS = Object.freeze(contract.videoKinds);
+export const DEFAULT_SELECTION = Object.freeze(contract.selection.legacyAlternative);
+export const MANUAL_SELECTION = Object.freeze(contract.selection.newAlternative);
 export function selectionFor(variant) { return variant.selection ?? DEFAULT_SELECTION; }
 export function kindForEvent(event) {
-  return event.sourceType === 'idle' ? 'idle' : event.sourceType === 'speak' ? 'speech' : ['deal', 'reveal'].includes(event.sourceType) ? 'action' : 'reaction';
+  return contract.sourceTypes[event.sourceType]?.kind;
 }
 export function situationsForEvent(event) {
-  if (event.sourceType === 'speak') return event.id === 'speak.other'
-    ? ['placebets', 'dealerblackjack', 'blackjack', 'dealerbust', 'win', 'push', 'lose'] : [event.exampleEvent.line];
-  if (event.id.startsWith('deal.player.')) return ({ 'deal.player.left': [0, 1], 'deal.player.centre': [2, 3, 4], 'deal.player.right': [5, 6] }[event.id] ?? []).map(n => `box${n}`);
-  if (event.id === 'deal.dealer') return ['dealer-up', 'dealer-hole'];
-  if (event.sourceType === 'reveal') return ['dealer-hole'];
-  return [];
+  return [...(contract.events.find(e => e.id === event.id)?.situations ?? [])];
 }
-export function validateVideoMetadata(input) {
-  const allowed = ['label', 'dealerId', 'eventId', 'kind', 'role', 'situation', 'notes'];
+export function validateVideoMetadata(input, { allowLegacySituation = false } = {}) {
+  const allowed = Object.keys(schema.properties);
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(k => !allowed.includes(k))) throw new Error('Ogiltiga videofält.');
   const event = seed.events.find(e => e.id === input.eventId);
   if (!seed.dealers.some(d => d.id === input.dealerId) || !event) throw new Error('Välj dealer och event.');
-  if (!['standard', 'alternative'].includes(input.role)) throw new Error('Välj standard eller alternativ.');
+  if (!schema.properties.role.enum.includes(input.role)) throw new Error('Välj standard eller alternativ.');
+  if (input.playback !== undefined && !contract.playback.supported.includes(input.playback)) throw new Error('Labbet stöder endast en gång (once). Loop är ännu ett förslag.');
   if (input.kind !== kindForEvent(event)) throw new Error('Videotypen passar inte eventet.');
-  for (const [key, max] of [['label', 120], ['notes', 1500], ['situation', 80]]) {
-    if (typeof input[key] !== 'string' || input[key].length > max || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(input[key])) throw new Error(`Ogiltigt fält: ${key}.`);
+  for (const key of ['label', 'notes', 'situation']) {
+    if (typeof input[key] !== 'string' || input[key].length > schema.properties[key].maxLength || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(input[key])) throw new Error(`Ogiltigt fält: ${key}.`);
   }
   if (!input.label.trim()) throw new Error('Ge videon ett namn.');
   const situations = situationsForEvent(event);
+  if (situations.length && !input.situation && (!allowLegacySituation || event.sourceType === 'speak')) throw new Error('Välj exakt situation eller replik. Hela eventgruppen är inte ett videofack.');
   if (input.situation && !situations.includes(input.situation)) throw new Error('Situationen passar inte eventet.');
   if (event.sourceType === 'speak' && !input.situation) throw new Error('En talvideo måste ha ett exakt replik-ID.');
   return { ...input, label: input.label.trim(), notes: input.notes.trim() };
@@ -35,10 +34,12 @@ export function validateVideoMetadata(input) {
 // Classification is operator supplied. This checks declared compatibility, not visual quality.
 export function videoFitsLine(video, dealerId, eventId) {
   const m = video?.classification;
-  return !m || m.dealerId === dealerId && m.eventId === eventId;
+  if (!m || m.dealerId !== dealerId || m.eventId !== eventId) return false;
+  try { validateVideoMetadata(m); return true; } catch { return false; }
 }
 export function videoFitsEvent(video, event) {
   const m = video?.classification;
+  if (!m) return false;
   if (!m?.situation) return true;
   if (m.kind === 'speech') return event.line === m.situation;
   if (m.situation.startsWith('box')) return event.to === 'box' && event.box === Number(m.situation.slice(3));

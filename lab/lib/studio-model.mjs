@@ -1,11 +1,12 @@
 import seed from '../policies/project.seed.json' with { type: 'json' };
+import contract from '../policies/studio-contract.json' with { type: 'json' };
 
 // Pure, browser-safe policy model. This file never reads environment, network,
 // player identities, game state or media files. JSON is the editable artefact.
-export const DEALER_IDS = Object.freeze(['astrid', 'vera', 'amira', 'mei']);
-export const SOURCE_TYPES = Object.freeze(['speak', 'deal', 'reveal', 'settle', 'turn', 'idle']);
+export const DEALER_IDS = Object.freeze(contract.dealers);
+export const SOURCE_TYPES = Object.freeze(Object.keys(contract.sourceTypes));
 export const TRIGGER_CATEGORIES = Object.freeze(['deterministic', 'social', 'temperament']);
-export const MAX_ALTERNATIVES = 4;
+export const MAX_ALTERNATIVES = contract.limits.alternatives;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const LABEL_MAX = 120;
 const VALUE_OPS = ['eq', 'ne', 'in', 'exists'];

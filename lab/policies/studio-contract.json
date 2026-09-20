@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "id": "croupier.lab.v1",
+  "description": "Canonical vocabulary and allowed lab capabilities. Engine source contract remains web/partner-presentation.mjs.",
+  "dealers": [
+    "astrid",
+    "vera",
+    "amira",
+    "mei"
+  ],
+  "sourceTypes": {
+    "speak": {
+      "label": "Repliker",
+      "kind": "speech"
+    },
+    "deal": {
+      "label": "Kortdelning",
+      "kind": "action"
+    },
+    "reveal": {
+      "label": "Kortvändning",
+      "kind": "action"
+    },
+    "settle": {
+      "label": "Resultat",
+      "kind": "reaction"
+    },
+    "turn": {
+      "label": "Spelarens tur",
+      "kind": "reaction"
+    },
+    "idle": {
+      "label": "Vänteläge",
+      "kind": "idle"
+    }
+  },
+  "videoKinds": {
+    "idle": "Idle / vänteläge",
+    "action": "Action / korthandling",
+    "speech": "Tal / exakt replik",
+    "reaction": "Reaktion / tur / resultat"
+  },
+  "roles": {
+    "standard": "Standard",
+    "alternative": "Alternativ"
+  },
+  "playback": {
+    "supported": [
+      "once"
+    ],
+    "default": "once",
+    "loop": {
+      "status": "proposed",
+      "description": "Inte aktiverat i labbspelaren. Kräver separat loop- och avbrottsgranskning."
+    }
+  },
+  "selection": {
+    "newAlternative": {
+      "rules": false,
+      "model": false,
+      "random": false
+    },
+    "legacyAlternative": {
+      "rules": true,
+      "model": true,
+      "random": false
+    }
+  },
+  "limits": {
+    "alternatives": 4,
+    "videoBytes": 134217728
+  },
+  "terms": [
+    {
+      "id": "event",
+      "label": "Event",
+      "definition": "En publicerad presentation från spelet: speak, deal, reveal, turn, settle eller idle."
+    },
+    {
+      "id": "group",
+      "label": "Eventgrupp",
+      "definition": "En av labbets 16 grupper. Inte ett nytt event i spelmotorn."
+    },
+    {
+      "id": "situation",
+      "label": "Situation",
+      "definition": "Exakt målplats eller replik inom en eventgrupp."
+    },
+    {
+      "id": "line",
+      "label": "Linje",
+      "definition": "En dealers uppsättning standard och alternativ för en eventgrupp."
+    },
+    {
+      "id": "variant",
+      "label": "Variant",
+      "definition": "Standard eller alternativ inom linjen. Äger urvalstillåtelser och extra villkor."
+    },
+    {
+      "id": "video",
+      "label": "Videofil",
+      "definition": "Råfil med stabilt video-ID och hash. Kategorisering är inte visuellt godkännande."
+    },
+    {
+      "id": "trigger",
+      "label": "Trigger",
+      "definition": "Extra villkor för ett alternativ. Skapar inte ett nytt spel-event."
+    },
+    {
+      "id": "schema",
+      "label": "Schema",
+      "definition": "Maskinläsbart format: tillåtna fält och värden."
+    },
+    {
+      "id": "manifest",
+      "label": "Manifest",
+      "definition": "Register över identiteter, kategorier och referenser."
+    },
+    {
+      "id": "policy",
+      "label": "Policy",
+      "definition": "Regler för när ett tillåtet alternativ får väljas."
+    }
+  ],
+  "events": [
+    {
+      "id": "speak.goodluck",
+      "sourceType": "speak",
+      "situations": [
+        "goodluck"
+      ]
+    },
+    {
+      "id": "speak.insurance",
+      "sourceType": "speak",
+      "situations": [
+        "insurance"
+      ]
+    },
+    {
+      "id": "speak.double",
+      "sourceType": "speak",
+      "situations": [
+        "double"
+      ]
+    },
+    {
+      "id": "speak.other",
+      "sourceType": "speak",
+      "situations": [
+        "placebets",
+        "dealerblackjack",
+        "blackjack",
+        "dealerbust",
+        "win",
+        "push",
+        "lose"
+      ]
+    },
+    {
+      "id": "deal.player.left",
+      "sourceType": "deal",
+      "situations": [
+        "box0",
+        "box1"
+      ]
+    },
+    {
+      "id": "deal.player.centre",
+      "sourceType": "deal",
+      "situations": [
+        "box2",
+        "box3",
+        "box4"
+      ]
+    },
+    {
+      "id": "deal.player.right",
+      "sourceType": "deal",
+      "situations": [
+        "box5",
+        "box6"
+      ]
+    },
+    {
+      "id": "deal.dealer",
+      "sourceType": "deal",
+      "situations": [
+        "dealer-up",
+        "dealer-hole"
+      ]
+    },
+    {
+      "id": "reveal.dealer",
+      "sourceType": "reveal",
+      "situations": [
+        "dealer-hole"
+      ]
+    },
+    {
+      "id": "turn.player",
+      "sourceType": "turn",
+      "situations": []
+    },
+    {
+      "id": "settle.blackjack",
+      "sourceType": "settle",
+      "situations": []
+    },
+    {
+      "id": "settle.dealerBust",
+      "sourceType": "settle",
+      "situations": []
+    },
+    {
+      "id": "settle.win",
+      "sourceType": "settle",
+      "situations": []
+    },
+    {
+      "id": "settle.push",
+      "sourceType": "settle",
+      "situations": []
+    },
+    {
+      "id": "settle.other",
+      "sourceType": "settle",
+      "situations": []
+    },
+    {
+      "id": "idle.ready",
+      "sourceType": "idle",
+      "situations": []
+    }
+  ]
+}

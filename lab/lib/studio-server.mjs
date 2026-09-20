@@ -68,7 +68,7 @@ export async function validateVideoBindings(project, { registry } = {}) {
   if (bound.some(variant => !known.has(variant.videoGenerationId))) throw new StudioError('En videokoppling saknas i det kända registret. Välj en fil i Videobanken.', 422);
   const videos = new Map(registry.videos.map(v => [v.id, v]));
   for (const line of project.lines) for (const variant of line.variants) {
-    if (variant.videoGenerationId && !videoFitsLine(videos.get(variant.videoGenerationId), line.dealerId, line.eventId)) throw new StudioError('Videons registrerade dealer/event passar inte linjen. Välj rätt film.', 422);
+    if (variant.videoGenerationId && !videoFitsLine(videos.get(variant.videoGenerationId), line.dealerId, line.eventId)) throw new StudioError(`${variant.id}: videon saknar giltig kategorisering för denna linje. Kategorisera i Videobankens Inkorg eller koppla loss filmen.`, 422);
   }
 }
 

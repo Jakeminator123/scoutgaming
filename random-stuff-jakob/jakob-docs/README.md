@@ -1,6 +1,11 @@
 # Jakobs dokumentation
 
-Börja i [systemkartan](systemkarta/README.md) för att förstå delarna och deras
+**Ny gemensam startyta: [Guide i labbet](http://127.0.0.1:4188/guide).**
+Arbetsgång och gemensamma begrepp uppdateras i [lab/docs](../../../lab/docs/README.md).
+Materialet nedan behålls som fördjupning, historik och stabila källankare.
+Skapa inte en andra användarguide här. Privata anteckningar ingår inte i flytten.
+
+Fördjupning finns i [systemkartan](systemkarta/README.md) för att förstå delarna och deras
 samband. Daterade leveranser finns i [arkivet](arkiv/README.md). Öppna buggar,
 förbättringar och granskningsbehov samlas i repots [findings](../../docs/findings/README.md).
 
@@ -33,7 +38,8 @@ kunskapspaket. Senare driftuppgifter finns i systemkartans
 
 | Material | Placering |
 | --- | --- |
-| Hur en systemdel fungerar, med källa och verifieringsdatum | Befintligt ämne i `systemkarta/`; ny ämnesmapp endast om ansvar saknas |
+| Daglig arbetsgång och gemensamma begrepp | `lab/docs/guide.json` och `lab/policies/studio-contract.json`, visas i Guide |
+| Teknisk fördjupning med källa och verifieringsdatum | Befintlig ämnesreferens; länka från Guide vid behov, skapa inte en konkurrerande startyta |
 | Bugg, förbättring eller obesvarad kontroll | [Findings-registret](../../docs/findings/REGISTER.md), med stabilt ID och underlag |
 | Vad en uppgift gjorde och testade vid en viss tidpunkt | `arkiv/ÅÅÅÅ-MM-DD/`, länkat från arkivindexet |
 | Gemensamt leveranskvitto | [JOHN-HANDOFF](../../docs/JOHN-HANDOFF.md), kort notis med länkar |

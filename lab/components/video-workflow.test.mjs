@@ -15,7 +15,7 @@ function component(file, name, props) {
   };
   const module = { exports: {} };
   const code = transformSync(readFileSync(new URL(file, import.meta.url), 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-  vm.runInNewContext(code, { module, exports: module.exports, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
+  vm.runInNewContext(code, { module, exports: module.exports, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
   return { props, exports: module.exports, render() { cursor = 0; return module.exports[name](props); } };
 }
 function find(node, predicate) {
@@ -81,8 +81,8 @@ test('test result with no video and social reply never borrow selected standard 
 });
 test('inline picker binds and removes an exact film without a model or upload', () => {
   const edits = [];
-  const one = { id: 'one', label: 'Astrid höger', dealer: 'astrid', available: true, verdict: 'want' };
-  const h = component('./video-library.tsx', 'VariantVideoBinding', { inventory: { videos: [one, { ...one, id: 'two', dealer: 'vera' }] }, dealerId: 'astrid', variant: { videoGenerationId: null }, isBaseline: true, onBind: id => edits.push(id), onInspect() {} });
+  const one = { id: 'one', label: 'Astrid höger', dealer: 'astrid', available: true, verdict: 'want', classification: { label: 'Astrid höger', dealerId: 'astrid', eventId: 'deal.player.right', kind: 'action', role: 'standard', situation: 'box5', notes: '' } };
+  const h = component('./video-library.tsx', 'VariantVideoBinding', { inventory: { videos: [one, { ...one, id: 'two', dealer: 'vera' }] }, dealerId: 'astrid', eventId: 'deal.player.right', variant: { videoGenerationId: null }, isBaseline: true, onBind: id => edits.push(id), onInspect() {} });
   const select = byType(h.render(), 'select');
   assert.ok(find(select, node => node.type === 'option' && node.props.value === 'one'));
   assert.equal(find(select, node => node.type === 'option' && node.props.value === 'two'), undefined);

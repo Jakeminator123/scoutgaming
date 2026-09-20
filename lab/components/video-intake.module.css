@@ -14,4 +14,7 @@
 .error { color: #ffb5ae; }
 .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
 .filters select { max-width: 100%; }
+.scopes {display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 16px}
+.scopes button {border:1px solid var(--line);padding:10px 14px;border-radius:6px}
+.scopes button[aria-pressed=true] {background:#23433c;border-color:#74b49c;color:#d0e6d9}
 @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } .upload, .audit { padding: 14px; } .upload summary span { display: block; margin: 8px 0 0; } }

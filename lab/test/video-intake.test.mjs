@@ -105,7 +105,7 @@ test('imported video cannot bind to another dealer/event or play over a differen
   const result = await simulateStudio({ project, dealerId: 'astrid', eventId: other, mode: 'off', context: {} }, { settings, fetchImpl: noFetch, videoRegistry });
   assert.equal(result.videoGenerationId, null); assert.ok(result.trace.some(t => t.stage === 'video'));
   video.classification.dealerId = 'vera';
-  await assert.rejects(validateVideoBindings(project, { registry: videoRegistry }), /dealer\/event/);
+  await assert.rejects(validateVideoBindings(project, { registry: videoRegistry }), /giltig kategorisering/);
 });
 
 test('all 256 seed mappings resolve to the right event and 64 distinct motion definitions; new alternatives are manual', () => {

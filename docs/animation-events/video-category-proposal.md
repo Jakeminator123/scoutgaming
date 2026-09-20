@@ -1,5 +1,10 @@
 # Enkel modell för videotyper och uppspelning
 
+**Historisk beslutsskiss. Aktuell arbetsgång och status: [Guide i labbet](http://127.0.0.1:4188/guide).**
+Gemensamt kontrakt finns nu i [lab/policies/studio-contract.json](../../lab/policies/studio-contract.json).
+Strikt kategorisering och `once` är införda lokalt; loop är fortfarande förslag.
+Texten nedan beskriver skissen innan dessa förändringar, inte dagens auktoritativa schema.
+
 Beslutsskiss, 20 september 2026. **Inte implementerad eller runtime-godkänd.**
 Utgår från det lokala repot; ingen ny kontroll av driftsatt app-revision ingår.
 

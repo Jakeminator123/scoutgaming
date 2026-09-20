@@ -4,6 +4,7 @@ import { access, lstat, open, readFile, realpath } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { readUploads, uploadDirectory } from './video-uploads.mjs';
+import { readClassifications } from './video-classifications.mjs';
 
 // Server-only: the browser receives logical IDs, never archive paths or credentials.
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
@@ -146,6 +147,10 @@ export async function loadVideoRegistry(options = {}) {
   try { archive = await archiveLocation(selection); summary.readable = true; }
   catch { summary.notes.push('Det lokala videoarkivet är inte tillgängligt. Ange LAB_VIDEO_ARCHIVE på servern.'); }
   const videos = [];
+  let classifications = [];
+  try { classifications = await readClassifications(options); }
+  catch { summary.notes.push('Kategorisering kunde inte läsas. Inga nya klassificeringar används.'); }
+  const classified = new Map(classifications.map(item => [item.id, item]));
   // Sequential metadata checks avoid opening hundreds of files at once.
   for (const entry of entries.values()) {
     let available = false, integrity = 'unavailable';
@@ -160,6 +165,13 @@ export async function loadVideoRegistry(options = {}) {
       }
     }
     const video = publicEntry(entry, available, integrity);
+    const recorded = classified.get(video.id);
+    if (recorded && recorded.sha256 === video.sha256) {
+      video.classification = recorded.metadata;
+      video.label = recorded.metadata.label;
+      video.dealer = recorded.metadata.dealerId;
+      video.suggestedEventId = recorded.metadata.eventId;
+    }
     videos.push(video);
     summary.intakeCounts[video.verdict] += 1;
     if (available) summary.available += 1;
