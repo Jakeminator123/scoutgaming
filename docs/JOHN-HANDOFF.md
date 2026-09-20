@@ -1639,6 +1639,33 @@ Fresh Higgsfield history review found completed31828ef9, already stored under id
 Final full opening group ends348 (exact raw return30), then plays existingbridge0..96 and waits behind its visible final actor until actual engine idle0 is presented. Intermediate groups still end333. Session resources dispose afterward; failures are bounded. Applies when opening ends with fullgroup (1/3/5/7 seats); even-seat individual remainders retain their existingreturn.
 
 Actual one-seat and three-seat rounds both played the bridge and settled:882.50→877.50→887.50 and887.50→872.50→902.50. First trace includes all97nativeframes; return-qa contains actual motion/idle screenshots, receipts andsettlements. All26 focusedtests and requiredprobe/precommit passed. Residual source edge fringes/colour differences remain; initial crossed-idle→dealing entry remains unsolved. A silent empty-hand reverse of this same bridge is a reasonable future entry candidate, but its initial hold must be shortened and actual handoff reviewed; no entry derivative has been made. Full goal remains active.
+## 2026-09-20 — verified rollout and voice follow-up
+
+Director dep-dankqvrtqb8s73c8igt0 and Gateway dep-dankro3m8hqs73blijsg are live
+on 0a1f9cb. Blueprint sync exe-dankqsp7lnhs73e9ujq0 changed advice timeout;
+authenticated Director status reports 8000ms. Upstream remains pinned 2026.9.5.
+Native validation completed before runtime startup. All three role contexts
+installed package 2026-09-20.1, sha256
+d4008a2d889f447ecf79a907de1511d46ce97ff40cd6acd9c61f5e77ade0459f,
+with injection always and no warnings. No owner errors in the new startup log;
+cron scheduler and heartbeat remain disabled. The memory plugin created its
+managed job record, not an enabled scheduler.
+
+Fresh local API -> Render -> Gateway chat correctly reported package version,
+official sources, 16-group distinction and no Windows file access (4815ms).
+Live active advice accepted contextual candidate (1995ms); shadow kept baseline
+despite real advice (1896ms). One earlier probe during startup returned 503;
+not counted as success. These are small dated samples, not a latency guarantee.
+
+Three short demo phrases now have actual ignored ElevenLabs cache MP3s. Browser
+cache replay passed. Chrome played the welcome audio to ended=true at 2.229116s
+with no media error; IAB crashed on native play, so use Chrome for now.
+Separate page-only GET navigation guard fixes external-link initial load while
+retaining API, iframe, fetch and mutation guards. Sidebar now says presentation
+types, not motor types. Lab 138/138, runtime suite 79/79 and typecheck pass;
+production rebuild and Chrome direct-navigation verification passed. No new product-media regression claimed or needed
+for these local lab/deployment changes; prior known product take gaps remain.
+
 ## 2026-09-20 — later OpenClaw context, situation UI and local voice panel
 
 Bounded lab/deployment iteration, not gameplay or production media changes.

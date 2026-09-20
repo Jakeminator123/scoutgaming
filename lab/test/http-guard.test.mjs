@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from '../lib/http-guard.mjs';
+import { assertLocalRequest, assertLocalPageRequest, readLocalJson, jsonResponse, errorResponse } from '../lib/http-guard.mjs';
+import { readFile, readdir } from 'node:fs/promises';
 import { StudioError } from '../lib/project-store.mjs';
 import { StudioValidationError } from '../lib/studio-model.mjs';
 
@@ -42,6 +43,50 @@ test('cross-site fetches are blocked even when Host and Origin otherwise match',
   const request = new Request(`${LOCAL}/api/project`, { headers: { Host: '127.0.0.1:4188', Origin: LOCAL, 'Sec-Fetch-Site': 'cross-site' } });
   assert.throws(() => assertLocalRequest(request), status(403));
   assert.doesNotThrow(() => assertLocalRequest(new Request(`${LOCAL}/api/project`, { headers: { 'Sec-Fetch-Site': 'none' } })));
+});
+
+function pageRequest(headers = {}, method = 'GET', url = `${LOCAL}/openclaw`) {
+  return new Request(url, { method, headers: { Host: '127.0.0.1:4188', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document', ...headers } });
+}
+
+test('top-level GET navigation can open the lab from an extension or external link', () => {
+  for (const origin of [undefined, 'https://external.example', 'chrome-extension://fixture-extension']) {
+    const request = pageRequest(origin ? { Origin: origin } : {});
+    assert.doesNotThrow(() => assertLocalPageRequest(request));
+    assert.throws(() => assertLocalRequest(request), status(403), 'The same exception must not apply to API requests.');
+  }
+});
+
+test('page navigation still requires a loopback URL and Host, not a spoofed header', () => {
+  assert.throws(() => assertLocalPageRequest(pageRequest({}, 'GET', 'https://external.example/openclaw')), status(403));
+  assert.throws(() => assertLocalPageRequest(pageRequest({ Host: 'external.example' })), status(403));
+  assert.throws(() => assertLocalRequest(pageRequest({}, 'GET', 'https://external.example/api/project')), status(403));
+  for (const host of ['localhost:4188', '[::1]:4188']) assert.doesNotThrow(() => assertLocalPageRequest(pageRequest({ Host: host }, 'GET', `http://${host}/openclaw`)));
+});
+
+test('iframe, non-navigation, missing metadata and mutation cannot use the page exception', () => {
+  for (const destination of ['iframe', 'frame', 'embed', 'object', 'empty', '']) assert.throws(() => assertLocalPageRequest(pageRequest({ 'Sec-Fetch-Dest': destination })), status(403));
+  for (const mode of ['cors', 'no-cors', 'same-origin', '']) assert.throws(() => assertLocalPageRequest(pageRequest({ 'Sec-Fetch-Mode': mode })), status(403));
+  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']) assert.throws(() => assertLocalPageRequest(pageRequest({}, method)), status(403));
+  assert.throws(() => assertLocalPageRequest(pageRequest({ 'Next-Action': 'not-a-real-action' })), status(403));
+  assert.throws(() => assertLocalPageRequest(pageRequest({ 'Sec-Fetch-Dest': 'iframe', 'Sec-Fetch-Site': 'same-origin', Origin: LOCAL })), status(403));
+});
+
+test('ordinary same-origin page and RSC fetches still work without relaxing foreign fetches', () => {
+  assert.doesNotThrow(() => assertLocalPageRequest(new Request(`${LOCAL}/openclaw`)));
+  const sameOrigin = { 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Site': 'same-origin', Origin: LOCAL, RSC: '1' };
+  assert.doesNotThrow(() => assertLocalPageRequest(pageRequest(sameOrigin)));
+  assert.throws(() => assertLocalPageRequest(pageRequest({ ...sameOrigin, Origin: 'https://external.example' })), status(403));
+});
+
+test('only StudioPage uses the navigation guard; API route sources never import it', async () => {
+  const page = await readFile(new URL('../app/studio-page.tsx', import.meta.url), 'utf8');
+  assert.match(page, /assertLocalPageRequest/);
+  const routes = await readdir(new URL('../app/api/', import.meta.url), { recursive: true, withFileTypes: true });
+  for (const file of routes.filter(file => file.isFile() && file.name === 'route.ts')) {
+    const source = await readFile(`${file.parentPath}/${file.name}`, 'utf8');
+    assert.doesNotMatch(source, /assertLocalPageRequest/, file.parentPath);
+  }
 });
 
 test('JSON parser applies local-origin guard before reading the body', async () => {
