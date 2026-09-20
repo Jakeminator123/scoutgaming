@@ -1,0 +1,11 @@
+{
+  "generator": "built-in GPT Image",
+  "source": "web/public/dealers/amira/scene.png",
+  "output": "web/public/dealers/amira/scene-clear-v2.png",
+  "dimensions": [
+    1672,
+    941
+  ],
+  "sha256": "8b7d4037c1599a690b65aec0c97240a9c7b15f47bcb4ad4a6e75668c83ae29d2",
+  "purpose": "Clear foreground table; raised lighting and more visible floor for existing Blender table"
+}

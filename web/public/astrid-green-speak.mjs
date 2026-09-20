@@ -8,18 +8,18 @@ import {capturePacked,createSpeechJoin,loadJoinImage} from './astrid-speech-join
 // over the held waiting idle. Silent, motion-aligned joins surround the
 // untouched recording; its mp3 starts on the first presented speech frame
 // plus the measured audio offset. Opt-in through speak.json.
-export async function loadGreenSpeak(src='review/astrid-green-speak/speak.json'){
+export async function loadGreenSpeak(src='review/astrid-green-speak/speak.json',dealer='astrid'){
   const take=await fetch(src).then(r=>r.ok?r.json():null).catch(()=>null);
   if(!take||take.status!=='review'||take.enabled===false)return null;
-  const errors=speakManifestErrors(take);
+  const errors=speakManifestErrors(take,dealer);
   if(errors.length)throw new Error(`Speak take invalid: ${errors.join('; ')}`);
   return take;
 }
 
-export function speakManifestErrors(take){
+export function speakManifestErrors(take,dealer='astrid'){
   const errors=[];
   if(take?.version!==2)errors.push('unsupported version');
-  if(take?.dealer!=='astrid'||take?.action!=='speak')errors.push('not an Astrid speak take');
+  if(!['astrid','amira'].includes(dealer)||take?.dealer!==dealer||take?.action!=='speak')errors.push(`not an ${dealer==='astrid'?'Astrid':'Amira'} speak take`);
   const offset=take?.spliceOffset??[0,0];
   if(!Array.isArray(offset)||offset.length!==2||!offset.every(Number.isFinite))errors.push('spliceOffset invalid');
   const actorOffset=take?.actorOffset??[0,0];
@@ -31,6 +31,7 @@ export function speakManifestErrors(take){
     if(!m?.src||!Number.isInteger(m?.width)||!Number.isInteger(m?.height)||!(m?.fps>0)||!Number.isInteger(m?.frames)||m.frames<2||m.layout!=='rgb-over-alpha')errors.push(`${id}: media incomplete`);
     if(!line?.camera?.placement||line.camera.width!==m?.width||line.camera.height!==m?.height)errors.push(`${id}: camera must match the packed media`);
     if(!line?.audio||typeof line.text!=='string')errors.push(`${id}: audio or text missing`);
+    else if(!line.audio.startsWith(`dealers/${dealer}/audio/`))errors.push(`${id}: audio belongs to another dealer`);
     if(!Number.isInteger(line?.cutIn)||!Number.isInteger(line?.cutOut)||line.cutIn<0||line.cutOut<=line.cutIn||line.cutOut>(m?.frames??0)-1)errors.push(`${id}: cut range invalid`);
     if(!Number.isFinite(line?.audioOffsetSeconds))errors.push(`${id}: audioOffsetSeconds missing`);
     const j=line?.transition;
@@ -48,7 +49,7 @@ function packedVideo(src){
 
 export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>console.info('[speak]',...a)}={}){
   if(!HTMLVideoElement.prototype.requestVideoFrameCallback)throw new Error('Presented video frames are unavailable');
-  const errors=speakManifestErrors(take);
+  const errors=speakManifestErrors(take,take?.dealer);
   if(errors.length)throw new Error(`Speak take invalid: ${errors.join('; ')}`);
   const [offsetX,offsetY]=take.spliceOffset??[0,0];
   const [actorX,actorY]=take.actorOffset??[0,0];

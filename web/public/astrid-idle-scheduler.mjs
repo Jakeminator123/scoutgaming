@@ -34,6 +34,13 @@ export function createIdleScheduler({segments,random=Math.random,glanceProbabili
 export function idleSegmentErrors(take){
   const errors=[],glances=take?.glances,ready=new Set(glances?.readyFrames??[]);
   if(!take?.base?.src||!Number.isInteger(take?.base?.frames))errors.push('base media missing');
+  if(take?.mode==='loop'){
+    const b=take.base;
+    if(!(b?.fps>0)||b.frames<2||!Number.isInteger(b?.width)||!Number.isInteger(b?.height)||b.width<1||b.height<1||b.layout!=='rgb-over-alpha')errors.push('loop media invalid');
+    if(take.camera?.width!==b?.width||take.camera?.height!==b?.height||!take.camera?.placement)errors.push('loop camera mismatch');
+    if(take.glances||Object.keys(take.segments??{}).length)errors.push('single loop cannot include glance segments');
+    return errors;
+  }
   if(!glances?.src||!Number.isInteger(glances?.frames))errors.push('glance media missing');
   const segments=take?.segments??{};
   if(segments.base)errors.push('base must be the base media loop, not a segment of the waiting clip');

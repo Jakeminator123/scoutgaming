@@ -5,7 +5,7 @@ import {cardFaceArt} from './card-art.mjs';
 
 // Physical card faces, paper edge and a lit turnover; the resting hand stays
 // in the existing accessible DOM. One short render loop per dealt card.
-export function createDealingCard({scene, camera, renderer,viewport=null,surfaceHeight=0,unitScale=1,cardBackTexture=null}) {
+export function createDealingCard({scene, camera, renderer,viewport=null,surfaceHeight=0,unitScale=1,cardBackTexture=null,faceArt=cardFaceArt}) {
   const textures = new Map();
   const back = cardBackTexture??texture(null);
   function texture(card) {
@@ -45,7 +45,7 @@ export function createDealingCard({scene, camera, renderer,viewport=null,surface
     const p=geo.attributes.position,uv=geo.attributes.uv;
     for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)+w/2)/w,1-(p.getZ(i)+h/2)/h);
     let feltArt;
-    if(worldCorners&&card){feltArt=new THREE.CanvasTexture(cardFaceArt(card).canvas);feltArt.colorSpace=THREE.SRGBColorSpace;}
+    if(worldCorners&&card){feltArt=new THREE.CanvasTexture(faceArt(card).canvas);feltArt.colorSpace=THREE.SRGBColorSpace;}
     const frontMat=new THREE.MeshStandardMaterial({map:feltArt??(card?textures.get(key):back),roughness:.64,metalness:0});
     const backMat=new THREE.MeshStandardMaterial({map:back,roughness:.64,side:THREE.BackSide});
     const root=new THREE.Group();const face=new THREE.Mesh(geo,frontMat);face.position.y=.4*unitScale;face.castShadow=true;root.add(face);

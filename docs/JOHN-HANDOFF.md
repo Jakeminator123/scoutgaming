@@ -1456,3 +1456,40 @@ reverses the silent bridge. Generated facial texture/expression differences rema
 this correction addresses tone, scale and cuts, not a new identity generation.
 User4190 database/session untouched. No production deployment or push. CAC-9 remains
 In Dev: this seam work does not close its broader hand/fingertip masking expectation.
+
+
+## 2026-09-20 — Amira branded table, clear room, supplied speech and waiting loop
+
+User moved work to Amira and supplied17 raw talk clips plus waiting job5f2929a3.
+All are now mounted through the shared keyed player. Speech retains1,123 native
+25fps frames, exact captions/MP3 hashes and measured0ms embedded-audio lag.
+Face/eyes/namebadge alpha survives the exported matte (minimum253 face). Waiting
+retains121 native24fps frames from the named5s take, with a rigid(+11,+1)px
+translation to align the head. No additional video generation or source repaint.
+
+Amira uses table-v2.blend with Scout branding and restored warm felt#665139;
+Astrid felt returns to#263336. A built-in GPT Image room edit based on Amira's
+original removes the extra foreground table, raises lighting and shows more floor.
+Saved scene-clear-v2.png (1672x941), original preserved, prompt/receipt in
+content/staging/2026-09-20/amira-room-clean/.
+
+Fixed absent/tiny card artwork in Blender mode when PerformancePlayer is absent.
+Moving and settled cards share the face artwork, Amira with larger indices and
+stronger contrast. Physical card geometry unchanged. Dealer fan19cm ahead of
+rear edge and total positioned to its left. Astrid filmed dealing is temporarily
+paused per user request; shoe-to-seat delivery plus existing idle/speech remain.
+
+Rendered isolated guest4211: all17 Amira lines; greeting/goodluck twice; eight
+waiting wraps and speech return; seven-seat round through settlement (stake35,
+return40), hits; later center9S+7S hit/bust/settlement with jumbo artwork and new
+room (stake5/return0). Vera two-play regression complete. Fresh Mei/Astrid final
+rechecks were interrupted by closed tabs; final dealer-fan22->19cm capture also
+interrupted. Do not report those checks as completed.18 focused tests, full
+pre-commit and dealer-sync --probe pass. Evidence and limits in
+content/staging/2026-09-20/dealer-table-review/README.md.
+
+Limits: supplied1K speech differs in detail/tone/left-hand pose from newer2K idle.
+The boundary is still visible; no seamless-transition or all-line lip-sync approval.
+Speech waits up to5.04s for the front-facing idle endpoint. No raw/source assets,
+user4190/live DB, production or remote deployment changed. CAC-9 stays In Dev;
+Amira work does not close that broader Astrid report.

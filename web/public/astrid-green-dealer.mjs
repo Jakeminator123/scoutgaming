@@ -45,8 +45,8 @@ export function greenShoeOutlet(take,viewport={width:innerWidth,height:innerHeig
 export function installGreenRestFrame(host,take){
   const image=document.createElement('img');
   image.className='astrid-rest-frame';
-  image.src=new URL('rest.png',new URL(take.media.src,document.baseURI)).href;
-  image.alt='Astrid';
+  image.src=take.rest?.src??new URL('rest.png',new URL(take.media.src,document.baseURI)).href;
+  image.alt=take.dealerName??'Astrid';
   image.draggable=false;
   const resize=()=>{
     const fit=uniformRegistration(take.camera,{width:innerWidth,height:innerHeight});
