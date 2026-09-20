@@ -1,3 +1,13 @@
+## 2026-09-20 — lab structure and test explanations
+
+Documentation-only follow-up: explained policies/schema/data/test, deferred a
+redundant manifest, recorded the existing video registry/archive read path and
+separated mocked integration checks from the pending real Render/model test.
+Added a thin Jakob note and links from its index and lab README. Re-ran both
+local suites: 69 studio + 62 Director tests passed. The previous broad product
+failures remain unresolved; no media, runtime settings, secrets or deployment
+changed. No real model request or broader product-suite rerun in this follow-up.
+
 ## 2026-09-20 — separate Next.js presentation studio
 
 Jakob requested stopping the old local lab and rebuilding a clearer, editable
