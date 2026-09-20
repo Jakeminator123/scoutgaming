@@ -1,3 +1,18 @@
+## 2026-09-20 — final work-branch publication preparation
+
+Jakob requested saving and pushing all completed local work to origin.
+Reviewed the three pending commits e69190b, 6efd3ba and 6fed982, including
+their existing validation and limitations below. The registered chef role
+was inactive; origin/work had no additional commits after a fresh fetch.
+An untracked private login note contains authentication assignments and
+was deliberately left local, unstaged and unchanged. No credential values
+were copied into this handoff or the publication.
+
+Validation: pending-commit whitespace check and targeted credential-pattern
+scan passed. Existing studio/Director test results are recorded below;
+no test rerun or new runtime/media acceptance is claimed. The known broader
+product-check failures and real Render/model verification remain open.
+
 ## 2026-09-20 — lab structure and test explanations
 
 Documentation-only follow-up: explained policies/schema/data/test, deferred a
