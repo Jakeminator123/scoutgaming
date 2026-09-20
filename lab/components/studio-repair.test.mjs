@@ -18,7 +18,7 @@ const mocks = {
   './trigger-editor': { TriggerEditor: empty, categoryLabels: {}, defaultValue: () => null },
   './video-library': { VideoLibrary: empty, VariantVideoBinding: empty },
   './variant-selection': { VariantSelectionEditor: empty },
-  './gateway-panel': { GatewayPanel: empty, ModeSelector: empty, modeLabels: { rules: 'Regler' } },
+  './gateway-panel': { GatewayPanel: empty, modeLabels: { off: 'Bara standard', rules: 'Regler', random: 'Slumpvariation', shadow: 'Skuggläge', active: 'OpenClaw' }, modeExplanations: { off: 'Alltid standardvarianten. Ingen modell kontaktas.' } },
   './test-context': { TestContextPanel: empty, neutralContext: {} },
 };
 function loadComponent(relativeFile) {
@@ -29,12 +29,41 @@ function loadComponent(relativeFile) {
     module, exports: module.exports, structuredClone,
     require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} }
       : name === './studio-types' ? loadComponent('./studio-types.ts')
+      : name === './event-test-panel' ? loadComponent('./event-test-panel.tsx')
         : mocks[name] ?? require(name),
   }, { filename: relativeFile });
   return module.exports;
 }
 const { Studio } = loadComponent('./studio.tsx');
 const render = project => renderToStaticMarkup(React.createElement(Studio, { initialProject: project, initialVideos: { videos: [] }, initialStatus: {} }));
+
+test('event test has one mode selector, explicit run action and result only after a real test', () => {
+  const { EventTestPanel } = loadComponent('./event-test-panel.tsx');
+  const props = { open: true, onOpen() {}, mode: 'off', onMode() {}, configured: false, context: {}, onContext() {}, dealer: 'Astrid', eventLabel: 'Bordet väntar', sourceType: 'idle', result: null, previewKind: null, busy: false, onRun() {} };
+  const html = renderToStaticMarkup(React.createElement(EventTestPanel, props));
+  assert.equal((html.match(/<option /g) ?? []).length, 5);
+  assert.match(html, /Inget test kört/);
+  assert.doesNotMatch(html, /VALD VARIANT|Tekniskt beslutsspår/);
+  assert.match(html, /Lokalt test. Inget modellanrop/);
+  const active = renderToStaticMarkup(React.createElement(EventTestPanel, { ...props, mode: 'active', busy: true }));
+  assert.match(active, /OpenClaw är inte konfigurerat/);
+  assert.match(active, /disabled="">Testar/);
+  const result = renderToStaticMarkup(React.createElement(EventTestPanel, { ...props, result: { variant: { label: 'Standard' }, decision: { reason: 'ai_disabled' }, provider: 'off', eligible: [] } }));
+  assert.match(result, /VALD VARIANT/);
+  assert.match(result, /Tekniskt beslutsspår/);
+});
+
+test('testsituation selection is derived from actual values, including custom edits', () => {
+  const { TestContextPanel, neutralContext, contextPresets } = loadComponent('./test-context.tsx');
+  const renderContext = value => renderToStaticMarkup(React.createElement(TestContextPanel, { value, onChange() {} }));
+  for (const preset of contextPresets) {
+    const html = renderContext(preset.value);
+    assert.equal((html.match(/aria-pressed="true"/g) ?? []).length, 1);
+  }
+  const custom = renderContext({ ...neutralContext, session: { recentWins: 7, recentLosses: 3 } });
+  assert.match(custom, /Egna testvärden/);
+  assert.doesNotMatch(custom, /aria-pressed="true"/);
+});
 
 test('Guide and OpenClaw are full-width surfaces without the unrelated event sidebar', () => {
   for (const initialView of ['guide', 'openclaw']) {
@@ -83,14 +112,17 @@ test('editor labels align with the selected node and distinguish event-test cont
   const html = render(createSeedProject());
   assert.match(html, /Redigera vald nod/);
   assert.match(html, /Samma nod som i nodträdet/);
-  assert.match(html, /Så väljs variant när du testar ett event/);
-  assert.match(html, /<details class="event-test-tools"><summary>Regeltest &amp; OpenClaw/);
+  assert.match(html, /<strong>Testa event<\/strong>/);
+  assert.match(html, /Urvalsläge för eventtest/);
+  assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
   assert.match(html, /Prova spelarchatten → Astrids vänteläge/);
   assert.doesNotMatch(html, /Din regi|En tydlig kedja, hela vägen/);
   const { TestContextPanel, neutralContext } = loadComponent('./test-context.tsx');
   const contextHtml = renderToStaticMarkup(React.createElement(TestContextPanel, { value: neutralContext, onChange() {} }));
-  assert.match(contextHtml, /Simulera kontext för eventtest/);
-  assert.match(contextHtml, /inte OpenClaws verkliga minne eller Astrids personlighet/);
-  assert.match(contextHtml, /spelarchatten med Astrid använder inte dessa fält/);
+  assert.match(contextHtml, /Välj testsituation/);
+  assert.match(contextHtml, /Simulerade värden, bara för eventtestet/);
+  assert.match(contextHtml, /Astrid-chatten använder inte dessa fält/);
+  assert.match(contextHtml, /<details><summary>Justera testvärden/);
+  assert.match(contextHtml, /aria-pressed="true">Neutral/);
   assert.doesNotMatch(contextHtml, /Vad vet croupiern just nu/);
 });

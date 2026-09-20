@@ -1,3 +1,27 @@
+## 2026-09-20 — simplify Eventstudio test and social chat panels
+
+Reworked the two screenshot-marked surfaces without changing schemas, media,
+runtime selection or model/TTS request behavior. Event testing is now a separate
+component: one existing-mode selector, selected scenario presets, folded manual
+test values, an adjacent run button, then the actual result. Removed the repeated
+four-step decision diagram; exact JSON remains behind a disclosure after a test.
+Direct preview and chat are still not presented as successful event tests.
+
+Astrid chat now prioritizes the composer. Reaction settings, standard-phrase
+audio and technical/cost explanation are distinct folded sections. Opt-in speech
+and its cost warning remain visible; saved-audio replay remains visible when it
+exists. Existing handlers, request cancellation, draft cache, policy revision
+checks, separate saving and exact-audio checks are unchanged. Guide updated in
+its existing source; no parallel documentation or new category vocabulary.
+
+Verification: 192 lab tests, TypeScript and production build pass. Browser QA on
+isolated port4193 confirmed idle standard result, rules+returning-player result,
+collapsed manual fields/settings/audio, working composer and no console errors.
+430px breakpoint checked with no horizontal overflow (425px document / 430px
+viewport), then viewport reset. No chat message or paid voice request was sent;
+the existing mocked-handler tests cover reply, audio, draft and cancellation.
+No actual video/player/gameplay or Render change. Jira connector unavailable.
+
 ## 2026-09-20 — render video-category explanation inline
 
 The managed .canvas.tsx link opened source code in Jakob's current desktop
