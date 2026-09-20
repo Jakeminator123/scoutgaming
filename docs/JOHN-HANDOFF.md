@@ -1527,3 +1527,9 @@ Follow-up: user requested softer hair edges. Added opt-in Amira dark-hair-region
 alpha feather3.4px/75% and wrap19%, adjusted for native crop width. Face/eyes and
 all source RGB stay sharp; no new matte. Composited transition endpoints inherit
 the same treatment. Hair before/after evidence is in the composite directory.
+
+## 2026-09-20 — production original/V2 demo switcher
+
+User requested deployment with Astrid V2 and Amira V2 beneath the existing dealer switcher for a before/after demo. Published current keyed/Blender presentation under `/v2/` and added the comparison row to the captured original production frontend. Root original media/player stays available; both routes use the same authoritative API/session/wallet. Filmed Astrid dealing remains paused. No generation, backend restart or live database copy.
+
+See `docs/releases/dealer-v2-2026-09-20.md` and its SHA-256 manifest for exact routes, source capture, rollback and verification. Isolated production-backend preview passed both V2 complete rounds, wallet continuity, mid-round switch guard, original seven-seat hit targets and repeated speech regression. Repository checks passed. Public static files/range serving verified on server; final public browser view remains gated by existing HTTP login. Mobile viewport override did not apply, so mobile appearance is not marked verified. Only task-owned switcher/build/docs files are committed.
