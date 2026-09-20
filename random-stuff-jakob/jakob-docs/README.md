@@ -2,6 +2,10 @@
 
 Jakobs minnesnoteringar och arbetsrapporter. Den gemensamma dokumentationen finns fortsatt i GitLab-wikin; tekniska rapporter länkas nedan. Konversationsexporter hör inte hemma här.
 
+## 2026-09-20 — OpenClaw och labbet
+
+[Kort arbetsnotering](2026-09-20-openclaw-och-labb.md): vad som byggts, dashboard och labbeditor, Render, nycklarnas olika roller, kvarvarande integration och städningen av gamla OpenClaw-mappar.
+
 ## 2026-09-20 — Videoregister, V3-karta och lagring
 
 [Arbetsrapport: V3, videoregister och placering](2026-09-20-v3-videoregister-och-placering.md) samlar vad vi undersökte och levererade, var de 224 originalvideorna finns, hur kartan startas, beslut om eventträdet, lagringsbedömning, kontroller, publicerade commits och vad som återstår inför verklig integration. Rapporten skiljer inventeringen från OPENCLAW-uppgiftens eget arbete.

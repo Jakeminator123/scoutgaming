@@ -5,11 +5,20 @@ inte labbets katalogeditor och inte IDE-agenternas GitLab-inbox.
 
 Dashboarden driftsattes och inloggningsvyn verifierades **2026-09-20**:
 [Öppna OpenClaw](https://croupier-lab-director.onrender.com/openclaw/).
-Båda Render-tjänsterna kör dashboard-koden från `7ec4e17`. UI:t når Gatewayen
-och ber om lösenord. Inloggad chatt/modellanrop och första browser-pairing
-återstår att prova med operatören; inget lösenord har lästs ur `secret.txt`.
+Båda Render-tjänsterna verifierades då på dashboard-koden från `7ec4e17`.
+Jakobs webbläsare har därefter godkänts med hans uttryckliga medgivande och
+den inloggade dashboarden verifierats. Ett riktigt chattsvar/modellanrop
+återstår att prova; inget lösenord har lästs ur `secret.txt`.
 
-## Render: en adress, OpenClaws egen inloggning
+## Vanlig användning — installationen är redan gjord
+
+Öppna [dashboarden](https://croupier-lab-director.onrender.com/openclaw/)
+och ange Gateway-lösenordet om det efterfrågas. Från Render: välj
+**croupier-lab-director**, öppna tjänstens webbadress och lägg till `/openclaw/`.
+Den privata `croupier-lab-openclaw` har ingen separat publik dashboardadress.
+Du behöver normalt varken terminal eller nya inställningar vid nästa besök.
+
+## Engångsinstallation eller ändrad deployment — inte vid varje inloggning
 
 1. Publicera och driftsätt dashboard-ändringen på **båda** labbtjänsterna.
    Behåll Gateway som Private Service; skapa ingen ny tjänst.

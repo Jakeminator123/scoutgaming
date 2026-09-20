@@ -2,7 +2,7 @@
 
 > Inofficiellt utkast. Partner-API, shoe-regler och koden som körs är sanningen. Gäller först efter att Jakob pratat med Kevin och Kevin accepterat. Inget av det här byter kod.
 
-Hjärnan bakom dealern. OpenClaw kör i Docker på Render, läser chatten, håller personligheten och väljer vilken variant som passar tonen — inom det regelmotorn öppnat. Rör aldrig kort, pengar eller landning. Bygger på paketet i random-stuff-jakob/openclaw_croupier och på den körande gatewayn i sajtmaskin/infra/openclaw.
+Hjärnan bakom dealern. OpenClaw kör i Docker på Render, läser chatten, håller personligheten och väljer vilken variant som passar tonen — inom det regelmotorn öppnat. Rör aldrig kort, pengar eller landning. Historiskt V2-förslag: paketet finns nu i open-claw/archive/croupier-proposal-v2; dåtidens gatewayreferens var sajtmaskin/infra/openclaw. Aktuellt separat labb finns i open-claw/lab.
 
 |  |  |
 | --- | --- |
