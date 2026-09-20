@@ -1,7 +1,9 @@
 # Systemkarta för Jakob
 
 En läsväg genom projektet, sammanställd 20 september 2026 med lokal
-källrevision `c0a5681` som ankare. Mapparna här
+källrevision `c0a5681` som ursprungligt ankare. Senare dokumentationsöversyn
+vid `bf4e82e` har tillfört röstpanel/runtimepaket och loaderfynd samt
+arkiverat arbetsrapporter; detaljer finns i [källregistret](KALLOR.md). Mapparna här
 sorterar **dokumentation efter systemdel**. Produktkod, JSON-register och
 mediefiler ligger kvar där de används; länkarna leder till originalkällorna.
 
@@ -29,6 +31,8 @@ systemkarta/
 | En JSON-fil eller många; schema eller faktiska poster? | [Studio, JSON och lagring](04-studio-json-och-lagring/README.md) |
 | Vad gör OpenClaw, ElevenLabs och Render faktiskt? | [OpenClaw, röst och drift](05-openclaw-rost-och-drift/README.md) |
 | Vilken dokumentation gäller och vad är verifierat? | [Arbetssätt och verifiering](06-arbetssatt-och-verifiering/README.md) |
+| Vilka buggar och förbättringar är öppna? | [Repoövergripande findings](../../../docs/findings/README.md) |
+| Vad gjordes och testades i en tidigare uppgift? | [Arbetsrapporter i arkivet](../arkiv/README.md) |
 
 **Läs statusen bredvid påståendet.** Här betyder **kodkontrollerat** att den
 lokala implementationen/data har lästs; **labb** beskriver den isolerade
@@ -39,6 +43,8 @@ Blackjack är implementerat. Roulette är en framtida plats i gränssnittet.
 Fyra dealers finns. De 256 variantposterna och 64 syntetiska rörelserna
 beskriver labbets startprojekt, inte antalet godkända dealerfilmer.
 
-Kartan är en navigationsyta och ersätter inte befintliga kontrakt eller
+Kartan sammanfattar systemet och länkar till kontrakt och daterade
 arbetsrapporter. [Källor och kvarstående glapp](KALLOR.md) redovisar vad som
-lästes och vad denna dokumentationsgranskning inte har verifierat.
+lästes och vad denna dokumentationsgranskning inte har verifierat. Öppna
+problem följs i findings; deras arbetsrapporter kan arkiveras utan att
+problemet därmed betraktas som löst.

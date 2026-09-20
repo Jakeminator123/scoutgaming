@@ -557,7 +557,7 @@ spelarchatt, spelminne eller en källa som får ändra spelresultat.
 
 Den lokala studion kan anropa Render Director som i sin tur anropar privat
 OpenClaw. Enligt OPENCLAW-uppgiftens daterade
-[anslutningsnotering](2026-09-20-nodtrad-rorelser-anslutning.md) har riktiga
+[anslutningsnotering](arkiv/2026-09-20/2026-09-20-nodtrad-rorelser-anslutning.md) har riktiga
 råd och operatörschatt provats mot Director `7f056f7`. Det provet tillhör
 den uppgiften; denna dokumentation har inte gjort egna modell- eller
 deployanrop. Produktkoppling och godkända dealerfilmer är separata steg.

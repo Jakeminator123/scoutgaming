@@ -157,7 +157,7 @@ passande film är inte en godkänd fallback. Denna fullständiga kontroll är
 ett framtida kontrakt, inte något som dagens labb redan garanterar.
 
 Denna framtida kedja stämmer med
-[röstprovets urvalsförslag](2026-09-20-rostprov-och-urvalsmodell.md): en
+[röstprovets urvalsförslag](arkiv/2026-09-20/2026-09-20-rostprov-och-urvalsmodell.md): en
 familj kan ha en eller flera takes, och viktat val inom den kompatibla poolen
 är ett möjligt förslag. Presentationsslump är separat från spelets RNG.
 Ersättning av samma presentation och en extra reaktion efteråt kräver

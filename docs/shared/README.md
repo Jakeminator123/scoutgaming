@@ -16,6 +16,9 @@ agentregler eller beslut om produktintegration.
 
 ## Aktiva och arkiverade dokument
 
+- [Systemkarta](../../random-stuff-jakob/jakob-docs/systemkarta/README.md): ämnesvis förklaring av systemet.
+- [Findings för hela repot](../findings/README.md): buggar, förbättringar och öppna kontroller med evidens; Jira CAC behåller implementation och QA-status.
+- [Jakobs rapportarkiv](../../random-stuff-jakob/jakob-docs/arkiv/README.md): daterade underlag och deras nya sökvägar.
 - Aktivt V3-underlag: `docs/animation-events/v3-9-days-mvp/`
 - Arkiverad V2: `docs/animation-events/archive/v2-long-term-goal-best-rng/`
 - [Arbetssätt](https://gitlab.com/scout-gg/croupier/-/wikis/workflow)

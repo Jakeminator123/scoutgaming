@@ -20,6 +20,11 @@ En nod är en grov ingång. Konkret destination, hand/kortposition och exakt
 talrad avgör vad som behöver presenteras. En video till fel kortmål blir
 inte användbar för att den har en passande social trigger.
 
+Den senare labbleveransen `0a1f9cb` visar konkreta situationsfält före
+variantval i nodträdet. Det är ett UI-förtydligande inom befintligt kontrakt;
+inga takepooler eller fullständiga produktfilter infördes. Se
+[den daterade leveransen](../../arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md).
+
 **Förslag för produktens framtida register:**
 
 ```text
@@ -65,3 +70,6 @@ Läs [situationer och urvalsordning](../../2026-09-20-situationer-variantfamilje
 [Director-motorn](../../../../open-claw/lab/src/engine.mjs) och
 [kompatibilitetsgränsen](../../../../lab/COMPATIBILITY.md).
 Takepooler, viktat takeval, cooldown och kö för extra reaktioner återstår.
+Fältmismatchen `split`/`splitFrom` har en egen post, F-005, i
+[findings-registret](../../../../docs/findings/REGISTER.md). Den är ett
+granskningsbehov, inte en fix levererad genom dokumentationen.
