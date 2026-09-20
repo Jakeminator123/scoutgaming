@@ -1,3 +1,42 @@
+## 2026-09-21 — reference-game launch and observation workflow in the lab
+
+Jakob clarified that 2D is a mockup of eventual video presentation. First
+observe the full existing game and video flow, then reproduce the presentation
+in the lab using authoritative server data. The lab's existing /activity now
+verifies Partner access, launches the original client, fetches current video
+mapping and exports complete received SSE records separately from the truncated
+150-entry display log. Trace capture stops visibly at 300 records or 4 MiB;
+it has no replay and lasts only while the view is mounted. The export also
+offers copyable JSON. Credentials and launch URLs are excluded.
+
+Live ping confirmed launch + events, correcting the old play-only scope claim.
+The separate generations read token fetched /api/v1/generations/mapping for
+four dealers; Astrid had 19 engine entries, 6 staged takes, no green takes,
+draft manifest status and null server revision. Mapping is registered material
+and BO choices, not a playback receipt. Only that adapter reads BETTALOTTO_API
+from root .env / lab .env.local / process env; no env file was changed.
+
+The launch button opened the original Astrid table with staged/smooth60 route
+and 0.00 EUR balance. Launch can create/load the partner profile and session;
+this was not purely read-only. No bets, rounds, balance changes or table commands
+were sent by the agent. SSE connected and was explicitly disconnected. No
+round records arrived. Kevin describes launch-to-SSE support, but his fetched
+branch b066a43 visibly publishes only from Partner-table; the native bridge
+remains unverified. A funded, intended demo environment is needed for round QA.
+Actual player clip start/end/landing telemetry and full table snapshots are
+not captured yet. No 2D renderer, game player, media or deployment was changed.
+
+All 248 lab tests, TypeScript and the production build passed (including 29
+focused observer/reference/trace checks). Browser QA verified access, mapping,
+launch, connection lifecycle and the copyable JSON export: four dealers,
+launch/events scopes, three connection records, zero rounds and no credential
+or launch URL. The browser download event was not confirmed by the automation;
+the same JSON is directly available in the panel. See the updated
+Jakob HANDOFF-2026-09-21-LIVE-OCH-2D.md and linked agent prompt for next steps.
+No Jira connector or linked CAC issue was available. The previously failing
+same-size video hash-cache test passed this run; no cache fix was made, so the
+earlier intermittent failure is not considered resolved by this change.
+
 ## 2026-09-21 — node code labels, verified SSE and next-agent handoff
 
 Added subdued `(sourceType · id)` labels from project data to all 16 event

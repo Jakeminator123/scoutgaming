@@ -6,8 +6,10 @@ Arbetsgången börjar i [Guide i labbet](http://127.0.0.1:4188/guide), vars käl
 
 ## Fördjupning
 
-- [Handoff: Partner-events till spelbar 2D](HANDOFF-2026-09-21-LIVE-OCH-2D.md):
-  verifierad SSE-anslutning, återstående spelkoppling och nästa videogranskning.
+- [Handoff: originalspel till 2D-mockup](HANDOFF-2026-09-21-LIVE-OCH-2D.md):
+  verifierad launch, SSE och videokarta; återstående rund- och playback-bevis.
+- [Agentprompt: 2D från observerat videoflöde](PROMPT-2D-MOCKUP-FRAN-SPELFLODE.md):
+  konkret fortsättning på befintlig Partner-yta, med rörelse, bindning och timing.
 - [API:er och miljövariabler](_env.explanation.md): vad varje anslutning gör,
   var uppgifterna ska finnas och vilka nycklar som hör ihop. Inga hemliga värden.
 - [Systemkartan](systemkarta/README.md): motor, presentation, media, studio och drift.

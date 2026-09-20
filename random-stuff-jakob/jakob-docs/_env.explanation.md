@@ -33,6 +33,12 @@ Variabelnamnet är en lokal konvention; det är inte ett krav från Bettalotto.
 i `.env` startar ingen automatisk nedladdning eller synkning av generations-API:t.
 `LAB_VIDEO_ARCHIVE` i `lab/.env.local` kan ange var originalarkivet finns.
 
+**Hämta videokarta** på `/activity` läser nu explicit
+`GET /api/v1/generations/mapping` med samma separata token. För just den
+adaptern läses `BETTALOTTO_API` från rotens `.env`, sedan `lab/.env.local`;
+processmiljön vinner. Live verifierat 2026-09-21. Det hämtar metadata,
+inte videofiler, och bevisar inte vad originalspelaren faktiskt spelade.
+
 ## 2. Bettalotto Partner API — spelanrop och publicerad presentation
 
 **Basadress:** `https://bettalotto.se`. Följande hör ihop och ska finnas
@@ -50,10 +56,10 @@ De äldre `LAB_PARTNER_*`-namnen stöds som fallback om det nya namnet saknas
 i processmiljön. Ett nytt namn med tomt värde tar företräde över det gamla.
 Observern läser **inte** automatiskt reporotens `.env`.
 
-API-delar och behörigheter enligt nuvarande kod:
+API-delar och behörigheter, korrigerat mot Kevins uppdaterade branch och live-ping 2026-09-21:
 
 - `GET /api/v1/events`: live-presentation för en nyckel och ett playerId;
-  kräver **play**. Labbet använder bara denna läsande anslutning.
+  kräver **events eller play**. Labbet använder en läsande anslutning.
 - `POST /api/v1/table`: spela/inhämta tillstånd via Partner-vägen; **play**.
   Spelmotorn äger regler, kort och saldo. Publicerad presentation når strömmen.
 - `POST /api/v1/launch`: ge spelaren en spel-URL; **launch**.
@@ -64,11 +70,13 @@ API-delar och behörigheter enligt nuvarande kod:
   **wallet**. Labbloggen använder dem inte.
 - `POST /api/v1/ping`: verifiera signering och läsa nyckelns scopes.
 
-Det finns ingen separat read-only-scope för events i den nuvarande koden.
-En nyckel med **play** kan också skicka bordskommandon, även om vår observer
-bara skickar GET. Kevins formulering ”events” behöver därför motsvara play.
+Live-ping verifierade **launch + events**. `events` är en separat lässcope;
+nyckeln saknar `play` och `wallet`. Labbet kan verifiera, öppna originalspelet
+och observera strömmen; det skickar inga bordskommandon eller saldoändringar.
 
-Vanliga spelklientens `/api/table` publicerar inte automatiskt till Partner-SSE.
+Kevin beskriver launch → spel → SSE med samma nyckel/spelare. Hämtad serverkod
+visar publicering från Partner-table, men ingen motsvarande native-koppling.
+Liveöppning och SSE fungerar; faktisk rundpublicering är fortfarande oprövad.
 En korrekt ansluten ström kan vara tom. Ingen replay finns efter avbrott.
 **Anslut läsande** i Händelseloggen startar observation, inte en spelrunda.
 
@@ -132,6 +140,7 @@ De lokala `/api/...`-vägarna är delar av samma app på `127.0.0.1:4188`:
 - `/api/project` och `/api/videos`: lokalt projekt, videofiler och metadata.
 - `/api/inputs`: Partner-konfigurationens status utan hemliga värden.
 - `/api/inputs/events`: serverns signerade vidareförmedling av Partner-SSE.
+- `/api/inputs/reference`: lokal status och explicita verify/launch/mapping-anrop.
 
 Dessa vägar skyddas för lokal användning och rätt origin. Leverantörsnycklar
 stannar i serverdelen. Webbläsaren behöver inga egna kopior i `NEXT_PUBLIC_*`.

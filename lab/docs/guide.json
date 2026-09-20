@@ -20,7 +20,7 @@
     {
       "view": "activity",
       "title": "4. Följ hela förloppet",
-      "body": "Se indata, vald variant, beslutsfattare, orsak och uppspelarens start/slut/fel. Öppna en loggrad för fälten. Partner live är en separat, läsande anslutning; den driver inte labbscenen."
+      "body": "Se labbets indata, beslut och uppspelningskvitton. För originalspelet: verifiera Partner-åtkomst, hämta videokartan, anslut läsande och öppna referensspelet i egen flik. Exportera observationsprotokollet som underlag för 2D-mockupen. Strömmen driver inte labbscenen."
     }
   ],
   "boundaries": [
@@ -28,10 +28,10 @@
     "De fyra presentationssätten är en vy över befintliga sex källtyper och 16 grupper. Tekniska ID:n och sparade projekt behålls. Idle är ett bakgrundsbehov, men videopreview spelas fortfarande en gång; redigerbara loopar och takepooler är inte införda.",
     "Eventets kort och box kommer från källan. Box 0–6 betyder bordsplats 1–7, inte en identifierad spelare. Återbesök, språk, chattsignal och historik är separat simulerad kontext i eventtestet. Kortposition kan behöva härledas. Variant-ID väljs efteråt; längd och landningstid hör till materialets metadata.",
     "Standard är också en variant. Linje är den tekniska behållaren för en dealers standard och alternativ, inte en talad replik. Want, filhash och kategorisering bevisar varken visuell kvalitet eller läppsynk. Full täckning för senare kort, split och övergångar återstår.",
-    "2D-biblioteket har 64 olika rörelsefiler: fyra per nuvarande eventgrupp, delade av fyra dealers. Därutöver finns en separat social rörelsefil. Det är schematiska gester och exempel, inte full täckning för varje kort, plats, split, övergång eller talad replik. Riktig läppsynk saknas.",
+    "2D är en mockup av presentation som ska vara videofiler. Biblioteket har 64 rörelsefiler, fyra per eventgrupp delade av fyra dealers, samt en social rörelsefil. Varianters namn ändrar inte rörelsen. Full täckning för kort, platser, split, timing, övergångar och repliker ska härledas från originalspelet. Riktig läppsynk saknas.",
     "Socialt prov finns för Astrid i vänteläget: fritt textsvar och förvalt ElevenLabs-ljud, högst sex sekunder tal. Standardfras vid uttryck är ett valbart undantag. Uttryckets cooldown stoppar inte fria svar. Socialt svar och handlingsprov får inte äga scenen samtidigt. Blinkningar startar inte om svaret. För långa ljud avvisas; stopp eller fel markeras som avbrutna prov. Riktig läppsynk och produktkoppling återstår.",
     "Händelseloggen lagrar högst 150 poster i flikens minne och töms vid omladdning. Ett modellförslag, en vald fil och en faktiskt avslutad uppspelning är skilda loggsteg. Inga exempelrader visas som mottagna live-events.",
-    "Vanliga spelet använder /api/table och egen koreografi. Partner använder /api/v1/table med presentation[] och en SSE-ström för samma API-nyckel och partner-playerId. Loggens observer kräver serverkonfiguration och en uttrycklig anslutning. BO-inloggning ansluter den inte. Strömmen saknar replay; avbrott kan ge luckor.",
+    "Partner-launch öppnar originalspelet för samma nyckel och spelare som SSE-observern. Launch och events är verifierade behörigheter. Att launch-spelets rundor faktiskt publiceras måste fortfarande bekräftas. Videokartan visar material och bindningar, inte spelade klipp. Protokollet håller hela mottagna meddelanden, högst 300 eller 4 MiB, och markerar stopp. Exportera före omladdning eller byte av vy. Strömmen saknar replay; avbrott kan ge luckor.",
     "Spelmotorn äger kort, regler, utfall, saldo och utbetalningar. OpenClaw får bara föreslå tillåten presentation. Sparade labbändringar publiceras inte automatiskt till spelet eller Render."
   ],
   "surfaces": [
@@ -49,7 +49,7 @@
     },
     {
       "name": "Händelselogg",
-      "purpose": "Aktuell fliks indata, beslut och uppspelning med tid, källa, vem och varför. Filtrera stegen eller öppna faktisk JSON. Här finns också valfri läsande Partner-observation; mottagna instruktioner spelas inte automatiskt."
+      "purpose": "Aktuell fliks indata, beslut och uppspelning. Verifiera Partner-åtkomst, öppna originalspelet, hämta videokarta och exportera observationer för 2D-mockupen. Mottagna instruktioner spelas inte automatiskt; faktiska klippstart/slut från originalspelaren ingår ännu inte."
     },
     {
       "name": "Chatt & OpenClaw",

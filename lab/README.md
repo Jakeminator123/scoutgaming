@@ -78,7 +78,8 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
   och filtrera stegen. Loggen håller högst 150 poster i minnet och töms vid
   omladdning. En kompakt logg följer de andra vyerna. Här finns även valfri,
   läsande observation av Partner-strömmen; den kör inget lokalt urval eller
-  någon uppspelning.
+  någon uppspelning. På samma yta kan du verifiera åtkomst, öppna originalspelet
+  via Partner-launch, läsa aktuell videokarta och exportera observationsprotokoll.
 - **Chatt & OpenClaw:** två tydliga chattvägar, anslutningsstatus och operatörschatt om det senast
   sparade projektet. Länk till den befintliga, separata native-dashboarden.
   Chatt kräver en konfigurerad anslutning; inga modellsvar fejkas.
@@ -217,7 +218,7 @@ serveranslutning. Ange följande i den lokala, Git-ignorerade `lab/.env.local`
 och starta om labbservern:
 
 - `BETTALOTTO_PARTNER_KEY_ID`: den publika Partner-nyckeln (`ck_live_…`), inte
-  backoffices rad-UUID. Nyckeln behöver `play`-behörighet.
+  backoffices rad-UUID. Strömmen behöver `events` eller `play`.
 - `BETTALOTTO_PARTNER_SECRET`: nyckelns hemliga signeringsdel, aldrig i webbläsaren.
 - `BETTALOTTO_PARTNER_PLAYER_ID`: partnerns spelar-ID för den kanal som ska läsas.
 - `BETTALOTTO_PARTNER_BASE_URL`: valfritt; standard är `https://bettalotto.se`.
@@ -229,9 +230,9 @@ Befintlig läsning av Director-/OpenClaw-inställningar från rotens `.env` är
 oförändrad. Flytta eller döp inte om de befintliga tjänsternas uppgifter för
 att aktivera Partner-loggen.
 
-`play` ger även behörighet till Partner-API:ts bordskommandon. Nyckeln är
-alltså inte begränsad till läsning bara för att denna observatör enbart
-anropar `GET /api/v1/events` och inte skickar spelhandlingar.
+`events` är en separat läsbehörighet i Kevins uppdaterade API. `play` ger även
+behörighet till bordskommandon. Live-ping den 21 september 2026 bekräftade
+`launch` och `events` för labbets nyckel; den har inte `play` eller `wallet`.
 
 Prefixet anger vem som utfärdar uppgifterna: Bettalotto Partner API, inte
 labbet. Nyckelparet kan användas av olika klienter inom sin behörighet;
@@ -247,8 +248,10 @@ Det historiska namnet `BETTALOTTO_API` avser enligt Kevins åtkomstuppgifter
 en separat lästoken för generationsregistret: `GET /api/v1/generations`
 med `Authorization: Bearer <readtoken>`. Den läser metadata/material och är
 inte Partner-nyckelparet för SSE. Se [Partner-dokumentationen](https://bettalotto.se/docs/partner-api.html).
-Detta klargör nycklarnas roller; någon liveanslutning till generations-API:t
-har inte verifierats här.
+**Hämta videokarta** använder `/api/v1/generations/mapping`, verifierat live
+den 21 september. Endast `BETTALOTTO_API` läses från rotens `.env`, sedan
+`lab/.env.local`; processmiljön vinner. Detta ändrar inte Partner-observerns
+inläsning. Inga miljöfiler skrivs eller videobinära filer hämtas av knappen.
 
 Nycklar skapas i backoffice under API Keys. **Anslut läsande** gör en faktisk
 anslutning; ”konfigurerad” bevisar inte behörighet eller trafik. Saknade
@@ -257,8 +260,11 @@ Ofullständiga nycklar och secrets stoppas av en lokal formatkontroll innan
 anslutning. Godkänt format bevisar inte att paret är giltigt, har rätt scope
 eller använder rätt playerId; det kan bara verifieras mot Bettalotto.
 
-Strömmen avser samma API-nyckel och partner-playerId. Den vanliga klientens
-`/api/table`-anrop ingår inte. En backoffice-inloggning ansluter inte labbet.
+Strömmen avser samma API-nyckel och partner-playerId som den nya launch-knappen.
+Kevin anger att launch-spelet ska kunna observeras i SSE. Den hämtade
+serverkoden publicerar däremot synligt från Partner-table; native `/api/table`
+har ingen motsvarande publicering. **Launch → rund-event är ännu oprövat live.**
+En accepterad anslutning bevisar inte denna koppling. BO-inloggning ansluter inte labbet.
 Observern läser publicerade rundor och presentationsinstruktioner, gör inga
 spelhandlingar och styr inte scenen. Mottagen instruktion, lokalt variantval
 och uppspelningskvitto är tre skilda saker.
@@ -266,6 +272,33 @@ och uppspelningskvitto är tre skilda saker.
 SSE-källan saknar replay. Avbrott loggas som möjliga luckor och kräver ny
 uttrycklig anslutning; loggen är ingen fullständig spelhistorik. Lokala API:n
 är `/api/inputs` för status och `/api/inputs/events` för observation.
+
+### Observera originalspelet inför 2D-mockupen
+
+1. Öppna `/activity` och välj **Verifiera Partner-åtkomst**. Det signerar
+   `/api/v1/ping` och visar endast tid, spelar-ID och scopes.
+2. Välj **Hämta videokarta** och **Anslut läsande** före spelöppningen.
+3. **Öppna referensspelet** signerar `/api/v1/launch` med samma konfigurerade
+   spelar-ID. Hela originalklienten med sin videospelare öppnas i en egen flik.
+   Inloggningslänken är kortlivad och sparas inte i logg/protokoll.
+4. Använd en avsedd demospelare med verifierad intern demoplånbok för rundprov.
+   Liveöppningen den 21 september visade Astrid och 0,00 €; inga insatser,
+   saldoändringar eller rundor gjordes. Nyckeln ger inte wallet-åtkomst.
+5. Kontrollera faktisk rundtrafik, koppla från och **Exportera observationsprotokoll**.
+   JSON-underlaget visas även för kopiering när webbläsaren inte hämtar filen.
+
+Protokollet håller hela mottagna rundmeddelanden före loggvisningens kortning.
+Det stoppar uttryckligen vid 300 meddelanden eller 4 MiB, utan att kasta bort
+äldre rundor. Det försvinner när vyn lämnas eller laddas om. Töm visningen
+tömmer bara de 150 loggraderna. Nycklar maskeras och URL-frågesträngar utelämnas.
+Videokartan, verifierade scopes och avbrott följer med exporten.
+
+Mapping beskriver registrerade klipp och BO-val; den är inget kvitto på klipp
+som faktiskt spelats. Protokollet saknar originalspelarens start/slut, kortlandning
+och fulla tabellsnapshots. 2D är en mockup av denna presentation. Att återspela
+en komplett runda och korrelera faktiska klipp återstår; observern driver inte scenen.
+`/api/inputs/reference` är lokal status (GET) och explicit verify/launch/mapping
+(POST); alla destinationer och credentials bestäms på servern.
 
 ## Video och kvarvarande integration
 
