@@ -6,6 +6,7 @@ import { prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engin
 import { buildRuntimeCatalog, validateProject } from './studio-model.mjs';
 import { createProjectStore, StudioError } from './project-store.mjs';
 import { loadVideoRegistry } from './video-registry.mjs';
+import { selectionFor, videoFitsLine, videoFitsEvent } from './video-intake.mjs';
 
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export function studioStore() { return createProjectStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR, 'data')); }
@@ -50,9 +51,12 @@ export async function remoteRequest(path, body, settings, fetchImpl, timeoutMs) 
 }
 
 // All AI advice is scoped to the exact draft, not merely its last saved revision.
-export function decisionCatalog(project, dealerId) {
+export function decisionCatalog(project, dealerId, mode = 'active') {
   const catalog = buildRuntimeCatalog(validateProject(project), dealerId);
-  catalog.revision = `draft-${createHash('sha256').update(JSON.stringify({ project, dealerId })).digest('hex')}`;
+  const variants = new Map(project.lines.filter(l => l.dealerId === dealerId).flatMap(l => l.variants).map(v => [v.id, v]));
+  const method = mode === 'rules' ? 'rules' : mode === 'random' ? 'random' : 'model';
+  for (const event of catalog.events) event.variants = event.variants.filter(v => v.id === event.baselineVariantId || selectionFor(variants.get(v.id))[method]);
+  catalog.revision = `draft-${createHash('sha256').update(JSON.stringify({ project, dealerId, mode })).digest('hex')}`;
   return catalog;
 }
 
@@ -62,21 +66,27 @@ export async function validateVideoBindings(project, { registry } = {}) {
   registry ??= await loadVideoRegistry();
   const known = new Set(registry.videos.map(video => video.id));
   if (bound.some(variant => !known.has(variant.videoGenerationId))) throw new StudioError('En videokoppling saknas i det kända registret. Välj en fil i Videobanken.', 422);
+  const videos = new Map(registry.videos.map(v => [v.id, v]));
+  for (const line of project.lines) for (const variant of line.variants) {
+    if (variant.videoGenerationId && !videoFitsLine(videos.get(variant.videoGenerationId), line.dealerId, line.eventId)) throw new StudioError('Videons registrerade dealer/event passar inte linjen. Välj rätt film.', 422);
+  }
 }
 
-export async function simulateStudio(body, { settings = settingsNow(), fetchImpl = fetch, videoRegistry } = {}) {
-  if (!['off', 'rules', 'shadow', 'active'].includes(body?.mode)) throw new StudioError('Välj standard, regler, shadow eller active.');
+export async function simulateStudio(body, { settings = settingsNow(), fetchImpl = fetch, videoRegistry, random = Math.random } = {}) {
+  if (!['off', 'rules', 'random', 'shadow', 'active'].includes(body?.mode)) throw new StudioError('Välj standard, regler, slump, shadow eller active.');
   const project = validateProject(body.project);
+  if (!videoRegistry && project.lines.some(l => l.variants.some(v => v.videoGenerationId))) videoRegistry = await loadVideoRegistry();
   await validateVideoBindings(project, { registry: videoRegistry });
   const event = project.events.find(item => item.id === body.eventId);
   if (!event) throw new StudioError('Eventet finns inte i kontraktet.');
-  const catalog = decisionCatalog(project, body.dealerId);
-  const input = { requestId: randomUUID(), event: event.exampleEvent, context: body.context, mode: body.mode === 'rules' ? 'active' : body.mode };
+  const catalog = decisionCatalog(project, body.dealerId, body.mode);
+  const input = { requestId: randomUUID(), event: event.exampleEvent, context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
   const prepared = prepareDecision(catalog, input);
   if (prepared.node.id !== body.eventId) throw new StudioError('Exemplet matchar inte valt event.');
   let reply = { advice: null, provider: { status: 'off' } };
-  if (body.mode === 'rules') {
-    reply = { advice: { requestId: prepared.requestId, catalogRevision: prepared.catalogRevision, variantId: prepared.eligible[0].id }, provider: { status: 'deterministic_rules' } };
+  if (body.mode === 'rules' || body.mode === 'random') {
+    const index = body.mode === 'random' ? Math.min(prepared.eligible.length - 1, Math.max(0, Math.floor(random() * prepared.eligible.length))) : 0;
+    reply = { advice: { requestId: prepared.requestId, catalogRevision: prepared.catalogRevision, variantId: prepared.eligible[index].id }, provider: { status: body.mode === 'random' ? 'local_random' : 'deterministic_rules' } };
   } else if (body.mode !== 'off') {
     if (settings.remoteUrl) {
       try { reply = await remoteRequest('/api/studio/advice', { catalog, input: { ...input, event: prepared.event, context: prepared.context } }, settings, fetchImpl, Math.max(500, settings.adviceTimeoutMs + 1500)); }
@@ -90,10 +100,22 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
     result.trace = result.trace.map(step => step.stage === 'advice' ? { stage: 'rules', status: 'selected', detail: 'Regelmotorn väljer högst prioriterade tillåtna variant. Inget modellanrop.' } : step);
     result.gate.reason = 'deterministic_rules';
   }
+  if (body.mode === 'random') {
+    result.trace = result.trace.map(step => step.stage === 'advice' ? { stage: 'random', status: 'selected', detail: 'Lika sannolikhet bland standard och uttryckligen slumpaktiverade alternativ vars triggers matchar. Endast labbpresentation.' } : step);
+    result.gate.reason = 'local_random';
+  }
+  let videoGenerationId = variant.videoGenerationId;
+  if (videoGenerationId) {
+    videoRegistry ??= await loadVideoRegistry();
+    if (!videoFitsEvent(videoRegistry.videos.find(v => v.id === videoGenerationId), prepared.event)) {
+      videoGenerationId = null;
+      result.trace.push({ stage: 'video', status: 'fallback', detail: 'Videons exakta situation/replik matchar inte exempel-eventet. Visar variantens 2D-reserv.' });
+    }
+  }
   return {
     decision: { variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, simulated: true },
     trace: result.trace, eligible: result.eligible, variant, asset: result.asset,
-    videoGenerationId: variant.videoGenerationId, provider: typeof reply?.provider?.status === 'string' ? reply.provider.status : 'unknown',
+    videoGenerationId, provider: typeof reply?.provider?.status === 'string' ? reply.provider.status : 'unknown',
   };
 }
 

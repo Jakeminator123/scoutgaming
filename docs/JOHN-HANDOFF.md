@@ -1,3 +1,30 @@
+## 2026-09-20 — local categorized video intake and standard coverage
+
+Added raw MP4/WebM intake to the existing lab VideoLibrary, with dealer,
+event, idle/action/speech/reaction, intended standard/alternative, exact
+speech/situation and notes. Files are bounded streamed uploads into ignored
+local data, SHA-256 identified and atomically indexed. Optional binding changes
+only the project draft. New alternatives are manual until explicitly allowed
+for rules/model/random; older projects retain prior behavior. Standard is the
+initial test mode. Added optional local presentation randomization, exact
+uploaded-video compatibility guards and a live reference/coverage audit.
+
+Audit: 16 nodes, 64 dealer lines, 256 variant records reference 64 distinct
+event-motion track sets, plus one separate social motion. All seed mappings
+and durations match. 224 original records have 224 distinct registered hashes
+and available local files; no saved default project/video bindings existed.
+No visual quality ranking or live BO binding is claimed.
+
+184 lab tests, typecheck and production Next build pass. Browser QA on isolated
+4192/data verified actual file selection/upload, saved standard, coverage,
+play-to-end/replay, manual alternative defaults, opt-in random selection,
+standard-mode preservation and reload persistence. No paid model/TTS call.
+All pre-commit commands attempted: integrity audits pass; six legacy tests
+are blocked by missing ffmpeg/ffprobe (five) or jq (one). Deep --probe likewise
+cannot run without ffprobe. Product player/media, calibration, RNG, DB and
+deployed OpenClaw are unchanged. Jira unavailable; no issue status claimed.
+Usage, storage, precise verification and remaining boundaries: lab/VIDEO-LIBRARY.md.
+
 ## 2026-09-20 — compact restart note for documentation/video findings
 
 Added random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-aterstart-dokumentation-och-videofynd.md

@@ -3,6 +3,7 @@ import { constants } from 'node:fs';
 import { access, lstat, open, readFile, realpath } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
+import { readUploads, uploadDirectory } from './video-uploads.mjs';
 
 // Server-only: the browser receives logical IDs, never archive paths or credentials.
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
@@ -73,7 +74,7 @@ function cacheKey(path, entry, info) {
 }
 
 async function inspectFile(archive, entry) {
-  const file = join(archive, `${entry.id}.mp4`);
+  const file = join(archive, `${entry.id}.${entry.extension ?? 'mp4'}`);
   const info = await lstat(file, { bigint: true });
   if (info.isSymbolicLink() || !info.isFile()) throw new RegistryError(403, 'Unsafe local video file.');
   const canonical = await realpath(file);
@@ -88,6 +89,13 @@ function text(value, max = 100) {
 }
 
 function publicEntry(entry, available, integrity) {
+  if (entry.classification) return {
+    id: entry.id, label: entry.classification.label, dealer: entry.classification.dealerId,
+    fileName: `${entry.id}.${entry.extension}`, verdict: 'unrated', bytes: entry.size,
+    sha256: entry.sha256, available, previewUrl: `/api/videos/${entry.id}`,
+    reviewStatus: 'unreviewed', integrity, suggestedEventId: entry.classification.eventId,
+    bindingScope: 'lab-only', source: 'upload', classification: entry.classification, addedAt: entry.addedAt,
+  };
   const dealerHint = text(entry.placement?.dealer, 40).toLowerCase();
   const dealer = DEALERS.has(dealerHint) ? dealerHint : undefined;
   const hint = text(entry.placement?.label, 80);
@@ -107,6 +115,7 @@ function publicEntry(entry, available, integrity) {
     integrity,
     ...(eventId && /^[a-zA-Z0-9._-]+$/.test(eventId) ? { suggestedEventId: eventId } : {}),
     bindingScope: 'lab-only',
+    source: 'archive',
   };
 }
 
@@ -125,7 +134,14 @@ export async function loadVideoRegistry(options = {}) {
   };
   let entries;
   try { entries = await readEntries(options); summary.snapshotReadable = true; }
-  catch { summary.notes.push('Videoregistret kunde inte läsas.'); return { videos: [], summary }; }
+  catch { summary.notes.push('Originalregistret kunde inte läsas.'); entries = new Map(); }
+  let uploads = [];
+  try { uploads = await readUploads(options); }
+  catch { summary.notes.push('Uppladdningsregistret kunde inte läsas; befintliga filer är bevarade.'); }
+  for (const entry of uploads) {
+    if (entries.has(entry.id)) throw new RegistryError(503, 'Duplicate video identity.');
+    entries.set(entry.id, entry);
+  }
   let archive;
   try { archive = await archiveLocation(selection); summary.readable = true; }
   catch { summary.notes.push('Det lokala videoarkivet är inte tillgängligt. Ange LAB_VIDEO_ARCHIVE på servern.'); }
@@ -133,9 +149,10 @@ export async function loadVideoRegistry(options = {}) {
   // Sequential metadata checks avoid opening hundreds of files at once.
   for (const entry of entries.values()) {
     let available = false, integrity = 'unavailable';
-    if (archive) {
+    const location = entry.classification ? uploadDirectory(options) : archive;
+    if (location) {
       try {
-        const { file, info } = await inspectFile(archive, entry);
+        const { file, info } = await inspectFile(location, entry);
         available = true;
         integrity = verified.has(cacheKey(file, entry, info)) ? 'verified' : 'unchecked';
       } catch (error) {
@@ -186,12 +203,16 @@ export async function getVideoResponse(id, request, options = {}) {
   if (typeof id !== 'string' || !UUID.test(id)) return errorResponse(request, 404, 'Unknown video.');
   let handle;
   try {
-    let entries;
-    try { entries = await readEntries(options); }
-    catch { throw new RegistryError(503, 'Video inventory unavailable.'); }
-    const entry = entries.get(id);
+    let entry, uploaded, snapshotFailed = false;
+    try { entry = (await readEntries(options)).get(id); }
+    catch { snapshotFailed = true; }
+    if (!entry) {
+      uploaded = (await readUploads(options)).find(v => v.id === id);
+      entry = uploaded;
+    }
+    if (!entry && snapshotFailed) throw new RegistryError(503, 'Video inventory unavailable.');
     if (!entry) return errorResponse(request, 404, 'Unknown video.');
-    const archive = await archiveLocation(selectArchive(options));
+    const archive = await archiveLocation(uploaded ? { path: uploadDirectory(options) } : selectArchive(options));
     const { file, info } = await inspectFile(archive, entry);
     // Validate and stream the same open file descriptor, not a second path lookup.
     handle = await open(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
@@ -220,7 +241,7 @@ export async function getVideoResponse(id, request, options = {}) {
       status = 206;
     }
     const headers = {
-      ...commonHeaders, 'Content-Type': 'video/mp4', 'Accept-Ranges': 'bytes', ETag: etag,
+      ...commonHeaders, 'Content-Type': entry.extension === 'webm' ? 'video/webm' : 'video/mp4', 'Accept-Ranges': 'bytes', ETag: etag,
       'Content-Length': String(range.end - range.start + 1),
       ...(status === 206 ? { 'Content-Range': `bytes ${range.start}-${range.end}/${entry.size}` } : {}),
     };

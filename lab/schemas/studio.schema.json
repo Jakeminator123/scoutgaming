@@ -2317,6 +2317,16 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
         },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rules", "model", "random"],
+          "properties": {
+            "rules": { "type": "boolean" },
+            "model": { "type": "boolean" },
+            "random": { "type": "boolean" }
+          }
+        },
         "videoGenerationId": {
           "oneOf": [
             {

@@ -1,5 +1,9 @@
-export interface VideoRegistryOptions { archiveDir?: string | null; snapshotPath?: string }
+import type { VideoMetadata } from './video-intake.mjs';
+export interface VideoRegistryOptions { archiveDir?: string | null; snapshotPath?: string; uploadDir?: string }
 export interface RegistryVideo {
+  classification?: VideoMetadata;
+  source?: 'archive' | 'upload';
+  addedAt?: string;
   id: string;
   label: string;
   dealer?: 'astrid' | 'vera' | 'amira' | 'mei';

@@ -4,7 +4,8 @@ export type TriggerCategory = 'deterministic' | 'social' | 'temperament';
 export type PredicateOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'includes' | 'all_eq' | 'in' | 'exists';
 export type Scalar = string | number | boolean | null;
 export interface StudioTrigger { id: string; label: string; category: TriggerCategory; path: string; op: PredicateOperator; value: Scalar | Scalar[] }
-export interface StudioVariant { id: string; label: string; priority: number; triggerIds: string[]; assetId: string; videoGenerationId: string | null }
+export interface VariantSelection { rules: boolean; model: boolean; random: boolean }
+export interface StudioVariant { id: string; label: string; priority: number; triggerIds: string[]; assetId: string; videoGenerationId: string | null; selection?: VariantSelection }
 export interface StudioLine { dealerId: DealerId; eventId: string; label: string; baselineVariantId: string; variants: StudioVariant[] }
 export interface StudioEvent { id: string; label: string; description: string; sourceType: SourceType; sourceRef: string; sourceStatus: 'verified' | 'proposed'; match: Record<string, unknown>; exampleEvent: Record<string, unknown> }
 export interface StudioAsset { id: string; label: string; kind: 'animation'; animation: string; color: string; durationMs: number }
