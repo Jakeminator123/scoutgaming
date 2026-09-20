@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { resolve, basename, dirname } from 'node:path';
 import { parseEnv } from 'node:util';
 
-export const LAB_ROOT = fileURLToPath(new URL('../', import.meta.url));
+// Resolve as a filesystem path, not a bundled URL asset. The same adapter is
+// also imported by the local Next.js studio.
+export const LAB_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_ENV_FILES = basename(dirname(resolve(LAB_ROOT))) === 'open-claw'
   ? [resolve(LAB_ROOT, '../../.env'), resolve(LAB_ROOT, '.env')] : [resolve(LAB_ROOT, '.env')];
 const KEYS = ['HOST', 'PORT', 'LAB_API_TOKEN', 'LAB_DATA_DIR', 'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',

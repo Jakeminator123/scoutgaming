@@ -1,0 +1,222 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import schema from '../schemas/studio.schema.json' with { type: 'json' };
+import {
+  createSeedProject, validateProject, buildRuntimeCatalog, addVariant, removeVariant,
+  removeTrigger, renameEvent, renameLine, DEALER_IDS, SOURCE_TYPES, allowedPathDescriptors,
+  StudioValidationError
+} from '../lib/studio-model.mjs';
+import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
+
+test('seed contains blackjack, four dealers, sixteen locked nodes and 64 editable lines', () => {
+  const p = createSeedProject();
+  assert.equal(validateProject(p), p);
+  assert.equal(p.gameId, 'blackjack');
+  assert.deepEqual(p.dealers.map(d => d.id), DEALER_IDS);
+  assert.equal(p.events.length, 16);
+  assert.deepEqual([...new Set(p.events.map(e => e.sourceType))].sort(), [...SOURCE_TYPES].sort());
+  assert.equal(p.lines.length, 64);
+  assert.ok(p.lines.every(line => line.variants.length === 2));
+  assert.equal(p.assets.length, 32);
+  assert.equal(schema.properties.events.minItems, p.events.length);
+  assert.equal(schema.$defs.variant.properties.videoGenerationId.oneOf[0].type, 'null');
+});
+
+test('seed clones are isolated and JSON round-trips', () => {
+  const first = createSeedProject(); first.events[0].label = 'Mitt namn';
+  const second = createSeedProject();
+  assert.notEqual(second.events[0].label, first.events[0].label);
+  assert.deepEqual(validateProject(JSON.parse(JSON.stringify(first))), first);
+});
+
+test('JSON schema agrees with model variant limits and allowed predicate fields/values', () => {
+  assert.equal(schema.$defs.line.properties.variants.minItems, 1);
+  assert.equal(schema.$defs.line.properties.variants.maxItems, 5);
+  assert.equal(schema.$defs.variant.properties.triggerIds.maxItems, 16);
+  assert.equal(schema.properties.triggers.maxItems, 128);
+  assert.equal(schema.properties.lines.minItems, 64);
+  assert.equal(schema.properties.lines.maxItems, 64);
+  assert.equal(schema.$defs.trigger.oneOf.length, allowedPathDescriptors.length);
+  for (const descriptor of allowedPathDescriptors) {
+    const entry = schema.$defs.trigger.oneOf.find(item => item.properties.path.const === descriptor.path);
+    assert.ok(entry, descriptor.path);
+    assert.equal(entry.properties.category.const, descriptor.category);
+    assert.deepEqual(entry.properties.op.enum, descriptor.operators);
+    const comparisons = entry.allOf[0];
+    assert.equal(comparisons.then.properties.value.type, 'boolean');
+    const membership = comparisons.else.then.properties.value;
+    assert.equal(membership.maxItems, 32);
+    const scalar = comparisons.else.else.properties.value;
+    assert.deepEqual(membership.items, scalar);
+    if (descriptor.values) assert.deepEqual(scalar.enum, descriptor.values);
+    if (descriptor.kind === 'number') {
+      assert.equal(scalar.type, 'integer');
+      assert.equal(scalar.minimum, descriptor.min);
+      assert.equal(scalar.maximum, descriptor.max);
+    }
+  }
+});
+
+test('labels can be edited without changing source IDs or source matches', () => {
+  const p = createSeedProject();
+  const renamed = renameEvent(p, p.events[0].id, 'Min hälsning');
+  const withLine = renameLine(renamed, 'astrid', p.events[0].id, 'Astrids standardlinje');
+  assert.equal(withLine.events[0].label, 'Min hälsning');
+  assert.equal(withLine.lines[0].label, 'Astrids standardlinje');
+  assert.deepEqual(withLine.events[0].match, p.events[0].match);
+  assert.equal(withLine.events[0].id, p.events[0].id);
+  assert.notEqual(p.events[0].label, withLine.events[0].label);
+});
+
+test('source IDs, match rules, examples, source types and ordered fallback cannot be edited', () => {
+  for (const change of [
+    p => { p.events[0].id = 'fake.event'; },
+    p => { p.events[0].sourceType = 'pickup'; },
+    p => { p.events[0].match = { line: 'placebets' }; },
+    p => { p.events[0].exampleEvent.futureCard = 'A'; },
+    p => { [p.events[0], p.events[3]] = [p.events[3], p.events[0]]; }
+  ]) {
+    const p = createSeedProject(); change(p);
+    assert.throws(() => validateProject(p), /källkontrakt|eventordning/);
+  }
+});
+
+test('unknown project fields and future/private predicates are rejected', () => {
+  for (const field of ['context.futureCards', 'event.rng', 'event.shoe', 'context.wallet', '__proto__.polluted']) {
+    const p = createSeedProject(); p.triggers[0].path = field;
+    assert.throws(() => validateProject(p), /fältet är inte tillåtet/);
+  }
+  const p = createSeedProject(); p.playerDatabase = {};
+  assert.throws(() => validateProject(p), /okänt fält playerDatabase/);
+});
+
+test('trigger value, operator and category are bounded by the selected field', () => {
+  for (const change of [
+    p => { p.triggers[0].op = 'eval'; },
+    p => { p.triggers[0].value = 'yes'; },
+    p => { p.triggers[0].category = 'deterministic'; },
+    p => { p.triggers.find(t => t.id === 'recent-losses').value = -1; },
+    p => { p.triggers.find(t => t.id === 'warm-mood').value = 'addicted'; }
+  ]) {
+    const p = createSeedProject(); change(p);
+    assert.throws(() => validateProject(p), StudioValidationError);
+  }
+  assert.ok(allowedPathDescriptors.some(d => d.path === 'context.temperament.mood'));
+});
+
+test('duplicate event, dealer, trigger, asset, variant and line IDs are rejected', () => {
+  for (const change of [
+    p => { p.events[1] = structuredClone(p.events[0]); },
+    p => { p.dealers[1].id = p.dealers[0].id; },
+    p => { p.triggers[1].id = p.triggers[0].id; },
+    p => { p.assets[1].id = p.assets[0].id; },
+    p => { p.lines[0].variants[1].id = p.lines[0].variants[0].id; },
+    p => { p.lines[1] = structuredClone(p.lines[0]); }
+  ]) {
+    const p = createSeedProject(); change(p);
+    assert.throws(() => validateProject(p), /dubblerat ID/);
+  }
+});
+
+test('missing and conditional baseline variants are rejected', () => {
+  const p = createSeedProject(), first = p.lines[0];
+  assert.throws(() => removeVariant(p, first.dealerId, first.eventId, first.baselineVariantId), /standardvarianten får inte tas bort/);
+  first.variants.shift();
+  assert.throws(() => validateProject(p), /standardvarianten måste finnas/);
+  const conditional = createSeedProject(); conditional.lines[0].variants[0].triggerIds = ['chat-praise'];
+  assert.throws(() => validateProject(conditional), /ovillkorlig/);
+  const replaced = createSeedProject(); replaced.lines[0].baselineVariantId = replaced.lines[0].variants[1].id;
+  assert.throws(() => validateProject(replaced), /stabila ID/);
+});
+
+test('unknown references and missing dealer/event lines fail before saving', () => {
+  for (const change of [
+    p => { p.lines[0].variants[1].triggerIds = ['missing-trigger']; },
+    p => { p.lines[0].variants[1].assetId = 'missing-asset'; },
+    p => { p.lines[0].dealerId = 'unknown'; },
+    p => { p.lines[0].eventId = 'unknown'; },
+    p => { p.lines.pop(); }
+  ]) {
+    const p = createSeedProject(); change(p);
+    assert.throws(() => validateProject(p), StudioValidationError);
+  }
+});
+
+test('alternatives can be added and removed, at most four plus permanent baseline', () => {
+  let p = createSeedProject(); const line = p.lines[0];
+  for (let n = 0; n < 3; n++) p = addVariant(p, line.dealerId, line.eventId, `Alternativ ${n}`);
+  assert.equal(p.lines[0].variants.length, 5);
+  assert.throws(() => addVariant(p, line.dealerId, line.eventId), /högst fyra/);
+  const removedId = p.lines[0].variants[2].id;
+  p = removeVariant(p, line.dealerId, line.eventId, removedId);
+  assert.equal(p.lines[0].variants.length, 4);
+  assert.equal(p.lines[0].baselineVariantId, line.baselineVariantId);
+  assert.ok(!p.lines[0].variants.some(v => v.id === removedId));
+});
+
+test('referenced triggers cannot be removed until explicitly detached from every dealer', () => {
+  const p = createSeedProject();
+  assert.throws(() => removeTrigger(p, 'returning-player'), /Koppla först bort den uttryckligen/);
+  assert.ok(p.triggers.some(t => t.id === 'returning-player'));
+  for (const line of p.lines) for (const variant of line.variants) variant.triggerIds = variant.triggerIds.filter(id => id !== 'returning-player');
+  const removed = removeTrigger(p, 'returning-player');
+  assert.ok(!removed.triggers.some(t => t.id === 'returning-player'));
+  assert.ok(removed.lines.every(line => line.variants.every(v => !v.triggerIds.includes('returning-player'))));
+  validateProject(removed);
+  const unused = removeTrigger(createSeedProject(), 'warm-mood');
+  assert.ok(!unused.triggers.some(t => t.id === 'warm-mood'));
+});
+
+test('video links are generation IDs only and never change runtime source events', () => {
+  const p = createSeedProject(); p.lines[0].variants[1].videoGenerationId = 'generation-123';
+  validateProject(p);
+  const catalog = buildRuntimeCatalog(p, 'astrid');
+  assert.equal(catalog.events[0].variants[1].videoGenerationId, undefined);
+  assert.deepEqual(catalog.events[0].exampleEvent, p.events[0].exampleEvent);
+  for (const path of ['C:/Videos/test.mp4', '../../secret.txt', 'https://unknown.invalid/file.mp4']) {
+    p.lines[0].variants[1].videoGenerationId = path;
+    assert.throws(() => validateProject(p), /generationId/);
+  }
+});
+
+test('all dealer catalogues round-trip through the real legacy engine', () => {
+  const p = createSeedProject();
+  for (const dealerId of DEALER_IDS) {
+    const catalog = buildRuntimeCatalog(p, dealerId);
+    assert.deepEqual(validateCatalog(catalog), { valid: true, errors: [] });
+    for (const event of p.events) {
+      const prepared = prepareDecision(catalog, { requestId: `${dealerId}.${event.id}`, event: event.exampleEvent });
+      assert.equal(prepared.node.id, event.id);
+      assert.ok(prepared.baseline.id.startsWith(`${dealerId}.`));
+      const result = finalizeDecision(prepared, null, 'off');
+      assert.equal(result.selected.id, prepared.baseline.id);
+      assert.deepEqual(result.event, event.exampleEvent);
+    }
+  }
+});
+
+test('social and deterministic predicates survive conversion; other dealer advice cannot cross over', () => {
+  const p = createSeedProject(), catalog = buildRuntimeCatalog(p, 'astrid');
+  const prepared = prepareDecision(catalog, { requestId: 'conversion-test', event: p.events[0].exampleEvent, mode: 'active', context: { playerHistory: { returning: true, preferredLanguage: 'de' } } });
+  assert.equal(prepared.eligible.length, 2);
+  const contextual = prepared.eligible.find(v => v.id.endsWith('.contextual'));
+  const accepted = finalizeDecision(prepared, { requestId: prepared.requestId, catalogRevision: p.revision, variantId: contextual.id }, 'active');
+  assert.equal(accepted.gate.accepted, true);
+  const wrongDealer = finalizeDecision(prepared, { requestId: prepared.requestId, catalogRevision: p.revision, variantId: contextual.id.replace('astrid.', 'vera.') }, 'active');
+  assert.equal(wrongDealer.gate.reason, 'ineligible_variant');
+});
+
+test('temperament is an explicit croupier mood predicate, not inferred player emotion', () => {
+  const p = createSeedProject(); p.lines[0].variants[1].triggerIds = ['warm-mood'];
+  const catalog = buildRuntimeCatalog(p, 'astrid');
+  assert.deepEqual(catalog.events[0].variants[1].when.all, [{ path: 'context.temperament.mood', op: 'eq', value: 'warm' }]);
+  assert.deepEqual(validateCatalog(catalog), { valid: true, errors: [] });
+  const warm = prepareDecision(catalog, { requestId: 'mood-warm', event: p.events[0].exampleEvent, context: { temperament: { mood: 'warm' } } });
+  assert.equal(warm.eligible.length, 2);
+  assert.equal(warm.context.temperament.mood, 'warm');
+  const calm = prepareDecision(catalog, { requestId: 'mood-calm', event: p.events[0].exampleEvent, context: { temperament: { mood: 'calm' } } });
+  assert.equal(calm.eligible.length, 1);
+  assert.equal(p.triggers.find(t => t.id === 'warm-mood').category, 'temperament');
+  p.triggers.find(t => t.id === 'warm-mood').path = 'context.player.emotion';
+  assert.throws(() => validateProject(p), /fältet är inte tillåtet/);
+});

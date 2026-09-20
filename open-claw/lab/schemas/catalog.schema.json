@@ -245,7 +245,8 @@
                               "context.playerHistory.returning",
                               "context.playerHistory.preferredLanguage",
                               "context.session.recentWins",
-                              "context.session.recentLosses"
+                              "context.session.recentLosses",
+                              "context.temperament.mood"
                             ]
                           },
                           "op": {

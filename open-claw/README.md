@@ -1,7 +1,10 @@
 # OpenClaw
 
-- **Aktiv kod:** [lab/](lab/README.md) — editor, testanimationer, OpenClaw-adapter,
-  Docker och Render-blueprint. Starta med `npm --prefix open-claw/lab start`.
+- **Nya lokala labbet:** [../lab/](../lab/README.md) — Next.js-editor,
+  animerad scen, JSON-policyer och videobank. Starta med `npm --prefix lab run dev`.
+- **OpenClaw och Render:** [lab/](lab/README.md) — Gateway, adapter och Docker.
+  Blueprinten ligger i [lab/render.yaml](lab/render.yaml). Sökvägen behålls
+  för befintlig drift; den äldre editorn är inte den nya lokala studion.
 - **För Jakob:** [dagens korta arbetsnotering](../random-stuff-jakob/jakob-docs/2026-09-20-openclaw-och-labb.md).
 - **Teknisk dokumentation:** [läs vid behov](lab/docs/README.md).
 - **Historik, inte runtime:** [archive/](archive/README.md). Det äldre
