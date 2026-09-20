@@ -66,9 +66,9 @@ export function isAssetCompatible(event, asset) {
 export function validateProject(project, { allowIncompatibleAnimations = false } = {}) {
   const errors = [];
   const error = (at, message) => errors.push(`${at}: ${message}`);
-  const keys = (value, allowed, at) => {
+  const keys = (value, allowed, at, optional = []) => {
     if (!record(value)) { error(at, 'ska vara ett objekt'); return false; }
-    for (const key of Object.keys(value)) if (!allowed.includes(key)) error(at, `okänt fält ${key}`);
+    for (const key of Object.keys(value)) if (!allowed.includes(key) && !optional.includes(key)) error(at, `okänt fält ${key}`);
     for (const key of allowed) if (!Object.hasOwn(value, key)) error(at, `fältet ${key} saknas`);
     return true;
   };
@@ -139,7 +139,13 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     if (!array(line.variants, `${at}.variants`, 1, MAX_ALTERNATIVES + 1)) return;
     line.variants.forEach((variant, vi) => {
       const vp = `${at}.variants[${vi}]`;
-      if (!keys(variant, ['id', 'label', 'priority', 'triggerIds', 'assetId', 'videoGenerationId'], vp)) return;
+      if (!keys(variant, ['id', 'label', 'priority', 'triggerIds', 'assetId', 'videoGenerationId'], vp, ['selection'])) return;
+      if (Object.hasOwn(variant, 'selection')) {
+        if (keys(variant.selection, ['rules', 'model', 'random'], `${vp}.selection`)) {
+          for (const value of Object.values(variant.selection)) if (typeof value !== 'boolean') error(`${vp}.selection`, 'urvalsval ska vara booleska');
+        }
+        if (variant.id === expectedBaseline) error(`${vp}.selection`, 'standarden är alltid tillgänglig och ska inte ha urvalsbegränsningar');
+      }
       id(variant.id, `${vp}.id`); duplicate(variantIds, variant.id, `${vp}.id`); label(variant.label, `${vp}.label`);
       if (typeof variant.id !== 'string' || !variant.id.startsWith(`${line.dealerId}.${line.eventId}.`)) error(`${vp}.id`, 'variantens ID ska höra till samma croupier/event');
       if (!Number.isInteger(variant.priority) || variant.priority < -100 || variant.priority > 100) error(`${vp}.priority`, 'ska vara ett heltal från -100 till 100');
@@ -194,7 +200,7 @@ export function addVariant(project, dealerId, eventId, label = 'Ny variant') {
     if (line.variants.length >= MAX_ALTERNATIVES + 1) throw new StudioValidationError(['variants: högst fyra alternativ utöver standardvarianten']);
     let serial = 1;
     while (line.variants.some(variant => variant.id === `${dealerId}.${eventId}.variant${serial}`)) serial++;
-    line.variants.push({ id: `${dealerId}.${eventId}.variant${serial}`, label, priority: 10, triggerIds: [], assetId: line.variants.find(variant => variant.id === line.baselineVariantId).assetId, videoGenerationId: null });
+    line.variants.push({ id: `${dealerId}.${eventId}.variant${serial}`, label, priority: 10, triggerIds: [], assetId: line.variants.find(variant => variant.id === line.baselineVariantId).assetId, videoGenerationId: null, selection: { rules: false, model: false, random: false } });
   });
 }
 export function removeVariant(project, dealerId, eventId, variantId) {

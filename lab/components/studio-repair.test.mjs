@@ -16,6 +16,7 @@ const mocks = {
   './social-chat-panel': { SocialChatPanel: empty },
   './trigger-editor': { TriggerEditor: empty, categoryLabels: {}, defaultValue: () => null },
   './video-library': { VideoLibrary: empty, VariantVideoBinding: empty },
+  './variant-selection': { VariantSelectionEditor: empty },
   './gateway-panel': { GatewayPanel: empty, ModeSelector: empty, modeLabels: { rules: 'Regler' } },
   './test-context': { TestContextPanel: empty, neutralContext: {} },
 };

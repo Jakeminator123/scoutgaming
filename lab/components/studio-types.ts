@@ -1,12 +1,16 @@
 import type { StudioAsset, StudioVariant } from '../lib/studio-model.mjs';
+import type { VideoMetadata } from '../lib/video-intake.mjs';
 
 export type StudioView = 'tree' | 'lab' | 'videos' | 'openclaw';
-export type DirectorMode = 'off' | 'rules' | 'shadow' | 'active';
+export type DirectorMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 
 export interface VideoEntry {
+  classification?: VideoMetadata;
+  source?: 'archive' | 'upload';
+  addedAt?: string;
   id: string;
   label: string;
-  dealer?: string;
+  dealer?: 'astrid' | 'vera' | 'amira' | 'mei';
   fileName: string;
   verdict: 'want' | 'no' | 'unrated';
   bytes: number;

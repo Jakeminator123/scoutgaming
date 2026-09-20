@@ -7,6 +7,7 @@ dashboard är separata. Inget du sparar här publiceras automatiskt.
 
 Aktuell läsväg: [systemkartan](../random-stuff-jakob/jakob-docs/systemkarta/README.md).
 Praktiskt nytt prov: [chatta med Astrid, Ledsen och sparat tal](SOCIAL-CHAT.md).
+Video-intake: [lägg in standardtagningar och alternativ, välj användning och se täckning](VIDEO-LIBRARY.md).
 Buggar, förbättringar och öppna kontroller för labbet och övriga repot finns i
 [findings](../docs/findings/README.md); implementation och QA följs i Jira CAC.
 
@@ -51,7 +52,9 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
   förhandsvisningsval. **Testa event** kör regler/modell. Beslutsmodell och
   simulerad kontext ligger samlade under **Regeltest & OpenClaw**. I Astrids vänteläge finns separat
   riktig OpenClaw-spelarchatt med redigerbar social policy och valfritt tal.
-- **Videobanken:** inspektera original och bind vald variant till ett exakt
+- **Videobanken:** lägg in egna MP4/WebM-filer med dealer, event, typ,
+  standard/alternativ och konkret situation. Filtrera banken och kontrollera
+  vilka standardlinjer som har video. Inspektera original och bind vald variant till ett exakt
   `videoGenerationId`. Samma koppling kan redigeras direkt i Eventstudion.
   Detta är en labbkoppling, inte ett runtime-godkännande.
 - **OpenClaw:** ansvar, anslutningsstatus och operatörschatt om det senast
@@ -111,7 +114,9 @@ Triggerkategorier: `deterministic` (publicerat spel/avgjord historik), `social`
 (simulerad chatt/preferens), `temperament` (croupierns framtoning, inte en
 diagnos av spelaren). I nodträdet visas två huvudgrupper: **spelstyrda** och
 **sociala/uttryck** (social + temperament). Alla valda villkor måste stämma. Inga villkor betyder
-alltid tillåten. [Detaljer om policyerna](policies/README.md).
+inga extra villkor; variantens separata val för regler, modell och slump avgör
+vilka urvalslägen den får delta i. Nya alternativ börjar manuellt.
+[Detaljer om policyerna](policies/README.md) och [videointake](VIDEO-LIBRARY.md).
 
 **Spara projekt** validerar, kontrollerar revision och skriver atomiskt med
 historik. Ett annat fönsters nyare ändringar skrivs inte över. Startfilen
@@ -133,7 +138,8 @@ Lokal studio → lokal server → HTTPS till Render Director → privat OpenClaw
 ```
 
 `off` använder standard utan modell. `rules` väljer högst prioriterade
-tillåtna variant utan modell. `shadow` tar emot råd men spelar standard.
+tillåtna variant utan modell. `random` lottar mellan standard och uttryckligen
+slumpaktiverade alternativ vars triggers matchar. `shadow` tar emot råd men spelar standard.
 `active` tillåter bara ett godkänt variant-ID för exakt event, dealer och
 utkastrevision. Fel, timeout eller otillåtet råd ger standard. RNG, kort,
 saldo och utbetalningar är aldrig OpenClaws ansvar.
@@ -157,11 +163,13 @@ anslutningsprov, inte en garanti för svarstiden i spelet.
 
 ## Video och kvarvarande integration
 
-Registret läses från den befintliga
+Originalregistret läses från den befintliga
 [V3-snapshoten](../docs/animation-events/v3-video-map/snapshot.json).
 På Jakobs Windows hittas originalarkivet automatiskt; annars anges
 `LAB_VIDEO_ARCHIVE` i `lab/.env.local`. Inga videor flyttas eller läggs i Git.
-Servern tillåter bara kända generation-ID:n och kontrollerar storlek och
+Egna uppladdningar läses dessutom från `data/videos/index.json`; filer sparas
+byte för byte i samma Git-ignorerade mapp. Servern tillåter bara registrerade
+video-ID:n och kontrollerar storlek och
 SHA-256 före uppspelning. `want` är intake, inte visuell acceptans.
 
 Registret är lokal filmetadata, inte AI-indexering av filmernas innehåll.
