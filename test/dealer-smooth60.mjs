@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {validateContactTake,calibrationPayload,selectContactTake,contactCueClock} from '../web/public/performance-contact.mjs';
 import {canRetargetTake} from '../web/public/dealer-reach.mjs';
 const root=new URL('../web/public/',import.meta.url);
@@ -15,7 +16,7 @@ test('60 fps native RGB and interpolated frame records preserve the source clock
     assert.equal(sha(calibrationPayload(t)),t.calibrationSha256);
     const file=new URL(t.media.src,root);
     assert.equal(sha(fs.readFileSync(file)),t.media.sha256);
-    const p=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,has_b_frames','-of','json',file.pathname])).streams[0];
+    const p=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,has_b_frames','-of','json',fileURLToPath(file)])).streams[0];
     assert.equal(p.width,t.media.width);assert.equal(p.height,t.media.height*2);
     assert.equal(Number(p.nb_read_frames),t.media.frames);assert.equal(p.r_frame_rate,'60/1');assert.equal(p.has_b_frames,0);
     assert.equal(p.width,1920);assert.equal(p.height,2160);
@@ -25,7 +26,7 @@ test('60 fps native RGB and interpolated frame records preserve the source clock
     assert.equal(t.media.frames,Math.ceil((old.media.frames-1)/.32)+1);
     assert.ok(Math.abs(t.events.rest/60-old.events.rest/24/.8)<1/60);
     for(const key of ['pickup','release','land'])assert.ok(Math.abs(t.events[key]/60-old.events[key]/24/.8)<=1/120);
-    const hashes=execFileSync('ffmpeg',['-v','error','-i',file.pathname,'-f','framemd5','-']).toString().split('\n').filter(x=>x&&!x.startsWith('#')).map(x=>x.split(',').at(-1).trim());
+    const hashes=execFileSync('ffmpeg',['-v','error','-i',fileURLToPath(file),'-f','framemd5','-']).toString().split('\n').filter(x=>x&&!x.startsWith('#')).map(x=>x.split(',').at(-1).trim());
     assert.equal(new Set(hashes).size,t.media.frames,'intermediate frames must not be duplicated');
   }
 });

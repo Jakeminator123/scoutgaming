@@ -1,3 +1,33 @@
+## 2026-09-20 — Windows media/player test portability
+
+Reproduced the reported 11 failures (99/110 Node tests passed): five script-path
+errors, one missing ffmpeg, four missing ffprobe and one WSL/Bash launch failure.
+Replaced seven filesystem URL.pathname arguments in six tests with fileURLToPath,
+including five latent media-path arguments hidden behind missing tools. The
+bugshot test now selects existing Git for Windows Bash, normalizes its extracted
+shell source to LF and passes an MSYS-compatible temporary path. Its real shell/
+jq payload assertions remain intact; tools/bugshot.sh is unchanged.
+
+The cue audit now hashes CRLF as LF only for cue text, preserving every other
+byte and exact binary-media hashing. Astrid's LF cue hash matches both its Git
+blob and existing baseline. Added three regression tests for equivalence and
+continued rejection of content/media changes. Original cue/media/calibration
+and the actual regression baseline were not rewritten or regenerated.
+
+Installed FFmpeg/ffprobe 9.0.1 and jq 1.8.2 under the user's LocalAppData Programs/
+CroupierTestTools; archive/binary SHA-256 and jq's PGP signature verified. Reused
+existing Git Bash/GnuPG. Only User PATH changed; no system install/WSL/reboot.
+
+Validation: every one of the 12 pre-commit commands exited 0; their Node groups
+passed 113/113 (110 original + three new). Dealer --probe passed all 90 streams;
+lab passed 69/69 and open-claw/lab passed 62/62. Zero skips/failures/cancellations.
+Exact commands, hashes, setup and remaining boundaries: WINDOWS-MEDIA-TESTS.md.
+No test execution blocker remains. The 13 known missing speech takes and human
+lip-sync/contact acceptance remain open; no runtime or new visual approval.
+No CAC issue ID/Jira connection was available, so no statuses were changed.
+Inbox API was unavailable to this process. Preserved other work/private notes.
+Local commit only; no push, deployment, secrets or Render configuration changes.
+
 ## 2026-09-20 — final work-branch publication preparation
 
 Jakob requested saving and pushing all completed local work to origin.

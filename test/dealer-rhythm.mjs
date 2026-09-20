@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {validateContactTake,calibrationPayload,selectContactTake,contactCueClock} from '../web/public/performance-contact.mjs';
 import {canRetargetTake} from '../web/public/dealer-reach.mjs';
 const root=new URL('../web/public/',import.meta.url);
@@ -14,7 +15,7 @@ test('rhythm footage and frame records stay bound, with subsecond shoe returns',
     assert.equal(sha(calibrationPayload(t)),t.calibrationSha256);
     const file=new URL(t.media.src,root);
     assert.equal(sha(fs.readFileSync(file)),t.media.sha256);
-    const p=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,has_b_frames','-of','json',file.pathname])).streams[0];
+    const p=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,has_b_frames','-of','json',fileURLToPath(file)])).streams[0];
     assert.equal(p.width,t.media.width);assert.equal(p.height,t.media.height*2);
     assert.equal(Number(p.nb_read_frames),t.media.frames);assert.equal(p.r_frame_rate,'24/1');assert.equal(p.has_b_frames,0);
     assert.ok(t.events.rest/24<.8);assert.equal(t.tracking.sourceStop-t.tracking.sourceStart,t.media.frames);

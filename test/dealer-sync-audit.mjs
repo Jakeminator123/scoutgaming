@@ -4,7 +4,8 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'nod
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
-const script=new URL('../pipeline/audit-dealer-sync.mjs',import.meta.url).pathname;
+import { fileURLToPath } from 'node:url';
+const script=fileURLToPath(new URL('../pipeline/audit-dealer-sync.mjs',import.meta.url));
 function fixture(t) {
  const root=mkdtempSync(join(tmpdir(),'sync-audit-'));t.after(()=>rmSync(root,{recursive:true,force:true}));mkdirSync(join(root,'docs'));
  const bases=['dealer','dealers/astrid','dealers/amira','dealers/mei'].map(b=>join(root,'web/public',b));
@@ -14,6 +15,7 @@ function fixture(t) {
   writeFileSync(join(base,'audio/en/bank.json'),JSON.stringify({win:{text:'Well played.'}}));
   writeFileSync(join(base,'streams/index.json'),JSON.stringify({clips:{'idle-1/speak/win':{file:'win.h264',audioDelayMs:100,fps:24,frames:[[0,5]]}}}));
  }
+ writeFileSync(join(bases[1],'dealing-cues.json'),'{\n  "release": 12\n}\n');
  const run=(...args)=>execFileSync(process.execPath,[script,'--root',root,...args],{encoding:'utf8',stdio:'pipe'});
  run('--record-baseline');return {root,bases,run};
 }
@@ -35,4 +37,27 @@ test('embedded speech media and wording are protected by the roster baseline',t=
  writeFileSync(path,JSON.stringify(manifest));assert.throws(()=>f.run(),/changed since baseline/);
  f.run('--record-baseline');assert.match(f.run(),/PASS/);
  manifest.astrid.win.text='Changed native words';writeFileSync(path,JSON.stringify(manifest));assert.throws(()=>f.run(),/changed since baseline/);
+});
+
+test('cue CRLF checkout matches the LF baseline without rewriting either file',t=>{
+ const f=fixture(t),file=join(f.bases[1],'dealing-cues.json'),baseline=join(f.root,'docs/dealer-sync-baseline.json');
+ const before=readFileSync(baseline),crlf=readFileSync(file,'utf8').replace(/\n/g,'\r\n');
+ writeFileSync(file,crlf);assert.match(f.run(),/PASS/);
+ assert.equal(readFileSync(file,'utf8'),crlf);assert.deepEqual(readFileSync(baseline),before);
+ // A newly recorded fixture must use the same identity on either platform.
+ f.run('--record-baseline');assert.deepEqual(readFileSync(baseline),before);
+});
+
+test('cue value, whitespace and removal changes still require review',t=>{
+ const f=fixture(t),file=join(f.bases[1],'dealing-cues.json'),original=readFileSync(file,'utf8');
+ for(const changed of [original.replace('12','13'),original.replace('  ',' '),original.replace(/\n/g,'\r')]){
+  writeFileSync(file,changed);assert.throws(()=>f.run(),/hand cues changed/);
+ }
+ rmSync(file);assert.throws(()=>f.run(),/hand cues changed/);
+});
+
+test('binary media hashes remain byte-exact even for CRLF-only changes',t=>{
+ const f=fixture(t),file=join(f.bases[1],'audio/en/win.mp3');
+ writeFileSync(file,'audio\n');f.run('--record-baseline');
+ writeFileSync(file,'audio\r\n');assert.throws(()=>f.run(),/changed since baseline/);
 });
