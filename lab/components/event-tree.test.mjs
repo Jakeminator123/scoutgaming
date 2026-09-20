@@ -43,7 +43,7 @@ test('node tree displays all four dealers, sixteen lab nodes and the fixed six-t
   const html = render(project);
   for (const dealer of project.dealers) assert.ok(html.includes(dealer.label));
   for (const event of project.events) assert.ok(html.includes(event.label));
-  assert.match(html, /16 labbnoder över 6 motortyper/);
+  assert.match(html, /16 labbnoder över 6 presentationstyper/);
   assert.match(html, /inte nya händelser i Kevins spelmotor/);
   assert.match(html, /STANDARD \/ FALLBACK/);
   assert.equal(JSON.stringify(project), before, 'rendering must not mutate policy');
@@ -54,7 +54,7 @@ test('tree renders actual saved variant count without filling missing demo alter
   const line = project.lines.find(item => item.dealerId === 'astrid');
   line.variants = line.variants.slice(0, 2);
   const html = render(project);
-  assert.match(html, /05 · 2 VARIANTER I DEN HÄR LINJEN/);
+  assert.match(html, /06 · 2 UTTRYCKSVARIANTER I DEN HÄR LINJEN/);
   assert.equal((html.match(/class="variantNode/g) ?? []).length, 2);
 });
 
@@ -65,6 +65,11 @@ test('tree shows two high-level trigger groups and bounded OpenClaw fallback, no
   assert.match(html, /Får föreslå endast bland tillåtna varianter/);
   assert.match(html, /Fel \/ inget svar → standard/);
   assert.doesNotMatch(html, />Temperament</);
+  const triggerSection = html.match(/<section class="controlPanel"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(triggerSection);
+  assert.doesNotMatch(triggerSection, /OpenClaw/);
+  assert.match(html, /Beslut &amp; ansvar · OpenClaw är ingen triggerkategori/);
+  assert.match(triggerSection, /före uppspelning — inte som ett extra klipp efteråt/);
 });
 
 test('bound video is shown by exact ID and unavailable files are not represented as usable or approved', () => {
@@ -106,4 +111,56 @@ test('generic speech lab node warns that one file cannot serve every exact sourc
   const html = render(project, { event, line, variant: line.variants[0] });
   assert.match(html, /samlar flera exakta replik-ID:n/);
   assert.match(html, /Riktigt tal kräver exakt text, ljud, video och godkänd synk/);
+});
+
+function renderEvent(project, id) {
+  const event = project.events.find(item => item.id === id);
+  const line = project.lines.find(item => item.dealerId === 'astrid' && item.eventId === id);
+  return render(project, { event, line, variant: line.variants[0] });
+}
+
+test('concrete deal example precedes expression choice and preserves zero and false fields', () => {
+  const project = createSeedProject();
+  const html = renderEvent(project, 'deal.player.left');
+  assert.match(html, /LABBEXEMPEL · INTE LIVE/);
+  assert.match(html, /sourceType → type<\/code><\/dt><dd>deal<\/dd>/);
+  assert.match(html, /<code>box<\/code><\/dt><dd>0<\/dd>/);
+  assert.match(html, /<code>handIndex<\/code><\/dt><dd>0<\/dd>/);
+  assert.match(html, /<code>faceDown<\/code><\/dt><dd>false<\/dd>/);
+  assert.match(html, /<code>shoeDraw<\/code><\/dt><dd>2<\/dd>/);
+  assert.ok(html.indexOf('03 · KONKRET SITUATION') < html.indexOf('04 · LINJEN SAMLAR UTTRYCKEN'));
+  assert.match(html, /Kortposition är en annan uppgift/);
+  assert.match(html, /är dragets ID, inte kortets ordningsnummer i handen/);
+  assert.doesNotMatch(html, /<code>cardPosition<\/code>/);
+});
+
+test('dealer example preserves null destinations without inventing a box or hand', () => {
+  const html = renderEvent(createSeedProject(), 'deal.dealer');
+  assert.match(html, /<code>to<\/code><\/dt><dd>dealer<\/dd>/);
+  assert.match(html, /<code>box<\/code><\/dt><dd>null<\/dd>/);
+  assert.match(html, /<code>handIndex<\/code><\/dt><dd>null<\/dd>/);
+  assert.match(html, /<code>faceDown<\/code><\/dt><dd>true<\/dd>/);
+});
+
+test('goodluck clarifies exact speech without overwriting an existing greeting label', () => {
+  const project = createSeedProject();
+  const line = project.lines.find(item => item.dealerId === 'astrid' && item.eventId === 'speak.goodluck');
+  line.variants.find(item => item.id === line.baselineVariantId).label = 'Min sparade hälsning';
+  const before = JSON.stringify(project);
+  const html = renderEvent(project, 'speak.goodluck');
+  assert.match(html, /<code>line<\/code><\/dt><dd>goodluck<\/dd>/);
+  assert.match(html, /betyder ”Lycka till” inför spel, inte en separat välkomsthändelse/);
+  assert.match(html, /Min sparade hälsning/);
+  assert.doesNotMatch(html, /<code>shoeDraw<\/code><\/dt>/);
+  assert.equal(JSON.stringify(project), before);
+});
+
+test('tree distinguishes current single-clip binding from proposed take pools and video coverage', () => {
+  const html = render(createSeedProject());
+  assert.match(html, /16 grupper är inte 16 videobehov/);
+  assert.match(html, /Ett klippval per variant/);
+  assert.match(html, /Inget viktat takeval görs/);
+  assert.match(html, /SENARE \/ FÖRSLAG/);
+  assert.match(html, /Pooler, vikter och extra reaktionssekvenser finns inte i dagens schema/);
+  assert.match(html, /En standardpost bevisar inte att dess video passar situationen eller är godkänd/);
 });

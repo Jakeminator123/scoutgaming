@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { dashboardOrigin, planGatewayConfig, requireGatewaySecrets } from './gateway-config.mjs';
+import { syncRuntimeBundle } from './runtime-bundle.mjs';
 
 const OPENCLAW_ENTRY = '/app/openclaw.mjs';
 
@@ -105,11 +106,11 @@ export async function prepareGatewayConfig(env, {
       if (await readExistingConfig(configPath) !== original) {
         throw new Error('OpenClaw configuration changed during startup; refusing to overwrite it. Restart after the other writer finishes.');
       }
-      if (plan.action === 'migrate-legacy') {
-        backupPath = `${configPath}.pre-dashboard-migration.bak`;
+      if (plan.action === 'migrate-legacy' || plan.action === 'reconcile-ownership') {
+        backupPath = `${configPath}.${plan.action === 'migrate-legacy' ? 'pre-dashboard-migration' : 'pre-ownership-migration'}.bak`;
         try { await writeFile(backupPath, original, { flag: 'wx', mode: 0o600 }); } catch (error) {
           if (error.code !== 'EEXIST' || await readExistingConfig(backupPath) !== original) {
-            throw new Error('Could not safely preserve the legacy Gateway configuration backup. No configuration was replaced.');
+            throw new Error('Could not safely preserve the Gateway configuration backup. No configuration was replaced.');
           }
         }
       }
@@ -121,11 +122,18 @@ export async function prepareGatewayConfig(env, {
   }
 }
 
+export async function prepareGatewayRuntime(env, options = {}) {
+  const prepared = await prepareGatewayConfig(env, options);
+  const bundle = await syncRuntimeBundle(prepared.config, prepared.gatewayEnv.OPENCLAW_STATE_DIR, options);
+  return { ...prepared, bundle };
+}
+
 async function main() {
-  const { gatewayEnv, action } = await prepareGatewayConfig(process.env);
+  const { gatewayEnv, action, bundle } = await prepareGatewayRuntime(process.env);
   if (action === 'migrate-legacy') {
     console.info('Migrated the exact legacy lab configuration; a private backup was retained and agent state was preserved.');
   }
+  console.info(`Croupier runtime bundle: ${JSON.stringify(bundle)}`);
   const gateway = spawn(process.execPath, [OPENCLAW_ENTRY, 'gateway', '--bind', 'lan'], {
     env: gatewayEnv, stdio: 'inherit',
   });

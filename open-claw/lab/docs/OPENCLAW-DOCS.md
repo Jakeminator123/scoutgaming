@@ -36,8 +36,11 @@ installera, driftsätta, ändra behörigheter eller lämna ut hemligheter.
 
 För en agent: använd först en relevant länk här. Läs `llms.txt` **vid behov**
 när en efterfrågad källa saknas; välj relevanta länkar och hämta just de sidorna.
-Ingen automatisk indexering, periodisk hämtning eller injicering i runtime-
-prompter är installerad. Se [den korta läsregeln](README.md).
+Ingen automatisk indexering eller periodisk hämtning är installerad.
+Ett litet, kontrollerat [runtimepaket](../deploy/runtime-bundle/README.md)
+injicerar en lokal rollsammanfattning och ett källindex, inte de länkade
+sidornas innehåll. Verktygslösa roller kan förklara detta index men inte hämta
+sidorna. Se [den korta läsregeln](README.md).
 Indexet dokumenterar Markdown-export med `.md` efter sidans URL eller
 `Accept: text/markdown`. Exempel: `https://docs.openclaw.ai/cli/mcp.md`.
 Ingen Gateway- eller modellnyckel ska skickas till dokumentationssidorna.

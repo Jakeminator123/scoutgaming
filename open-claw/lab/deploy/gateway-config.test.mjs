@@ -87,6 +87,8 @@ function legacyConfig(env = example) {
   config.gateway.controlUi = { enabled: false };
   delete config.gateway.publicOrigin;
   delete config.agents.entries['croupier-operator'];
+  delete config.agents.defaults;
+  delete config.talk;
   config.tools.deny = ['*'];
   return config;
 }
@@ -129,6 +131,33 @@ test('native settings survive restart while removing dashboard opt-in closes ing
   assert.deepEqual(closed.config.agents, config.agents);
   assert.deepEqual(closed.config.models, config.models);
   assert.equal(closed.config.gateway.terminal.enabled, true);
+});
+
+test('missing system and Talk owners are filled without enabling tools or jobs', () => {
+  const config = gatewayConfig(example);
+  delete config.agents.defaults;
+  delete config.talk;
+  const before = structuredClone(config);
+  const result = planGatewayConfig(config, example);
+  assert.equal(result.action, 'reconcile-ownership');
+  assert.deepEqual(config, before);
+  assert.equal(result.config.agents.defaults.systemAgent.agentId, 'croupier-operator');
+  assert.equal(result.config.talk.agentId, 'croupier-operator');
+  assert.equal(result.config.cron.enabled, false);
+  assert.deepEqual(result.config.tools, config.tools);
+  assert.deepEqual(result.config.agents.entries, config.agents.entries);
+  assert.equal(planGatewayConfig(result.config, example).action, 'reuse');
+});
+
+test('explicit human ownership and other Talk settings survive restarts', () => {
+  const config = gatewayConfig(example);
+  config.agents.defaults.systemAgent.agentId = 'croupier-chat';
+  config.talk = { agentId: 'croupier-director', interruptOnSpeech: false };
+  assert.deepEqual(planGatewayConfig(config, example), { action: 'reuse', config });
+  delete config.agents.entries['croupier-operator'];
+  delete config.agents.defaults;
+  delete config.talk;
+  assert.deepEqual(planGatewayConfig(config, example), { action: 'reuse', config });
 });
 
 test('unsafe legacy bypass flags are not silently accepted from a customized config', () => {

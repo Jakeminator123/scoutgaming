@@ -31,7 +31,7 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
 
 ## Fyra arbetsytor
 
-- **Nodträdet (`/tree`):** spel → dealer → labbnod → linje → variant →
+- **Nodträdet (`/tree`):** spel → dealer → labbnod → konkret situation → linje → variant →
   animation/videoreferens. Alla fyra dealers använder samma eventkontrakt.
   Triggers är villkor för varianter, inte nya motor-events. Klicka vidare till
   editorn för att ändra den valda delen utan att tappa osparat arbete.
@@ -45,6 +45,10 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
 - **OpenClaw:** ansvar, anslutningsstatus och operatörschatt om det senast
   sparade projektet. Länk till den befintliga, separata native-dashboarden.
   Chatt kräver en konfigurerad anslutning; inga modellsvar fejkas.
+  Här finns också **Prova rösten**: tre standardfraser, egen text eller en
+  kopia av det senaste operatörssvaret. Explicit knapptryck genererar Sarah-röst
+  via ElevenLabs (kan kosta krediter); återanvändning av samma prov kostar inget
+  nytt modellanrop. Detta är separat ljud, inte spelarchatt eller videosynk.
 
 ## Filer och begrepp
 
@@ -56,6 +60,7 @@ lab/
   lib/studio-model.mjs         kontrakt, referenser, validering och konvertering
   data/project.json           ditt sparade projekt (lokalt, Git-ignorerat)
   data/history/               tidigare sparade revisioner (Git-ignorerat)
+  data/voice-cache/            text/röst/modell-indexerade MP3-prov och metadata
   test/                       automatiska regler-, lagrings-, API- och videotester
   app/                        Next.js-sidor och lokalt API
   components/                 editor, scen, videobank och OpenClaw-panel
@@ -80,7 +85,7 @@ standard och tre labbalternativ vardera (256 dealer-specifika variantposter,
 Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
 Roulette är bara en synlig framtida plats, inte implementerat.
 
-Motorns **sex typer** är `speak`, `deal`, `reveal`, `turn`, `settle`, `idle`.
+Partner-API:ts **sex presentationstyper** är `speak`, `deal`, `reveal`, `turn`, `settle`, `idle`.
 De **16 noderna** är labbets begripliga mappningar, inte 16 nya motor-events.
 Visningsnamn kan ändras; tekniska event-ID:n, matchning och exempel är låsta.
 Standardvarianten kan inte raderas eller villkoras. Alternativ och triggers
