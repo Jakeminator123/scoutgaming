@@ -37,6 +37,7 @@ export function speakManifestErrors(take,dealer='astrid'){
     const j=line?.transition;
     if(j&&JSON.stringify(j.actorOffset??[0,0])!==JSON.stringify(actorOffset))errors.push(`${id}: transition placement binding invalid`);
     if(j&&(!(j.durationMs>=100&&j.durationMs<=400)||j.width<m.width||j.height<m.height||j.mediaSha256!==m.sha256||!j.idleSha256||!j.enter?.src||!j.exit?.src))errors.push(`${id}: transition binding invalid`);
+    if(j?.composited&&(!(j.idleRegistration?.scale>0)||![j.idleRegistration.x,j.idleRegistration.y].every(Number.isFinite)))errors.push(`${id}: transition idle registration invalid`);
   }
   return errors;
 }
@@ -47,7 +48,7 @@ function packedVideo(src){
   video.src=src;return {video,ready};
 }
 
-export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>console.info('[speak]',...a)}={}){
+export async function installGreenSpeak(host,take,{waiting=()=>null,composite=null,log=(...a)=>console.info('[speak]',...a)}={}){
   if(!HTMLVideoElement.prototype.requestVideoFrameCallback)throw new Error('Presented video frames are unavailable');
   const errors=speakManifestErrors(take,take?.dealer);
   if(errors.length)throw new Error(`Speak take invalid: ${errors.join('; ')}`);
@@ -102,7 +103,9 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
       const spec=line.transition;
       actor.canvas.style.visibility='hidden';join.canvas.style.display='';
       layer.dataset.speakState=edge;layer.dataset.speakJoinProgress='0';
-      await join.play(from,to,joinMaps[edge],{durationMs:spec.durationMs,signal:controller.signal,onFrame:t=>{layer.dataset.speakJoinProgress=t.toFixed(3);}});
+      const idleState={id:'waiting',frame:0,registration:spec.idleRegistration},speechState={id,frame:edge==='enter'?line.cutIn:line.cutOut,registration:{x:actorX,y:actorY,scale:1}};
+      await join.play(from,to,joinMaps[edge],{durationMs:spec.durationMs,signal:controller.signal,onFrame:t=>{layer.dataset.speakJoinProgress=t.toFixed(3);
+        if(spec.composited)composite?.paintJoin(from,to,join.canvas,t,...(edge==='enter'?[idleState,speechState]:[speechState,idleState]));}});
       controller.signal.throwIfAborted();
       join.canvas.style.display='none';actor.canvas.style.visibility='';
     };
@@ -110,9 +113,15 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
       if(finishing||active!==controller)return;finishing=true;
       try{
         if(join){
-          const destination=await idle.prepareResume();controller.signal.throwIfAborted();
-          const source=capturePacked(video,media.width,media.height,line.transition.width,line.transition.height,actorX,actorY);
+          let destination=await idle.prepareResume();controller.signal.throwIfAborted();
+          const spec=line.transition;
+          const source=spec.composited?actor.snapshot({width:spec.width,height:spec.height,x:actorX,y:actorY}):capturePacked(video,media.width,media.height,spec.width,spec.height,actorX,actorY);
+          if(spec.composited)destination=idle.captureComposite({width:spec.width,height:spec.height,...spec.idleRegistration});
           await transition('exit',source,destination);
+        }else if(composite&&idle?.prepareResume){
+          // Refresh the resting actor and its contact shadows before revealing
+          // that layer, rather than leaving the last speech shadow for a frame.
+          await idle.prepareResume();controller.signal.throwIfAborted();
         }
       }catch(error){if(!controller.signal.aborted)console.warn('[speak] exit',error.message);}
       finally{cleanup();}
@@ -120,14 +129,14 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
     const onAudioEnded=()=>{audioDone=true;if(videoDone)finish();};
     // Some browsers deliver ended before the final video-frame callback; the
     // decoded last image is still there, so present it as the cut-out frame.
-    const onVideoEnded=()=>{if(!videoDone){if(video.readyState>=2)actor.paint(video,null,{packed:true});layer.dataset.speakFrame=String(line.cutOut);videoDone=true;}if(audioDone||audio.ended)finish();};
+    const onVideoEnded=()=>{if(!videoDone){if(video.readyState>=2)actor.paint(video,null,{packed:true,frameIndex:line.cutOut});layer.dataset.speakFrame=String(line.cutOut);videoDone=true;}if(audioDone||audio.ended)finish();};
     controller.signal.addEventListener('abort',cleanup,{once:true});
     timer=setTimeout(abort,20000);
     const audioClock=mediaTime=>mediaTime-line.cutIn/fps+line.audioOffsetSeconds;
     const paint=(_,metadata)=>{
       if(controller.signal.aborted)return;
       const frame=Math.min(line.cutOut,Math.floor(metadata.mediaTime*fps+1e-4));
-      actor.paint(video,null,{packed:true});layer.dataset.speakFrame=String(frame);
+      actor.paint(video,null,{packed:true,frameIndex:frame});layer.dataset.speakFrame=String(frame);
       if(!audioStarted){
         // Anchor the line to the first presented frame, not to play() timing.
         audioStarted=true;
@@ -163,22 +172,25 @@ export async function installGreenSpeak(host,take,{waiting=()=>null,log=(...a)=>
         const maps=await entry.joinReady;joinMaps={enter:maps[0],exit:maps[1]};
       }
       await idle?.holdAtBoundary();
+      if(joinMaps&&line.transition.composited){await idle.prepareResume();controller.signal.throwIfAborted();}
       const target=(line.cutIn+.5)/fps;
       if(Math.abs(video.currentTime-target)>=.5/fps)await new Promise(resolve=>{video.addEventListener('seeked',()=>resolve(),{once:true});video.currentTime=target;});
       controller.signal.throwIfAborted();
-      actor=createActorCompositor(media.width,media.height);
+      actor=createActorCompositor(media.width,media.height,{composite:composite?.actor('speech',id,media.sha256)});
       Object.assign(actor.canvas.style,{position:'absolute',left:`${actorX/media.width*100}%`,top:`${actorY/media.height*100}%`,width:'100%',height:'100%'});
       layer.replaceChildren(actor.canvas);current=entry;resize();
-      actor.paint(video,null,{packed:true});
+      actor.paint(video,null,{packed:true,frameIndex:line.cutIn});
       layer.style.visibility='';layer.dataset.speakState='playing';layer.dataset.speakLine=id;layer.dataset.speakJob=line.jobId??'';
       if(joinMaps){
-        const spec=line.transition;join=createSpeechJoin(spec.width,spec.height);
+        const spec=line.transition;join=createSpeechJoin(spec.width,spec.height,{composited:spec.composited===true});
         Object.assign(join.canvas.style,{position:'absolute',left:'0',top:'0',width:`${spec.width/media.width*100}%`,height:`${spec.height/media.height*100}%`});
         layer.append(join.canvas);
       }
       host.classList.add('performance-playing');
       if(join){
-        const source=idle.captureFrame(),destination=capturePacked(video,media.width,media.height,line.transition.width,line.transition.height,actorX,actorY);
+        const spec=line.transition;
+        const source=spec.composited?idle.captureComposite({width:spec.width,height:spec.height,...spec.idleRegistration}):idle.captureFrame();
+        const destination=spec.composited?actor.snapshot({width:spec.width,height:spec.height,x:actorX,y:actorY}):capturePacked(video,media.width,media.height,spec.width,spec.height,actorX,actorY);
         await transition('enter',source,destination);
         layer.dataset.speakState='playing';
       }

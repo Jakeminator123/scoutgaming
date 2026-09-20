@@ -16,7 +16,7 @@ export function loadJoinImage(src){
   const image=new Image();image.src=src;return image.decode().then(()=>image);
 }
 
-export function createSpeechJoin(width,height){
+export function createSpeechJoin(width,height,{composited=false}={}){
   const canvas=document.createElement('canvas');
   const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:false});
   renderer.setSize(width,height,false);renderer.setClearColor(0,0);
@@ -29,8 +29,8 @@ export function createSpeechJoin(width,height){
   const vertexShader='varying vec2 v;void main(){v=uv;gl_Position=vec4(position.xy,0.0,1.0);}';
   const target=new THREE.WebGLRenderTarget(width,height,{depthBuffer:false,stencilBuffer:false});
   const morph=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,blending:THREE.NoBlending,
-    uniforms:{a:{value:null},b:{value:null},flow:{value:null},size:{value:new THREE.Vector2(width,height)},progress:{value:0}},vertexShader,
-    fragmentShader:`varying vec2 v;uniform sampler2D a,b,flow;uniform vec2 size;uniform float progress;
+    uniforms:{a:{value:null},b:{value:null},flow:{value:null},size:{value:new THREE.Vector2(width,height)},progress:{value:0},composited:{value:composited?1:0}},vertexShader,
+    fragmentShader:`varying vec2 v;uniform sampler2D a,b,flow;uniform vec2 size;uniform float progress,composited;
       vec2 movement(vec2 uv,float backward){
         vec2 f=(texture2D(flow,vec2(uv.x,uv.y*.5+(1.0-backward)*.5)).rg*255.0-128.0)*.5;
         return f/vec2(size.x,-size.y);
@@ -42,6 +42,7 @@ export function createSpeechJoin(width,height){
       }
       vec4 packedAt(sampler2D image,vec2 uv){
         if(any(lessThan(uv,vec2(0.0)))||any(greaterThan(uv,vec2(1.0))))return vec4(0.0);
+        if(composited>0.5){vec4 c=texture2D(image,uv);return vec4(c.rgb*c.a,c.a);}
         float alpha=texture2D(image,vec2(uv.x,uv.y*.5)).r;
         return vec4(texture2D(image,vec2(uv.x,uv.y*.5+.5)).rgb*alpha,alpha);
       }
@@ -51,13 +52,13 @@ export function createSpeechJoin(width,height){
       }`});
   const morphScene=new THREE.Scene();morphScene.add(new THREE.Mesh(geometry,morph));
   const finish=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-    uniforms:{actor:{value:target.texture},actorPixel:{value:new THREE.Vector2(1/width,1/height)},...edgeUniforms()},vertexShader,
-    fragmentShader:`varying vec2 v;uniform sampler2D actor;
+    uniforms:{actor:{value:target.texture},actorPixel:{value:new THREE.Vector2(1/width,1/height)},composited:{value:composited?1:0},...edgeUniforms()},vertexShader,
+    fragmentShader:`varying vec2 v;uniform sampler2D actor;uniform float composited;
       float actorAt(vec2 uv){return texture2D(actor,uv).a;}
       vec3 rgbAt(vec2 uv){return texture2D(actor,uv).rgb;}
       ${actorEdgeGLSL}
       ${edgeBlendGLSL}
-      void main(){gl_FragColor=blendEdge(v,cleanActor(v));}`});
+      void main(){gl_FragColor=composited>0.5?texture2D(actor,v):blendEdge(v,cleanActor(v));}`});
   const scene=new THREE.Scene();scene.add(new THREE.Mesh(geometry,finish));
   const sampler=createSceneSampler();
   let cancel=null;

@@ -8,7 +8,7 @@ import {cardFaceArt} from './card-art.mjs';
 
 // Keep the native actor unwarped. The table camera is fitted at the rear edge,
 // and the shoe outlet is registered to the filmed pickup after that camera fit.
-export async function createBlenderTableScene(canvas,{frame,dealer='astrid'}={}){
+export async function createBlenderTableScene(canvas,{frame,dealer='astrid',composite=null}={}){
   const [asset,registration,cardBack]=await Promise.all([
     new GLTFLoader().loadAsync('review/astrid-table-v2/table.glb'),
     fetch('review/astrid-table-v2/registration.json').then(r=>{if(!r.ok)throw new Error('Table registration unavailable');return r.json();}),
@@ -32,13 +32,17 @@ export async function createBlenderTableScene(canvas,{frame,dealer='astrid'}={})
   }
   canvas.dataset.tableDealer=dealer;
   canvas.dataset.feltColor=feltColors[dealer]??'source';
-  scene.add(new THREE.HemisphereLight(0xfff3df,0x282c30,2.2));
-  const key=new THREE.DirectionalLight(0xffedda,3);key.position.set(-2,4,2);scene.add(key);
+  const lighting=composite?.profile.light;
+  if(lighting)renderer.shadowMap.type=THREE.VSMShadowMap;
+  scene.add(new THREE.HemisphereLight(0xfff3df,0x282c30,lighting?.hemisphereIntensity??2.2));
+  const key=new THREE.DirectionalLight(lighting?.keyRGB??0xffedda,lighting?.keyIntensity??3);key.position.set(...(lighting?.keyPosition??[-2,4,2]));scene.add(key);
   key.castShadow=true;key.shadow.mapSize.set(2048,2048);
   Object.assign(key.shadow.camera,{left:-2,right:2,top:2,bottom:-2,near:.1,far:10});
   key.shadow.bias=-.0001;key.shadow.normalBias=.002;
+  if(lighting){key.shadow.radius=lighting.shadowRadius;key.shadow.blurSamples=lighting.blurSamples;key.shadow.mapSize.set(lighting.shadowMapSize,lighting.shadowMapSize);}
   key.shadow.camera.updateProjectionMatrix();
-  const fill=new THREE.DirectionalLight(0xc7deed,1);fill.position.set(2,2,-1);scene.add(fill);
+  const fill=new THREE.DirectionalLight(0xc7deed,lighting?.fillIntensity??1);fill.position.set(2,2,-1);scene.add(fill);
+  if(lighting)canvas.dataset.compositeLight=composite.profile.id;
   const source={width:1920,height:1080,framingScale:frame?.framingScale??1};
   // Preserve PlateCam's horizontal field of view; the 2048x1158 reference
   // differs slightly from the native 1920x1080 video, so crop only vertically.

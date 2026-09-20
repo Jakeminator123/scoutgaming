@@ -13,6 +13,7 @@ import {loadGreenWaiting,installGreenWaiting} from './astrid-green-waiting.mjs';
 import {installFoldedRest} from './astrid-folded-rest.mjs';
 import {loadGreenSpeak,installGreenSpeak} from './astrid-green-speak.mjs';
 import {installEdgeHud} from './actor-edge-blend.mjs';
+import {loadActorComposite,createCompositeEnvironment} from './actor-composite-scene.mjs';
 let astridWaiting=null,astridSpeak=null; // Shared keyed player; populated for the selected green dealer.
 
 const $ = s => document.querySelector(s);
@@ -67,6 +68,7 @@ const riggedReview=DEALER.key==='astrid'&&new URLSearchParams(location.search).g
 // Old frontal idle, speech and dealing fallbacks stay retired.
 const astridRestart=DEALER.key==='astrid'&&!riggedReview;
 const amiraBlender=DEALER.key==='amira';
+const amiraComposite=amiraBlender&&new URLSearchParams(location.search).get('composite')!=='off'?await loadActorComposite().catch(error=>{console.warn('[composite]',error.message);return null;}):null;
 const amiraSpeakTake=amiraBlender?await loadGreenSpeak('review/amira-green-speak/speak.json','amira'):null;
 const greenActor=astridRestart||!!amiraSpeakTake;
 // Temporary recalibration pause: retain actor idle/speech and card placement,
@@ -152,7 +154,7 @@ try {
     const status=document.createElement('div');status.id='rig-review-status';status.textContent=tableScene.facial?'Astrid likeness review · measured speech, visual acceptance pending':'3D contact review · face and speech animation unfinished';$('#scene').append(status);
   }else if(blenderTable){
     const {createBlenderTableScene}=await import('./blender-table-scene.mjs');
-    tableScene=await createBlenderTableScene($('#table-canvas'),{frame:astridGreenTake?.camera.placement??{framingScale:.85},dealer:DEALER.key});
+    tableScene=await createBlenderTableScene($('#table-canvas'),{frame:astridGreenTake?.camera.placement??{framingScale:.85},dealer:DEALER.key,composite:amiraComposite});
   }else{
   const { createTableScene } = await import('./table-scene.mjs');
   tableScene = createTableScene($('#table-canvas'), DEALER.key, {
@@ -286,11 +288,12 @@ if(astridRestart){
   catch(error){console.warn('[speak]',error.message);}
 }else if(amiraSpeakTake){
   document.documentElement.dataset.greenDealer='amira';
+  const composite=amiraComposite?createCompositeEnvironment($('#scene'),amiraComposite):null;
   const line=amiraSpeakTake.lines.greeting;
   const waiting=await loadGreenWaiting('review/amira-green-waiting/idle.json');
-  if(waiting)astridWaiting=await installGreenWaiting($('#scene'),waiting);
+  if(waiting)astridWaiting=await installGreenWaiting($('#scene'),waiting,{composite});
   else installGreenRestFrame($('#scene'),{...line,rest:amiraSpeakTake.rest,dealerName:DEALER.name});
-  astridSpeak=await installGreenSpeak($('#scene'),amiraSpeakTake,{waiting:()=>astridWaiting});
+  astridSpeak=await installGreenSpeak($('#scene'),amiraSpeakTake,{waiting:()=>astridWaiting,composite});
 }else try {
   await engine.init();
   if(engine.fullActor){
