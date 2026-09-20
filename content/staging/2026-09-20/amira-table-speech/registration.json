@@ -1,0 +1,85 @@
+{
+  "nativeDimensions": [
+    1280,
+    704
+  ],
+  "virtualDimensions": [
+    1920,
+    1080
+  ],
+  "uniformScale": 1.5,
+  "offset": [
+    0,
+    12
+  ],
+  "framingScale": 0.85,
+  "method": "Source greeting first frame manual image landmarks; approximate pixels, not survey-grade camera solve",
+  "sourceLandmarks": {
+    "rearRailLeft": [
+      141,
+      353
+    ],
+    "rearRailCenter": [
+      640,
+      354
+    ],
+    "rearRailRight": [
+      1136,
+      355
+    ],
+    "shoeOutletCenter": [
+      852,
+      432
+    ],
+    "shoeBackTop": [
+      947,
+      329
+    ],
+    "leftHandRest": [
+      550,
+      410
+    ],
+    "rightHandRest": [
+      830,
+      402
+    ],
+    "torsoBottom": [
+      641,
+      350
+    ]
+  },
+  "virtualLandmarks": {
+    "rearRailLeft": [
+      211.5,
+      541.5
+    ],
+    "rearRailCenter": [
+      960.0,
+      543.0
+    ],
+    "rearRailRight": [
+      1704.0,
+      544.5
+    ],
+    "shoeOutletCenter": [
+      1278.0,
+      660.0
+    ],
+    "shoeBackTop": [
+      1420.5,
+      505.5
+    ],
+    "leftHandRest": [
+      825.0,
+      627.0
+    ],
+    "rightHandRest": [
+      1245.0,
+      615.0
+    ],
+    "torsoBottom": [
+      961.5,
+      537.0
+    ]
+  }
+}

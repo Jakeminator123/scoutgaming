@@ -26,16 +26,17 @@ function packedVideo(src){
 
 export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(...a)=>console.info('[idle]',...a),externalLifecycle=false}={}){
   if(!HTMLVideoElement.prototype.requestVideoFrameCallback)throw new Error('Presented video frames are unavailable');
-  const base=take.base,glances=take.glances;
+  const singleLoop=take.mode==='loop';
+  const base=take.base,glances=take.glances??{...base,camera:take.camera};
   const baseMedia=packedVideo(base.src),glanceMedia=packedVideo(glances.src);
   baseMedia.video.loop=true;
   const baseActor=createActorCompositor(base.width,base.height),glanceActor=createActorCompositor(glances.width,glances.height);
   const baseCanvas=baseActor.canvas,glanceCanvas=glanceActor.canvas;
   baseCanvas.className='astrid-green-idle';baseCanvas.dataset.idleKind='waiting-base';baseCanvas.dataset.idleJob=base.jobId;baseCanvas.dataset.idleSeed=String(seed);
   glanceCanvas.className='astrid-green-idle astrid-green-glance';glanceCanvas.dataset.idleKind='waiting-glance';glanceCanvas.dataset.idleJob=glances.jobId;
-  baseCanvas.setAttribute('aria-label','Astrid waiting');glanceCanvas.setAttribute('aria-hidden','true');
+  baseCanvas.setAttribute('aria-label',`${take.dealer==='amira'?'Amira':'Astrid'} waiting`);glanceCanvas.setAttribute('aria-hidden','true');
   const random=mulberry32(seed);
-  const scheduler=createIdleScheduler({segments:{base:{start:0,end:base.frames-1},...take.segments},random,...(take.scheduler??{})});
+  const scheduler=singleLoop?{next:()=>'base'}:createIdleScheduler({segments:{base:{start:0,end:base.frames-1},...take.segments},random,...(take.scheduler??{})});
   const eps=1e-4,sequence=[],seekWaiters=new Set();
   let stopped=false,held=false,holdWaiters=[],current='base',glance=null,previousBaseTime=-1,baseLoops=0,lastProgress=performance.now(),watchdog,baseRequest,glanceRequest;
   const [offsetX,offsetY]=take.spliceOffset??[0,0];
@@ -123,7 +124,7 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
     restoreLifecycle(){observer.observe(host,{attributes:true,attributeFilter:['class']});},
     sourceSha256:base.sha256,
     async glanceOnce(name){
-      if(stopped||!take.segments[name])return;
+      if(stopped||!take.segments?.[name])return;
       held=false;await playGlance(name);
       if(!stopped)await new Promise(resolve=>holdWaiters.push(resolve));
     },
@@ -144,7 +145,9 @@ export async function installGreenWaiting(host,take,{seed=Date.now()>>>0,log=(..
     // running glance is held only at its end frame.
     holdAtBoundary(){
       if(held||stopped)return Promise.resolve();
-      if(current==='base'){baseMedia.video.pause();settleHold();return Promise.resolve();}
+      // A continuous take may look aside mid-loop. Let it reach its matching
+      // front-facing endpoint before speech, avoiding a cut during the glance.
+      if(current==='base'&&!singleLoop){baseMedia.video.pause();settleHold();return Promise.resolve();}
       return new Promise(resolve=>holdWaiters.push(resolve));
     },
     resume(){if(held&&!stopped&&!host.classList.contains('performance-playing')){held=false;glance=null;playBase();}},

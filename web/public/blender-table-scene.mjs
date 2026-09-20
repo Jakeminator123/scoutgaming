@@ -4,10 +4,11 @@ import {uniformRegistration} from './performance-contact.mjs';
 import {createDealingCard} from './dealing-card.mjs';
 import {createFeltBranding,createBlenderCardStack,createFeltBettingBoxes,BET_BOX_SIZE} from './blender-table-details.mjs';
 import {layoutFeltCards} from './blender-card-layout.mjs';
+import {cardFaceArt} from './card-art.mjs';
 
 // Keep the native actor unwarped. The table camera is fitted at the rear edge,
 // and the shoe outlet is registered to the filmed pickup after that camera fit.
-export async function createBlenderTableScene(canvas,{frame}={}){
+export async function createBlenderTableScene(canvas,{frame,dealer='astrid'}={}){
   const [asset,registration,cardBack]=await Promise.all([
     new GLTFLoader().loadAsync('review/astrid-table-v2/table.glb'),
     fetch('review/astrid-table-v2/registration.json').then(r=>{if(!r.ok)throw new Error('Table registration unavailable');return r.json();}),
@@ -21,6 +22,16 @@ export async function createBlenderTableScene(canvas,{frame}={}){
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   const scene=new THREE.Scene();scene.add(asset.scene);
+  // Restore each dealer's original felt palette. The Blender diffuse map is
+  // baked green; keep its wool normal map and roughness without that tint.
+  const feltColors={astrid:'#263336',amira:'#665139'};
+  const felt=asset.scene.getObjectByName('HERO_TableFelt');
+  if(felt&&feltColors[dealer]){
+    felt.material=felt.material.clone();felt.material.map=null;
+    felt.material.color.set(feltColors[dealer]);
+  }
+  canvas.dataset.tableDealer=dealer;
+  canvas.dataset.feltColor=feltColors[dealer]??'source';
   scene.add(new THREE.HemisphereLight(0xfff3df,0x282c30,2.2));
   const key=new THREE.DirectionalLight(0xffedda,3);key.position.set(-2,4,2);scene.add(key);
   key.castShadow=true;key.shadow.mapSize.set(2048,2048);
@@ -87,7 +98,7 @@ export async function createBlenderTableScene(canvas,{frame}={}){
     render();
   }
   resize();
-  const deal=createDealingCard({scene,camera,renderer,viewport:()=>({x:0,y:0,width:innerWidth,height:innerHeight}),surfaceHeight,unitScale:.001,cardBackTexture:cardBack});
+  const deal=createDealingCard({scene,camera,renderer,viewport:()=>({x:0,y:0,width:innerWidth,height:innerHeight}),surfaceHeight,unitScale:.001,cardBackTexture:cardBack,faceArt:card=>cardFaceArt(card,{jumbo:dealer==='amira'})});
   canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();document.documentElement.classList.remove('table-3d');});
   canvas.addEventListener('webglcontextrestored',()=>{resize();document.documentElement.classList.add('table-3d');});
   return {resize,render,
@@ -108,6 +119,13 @@ export async function createBlenderTableScene(canvas,{frame}={}){
       return [[-w,h],[w,h],[w,-h],[-w,-h]].map(([x,y])=>projectPoint(m.localToWorld(new THREE.Vector3(x,y,0))));
     },
     project(x,z){return projectPoint(new THREE.Vector3(x*radius,surfaceHeight,rear+z*depth));},
+    dealerCardQuad(index=0,count=2){
+      const w=.063,h=.088,step=Math.min(.026,.13/Math.max(1,count-1));
+      // Place the dealer fan ahead of Amira's resting hands, leaving its total
+      // visible beside the fan rather than underneath the keyed fingers.
+      const x=-.018+index*step,z=rear+.19+index*.003;
+      return [[x-w/2,z-h/2],[x+w/2,z-h/2],[x+w/2,z+h/2],[x-w/2,z+h/2]].map(([x,z])=>projectPoint(new THREE.Vector3(x,surfaceHeight+.001,z)));
+    },
     shoeOutlet(){return projectPoint(outlet);},
     dealCard(options){
       const quad=options.element?.dataset.feltCorners;
