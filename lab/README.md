@@ -7,7 +7,17 @@ dashboard är separata. Inget du sparar här publiceras automatiskt.
 
 ## Starta
 
-Node 22.16+ behövs. Kör från repots rot:
+**Windows: dubbelklicka [Start-Labb.cmd](../Start-Labb.cmd) i repots rot.**
+Den använder [Start-Labb.ps1](../Start-Labb.ps1), öppnar webbläsaren och startar
+studion om den inte redan körs. Ingen befintlig process stoppas, ingen nyckel
+roteras och ingenting ändras på Render. Behåll serverfönstret öppet; Ctrl+C
+stoppar servern i det. Efter en `.env`-ändring: stoppa den gamla servern först.
+
+Node 22.16+ behövs; saknade beroenden installeras från låsfilen vid första start.
+Variabler och placeringar utan hemliga värden: [_ENVIROMENT-INFO](../_ENVIROMENT-INFO.md).
+Tekniska alternativ: `Start-Labb.ps1 -NoBrowser` öppnar inte webbläsaren;
+`-CheckOnly` kontrollerar starten utan installation/serverstart; `-Port` väljer
+en annan lokal testport. Kommandon för utvecklare, från repots rot:
 
 ```powershell
 npm --prefix lab ci

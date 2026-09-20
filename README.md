@@ -5,6 +5,8 @@ shared playback path for four AI dealers. It is a development product, not a
 certified RNG/RGS or a real-money system.
 
 For the separate local presentations editor, see [Croupier Studio in `lab/`](lab/README.md).
+On Windows, double-click [Start-Labb.cmd](Start-Labb.cmd). Key names and locations
+(no secret values) are listed in [_ENVIROMENT-INFO.md](_ENVIROMENT-INFO.md).
 OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
 
 ## Sources of truth
