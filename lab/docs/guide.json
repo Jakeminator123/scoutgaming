@@ -1,26 +1,60 @@
 {
-  "title": "Ditt labb, på ett ställe.",
-  "intro": "Här finns arbetsgången och de gemensamma begreppen. Dashboarden är arbetsytan; den här guiden är dokumentationen.",
+  "title": "Från indata till synligt resultat.",
+  "intro": "Nodträdet visar vad som kan hända. Eventstudion provar ditt val. Händelseloggen visar vad som faktiskt kom in, vem som beslutade och hur uppspelningen gick.",
   "steps": [
-    {"view":"videos","title":"1. Lägg filmen i rätt fack","body":"Ladda upp en fil, eller kategorisera ett befintligt original i Inkorg. Ange dealer, eventgrupp och exakt situation eller replik där det behövs. Videotypen följer eventet."},
-    {"view":"lab","title":"2. Välj standard eller alternativ","body":"Koppla filmen till rätt linje. Standard är det säkra grundvalet. Nya alternativ är manuella tills du uttryckligen tillåter regler, OpenClaw eller slump. Extra triggers begränsar dem ytterligare."},
-    {"view":"lab","title":"3. Granska, testa och spara","body":"Spela vald variant granskar materialet. Testa event kontrollerar urvalet. Spara projekt sparar kopplingar och regler lokalt; det publicerar inte till spelet eller Render."}
+    {
+      "view": "tree",
+      "title": "1. Förstå behovet",
+      "body": "Välj croupier och presentationssätt: idle/bakgrund, engångshandling, exakt tal eller tur/resultat. Öppna ett event för att se dess verkliga exempeldata, förväntade fält och vad som saknas."
+    },
+    {
+      "view": "videos",
+      "title": "2. Koppla rätt material",
+      "body": "Kategorisera filmen med dealer, eventgrupp och exakt situation eller replik. En skyddad standardvariant finns alltid; lägg till alternativ när det behövs. Filkoppling är inte visuellt godkännande."
+    },
+    {
+      "view": "lab",
+      "title": "3. Prova och spara",
+      "body": "Spela vald variant visar ditt markerade material. Testa event kör urvalet med simulerad kontext. Nya alternativ är manuella tills du tillåter regler, modell eller slump. Spara projekt sparar lokalt."
+    },
+    {
+      "view": "activity",
+      "title": "4. Följ hela förloppet",
+      "body": "Se indata, vald variant, beslutsfattare, orsak och uppspelarens start/slut/fel. Öppna en loggrad för fälten. Partner live är en separat, läsande anslutning; den driver inte labbscenen."
+    }
   ],
   "boundaries": [
-    "En fil får bara kopplas till sin registrerade dealer och eventgrupp. Exakt situation kontrolleras även när eventet testas.",
-    "De 16 eventgrupperna är genvägar för sex presentationstyper, inte hela signalsystemet eller 16 filmer. Vanliga spelet använder /api/table och egen koreografi. Partner använder /api/v1/table med presentation[] och en separat SSE-ström. Labbet testar sparade exempel, inte en ansluten spelström.",
-    "Standard betyder ditt valda grundalternativ — inte automatiskt högst kvalitet. Want, filhash och kategorisering är inte visuell eller läppsynk-godkännande.",
-    "Situation betyder bara relevanta omständigheter: deal behöver exakt plats/hand/kortposition; idle behöver inte kortfält. Dagens labb kontrollerar inte full täckning för senare kort, split och övergångar.",
-    "Labbet spelar videon en gång. Kevins specifika idle-spelare kan redan växla klipp, men redigerbara loopar, takepooler och sekvenser är ännu inte införda i labbet.",
-    "Spelfakta är mer än RNG: kortordning plus regler, godkända handlingar och resultat. Spelmotorn äger dessa samt saldo och utbetalningar. Labbet och OpenClaw får bara välja tillåten presentation. Ersättning av Kevins talväg är beslutad riktning, inte genomförd avstängning.",
-    "Chatt, testkontext och uppspelarens ljud-/videosignaler är olika indata. Ett manifest visar registrerat material; bara faktisk uppspelning visar vad som användes. BO-inloggning ansluter inte labbet till Partner-strömmen."
+    "Signal är samlingsordet för inkommande information: spelfakta, chatt eller uppspelningens status. Ett event är en namngiven händelse med data. De sex Partner-presentationstyperna är en del av detta, inte allt som kan hända i systemet.",
+    "De fyra presentationssätten är en vy över befintliga sex källtyper och 16 grupper. Tekniska ID:n och sparade projekt behålls. Idle är ett bakgrundsbehov, men videopreview spelas fortfarande en gång; redigerbara loopar och takepooler är inte införda.",
+    "Eventets kort och box kommer från källan. Box 0–6 betyder bordsplats 1–7, inte en identifierad spelare. Återbesök, språk, chattsignal och historik är separat simulerad kontext i eventtestet. Kortposition kan behöva härledas. Variant-ID väljs efteråt; längd och landningstid hör till materialets metadata.",
+    "Standard är också en variant. Linje är den tekniska behållaren för en dealers standard och alternativ, inte en talad replik. Want, filhash och kategorisering bevisar varken visuell kvalitet eller läppsynk. Full täckning för senare kort, split och övergångar återstår.",
+    "Socialt prov finns för Astrid i vänteläget: ett textsvar och valfri röst, högst sex sekunder tal. Socialt svar och handlingsprov får inte äga scenen samtidigt. Blinkningar startar inte om svaret. För långa ljud avvisas; stopp eller fel markeras som avbrutna prov. Riktig läppsynk och produktkoppling återstår.",
+    "Händelseloggen lagrar högst 150 poster i flikens minne och töms vid omladdning. Ett modellförslag, en vald fil och en faktiskt avslutad uppspelning är skilda loggsteg. Inga exempelrader visas som mottagna live-events.",
+    "Vanliga spelet använder /api/table och egen koreografi. Partner använder /api/v1/table med presentation[] och en SSE-ström för samma API-nyckel och partner-playerId. Loggens observer kräver serverkonfiguration och en uttrycklig anslutning. BO-inloggning ansluter den inte. Strömmen saknar replay; avbrott kan ge luckor.",
+    "Spelmotorn äger kort, regler, utfall, saldo och utbetalningar. OpenClaw får bara föreslå tillåten presentation. Sparade labbändringar publiceras inte automatiskt till spelet eller Render."
   ],
   "surfaces": [
-    {"name":"Nodträdet","purpose":"Överblick av sambandet event → linje → variant. Samma data som Eventstudion, ingen separat konfiguration."},
-    {"name":"Eventstudion","purpose":"Redigera en linje och granska varianter. Testa event: välj urvalsläge, välj testsituation och kör. Chatta med Astrid: separat spelarchatt i Astrids vänteläge, med egna reaktionsinställningar. Testvärdena används inte av chatten. Detaljer och ljudverktyg fälls ut vid behov."},
-    {"name":"Videobanken","purpose":"Original, kategorisering och kopplingar. Visar först filmer för vald eventgrupp. Inkorg innehåller material som ännu behöver kategoriseras."},
-    {"name":"OpenClaw","purpose":"Anslutning, urvalsläge och operatörschatt. Den externa Gateway-dashboarden är driftverktyget, inte ytterligare dokumentation."}
+    {
+      "name": "Nodträdet",
+      "purpose": "Grupperar efter det som ska synas: idle, engångshandling, exakt tal eller tur/resultat. Visar eventfält, saknade uppgifter, separat kontext och markerad variant. Samma projekt som Eventstudion."
+    },
+    {
+      "name": "Eventstudion",
+      "purpose": "Redigera variantuppsättningen, prova material och kör urval. Testvärden används för eventtestet. Chatta med Astrid är ett separat idle-prov med egen social policy; hennes uttrycksförslag loggas medan scenen stannar i vänteläget."
+    },
+    {
+      "name": "Videobanken",
+      "purpose": "Original, kategorisering och exakta filkopplingar. Inkorg innehåller material som behöver klassificeras. En fil får bara kopplas till sin registrerade dealer och eventgrupp; situationen kontrolleras vid eventtest."
+    },
+    {
+      "name": "Händelselogg",
+      "purpose": "Aktuell fliks indata, beslut och uppspelning med tid, källa, vem och varför. Filtrera stegen eller öppna faktisk JSON. Här finns också valfri läsande Partner-observation; mottagna instruktioner spelas inte automatiskt."
+    },
+    {
+      "name": "OpenClaw",
+      "purpose": "Anslutning, urvalsläge, operatörschatt och fristående röstprov. Gateway-dashboarden är driftverktyget. Operatörschatt är skild från Astrids spelarchatt och eventtestets simulerade chattsignal."
+    }
   ],
-  "storage": "Lokalt labb: projektets kopplingar och tillåtna urval. Originalfiler: externa generationsarkivet eller labbets lokala uppladdningar. Kategorisering: ett separat metadataregister, utan att flytta eller ändra originalen. Render: extern director och OpenClaw Gateway; lokala ändringar publiceras inte dit automatiskt.",
-  "authority": "Gemensamma begrepp och möjligheter finns i lab/policies/studio-contract.json. Videoformatet finns i lab/schemas/video.schema.json. API och formulär använder kontraktet; tester kontrollerar att seed, schema och katalog inte driver isär. Tekniska README-filer är utvecklarreferens, inte alternativa användarguider."
+  "storage": "Projekt och social policy sparas lokalt och separat. Originalfiler ligger i generationsarkivet eller lokala uppladdningar; kategorisering ändrar bara metadata. Händelseloggen finns enbart i flikens minne. Partner-hemligheter stannar på den lokala servern. Render är extern Director/OpenClaw-drift; lokala ändringar publiceras inte dit automatiskt.",
+  "authority": "Källtyper, ID:n och möjligheter finns i lab/policies/studio-contract.json. Nodträdets presentation-profile grupperar detta kontrakt utan att utöka det. Videoformatet finns i lab/schemas/video.schema.json. Tekniska README-filer är utvecklarreferenser; den här guiden är labbets gemensamma ingång."
 }

@@ -1,3 +1,54 @@
+## 2026-09-20 — lab presentation model, social ownership and actual activity
+
+Reworked the lab's node tree and guide around four output groups: idle,
+one-shot action, exact speech and turn/result reaction. The six source types
+and sixteen existing event IDs are unchanged. Inspectors distinguish actual
+example fields, missing fields, seat indexes, partner player identity, manual
+context and the variant/timing selected for presentation. Standard is a
+protected variant within a dealer/event collection, not a separate utterance.
+
+Added a session-only activity view at `/activity`, also available below the
+studio. Actual local requests, decisions and player start/end/fallback/cancel
+receipts share a run ID and expose the responsible component, reason and
+bounded data. It does not seed simulated rows as received traffic. The optional
+server-side Partner observer connects only after explicit user action, signs
+GET `/api/v1/events`, keeps credentials off the browser, and distinguishes
+published instructions from local playback. Disconnects are marked as gaps;
+there is no replay. The native game client's `/api/table` does not publish to
+this key/player-scoped channel. No live connection was made: Partner key,
+secret and playerId are still missing from this lab configuration.
+
+Canonical observer settings are `BETTALOTTO_PARTNER_*` in `lab/.env.local`;
+the earlier `LAB_PARTNER_*` names are fallback aliases. `LAB_API_TOKEN` and
+`LAB_REMOTE_TOKEN` authenticate our Director path; `OPENCLAWAPI_KEY` is Gateway
+auth. Kevin's separately supplied generations read-token concerns material
+metadata, not Partner SSE. Access instructions and his login links were saved
+in the requested private, ignored local text file. No credential or reset URL
+is part of this commit, and the excluded personal archive was not read.
+
+Social replies reserve Astrid's idle scene from request through completion.
+Action tests cannot overlap; a response is not automatically repeated. Voice
+metadata is checked before playback, material over six seconds is rejected,
+and a six-second playback watchdog handles unknown/incorrect durations.
+Stop, navigation and hidden-page cancellation release the owner; incidental
+idle rendering does not stop or restart speech. Suggested expression and
+actual idle display are logged separately. Dynamic lipsync and product-wide
+social scheduling are still not connected. Video callbacks now reject stale
+turns/elements, and cancellation actually pauses a playing lab video.
+
+Validation: 233 lab tests, TypeScript and the production Next build pass.
+Required regression checks also pass: 113 pre-commit tests, the asset-state
+script, sync audit including `--probe`, performance audit and Astrid actor
+audit. Browser QA covered the new log, standard and local-rule selection,
+two consecutive 2D lab previews for each of the four dealers, and a 390px
+mobile viewport without document overflow. Social ownership, stale media
+callbacks, overlong/unknown-duration audio and observer signing/stream gaps
+are covered by isolated tests. No paid model/TTS request or gameplay/wallet
+action was made. Production playback and media were not changed; existing
+missing speech takes (Vera 8, Amira 2, Mei 3) and lipsync acceptance gaps remain.
+Media checks read audit metadata; no video corpus was indexed as LLM context.
+The eight-day V4 website/wiki publication remains the documentation baseline.
+
 ## 2026-09-20 — V4 publication verified
 
 Published V4 source and the system-map/archive changes to

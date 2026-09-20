@@ -15,8 +15,8 @@ const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve();
 
 // Focused hook harness: exercises real handlers and cancellation without a browser,
 // a model, external audio or an additional test dependency.
-function harness({ dealerId = 'astrid', eventId = 'idle.ready', draftCache, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
-  const slots = [], requests = [], reactions = [], audio = [], effects = [];
+function harness({ dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
+  const slots = [], requests = [], reactions = [], audio = [], effects = [], ownership = [], activities = [];
   let cursor = 0, cancel;
   const listeners = new Map();
   const equalDeps = (a, b) => Boolean(a && b && a.length === b.length && a.every((item, i) => Object.is(item, b[i])));
@@ -27,19 +27,20 @@ function harness({ dealerId = 'astrid', eventId = 'idle.ready', draftCache, resp
     useEffect(fn, deps) { const index = cursor++; if (!equalDeps(slots[index]?.deps, deps)) { const old = slots[index]; slots[index] = { deps, cleanup: old?.cleanup }; effects.push(() => { old?.cleanup?.(); slots[index].cleanup = fn(); }); } },
   };
   class FakeAudio {
-    constructor(url) { this.url = url; this.playCalls = 0; this.pauseCalls = 0; audio.push(this); }
-    async play() { this.playCalls++; }
+    constructor(url) { this.url = url; this.duration = duration; this.readyState = 1; this.playCalls = 0; this.pauseCalls = 0; audio.push(this); }
+    async play() { this.playCalls++; this.onplaying?.(); }
     pause() { this.pauseCalls++; }
     removeAttribute() {}
     load() {}
   }
   const module = { exports: {} };
-  vm.runInNewContext(compiled, { module, exports: module.exports, AbortController, structuredClone, crypto: { randomUUID }, Audio: FakeAudio, window: { confirm: () => true, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
+  const document = { hidden: false, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) };
+  vm.runInNewContext(compiled, { module, exports: module.exports, Error, AbortController, structuredClone, crypto: { randomUUID }, Audio: FakeAudio, document, window: { confirm: () => true, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
     require: name => name === 'react' ? hooks : name === './studio-types' ? { requestJson: async (url, init = {}) => { requests.push({ url, init }); return url === '/api/social' && !init.method ? structuredClone(status) : respond(url, init); } } : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : require(name),
   });
-  const props = { dealerId, eventId, draftCache, onGoToIdle() {}, registerCancel: fn => { cancel = fn; }, onBegin() {}, onReaction: (...args) => reactions.push(args) };
+  const props = { dealerId, eventId, draftCache, blocked, onBusyChange: value => ownership.push(value), onActivity: value => activities.push(value), onGoToIdle() {}, registerCancel: fn => { cancel = fn; }, onBegin() {}, onReaction: (...args) => reactions.push(args) };
   function render() { cursor = 0; const tree = module.exports.SocialChatPanel(props); while (effects.length) effects.shift()(); return tree; }
-  return { render, props, requests, reactions, audio, listeners, exports: module.exports, cancel: () => cancel?.(), unmount: () => slots.forEach(slot => slot.cleanup?.()) };
+  return { render, props, requests, reactions, audio, ownership, activities, document, listeners, exports: module.exports, cancel: (reason) => cancel?.(reason), unmount: () => slots.forEach(slot => slot.cleanup?.()) };
 }
 function find(node, predicate) {
   if (!node || typeof node !== 'object') return undefined;
@@ -139,6 +140,7 @@ test('two saved-audio replays preserve a neutral model choice without another pa
   toggle.props.onChange({ target: { checked: true } });
   typeMessage(instance, 'Hej!'); submit(instance); await flush();
   for (let replay = 0; replay < 2; replay++) {
+    instance.audio.at(-1).onended(); await flush();
     button(instance.render(), 'Spela sparat ljud').props.onClick(); await flush();
     assert.match(text(instance.render()), /Ingen social reaktion valdes/);
   }
@@ -165,6 +167,61 @@ test('history drops system output and oldest complete messages to fit bounded AP
   const before = JSON.stringify(input), result = instance.exports.socialHistory(input);
   assert.equal(result.length, 8); assert.ok(result.every(item => item.role !== 'system'));
   assert.equal(JSON.stringify(input), before);
+});
+
+test('another action blocks social input before any provider call', async () => {
+  const instance = await ready({ blocked: true });
+  typeMessage(instance, 'Hej'); submit(instance); await flush();
+  assert.equal(messageField(instance.render()).props.disabled, true);
+  assert.equal(instance.requests.filter(item => item.init.method === 'POST').length, 0);
+  assert.match(text(instance.render()), /Scenen används av ett annat prov/);
+  instance.unmount();
+});
+
+test('one owner survives idle rerenders and blocks a second send or replay until audio ends', async () => {
+  const instance = await ready({ respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'd'.repeat(64), audioUrl: `/api/voice/${'d'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
+  find(instance.render(), node => node.type === 'input' && node.props.type === 'checkbox' && node.props.checked === false).props.onChange({ target: { checked: true } });
+  typeMessage(instance, 'Hej'); submit(instance); submit(instance); await flush();
+  assert.equal(instance.ownership.at(-1), true);
+  assert.equal(instance.requests.filter(item => item.init.method === 'POST').length, 1);
+  for (let i = 0; i < 3; i++) instance.render();
+  assert.equal(instance.audio[0].playCalls, 1); assert.equal(instance.audio[0].pauseCalls, 0);
+  assert.equal(button(instance.render(), 'Spela sparat ljud').props.disabled, true);
+  button(instance.render(), 'Spela sparat ljud').props.onClick(); await flush();
+  assert.equal(instance.audio.length, 1);
+  instance.audio[0].onended(); await flush();
+  assert.equal(instance.ownership.at(-1), false); assert.equal(button(instance.render(), 'Spela sparat ljud').props.disabled, false);
+  assert.equal(instance.activities.filter(item => item.type === 'social.responded').length, 1);
+  assert.equal(instance.activities.filter(item => item.type === 'social.audio.completed').length, 1);
+  instance.unmount();
+});
+
+test('overlong audio leaves one text reply, rejects playback and releases ownership', async () => {
+  const instance = await ready({ duration: 8, respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'e'.repeat(64), audioUrl: `/api/voice/${'e'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
+  find(instance.render(), node => node.type === 'input' && node.props.type === 'checkbox' && node.props.checked === false).props.onChange({ target: { checked: true } });
+  typeMessage(instance, 'Hej'); submit(instance); await flush();
+  assert.equal(instance.audio[0].playCalls, 0); assert.equal(instance.ownership.at(-1), false);
+  assert.equal(instance.reactions.length, 1); assert.match(text(instance.render()), /längre än sex sekunder/);
+  assert.equal(instance.activities.filter(item => item.type === 'social.audio.rejected').length, 1);
+  instance.unmount();
+});
+
+test('failed model request and explicit stop release the owner and log the actual reason', async () => {
+  const failed = await ready({ respond: async () => { throw new Error('offline'); } });
+  typeMessage(failed, 'Hej'); submit(failed); await flush();
+  assert.equal(failed.ownership.at(-1), false); assert.equal(failed.activities.at(-1).reason, 'offline'); failed.unmount();
+  const stopped = await ready({ respond: () => new Promise(() => {}) });
+  typeMessage(stopped, 'Hej'); submit(stopped); stopped.cancel('view-change');
+  assert.equal(stopped.ownership.at(-1), false); assert.equal(stopped.activities.at(-1).reason, 'view-change'); stopped.unmount();
+});
+
+test('leaving the visible page cancels the pending turn rather than allowing background speech', async () => {
+  const instance = await ready({ respond: () => new Promise(() => {}) });
+  typeMessage(instance, 'Hej'); submit(instance);
+  instance.document.hidden = true; instance.listeners.get('visibilitychange')();
+  assert.equal(instance.ownership.at(-1), false); assert.equal(instance.activities.at(-1).reason, 'page-hidden');
+  assert.equal(instance.requests.find(item => item.url === '/api/social/chat').init.signal.aborted, true);
+  instance.unmount();
 });
 
 test('social policy draft survives panel navigation and warns before browser reload', async () => {

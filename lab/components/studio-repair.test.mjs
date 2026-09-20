@@ -13,6 +13,7 @@ const empty = () => null;
 const mocks = {
   './studio-guide': { StudioGuide: empty },
   './event-tree': { EventTree: empty },
+  './activity-log': { ActivityLog: empty },
   './stage': { Stage: empty },
   './social-chat-panel': { SocialChatPanel: empty },
   './trigger-editor': { TriggerEditor: empty, categoryLabels: {}, defaultValue: () => null },
@@ -66,12 +67,13 @@ test('testsituation selection is derived from actual values, including custom ed
 });
 
 test('Guide and OpenClaw are full-width surfaces without the unrelated event sidebar', () => {
-  for (const initialView of ['guide', 'openclaw']) {
+  for (const initialView of ['guide', 'openclaw', 'activity']) {
     const html = renderToStaticMarkup(React.createElement(Studio, { initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: {}, initialView }));
     assert.doesNotMatch(html, /class="event-sidebar"/);
     assert.match(html, /href="\/guide"/);
   }
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/guide'), 'guide');
+  assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/activity'), 'activity');
 });
 
 test('legacy incompatible selections are visible with a repair action and are not silently changed', () => {

@@ -8,12 +8,26 @@ inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
 Utvecklarreferenser: [start och arkitektur](../README.md),
 [videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../schemas/video.schema.json).
 Eventgrupperna ska överensstämma med projektets seed och motorns källkontrakt.
+Nodträdet grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
+tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
+över samma sex källtyper och 16 ID:n. Den skapar inte nya motorevents.
 Ändrade tekniska ID:n, nya typer eller playback-funktioner kräver ett uttalat
 beslut, kontrakt/schemaändring, tester och migrationsbeskrivning. Visningsnamn
 kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 
 Historiska analyser och permanenta källankare ligger kvar i jakob-docs.
 De är fördjupning, inte ytterligare en startyta. Privata anteckningar lämnas orörda.
+
+**Händelseloggen** på `/activity` skiljer källa, eventdata, kontext, beslut och
+uppspelningskvitto. Den visar aktuella labbanrop och valfri läsande Partner-
+observation, högst 150 poster i flikens minne. Saknad konfiguration är inte
+en ansluten spelström; observern spelar inget i scenen. Konfiguration och
+gränser finns i [labbets README](../README.md#läsande-partner-ström).
+
+**Socialt svar** är ett eget idle-prov med en enda talägare och högst sex
+sekunder ljud. För långa ljud avvisas; avbrott/fel loggas. Modellens uttrycks-
+förslag visas separat från neutralt idle. Produktens talväg och riktig
+läppsynk är fortfarande separata integrationer. Se [socialt prov](../SOCIAL-CHAT.md).
 
 [Signal- och begreppskartan](../../random-stuff-jakob/jakob-docs/2026-09-20-situationer-variantfamiljer-och-takes.md)
 förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna,
