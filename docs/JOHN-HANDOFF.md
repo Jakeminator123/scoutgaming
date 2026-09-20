@@ -1,3 +1,24 @@
+## 2026-09-20 — Explicit local chef role
+
+Jakob requested a reusable coordinating role and publication to his work branch.
+Added the canonical chef skill, thin Cursor adapters and an AGENTS routing rule.
+The four steps are inventory, scoped coordination, requested integration/tests,
+and verified delivery. Activation is explicit: /chef (Codex skill picker: $chef).
+Status only reads; /chef av releases this chat's role. Kevin retains product
+decisions. Activation does not authorize merge/push or start background agents.
+
+A cooperative registry in the main worktree's ignored .croupier-inbox directory
+is shared by linked worktrees, not separate clones/machines. A short atomic lock
+protects updates; a second chat cannot silently take over. This is not an ACL
+or a long-running Git lock. No chief was activated during this delivery.
+
+Validation: all 31 inbox/chef tests passed locally, including concurrent claims,
+linked worktrees, explicit handover and separate clones. Behavioral review
+clarified per-worktree inventory, fresh origin targets and lost-role handling.
+Skill metadata was checked manually; the optional Python validator lacks PyYAML.
+CI includes the new tests. No gameplay, media, live inbox or deployment changes.
+The shared inbox guide and Jakobs thin notes describe the same role boundaries.
+
 ## 2026-09-20 — OpenClaw archive cleanup and thin Jakob notes
 
 Jakob requested removal/consolidation of obsolete OpenClaw folders and a short

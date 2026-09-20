@@ -5,7 +5,7 @@ agent-inbox:
   image: node:22-bookworm
   stage: test
   script:
-    - node --test test/croupier-inbox.mjs
+    - node --test test/croupier-inbox.mjs test/croupier-chef.mjs
   rules:
     - changes:
         - tools/croupier-inbox.mjs
@@ -13,6 +13,12 @@ agent-inbox:
         - .agents/skills/ping-croupier/SKILL.md
         - .cursor/skills/ping-croupier/SKILL.md
         - .cursor/rules/kevin-ping.mdc
+        - tools/croupier-chef.mjs
+        - test/croupier-chef.mjs
+        - .agents/skills/chef/**/*
+        - .cursor/skills/chef/**/*
+        - .cursor/commands/chef.md
+        - .cursor/rules/chef.mdc
 
 dealer-regression:
   image: node:22-bookworm
