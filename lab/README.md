@@ -3,6 +3,8 @@
 Den nya Next.js-arbetsytan. Den riktiga spelklienten och OpenClaws egen
 dashboard är separata. Inget du sparar här publiceras automatiskt.
 
+[Enkel förklaring för Jakob: mappar, tester och videokoppling](../random-stuff-jakob/jakob-docs/2026-09-20-labbets-mappar-och-tester.md).
+
 ## Starta
 
 Node 22.16+ behövs. Kör från repots rot:
@@ -38,9 +40,14 @@ lab/
   lib/studio-model.mjs         kontrakt, referenser, validering och konvertering
   data/project.json           ditt sparade projekt (lokalt, Git-ignorerat)
   data/history/               tidigare sparade revisioner (Git-ignorerat)
+  test/                       automatiska regler-, lagrings-, API- och videotester
   app/                        Next.js-sidor och lokalt API
   components/                 editor, scen, videobank och OpenClaw-panel
 ```
+
+`policies` betyder här startregler; `schemas` beskriver strukturkraven.
+`data/` skapas vid sparning och ersätter inte startprojektet i Git. Ingen separat
+manifestfil behövs nu. `.next/` och `node_modules/` är genererade verktygsmappar.
 
 Spel → croupier → eventnod → linje → standard/alternativ → animation/videofil.
 En linje hör till en croupier och ett event. Starten har 64 linjer med en

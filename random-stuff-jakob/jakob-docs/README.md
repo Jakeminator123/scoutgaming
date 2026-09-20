@@ -14,6 +14,8 @@ Jakobs egen token är installerad i en separat åtkomstskyddad lokal fil utanfö
 
 [Kort arbetsnotering](2026-09-20-openclaw-och-labb.md): vad som byggts, dashboard och labbeditor, Render, nycklarnas olika roller, kvarvarande integration och städningen av gamla OpenClaw-mappar.
 
+[Mappar, tester och videokoppling](2026-09-20-labbets-mappar-och-tester.md): enkla förklaringar av policies/schema/data/test, varför inget nytt manifest behövs, Windows-felen och hur riktig OpenClaw ska verifieras.
+
 ## 2026-09-20 — Videoregister, V3-karta och lagring
 
 [Arbetsrapport: V3, videoregister och placering](2026-09-20-v3-videoregister-och-placering.md) samlar vad vi undersökte och levererade, var de 224 originalvideorna finns, hur kartan startas, beslut om eventträdet, lagringsbedömning, kontroller, publicerade commits och vad som återstår inför verklig integration. Rapporten skiljer inventeringen från OPENCLAW-uppgiftens eget arbete.
