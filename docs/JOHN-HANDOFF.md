@@ -1,3 +1,10 @@
+## 2026-09-20 — compact restart note for documentation/video findings
+
+Added random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-aterstart-dokumentation-och-videofynd.md
+and linked it from the archive index. Captures the model, docs/findings split,
+Kevin approval dependency and later OPENCLAW commits at HEAD 11d751a.
+Checked local links; documentation only, no runtime/media change or test claim.
+
 ## 2026-09-20 — live Astrid social lab chat and explicit variant preview
 
 Both Render services now live on 6797b6a: Director dep-danlaejtqb8s73c9v5l0,
