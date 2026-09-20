@@ -1,6 +1,8 @@
 # Astrids sociala chattprov
 
-Öppna **Eventstudion → Astrid → Bordet väntar**. Detta är ett lokalt
+Chatten sitter direkt under bordet i **Eventstudion**, före eventtestets
+inställningar. Den är synlig även när en annan nod är vald. Välj då
+**Gå till Astrids vänteläge** för att aktivera fältet. Detta är ett lokalt
 spelarchattprov. OpenClaw-sidans operatörschatt och eventtestets simulerade
 chattsignal är separata flöden.
 

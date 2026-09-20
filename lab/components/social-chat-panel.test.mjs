@@ -15,7 +15,7 @@ const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve();
 
 // Focused hook harness: exercises real handlers and cancellation without a browser,
 // a model, external audio or an additional test dependency.
-function harness({ dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
+function harness({ compact = false, dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
   const slots = [], requests = [], reactions = [], audio = [], effects = [], ownership = [], activities = [];
   let cursor = 0, cancel;
   const listeners = new Map();
@@ -38,7 +38,7 @@ function harness({ dealerId = 'astrid', eventId = 'idle.ready', draftCache, dura
   vm.runInNewContext(compiled, { module, exports: module.exports, Error, AbortController, structuredClone, crypto: { randomUUID }, Audio: FakeAudio, document, window: { confirm: () => true, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
     require: name => name === 'react' ? hooks : name === './studio-types' ? { requestJson: async (url, init = {}) => { requests.push({ url, init }); return url === '/api/social' && !init.method ? structuredClone(status) : respond(url, init); } } : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : require(name),
   });
-  const props = { dealerId, eventId, draftCache, blocked, onBusyChange: value => ownership.push(value), onActivity: value => activities.push(value), onGoToIdle() {}, registerCancel: fn => { cancel = fn; }, onBegin() {}, onReaction: (...args) => reactions.push(args) };
+  const props = { compact, dealerId, eventId, draftCache, blocked, onBusyChange: value => ownership.push(value), onActivity: value => activities.push(value), onGoToIdle() {}, registerCancel: fn => { cancel = fn; }, onBegin() {}, onReaction: (...args) => reactions.push(args) };
   function render() { cursor = 0; const tree = module.exports.SocialChatPanel(props); while (effects.length) effects.shift()(); return tree; }
   return { render, props, requests, reactions, audio, ownership, activities, document, listeners, exports: module.exports, cancel: (reason) => cancel?.(reason), unmount: () => slots.forEach(slot => slot.cleanup?.()) };
 }
@@ -57,9 +57,10 @@ function submit(instance) { find(instance.render(), node => node.type === 'form'
 const replyFor = (body, extra = {}) => ({ requestId: body.requestId, policyRevision: body.policyRevision, reply: policy.response.fixedText, triggerId: 'social.ledsen', confidence: 0.9, provider: 'responded', assetId: 'social.ledsen', ...extra });
 
 test('chat keeps the composer primary and settings/audio collapsed without enabling speech or sending', async () => {
-  const instance = await ready(), tree = instance.render();
+  const instance = await ready({ compact: true }), tree = instance.render();
+  assert.match(text(tree), /VID BORDET/);
   assert.match(text(tree), /Chatta med Astrid/);
-  for (const label of ['Reaktion och svar', 'Standardfrasens ljud', 'Om chatten och kostnader']) {
+  for (const label of ['Chattinställningar och ljud', 'Reaktion och svar', 'Standardfrasens ljud', 'Om chatten och kostnader']) {
     const details = find(tree, node => node.type === 'details' && text(node).includes(label));
     assert.ok(details); assert.notEqual(details.props.open, true);
   }
@@ -92,6 +93,28 @@ test('scene cancellation aborts in-flight chat and ignores late replies without 
   release(); await flush();
   assert.equal(instance.reactions.length, 0); assert.equal(instance.audio.length, 0);
   assert.ok(!text(instance.render()).includes(policy.response.fixedText + 'ASTRID'));
+  instance.unmount();
+});
+
+test('chat stays mounted across node changes, cancels late replies and keeps the composer', async () => {
+  let release;
+  const instance = await ready({ compact: true, respond: (url, init) => new Promise(resolve => { release = () => resolve(replyFor(JSON.parse(init.body))); }) });
+  typeMessage(instance, 'Ett väntande meddelande'); submit(instance);
+  const sent = instance.requests.find(item => item.url === '/api/social/chat');
+  instance.props.eventId = 'deal.player.left';
+  instance.render();
+  assert.equal(sent.init.signal.aborted, true);
+  release(); await flush();
+  assert.equal(instance.reactions.length, 0);
+  assert.equal(instance.audio.length, 0);
+  assert.equal(messageField(instance.render()).props.disabled, true);
+  instance.props.eventId = 'idle.ready'; instance.render();
+  typeMessage(instance, 'Mitt oskickade utkast');
+  instance.props.eventId = 'deal.player.left'; instance.render();
+  instance.props.eventId = 'idle.ready'; instance.render();
+  assert.equal(messageField(instance.render()).props.value, 'Mitt oskickade utkast');
+  assert.equal(messageField(instance.render()).props.disabled, false);
+  assert.equal(instance.requests.filter(item => item.init.method === 'POST').length, 1);
   instance.unmount();
 });
 

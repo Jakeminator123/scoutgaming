@@ -143,6 +143,31 @@ stannar i serverdelen. Webbläsaren behöver inga egna kopior i `NEXT_PUBLIC_*`.
 Partner-nycklar. Varken ett administratörslösenord eller en resetlänk ska
 användas som Partner-secret. Resetlänkar hör till den privata åtkomstfilen.
 
+### Vad visar de sparade backoffice-loggarna?
+
+De lokala textutdragen i `random-stuff-jakob/jakob-log-files/backoffice.bettalotto`
+granskades 2026-09-21. De beskriver backoffice-data, inte en fångad Partner-
+eventström. Råfilerna behålls lokalt och används inte som körbar konfiguration.
+
+- **clips:** klippmetadata och `assignments` per dealer och bordsdel. `box0`–`box6`,
+  dealer-up, dealer-hole, return och idle är mål/roller. Ett tomt `src` kan
+  fortfarande ha en H264-`stream`; det betyder inte automatiskt saknad film.
+- **gen-verdicts:** bedömningar av genereringar och `genLandings` som anger
+  avsedd landningsdel. En sådan märkning bevisar inte att klippet spelas i drift.
+- **generations:** genererings-ID, modell, status, prompt, längd och materiallänkar.
+  En prompt beskriver avsikten; den bevisar inte filmens kvalitet eller läppsynk.
+- **overview:** administrativ översikt över dealers, rum och aggregerad aktivitet.
+
+Filerna innehåller ellipser och bortklippta delar. De är användbara som
+fält-/strukturunderlag, men räcker inte för en komplett automatisk import,
+fullständig täckningskontroll eller verifiering av eventströmmen. Inga
+videofiler laddades ned eller analyserades i denna granskning. Klipp- och
+översiktsstrukturerna kan jämföras med `/api/bo/clips` respektive
+`/api/bo/overview` i produktservern; BO-session och Partner-signering är
+olika åtkomstvägar.
+
+### Övriga utvecklaranslutningar
+
 **Produktens äldre agentanslutning:** `AXEL_AGENT_URL` och `AXEL_AGENT_TOKEN`
 i spelserverns processmiljö. `RESEND_API_KEY` används där för e-post.
 Token/mailnyckel kan även läsas från `CROUPIER_ENV_FILE`,

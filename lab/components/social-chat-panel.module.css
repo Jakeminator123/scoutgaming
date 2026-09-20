@@ -3,3 +3,20 @@
 .stageAnchor,.chatAnchor{scroll-margin-top:105px}.sceneReply{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 18px;margin-top:10px;border:1px solid #4f625e;border-radius:8px;background:#23332f}.sceneReply p{font-size:15px;line-height:1.65;color:#e1e8d8;white-space:pre-wrap;overflow-wrap:anywhere;margin:7px 0}.sceneReply small,.sceneReply>span{font-size:10px;color:#a2b9ad;line-height:1.7}.sceneReply button{white-space:nowrap;flex-shrink:0;font-size:11px}.settings .draftWarning{color:#d9c39d;background:#302e24;padding:10px 12px;border-radius:6px;font-size:11px;line-height:1.75}@media(max-width:700px){.sceneReply{display:block}.sceneReply button{margin-top:10px}.stageAnchor,.chatAnchor{scroll-margin-top:85px}}
 .panel{background:#18272f;border-color:#45606e;border-radius:12px;padding:22px}.heading h2{font-size:19px;font-weight:550}.panel>p{font-size:12px;line-height:1.8;margin-top:12px}.chatEmpty{margin-top:18px}.chatEmpty .empty{text-align:left;padding:0;font-size:11px;color:#90a8b5}.chat{margin-top:18px}.field{font-size:12px}.field textarea{min-height:86px}.check{font-size:12px}.check small{font-size:11px}.actions{margin-top:16px}.settings,.audioTools{padding-top:16px;margin-top:18px}.settings summary,.audioTools summary{font-size:13px;font-weight:500;color:#d0dfd5;cursor:pointer;line-height:1.8}.audioTools summary>span{font-size:10px;font-weight:400;color:#98b0b9;margin-left:12px}.about{border-top:1px solid #344c59;padding-top:14px;margin-top:18px}.about summary{font-size:11px;color:#94acb8;cursor:pointer}.about p{font-size:11px;line-height:1.8;color:#94acb8;margin-top:10px}.savedAudio{margin-top:18px}
 .ownership{display:grid;gap:7px;margin:16px 0;padding:12px 14px;border:1px solid #526d6d;background:#172f31;border-radius:8px}.ownership strong{font-size:12px;color:#d4e6d6}.ownership span{font-size:11px;line-height:1.7;color:#a3bbb8}.ownership button{justify-self:start;font-size:11px}
+
+.stageAnchor>:global(.stage-panel){border-bottom-left-radius:0;border-bottom-right-radius:0}
+.compact{margin-top:0;border-top:0;border-radius:0 0 12px 12px;padding:16px 18px;background:#19272e}
+.compact .heading h2{font-size:16px;margin-top:4px}.compact>p{font-size:11px;margin:8px 0}
+.compact .ownership{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:8px 0;padding:8px 10px}
+.compact .ownership strong,.compact .ownership span{font-size:10px}.compact .ownership button{margin-left:auto}
+.compact .sceneGate{margin:8px 0;padding:0;border:0;background:none}.compact .sceneGate button{font-size:11px}
+.compact .chatEmpty{margin:8px 0}.compact .chatEmpty .empty{margin:0;font-size:10px}
+.compact .chat{max-height:190px;margin-top:10px;padding:10px}
+.compact form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:end}
+.compact form>.field{grid-column:1/-1;margin:5px 0}.compact .field textarea{min-height:64px}
+.compact form>.check{margin:0;font-size:11px}.compact .check small{font-size:10px}
+.compact .actions{margin:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.compact .actions>span{font-size:9px}.compact .actions button{font-size:11px;padding:9px 13px}
+.tools{margin-top:16px;padding-top:12px;border-top:1px solid #344c59}.tools>summary{font-size:11px;color:#aec2c9;cursor:pointer}
+.compact .about{margin-top:12px;padding-top:10px}.compact .about summary{font-size:10px}
+@media(max-width:700px){.compact{padding:14px}.compact .heading{display:flex}.compact .badge{margin-top:0}.compact form{grid-template-columns:1fr}.compact .actions{align-items:stretch}.compact .actions button{width:100%}}

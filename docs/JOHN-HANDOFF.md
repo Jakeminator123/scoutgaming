@@ -1,3 +1,37 @@
+## 2026-09-21 — place the player chat next to the table
+
+Following Jakob's clarification, kept the existing chat/settings entry points
+and moved the player chat directly below the table preview, before event-test
+controls. The compact panel shares the table border and groups advanced
+social settings/audio in a disclosure. It remains visible on other nodes
+with disabled input and an explicit Astrid-idle navigation action. Existing
+idle-only, one-owner and six-second speech controls are unchanged. Keeping
+the panel mounted across node selections preserves an unsent message;
+scene changes still cancel pending replies and audio.
+
+Read only the user-supplied text captures under
+random-stuff-jakob/jakob-log-files/backoffice.bettalotto. They show partial
+backoffice clips/assignments, generation metadata, verdicts/landing labels
+and overview data, not a recorded Partner event stream. Documented their
+use and limits in _env.explanation.md. Excluded raw captures from Git; did
+not download or inspect linked media, import truncated JSON or make a live
+Partner/BO call. No credentials or environment loaders were changed.
+
+Validation: 24 relevant component tests passed, including compact placement,
+idle gates and a new mounted-node-change cancellation/draft regression.
+TypeScript and production build passed. Desktop and 390px browser checks
+confirmed one chat immediately below the stage, no horizontal overflow,
+preserved unsent text and disabled input outside idle; no console errors.
+No actual message, TTS request, project save or game round was sent.
+
+Broader test limitation: 233 of 234 lab tests passed before the added
+regression. The unchanged video-registry test "size and hash mismatches
+block playback including same-size edits after caching" returned HTTP 200
+instead of 409 at lab/test/video-registry.test.mjs:131. Reproduced with that
+file alone (12/13 pass). Neither that test nor lab/lib/video-registry.mjs
+was changed here. Cause needs separate investigation; do not report the
+whole suite as green or treat this UI delivery as media-integrity approval.
+
 ## 2026-09-21 — simplify lab navigation, variant tests and environment guidance
 
 Made OpenClaw the initial event-test mode, with explicit button-triggered
