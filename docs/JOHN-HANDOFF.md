@@ -1,3 +1,26 @@
+## 2026-09-20 — V4 publication verified
+
+Published V4 source and the system-map/archive changes to
+`jakeminator123/work` at 8df6a52; Croupier main was not changed.
+Published the wiki at 7fe3f05 and the separate GitHub documentation repository's
+main at 16e705e. Remote branch SHAs were checked after each push. A fresh
+44-file source/site/wiki sync has no drift. The public website returns HTTP 200
+and exactly the reviewed HTML bytes (SHA-256
+691be95ce61ed9f8f2921c6713e61510ecde6a825ee8d8fb1c7b0aa5fa351b37).
+Browser inspection confirms the live V4 title, four-step overview and eight-day
+navigation. GitHub Actions run 35536345399 and the Vercel commit status succeeded.
+
+Final active-document validation covered 34 documents and 266 local links;
+all targets exist and none link to the personal archive. Wiki validation covered
+64 changed/new Markdown pages and 157 wiki links with no missing targets.
+The wiki's remote Git publication is verified; an unauthenticated browser was
+redirected to GitLab sign-in, so rendered wiki QA is not claimed. The website's
+local and live render were inspected. No game deployment or runtime login occurred.
+
+Existing GitHub/Vercel addresses retain their historical v1 suffix. Their V4
+display title and documentation explain that it is an address, not a version.
+The user's preferred permanent repository name has not been supplied.
+
 ## 2026-09-20 — V4 documentation and private archive boundary
 
 Replaced V3 as the active explanation with eleven concise V4 source files at
@@ -34,7 +57,7 @@ Public display name is Croupier · Presentationsplan · V4. Existing GitHub and
 Vercel addresses remain compatible while the repository naming preference is
 unresolved. Historical V3 pages are labeled superseded; their public HTML is
 preserved as project version history, separately from the retired personal archive.
-Remote publication verification will be recorded in the delivery follow-up.
+Remote publication verification is recorded in the follow-up above.
 
 ## 2026-09-20 — review external system package against the actual signal paths
 
