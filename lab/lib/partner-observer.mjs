@@ -13,7 +13,7 @@ const MAX_FRAME_BYTES = 64 * 1024;
 const MAX_CONNECTION_BYTES = 16 * 1024 * 1024;
 const encoder = new TextEncoder();
 
-function partnerEnvironment(env) {
+export function partnerEnvironment(env) {
   return Object.fromEntries([...REQUIRED, 'BETTALOTTO_PARTNER_BASE_URL'].map(name => [name,
     // A present canonical value wins even when blank: never silently replace an
     // intentional empty/invalid setting with credentials from another namespace.
@@ -41,7 +41,7 @@ function configuration(env) {
   const origin = approvedOrigin(env.BETTALOTTO_PARTNER_BASE_URL);
   if (!origin) invalid.push('BETTALOTTO_PARTNER_BASE_URL');
   return { configured: missing.length === 0 && invalid.length === 0, missing, invalid,
-    endpoint: origin ? `${origin}/api/v1/events` : null, scope: 'play',
+    endpoint: origin ? `${origin}/api/v1/events` : null, scope: 'events or play',
     channel: 'api-key + partner-player', replay: false, readOnly: true };
 }
 

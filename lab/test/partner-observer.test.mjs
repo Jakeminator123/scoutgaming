@@ -19,7 +19,7 @@ test('status and unconfigured stream disclose only missing names and never conne
   assert.equal(status.configured, false);
   assert.deepEqual(status.missing, Object.keys(env));
   assert.equal(status.endpoint, 'https://bettalotto.se/api/v1/events');
-  assert.equal(status.scope, 'play'); assert.equal(status.replay, false);
+  assert.equal(status.scope, 'events or play'); assert.equal(status.replay, false);
   assert.equal((await observer.endpoint(request())).status, 503);
   assert.equal(calls, 0);
 });

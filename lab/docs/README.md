@@ -23,6 +23,10 @@ uppspelningskvitto. Den visar aktuella labbanrop och valfri läsande Partner-
 observation, högst 150 poster i flikens minne. Saknad konfiguration är inte
 en ansluten spelström; observern spelar inget i scenen. Konfiguration och
 gränser finns i [labbets README](../README.md#läsande-partner-ström).
+På samma yta finns Partner-verifiering, öppning av hela originalspelet,
+aktuell videokarta och JSON-export av hela mottagna presentationslistor.
+2D ska efterlikna observerad videopresentation. Originalspelarens faktiska
+klippstart/slut och kopplingen från launch-rundor till SSE återstår att belägga.
 
 **Socialt svar** är ett eget idle-prov med en enda talägare och högst sex
 sekunder ljud. För långa ljud avvisas; avbrott/fel loggas. Modellens uttrycks-

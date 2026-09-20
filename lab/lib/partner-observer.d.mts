@@ -4,7 +4,7 @@ export type PartnerInputStatus = {
   missing: PartnerEnvironmentName[];
   invalid: PartnerEnvironmentName[];
   endpoint: string | null;
-  scope: 'play';
+  scope: 'events or play';
   channel: 'api-key + partner-player';
   replay: false;
   readOnly: true;
@@ -22,3 +22,4 @@ export function createPartnerObserver(options?: Record<string, unknown>): {
   endpoint(request: Request): Promise<Response>;
 };
 export function partnerInputEndpoint(request: Request): Promise<Response>;
+export function partnerEnvironment(env: Record<string, string | undefined>): Record<PartnerEnvironmentName, string | undefined>;

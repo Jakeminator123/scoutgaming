@@ -1,8 +1,72 @@
-# Fortsättning: Partner-events → spelbar blackjack i 2D
+# Fortsättning: originalspel → observationsprotokoll → 2D-mockup
 
 **Kontrollerat 21 september 2026.** Arbetsrepo: `C:/Users/jakem/Projects/croupier`,
 branch `jakeminator123/work`. Labbet kör på `http://127.0.0.1:4188`.
 Den här filen är en teknisk överlämning, utan hemligheter eller samtalsexport.
+
+## Senaste kompletteringen: launch, videokarta och protokoll
+
+**Jakobs förtydligande:** 2D är en mockup av presentation som senare ska vara
+videofiler. Utgå från hela befintliga blackjackklienten och dess videoflöde.
+Observera verkliga sekvenser och återskapa dem på labbets befintliga Partner-yta.
+En egen uppsättning påhittade gester är inte nästa steg.
+
+- Avslutningscommitten `e680dac` har hämtats hem. Den innehöll handoff,
+  dokumentation och kodetiketter. Arbetsgren är `jakeminator123/work`, med
+  `origin/jakeminator123/work` som jämförelsebas. Kevin-grenen hämtades till
+  remote-ref `b066a43` för läsning, utan merge.
+- Kevins [senaste relevanta besked](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3873260823)
+  beskriver `launch + events`, samma spelar-ID för spel och observation,
+  nya `/api/v1/generations/mapping` och en deployad fix i PerformancePlayer.source().
+- Live-ping via labbet bekräftade **launch + events**, inte play/wallet.
+  Det korrigerar äldre scope-uppgifter längre ned och i tidigare handoffs.
+- `/activity` har nu **Verifiera Partner-åtkomst**, **Öppna referensspelet**,
+  **Hämta videokarta** och **Exportera observationsprotokoll**. Det är samma
+  yta som den befintliga läsande SSE-anslutningen. Inget anrop till leverantören
+  sker bara för att sidan öppnas.
+- Partner-launch öppnades live för den konfigurerade spelaren. Originalklienten
+  visade Astrids videobord och `0,00 €`, med `dealer=astrid&performance=staged&motion=smooth60`.
+  Inga insatser, saldoändringar eller rundor gjordes. Launch kan skapa/ladda
+  partnerprofil och session; provet var därför inte enbart läsande.
+- SSE accepterades samtidigt och kopplades sedan från. **Inga rundmeddelanden
+  mottogs. Launch → faktisk rundpublicering är ännu oprövat.** Kevin säger
+  att flödet ska fungera; hämtad kod visar publicering i Partner-table men
+  ingen motsvarande native `/api/table`-koppling. Utred med en avsedd demorunda
+  före påståenden om fungerande helhetsintegration.
+- Mapping gav fyra dealers. Astrid hade 19 engine-poster, 6 staged-takes,
+  0 green-takes och manifeststatus draft. `revision` var null: deploymentens
+  exakta commit är inte verifierad. BO-val, never-again och verdicts följer
+  kartan; de är inte uppspelningskvitton.
+- Observationen sparar hela mottagna rundmeddelanden före loggens 40-raders
+  kortning. Den stoppar synligt vid 300 meddelanden eller 4 MiB. Exporten
+  innehåller scopes, videokarta, tidsstämplar och anslutningsluckor, utan
+  launch-URL/nycklar. JSON kan också kopieras i ytan. Exportera före vybyte
+  eller omladdning; ingen automatisk historik eller replay finns.
+- Originalspelarens faktiska klippstart/slut/kortlandning och fulla
+  tabellsnapshots ingår **inte** ännu. Ingen 2D-renderer eller produktmedia
+  ändrades. SSE-instruktioner får inte märkas som redan spelade klipp.
+
+Nya kodankare: `lab/lib/partner-reference.mjs` (serveradapter),
+`lab/components/partner-reference.tsx` (panel), `lab/lib/partner-trace.mjs`
+(observation/export). Endast mapping-adaptern läser generationsvariabeln
+`BETTALOTTO_API` från root `.env`, lab `.env.local` och processmiljön i den
+prioritetsordningen. Befintliga miljöfiler och Partner-inläsning är bevarade.
+
+Nästa agent följer [den konkreta uppdragsprompten](PROMPT-2D-MOCKUP-FRAN-SPELFLODE.md).
+Först behövs en avsedd demoplånbok med saldo och belagd rundtrafik; använd inte
+wallet-/databasändringar på det riktiga kontot för att kringgå nollsaldot.
+Jira CAC kunde inte uppdateras: ingen Jira-anslutning eller kopplat ärende-ID
+fanns tillgängligt. Teknisk observation och dokumentation är lokalt sparade.
+
+Verifiering för kompletteringen: **248/248 labbtester, TypeScript och
+produktionsbygget passerade**, inklusive 29 riktade API/observer/protokolltester.
+Browser verifierade scopes, videokarta, launch till originalbordet och SSE
+anslutning/frånkoppling. Den kopierbara JSON-exporten verifierades med fyra
+dealers, launch/events, tre anslutningsposter, noll rundor och inga credentials
+eller launch-URL. Automationen bekräftade inte webbläsarens nedladdningshändelse;
+samma JSON finns i panelen för kopiering. Det tidigare cachetestet passerade
+denna gång utan cacheändring; den äldre intermittenta avvikelsen är inte löst.
+Ingen take har visuellt godkänts av detta prov.
 
 ## Börja här
 
@@ -23,8 +87,9 @@ och [miljöåterställningen](../../docs/ENVIRONMENT-RESTORATION.md). Äldre not
   `/api/inputs` gav `configured: true`, inga saknade/ogiltiga fält.
   Klick på **Anslut läsande** i Händelseloggen gav **Partner-ström ansluten**
   mot `https://bettalotto.se/api/v1/events`.
-  Det verifierar att servern accepterade anslutningen; lokal serverkod kräver
-  `play`. Inga rund-events kom under det korta provet, inga spelkommandon skickades.
+  Det verifierar att servern accepterade anslutningen. Den äldre lokala
+  serverkoden kräver `play`; uppdaterad Kevin-kod och live stöder även `events`.
+  Inga rund-events kom under det korta provet, inga spelkommandon skickades.
   Testanslutningen kopplades därefter från uttryckligen. Den kör inte i bakgrunden.
 - **224 av 224 videoposter är tillgängliga lokalt**, enligt `/api/videos`.
   Här betyder tillgänglig läsbar fil med förväntad storlek, inte kvalitetsgodkänd
@@ -44,8 +109,8 @@ och [miljöåterställningen](../../docs/ENVIRONMENT-RESTORATION.md). Äldre not
 
 Använd först [Bettalottos befintliga spelklient](https://bettalotto.se/) i
 avsedd demomiljö. Vanlig inloggning eller en Partner-launch kan ge åtkomst
-till den klienten. **Launch är en ingång till befintlig UI, inte en ny
-spelyta i labbet.** Ingen launch-länk skapades i denna körning.
+till den klienten. **Launch öppnar hela originalklienten med dess videorendering.**
+Labbets nya launch-knapp är verifierad enligt kompletteringen ovan.
 
 Spela några avgränsade demorundor och notera faktisk sekvens: spelhandling,
 motorns kort/resultat, använt klipp eller stream-ID, replik, målposition,

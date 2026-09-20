@@ -26,4 +26,16 @@
 .run { display: block; font: 10px ui-monospace, monospace; overflow-wrap: anywhere; opacity: .6; }
 .note, .empty, .latest { font-size: 12px; line-height: 1.7; opacity: .72; overflow-wrap: anywhere; }
 .empty { padding: 24px 0; }
+.reference { padding: 24px; margin: 20px 0 0; border: 1px solid var(--line, #d3ddd8); border-radius: 10px; min-width: 0; }
+.reference h3 { margin: 10px 0; font-size: 21px; }
+.reference p, .mapping li { font-size: 13px; line-height: 1.7; }
+.reference .tools { flex-wrap: wrap; align-items: center; }
+.mapping { margin-top: 18px; }
+.mapping details { margin: 12px 0; }
+.mapping summary { cursor: pointer; font-size: 13px; overflow-wrap: anywhere; }
+.mapping pre { max-height: 330px; overflow: auto; padding: 14px; background: #13251f; color: #e6f2eb; font: 11px/1.6 ui-monospace, monospace; border-radius: 6px; }
+.protocol { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line, #d3ddd8); }
+.protocol > div { flex: 1 1 300px; }
+.protocol strong { font-size: 14px; }
 @media (max-width: 700px) { .header, .connection { display: flex; flex-direction: column; gap: 14px; } .timeline > li { grid-template-columns: 1fr; gap: 10px; } .timestamp { flex-direction: row; } .tools { flex-wrap: wrap; } }
+.exportText { width: 100%; max-width: 100%; box-sizing: border-box; resize: vertical; font: 12px/1.5 monospace; }
