@@ -1,22 +1,21 @@
 # Eventregister och mental mappmodell
 
-Arbetsmodell för Jakob, 20 september 2026. Jakob vill tills vidare se systemet
-som ett mappträd. Trädet nedan är en **logisk vy över referenser**, inte ett
-beslut att flytta videor eller ändra spelmotorns kontrakt.
+Aktiv referens, uppdaterad 20 september 2026 inför V4. Trädet nedan är en
+**logisk vy över referenser**, inte ett beslut att flytta videor eller ändra
+spelmotorns kontrakt. Börja gärna i [systemkartan](systemkarta/README.md).
 
-Underlaget är lokal spelkod, [V3-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events-v3-s03),
-[videoinventeringen](../../docs/animation-events/v3-video-map/README.md) och
-den parallella OPENCLAW-uppgiftens nya labbfiler. Spelkoden lästes vid lokalt
-HEAD `d910ddc`; labbets startprojekt lästes som `studio.2026-09-20.2` och
-OPENCLAW-uppgiftens nya labbarbete blev under granskningen lokalt committat
-som `b26ff83`. Detta dokument påstår inte att allt är publicerat eller att
-Kevins senaste remote-head har kontrollerats.
+Ursprungliga källankare: spelkod `d910ddc`, studio `b26ff83` och startprojekt
+`studio.2026-09-20.2`. Den senare systempaketskontrollen jämförde work/origin
+`a15b780` med main `b147659`; granskade server-, shoe-, Partner- och appfiler
+saknade diff. Den kontrollens handoff är `62784f4`. Aktuell serverrevision
+och aktiva BO-bindningar är fortfarande inte verifierade. Se
+[källregistret](systemkarta/KALLOR.md) och [aktiv sprint](../../docs/animation-events/README.md).
 
 **Finns** betyder läst i kod/data. **Labb** betyder en implementerad
 illustration eller simulerad kontext. **Förslag** betyder ännu inte infört.
 `sourceStatus: verified` avser eventets källa, inte godkänd video.
 
-Senare förtydligande samma dag: [situationer, variantfamiljer och takes](2026-09-20-situationer-variantfamiljer-och-takes.md)
+[Situationer, variantfamiljer och takes](2026-09-20-situationer-variantfamiljer-och-takes.md)
 utvecklar Jakobs fråga om första/andra kortet, sju destinationer och växande
 videobehov. Den texten är den korta gemensamma ingången till hur modellen
 ska förstås; detta register behåller de fullständiga källorna och listorna.
@@ -66,7 +65,7 @@ Varje exakt presentationsbehov
 
 Varje variant
 ├── Labb: assetId → syntetisk rörelse
-├── Labb: valfri videoGenerationId → exakt originalpreview
+├── Labb: valfri videoGenerationId → kategoriserat original eller uppladdning
 └── Föreslagen produktkoppling: tillåtna takeId:n
     └── Video + eventuellt ljud + kalibrering + originalreferenser
 ```
@@ -75,7 +74,7 @@ Kategorierna Tal/Kortutdelning/etc. är presentationsmappar i vår mentala vy.
 De sju kategorierna är inte sju nya motor-events. Övergångar beskriver främst
 spelarens mediesekvenser, inte ytterligare händelser från spelmotorn.
 
-En samma rörelsefil kan refereras av flera dealerlinjer. En take kan stödja
+Samma rörelsefil kan refereras av flera dealerlinjer. En take kan stödja
 flera mål genom uttrycklig kalibrering. Triggers kan återanvändas av flera
 varianter. Därför passar **stabila ID:n och referenser** bättre än att varje
 sak bara får finnas i en enda fysisk undermapp.
@@ -90,7 +89,7 @@ flera gånger och innehålla olika mål, händer och kort.
 I det föreslagna finare registret måste även standardens take uppfylla
 situationens krav. En obligatorisk standardpost garanterar inte att rätt
 film finns; saknad kompatibel take ska visas som en täckningslucka.
-I dagens syntetiska labb är standarden däremot triggeroberoende valbar
+I dagens labb är standarden däremot triggeroberoende valbar
 inom en validerad linje; det är inte samma sak som godkänd videotäckning.
 
 ## 2. Orden och kopplingarna
@@ -116,9 +115,11 @@ konfigurationspost för dealer/event. `speak.line` är den exakta repliken som
 produkten redan har valt. `speak.other` samlar flera sådana repliker; en
 gemensam talvideo kan inte säkert ersätta dem.
 
-En trigger skapar inte själv ett spel-event. Beröm i chatten kan i dagens
-labb göra ett alternativ valbart vid nästa testade event. En spontan reaktion
-direkt när chatt anländer skulle kräva en separat, beslutad eventkälla.
+En trigger skapar inte själv ett spel-event. Ett manuellt testvärde för
+beröm kan göra ett alternativ valbart i eventtestet. Den separata sociala
+Astrid-chatten tolkar riktig text och kan välja en idle-reaktion enligt sin
+egen policy; den fyller inte automatiskt eventtestets `chat.signal`.
+En gemensam social reaktionskö till produktspelaren återstår.
 
 ## 3. Vilka register finns faktiskt?
 
@@ -133,7 +134,7 @@ direkt när chatt anländer skulle kräva en separat, beslutad eventkälla.
 | Dealerlinjer/varianter | `lines[].variants[]` | 64 linjer, 4 startvarianter vardera = 256 variantposter. |
 | Labbassets | `assets[]` | 64 delade animationsreferenser. |
 | Rörelsedata | [animations/index.json](../../lab/animations/index.json), 16 eventfiler | 64 tysta 2D-klipp; inte 256 dealerfilmer. |
-| Originalvideor | [snapshot.json](../../docs/animation-events/v3-video-map/snapshot.json), externt råarkiv | 224 inventerade generationer. Snapshot, ingen livesynk. |
+| Originalvideor och uppladdningar | [snapshot.json](../../docs/animation-events/v3-video-map/snapshot.json), [videoregistret](../../lab/lib/video-registry.mjs) | 224 daterat inventerade original, kompletterade med lokal intake och hashbunden kategorisering. Ingen produktaktivering. |
 | Vanliga spelklipp | Dealernas `streams/index.json` | 90 indexposter lokalt; tal/idle/actions. |
 | Exakt tal | Dealerljudbanker, [speech-lines.mjs](../../web/public/speech-lines.mjs), [speech-media.json](../../web/public/speech-media.json) | Text, ljud, matchande klipp och vissa MP4 med inbyggt ljud. |
 | Fysiska takes | [Astrids performance-manifest](../../web/public/dealers/astrid/performance/manifest.json) | 4 grundtakes + 2 continuations, samtliga `review`; dessutom särskilda review-manifest för andra bearbetningar. |
@@ -141,7 +142,8 @@ direkt när chatt anländer skulle kräva en separat, beslutad eventkälla.
 
 Seedräkningen gäller `studio.2026-09-20.2`, inte automatiskt ett tidigare
 sparat användarprojekt. Det normala `lab/data/project.json` saknades vid
-kontrollen. Äldre QA-data ska inte importeras som riktiga bindningar.
+den ursprungliga inventeringen; det är inte en ny kontroll av användardata.
+Äldre QA-data ska inte importeras som riktiga bindningar.
 
 | Dealer | Produktens mediarot | Tal / idle / actions i stream-index |
 | --- | --- | --- |
@@ -161,16 +163,23 @@ gameView(): filtrerad publik spelvy
     ├── /api/table → vanliga webbklientens befintliga koreografi
     └── /api/v1/table → presentationEvents(föregående vy, ny vy, op, extra)
                             ↓
-                       presentation[]
-                            ↓
-Labbets testinput → projektion → eventnod → triggerprövning → variantval
-                                  ↑             ↑
-                              eventregister   tillåten kontext
+                       presentation[] + samma lista via scoped SSE
+
+Separat labbprov:
+Sparat exampleEvent + manuell kontext → projektion → eventnod → variantval
 ```
 
-Partner-flödet finns, men labbet prenumererar inte automatiskt på ett riktigt
-spelbord. Den vanliga webbklienten använder sin egen kodväg. En gemensam
-produktionsadapter återstår att välja och granska med Kevin.
+Partner-flödet finns, men labbet prenumererar inte på ett riktigt spelbord.
+Den vanliga webbklienten använder sin egen kodväg. En gemensam adapter
+och en läsande livemonitor är förslag.
+
+Partner-API:t är dubbelriktat: partnern skickar kommandon in; status,
+presentation och tillgångsreferenser går ut. Utan `walletUrl` används
+intern demowallet. Med `walletUrl` är operatören saldots källa och den
+granskade Partner-table-vägen anropar `balance`, `bet` och `win`.
+En launch-URL öppnar native-klienten; dess `/api/table` går inte automatiskt
+genom Partner-table-vägens wallet eller SSE. Driftens kompletta wallet- och
+återhämtningsbeteende är inte verifierat av detta register.
 
 ### Kommandon och intern motor
 
@@ -252,6 +261,19 @@ Transporten har dessutom SSE-namnen `hello` och `round`. SSE-`round` bär
 presentationslistan som `events` tillsammans med bland annat op/version/phase.
 De är transportmeddelanden, inte två extra presentationstyper.
 
+SSE är avgränsad till API-nyckel + partnerns `playerId` och kräver signerad
+åtkomst med `play`-scope. BO-inloggning räcker inte. Vanliga `/api/table`
+publicerar inte till strömmen. `state` och cachade `requestId`-svar ger
+ingen ny publicering. Det finns ingen replaybuffert eller `Last-Event-ID`-
+återhämtning i granskad kod. Klienten behöver beslutad återhämtning efter
+avbrott och får inte spela samma händelse från både svar och SSE.
+Källa: [partner-api.mjs](../../web/partner-api.mjs).
+
+`/api/v1/assets` läser filbaserade index, banker och performance-manifest;
+det läser inte aktiva BO-bindningar. Takes som inte är `rejected` kan ingå,
+även `review`. Manifestförekomst bevisar varken visuell acceptans eller
+faktiskt medieval i spelaren.
+
 ### Vad kan mer bli input till registret?
 
 | Källa | Vad som redan finns | Vad som återstår för labbpolicy |
@@ -262,7 +284,9 @@ De är transportmeddelanden, inte två extra presentationstyper.
 | Vanliga klientens chatt | Manuellt `/chat` med `message`, de senaste historikposterna och `dealer`; svar `reply/say` | Detta är inte samma system som labbets simulerade `chat.signal`. Automatisk spelkommentar finns i kod men `AUTO_COMMENTARY=false`. |
 | Partner-launch | Bland annat språk och valuta | Att ett språk finns i launch-token innebär inte att det redan matar labbets språkpreferens. |
 | Tillgångskatalog | Dealer, scen, kamera, codec, frames, ljud/text, take/cues | Mediemetadata är en egen källa; inte spelutfall. |
-| Labboperatör | Chattklass, återkomst, språk, historikräknare, framtoning | Manuella testvärden i dag. |
+| Labboperatör | Chattklass, återkomst, språk, historikräknare, framtoning | Manuella värden i eventtestet. |
+| Social labbchatt | Riktig text → sparad policy → kontrollerat svar/reaktion, valfritt tal | Separat Astrid/idle-prov; koppling till produkt och bestående spelarminne återstår. |
+| Uppspelare och ljud | Beredskap, currentTime, slut, avbrott, fel och frame-cues | Styr synk och sekvens, inte kort eller utfall; inget gemensamt signalregister finns. |
 
 Den vanliga klienten anropar exempelvis `greeting` vid inträde, `bust`
 efter ett för högt handvärde och `sidebet` när en sidobet vinner. Dessa är
@@ -278,6 +302,8 @@ no_peek, house_edge, thanks, small_talk, side_when, ask_me, farewell_bank
 ```
 
 Detta är bankposter, inte nya spel-events eller en lista över godkända klipp.
+Ingen mikrofon-/taligenkänningsingång hittades i de granskade klient- och
+labbvägarna. Ljud som utgående tal och uppspelningsklocka är andra roller.
 Klienten filtrerar bort `rules_decks` och `fair_rng` från den laddade banken.
 Alla poster har inte motsvarande talvideo. Partner-lobbyn listar i den
 granskade koden bara `astrid-blackjack`; fyra dealeruppsättningar innebär
@@ -343,8 +369,9 @@ till godtyckliga eventnoder i seedfilen.
 | `playful-mood` | temperament | `context.temperament.mood` | `eq "playful"` |
 
 `deterministic` innebär här ett testbart villkor. Det innebär inte att
-sessionshistoriken redan hämtas från spelservern. All kontext ovan är ännu
-simulerad i labbet. `temperament` beskriver dealerns uttryck.
+sessionshistoriken redan hämtas från spelservern. Kontextfälten ovan fylls
+fortfarande med manuella testvärden. `temperament` beskriver dealerns uttryck.
+Det ska inte blandas ihop med den separata sociala chattens riktiga textinput.
 
 Följande ytterligare triggerposter kan beskrivas med **dagens tillåtna
 fält**, men har inte lagts in av denna dokumentationsuppgift:
@@ -357,9 +384,10 @@ fält**, men har inte lagts in av denna dokumentationsuppgift:
 | `split-available` | `event.legalActions includes "split"` | Turmarkering när split redan är tillåtet; inget råd att splitta |
 | `preferred-swedish` | `context.playerHistory.preferredLanguage eq "sv"` | Språkpreferens; kräver separat exakt svensk tal-take för riktigt tal |
 
-Flera triggers på en variant betyder **AND**. Tom lista betyder alltid
-valbar; den betyder inte avstängd. `in` kan uttrycka flera alternativ för
-ett enskilt fält. Godtyckliga nästlade AND/OR-träd finns inte i studioformatet.
+Flera triggers på en variant betyder **AND**. Tom lista ger inga extra
+villkor; varianten måste fortfarande tillåta valt urvalsläge via `selection`.
+`in` kan uttrycka flera alternativ för ett enskilt fält. Godtyckliga nästlade
+AND/OR-träd finns inte i studioformatet.
 
 Tillåtna fält enligt `allowedPathDescriptors` i
 [studio-model.mjs](../../lab/lib/studio-model.mjs):
@@ -385,8 +413,8 @@ det fältet som redigerbar trigger. Saknade fält ger inte träff med `ne`;
 
 **Idéer som kräver utbyggnad:** cooldown, ”använd inte samma take två gånger”,
 tid sedan senaste replik, spelarens explicita önskemål om mindre prat,
-shoe/cut-card-kontext och en spontan chattreaktion. De behöver dokumenterad
-källa, projektion och ibland tillstånd/schemaläggning. De är inte färdiga
+shoe/cut-card-kontext och en gemensam produktkö för chattreaktioner. De behöver
+dokumenterad källa, projektion och ibland tillstånd/schemaläggning. De är inte färdiga
 triggers bara för att data går att föreställa sig. Pengafält, rå chatt och
 hemlig shoe-ordning ingår inte i dagens triggerlista.
 
@@ -430,7 +458,9 @@ startprojektet och respektive animationsfil.
 `calm-mood` finns i triggerregistret men används inte av startvarianterna.
 En redigerad linje får ha standard + högst fyra alternativ, alltså upp till
 fem varianter; fyra är seedens nuvarande antal. Alla seedens
-`videoGenerationId` är `null`.
+`videoGenerationId` är `null`. Nya alternativ får `selection` med
+`rules/model/random` avstängda och kan förhandsvisas manuellt. Äldre projekt
+utan fältet behåller `rules: true`, `model: true`, `random: false`.
 
 Variantnamnen är labbexempel. Ett ”tyska”-namn skapar inget tyskt ljud och
 en gest som heter ”gränssättning” skriver inte om den publicerade repliken.
@@ -447,7 +477,10 @@ lab/
 │   └── studio.schema.json     vilka projektfält och värden som får finnas
 ├── data/                      lokalt sparande, Git-ignorerat
 │   ├── project.json           skapas när användaren sparar
-│   └── history/               tidigare revisioner
+│   ├── history/               tidigare revisioner
+│   ├── videos/                uppladdningar, index och classifications.json
+│   ├── social-policy.json     separat social policy
+│   └── voice-cache/           exakt text/röst/hash och lokal MP3
 ├── animations/
 │   ├── index.json             rörelsebibliotekets innehållsförteckning
 │   └── <eventId>.json         fyra syntetiska klipp per eventnod
@@ -455,7 +488,7 @@ lab/
     ├── studio-model.mjs       referensvalidering och katalogkonvertering
     ├── project-store.mjs      sparande, revisioner och historik
     ├── motion-library.mjs     validering av rörelsefiler
-    └── video-registry.mjs     läser befintligt originalregister
+    └── video-registry.mjs     förenar original, uppladdningar och kategorisering
 
 open-claw/lab/
 ├── schemas/
@@ -527,27 +560,30 @@ Projekt-JSON + vald dealer
     ↓ buildRuntimeCatalog
 En katalog för just denna dealer
     ↓
-Publicerat event + tillåten kontext → normalisering
+Sparat exempel-event + tillåten testkontext → normalisering
     ↓
 Första matchande nod → tillåtna varianter → alltid tillgänglig standard
     ├── off: standard
     ├── rules: högst prioriterade tillåtna variant, utan modell
+    ├── random: lika chans bland standard och tillåtna slumpalternativ
     ├── shadow: modellråd registreras, standard spelas
     └── active: endast ett giltigt råd för rätt anrop/katalog får användas
     ↓
-Vald variant → labbanimation / separat originalpreview
+Vald variant → bunden video som klarar labbkontrollerna, annars märkt 2D-reserv
 ```
 
-`rules` är studions extra lokala urvalsläge. Den underliggande Director-motorn
-har `off/shadow/active`. Samma lägeslista ska därför inte kopieras blint
-mellan format.
+`rules` och `random` är studions extra lokala urvalslägen. Den underliggande
+Director-motorn har `off/shadow/active`. Samma lägeslista ska därför inte
+kopieras blint mellan format. Presentationsslumpen påverkar inte spel-RNG.
+Den väljer mellan varianter; viktade takepooler är fortfarande förslag.
 
 `buildRuntimeCatalog` översätter `triggerIds` till konkreta `when.all`
 predikat. `prepareDecision` matchar nod och filtrerar varianter; prioritet
 sorteras fallande, sedan ID. OpenClaw får föreslå bland tillåtna ID:n.
 `finalizeDecision` kontrollerar `requestId`, `catalogRevision` och
 `variantId`. Studion binder katalogrevisionen till utkastets innehåll och
-vald dealer för att avvisa inaktuella råd.
+vald dealer och urvalsläge för att avvisa inaktuella råd. `selection`
+filtrerar bort alternativ som inte får användas med den valda metoden.
 
 Fel, timeout, uteblivet råd eller otillåtet variant-ID ger standardvarianten.
 I `active` behöver OpenClaws giltiga val inte vara den högst prioriterade
@@ -559,11 +595,11 @@ Operatörschatten är ett separat anrop om labbprojektet. Den är inte
 spelarchatt, spelminne eller en källa som får ändra spelresultat.
 
 Den lokala studion kan anropa Render Director som i sin tur anropar privat
-OpenClaw. Enligt OPENCLAW-uppgiftens daterade
-[anslutningsnotering](arkiv/2026-09-20/2026-09-20-nodtrad-rorelser-anslutning.md) har riktiga
-råd och operatörschatt provats mot Director `7f056f7`. Det provet tillhör
-den uppgiften; denna dokumentation har inte gjort egna modell- eller
-deployanrop. Produktkoppling och godkända dealerfilmer är separata steg.
+OpenClaw. [Handoffens daterade verifieringar](../../docs/JOHN-HANDOFF.md)
+redovisar tidigare råd/operatörschatt på `7f056f7` och senare socialt
+labbprov på `6797b6a`. Ingen ny driftkontroll eller något modell-/deployanrop
+görs av detta dokument. [Socialchatten](../../lab/SOCIAL-CHAT.md) har eget
+kontrakt; produktkoppling och godkända dealerfilmer är separata steg.
 
 ## 10. Media, takes och aktivering i samma logiska register
 
@@ -577,9 +613,9 @@ godkänd katalogrevision + tillåtet körläge
 uppspelning i den gemensamma produktspelaren
 ```
 
-Detta är målkedjan för produktintegration. Dagens labb kan redan binda
-direkt till ett original för preview, men har inte en färdig sådan
-take-katalog per variant.
+Detta är målkedjan för produktintegration. Dagens labb kan binda ett
+kategoriserat original eller en uppladdning för preview och vissa exakta
+eventkontroller, men har inte en färdig sådan take-katalog per variant.
 
 | Statusdimension | Vad den säger |
 | --- | --- |
@@ -680,6 +716,9 @@ inte stoppas direkt i dagens strikta studio-JSON.
 
 ## 12. Verifiering och kvarstående gränser
 
+Följande formatprov hör till den ursprungliga referensens daterade leverans;
+de är inte nya körningar i V4:s dokumentationsöversyn.
+
 Dokumentets lokala länkar kontrollerades. Alla 16 noder och nio starttriggers
 stämde med det lästa startprojektet. Båda JSON-exemplen parsades, och alla
 fem föreslagna triggerposter godtogs av den riktiga `validateProject` i en
@@ -696,5 +735,6 @@ godkännanden, belastning eller ett nytt spel-/modelltest.
 Den här leveransen ändrar dokumentation. Den ändrar inte policies, lagrade
 projekt, spelkod, media, databas eller OpenClaws konfiguration. Fullständig
 produktintegration, aktuella BO-bindningar och hashbunden visuell take-QA
-återstår. Den lokala GitLab-inboxens API-inloggning var inte tillgänglig i
-denna process; den lokala OPENCLAW-uppgiften kunde ändå ge scoped återkoppling.
+återstår. V4-översynens källor, nya preciseringar och avgränsning finns i
+[systemkartans källregister](systemkarta/KALLOR.md). Ingen media har avkodats
+eller innehållsindexerats i den översynen; det personliga arkivet har inte lästs.

@@ -1,0 +1,10 @@
+---
+description: Keep Jakob's personal historical archive out of active agent context
+alwaysApply: true
+---
+
+Follow the active-documentation and private-archive boundary in root AGENTS.md.
+Do not read or index `random-stuff-jakob/jakob-docs/arkiv/`, including restored
+copies, Git-history versions or external backups, unless Jakob explicitly asks
+for a specific historical document. Use the current guide, system map, sprint
+and findings instead. Old handoff references do not authorize archive retrieval.

@@ -1,4 +1,4 @@
-# V3-workflow för Jakob
+# V4-workflow för Jakob
 
 Detta arbetssätt gäller `jakeminator123/work`. Det är inte en instruktion till
 Kevin eller hans agenter och får inte kopieras till hans branch som en automatisk
@@ -9,9 +9,9 @@ regel.
 1. GitLab-repot `scout-gg/croupier`: kod, motor, media och verifierad runtime.
 2. [GitLab-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home): gemensamma
    beslut, kartor och handoff.
-3. [GitHub `animation-events-v1` · V3](https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp):
-   källrepo för den interaktiva V3-canvasen och den publika presentationen.
-4. `docs/animation-events/v3-9-days-mvp/`: repo-nära V3-underlag.
+3. [GitHub `animation-events-v1` · V4](https://github.com/Jakeminator123/animation-events-v1):
+   källrepo för den interaktiva V4-canvasen och den publika presentationen.
+4. `docs/animation-events/v4-8-days-mvp/`: repo-nära V4-underlag.
 5. `docs/animation-events/archive/v2-long-term-goal-best-rng/`: oförändrat
    V2-arkiv.
 
@@ -80,8 +80,8 @@ först när hela Expected Result är verifierat; misslyckad QA går tillbaka til
 
 När sakmodellen ändras uppdateras i samma leverans:
 
-1. s00–s06 och den interaktiva `index.html` i GitHub-canvasens V3-branch;
-2. motsvarande V3-sidor i Croupier och GitLab-wikin;
+1. s00–s06 och den interaktiva `index.html` i GitHub-canvasens publiceringsbranch;
+2. motsvarande V4-sidor i Croupier och GitLab-wikin;
 3. beslutslogg och teknisk runtime-verifiering när fakta eller revisionsankare
    ändras.
 

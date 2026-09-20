@@ -10,7 +10,7 @@ agentregler eller beslut om produktintegration.
   gemensamma ytan för beslut, kartor och handoff.
 - Körande kod, Partner API, manifester och verifierad runtime väger alltid tyngre
   än ett diagram eller en plan.
-- [GitHub `animation-events-v1` · V3](https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp)
+- [GitHub `animation-events-v1` · V4](https://github.com/Jakeminator123/animation-events-v1)
   är källrepo för den interaktiva canvasen. Den får beskriva runtime men aldrig
   ersätta Croupier som källa för motor och spelregler.
 
@@ -18,8 +18,7 @@ agentregler eller beslut om produktintegration.
 
 - [Systemkarta](../../random-stuff-jakob/jakob-docs/systemkarta/README.md): ämnesvis förklaring av systemet.
 - [Findings för hela repot](../findings/README.md): buggar, förbättringar och öppna kontroller med evidens; Jira CAC behåller implementation och QA-status.
-- [Jakobs rapportarkiv](../../random-stuff-jakob/jakob-docs/arkiv/README.md): daterade underlag och deras nya sökvägar.
-- Aktivt V3-underlag: `docs/animation-events/v3-9-days-mvp/`
+- Aktivt V4-underlag: `docs/animation-events/v4-8-days-mvp/`
 - Arkiverad V2: `docs/animation-events/archive/v2-long-term-goal-best-rng/`
 - [Arbetssätt](https://gitlab.com/scout-gg/croupier/-/wikis/workflow)
 - [Animationsevents](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events)
@@ -27,6 +26,6 @@ agentregler eller beslut om produktintegration.
 - [Gemensam inbox för Kevin, Jakob, Emil och våra agenter](AGENT-INBOX.md)
 - [Inbox i wikin](https://gitlab.com/scout-gg/croupier/-/wikis/ping)
 
-V3 beskriver Jakobs backend-, logik- och eventarbete ovanpå Kevins befintliga
+V4 beskriver Jakobs backend-, logik- och eventarbete ovanpå Kevins befintliga
 motor. Emil arbetar nära Kevin med video. Jakobs koppling till Emil går i första
 hand via avgränsade artefakter, manifest och handoff.

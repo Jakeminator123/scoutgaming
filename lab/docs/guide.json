@@ -8,11 +8,12 @@
   ],
   "boundaries": [
     "En fil får bara kopplas till sin registrerade dealer och eventgrupp. Exakt situation kontrolleras även när eventet testas.",
-    "De 16 eventgrupperna är genvägar i dagens labb, inte alla signaler från spelet eller 16 universella filmer. Partner är en ingång för externa klienter; Kevins egen klient använder publik spelstatus. Labbet testar sparade exempel, inte en ansluten spelström.",
+    "De 16 eventgrupperna är genvägar för sex presentationstyper, inte hela signalsystemet eller 16 filmer. Vanliga spelet använder /api/table och egen koreografi. Partner använder /api/v1/table med presentation[] och en separat SSE-ström. Labbet testar sparade exempel, inte en ansluten spelström.",
     "Standard betyder ditt valda grundalternativ — inte automatiskt högst kvalitet. Want, filhash och kategorisering är inte visuell eller läppsynk-godkännande.",
     "Situation betyder bara relevanta omständigheter: deal behöver exakt plats/hand/kortposition; idle behöver inte kortfält. Dagens labb kontrollerar inte full täckning för senare kort, split och övergångar.",
     "Labbet spelar videon en gång. Kevins specifika idle-spelare kan redan växla klipp, men redigerbara loopar, takepooler och sekvenser är ännu inte införda i labbet.",
-    "Spelfakta är mer än RNG: kortordning plus regler, godkända handlingar och resultat. Spelmotorn äger dessa samt saldo och utbetalningar. Labbet och OpenClaw får bara välja tillåten presentation. Ersättning av Kevins talväg är beslutad riktning, inte genomförd avstängning."
+    "Spelfakta är mer än RNG: kortordning plus regler, godkända handlingar och resultat. Spelmotorn äger dessa samt saldo och utbetalningar. Labbet och OpenClaw får bara välja tillåten presentation. Ersättning av Kevins talväg är beslutad riktning, inte genomförd avstängning.",
+    "Chatt, testkontext och uppspelarens ljud-/videosignaler är olika indata. Ett manifest visar registrerat material; bara faktisk uppspelning visar vad som användes. BO-inloggning ansluter inte labbet till Partner-strömmen."
   ],
   "surfaces": [
     {"name":"Nodträdet","purpose":"Överblick av sambandet event → linje → variant. Samma data som Eventstudion, ingen separat konfiguration."},

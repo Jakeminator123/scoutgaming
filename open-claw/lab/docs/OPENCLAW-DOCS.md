@@ -101,7 +101,7 @@ lokal studio → Render → OpenClaw svarade med korrekt paketversion, källor o
 ansvarsgränser. Aktivt variantval och shadow gav riktiga råd på cirka två
 sekunder i varsitt prov; Director rapporterade 8000 ms testgräns.
 Detta är daterad anslutningsevidens, inte en kontinuerlig hälsokontroll eller
-garanti för framtida svarstid. Se [arbetsnoteringen](../../../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md).
+garanti för framtida svarstid. Se [systemkartans daterade driftgränser](../../../random-stuff-jakob/jakob-docs/systemkarta/05-openclaw-rost-och-drift/README.md).
 
 ## Var ändrar vi i Croupier?
 
@@ -118,6 +118,6 @@ garanti för framtida svarstid. Se [arbetsnoteringen](../../../random-stuff-jako
 | HTTP-adapter för råd och separat operatörssamtal | [openclaw.mjs](../src/openclaw.mjs) |
 | Redigerbara linjer, varianter och triggers | [catalog.json](../config/catalog.json) |
 
-IDE-inboxen ska aldrig kopplas in som spelarchatt. Den riktiga spelarchattens
-adapter, moderering och minne är ännu inte implementerade; labbet använder
-simulerade signaler. Se [labbets avgränsningar](../README.md#ide-inboxen-är-inte-spelarchatten).
+IDE-inboxen ska aldrig kopplas in som spelarchatt. Produktspelarens adapter, moderering och beständiga minne återstår.
+Eventtestet använder simulerad kontext; det separata sociala Astrid-provet
+använder skriven chatt och kontrollerade modellsvar. Se [labbets avgränsningar](../README.md#ide-inboxen-är-inte-spelarchatten).
