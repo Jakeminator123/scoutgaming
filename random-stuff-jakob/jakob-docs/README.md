@@ -16,6 +16,13 @@ Jakobs egen token är installerad i en separat åtkomstskyddad lokal fil utanfö
 
 ## 2026-09-20 — OpenClaw och labbet
 
+[Eventregister och mental mappmodell](2026-09-20-eventregister-och-mental-modell.md):
+Jakobs provisoriska träd för spel → dealer → presentationsbehov → variant → take.
+Samlar motorhändelser och publik rådata, sex presentationstyper, 16 labbnoder,
+alla nio starttriggers och fem nya triggerförslag, 256 variantposter samt
+hur projekt-JSON, scheman, rörelser, originalvideor och OpenClaw hänger ihop.
+Trädet är en logisk vy; inga medier flyttas.
+
 [Nodträd, 64 rörelser och verifierad Render-anslutning](2026-09-20-nodtrad-rorelser-anslutning.md): hur labbet följer Kevins motor, vad som bara är exempel, vad som är testat och en separat Windows/Cursor-prompt.
 
 [Startfil och miljöregister](../../_ENVIROMENT-INFO.md): dubbelklicka `Start-Labb.cmd` i repots rot. Alla labb-/OpenClaw-variabelnamn och deras placeringar, utan hemliga värden. Lokal `LAB_REMOTE_TOKEN` är samma värde som Directors `LAB_API_TOKEN`; inga automatiska nyckelbyten.

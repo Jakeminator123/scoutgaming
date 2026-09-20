@@ -1,3 +1,28 @@
+## 2026-09-20 — Jakob's logical event and media registry
+
+Documented Jakob's requested temporary folder-shaped mental model in
+random-stuff-jakob/jakob-docs/2026-09-20-eventregister-och-mental-modell.md,
+linked from his index. Covers all 10 internal Round event names, commands,
+public gameView fields, six Partner presentation types, 16 studio nodes,
+four dealers, implemented blackjack versus placeholder roulette, nine seed
+triggers, 256 variant records and 64 shared synthetic motion clips. Connects
+existing schemas/project serialization, original inventory, takes, binding
+status and OpenClaw selection. Five additional triggers are documented
+proposals only. Based on local source and studio.2026-09-20.2/b26ff83;
+not a fresh deployed-product or Kevin remote-head verification.
+
+Validation: local document links and node/trigger coverage, JSON fragment
+parsing, pure project/catalog validators, all five proposed trigger shapes,
+and box3-positive/box2-negative eligibility for the example in memory.
+Independent read reviews checked engine and policy boundaries. No new
+visual, media or runtime acceptance. Flags the existing split/splitFrom
+classification mismatch for later adapter review; no gameplay fix here.
+
+Documentation only: no policy/project/media/player/database changes,
+model calls, deployment or push. Preserved the other task's work and private
+login note. Actual BO bindings, exact-line/take product integration and
+per-take acceptance remain open. No CAC issue was implemented or closed.
+
 ## 2026-09-20 — node tree, synthetic motions and live Render relay
 
 Added root lab /tree with four dealers sharing sixteen semantic lab groupings
