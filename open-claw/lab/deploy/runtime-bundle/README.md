@@ -1,12 +1,12 @@
 # Runtimekunskap – litet, versionsmärkt och utan hemligheter
 
-`manifest.json` väljer vilken text som hör till varje roll. Director får bara
-sitt korta JSON-/presentationskontrakt. Chat och operator får även begreppsmodell
+`manifest.json` väljer vilken text som hör till varje roll. Director och social
+får sina korta, separata JSON-kontrakt. Chat och operator får även begreppsmodell
 och ett kompakt källindex. Det är egna sammanfattningar och länkar, inte en kopia
 av hela OpenClaws dokumentation. Nya begrepp märks som förslag när de inte är kod.
 
 Vid varje containerstart, även när `openclaw.json` återanvänds, synkar
-`../runtime-bundle.mjs` paketet till de tre **befintligt konfigurerade** rollernas
+`../runtime-bundle.mjs` paketet till de fyra **befintligt konfigurerade** rollernas
 arbetsytor. Den skapar inte nya roller eller verktygsbehörigheter. Saknad roll,
 delad/extern arbetsyta och handredigerat managed block rapporteras utan att
 skrivas över. Den befintliga Gateway-konfigurationen ägs inte av paketet.

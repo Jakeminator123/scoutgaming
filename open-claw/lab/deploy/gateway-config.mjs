@@ -148,7 +148,7 @@ export function gatewayConfig(env) {
   operator.workspace = path.join(stateDir, 'workspaces', 'croupier-operator');
   operator.agentDir = path.join(stateDir, 'agents', 'croupier-operator', 'agent');
   config.agents.entries['croupier-operator'] = operator;
-  const configured = applyOwnershipDefaults(applyDashboardPolicy(config, env));
+  const configured = applySocialRole(applyOwnershipDefaults(applyDashboardPolicy(config, env)), env);
   configured.gateway.auth.rateLimit = {
     maxAttempts: 10, windowMs: 60000, lockoutMs: 300000, exemptLoopback: false,
   };
@@ -170,6 +170,46 @@ export function applyOwnershipDefaults(config) {
   }
   if (next.talk === undefined) next.talk = {};
   if (isObject(next.talk) && next.talk.agentId === undefined) next.talk.agentId = 'croupier-operator';
+  return next;
+}
+
+// Add one isolated, tool-denied role without rebuilding any existing agent.
+// Conflicting human configuration is reported, never silently "repaired".
+export function applySocialRole(config, env) {
+  const next = structuredClone(config);
+  if (!isObject(next.agents?.entries)) throw new Error('Croupier social role conflict: agent entries are missing.');
+  const entries = next.agents.entries;
+  if (entries['croupier-social'] === undefined) {
+    const primary = entries['croupier-chat']?.model?.primary ?? entries['croupier-director']?.model?.primary;
+    if (typeof primary !== 'string' || !primary.trim()) throw new Error('Croupier social role conflict: no existing model reference to reuse.');
+    const state = env.OPENCLAW_STATE_DIR || '/data/openclaw';
+    entries['croupier-social'] = {
+      name: 'Astrid social lab chat',
+      workspace: path.join(state, 'workspaces', 'croupier-social'),
+      agentDir: path.join(state, 'agents', 'croupier-social', 'agent'),
+      model: { primary, fallbacks: [] }, skills: [],
+      memory: { search: { enabled: false } }, heartbeat: { every: '0m' },
+      tools: { profile: 'minimal', deny: ['*'], elevated: { enabled: false } },
+    };
+  }
+  const social = entries['croupier-social'];
+  if (!isObject(social) || !Array.isArray(social.tools?.deny) || !social.tools.deny.includes('*')
+    || social.tools.elevated?.enabled !== false || social.memory?.search?.enabled !== false
+    || social.heartbeat?.every !== '0m' || !Array.isArray(social.skills) || social.skills.length !== 0) {
+    throw new Error('Croupier social role conflict: preserve the existing file and resolve social tools, memory, skills or heartbeat explicitly.');
+  }
+  const overlaps = (left, right) => {
+    const relative = path.relative(path.resolve(left), path.resolve(right));
+    return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+  };
+  const paths = [social.workspace, social.agentDir];
+  if (paths.some(value => typeof value !== 'string' || !path.isAbsolute(value))
+    || overlaps(paths[0], paths[1]) || overlaps(paths[1], paths[0])
+    || Object.entries(entries).some(([id, entry]) => id !== 'croupier-social'
+      && [entry?.workspace, entry?.agentDir].some(other => typeof other === 'string' && path.isAbsolute(other)
+        && paths.some(value => overlaps(value, other) || overlaps(other, value))))) {
+    throw new Error('Croupier social role conflict: social workspace and agent state must be isolated.');
+  }
   return next;
 }
 
@@ -205,8 +245,10 @@ export function planGatewayConfig(existing, env) {
     };
   }
   const ingress = applyDashboardPolicy(existing, env);
-  const config = applyOwnershipDefaults(ingress);
+  const ownership = applyOwnershipDefaults(ingress);
+  const config = applySocialRole(ownership, env);
   const action = isDeepStrictEqual(config, existing) ? 'reuse'
+    : !isDeepStrictEqual(config, ownership) ? 'reconcile-social'
     : isDeepStrictEqual(ingress, existing) ? 'reconcile-ownership' : 'reconcile-ingress';
   return { action, config };
 }

@@ -67,6 +67,20 @@ async function readExistingConfig(configPath) {
   }
 }
 
+async function preserveConfigBackup(backupPath, original) {
+  const candidate = `${backupPath}.${randomUUID()}.tmp`;
+  try {
+    // Publish only a fully written backup; an interrupted write must not leave
+    // a truncated final backup which prevents the next startup from proceeding.
+    await writeFile(candidate, original, { flag: 'wx', mode: 0o600 });
+    try { await link(candidate, backupPath); } catch (error) {
+      if (error.code !== 'EEXIST' || await readExistingConfig(backupPath) !== original) throw error;
+    }
+  } finally {
+    await unlink(candidate).catch((error) => { if (error.code !== 'ENOENT') throw error; });
+  }
+}
+
 export async function prepareGatewayConfig(env, {
   validateConfig = validateGatewayConfig,
   parseConfig = parseGatewayConfig,
@@ -93,8 +107,10 @@ export async function prepareGatewayConfig(env, {
   try {
     await writeFile(candidate, `${JSON.stringify(plan.config, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
     await validateConfig(candidate, gatewayEnv);
-    if (plan.action === 'seed' || plan.action === 'migrate-legacy') {
-      for (const agent of Object.values(plan.config.agents.entries)) {
+    if (plan.action === 'seed' || plan.action === 'migrate-legacy' || plan.action === 'reconcile-social') {
+      const agents = plan.action === 'reconcile-social'
+        ? [plan.config.agents.entries['croupier-social']] : Object.values(plan.config.agents.entries);
+      for (const agent of agents) {
         await mkdir(agent.workspace, { recursive: true, mode: 0o700 });
         await mkdir(agent.agentDir, { recursive: true, mode: 0o700 });
       }
@@ -106,12 +122,11 @@ export async function prepareGatewayConfig(env, {
       if (await readExistingConfig(configPath) !== original) {
         throw new Error('OpenClaw configuration changed during startup; refusing to overwrite it. Restart after the other writer finishes.');
       }
-      if (plan.action === 'migrate-legacy' || plan.action === 'reconcile-ownership') {
-        backupPath = `${configPath}.${plan.action === 'migrate-legacy' ? 'pre-dashboard-migration' : 'pre-ownership-migration'}.bak`;
-        try { await writeFile(backupPath, original, { flag: 'wx', mode: 0o600 }); } catch (error) {
-          if (error.code !== 'EEXIST' || await readExistingConfig(backupPath) !== original) {
-            throw new Error('Could not safely preserve the Gateway configuration backup. No configuration was replaced.');
-          }
+      if (['migrate-legacy', 'reconcile-ownership', 'reconcile-social'].includes(plan.action)) {
+        const suffix = { 'migrate-legacy': 'pre-dashboard-migration', 'reconcile-ownership': 'pre-ownership-migration', 'reconcile-social': 'pre-social-migration' }[plan.action];
+        backupPath = `${configPath}.${suffix}.bak`;
+        try { await preserveConfigBackup(backupPath, original); } catch {
+          throw new Error('Could not safely preserve the Gateway configuration backup. No configuration was replaced.');
         }
       }
       await rename(candidate, configPath);

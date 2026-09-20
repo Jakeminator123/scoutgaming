@@ -26,6 +26,10 @@ observing advice; off uses the baseline. OpenClaw is not a trigger category.
 Deterministic signals and social/emotional signals are different input categories;
 social values/history in the lab are simulated, not a working player-memory link.
 Lab operator chat does not implement production player chat or IDE-agent inbox.
+The separate croupier-social lab role interprets chat semantically for Astrid in
+idle.ready and proposes social.ledsen or no expression, with a bounded reply.
+This isolated social lab is not production player-chat integration or durable
+player memory. Its choose_social_response is validated JSON, not a native tool.
 
 Proposals, NOT current runtime: multi-take families, equal/weighted selection
 within a compatible pool, full situation coverage matrix, and queued extra

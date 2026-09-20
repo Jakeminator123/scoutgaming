@@ -30,7 +30,7 @@ export function providerStatus(settings) {
   };
 }
 
-async function complete(settings, body, timeoutMs, fetchImpl) {
+export async function complete(settings, body, timeoutMs, fetchImpl) {
   if (!settings.baseUrl || !settings.gatewayKey) throw new GatewayError('openclaw_not_configured');
   let endpoint;
   try { endpoint = gatewayEndpoint(settings.baseUrl); } catch { throw new GatewayError('invalid_gateway_url'); }

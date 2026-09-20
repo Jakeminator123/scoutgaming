@@ -18,4 +18,5 @@ versionen eller sakfrågan kräver det.
 - [Starta på Render](RENDER-START-SV.md)
 - [Logga in i OpenClaws egen dashboard](DASHBOARD-SV.md)
 - [Teknisk drift och nycklar](DEPLOYMENT.md)
+- [Separat social labbchatt för Astrid](SOCIAL-CHAT.md)
 - [Runtimekunskap: roller, versionshash, bevarade agentfiler](../deploy/runtime-bundle/README.md)
