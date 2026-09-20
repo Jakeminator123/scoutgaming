@@ -20,6 +20,12 @@ Den fullständiga tekniska rapporten med källreferenser finns i
 [V3-videokartans README](../../docs/animation-events/v3-video-map/README.md).
 Den här arbetsrapporten beskriver vad vi gjorde och hur arbetet kan fortsätta.
 
+Rapportens avsnitt [Samlad översikt över register, manifest och föreslagna scheman](../../docs/animation-events/v3-video-map/README.md#samlad-översikt-över-register-manifest-och-föreslagna-scheman)
+samlar generationsregistret, lokala `catalog.json`, `streams/index.json`,
+performance-manifest/proveniens, labbkatalogen, BO:s `clipAssignments` och
+förslagen `event.yaml`/`take.yaml`. Befintliga register, okända live-val och
+ännu inte implementerade förslag markeras var för sig.
+
 ## Vad vi gjorde
 
 1. Läste V3-underlaget, Partner-presentationen, labbets katalog och matchning,
@@ -182,6 +188,11 @@ node docs/animation-events/v3-video-map/serve.mjs --archive "C:\Users\jakem\Crou
 lägg till `--port 4197` och öppna motsvarande port. Servern hämtar inget
 från Bettalotto och behöver ingen API-nyckel. Utan arkiv fungerar kartan,
 men ingen videopreview. Saknad fil ger 404; avvikande storlek/hash ger 409.
+
+Vid avslutningskontrollen den 20 september 2026 stängdes vår videokartserver
+på Jakobs begäran. Efteråt verifierades att varken 4196 eller 4197 lyssnade
+och att ingen av våra videokartservrar körde. Startkommandot ovan är kvar
+för nästa användning; kontrollen beskriver tillståndet vid avslutningen.
 
 Efter avsiktliga ändringar i mall eller snapshot:
 
