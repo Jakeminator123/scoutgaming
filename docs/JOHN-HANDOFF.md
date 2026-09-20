@@ -1,3 +1,39 @@
+## 2026-09-21 — simplify lab navigation, variant tests and environment guidance
+
+Made OpenClaw the initial event-test mode, with explicit button-triggered
+requests and the existing validated standard fallback. Standard, rules,
+random and shadow remain available under closed comparison-test disclosures;
+alternative eligibility is unchanged. The event test now explains that
+simulated context selects a prepared variant, not an additional animation
+layer. Video binding targets appear before upload and inventory controls.
+
+Added visible shortcuts to Astrid's idle player chat and the operator chat,
+collected under Chatt & OpenClaw. The player shortcut keeps the project draft
+and scrolls to the idle chat panel. Operator chat comes before configuration
+both visually and in document/keyboard order. No chat is sent on navigation.
+
+Added random-stuff-jakob/jakob-docs/_env.explanation.md with API roles,
+configuration locations, file precedence, Partner scopes and unverified
+connection boundaries. Linked it from the documentation indexes. Actual
+environment values and loaders were not changed. No credentials are in the
+new document, and no live Partner, model or TTS request was made during QA.
+
+Checked the motion definitions rather than scanning video artifacts: 64
+unique event motion tracks, four per each of 16 groups, shared by four dealers
+through 256 seed bindings, plus one separate social track. This does not cover
+all game sequences, exact seven-seat choreography, split or lip sync. The
+Guide, README and workspace now state that limit. No production player or
+media files changed; private archives were not read.
+
+Validation: all 234 lab tests passed, TypeScript passed, production build
+passed, and the seven affected component regression tests passed again after
+final copy/order adjustments. Checked desktop and 390px layouts, both chat
+shortcuts, local standard-mode simulation, closed comparison controls and
+video target ordering in the browser; no console errors or page overflow.
+Checked 39 local documentation links and git diff whitespace. Live Partner
+scope/player matching, deployed Director availability and speech/lip-sync
+acceptance remain separate outstanding checks.
+
 ## 2026-09-20 — prepare private Partner settings and clarify variant testing
 
 At Jakob's request, created the ignored `lab/.env.local` with blank canonical

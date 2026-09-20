@@ -58,8 +58,10 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
   annars just den variantens 2D-reserv. Välj fil direkt under **Standardvariantens
   video** i varianteditorn och spara med **Spara projekt**. Alternativ får egna
   kopplingar; de lånar aldrig standardens film. **Bara 2D** är ett manuellt
-  förhandsvisningsval. **Testa event** kör regler/modell. Beslutsmodell och
-  simulerad kontext ligger samlade under **Regeltest & OpenClaw**. I Astrids vänteläge finns separat
+  förhandsvisningsval. **Testa event** startar med OpenClaw som urvalsläge; modellen anropas först
+  när du trycker. **Avancerade jämförelsetester** innehåller standard, regler,
+  slump och skuggläge. Testsituationen påverkar variantvalet, inte en extra
+  animation ovanpå den kopplade videon. I Astrids vänteläge finns separat
   riktig OpenClaw-spelarchatt med redigerbar social policy och valfritt tal.
   Socialt svar och handlingspreview har en gemensam spärr: ett textsvar och
   högst sex sekunder tal i neutralt idle. Modellens uttrycksförslag loggas
@@ -76,13 +78,28 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
   omladdning. En kompakt logg följer de andra vyerna. Här finns även valfri,
   läsande observation av Partner-strömmen; den kör inget lokalt urval eller
   någon uppspelning.
-- **OpenClaw:** ansvar, anslutningsstatus och operatörschatt om det senast
+- **Chatt & OpenClaw:** två tydliga chattvägar, anslutningsstatus och operatörschatt om det senast
   sparade projektet. Länk till den befintliga, separata native-dashboarden.
   Chatt kräver en konfigurerad anslutning; inga modellsvar fejkas.
   Här finns också **Prova rösten**: tre standardfraser, egen text eller en
   kopia av det senaste operatörssvaret. Explicit knapptryck genererar Sarah-röst
   via ElevenLabs (kan kosta krediter); återanvändning av samma prov kostar inget
   nytt modellanrop. Detta är separat ljud, inte spelarchatt eller videosynk.
+
+## Var finns chatten och vad täcker 2D?
+
+**Spelarchatt med Astrid** finns som genväg ovanför arbetsytan, även från
+Videobanken. Den öppnar Astrids vänteläge och rullar till chattpanelen.
+**Fråga OpenClaw om labbet** öppnar operatörschatten för det sparade projektet.
+Båda finns samlade under **Chatt & OpenClaw**; ingen fråga skickas av navigationen.
+
+2D-biblioteket innehåller 64 unika rörelsefiler, fyra per eventgrupp, plus
+en separat social rörelse. Seedens 256 variantkopplingar delar dessa filer
+över fyra dealers. De är schematiska rörelseprov, inte fullständig spelkoreografi:
+alla kortsekvenser, sju exakta platser, split, övergångar och läppsynk täcks inte.
+
+API:er, nyckelroller och miljöfiler finns i
+[Jakobs miljöförklaring](../random-stuff-jakob/jakob-docs/_env.explanation.md).
 
 ## Filer och begrepp
 

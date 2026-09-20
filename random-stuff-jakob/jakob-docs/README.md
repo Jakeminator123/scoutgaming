@@ -6,6 +6,8 @@ Arbetsgången börjar i [Guide i labbet](http://127.0.0.1:4188/guide), vars käl
 
 ## Fördjupning
 
+- [API:er och miljövariabler](_env.explanation.md): vad varje anslutning gör,
+  var uppgifterna ska finnas och vilka nycklar som hör ihop. Inga hemliga värden.
 - [Systemkartan](systemkarta/README.md): motor, presentation, media, studio och drift.
 - [Signal- och situationsmodellen](2026-09-20-situationer-variantfamiljer-och-takes.md):
   vad som händer, vad som ska visas och hur kompatibelt material väljs.

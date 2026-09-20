@@ -1,5 +1,8 @@
 # Environment-info — labbet och OpenClaw
 
+För hela API-översikten inklusive Bettalotto Partner och generations-API:t, se
+[Jakobs miljöförklaring](random-stuff-jakob/jakob-docs/_env.explanation.md).
+
 Variabelnamn och placeringar, **inga hemliga värden**. Detta är ett register,
 inte en konfigurationsfil som programmet läser. Avser labbet/OpenClaw, inte
 produktens databasnycklar eller IDE-agenternas separata GitLab-inbox.

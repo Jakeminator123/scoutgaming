@@ -3,10 +3,11 @@ import type { StudioVariant, VariantSelection } from '../lib/studio-model.mjs';
 import { selectionFor } from '../lib/video-intake.mjs';
 
 export function VariantSelectionFields({ value, onChange }: {value: VariantSelection; onChange: (value: VariantSelection) => void}) {
-  return <fieldset className="trigger-assignment"><legend>Hur får alternativet väljas?</legend>
-    {([['rules', 'Regler', 'Kan väljas deterministiskt efter prioritet.'], ['model', 'OpenClaw', 'Får föreslås av modellen.'], ['random', 'Slumpvariation', 'Kan ingå i en slumpad presentation. Av från början.']] as const).map(([key, label, help]) =>
+  return <fieldset className="trigger-assignment"><legend>Variantval</legend>
+    <label className="check-field"><input type="checkbox" checked={value.model} onChange={e => onChange({ ...value, model: e.target.checked })} /><span>Tillåt OpenClaw att välja alternativet<small>Variantens villkor måste också matcha.</small></span></label>
+    <details className="selection-diagnostics"><summary>Tillåt i jämförelsetester</summary>{([['rules', 'Regeltest', 'Kan väljas efter prioritet, utan OpenClaw.'], ['random', 'Slumptest', 'Kan ingå i ett slumpat variantval.']] as const).map(([key, label, help]) =>
       <label className="check-field" key={key}><input type="checkbox" checked={value[key]} onChange={e => onChange({ ...value, [key]: e.target.checked })} /><span>{label}<small>{help}</small></span></label>)}
-    <p className="helper">Alla av = endast manuell förhandsvisning. Valda triggers måste fortfarande matcha. Standardläget spelar alltid standard.</p>
+    </details><p className="helper">Alla val av = endast manuell förhandsvisning. Standardvarianten finns alltid som reserv.</p>
   </fieldset>;
 }
 export function VariantSelectionEditor({ variant, onChange }: {variant: StudioVariant; onChange: (value: VariantSelection) => void}) {
