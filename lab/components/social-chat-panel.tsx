@@ -22,6 +22,7 @@ interface SocialReply {
   audio?: SocialAudio; voiceError?: string; suppressed?: string; systemNotice?: boolean;
 }
 interface Props {
+  compact?: boolean;
   dealerId: string;
   eventId: string;
   onGoToIdle: () => void;
@@ -45,7 +46,7 @@ export function socialHistory(messages: readonly ChatMessage[]) {
 }
 
 /** Separate social-lab policy and conversation. It never edits the presentation project. */
-export function SocialChatPanel({ dealerId, eventId, onGoToIdle, registerCancel, onBegin, onReaction, draftCache, blocked = false, onBusyChange, onActivity }: Props) {
+export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle, registerCancel, onBegin, onReaction, draftCache, blocked = false, onBusyChange, onActivity }: Props) {
   const [status, setStatus] = useState<SocialStatus | null>(() => draftCache?.current?.status ?? null);
   const [draft, setDraft] = useState<SocialPolicy | null>(() => draftCache?.current?.draft ?? null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -216,11 +217,11 @@ export function SocialChatPanel({ dealerId, eventId, onGoToIdle, registerCancel,
     try { await playAudio(source); } finally { finish(run); }
   }
 
-  return <section className={styles.panel} aria-labelledby="social-chat-heading">
-    <div className={styles.heading}><div><span className="eyebrow">SPELARCHATT</span><h2 id="social-chat-heading">Chatta med Astrid</h2></div><span className={styles.badge}>Astrids vänteläge</span></div>
-    <p>Ett meddelande ger ett textsvar och, om du väljer det, ett talprov. Astrid svarar bara i vänteläget. Talet får ta högst sex sekunder; kortdelning och andra handlingsprov väntar under hela svaret.</p>
-    <div className={styles.ownership} role="status"><strong>{busy === 'chat' ? 'Socialt svar reserverat · inväntar OpenClaw' : busy === 'playback' ? audioPlaying ? 'Socialt tal äger scenen · högst 6 s' : 'Socialt tal reserverat · kontrollerar ljudet' : blocked ? 'Scenen används av ett annat prov' : 'Vänteläget kan ta emot ett socialt prov'}</strong><span>En ägare åt gången. Blinkningar avbryter inte svaret. Läppsynk är ännu inte ansluten.</span>{busy === 'chat' || busy === 'playback' || busy === 'voice' ? <button className="text-button" type="button" onClick={() => cancel('user-stop')}>Stoppa socialt prov</button> : null}</div>
-    {!sceneAllowed ? <div className={styles.sceneGate}><strong>Chatten provas bara när Astrid väntar.</strong><p>Välj vänteläget för att inte lägga en social rörelse ovanpå kortdelning eller en annan croupier.</p><button className="primary-button" type="button" onClick={onGoToIdle}>Gå till Astrids vänteläge →</button></div> : null}
+  return <section className={`${styles.panel} ${compact ? styles.compact : ''}`} aria-labelledby="social-chat-heading">
+    <div className={styles.heading}><div><span className="eyebrow">{compact ? 'VID BORDET · SPELARCHATT' : 'SPELARCHATT'}</span><h2 id="social-chat-heading">Chatta med Astrid</h2></div><span className={styles.badge}>Astrids vänteläge</span></div>
+    <p>{compact ? 'Skriv till Astrid vid bordet. Hon svarar i vänteläget, med text och valfritt tal i högst sex sekunder.' : 'Ett meddelande ger ett textsvar och, om du väljer det, ett talprov. Astrid svarar bara i vänteläget. Talet får ta högst sex sekunder; kortdelning och andra handlingsprov väntar under hela svaret.'}</p>
+    <div className={styles.ownership} role="status"><strong>{!sceneAllowed ? 'Välj Astrids vänteläge för att skicka' : busy === 'chat' ? 'Socialt svar reserverat · inväntar OpenClaw' : busy === 'playback' ? audioPlaying ? 'Socialt tal äger scenen · högst 6 s' : 'Socialt tal reserverat · kontrollerar ljudet' : blocked ? 'Scenen används av ett annat prov' : 'Vänteläget kan ta emot ett socialt prov'}</strong><span>{compact ? 'Läppsynk är ännu inte ansluten.' : 'En ägare åt gången. Blinkningar avbryter inte svaret. Läppsynk är ännu inte ansluten.'}</span>{busy === 'chat' || busy === 'playback' || busy === 'voice' ? <button className="text-button" type="button" onClick={() => cancel('user-stop')}>Stoppa socialt prov</button> : null}</div>
+    {!sceneAllowed ? <div className={styles.sceneGate}>{!compact ? <><strong>Chatten provas bara när Astrid väntar.</strong><p>Välj vänteläget för att inte lägga en social rörelse ovanpå kortdelning eller en annan croupier.</p></> : null}<button className="primary-button" type="button" onClick={onGoToIdle}>Gå till Astrids vänteläge →</button></div> : null}
     {!draft || !status ? <div className={styles.loading}><p>{busy === 'loading' ? 'Läser sociala inställningar…' : 'Sociala inställningar är inte inlästa.'}</p>{!busy ? <button className="text-button" type="button" onClick={() => void loadPolicy()}>Läs inställningarna igen</button> : null}</div> : <>
       <div className={messages.length || busy === 'chat' ? styles.chat : styles.chatEmpty} aria-live="polite">{messages.length ? messages.map((item, index) => <div key={index} className={item.role === 'user' ? styles.playerMessage : item.role === 'system' ? styles.systemMessage : styles.astridMessage}><span>{item.role === 'user' ? 'DU / LABBSPELARE' : item.role === 'system' ? 'SYSTEM / PAUS' : 'ASTRID'}</span><p>{item.content}</p></div>) : <p className={styles.empty}>Ingen konversation ännu. Börja med ett meddelande nedan.</p>}{busy === 'chat' ? <p className={styles.pending}>Astrid funderar…</p> : null}</div>
       <form onSubmit={event => { event.preventDefault(); void send(); }}>
@@ -229,7 +230,7 @@ export function SocialChatPanel({ dealerId, eventId, onGoToIdle, registerCancel,
         <div className={styles.actions}><span>{!status.configured ? 'OpenClaw är inte konfigurerat.' : dirty ? 'Spara dina sociala inställningar före testet.' : 'Modellanrop sker bara när du skickar.'}</span><button className="primary-button" type="submit" disabled={!sceneAllowed || blocked || !status.configured || dirty || Boolean(busy) || !message.trim()}> {busy === 'chat' ? 'Väntar…' : 'Skicka till Astrid ↑'}</button></div>
       </form>
       {reply ? <div className={styles.decision}><strong>{reply.triggerId ? `${status.policy.trigger.label} föreslogs` : 'Ingen social reaktion valdes'}</strong><span>Modellens bedömning: {Math.round(reply.confidence * 100)} %. {reply.suppressed ? `Servern begränsade reaktionen: ${reply.suppressed}.` : ''} Scenen behåller vänteläget: ingen hand- eller kroppsrörelse läggs ovanpå talet.</span><code>Förslag: {reply.assetId} · Visas: idle.ready.standard</code></div> : null}
-      <details className={styles.settings}>
+      <details className={styles.tools}><summary>Chattinställningar och ljud</summary><details className={styles.settings}>
         <summary>Reaktion och svar <span>{dirty ? 'Osparat utkast' : 'Sparad policy'}</span></summary>
         {dirty ? <p className={styles.draftWarning}>Osparat socialt utkast. Det bevaras när du byter sida i studion, men försvinner om du laddar om eller stänger fliken. Spara sociala inställningar när du är nöjd.</p> : null}
         <p>Bestäm när ett socialt uttryck föreslås och hur Astrid svarar. Förslaget loggas; under svaret stannar hon i vänteläget. Sparas separat från eventprojektet.</p>
@@ -244,6 +245,7 @@ export function SocialChatPanel({ dealerId, eventId, onGoToIdle, registerCancel,
         <div className={styles.actions}><code>social.ledsen · {status.policy.revision.slice(0, 12)}</code><button className="primary-button" type="button" disabled={blocked || !dirty || Boolean(busy)} onClick={() => void savePolicy()}>{busy === 'saving' ? 'Sparar…' : 'Spara sociala inställningar'}</button></div><button className="text-button" type="button" disabled={blocked || Boolean(busy)} onClick={() => { if (!dirty || window.confirm('Läs in den sparade sociala policyn och kasta detta sociala utkast?')) void loadPolicy(); }}>Läs om sparad social policy</button>
       </details>
       <details className={styles.audioTools}><summary>Standardfrasens ljud <span>Valfritt</span></summary><div><p>Skriv en kort standardfras avsedd att sägas inom sex sekunder. Skapa dess ljud utan att skicka ett chattmeddelande. Samma text och röst återanvänder ljudet. Nytt ljud kan kosta krediter; ingen video eller läppsynk skapas. Ljud som visar längre speltid än sex sekunder avvisas före start; en tidsvakt stoppar även felaktig eller okänd speltid.</p></div><button className="text-button" type="button" onClick={() => void createFixedAudio()} disabled={!sceneAllowed || blocked || !status.voiceConfigured || dirty || Boolean(busy) || draft.response.mode !== 'fixed'}>{busy === 'voice' ? 'Skapar ljud…' : 'Skapa / spara standardfrasens ljud'}</button>{!status.voiceConfigured ? <p>ElevenLabs behöver konfigureras lokalt för tal.</p> : null}{draft.response.mode !== 'fixed' ? <p>Välj fast standardfras under Reaktion och svar för att skapa detta ljud.</p> : null}</details>{savedAudio ? <div className={styles.savedAudio}><p>Exakt ljudtext: ”{savedAudio.text}”</p><button className="primary-button" type="button" disabled={!sceneAllowed || blocked || dirty || Boolean(busy)} onClick={() => void replay()}>▶ Spela sparat ljud igen (manuellt)</button>{audioPlaying ? <button className="text-button" type="button" onClick={() => cancel('user-stop')}>Stoppa ljud</button> : null}</div> : null}
+      </details>
     </>}
     {notice ? <p className={styles.notice} role="status">{notice}</p> : null}{error ? <p className="inline-error" role="alert">{error}</p> : null}
     <details className={styles.about}><summary>Om chatten och kostnader</summary><p>Detta är en separat social labbpolicy, inte ett spel-event. Kort, saldo och resultat ändras inte. Chatten är skild från operatörschatten och IDE-inboxen, och har inget bestående spelarminne.</p><p>Modellanrop sker när du skickar. Tal är valfritt och kan förbruka ElevenLabs-krediter; avbrytning garanterar inte att leverantörens kostnad avbryts. Historiken finns bara medan chattpanelen är öppen.</p></details>

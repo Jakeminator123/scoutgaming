@@ -14,8 +14,8 @@ const mocks = {
   './studio-guide': { StudioGuide: empty },
   './event-tree': { EventTree: empty },
   './activity-log': { ActivityLog: empty },
-  './stage': { Stage: empty },
-  './social-chat-panel': { SocialChatPanel: empty },
+  './stage': { Stage: () => React.createElement('section', { 'data-testid': 'table-preview' }) },
+  './social-chat-panel': { SocialChatPanel: ({compact}) => React.createElement('section', { 'data-testid': 'table-chat', 'data-compact': String(compact) }) },
   './trigger-editor': { TriggerEditor: empty, categoryLabels: {}, defaultValue: () => null },
   './video-library': { VideoLibrary: empty, VariantVideoBinding: empty },
   './variant-selection': { VariantSelectionEditor: empty },
@@ -114,6 +114,10 @@ test('repair banner counts problems outside the currently selected dealer and ev
 
 test('editor labels align with the selected node and distinguish event-test context from social chat', () => {
   const html = render(createSeedProject());
+  assert.match(html, /data-testid="table-chat" data-compact="true"/);
+  assert.ok(html.indexOf('data-testid="table-preview"') < html.indexOf('data-testid="table-chat"'));
+  assert.ok(html.indexOf('data-testid="table-chat"') < html.indexOf('<strong>Testa event</strong>'));
+  assert.equal((html.match(/data-testid="table-chat"/g) ?? []).length, 1);
   assert.match(html, /Redigera vald nod/);
   assert.match(html, /Samma nod som i nodträdet/);
   assert.match(html, /<strong>Testa event<\/strong>/);

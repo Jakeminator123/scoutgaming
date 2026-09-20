@@ -89,7 +89,9 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
 ## Var finns chatten och vad täcker 2D?
 
 **Spelarchatt med Astrid** finns som genväg ovanför arbetsytan, även från
-Videobanken. Den öppnar Astrids vänteläge och rullar till chattpanelen.
+Videobanken. Den öppnar Astrids vänteläge och rullar till chattpanelen direkt under bordet.
+Panelen sitter ihop med förhandsvisningen, före eventtestets inställningar,
+och syns även för andra noder med en tydlig knapp till Astrids vänteläge.
 **Fråga OpenClaw om labbet** öppnar operatörschatten för det sparade projektet.
 Båda finns samlade under **Chatt & OpenClaw**; ingen fråga skickas av navigationen.
 
