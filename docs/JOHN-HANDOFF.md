@@ -1,3 +1,31 @@
+## 2026-09-20 — publish portable V3 video map to Jakob work
+
+Jakob authorized pushing this task's work to jakeminator123/work. Prepared
+an isolated checkout on the current remote work branch so other agents'
+unpublished commits and original working files remain separate. Preserved
+the remote handoff entries while applying the video inventory report.
+
+Added a portable docs/animation-events/v3-video-map/map.html, sanitized
+snapshot.json, HTML template, deterministic build command and read-only
+localhost preview server. The server takes --archive PATH, verifies size
+and SHA-256, supports byte ranges and only serves allowlisted generation
+IDs. No API key, complete raw prompt, original MP4 or conversation export
+is included. The report now records the storage/fetch follow-up and startup
+instructions. This remains an inventory and proposal, not runtime integration.
+
+Validation: deterministic rebuild, embedded-data equality, secret exclusion
+and JavaScript syntax passed. Fifteen HTTP checks passed, including local
+hash/range handling and rejection of corrupt test copies. Browser loaded the
+portable map and a 1920x1080 local preview with readyState 4 and no media or
+console errors. No product player/media acceptance is claimed.
+
+The OPENCLAW task received the user's requested coordination handoff:
+original server archive versus identical local copies versus processed
+runtime takes; generationId/sourceHash to take/mediaHash to event mapping;
+and separate intakeVerdict, reviewStatus and activeBinding. Actual BO
+assignments, per-take visual acceptance and final trigger definitions remain
+unverified. Existing gameplay, media and OpenClaw runtime are untouched.
+
 ## 2026-09-20 — V3 video inventory and placement map
 
 Read the Bettalotto Generations API using the user-authorized local
