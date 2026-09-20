@@ -1,13 +1,13 @@
 # Fynd och förbättringar
 
 [Projektets ingång](../../README.md) ·
-[Systemkartan](../../random-stuff-jakob/jakob-docs/systemkarta/README.md) ·
-[Arbetsrapporter](../../random-stuff-jakob/jakob-docs/arkiv/README.md)
+[Systemkartan](../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
 
 Här samlas repoövergripande observationer som behöver triage: buggar,
 förbättringsförslag och frågor som måste granskas. Börja i
-[registret](REGISTER.md). Utförliga undersökningar och handoffnotiser ligger
-kvar som källor; registret ger en kort väg till rätt underlag.
+[registret](REGISTER.md). Registret bevarar observationer, datum och begränsningar. Personliga
+rapportoriginal ingår inte i den aktiva läsvägen; använd länkad kod och
+gemensam handoff för fortsatt kontroll.
 
 **Registret är inte en parallell Jira eller ett tillstånd att ändra kod.**
 Jira CAC är den levande arbetslistan och äger implementationens status.
@@ -46,7 +46,7 @@ Läs då aktuell issue, Expected Result och fält; upptäck tillgängliga
 - Datera underlaget och skilj kodrevision, lokal reproduktion och
   driftsatt beteende. En ny uppgift kan ändra slutsatsen utan att det äldre
   kvittot raderas.
-- Sammanfatta observationen och dess gräns. Länka detaljerade rapporter;
+- Sammanfatta observationen och dess gräns. Länka aktiva kod- och testkällor;
   lägg inte in chattutskrifter, hemligheter eller råa API-svar här.
 - Beslut och eventuell avslutad triage ska ha en källa. Ett skickat ping
   är inte ett godkännande. En genomförd kodändring är inte visuell media-QA.

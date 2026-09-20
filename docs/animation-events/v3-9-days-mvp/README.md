@@ -1,3 +1,5 @@
+> **Historisk V3.** Aktuell plan är [V4 · åtta arbetsdagar](../v4-8-days-mvp/README.md). Påståenden nedan hör till den äldre versionen.
+
 # Animation events · V3
 
 > V3 beskriver arbetssättet efter beslutsrundan mellan Jakob, Emil och Kevin.

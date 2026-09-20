@@ -1,3 +1,41 @@
+## 2026-09-20 — V4 documentation and private archive boundary
+
+Replaced V3 as the active explanation with eleven concise V4 source files at
+`docs/animation-events/v4-8-days-mvp/` (source commit a46b9cf). Eight days
+are Jakob's remaining planning horizon, not a historical meeting decision or
+verified launch date. The website and wiki are generated views of that source.
+Their shared text now separates native table status, Partner presentation/SSE,
+lab examples, social chat, media timing and proposed product integration.
+
+Reviewed and corrected all six system-map areas, their entry and source index,
+and the two active event/situation references. Updated active README, workflow,
+findings provenance and guide boundaries. Existing findings and Jira states are
+unchanged. Source anchors and dated test evidence retain their limitations;
+current deployment, authorized runtime session, BO bindings and real playback
+remain unverified. No gameplay, player, media, runtime schema or model call changed.
+
+Moved the complete 13-file personal archive out of the checkout to a local backup
+without reading its bodies. Its removal is versioned on Jakob's branch; older
+Git commits still contain history. Removed active reading links and added
+AGENTS/Cursor rules plus ignore entries to keep restored copies out of ordinary
+agent reading/indexing. These are scope instructions and indexing exclusions,
+not a promise that every tool is technically unable to retrieve old commits.
+No private package, email/reset link, archive content or backup path is published.
+
+Verification: website's 17 existing tests passed; its five generator tests
+passed again after the final rendering correction. The 44-file source/site/wiki
+sync is clean, reproducible HTML and the static deployment build pass. Browser
+QA covered all seven chapters, day 8, search and a 390px mobile viewport with no
+document overflow or console errors. Four guide/studio-contract tests passed.
+Local document links, JSON parsing and whitespace checks passed. No media
+binaries were decoded or indexed, and no visual media acceptance is claimed.
+
+Public display name is Croupier · Presentationsplan · V4. Existing GitHub and
+Vercel addresses remain compatible while the repository naming preference is
+unresolved. Historical V3 pages are labeled superseded; their public HTML is
+preserved as project version history, separately from the retired personal archive.
+Remote publication verification will be recorded in the delivery follow-up.
+
 ## 2026-09-20 — review external system package against the actual signal paths
 
 Reviewed Jakob's supplied system package as evidence/proposals, not executable

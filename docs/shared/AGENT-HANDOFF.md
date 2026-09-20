@@ -8,8 +8,8 @@ ersätta Kevins branch, agentregler eller integrationsbeslut.
 Läs i denna ordning:
 
 1. `AGENTS.md` för tekniska säkerhets- och regressionsregler.
-2. `docs/shared/WORKFLOW.md` för Jakobs V3-arbetssätt.
-3. `docs/animation-events/v3-9-days-mvp/` för det aktiva underlaget.
+2. `docs/shared/WORKFLOW.md` för Jakobs V4-arbetssätt.
+3. `docs/animation-events/v4-8-days-mvp/` för det aktiva underlaget.
 4. Senaste relevanta del av `docs/JOHN-HANDOFF.md` och
    `docs/ENVIRONMENT-RESTORATION.md` för verifierad runtime och mediahistorik.
 
@@ -42,7 +42,7 @@ historik, inte som aktiv arkitektur.
   Kevins eller Jakobs uttryckliga beslut om målbranch.
 - Vid färdig etapp: dokumentera kontrakt, tester/evidens och kvarvarande gap;
   stäm därefter av med Kevin innan eventuell inkorporering.
-- Håll Jira CAC:s faktiska status uppdaterad; dokumentstatus i V3 ersätter inte
+- Håll Jira CAC:s faktiska status uppdaterad; dokumentstatus i V4 ersätter inte
   `In Dev`, `Ready for QA`, `In Testing` eller verifierad `Done`.
 
 ## Kommunikation

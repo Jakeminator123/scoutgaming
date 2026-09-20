@@ -4,7 +4,9 @@ Startat 20 september 2026. Detta är en första sammanställning av redan
 dokumenterade observationer, inte en fullständig revision av repot.
 Evidensen nedan hänvisar till källornas daterade kontroller; denna
 sammanställning har inte gjort nya liveanrop eller produkt-QA.
-Begrepp och arbetssätt finns i [README](README.md).
+Begrepp och arbetssätt finns i [README](README.md). Personarkivet är
+avskilt; tidigare rapporterade reproduktioner är bevarade som daterade
+observationer nedan, inte omkörda genom dokumentationsändringen.
 
 **Jira CAC äger implementationens status.** Arbetsstatus här avser bara
 triage. Ingen Jira-referens är ännu angiven för posterna nedan.
@@ -33,7 +35,7 @@ triage. Ingen Jira-referens är ännu angiven för posterna nedan.
   en verklig webbläsarsession.
 - **Kod / källa:** [performance-player.mjs](../../web/public/performance-player.mjs),
   metoderna `source`, `preload`, `dispose`;
-  [reproduktion och omfattning, avsnitt 1 och 5](../../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-videoladdning-och-kevin-ping.md).
+  reproduktion och omfattning, avsnitt 1 och 5 (historiskt rapportunderlag, ej i aktiv läsväg).
 - **Arbetsstatus:** Inväntar Kevins godkännande A. Ingen fix utförd inom fyndet.
 - **Nästa steg:** Efter uttryckligt besked samordnas pågående laddningar per
   verifierat medieinnehåll. Kontrollera retry efter fel, flera konsumenter,
@@ -58,7 +60,7 @@ triage. Ingen Jira-referens är ännu angiven för posterna nedan.
 - **Kod / källa:** [app.mjs](../../web/public/app.mjs), blocket
   `if(performanceStaged)` och anropen till `performancePlayer.preload`;
   [DealerEngine](../../web/public/dealer-engine.mjs);
-  [prioritetsförslaget, avsnitt 4–5](../../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-videoladdning-och-kevin-ping.md).
+  prioritetsförslaget, avsnitt 4–5 (historiskt rapportunderlag, ej i aktiv läsväg).
 - **Arbetsstatus:** Inväntar Kevins godkännande B. Ingen prioriteringsändring utförd.
 - **Nästa steg:** Efter besked mäts kall/varm start, första målade idle,
   första replik och första landade kort. Pröva sedan första idle med rätt
@@ -83,7 +85,7 @@ triage. Ingen Jira-referens är ännu angiven för posterna nedan.
   trafik-/starttidsförlust.
 - **Kod / källa:** [web/server.mjs](../../web/server.mjs), statisk
   filhantering för 200/206/304;
-  [cachekontrollen, avsnitt 3](../../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-videoladdning-och-kevin-ping.md);
+  cachekontrollen, avsnitt 3 (historiskt rapportunderlag, ej i aktiv läsväg);
   [tidigare lagrings- och HTTP-kontroll](../animation-events/v3-video-map/README.md).
 - **Arbetsstatus:** Behöver avstämning; ingen cacheändring beslutad här.
 - **Nästa steg:** Beskriv en säker versionskoppling mellan index, media och
@@ -108,7 +110,7 @@ triage. Ingen Jira-referens är ännu angiven för posterna nedan.
   kan ha beroenden. Filer som spelaren aldrig hämtar kostar inte automatiskt
   nedladdning hos spelaren. Enbart nya mappnamn sparar inga bytes.
 - **Kod / källa:** [inventering och lagringsgränser](../animation-events/v3-video-map/README.md);
-  [QA-paketering, avsnitt 4](../../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-videoladdning-och-kevin-ping.md);
+  QA-paketering, avsnitt 4 (historiskt rapportunderlag, ej i aktiv läsväg);
   [SPEECH-SYNC.md](../SPEECH-SYNC.md), om bevarade original som warp-källa.
 - **Arbetsstatus:** Behöver beroendekontroll; ingen flytt eller radering beslutad.
 - **Nästa steg:** Bygg en uttrycklig fillista för produktleverans och

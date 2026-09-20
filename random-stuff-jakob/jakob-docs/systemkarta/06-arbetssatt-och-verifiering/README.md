@@ -1,70 +1,59 @@
 # Arbetssätt och verifiering
 
-[Till systemkartan](../README.md) · [Lästa källor och avgränsning](../KALLOR.md)
+[Till systemkartan](../README.md) · [Källor och avgränsning](../KALLOR.md)
 
-Utgå från den konkreta situation Jakob beskriver och ange sedan källtyp,
-data och kodnamn. Ett begripligt träd kan visa behov, alternativ, saknade
-inspelningar och befintligt material utan att bestämma fysisk filplacering.
+**Börja med frågan, välj sedan rätt källa.** Ett dokumentationsbeslut,
+en kodfunktion och ett godkänt produktbeteende är olika saker.
 
-| Källa | Ansvar |
-| --- | --- |
-| Croupier-repot | Produktkod, kontrakt, media och kontrollerbar implementation |
-| [Gemensamma wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home) | Beslut, samarbete och handoff |
-| [Aktiv V3-dokumentation](../../../../docs/animation-events/v3-9-days-mvp/README.md) | Repo-nära sakmodell och förslag för produktintegration |
-| [Jakobs arkiv](../../arkiv/README.md) | Daterade arbetsrapporter och underlag |
-| [Findings](../../../../docs/findings/README.md) | Buggar, förbättringar och granskningsbehov med separat evidens och triage |
-| [JOHN-HANDOFF](../../../../docs/JOHN-HANDOFF.md) | Daterade leveranser, testresultat och kvarstående gap |
-| [GitHub/Vercel-canvasens källguide](../../../../docs/animation-events/v3-9-days-mvp/CANVAS.md) | Presentation av dokumentationen |
-| Jira CAC | Implementation och faktisk QA-status |
+- **Kod och kontrakt:** Croupier-repot visar vad implementationen gör.
+- **Aktiv sprint:** [dokumentationsnavet](../../../../docs/animation-events/README.md)
+  leder till V4 och de föreslagna etapperna. Wiki och hemsida presenterar
+  samma plan; versionsnummer på planen är inte produktens version.
+- **Beslut och samarbete:** [wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home)
+  och [arbetsflödet](../../../../docs/shared/WORKFLOW.md).
+- **Öppna observationer:** [findings](../../../../docs/findings/REGISTER.md)
+  behåller evidens och beslutsspår.
+- **Leverans och testkvitto:** [JOHN-HANDOFF](../../../../docs/JOHN-HANDOFF.md)
+  anger datum, revision, genomförda prov och kvarstående glapp.
+- **Implementation och QA-status:** Jira CAC. Läs aktuell issue och hela
+  Expected Result före kodarbete; kopiera inte status till en parallell lista.
 
-Kevin äger motor och produktintegration. Jakob arbetar med backend, logik
-och avgränsade förslag på sin work-branch. Kevin och Emil äger videoflödet.
-En lokal labbändring eller agentförklaring är inte ett integrationsbeslut.
-[Roller och etappflöde](../../../../docs/shared/WORKFLOW.md).
+Det personliga arkivet är ingen aktiv källa eller navigationsväg.
+Nödvändiga sakuppgifter hör hemma i aktiva projektdokument, med direkt
+kodreferens och daterad verifiering. Att ett arkiv tas ur läsvägen stänger
+inte fynd eller raderar Git-historik.
 
-Verifiering har flera olika frågor:
+## Vad en kontroll faktiskt bevisar
 
-| Kontroll | Vad den kan belägga |
-| --- | --- |
-| Läsning av kod/schema/register | Att fält, typer och referenser finns |
-| Studio-/Director-tester | Regler, kontrakt, projektion, sparning och fallback |
-| Riktigt råd/chattanrop | Att just den modellvägen fungerade vid provet |
-| Medieaudit och hash | Att överenskomna bytes/metadata inte ändrats oavsiktligt |
-| Visuell rehearsal i riktig spelare | Exakt tal, kontakt, rörelse och två påföljande uppspelningar |
-| Kontrollerad aktuell bindning | Vilket material den angivna revisionen/körningen faktiskt väljer |
+**Kod/schema/register** belägger fält, regler och referenser.
+**Automatiska tester** belägger de provade kontrakten och fallen.
+**Riktigt modell-/chattanrop** belägger att just den vägen fungerade då.
+**Hash och medieaudit** skyddar överenskomna bytes och metadata.
+**Visuell rehearsal** behövs för exakt tal, kontakt, rörelse och följduppspelning.
+**Aktuell bindningskontroll** behövs för att veta vad den riktiga sessionen väljer.
 
-Ingen enskild rad bevisar alla de andra. Vid media-/spelarändringar gäller
-[AGENTS.md](../../../../AGENTS.md), [pre-commit-kontrollerna](../../../../.githooks/pre-commit)
-och `node pipeline/audit-dealer-sync.mjs --probe`, tillsammans med granskning
-av alla fyra dealers i riktig rehearsal. Dokumentationens kartläggning
-godkänner inga nya takes.
+Ingen enskild kontroll bevisar alla de andra. De senast dokumenterade rena
+testerna i handoffen är 192 labbtester och 98 Director/OpenClaw-tester
+(20 september 2026). Denna kartöversyn kör inte om produkt-/medietester
+och ger ingen ny visuell acceptans.
 
-**Tidigare verifierat:** Windows-rapporten dokumenterar 113 hooktester och
-90 stream-prober. CLI-röstprovet redovisade 114 studiotester; den senare
-[runtime-/röstpanelleveransen](../../arkiv/2026-09-20/2026-09-20-openclaw-instruktioner-och-rostpanel.md)
-redovisar 138 labbtester, 79 runtime-tester samt typecheck och bygge.
-Dessa siffror hör till respektive leverans och är inga nykörningar gjorda
-av systemkartan.
+Vid media-/spelarändringar gäller [projektreglerna](../../../../AGENTS.md),
+[pre-commit-listan](../../../../.githooks/pre-commit),
+`node pipeline/audit-dealer-sync.mjs --probe` och riktig rehearsal för alla
+fyra dealers, inklusive två påföljande uppspelningar. Dokumentation ensam
+kan inte markera en take godkänd.
 
-## Dokumentation som går att fortsätta arbeta i
+## Fortsätt från de öppna gränserna
 
-Lägg systemförklaringar i rätt ämne, observationer i findings och daterade
-arbetskvitton i arkivet. Behåll ett fynds ID när slutsatsen ändras och länka
-dess Jira-issue när sådan finns. Ett arkiverat underlag kan fortfarande
-beskriva ett öppet problem. F-001/F-002 inväntar Kevins särskilda besked;
-denna omorganisation ändrar inte det villkoret.
+Aktuell Bettalotto-revision, behörig testsession, aktiva BO-bindningar,
+SSE-återhämtning, walletbeteende per klientväg och faktisk produktuppspelning
+behöver verifieras innan labbet kallas integrerat. Varken manifest,
+BO-inloggning eller en fungerande social chatt räcker ensamt.
 
-JOHN-HANDOFF behåller sin kanoniska plats och historik. Senare notiser har
-ibland lagts längst ned, så toppens placering ensam fastställer inte senaste
-läget. Använd länkad leveransrapport, datum och revision. Nya korta handoff-
-notiser bör läggas överst och länka till rätt ämne, fynd och arkivrapport.
+F-001/F-002 behåller sitt särskilda beslutsberoende. Övriga fynd behåller
+sin evidensnivå och triage tills det finns nytt underlag. Den här
+dokumentationsöversynen ändrar ingen Jira-status.
 
-För Windows-frågor, läs [testreparationen](../../../../docs/WINDOWS-MEDIA-TESTS.md)
-och [den separata datoragentens diagnosprompt](../../arkiv/2026-09-20/PROMPT-windows-cursor-bash.md).
-Ett gammalt process-PATH eller nekad sandboxåtkomst är inte automatiskt ett
-nytt produktfel eller skäl att installera om verktyg.
-
-Agentkommunikationen finns beskriven i [inboxguiden](../../../../docs/shared/AGENT-INBOX.md).
-Exakt mottagare, tydligt uppdrag och länkat underlag hjälper till att hålla
-samma språk. Ingen bakgrundspollning eller automatisk inkoppling till
-spelarchatt följer av denna dokumentationsmapp.
+För Windows-kontroller finns [testmiljön](../../../../docs/WINDOWS-MEDIA-TESTS.md).
+För riktad agentkommunikation finns [inboxguiden](../../../../docs/shared/AGENT-INBOX.md).
+Kartan startar ingen bakgrundspollning eller automatisk dokumentcrawl.

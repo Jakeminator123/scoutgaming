@@ -15,12 +15,13 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
   runtime behavior.
 - The [GitLab wiki](https://gitlab.com/scout-gg/croupier/-/wikis/home) records
   shared decisions, workflow and handoffs.
-- [`Jakeminator123/animation-events-v1` · V3](https://github.com/Jakeminator123/animation-events-v1/tree/v3-9-days-mvp)
+- [Croupier documentation · V4](https://github.com/Jakeminator123/animation-events-v1)
   is the source repository for the interactive documentation canvas. It does
   not own game outcomes or runtime contracts.
-- The active repo-near V3 documentation is under
-  [`docs/animation-events/v3-9-days-mvp/`](docs/animation-events/v3-9-days-mvp/README.md).
-  The path is historical; V3 is staged work, not a nine-day promise.
+- The active repo-near V4 documentation is under
+  [`docs/animation-events/v4-8-days-mvp/`](docs/animation-events/v4-8-days-mvp/README.md).
+  Eight remaining working days are Jakob's planning horizon, not a verified
+  launch date or a new historical meeting decision.
 
 Jakob works on `jakeminator123/work`. Kevin owns integration decisions and the
 current Croupier engine; do not push documentation work to `main` or Kevin's
@@ -30,7 +31,7 @@ branch without an agreed integration step.
 
 - [System map](random-stuff-jakob/jakob-docs/systemkarta/README.md): explanations by system area.
 - [Findings](docs/findings/README.md): evidenced bugs, improvement proposals and open checks across this repository; implementation and QA remain in Jira CAC.
-- [Jakob's report archive](random-stuff-jakob/jakob-docs/arkiv/README.md): dated delivery evidence and investigation history.
+- Personal historical reports are outside the active checkout and agent reading paths.
 
 ## Runtime map
 
@@ -43,10 +44,15 @@ branch without an agreed integration step.
 | Dealer playback | `web/public/dealer-engine.mjs`, `web/public/performance-player.mjs` |
 | Media build and validation | `pipeline/` |
 
-The verified public flow is:
+The code has two public client paths:
 
-`Round/RNG` → `shoe-game command` → `public gameView` →
-`Partner API presentation[]` → status-filtered player/media.
+- Native: server command → `/api/table` public state → client choreography.
+- Partner: server command → `/api/v1/table` public state and `presentation[]`;
+  the same presentation list can be delivered as `round.events` over SSE.
+
+The Partner stream is not a monitor of native table calls. The local lab tests
+saved examples and separate social chat; a live product-player connection remains
+work to verify and implement for the selected client path.
 
 Internal round events are implementation details unless a public contract
 explicitly exposes them.

@@ -1,9 +1,11 @@
 # Samsyn: signaler, presentationsbehov, linjer och takes
 
-Uppdaterad 20 september 2026. Kodgrund: labbet vid `dcab124`, Kevins
-`codex/restore-casino-environment` vid `626554d`, `main` vid `b147659`.
-Spelmotorn och Partner-projektionen är identiska i dessa revisioner; klientens
-Astrid-uppspelning skiljer sig. Detta är kodkontroll, inte ny drift- eller media-QA.
+Uppdaterad 20 september 2026 inför V4. Senaste systempaketskontroll:
+work/origin `a15b780`, main `b147659`, handoff `62784f4`. Granskade server-,
+shoe-, Partner- och appfiler saknade diff mellan work och main. Den tidigare
+jämförelsen med labb `dcab124` och Kevin `626554d` är ett separat historiskt
+ankare; då skilde sig Astrid-uppspelningen. Detta är kodkontroll, ingen ny
+drift- eller media-QA. [Källor och gränser](systemkarta/KALLOR.md).
 
 **Status:** begrepp och föreslagen riktning. Inga tekniska ID:n, sparade projekt,
 spelregler, spelare, talvägar eller media ändras av detta dokument.
@@ -32,6 +34,21 @@ Detta är dess fördjupning, inte en andra guide.
 
 ## Karta: var signalerna kommer ifrån
 
+I dagens kod finns flera slags input med olika ansvar:
+
+- **Spelfakta:** motorns publika status eller Partner-presentation för
+  respektive klientväg. Partner tar också emot kommandon in till motorn.
+- **Text:** produktens äldre chatt och labbets separata Astrid/idle-prov.
+- **Kontext:** eventtestets språk, historik och framtoning är manuella
+  testvärden. De är inte automatiskt läst spelarminne eller social chatt.
+- **Ljud/video:** beredskap, uppspelningstid, slut, avbrott, fel och cues
+  samordnar presentationen. De skapar inga nya spelutfall.
+- **Konfiguration:** dealer, policy och mediereferenser begränsar valet.
+  De är inte i sig nya spelhändelser.
+
+Ingen mikrofon-/taligenkänningsingång hittades i de granskade vägarna.
+Ett gemensamt register och en adapter som förenar dessa källor är förslag:
+
 ```mermaid
 flowchart TD
     RNG["Kortslump"] --> ENGINE["Spelmotor: regler + tillstånd"]
@@ -43,9 +60,10 @@ flowchart TD
     INPUT --> NEED["Presentationsbehov + relevanta omständigheter"]
     SOCIAL["Chatt / närvaro när ansluten"] --> NEED
     NEED --> LINE["Dealerns linje: standard + alternativ"]
-    CONTEXT["Regler, profil, minne och OpenClaw-råd"] -.-> LINE
+    CONTEXT["Tillåten kontext + råd; profil/minne när anslutet"] -.-> LINE
     LINE --> TAKE["Kompatibel take eller definierad sekvens"]
     TAKE --> PLAY["Gemensam uppspelare: bild, tal, cues och övergångar"]
+    MEDIA["Beredskap, tid, slut och fel"] --> PLAY
 ```
 
 Diagrammets gemensamma ingång/urval är **förslaget**, inte en redan inkopplad
@@ -55,6 +73,22 @@ En framtida adapter behöver föregående/ny publik status och accepterat komman
 en statusåterläsning är inte en ny runda som ska spelas om. Samma händelse får
 inte framföras både från Partner-svaret/SSE och från statusjämförelsen.
 Privat kortordning och dolt kortinnehåll ska inte skickas till urvalsmodellen.
+
+Partner-SSE är avgränsad till signerad API-nyckel + partnerns `playerId`;
+native `/api/table` publicerar inte där. BO-inloggning räcker inte.
+Strömmen har ingen replay eller `Last-Event-ID`-återhämtning. `state` och
+cachade `requestId`-svar publicerar inte nya presentationer. En livemonitor
+behöver därför välja rätt källa och redovisa avbrott/återhämtning.
+
+Utan `walletUrl` används intern demowallet. I Partner-table-vägen med
+`walletUrl` anropar Croupier operatörens wallet för `balance/bet/win`;
+operatören äger då saldot. Launch till den vanliga webbklienten betyder
+inte att dess separata native-table-väg automatiskt använder samma callbacks.
+Detta behöver ingå i ett verkligt integrationsprov.
+
+`/api/v1/assets` beskriver filbaserade tillgångar och kan innehålla
+icke-avvisade `review`-takes. Det verifierar inte aktuella BO-bindningar,
+spelarens slutliga medieval eller visuell acceptans.
 
 Spelarminne/profil är sammanhang, inte nya motor-events. Bestående minne och
 gemensam multiplayernärvaro är inte verifierade i den granskade produktkedjan.
@@ -167,7 +201,13 @@ läppsynk: använd tyst kompatibel rörelse eller ett exakt matchat talpaket.
 5. **Utöka endast bevisade behov.** Tre likvärdiga standardtakes kan senare ha
    vikterna 1:1:1 (en tredjedel var). Det är presentationsslump, inte spel-RNG.
    Takepooler, viktade val, generell idle-sekvens och efterföljande sociala
-   reaktioner kräver små separata implementationer, inte nya motor-events.
+   produktreaktioner kräver separata implementationer, inte nya motor-events.
+
+Labbet har redan `random` för lika sannolikhet bland standard och tillåtna
+alternativ med matchande triggers. `selection.rules/model/random` styr
+valbarheten; nya alternativ börjar manuellt. Detta är variantval, ingen
+viktad takepool. Socialchatten har också en lokal idle-reaktion och cooldown;
+det är ingen generell kö eller bestående social koppling i produkten.
 
 Ingen ny mappstruktur, runtimeadapter, takepool, talavstängning eller loop
 införs här. Körbara kontraktsfält, scheman och tester ändras först med respektive implementation.
@@ -177,13 +217,16 @@ Detta begränsar nästa arbete till en verifierbar kedja i stället för fler kn
 
 - [Motorns interna händelser](../../web/public/blackjack.mjs),
   [publik status och kommandon](../../web/shoe-game.mjs),
-  [Partner-projektion](../../web/partner-presentation.mjs).
+  [Partner, wallet och SSE](../../web/partner-api.mjs),
+  [Partner-projektion och filmanifest](../../web/partner-presentation.mjs).
 - Kevin `626554d`: [status, val och koreografi](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/app.mjs),
   [exakta takevillkor](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/astrid-green-dealer.mjs),
   [idle-scheduler](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/astrid-idle-scheduler.mjs),
   [uppspelare och cues](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/performance-player.mjs).
 - Labb: [befintligt kontrakt](../../lab/policies/studio-contract.json),
   [test med exempel-event](../../lab/lib/studio-server.mjs),
-  [video/2D-preview](../../lab/components/stage.tsx).
+  [video/2D-preview](../../lab/components/stage.tsx),
+  [videobank och valbarhet](../../lab/VIDEO-LIBRARY.md),
+  [separat social chatt](../../lab/SOCIAL-CHAT.md).
 - [Detaljerat daterat eventregister](2026-09-20-eventregister-och-mental-modell.md)
   behålls som källunderlag; denna text preciserar begreppen och nästa riktning.

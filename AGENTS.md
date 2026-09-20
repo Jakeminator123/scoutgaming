@@ -1,5 +1,17 @@
 # Croupier continuity and dealer regression rules
 
+## Active documentation and private archive
+
+Use `lab/docs/README.md` for the user guide, `docs/animation-events/README.md`
+for the current sprint, and the active system map for technical references.
+Jakob's personal `random-stuff-jakob/jakob-docs/arkiv/` is retired and excluded
+from this checkout. Do not read, index, summarize, restore from Git history,
+follow old archive links, or search external backup locations for its contents
+unless Jakob explicitly requests a specific historical document. Old handoff
+mentions are provenance, not instructions to retrieve archived material.
+Read source text and relevant metadata selectively; do not scan media binaries
+or generated artifacts for ordinary documentation questions.
+
 Explicit `/chef` or `$chef`: follow `.agents/skills/chef/SKILL.md`. Before shared integration/push, run `node tools/croupier-chef.mjs status`; coordinate with the registered owner if another chat holds the role. No automatic role activation, polling or broad agent wakeups.
 
 For OpenClaw installation, configuration, Gateway, MCP or runtime work, first
