@@ -8,15 +8,28 @@ import { createSeedProject } from '../lib/studio-model.mjs';
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 function component(file, name, props) {
-  const slots = []; let cursor = 0;
+  const slots = [], effects = [], timers = new Map(), nodes = new Map(); let cursor = 0, timerId = 0;
+  const sameDeps = (a, b) => a && b && a.length === b.length && a.every((item, index) => Object.is(item, b[index]));
   const hooks = {
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
-    useRef(value) { return { current: value }; }, useEffect() {}, useEffectEvent(fn) { return fn; }, useDeferredValue(value) { return value; },
+    useRef(value) { const i = cursor++; return slots[i] ??= { current: value }; },
+    useEffect(fn, deps) { const i = cursor++; if (!sameDeps(slots[i]?.deps, deps)) { const old = slots[i]; slots[i] = { deps, cleanup: old?.cleanup }; effects.push(() => { old?.cleanup?.(); slots[i].cleanup = fn(); }); } },
+    useEffectEvent(fn) { const i = cursor++; slots[i] = fn; return (...args) => slots[i](...args); }, useDeferredValue(value) { return value; },
   };
   const module = { exports: {} };
   const code = transformSync(readFileSync(new URL(file, import.meta.url), 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-  vm.runInNewContext(code, { module, exports: module.exports, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
-  return { props, exports: module.exports, render() { cursor = 0; return module.exports[name](props); } };
+  vm.runInNewContext(code, { module, exports: module.exports, window: { setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); }, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
+  function bindRefs(tree) {
+    if (!tree || typeof tree !== 'object') return;
+    if (Array.isArray(tree)) { tree.forEach(bindRefs); return; }
+    if (tree.props?.ref) {
+      const key = `${tree.type}:${tree.key ?? ''}:${tree.props.className ?? ''}`;
+      if (!nodes.has(key)) nodes.set(key, { dataset: {}, paused: !tree.props.autoPlay, duration: 3, currentTime: 3, pauseCalls: 0, pause() { this.paused = true; this.pauseCalls++; } });
+      tree.props.ref.current = nodes.get(key);
+    }
+    bindRefs(tree.props?.children);
+  }
+  return { props, timers, exports: module.exports, render() { cursor = 0; const tree = module.exports[name](props); bindRefs(tree); while (effects.length) effects.shift()(); return tree; } };
 }
 function find(node, predicate) {
   if (!node || typeof node !== 'object') return;
@@ -25,6 +38,7 @@ function find(node, predicate) {
 }
 const byType = (tree, type) => find(tree, node => node.type === type);
 const button = (tree, label) => find(tree, node => node.type === 'button' && node.props.children === label);
+function videoEvent(video, name) { const element = video.props.ref.current; if (name === 'onPlaying') element.paused = false; video.props[name]({ currentTarget: element }); }
 const project = createSeedProject();
 function stage(extra = {}) {
   return component('./stage.tsx', 'Stage', { event: project.events[0], asset: project.assets[0], dealer: 'Astrid', variantLabel: 'Standard', playId: 0, playing: false, hasResult: false, busy: false, onPlay() {}, onPreview() {}, ...extra });
@@ -49,12 +63,12 @@ test('missing/unbound variant falls back to its 2D asset even after a video vari
 test('decode failure falls back; explicit replay retries, another film is not poisoned', () => {
   let previews = 0;
   const h = stage({ videoUrl: '/api/videos/one', onPreview() { previews++; } });
-  byType(h.render(), 'video').props.onError();
+  videoEvent(byType(h.render(), 'video'), 'onError');
   assert.equal(byType(h.render(), 'video'), undefined);
   find(h.render(), node => node.type === 'button' && Array.isArray(node.props.children) && node.props.children.includes('Spela vald variant')).props.onClick();
   assert.equal(previews, 1);
   assert.ok(byType(h.render(), 'video'));
-  byType(h.render(), 'video').props.onError(); h.props.videoUrl = '/api/videos/two';
+  videoEvent(byType(h.render(), 'video'), 'onError'); h.props.videoUrl = '/api/videos/two';
   assert.ok(byType(h.render(), 'video'));
 });
 test('Bara 2D is an explicit override; switching back restores exact bound video', () => {
@@ -67,8 +81,54 @@ test('Bara 2D is an explicit override; switching back restores exact bound video
 test('video completion is governed by the video event, not the 2D duration', () => {
   let ended = 0;
   const h = stage({ videoUrl: '/api/videos/one', onPlaybackEnd() { ended++; } });
-  byType(h.render(), 'video').props.onEnded();
+  const video = byType(h.render(), 'video');
+  videoEvent(video, 'onPlaying'); videoEvent(video, 'onEnded');
   assert.equal(ended, 1);
+});
+test('stale video callbacks cannot end or replace the next replay or selection', () => {
+  for (const change of ['replay', 'selection']) {
+    const receipts = []; let ended = 0;
+    const h = stage({ videoUrl: '/api/videos/one', playing: true, playId: 1, onPlaybackEvent(value) { receipts.push(value); }, onPlaybackEnd() { ended++; } });
+    const first = byType(h.render(), 'video'), oldElement = first.props.ref.current;
+    videoEvent(first, 'onPlaying');
+    if (change === 'replay') h.props.playId++;
+    else h.props.videoUrl = '/api/videos/two';
+    const second = byType(h.render(), 'video');
+    for (const name of ['onPlaying', 'onEnded', 'onError']) first.props[name]({ currentTarget: oldElement });
+    assert.equal(receipts.length, 1); assert.equal(ended, 0); assert.ok(byType(h.render(), 'video'));
+    videoEvent(second, 'onPlaying'); videoEvent(second, 'onEnded'); videoEvent(second, 'onEnded');
+    assert.deepEqual(receipts.map(item => item.phase), ['started', 'started', 'completed']); assert.equal(ended, 1);
+  }
+});
+test('social takeover pauses existing video and drops its late receipts', () => {
+  const receipts = []; let ended = 0;
+  const h = stage({ videoUrl: '/api/videos/one', playing: true, playId: 1, onPlaybackEvent(value) { receipts.push(value); }, onPlaybackEnd() { ended++; } });
+  const first = byType(h.render(), 'video'), element = first.props.ref.current;
+  videoEvent(first, 'onPlaying'); h.props.blocked = true;
+  const blocked = byType(h.render(), 'video');
+  assert.equal(blocked.props.controls, false); assert.equal(element.paused, true);
+  for (const name of ['onPlaying', 'onEnded', 'onError']) first.props[name]({ currentTarget: element });
+  assert.equal(receipts.length, 1); assert.equal(ended, 0); assert.ok(byType(h.render(), 'video'));
+});
+test('an old callback cannot pause a current play on the same reused video element', () => {
+  const receipts = [];
+  const h = stage({ videoUrl: '/api/videos/one', playing: true, playId: 1, onPlaybackEvent(value) { receipts.push(value); } });
+  const first = byType(h.render(), 'video'), element = first.props.ref.current; videoEvent(first, 'onPlaying');
+  h.props.dealer = 'Vera'; const current = byType(h.render(), 'video'); videoEvent(current, 'onPlaying');
+  assert.equal(current.props.ref.current, element);
+  first.props.onPlaying({ currentTarget: element }); first.props.onEnded({ currentTarget: element }); first.props.onError({ currentTarget: element });
+  assert.equal(element.paused, false); assert.deepEqual(receipts.map(item => item.phase), ['started', 'started']);
+  videoEvent(current, 'onEnded'); assert.equal(receipts.at(-1).phase, 'completed');
+});
+test('clearing playing pauses same-bound video, invalidates queued end, and permits explicit native replay', () => {
+  const receipts = []; let ended = 0;
+  const h = stage({ videoUrl: '/api/videos/one', playing: true, playId: 1, onPlaybackEvent(value) { receipts.push(value); }, onPlaybackEnd() { ended++; } });
+  const first = byType(h.render(), 'video'); videoEvent(first, 'onPlaying');
+  h.props.playing = false; const stopped = byType(h.render(), 'video');
+  assert.equal(stopped.props.ref.current.paused, true); videoEvent(first, 'onEnded');
+  assert.equal(ended, 0); assert.deepEqual(receipts.map(item => item.phase), ['started']);
+  videoEvent(stopped, 'onPlaying'); videoEvent(stopped, 'onEnded');
+  assert.equal(ended, 1); assert.deepEqual(receipts.map(item => item.phase), ['started', 'started', 'completed']);
 });
 test('test result with no video and social reply never borrow selected standard film', () => {
   const { previewVideoIdFor } = component('./studio-types.ts', '', {}).exports;

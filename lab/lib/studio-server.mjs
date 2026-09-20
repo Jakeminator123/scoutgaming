@@ -113,7 +113,7 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
     }
   }
   return {
-    decision: { variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, simulated: true },
+    decision: { requestId: prepared.requestId, variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, context: prepared.context, simulated: true },
     trace: result.trace, eligible: result.eligible, variant, asset: result.asset,
     videoGenerationId, provider: typeof reply?.provider?.status === 'string' ? reply.provider.status : 'unknown',
   };

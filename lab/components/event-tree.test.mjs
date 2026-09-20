@@ -54,7 +54,7 @@ test('tree renders actual saved variant count without filling missing demo alter
   const line = project.lines.find(item => item.dealerId === 'astrid');
   line.variants = line.variants.slice(0, 2);
   const html = render(project);
-  assert.match(html, /06 · 2 UTTRYCKSVARIANTER I DEN HÄR LINJEN/);
+  assert.match(html, /06 · 2 VARIANTER FÖR SAMMA BEHOV/);
   assert.equal((html.match(/class="variantNode/g) ?? []).length, 2);
 });
 
@@ -123,13 +123,13 @@ test('concrete deal example precedes expression choice and preserves zero and fa
   const project = createSeedProject();
   const html = renderEvent(project, 'deal.player.left');
   assert.match(html, /LABBEXEMPEL · INTE LIVE/);
-  assert.match(html, /sourceType → type<\/code><\/dt><dd>deal<\/dd>/);
+  assert.match(html, /<code>type<\/code><\/dt><dd>deal<\/dd>/);
   assert.match(html, /<code>box<\/code><\/dt><dd>0<\/dd>/);
   assert.match(html, /<code>handIndex<\/code><\/dt><dd>0<\/dd>/);
   assert.match(html, /<code>faceDown<\/code><\/dt><dd>false<\/dd>/);
   assert.match(html, /<code>shoeDraw<\/code><\/dt><dd>2<\/dd>/);
-  assert.ok(html.indexOf('03 · KONKRET SITUATION') < html.indexOf('04 · LINJEN SAMLAR UTTRYCKEN'));
-  assert.match(html, /Kortposition är en annan uppgift/);
+  assert.ok(html.indexOf('03 · INDATA OCH FÖRVÄNTAT RESULTAT') < html.indexOf('04 · EN STANDARD + DINA ALTERNATIV'));
+  assert.match(html, /Kortposition behöver härledas/);
   assert.match(html, /är dragets ID, inte kortets ordningsnummer i handen/);
   assert.doesNotMatch(html, /<code>cardPosition<\/code>/);
 });
@@ -153,6 +153,26 @@ test('goodluck clarifies exact speech without overwriting an existing greeting l
   assert.match(html, /Min sparade hälsning/);
   assert.doesNotMatch(html, /<code>shoeDraw<\/code><\/dt>/);
   assert.equal(JSON.stringify(project), before);
+});
+
+test('output groups retain all technical event identities and distinguish context from selection', () => {
+  const html = renderEvent(createSeedProject(), 'deal.player.centre');
+  for (const label of ['Idle / bakgrund', 'Handling / engång', 'Tal / exakt replik', 'Tur / resultat']) assert.ok(html.includes(label));
+  assert.match(html, /Filtrera efter presentationssätt/);
+  assert.match(html, /Box 0–6 är plats 1–7/);
+  assert.match(html, /Detta är inget playerId/);
+  assert.match(html, /Markerad variant · ännu inget testbeslut/);
+  assert.match(html, /2D-längd från materialets metadata/);
+  assert.match(html, /variantId<\/code> är urvalets svar/);
+  assert.match(html, /Saknas i detta exempel/);
+  assert.match(html, /<code>clip.prefer<\/code>/);
+});
+
+test('idle presentation does not claim loops or chat are triggered by an idle event', () => {
+  const html = renderEvent(createSeedProject(), 'idle.ready');
+  assert.match(html, /Dagens videopreview spelas en gång/);
+  assert.match(html, /Ett idle-event startar inte i sig en chatt eller ett nytt talat svar/);
+  assert.match(html, /högst 6 sekunder/);
 });
 
 test('tree distinguishes current single-clip binding from proposed take pools and video coverage', () => {

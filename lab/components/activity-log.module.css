@@ -1,0 +1,29 @@
+.panel { margin-top: 28px; border-top: 1px solid var(--line, #d3ddd8); padding-top: 24px; }
+.header { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.header h2 { margin: 6px 0 10px; font-size: 24px; letter-spacing: -.035em; }
+.header h2 small { font: 12px ui-monospace, monospace; opacity: .6; margin-left: 12px; }
+.header p, .connection p { font-size: 13px; max-width: 700px; line-height: 1.65; }
+.tools { display: flex; gap: 10px; flex-shrink: 0; }
+.connection { display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; padding: 22px 0; border-bottom: 1px solid var(--line, #d3ddd8); }
+.connection h3 { font-size: 16px; margin: 0 0 8px; }
+.connection strong { font-size: 13px; }
+.connection button { margin-right: 8px; margin-bottom: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 22px 0; }
+.filters button { border: 1px solid var(--line, #d3ddd8); background: transparent; color: inherit; padding: 7px 12px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+.filters button[aria-pressed=true] { background: #193f35; color: #f3faf6; border-color: #193f35; }
+.timeline { margin: 0; padding: 0; list-style: none; }
+.timeline > li { display: grid; grid-template-columns: 110px 1fr; gap: 18px; padding: 18px 0; border-top: 1px solid var(--line, #d3ddd8); }
+.timestamp { display: flex; flex-direction: column; gap: 8px; font-size: 11px; opacity: .7; }
+.timestamp time { font: 12px ui-monospace, monospace; }
+.tags { display: flex; flex-wrap: wrap; gap: 7px; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+.tags span { border: 1px solid var(--line, #d3ddd8); padding: 3px 6px; border-radius: 4px; }
+.timeline > li[data-status=failed] .tags span:last-child { color: #9a412b; border-color: #c9907f; }
+.body { min-width: 0; }
+.body h3 { font-size: 15px; margin: 9px 0; }
+.body p { margin: 0 0 10px; font-size: 12px; line-height: 1.7; }
+.body summary { font-size: 12px; cursor: pointer; margin-top: 12px; }
+.body pre { overflow: auto; max-height: 350px; padding: 16px; background: #13251f; color: #e6f2eb; font: 12px/1.6 ui-monospace, monospace; border-radius: 6px; }
+.run { display: block; font: 10px ui-monospace, monospace; overflow-wrap: anywhere; opacity: .6; }
+.note, .empty, .latest { font-size: 12px; line-height: 1.7; opacity: .72; overflow-wrap: anywhere; }
+.empty { padding: 24px 0; }
+@media (max-width: 700px) { .header, .connection { display: flex; flex-direction: column; gap: 14px; } .timeline > li { grid-template-columns: 1fr; gap: 10px; } .timestamp { flex-direction: row; } .tools { flex-wrap: wrap; } }
