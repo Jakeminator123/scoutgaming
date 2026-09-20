@@ -1,3 +1,23 @@
+## 2026-09-20 — live Astrid social lab chat and explicit variant preview
+
+Both Render services now live on 6797b6a: Director dep-danlaejtqb8s73c9v5l0,
+Gateway dep-danlb4mgekts739bj320. Gateway log confirms runtime bundle
+2026-09-20.2 and croupier-social installed without role warnings.
+Real Chrome and Codex-webview chat selected social.ledsen and exact fixed
+phrase; saved ElevenLabs audio replay and hands-cover-face pose were observed.
+Real free reply + new MP3 succeeded; quoted-insult control selected no trigger.
+No persistent user memory or product playback integration is claimed.
+
+Local Next studio adds independent editable social policy/history, bounded
+player-style chat, explicit TTS/cache, idle-only synthetic reaction and cancellation.
+Separate direct variant preview from rule/model event test (Bara standard).
+Four deal-right motions are more distinct without changing cards/destination.
+No existing project migration, product media/player, RNG, DB or secret changes.
+169/169 lab tests, 98/98 Director tests, typecheck and final Next build pass. Browser checks include
+real text selection, exact-audio preview and visible sad pose; no lip-sync approval.
+Details: random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-astrid-social-chatt.md.
+Guide: lab/SOCIAL-CHAT.md. Jira unavailable in this session; no status change claimed.
+
 ## 2026-09-20 — isolated social OpenClaw role prepared for rollout
 
 Added dedicated croupier-social and authenticated /api/studio/social-chat,

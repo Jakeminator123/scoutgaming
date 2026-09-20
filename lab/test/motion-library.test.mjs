@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { MOTION_CLIPS, MOTION_INDEX, MOTION_TARGETS, getMotionClip, validateMotionClip } from '../lib/motion-library.mjs';
+import { MOTION_CLIPS, SOCIAL_MOTION_CLIPS, MOTION_INDEX, MOTION_TARGETS, getMotionClip, validateMotionClip, motionAllowedForSource, stageBaseAnimation } from '../lib/motion-library.mjs';
 import { motionKeyframes, playMotion } from '../lib/motion-player.mjs';
 
 const sourceClip = () => structuredClone(MOTION_CLIPS[0]);
@@ -132,8 +132,91 @@ test('Stage keeps exact videos separate and owns cleanup for selection, replay a
   const source = await readFile(new URL('../components/stage.tsx', import.meta.url), 'utf8');
   assert.match(source, /getMotionClip\(asset\?\.id\)/);
   assert.match(source, /preference\.removeEventListener\('change', reduce\); playback\.cancel\(\)/);
-  assert.match(source, /\[clip, durationMs, event\.id, dealer, hasResult, playId, showVideo\]/);
+  assert.match(source, /\[clip, durationMs, event\.id, dealer, shouldAnimate, playId, showVideo\]/);
+  assert.match(source, /const shouldAnimate = hasResult \|\| previewing/);
+  assert.match(source, /Förhandsvisa vald variant/);
+  assert.match(source, /onClick=\{onPreview\}/);
+  assert.match(source, /onClick=\{onPlay\}/);
+  assert.match(source, /onEnded=\{onPlaybackEnd\}/);
   assert.match(source, /src=\{videoUrl\} controls autoPlay muted playsInline/);
   assert.doesNotMatch(source, /<video[^>]*\bloop\b/);
   assert.match(source, /Tyst 2D-exempel/);
+});
+
+test('social.ledsen is separate from all 64 game clips and saved project bindings', async () => {
+  const social = getMotionClip('social.ledsen');
+  const seed = JSON.parse(await readFile(new URL('../policies/project.seed.json', import.meta.url), 'utf8'));
+  assert.equal(validateMotionClip(social), social);
+  assert.equal(social.scope, 'social-lab');
+  assert.equal(social.reactionId, 'ledsen');
+  assert.equal(social.eventId, undefined);
+  assert.equal(social.durationMs, 4200);
+  assert.equal(MOTION_CLIPS.length, 64);
+  assert.ok(!MOTION_CLIPS.includes(social));
+  assert.deepEqual(SOCIAL_MOTION_CLIPS, [social]);
+  assert.equal(MOTION_INDEX.socialClipCount, 1);
+  assert.ok(!seed.assets.some(asset => asset.id === social.assetId));
+  assert.ok(!seed.events.some(event => event.id.startsWith('social.')));
+  const source = JSON.parse(await readFile(new URL(`../animations/${MOTION_INDEX.socialFiles[0]}`, import.meta.url), 'utf8'));
+  assert.deepEqual(source.clips, SOCIAL_MOTION_CLIPS);
+});
+
+test('sad expression precedes two face-covering hands and every social track returns neutral', () => {
+  const social = getMotionClip('social.ledsen');
+  const sad = social.tracks.find(track => track.target === 'sadFace').frames;
+  const hands = social.tracks.find(track => track.target === 'coverHands').frames;
+  assert.ok(sad.find(frame => frame.opacity === 1).at < hands.find(frame => frame.opacity === 1).at);
+  assert.ok(hands.some(frame => frame.opacity === 1 && frame.y === 0));
+  for (const target of ['leftArm', 'rightArm']) {
+    const frames = social.tracks.find(track => track.target === target).frames;
+    assert.ok(frames.some(frame => frame.opacity === 0), 'Straight arms fade while bent arms cover the face; not four visible hands.');
+    assert.equal(frames[0].opacity, 1); assert.equal(frames.at(-1).opacity, 1);
+  }
+  for (const track of social.tracks) {
+    const { at: firstAt, ...first } = track.frames[0];
+    const { at: lastAt, ...last } = track.frames.at(-1);
+    assert.equal(firstAt, 0); assert.equal(lastAt, 1); assert.deepEqual(first, last);
+  }
+});
+
+test('social motions cannot replace deal/reveal or other presentation facts', () => {
+  const social = getMotionClip('social.ledsen');
+  assert.equal(motionAllowedForSource(social, 'idle'), true);
+  for (const sourceType of ['deal', 'reveal', 'speak', 'turn', 'settle']) assert.equal(motionAllowedForSource(social, sourceType), false);
+  for (const direction of ['left', 'centre', 'right']) {
+    const event = { id: `deal.player.${direction}`, sourceType: 'deal', exampleEvent: { clip: { action: `deal-${direction}` } } };
+    assert.equal(stageBaseAnimation(event, 'idle'), `deal-${direction}`);
+    assert.equal(stageBaseAnimation(event, 'celebrate'), `deal-${direction}`);
+  }
+  assert.equal(stageBaseAnimation({ id: 'reveal.dealer', sourceType: 'reveal', exampleEvent: {} }, 'idle'), 'reveal');
+});
+
+test('right-deal examples differ in broad gesture, not merely timing or card destination', () => {
+  const clips = ['standard', 'contextual', 'motion3', 'motion4'].map(slot => getMotionClip(`deal.player.right.${slot}`));
+  const minArm = clip => Math.min(...clip.tracks.find(track => track.target === 'rightArm').frames.map(frame => frame.rotate));
+  assert.ok(minArm(clips[0]) < minArm(clips[1]) - 20, 'Calm is visibly lower than standard.');
+  assert.ok(minArm(clips[3]) < minArm(clips[0]) - 20, 'Playful uses a visibly broader gesture.');
+  assert.ok(clips[2].tracks.find(track => track.target === 'blush').frames.some(frame => frame.opacity >= .85));
+  assert.ok(clips[3].tracks.find(track => track.target === 'leftArm').frames.some(frame => frame.rotate >= 75));
+});
+
+test('motion completion fires once; cancellation and reduced motion are bounded', async () => {
+  const clip = getMotionClip('social.ledsen');
+  const first = rig(); let completed = 0;
+  const playback = playMotion(clip, first.targets, { onFinish: () => completed++ });
+  const last = first.calls.at(-1).handle.onfinish;
+  first.calls.forEach(call => call.handle.onfinish()); last();
+  assert.equal(completed, 1); assert.equal(playback.status, 'finished');
+  const second = rig();
+  const cancelled = playMotion(clip, second.targets, { onFinish: () => completed++ });
+  const stale = second.calls.map(call => call.handle.onfinish);
+  cancelled.cancel(); stale.forEach(callback => callback());
+  assert.equal(completed, 1);
+  const reduced = rig();
+  playMotion(clip, reduced.targets, { reducedMotion: true, onFinish: () => completed++ });
+  await Promise.resolve();
+  assert.equal(completed, 2); assert.equal(reduced.calls.length, 0);
+  const abandoned = playMotion(clip, reduced.targets, { reducedMotion: true, onFinish: () => completed++ });
+  abandoned.cancel(); await Promise.resolve();
+  assert.equal(completed, 2);
 });
