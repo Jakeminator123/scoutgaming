@@ -20,6 +20,9 @@ Senare förtydligande samma dag: [situationer, variantfamiljer och takes](2026-0
 utvecklar Jakobs fråga om första/andra kortet, sju destinationer och växande
 videobehov. Den texten är den korta gemensamma ingången till hur modellen
 ska förstås; detta register behåller de fullständiga källorna och listorna.
+Den senare kodkontrollen mot Kevin `626554d` preciserar också att Partner inte
+är native-klientens ingång, att situationer bara visas där de är relevanta
+och att de 16 grupperna är genvägar, inte en komplett signalmodell.
 
 ## 1. Mappträdet vi använder för att tänka
 

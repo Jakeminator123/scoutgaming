@@ -8,10 +8,11 @@
   ],
   "boundaries": [
     "En fil får bara kopplas till sin registrerade dealer och eventgrupp. Exakt situation kontrolleras även när eventet testas.",
-    "De 16 eventgrupperna är inte 16 universella filmer. En grupp kan innehålla flera kortplatser eller exakta repliker.",
+    "De 16 eventgrupperna är genvägar i dagens labb, inte alla signaler från spelet eller 16 universella filmer. Partner är en ingång för externa klienter; Kevins egen klient använder publik spelstatus. Labbet testar sparade exempel, inte en ansluten spelström.",
     "Standard betyder ditt valda grundalternativ — inte automatiskt högst kvalitet. Want, filhash och kategorisering är inte visuell eller läppsynk-godkännande.",
-    "Labbet spelar videon en gång. Idle beskriver innehållet, inte att labbet redan loopar. Loop och avbrottspolicy är fortfarande förslag.",
-    "Spelmotorn äger kort, resultat, saldo och utbetalningar. Labbet och OpenClaw får bara välja tillåten presentation."
+    "Situation betyder bara relevanta omständigheter: deal behöver exakt plats/hand/kortposition; idle behöver inte kortfält. Dagens labb kontrollerar inte full täckning för senare kort, split och övergångar.",
+    "Labbet spelar videon en gång. Kevins specifika idle-spelare kan redan växla klipp, men redigerbara loopar, takepooler och sekvenser är ännu inte införda i labbet.",
+    "Spelfakta är mer än RNG: kortordning plus regler, godkända handlingar och resultat. Spelmotorn äger dessa samt saldo och utbetalningar. Labbet och OpenClaw får bara välja tillåten presentation. Ersättning av Kevins talväg är beslutad riktning, inte genomförd avstängning."
   ],
   "surfaces": [
     {"name":"Nodträdet","purpose":"Överblick av sambandet event → linje → variant. Samma data som Eventstudion, ingen separat konfiguration."},

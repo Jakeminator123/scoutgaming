@@ -1,3 +1,28 @@
+## 2026-09-20 — distinguish signals, situations and presentation choices
+
+Documentation-only clarification requested by Jakob. Reworked the existing
+situations/variant-families reference, preserving its stable path and source
+anchors. Added a signal-flow map, optional need-specific situation fields,
+the six-type/16-shortcut distinction, exact deal targeting versus expressions,
+native idle choreography versus once-only lab preview, and a minimal integration
+proposal. Partner and native public-state input are alternative projections,
+not two sources to replay simultaneously. RNG is only part of authoritative
+game facts. Replacing legacy speech with one voice owner is a requested direction,
+not an implemented shutdown; no product/player/Render/media change was made.
+
+Updated the existing Guide JSON and glossary descriptions, not a new guide or
+runtime contract. Runtime fields, event/term IDs, schemas and saved projects are
+unchanged. Reference:
+random-stuff-jakob/jakob-docs/2026-09-20-situationer-variantfamiljer-och-takes.md.
+Code basis: local dcab124, Kevin 626554d, main b147659. Independent code review
+confirmed the distinctions; not a live deployment or visual media acceptance.
+
+Verification: 192/192 lab tests passed; JSON parsing, unchanged runtime-contract
+assertion, reference local links and git diff --check passed. No paid requests.
+Remaining: public-state adapter, real-player integration, take coverage/pools,
+editable idle sequences and speech-owner cutover; these are proposals, not
+completed capabilities. No Jira transition or remote push performed.
+
 ## 2026-09-20 — simplify Eventstudio test and social chat panels
 
 Reworked the two screenshot-marked surfaces without changing schemas, media,
