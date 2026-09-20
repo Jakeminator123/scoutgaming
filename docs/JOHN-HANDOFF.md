@@ -1,3 +1,32 @@
+## 2026-09-20 — OpenClaw archive cleanup and thin Jakob notes
+
+Jakob requested removal/consolidation of obsolete OpenClaw folders and a short
+record of this task's full day's work in random-stuff-jakob/jakob-docs, followed
+by publication to origin/jakeminator123/work. The old tracked proposal moved
+from open-claw/openclaw_croupier to open-claw/archive/croupier-proposal-v2.
+All 24 files were preserved unchanged. Removed the local untracked duplicate
+random-stuff-jakob/openclaw_croupier only after all its 23 files matched the
+preserved package by SHA-256. No unique material was deleted; its content
+remains recoverable from the archive. Provenance and the 22-entry original
+manifest stay available. Historical V2 references now name the archive.
+
+Added 2026-09-20-openclaw-och-labb.md to Jakobs notes and linked its existing
+index; the short open-claw README now distinguishes active lab from archive.
+Corrected the dashboard guide: installation is not required on each visit.
+After the earlier deployment entry below, Jakob explicitly authorized pairing;
+his pending browser was approved using the existing environment credential,
+and the authenticated native dashboard was observed. No secret file was read.
+An actual model/chat response, live restart-persistence acceptance, real player
+chat, player memory and approved-video integration remain unverified/unbuilt.
+The exposed Gateway password has not been rotated. IDE inbox remains separate.
+
+Validation: 54 lab tests and catalog check passed; 24 archived Git blobs are
+unchanged and 13 relative links in changed Markdown files resolve. Local
+check still reports no configured Gateway (OPENCLAW_BASE_URL missing), not a
+live model success. No gameplay, media, database, runtime code, Dockerfile,
+blueprint, secrets or Render settings changed. Deployment is not required
+for this documentation/folder cleanup. Only this task's files are staged.
+
 ## 2026-09-20 — durable work record in Jakobs docs
 
 Added random-stuff-jakob/jakob-docs/2026-09-20-v3-videoregister-och-placering.md
