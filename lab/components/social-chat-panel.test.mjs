@@ -15,7 +15,7 @@ const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve();
 
 // Focused hook harness: exercises real handlers and cancellation without a browser,
 // a model, external audio or an additional test dependency.
-function harness({ compact = false, dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
+function harness({ compact = false, voiceConfigured = true, dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
   const slots = [], requests = [], reactions = [], audio = [], effects = [], ownership = [], activities = [];
   let cursor = 0, cancel;
   const listeners = new Map();
@@ -36,7 +36,7 @@ function harness({ compact = false, dealerId = 'astrid', eventId = 'idle.ready',
   const module = { exports: {} };
   const document = { hidden: false, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) };
   vm.runInNewContext(compiled, { module, exports: module.exports, Error, AbortController, structuredClone, crypto: { randomUUID }, Audio: FakeAudio, document, window: { confirm: () => true, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
-    require: name => name === 'react' ? hooks : name === './studio-types' ? { requestJson: async (url, init = {}) => { requests.push({ url, init }); return url === '/api/social' && !init.method ? structuredClone(status) : respond(url, init); } } : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : require(name),
+    require: name => name === 'react' ? hooks : name === './studio-types' ? { requestJson: async (url, init = {}) => { requests.push({ url, init }); return url === '/api/social' && !init.method ? structuredClone({ ...status, voiceConfigured }) : respond(url, init); } } : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : require(name),
   });
   const props = { compact, dealerId, eventId, draftCache, blocked, onBusyChange: value => ownership.push(value), onActivity: value => activities.push(value), onGoToIdle() {}, registerCancel: fn => { cancel = fn; }, onBegin() {}, onReaction: (...args) => reactions.push(args) };
   function render() { cursor = 0; const tree = module.exports.SocialChatPanel(props); while (effects.length) effects.shift()(); return tree; }
@@ -56,17 +56,16 @@ function typeMessage(instance, value) { messageField(instance.render()).props.on
 function submit(instance) { find(instance.render(), node => node.type === 'form').props.onSubmit({ preventDefault() {} }); }
 const replyFor = (body, extra = {}) => ({ requestId: body.requestId, policyRevision: body.policyRevision, reply: policy.response.fixedText, triggerId: 'social.ledsen', confidence: 0.9, provider: 'responded', assetId: 'social.ledsen', ...extra });
 
-test('chat keeps the composer primary and settings/audio collapsed without enabling speech or sending', async () => {
+test('chat defaults to speech but never generates it until sending; only one settings section is exposed', async () => {
   const instance = await ready({ compact: true }), tree = instance.render();
-  assert.match(text(tree), /VID BORDET/);
   assert.match(text(tree), /Chatta med Astrid/);
-  for (const label of ['Chattinställningar och ljud', 'Reaktion och svar', 'Standardfrasens ljud', 'Om chatten och kostnader']) {
+  for (const label of ['Inställningar', 'Uttryck och svar', 'Standardfrasens ljud']) {
     const details = find(tree, node => node.type === 'details' && text(node).includes(label));
     assert.ok(details); assert.notEqual(details.props.open, true);
   }
-  const voice = find(tree, node => node.type === 'input' && node.props.type === 'checkbox' && node.props.checked === false);
-  assert.ok(voice);
-  assert.match(text(tree), /nytt tal kan kosta ElevenLabs-krediter/);
+  const voice = find(tree, node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs');
+  assert.ok(voice); assert.equal(voice.props.checked, true);
+  assert.match(text(tree), /använder krediter/);
   assert.equal(button(tree, 'Skicka till Astrid').props.disabled, true);
   assert.equal(instance.requests.filter(item => item.init.method).length, 0);
   instance.unmount();
@@ -122,7 +121,7 @@ test('cooldown is a system message, never a spoken Astrid reply or model-history
   const bodies = [];
   const instance = await ready({ respond: async (url, init) => { const body = JSON.parse(init.body); bodies.push(body); return replyFor(body, { triggerId: null, assetId: 'idle.ready.standard', systemNotice: true, suppressed: 'cooldown', reply: 'Serverns pausförklaring.' }); } });
   typeMessage(instance, 'Första meddelandet'); submit(instance); await flush();
-  assert.match(text(instance.render()), /SYSTEM \/ PAUS/);
+  assert.match(text(instance.render()), /SYSTEM/);
   assert.equal(instance.reactions.length, 0); assert.equal(instance.audio.length, 0);
   typeMessage(instance, 'Andra meddelandet'); submit(instance); await flush();
   assert.equal(bodies[1].message, 'Andra meddelandet');
@@ -130,10 +129,10 @@ test('cooldown is a system message, never a spoken Astrid reply or model-history
   instance.unmount();
 });
 
-test('speech is opt-in, exact matched audio plays once and cancellation pauses it', async () => {
+test('speech is on by default, exact matched audio plays once and cancellation pauses it', async () => {
   const instance = await ready({ respond: async (url, init) => { const body = JSON.parse(init.body); return replyFor(body, { audio: { id: 'a'.repeat(64), audioUrl: `/api/voice/${'a'.repeat(64)}`, text: policy.response.fixedText, cached: true } }); } });
-  const toggle = find(instance.render(), node => node.type === 'input' && node.props.type === 'checkbox' && node.props.checked === false);
-  assert.ok(toggle); toggle.props.onChange({ target: { checked: true } });
+  const toggle = find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs');
+  assert.ok(toggle); assert.equal(toggle.props.checked, true);
   typeMessage(instance, 'Ett test'); submit(instance); await flush();
   assert.equal(JSON.parse(instance.requests.find(item => item.url === '/api/social/chat').init.body).voice, true);
   assert.equal(instance.reactions.length, 1); assert.equal(instance.audio.length, 1); assert.equal(instance.audio[0].playCalls, 1);
@@ -159,8 +158,8 @@ test('two saved-audio replays preserve a neutral model choice without another pa
     triggerId: null, assetId: 'idle.ready.standard', confidence: 0.1, reply: replyText,
     audio: { id: 'c'.repeat(64), audioUrl: `/api/voice/${'c'.repeat(64)}`, text: replyText, cached: true },
   }) });
-  const toggle = find(instance.render(), node => node.type === 'input' && node.props.type === 'checkbox' && node.props.checked === false);
-  toggle.props.onChange({ target: { checked: true } });
+  const toggle = find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs');
+  assert.equal(toggle.props.checked, true);
   typeMessage(instance, 'Hej!'); submit(instance); await flush();
   for (let replay = 0; replay < 2; replay++) {
     instance.audio.at(-1).onended(); await flush();
@@ -175,11 +174,24 @@ test('two saved-audio replays preserve a neutral model choice without another pa
   instance.unmount();
 });
 
-test('an unexpected audio field cannot start speech without the user opt-in', async () => {
+test('muting speech prevents playback even if the response unexpectedly contains audio', async () => {
   const instance = await ready({ respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'b'.repeat(64), audioUrl: `/api/voice/${'b'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
+  find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs').props.onChange({ target: { checked: false } });
   typeMessage(instance, 'Ett tyst test'); submit(instance); await flush();
   assert.equal(JSON.parse(instance.requests.find(item => item.url === '/api/social/chat').init.body).voice, false);
   assert.equal(instance.reactions.length, 1); assert.equal(instance.audio.length, 0);
+  instance.unmount();
+});
+
+test('voice preference stays on but unavailable ElevenLabs sends text-only and cannot play unexpected audio', async () => {
+  const instance = await ready({ voiceConfigured: false, respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'b'.repeat(64), audioUrl: `/api/voice/${'b'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
+  const toggle = find(instance.render(), node => node.props?.['aria-label'] === 'Ljud från ElevenLabs');
+  assert.equal(toggle.props.checked, true);
+  assert.equal(toggle.props.disabled, true);
+  typeMessage(instance, 'Hej'); submit(instance); await flush();
+  assert.equal(JSON.parse(instance.requests.find(item => item.url === '/api/social/chat').init.body).voice, false);
+  assert.equal(instance.audio.length, 0);
+  assert.equal(instance.activities.find(item => item.type === 'social.responded').data.output, 'text');
   instance.unmount();
 });
 
@@ -203,7 +215,6 @@ test('another action blocks social input before any provider call', async () => 
 
 test('one owner survives idle rerenders and blocks a second send or replay until audio ends', async () => {
   const instance = await ready({ respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'd'.repeat(64), audioUrl: `/api/voice/${'d'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
-  find(instance.render(), node => node.type === 'input' && node.props.type === 'checkbox' && node.props.checked === false).props.onChange({ target: { checked: true } });
   typeMessage(instance, 'Hej'); submit(instance); submit(instance); await flush();
   assert.equal(instance.ownership.at(-1), true);
   assert.equal(instance.requests.filter(item => item.init.method === 'POST').length, 1);
@@ -221,7 +232,6 @@ test('one owner survives idle rerenders and blocks a second send or replay until
 
 test('overlong audio leaves one text reply, rejects playback and releases ownership', async () => {
   const instance = await ready({ duration: 8, respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'e'.repeat(64), audioUrl: `/api/voice/${'e'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
-  find(instance.render(), node => node.type === 'input' && node.props.type === 'checkbox' && node.props.checked === false).props.onChange({ target: { checked: true } });
   typeMessage(instance, 'Hej'); submit(instance); await flush();
   assert.equal(instance.audio[0].playCalls, 0); assert.equal(instance.ownership.at(-1), false);
   assert.equal(instance.reactions.length, 1); assert.match(text(instance.render()), /längre än sex sekunder/);

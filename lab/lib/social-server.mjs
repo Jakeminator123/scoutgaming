@@ -58,9 +58,10 @@ export function createSocialService({ store = socialStore(), settings = settings
         : await socialChat(input, config, fetchImpl);
       const result = validateLocalReply(raw, input);
       await revisionStillCurrent(policy.revision);
-      // Do not speak a rejected expression either: no extra fixed reprimand
-      // during cooldown. The UI may start a new test when the cooldown expires.
-      if (result.triggerId && now() - session.lastReaction < policy.cooldownMs) {
+      const expressionCoolingDown = Boolean(result.triggerId && now() - session.lastReaction < policy.cooldownMs);
+      // Repeating a fixed trigger phrase would repeat the same reprimand.
+      // A free reply belongs to the conversation and survives expression cooldown.
+      if (expressionCoolingDown && policy.response.mode === 'fixed') {
         return { ...result, triggerId: null, assetId: 'idle.ready.standard', suppressed: 'cooldown', reply: 'Reaktionen väntar: den sociala triggerns paus har inte löpt ut.', systemNotice: true };
       }
       let audio; let voiceError;
@@ -69,8 +70,8 @@ export function createSocialService({ store = socialStore(), settings = settings
         catch { voiceError = 'Tal kunde inte skapas. Textsvaret finns kvar; ingen automatisk ny generering görs.'; }
       }
       await revisionStillCurrent(policy.revision);
-      if (result.triggerId) session.lastReaction = now();
-      return { ...result, assetId: result.triggerId || 'idle.ready.standard', ...(audio ? { audio } : {}), ...(voiceError ? { voiceError } : {}) };
+      if (result.triggerId && !expressionCoolingDown) session.lastReaction = now();
+      return { ...result, ...(expressionCoolingDown ? { triggerId: null, suppressed: 'cooldown' } : {}), assetId: expressionCoolingDown ? 'idle.ready.standard' : result.triggerId || 'idle.ready.standard', ...(audio ? { audio } : {}), ...(voiceError ? { voiceError } : {}) };
     };
     session.pending = input.requestId;
     const promise = work().finally(() => { session.pending = null; session.touched = now(); });

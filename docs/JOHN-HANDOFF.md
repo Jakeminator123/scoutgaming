@@ -1,3 +1,43 @@
+## 2026-09-21 — compact chat, speech on by default and independent free replies
+
+Reduced the table chat to a composer, send button, speech toggle and one
+closed Settings disclosure. Only active work/blocking/errors add status
+messages. Detailed reaction/audio controls remain available inside Settings.
+Speech now defaults on as Jakob requested, with a visible ElevenLabs credit
+label and an explicit mute control. Nothing generates on page load. When
+voice is unavailable the request remains text-only even though the preference
+is on; unexpected response audio cannot override mute/unavailability.
+
+Changed the social seed to free responses. Also changed only response.mode
+from fixed to free in Jakob's running local policy via GET/PUT /api/social,
+using its expected revision and normal history-saving path. Verified the
+previous fixed phrase and complete trigger definition were preserved. This
+was a specific local setting update, not an automatic migration of other
+saved policies. No environment values or loaders were edited.
+
+Free text and optional TTS now survive expression cooldown: the repeated
+expression is suppressed, while the contextual reply and identical spoken
+text remain. Explicit fixed-phrase mode retains suppression of its repeated
+reprimand. Tests cover different free words with the same sad expression,
+neutral factual-question responses, exact TTS text, free-reply cooldown and
+fixed-phrase validation. The API supports both policies already; no remote
+Director/Gateway deployment was needed or performed.
+
+The current social renderer still presents neutral idle during speech. It
+has no queue/binding for a sad video at the next idle boundary and no general
+selection among all studio videos. No reaction-video or lip-sync completion
+is claimed. A future expression take must sequence with idle-only speech,
+or use a separately validated lip-sync solution. Updated the social guide,
+README, shared Guide and environment explanation accordingly.
+
+Validation: 51 targeted component/social/playback checks passed; TypeScript
+and production build passed. Desktop/390px browser checks confirmed one
+closed Settings entry, free mode, checked/mutable speech toggle, no overflow
+or console errors. No actual chat/model/TTS request was sent. Broader suite
+before the last added unavailable-voice case: 236/237 passed; the unchanged
+same-size video hash test at lab/test/video-registry.test.mjs:131 failed again
+(HTTP 200 vs expected 409), as recorded in the previous delivery.
+
 ## 2026-09-21 — place the player chat next to the table
 
 Following Jakob's clarification, kept the existing chat/settings entry points
