@@ -196,3 +196,11 @@ curl -H "Authorization: Bearer $TOKEN" -H "Range: bytes=0-1048575" -o first-mb.m
 ```
 
 Tokens: `GENERATIONS_READ_TOKENS` in `/etc/croupier/agent.env` holds the sha256 digests of accepted tokens, comma separated. Add or remove a digest and restart the service to rotate.
+
+### Mapping: what plays today
+
+`GET /api/v1/generations/mapping` (same bearer token) returns, per dealer, every clip the game can play and the `show.*` event it serves: engine clips (idle, speech lines with text and audio, actions), Astrid's green takes on the default route, the staged performance takes, plus the backoffice picks, never-again list and want / don't want verdicts. Includes file path, format, frames, fps, hash, whether it loops or plays once, and which code selects it. `revision` is the running git commit.
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" https://bettalotto.se/api/v1/generations/mapping | jq '.dealers.astrid.greenTakes'
+```

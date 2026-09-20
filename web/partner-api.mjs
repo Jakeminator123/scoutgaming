@@ -17,7 +17,8 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
   db.exec(`CREATE TABLE IF NOT EXISTS partner_players (key_id TEXT NOT NULL, partner_player TEXT NOT NULL, player_id TEXT NOT NULL, PRIMARY KEY (key_id, partner_player))`);
   db.exec(`CREATE TABLE IF NOT EXISTS partner_idem (key_id TEXT NOT NULL, request_id TEXT NOT NULL, response TEXT NOT NULL, PRIMARY KEY (key_id, request_id))`);
 
-  const SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby'];
+  // events = observe the SSE stream only; play implies it. A key with just events cannot launch or act.
+  const SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
   const keys = {
     list() { return boDb.prepare('SELECT id, name, key, scopes, wallet_url, ip_allow, created_by, created_at, last_used, revoked_at FROM api_keys ORDER BY created_at DESC').all().map(r => ({ ...r, scopes: JSON.parse(r.scopes), key: r.key.slice(0, 12) + '…' })); },
     create({ name, scopes, walletUrl, ipAllow }, who) {
@@ -104,7 +105,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
     if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return fail(401, 'timestamp outside 5 min window');
     const expected = createHmac('sha256', row.secret).update(`${ts}.GET./api/v1/events.${playerId}`).digest('hex');
     if (expected.length !== String(sig).length || !timingSafeEqual(Buffer.from(expected), Buffer.from(String(sig)))) return fail(401, 'bad signature');
-    if (!JSON.parse(row.scopes).includes('play')) return fail(403, 'scope play required');
+    { const sc = JSON.parse(row.scopes); if (!sc.includes('play') && !sc.includes('events')) return fail(403, 'scope play or events required'); }
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.write(`event: hello\ndata: ${JSON.stringify({ playerId, serverTime: new Date().toISOString() })}\n\n`);
     const c = chan(row.id, playerId); if (!subs.has(c)) subs.set(c, new Set()); subs.get(c).add(res);
