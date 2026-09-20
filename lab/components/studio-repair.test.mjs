@@ -119,7 +119,7 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.ok(html.indexOf('data-testid="table-chat"') < html.indexOf('<strong>Testa event</strong>'));
   assert.equal((html.match(/data-testid="table-chat"/g) ?? []).length, 1);
   assert.match(html, /Redigera vald nod/);
-  assert.match(html, /Samma nod som i nodträdet/);
+  assert.match(html, /Valt event: Lycka till · Astrid/);
   assert.match(html, /<strong>Testa event<\/strong>/);
   assert.match(html, /Urvalsläge för eventtest/);
   assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
@@ -131,8 +131,8 @@ test('editor labels align with the selected node and distinguish event-test cont
   const { TestContextPanel, neutralContext } = loadComponent('./test-context.tsx');
   const contextHtml = renderToStaticMarkup(React.createElement(TestContextPanel, { value: neutralContext, onChange() {} }));
   assert.match(contextHtml, /Välj testsituation/);
-  assert.match(contextHtml, /Simulerade värden, bara för eventtestet/);
-  assert.match(contextHtml, /Astrid-chatten använder inte dessa fält/);
+  assert.match(contextHtml, /simulerad kontext för variantvalet/);
+  assert.match(contextHtml, /hämtar inga livesignaler och styr inte Astrid-chatten/);
   assert.match(contextHtml, /<details><summary>Justera testvärden/);
   assert.match(contextHtml, /aria-pressed="true">Neutral/);
   assert.doesNotMatch(contextHtml, /Vad vet croupiern just nu/);
