@@ -1,3 +1,28 @@
+## 2026-09-20 — reproduced media-loader race; Kevin approval requested
+
+At Jakob's explicit request, sent one signed ping-croupier question to Kevin:
+https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3870554825.
+Asks approval for A) shared in-flight loads by verified hash and B) separate
+measurement/prioritization of staged preloads. Jakob explicitly requires
+Kevin approval before local player/video edits. STATUS: approval pending.
+OPENCLAW task received the same boundary and confirmed no media work starts.
+
+An isolated in-memory harness used the current PerformancePlayer source()
+and dispose() methods verbatim, fake fetch/URL/window and real media bytes.
+Two smooth60 edge-v2 centre/dealer files are each 598735 bytes with identical
+verified SHA-256. Concurrent calls: 2 fetch, 2 hash, 2 Blob URLs, 1 Map entry;
+dispose revokes only 1. Sequential calls: 1 of each, full revocation.
+This proves a loader race/resource-bookkeeping defect, not the cause of
+Kevin's visual double-image report or measured browser memory/live traffic.
+
+Documented findings, file-origin/Blob distinctions, Redis versus client/HTTP
+cache, QA-package versus player-speed benefits, and proposed verification in
+jakob-docs/2026-09-20-videoladdning-och-kevin-ping.md; linked from its index.
+Relevant product files at 7be5844 are unchanged from the cited 998016a.
+No implementation, player/media/calibration/database/deployment changes,
+new storage service, product QA or CAC status transition. Existing broken
+or unapproved takes remain open. Only docs committed for this delivery.
+
 ## 2026-09-20 — Jakob's situation model and documentation system map
 
 Updated Jakob's event registry and added
