@@ -13,6 +13,13 @@ const roster = { vera:'dealer', astrid:'dealers/astrid', amira:'dealers/amira', 
 const sha = value => createHash('sha256').update(value).digest('hex');
 const read = file => JSON.parse(readFileSync(file, 'utf8'));
 const fingerprint = file => existsSync(file) ? sha(readFileSync(file)) : null;
+// Git can check text out as CRLF on Windows. Only cue text uses an LF identity;
+// media stays byte-exact, and all other cue bytes (including whitespace) matter.
+const cueFingerprint = file => {
+  if (!existsSync(file)) return null;
+  const bytes = readFileSync(file);
+  return sha(bytes.filter((byte, i) => byte !== 0x0d || bytes[i + 1] !== 0x0a));
+};
 const probeCache = new Map();
 const probe = file => {
   if (!probeCache.has(file)) probeCache.set(file, JSON.parse(execFileSync(process.env.FFPROBE || 'ffprobe', ['-v','error','-show_entries','stream=codec_type,has_b_frames,width,height:format=duration','-of','json',file], {encoding:'utf8'})));
@@ -85,7 +92,7 @@ for (const [name, relative] of Object.entries(roster)) {
     }
   }
   const {clips: ignored, ...header} = index;
-  snapshot.dealers[name] = {header, lines, streams, mattes, ...(Object.keys(native).length?{native}:{}), cues:fingerprint(join(base,'dealing-cues.json'))};
+  snapshot.dealers[name] = {header, lines, streams, mattes, ...(Object.keys(native).length?{native}:{}), cues:cueFingerprint(join(base,'dealing-cues.json'))};
   console.log(`${name}: ${ids.size} lines, ${Object.values(lines).filter(l=>!l.video).length} missing speech takes (not approved), ${Object.keys(streams).length} streams`);
 }
 if (errors.length) { console.error(errors.join('\n')); process.exit(1); }

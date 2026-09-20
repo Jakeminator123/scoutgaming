@@ -1,5 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
 import {createHash} from 'node:crypto';import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {sceneJoinPayload} from '../web/public/scene-join.mjs';
 import {readyMotionErrors} from '../web/public/ready-motion.mjs';
 import {PerformancePlayer} from '../web/public/performance-player.mjs';
@@ -36,7 +37,7 @@ test('installed ready motion covers every actual take with a bounded loop',()=>{
  for(const clip of [m.loop,m.speech,...m.joins]){
   const file=new URL(clip.media.src,pub),sha=x=>createHash('sha256').update(x).digest('hex');
   assert.equal(sha(fs.readFileSync(file)),clip.media.sha256);assert.equal(sha(sceneJoinPayload(clip)),clip.calibrationSha256);
-  const v=JSON.parse(execFileSync('ffprobe',['-v','error','-select_streams','v:0','-count_frames','-show_entries','stream=width,height,r_frame_rate,nb_read_frames,has_b_frames','-of','json',file.pathname])).streams[0];
+  const v=JSON.parse(execFileSync('ffprobe',['-v','error','-select_streams','v:0','-count_frames','-show_entries','stream=width,height,r_frame_rate,nb_read_frames,has_b_frames','-of','json',fileURLToPath(file)])).streams[0];
   assert.equal(v.width,1920);assert.equal(v.height,2160);assert.equal(v.r_frame_rate,'60/1');assert.equal(Number(v.nb_read_frames),clip.media.frames);assert.equal(v.has_b_frames,0);
  }
 });

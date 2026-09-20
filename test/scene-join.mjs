@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {selectSceneJoin,validateSceneJoin,sceneJoinPayload} from '../web/public/scene-join.mjs';
 import {PerformancePlayer} from '../web/public/performance-player.mjs';
 const root=new URL('../web/public/',import.meta.url);
@@ -16,7 +17,7 @@ test('each real take has a frame-bound entry and exit, with a 60 fps actor clock
   for(const j of manifest.joins){
     assert.deepEqual(validateSceneJoin(j),[]);assert.equal(sha(sceneJoinPayload(j)),j.calibrationSha256);
     const file=new URL(j.media.src,root);assert.equal(sha(fs.readFileSync(file)),j.media.sha256);
-    const p=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,has_b_frames','-of','json',file.pathname])).streams[0];
+    const p=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,has_b_frames','-of','json',fileURLToPath(file)])).streams[0];
     assert.equal(p.width,1920);assert.equal(p.height,2160);assert.equal(p.r_frame_rate,'60/1');assert.equal(p.has_b_frames,0);assert.equal(Number(p.nb_read_frames),j.media.frames);
   }
 });
