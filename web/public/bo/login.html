@@ -39,7 +39,10 @@ document.getElementById('f').onsubmit = async e => {
   e.preventDefault();
   const r = await fetch('/api/bo/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user: document.getElementById('u').value, pass: document.getElementById('p').value }) });
-  if (r.ok) location.href = '/bo/';
+  if (r.ok) {
+    const next=new URLSearchParams(location.search).get('returnTo');
+    location.href = /^\/api\/bo\/game-login\?state=[a-f0-9]{64}$/.test(next??'') ? next : '/bo/';
+  }
   else document.getElementById('err').textContent = 'Wrong username or password.';
 };
 document.getElementById('forgot').onclick = async e => {

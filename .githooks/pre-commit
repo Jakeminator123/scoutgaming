@@ -1,5 +1,8 @@
 #!/bin/sh
 set -eu
+node test/player-auth.mjs
+node test/craig-login.mjs
+node test/bo-game-auth.mjs
 node pipeline/audit-dealer-sync.mjs
 node pipeline/audit-performance.mjs
 node pipeline/audit-astrid-actor.mjs

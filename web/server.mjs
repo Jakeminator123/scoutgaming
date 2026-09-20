@@ -4,6 +4,7 @@
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
 import { craigIdentity } from './craig-identity.mjs';
 import { playerAuth } from './player-auth.mjs';
+import { backofficeGameAuth } from './bo-game-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { isAgentFailure } from './agent-response.mjs';
@@ -775,7 +776,10 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
   return css;
 }
 
-const auth=playerAuth(db,apiPlayer,craigIdentity(boDb));
+const scoutIdentity=craigIdentity(boDb);
+const auth=playerAuth(db,apiPlayer,scoutIdentity);
+const validLaunch=token=>{const claims=jwtVerify(token);return !!(claims?.sub&&claims.partner&&getPlayer(claims.sub));};
+const boGameAuth=backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL});
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
 function previewPlayer(req,res) {
@@ -791,8 +795,9 @@ function previewPlayer(req,res) {
 }
 createServer(async (req, res) => {
   const pathname=new URL(req.url,'http://local').pathname;
+  if(boGameAuth(req,res))return;
   { const u=new URL(req.url,'http://local'); const launch=u.searchParams.get('launch');
-    if(pathname==='/' && launch){ const claims=jwtVerify(launch);
+    if(['/', '/v2', '/v2/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!getPlayer(claims.sub)){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       const token=randomBytes(32).toString('hex'); const digest=createHash('sha256').update(token).digest('hex');
       db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp) VALUES (?,?,?,?)').run(digest,claims.sub,Date.now()+6*3600*1000,`partner:${claims.partner}`);
@@ -846,14 +851,16 @@ createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/api/bo/login') {
+    if(req.headers.origin && (!URL.canParse(req.headers.origin)||new URL(req.headers.origin).host!==req.headers.host)){res.writeHead(403);res.end('Invalid origin');return;}
     let body = '';
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
     req.on('end', () => {
       let who = null, uname = '';
       try { const { user, pass } = JSON.parse(body || '{}'); uname = user; who = boCheckLogin(user, pass); } catch {}
       if (!who) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
-      const tok = jwtSign({ sub: uname, role: who.role, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800` });
+      const tok = jwtSign({ sub: uname, role: who.role, aud:'backoffice', source_stamp:scoutIdentity.find(uname)?.stamp, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
+      const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control':'no-store', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}` });
       res.end('{"ok":true}');
     });
     return;
@@ -862,7 +869,7 @@ createServer(async (req, res) => {
   // reachable without a session; everything else in the BO needs one
   const boOpen = (req.method === 'GET' && (req.url === '/api/bo/config' || req.url === '/api/bo/me'))
     || (req.method === 'POST' && ['/api/bo/reset-request', '/api/bo/set-password'].includes(req.url))
-    || req.url === '/bo/login.html' || req.url.startsWith('/bo/set-password.html');
+    || pathname === '/bo/login.html' || req.url.startsWith('/bo/set-password.html');
   if ((req.url.startsWith('/api/bo/') || req.url === '/bo' || req.url.startsWith('/bo/')) && !boOpen
       && !boSessionOk(req)) {
     if (req.url.startsWith('/api/')) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"login required"}'); }
