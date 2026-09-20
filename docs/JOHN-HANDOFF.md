@@ -1,3 +1,21 @@
+## 2026-09-20 — clarify environment boundary and reject Partner placeholders
+
+Confirmed that the previous lab change did not edit real environment files or
+the existing Director/Gateway settings loader. The optional Partner observer
+uses the Next process environment (`lab/.env.local`), not the root `.env`
+file reader used by existing Director settings. Documented that boundary;
+the user's current root settings remain untouched and no local config file
+was created. Existing aliases remain supported when loaded into the process.
+
+Fixed the reported configuration-status defect: keys/secrets must match the
+formats actually minted by the current Partner server, so short placeholders,
+generations tokens and malformed credentials cannot enable an upstream
+connection. Status still does not claim successful authentication or correct
+scope/player identity. Missing settings and invalid formats are shown
+separately. Verified 36 observer/HTTP-guard tests and TypeScript, including
+zero upstream calls for invalid values and canonical/legacy precedence.
+No live API call, credential change, model call or media change occurred.
+
 ## 2026-09-20 — lab presentation model, social ownership and actual activity
 
 Reworked the lab's node tree and guide around four output groups: idle,

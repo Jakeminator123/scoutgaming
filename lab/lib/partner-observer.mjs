@@ -3,6 +3,12 @@ import { assertLocalRequest, errorResponse, jsonResponse } from './http-guard.mj
 import { StudioError } from './project-store.mjs';
 
 const REQUIRED = ['BETTALOTTO_PARTNER_KEY_ID', 'BETTALOTTO_PARTNER_SECRET', 'BETTALOTTO_PARTNER_PLAYER_ID'];
+// Match the credentials minted by web/partner-api.mjs. Shape is only a local
+// check; Bettalotto must still authenticate the pair and authorize the scope.
+const CREDENTIAL_FORMATS = {
+  BETTALOTTO_PARTNER_KEY_ID: /^ck_live_[A-Za-z0-9_-]{24}$/,
+  BETTALOTTO_PARTNER_SECRET: /^cs_[A-Za-z0-9_-]{43}$/,
+};
 const MAX_FRAME_BYTES = 64 * 1024;
 const MAX_CONNECTION_BYTES = 16 * 1024 * 1024;
 const encoder = new TextEncoder();
@@ -29,7 +35,9 @@ function approvedOrigin(value) {
 
 function configuration(env) {
   const missing = REQUIRED.filter(name => typeof env[name] !== 'string' || !env[name].trim());
-  const invalid = REQUIRED.filter(name => typeof env[name] === 'string' && (env[name].length > 512 || /[\r\n\0]/.test(env[name])));
+  const invalid = REQUIRED.filter(name => !missing.includes(name) &&
+    (env[name].length > 512 || /[\r\n\0]/.test(env[name]) ||
+      CREDENTIAL_FORMATS[name] && !CREDENTIAL_FORMATS[name].test(env[name])));
   const origin = approvedOrigin(env.BETTALOTTO_PARTNER_BASE_URL);
   if (!origin) invalid.push('BETTALOTTO_PARTNER_BASE_URL');
   return { configured: missing.length === 0 && invalid.length === 0, missing, invalid,

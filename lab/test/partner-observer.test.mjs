@@ -4,7 +4,7 @@ import { createHmac } from 'node:crypto';
 import { createPartnerObserver } from '../lib/partner-observer.mjs';
 
 const LOCAL = 'http://127.0.0.1:4188';
-const env = { BETTALOTTO_PARTNER_KEY_ID: 'ck_live_test_fixture', BETTALOTTO_PARTNER_SECRET: 'fixture-only-secret', BETTALOTTO_PARTNER_PLAYER_ID: 'fixture-player' };
+const env = { BETTALOTTO_PARTNER_KEY_ID: `ck_live_${'K'.repeat(24)}`, BETTALOTTO_PARTNER_SECRET: `cs_${'S'.repeat(43)}`, BETTALOTTO_PARTNER_PLAYER_ID: 'fixture-player' };
 const request = (path = '/api/inputs/events', options) => new Request(`${LOCAL}${path}`, options);
 const upstream = text => new Response(text, { headers: { 'Content-Type': 'text/event-stream' } });
 const round = { type: 'round', op: 'start', requestId: 'round-1', version: 3, phase: 'decisions', balance: 42,
@@ -37,6 +37,27 @@ test('configured status is safe and cannot be used to select credentials or dest
   assert.equal(response.headers.get('cache-control'), 'no-store');
 });
 
+test('placeholder, wrong-service and malformed credentials cannot claim configuration or connect', async () => {
+  let calls = 0;
+  for (const [name, values] of [
+    ['BETTALOTTO_PARTNER_KEY_ID', ['abc', 'ck_live_short', `ck_live_${'K'.repeat(23)}`, `ck_live_${'K'.repeat(25)}`, ` ${env.BETTALOTTO_PARTNER_KEY_ID}`, 'backoffice-row-uuid']],
+    ['BETTALOTTO_PARTNER_SECRET', ['abc', 'cs_short', `gen_${'a'.repeat(48)}`, `cs_${'S'.repeat(42)}`, `cs_${'S'.repeat(44)}`, `${env.BETTALOTTO_PARTNER_SECRET}\n`]],
+  ]) for (const value of values) {
+    const observer = createPartnerObserver({ env: { ...env, [name]: value }, fetchImpl() { calls++; } });
+    const status = observer.status();
+    assert.equal(status.configured, false);
+    assert.deepEqual(status.missing, []);
+    assert.deepEqual(status.invalid, [name]);
+    assert.ok(!JSON.stringify(status).includes(value));
+    assert.equal((await observer.endpoint(request())).status, 503);
+  }
+  const legacy = { LAB_PARTNER_KEY_ID: 'key', LAB_PARTNER_SECRET: 'secret', LAB_PARTNER_PLAYER_ID: 'player' };
+  const status = createPartnerObserver({ env: legacy }).status();
+  assert.equal(status.configured, false);
+  assert.deepEqual(status.invalid, ['BETTALOTTO_PARTNER_KEY_ID', 'BETTALOTTO_PARTNER_SECRET']);
+  assert.equal(calls, 0);
+});
+
 test('legacy lab names remain fallback-only and diagnostics always name Bettalotto settings', async () => {
   const legacy = Object.fromEntries(Object.entries(env).map(([name, value]) => [name.replace('BETTALOTTO_PARTNER_', 'LAB_PARTNER_'), value]));
   assert.equal(createPartnerObserver({ env: legacy }).status().configured, true);
@@ -47,11 +68,12 @@ test('legacy lab names remain fallback-only and diagnostics always name Bettalot
   const invalidCanonical = createPartnerObserver({ env: { ...legacy, LAB_PARTNER_BASE_URL: 'https://bettalotto.se', BETTALOTTO_PARTNER_BASE_URL: 'https://evil.test' } }).status();
   assert.deepEqual(invalidCanonical.invalid, ['BETTALOTTO_PARTNER_BASE_URL']);
   let actualKey;
-  const observer = createPartnerObserver({ env: { ...legacy, ...env, BETTALOTTO_PARTNER_KEY_ID: 'canonical-fixture-key' }, fetchImpl: async url => {
+  const canonicalKey = `ck_live_${'C'.repeat(24)}`;
+  const observer = createPartnerObserver({ env: { ...legacy, ...env, BETTALOTTO_PARTNER_KEY_ID: canonicalKey }, fetchImpl: async url => {
     actualKey = url.searchParams.get('key'); return upstream('');
   } });
   await (await observer.endpoint(request())).text();
-  assert.equal(actualKey, 'canonical-fixture-key');
+  assert.equal(actualKey, canonicalKey);
   const unsupportedAlias = createPartnerObserver({ env: { BETTALOTTO_API: 'ambiguous-fixture-value' } }).status();
   assert.deepEqual(unsupportedAlias.missing, Object.keys(env));
 });
