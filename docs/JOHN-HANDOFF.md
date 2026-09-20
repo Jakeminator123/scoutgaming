@@ -1,3 +1,25 @@
+## 2026-09-21 — clarify simulated context and selected event
+
+Replaced the “Återbesök · tyska” test preset with “Återkommande spelare”.
+It now changes only the returning-player flag relative to neutral; language
+stays Swedish and dealer mood stays calm. Existing saved variant conditions
+are unchanged. Clarified the preset footer: these buttons set simulated
+context for variant selection, fetch no live signals and do not drive chat.
+The returning-player checkbox now calls its data simulated player history.
+
+The studio inspector explicitly says “Valt event” and sidebar event buttons
+expose their selected state through aria-pressed. Idle / bakgrund is an output
+category; Bordet väntar (idle.ready) and Lycka till (speak.goodluck) are distinct
+nodes. Initial selection still follows the saved project's first event, while
+the sidebar groups idle first. Browser QA confirmed that selecting Bordet
+väntar updates both the main heading and the inspector to that same node.
+
+Validation: all 7 studio component tests and TypeScript passed. Browser QA
+confirmed the renamed preset selects returning=true with Swedish, calm mood,
+no chat signal and zero wins/losses. No model/TTS request, project save, live
+event connection, environment edit or media change. The previously recorded
+video hash-cache test limitation was outside this UI change and not retested.
+
 ## 2026-09-21 — compact chat, speech on by default and independent free replies
 
 Reduced the table chat to a composer, send button, speech toggle and one
