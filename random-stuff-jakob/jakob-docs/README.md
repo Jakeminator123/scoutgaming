@@ -2,6 +2,19 @@
 
 Jakobs minnesnoteringar och arbetsrapporter. Den gemensamma dokumentationen finns fortsatt i GitLab-wikin; tekniska rapporter länkas nedan. Konversationsexporter hör inte hemma här.
 
+## Börja här — system och gemensamt språk
+
+[Systemkartan](systemkarta/README.md) ordnar dagens dokumentation efter
+systemdelar och länkar tillbaka till källorna: spelmotor, event/urval,
+dealer/media, studio/JSON, OpenClaw/röst/drift och arbetssätt/verifiering.
+De daterade originalrapporterna ligger kvar nedan.
+
+[Situationer, variantfamiljer och takes](2026-09-20-situationer-variantfamiljer-och-takes.md)
+förklarar Jakobs mappmodell och hur destination, hand, första/andra kortet och
+rörelsesekvens påverkar videotäckningen. Skiljer tio interna eventtyper,
+sex presentationstyper och 16 labbnoder; ger ett gemensamt språk för agenternas
+fortsatta arbete. Mappvyn och föreslagen fysisk JSON-uppdelning är olika saker.
+
 ## 2026-09-20 — Windows-testerna
 
 [Reparerade media-/spelartester](2026-09-20-windows-medietester.md): portabla sökvägar, Git Bash utan WSL, verifierade användarlokala testverktyg och CRLF-hantering utan ändrade medier/baseline. Alla begärda testkommandon passerar.
@@ -51,4 +64,6 @@ Trädet är en logisk vy; inga medier flyttas.
 - **Historik:** förhandsvisningar förkortas; GitLab-original raderas inte. Hanterade meddelanden lämnar chattens olästa kö. Lokal cache/läsmarkeringar har ännu ingen automatisk åldersrensning.
 - **Kvar:** anslut befintlig GitLab-token lokalt, utan att skriva hemligheten här. Kevin/Emil behöver aktivera reglerna själva. Inboxändringen finns på `codex/inbox-routing-cache`; annan lokal kod följde inte med den publiceringen.
 
-Lägg korta daterade noteringar här och länka längre arbetsrapporter som enstaka Markdown-filer i samma mapp. Inga undermappar behövs ännu.
+Lägg daterade arbetsrapporter här. `systemkarta/` är den ämnesindelade
+läsvyn med egna undermappar och källhänvisningar; den flyttar eller ersätter
+inte originalrapporterna. Uppdatera kartans länkar när nya källor tillkommer.
