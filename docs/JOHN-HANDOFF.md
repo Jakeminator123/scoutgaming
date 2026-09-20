@@ -1,3 +1,15 @@
+## 2026-09-20 — video register overview and preview shutdown documented
+
+Consolidated the existing registry/manifest findings into one table in the
+V3 video map report and linked it from Jakobs work record. The table separates
+existing sources, unverified live BO assignments and proposed event/take YAML.
+Recorded the user-requested preview shutdown and the subsequent check that
+neither 4196 nor 4197 listened and no task-owned preview process remained.
+This records the earlier shutdown check; no server was restarted.
+
+Validation: documentation links and git diff checks. No media/player changes
+or new visual acceptance. Active bindings and final schema integration remain open.
+
 ## 2026-09-20 — Explicit local chef role
 
 Jakob requested a reusable coordinating role and publication to his work branch.

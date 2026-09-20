@@ -58,8 +58,12 @@ Ursprungliga privata leveransfiler på Jakobs dator finns också kvar:
 - [Canvas med karta och sökbart register](C:/Users/jakem/.cursor/projects/c-Users-jakem-Projects-croupier/canvases/croupier-v3-videokarta.canvas.tsx)
 - [Härledd inventering och evidens](C:/Users/jakem/.codex/visualizations/2026/09/19/01a0bbdb-661e-74a2-beac-de30003775fb/croupier-v3-video-map.private.json)
 
-Den ursprungliga previewn på port 4196 kan redan vara igång på Jakobs dator.
-Dess äldre startkommando är `node .croupier-inbox/v3-video-audit/serve-preview.mjs`.
+Avslutningskontroll 20 september 2026: den ursprungliga previewservern
+stängdes på Jakobs begäran. Efteråt verifierades att varken port 4196
+eller 4197 lyssnade och att ingen av våra videokartservrar körde.
+Detta är en daterad kontroll; startkommandot ovan kan användas vid behov.
+Den äldre previewns startkommando var
+`node .croupier-inbox/v3-video-audit/serve-preview.mjs`.
 Råa API-snapshotar, hashningskvitto och ursprungliga hjälpfiler ligger kvar i
 ignorerade `.croupier-inbox/v3-video-audit/`. Git-versionen av kartan kan
 användas utan dessa privata hjälpfiler. Inget auth-material eller råvideo
@@ -100,6 +104,21 @@ Den dokumenterat scope-begränsade generationstoken användes bara mot sitt
 generations-API. Dagens faktiska cfg.clipAssignments är därför fortfarande
 okända. Ett manifest, en filhash eller ett källomnämnande bevisar inte att
 videon spelas i en aktuell session.
+
+## Samlad översikt över register, manifest och föreslagna scheman
+
+| Register eller struktur | Vad det beskriver | Verifieringsgräns |
+| --- | --- | --- |
+| Generations-API:t och serverns `bo/generations.json` | Originalvideor med generation-id, storlek, hash och intake-omdöme. | Omdömet bevisar inte visuell acceptans eller aktiv användning. |
+| Lokala arkivets `catalog.json` | Register som följde med de nedladdade originalen. | De 224 MP4-filerna kontrollerades mot det nyhämtade API-registret; katalogen är ingen livesynk. |
+| Dealernas `streams/index.json` | Indexerade H.264-klipp för vanlig uppspelning. | En indexpost bevisar inte att klippet används i en viss session. |
+| Astrids `performance/manifest.json` och `provenance.json` | Bearbetade takes, continuations, mediereferenser, kalibreringsdata och ursprung. | De sex granskade takes/continuations hade status review. |
+| Labbets `config/catalog.json` | Semantiska eventnoder, matchningsvillkor och varianter för labbet. | Befintlig labblogik, inte en färdig produktionskoppling av alla videor. |
+| BO:s `cfg.clipAssignments` via `/api/bo/config` | Val av klipp per dealer och BO-plats. | Dagens faktiska val kunde inte läsas och återstår att verifiera. |
+| Föreslagna `event.yaml` och `take.yaml` | Gemensam beskrivning av event/subevent/variant, triggers, take, proveniens och acceptans. | Dokumenterat förslag; filformaten och integrationen har inte implementerats av denna uppgift. |
+
+Kartan sammanställer dessa nivåer i sin daterade `snapshot.json`. Den är
+ett analysunderlag och ersätter inte originalregister eller runtime-manifest.
 
 ## Vad registret innehåller
 
