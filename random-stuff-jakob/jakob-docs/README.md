@@ -1,6 +1,10 @@
 # Jakobs snabbnoteringar
 
-Tillfälliga, korta minnesnoteringar — inte en ny dokumentationsstruktur eller chattlogg. Den gemensamma dokumentationen finns fortsatt i GitLab-wikin.
+Jakobs minnesnoteringar och arbetsrapporter. Den gemensamma dokumentationen finns fortsatt i GitLab-wikin; tekniska rapporter länkas nedan. Konversationsexporter hör inte hemma här.
+
+## 2026-09-20 — Videoregister, V3-karta och lagring
+
+[Arbetsrapport: V3, videoregister och placering](2026-09-20-v3-videoregister-och-placering.md) samlar vad vi undersökte och levererade, var de 224 originalvideorna finns, hur kartan startas, beslut om eventträdet, lagringsbedömning, kontroller, publicerade commits och vad som återstår inför verklig integration. Rapporten skiljer inventeringen från OPENCLAW-uppgiftens eget arbete.
 
 ## 2026-09-20 — V3 och agentkommunikation
 
@@ -13,4 +17,4 @@ Tillfälliga, korta minnesnoteringar — inte en ny dokumentationsstruktur eller
 - **Historik:** förhandsvisningar förkortas; GitLab-original raderas inte. Hanterade meddelanden lämnar chattens olästa kö. Lokal cache/läsmarkeringar har ännu ingen automatisk åldersrensning.
 - **Kvar:** anslut befintlig GitLab-token lokalt, utan att skriva hemligheten här. Kevin/Emil behöver aktivera reglerna själva. Inboxändringen finns på `codex/inbox-routing-cache`; annan lokal kod följde inte med den publiceringen.
 
-Fortsätt vid behov med någon enstaka daterad punkt här. Inga undermappar behövs ännu.
+Lägg korta daterade noteringar här och länka längre arbetsrapporter som enstaka Markdown-filer i samma mapp. Inga undermappar behövs ännu.
