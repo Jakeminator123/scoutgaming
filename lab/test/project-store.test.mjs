@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createProjectStore } from '../lib/project-store.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
 
 async function fixture(t) {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-studio-project-'));
@@ -66,6 +66,25 @@ test('malformed or invalid existing file is preserved, never silently replaced b
     await assert.rejects(store.save(draft, draft.revision), error => error.statusCode === 422);
     assert.equal(await readFile(join(directory, 'project.json'), 'utf8'), contents);
   }
+});
+
+test('legacy incompatible animation is readable for explicit repair, never auto-rewritten or saved unchanged', async t => {
+  const { directory, store } = await fixture(t);
+  const legacy = createSeedProject();
+  const line = legacy.lines.find(line => line.dealerId === 'astrid' && line.eventId === 'deal.player.left');
+  line.variants[0].assetId = 'speak.goodluck.standard';
+  const original = JSON.stringify(legacy);
+  await writeFile(join(directory, 'project.json'), original);
+  const loaded = await store.load();
+  assert.deepEqual(loaded, legacy);
+  assert.throws(() => validateProject(loaded), /delningsriktning/);
+  await assert.rejects(store.save(loaded, loaded.revision), /delningsriktning/);
+  assert.equal(await readFile(join(directory, 'project.json'), 'utf8'), original);
+  loaded.lines.find(line => line.dealerId === 'astrid' && line.eventId === 'deal.player.left').variants[0].assetId = 'deal.player.left.standard';
+  const saved = await store.save(loaded, loaded.revision);
+  assert.equal(validateProject(saved), saved);
+  const history = await readdir(join(directory, 'history'));
+  assert.deepEqual(JSON.parse(await readFile(join(directory, 'history', history[0]), 'utf8')), legacy);
 });
 
 test('concurrent writers cannot both commit the same expected revision', async t => {

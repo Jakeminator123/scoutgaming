@@ -19,7 +19,8 @@ export const allowedPathDescriptors: readonly PathDescriptor[];
 export const ALLOWED_PATH_DESCRIPTORS: readonly PathDescriptor[];
 export class StudioValidationError extends Error { errors: string[]; statusCode: number }
 export function createSeedProject(): StudioProject;
-export function validateProject(project: unknown): StudioProject;
+export function isAssetCompatible(event: StudioEvent | undefined, asset: StudioAsset | undefined): boolean;
+export function validateProject(project: unknown, options?: {allowIncompatibleAnimations?: boolean}): StudioProject;
 export function buildRuntimeCatalog(project: StudioProject, dealerId: DealerId): RuntimeCatalog;
 export function addVariant(project: StudioProject, dealerId: DealerId, eventId: string, label?: string): StudioProject;
 export function removeVariant(project: StudioProject, dealerId: DealerId, eventId: string, variantId: string): StudioProject;

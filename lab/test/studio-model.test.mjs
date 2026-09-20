@@ -4,7 +4,7 @@ import schema from '../schemas/studio.schema.json' with { type: 'json' };
 import {
   createSeedProject, validateProject, buildRuntimeCatalog, addVariant, removeVariant,
   removeTrigger, renameEvent, renameLine, DEALER_IDS, SOURCE_TYPES, allowedPathDescriptors,
-  StudioValidationError
+  StudioValidationError, isAssetCompatible
 } from '../lib/studio-model.mjs';
 import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
 
@@ -16,8 +16,8 @@ test('seed contains blackjack, four dealers, sixteen locked nodes and 64 editabl
   assert.equal(p.events.length, 16);
   assert.deepEqual([...new Set(p.events.map(e => e.sourceType))].sort(), [...SOURCE_TYPES].sort());
   assert.equal(p.lines.length, 64);
-  assert.ok(p.lines.every(line => line.variants.length === 2));
-  assert.equal(p.assets.length, 32);
+  assert.ok(p.lines.every(line => line.variants.length === 4));
+  assert.equal(p.assets.length, 64);
   assert.equal(schema.properties.events.minItems, p.events.length);
   assert.equal(schema.$defs.variant.properties.videoGenerationId.oneOf[0].type, 'null');
 });
@@ -144,7 +144,7 @@ test('unknown references and missing dealer/event lines fail before saving', () 
 
 test('alternatives can be added and removed, at most four plus permanent baseline', () => {
   let p = createSeedProject(); const line = p.lines[0];
-  for (let n = 0; n < 3; n++) p = addVariant(p, line.dealerId, line.eventId, `Alternativ ${n}`);
+  for (let n = line.variants.length; n < 5; n++) p = addVariant(p, line.dealerId, line.eventId, `Alternativ ${n}`);
   assert.equal(p.lines[0].variants.length, 5);
   assert.throws(() => addVariant(p, line.dealerId, line.eventId), /högst fyra/);
   const removedId = p.lines[0].variants[2].id;
@@ -163,7 +163,9 @@ test('referenced triggers cannot be removed until explicitly detached from every
   assert.ok(!removed.triggers.some(t => t.id === 'returning-player'));
   assert.ok(removed.lines.every(line => line.variants.every(v => !v.triggerIds.includes('returning-player'))));
   validateProject(removed);
-  const unused = removeTrigger(createSeedProject(), 'warm-mood');
+  const detached = createSeedProject();
+  for (const line of detached.lines) for (const variant of line.variants) variant.triggerIds = variant.triggerIds.filter(id => id !== 'warm-mood');
+  const unused = removeTrigger(detached, 'warm-mood');
   assert.ok(!unused.triggers.some(t => t.id === 'warm-mood'));
 });
 
@@ -219,4 +221,36 @@ test('temperament is an explicit croupier mood predicate, not inferred player em
   assert.equal(p.triggers.find(t => t.id === 'warm-mood').category, 'temperament');
   p.triggers.find(t => t.id === 'warm-mood').path = 'context.player.emotion';
   assert.throws(() => validateProject(p), /fältet är inte tillåtet/);
+});
+
+test('synthetic new variants preserve source contracts and do not invent video bindings', () => {
+  const p = createSeedProject();
+  for (const line of p.lines) {
+    assert.equal(line.variants[0].triggerIds.length, 0);
+    assert.ok(line.variants.every(v => v.videoGenerationId === null));
+    assert.deepEqual(line.variants[2].triggerIds, ['chat-praise', 'warm-mood']);
+    assert.deepEqual(line.variants[3].triggerIds, ['playful-mood', 'recent-wins']);
+  }
+});
+
+test('old two-variant projects stay valid; no auto-expansion or label replacement', () => {
+  const p = createSeedProject();
+  p.lines.forEach(line => { line.variants = line.variants.slice(0, 2); });
+  p.assets = p.assets.filter(asset => !/\.motion[34]$/.test(asset.id));
+  p.events[0].label = 'Mitt sparade namn';
+  const before = structuredClone(p);
+  assert.deepEqual(validateProject(p), before);
+  assert.equal(p.lines[0].variants.length, 2);
+});
+
+test('lab assets cannot reverse a published deal or replace a reveal', () => {
+  for (const eventId of ['deal.player.left', 'reveal.dealer', 'speak.goodluck', 'settle.win', 'idle.ready']) {
+    const p = createSeedProject();
+    const line = p.lines.find(line => line.dealerId === 'astrid' && line.eventId === eventId);
+    const event = p.events.find(event => event.id === eventId);
+    const wrongAsset = p.assets.find(asset => asset.id === 'deal.player.right.standard');
+    assert.equal(isAssetCompatible(event, wrongAsset), false);
+    line.variants[0].assetId = wrongAsset.id;
+    assert.throws(() => validateProject(p), /delningsriktning eller kortvändning/);
+  }
 });

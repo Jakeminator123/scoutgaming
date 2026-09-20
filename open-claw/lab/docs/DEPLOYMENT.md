@@ -1,5 +1,11 @@
 # OpenClaw and Render blueprint
 
+**Two distinct editors:** this deployment serves the older Director editor
+with its own Render-persisted catalogue. The current Next.js studio lives in
+root `lab/`, saves its project locally and sends an ephemeral catalogue through
+`/api/studio/advice` and `/api/studio/chat`. It does not overwrite the Render
+catalogue. See [the current studio guide](../../../lab/README.md).
+
 The lab's deployable unit is `open-claw/lab/`. It can remain in Croupier or be
 copied to the root of a separate repository later. The blueprint is scaffolding:
 creating cloud services, supplying credentials and verifying a real model call

@@ -4,6 +4,12 @@ Den här guiden publicerar ett **operatörslabb**, inte Croupiers produktionsspe
 eller ett färdigt chattsystem för spelare. IDE-agenternas GitLab-inbox är ett
 helt separat system och ska inte kopplas till OpenClaw.
 
+**Vilken editor?** Den nya Next-studion ligger i rotens `lab/` och sparar
+projektet lokalt. Den skickar bara en tillfällig katalog till Directors
+`/api/studio/advice` och `/api/studio/chat`. Den äldre editorn som följer med
+Director sparar en separat katalog på Render. Blanda inte ihop dem.
+[Aktuell studioguide](../../../lab/README.md).
+
 ## 1. Koden i GitLab
 
 Använd repot `scout-gg/croupier`, branchen `jakeminator123/work` och filen

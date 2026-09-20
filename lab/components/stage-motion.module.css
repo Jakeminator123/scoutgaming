@@ -1,0 +1,23 @@
+.scene[data-motion-player='json'] :global(.avatar-head),
+.scene[data-motion-player='json'] :global(.avatar-arm),
+.scene[data-motion-player='json'] :global(.dealer-avatar),
+.scene[data-motion-player='json'] :global(.speech-signal i) {
+  animation: none;
+}
+
+.scene[data-motion-player='json'] :global(.avatar-arm) { z-index: 6; }
+.scene[data-motion-player='json'] :global(.dealer-avatar) { transform-origin: 50% 100%; }
+.face { position: absolute; inset: 0; transform-origin: 70px 64px; z-index: 4; }
+.blush {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 8px 5px at 9px 39px, #e87378cc, transparent), radial-gradient(ellipse 8px 5px at 36px 39px, #e87378cc, transparent);
+  opacity: 0;
+  border-radius: inherit;
+}
+.motionLabel { max-width: 480px; }
+.motionLabel code { font-size: inherit; color: #92aca7; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scene .face, .scene .blush { animation: none; transition: none; }
+}

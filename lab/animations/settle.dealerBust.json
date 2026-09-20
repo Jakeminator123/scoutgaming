@@ -1,0 +1,714 @@
+{
+  "schemaVersion": 1,
+  "eventId": "settle.dealerBust",
+  "clips": [
+    {
+      "assetId": "settle.dealerBust.standard",
+      "eventId": "settle.dealerBust",
+      "label": "Visa resultat",
+      "durationMs": 1400,
+      "tracks": [
+        {
+          "target": "actor",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.18,
+              "x": 0,
+              "y": -2,
+              "rotate": 0
+            },
+            {
+              "at": 0.37,
+              "x": 0,
+              "y": -4,
+              "rotate": 0
+            },
+            {
+              "at": 0.59,
+              "x": 0,
+              "y": 2,
+              "rotate": 0
+            },
+            {
+              "at": 0.8,
+              "x": 0,
+              "y": 1,
+              "rotate": 0
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "face",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.18,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.37,
+              "x": 0,
+              "y": -2,
+              "rotate": 5
+            },
+            {
+              "at": 0.59,
+              "x": 0,
+              "y": 5,
+              "rotate": 0
+            },
+            {
+              "at": 0.8,
+              "x": 0,
+              "y": 4,
+              "rotate": 2
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "leftArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": 20
+            },
+            {
+              "at": 0.18,
+              "rotate": 63
+            },
+            {
+              "at": 0.37,
+              "rotate": 75
+            },
+            {
+              "at": 0.59,
+              "rotate": 20
+            },
+            {
+              "at": 0.8,
+              "rotate": 42
+            },
+            {
+              "at": 1,
+              "rotate": 20
+            }
+          ]
+        },
+        {
+          "target": "rightArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": -20
+            },
+            {
+              "at": 0.18,
+              "rotate": -63
+            },
+            {
+              "at": 0.37,
+              "rotate": -75
+            },
+            {
+              "at": 0.59,
+              "rotate": -20
+            },
+            {
+              "at": 0.8,
+              "rotate": -40
+            },
+            {
+              "at": 1,
+              "rotate": -20
+            }
+          ]
+        },
+        {
+          "target": "blush",
+          "frames": [
+            {
+              "at": 0,
+              "opacity": 0
+            },
+            {
+              "at": 0.18,
+              "opacity": 0
+            },
+            {
+              "at": 0.37,
+              "opacity": 0
+            },
+            {
+              "at": 0.59,
+              "opacity": 0
+            },
+            {
+              "at": 0.8,
+              "opacity": 0
+            },
+            {
+              "at": 1,
+              "opacity": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "settle.dealerBust.contextual",
+      "eventId": "settle.dealerBust",
+      "label": "Tacka för beröm",
+      "durationMs": 1700,
+      "tracks": [
+        {
+          "target": "actor",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.23,
+              "x": 1,
+              "y": -1,
+              "rotate": 1
+            },
+            {
+              "at": 0.45,
+              "x": 2,
+              "y": 0,
+              "rotate": 2
+            },
+            {
+              "at": 0.62,
+              "x": 0,
+              "y": 2,
+              "rotate": 0
+            },
+            {
+              "at": 0.83,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "face",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.23,
+              "x": 0,
+              "y": 0,
+              "rotate": 4
+            },
+            {
+              "at": 0.45,
+              "x": 0,
+              "y": 2,
+              "rotate": 8
+            },
+            {
+              "at": 0.62,
+              "x": 0,
+              "y": 5,
+              "rotate": 0
+            },
+            {
+              "at": 0.83,
+              "x": 0,
+              "y": 1,
+              "rotate": -4
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "leftArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": 20
+            },
+            {
+              "at": 0.23,
+              "rotate": 23
+            },
+            {
+              "at": 0.45,
+              "rotate": 20
+            },
+            {
+              "at": 0.62,
+              "rotate": 20
+            },
+            {
+              "at": 0.83,
+              "rotate": 28
+            },
+            {
+              "at": 1,
+              "rotate": 20
+            }
+          ]
+        },
+        {
+          "target": "rightArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": -20
+            },
+            {
+              "at": 0.23,
+              "rotate": -105
+            },
+            {
+              "at": 0.45,
+              "rotate": 44
+            },
+            {
+              "at": 0.62,
+              "rotate": -20
+            },
+            {
+              "at": 0.83,
+              "rotate": -42
+            },
+            {
+              "at": 1,
+              "rotate": -20
+            }
+          ]
+        },
+        {
+          "target": "blush",
+          "frames": [
+            {
+              "at": 0,
+              "opacity": 0
+            },
+            {
+              "at": 0.23,
+              "opacity": 0
+            },
+            {
+              "at": 0.45,
+              "opacity": 0.5
+            },
+            {
+              "at": 0.62,
+              "opacity": 0
+            },
+            {
+              "at": 0.83,
+              "opacity": 0.3
+            },
+            {
+              "at": 1,
+              "opacity": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "settle.dealerBust.motion3",
+      "eventId": "settle.dealerBust",
+      "label": "Rodnande leende",
+      "durationMs": 2100,
+      "tracks": [
+        {
+          "target": "actor",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.21,
+              "x": 3,
+              "y": 1,
+              "rotate": 2
+            },
+            {
+              "at": 0.43,
+              "x": -3,
+              "y": 1,
+              "rotate": -2
+            },
+            {
+              "at": 0.66,
+              "x": 0,
+              "y": -2,
+              "rotate": 0
+            },
+            {
+              "at": 0.86,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "face",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.21,
+              "x": 0,
+              "y": 6,
+              "rotate": 13
+            },
+            {
+              "at": 0.43,
+              "x": 0,
+              "y": 6,
+              "rotate": -12
+            },
+            {
+              "at": 0.66,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.86,
+              "x": 0,
+              "y": 1,
+              "rotate": -4
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "leftArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": 20
+            },
+            {
+              "at": 0.21,
+              "rotate": 10
+            },
+            {
+              "at": 0.43,
+              "rotate": -28
+            },
+            {
+              "at": 0.66,
+              "rotate": 63
+            },
+            {
+              "at": 0.86,
+              "rotate": 28
+            },
+            {
+              "at": 1,
+              "rotate": 20
+            }
+          ]
+        },
+        {
+          "target": "rightArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": -20
+            },
+            {
+              "at": 0.21,
+              "rotate": 28
+            },
+            {
+              "at": 0.43,
+              "rotate": -12
+            },
+            {
+              "at": 0.66,
+              "rotate": -63
+            },
+            {
+              "at": 0.86,
+              "rotate": -42
+            },
+            {
+              "at": 1,
+              "rotate": -20
+            }
+          ]
+        },
+        {
+          "target": "blush",
+          "frames": [
+            {
+              "at": 0,
+              "opacity": 0
+            },
+            {
+              "at": 0.21,
+              "opacity": 0.95
+            },
+            {
+              "at": 0.43,
+              "opacity": 0.9
+            },
+            {
+              "at": 0.66,
+              "opacity": 0
+            },
+            {
+              "at": 0.86,
+              "opacity": 0.3
+            },
+            {
+              "at": 1,
+              "opacity": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "settle.dealerBust.motion4",
+      "eventId": "settle.dealerBust",
+      "label": "Litet axelryck",
+      "durationMs": 2300,
+      "tracks": [
+        {
+          "target": "actor",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.16,
+              "x": 0,
+              "y": -4,
+              "rotate": 0
+            },
+            {
+              "at": 0.35,
+              "x": -5,
+              "y": 0,
+              "rotate": -4
+            },
+            {
+              "at": 0.58,
+              "x": 0,
+              "y": -4,
+              "rotate": 0
+            },
+            {
+              "at": 0.79,
+              "x": 0,
+              "y": 1,
+              "rotate": 0
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "face",
+          "frames": [
+            {
+              "at": 0,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            },
+            {
+              "at": 0.16,
+              "x": 0,
+              "y": -2,
+              "rotate": 5
+            },
+            {
+              "at": 0.35,
+              "x": 0,
+              "y": 0,
+              "rotate": -6
+            },
+            {
+              "at": 0.58,
+              "x": 0,
+              "y": -2,
+              "rotate": 5
+            },
+            {
+              "at": 0.79,
+              "x": 0,
+              "y": 4,
+              "rotate": 2
+            },
+            {
+              "at": 1,
+              "x": 0,
+              "y": 0,
+              "rotate": 0
+            }
+          ]
+        },
+        {
+          "target": "leftArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": 20
+            },
+            {
+              "at": 0.16,
+              "rotate": 75
+            },
+            {
+              "at": 0.35,
+              "rotate": 35
+            },
+            {
+              "at": 0.58,
+              "rotate": 75
+            },
+            {
+              "at": 0.79,
+              "rotate": 42
+            },
+            {
+              "at": 1,
+              "rotate": 20
+            }
+          ]
+        },
+        {
+          "target": "rightArm",
+          "frames": [
+            {
+              "at": 0,
+              "rotate": -20
+            },
+            {
+              "at": 0.16,
+              "rotate": -75
+            },
+            {
+              "at": 0.35,
+              "rotate": -28
+            },
+            {
+              "at": 0.58,
+              "rotate": -75
+            },
+            {
+              "at": 0.79,
+              "rotate": -40
+            },
+            {
+              "at": 1,
+              "rotate": -20
+            }
+          ]
+        },
+        {
+          "target": "blush",
+          "frames": [
+            {
+              "at": 0,
+              "opacity": 0
+            },
+            {
+              "at": 0.16,
+              "opacity": 0
+            },
+            {
+              "at": 0.35,
+              "opacity": 0
+            },
+            {
+              "at": 0.58,
+              "opacity": 0
+            },
+            {
+              "at": 0.79,
+              "opacity": 0
+            },
+            {
+              "at": 1,
+              "opacity": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -53,7 +53,17 @@ export class StudioValidationError extends Error {
 
 export function createSeedProject() { return clone(seed); }
 
-export function validateProject(project) {
+// Illustration choices must not reverse a published deal or hide a reveal.
+// This is NOT media acceptance: exact dealer/line/take validation belongs to
+// a separately reviewed production adapter, not this synthetic motion layer.
+export function isAssetCompatible(event, asset) {
+  if (!event || !asset || typeof asset.animation !== 'string') return false;
+  if (event.sourceType === 'deal') return asset.animation === event.exampleEvent.clip?.action;
+  if (event.sourceType === 'reveal') return asset.animation === 'reveal';
+  return !asset.animation.startsWith('deal-') && asset.animation !== 'reveal';
+}
+
+export function validateProject(project, { allowIncompatibleAnimations = false } = {}) {
   const errors = [];
   const error = (at, message) => errors.push(`${at}: ${message}`);
   const keys = (value, allowed, at) => {
@@ -134,6 +144,7 @@ export function validateProject(project) {
       if (typeof variant.id !== 'string' || !variant.id.startsWith(`${line.dealerId}.${line.eventId}.`)) error(`${vp}.id`, 'variantens ID ska höra till samma croupier/event');
       if (!Number.isInteger(variant.priority) || variant.priority < -100 || variant.priority > 100) error(`${vp}.priority`, 'ska vara ett heltal från -100 till 100');
       if (!assetIds.has(variant.assetId)) error(`${vp}.assetId`, 'okänd animationsreferens');
+      else if (!allowIncompatibleAnimations && !isAssetCompatible(project.events.find(event => event.id === line.eventId), project.assets.find(asset => asset.id === variant.assetId))) error(`${vp}.assetId`, 'labbanimationen måste behålla eventets delningsriktning eller kortvändning; repliker/resultat får inte lägga till en kortoperation');
       if (variant.videoGenerationId !== null && (typeof variant.videoGenerationId !== 'string' || !ID.test(variant.videoGenerationId))) error(`${vp}.videoGenerationId`, 'ska vara null eller ett generationId, aldrig en sökväg/URL');
       if (array(variant.triggerIds, `${vp}.triggerIds`, 0, 16)) {
         if (new Set(variant.triggerIds).size !== variant.triggerIds.length) error(`${vp}.triggerIds`, 'samma trigger är vald flera gånger');
