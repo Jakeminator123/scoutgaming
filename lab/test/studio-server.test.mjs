@@ -12,7 +12,7 @@ const germanReturn = { playerHistory: { returning: true, preferredLanguage: 'de'
 const baselineId = 'astrid.speak.goodluck.standard';
 const contextualId = 'astrid.speak.goodluck.contextual';
 const videoId = 'c01866d1-7c93-43a4-9493-73f7c66d3725';
-const registry = { videos: [{ id: videoId, available: false, fileName: `${videoId}.mp4`, verdict: 'want', reviewStatus: 'unreviewed', bindingScope: 'lab-only' }], summary: {} };
+const registry = { videos: [{ id: videoId, classification: { label: 'Goodluck', dealerId: 'astrid', eventId: 'speak.goodluck', kind: 'speech', role: 'standard', situation: 'goodluck', notes: '' }, available: false, fileName: `${videoId}.mp4`, verdict: 'want', reviewStatus: 'unreviewed', bindingScope: 'lab-only' }], summary: {} };
 function body(patch = {}) {
   return { project: createSeedProject(), dealerId: 'astrid', eventId: 'speak.goodluck', mode: 'active', context: germanReturn, ...patch };
 }

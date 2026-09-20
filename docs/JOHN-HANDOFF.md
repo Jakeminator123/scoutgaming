@@ -1871,3 +1871,37 @@ pre-deployment note is not proof of successful rollout. Current user asked
 for redeployment and small real probes. Branch is jakeminator123/work only.
 No CAC issue supplied/closed. Product missing takes and compatibility gaps remain.
 Thin note: jakob-docs/2026-09-20-openclaw-instruktioner-och-rostpanel.md.
+## 2026-09-20 — one lab Guide, canonical vocabulary and bounded video bank
+
+Jakob shortened this goal from 40 to 25 minutes. Consolidated the daily work
+documentation into `/guide` inside the existing Studio shell, sourced from
+`lab/docs/guide.json`; glossary comes from `lab/policies/studio-contract.json`.
+Existing jakob-docs and proposal links remain intact as reference/history,
+with a redirecting start note. Private login notes were not read or staged.
+
+Shared manifest owns dealer IDs, six source types, sixteen event groups,
+video kinds, exact situations, selection defaults and limits. The new video
+schema and consistency tests lock these together with seed/runtime validation.
+`once` is the only supported playback value; loop remains explicitly proposed.
+No engine event, game playback, original media, Render or Gateway was changed.
+
+Dashboard: Guide/OpenClaw no longer display the unrelated event sidebar.
+Upload, extra filters and detailed coverage stay folded. Video bank starts at
+the selected dealer/event group, with separate Inbox and all-originals views.
+One shared form replaces duplicate metadata fields; video kind follows the event.
+Archive originals can be classified via localhost-only `/api/videos/classify`:
+hash-scoped metadata overlay, optimistic conflict checks, atomic rename and lock.
+Original bytes remain in place. Unclassified/legacy-imprecise films are no longer
+eligible everywhere. Existing project references are preserved, visibly flagged
+and must be classified or detached before save/test. No automatic bulk labels.
+
+Verification: 188 lab tests pass, including all dealers/groups/situations,
+schema drift, fail-closed binding, immutable archive bytes, reload, concurrent
+stale-write rejection and corrupt-overlay preservation. Browser QA on isolated
+data directory/port4192 confirmed Guide layout, 224 originals in Inbox, metadata
+save, wrong-group binding disabled, correct-group binding, draft survival across
+Guide navigation and project save. This is metadata/workflow verification, not
+visual content approval of those 224 videos. No paid model requests or real DB.
+Production build and TypeScript check passed at delivery. Jira connector unavailable; no Jira transitions.
+Remaining: operator classification/content review of originals; loop/interrupt
+policy and runtime promotion remain separate work, not silently enabled here.

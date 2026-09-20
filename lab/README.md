@@ -1,11 +1,15 @@
 # Croupier Studio — lokalt presentationslabb
 
+**Användarguide: [Guide i dashboarden](http://127.0.0.1:4188/guide).**
+Det är den gemensamma dokumentationsytan. Denna README är utvecklarreferens.
+Källa och begreppsägarskap: [lab/docs](docs/README.md).
+
 Den nya Next.js-arbetsytan. Den riktiga spelklienten och OpenClaws egen
 dashboard är separata. Inget du sparar här publiceras automatiskt.
 
 [Historisk arbetsrapport: mappar, tester och videokoppling](../random-stuff-jakob/jakob-docs/arkiv/2026-09-20/2026-09-20-labbets-mappar-och-tester.md).
 
-Aktuell läsväg: [systemkartan](../random-stuff-jakob/jakob-docs/systemkarta/README.md).
+Fördjupning/äldre systemunderlag: [systemkartan](../random-stuff-jakob/jakob-docs/systemkarta/README.md).
 Praktiskt nytt prov: [chatta med Astrid, Ledsen och sparat tal](SOCIAL-CHAT.md).
 Video-intake: [lägg in standardtagningar och alternativ, välj användning och se täckning](VIDEO-LIBRARY.md).
 Buggar, förbättringar och öppna kontroller för labbet och övriga repot finns i
@@ -35,7 +39,9 @@ ska inte köras samtidigt på samma port. För byggd version: `npm --prefix lab
 run build`, därefter `npm --prefix lab start`. Studion är avsiktligt endast
 för localhost; öppna den inte mot internet eller ett publikt nätverk.
 
-## Fyra arbetsytor
+## Arbetsytor och gemensam Guide
+
+- **Guide (`/guide`):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
 - **Nodträdet (`/tree`):** spel → dealer → labbnod → konkret situation → linje → variant →
   animation/videoreferens. Alla fyra dealers använder samma eventkontrakt.

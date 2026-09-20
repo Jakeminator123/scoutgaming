@@ -1,5 +1,9 @@
 # Videobank: standardtagningar och alternativ
 
+Aktuell användaringång: [Guide i labbet](http://127.0.0.1:4188/guide).
+Detta är teknisk referens. Se avsnittet **Aktuell ingång och kategoriavgränsning**
+nedan för de skärpta reglerna och kategorisering av befintliga original.
+
 ## Användning
 
 Öppna **Videobanken** i det lokala labbet (`/videos`). Lägg in MP4 eller
@@ -115,3 +119,19 @@ på denna maskin: fem kräver saknade `ffmpeg`/`ffprobe`, ett kräver `jq`.
 `audit-dealer-sync.mjs --probe` stoppades också av saknat `ffprobe`.
 Jira-anslutning saknades; inga CAC-statusar ändrades. Full dealer-QA och
 hashbunden visuell acceptans är inte utförda av detta labbarbete.
+# Aktuell ingång och kategoriavgränsning
+
+Använd [Guide i labbet](http://127.0.0.1:4188/guide). Detta dokument är teknisk referens.
+Videobanken visar som standard bara registrerade filmer för vald dealer/eventgrupp.
+Inkorg samlar oklassificerade original och äldre ofullständiga klassificeringar.
+Kategorisering av ett befintligt original sparas i `videos/classifications.json`
+under labbets data-mapp, knuten till exakt ID och SHA-256. Originalfilen flyttas
+eller ändras inte. Samtidiga redigeringar skyddas med lås och föregående metadata.
+API: `POST /api/videos/classify` (endast lokalt/samma origin).
+
+Alla kortgrupper och talgrupper kräver exakt situation/replik. Äldre tomma
+korthandlingar kan läsas men behöver kategoriseras före ny koppling/test/sparning.
+Okategoriserade original är granskningsbara men inte valbara som variantfilmer.
+`playback` får bara vara `once`; utelämnat betyder `once`. Loop är inte aktiverat.
+Kontrakt: `policies/studio-contract.json`; format: `schemas/video.schema.json`.
+Urvalstillåtelser och triggers hör till varianten, inte en duplicerad filpolicy.

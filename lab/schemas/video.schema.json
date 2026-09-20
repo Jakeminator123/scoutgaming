@@ -1,0 +1,428 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://croupier.local/schemas/video.schema.json",
+  "title": "Kategorisering av en labbvideo",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "label",
+    "dealerId",
+    "eventId",
+    "kind",
+    "role",
+    "situation",
+    "notes"
+  ],
+  "properties": {
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "dealerId": {
+      "enum": [
+        "astrid",
+        "vera",
+        "amira",
+        "mei"
+      ]
+    },
+    "eventId": {
+      "enum": [
+        "speak.goodluck",
+        "speak.insurance",
+        "speak.double",
+        "speak.other",
+        "deal.player.left",
+        "deal.player.centre",
+        "deal.player.right",
+        "deal.dealer",
+        "reveal.dealer",
+        "turn.player",
+        "settle.blackjack",
+        "settle.dealerBust",
+        "settle.win",
+        "settle.push",
+        "settle.other",
+        "idle.ready"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "idle",
+        "action",
+        "speech",
+        "reaction"
+      ]
+    },
+    "role": {
+      "enum": [
+        "standard",
+        "alternative"
+      ]
+    },
+    "situation": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "playback": {
+      "enum": [
+        "once"
+      ],
+      "default": "once"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "speak.goodluck"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "speech"
+          },
+          "situation": {
+            "enum": [
+              "goodluck"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "speak.insurance"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "speech"
+          },
+          "situation": {
+            "enum": [
+              "insurance"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "speak.double"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "speech"
+          },
+          "situation": {
+            "enum": [
+              "double"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "speak.other"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "speech"
+          },
+          "situation": {
+            "enum": [
+              "placebets",
+              "dealerblackjack",
+              "blackjack",
+              "dealerbust",
+              "win",
+              "push",
+              "lose"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "deal.player.left"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "action"
+          },
+          "situation": {
+            "enum": [
+              "box0",
+              "box1"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "deal.player.centre"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "action"
+          },
+          "situation": {
+            "enum": [
+              "box2",
+              "box3",
+              "box4"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "deal.player.right"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "action"
+          },
+          "situation": {
+            "enum": [
+              "box5",
+              "box6"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "deal.dealer"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "action"
+          },
+          "situation": {
+            "enum": [
+              "dealer-up",
+              "dealer-hole"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "reveal.dealer"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "action"
+          },
+          "situation": {
+            "enum": [
+              "dealer-hole"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "turn.player"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "reaction"
+          },
+          "situation": {
+            "enum": [
+              ""
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "settle.blackjack"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "reaction"
+          },
+          "situation": {
+            "enum": [
+              ""
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "settle.dealerBust"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "reaction"
+          },
+          "situation": {
+            "enum": [
+              ""
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "settle.win"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "reaction"
+          },
+          "situation": {
+            "enum": [
+              ""
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "settle.push"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "reaction"
+          },
+          "situation": {
+            "enum": [
+              ""
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "settle.other"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "reaction"
+          },
+          "situation": {
+            "enum": [
+              ""
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "idle.ready"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "idle"
+          },
+          "situation": {
+            "enum": [
+              ""
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

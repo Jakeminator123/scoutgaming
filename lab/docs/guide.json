@@ -1,0 +1,24 @@
+{
+  "title": "Ditt labb, på ett ställe.",
+  "intro": "Här finns arbetsgången och de gemensamma begreppen. Dashboarden är arbetsytan; den här guiden är dokumentationen.",
+  "steps": [
+    {"view":"videos","title":"1. Lägg filmen i rätt fack","body":"Ladda upp en fil, eller kategorisera ett befintligt original i Inkorg. Ange dealer, eventgrupp och exakt situation eller replik där det behövs. Videotypen följer eventet."},
+    {"view":"lab","title":"2. Välj standard eller alternativ","body":"Koppla filmen till rätt linje. Standard är det säkra grundvalet. Nya alternativ är manuella tills du uttryckligen tillåter regler, OpenClaw eller slump. Extra triggers begränsar dem ytterligare."},
+    {"view":"lab","title":"3. Granska, testa och spara","body":"Spela vald variant granskar materialet. Testa event kontrollerar urvalet. Spara projekt sparar kopplingar och regler lokalt; det publicerar inte till spelet eller Render."}
+  ],
+  "boundaries": [
+    "En fil får bara kopplas till sin registrerade dealer och eventgrupp. Exakt situation kontrolleras även när eventet testas.",
+    "De 16 eventgrupperna är inte 16 universella filmer. En grupp kan innehålla flera kortplatser eller exakta repliker.",
+    "Standard betyder ditt valda grundalternativ — inte automatiskt högst kvalitet. Want, filhash och kategorisering är inte visuell eller läppsynk-godkännande.",
+    "Labbet spelar videon en gång. Idle beskriver innehållet, inte att labbet redan loopar. Loop och avbrottspolicy är fortfarande förslag.",
+    "Spelmotorn äger kort, resultat, saldo och utbetalningar. Labbet och OpenClaw får bara välja tillåten presentation."
+  ],
+  "surfaces": [
+    {"name":"Nodträdet","purpose":"Överblick av sambandet event → linje → variant. Samma data som Eventstudion, ingen separat konfiguration."},
+    {"name":"Eventstudion","purpose":"Redigera en linje, granska standard och alternativ, och testa regler. Testverktygen fälls ut när du behöver dem."},
+    {"name":"Videobanken","purpose":"Original, kategorisering och kopplingar. Visar först filmer för vald eventgrupp. Inkorg innehåller material som ännu behöver kategoriseras."},
+    {"name":"OpenClaw","purpose":"Anslutning, urvalsläge och operatörschatt. Den externa Gateway-dashboarden är driftverktyget, inte ytterligare dokumentation."}
+  ],
+  "storage": "Lokalt labb: projektets kopplingar och tillåtna urval. Originalfiler: externa generationsarkivet eller labbets lokala uppladdningar. Kategorisering: ett separat metadataregister, utan att flytta eller ändra originalen. Render: extern director och OpenClaw Gateway; lokala ändringar publiceras inte dit automatiskt.",
+  "authority": "Gemensamma begrepp och möjligheter finns i lab/policies/studio-contract.json. Videoformatet finns i lab/schemas/video.schema.json. API och formulär använder kontraktet; tester kontrollerar att seed, schema och katalog inte driver isär. Tekniska README-filer är utvecklarreferens, inte alternativa användarguider."
+}

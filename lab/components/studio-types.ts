@@ -1,7 +1,7 @@
 import type { StudioAsset, StudioVariant } from '../lib/studio-model.mjs';
 import type { VideoMetadata } from '../lib/video-intake.mjs';
 
-export type StudioView = 'tree' | 'lab' | 'videos' | 'openclaw';
+export type StudioView = 'tree' | 'lab' | 'videos' | 'openclaw' | 'guide';
 export type DirectorMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 
 export interface VideoEntry {
@@ -74,11 +74,11 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
   return social ? undefined : result ? result.videoGenerationId : variant.videoGenerationId;
 }
 
-export const viewPaths: Record<StudioView, string> = { tree: '/tree', lab: '/', videos: '/videos', openclaw: '/openclaw' };
+export const viewPaths: Record<StudioView, string> = { tree: '/tree', lab: '/', videos: '/videos', openclaw: '/openclaw', guide: '/guide' };
 
 export function studioViewForPath(path: string): StudioView {
   const segment = path.split('/').filter(Boolean)[0];
-  return segment === 'tree' || segment === 'videos' || segment === 'openclaw' ? segment : 'lab';
+  return segment === 'tree' || segment === 'videos' || segment === 'openclaw' || segment === 'guide' ? segment : 'lab';
 }
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {

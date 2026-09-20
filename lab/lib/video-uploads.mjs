@@ -11,7 +11,7 @@ export function uploadDirectory(options = {}) {
   const lab = basename(process.cwd()) === 'lab' ? process.cwd() : join(process.cwd(), 'lab');
   return resolve(options.uploadDir ?? join(process.env.LAB_STUDIO_DATA_DIR || join(lab, 'data'), 'videos'));
 }
-async function safeDirectory(dir, create = false) {
+export async function safeDirectory(dir, create = false) {
   if (create) await mkdir(dir, { recursive: true });
   const info = await lstat(dir), actual = await realpath(dir);
   const same = process.platform === 'win32' ? actual.toLowerCase() === dir.toLowerCase() : actual === dir;
@@ -28,7 +28,7 @@ export async function readUploads(options = {}) {
     const ids = new Set();
     for (const v of data.videos) {
       if (!/^[a-f0-9-]{36}$/.test(v.id) || ids.has(v.id) || !/^[a-f0-9]{64}$/.test(v.sha256) || !Number.isSafeInteger(v.size) || v.size < 16 || v.size > MAX_VIDEO_BYTES || !['mp4', 'webm'].includes(v.extension)) throw new Error('Invalid record');
-      validateVideoMetadata(v.classification); ids.add(v.id);
+      validateVideoMetadata(v.classification, { allowLegacySituation: true }); ids.add(v.id);
     }
     return data.videos;
   } catch (error) {
