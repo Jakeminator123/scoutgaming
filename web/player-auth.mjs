@@ -16,7 +16,24 @@ export function playerAuth(db, createPlayer, identity = null) {
     if(identity && !String(session.source_stamp??'').startsWith('partner:')){const link=db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id);if(!link || !session.source_stamp || identity.stamp(link.craig_user_id)!==session.source_stamp)return null;}
     return session.player_id;
   }
-  const cookie=(req,token,age)=>`player_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${(req.socket.encrypted || process.env.NODE_ENV==='production') ? '; Secure' : ''}`;
+  const cookie=(req,token,age,sameSite='Strict')=>`player_session=${token}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${age}${(req.socket.encrypted || process.env.NODE_ENV==='production') ? '; Secure' : ''}`;
+  function linkIdentity(existing) {
+    if(!identity || !existing?.stamp || identity.stamp(existing.id)!==existing.stamp)throw Error('Scout session expired. Sign in again.');
+    let link=db.prepare('SELECT player_id FROM craig_player_links WHERE craig_user_id=?').get(existing.id);
+    if(!link){const p=createPlayer({name:existing.name});link={player_id:p.id};db.prepare('INSERT INTO craig_player_links VALUES (?,?)').run(existing.id,p.id);}
+    return {...link,source_stamp:existing.stamp};
+  }
+  function issue(req,account,maxAge=86400,sameSite='Strict') {
+    const token=randomBytes(32).toString('hex'),now=Date.now();
+    db.prepare('DELETE FROM player_sessions WHERE expires<=?').run(now);
+    db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp) VALUES (?,?,?,?)').run(digest(token),account.player_id,now+maxAge*1000,account.source_stamp??null);
+    return cookie(req,token,maxAge,sameSite);
+  }
+  function fromBackoffice(req,existing,maxAge=86400) {
+    db.exec('BEGIN IMMEDIATE');
+    try {const header=issue(req,linkIdentity(existing),maxAge,'Lax');db.exec('COMMIT');return header;}
+    catch(e){db.exec('ROLLBACK');throw e;}
+  }
   async function handle(req,res) {
     if (!['/api/auth/login','/api/auth/register','/api/auth/logout'].includes(req.url)) return false;
     const reply=(status,data,headers={})=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store',...headers});res.end(JSON.stringify(data));};
@@ -43,9 +60,7 @@ export function playerAuth(db, createPlayer, identity = null) {
         if(!existing)throw Error('Email, username or password is incorrect.');
         db.exec('BEGIN IMMEDIATE');
         try {
-          let link=db.prepare('SELECT player_id FROM craig_player_links WHERE craig_user_id=?').get(existing.id);
-          if(!link){const p=createPlayer({name:existing.name});link={player_id:p.id};db.prepare('INSERT INTO craig_player_links VALUES (?,?)').run(existing.id,p.id);}
-          account={...link,source_stamp:existing.stamp};db.exec('COMMIT');
+          account=linkIdentity(existing);db.exec('COMMIT');
         }catch(e){db.exec('ROLLBACK');throw e;}
       }else if(req.url==='/api/auth/register') {
         if(account)throw Error('Account unavailable. Try signing in.');
@@ -60,12 +75,9 @@ export function playerAuth(db, createPlayer, identity = null) {
         const computed=scryptSync(password,account?.salt??'invalid-account',64);
         if(!account||!timingSafeEqual(computed,Buffer.from(account.hash,'hex')))throw Error('Email or password is incorrect.');
       }
-      const token=randomBytes(32).toString('hex');
-      db.prepare('DELETE FROM player_sessions WHERE expires<=?').run(now);
-      db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp) VALUES (?,?,?,?)').run(digest(token),account.player_id,now+86400000,account.source_stamp??null);
-      reply(200,{ok:true},{'Set-Cookie':cookie(req,token,86400)});
+      reply(200,{ok:true},{'Set-Cookie':issue(req,account)});
     }catch(e){reply(400,{error:e.message});}
     return true;
   }
-  return {user,handle};
+  return {user,handle,fromBackoffice};
 }

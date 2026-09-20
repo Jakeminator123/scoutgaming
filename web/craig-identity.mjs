@@ -4,6 +4,12 @@ import { scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 export function craigIdentity(db) {
   const fingerprint = u => u?.salt && u?.hash ? createHash('sha256').update(`${u.salt}:${u.hash}`).digest('hex') : null;
   return {
+    find(login) {
+      const key=String(login??'').trim().toLowerCase();
+      const matches=db.prepare('SELECT id,username,salt,hash FROM users WHERE lower(username)=? OR lower(email)=?').all(key,key);
+      const u=matches.length===1 ? matches[0] : null;
+      return u?.salt && /^[a-f0-9]{128}$/i.test(u.hash??'') ? {id:String(u.id),name:u.username,stamp:fingerprint(u)} : null;
+    },
     authenticate(login, password) {
       const matches=db.prepare('SELECT id,username,salt,hash FROM users WHERE lower(username)=? OR lower(email)=?').all(login,login);
       const u=matches.length===1 ? matches[0] : null;
