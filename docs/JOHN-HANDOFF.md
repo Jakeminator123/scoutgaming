@@ -1,3 +1,11 @@
+## 2026-09-20 — render video-category explanation inline
+
+The managed .canvas.tsx link opened source code in Jakob's current desktop
+UI, not the rendered canvas. Re-presented the same proposal as an inline
+visualization in the thread-scoped visualization directory. Blue/orange plus
+text labels preserve existing/proposed distinctions. Browser preview verified
+rendered content and switching idle to action/box2. No app or media changes.
+
 ## 2026-09-20 — video-category concept canvas, no runtime change
 
 Created a standalone local canvas explaining three separate concerns: the
