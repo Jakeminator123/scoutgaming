@@ -1,3 +1,18 @@
+## 2026-09-20 — video-category concept canvas, no runtime change
+
+Created a standalone local canvas explaining three separate concerns: the
+four existing lab video kinds, proposed common once/loop playback metadata,
+and existing per-variant selection policy. Existing behavior is blue and
+labelled; new requirements are orange and labelled. Interactive examples
+cover idle, exact card destination, exact speech and silent result reaction.
+Explicitly distinguishes current once-only lab video preview from product
+idle repetition and the legacy repeating-deal path. Transition/return support
+is documented as existing player behavior, not a new engine event/category.
+Strict TypeScript check against installed canvas SDK passed; rendered host UI
+was not independently verified. Durable proposal and canvas link:
+docs/animation-events/video-category-proposal.md.
+No gameplay, media, lab schema, policy, runtime, Render or Jira changes.
+
 ## 2026-09-20 — local categorized video intake and standard coverage
 
 Added raw MP4/WebM intake to the existing lab VideoLibrary, with dealer,
