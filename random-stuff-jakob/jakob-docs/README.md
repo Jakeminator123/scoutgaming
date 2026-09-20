@@ -16,6 +16,8 @@ Jakobs egen token är installerad i en separat åtkomstskyddad lokal fil utanfö
 
 ## 2026-09-20 — OpenClaw och labbet
 
+[Startfil och miljöregister](../../_ENVIROMENT-INFO.md): dubbelklicka `Start-Labb.cmd` i repots rot. Alla labb-/OpenClaw-variabelnamn och deras placeringar, utan hemliga värden. Lokal `LAB_REMOTE_TOKEN` är samma värde som Directors `LAB_API_TOKEN`; inga automatiska nyckelbyten.
+
 [Kort arbetsnotering](2026-09-20-openclaw-och-labb.md): vad som byggts, dashboard och labbeditor, Render, nycklarnas olika roller, kvarvarande integration och städningen av gamla OpenClaw-mappar.
 
 [Mappar, tester och videokoppling](2026-09-20-labbets-mappar-och-tester.md): enkla förklaringar av policies/schema/data/test, varför inget nytt manifest behövs, Windows-felen och hur riktig OpenClaw ska verifieras.

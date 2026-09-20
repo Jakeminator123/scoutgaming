@@ -1,3 +1,28 @@
+## 2026-09-20 — one-click lab start and environment inventory
+
+Added root Start-Labb.cmd / Start-Labb.ps1: starts the local Next studio from
+any working directory, reuses a healthy existing studio, refuses an occupied
+foreign port, opens the default browser after readiness, and installs locked
+lab dependencies only when missing. Node version-manager shims resolve to the
+actual Node executable. No secrets/config files are written, no credentials
+rotate, and no Render services or system-wide PowerShell settings change.
+
+Root _ENVIROMENT-INFO.md inventories lab/OpenClaw variable names, locations and
+aliases without secret values: local LAB_REMOTE_TOKEN equals Director's
+LAB_API_TOKEN; Gateway/model credentials retain their existing distinct roles.
+Verified Render generateValue initializes only a missing variable; it is not
+recurring rotation. Added links from root/lab READMEs and Jakob's thin index.
+
+Validation: Windows PowerShell parser, existing-server reuse from a different
+cwd, occupied-port rejection and wrapper checks passed (four new tests). The
+full local suites passed 73 studio + 62 Director tests. Actual temporary start
+on 4193 served health and the studio page successfully; the QA server was then
+stopped and original 4188 preview retained. Ctrl+C injected through the tool's
+PTY did not stop the QA child, so its exact verified process chain was stopped;
+interactive console stop and automatic default-browser opening are not claimed
+as UI-verified. Dependency installation was not needed or exercised. No paid
+model requests, Render deploys or environment/credential edits were performed.
+
 ## 2026-09-20 — Windows media/player test portability
 
 Reproduced the reported 11 failures (99/110 Node tests passed): five script-path
