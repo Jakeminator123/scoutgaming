@@ -20,18 +20,50 @@ beskriver bearbetade, kalibrerade Astrid-takes. Råarkivet och performance är
 olika nivåer i samma materialkedja. Börja med logiska referenser till dessa
 platser, inte en fysisk omflyttning.
 
-Privata leveransfiler på denna dator:
+## Öppna kartan från repot
+
+[map.html](map.html) innehåller nodträdet, registeröversikten och
+placeringsförslagen. Den kan öppnas direkt som lokal fil. All kartdata ingår;
+videopreview kräver däremot en egen lokal kopia av råarkivet.
+
+För karta med video, kör från repots rot med Node 22 eller senare:
+
+```powershell
+node docs/animation-events/v3-video-map/serve.mjs --archive "C:\Users\jakem\CroupierAssets\bettalotto-generations"
+```
+
+Öppna sedan http://127.0.0.1:4196/. Ange din egen arkivmapp på andra datorer.
+Om porten redan används, lägg till exempelvis `--port 4197`. Utan `--archive`
+fungerar kartan, men videopreview kräver att servern startas med arkivmappen.
+Servern lyssnar endast lokalt, är läsande och hämtar inget från Bettalotto.
+Den kontrollerar varje efterfrågad fils storlek och SHA-256 mot snapshoten
+före uppspelning. En saknad fil ger 404 och en avvikande fil ger 409.
+
+[snapshot.json](snapshot.json) innehåller den härledda inventeringen från
+20 september, utan API-nyckel, fullständiga prompts eller absoluta lokala
+arkivsökvägar. Statusar är daterade observationer, inte en automatisk livesynk.
+Hashkontrollen av de 224 originalen gjordes på Jakobs dator; andra datorer
+behöver egna videofiler. Källreferenser anges per fil eftersom handoffens
+radnummer förändras när nya notiser läggs till.
+
+Efter avsiktlig redigering av snapshot eller [HTML-mallen](map-template.html),
+bygg om med `node docs/animation-events/v3-video-map/build.mjs`.
+Skriptet återanvänder snapshoten och gör inga API-anrop. Genererade map.html
+ska följa med samma commit. Filerna är en inventeringskarta under docs;
+de ändrar inte produktens spelare eller runtime-manifest.
+
+Ursprungliga privata leveransfiler på Jakobs dator finns också kvar:
 
 - [Interaktiv karta med lokala videopreviewer](C:/Users/jakem/.codex/visualizations/2026/09/19/01a0bbdb-661e-74a2-beac-de30003775fb/croupier-v3-videokarta.html)
 - [Canvas med karta och sökbart register](C:/Users/jakem/.cursor/projects/c-Users-jakem-Projects-croupier/canvases/croupier-v3-videokarta.canvas.tsx)
 - [Härledd inventering och evidens](C:/Users/jakem/.codex/visualizations/2026/09/19/01a0bbdb-661e-74a2-beac-de30003775fb/croupier-v3-video-map.private.json)
 
-HTML-kartans videopreviewer använder den lokala, läsande servern på
-http://127.0.0.1:4196/. Startkommandot på denna dator är
-node .croupier-inbox/v3-video-audit/serve-preview.mjs.
-HTML-kartans övriga innehåll fungerar även fristående. Genereringsskript,
-råa API-snapshotar, hashningskvitto och hjälpfiler finns i den ignorerade
-.croupier-inbox/v3-video-audit/; inget auth-material ingår i leveransfilerna.
+Den ursprungliga previewn på port 4196 kan redan vara igång på Jakobs dator.
+Dess äldre startkommando är `node .croupier-inbox/v3-video-audit/serve-preview.mjs`.
+Råa API-snapshotar, hashningskvitto och ursprungliga hjälpfiler ligger kvar i
+ignorerade `.croupier-inbox/v3-video-audit/`. Git-versionen av kartan kan
+användas utan dessa privata hjälpfiler. Inget auth-material eller råvideo
+ingår i den här leveransen.
 
 ## Källor och verifieringsgräns
 
@@ -259,8 +291,73 @@ material. Ett nytt intake-omdöme är inte automatiskt ett fullständigt
 beroendebeslut för varje bearbetad take. Konflikten måste granskas; denna
 översyn ändrar inte gamla filer eller aktiva kopplingar.
 
+## Lagring och hämtning — uppföljande kontroll 20 september
+
+GitLabs main hämtades på nytt och var b14765971ca9f697a7fa14ffc0ea13570453b789
+(18 september). Följande mäter filernas storlek i just det Git-trädet,
+inte Git-historik, ospårade filer eller den driftsatta serverns lediga disk:
+
+| Mängd | Storlek |
+| --- | ---: |
+| Alla spårade filer | 3,069 GB |
+| web/public | 412,4 MB |
+| Astrids performance-mapp med kringmaterial | 106,7 MB |
+| De fyra dealernas 90 indexerade H.264-klipp | cirka 67,8 MB |
+| Grundmanifestets fyra takes och två continuations | 31,1 MB |
+| Separat generationsarkiv, 224 original | 1,023 GB |
+
+Siffrorna överlappar och ska inte summeras. Vera använder fortfarande
+web/public/dealer, medan Astrid, Amira och Mei använder dealers/<namn>.
+Main innehåller inga filer under web/public/bo/gen. Generations-API:t och
+BO-klippvalen finns i den granskade Kevin-grenen och API:t är live, vilket
+inte innebär att GitLab-main är identisk med den driftsatta appen.
+
+Backoffice Generations visar bo/gen/<generation-id>.mp4. Generations-API:t
+läser samma katalog och samma originalfiler. Det lokala råarkivet är en
+identisk kopia av dessa 224 filer. Performance/streams är ett separat lager
+av spelmaterial, ofta bearbetat med egna bytes, masker och kalibrering.
+BETTALOTTO_API är credential-variabeln för åtkomst, inte namnet på ett extra
+videolager. /api/bo/config returnerar val av klipp; det är inte råvideoregistret.
+
+DealerEngine hämtar först streams/index.json och därefter hela efterfrågade
+H.264-filer till en Map med ArrayBuffer. Det är ingen kontinuerlig
+livesändning. Uppspelningar återanvänder bytes i minnet. Cachen saknar en
+uttrycklig storleksbudget/utkastning under sessionen. PerformancePlayer
+förladdar hela MP4-takes i aktiverat staged-läge, kontrollerar SHA-256 och
+spelar via blob-adresser; dessa frigörs vid dispose.
+
+Live-kontrollen verifierade GET-registret (224 poster), en 32-byte
+delhämtning av original (206), och delhämtning av H.264/MP4 (206).
+Originalets svar hade private, max-age=3600 och hash-ETag. Vanlig GET för
+performance-MP4 gav no-cache och ETag; delsvaret gav no-store. Dessa
+kontroller mätte protokollbeteende, inte maximal trafik eller samtidighet.
+
+Bedömning, inte benchmark: spårbarhet 8/10, mappstruktur 5/10, hämtning och
+återanvändning 7/10, skalbarhet 4/10; sammantaget 6/10. Manifest/hashar är
+en styrka. Blandade arbets-/runtimefiler, media direkt i Git, fullfilshämtning
+och obegränsad cache är de främsta förbättringspunkterna.
+
+Vid mätningen fanns cirka 180 GB ledigt på C: och 736 GB på D:.
+Originalens genomsnitt på 4,565 MB ger 0,876 GB för 192 filer eller
+1,479 GB för 324 filer. Detta är ett planeringsexempel med en fil per plats;
+bearbetningar, masker och flera takes tillkommer. Serverns lediga disk,
+bandbredd och samtidighetsgräns är inte uppmätta.
+
+Fortsatt rekommendation: behåll råarkivet separat och nuvarande runtimevägar;
+låt eventträdet referera till generation-id och bearbetad take. Inför senare
+begränsad förladdning för vald dealer, minnesbudget och versionsbundna
+mediefiler som kan cachelagras länge. Separat medielagring/CDN kan därefter
+byta fysisk plats utan att den logiska eventadressen ändras.
+
 ## Kontroller av leveransen
 
+- Git-versionen byggdes om deterministiskt från snapshot och mall. Inbäddad
+  data stämdes av mot snapshoten och API-nyckeln saknas i samtliga leveransfiler.
+- Den portabla servern klarade 15 HTTP-kontroller: karta, HEAD, byteintervall,
+  saknat arkiv, okända resurser, otillåtna metoder/host/origin samt avvisning
+  av felaktig storlek/hash. Testkopior användes för avvikande videofiler.
+- Webbläsaren öppnade Git-versionen och en lokal 1920×1080-video nådde
+  readyState 4 utan mediafel eller konsolfel. Detta verifierar previewvägen.
 - API-antalet och samtliga 224 lokala filer stämdes av med storlek och SHA-256.
 - Nodantal, unika generation-id:n, 27 subevent-familjer, take-referenser,
   dokumentlänkar och frånvaro av API-nyckeln i leveransfilerna verifierades.
