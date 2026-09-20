@@ -1,3 +1,27 @@
+## 2026-09-20 — isolated ElevenLabs voice proof and selection clarification
+
+Verified root .env ELEVENLABS_API_KEY and ELEVENLABS_OC_API are present and
+identical, without exposing/changing either. Official API listed premade
+Sarah and generated one fixed Swedish preview: HTTP 200, 84,471 bytes,
+5.201270 seconds MP3 mono 44.1kHz; total TTS request 2506ms. Generated audio
+and text/voice/model/hash metadata stay ignored in lab/data/voice-previews.
+No voice cloning, Render env/deploy, player data or real dealer media change.
+
+Added standalone tools/elevenlabs-lab-preview.mjs: explicit --check or
+--generate, matching alias guard, one bounded request/no retry, no provider
+body/secret output. It is NOT imported by studio, player or OpenClaw and
+does not connect TTS to chat/stage. Audio codec/duration verified by ffprobe;
+subjective pronunciation/voice approval and lipsync not claimed.
+Six new mocked tests pass; complete lab suite 114/114. Existing product
+media/playback untouched; no new production visual acceptance claimed.
+
+Documented baseline/variant family -> weighted compatible take as a proposal
+only, replacement versus appended reaction, OpenClaw selector versus trigger
+source, seven-box/exact-speech/loop constraints. No tree, schema, policy,
+saved project or timeout edits. Earlier openclaw_timeout locates the 2500ms
+Director-to-Gateway budget, not a measured per-component bottleneck.
+Updated environment inventory and Jakob's thin note/index. No remote push.
+
 ## 2026-09-20 — Jakob's logical event and media registry
 
 Documented Jakob's requested temporary folder-shaped mental model in
