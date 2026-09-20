@@ -1,3 +1,35 @@
+## 2026-09-20 — Jakob's situation model and documentation system map
+
+Updated Jakob's event registry and added
+random-stuff-jakob/jakob-docs/2026-09-20-situationer-variantfamiljer-och-takes.md.
+The requested mental tree now separates concrete situation from expression
+family and compatible take. Documents seven boxes, hand/card-position/sequence
+dimensions, conditional video-count multiplication and possible reviewed reuse.
+Keeps 10 internal event types, six Partner presentation types and 16 studio
+classification nodes distinct. Proposed coverage contracts, take pools and
+physical JSON splitting remain proposals; existing serialization is unchanged.
+Even the required standard entry cannot waive take compatibility in the
+proposed product contract. A preview generation ID is not visual acceptance.
+
+An independent subagent read today's authored documentation and inspected
+local code/data to create jakob-docs/systemkarta/: six topic folders plus
+an index and explicit source/coverage register. Original documents remain in
+place. The map distinguishes dated historical reports from current source
+and earlier deployment evidence; it does not claim a fresh remote audit.
+Source baseline: c0a5681, with this task's new model clarifications included.
+
+At Jakob's request, sent the concrete model to the existing OPENCLAW task.
+That task confirmed the shared vocabulary and supplied the standard-fallback
+clarification. Its separately requested subsequent runtime/deployment work
+is outside this documentation delivery and may supersede dated drift notes.
+
+Validation: independent terminology/factual review, local Markdown link
+checks, source counts for 10/6/16, and git diff whitespace checks. No new
+gameplay/media tests, visual acceptance or runtime verification claimed.
+Documentation only; no media, schemas, saved projects, gameplay, credentials,
+database, deployment or push changes. Existing missing takes and unverified
+product bindings remain open; no CAC issue implemented or closed.
+
 ## 2026-09-20 — isolated ElevenLabs voice proof and selection clarification
 
 Verified root .env ELEVENLABS_API_KEY and ELEVENLABS_OC_API are present and

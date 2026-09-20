@@ -16,6 +16,11 @@ Kevins senaste remote-head har kontrollerats.
 illustration eller simulerad kontext. **Förslag** betyder ännu inte infört.
 `sourceStatus: verified` avser eventets källa, inte godkänd video.
 
+Senare förtydligande samma dag: [situationer, variantfamiljer och takes](2026-09-20-situationer-variantfamiljer-och-takes.md)
+utvecklar Jakobs fråga om första/andra kortet, sju destinationer och växande
+videobehov. Den texten är den korta gemensamma ingången till hur modellen
+ska förstås; detta register behåller de fullständiga källorna och listorna.
+
 ## 1. Mappträdet vi använder för att tänka
 
 ```text
@@ -50,10 +55,11 @@ Spel
 └── Roulette [framtida plats i labbets gränssnitt; ingen implementerad modell]
 
 Varje exakt presentationsbehov
-└── Dealerlinje
-    ├── Standardvariant [alltid tillgänglig]
-    └── Namngivna alternativ
-        └── Referenser till triggers [alla valda villkor måste vara sanna]
+└── Konkret situation [exakt talrad eller mål + hand/kortposition/sekvens]
+    └── Dealerlinje / föreslagen finare bindning
+        ├── Standardvariant [obligatorisk konfigurationspost]
+        └── Namngivna alternativ
+            └── Referenser till triggers [alla valda villkor måste vara sanna]
 
 Varje variant
 ├── Labb: assetId → syntetisk rörelse
@@ -71,6 +77,19 @@ flera mål genom uttrycklig kalibrering. Triggers kan återanvändas av flera
 varianter. Därför passar **stabila ID:n och referenser** bättre än att varje
 sak bara får finnas i en enda fysisk undermapp.
 
+De konkreta situationerna är en föreslagen finare registervy; den nuvarande
+labblinjen är fortfarande bara dealer + eventnod. Den låsta labbkatalogens
+16 noder är inte en komplett förteckning över alla erforderliga videor.
+**10 interna typer + 6 presentationstyper är inte definitionen av dessa 16.**
+Labbets noder klassificerar de sex presentationstyperna. En typ kan inträffa
+flera gånger och innehålla olika mål, händer och kort.
+
+I det föreslagna finare registret måste även standardens take uppfylla
+situationens krav. En obligatorisk standardpost garanterar inte att rätt
+film finns; saknad kompatibel take ska visas som en täckningslucka.
+I dagens syntetiska labb är standarden däremot triggeroberoende valbar
+inom en validerad linje; det är inte samma sak som godkänd videotäckning.
+
 ## 2. Orden och kopplingarna
 
 | Begrepp | Betydelse | Exempel |
@@ -80,6 +99,7 @@ sak bara får finnas i en enda fysisk undermapp.
 | Publik spelvy | Aktuell, filtrerad bild av bordet efter ett command. | `round.hands`, `round.phase` |
 | Presentationsevent | En bestämd sak klienten ska visa/höra. | `type: deal`, `box: 3` |
 | Eventnod | Labbets klassificering av ett presentationsevent. | `deal.player.centre` |
+| Konkret situation | Fakta som den valda presentationen måste kunna utföra. | Andra kortet till vald hand på box 3 |
 | Matchning | Väljer nod utifrån eventets källa/fält. | `clip.action = deal-centre` |
 | Dealerlinje | Dealer + eventnod + standard och alternativ. | Astrid + `deal.player.centre` |
 | Trigger | Ett villkor som gör en variant valbar efter matchningen. | `event.box = 3` |
@@ -613,6 +633,31 @@ Spel, dealers och triggers ska helst kunna ha egna registerposter som
 refereras från flera vyer. **I dag är de flesta poster redan serialiserade
 tillsammans i ett projekt-JSON.** Att dela upp dem fysiskt i fler filer är
 en möjlig framtida lagringsändring, inte ett krav för att få mappkänslan.
+
+En fil per registertyp kan vara mer hanterlig än en fil per enskild post.
+Följande fysiska uppdelning är ett förslag, **inte dagens filstruktur**:
+
+```text
+register/
+├── dealers.json
+├── games/
+│   └── blackjack/
+│       ├── events.json
+│       ├── triggers.json
+│       └── policies/
+│           ├── astrid.json
+│           ├── vera.json
+│           ├── amira.json
+│           └── mei.json
+├── animations/
+└── takes/
+```
+
+En sådan ändring skulle kräva en loader och samlad referensvalidering samt
+en genomtänkt sparmodell. Dagens atomiska sparande av ett projekt ska inte
+förloras genom att dela upp det okontrollerat. Ett schema kan återanvändas
+för många poster/filer; det behövs inte ett nytt schema för varje dealer
+eller variant. Den mentala trädvyn kan byggas innan fysisk uppdelning behövs.
 
 Nästa avgränsade steg kan vara en läsande översikt över befintliga register,
 med separat märkning av källa, labbexempel, förslag, saknad take och granskad
