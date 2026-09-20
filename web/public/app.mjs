@@ -1,3 +1,4 @@
+import { installDealerVersionSwitcher, dealerVersionPath, V2_DEALERS } from './dealer-version-switcher.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
 import { createTableAudio } from './table-audio.mjs';
@@ -47,6 +48,8 @@ const DEALERS = {
             table: 'dealers/mei/table.png' },
 };
 const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
+const dealerV2Route = location.pathname.startsWith('/v2/');
+if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original'));
 {
   document.documentElement.dataset.dealer = DEALER.key;
   const rs = document.documentElement.style;
@@ -2076,6 +2079,7 @@ for (const dealer of Object.values(DEALERS)) {
   };
   $('#dealer-options').appendChild(button);
 }
+if (dealerV2Route) installDealerVersionSwitcher({ dealer: DEALER.key, version: 'v2', isBusy: () => !!round || busy });
 
 
 buildChips();
