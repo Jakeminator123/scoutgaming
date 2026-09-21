@@ -1,3 +1,40 @@
+## 2026-09-21 — three live demo rounds observed; embedding is the next goal
+
+Jakob explicitly confirmed the existing balance was demo-only, with no cash
+value or withdrawals. Played three small single-box demo rounds: stand,
+hit to 21/push, and stand after a fresh explicit Partner-launch. Every hand
+finished and no outstanding wager remained. No deposit, DB edit or media change.
+
+Captured 49 client console records, 15 normalized DOM/AX checkpoints, mapping,
+verified scopes and a separate file-backed SSE observer. Private evidence is
+Git-ignored at lab/data/observations/2026-09-20T23-50-27-036Z/README.md and its
+linked JSON/JSONL files. tools/capture-partner-observation.mjs records only
+the existing local lab read APIs; it sends no gameplay or wallet commands.
+It has a ten-minute/16-MiB limit and a per-session STOP marker. The test
+capture ended normally; both browser and CLI observers are disconnected.
+
+Observed: zero SSE round records despite three completed rounds, including
+the explicit launch route. All seven logged dealing starts used direct-shoe
+fallback. The launch route reported "No staged capture", despite six takes
+in mapping. Goodluck had end-without-start logs (72–87 ms); dealerbust, push
+and placebets had paired matched start/end logs. These are client diagnostics,
+not verified clip hashes/frames or lip-sync acceptance. Complete native HTTP
+bodies, request IDs and later dealer cards in two rounds were not captured.
+
+Latest steering: put the original game embedded/streamed INSIDE the existing
+Studio activity surface, with real-time code/data/playback logging alongside
+or below it, then map this evidence to lab nodes and control flows. Jakob
+asked to finish the last observation first and discuss embedding afterwards;
+no embedding, player instrumentation or 2D changes were implemented this turn.
+Initial code comparison confirms Stage is an example-event preview with
+three visual slots and prop cards, not a server-owned persistent blackjack hand.
+
+Validation: collector syntax check and live start/STOP/exit passed; saved JSON
+parsed with 49 console records, 15 checkpoints, two SSE statuses and zero rounds.
+Checked the evidence bundle for credential prefixes/launch URLs: none found.
+Raw evidence remains Git-ignored. No product build/test rerun was needed for
+the observation-only helper and handoff edits; existing player/media unchanged.
+
 ## 2026-09-21 — reference-game launch and observation workflow in the lab
 
 Jakob clarified that 2D is a mockup of eventual video presentation. First
