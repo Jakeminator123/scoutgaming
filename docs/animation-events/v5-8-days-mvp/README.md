@@ -4,7 +4,8 @@
 
 [Öppna webbsidan](https://animation-events-v1.vercel.app/) ·
 [Läs wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events) ·
-[Nästa åtta dagar](s06-plan.md)
+[Nästa åtta dagar](s06-plan.md) ·
+[Portabel sjudagarshandoff](HANDOFF-7-DAGAR.md)
 
 Vi har nu en lokal kedja från mottagen presentationsinstruktion till
 variantbeslut och uppspelning av befintligt material. Nästa mål är att ansluta
@@ -14,6 +15,8 @@ Spelservern behåller alla spelbeslut.
 
 ## Börja där arbetet finns
 
+- [Portabel handoff för agenter och nya personer](HANDOFF-7-DAGAR.md):
+  D0 + sju dagar, system, API-kopplingar, lagring, evidens och startprompt.
 - [Helheten och dagens leverans](s00-helheten.md): byggt, beställt och kvar.
 - [System och mappar](s01-kartan.md): labb, native, Partner, BO och manifest.
 - [Signaler och observation](s02-spraket.md): RNG, events, beslut och kvitton.

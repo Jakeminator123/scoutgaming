@@ -15,11 +15,12 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
   runtime behavior.
 - The [GitLab wiki](https://gitlab.com/scout-gg/croupier/-/wikis/home) records
   shared decisions, workflow and handoffs.
-- [Croupier documentation · V4](https://github.com/Jakeminator123/animation-events-v1)
+- [Croupier documentation · V5](https://github.com/Jakeminator123/animation-events-v1)
   is the source repository for the interactive documentation canvas. It does
   not own game outcomes or runtime contracts.
-- The active repo-near V4 documentation is under
-  [`docs/animation-events/v4-8-days-mvp/`](docs/animation-events/v4-8-days-mvp/README.md).
+- The active repo-near V5 documentation is under
+  [`docs/animation-events/v5-8-days-mvp/`](docs/animation-events/v5-8-days-mvp/README.md),
+  with a [portable seven-day handoff](docs/animation-events/v5-8-days-mvp/HANDOFF-7-DAGAR.md).
   Eight remaining working days are Jakob's planning horizon, not a verified
   launch date or a new historical meeting decision.
 

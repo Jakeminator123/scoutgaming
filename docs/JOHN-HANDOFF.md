@@ -1,3 +1,23 @@
+## 2026-09-21 — portabel sjudagarshandoff för nya personer och agenter
+
+Added `docs/animation-events/v5-8-days-mvp/HANDOFF-7-DAGAR.md`: a portable
+D0 + seven-day context pack for Cursor, Codex, browser-GPT and human handoff.
+It maps Jakob/Kevin/Emil ownership, canonical sources, product/lab/OpenClaw
+boundaries, repositories, storage, secrets by variable name, runtime and ops
+API surfaces, evidence levels, the seven execution days, a daily receipt and
+a compact copy/paste prompt. V5 remains canonical; the new handoff is a map,
+not a parallel Jira or runtime contract. Root and active sprint navigation now
+point to V5 and the handoff.
+
+Documentation-only validation: relative links were checked against the
+working tree and `git diff --check` passed. No gameplay, media bytes, frame
+index, calibration, API behavior, environment value, database, Render service,
+Jira status or visual acceptance changed. Current Jira CAC issues were not
+available through a connector, so the handoff requires the next implementer to
+read live Expected Result/custom fields before work. The private GitHub backup
+is documented as a manual private copy; continuous mirroring is still open.
+Pre-existing dirty/untracked user files remain excluded.
+
 ## 2026-09-21 — Scout-brandad Croupier Lab-dashboard
 
 Labbet har fått en egen Scout-brandad dashboardyta direkt i den befintliga
