@@ -4,6 +4,29 @@
 branch `jakeminator123/work`. Labbet kör på `http://127.0.0.1:4188`.
 Den här filen är en teknisk överlämning, utan hemligheter eller samtalsexport.
 
+## Nyaste provet: tre demorundor och nästa mål
+
+Efter kompletteringen nedan bekräftade Jakob att spelkontot enbart innehöll
+demopengar. Tre små rundor avslutades, även en från explicit Partner-launch.
+**Noll SSE-rundmeddelanden kom.** Alla sju loggade utdelningsstarter använde
+direktleverans från skon; launch-vägen rapporterade `No staged capture`.
+Goodluck hade slut utan loggad start; dealerbust/push/placebets hade parade
+talstart/slut. Detta är diagnostik, inte godkänd videouppspelning eller läppsynk.
+
+49 konsolposter, 15 normaliserade DOM-kontrollpunkter, mapping, scopes och
+SSE/session ligger privat i `lab/data/observations/2026-09-20T23-50-27-036Z/`.
+Mappens README beskriver bevis, begränsningar och första kodjämförelsen.
+HTTP-kroppar, server-requestId/version och samtliga mellanliggande kort/frame-
+tider fångades inte. Både browser- och filobservatören är avslutade.
+
+**Senaste målbild:** bygg in originalspelet streamat/inbäddat direkt på
+Studions befintliga Händelselogg-yta, med live-logg över faktiska anrop,
+data, beslut och uppspelning intill/nedanför. Mappa sedan detta till labbets
+noder och flöden. En ny flik är bara dagens provväg. Jakob bad att avsluta
+sista rundan nu och ta inbyggnaden därefter; ingen sådan integration ändrades
+i detta observationsprov. Tidigare nollsaldo och oprövade rundor nedan är
+historisk status före detta prov, inte nuvarande blockerare.
+
 ## Senaste kompletteringen: launch, videokarta och protokoll
 
 **Jakobs förtydligande:** 2D är en mockup av presentation som senare ska vara

@@ -10,6 +10,14 @@ och media. Läs senaste kompletteringen i
 
 ## Målet
 
+Senaste förtydligandet: originalspelet ska först byggas in streamat/inbäddat
+på Studions befintliga Händelselogg-yta, med realtidslogg över faktiska
+anrop/data/kodbeslut/uppspelning intill eller nedanför. Därefter mappas flödet
+till labbsystemet. En launch i ny flik är dagens provväg, inte slutmålet.
+Tre demorundor har nu observerats med noll SSE-rundmeddelanden, direktleverans
+från skon och `No staged capture` på launch-vägen. Läs senaste handoffen och
+det privata observationsunderlaget innan äldre antaganden används.
+
 2D är en mockup av det som ska vara videofiler. Återskapa originalspelets
 observerade presentation: korrekta kort, boxar/händer, klippordning, repliker,
 kortlandning, pauser och återgång till idle. Använd samma serverägda speldata.
