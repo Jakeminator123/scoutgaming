@@ -130,12 +130,14 @@ test('feature switches close search and comedy independently; profile expires af
 
 test('both lab chats receive the fictional cast for natural name questions and follow-ups', async () => {
   const userInput = input('request-natural', 'Vem är Jakob?');
-  await socialChat(userInput, settings, async (_url, options) => {
+  const socialResult = await socialChat(userInput, settings, async (_url, options) => {
     const body = JSON.parse(options.body), system = body.messages[0].content;
     assert.match(system, /TEMPORARY FICTIONAL/); assert.match(system, /Viking king/);
     assert.match(system, /John should train/); assert.match(system, /Swedish, German/);
     return completion({ action: 'choose_social_response', ...Object.fromEntries(Object.entries(reply(userInput)).filter(([key]) => key !== 'provider')) });
   }, { name: 'Jakob', personas: true, roast: roastFor(userInput.message) });
+  assert.equal(socialResult.reply.split('\n').length, 4);
+  assert.match(socialResult.reply, /你好/);
   for (const message of ['Vem är John?', 'Vad ska han bygga?']) {
     await chatWithDirector({ message, conversationId: 'operator-fixture' }, settings, async (_url, options) => {
       const body = JSON.parse(options.body), context = body.messages.filter(m => m.role === 'system').map(m => m.content).join('\n');

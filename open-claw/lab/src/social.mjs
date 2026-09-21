@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { complete, GatewayError } from './openclaw.mjs';
-import { companionPersonaContext, comedyDirection } from './companion-personas.mjs';
+import { companionPersonaContext, comedyDirection, comedyFallback, isComedyPoem } from './companion-personas.mjs';
 
 export const SOCIAL_SCENE = Object.freeze({ dealerId: 'astrid', eventId: 'idle.ready' });
 export const SOCIAL_TRIGGER_ID = 'social.ledsen';
@@ -108,7 +108,10 @@ ${companion.search && !companion.roast ? 'You may ask the application for ONE pu
     text = await requestCompletion('-after-search');
     try { choice = JSON.parse(text); } catch { replyError(); }
   }
-  if (object(choice)) choice.reply = canonicalText(choice.reply);
+  if (object(choice)) {
+    choice.reply = canonicalText(choice.reply);
+    if (companion?.roast && !isComedyPoem(choice.reply)) choice.reply = comedyFallback(companion.roast);
+  }
   if (!exact(choice, ['action', 'requestId', 'policyRevision', 'reply', 'triggerId', 'confidence'])
     || choice.action !== 'choose_social_response' || !ttsText(choice.reply)) replyError();
   const { action: _action, ...result } = choice;

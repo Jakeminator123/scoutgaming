@@ -59,7 +59,9 @@ test('search endpoint authenticates and rejects browser/custom budget requests b
 test('OpenClaw queries are restricted to the actual official docs and reject lookalike citations', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'companion-search-sources-'));
   const service = createSearchService({ directory, key: 'fixture', now: () => Date.parse('2026-09-21'), fetchImpl: async (_url, options) => {
-    assert.deepEqual(JSON.parse(options.body).tools[0].filters, { allowed_domains: ['docs.openclaw.ai'] });
+    const request = JSON.parse(options.body);
+    assert.deepEqual(request.tools, [{ type: 'web_search', search_context_size: 'low' }]);
+    assert.equal(request.input, 'site:docs.openclaw.ai OpenClaw documentation');
     const data = await response().json();
     data.output[1].content[0].annotations = [
       { type: 'url_citation', title: 'Official OpenClaw', url: 'https://unrelated.example/docs' },
