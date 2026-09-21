@@ -32,7 +32,7 @@ slås ihop, medan konflikter och luckor stoppar uppspelningen. Originalspelarens
 faktiska klippstart/slut återstår. Den lokala native-till-Partner-bryggan är
 testad men måste driftsättas innan motsvarande liveflöde kan verifieras.
 
-**Socialt svar** är ett eget idle-prov med en enda talägare och högst sex
+**Socialt svar** är ett eget idle-prov med en enda talägare och högst 25
 sekunder ljud. För långa ljud avvisas; avbrott/fel loggas. Modellens uttrycks-
 förslag visas separat från neutralt idle. Produktens talväg och riktig
 läppsynk är fortfarande separata integrationer. Se [socialt prov](../SOCIAL-CHAT.md).

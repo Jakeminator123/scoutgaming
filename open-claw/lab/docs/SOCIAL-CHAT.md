@@ -1,5 +1,10 @@
 # Social Astrid – separat labbchatt
 
+Tillägg 2026-09-21: [labbprofil och companion-adapter](COMPANION.md) ger
+namnval, avgränsat beständigt minne, en begränsad nyckelfri webbsökning och
+skämtpoem. Det använder en ny autentiserad route. Det ursprungliga
+`/api/studio/social-chat`-kontraktet nedan är fortsatt stateless/verktygslöst.
+
 Detta är **inte operatörschatten**, IDE-inboxen eller produktionens spelarchatt.
 Modellen tolkar vad som skrivs och svarar som en fiktiv Astrid. `social.ledsen`
 väljer Astrids uttryck; det är inte en diagnos eller ett påstående om spelarens

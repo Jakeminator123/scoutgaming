@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "2026-09-20.2",
+  "version": "2026-09-21.1",
   "openclawVersion": "2026.9.5",
   "roles": {
     "croupier-director": ["roles/croupier-director.md"],

@@ -119,5 +119,7 @@ garanti för framtida svarstid. Se [systemkartans daterade driftgränser](../../
 | Redigerbara linjer, varianter och triggers | [catalog.json](../config/catalog.json) |
 
 IDE-inboxen ska aldrig kopplas in som spelarchatt. Produktspelarens adapter, moderering och beständiga minne återstår.
+Labbets egna namnval och begränsade beständiga minne finns nu separat i
+[companion-adaptern](COMPANION.md); det identifierar inte Partner-spelare.
 Eventtestet använder simulerad kontext; det separata sociala Astrid-provet
 använder skriven chatt och kontrollerade modellsvar. Se [labbets avgränsningar](../README.md#ide-inboxen-är-inte-spelarchatten).

@@ -8,6 +8,18 @@ chattsignal är separata flöden.
 
 ## Ett svar i idle
 
+Välj först ditt namn: Jakob, Emil, Kevin, Alex eller John. Samma labbprofil
+i webbläsaren får en återkomsthälsning och de senaste 12 inläggen, sparade
+i upp till 30 dagar på Director. **Glöm mig / byt person** raderar detta
+applikationsminne. Namn är smeknamn, inte identifiering i Partner-API.
+
+**Skämtläge** reagerar på exempelvis `Berätta om Emil` med ett kort nyskrivet
+poem på svenska, tyska och kinesiska. Talgränsen är nu 25 sekunder; Ljud
+läser den exakta dikten. **Tillåt webbsökning** låter Astrid be om en nyckelfri sökning:
+0 kr i sökavgift, högst 20 försök per rullande timme för hela labbet, inga betalda
+reservleverantörer. Modell och valfritt ljud har sina vanliga kostnader.
+[Teknik, begränsningar och exakt återställning](../open-claw/lab/docs/COMPANION.md).
+
 Ett meddelande ger ett fritt textsvar. **Ljud** är förvalt och låter
 ElevenLabs läsa exakt samma text; avmarkera det för enbart text. Scenen visar `idle.ready.standard`. Modellen kan fortfarande föreslå
 exempelvis `social.ledsen`; förslaget loggas men startar ingen hand- eller
@@ -17,7 +29,7 @@ Socialt prov får bara börja när Astrid väntar och ingen annan preview äger
 scenen. Handlingsprov spärras medan det sociala anropet eller talet pågår.
 Detta är lokal samordning, ingen färdig eventkö i produktens spelare.
 
-- **Högst sex sekunder tal:** ljudets metadata kontrolleras före start. Ett
+- **Högst 25 sekunder tal:** ljudets metadata kontrolleras före start. Ett
   för långt ljud avvisas; textsvaret finns kvar. En tidsvakt stoppar ett ljud
   som ändå passerar gränsen och loggar det som ett misslyckat prov.
 - **En uppspelning:** inget automatiskt omtag eller loop. Knappen för att
@@ -55,7 +67,7 @@ inte en uppmätt känsla hos spelaren. Sparade projekt migreras inte automatiskt
 
 Tal är förvalt men skapas först när du skickar och kan kosta ElevenLabs-krediter. Samma exakta
 text/röst/modell kan återanvända ljudcachen. För långt genererat tal kan
-avvisas efter att det skapats; sexsekunderskontrollen är ingen kostnadsgräns.
+avvisas efter att det skapats; 25-sekunderskontrollen är ingen kostnadsgräns.
 Det görs ingen automatisk regenerering. Inspelade produktvideor används inte
 med nya ord utan ett matchande granskat talpaket.
 
@@ -74,7 +86,7 @@ godtyckligt nya ord utan fungerande läppsynk.
   och format; servervalidering finns i `open-claw/lab/src/social.mjs`.
 - `data/social-policy.json` och `data/social-history/`: lokala inställningar
   och revisioner, utanför Git.
-- `lib/social-playback.mjs`: en talägare, sexsekunderskontroll och stopp.
+- `lib/social-playback.mjs`: en talägare, 25-sekunderskontroll och stopp.
 - `animations/social-reactions.json`: tidigare syntetiskt uttrycksmaterial.
   Den sociala svarsvägen väljer nu neutralt idle vid visning.
 - `data/voice-cache/`: exakt text/röst/modell/hash och MP3, utanför Git.

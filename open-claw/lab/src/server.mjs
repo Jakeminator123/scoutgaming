@@ -9,6 +9,7 @@ import { normalizeInput, prepareDecision, finalizeDecision } from './engine.mjs'
 import { askDirector, chatWithDirector, providerStatus, boundedJson, GatewayError } from './openclaw.mjs';
 import { createDashboardProxy } from './dashboard-proxy.mjs';
 import { normalizeSocialInput, socialChat, validateSocialReply } from './social.mjs';
+import { createCompanionService, normalizeCompanionRequest } from './companion.mjs';
 
 const SOURCE_TYPES = ['speak', 'deal', 'reveal', 'settle', 'turn', 'idle'];
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
@@ -83,6 +84,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   let activeAdvice = 0;
   let activeChat = 0;
   let activeSocialChat = 0;
+  let companion;
   const decide = async (raw, settings, deadlineAt = Infinity) => {
     const input = normalizeInput(raw);
     const catalog = await store.load();
@@ -145,12 +147,14 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           '/api/decide': ['POST'], '/api/chat': ['POST'], '/api/presentation': ['POST'],
           '/api/studio/advice': ['POST'], '/api/studio/chat': ['POST'],
           '/api/studio/social-chat': ['POST'],
+          '/api/studio/companion': ['POST'],
         };
         if (!allowed[path]) throw new GatewayError('not_found', 404);
         if (!allowed[path].includes(req.method)) throw new GatewayError('method_not_allowed', 405);
         let body = ['POST', 'PUT'].includes(req.method) ? await bodyJson(req) : undefined;
         if (settings.remoteUrl && path !== '/api/scenarios') {
-          if (path === '/api/studio/social-chat') body = normalizeSocialInput(body);
+          if (path === '/api/studio/companion') body = normalizeCompanionRequest(body);
+          else if (path === '/api/studio/social-chat') body = normalizeSocialInput(body);
           else if (path.startsWith('/api/studio/')) {
             const prepared = prepareDecision(body?.catalog, { ...body?.input, mode: 'active' });
             body = { catalog: body.catalog, input: { requestId: prepared.requestId, event: prepared.event, context: prepared.context, mode: 'active' }, message: body.message, conversationId: body.conversationId };
@@ -165,7 +169,11 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           if (path === '/api/status') data.remote = { configured: true, status: 'connected' };
           return respond(res, 200, data);
         }
-        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', 'studio-social-chat-v1'] });
+        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', 'studio-social-chat-v1', ...(settings.companionEnabled !== false ? ['studio-companion-v1'] : [])] });
+        if (path === '/api/studio/companion') {
+          companion ??= createCompanionService({ directory: initial.dataDir, settings: settingsProvider, fetchImpl });
+          return respond(res, 200, await companion.handle(body));
+        }
         if (path === '/api/studio/social-chat') {
           const input = normalizeSocialInput(body);
           if (activeSocialChat >= 2) throw new GatewayError('social_chat_busy', 429);
@@ -226,6 +234,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   // Upgraded sockets are not covered by Node's closeAllConnections().
   const closeServer = server.close.bind(server);
   server.close = callback => { dashboard?.close(); return closeServer(callback); };
+  server.on('close', () => companion?.close());
   return { server, store };
 }
 

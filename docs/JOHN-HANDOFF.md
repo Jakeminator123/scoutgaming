@@ -1,3 +1,36 @@
+## 2026-09-21 — reversible OpenClaw lab companion, based on V5 94a2688
+
+Added to Astrid's existing lab social chat: chosen names Jakob/Emil/Kevin/Alex/John,
+return greeting, separate persistent profile history and explicit forget. The
+browser gets an opaque HttpOnly identity; names cannot select another profile.
+The authenticated Director stores the last 12 posts / 8000 characters, up to
+30 inactive days, separately in companion.sqlite. Forget invalidates in-flight
+replies. No real player/game database, Partner production or media is modified.
+
+Explicit "Berätta om <name>" produces one original friendly mixed Swedish/German/
+Chinese poem with requested jokes. No Lundell quotations, self-chat, cron or
+native tool expansion. Jakob explicitly raised the social speech limit to 25
+seconds; poems use the existing exact-text TTS and single-owner idle path.
+Metadata preflight/watchdog/cancellation remain enforced. Web search uses
+only key-free DuckDuckGo HTML: 0 SEK search fees, at most 20 attempts per rolling
+hour across the Director, durable reservations before I/O, no paid fallback.
+This cap excludes existing model, hosting and optional ElevenLabs charges.
+
+Rollback and exact boundaries: open-claw/lab/docs/COMPANION.md. Three independent
+LAB_COMPANION_* switches. Runtime context package 2026-09-21.1 preserves native
+configs/human text and uses the existing snapshot/backup mechanism. Product
+speech ownership and verified Partner identity integration remain Kevin's V5
+work; lab-observer identifiers are never treated as visitor authentication.
+
+Local validation: 107 OpenClaw/deployment tests, 302 lab tests, TypeScript and
+Next production build passed. All pre-commit commands and dealer-sync probe
+passed; re-run for final speech-limit change is recorded with delivery. Added persistence/isolation/forget/race/quota,
+request-idempotency, authenticated endpoint, single-search-loop and UI tests.
+Deployment/live evidence will be recorded in COMPANION.md after verification.
+Jira browser is signed out and no Jira connector exists; no CAC transition or
+Done claim. Inbox credential read is EPERM; role check was inactive. Preserved
+all four pre-existing untracked user files. No new visual/lip-sync acceptance.
+
 ## 2026-09-21 — V5 sprint publication and complete base-speech intake
 
 Published and checked: Croupier source fd51d12 (including d382b46/0b30694),

@@ -7,6 +7,7 @@ import { remoteRequest, connectionStatus } from './studio-server.mjs';
 import { StudioError } from './project-store.mjs';
 import { generateVoicePreview, voicePreviewStatus } from './voice-preview.mjs';
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
+import { companionRequest, labCompanionIdentity } from './companion-server.mjs';
 
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 const settingsNow = () => readSettings({ envFiles: [resolve(LAB_DIR, '../.env'), resolve(LAB_DIR, '.env.local')] });
@@ -36,15 +37,16 @@ export function createSocialService({ store = socialStore(), settings = settings
   async function revisionStillCurrent(revision) {
     if ((await store.load()).revision !== revision) throw new StudioError('Policyn ändrades medan svaret skapades. Svaret spelas inte; prova igen.', 409);
   }
-  async function chat(body) {
-    if (!exactKeys(body, ['requestId', 'conversationId', 'message', 'history', 'policyRevision', 'scene', 'voice']) || typeof body.voice !== 'boolean') throw new StudioError('Ogiltigt socialt chattprov.');
+  async function chat(body, identity = null) {
+    if (!exactKeys(body, ['requestId', 'conversationId', 'message', 'history', 'policyRevision', 'scene', 'voice', ...(body?.companion ? ['companion'] : [])]) || typeof body.voice !== 'boolean') throw new StudioError('Ogiltigt socialt chattprov.');
+    if (body.companion && (!identity || !exactKeys(body.companion, ['fun', 'web']) || typeof body.companion.fun !== 'boolean' || typeof body.companion.web !== 'boolean')) throw new StudioError('Ogiltigt namn- och minnesprov.');
     const policy = await store.load();
     if (body.policyRevision !== policy.revision) throw new StudioError('Läs in den aktuella sociala policyn innan du chattar.', 409);
     let input;
     try { input = normalizeSocialInput({ requestId: body.requestId, conversationId: body.conversationId, message: body.message, history: body.history, policy, scene: body.scene }); }
     catch { throw new StudioError('Chattprovet kräver Astrids vänteläge och ett kort meddelande.', 422); }
-    const session = getSession(input.conversationId);
-    const fingerprint = createHash('sha256').update(JSON.stringify({ input, voice: body.voice })).digest('hex');
+    const session = getSession(identity || input.conversationId);
+    const fingerprint = createHash('sha256').update(JSON.stringify({ input, voice: body.voice, companion: body.companion })).digest('hex');
     const previous = session.receipts.get(input.requestId);
     if (previous) {
       if (previous.fingerprint !== fingerprint) throw new StudioError('Samma test-ID har redan använts för andra indata.', 409);
@@ -53,7 +55,8 @@ export function createSocialService({ store = socialStore(), settings = settings
     if (session.pending) throw new StudioError('Astrid behandlar redan ett meddelande i detta samtal.', 409);
     const work = async () => {
       const config = currentSettings();
-      const raw = config.remoteUrl
+      const extra = identity && body.companion ? await companionRequest({ operation: 'chat', identity, input, ...body.companion }, config, fetchImpl) : null;
+      const raw = extra ? extra.result : config.remoteUrl
         ? await remoteRequest('/api/studio/social-chat', input, config, fetchImpl, 32000)
         : await socialChat(input, config, fetchImpl);
       const result = validateLocalReply(raw, input);
@@ -71,7 +74,7 @@ export function createSocialService({ store = socialStore(), settings = settings
       }
       await revisionStillCurrent(policy.revision);
       if (result.triggerId && !expressionCoolingDown) session.lastReaction = now();
-      return { ...result, ...(expressionCoolingDown ? { triggerId: null, suppressed: 'cooldown' } : {}), assetId: expressionCoolingDown ? 'idle.ready.standard' : result.triggerId || 'idle.ready.standard', ...(audio ? { audio } : {}), ...(voiceError ? { voiceError } : {}) };
+      return { ...result, ...(extra ? { companion: { profile: extra.profile, search: extra.search, comedy: extra.comedy } } : {}), ...(expressionCoolingDown ? { triggerId: null, suppressed: 'cooldown' } : {}), assetId: expressionCoolingDown ? 'idle.ready.standard' : result.triggerId || 'idle.ready.standard', ...(audio ? { audio } : {}), ...(voiceError ? { voiceError } : {}) };
     };
     session.pending = input.requestId;
     const promise = work().finally(() => { session.pending = null; session.touched = now(); });
@@ -87,23 +90,38 @@ export function createSocialService({ store = socialStore(), settings = settings
     await revisionStillCurrent(policy.revision);
     return audio;
   }
-  return { chat, voice };
+  return { chat, voice, forgetSession: identity => sessions.delete(identity) };
 }
 
 // Lazy initialization keeps test imports/builds from reading any credentials.
 let service;
 function currentService() { return service ??= createSocialService(); }
-export async function socialEndpoint(request, { store = socialStore(), service: suppliedService, settings, voiceSettings } = {}) {
+export async function socialEndpoint(request, { store = socialStore(), service: suppliedService, settings, voiceSettings, fetchImpl = fetch } = {}) {
   try {
     assertLocalRequest(request);
     const path = new URL(request.url).pathname;
-    if (path === '/api/social' && request.method === 'GET') return jsonResponse({ policy: await store.load(), configured: connectionStatus(settings ?? settingsNow()).configured, voiceConfigured: voicePreviewStatus(voiceSettings).configured });
+    const config = settings ?? settingsNow();
+    if (path === '/api/social' && request.method === 'GET') return jsonResponse({ policy: await store.load(), configured: connectionStatus(config).configured, voiceConfigured: voicePreviewStatus(voiceSettings).configured, companionEnabled: config.companionEnabled === true });
+    if (path === '/api/social/profile') {
+      const visitor = labCompanionIdentity(request, config);
+      const body = request.method === 'GET' ? { operation: 'profile' } : await readLocalJson(request);
+      if (!['GET', 'POST'].includes(request.method) || !(exactKeys(body, ['operation']) && ['profile', 'forget'].includes(body.operation) || exactKeys(body, ['operation', 'name']) && body.operation === 'name')) throw new StudioError('Ogiltigt profilval.');
+      const response = jsonResponse(await companionRequest({ ...body, identity: visitor.identity }, config, fetchImpl));
+      if (body.operation === 'forget') (suppliedService ?? service)?.forgetSession?.(visitor.identity);
+      if (visitor.cookie) response.headers.set('Set-Cookie', visitor.cookie);
+      return response;
+    }
     const body = await readLocalJson(request);
     if (path === '/api/social' && request.method === 'PUT') {
       if (!exactKeys(body, ['policy', 'expectedRevision'])) throw new StudioError('Ogiltig social policybegäran.');
       return jsonResponse({ policy: await store.save(body.policy, body.expectedRevision) });
     }
-    if (path === '/api/social/chat' && request.method === 'POST') return jsonResponse(await (suppliedService ?? currentService()).chat(body));
+    if (path === '/api/social/chat' && request.method === 'POST') {
+      const visitor = body.companion ? labCompanionIdentity(request, config) : null;
+      const response = jsonResponse(await (suppliedService ?? currentService()).chat(body, visitor?.identity));
+      if (visitor?.cookie) response.headers.set('Set-Cookie', visitor.cookie);
+      return response;
+    }
     if (path === '/api/social/voice' && request.method === 'POST') return jsonResponse(await (suppliedService ?? currentService()).voice(body));
     return jsonResponse({ error: 'Metoden stöds inte.' }, 405);
   } catch (error) { return errorResponse(error); }
