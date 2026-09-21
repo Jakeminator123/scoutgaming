@@ -1,5 +1,11 @@
 ## 2026-09-21 — V5 sprint publication and complete base-speech intake
 
+Published and checked: Croupier source fd51d12 (including d382b46/0b30694),
+GitHub site f43806b and wiki 6d2996e. Stable Vercel shows V5/7b010e2b2054;
+wiki landing and video instructions were checked in the authenticated browser.
+Website CI succeeded; 17 local site tests and 44-file source/mirror sync passed.
+See docs/animation-events/V5-PUBLICATION.md for links, checks and boundaries.
+
 V5's canonical source is docs/animation-events/v5-8-days-mvp: seven chapters,
 decisions, evidence and publication instructions. It replaces active V4 links
 without rewriting historical runtime evidence. Sources include today's active
