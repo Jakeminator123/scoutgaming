@@ -8,6 +8,29 @@ const themes = Object.freeze({
   John: 'John should train to become as strong as Jakob and build a magnificent man cave; playful gym and DIY jokes, no shaming his worth or masculinity.',
 });
 
+const fallbackPoems = Object.freeze({
+  Jakob: `Jakob rider som vikingakung, så löjligt snygg och stark,
+der Held lyfter långskeppet och parkerar det på mark.
+你好, ropar valkyriorna: vilken hjälte, vilken glans,
+Ulf Lundell tappar kompassen när kungen tar sin dans.`,
+  Emil: `Emil, vår glasögonorm, delar ess med listigt trick,
+der Poker-Nerd ser genom korten med sin örnblick.
+很好, sjunger markerna kring bordets gröna jord,
+Ulf Lundell tappar rimmen när Emil synar varje ord.`,
+  Kevin: `Kevin, stäng Championship Manager, nu ska jobbet bli klart,
+mit Augenmaske tar du pauser, sedan vaknar du med fart.
+早点休息, ropar laget, livet väntar vid din plan,
+varva sömn med stora segrar som en pigg fotbollsfan.`,
+  Alex: `Alexander börsnoterar månen, Milliarden är hans mål,
+die Börse jagar efter medan pöbeln tappar skål.
+发财, ropar draken när miljarder går på börs,
+Alex dansar över taket; varje pöbelmiljonär förförs.`,
+  John: `John tränar som en åskgud, man cave-planen står klar,
+wie Jakob lyfter han ett kylskåp och ett hantelpar.
+加油, sjunger borrmaskinen, skruven dansar med hans drill,
+där bygger John sitt hjältepalats, ganz genau som han vill.`,
+});
+
 export function companionName(value) {
   if (typeof value !== 'string') return null;
   if (/^alexander$/i.test(value.trim())) return 'Alex';
@@ -29,4 +52,15 @@ For questions about these names and follow-up questions, answer warmly using the
 
 export function comedyDirection(roast) {
   return `This turn requests a wildly absurd friendly comedy POEM about ${roast.name}, not a factual introduction. Reply in exactly four short lines, no preamble. Lines 1 and 2 rhyme; lines 3 and 4 rhyme. Mix Swedish, German and a little Chinese: include a German phrase and a Chinese phrase within the lines, not just a greeting at the end. Invent a ridiculous scene from this theme: ${roast.theme}. You may mention Ulf Lundell, but do not quote or closely imitate his lyrics or poems. One reply, 35-45 spoken words, at most 320 characters for a 25-second speech preview. No self-chat.`;
+}
+
+export function isComedyPoem(value) {
+  if (typeof value !== 'string' || value.length > 320) return false;
+  const lines = value.split('\n').filter(line => line.trim());
+  return lines.length === 4 && /\p{Script=Han}/u.test(value)
+    && /\b(?:der|die|das|ein|eine|mein|mit|ganz|wie|ist|und|Held|König|Börse|Milliarden|Augenmaske|Poker-Nerd)\b/iu.test(value);
+}
+
+export function comedyFallback(roast) {
+  return fallbackPoems[roast?.name] || fallbackPoems.Jakob;
 }
