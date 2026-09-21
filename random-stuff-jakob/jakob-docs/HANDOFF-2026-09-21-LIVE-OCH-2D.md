@@ -1,3 +1,8 @@
+> **Uppdatering V5:** nedan är daterad observationshistorik. Native-publicering,
+> originalförval och sekvensspelare har därefter implementerats lokalt;
+> [V5](../../docs/animation-events/v5-8-days-mvp/README.md) är aktuellt arbetsläge.
+> Live-rundposter och originalets playbacktelemetri är fortfarande öppna.
+
 # Fortsättning: originalspel → observationsprotokoll → 2D-mockup
 
 **Kontrollerat 21 september 2026.** Arbetsrepo: `C:/Users/jakem/Projects/croupier`,

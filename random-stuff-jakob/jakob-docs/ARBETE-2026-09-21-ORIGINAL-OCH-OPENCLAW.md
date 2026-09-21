@@ -2,7 +2,9 @@
 
 Arbetsgren: `jakeminator123/work`. Detta dokument samlar leveransen i
 `d382b46` och fortsättningen med gemensamma presentationsbeslut och exakta
-talexempel. Det beskriver lokal kod; ingen push eller driftsättning ingår.
+talexempel. Texten nedan dokumenterar det då lokala kodarbetet. Den efterföljande V5-leveransen
+samlar dokumentation, kontraktskomplettering och publicering; se
+[V5](../../docs/animation-events/v5-8-days-mvp/README.md). Produktdeploy ingår inte.
 
 ## Så fungerar kedjan
 
@@ -132,7 +134,8 @@ previewkonflikt är reparerad. Detaljer finns i
 Den vanliga lokala spelaren använder grenens produktförbättringar men inte
 automatiskt labbets varianter. Live är den kod och de assets som faktiskt är
 driftsatta. Att Git har en `main`-gren visar inte vilken revision live kör;
-API-kartan redovisade inget commit-ID. Ingen ändring här har pushats/deployats.
+API-kartan redovisade inget commit-ID. Vid denna implementation var ändringarna ännu inte pushade. Efterföljande V5-
+publicering ändrar inte vad som är driftsatt i spelprodukten.
 
 ## Verifiering och kvarvarande luckor
 

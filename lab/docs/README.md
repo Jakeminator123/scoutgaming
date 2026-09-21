@@ -42,4 +42,8 @@ förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna
 relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
 nuvarande kod från nästa steg; den aktiverar inte nya funktioner.
 
-Aktuell plan och publicerade läsytor finns i [V4 · åtta arbetsdagar](../../docs/animation-events/v4-8-days-mvp/README.md). Guide beskriver dagens labb; sprintplanens förslag aktiverar inga funktioner.
+Aktuell plan och publicerade läsytor finns i [V5 · åtta arbetsdagar](../../docs/animation-events/v5-8-days-mvp/README.md). Guide beskriver dagens labb; sprintplanens förslag aktiverar inga funktioner.
+
+[Artefaktkarta: scheman, manifest och lagring](ARTIFACTS.md) ·
+[OpenClaw-talägarskap: implementationsbrief](OPENCLAW-SPEECH-OWNERSHIP.md) ·
+[Takepaket för Kevin/Emil](templates/media-take.md).

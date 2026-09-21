@@ -120,6 +120,31 @@
       "id": "policy",
       "label": "Policy",
       "definition": "Regler för när ett tillåtet alternativ får väljas."
+    },
+    {
+      "id": "recorded-line",
+      "label": "Replik-ID",
+      "definition": "Exakt inspelat talinnehåll, exempelvis greeting. Skilj från dealerlinjen som samlar standard och alternativ för en eventgrupp."
+    },
+    {
+      "id": "original-preset",
+      "label": "Originalförval",
+      "definition": "Exakt lokalt produktmaterial för standard utan egen videokoppling. Tillgänglig fil betyder inte aktiv livebindning eller visuell acceptans."
+    },
+    {
+      "id": "decision",
+      "label": "Presentationsbeslut",
+      "definition": "Val av tillåten variant med eget besluts-ID och separat källreferens. Beslutscachen skyddar inte all faktisk uppspelning över flikar och processer."
+    },
+    {
+      "id": "receipt",
+      "label": "Uppspelningskvitto",
+      "definition": "Faktisk start, slut, cue, avbrott eller fel från spelaren. Ett modellförslag eller filval är inte ett sådant kvitto."
+    },
+    {
+      "id": "speech-package",
+      "label": "Läppsynkpaket",
+      "definition": "Exakt text, ljud, video, frame-index, kalibrering och acceptans för samma take. Nya bytes kräver ny visuell granskning."
     }
   ],
   "events": [
@@ -154,7 +179,14 @@
         "dealerbust",
         "win",
         "push",
-        "lose"
+        "lose",
+        "greeting",
+        "peek",
+        "bust",
+        "sidebet",
+        "chatter1",
+        "chatter2",
+        "farewell"
       ]
     },
     {
