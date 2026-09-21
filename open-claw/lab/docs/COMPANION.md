@@ -12,7 +12,9 @@ det är fortfarande inte en egen komplett spelklient.
 Nästa besök med samma webbläsarprofil och localhost-adress visar återkomsthälsning
 och sparade inlägg. Skriv till exempel `Berätta om 'Emil'!` för ett skämtpoem.
 Namnen är skiftlägesokänsliga och Alexander är ett alias för Alex. Enbart namnet
-eller ett vanligt samtal om personen startar inte skämtläget.
+ensamt startar inte skämtläget. Även `Vem är Jakob?` och `Berätta om Jakob.
+Vad gör han?` fungerar. Båda labbchattarna får samma fiktiva personbeskrivningar
+för namnfrågor och följdfrågor. Operatörschatten får inte spelarens privata minne.
 
 Poemen är nyskrivna, korta, vänligt överdrivna rim på svenska, tyska och kinesiska,
 med Jakobs beställda teman. Ulf Lundell kan nämnas, men inga verk kopieras eller
@@ -60,26 +62,40 @@ därför inte för att öppna någon spelares minne. Den adaptern är inte drift
 ## Sökning och kostnadsgräns
 
 Modellen får begära en enda `search_public_web`-applikationsåtgärd per meddelande.
-Director anropar endast DuckDuckGos nyckelfria HTML-sökning på en fast HTTPS-värd.
-Ingen betald leverantör, API-nyckel, browser, godtycklig URL-fetch eller automatisk
-reservleverantör finns. Sökavgiften är **0 SEK**, alltså under önskade cirka
-5 SEK/timme. Modell, hosting och valfritt ljud har separata befintliga kostnader;
-detta är inte ett gemensamt kostnadstak för hela OpenClaw-installationen.
+Efter anslutningsfel mot DuckDuckGo från Render valde Jakob uttryckligen den
+befintliga OpenAI-anslutningen, högst cirka 5 SEK/timme. Gratisadaptern är borttagen.
+Director skickar en offentlig sökfras till Gatewayns privata hjälptjänst på
+port 18790. Den använder befintlig `OPENCLAW_MODEL_API_KEY` endast när den sparade
+leverantören är OpenAI. Inga nycklar kopieras till Director eller webbläsaren.
+Gatewayns vanliga port 18789, native verktyg och dashboard ändras inte.
 
-Högst 20 sökförsök per rullande 60 minuter gäller för hela Director-instansen.
-SQLite reserverar före nätanrop, även fel räknas, och återstart nollställer inte
-kvoten. Budgeten kan inte höjas via chatt eller begäransfält. Svar begränsas till
-256 KB, åtta sekunders timeout och tre korta källutdrag. Högst två modellkontakter
-per meddelande: välj sökning/svara, sedan sammanfatta sökresultat. Inga sökningar
-i skämtläge. Källänkar visas separat. Oåtkomlig tjänst, utmaningssida och nådd
-timgräns visas uttryckligen; ingen CAPTCHA kringgås och inget söksvar hittas på.
+Hjälptjänsten anropar enbart `https://api.openai.com/v1/responses`, med låst
+`gpt-4.1-mini-2025-04-14`, standardprissättning, `web_search`, `max_tool_calls: 1`,
+512 ut-token, låg sökkontext och `store: false`. Frasen är högst 240 tecken;
+personminne, profilnycklar och katalog skickas inte. Högst tre citerade HTTP(S)-
+källor återförs, högst 256 KB API-svar, 25 sekunders timeout och ingen automatisk
+omkörning eller reservleverantör. Director gör högst två vanliga modellkontakter
+för att välja sökning och sammanfatta resultatet. Skämtpoem söker inte på webben.
 
-Officiella OpenClaw-källor kontrollerade 2026-09-21:
-[webbsökning](https://docs.openclaw.ai/tools/web) och
-[DuckDuckGo](https://docs.openclaw.ai/tools/duckduckgo-search).
-DuckDuckGos HTML-integration är experimentell och kan blockeras eller ändras.
-Vår begränsade adapter kör i Director; vi installerar inte något nytt plugin
-och uppgraderar inte den låsta Gateway-versionen 2026.9.5.
+Budgeten reserverar **0,50 SEK per försök, högst tio försök per rullande timme**,
+globalt på Gateway. `OPENCLAW_STATE_DIR/companion-search.sqlite` lagrar reservationer
+och idempotenta kvitton; även misslyckade/avbrutna försök räknas, och omstart
+nollställer inte taket. Director har därutöver ett transporttak på 20 försök/timme.
+Varken pris, modell, verktygsantal eller budget kan ändras av chattdata.
+`costSek` är en konservativ reservation, inte uppmätt fakturabelopp.
+
+Prisunderlag kontrollerat 2026-09-21: 0,01 USD/sökanrop, 8 000 fasta sökindatatoken
+plus den korta frågan, 0,40 USD/miljon in-token och 1,60 USD/miljon ut-token.
+Reservationen använder 20 SEK/USD samt marginal för moms. Med dessa priser ligger
+den begränsade sökningen under reservationen. Prisantagandet spärras automatiskt
+2026-10-21 tills `SEARCH_POLICY` har granskats igen. Taket avser söktjänsten,
+inklusive dess modell; vanlig chatt, hosting och ElevenLabs har separata kostnader.
+
+Primärkällor: [OpenAI web search](https://developers.openai.com/api/docs/guides/tools-web-search),
+[priser](https://developers.openai.com/api/docs/pricing),
+[max_tool_calls](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
+och [Render privata tjänster](https://render.com/docs/private-services).
+OpenClaw ligger kvar på låsta versionen 2026.9.5. Ingen ny MCP/plugin installeras.
 
 ## Kontrakt och avstängning
 
@@ -92,7 +108,7 @@ Studio: `GET/POST /api/social/profile`; `/api/social/chat` kan nu skicka
 `companion: { fun, web }`. Namn/minne ger aldrig tillgång till spelmotorn.
 
 Alla native agentverktyg, shell, filåtkomst, cron, heartbeat och minnessökning
-behåller sina tidigare gränser. Runtimepaket `2026-09-21.1` förklarar de nya
+behåller sina tidigare gränser. Runtimepaket `2026-09-21.2` förklarar de nya
 begränsade applikationsåtgärderna för socialrollen. Handtexter och native
 inställningar bevaras av befintlig paketsynk med backup och konfliktkontroll.
 
@@ -100,7 +116,8 @@ För att stänga av separat, sätt motsvarande variabel till exakt `false`:
 
 - `LAB_COMPANION_ENABLED`: hela funktionen. Sätt både i Director och lokalt
   `.env`/`lab/.env.local`, starta om båda; gamla socialchatten är kvar.
-- `LAB_COMPANION_WEB_ENABLED`: spärrar all ny webbsökning i Director.
+- `LAB_COMPANION_WEB_ENABLED`: spärrar all ny webbsökning i Director; sätt även
+  på Gateway för att stänga dess privata sökhjälp efter omstart.
 - `LAB_COMPANION_FUN_ENABLED`: spärrar specialpoemen i Director.
 
 Talgränsen är `SOCIAL_SPEECH_LIMIT_MS` i `lab/lib/social-playback.mjs` och dess
@@ -118,7 +135,16 @@ kvar på Gateway-disken enligt den vanliga runtimepaket-rutinen.
 
 ## Leverans och verifiering
 
-Fylls med faktisk commit och driftkvitto efter deployment. Lokala regressioner
-täcker separata identiteter, återstart, kvot, idempotens, radering under pågående
-anrop, autentisering, sökloopens gräns och befintlig social/TTS-validering.
-Mockade tester är inte evidens för levande modellton eller lyckad extern sökning.
+Första funktionscommitten är `e07dd86`; den bygger direkt på `94a2688` och är
+pushad till `jakeminator123/work`. Båda Render-tjänsterna körde denna version
+2026-09-21 innan rättningen för naturliga namnfrågor och OpenAI-sökning.
+Återställ båda funktionscommittarna i omvänd ordning enligt slutkvittot nedan,
+bygg om lokala labbet och driftsätt båda Render-tjänsterna. Budgetdatabasen får
+ligga kvar avstängd; inga speldata eller medier behöver återställas.
+
+Lokalt: 110 OpenClaw/deployment-tester, 302 labbtester, TypeScript och Next-bygge.
+Riktigt OpenAI-sökprov gav docs.openclaw.ai som citerad källa. Minne/återkomst/
+Glöm mig verifierades genom labbets API mot Render med en separat provprofil.
+Alla fyra dealers genomförde två greeting-uppspelningar i följd på isolerad
+rehearsal.localhost med separat databas. Det är livscykelbevis, inte ny läppsynk-
+eller tillgångsacceptans. Slutliga driftkvitton fylls efter uppföljande deployment.

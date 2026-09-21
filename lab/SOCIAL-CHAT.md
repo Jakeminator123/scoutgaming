@@ -15,9 +15,10 @@ applikationsminne. Namn är smeknamn, inte identifiering i Partner-API.
 
 **Skämtläge** reagerar på exempelvis `Berätta om Emil` med ett kort nyskrivet
 poem på svenska, tyska och kinesiska. Talgränsen är nu 25 sekunder; Ljud
-läser den exakta dikten. **Tillåt webbsökning** låter Astrid be om en nyckelfri sökning:
-0 kr i sökavgift, högst 20 försök per rullande timme för hela labbet, inga betalda
-reservleverantörer. Modell och valfritt ljud har sina vanliga kostnader.
+läser den exakta dikten. Även `Vem är Jakob?` och följdfrågor får rätt fiktiva
+beskrivning, också i operatörschatten. **Tillåt webbsökning** använder OpenAI:
+0,50 kr reserveras per försök, högst tio försök och cirka 5 kr per rullande timme.
+Vanlig chatt och valfritt ljud har separata kostnader. Inga reservleverantörer.
 [Teknik, begränsningar och exakt återställning](../open-claw/lab/docs/COMPANION.md).
 
 Ett meddelande ger ett fritt textsvar. **Ljud** är förvalt och låter
