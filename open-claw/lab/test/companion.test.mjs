@@ -139,12 +139,16 @@ test('both lab chats receive the fictional cast for natural name questions and f
   assert.equal(socialResult.reply.split('\n').length, 4);
   assert.match(socialResult.reply, /你好/);
   for (const message of ['Vem är John?', 'Vad ska han bygga?']) {
-    await chatWithDirector({ message, conversationId: 'operator-fixture' }, settings, async (_url, options) => {
+    const operatorResult = await chatWithDirector({ message, conversationId: 'operator-fixture' }, settings, async (_url, options) => {
       const body = JSON.parse(options.body), context = body.messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
       assert.match(context, /John should train/); assert.match(context, /man cave/);
       assert.equal(body.tool_choice, 'none');
       return Response.json({ choices: [{ message: { content: 'I vår labbsaga bygger John en man cave.' } }] });
     });
+    if (message === 'Vem är John?') {
+      assert.equal(operatorResult.reply.split('\n').length, 4);
+      assert.match(operatorResult.reply, /加油/);
+    }
   }
   await chatWithDirector({ message: 'Vem är John?', conversationId: 'operator-disabled' }, { ...settings, companionFunEnabled: false }, async (_url, options) => {
     assert.doesNotMatch(JSON.parse(options.body).messages.map(m => m.content).join('\n'), /John should train/);
