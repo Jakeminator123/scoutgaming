@@ -55,7 +55,7 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
   triggers. Testa ett publicerat exempel med simulerad chatt, historik och
   framtoning. Den animerade scenen och beslutsspåret visar vad som händer.
   **Spela vald variant** spelar ditt markerade klipp direkt: kopplad video,
-  annars just den variantens 2D-reserv. Välj fil direkt under **Standardvariantens
+  annars exakt registrerat original för standard, därefter variantens 2D-reserv. Välj fil direkt under **Standardvariantens
   video** i varianteditorn och spara med **Spara projekt**. Alternativ får egna
   kopplingar; de lånar aldrig standardens film. **Bara 2D** är ett manuellt
   förhandsvisningsval. **Testa event** startar med OpenClaw som urvalsläge; modellen anropas först
@@ -77,9 +77,10 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
   start/slut/fel med tid, källa, beslutsfattare och orsak. Fäll ut faktisk JSON
   och filtrera stegen. Loggen håller högst 150 poster i minnet och töms vid
   omladdning. En kompakt logg följer de andra vyerna. Här finns även valfri,
-  läsande observation av Partner-strömmen; den kör inget lokalt urval eller
-  någon uppspelning. På samma yta kan du verifiera åtkomst, öppna originalspelet
-  via Partner-launch, läsa aktuell videokarta och exportera observationsprotokoll.
+  läsande observation av Partner-strömmen. Visa originalspelets flik lokalt eller
+  spela samma instruktioner i labbet genom ett uttryckligt val. Sekvenslistan
+  öppnar riktiga eventdata i editorn. På samma yta kan du verifiera åtkomst,
+  öppna originalspelet via Partner-launch och importera/exportera observationer.
 - **Chatt & OpenClaw:** två tydliga chattvägar, anslutningsstatus och operatörschatt om det senast
   sparade projektet. Länk till den befintliga, separata native-dashboarden.
   Chatt kräver en konfigurerad anslutning; inga modellsvar fejkas.
@@ -262,11 +263,14 @@ eller använder rätt playerId; det kan bara verifieras mot Bettalotto.
 
 Strömmen avser samma API-nyckel och partner-playerId som den nya launch-knappen.
 Kevin anger att launch-spelet ska kunna observeras i SSE. Den hämtade
-serverkoden publicerar däremot synligt från Partner-table; native `/api/table`
-har ingen motsvarande publicering. **Launch → rund-event är ännu oprövat live.**
+serverkoden publicerade tidigare endast från Partner-table. Den lokala
+`web/native-table.mjs` publicerar nu native-kommandon efter commit, till den
+verifierade launch-sessionens nyckel/spelare och endast vid versionsökning.
+Bryggan måste driftsättas på spelservern innan detta gäller live. **Launch → rund-event är ännu oprövat live.**
 En accepterad anslutning bevisar inte denna koppling. BO-inloggning ansluter inte labbet.
 Observern läser publicerade rundor och presentationsinstruktioner, gör inga
-spelhandlingar och styr inte scenen. Mottagen instruktion, lokalt variantval
+spelhandlingar. **Följ nya instruktioner** eller explicit återspelning driver
+labbscenen från dessa fakta. Mottagen instruktion, lokalt variantval
 och uppspelningskvitto är tre skilda saker.
 
 SSE-källan saknar replay. Avbrott loggas som möjliga luckor och kräver ny
@@ -280,7 +284,9 @@ uttrycklig anslutning; loggen är ingen fullständig spelhistorik. Lokala API:n
 2. Välj **Hämta videokarta** och **Anslut läsande** före spelöppningen.
 3. **Öppna referensspelet** signerar `/api/v1/launch` med samma konfigurerade
    spelar-ID. Hela originalklienten med sin videospelare öppnas i en egen flik.
-   Inloggningslänken är kortlivad och sparas inte i logg/protokoll.
+   Inloggningslänken är kortlivad och sparas inte i logg/protokoll. Välj
+   **Visa spelfliken här** för lokal bildvisning utan inspelning/uppladdning.
+   Webbläsaren låter dig välja flik; spelets knappar används i originalfliken.
 4. Använd en avsedd demospelare med verifierad intern demoplånbok för rundprov.
    Liveöppningen den 21 september visade Astrid och 0,00 €; inga insatser,
    saldoändringar eller rundor gjordes. Nyckeln ger inte wallet-åtkomst.
@@ -289,14 +295,15 @@ uttrycklig anslutning; loggen är ingen fullständig spelhistorik. Lokala API:n
 
 Protokollet håller hela mottagna rundmeddelanden före loggvisningens kortning.
 Det stoppar uttryckligen vid 300 meddelanden eller 4 MiB, utan att kasta bort
-äldre rundor. Det försvinner när vyn lämnas eller laddas om. Töm visningen
+äldre rundor. Det bevaras mellan labbvyernas navigation men försvinner vid omladdning. Töm visningen
 tömmer bara de 150 loggraderna. Nycklar maskeras och URL-frågesträngar utelämnas.
 Videokartan, verifierade scopes och avbrott följer med exporten.
 
 Mapping beskriver registrerade klipp och BO-val; den är inget kvitto på klipp
 som faktiskt spelats. Protokollet saknar originalspelarens start/slut, kortlandning
-och fulla tabellsnapshots. 2D är en mockup av denna presentation. Att återspela
-en komplett runda och korrelera faktiska klipp återstår; observern driver inte scenen.
+och fulla tabellsnapshots. Sekvenslistan återspelar mottagna instruktioner och
+öppnar dem i editorn med exakta publika fakta. Den återskapar inte en komplett
+beständig flerhandsvy eller originalets ännu okända tidslinje.
 `/api/inputs/reference` är lokal status (GET) och explicit verify/launch/mapping
 (POST); alla destinationer och credentials bestäms på servern.
 
@@ -317,8 +324,8 @@ Saknad eller ospelbar fil ger en märkt 2D-reserv. Filmer spelas till sitt eget
 slut, inte animationens testlängd, och loopas inte. Inga 16 filmer väljs
 automatiskt: exakt situation, dealer, riktning och eventuell talrad måste matcha.
 
-Bestående spelarminne, produktens spelarchatt/moderering och integration med
-produktens gemensamma videospelare återstår. Astrids separata idle-chattprov
+Bestående spelarminne, produktens spelarchatt/moderering och en gemensam talägare
+återstår. Labbets originalförval återanvänder nu produktens mediespelarmoduler. Astrids separata idle-chattprov
 använder verkliga modellsvar; eventtestets kontext är fortfarande simulerad.
 IDE-agenternas GitLab-inbox hör inte hit. Videor måste granskas per take
 med text/ljud, hash och kalibrering innan de aktiveras i spelet. Nodträdet

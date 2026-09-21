@@ -1,3 +1,69 @@
+## 2026-09-21 — local originals, shared observation sequence, native publication and BO preview ownership
+
+The lab now resolves the existing standard variant's empty video binding to a
+registered local original for the selected dealer and exact supported source
+event. Explicit project video bindings take precedence; alternative variants
+never borrow the default. No project migration or media-byte change was made.
+The inventory has 84 available entries across four dealers, including 22 Astrid
+entries. Native MP4, indexed H.264 with its exact audio and packed base-staged
+takes reuse the product media modules. Rejected Astrid action is excluded.
+Canonical staged destinations are limited; contact across later cards, all
+seats, split and transitions is not established. This is no new visual approval.
+Jakob reported that the browser did not show Astrid; subsequent local screenshots
+showed the material registered under Astrid in both lab and actual player.
+That confirms the code's selection, not the intended visual identity.
+
+Händelselogg contains a single reference/lab viewing surface. Browser-selected
+reference-tab video stays local, with no recording, upload or captured audio;
+controls and sound stay in the original tab. Cross-site authenticated embedding
+is not bypassed. The tab chooser still needs a manual browser check.
+Partner instructions and imported observations become an ordered sequence with
+per-step playback and links into the existing editor. Exact public cards,
+destination and line survive editing; hidden ranks are redacted. Lab playback
+has separate start/end/error receipts. HTTP/SSE duplicates are merged; conflicting
+correlations, gaps and capacity limits stop following. Follow-new is opt-in and
+uses standard selection initially. No automatic model calls or fabricated live
+traffic occur. The trace survives lab navigation but not page reload. The 2D
+scene is an event preview, not a persistent reconstruction of every game hand.
+Original-client clip/landing telemetry and actual live choreography remain absent.
+
+Native /api/table commits wallet/shoe first and then publishes to the verified
+Partner-launch session's exact key/player channel. State reads, retry, stale or
+illegal commands and rollback do not republish. Publication failure cannot turn
+an accepted command into a failure. The events scope can read SSE without gaining
+play/wallet. CROUPIER_DATA_DIR allows the real local server to use isolated QA
+databases; existing defaults and temporary guest access are unchanged. The bridge
+is local code, not deployed to Bettalotto; live round delivery is still unverified.
+
+The BO catalogue and voice previews now share one preview controller: starting
+another pauses/rewinds the previous, and navigation/redraw/pagehide releases media.
+BFCache restoration rerenders the current section; the API Keys view exposes
+the read-only events scope without creating a key. This repairs an identified
+local concurrency gap. Kevin's historical double-stream
+incident was not reproduced. Multiple catalogue families and synchronized engine
+image/matte decoders must not be mistaken for two competing runtime takes.
+See the active system-map ASTRID-KALLKARTA-OCH-DUBBELSTROM-2026-09-21.md and the
+separate PROMPT-OPENCLAW-SOM-TALAGARE.md. OpenClaw ownership is specified there;
+it has not yet replaced all product speech producers in this change.
+
+Validation: 286 lab tests, TypeScript and the Next production build passed; all commands in .githooks/pre-commit
+and audit-dealer-sync.mjs --probe passed. BO adds three focused ownership/cleanup
+tests, all passing. Chrome QA used lab port 4192 and a separate data directory;
+actual player QA used rehearsal.localhost:4194 and isolated CROUPIER_DATA_DIR.
+All four dealers' greeting was exercised with Play twice and matched start/end
+pairs; screenshots confirm visible media, not full audio/lip-sync acceptance.
+An isolated native transaction fixture produced three real in-memory publications;
+imported into the browser, all 12 presentation steps played to completion with
+49 log rows (import plus input/decision/start/end per step) and no console warnings
+or errors. Opening step 2 in the editor retained 8-spades, box 0, hand 0.
+Import initially failed until Chrome file access was enabled, then succeeded.
+No live bets, real user database changes, paid model/media calls or deployment.
+
+Inbox check remains blocked by EPERM reading its existing credential. No Jira
+connector/current issue was available, so no CAC status or QA completion is claimed.
+The user's three supplied untracked inventory/export/text files remain outside
+this task's commit. Private QA data and logs are under ignored lab/data.
+
 ## 2026-09-21 — Astrid inventory traced; explicit base-staged launch in the lab
 
 Jakob moved the supplied motor inventory into random-stuff-jakob. Its parsed

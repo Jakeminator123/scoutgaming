@@ -12,3 +12,4 @@ node --test test/dealer-motion.mjs test/dealer-skin-contact.mjs
 node --test test/rigged-card-layout.mjs test/rigged-layout-contact.mjs test/rigged-discard-state.mjs
 node --test test/dealer-collection.mjs
 node --test test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-face-bindings.mjs
+node --test test/native-partner-events.mjs test/bo-media-preview.mjs

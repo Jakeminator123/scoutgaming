@@ -1,0 +1,4 @@
+.preview { position: relative; min-height: 300px; aspect-ratio: 16 / 10; background: #161c1a; }
+.preview iframe { display: block; width: 100%; height: 100%; position: absolute; inset: 0; border: 0; }
+.preview > span { position: absolute; right: 12px; bottom: 8px; font-size: 10px; color: #aabbb2; pointer-events: none; }
+@media (max-width: 600px) { .preview { min-height: 270px; } }

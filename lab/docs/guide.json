@@ -10,28 +10,29 @@
     {
       "view": "videos",
       "title": "2. Koppla rätt material",
-      "body": "Kategorisera filmen med dealer, eventgrupp och exakt situation eller replik. En skyddad standardvariant finns alltid; lägg till alternativ när det behövs. Filkoppling är inte visuellt godkännande."
+      "body": "Standardvarianten använder ett registrerat lokalt original när exakt replik eller kortdestination stöds. Videobanken visar källan och luckorna. Koppla en egen film när du vill ersätta förvalet; alternativen behåller egna kopplingar. Tillgänglig fil är inte visuellt godkännande."
     },
     {
       "view": "lab",
       "title": "3. Prova och spara",
-      "body": "Spela vald variant visar ditt markerade material. Testa event låter OpenClaw välja bland tillåtna varianter med simulerad kontext. Modellanrop sker först när du trycker. Standard är reserv vid fel. Jämförelselägen finns under Avancerade jämförelsetester."
+      "body": "Spela vald variant visar markerat material. Testa event låter OpenClaw välja bland tillåtna varianter. Ett event öppnat från en observation behåller sina verkliga spelfakta; chatt och historik är separat testkontext. Modellanrop sker först när du trycker. Standard är reserv vid fel."
     },
     {
       "view": "activity",
       "title": "4. Följ hela förloppet",
-      "body": "Se labbets indata, beslut och uppspelningskvitton. För originalspelet: verifiera Partner-åtkomst, hämta videokartan, anslut läsande och öppna referensspelet i egen flik. Under Testa Astrids grundfilmer kan du efter avslutad runda öppna staged-grundläget utan smooth60/rhythm. Filmerna är för granskning. Exportera observationsprotokollet som underlag för 2D-mockupen. Strömmen driver inte labbscenen."
+      "body": "På Händelseloggen: öppna originalspelet via Partner och välj dess flik under Visa spelflik. Växla till Labbets presentation för att spela mottagna eller importerade instruktioner med labbets material. Följ nya instruktioner är ett uttryckligt val. Stega, spela en sekvens och öppna dess event i den vanliga editorn. Exportera protokollet före omladdning."
     }
   ],
   "boundaries": [
     "Signal är samlingsordet för inkommande information: spelfakta, chatt eller uppspelningens status. Ett event är en namngiven händelse med data. De sex Partner-presentationstyperna är en del av detta, inte allt som kan hända i systemet.",
     "De fyra presentationssätten är en vy över befintliga sex källtyper och 16 grupper. Tekniska ID:n och sparade projekt behålls. Idle är ett bakgrundsbehov, men videopreview spelas fortfarande en gång; redigerbara loopar och takepooler är inte införda.",
     "Eventets kort och box kommer från källan. Box 0–6 betyder bordsplats 1–7, inte en identifierad spelare. Återbesök, språk, chattsignal och historik är separat simulerad kontext i eventtestet. Kortposition kan behöva härledas. Variant-ID väljs efteråt; längd och landningstid hör till materialets metadata.",
-    "Standard är också en variant. Linje är den tekniska behållaren för en dealers standard och alternativ, inte en talad replik. Want, filhash och kategorisering bevisar varken visuell kvalitet eller läppsynk. Full täckning för senare kort, split och övergångar återstår.",
+    "Standard är också en variant. Linje är behållaren för en dealers standard och alternativ. Utan egen videokoppling kan standard använda ett exakt registrerat lokalt original. Alternativ lånar inte förvalet. Want, filhash och kategorisering bevisar varken rätt person, visuell kvalitet eller läppsynk. Täckning för senare kort, split och övergångar är ofullständig.",
     "2D är en mockup av presentation som ska vara videofiler. Biblioteket har 64 rörelsefiler, fyra per eventgrupp delade av fyra dealers, samt en social rörelsefil. Varianters namn ändrar inte rörelsen. Full täckning för kort, platser, split, timing, övergångar och repliker ska härledas från originalspelet. Riktig läppsynk saknas.",
     "Socialt prov finns för Astrid i vänteläget: fritt textsvar och förvalt ElevenLabs-ljud, högst sex sekunder tal. Standardfras vid uttryck är ett valbart undantag. Uttryckets cooldown stoppar inte fria svar. Socialt svar och handlingsprov får inte äga scenen samtidigt. Blinkningar startar inte om svaret. För långa ljud avvisas; stopp eller fel markeras som avbrutna prov. Riktig läppsynk och produktkoppling återstår.",
     "Händelseloggen lagrar högst 150 poster i flikens minne och töms vid omladdning. Ett modellförslag, en vald fil och en faktiskt avslutad uppspelning är skilda loggsteg. Inga exempelrader visas som mottagna live-events.",
-    "Partner-launch öppnar originalspelet för samma nyckel och spelare som SSE-observern. Launch och events är verifierade behörigheter. Att launch-spelets rundor faktiskt publiceras måste fortfarande bekräftas. Videokartan visar material och bindningar, inte spelade klipp. Protokollet håller hela mottagna meddelanden, högst 300 eller 4 MiB, och markerar stopp. Exportera före omladdning eller byte av vy. Strömmen saknar replay; avbrott kan ge luckor.",
+    "Partner-launch öppnar originalspelet för samma nyckel och spelare som SSE-observern. Den lokala servern kan publicera native-rundor till rätt Partner-kanal efter commit; detta kräver driftsättning för att gälla live. Videokartan visar bindningar, inte spelade klipp. Protokollet håller högst 300 meddelanden eller 4 MiB och bevaras vid byte av labbvy, men töms vid omladdning. Avbrott markeras som luckor; servern saknar historisk replay.",
+    "Originalbilden kommer från den spelflik du uttryckligen väljer i webbläsaren. Bilden visas lokalt utan inspelning, uppladdning eller fångat ljud. Labbpresentationen använder samma mottagna instruktioner, men är en egen uppspelning. Samma instruktion via HTTP och SSE spelas bara en gång; konflikter och saknade steg stoppar sekvensen. Originalspelarens klippstart/slut och landningstider ingår ännu inte.",
     "Spelmotorn äger kort, regler, utfall, saldo och utbetalningar. OpenClaw får bara föreslå tillåten presentation. Sparade labbändringar publiceras inte automatiskt till spelet eller Render."
   ],
   "surfaces": [
@@ -49,7 +50,7 @@
     },
     {
       "name": "Händelselogg",
-      "purpose": "Aktuell fliks indata, beslut och uppspelning. Verifiera Partner-åtkomst, öppna originalspelet, hämta videokarta och exportera observationer för 2D-mockupen. Mottagna instruktioner spelas inte automatiskt; faktiska klippstart/slut från originalspelaren ingår ännu inte."
+      "purpose": "Originalbild, valfri labbuppspelning av samma instruktioner och en sekvenslista som öppnar eventeditorn. Verifiera Partner-åtkomst, anslut läsande, importera/exportera observationer. Mottagna instruktioner och labbets uppspelningskvitton visas separat; originalets faktiska klipptelemetri saknas."
     },
     {
       "name": "Chatt & OpenClaw",

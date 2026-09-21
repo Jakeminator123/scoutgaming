@@ -17,7 +17,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
   db.exec(`CREATE TABLE IF NOT EXISTS partner_players (key_id TEXT NOT NULL, partner_player TEXT NOT NULL, player_id TEXT NOT NULL, PRIMARY KEY (key_id, partner_player))`);
   db.exec(`CREATE TABLE IF NOT EXISTS partner_idem (key_id TEXT NOT NULL, request_id TEXT NOT NULL, response TEXT NOT NULL, PRIMARY KEY (key_id, request_id))`);
 
-  const SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby'];
+  const SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
   const keys = {
     list() { return boDb.prepare('SELECT id, name, key, scopes, wallet_url, ip_allow, created_by, created_at, last_used, revoked_at FROM api_keys ORDER BY created_at DESC').all().map(r => ({ ...r, scopes: JSON.parse(r.scopes), key: r.key.slice(0, 12) + '…' })); },
     create({ name, scopes, walletUrl, ipAllow }, who) {
@@ -104,7 +104,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
     if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return fail(401, 'timestamp outside 5 min window');
     const expected = createHmac('sha256', row.secret).update(`${ts}.GET./api/v1/events.${playerId}`).digest('hex');
     if (expected.length !== String(sig).length || !timingSafeEqual(Buffer.from(expected), Buffer.from(String(sig)))) return fail(401, 'bad signature');
-    if (!JSON.parse(row.scopes).includes('play')) return fail(403, 'scope play required');
+    if (!JSON.parse(row.scopes).some(scope => scope === 'events' || scope === 'play')) return fail(403, 'scope events or play required');
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.write(`event: hello\ndata: ${JSON.stringify({ playerId, serverTime: new Date().toISOString() })}\n\n`);
     const c = chan(row.id, playerId); if (!subs.has(c)) subs.set(c, new Set()); subs.get(c).add(res);
@@ -172,5 +172,20 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       return send(404, { error: 'unknown endpoint' });
     } catch (e) { return send(400, { error: String(e.message || e) }); }
   }
-  return { keys, handle, handleEvents, SCOPES };
+  // Called only by the native table after a committed, non-replayed command.
+  // Session provenance is a separate server argument, never client JSON.
+  function publishNativeRound({ session, playerId, previousView, view, command, balance }) {
+    if (!session?.partnerKeyId || session.playerId !== playerId || command.op === 'state') return false;
+    const key = boDb.prepare('SELECT id, scopes FROM api_keys WHERE id=? AND revoked_at IS NULL').get(session.partnerKeyId);
+    if (!key || !JSON.parse(key.scopes).some(scope => scope === 'events' || scope === 'play')) return false;
+    const mappings = db.prepare('SELECT partner_player FROM partner_players WHERE key_id=? AND player_id=?').all(key.id, playerId);
+    // An ambiguous reverse mapping must not broadcast a native player's data.
+    if (mappings.length !== 1) return false;
+    const events = presentationEvents(previousView, view, command.op, { action: command.action });
+    if (!events.length) return false;
+    publish(key.id, mappings[0].partner_player, { type: 'round', op: command.op, requestId: command.requestId,
+      version: view.version, phase: view.round?.phase ?? null, balance, events });
+    return true;
+  }
+  return { keys, handle, handleEvents, publishNativeRound, SCOPES };
 }

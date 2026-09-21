@@ -8,9 +8,10 @@ import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { isAgentFailure } from './agent-response.mjs';
 import { installPartnerApi } from './partner-api.mjs';
+import { createNativeTableCommand } from './native-table.mjs';
 import { readFileSync as readSync, writeFileSync as writeSync } from 'node:fs';
 import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
-import { join, normalize, extname } from 'node:path';
+import { join, normalize, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
@@ -18,7 +19,9 @@ import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, creat
 const root = join(fileURLToPath(new URL('.', import.meta.url)), 'public');
 
 // ---------- player database (demo money only) ----------
-const dataDir = join(fileURLToPath(new URL('.', import.meta.url)), 'data');
+// An explicit directory lets local QA exercise the real player/server without
+// opening the operator's databases. Production keeps its existing default.
+const dataDir = process.env.CROUPIER_DATA_DIR ? resolve(process.env.CROUPIER_DATA_DIR) : join(fileURLToPath(new URL('.', import.meta.url)), 'data');
 mkdirSync(dataDir, { recursive: true });
 const db = new DatabaseSync(join(dataDir, 'croupier.db'));
 db.exec(`
@@ -81,21 +84,10 @@ function apiCurrency({ id, currency }) {
 const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency };
 
 // Server-owned demo table; SQLite transaction commits wallet and shoe together.
-db.exec('CREATE TABLE IF NOT EXISTS blackjack_tables (player_id TEXT PRIMARY KEY, state TEXT NOT NULL)');
-API['/api/table'] = ({ id, ...req }) => {
-  db.exec('BEGIN IMMEDIATE');
-  try {
-    const p = getPlayer(id); if (!p) throw new Error('Load your player first');
-    const saved = db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(id);
-    const g = saved ? JSON.parse(saved.state) : newGame();
-    const { delta, view } = shoeCommand(g, req, p.balance);
-    const balance = Math.round((p.balance + delta) * 100) / 100;
-    db.prepare('INSERT INTO blackjack_tables VALUES (?,?) ON CONFLICT(player_id) DO UPDATE SET state=excluded.state').run(id, JSON.stringify(g));
-    db.prepare('UPDATE players SET balance=? WHERE id=?').run(balance,id);
-    if (delta) logTx(id, req.op, delta, p.currency, 'server blackjack');
-    db.exec('COMMIT'); return { ...view, balance };
-  } catch (e) { db.exec('ROLLBACK'); throw e; }
-};
+API['/api/table'] = createNativeTableCommand({ db, getPlayer, logTx,
+  publish: observation => { if (observation.session?.partnerKeyId) partner().publishNativeRound(observation); },
+  onPublishError: () => console.warn('[partner-events] Native command committed; observation could not be published.'),
+});
 
 // ---------- partner API v1 (operators / aggregators) ----------
 let partnerApi = null;
@@ -916,7 +908,7 @@ createServer(async (req, res) => {
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
     req.on('end', () => {
       let out;
-      try { out = API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }); }
+      try { out = API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }, req.url === '/api/table' ? auth.session(req) : null); }
       catch (e) { out = { error: String(e.message || e) }; }
       res.writeHead(out.error ? 400 : 200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));

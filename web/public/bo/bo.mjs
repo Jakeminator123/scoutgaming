@@ -1,4 +1,6 @@
 // Scout Live Casino backoffice - live data from the game server.
+import { createSinglePreviewController } from './media-preview.mjs';
+
 const $=s=>document.querySelector(s);
 const fmt=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const pill=(t,k)=>`<span class="pill ${k}">${t}</span>`;
@@ -35,12 +37,15 @@ const PORTRAIT=k=>`/bo/img/${k}-portrait.jpg`;
 const ROOMIMG={prive:'/bo/img/prive-room.jpg',darkhall:'/bo/img/darkhall-room.jpg',goldensalon:'/bo/img/goldensalon-room.jpg',azure:'/bo/img/azure-room.jpg'};
 const DEALER_ROOM={vera:'prive',astrid:'darkhall',amira:'goldensalon',mei:'azure'};
 const DSTATE=d=>d.speak>=10?['LIVE-READY','live']:d.speak>0?['PREVIEW','preview']:d.stills?['STILLS READY','pending']:['PENDING','pending'];
+const mediaPreviews=createSinglePreviewController();
+addEventListener('pagehide',()=>mediaPreviews.release(document));
+addEventListener('pageshow',event=>{if(event.persisted)void render(location.hash.slice(1)||'ops');});
 
 async function render(id){
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.id===id));
   const meta=SECTIONS.find(s=>s[0]===id)||SECTIONS[0];
   $('#title').textContent=meta[1]; $('#sub').textContent=meta[2];
-  const C=$('#content'); C.innerHTML='<div class="mono" style="color:var(--mut);font-size:11px">loading&hellip;</div>';
+  const C=$('#content'); mediaPreviews.release(C); C.innerHTML='<div class="mono" style="color:var(--mut);font-size:11px">loading&hellip;</div>';
   const ov=await api('/api/bo/overview');
   const sum=t=>ov.tx.find(x=>x.type===t)||{n:0,sum:0};
   if(id==='ops'){
@@ -62,7 +67,7 @@ async function render(id){
 
   if(id==='apikeys'){
     const d=await api('/api/bo/apikeys');
-    const SC={launch:'Launch (get game URL for a player)',play:'Play (drive the table server-side)',wallet:'Wallet (balance queries)',history:'History (round log export)',lobby:'Lobby (tables, limits, rules)'};
+    const SC={launch:'Launch (get game URL for a player)',play:'Play (drive the table server-side)',wallet:'Wallet (balance queries)',history:'History (round log export)',lobby:'Lobby (tables, limits, rules)',events:'Events (read-only observation stream; no table or wallet commands)'};
     const draw=(fresh)=>{C.innerHTML=`
       ${fresh?`<div class="panel" style="border-color:var(--lime)"><div class="t" style="color:var(--lime)">NEW KEY &middot; ${fresh.name} &middot; SECRET SHOWN ONCE</div><div class="pad">
         <div class="mono" style="font-size:12px;line-height:1.9;user-select:all">X-Api-Key: <b>${fresh.key}</b><br>Secret: <b>${fresh.secret}</b><br>Scopes: ${fresh.scopes.join(', ')}${fresh.walletUrl?`<br>Wallet URL: ${fresh.walletUrl}`:''}</div>
@@ -120,6 +125,7 @@ async function render(id){
     const cardBadge=c=>{const ps=assignedParts(c.id);return ps.length?`<span class="pill live" style="background:var(--lime);color:#111">&#10003; ASSIGNED &middot; ${ps.map(p=>PARTN[p].toUpperCase()).join(' + ')}</span>`:'';};
     const markCard=id=>{const el=C.querySelector(`[data-clip="${id}"]`);if(!el)return;const ps=assignedParts(id);el.style.borderColor=ps.length||st.selected===id?'var(--lime)':'var(--line)';el.style.boxShadow=ps.length?'0 0 0 2px rgba(214,255,58,.25)':'';el.querySelector('[data-badge]').innerHTML=cardBadge(byId[id]);};
     const draw=()=>{
+      mediaPreviews.release(C);
       const never=lib.neverAgain??{};
       let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='never'?!!never[c.id]:!never[c.id]&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent))));
       const cmp={dealer:(a,b)=>a.dealer.localeCompare(b.dealer)||(a.part??'zz').localeCompare(b.part??'zz')||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),part:(a,b)=>(a.part??'zz').localeCompare(b.part??'zz')||a.dealer.localeCompare(b.dealer),frames:(a,b)=>(b.frames??0)-(a.frames??0)}[st.sort];
@@ -139,7 +145,7 @@ async function render(id){
       </div></div>`:''}
       <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
       ${list.map(c=>`<div data-clip="${c.id}" style="border:1px solid ${st.selected===c.id||assignedParts(c.id).length?'var(--lime)':'var(--line)'};${assignedParts(c.id).length?'box-shadow:0 0 0 2px rgba(214,255,58,.25);':''}border-radius:10px;overflow:hidden;background:var(--panel2);cursor:pointer;position:relative"><div data-badge style="position:absolute;top:8px;left:8px;z-index:2">${cardBadge(c)}</div>
-        ${c.src?`<video src="/${c.src}" preload="metadata" muted playsinline controls style="width:100%;max-height:220px;display:block;background:#000;object-fit:contain"></video>`:`<div style="height:90px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
+        ${c.src?`<video data-bo-preview src="/${c.src}" preload="metadata" muted playsinline controls style="width:100%;max-height:220px;display:block;background:#000;object-fit:contain"></video>`:`<div style="height:90px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
         <div style="padding:9px 11px">
           <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
           <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.status?' &middot; '+c.status:''}</div>
@@ -150,6 +156,7 @@ async function render(id){
           <div data-never-row="${c.id}" style="margin-top:6px;display:flex;gap:6px;align-items:center"><input data-never-reason="${c.id}" placeholder="why it's awful (optional)" style="flex:1;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-never="${c.id}" style="border-color:rgba(255,80,80,.5);color:var(--red);font-size:10px">&#10006; NEVER AGAIN</button></div>`}
         </div></div>`).join('')}
       </div>`;
+      mediaPreviews.bind(C);
       $('#cf-dealer').onchange=e=>{st.dealer=e.target.value;st.selected=null;draw();};
       $('#cf-part').onchange=e=>{st.part=e.target.value;draw();};
       $('#cf-sort').onchange=e=>{st.sort=e.target.value;draw();};
@@ -182,9 +189,9 @@ async function render(id){
     <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
     ${d.lines.map(l=>`
       <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel2)">
-        ${l.preview?`<video src="${l.preview}" preload="none" controls playsinline style="width:100%;aspect-ratio:1;display:block;background:#000"></video>`
+        ${l.preview?`<video data-bo-preview src="${l.preview}" preload="none" controls playsinline style="width:100%;aspect-ratio:1;display:block;background:#000"></video>`
                    :`<div style="width:100%;aspect-ratio:2.6;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:#000">
-                      <audio src="${l.audio}" controls preload="none" style="width:88%;height:30px"></audio>
+                      <audio data-bo-preview src="${l.audio}" controls preload="none" style="width:88%;height:30px"></audio>
                       <span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">VOICE ONLY - NO CLIP YET</span></div>`}
         <div style="padding:9px 11px">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
@@ -199,6 +206,7 @@ async function render(id){
         </div>
       </div>`).join('')}
     </div></div>`).join('');
+    mediaPreviews.bind(C);
     C.querySelectorAll('button[data-rv]').forEach(b=>b.onclick=async()=>{
       const r=await api('/api/bo/voiceline-review',{dealer:b.dataset.d,line:b.dataset.l,verdict:b.dataset.rv});
       if(r.ok){toast(`${b.dataset.d}/${b.dataset.l}: ${b.dataset.rv}`);render('voice');}

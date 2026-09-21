@@ -42,6 +42,24 @@ test('off always uses baseline without calling configured OpenClaw', async () =>
   assert.equal(result.decision.reason, 'ai_disabled');
 });
 
+test('received instructions preserve exact public cards, destinations and speech instead of editor examples', async () => {
+  const sourceEvent = { type: 'deal', to: 'box', box: 4, handIndex: 2, faceDown: false, card: { r: '9', s: '♦' }, shoeDraw: 43, clip: { action: 'deal-centre' } };
+  const result = await server.simulateStudio(body({ eventId: 'deal.player.centre', mode: 'off', sourceEvent }), { settings: settings(), fetchImpl: noFetch });
+  assert.deepEqual(result.decision.sourceEvent, sourceEvent);
+  assert.equal(result.decision.simulated, false);
+  assert.equal(result.decision.presentationReplay, true);
+  const speech = await server.simulateStudio(body({ eventId: 'speak.other', mode: 'off', sourceEvent: { type: 'speak', line: 'win' } }), { settings: settings(), fetchImpl: noFetch });
+  assert.equal(speech.decision.sourceEvent.line, 'win');
+});
+
+test('received instruction projection removes private values and rejects a mismatched editor group', async () => {
+  const sourceEvent = { type: 'deal', to: 'dealer', box: null, handIndex: null, faceDown: true, card: { r: 'A', s: '♠' }, shoeDraw: 12, clip: { action: 'deal-dealer' }, privateShoe: ['SECRET_CARD'] };
+  const result = await server.simulateStudio(body({ eventId: 'deal.dealer', mode: 'off', sourceEvent }), { settings: settings(), fetchImpl: noFetch });
+  assert.equal(result.decision.sourceEvent.card, null);
+  assert.ok(!JSON.stringify(result).includes('SECRET_CARD'));
+  await assert.rejects(server.simulateStudio(body({ eventId: 'speak.goodluck', mode: 'off', sourceEvent }), { settings: settings(), fetchImpl: noFetch }), /matchar inte/);
+});
+
 test('shadow validates advice but keeps baseline, active accepts only eligible choice', async () => {
   const shadow = await server.simulateStudio(body({ mode: 'shadow' }), { settings: directSettings(), fetchImpl: gateway() });
   assert.equal(shadow.variant.id, baselineId);
