@@ -4,7 +4,8 @@ Live follow-up: both chats answered Jakob/John and follow-up questions correctly
 Kevin's browser TTS completed in 12.771 seconds under the 25-second limit.
 An OpenAI search selected a lookalike OpenClaw documentation site; official
 OpenClaw queries now filter to docs.openclaw.ai and reject other citations.
-Poem direction now requests four rhyming lines without an introductory paragraph.
+Poem direction requests four rhyming lines without an introductory paragraph;
+both chat paths replace malformed model output with a local four-line original.
 
 Follow-up to e07dd86 based on user live QA. Both lab chats now receive the
 same temporary fictional cast; Vem är Jakob/John and Berätta om Jakob with a
@@ -21,11 +22,18 @@ per rolling hour, 5 SEK budget. Search pricing review required on 2026-10-21.
 Normal chat, hosting and ElevenLabs are separate. See COMPANION.md for pricing,
 retention, ports, disable switches, exact rollback and deployment receipts.
 
-Validation: 110 OpenClaw/deployment tests, 302 lab tests and production build
+Validation: 111 OpenClaw/deployment tests, 302 lab tests and production build
 passed. Real OpenAI search returned a cited official documentation link.
+Final live verification returned only docs.openclaw.ai/install and four-line
+mixed-language poems in both the player and operator chats.
 Four-dealer greeting Play-twice checks completed on isolated rehearsal host;
 no new visual or lip-sync acceptance. This supersedes the original free-search
 and exact-only trigger descriptions below. No Partner/product migration.
+
+Final source revision: `cbb856e75f5499ad882f56dfa093046210e70665`.
+Render receipts: Director `dep-daoals0473hc739jad00`; private Gateway
+`dep-daoalujtqb8s73ej1520`. Exact rollback order and disable switches are in
+`open-claw/lab/docs/COMPANION.md`.
 
 ## 2026-09-21 — reversible OpenClaw lab companion, based on V5 94a2688
 
