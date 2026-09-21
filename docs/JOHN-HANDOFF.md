@@ -20,7 +20,7 @@ Validering: `npm run typecheck`, hela labbsviten (304 tester) och Next 16.3.5
 production build passerade. Det byggda labbet granskades på isolerad
 `127.0.0.1:4200`: standardvyn, Guide-navigering, sex huvudvyer, Scout-tokens
 och avsaknad av horisontell overflow verifierades; webbläsarkonsolen hade inga
-varningar eller fel. Previewprocessen stängs före leverans. Ingen gameplay,
+varningar eller fel. Previewprocessen och previewfliken stängdes efter kontrollen. Ingen gameplay,
 dealerfilm, ljudfil, frame-index, kalibrering, serverdata eller Jira-status har
 ändrats.
 
