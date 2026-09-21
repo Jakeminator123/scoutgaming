@@ -21,12 +21,19 @@ function fixture({ duration = 2, readyState = 1, play } = {}) {
   return { player, elements, timers, states, receipts, fireTimer };
 }
 
-test('metadata over six seconds is rejected before any audio play call', async () => {
-  for (const duration of [6.01, 12, Infinity]) {
+test('metadata over 25 seconds is rejected before any audio play call', async () => {
+  for (const duration of [25.01, 30, Infinity]) {
     const f = fixture({ duration }), result = await f.player.play('/voice');
-    assert.equal(result.outcome, 'rejected'); assert.equal(result.reason, 'audio-longer-than-six-seconds');
+    assert.equal(result.outcome, 'rejected'); assert.equal(result.reason, 'audio-longer-than-25-seconds');
     assert.equal(f.elements[0].playCalls, 0); assert.equal(f.player.active, false); assert.equal(f.timers.size, 0);
   }
+});
+
+test('a 24-second poem now plays once and completes normally', async () => {
+  const f = fixture({ duration: 24 }), pending = f.player.play('/poem');
+  await flush(); assert.equal(f.elements[0].playCalls, 1);
+  f.elements[0].currentTime = 24; f.elements[0].ended = true; f.elements[0].onended();
+  assert.equal((await pending).outcome, 'completed'); assert.equal(f.timers.size, 0);
 });
 
 test('metadata must arrive before playback and missing metadata fails without retry', async () => {
@@ -46,11 +53,11 @@ test('arriving metadata permits one play and natural end clears the hard watchdo
   assert.equal(result.outcome, 'completed'); assert.equal(f.timers.size, 0); assert.deepEqual(f.states, ['loading', 'playing', 'idle']);
 });
 
-test('unknown or falsely short duration is stopped by the six-second watchdog as a failed preview', async () => {
+test('unknown or falsely short duration is stopped by the 25-second watchdog as a failed preview', async () => {
   for (const duration of [NaN, 2]) {
-    const f = fixture({ duration }), pending = f.player.play('/voice'); await flush(); f.fireTimer(6000);
+    const f = fixture({ duration }), pending = f.player.play('/voice'); await flush(); f.fireTimer(25000);
     const result = await pending;
-    assert.equal(result.outcome, 'failed'); assert.equal(result.reason, 'speech-six-second-watchdog');
+    assert.equal(result.outcome, 'failed'); assert.equal(result.reason, 'speech-25-second-watchdog');
     assert.ok(f.elements[0].pauseCalls > 0); assert.equal(f.timers.size, 0);
   }
 });
@@ -78,8 +85,8 @@ test('current time and changing metadata also enforce the bound', async () => {
   for (const source of ['time', 'metadata']) {
     const f = fixture(), pending = f.player.play('/voice'); await flush();
     const element = f.elements[0];
-    if (source === 'time') { element.currentTime = 6; element.ontimeupdate(); }
-    else { element.duration = 9; element.ondurationchange(); }
+    if (source === 'time') { element.currentTime = 25; element.ontimeupdate(); }
+    else { element.duration = 26; element.ondurationchange(); }
     assert.notEqual((await pending).outcome, 'completed'); assert.equal(f.player.active, false);
   }
 });
@@ -92,7 +99,7 @@ test('browser autoplay rejection produces one failed receipt and no automatic re
 
 test('delayed browser end notification cannot label an overlong take completed', async () => {
   const f = fixture(), pending = f.player.play('/voice'); await flush();
-  f.elements[0].currentTime = 6.5; f.elements[0].onended();
+  f.elements[0].currentTime = 25.5; f.elements[0].onended();
   const result = await pending;
-  assert.equal(result.outcome, 'failed'); assert.equal(result.reason, 'speech-six-second-watchdog');
+  assert.equal(result.outcome, 'failed'); assert.equal(result.reason, 'speech-25-second-watchdog');
 });

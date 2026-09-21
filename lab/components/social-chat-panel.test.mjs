@@ -15,7 +15,7 @@ const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve();
 
 // Focused hook harness: exercises real handlers and cancellation without a browser,
 // a model, external audio or an additional test dependency.
-function harness({ compact = false, voiceConfigured = true, dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
+function harness({ compact = false, companionEnabled = false, voiceConfigured = true, dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
   const slots = [], requests = [], reactions = [], audio = [], effects = [], ownership = [], activities = [];
   let cursor = 0, cancel;
   const listeners = new Map();
@@ -36,7 +36,7 @@ function harness({ compact = false, voiceConfigured = true, dealerId = 'astrid',
   const module = { exports: {} };
   const document = { hidden: false, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) };
   vm.runInNewContext(compiled, { module, exports: module.exports, Error, AbortController, structuredClone, crypto: { randomUUID }, Audio: FakeAudio, document, window: { confirm: () => true, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
-    require: name => name === 'react' ? hooks : name === './studio-types' ? { requestJson: async (url, init = {}) => { requests.push({ url, init }); return url === '/api/social' && !init.method ? structuredClone({ ...status, voiceConfigured }) : respond(url, init); } } : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : require(name),
+    require: name => name === 'react' ? hooks : name === './studio-types' ? { requestJson: async (url, init = {}) => { requests.push({ url, init }); return url === '/api/social' && !init.method ? structuredClone({ ...status, voiceConfigured, companionEnabled }) : respond(url, init); } } : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : require(name),
   });
   const props = { compact, dealerId, eventId, draftCache, blocked, onBusyChange: value => ownership.push(value), onActivity: value => activities.push(value), onGoToIdle() {}, registerCancel: fn => { cancel = fn; }, onBegin() {}, onReaction: (...args) => reactions.push(args) };
   function render() { cursor = 0; const tree = module.exports.SocialChatPanel(props); while (effects.length) effects.shift()(); return tree; }
@@ -231,10 +231,10 @@ test('one owner survives idle rerenders and blocks a second send or replay until
 });
 
 test('overlong audio leaves one text reply, rejects playback and releases ownership', async () => {
-  const instance = await ready({ duration: 8, respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'e'.repeat(64), audioUrl: `/api/voice/${'e'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
+  const instance = await ready({ duration: 26, respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'e'.repeat(64), audioUrl: `/api/voice/${'e'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
   typeMessage(instance, 'Hej'); submit(instance); await flush();
   assert.equal(instance.audio[0].playCalls, 0); assert.equal(instance.ownership.at(-1), false);
-  assert.equal(instance.reactions.length, 1); assert.match(text(instance.render()), /längre än sex sekunder/);
+  assert.equal(instance.reactions.length, 1); assert.match(text(instance.render()), /längre än 25 sekunder/);
   assert.equal(instance.activities.filter(item => item.type === 'social.audio.rejected').length, 1);
   instance.unmount();
 });
@@ -289,4 +289,28 @@ test('studio uses a distinct direct-preview state, cancellation and separate soc
   assert.match(studio, /prefers-reduced-motion: reduce/);
   assert.match(studio, /Visa chatten/);
   assert.match(readFileSync(new URL('./gateway-panel.tsx', import.meta.url), 'utf8'), /off: 'Bara standard'/);
+});
+
+test('companion asks a new visitor, restores returned memory and forgets without generating speech', async () => {
+  let profile = { name: null, history: [], greeting: 'Tjena! Vem kom in?', names: ['Jakob', 'Emil', 'Kevin', 'Alex', 'John'], retentionDays: 30 };
+  const instance = await ready({ companionEnabled: true, respond: async (url, init) => {
+    assert.equal(url, '/api/social/profile');
+    if (init.method === 'POST') {
+      const body = JSON.parse(init.body);
+      profile = { ...profile, name: body.operation === 'forget' ? null : body.name, history: [], greeting: body.operation === 'forget' ? 'Vem kom in?' : 'Tjena Jakob!' };
+    }
+    return structuredClone(profile);
+  } });
+  instance.render(); await flush();
+  typeMessage(instance, 'Hej'); submit(instance); await flush();
+  assert.equal(instance.requests.some(item => item.url === '/api/social/chat'), false);
+  await button(instance.render(), 'Jakob').props.onClick(); await flush();
+  assert.match(text(instance.render()), /Du är Jakob/);
+  await button(instance.render(), 'Glöm mig').props.onClick(); await flush();
+  assert.match(text(instance.render()), /Vem kom in/); assert.equal(instance.audio.length, 0);
+  instance.unmount();
+  const returning = await ready({ companionEnabled: true, respond: async () => ({ ...profile, name: 'John', history: [{ role: 'user', content: 'Min favorithobby är paddling.' }], greeting: 'Tjena John! Kul att du är tillbaka.' }) });
+  returning.render(); await flush();
+  assert.match(text(returning.render()), /paddling/); assert.match(text(returning.render()), /Tjena John/);
+  returning.unmount();
 });
