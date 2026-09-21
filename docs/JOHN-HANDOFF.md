@@ -1,3 +1,26 @@
+## 2026-09-21 — natural name questions and budgeted OpenAI search
+
+Follow-up to e07dd86 based on user live QA. Both lab chats now receive the
+same temporary fictional cast; Vem är Jakob/John and Berätta om Jakob with a
+follow-up sentence work. Shared descriptions persist in request context, not
+as verified personal facts. Fixed compact chat form layout and remaining
+six-second UI labels; the actual speech limit is 25 seconds.
+
+DuckDuckGo connections timed out on Render. Jakob explicitly selected the
+existing OpenAI connection instead. A private authenticated helper on Gateway
+port 18790 reuses its existing provider key, without copying keys or enabling
+native agent tools. Fixed GPT-4.1 mini snapshot, one web_search call, 512 output
+tokens, no retries. Durable pre-call reservation: 0.50 SEK/attempt, ten attempts
+per rolling hour, 5 SEK budget. Search pricing review required on 2026-10-21.
+Normal chat, hosting and ElevenLabs are separate. See COMPANION.md for pricing,
+retention, ports, disable switches, exact rollback and deployment receipts.
+
+Validation: 110 OpenClaw/deployment tests, 302 lab tests and production build
+passed. Real OpenAI search returned a cited official documentation link.
+Four-dealer greeting Play-twice checks completed on isolated rehearsal host;
+no new visual or lip-sync acceptance. This supersedes the original free-search
+and exact-only trigger descriptions below. No Partner/product migration.
+
 ## 2026-09-21 — reversible OpenClaw lab companion, based on V5 94a2688
 
 Added to Astrid's existing lab social chat: chosen names Jakob/Emil/Kevin/Alex/John,

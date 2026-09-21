@@ -20,7 +20,7 @@ export function labCompanionIdentity(request, settings) {
 const directServices = new Map();
 export async function companionRequest(body, settings, fetchImpl = fetch) {
   if (settings.companionEnabled === false) throw new StudioError('Namn och minne är avstängt.', 503);
-  if (settings.remoteUrl) return remoteRequest('/api/studio/companion', body, settings, fetchImpl, 75000);
+  if (settings.remoteUrl) return remoteRequest('/api/studio/companion', body, settings, fetchImpl, 90000);
   const directory = resolve(settings.dataDir, 'companion');
   let service = directServices.get(directory);
   if (!service) {

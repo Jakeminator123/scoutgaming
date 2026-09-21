@@ -3,25 +3,9 @@ import { GatewayError } from './openclaw.mjs';
 import { normalizeSocialInput, socialChat } from './social.mjs';
 import { createCompanionStore, COMPANION_RETENTION_DAYS } from './companion-store.mjs';
 import { searchPublicWeb } from './companion-search.mjs';
+import { COMPANION_NAMES, companionName, roastFor } from './companion-personas.mjs';
+export { COMPANION_NAMES, companionName, roastFor } from './companion-personas.mjs';
 
-export const COMPANION_NAMES = Object.freeze(['Jakob', 'Emil', 'Kevin', 'Alex', 'John']);
-const themes = {
-  Jakob: 'Jakob is an absurdly handsome, strong Viking king and hero; a cheerful over-the-top praise poem.',
-  Emil: 'Emil is the beloved glasögonorm and pokernörd: spectacles, cards and comic cleverness; never encourage betting or losses.',
-  Kevin: 'Kevin should finish his Championship Manager work, alternate with eye masks and wake up for life; sleepy football-manager comedy.',
-  Alex: 'Alexander dreams of billions from stock listings and theatrically snubs pöbelmiljonärer; absurd fictional ambition, no financial advice or real wealth claims.',
-  John: 'John should train to become as strong as Jakob and build a magnificent man cave; playful gym and DIY jokes, no shaming his worth or masculinity.',
-};
-export function companionName(value) {
-  if (typeof value !== 'string') return null;
-  if (/^alexander$/i.test(value.trim())) return 'Alex';
-  return COMPANION_NAMES.find(name => name.toLowerCase() === value.trim().toLowerCase()) || null;
-}
-export function roastFor(message) {
-  const match = /^berätta\s+om\s+["'“”‘’]?(jakob|john|kevin|emil|alexander|alex)["'“”‘’]?[.!?]*\s*$/iu.exec(message.trim());
-  const name = match && companionName(match[1]);
-  return name ? { name, theme: themes[name] } : null;
-}
 const exact = (v, keys) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 export function normalizeCompanionRequest(body) {
   const fields = body?.operation === 'chat' ? ['identity', 'operation', 'input', 'fun', 'web']
@@ -37,7 +21,7 @@ export function normalizeCompanionRequest(body) {
 function publicProfile(profile) {
   return { name: profile.name, history: profile.history, names: [...COMPANION_NAMES], retentionDays: COMPANION_RETENTION_DAYS,
     greeting: profile.name ? `Tjena ${profile.name}! ${profile.history.length ? 'Kul att du är tillbaka. Vi kan fortsätta där vi slutade.' : 'Vad vill du prata om?'}` : 'Tjena! Vem kom in? Välj Jakob, Emil, Kevin, Alex eller John.',
-    search: { provider: 'duckduckgo-html', maxPerHour: 20, searchCostSek: 0, paidFallback: false } };
+    search: { provider: 'openai-web-search', maxPerHour: 10, reserveSek: 0.5, budgetSekPerHour: 5, paidFallback: false } };
 }
 
 export function createCompanionService({ directory, store = createCompanionStore(directory), settings, fetchImpl = fetch, model = socialChat } = {}) {
@@ -72,9 +56,9 @@ export function createCompanionService({ directory, store = createCompanionStore
       let search = { status: 'not_requested', results: [], costSek: 0 };
       const roast = body.fun && config.companionFunEnabled !== false ? roastFor(input.message) : null;
       const result = await model(input, config, fetchImpl, {
-        name: profile.name, roast,
+        name: profile.name, roast, personas: body.fun && config.companionFunEnabled !== false,
         search: body.web && config.companionWebEnabled !== false ? async query => {
-          search = await searchPublicWeb(query, { store, fetchImpl }); return search;
+          search = await searchPublicWeb(query, { store, settings: config, fetchImpl }); return search;
         } : null,
       });
       const history = [...profile.history, { role: 'user', content: input.message }, { role: 'assistant', content: result.reply }].slice(-12);

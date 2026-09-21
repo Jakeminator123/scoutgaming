@@ -36,3 +36,6 @@
 .options label { display: flex; align-items: center; gap: 6px; }
 .options small { flex-basis: 100%; }
 .sources { display: grid; gap: 6px; padding: 10px 0; overflow-wrap: anywhere; font-size: 12px; }
+.compact form > .options { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
+.compact form > .check { grid-column: 1; grid-row: 3; min-width: 0; }
+.compact form > .actions { grid-column: 2; grid-row: 3; min-width: 0; }

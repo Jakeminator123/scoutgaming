@@ -265,7 +265,7 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
         {status.companionEnabled ? <div className={styles.options}>
           <label><input type="checkbox" checked={fun} disabled={Boolean(busy) || blocked} onChange={e => setFun(e.target.checked)} /> Skämtläge</label>
           <label><input type="checkbox" checked={web} disabled={Boolean(busy) || blocked} onChange={e => setWeb(e.target.checked)} /> Tillåt webbsökning</label>
-          <small>Prova: Berätta om Emil. Egna rim på svenska, tyska och kinesiska. Tal upp till 25 sekunder. Webbsökning: 0 kr, högst 20/timme för labbet; modell och ljud tillkommer.</small>
+          <small>Prova: Berätta om Emil. Egna rim på svenska, tyska och kinesiska. Tal upp till 25 sekunder. Webbsökning via OpenAI: budget högst cirka 5 kr/timme, max 10 försök. Vanlig chatt och ljud tillkommer.</small>
         </div> : null}
         <div className={styles.actions}><button className="primary-button" type="submit" disabled={!sceneAllowed || blocked || !status.configured || dirty || Boolean(busy) || !message.trim() || Boolean(status.companionEnabled && !profile?.name)}>{busy === 'chat' ? 'Väntar…' : 'Skicka till Astrid ↑'}</button></div>
       </form>

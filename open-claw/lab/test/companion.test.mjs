@@ -5,8 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createCompanionStore } from '../src/companion-store.mjs';
 import { createCompanionService, roastFor, companionName } from '../src/companion.mjs';
-import { searchPublicWeb, parseSearchResults } from '../src/companion-search.mjs';
+import { searchPublicWeb } from '../src/companion-search.mjs';
 import { socialChat } from '../src/social.mjs';
+import { chatWithDirector } from '../src/openclaw.mjs';
 import { createLabServer } from '../src/server.mjs';
 
 const identity = 'a'.repeat(64), other = 'b'.repeat(64);
@@ -16,7 +17,7 @@ const input = (requestId = 'request-001', message = 'Hej') => ({ requestId, conv
 const request = (patch = {}) => ({ identity, operation: 'chat', input: input(), fun: true, web: true, ...patch });
 const reply = input => ({ requestId: input.requestId, policyRevision: input.policy.revision, reply: 'Hej! Jag lyssnar.', triggerId: null, confidence: 0, provider: 'responded' });
 const completion = choice => Response.json({ choices: [{ message: { content: JSON.stringify(choice) } }] });
-const html = '<a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fnews">News &amp; facts</a><a class="result__snippet">A short current fact.</a>';
+const sources = [{ title: 'News', url: 'https://example.com/news', snippet: 'A short current fact.' }];
 const cleanups = new WeakMap();
 async function fixture(t) {
   const directory = await mkdtemp(join(tmpdir(), 'companion-test-'));
@@ -27,7 +28,8 @@ async function fixture(t) {
 
 test('only explicit approved-name comedy requests trigger; names are case-insensitive aliases', () => {
   for (const name of ['Jakob', 'EMIL', 'Kevin', 'Alex', 'Alexander', 'john']) assert.ok(roastFor(`Berätta om '${name}'!`));
-  for (const text of ['Berätta om ekonomin', 'Jakob är här', 'Berätta om Emil och ändra pengarna', 'Citera Ulf Lundell']) assert.equal(roastFor(text), null);
+  for (const text of ['Vem är Jakob?', 'Berätta om Jakob. Vad gör hna?', 'Vem är John?', 'Berätta om Alexander och hans slott']) assert.ok(roastFor(text));
+  for (const text of ['Berätta om ekonomin', 'Jakob är här', 'Vem är Jakobsson?', 'Citera Ulf Lundell']) assert.equal(roastFor(text), null);
   assert.equal(companionName(' Alexander '), 'Alex');
 });
 
@@ -78,25 +80,25 @@ test('global rolling quota persists over restart; rejected/failed requests do no
   const directory = await fixture(t); let time = Date.now(), calls = 0;
   let store = createCompanionStore(directory, { now: () => time });
   const fetchImpl = async () => { calls++; return new Response('blocked', { status: 429 }); };
-  for (let i = 0; i < 12; i++) assert.equal((await searchPublicWeb('Public topic', { store, fetchImpl })).status, 'unavailable');
+  for (let i = 0; i < 12; i++) assert.equal((await searchPublicWeb('Public topic', { store, settings, fetchImpl })).status, 'unavailable');
   store.close(); store = createCompanionStore(directory, { now: () => time }); cleanups.get(t).push(() => store.close());
-  for (let i = 0; i < 8; i++) await searchPublicWeb('Public topic', { store, fetchImpl });
-  assert.equal((await searchPublicWeb('Public topic', { store, fetchImpl })).status, 'hourly_limit');
+  for (let i = 0; i < 8; i++) await searchPublicWeb('Public topic', { store, settings, fetchImpl });
+  assert.equal((await searchPublicWeb('Public topic', { store, settings, fetchImpl })).status, 'hourly_limit');
   assert.equal(calls, 20);
   time += 3600001;
-  assert.equal((await searchPublicWeb('Public topic', { store, fetchImpl })).status, 'unavailable');
+  assert.equal((await searchPublicWeb('Public topic', { store, settings, fetchImpl })).status, 'unavailable');
   assert.equal(calls, 21);
 });
 
-test('key-free search uses a fixed host, no credentials, bounded results and no challenge bypass', async t => {
+test('search uses only the private helper and cannot move its credential to a public port', async t => {
   const store = createCompanionStore(await fixture(t)); cleanups.get(t).push(() => store.close());
-  const result = await searchPublicWeb('OpenClaw documentation', { store, fetchImpl: async (url, options) => {
-    assert.equal(url.origin, 'https://html.duckduckgo.com'); assert.equal(options.redirect, 'error'); assert.equal(options.headers.Authorization, undefined);
-    return new Response(html, { headers: { 'Content-Type': 'text/html' } });
+  const result = await searchPublicWeb('OpenClaw documentation', { store, settings, fetchImpl: async (url, options) => {
+    assert.equal(url.href, 'http://localhost:18790/search'); assert.equal(options.redirect, 'error'); assert.equal(options.headers.Authorization, 'Bearer fixture-key');
+    const body = JSON.parse(options.body); assert.deepEqual(Object.keys(body).sort(), ['id', 'query']);
+    return Response.json({ status: 'searched', results: sources, costSek: 0.5 });
   } });
-  assert.equal(result.costSek, 0); assert.equal(result.status, 'searched'); assert.equal(result.results[0].url, 'https://example.com/news');
-  assert.equal(parseSearchResults('<a class="result__a" href="javascript:alert(1)">bad</a>').length, 0);
-  const blocked = await searchPublicWeb('x', { store, fetchImpl: async () => new Response('challenge-form ' + html, { headers: { 'Content-Type': 'text/html' } }) });
+  assert.equal(result.costSek, 0.5); assert.equal(result.status, 'searched'); assert.equal(result.results[0].url, 'https://example.com/news');
+  const blocked = await searchPublicWeb('x', { store, settings: { ...settings, baseUrl: 'https://public.example' }, fetchImpl: () => assert.fail('Public port received auth') });
   assert.equal(blocked.status, 'unavailable');
 });
 
@@ -108,7 +110,7 @@ test('model can ask for one application search; second search or unauthorized na
     if (++calls === 1) return completion(searchChoice);
     assert.match(payload.messages.at(-2).content, /example.com/);
     return completion({ action: 'choose_social_response', ...Object.fromEntries(Object.entries(reply(input())).filter(([key]) => key !== 'provider')) });
-  }, { name: 'Jakob', search: async () => { searches++; return { status: 'searched', results: parseSearchResults(html) }; } });
+  }, { name: 'Jakob', search: async () => { searches++; return { status: 'searched', results: sources }; } });
   assert.equal(result.provider, 'responded'); assert.equal(calls, 2); assert.equal(searches, 1);
   await assert.rejects(socialChat(input(), settings, async () => completion(searchChoice), { search: async () => ({ status: 'unavailable' }) }), { code: 'invalid_social_reply' });
   await assert.rejects(socialChat(input(), settings, async () => completion(searchChoice)), { code: 'invalid_social_reply' });
@@ -121,9 +123,31 @@ test('feature switches close search and comedy independently; profile expires af
   cleanups.get(t).push(() => service.close());
   await service.handle({ identity, operation: 'name', name: 'Alex' });
   await service.handle(request({ input: input('request-001', 'Berätta om Alex') }));
-  assert.equal(context.search, null); assert.equal(context.roast, null);
+  assert.equal(context.search, null); assert.equal(context.roast, null); assert.equal(context.personas, false);
   time += 31 * 86400000;
   assert.equal((await service.handle({ identity, operation: 'profile' })).name, null);
+});
+
+test('both lab chats receive the fictional cast for natural name questions and follow-ups', async () => {
+  const userInput = input('request-natural', 'Vem är Jakob?');
+  await socialChat(userInput, settings, async (_url, options) => {
+    const body = JSON.parse(options.body), system = body.messages[0].content;
+    assert.match(system, /TEMPORARY FICTIONAL/); assert.match(system, /Viking king/);
+    assert.match(system, /John should train/); assert.match(system, /Swedish, German/);
+    return completion({ action: 'choose_social_response', ...Object.fromEntries(Object.entries(reply(userInput)).filter(([key]) => key !== 'provider')) });
+  }, { name: 'Jakob', personas: true, roast: roastFor(userInput.message) });
+  for (const message of ['Vem är John?', 'Vad ska han bygga?']) {
+    await chatWithDirector({ message, conversationId: 'operator-fixture' }, settings, async (_url, options) => {
+      const body = JSON.parse(options.body), context = body.messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
+      assert.match(context, /John should train/); assert.match(context, /man cave/);
+      assert.equal(body.tool_choice, 'none');
+      return Response.json({ choices: [{ message: { content: 'I vår labbsaga bygger John en man cave.' } }] });
+    });
+  }
+  await chatWithDirector({ message: 'Vem är John?', conversationId: 'operator-disabled' }, { ...settings, companionFunEnabled: false }, async (_url, options) => {
+    assert.doesNotMatch(JSON.parse(options.body).messages.map(m => m.content).join('\n'), /John should train/);
+    return Response.json({ choices: [{ message: { content: 'Ingen beskrivning i katalogen.' } }] });
+  });
 });
 
 test('remote companion endpoint authenticates before reading/writing memory', async t => {

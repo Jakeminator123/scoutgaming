@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { dashboardOrigin, planGatewayConfig, requireGatewaySecrets } from './gateway-config.mjs';
 import { syncRuntimeBundle } from './runtime-bundle.mjs';
+import { createSearchServer, openAiSearchKey } from './companion-search-server.mjs';
 
 const OPENCLAW_ENTRY = '/app/openclaw.mjs';
 
@@ -144,17 +145,23 @@ export async function prepareGatewayRuntime(env, options = {}) {
 }
 
 async function main() {
-  const { gatewayEnv, action, bundle } = await prepareGatewayRuntime(process.env);
+  const { gatewayEnv, action, bundle, config } = await prepareGatewayRuntime(process.env);
   if (action === 'migrate-legacy') {
     console.info('Migrated the exact legacy lab configuration; a private backup was retained and agent state was preserved.');
   }
   console.info(`Croupier runtime bundle: ${JSON.stringify(bundle)}`);
+  // Private helper: existing credential, no native tools or public ingress.
+  const search = createSearchServer({ directory: gatewayEnv.OPENCLAW_STATE_DIR,
+    token: gatewayEnv.OPENCLAWAPI_KEY.trim(), key: openAiSearchKey(gatewayEnv, config),
+    enabled: gatewayEnv.LAB_COMPANION_WEB_ENABLED !== 'false' && gatewayEnv.LAB_COMPANION_ENABLED !== 'false' });
+  search.on('error', () => console.error('Private companion search listener is unavailable.'));
+  search.listen(18790, '0.0.0.0', () => console.info('Private companion search ready on 18790; budget 5 SEK/hour.'));
   const gateway = spawn(process.execPath, [OPENCLAW_ENTRY, 'gateway', '--bind', 'lan'], {
     env: gatewayEnv, stdio: 'inherit',
   });
-  for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => gateway.kill(signal));
+  for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => { search.close(); gateway.kill(signal); });
   gateway.once('error', () => { console.error('OpenClaw could not start.'); process.exitCode = 1; });
-  gateway.once('exit', (code, signal) => { process.exitCode = code ?? (signal ? 1 : 0); });
+  gateway.once('exit', (code, signal) => { search.close(); process.exitCode = code ?? (signal ? 1 : 0); });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
