@@ -15,7 +15,9 @@ flowchart LR
     E --> F[Partnerklient: svar eller SSE]
     D --> G[Bild, ljud och tidsmarkörer]
     F --> G
-    H[Labb: sparade exempel + testkontext] --> I[Variantval + video eller 2D]
+    F --> H[Labb: mottagna och importerade instruktioner]
+    J[Sparade exempel + testkontext] --> H
+    H --> I[Gemensamt beslut + original, variant eller 2D]
 ```
 
 **Två produktvägar finns.** Vanliga klienten använder `/api/table` och

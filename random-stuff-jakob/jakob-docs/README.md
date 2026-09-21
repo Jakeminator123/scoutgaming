@@ -2,7 +2,7 @@
 
 Arbetsgången börjar i [Guide i labbet](http://127.0.0.1:4188/guide), vars källa
 är [lab/docs](../../lab/docs/README.md). Den aktuella åttadagarsplanen finns i
-[V4](../../docs/animation-events/v4-8-days-mvp/README.md).
+[V5](../../docs/animation-events/v5-8-days-mvp/README.md).
 
 ## Fördjupning
 

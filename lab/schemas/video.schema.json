@@ -161,7 +161,14 @@
               "dealerbust",
               "win",
               "push",
-              "lose"
+              "lose",
+              "greeting",
+              "peek",
+              "bust",
+              "sidebet",
+              "chatter1",
+              "chatter2",
+              "farewell"
             ]
           }
         }

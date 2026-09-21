@@ -1,3 +1,37 @@
+## 2026-09-21 — V5 sprint publication and complete base-speech intake
+
+V5's canonical source is docs/animation-events/v5-8-days-mvp: seven chapters,
+decisions, evidence and publication instructions. It replaces active V4 links
+without rewriting historical runtime evidence. Sources include today's active
+Jakob notes and selectively read local backoffice exports; raw logs, personal
+data and credentials remain private. The eight-day plan assigns Kevin product
+integration and Emil/Kevin exact media/lip-sync deliveries while Jakob travels.
+Jakob's OpenClaw chat is the requested conversation/speech decision owner.
+Product triggers and /chat already use a shared client speech queue; extend
+that implementation and consolidate decision ownership rather than creating a
+second queue. This product integration is not implemented by the docs release.
+
+Lab schemas, policies, 2D assets and product manifests are indexed in
+lab/docs/ARTIFACTS.md. The shared speech implementation brief is now
+lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md; the old Jakob prompt links to it.
+A take delivery/review template and schema README clarify evidence and storage.
+The lab guide/central glossary and public video/trigger instructions are updated.
+
+Fixed a real intake gap: speak.other now accepts the existing greeting, peek,
+bust, sidebet, chatter1, chatter2 and farewell lines, alongside its prior seven.
+Contract/schema changed together; exact line validation is preserved. No event
+IDs, project migration, media bytes, calibration or player modules changed.
+Regression covers upload/reload/binding and greeting being rejected for win.
+
+Validation: 297 lab tests, Next production build including TypeScript, all
+commands in .githooks/pre-commit and audit-dealer-sync --probe passed. This
+release does not add new visual/lip-sync approvals. Earlier four-dealer actual
+player Play-twice results below remain dated evidence. Wiki/site use the
+canonical V5 source and hash manifest; publication receipts are recorded in
+docs/animation-events/V5-PUBLICATION.md after remote verification. No product
+deployment or CAC status change is implied. Existing unrelated untracked files
+are preserved and excluded; the older dirty website checkout is untouched.
+
 ## 2026-09-21 — common OpenClaw decision boundary and reachable exact speech
 
 Both Studio event tests and GameStream now call `/api/presentation/decision`.

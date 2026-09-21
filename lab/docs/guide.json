@@ -10,7 +10,7 @@
     {
       "view": "videos",
       "title": "2. Koppla rätt material",
-      "body": "Standardvarianten använder ett registrerat lokalt original när exakt replik eller kortdestination stöds. Videobanken visar källan och luckorna. Koppla en egen film när du vill ersätta förvalet; alternativen behåller egna kopplingar. Tillgänglig fil är inte visuellt godkännande. Övrig spelreplik har ett enkelt val av exakt tal-klipp; Astrid har 14 där och tre egna talnoder. Tur och resultat är spelmarkeringar, med resultattal i ett separat speak-event."
+      "body": "Standardvarianten använder ett registrerat lokalt original när exakt replik eller kortdestination stöds. Videobanken visar källan och luckorna. Koppla en egen film när du vill ersätta förvalet; alternativen behåller egna kopplingar. Tillgänglig fil är inte visuellt godkännande. Övrig spelreplik har ett enkelt val av exakt tal-klipp; Astrid har 14 där och tre egna talnoder. Tur och resultat är spelmarkeringar, med resultattal i ett separat speak-event. Egna filmer läggs in i Videobanken: välj exakt situation/replik, koppla vid behov till projektutkastet och välj Spara projekt efteråt. Nya alternativ börjar med automatiskt urval avstängt."
     },
     {
       "view": "lab",
@@ -33,7 +33,8 @@
     "Händelseloggen lagrar högst 150 poster i flikens minne och töms vid omladdning. Ett modellförslag, en vald fil och en faktiskt avslutad uppspelning är skilda loggsteg. Inga exempelrader visas som mottagna live-events.",
     "Partner-launch öppnar originalspelet för samma nyckel och spelare som SSE-observern. Den lokala servern kan publicera native-rundor till rätt Partner-kanal efter commit; detta kräver driftsättning för att gälla live. Videokartan visar bindningar, inte spelade klipp. Protokollet håller högst 300 meddelanden eller 4 MiB och bevaras vid byte av labbvy, men töms vid omladdning. Avbrott markeras som luckor; servern saknar historisk replay.",
     "Originalbilden kommer från den spelflik du uttryckligen väljer i webbläsaren. Bilden visas lokalt utan inspelning, uppladdning eller fångat ljud. Labbpresentationen använder samma mottagna instruktioner, men är en egen uppspelning. Samma instruktion via HTTP och SSE spelas bara en gång; konflikter och saknade steg stoppar sekvensen. Originalspelarens klippstart/slut och landningstider ingår ännu inte.",
-    "Spelmotorn äger kort, regler, utfall, saldo och utbetalningar. OpenClaw får bara föreslå tillåten presentation. Sparade labbändringar publiceras inte automatiskt till spelet eller Render."
+    "Spelmotorn äger kort, regler, utfall, saldo och utbetalningar. OpenClaw får bara föreslå tillåten presentation. Sparade labbändringar publiceras inte automatiskt till spelet eller Render.",
+    "V5:s beställda produktintegration: Jakobs OpenClaw-chatt ska äga dialog och talbeslut. Kevin utvecklar befintlig gemensam klientkö; Kevin/Emils läppsynk utför det exakta talet. Detta är inte redan aktiverat i produkten. Scheman, manifestreferenser och implementationsbrief finns samlade i lab/docs/ARTIFACTS.md."
   ],
   "surfaces": [
     {

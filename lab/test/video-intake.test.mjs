@@ -108,6 +108,25 @@ test('imported video cannot bind to another dealer/event or play over a differen
   await assert.rejects(validateVideoBindings(project, { registry: videoRegistry }), /giltig kategorisering/);
 });
 
+test('a newly uploaded greeting binds, survives reload and cannot play as another speech line', async t => {
+  const options = await fixture(t);
+  const speech = { ...metadata, eventId: 'speak.other', kind: 'speech', situation: 'greeting' };
+  const result = await uploadVideo(request(bytes, speech), options);
+  const videoRegistry = await loadVideoRegistry(options);
+  const project = createSeedProject();
+  project.lines.find(l => l.dealerId === 'astrid' && l.eventId === 'speak.other').variants[0].videoGenerationId = result.id;
+  await validateVideoBindings(project, { registry: videoRegistry });
+  const body = { project, dealerId: 'astrid', eventId: 'speak.other', mode: 'off', context: {} };
+  const chosen = await simulateStudio({ ...body, exampleEvent: { type: 'speak', line: 'greeting' } }, { settings, fetchImpl: noFetch, videoRegistry });
+  assert.equal(chosen.videoGenerationId, result.id);
+  const mismatch = await simulateStudio({ ...body, exampleEvent: { type: 'speak', line: 'win' } }, { settings, fetchImpl: noFetch, videoRegistry });
+  assert.equal(mismatch.videoGenerationId, null);
+  for (const line of ['peek', 'bust', 'sidebet', 'chatter1', 'chatter2', 'farewell']) {
+    assert.doesNotThrow(() => validateVideoMetadata({ ...speech, situation: line }));
+  }
+  assert.throws(() => validateVideoMetadata({ ...speech, situation: 'invented-speech' }), /Situationen/);
+});
+
 test('all 256 seed mappings resolve to the right event and 64 distinct motion definitions; new alternatives are manual', () => {
   const project = createSeedProject(), audit = auditStudio(project);
   assert.equal(audit.events, 16); assert.equal(audit.lines.length, 64); assert.equal(audit.variants, 256);
