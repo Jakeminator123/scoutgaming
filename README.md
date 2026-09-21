@@ -13,6 +13,10 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
 
 - This GitLab repository is the source for game code, RNG, wallet, media and
   runtime behavior.
+- The private [GitHub copy](https://github.com/Jakeminator123/github-work)
+  mirrors Jakob's `jakeminator123/work` branch for browser-GPT access because
+  that environment currently cannot access GitLab. GitLab remains canonical;
+  verify the commit before using the copy, and do not make it public.
 - The [GitLab wiki](https://gitlab.com/scout-gg/croupier/-/wikis/home) records
   shared decisions, workflow and handoffs.
 - [Croupier documentation · V5](https://github.com/Jakeminator123/animation-events-v1)

@@ -1,3 +1,19 @@
+## 2026-09-22 — rätt privat GitHub-kopia för browser-GPT
+
+The private GitHub backup is now `Jakeminator123/github-work`, branch
+`jakeminator123/work`. Its purpose is read access for Jakob's browser-based GPT
+environment, which currently cannot access GitLab; GitLab remains canonical.
+The older misnamed `Jakeminator123/gitlab-work` was retained until the new
+private repository had the complete branch and matching commit. The portable
+V5 handoff and root README now point to the correct URL. A private repository
+does not grant any browser agent access by itself; check the intended reader's
+authorization separately. Continuous automatic mirroring is not configured;
+push the GitHub copy after each approved GitLab update and verify matching
+commit IDs.
+
+Documentation-only change. No game, media, database, environment or Jira status
+was changed. Existing unrelated dirty and untracked files remain untouched.
+
 ## 2026-09-21 — portabel sjudagarshandoff för nya personer och agenter
 
 Added `docs/animation-events/v5-8-days-mvp/HANDOFF-7-DAGAR.md`: a portable
