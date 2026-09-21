@@ -1,5 +1,5 @@
 import { gatewayEndpoint } from './settings.mjs';
-import { companionPersonaContext, comedyDirection, roastFor } from './companion-personas.mjs';
+import { companionPersonaContext, comedyDirection, comedyFallback, isComedyPoem, roastFor } from './companion-personas.mjs';
 
 export class GatewayError extends Error {
   constructor(code, statusCode = 503) { super(code); this.code = code; this.statusCode = statusCode; }
@@ -84,7 +84,7 @@ export async function chatWithDirector(input, settings, fetchImpl = fetch, catal
   if (!/^[a-zA-Z0-9_-]{8,100}$/.test(conversationId || '')) throw new GatewayError('invalid_conversation_id', 400);
   const fun = settings.companionEnabled !== false && settings.companionFunEnabled !== false;
   const roast = fun && roastFor(message);
-  const reply = await complete(settings, {
+  const modelReply = await complete(settings, {
     model: settings.chatAgent, stream: false, tool_choice: 'none', max_completion_tokens: 1400,
     user: `croupier-lab-chat:${conversationId}`,
     messages: [
@@ -92,5 +92,7 @@ export async function chatWithDirector(input, settings, fetchImpl = fetch, catal
       { role: 'user', content: JSON.stringify({ question: message.trim(), catalog: catalog ? { revision: catalog.revision, events: catalog.events.map(node => ({ id: node.id, label: node.label, sourceType: node.sourceType, baselineVariantId: node.baselineVariantId, variants: node.variants })) } : null }) },
     ],
   }, 30000, fetchImpl);
+  const canonicalReply = modelReply.trim().replace(/\r\n?/g, '\n');
+  const reply = roast && !isComedyPoem(canonicalReply) ? comedyFallback(roast) : modelReply;
   return { reply, conversationId, provider: { status: 'responded' } };
 }
