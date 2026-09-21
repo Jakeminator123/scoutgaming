@@ -73,7 +73,9 @@ Hjälptjänsten anropar enbart `https://api.openai.com/v1/responses`, med låst
 `gpt-4.1-mini-2025-04-14`, standardprissättning, `web_search`, `max_tool_calls: 1`,
 512 ut-token, låg sökkontext och `store: false`. Frasen är högst 240 tecken;
 personminne, profilnycklar och katalog skickas inte. Högst tre citerade HTTP(S)-
-källor återförs, högst 256 KB API-svar, 25 sekunders timeout och ingen automatisk
+källor återförs. OpenClaw-frågor begränsas till `docs.openclaw.ai` efter att ett
+liveprov hittade en orelaterad sida med missvisande titel. Högst 256 KB API-svar,
+25 sekunders timeout och ingen automatisk
 omkörning eller reservleverantör. Director gör högst två vanliga modellkontakter
 för att välja sökning och sammanfatta resultatet. Skämtpoem söker inte på webben.
 
@@ -142,9 +144,11 @@ pushad till `jakeminator123/work`. Båda Render-tjänsterna körde denna version
 bygg om lokala labbet och driftsätt båda Render-tjänsterna. Budgetdatabasen får
 ligga kvar avstängd; inga speldata eller medier behöver återställas.
 
-Lokalt: 110 OpenClaw/deployment-tester, 302 labbtester, TypeScript och Next-bygge.
+Lokalt: 111 OpenClaw/deployment-tester, 302 labbtester, TypeScript och Next-bygge.
 Riktigt OpenAI-sökprov gav docs.openclaw.ai som citerad källa. Minne/återkomst/
 Glöm mig verifierades genom labbets API mot Render med en separat provprofil.
 Alla fyra dealers genomförde två greeting-uppspelningar i följd på isolerad
 rehearsal.localhost med separat databas. Det är livscykelbevis, inte ny läppsynk-
-eller tillgångsacceptans. Slutliga driftkvitton fylls efter uppföljande deployment.
+eller tillgångsacceptans. Kevins riktiga ElevenLabs-prov slutfördes i webbläsaren
+på 12 770,975 ms med maxDurationMs 25 000 (request 8b3ee664-e6b3-4fa2-b91d-a3ca02ba02cf).
+Slutliga driftkvitton fylls efter uppföljande deployment.
