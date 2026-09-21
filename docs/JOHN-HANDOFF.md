@@ -1,3 +1,26 @@
+## 2026-09-21 — supplied export and private hole-card check
+
+Read Jakob's explicitly supplied Downloads observation export (00:07:56 UTC).
+It contains only connecting/connected, no round payload, no mapping and no
+actual-playback evidence. It cannot establish a premature card reveal or map
+Astrid's motions. Its file hash and parsed summary are saved privately in
+the current ignored observation bundle's `export-and-hole-card-check.json`.
+
+Ran `node test/shoe-game.mjs`: 197 shoe/service checks plus persisted
+split/double/insurance/idempotent payout checks passed. A separate deterministic
+in-memory check confirmed the upcard is included, the private hole-card value
+is excluded before reveal, and that value appears after stand/reveal. No live
+game command or real database was used. This is local-model verification, not
+proof of the current browser's visual timing. A face-down card back appearing
+before its value is disclosed is expected; premature face/value display would
+need a synchronized HTTP response and screen/playback trace to reproduce.
+
+Jakob deferred the broader animation-event investigation until a later pass.
+Next correlate server requestId/version with actual client trigger, clip choice,
+painted start/end/error and card landing; distinguish idle, speech, filmed
+actions and synthetic card motion. Do not substitute configured mappings or
+internal engine events for proof of rendered playback. No product code changed.
+
 ## 2026-09-21 — live Astrid media failures confirmed from user's console report
 
 Authenticated metadata/header checks confirmed `dealers/astrid/speech/goodluck.mp4`
