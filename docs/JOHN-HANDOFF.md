@@ -1,3 +1,32 @@
+## 2026-09-21 — deployed native API path confirmed; direct SSE still lacks rounds
+
+Follow-up while Jakob played: authenticated Partner ping and stream succeeded.
+The lab capture received two connection statuses and zero rounds, then failed
+after about five minutes with `terminated`; it is not an uninterrupted trace.
+A direct same-key/player upstream SSE probe persisted only `hello`, no round.
+Its timeout did not complete process teardown; it was interrupted, so there is
+no trustworthy final heartbeat count or exact end time for that probe.
+
+Fetched the actual deployed app.mjs through a normal Partner-launch session:
+tableCommand still posts to `/api/table` (line 596; SHA-256 starts 463ff2a00d92).
+Six native `op: state` reads returned HTTP 200 and identical idle state/version.
+No start/act/collect, deposit, database edit or agent-played round occurred.
+Browser control was stopped because the tool could not verify the current URL.
+Raw evidence, hashes and limitations are Git-ignored in
+`lab/data/observations/2026-09-21T00-10-30-027Z/README.md`.
+
+The likely missing link is native-table publication into the authenticated
+Partner key/player channel. Local and previously fetched b066a43 server code
+publish only from Partner-table. Deployed server revision remains unknown,
+and no precisely timed user start/act request was captured, so do not call
+this a complete end-to-end reproduction. Implement/verify server publication
+before assuming a lab rebuild or different credentials will supply rounds;
+actual clip/landing telemetry is a separate remaining client integration.
+Corrected stale play-only scope guidance in lab/.env.example and clarified the
+separate generations token. No actual env values, product/media code or deployment
+changed; validation was live read requests and parsing the private evidence,
+not a new product test run.
+
 ## 2026-09-21 — three live demo rounds observed; embedding is the next goal
 
 Jakob explicitly confirmed the existing balance was demo-only, with no cash
