@@ -5,6 +5,10 @@
 **Rätt film måste kunna utföra den konkreta situationen.** Ett nodnamn,
 en standardpost eller ett korrekt filhash bevisar inte det.
 
+[Astrids live-kontroll 21 september](ASTRID-LIVE-2026-09-21.md) jämför
+motorlistan med native-anrop, Partner-instruktioner och faktisk tillgänglighet.
+Grund-staged finns; smooth60/rhythm och native goodluck/win gav 404 i provet.
+
 ## Fyra frågor om varje film
 
 1. **Finns den?** Originalinventering och stream-index beskriver material.

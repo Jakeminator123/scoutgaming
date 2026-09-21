@@ -46,6 +46,22 @@ test('unreadable generations configuration does not block Partner access or laun
   assert.ok((await api.endpoint(request('mapping'))).status >= 400);
 });
 
+test('explicit staged-base launch keeps Partner identity and token but removes incompatible presentation overrides', async () => {
+  const supplied = `${ORIGIN}/?launch=fixture-token&dealer=vera&performance=staged&motion=smooth60&scene=rigged-review&joins=off&continuity=review#old`;
+  const api = service(async (url, options) => {
+    assert.equal(url, `${ORIGIN}/api/v1/launch`);
+    assert.deepEqual(JSON.parse(options.body), { playerId: env.BETTALOTTO_PARTNER_PLAYER_ID });
+    return Response.json({ url: supplied, expiresIn: 60 });
+  });
+  const ordinary = await (await api.endpoint(request('launch'))).json();
+  assert.equal(ordinary.url, supplied); assert.equal(ordinary.presentationMode, 'partner-default');
+  const staged = await (await api.endpoint(request('launch-staged-base'))).json();
+  const url = new URL(staged.url);
+  assert.equal(url.origin, ORIGIN); assert.equal(url.pathname, '/'); assert.equal(url.hash, '');
+  assert.deepEqual([...url.searchParams], [['launch', 'fixture-token'], ['dealer', 'astrid'], ['performance', 'staged']]);
+  assert.equal(staged.expiresIn, 60); assert.equal(staged.presentationMode, 'astrid-staged-base');
+});
+
 test('client-supplied identity/destination, foreign origins, query settings and unsupported methods are rejected before network access', async () => {
   let calls = 0; const api = service(() => { calls++; });
   const body = value => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
@@ -61,9 +77,11 @@ test('client-supplied identity/destination, foreign origins, query settings and 
 
 test('launch responses cannot redirect to another origin or unrelated endpoint', async () => {
   for (const url of ['https://other.test/?launch=token', `${ORIGIN}/api/delete?launch=token`, `${ORIGIN}/`, 'javascript:alert(1)', `https://name:password@bettalotto.se/?launch=token`]) {
-    const response = await service(async () => Response.json({ url })).endpoint(request('launch'));
-    assert.equal(response.status, 502);
-    assert.ok(!(await response.text()).includes(url));
+    for (const action of ['launch', 'launch-staged-base']) {
+      const response = await service(async () => Response.json({ url })).endpoint(request(action));
+      assert.equal(response.status, 502);
+      assert.ok(!(await response.text()).includes(url));
+    }
   }
 });
 

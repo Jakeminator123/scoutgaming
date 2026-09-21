@@ -4,6 +4,27 @@
 branch `jakeminator123/work`. Labbet kör på `http://127.0.0.1:4188`.
 Den här filen är en teknisk överlämning, utan hemligheter eller samtalsexport.
 
+## Senaste kontroll: grundfilmerna finns, variantmanifest saknas
+
+Den flyttade `random-stuff-jakob/astrid_motorklipp.txt` är identisk som JSON
+med API-kartans Astrid-del. Live-kontroll visar att grundmanifestet, fyra
+grundtakes, två continuations, 19 motorströmmar och 17 ljudfiler finns.
+`smooth60`/`rhythm`-manifesten samt native `goodluck.mp4`/`win.mp4` ger 404.
+Det preciserar tidigare `No staged capture`: grundmaterialet saknas inte.
+
+Händelselogg har nu **Testa Astrids grundfilmer → Öppna staged-grundläge**
+efter verifierad Partner-åtkomst. Valet använder samma spelare och normal
+Partner-launch men väljer Astrid + staged utan motion/scene-överstyrning.
+Vanlig öppning behåller serverns länk. Jämför efter en avslutad runda;
+materialet är för granskning och de två continuations aktiveras inte här.
+
+Se [Astrids faktiska anrop och material](systemkarta/03-dealers-video-takes/ASTRID-LIVE-2026-09-21.md)
+för taltriggers, idle, saknade gester och skillnader mot Partner-listan.
+Även agentprompten är uppdaterad. 26 riktade tester, typkontroll och bygge
+passerade. Ny launch och grundmanifest verifierades med HTTP; ingen runda
+eller faktisk browseruppspelning verifierades i detta pass. Tomma SSE-rundor,
+talfilernas 404, inbäddning och klientens uppspelningstelemetri återstår.
+
 ## Senare kontroll: live-klienten använder native table
 
 Verifierat genom en normal Partner-launch-session: den faktiskt levererade

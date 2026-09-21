@@ -72,19 +72,29 @@ export function createPartnerReference({ env = () => process.env, token = genera
       }
       if (request.method !== 'POST') return jsonResponse({ error: 'Använd GET eller POST.' }, 405);
       const body = await readLocalJson(request);
-      if (!body || Object.keys(body).length !== 1 || !['verify', 'launch', 'mapping'].includes(body.action)) throw new StudioError('Välj verifiering, spelöppning eller videokarta.');
+      if (!body || Object.keys(body).length !== 1 || !['verify', 'launch', 'launch-staged-base', 'mapping'].includes(body.action)) throw new StudioError('Välj verifiering, spelöppning eller videokarta.');
       if (body.action === 'verify') {
         const result = await post('/api/v1/ping', {}, settings);
         if (result.ok !== true || !Array.isArray(result.scopes) || !result.scopes.every(value => typeof value === 'string' && /^[a-z][a-z0-9_-]{0,31}$/.test(value))) throw new StudioError('Behörighetssvaret hade ett okänt format.', 502);
         return jsonResponse({ verifiedAt: new Date(now()).toISOString(), playerId: settings.partner.BETTALOTTO_PARTNER_PLAYER_ID, scopes: [...new Set(result.scopes)] });
       }
-      if (body.action === 'launch') {
+      if (body.action === 'launch' || body.action === 'launch-staged-base') {
         const result = await post('/api/v1/launch', { playerId: settings.partner.BETTALOTTO_PARTNER_PLAYER_ID }, settings);
         let url;
         try { url = new URL(result.url); } catch { throw new StudioError('Spelets öppningslänk är ogiltig.', 502); }
         if (url.origin !== settings.origin || url.pathname !== '/' || url.username || url.password || !url.searchParams.get('launch')) throw new StudioError('Spelets öppningslänk har fel adress.', 502);
+        const presentationMode = body.action === 'launch-staged-base' ? 'astrid-staged-base' : 'partner-default';
+        if (presentationMode === 'astrid-staged-base') {
+          // Explicit diagnostic choice. Keep the validated launch identity but
+          // use only the base manifest, never inherit motion/scene overrides.
+          const launchToken = url.searchParams.get('launch');
+          url = new URL('/', settings.origin);
+          url.searchParams.set('launch', launchToken);
+          url.searchParams.set('dealer', 'astrid');
+          url.searchParams.set('performance', 'staged');
+        }
         // This short-lived URL is only for navigation. Never put it in activity/trace data.
-        return jsonResponse({ url: url.href, expiresIn: Number.isFinite(result.expiresIn) ? result.expiresIn : null });
+        return jsonResponse({ url: url.href, expiresIn: Number.isFinite(result.expiresIn) ? result.expiresIn : null, presentationMode });
       }
       const readToken = token(settings.raw);
       if (!readToken || typeof readToken !== 'string' || /[\r\n\0]/.test(readToken)) throw new StudioError('Generations-API:ts lästoken saknas eller är ogiltig.', 503);

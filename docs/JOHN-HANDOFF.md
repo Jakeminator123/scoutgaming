@@ -1,3 +1,37 @@
+## 2026-09-21 — Astrid inventory traced; explicit base-staged launch in the lab
+
+Jakob moved the supplied motor inventory into random-stuff-jakob. Its parsed
+Astrid JSON exactly matches the saved generations mapping: 19 engine clips
+(idle, action and 17 speech), four base staged takes and two continuations.
+Authenticated metadata/HEAD checks found the base manifest, all six staged
+files, all 19 engine streams and 17 audio files available. The smooth60/rhythm
+manifests and native goodluck/win MP4s return 404. The old action remains
+intentionally rejected; no rejection or speech binding was changed.
+
+Added an explicit activity-page choice, "Testa Astrids grundfilmer" →
+"Öppna staged-grundläge". It obtains a normal Partner launch for the configured
+player, validates its destination, and retains only its token plus Astrid and
+performance=staged. Normal launch still uses the server's original URL. This
+is a diagnostic mode for review footage, not visual acceptance or a repair of
+native-to-Partner event publication. No launch token is logged. Mapping log
+metadata now names its source/dealers and explicitly marks actualPlayback=false.
+
+Documented native speech triggers, idle behavior, missing gesture clips,
+native/Partner double-and-bust ordering differences, and existing 2D duration
+support in random-stuff-jakob/jakob-docs/systemkarta/03-dealers-video-takes/
+ASTRID-LIVE-2026-09-21.md. Updated the lab guide and the 2D-agent prompt.
+Catalog show.* labels are not observed playback events. Next correlate the
+actual client choreography with server state before mapping it into 2D.
+
+Validation: 26 focused Partner reference/observer tests, lab typecheck and
+production build passed. Live local route returned the new control; the new
+launch action returned 200, redirected normally into a session without motion,
+and the base manifest returned 200. No round or visual browser playback was
+verified in this pass. No gameplay/media files or deployment were changed.
+Private HTTP evidence is in the ignored observation bundle's
+asset-availability.json. The user's two supplied files are left outside this
+task's commit. Embedding and actual clip/landing telemetry remain outstanding.
+
 ## 2026-09-21 — supplied export and private hole-card check
 
 Read Jakob's explicitly supplied Downloads observation export (00:07:56 UTC).
