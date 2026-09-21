@@ -28,5 +28,5 @@ For questions about these names and follow-up questions, answer warmly using the
 }
 
 export function comedyDirection(roast) {
-  return `This turn requests a friendly comedy poem about ${roast.name}. Write original rhyming lines mixing Swedish, German and a little Chinese. Go playfully absurd with this theme: ${roast.theme}. You may mention Ulf Lundell, but do not quote or closely imitate his lyrics or poems. One reply only, aim for 35-45 spoken words and at most 320 characters for a 25-second speech preview. No self-chat.`;
+  return `This turn requests a wildly absurd friendly comedy POEM about ${roast.name}, not a factual introduction. Reply in exactly four short lines, no preamble. Lines 1 and 2 rhyme; lines 3 and 4 rhyme. Mix Swedish, German and a little Chinese: include a German phrase and a Chinese phrase within the lines, not just a greeting at the end. Invent a ridiculous scene from this theme: ${roast.theme}. You may mention Ulf Lundell, but do not quote or closely imitate his lyrics or poems. One reply, 35-45 spoken words, at most 320 characters for a 25-second speech preview. No self-chat.`;
 }

@@ -55,3 +55,19 @@ test('search endpoint authenticates and rejects browser/custom budget requests b
   assert.equal((await (await post(auth)).json()).status, 'searched'); assert.equal(calls, 1);
   assert.equal(openAiSearchKey({ OPENCLAW_MODEL_API_KEY: 'secret' }, { models: { providers: { 'lab-provider': { baseUrl: 'https://other.example', apiKey: { source: 'env', id: 'OPENCLAW_MODEL_API_KEY' } } } } }), '');
 });
+
+test('OpenClaw queries are restricted to the actual official docs and reject lookalike citations', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'companion-search-sources-'));
+  const service = createSearchService({ directory, key: 'fixture', now: () => Date.parse('2026-09-21'), fetchImpl: async (_url, options) => {
+    assert.deepEqual(JSON.parse(options.body).tools[0].filters, { allowed_domains: ['docs.openclaw.ai'] });
+    const data = await response().json();
+    data.output[1].content[0].annotations = [
+      { type: 'url_citation', title: 'Official OpenClaw', url: 'https://unrelated.example/docs' },
+      { type: 'url_citation', title: 'OpenClaw Docs', url: 'https://docs.openclaw.ai/' },
+    ];
+    return Response.json(data);
+  } });
+  t.after(async () => { service.close(); await rm(directory, { recursive: true, force: true }); });
+  const result = await service.search({ id: id(15), query: 'OpenClaw documentation' });
+  assert.equal(result.status, 'searched'); assert.deepEqual(result.results.map(r => r.url), ['https://docs.openclaw.ai/']);
+});

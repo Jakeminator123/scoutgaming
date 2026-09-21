@@ -1,5 +1,11 @@
 ## 2026-09-21 — natural name questions and budgeted OpenAI search
 
+Live follow-up: both chats answered Jakob/John and follow-up questions correctly.
+Kevin's browser TTS completed in 12.771 seconds under the 25-second limit.
+An OpenAI search selected a lookalike OpenClaw documentation site; official
+OpenClaw queries now filter to docs.openclaw.ai and reject other citations.
+Poem direction now requests four rhyming lines without an introductory paragraph.
+
 Follow-up to e07dd86 based on user live QA. Both lab chats now receive the
 same temporary fictional cast; Vem är Jakob/John and Berätta om Jakob with a
 follow-up sentence work. Shared descriptions persist in request context, not
