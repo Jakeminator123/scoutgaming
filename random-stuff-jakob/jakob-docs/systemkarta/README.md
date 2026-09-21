@@ -1,6 +1,6 @@
 # Systemkarta — från spelfakta till uppspelning
 
-Uppdaterad 20 september 2026 inför V4. Kartan beskriver den granskade koden
+Uppdaterad 21 september 2026. Kartan beskriver den granskade koden
 och skiljer den från labbprov och återstående produktintegration.
 [Källregistret](KALLOR.md) anger revisioner, kontroller och begränsningar.
 
@@ -21,8 +21,11 @@ flowchart LR
 **Två produktvägar finns.** Vanliga klienten använder `/api/table` och
 samordnar presentationen själv. Partnerklienten använder `/api/v1/table`,
 får `presentation[]` och kan få samma lista via `/api/v1/events`.
-Labbet testar fortfarande sparade exempel. En gemensam adapter och en
-läsande livemonitor är förslag.
+Labbet kan testa exempel och återspela mottagna/importerade Partner-instruktioner.
+Båda går genom samma presentationsbeslut med OpenClaw som valbart mellanled.
+Native-publicering efter commit finns lokalt; liveleverans av riktiga rundposter
+och originalklientens uppspelningskvitton återstår att verifiera.
+[Samlad leverans och gränser](../ARBETE-2026-09-21-ORIGINAL-OCH-OPENCLAW.md).
 
 ## Välj fråga
 

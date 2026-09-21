@@ -81,11 +81,26 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
   if (!event) throw new StudioError('Eventet finns inte i kontraktet.');
   const catalog = decisionCatalog(project, body.dealerId, body.mode);
   const observed = Object.hasOwn(body, 'sourceEvent');
+  if (observed && Object.hasOwn(body, 'exampleEvent')) throw new StudioError('Välj ett mottaget event eller ett labbexempel.');
   // Both routes use the same input projection, matching and variant gate. A
   // recorded instruction must never be replaced by the editor's example.
-  const input = { requestId: randomUUID(), event: observed ? body.sourceEvent : event.exampleEvent, context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
-  const prepared = prepareDecision(catalog, input);
+  const input = { requestId: body.requestId ?? randomUUID(), event: observed ? body.sourceEvent : (body.exampleEvent ?? event.exampleEvent), context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
+  let prepared = prepareDecision(catalog, input);
   if (prepared.node.id !== body.eventId) throw new StudioError('Källeventet matchar inte vald eventgrupp.');
+  // Reject incompatible explicit alternatives BEFORE asking the adviser. The
+  // unconditional baseline keeps its marked 2D fallback when media is missing.
+  const lineForEvent = project.lines.find(item => item.eventId === event.id && item.dealerId === body.dealerId);
+  const excluded = new Set(lineForEvent.variants.filter(variant => {
+    if (variant.id === lineForEvent.baselineVariantId || !variant.videoGenerationId) return false;
+    const video = videoRegistry?.videos.find(item => item.id === variant.videoGenerationId);
+    return !video?.available || !videoFitsEvent(video, prepared.event);
+  }).map(variant => variant.id));
+  if (excluded.size) {
+    catalog.events.find(item => item.id === event.id).variants = prepared.node.variants.filter(variant => !excluded.has(variant.id));
+    catalog.revision = `draft-${createHash('sha256').update(JSON.stringify(catalog)).digest('hex')}`;
+    prepared = prepareDecision(catalog, input);
+  }
+  prepared.trace.splice(2, 0, { stage: 'compatibility', status: excluded.size ? 'filtered' : 'checked', detail: `${excluded.size} alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.` });
   let reply = { advice: null, provider: { status: 'off' } };
   if (body.mode === 'rules' || body.mode === 'random') {
     const index = body.mode === 'random' ? Math.min(prepared.eligible.length - 1, Math.max(0, Math.floor(random() * prepared.eligible.length))) : 0;

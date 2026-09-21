@@ -10,12 +10,12 @@
     {
       "view": "videos",
       "title": "2. Koppla rätt material",
-      "body": "Standardvarianten använder ett registrerat lokalt original när exakt replik eller kortdestination stöds. Videobanken visar källan och luckorna. Koppla en egen film när du vill ersätta förvalet; alternativen behåller egna kopplingar. Tillgänglig fil är inte visuellt godkännande."
+      "body": "Standardvarianten använder ett registrerat lokalt original när exakt replik eller kortdestination stöds. Videobanken visar källan och luckorna. Koppla en egen film när du vill ersätta förvalet; alternativen behåller egna kopplingar. Tillgänglig fil är inte visuellt godkännande. Övrig spelreplik har ett enkelt val av exakt tal-klipp; Astrid har 14 där och tre egna talnoder. Tur och resultat är spelmarkeringar, med resultattal i ett separat speak-event."
     },
     {
       "view": "lab",
       "title": "3. Prova och spara",
-      "body": "Spela vald variant visar markerat material. Testa event låter OpenClaw välja bland tillåtna varianter. Ett event öppnat från en observation behåller sina verkliga spelfakta; chatt och historik är separat testkontext. Modellanrop sker först när du trycker. Standard är reserv vid fel."
+      "body": "Spela vald variant visar markerat material. Testa event låter OpenClaw välja bland tillåtna varianter. Ett event öppnat från en observation behåller sina verkliga spelfakta; chatt och historik är separat testkontext. Modellanrop sker först när du trycker. Standard är reserv vid fel. Eventprovet och sekvensspelaren delar samma beslutsväg. Ett upprepat besluts-ID återanvänder svaret utan nytt modellval; start/slut loggas separat av spelaren."
     },
     {
       "view": "activity",

@@ -26,6 +26,40 @@ function gateway(answer = value => ({ requestId: value.requestId, catalogRevisio
   };
 }
 
+test('exact local speech examples remain simulated and cannot override an observation', async () => {
+  const result = await server.simulateStudio(body({ eventId: 'speak.other', mode: 'off', exampleEvent: { type: 'speak', line: 'greeting' } }), { settings: settings(), fetchImpl: noFetch });
+  assert.equal(result.decision.sourceEvent.line, 'greeting');
+  assert.equal(result.decision.simulated, true); assert.equal(result.decision.presentationReplay, false);
+  await assert.rejects(server.simulateStudio(body({ sourceEvent: { type: 'speak', line: 'goodluck' }, exampleEvent: { type: 'speak', line: 'win' } }), { settings: settings() }));
+  await assert.rejects(server.simulateStudio(body({ exampleEvent: { type: 'speak', line: 'win' } }), { settings: settings() }), /matchar inte/);
+});
+
+test('unavailable explicit alternatives are removed before rules, random and OpenClaw selection', async () => {
+  const project = createSeedProject();
+  const alternative = project.lines.find(line => line.eventId === 'speak.goodluck' && line.dealerId === 'astrid').variants.find(v => v.id === contextualId);
+  alternative.videoGenerationId = videoId; alternative.selection = { rules: true, random: true, model: true };
+  for (const mode of ['rules', 'random', 'active']) {
+    const captures = [];
+    const result = await server.simulateStudio(body({ project, mode }), { settings: directSettings(), videoRegistry: registry, random: () => 0, fetchImpl: gateway(undefined, captures) });
+    assert.ok(result.eligible.every(v => v.id !== contextualId));
+    assert.equal(result.variant.id, baselineId);
+    if (captures.length) assert.ok(!captures[0].payload.messages[1].content.includes(contextualId));
+  }
+});
+
+test('a different recorded sentence cannot be an eligible alternative for received speech', async () => {
+  const project = createSeedProject();
+  const line = project.lines.find(line => line.eventId === 'speak.other' && line.dealerId === 'astrid');
+  const variant = line.variants[1]; variant.videoGenerationId = videoId; variant.triggerIds = [];
+  const videos = structuredClone(registry); videos.videos[0].available = true;
+  videos.videos[0].classification = { ...videos.videos[0].classification, eventId: 'speak.other', situation: 'win' };
+  const capture = [];
+  const result = await server.simulateStudio(body({ project, eventId: 'speak.other', sourceEvent: { type: 'speak', line: 'lose' } }), { settings: directSettings(), videoRegistry: videos, fetchImpl: gateway(value => ({ requestId: value.requestId, catalogRevision: value.catalogRevision, variantId: variant.id }), capture) });
+  assert.ok(result.eligible.every(item => item.id !== variant.id));
+  assert.equal(result.decision.reason, 'ineligible_variant');
+  assert.equal(result.decision.sourceEvent.line, 'lose');
+});
+
 test('rules select highest-priority eligible variant with no model request', async () => {
   const result = await server.simulateStudio(body({ mode: 'rules' }), { settings: directSettings(), fetchImpl: noFetch });
   assert.equal(result.variant.id, contextualId);

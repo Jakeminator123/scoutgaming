@@ -6,6 +6,8 @@ Arbetsgången börjar i [Guide i labbet](http://127.0.0.1:4188/guide), vars käl
 
 ## Fördjupning
 
+- [Samlad leverans: originalklipp och OpenClaw](ARBETE-2026-09-21-ORIGINAL-OCH-OPENCLAW.md):
+  vad som byggts, antal klipp, API-kontroll, luckor i observationen och var allt kan provas.
 - [Handoff: originalspel till 2D-mockup](HANDOFF-2026-09-21-LIVE-OCH-2D.md):
   verifierad launch, SSE och videokarta; återstående rund- och playback-bevis.
 - [Agentprompt: 2D från observerat videoflöde](PROMPT-2D-MOCKUP-FRAN-SPELFLODE.md):

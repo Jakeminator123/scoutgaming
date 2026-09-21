@@ -31,6 +31,7 @@ function loadComponent(relativeFile) {
     require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} }
       : name === './studio-types' ? loadComponent('./studio-types.ts')
       : name === './event-test-panel' ? loadComponent('./event-test-panel.tsx')
+      : name === './speech-source' ? loadComponent('./speech-source.tsx')
         : mocks[name] ?? require(name),
   }, { filename: relativeFile });
   return module.exports;
@@ -54,6 +55,9 @@ test('event test has one mode selector, explicit run action and result only afte
   const result = renderToStaticMarkup(React.createElement(EventTestPanel, { ...props, result: { variant: { label: 'Standard' }, decision: { reason: 'ai_disabled' }, provider: 'off', eligible: [] } }));
   assert.match(result, /VALD VARIANT/);
   assert.match(result, /Tekniskt beslutsspår/);
+  const original = renderToStaticMarkup(React.createElement(EventTestPanel, { ...props, originalLabel: 'Astrid · blackjack', result: { variant: { label: 'Standard' }, decision: { reason: 'accepted' }, provider: 'responded', eligible: [] } }));
+  assert.match(original, /Originalförval · Astrid · blackjack/);
+  assert.doesNotMatch(original, /ingen video vald/);
 });
 
 test('testsituation selection is derived from actual values, including custom edits', () => {

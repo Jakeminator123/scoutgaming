@@ -1,3 +1,55 @@
+## 2026-09-21 — common OpenClaw decision boundary and reachable exact speech
+
+Both Studio event tests and GameStream now call `/api/presentation/decision`.
+The legacy `/api/simulate` shares the same process-level service, including
+across separate Next route bundles. Identical request IDs/content join/reuse
+the decision; changed content returns 409. Cache: 128 jobs, five minutes after
+completion, four concurrent decisions. This deduplicates decision attempts,
+not playback across tabs or server processes. Source correlations stay separate
+from decision IDs and are not sent to the model. Decisions report owner/reuse
+and explicitly do not claim playback. Incompatible/unavailable explicitly
+bound alternatives are removed before model/rules/random choice. The protected
+standard and its marked fallback remain. Product speech ownership is unchanged.
+
+The lab's existing speak.other group now exposes exact local speech examples;
+Astrid has 14 choices there plus three dedicated speech nodes (17 speech clips).
+Previously unmapped recorded greetings/bust/social lines resolve by exact line.
+Received instructions cannot be overwritten by an example. Turn/settle/reveal
+explain their role and absent dedicated original video; result speech is a
+separate speak instruction, never duplicated onto settle. Coverage includes
+original presets; the event result no longer incorrectly says "no video" when
+an original preset was selected. No event-ID migration or media-byte changes.
+
+Authenticated live generations/mapping returned 200, revision null. Presence
+check found all 89 engine video paths, 78 audio paths and six staged paths
+already local. No download was needed; this is not remote-byte equality or
+visual approval. The supplied observation JSON has two status records and no
+round records. It cannot reconstruct the earlier live game. Do not substitute
+the previous isolated QA fixture as live evidence.
+
+The full work summary is in Jakob's active folder:
+random-stuff-jakob/jakob-docs/ARBETE-2026-09-21-ORIGINAL-OCH-OPENCLAW.md.
+Active system map and lab guide were updated. Earlier native Partner publication
+and BO single-preview fixes are included in that summary; lab variant decisions
+are still not integrated into native/BO runtime. Live branch/revision is unknown.
+
+Validation: 296 lab tests, TypeScript and final Next production build passed;
+all pre-commit checks plus audit-dealer-sync --probe passed. A browser-driven
+Astrid blackjack event used the configured OpenClaw connection, reported an
+accepted choice and completed exact original playback. An earlier direct HTTP
+greeting test also returned responded/accepted. Both API addresses were checked
+against the same decision ID: the second reused the first. Astrid greeting
+preview completed twice in the lab. All four actual players at isolated
+rehearsal.localhost:4194 ran greeting with Play twice and two matched start/end
+pairs; no console warnings/errors. This is lifecycle verification, not renewed
+full audio/lip-sync or intended Astrid identity acceptance. Final lab tab: 4192.
+
+Private QA data/logs remain in ignored lab/data/qa-director-20260921. No live
+bets, real user DB changes, media generation, push or deployment. Two explicit
+OpenClaw smoke calls were made; no speech generation. Inbox credential access
+remains EPERM and no Jira connector/current issue was available; no CAC status
+or Done claim. Four pre-existing untracked user/other-task files are excluded.
+
 ## 2026-09-21 — local originals, shared observation sequence, native publication and BO preview ownership
 
 The lab now resolves the existing standard variant's empty video binding to a
