@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
+import { webcrypto } from 'node:crypto';
 import { createSeedProject } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
@@ -40,7 +41,7 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
     './stage': { Stage }, './presentation-sequence': { PresentationSequence: Sequence }, './reference-capture': { ReferenceCapture: Reference },
   };
   const module = { exports: {} };
-  vm.runInNewContext(compiled.code, { module, exports: module.exports, AbortController, Error, Promise,
+  vm.runInNewContext(compiled.code, { module, exports: module.exports, AbortController, Error, Promise, crypto: webcrypto,
     require: name => name === 'react' ? react : name.endsWith('.module.css') ? { __esModule: true, default: {} } : mocks[name] ?? require(name) });
   function flush() {
     for (let count = 0; count < 20; count++) {
@@ -69,7 +70,10 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
 test('replay from the original view waits for the matching player completion and preserves exact source data', async () => {
   const ui = setup(); assert.equal(ui.requests.length, 0);
   const run = ui.play(1); assert.equal(ui.requests.length, 1);
-  assert.equal(ui.requests[0].url, '/api/simulate');
+  assert.equal(ui.requests[0].url, '/api/presentation/decision');
+  assert.equal(ui.requests[0].body.sourceRef.requestId, 'command.1');
+  assert.equal(ui.requests[0].body.sourceRef.presentationIndex, 1);
+  assert.match(ui.requests[0].body.requestId, /^[a-f0-9-]{36}$/);
   assert.deepEqual(ui.requests[0].body.sourceEvent, { type: 'speak', line: 'goodluck' });
   ui.resolve(); await tick(); ui.flush();
   assert.equal(ui.find(Stage).playing, true);

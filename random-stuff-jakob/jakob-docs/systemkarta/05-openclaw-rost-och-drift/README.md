@@ -16,7 +16,10 @@ Lokal studio → lokal server → Render Director → privat OpenClaw Gateway
 
 ## Fyra olika samtal
 
-- **Eventråd:** ett variant-ID ur tillåtna alternativ för testeventet.
+- **Eventråd:** ett variant-ID ur tillåtna alternativ för ett exempel eller
+  en mottagen presentationsinstruktion. Eventeditor och sekvensspelare delar
+  det lokala mellanledet `/api/presentation/decision`, med deduplicering av
+  beslutsförsök och separat uppspelningskvitto.
 - **Operatörschatt:** frågor om labbprojektet; separat från spelarchatt.
 - **Social Astrid-chatt:** riktig textinput, egen sparad policy och
   validerad text/reaktion i `idle.ready`. Valfritt exakt ElevenLabs-tal.

@@ -4,6 +4,16 @@
 Det är den gemensamma dokumentationsytan. Denna README är utvecklarreferens.
 Källa och begreppsägarskap: [lab/docs](docs/README.md).
 
+Eventeditor och sekvensspelare går genom `POST /api/presentation/decision`.
+Den gamla `/api/simulate` är ett alias. Servern delar samma pågående/sparade
+beslut för ett oförändrat `requestId`; förändrat innehåll ger 409. Cache och
+samtidighetsgräns gäller en Node-process: 128 jobb, fem minuter efter svar,
+högst fyra pågående beslut. Nytt manuellt prov får nytt ID. Källans ID ligger
+separat i `sourceRef`. Detta deduplicerar modellbeslut, inte uppspelning i olika
+flikar. Källreferenser skickas inte till modellen. `decision.director` visar
+ägare, cacheåterbruk och att uppspelning ännu inte är bekräftad. Explicit bundna
+alternativ med otillgänglig eller felmatchad video utesluts före modellval.
+
 Den nya Next.js-arbetsytan. Den riktiga spelklienten och OpenClaws egen
 dashboard är separata. Inget du sparar här publiceras automatiskt.
 
@@ -52,7 +62,10 @@ för localhost; öppna den inte mot internet eller ett publikt nätverk.
   tappa osparat arbete. Ingen seed eller något tekniskt ID migreras.
 
 - **Eventstudion:** välj croupier/event, redigera namn, linje, varianter och
-  triggers. Testa ett publicerat exempel med simulerad chatt, historik och
+  triggers. **Övrig spelreplik → Tal-klipp att prova** väljer en exakt lokal
+  replik för exemplet (14 Astrid-klipp, utöver de tre egna talnoderna).
+  Tur/resultat visar speldata; resultattalet har ett separat speak-event.
+  Testa ett publicerat exempel med simulerad chatt, historik och
   framtoning. Den animerade scenen och beslutsspåret visar vad som händer.
   **Spela vald variant** spelar ditt markerade klipp direkt: kopplad video,
   annars exakt registrerat original för standard, därefter variantens 2D-reserv. Välj fil direkt under **Standardvariantens

@@ -15,10 +15,9 @@ const RUNTIME = path.resolve(LAB, 'lib/original-media-runtime.mjs');
 const ROOT = '/api/original-media';
 const DEALERS = { astrid: 'dealers/astrid', vera: 'dealer', amira: 'dealers/amira', mei: 'dealers/mei' };
 const MODULES = ['dealer-engine.mjs', 'actor-compositor.mjs', 'speech-playback.mjs', 'performance-player.mjs', 'performance-contact.mjs', 'card-art.mjs', 'dealer-reach.mjs', 'scene-join.mjs', 'vendor/three/three.module.js', 'vendor/three/three.core.min.js'];
-const OTHER_LINES = ['placebets', 'dealerblackjack', 'blackjack', 'dealerbust', 'win', 'push', 'lose'];
 const readJson = async relative => JSON.parse(await readFile(path.join(PUBLIC, relative), 'utf8'));
 async function exists(relative) { try { return (await stat(path.join(PUBLIC, relative))).isFile(); } catch { return false; } }
-function sourceEvent(line) { return ['goodluck', 'insurance', 'double'].includes(line) ? `speak.${line}` : OTHER_LINES.includes(line) ? 'speak.other' : null; }
+function sourceEvent(line) { return ['goodluck', 'insurance', 'double'].includes(line) ? `speak.${line}` : 'speak.other'; }
 
 async function inventory() {
   const entries = [], definitions = new Map(), files = new Set(MODULES);

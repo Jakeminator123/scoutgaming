@@ -15,7 +15,7 @@ test('all four dealers use exact available speech or idle without broad speech f
     assert.equal(idle.dealerId, dealer); assert.equal(idle.kind, 'idle');
     assert.equal(double.situation, 'double'); assert.equal(double.eventId, 'speak.double');
     assert.equal(resolveOriginalDefault(catalog, dealer, { type: 'speak', line: 'unknown-sentence' }), null);
-    assert.equal(resolveOriginalDefault(catalog, dealer, { type: 'speak', line: 'greeting' }), null, 'unsupported node stays unmapped');
+    assert.equal(resolveOriginalDefault(catalog, dealer, { type: 'speak', line: 'greeting' }).situation, 'greeting', 'recorded speech is reachable through speak.other');
   }
   for (const line of ['win', 'lose', 'push', 'placebets']) assert.equal(resolveOriginalDefault(catalog, 'astrid', { type: 'speak', line }).situation, line);
   assert.equal(resolveOriginalDefault(catalog, 'mei', { type: 'speak', line: 'push' }), null, 'missing exact video is not replaced with other speech');

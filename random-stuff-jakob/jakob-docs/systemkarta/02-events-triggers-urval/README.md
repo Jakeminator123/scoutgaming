@@ -14,17 +14,24 @@ och deras antal anger inte hur många filmer som behövs.
 ## Dagens eventtest
 
 ```text
-Sparat exampleEvent + manuella testvärden
+Sparat/valt exampleEvent eller mottagen instruktion + manuella testvärden
     → första matchande nod
     → standard + alternativ tillåtna för valt urvalsläge och matchande triggers
     → vald variant
-    → exakt bunden video när den passar, annars märkt 2D-reserv
+    → exakt bunden video eller standardens originalförval, annars märkt 2D-reserv
 ```
 
-Labbet prenumererar inte på ett livebord. Språk, återbesök, historikräknare,
+Labbet kan läsa Partner-SSE och importera sparade instruktioner. Det skickar
+inga spelkommandon. Språk, återbesök, historikräknare,
 `chat.signal` och framtoning i eventtestet är testvärden. Den separata
 Astrid-chatten har riktig textinput och ett eget socialt kontrakt; dess
 svar är inte automatiskt kopplade till eventtestets kontext.
+
+Eventprov och sekvensspelare använder `/api/presentation/decision`. Ett eget
+besluts-ID skiljs från källans kommando-ID; identiska försök delar modellval
+inom serverprocessens begränsade cache. Explicit bundna alternativ med saknad
+eller felmatchad video tas bort före modellval. Ursprunglig replik och kortdata
+bevaras. Nya talexempel väljs inom `speak.other`, utan nya event-ID:n.
 
 Fem urvalslägen finns i studion:
 

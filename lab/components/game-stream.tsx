@@ -12,6 +12,7 @@ import { Stage, type PlaybackReceipt } from './stage';
 import { PresentationSequence } from './presentation-sequence';
 import { ReferenceCapture } from './reference-capture';
 import type { ActivityDraft } from './activity-log';
+import { decisionAttribution } from '../lib/activity-log.mjs';
 import styles from './game-stream.module.css';
 
 export interface GameStreamProps {
@@ -108,7 +109,7 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
     const runId = `sequence-${step.id}-${current.generation}`;
     onActivity({ source: step.replay ? 'lab' : 'partner', stage: 'input', status: 'received', runId, title: step.label, owner: 'Mottagen presentationsinstruktion', reason: 'Labbet återspelar publicerade kort, destination och exakt replik. Inget spelkommando skickas.', data: { source: step.source, replay: step.replay, requestId: step.requestId, version: step.version, presentationIndex: step.presentationIndex, event: step.event } });
     try {
-      const response = await requestJson<SimulationResult>('/api/simulate', { method: 'POST', signal: controller.signal, body: JSON.stringify({ project, dealerId, eventId: step.eventId, sourceEvent: step.event, mode, context: neutralContext }) });
+      const response = await requestJson<SimulationResult>('/api/presentation/decision', { method: 'POST', signal: controller.signal, body: JSON.stringify({ requestId: crypto.randomUUID(), project, dealerId, eventId: step.eventId, sourceEvent: step.event, sourceRef: { kind: step.replay ? 'import' : 'observed', channel: step.channel, requestId: step.requestId, version: step.version, presentationIndex: step.presentationIndex }, mode, context: neutralContext }) });
       const latest = currentSequence.current.steps.find(item => item.id === step.id);
       const context = currentContext.current;
       if (signal.aborted || controller.signal.aborted || playback.current !== current || !context.active || context.project !== project || context.dealerId !== dealerId || context.mode !== mode
@@ -116,7 +117,7 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
       if (!response.variant || !response.asset) throw new Error('Variantbeslutet saknar en spelbar variant eller 2D-reserv.');
       const completion = new Promise<void>((resolve, reject) => { current.finish = { resolve, reject }; });
       setResult(response); setResultIdentity(`${dealerId}:${stepIdentity(step)}`); setPlayId(current.generation); setPlaying(true); setBusy(false);
-      onActivity({ source: 'lab', stage: 'decision', status: 'selected', runId, title: response.variant?.label ?? step.label, owner: 'Labbets variantval', reason: 'Presentation av mottagen instruktion. Manuellt neutral testkontext; inga spelarminnen antas.', data: { decision: response.decision, trace: response.trace, mode, contextOrigin: 'neutral-lab-context' } });
+      onActivity({ source: 'lab', stage: 'decision', status: 'selected', runId, title: response.variant?.label ?? step.label, owner: decisionAttribution(mode, response.decision?.reason, response.provider), reason: 'Presentation av mottagen instruktion. Manuellt neutral testkontext; inga spelarminnen antas.', data: { decision: response.decision, trace: response.trace, mode, contextOrigin: 'neutral-lab-context' } });
       await completion;
     } finally {
       current.cleanup();
