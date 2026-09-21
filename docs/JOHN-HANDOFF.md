@@ -1,3 +1,21 @@
+## 2026-09-21 — live Astrid media failures confirmed from user's console report
+
+Authenticated metadata/header checks confirmed `dealers/astrid/speech/goodluck.mp4`
+returns 404 while live speech-media.json still selects it as Astrid's native take.
+The live index has indexed goodluck, but playRecorded prioritizes the configured
+native take; no automatic retry of that indexed alternative follows its failure.
+playSpeech invokes onFinish on error as well as completion, so `[speech] end
+goodluck` without start is not a successful-playback receipt.
+
+Live `performance/smooth60/manifest.json` also returns 404. Astrid's live
+dealing-cues.json marks the old action `rejected` because its palms move over
+existing cards without picking up from the shoe. That prevents the indexed
+action from being used even though it exists; never undo that rejection just
+to remove the fallback log. Restore a reviewed release/binding, not arbitrary
+replacement footage. These media gaps are distinct from missing Partner events.
+Saved headers/metadata in the ignored observation bundle's `media-check.json`;
+no media downloaded or modified, no game command, no deployment or new QA approval.
+
 ## 2026-09-21 — deployed native API path confirmed; direct SSE still lacks rounds
 
 Follow-up while Jakob played: authenticated Partner ping and stream succeeded.
