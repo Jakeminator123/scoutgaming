@@ -80,9 +80,12 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
   const event = project.events.find(item => item.id === body.eventId);
   if (!event) throw new StudioError('Eventet finns inte i kontraktet.');
   const catalog = decisionCatalog(project, body.dealerId, body.mode);
-  const input = { requestId: randomUUID(), event: event.exampleEvent, context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
+  const observed = Object.hasOwn(body, 'sourceEvent');
+  // Both routes use the same input projection, matching and variant gate. A
+  // recorded instruction must never be replaced by the editor's example.
+  const input = { requestId: randomUUID(), event: observed ? body.sourceEvent : event.exampleEvent, context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
   const prepared = prepareDecision(catalog, input);
-  if (prepared.node.id !== body.eventId) throw new StudioError('Exemplet matchar inte valt event.');
+  if (prepared.node.id !== body.eventId) throw new StudioError('Källeventet matchar inte vald eventgrupp.');
   let reply = { advice: null, provider: { status: 'off' } };
   if (body.mode === 'rules' || body.mode === 'random') {
     const index = body.mode === 'random' ? Math.min(prepared.eligible.length - 1, Math.max(0, Math.floor(random() * prepared.eligible.length))) : 0;
@@ -113,7 +116,7 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
     }
   }
   return {
-    decision: { requestId: prepared.requestId, variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, context: prepared.context, simulated: true },
+    decision: { requestId: prepared.requestId, variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, context: prepared.context, simulated: !observed, presentationReplay: observed },
     trace: result.trace, eligible: result.eligible, variant, asset: result.asset,
     videoGenerationId, provider: typeof reply?.provider?.status === 'string' ? reply.provider.status : 'unknown',
   };

@@ -18,7 +18,7 @@ function component(file, name, props) {
   };
   const module = { exports: {} };
   const code = transformSync(readFileSync(new URL(file, import.meta.url), 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-  vm.runInNewContext(code, { module, exports: module.exports, window: { setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); }, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
+  vm.runInNewContext(code, { module, exports: module.exports, window: { setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); }, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
   function bindRefs(tree) {
     if (!tree || typeof tree !== 'object') return;
     if (Array.isArray(tree)) { tree.forEach(bindRefs); return; }

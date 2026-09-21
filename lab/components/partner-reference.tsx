@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { exportPartnerTrace, type PartnerTrace } from '../lib/partner-trace.mjs';
 import type { ActivityDraft } from './activity-log';
 import styles from './activity-log.module.css';
@@ -9,13 +9,15 @@ interface Configuration { configured: boolean; mappingConfigured: boolean; mappi
 interface Access { verifiedAt: string; playerId: string; scopes: string[] }
 interface Mapping { fetchedAt: string; source: string; actualPlayback: false; mapping: { revision?: string | null; dealers: Record<string, Record<string, unknown>>; backofficePicks?: unknown; notes?: string[] } }
 
-export function PartnerReference({ trace, connected, onActivity }: { trace: PartnerTrace; connected: boolean; onActivity: (entry: ActivityDraft) => void }) {
+export function PartnerReference({ trace, connected, onActivity, onImport, children }: { trace: PartnerTrace; connected: boolean; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; children?: ReactNode }) {
   const [configuration, setConfiguration] = useState<Configuration | null>(null);
   const [access, setAccess] = useState<Access | null>(null);
   const [mapping, setMapping] = useState<Mapping | null>(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [exportText, setExportText] = useState('');
+  const gameWindow = useRef<Window | null>(null);
+  const importInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let current = true;
     fetch('/api/inputs/reference', { cache: 'no-store' }).then(async response => {
@@ -33,10 +35,12 @@ export function PartnerReference({ trace, connected, onActivity }: { trace: Part
   async function run(action: 'verify' | 'launch' | 'launch-staged-base' | 'mapping') {
     if (busy) return;
     const openingGame = action === 'launch' || action === 'launch-staged-base';
+    // Reuse the current player tab; a second launch must not interrupt a hand.
+    if (openingGame && gameWindow.current && !gameWindow.current.closed) { gameWindow.current.focus(); setError('Spelet är redan öppet. Avsluta rundan och stäng spelfliken före byte av videoläge.'); return; }
     // Open synchronously with the user's click so popup protection does not drop the result.
     const game = openingGame ? window.open('about:blank', '_blank') : null;
     if (openingGame && !game) { setError('Tillåt en ny flik för att öppna referensspelet.'); return; }
-    if (game) game.opener = null;
+    if (game) { game.opener = null; gameWindow.current = game; }
     setBusy(action); setError('');
     try {
       const data = await request(action);
@@ -63,18 +67,31 @@ export function PartnerReference({ trace, connected, onActivity }: { trace: Part
     const link = document.createElement('a'); link.href = url; link.download = `croupier-observation-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
     document.body.append(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+  async function importObservation(file?: File) {
+    if (!file || !onImport) return;
+    setError('');
+    try {
+      if (file.size > 4 * 1024 * 1024) throw new Error('Observationen får vara högst 4 MiB.');
+      const value = JSON.parse(await file.text());
+      if (value?.kind !== 'croupier-partner-observation' || value.schemaVersion !== 1 || !Array.isArray(value.records) || value.records.length > 300 || !value.records.every((record: unknown) => record && typeof record === 'object' && !Array.isArray(record))) throw new Error('Välj en exporterad Croupier-observation med högst 300 poster.');
+      onImport(value.records.map((record: Record<string, unknown>) => ({ ...record, origin: 'import' })));
+      onActivity({ source: 'partner', stage: 'input', status: 'observed', title: 'Sparad observation inläst', owner: 'Importerad observation', reason: 'Historiska instruktioner, ingen ny live-runda.', data: { records: value.records.length } });
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Observationen kunde inte läsas.'); }
+    finally { if (importInput.current) importInput.current.value = ''; }
+  }
   const rounds = trace.records.filter(record => record.kind === 'round').length;
   const canLaunch = access?.scopes.includes('launch');
   return <section className={styles.reference} aria-label="Referensspel och observationsprotokoll">
     <span className="eyebrow">BEFINTLIGT BLACKJACK → OBSERVATION → 2D-MOCKUP</span>
     <h3>Följ spelet och videoflödet</h3>
-    <p>Öppna det befintliga spelet, anslut strömmen nedan och samla underlaget för labbets 2D-mockup. Spelets egen klient sköter videorenderingen.</p>
+    <p>Öppna spelet via Partner och följ det här. Växla mellan originalflikens bild och labbets presentation av samma mottagna instruktioner.</p>
     <p><strong>Spelare:</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
     <div className={styles.tools}>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => void run('verify')}>{busy === 'verify' ? 'Verifierar…' : 'Verifiera Partner-åtkomst'}</button>
       <button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.mappingConfigured} onClick={() => void run('mapping')}>{busy === 'mapping' ? 'Hämtar…' : 'Hämta videokarta'}</button>
     </div>
+    {children}
     <details className={styles.mapping}>
       <summary>Testa Astrids grundfilmer</summary>
       <p>Öppnar staged-grundläget utan smooth60 eller rhythm. Grundfilmerna är märkta för granskning. Använd detta för att jämföra videolägen efter en avslutad runda.</p>
@@ -91,7 +108,7 @@ export function PartnerReference({ trace, connected, onActivity }: { trace: Part
       <details><summary>Backoffice-val per bordsdel</summary><pre>{JSON.stringify(mapping.mapping.backofficePicks ?? {}, null, 2)}</pre></details>
       <ul>{mapping.mapping.notes?.map(note => <li key={note}>{note}</li>)}</ul>
     </details> : null}
-    <div className={styles.protocol}><div><strong>Observationsprotokoll · {rounds} mottagna rundmeddelanden</strong><p className={styles.note}>Hela mottagna presentationslistor sparas separat från den kortade loggvisningen. Protokollet finns i denna vy tills du lämnar eller laddar om den. {connected ? 'Observation pågår.' : 'Ingen aktiv anslutning.'}</p></div><button className="text-button" disabled={!trace.records.length && !mapping && !access} onClick={download}>Exportera observationsprotokoll</button></div>
+    <div className={styles.protocol}><div><strong>Observationsprotokoll · {rounds} mottagna kommandomeddelanden</strong><p className={styles.note}>Hela mottagna presentationslistor sparas separat från den kortade loggvisningen. Protokollet finns kvar mellan labbets vyer tills sidan laddas om. {connected ? 'Observation pågår.' : 'Ingen aktiv anslutning.'}</p></div><button className="text-button" disabled={!trace.records.length && !mapping && !access} onClick={download}>Exportera observationsprotokoll</button>{onImport ? <><input ref={importInput} type="file" accept="application/json,.json" hidden onChange={event => void importObservation(event.target.files?.[0])} /><button className="text-button" disabled={connected} onClick={() => importInput.current?.click()}>Läs in observation</button></> : null}</div>
     {trace.limited ? <p role="alert">Protokollet har nått sin gräns och fångar inga fler meddelanden. Exportera det; fortsatt trafik syns endast i loggvisningen.</p> : null}
     {exportText ? <details className={styles.mapping} open><summary>JSON-export redo</summary><p className={styles.note}>Samma underlag som i JSON-filen. Du kan också markera och kopiera det här. Exportera igen för att ta med senare meddelanden.</p><textarea className={styles.exportText} aria-label="Observationsprotokoll som JSON" readOnly value={exportText} rows={8} /></details> : null}
     <p className={styles.note}>Protokollet innehåller inte originalspelarens faktiska klippstart, klippslut eller kortlandning. Dessa behöver observeras i spelaren innan sekvensen kan återges korrekt i 2D. En launch-länk och inloggningsuppgifter följer inte med exporten.</p>

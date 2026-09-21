@@ -21,12 +21,16 @@ De är fördjupning, inte ytterligare en startyta. Privata anteckningar lämnas 
 **Händelseloggen** på `/activity` skiljer källa, eventdata, kontext, beslut och
 uppspelningskvitto. Den visar aktuella labbanrop och valfri läsande Partner-
 observation, högst 150 poster i flikens minne. Saknad konfiguration är inte
-en ansluten spelström; observern spelar inget i scenen. Konfiguration och
+en ansluten spelström. Uppspelning startas separat eller med **Följ nya instruktioner**. Konfiguration och
 gränser finns i [labbets README](../README.md#läsande-partner-ström).
 På samma yta finns Partner-verifiering, öppning av hela originalspelet,
 aktuell videokarta och JSON-export av hela mottagna presentationslistor.
-2D ska efterlikna observerad videopresentation. Originalspelarens faktiska
-klippstart/slut och kopplingen från launch-rundor till SSE återstår att belägga.
+Originalbilden kan visas genom ett uttryckligt val av spelflik i webbläsaren.
+Labbpresentationen spelar samma mottagna eller importerade instruktioner;
+sekvenslistan kan öppna varje event i den befintliga editorn. HTTP/SSE-dubbletter
+slås ihop, medan konflikter och luckor stoppar uppspelningen. Originalspelarens
+faktiska klippstart/slut återstår. Den lokala native-till-Partner-bryggan är
+testad men måste driftsättas innan motsvarande liveflöde kan verifieras.
 
 **Socialt svar** är ett eget idle-prov med en enda talägare och högst sex
 sekunder ljud. För långa ljud avvisas; avbrott/fel loggas. Modellens uttrycks-

@@ -6,6 +6,26 @@ nedan för de skärpta reglerna och kategorisering av befintliga original.
 
 ## Användning
 
+### Lokala original som standardförval
+
+Från 21 september läser `/api/original-media` det lokala produktregistret.
+Standard utan `videoGenerationId` använder exakt matchande original för
+vald dealer, replik eller stödd destination. En explicit koppling går före;
+alternativ lånar aldrig standardens film. **Bara 2D** finns kvar.
+Ingen projektfil skrivs om och inga råfiler flyttas. Detta ändrar alltså hur
+en tom standardkoppling förhandsvisas, inte det sparade projektformatet.
+
+Native MP4, indexerad H.264 med exakt ljud och packad staged-video spelas
+genom produktens befintliga spelarmoduler. De är olika materialformat och
+ska inte behandlas som utbytbara MP4-filer. Staged-förval gäller endast de
+registrerade destinationerna; senare kort, split, reveal och övergångar
+får inte antas vara täckta. Den avvisade Astrid-actionfilen används inte.
+
+Katalogen omfattar 84 lokalt tillgängliga poster, varav 22 för Astrid vid
+kontrollen. Det är inventering, inte identitetskontroll, visuell acceptans
+eller bevis för vilka bytes Bettalotto använder. Lokala uppspelningskvitton
+är separata från originalspelets ännu saknade klipptelemetri.
+
 Öppna **Videobanken** i det lokala labbet (`/videos`). Lägg in MP4 eller
 WebM, högst 128 MiB per fil. Ange namn, dealer, event, avsedd roll
 (standard/alternativ) och vid behov en konkret situation. Videotypen följer

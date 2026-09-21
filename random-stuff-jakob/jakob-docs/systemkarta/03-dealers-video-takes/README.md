@@ -9,6 +9,12 @@ en standardpost eller ett korrekt filhash bevisar inte det.
 motorlistan med native-anrop, Partner-instruktioner och faktisk tillgänglighet.
 Grund-staged finns; smooth60/rhythm och native goodluck/win gav 404 i provet.
 
+[Astrids källkarta och dubbelströmskontroll](ASTRID-KALLKARTA-OCH-DUBBELSTROM-2026-09-21.md)
+visar vilket lager som äger spelfakta, native media, labburval och OpenClaw-råd.
+Den skiljer avsiktlig HTTP+SSE-leverans och huvudbild+matte från den ännu
+oreproducerade incidenten, samt redovisar backoffice-previewns påträffade och
+lokalt åtgärdade ensamägarproblem.
+
 ## Fyra frågor om varje film
 
 1. **Finns den?** Originalinventering och stream-index beskriver material.
