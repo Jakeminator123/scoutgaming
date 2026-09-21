@@ -4,6 +4,7 @@
 med tydliga bevis på vad som finns, vad labbet provar och vad som återstår.
 
 - [Läs V5](v5-8-days-mvp/README.md) · [Åttadagarsplanen](v5-8-days-mvp/s06-plan.md)
+- [Portabel handoff för den kvarvarande sjudagarsramen](v5-8-days-mvp/HANDOFF-7-DAGAR.md)
 - [Öppna webbversionen](https://animation-events-v1.vercel.app/)
 - [Läs samma V5 i wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events)
 - [Systemkartan](../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
