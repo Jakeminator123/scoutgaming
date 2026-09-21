@@ -281,10 +281,13 @@ teamets avtalade lagring och lämna hash/relativ referens i takepaketet.
 - **Jakobs branch:** `jakeminator123/work`. Pusha aldrig `main` från denna
   checkout och force-pusha/rebasea inte en delad branch.
 - **Privat GitHub-kopia:**
-  [Jakeminator123/gitlab-work](https://github.com/Jakeminator123/gitlab-work),
-  branch `jakeminator123/work`. Den är privat och var synkad med GitLab vid
-  handoffleveransen. Den är en reservkopia, inte kanonisk produktkälla.
-  Automatisk kontinuerlig spegling är ännu inte konfigurerad.
+  [Jakeminator123/github-work](https://github.com/Jakeminator123/github-work),
+  branch `jakeminator123/work`. Den ska förbli privat. Syftet är att Jakobs
+  browserbaserade GPT-miljö för närvarande inte når GitLab; en behörig agent
+  kan då läsa samma committade kod via GitHub. Kontrollera faktisk åtkomst och
+  samma commit-ID innan kopian används. GitLab är fortsatt kanonisk produktkälla.
+  Kopian synkas uttryckligen efter varje godkänd GitLab-push; automatisk
+  kontinuerlig spegling är ännu inte konfigurerad.
 - **Dokumentationsrepo:**
   [Jakeminator123/animation-events-v1](https://github.com/Jakeminator123/animation-events-v1).
 - **Publik V5:** [animation-events-v1.vercel.app](https://animation-events-v1.vercel.app/).
@@ -423,9 +426,10 @@ krediter och får inte startas utan relevant scope/godkännande.
 
 - Inboxverktyget använder GitLabs Notes API och lokal 30-sekunders cache.
   Kör högst en kontroll vid början av en ny användartur; ingen polling.
-- GitHub `gitlab-work` är privat reservkopia. Synka den uttryckligen efter en
-  godkänd GitLab-push tills automatisk spegling är beslutad och säkert
-  konfigurerad.
+- GitHub `github-work` är den privata reservkopian avsedd för browser-GPT.
+  Synka den uttryckligen efter en godkänd GitLab-push och jämför commit-ID på
+  båda sidor tills automatisk spegling är beslutad och säkert konfigurerad.
+  Privat repo innebär inte automatisk agentåtkomst; ge endast avsedd läsbehörighet.
 - Vercel publicerar dokumentationswebben från det separata docs-repot.
 - Render kör Director + privat Gateway enligt blueprint och sparar avgränsad
   Companion-data på disk.
