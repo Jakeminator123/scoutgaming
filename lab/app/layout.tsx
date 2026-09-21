@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Croupier Studio · Presentationslabb',
-  description: 'Redigera och testa Croupiers presentation: events, regler, uttryck och videobindningar.',
+  title: 'Croupier Lab · Scout Gaming',
+  description: 'Scout Gamings lokala labb för events, regler, uttryck och videobindningar.',
   robots: { index: false, follow: false },
 };
 

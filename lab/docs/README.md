@@ -7,6 +7,7 @@ inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
 
 Utvecklarreferenser: [start och arkitektur](../README.md),
 [videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../schemas/video.schema.json).
+[Dashboardens Scout-design, rörelse och lokala körning](DASHBOARD-DESIGN.md).
 Eventgrupperna ska överensstämma med projektets seed och motorns källkontrakt.
 Nodträdet grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
 tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell

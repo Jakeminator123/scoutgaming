@@ -1,3 +1,29 @@
+## 2026-09-21 — Scout-brandad Croupier Lab-dashboard
+
+Labbet har fått en egen Scout-brandad dashboardyta direkt i den befintliga
+Studio-vyn. Det offentliga referensrepot
+`Jakeminator123/cyberpunk-dashboard-design` (läst vid `5fc4af3`) användes som
+visuellt underlag, medan källan och alla funktioner fortsatt är Croupier
+`jakeminator123/work`. Ingen iframe, parallell datamodell eller kopierad Studio
+infördes. Eventstudion är fortsatt standard på `/`; Nodträdet, Videobanken,
+Händelseloggen, Chatt & OpenClaw och Guide använder samma befintliga rutter.
+
+Paletten följer den aktuella Scout-webben: ink `#0A0B0D`, off-white `#F2F1ED`,
+lime `#D6FF3A`, djup lime `#B5DC1F` och steel `#5A6470`/`#1F252E`.
+`image.png` fanns inte i workspacen eller referensrepot, så wordmarket är
+kodbaserat. Endast snedstrecket är lime och får en begränsad 3D-animation.
+Header, sidomeny, arbetsyta och scen har korta orienterande övergångar; aktiva
+noder och statusar har tydligare hierarki. Reduced-motion stänger av allt nytt.
+Designbeslut och lokal körning finns i `lab/docs/DASHBOARD-DESIGN.md`.
+
+Validering: `npm run typecheck`, hela labbsviten (304 tester) och Next 16.3.5
+production build passerade. Det byggda labbet granskades på isolerad
+`127.0.0.1:4200`: standardvyn, Guide-navigering, sex huvudvyer, Scout-tokens
+och avsaknad av horisontell overflow verifierades; webbläsarkonsolen hade inga
+varningar eller fel. Previewprocessen och previewfliken stängdes efter kontrollen. Ingen gameplay,
+dealerfilm, ljudfil, frame-index, kalibrering, serverdata eller Jira-status har
+ändrats.
+
 ## 2026-09-21 — natural name questions and budgeted OpenAI search
 
 Live follow-up: both chats answered Jakob/John and follow-up questions correctly.
