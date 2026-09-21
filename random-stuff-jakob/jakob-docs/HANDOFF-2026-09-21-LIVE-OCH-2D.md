@@ -4,7 +4,27 @@
 branch `jakeminator123/work`. Labbet kör på `http://127.0.0.1:4188`.
 Den här filen är en teknisk överlämning, utan hemligheter eller samtalsexport.
 
-## Nyaste provet: tre demorundor och nästa mål
+## Senare kontroll: live-klienten använder native table
+
+Verifierat genom en normal Partner-launch-session: den faktiskt levererade
+`app.mjs` skickar till `/api/table`, inte `/api/v1/table`. Både labbets anslutning
+och en separat direkt Partner-SSE autentiserades, men inga rundposter sparades.
+Labbinspelningen slutade med `terminated` efter cirka fem minuter. Direktprovet
+avbröts manuellt efter problem med avslut; det har inget slutligt heartbeat-antal.
+
+Sex läsningar av samma spelares native `op: state` gav identiskt vänteläge,
+ingen aktiv runda. Agenten spelade ingen ny runda: browserstyrningen stoppades
+eftersom verktyget inte kunde verifiera aktuell URL. Inga env-värden ändrades.
+Privat underlag och exakt begränsning finns i
+`lab/data/observations/2026-09-21T00-10-30-027Z/README.md`.
+
+Nästa tekniska steg är att verifiera/komplettera native-table → Partner-events
+på servern, med autentiserad kanal, korrelation och skydd mot dubbelpublicering.
+Deployad serverrevision är fortfarande okänd och användarens exakta rundanrop
+fångades inte. Klippstart/slut och kortlandning kräver dessutom klienttelemetri.
+En omladdning eller nyckeländring löser inte automatiskt dessa kopplingar.
+
+## Tidigare prov: tre demorundor och nästa mål
 
 Efter kompletteringen nedan bekräftade Jakob att spelkontot enbart innehöll
 demopengar. Tre små rundor avslutades, även en från explicit Partner-launch.
