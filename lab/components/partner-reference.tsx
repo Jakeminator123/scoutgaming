@@ -30,11 +30,12 @@ export function PartnerReference({ trace, connected, onActivity }: { trace: Part
     if (!response.ok) throw new Error(data.error ?? 'API-anropet misslyckades.');
     return data;
   }
-  async function run(action: 'verify' | 'launch' | 'mapping') {
+  async function run(action: 'verify' | 'launch' | 'launch-staged-base' | 'mapping') {
     if (busy) return;
+    const openingGame = action === 'launch' || action === 'launch-staged-base';
     // Open synchronously with the user's click so popup protection does not drop the result.
-    const game = action === 'launch' ? window.open('about:blank', '_blank') : null;
-    if (action === 'launch' && !game) { setError('Tillåt en ny flik för att öppna referensspelet.'); return; }
+    const game = openingGame ? window.open('about:blank', '_blank') : null;
+    if (openingGame && !game) { setError('Tillåt en ny flik för att öppna referensspelet.'); return; }
     if (game) game.opener = null;
     setBusy(action); setError('');
     try {
@@ -44,10 +45,10 @@ export function PartnerReference({ trace, connected, onActivity }: { trace: Part
         onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Partner-behörigheter verifierade', owner: 'Bettalotto / ping', reason: 'Verifierar åtkomst; inga spelkommandon skickades.', data: { scopes: data.scopes, verifiedAt: data.verifiedAt } });
       } else if (action === 'mapping') {
         setMapping(data);
-        onActivity({ source: 'partner', stage: 'configuration', status: 'observed', title: 'Aktuell videokarta hämtad', owner: 'Generations-API / mapping', reason: 'Visar registrerat material och BO-val. Bevisar inte vilket klipp som faktiskt spelades.', data: { fetchedAt: data.fetchedAt, revision: data.mapping.revision ?? null } });
+        onActivity({ source: 'partner', stage: 'configuration', status: 'observed', title: 'Aktuell videokarta hämtad', owner: 'Generations-API / mapping', reason: 'Visar registrerat material och BO-val. Bevisar inte vilket klipp som faktiskt spelades.', data: { source: data.source, fetchedAt: data.fetchedAt, revision: data.mapping.revision ?? null, actualPlayback: false, dealers: Object.keys(data.mapping.dealers) } });
       } else if (game) {
         game.location.replace(data.url);
-        onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Referensspelet öppnat i egen flik', owner: 'Partner-launch', reason: 'Samma konfigurerade spelare som eventströmmen. Öppningen är ingen registrerad spelrunda.', data: { expiresIn: data.expiresIn } });
+        onActivity({ source: 'config', stage: 'connection', status: 'observed', title: action === 'launch-staged-base' ? 'Astrids staged-grundläge öppnat i egen flik' : 'Referensspelet öppnat i egen flik', owner: 'Partner-launch', reason: 'Samma konfigurerade spelare som eventströmmen. Öppningen är ingen registrerad spelrunda.', data: { expiresIn: data.expiresIn, presentationMode: data.presentationMode } });
       }
     } catch (cause) {
       game?.close();
@@ -74,6 +75,12 @@ export function PartnerReference({ trace, connected, onActivity }: { trace: Part
       <button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.mappingConfigured} onClick={() => void run('mapping')}>{busy === 'mapping' ? 'Hämtar…' : 'Hämta videokarta'}</button>
     </div>
+    <details className={styles.mapping}>
+      <summary>Testa Astrids grundfilmer</summary>
+      <p>Öppnar staged-grundläget utan smooth60 eller rhythm. Grundfilmerna är märkta för granskning. Använd detta för att jämföra videolägen efter en avslutad runda.</p>
+      <button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch-staged-base')}>{busy === 'launch-staged-base' ? 'Öppnar…' : 'Öppna staged-grundläge ↗'}</button>
+      <p className={styles.note}>Samma Partner-spelare används. Saknade talfiler och rundmeddelanden i Partner-strömmen kan fortfarande behöva åtgärdas separat.</p>
+    </details>
     {!access ? <p className={styles.note}>Verifiera åtkomsten före spelöppning. Inga externa anrop görs när sidan öppnas.</p> : !canLaunch ? <p className={styles.note}>Nyckeln saknar launch. Den kan inte öppna referensspelet.</p> : null}
     {access && !access.scopes.includes('play') ? <p className={styles.note}>Nyckeln kan öppna spelet men saknar play för en egen klient med Partner-table. Labbet skickar inga insatser eller spelhandlingar.</p> : null}
     {!configuration?.mappingConfigured && configuration ? <p className={styles.note}>{configuration.mappingError ?? 'Videokartan behöver generations-API:ts separata lästoken, BETTALOTTO_API.'}</p> : null}

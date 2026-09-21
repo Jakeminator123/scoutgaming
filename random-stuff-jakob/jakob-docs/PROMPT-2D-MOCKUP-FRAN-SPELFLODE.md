@@ -18,6 +18,14 @@ Tre demorundor har nu observerats med noll SSE-rundmeddelanden, direktleverans
 från skon och `No staged capture` på launch-vägen. Läs senaste handoffen och
 det privata observationsunderlaget innan äldre antaganden används.
 
+Senare kontroll preciserar detta: grund-staged och dess fyra takes plus två
+continuations finns på servern; manifesten för smooth60/rhythm saknas. Labbet
+har ett uttryckligt testval för staged-grundläget. Se
+[kartläggningen av Astrids spelanrop](systemkarta/03-dealers-video-takes/ASTRID-LIVE-2026-09-21.md).
+Motorlistans show.*-etiketter är katalogbeskrivningar. Native koreografi och
+Partner-presentation skiljer sig bland annat i double/bust-ordning; behandla
+inte listan som en inspelad tidslinje eller som identiska uppspelningsvägar.
+
 2D är en mockup av det som ska vara videofiler. Återskapa originalspelets
 observerade presentation: korrekta kort, boxar/händer, klippordning, repliker,
 kortlandning, pauser och återgång till idle. Använd samma serverägda speldata.
@@ -29,9 +37,10 @@ parallell motor eller separat ny app.
 1. Läs Kevins [API- och videobesked](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3873260823).
    `/activity` kan verifiera Partner-scopes, ansluta SSE, öppna originalspelet
    med samma nyckel/spelare, hämta mapping och exportera observationsprotokoll.
-   Nuvarande nyckel har launch/events, inte play/wallet. Liveöppningen visade
-   saldo 0,00 €. Ordna avsedd demomiljö innan rundprov; manipulera inte en riktig
-   spelares databas, wallet eller saldo för testet.
+   Nuvarande nyckel har launch/events, inte play/wallet. Jakob har uttryckligen
+   bekräftat att denna spelares senare finansierade saldo enbart är demopengar.
+   Tre agentrundor och därefter användarens spel har observerats. Manipulera
+   inte en riktig spelares databas, wallet eller saldo för testet.
 2. Kontrollera först att en verklig runda från launch-klienten faktiskt kommer
    i SSE. Detta är inte verifierat: Kevin beskriver stödet, medan hämtad
    serverkod visar publicering från Partner-table men ingen native-brygga.
