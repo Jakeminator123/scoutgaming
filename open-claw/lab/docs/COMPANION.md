@@ -18,7 +18,9 @@ för namnfrågor och följdfrågor. Operatörschatten får inte spelarens privat
 
 Poemen är nyskrivna, korta, vänligt överdrivna rim på svenska, tyska och kinesiska,
 med Jakobs beställda teman. Ulf Lundell kan nämnas, men inga verk kopieras eller
-nära efterbildas. Ett svar per meddelande, ingen självchatt eller bakgrundsloop.
+nära efterbildas. Om modellen missar fyra rader eller språkblandningen ersätts
+svaret av ett lokalt fyraradigt original för namnet. Ett svar per meddelande,
+ingen självchatt eller bakgrundsloop.
 På Jakobs uttryckliga begäran är labbets talgräns nu **25 sekunder**, även för
 poemen. Med Ljud på skickas exakt svarstext till befintligt ElevenLabs-prov;
 avmarkera för enbart text. Modellen ombeds hålla dikten kort, men faktisk
@@ -127,28 +129,47 @@ typdeklaration. En kodrevert av denna leverans återställer även den tidigare
 sexsekundersgränsen. Det finns fortsatt bara en talägare och ett ljud åt gången.
 
 Default är på i denna beställda labbfunktion. Ingen miljöhemlighet ändras.
-För full kodåterställning: reverta endast feature-committen angiven i
-leveranskvittot nedan, pusha arbetsgrenen och driftsätt föregående version på
-båda Render-tjänsterna. Gör ingen reset till `94a2688` över senare gemensamt
-arbete. Den nya separata SQLite-filen kan ligga kvar avstängd; ta en privat
-backup före eventuell filradering. Inga befintliga kataloger eller medier ska
-återställas eller raderas. Gamla runtime-snapshots och AGENTS-backuper finns
-kvar på Gateway-disken enligt den vanliga runtimepaket-rutinen.
+För full kodåterställning: reverta funktionscommittarna i denna ordning och
+driftsätt den nya branchspetsen på båda Render-tjänsterna:
+
+```text
+git revert cbb856e75f5499ad882f56dfa093046210e70665
+git revert 6ac2d73751863b4845c093f224b3fd2e8430075a
+git revert 221223ff7e87a5870c330832c282f1e75e7d9dd0
+git revert 08ddf1aae875e919e2d559c62d5e9d498ce338d9
+git revert e07dd86fa3c39229e7ab994fe8034fd81eb3a12c
+git push origin jakeminator123/work
+```
+
+Gör ingen reset till `94a2688` över senare gemensamt arbete. Den nya separata
+SQLite-filen kan ligga kvar avstängd; ta en privat backup före eventuell
+filradering. Inga befintliga kataloger eller medier ska återställas eller
+raderas. Gamla runtime-snapshots och AGENTS-backuper finns kvar på Gateway-
+disken enligt den vanliga runtimepaket-rutinen.
 
 ## Leverans och verifiering
 
-Första funktionscommitten är `e07dd86`; den bygger direkt på `94a2688` och är
-pushad till `jakeminator123/work`. Båda Render-tjänsterna körde denna version
-2026-09-21 innan rättningen för naturliga namnfrågor och OpenAI-sökning.
-Återställ båda funktionscommittarna i omvänd ordning enligt slutkvittot nedan,
-bygg om lokala labbet och driftsätt båda Render-tjänsterna. Budgetdatabasen får
-ligga kvar avstängd; inga speldata eller medier behöver återställas.
+Leveransen består av `e07dd86` (grundfunktion), `08ddf1a` (naturliga namnfrågor
+och budgeterad OpenAI-sökning), `221223f` (källspärr och skarpare fyraradiga
+poem), `6ac2d73` (kompatibel officiell sökfråga och garanterad poemreserv) samt
+`cbb856e` (samma formatgaranti i operatörschatten).
+Den bygger direkt på V5-spetsen `94a2688` och är pushad till
+`jakeminator123/work`. Återställ i omvänd ordning med kommandona ovan, bygg om
+lokala labbet och driftsätt båda Render-tjänsterna. Budgetdatabasen får ligga
+kvar avstängd; inga speldata eller medier behöver återställas.
 
 Lokalt: 111 OpenClaw/deployment-tester, 302 labbtester, TypeScript och Next-bygge.
 Riktigt OpenAI-sökprov gav docs.openclaw.ai som citerad källa. Minne/återkomst/
 Glöm mig verifierades genom labbets API mot Render med en separat provprofil.
+Slutprovet mot publicerad revision gav ett fyraradigt Jakob-poem i spelarchatten,
+ett fyraradigt John-poem i operatörschatten och endast
+`https://docs.openclaw.ai/install` som accepterad installationskälla. Provprofilen
+glömdes i testets `finally`-steg.
 Alla fyra dealers genomförde två greeting-uppspelningar i följd på isolerad
 rehearsal.localhost med separat databas. Det är livscykelbevis, inte ny läppsynk-
 eller tillgångsacceptans. Kevins riktiga ElevenLabs-prov slutfördes i webbläsaren
 på 12 770,975 ms med maxDurationMs 25 000 (request 8b3ee664-e6b3-4fa2-b91d-a3ca02ba02cf).
-Slutliga driftkvitton fylls efter uppföljande deployment.
+
+Slutlig kodrevision: `cbb856e75f5499ad882f56dfa093046210e70665`.
+Render-kvitton: [Director `dep-daoals0473hc739jad00`](https://dashboard.render.com/web/srv-danhlpjtqb8s73bv530g/deploys/dep-daoals0473hc739jad00)
+och [Gateway `dep-daoalujtqb8s73ej1520`](https://dashboard.render.com/pserv/srv-danhiv3tqb8s73burkq0/deploys/dep-daoalujtqb8s73ej1520).
