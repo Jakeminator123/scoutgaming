@@ -974,13 +974,15 @@ createServer(async (req, res) => {
   if (decoded === '/bo') { res.writeHead(303, { Location: '/bo/' + url.search }); res.end(); return; }
   let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '');
   const generationPath = '/' + path.replace(/\\/g, '/').replace(/^\/+/, '');
-  if (generationPath.startsWith('/bo/gen/')) {
+  const generationPrefix = /^\/bo[ .]*\/gen[ .]*\//i.exec(generationPath);
+  if (generationPrefix) {
     // Repeat auth after decoding/normalization so encoded slashes cannot bypass
-    // the ordinary BO gate above. This mount never falls through to static files.
+    // the ordinary BO gate above. Windows also ignores directory casing and
+    // trailing dots/spaces. None of these aliases may fall through to static files.
     if (!boSessionOk(req)) { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); return; }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
     let catalog; try { catalog = JSON.parse(readSync(join(root, 'bo/generations.json'), 'utf8')); } catch { catalog = []; }
-    const media = openGenerationMedia({ directory: generationDirectory, catalog, fileName: generationPath.slice('/bo/gen/'.length) });
+    const media = openGenerationMedia({ directory: generationDirectory, catalog, fileName: generationPath.slice(generationPrefix[0].length) });
     if (!media) { res.writeHead(404, { 'Cache-Control': 'no-store' }); res.end('not found'); return; }
     serveGenerationMedia(req, res, media); return;
   }

@@ -173,7 +173,8 @@ try {
   const generationAvailable = (await bo.request.head(fixture.gameUrl + generationSrc)).ok();
   if (generationAvailable) {
     await bo.locator('[data-card] video').evaluate(video => video.play());
-    await bo.waitForFunction(() => document.querySelector('[data-card] video')?.currentTime > 0);
+    await bo.waitForFunction(() => document.querySelector('[data-card] video')?.currentTime > 0.2);
+    await bo.screenshot({ path: resolve(output, 'backoffice-generation-sample.png') });
   }
   await bo.keyboard.press('Escape');
   await bo.goto(fixture.gameUrl + '/bo/#clips');

@@ -45,9 +45,11 @@ Windows normaliserade till `\`. Servern hanterar nu båda formerna och
 `/bo` omdirigerar till `/bo/`. Authregression och verkligt lokalt browserflöde
 login → Generations → swipe med en preview → Dealing Clips passerade.
 
-Sammanhängande browserkörning efter **Ny observation** och nytt labbbygge
-passerade: 12 steg, 12 avslut, 12 sammanslagna native/SSE-dubbletter och
-17 native-playbackkvitton. Ny observation skickade inget extra spelkommando. Alla sex
+Senaste sammanhängande browserkörning (22 september 02:21 UTC) efter
+**Ny observation** och nytt labbbygge passerade: 13 steg, 13 avslut,
+13 sammanslagna native/SSE-dubbletter och 19 native-playbackkvitton.
+Antalen följer den riktiga givna rundan, inte en hårdkodad sekvens.
+Ny observation skickade inget extra spelkommando. Alla sex
 dealer-/renderingsfallen klarade två plays; inga JavaScript-fel registrerades.
 BO provades även med två riktiga Dealing Clips-videor: första previewn
 pausades när nästa startade. Det bevisar inte manuellt flikdelningstillstånd,
@@ -56,8 +58,9 @@ full läppsynkacceptans eller verifierad live-deploy.
 Senare metadata-inventering fann 224/224 snapshot-ID:n och förväntade
 filstorlekar i det befintliga externa generationsarkivet. Filmbytes lästes
 inte för inventeringen. BO:s Generations-väg behövde en separat lokal
-arkivkoppling eftersom `web/public/bo/gen` saknades; stickprov efter denna
-koppling har ett eget kvitto i handoffen och ingår inte i browserresultatet ovan.
+arkivkoppling eftersom `web/public/bo/gen` saknades. Efter denna skrivskyddade
+koppling spelades också ett Generations-stickprov faktiskt upp i körningen
+ovan; inga filmer kopierades in i repot. Se även [handoffkvittot](../../JOHN-HANDOFF.md).
 
 ## Historiskt underlag · 21 september
 
