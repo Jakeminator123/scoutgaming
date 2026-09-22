@@ -1,3 +1,24 @@
+## 2026-09-22 — äldre GitHub-adress, lokal env-inventering och kort start
+
+The old private `Jakeminator123/gitlab-work` repository is now a signpost:
+its current `jakeminator123/work` branch contains exactly one `README.md`,
+linking to private `Jakeminator123/github-work` and canonical GitLab. This was
+a normal fast-forward commit (`f7fb7e7`); the old code remains recoverable in
+its Git history. GitHub UI confirmed the repository stayed private and showed
+only the redirect README on its default branch. Do not mirror new work there.
+
+Updated Jakob's `_env.explanation.md` with **names only** from the actual
+local files: 13 assignment names in root `.env`, three in `lab/.env.local`,
+plus the checked-in `lab/.env.example` and `open-claw/lab/.env.example`
+templates. No values were copied, logged or changed. Root
+`_ENVIROMENT-INFO.md` points to that inventory. New
+`random-stuff-jakob/jakob-docs/KORT-START-HAR.md` is a short repo map for
+Jakob/agents, including the external Bettalotto MP4 scratch/mapping folder
+Jakob reported (path unverified and intentionally not recorded), env locations,
+mirror rule, and indexing boundary. Jakob docs README and root README link to
+it. No media,
+credentials, runtime, deployment or Jira status changed.
+
 ## 2026-09-22 — work-branch delivery rule and indexing hygiene
 
 Added a branch-scoped agent rule in `.cursor/rules/work-branch-mirror.mdc` and

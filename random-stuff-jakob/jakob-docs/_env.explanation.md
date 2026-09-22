@@ -1,8 +1,45 @@
 # API:er och miljövariabler — vad hör ihop?
 
-Kontrollerat mot koden 2026-09-21. Här finns namn, placeringar och ansvar,
+Kontrollerat mot koden 2026-09-21 och lokala filers **variabelnamn** 2026-09-22.
+Här finns namn, placeringar och ansvar,
 **inga hemliga värden**. Filen är dokumentation; programmet läser inte den
 som konfiguration. En konfigurerad anslutning är inte ett verifierat driftläge.
+
+## Lokal inventering — namn, inte värden
+
+Följande är de faktiskt förekommande tilldelningsnamnen i de två privata
+lokala filerna. Förekomst säger inte att ett värde är korrekt, aktivt eller
+behövs för normal drift. Ingen nyckel har kopierats hit.
+
+- Repots `.env` (13): `BETTALOTTO_API`, `OPENAI_API_KEY`,
+  `OPENCLAWAPI_KEY`, `OPENCLAW_MODEL_API_KEY`, `OPENCLAW_TIMEOUT_MS`,
+  `LAB_API_TOKEN`, `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN`,
+  `LAB_PARTNER_KEY_ID`, `LAB_PARTNER_SECRET`, `LAB_PARTNER_PLAYER_ID`,
+  `ELEVENLABS_API_KEY`, `ELEVENLABS_OC_API`.
+- `lab/.env.local` (3): `BETTALOTTO_PARTNER_KEY_ID`,
+  `BETTALOTTO_PARTNER_SECRET`, `BETTALOTTO_PARTNER_PLAYER_ID`.
+
+De incheckade **exemplen**, inte dina aktiva värden, innehåller dessa namn:
+
+- `lab/.env.example` (9 kommenterade mallrader):
+  `BETTALOTTO_PARTNER_BASE_URL`, `BETTALOTTO_PARTNER_KEY_ID`,
+  `BETTALOTTO_PARTNER_PLAYER_ID`, `BETTALOTTO_PARTNER_SECRET`,
+  `LAB_REMOTE_TOKEN`, `LAB_REMOTE_URL`, `LAB_STUDIO_DATA_DIR`,
+  `LAB_VIDEO_ARCHIVE`, `OPENCLAW_TIMEOUT_MS`.
+- `open-claw/lab/.env.example` (19): `OPENCLAWAPI_KEY`,
+  `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`,
+  `OPENCLAW_TIMEOUT_MS`, `LAB_COMPANION_ENABLED`,
+  `LAB_COMPANION_FUN_ENABLED`, `LAB_COMPANION_WEB_ENABLED`,
+  `OPENCLAW_DASHBOARD_ORIGIN`, `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK`,
+  `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN`, `LAB_API_TOKEN`, `HOST`, `PORT`,
+  `OPENCLAW_MODEL_API_KEY`, `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`,
+  `OPENCLAW_MODEL_API`.
+
+De äldre `LAB_PARTNER_*`-namnen finns i **rotens** `.env`, men den nuvarande
+Partner-observatören läser sin `lab/.env.local` och använder där de nyare
+`BETTALOTTO_PARTNER_*`-namnen. Rotens OpenClaw-/modellnamn innebär inte att
+Render-tjänsternas miljö automatiskt uppdateras. Radera eller flytta inga
+fungerande nycklar utifrån denna inventering.
 
 ## Börja här
 
