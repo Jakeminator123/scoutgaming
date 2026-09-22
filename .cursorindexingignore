@@ -1,2 +1,28 @@
 /random-stuff-jakob/jakob-docs/arkiv/
 /random-stuff-jakob/jakob-docs/KEVIN-ATKOMST-PRIVAT.txt
+
+# Generated dependencies and builds: keep locally, skip semantic indexing.
+node_modules/
+.next/
+
+# Binary media and 3D assets: source/sidecar metadata stays indexable.
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.mp3
+*.wav
+*.ogg
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.glb
+*.gltf
+*.blend
+*.fbx
+*.obj
+*.stl
+*.usdz
+*.bin

@@ -21,6 +21,12 @@ question needs it, not on every turn or runtime event.
 
 If this checkout is branch `jakeminator123/work`: do not push `main`. At each new user turn, run `node tools/croupier-inbox.mjs check` once; initialize via `ping-croupier` if needed. Shared fetch cache lasts 30 seconds; read cursors stay per chat. Nothing relevant: continue silently. No polling or checks on agent/tool updates. Missing API: report once, no automatic browser fallback on ordinary turns. Only the addressed agent answers; CC/all is informational. Read `ping-croupier` for replies/setup. Wiki: https://gitlab.com/scout-gg/croupier/-/wikis/home
 
+On `jakeminator123/work`, deliver each approved commit to canonical GitLab and
+the private reference copy `Jakeminator123/github-work` with
+`node tools/push-work-mirrors.mjs`; it pushes GitLab first and verifies matching
+commit IDs on both services. Do not use the retired `gitlab-work` GitHub repo,
+push `main`, or force-push. This is an agent workflow, not an unattended mirror.
+
 Read `docs/JOHN-HANDOFF.md` and `docs/ENVIRONMENT-RESTORATION.md` before changing gameplay or media. This repository is the working product; the older checkout nested inside Scout-Gaming is not the current source.
 
 - Preserve existing dirty files, especially raw media and calibration scripts. Do not reset, clean, or replace the whole media directory.
