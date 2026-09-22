@@ -1,0 +1,20 @@
+---
+description: Push Jakob's work branch to canonical GitLab and its private GitHub reference copy.
+alwaysApply: true
+---
+
+# Jakob work branch delivery
+
+- Apply this only when the current branch is `jakeminator123/work`. Never push
+  `main`, another person's branch, or unrelated local changes.
+- GitLab `scout-gg/croupier` is canonical. GitHub
+  `Jakeminator123/github-work` is a private reference copy for browser-GPT;
+  it must not become public or be treated as the source of truth.
+- Before a shared push, run `node tools/croupier-chef.mjs status` and follow
+  `AGENTS.md` ownership instructions. Commit only task-owned files.
+- For every approved delivery on this branch, run
+  `node tools/push-work-mirrors.mjs`. It checks ancestry, pushes GitLab first,
+  then GitHub, and verifies that both branch tips equal local HEAD. If either
+  push fails, report the partial state and retry only after resolving it.
+- Do not force-push or substitute the retired `gitlab-work` GitHub repo.
+- This rule governs agent deliveries; it is not unattended server-side mirroring.

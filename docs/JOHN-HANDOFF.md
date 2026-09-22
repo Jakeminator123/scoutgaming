@@ -1,3 +1,28 @@
+## 2026-09-22 — work-branch delivery rule and indexing hygiene
+
+Added a branch-scoped agent rule in `.cursor/rules/work-branch-mirror.mdc` and
+`AGENTS.md`. For approved deliveries on `jakeminator123/work`, use
+`node tools/push-work-mirrors.mjs`: it checks both remote heads are ancestors,
+pushes canonical GitLab first and the private `Jakeminator123/github-work`
+reference copy second, then verifies identical commit IDs. `--check` is a
+read-only preflight. This is a deliberate agent workflow, not unattended
+server-side mirroring; a failed second push must be reported and retried.
+
+Metadata-only indexing audit: 4,230 tracked paths, including 41 `.blend`
+files (about 1,266 MiB), 28 `.glb` (432 MiB), 277 `.mp4` (366 MiB), plus
+tracked images and audio. Local `lab/node_modules` holds about 10,935 files
+(342 MiB) and `lab/.next` about 441 files (345 MiB); both were already
+Git-ignored. `.cursorindexingignore` now excludes dependency/build folders and
+binary media/3D formats from semantic indexing while leaving source, sidecar
+JSON, manifests, and all actual files intact. No media bytes or approved
+asset hashes changed. Do not delete or rewrite tracked media casually: future
+Git-size/LFS work needs a separate plan and visual/calibration safeguards.
+
+Validation: `node --check tools/push-work-mirrors.mjs`, `git diff --check`, and
+`node tools/push-work-mirrors.mjs --check` passed. No gameplay, media bytes,
+database, deployment, or Jira status changed. Existing unrelated local edits
+remain untouched.
+
 ## 2026-09-22 — rätt privat GitHub-kopia för browser-GPT
 
 The private GitHub backup is now `Jakeminator123/github-work`, branch
