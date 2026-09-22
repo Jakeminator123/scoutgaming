@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'node:net';
-import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, symlink, rm, readdir, copyFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -68,5 +68,45 @@ test('explicit media directory serves BO and token API with auth, HEAD and byte 
     await fixture.stop(); fixture = null;
     assert.equal(existsSync(join(directory, `${first.id}.mp4`)), true, 'fixture cleanup never deletes supplied archive');
     assert.equal(readFileSync(join(directory, `${first.id}.mp4`), 'utf8'), bytes);
+  } finally { await fixture?.stop(); await rm(tmp, { recursive: true, force: true }); }
+});
+
+test('default media directory cannot bypass BO auth or catalog checks through Windows route aliases', async () => {
+  const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-case-'));
+  const web = join(tmp, 'web'), directory = join(web, 'public/bo/gen');
+  const known = '11111111-2222-3333-4444-555555555555';
+  const unknown = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+  let fixture;
+  try {
+    await mkdir(directory, { recursive: true });
+    const source = new URL('../web/', import.meta.url);
+    for (const file of await readdir(source)) if (file.endsWith('.mjs')) {
+      await copyFile(new URL(file, source), join(web, file === 'server.mjs' ? 'server-under-test.mjs' : file));
+    }
+    await copyFile(new URL('public/blackjack.mjs', source), join(web, 'public/blackjack.mjs'));
+    // Exercise the real server's default directory, not the comparison fixture's
+    // intentional empty-media override. Only this disposable child loses it.
+    await writeFile(join(web, 'server.mjs'), "delete process.env.CROUPIER_GENERATIONS_DIR; await import('./server-under-test.mjs');\n");
+    await writeFile(join(web, 'public/bo/generations.json'), JSON.stringify([{ id: known }]));
+    await writeFile(join(directory, `${known}.mp4`), 'synthetic known media');
+    await writeFile(join(directory, `${unknown}.mp4`), 'synthetic uncatalogued media');
+    fixture = await startLocalComparison({ startLab: false, repoRoot: tmp, gamePort: await freePort('localhost'), labPort: await freePort('127.0.0.1') });
+    const get = (path, cookie = '') => fetch(fixture.gameUrl + path, { headers: { Cookie: cookie }, redirect: 'manual' });
+    const prefixes = ['/BO/GEN/', '/Bo/gEn/', '/BO%2fGEN%2f', '/BO%5cGEN%5c',
+      '/bo./gen./', '/bo%20/gen%20/', '/BO.%20/Gen%20./'];
+    for (const prefix of prefixes) {
+      const denied = await get(`${prefix}${known}.mp4`);
+      assert.equal(denied.status, 302, `${prefix} requires BO auth even when default files exist`);
+      assert.equal(denied.headers.get('location'), '/bo/login.html');
+    }
+    const login = await fetch(fixture.gameUrl + '/api/bo/login', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: fixture.gameUrl }, body: JSON.stringify({ user: fixture.bo.username, pass: fixture.bo.password }) });
+    assert.equal(login.status, 200);
+    const cookie = login.headers.getSetCookie().map(value => value.split(';')[0]).join('; ');
+    for (const prefix of prefixes) {
+      const allowed = await get(`${prefix}${known}.mp4`, cookie);
+      assert.equal(allowed.status, 200);
+      assert.equal(await allowed.text(), 'synthetic known media');
+      assert.equal((await get(`${prefix}${unknown}.mp4`, cookie)).status, 404, 'existing uncatalogued file is never served by static fallback');
+    }
   } finally { await fixture?.stop(); await rm(tmp, { recursive: true, force: true }); }
 });

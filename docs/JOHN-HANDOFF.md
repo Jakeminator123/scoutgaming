@@ -67,13 +67,18 @@ vars ID och storlekar matchar katalogen. Detta är inte en generell hash- eller
 kvalitetsacceptans, och inte det pensionerade personliga dokumentarkivet.
 BO-auth respektive API-token krävs; enbart katalogkända filnamn serveras,
 med skydd mot sökvägsflykt och symboliska länkar samt stöd för byteintervall.
-Inget arkiv raderas av fixtureverktygets städning.
+Windows-alias med annan skiftlägesform, avslutande punkter/mellanslag eller
+kodade separatorer går också genom BO-auth och katalogkontroll; detta provas
+mot en syntetisk standardmapp, inte mot användarens filmer. Inget arkiv raderas
+av fixtureverktygets städning.
 
 Verifierat: alla pre-commit-kommandon, dealer-audit med `--probe`, 322 labbtester,
 TypeScript och labbets produktionsbyggnad, 112 OpenClaw-tester, två isolerings-
-fixturetester och åtta medie-/authregressioner. Riktigt browserprov 2026-09-22
-bekräftade 12 sekvenssteg, 12 labbval, 12 uppspelningsavslut, 12 deduplicerade
-event och 17 native-uppspelningskvitton, samt observerad chatt i beslutspayload.
+fixturetester och nya medie-/authregressioner. Senaste riktiga browserprov
+2026-09-22 02:21 UTC bekräftade 13 sekvenssteg, 13 labbval, 13 uppspelningsavslut,
+13 deduplicerade event och 19 native-uppspelningskvitton, samt observerad chatt
+i beslutspayload. Antalet event varierar med den riktiga motorns givna kort;
+kvittona jämförs per kommando, inte mot en fabricerad fast runda.
 Ny observation skapade inget extra spelkommando, SSE-abonnemang eller fönster.
 Mobilvyn hade ingen horisontell sidöverströmning. Alla fyra originaldealers
 samt Astrid/Amira V2 klarade `goodluck` via verkliga spelarens **Play twice**;
