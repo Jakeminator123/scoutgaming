@@ -30,7 +30,10 @@ Native-svaret innehåller nu även samma publika presentationskontrakt. En
 opt-in-observer i spelfliken ger labbet det mottagna svaret, publik bordsvy och
 instrumenterade playback-/chattsignaler. Labbet kan testa exempel och återspela
 mottagna/importerade instruktioner.
-Båda går genom samma presentationsbeslut med OpenClaw som valbart mellanled.
+Labbets exempelhändelser och mottagna/importerade instruktioner går genom
+samma presentationsbeslut med OpenClaw som valbart mellanled. Det betyder
+inte att originalspelarens befintliga presentation eller produktchatt redan
+har flyttats till OpenClaw.
 Native-publicering till Partner sker efter commit för verifierad launch-session.
 Observerad klientuppspelning och SSE-instruktioner är olika bevis. En öppen
 SSE-transport utan rundposter ska inte visas som fungerande speltrafik.

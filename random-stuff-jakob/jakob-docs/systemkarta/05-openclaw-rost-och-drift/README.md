@@ -70,6 +70,17 @@ Director och privat Gateway; Next-studion är lokal.
 [Gateway-Dockerfilen](../../../../open-claw/lab/deploy/Dockerfile.gateway)
 är versions-/digestlåst. Ingen driftändring görs av systemkartan.
 
+För hela livejämförelsen krävs tre separata versioner: senaste lokala
+Next-labbet, en Director som stöder kontext v2 samt Bettalottos native-server
+och klient med presentationssvar och opt-in-observer. Render-blueprintens
+byggkontext är endast `open-claw/lab/`; en Director-deploy publicerar alltså
+varken `lab/` eller `web/`. Just kontext v2 kräver inte en ny Gateway-version.
+Lokala helhetsprovet är godkänt, men Bettalottos aktuella native-version är
+inte verifierad: begränsade offentliga JS-anrop den 22 september gav 401.
+Det visar åtkomstkrav, inte att den nya koden finns eller saknas live.
+Driftsättning och en behörig provsession återstår separat; inga riktiga
+spelares saldon eller sessioner ska användas som testdata.
+
 ## Avgränsad kunskap, ingen full indexering
 
 [Runtimepaketet](../../../../open-claw/lab/deploy/runtime-bundle/README.md)

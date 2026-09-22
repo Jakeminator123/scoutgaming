@@ -1,5 +1,17 @@
 ## 2026-09-22 — Kevin-integrering i Jakobs work och gemensam livejämförelse
 
+Leveransen är pushad som `dff5712` till både kanoniska GitLab/work och privata
+GitHub/work. GitLab bekräftade MR !1 som merged via `7874097`. En efterföljande
+driftgranskning preciserar kvarstående gräns: Render Director bygger bara
+`open-claw/lab/`, inte lokala Next-labbet eller Bettalottos `web/`-server/klient.
+Alla tre måste ha rätt version för hela liveflödet. Director behöver kontext
+v2; någon Gateway-uppdatering krävs inte för just det kontraktet. Bettalottos
+native-version kunde inte fastställas med offentliga JS-GET (401, inte bevis
+för eller emot ny kod). Enbart Director-deploy är därför inte en komplett
+live-acceptans. Live-deploy, behörig versionskontroll och separat godkänd
+testsessionsrunda återstår; ingen driftsättning eller riktig spelrunda
+utfördes i efterkontrollen. Lokal helhet är testad enligt kvittot nedan.
+
 Arbetet utgår från `jakeminator123/work`, inte från main. Backup-taggen
 `backup/jakob-work-pre-kevin-20260922` på GitLab och privata GitHub pekar på
 `6fe7c82d1522db9c9d4f611ad44006648ec355aa`. Fyra redan lokalt ändrade/nya filer
