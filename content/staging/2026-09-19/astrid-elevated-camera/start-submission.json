@@ -1,0 +1,38 @@
+{
+  "results": [
+    {
+      "id": "269f8943-e9ba-473e-9167-13774c61dd9f",
+      "type": "image",
+      "status": "pending",
+      "model": "gpt_image_2_5",
+      "params": {
+        "prompt": "Create ONE photorealistic 16:9 green-screen production reference for Astrid, seated at a full-size blackjack table, ready to deal her FIRST FACE-UP CARD TO HERSELF. There are three references with separate roles. IMAGE 1 (ref-identity.png) is the ONLY face, blonde hair, age, natural skin, earrings, black blazer and ivory blouse identity source. Preserve this exact woman's appearance and soft natural skin. IMAGE 2 (live blackjack video frame) is the CAMERA AND TABLE-PLANE PERSPECTIVE reference: copy its elevated player-side broadcast viewpoint looking DOWN across a broad tabletop toward the seated dealer, with clearly visible tops of hands, shoe and card planes. Do not copy the brunette, second person, casino decor, logos or UI. IMAGE 3 (our game table) supplies OUR single semicircular table shape, broad rail, Astrid centered behind its straight rear edge, and ONE card shoe on screen-right within her left hand's reach. Use the higher camera of IMAGE 2, not the frontal seated-portrait angle of IMAGE 1 or the lower angle of IMAGE 3. This camera is elevated above her eyes and tilted down about 30 degrees, not directly overhead: her full face is visible but the broad top surface occupies the lower half of the image and we see the top of the shoe and both complete hands. Medium-wide broadcast composition: crown near x50% y8%, shoulders around y27%, forearms and empty relaxed hands around y46-51%, rear table edge around y48%, curved front edge near y94%. Her body is naturally seated upright behind the rail, not cropped at the wrists, no elongated torso. Table extends across x8%-92% and there is ample empty dealer-card work area immediately in front of her at x49% y58%; this is her own card position, NOT any player's outer betting position. One realistically playing-card-sized shoe is around x68% y49%, its low outlet facing inward/down-left toward the dealer card position, and a single thin lime-green tracking card with four tiny magenta corner dots is slightly exposed at its outlet. Both hands are empty, left hand beside the shoe, right hand ready close to her own landing zone. Convert all background, the whole table including rail, and the shoe into matte evenly lit chroma GREEN physical surfaces, keeping their geometry and perspective legible. Do not include the casino room. Keep Astrid's skin, hair and clothing in their original natural colors with no green spill. No lettering, interface, chips, extra cards, second person or transparent cutout. This is a new camera reference physically photographed from the required elevated angle, not a stretched/reprojected frontal image.",
+        "aspect_ratio": "16:9",
+        "reference_images": [
+          "b2c16866-56c4-4406-bbb1-7fed713ca485",
+          "ffe36559-9a31-410b-bce6-b1873afa91db",
+          "0fe2ef3d-ea28-45d7-8d0b-9703937e3a06"
+        ],
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  ],
+  "adjustments": {
+    "medias[0].role": {
+      "requested": "image",
+      "used": "image_references",
+      "reason": "GPT Image 2.5 backend expects schema-key media roles"
+    },
+    "medias[1].role": {
+      "requested": "image",
+      "used": "image_references",
+      "reason": "GPT Image 2.5 backend expects schema-key media roles"
+    },
+    "medias[2].role": {
+      "requested": "image",
+      "used": "image_references",
+      "reason": "GPT Image 2.5 backend expects schema-key media roles"
+    }
+  }
+}

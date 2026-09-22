@@ -46,7 +46,7 @@ export function ReferenceCapture({ onActivity }: { onActivity: (entry: ActivityD
   }
   return <div className={styles.capture}>
     <video ref={video} autoPlay playsInline muted hidden={!sharing} aria-label="Direktbild från vald spelflik" />
-    {!sharing ? <div className={styles.empty}><span aria-hidden="true">♠</span><strong>Originalspelet, här bredvid loggen</strong><p>Öppna referensspelet via Partner ovan. Välj sedan dess flik för att se en direktbild här. Spelknapparna används i spelfliken.</p></div> : null}
+    {!sharing ? <div className={styles.empty}><span aria-hidden="true">♠</span><strong>Originalspelets bild</strong><p>Anslut öppnar spelet. Välj sedan dess flik nedan för att visa bilden här. Webbläsaren kräver ditt val; speldata och labbet fungerar även utan bilddelning.</p></div> : null}
     <div className={styles.toolbar}><button className="text-button" disabled={requesting} onClick={() => sharing ? stop() : void start()}>{sharing ? 'Sluta visa spelfliken' : requesting ? 'Välj spelflik i webbläsaren…' : 'Visa spelfliken här'}</button><small>Bilden stannar i din webbläsare. Ljudet hörs från originalfliken.</small></div>
     {error ? <p role="status">{error}</p> : null}
   </div>;

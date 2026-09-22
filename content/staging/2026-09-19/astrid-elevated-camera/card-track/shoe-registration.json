@@ -1,0 +1,58 @@
+{
+  "sourceSha256": "dfaeea2b4dae3cad918a2a3af9114d261131939ea636cf2e3427172b3b33402b",
+  "measuredFrame": 7,
+  "coordinateSpace": "native decoded source pixels; origin top-left; x right, y down",
+  "frontLipEdge": [
+    [
+      1244,
+      662
+    ],
+    [
+      1287,
+      685
+    ]
+  ],
+  "frontLipAnchor": [
+    1265.5,
+    673.5
+  ],
+  "frontLipUncertaintyPx": 4,
+  "throatEdge": [
+    [
+      1275,
+      625
+    ],
+    [
+      1310,
+      643
+    ]
+  ],
+  "throatAnchor": [
+    1292.5,
+    634
+  ],
+  "throatUncertaintyPx": 4,
+  "firstFrameCardQuad": [
+    [
+      1233,
+      668
+    ],
+    [
+      1278,
+      625
+    ],
+    [
+      1312,
+      650
+    ],
+    [
+      1275,
+      693
+    ]
+  ],
+  "firstFrameCardCentroid": [
+    1274.5,
+    659.0
+  ],
+  "note": "Match the rendered outlet definition to the correct source feature. Front lower tray lip and upper mouth throat are different anchors; do not conflate them."
+}

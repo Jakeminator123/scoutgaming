@@ -1,0 +1,253 @@
+{
+  "version": 2,
+  "id": "astrid-table-v2-waiting-2a721f7d+15777d5f",
+  "dealer": "astrid",
+  "action": "idle",
+  "status": "review",
+  "enabled": true,
+  "base": {
+    "jobId": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+    "src": "review/astrid-eye-contact-idle/actor-packed.mp4",
+    "sha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+    "sourceSha256": "67d9ee9800577ae4fa336c66b02f95bdd7a2a847fccb01b613322fccbeadfa42",
+    "width": 960,
+    "height": 760,
+    "fps": 24,
+    "frames": 193,
+    "crop": [
+      560,
+      0,
+      960,
+      760
+    ],
+    "loop": true
+  },
+  "glances": {
+    "jobId": "15777d5f-4085-484e-a170-eb5c9a13d7b0",
+    "src": "review/astrid-green-waiting/actor-packed.mp4",
+    "sha256": "217de02ecd9b9e0c4f19b2c682d8dc1bf6e4d510ddddf26656aa0e50f865c858",
+    "sourceSha256": "849b241e6a9b769bef1cd40299516c25f1a5aba28bf865b2d3593854731765bf",
+    "width": 754,
+    "height": 678,
+    "fps": 24,
+    "frames": 121,
+    "crop": [
+      560,
+      0,
+      754,
+      678
+    ],
+    "readyFrames": [
+      0,
+      41,
+      90,
+      120
+    ],
+    "camera": {
+      "width": 754,
+      "height": 678,
+      "placement": {
+        "width": 1920,
+        "height": 1080,
+        "scale": 1,
+        "x": 560,
+        "y": 0,
+        "framingScale": 0.85
+      }
+    }
+  },
+  "camera": {
+    "width": 960,
+    "height": 760,
+    "placement": {
+      "width": 1920,
+      "height": 1080,
+      "scale": 1,
+      "x": 560,
+      "y": 0,
+      "framingScale": 0.85
+    }
+  },
+  "spliceOffset": [
+    0,
+    15.3
+  ],
+  "spliceMeasurement": {
+    "method": "packed frames compared in the shared crop origin (560,0): silhouette centroid and phase correlation of head (rows 20-240) and torso (rows 20-600) regions, base frame 0 versus 15777d5f frames 0/41/90/120",
+    "headShiftPx": {
+      "0": [
+        0.08,
+        -15.37
+      ],
+      "41": [
+        -0.14,
+        -15.05
+      ],
+      "90": [
+        0.49,
+        -15.1
+      ],
+      "120": [
+        0.17,
+        -14.74
+      ]
+    },
+    "torsoShiftPx": {
+      "0": [
+        -0.11,
+        -15.82
+      ],
+      "41": [
+        0.17,
+        -15.33
+      ],
+      "90": [
+        0.05,
+        -15.82
+      ],
+      "120": [
+        -0.02,
+        -15.53
+      ]
+    },
+    "silhouetteCentroidDeltaPx": [
+      -0.4,
+      -13.7
+    ],
+    "silhouetteTopRowBaseVsGlance": [
+      44,
+      26
+    ],
+    "maskedRgbMeanDiff": 14,
+    "conclusion": "the waiting clip sits about 15 px higher in the frame than the base loop with no horizontal offset; rigid offset applied to the glance layer at splice: +15.3 px down, 0 px across (source pixels, scaled with the fit)"
+  },
+  "segments": {
+    "glanceLeft": {
+      "start": 0,
+      "end": 41,
+      "note": "glance toward viewer-left (her right), back to ready at 41"
+    },
+    "glanceRight": {
+      "start": 41,
+      "end": 90,
+      "note": "glance toward viewer-right (her left) with a blink, back to ready at 90"
+    },
+    "full": {
+      "start": 0,
+      "end": 120,
+      "note": "the whole clip"
+    }
+  },
+  "scheduler": {
+    "glanceProbability": 0.4,
+    "maxBaseRun": 3,
+    "holdLoops": [
+      1,
+      3
+    ],
+    "glances": [
+      "glanceLeft",
+      "glanceRight",
+      "full"
+    ]
+  },
+  "measured": {
+    "headCrop": [
+      870,
+      26,
+      180,
+      200
+    ],
+    "method": "phase correlation of the head crop against frame 0 (dx px) plus mean abs grey difference; motion/head-motion.json, head-motion.png, head-sheet.jpg",
+    "observed": "frames 0-5 ready; 6-40 head turns toward viewer-LEFT (her right, dx to -31 px at 23-28) and returns by 41; 42-89 head turns toward viewer-RIGHT (her left, dx to +30 px at 54-64) and returns by 90; 90-120 calm breathing, dx under 0.4 px. The README order (left first) is by viewer direction; the hands settle 1.4 px after frame 5 and stay.",
+    "seamsMeanAbsDiff(full,head)": {
+      "0-120": [
+        1.44,
+        4.31
+      ],
+      "0-41": [
+        1.31,
+        4.51
+      ],
+      "0-90": [
+        1.35,
+        3.57
+      ],
+      "41-90": [
+        0.94,
+        4.95
+      ],
+      "90-120": [
+        0.84,
+        3.43
+      ],
+      "41-120": [
+        1.07,
+        4.47
+      ],
+      "96-120": [
+        0.79,
+        2.46
+      ]
+    }
+  },
+  "rest": {
+    "version": 1,
+    "jobId": "744a9e34-944a-4788-9d81-a0e50bd20039",
+    "transitionJobId": "92521ca6-1037-498a-ad71-933248fcf253",
+    "readySha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+    "width": 960,
+    "height": 760,
+    "camera": {
+      "width": 960,
+      "height": 760,
+      "placement": {
+        "width": 1920,
+        "height": 1080,
+        "scale": 1,
+        "x": 560,
+        "y": 0,
+        "framingScale": 0.85
+      }
+    },
+    "loop": {
+      "src": "review/astrid-seam-repair/loop-dd8258097b1b.mp4",
+      "sha256": "dd8258097b1b5fd22e8adfc8621293be87b54bfc84cd2e67eb703e3b5076e253",
+      "sourceSha256": "161027b091e5001a42e6deb3fdf3143f38a00fde40c0cfed70082a3df078c391",
+      "fps": 24,
+      "frames": 61,
+      "sourceFrames": [
+        72,
+        144
+      ],
+      "calibrationRevision": "seam-repair-v1"
+    },
+    "out": {
+      "src": "review/astrid-seam-repair/out-b1cf62468689.mp4",
+      "sha256": "b1cf624686892e61857ce44896281c763cf91d0d9e1ab5b9a38b9316d1a5119a",
+      "sourceSha256": "0300b053aa71c3d802532cfd6ebfe383fe41cb9cef872e82883ed5e14546e087",
+      "fps": 36,
+      "frames": 73,
+      "sourceFrames": [
+        40,
+        96
+      ],
+      "calibrationRevision": "seam-repair-v1"
+    },
+    "back": {
+      "src": "review/astrid-seam-repair/back-fc3615057eaa.mp4",
+      "sha256": "fc3615057eaaecd8da0a1fc712bc57e03d2f914fdf752dbd3bffb40953792b40",
+      "sourceSha256": "0300b053aa71c3d802532cfd6ebfe383fe41cb9cef872e82883ed5e14546e087",
+      "fps": 36,
+      "frames": 73,
+      "sourceFrames": [
+        96,
+        40
+      ],
+      "calibrationRevision": "seam-repair-v1"
+    },
+    "note": "Fixed measured uniform actor scale/translation and per-take RGB balance. Folded loop uses a 12-frame motion-aligned moving overlap; wrap is adjacent native frames60->61 of the previous trimmed loop. Out starts on the exact loop entry; return ends there. Speech exits the loop only at that boundary. The folded native loop provides breathing and subtle eyes without extra full head-turn clips.",
+    "automaticGlances": false
+  },
+  "note": "Base = the eye-contact loop already in play (every base frame is a ready pose, held at once); glance segments from the waiting clip splice in at the base loop boundary with a rigid 2D offset; no warping."
+}

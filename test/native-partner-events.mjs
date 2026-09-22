@@ -87,6 +87,8 @@ test('native start, act and collect publish committed public events only to the 
   assert.equal(opening.balance, 995);
   assert.equal(f.a.rounds().length, 1);
   const first = f.a.rounds()[0];
+  assert.deepEqual(opening.presentation,first.events,'the original response and SSE carry the same presentation');
+  assert.equal(opening.requestId,start.requestId);
   assert.deepEqual(Object.keys(first).sort(), ['type', 'op', 'requestId', 'version', 'phase', 'balance', 'events'].sort());
   assert.equal(first.requestId, start.requestId);
   assert.equal(first.events.filter(event => event.type === 'deal').length, 4);
@@ -107,6 +109,17 @@ test('native start, act and collect publish committed public events only to the 
   assert.equal(f.a.rounds().length, 3, 'duplicate collection is not another publication');
   assert.equal(f.getPlayer('native-alice').balance, paid.balance);
   assert.equal(f.rejectedPublications(), 0);
+});
+
+test('a retried native response retains its original presentation without replaying the command or SSE',t=>{
+  const f=fixture(t),request=f.request('start',{bets});
+  const first=f.native(request,f.session),retry=f.native(request,f.session);
+  assert.deepEqual(retry.presentation,first.presentation);
+  assert.ok(retry.presentation.length>0);
+  assert.equal(retry.balance,first.balance);
+  assert.equal(f.a.rounds().length,1);
+  const state=f.native(f.request('state'),f.session);
+  assert.deepEqual(state.presentation,[]);
 });
 
 test('state, duplicate commands, stale version and illegal action never republish', t => {

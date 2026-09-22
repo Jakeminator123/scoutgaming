@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "id": "3d868f8b-86b5-44b3-a4a4-3e4f8d58e038",
+      "type": "image",
+      "status": "pending",
+      "model": "gpt_image_2_5",
+      "params": {
+        "prompt": "Make the END FRAME of the exact supplied greenscreen studio shot. Preserve the input photograph exactly in composition, camera position, subject scale, Astrid face/identity, blonde hair, natural warm skin, black long sleeve tailored jacket, cream blouse, seated posture, both arms/hands in their same resting ready positions, lighting, solid emerald-green background, green work surface and green wedge card-dispenser. Only move the ONE existing lime-green tracking card out of the dispenser to a landed position on the foreground green work surface to viewer LEFT of her hands. Its centre must be at 39 percent of full image width from the LEFT, and 86 percent of full image height from the TOP. The entire thin rigid card lies flat and stationary in the exact same tabletop perspective as the input, with four small MAGENTA circular corner tracking markers and a fine dark outline on its lime-green face. Card size is the same physical playing-card size as the original, with plausible foreground perspective, no enlargement. Both hands must now be EMPTY and resting in the original input positions: feeding fingertips empty adjacent to the shoe outlet, other empty hand resting on the green surface. Remove the original card from the outlet completely; there is only ONE card in the entire image, the landed one. No other changes whatsoever. No casino, room, text, ranks, suits, extra props, portrait crop, reframing, camera movement, pose change or skin-colour change. Full-frame single photograph, not a collage.",
+        "aspect_ratio": "16:9",
+        "reference_images": [
+          "166e7630-08ef-4091-86c9-23ecbd0fd9ec"
+        ],
+        "resolution": "2k",
+        "quality": "high"
+      }
+    }
+  ],
+  "adjustments": {
+    "medias[0].role": {
+      "requested": "image",
+      "used": "image_references",
+      "reason": "GPT Image 2.5 backend expects schema-key media roles"
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import { installDealerVersionSwitcher, dealerVersionPath, V2_DEALERS } from './dealer-version-switcher.mjs';
+import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
 import { createTableAudio } from './table-audio.mjs';
@@ -8,6 +10,13 @@ import { handValue } from './blackjack.mjs';
 import { placeActions } from './action-placement.mjs';
 import { packedSpeechCanvas } from './packed-speech.mjs';
 import { cardFaceArt } from './card-art.mjs';
+import {shouldUseGreenDealerCard,selectGreenTake,loadGreenTakes,greenShoeOutlet,layoutGreenDealerCards,installGreenRestFrame,installGreenIdle,quadMatrix} from './astrid-green-dealer.mjs';
+import {loadGreenWaiting,installGreenWaiting} from './astrid-green-waiting.mjs';
+import {installFoldedRest} from './astrid-folded-rest.mjs';
+import {loadGreenSpeak,installGreenSpeak} from './astrid-green-speak.mjs';
+import {installEdgeHud} from './actor-edge-blend.mjs';
+import {loadActorComposite,createCompositeEnvironment} from './actor-composite-scene.mjs';
+let astridWaiting=null,astridSpeak=null; // Shared keyed player; populated for the selected green dealer.
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -33,13 +42,18 @@ const DEALERS = {
             scene: 'dealers/astrid/scene.png', sceneWK: 2.63602, sceneHK: 1.11831,
             table: 'dealers/astrid/table.png', dealingCues: 'dealers/astrid/dealing-cues.json' },
   amira:  { key: 'amira', base: 'dealers/amira', anchor: 0.87, name: 'Amira',
-            scene: 'dealers/amira/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
+            scene: 'dealers/amira/scene-clear-v2.png', sceneWK: 3.468, sceneHK: 1.47126,
             table: 'dealers/amira/table.png' },
   mei:    { key: 'mei', base: 'dealers/mei', anchor: 0.87, name: 'Mei',
             scene: 'dealers/mei/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
             table: 'dealers/mei/table.png' },
 };
 const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
+const dealerV2Route = location.pathname === '/v2' || location.pathname.startsWith('/v2/');
+const nativeObservation = createNativeObservation({ href: location.href, opener: window.opener });
+nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original' });
+if (!dealerV2Route && DEALER.key === 'amira') DEALER.scene = 'dealers/amira/scene.png';
+if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
 {
   document.documentElement.dataset.dealer = DEALER.key;
   const rs = document.documentElement.style;
@@ -56,24 +70,54 @@ const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DE
   if (disclosure) disclosure.textContent = disclosure.textContent.replace('Vera', DEALER.name);
 }
 
-const speechMedia = await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
 const riggedReview=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('scene')==='rigged-review';
-const performanceStaged=!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged';
+// Astrid's replacement waiting loop uses the approved elevated green camera.
+// Old frontal idle, speech and dealing fallbacks stay retired.
+const astridRestart=dealerV2Route&&DEALER.key==='astrid'&&!riggedReview;
+const amiraBlender=dealerV2Route&&DEALER.key==='amira';
+const amiraComposite=amiraBlender&&new URLSearchParams(location.search).get('composite')!=='off'?await loadActorComposite().catch(error=>{console.warn('[composite]',error.message);return null;}):null;
+const amiraSpeakTake=amiraBlender?await loadGreenSpeak('review/amira-green-speak/speak.json','amira'):null;
+const greenActor=astridRestart||!!amiraSpeakTake;
+// Temporary recalibration pause: retain actor idle/speech and card placement,
+// but use the table's shoe-to-felt animation instead of filmed dealing takes.
+const astridDealingPaused=astridRestart;
+if(astridRestart){
+  document.documentElement.dataset.astridRebuild='true';
+  document.documentElement.dataset.actorIsolated='true';
+  document.documentElement.dataset.astridDealing='paused';
+}
+const speechMedia = greenActor?{}:await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+const performanceStaged=astridRestart||(!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged');
 const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
 const performanceMotion=new URLSearchParams(location.search).get('motion');
+const astridGreenReview=astridRestart;
+const astridBlender=astridRestart;
+const blenderTable=astridBlender||amiraBlender;
+// One review directory may hold several green takes: the dealer's first upcard
+// and the first card of one specific box. Each is selected by action and box.
+const astridGreenTakes=astridGreenReview?await loadGreenTakes(`review/${astridBlender?'astrid-table-v2':'astrid-elevated-table'}`):[];
+// Explicitly requested live experiment. The ordinary table keeps its takes.
+if(astridBlender&&new URLSearchParams(location.search).get('astridBlue')==='box4'){
+  const preview=await loadGreenTakes('review/astrid-blue-box4');
+  const dealer=preview.find(t=>t.action==='deal-dealer');
+  if(dealer){const index=astridGreenTakes.findIndex(t=>t.action==='deal-dealer');if(index>=0)astridGreenTakes.splice(index,1,dealer);else astridGreenTakes.push(dealer);}
+  astridGreenTakes.push(...preview.filter(t=>t.box===4));
+}
+const astridGreenTake=astridGreenTakes.find(t=>t.action==='deal-dealer')??null;
+const astridGreenBoxTakes=astridGreenTakes.filter(t=>Number.isInteger(t.box));
 const performanceRhythm=performanceStaged&&['rhythm','smooth60'].includes(performanceMotion);
-const actorProvenance=performanceStaged?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
+const actorProvenance=performanceStaged&&!astridRestart?await fetch('dealers/astrid/actor/provenance.json').then(r=>r.ok?r.json():null).catch(()=>null):null;
 let performanceManifest=null,performancePlayer=null,selectPerformance=null,selectPlayerPerformance=null,selectSequencePerformance=null,performanceCardCorners=null;
-if(performanceStaged) {
+if(performanceStaged&&!astridDealingPaused) {
   try {
     const [{PerformancePlayer,cardLandingCorners},{selectContactTake,selectPlayerDelivery,selectSequenceTake},manifest]=await Promise.all([
       import('./performance-player.mjs'),import('./performance-contact.mjs'),
-      fetch(`dealers/astrid/performance/${performanceRhythm?`${performanceMotion}/`:''}manifest.json`).then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
+      astridRestart?Promise.resolve({status:'review',takes:[],reviewCandidates:[]}):fetch(`dealers/astrid/performance/${performanceRhythm?`${performanceMotion}/`:''}manifest.json`).then(r=>{if(!r.ok)throw new Error('No staged capture');return r.json();}),
     ]);
     performanceManifest=manifest;selectPerformance=selectContactTake;performanceCardCorners=cardLandingCorners;
     selectPlayerPerformance=selectPlayerDelivery;
     selectSequencePerformance=selectSequenceTake;
-    const sceneJoins=performanceMotion==='smooth60'&&new URLSearchParams(location.search).get('joins')!=='off'
+    const sceneJoins=!astridRestart&&performanceMotion==='smooth60'&&new URLSearchParams(location.search).get('joins')!=='off'
       ?await fetch('dealers/astrid/performance/joins/manifest.json').then(r=>r.ok?r.json():null):null;
     let readyMotion=null;
     if(sceneJoins&&new URLSearchParams(location.search).get('ready')!=='off'){
@@ -97,7 +141,7 @@ if(performanceStaged) {
   }catch(error){console.info('[performance]',error.message);}
 }
 let dealingCues = null;
-if (DEALER.dealingCues) {
+if (!astridRestart&&DEALER.dealingCues) {
   try {
     const response = await fetch(DEALER.dealingCues);
     if (response.ok) dealingCues = await response.json();
@@ -115,14 +159,89 @@ try {
     const css=document.createElement('link');css.rel='stylesheet';css.href='rigged-review.css';document.head.append(css);
     document.documentElement.classList.add('rigged-review');
     const status=document.createElement('div');status.id='rig-review-status';status.textContent=tableScene.facial?'Astrid likeness review · measured speech, visual acceptance pending':'3D contact review · face and speech animation unfinished';$('#scene').append(status);
+  }else if(blenderTable){
+    const {createBlenderTableScene}=await import('./blender-table-scene.mjs');
+    tableScene=await createBlenderTableScene($('#table-canvas'),{frame:astridGreenTake?.camera.placement??{framingScale:.85},dealer:DEALER.key,composite:amiraComposite});
   }else{
   const { createTableScene } = await import('./table-scene.mjs');
   tableScene = createTableScene($('#table-canvas'), DEALER.key, {
-    contactProof: DEALER.key === 'astrid' && new URLSearchParams(location.search).get('performance') === 'staged',
+    contactProof: performanceStaged,
+    shoeRegistration:astridGreenTake?()=>greenShoeOutlet(astridGreenTake):null,
   });
   }
   document.documentElement.classList.add('table-3d');
 } catch (error) { console.warn('[table] Using image fallback:', error.message); }
+if(astridGreenTake){
+  document.documentElement.dataset.astridGreen='dealer-upcard';
+  installGreenRestFrame($('#scene'),astridGreenTake);
+  addEventListener('resize',()=>layoutGreenDealerCards($('#dealer-cards'),astridGreenTake));
+  performancePlayer?.preload([astridGreenTake]).catch(error=>console.warn('[green upcard]',error.message));
+  const replay=document.createElement('button');replay.id='green-upcard-replay';replay.textContent='Replay Astrid’s first card';replay.disabled=true;
+  Object.assign(replay.style,{position:'absolute',right:'16px',top:'72px',zIndex:70,padding:'10px 14px',border:'1px solid #d6ff3a',borderRadius:'18px',background:'#111c',color:'#d6ff3a',font:'12px Arial'});
+  $('#scene').append(replay);
+  replay.hidden=astridDealingPaused;
+  replay.onclick=async()=>{
+    const el=$('#dealer-cards .card:not(.back)');
+    if(astridDealingPaused||busy||speaking||!el||!round?.dealer?.[0]||!performancePlayer)return;
+    busy=true;replay.disabled=true;await astridWaiting?.holdAtBoundary();el.style.visibility='hidden';
+    try{await performancePlayer.play(astridGreenTake,{card:round.dealer[0],target:el.getBoundingClientRect(),corners:performanceCardCorners(el),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}});}
+    catch(error){console.warn('[green upcard]',error.message);}
+    finally{el.style.visibility='';try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
+  };
+}
+// The filmed landing spot is that box's first-card position: its DOM fan is
+// registered to the landed quad, exactly as the dealer's upcard is. Takes
+// enabled for split hands retain that registration for each separate hand.
+function layoutGreenBoxCards(){
+  for(const take of astridGreenBoxTakes){
+    const container=$(`.seat[data-box="${take.box}"] .cards`);
+    if(container&&(take.tracking?.deliveries==='all-box-cards'||!container.querySelector(':scope > .subhand')))layoutGreenDealerCards(container,take);
+  }
+}
+if(astridGreenTake)installEdgeHud($('#scene'));
+if(astridGreenBoxTakes.length){
+  document.documentElement.dataset.astridGreen=[astridGreenTake?'dealer-upcard':null,...astridGreenBoxTakes.map(t=>`box${t.box}`)].filter(Boolean).join('+');
+  performancePlayer?.preload(astridGreenBoxTakes).catch(error=>console.warn('[green box]',error.message));
+  addEventListener('resize',layoutGreenBoxCards);
+  if(tableScene?.layoutCards){const feltLayout=tableScene.layoutCards.bind(tableScene);tableScene.layoutCards=()=>{feltLayout();layoutGreenBoxCards();};}
+  astridGreenBoxTakes.forEach((take,i)=>{
+    const openingCards=take.tracking?.openingCards===2?2:1;
+    const replay=document.createElement('button');replay.id=`green-box${take.box}-replay`;replay.textContent=`Replay box ${take.box} ${openingCards===2?'both cards':'first card'}`;replay.disabled=true;
+    Object.assign(replay.style,{position:'absolute',right:'16px',top:`${112+i*40}px`,zIndex:70,padding:'10px 14px',border:'1px solid #d6ff3a',borderRadius:'18px',background:'#111c',color:'#d6ff3a',font:'12px Arial'});
+    $('#scene').append(replay);
+    replay.hidden=astridDealingPaused;
+    replay.onclick=async()=>{
+      const elements=[...document.querySelectorAll(`.seat[data-box="${take.box}"] .cards > .card`)].slice(0,openingCards);
+      const cards=round?.live?.().find(h=>h.box===take.box)?.cards??[];
+      if(astridDealingPaused||busy||speaking||!elements.length||!cards[0]||!performancePlayer)return;
+      busy=true;replay.disabled=true;
+      try{
+        await astridWaiting?.holdAtBoundary();
+        elements.forEach(el=>{el.style.visibility='hidden';});
+        for(const [index,el] of elements.entries()){
+          await performancePlayer.play(take,{card:cards[index],target:el.getBoundingClientRect(),corners:performanceCardCorners(el),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}});
+        }
+      }
+      catch(error){console.warn('[green box]',error.message);}
+      finally{elements.forEach(el=>{el.style.visibility='';});try{await performancePlayer.finish();}finally{busy=false;replay.disabled=false;}}
+    };
+  });
+}
+if(amiraBlender&&tableScene?.layoutCards){
+  const layout=tableScene.layoutCards.bind(tableScene);
+  tableScene.layoutCards=()=>{
+    layout();
+    const container=$('#dealer-cards'),host=container.parentElement.getBoundingClientRect();
+    Object.assign(container.style,{left:`${-host.left}px`,top:`${-host.top}px`,transform:'none'});
+    const cards=[...container.querySelectorAll(':scope > .card')];
+    cards.forEach((el,i)=>{
+      const quad=tableScene.dealerCardQuad(i,cards.length).map(p=>[p.x,p.y]);
+      Object.assign(el.style,{left:'0px',top:'0px',width:'100px',height:'140px',transformOrigin:'0 0',animation:'none',transform:`matrix3d(${quadMatrix(quad,100,140).join(',')})`});
+      el.dataset.feltCard='true';el.dataset.feltCorners=JSON.stringify(quad);
+    });
+  };
+}
+const greenBoxReplays=(enabled)=>{for(const take of astridGreenBoxTakes){const button=$(`#green-box${take.box}-replay`);if(button)button.disabled=!enabled||!$(`.seat[data-box="${take.box}"] .cards > .card:first-child`);}};
 
 // a dealer without clips still stands at her table: her canonical poster
 // fills the dealer frame instead of an empty room
@@ -138,10 +257,11 @@ const engine = new DealerEngine($('#dealer'), DEALER.base, {
   handsCanvas: $('#dealer-hands'),
   actorMatteBase:actorProvenance?'dealers/astrid/actor':null,handsCut:DEALER.anchor,
 });
+engine.onPresentClip = (clip, playbackRequestId) => nativeObservation.clip(clip, playbackRequestId, DEALER.key);
 let engineUp = false;
 let speaking = false;
 let dealingActive = false;
-const canUseDealingTake = () => !riggedReview && engineUp && dealingCues?.status !== 'rejected' && !!engine.index?.clips?.[CLIP.deal];
+const canUseDealingTake = () => !amiraBlender && !astridDealingPaused && !riggedReview && engineUp && dealingCues?.status !== 'rejected' && !!engine.index?.clips?.[CLIP.deal];
 // Speaking clips with their real lengths. Cutting between different clips
 engine.onIdlePick = () => {
   // A recorded sentence is a single take. Decode-ahead must never replay its
@@ -155,7 +275,34 @@ engine.onIdlePick = () => {
 };
 const trigger = k => { if (!performanceStaged && engineUp && !speaking && speechQueue.pending === 0 && engine.index.clips[k]) engine.trigger(k); };
 
-try {
+if(astridRestart){
+  // The green waiting clip with its randomized scheduler is preferred; the
+  // plain elevated loop stays as the fallback when it is absent or fails.
+  if(astridGreenTake)try{
+    const waiting=await loadGreenWaiting();
+    if(waiting){
+      astridWaiting=await installGreenWaiting($('#scene'),waiting,{externalLifecycle:!!waiting.rest});
+      if(waiting.rest)try{astridWaiting=await installFoldedRest($('#scene'),waiting.rest,astridWaiting);}
+      catch(error){astridWaiting.restoreLifecycle();astridWaiting.resume();throw error;}
+    }
+  }catch(error){console.warn('[waiting idle]',error.message);}
+  if(astridGreenTake&&!astridWaiting)try{await installGreenIdle($('#scene'),astridGreenTake);}
+  catch(error){console.warn('[elevated idle]',error.message);}
+  // Keyed green speak takes (Blender table only): the greeting plays over the
+  // held idle with its recorded line; other lines stay silent as before.
+  if(astridGreenTake&&astridBlender)try{const speak=await loadGreenSpeak();if(speak){astridSpeak=await installGreenSpeak($('#scene'),speak,{waiting:()=>astridWaiting});
+    // Review hook, like window.astridEdge: window.astridSay('win') plays a line.
+    window.astridSay=id=>voice.say(id,{force:true});}}
+  catch(error){console.warn('[speak]',error.message);}
+}else if(amiraSpeakTake){
+  document.documentElement.dataset.greenDealer='amira';
+  const composite=amiraComposite?createCompositeEnvironment($('#scene'),amiraComposite):null;
+  const line=amiraSpeakTake.lines.greeting;
+  const waiting=await loadGreenWaiting('review/amira-green-waiting/idle.json');
+  if(waiting)astridWaiting=await installGreenWaiting($('#scene'),waiting,{composite});
+  else installGreenRestFrame($('#scene'),{...line,rest:amiraSpeakTake.rest,dealerName:DEALER.name});
+  astridSpeak=await installGreenSpeak($('#scene'),amiraSpeakTake,{waiting:()=>astridWaiting,composite});
+}else try {
   await engine.init();
   if(engine.fullActor){
     document.documentElement.dataset.actorIsolated='true';
@@ -176,7 +323,7 @@ try {
 }
 
 // debug HUD (?debug)
-if (location.search.includes('debug')) {
+if (!astridRestart&&location.search.includes('debug')) {
   document.body.classList.add('debug');
   setInterval(() => {
     $('#engine-hud').textContent =
@@ -206,6 +353,7 @@ const voice = {
   greeted: false,
   dead: new Set(),
   load() {
+    if(greenActor)return;
     for (const t of VOICE_LINES) {
       const a = new Audio(`${DEALER.base}/audio/en/${t}.mp3`);
       a.preload = 'auto';
@@ -216,6 +364,21 @@ const voice = {
     }
   },
   say(t, { force = false } = {}) {
+    if(greenActor){
+      if(!astridSpeak?.has(t)||this.muted||speechQueue.pending>0&&!force)return;
+      console.info('[voice]', t, 'green speak take', 'muted=' + this.muted, 'force=' + force);
+      const correlation=nativeObservation.context();
+      nativeObservation.emit('playback',{event:'speech',state:'selected',line:t,renderer:'green'},correlation);
+      return speechTurn(async signal=>{
+        speaking=true;
+        try { await astridSpeak.say(t,{signal,
+          onStart:text=>showCaption(text,Math.min(13000,3500+text.length*70)),
+          onPresent:details=>nativeObservation.emit('playback',{event:'speech',state:'start',line:t,...details,evidence:'presented-frame'},correlation),
+          onFinish:result=>{nativeObservation.emit('playback',{event:'speech',state:result?.completed?'end':'interrupted',line:t},correlation);speaking=false;$('#caption').classList.remove('show');}
+        }); } catch(error) { nativeObservation.emit('playback',{event:'speech',state:'error',line:t,error:error.message},correlation); }
+        finally { speaking=false; }
+      });
+    }
     // one honest line per decision - silence must never be a mystery again
     console.info('[voice]', t, 'muted=' + this.muted, 'dead=' + this.dead.has(t), 'busy=' + speechQueue.pending, 'force=' + force);
     if (this.muted) return;
@@ -542,9 +705,16 @@ const TABLES = [
   { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000], dealer: 'vera' },
 ];
 let table = TABLES[0];
+const clipAssignments = {};
 // the backoffice owns tier->dealer assignment; apply it before anyone switches
 fetch('/api/bo/config').then(r => r.ok ? r.json() : null).then(cfg => {
-  if (!cfg?.tiers) return;
+  if (!cfg) return;
+  // Dealing Clips page: the clip picked per table part for this dealer (Never again never plays)
+  const picked = cfg.clipAssignments?.[DEALER.key] ?? {};
+  if(!astridRestart)for (const [part, a] of Object.entries(picked)) if (a?.clip && !cfg.neverAgain?.[a.clip]) clipAssignments[part] = a.clip;
+  const idle = clipAssignments.idle?.startsWith(DEALER.key + ':') ? clipAssignments.idle.slice(DEALER.key.length + 1) : null;
+  if (idle?.includes("/idle/") && !performanceStaged) CLIP.idle = idle;
+  if (!cfg.tiers) return;
   for (const t of TABLES) if (cfg.tiers[t.id]) t.dealer = cfg.tiers[t.id];
 }).catch(() => {});
 let CHIPS = table.chips;
@@ -569,7 +739,7 @@ async function loadPlayer() {
   } catch { /* server db unavailable: play on with the local demo balance */ }
 }
 function syncBalance() { /* Server table commands now persist the wallet. */ }
-let tableVersion = 0, shoeState = null;
+let tableVersion = 0, shoeState = null, observedTableView = null;
 function showShoe(state) {
   if (!state) return;
   shoeState = state; tableScene?.setShoe(state);
@@ -589,6 +759,8 @@ async function tableCommand(op, extra = {}) {
     catch (e) { if (attempt || !/fetch|network|load failed/i.test(e.message)) throw e; }
   }
   tableVersion = out.version;
+  nativeObservation.command(payload, out, observedTableView, DEALER.key);
+  observedTableView = out;
   tableScene?.setTableSnapshot?.(out,{collecting:op==='collect'});
   return out;
 }
@@ -614,6 +786,8 @@ async function prepareTable() {
     const dc = $('#dealer-cards');
     round.dealer.forEach((c,i)=>{ const el=cardEl(c); el.style.setProperty('--ci',i); dc.appendChild(el); });
     if (round.dealer.length === 1) { const el=cardEl(null,true); el.style.setProperty('--ci',1); dc.appendChild(el); }
+    if(astridGreenTake){layoutGreenDealerCards(dc,astridGreenTake);$('#green-upcard-replay').disabled=false;}
+    greenBoxReplays(true);
     updateBadge(dc,round.dealer); renderBets();
     if (round.phase === 'insurance') { $('#insurance').hidden=false; busy=false; }
     else if (round.phase === 'settled') { busy=true; await finish(); }
@@ -689,6 +863,11 @@ for (let i = 0; i < SEATS; i++) {
     <div class="result"></div>
   </div>`;
   seatsEl.appendChild(el);
+  if(tableScene?.setBettingBoxes){
+    const controls=document.createElement('div');controls.className='felt-bet-controls';
+    for(const node of el.querySelectorAll('.sidearcs,.spot,.side-chip'))controls.append(node);
+    el.append(controls);
+  }
   seatEls.push(el);
 }
 // screen-space seat positions measured from the expected-results screenshot:
@@ -727,6 +906,10 @@ function layoutSeats() {
   const boxes = playedBoxes();
   const span = compactSeats && tableScene ? 40 : num('--arc-span', compactSeats ? 84 : 110);   // leave room for the outer card fans on phones
   const step = span / (boxes.length - 1);
+  tableScene?.setBettingBoxes?.(boxes.map((i,k)=>{
+    const phi=(90+span/2-k*step)*Math.PI/180;
+    return {id:i,x:.83*Math.cos(phi),z:.78*Math.sin(phi),rotation:(phi-Math.PI/2)*.65};
+  }));
   seatEls.forEach((el, i) => el.classList.toggle('seat-off', !boxes.includes(i)));
   boxes.forEach((i, k) => {
     const phi = (90 + span / 2 - k * step) * Math.PI / 180;
@@ -737,7 +920,12 @@ function layoutSeats() {
     seatEls[i].style.left = `${(p?.x ?? img.left + fx * img.width) - table.left}px`;
     seatEls[i].style.top = `${(p?.y ?? img.top + fy * img.height) - table.top}px`;
     seatEls[i].querySelector('.seat-inner').style.setProperty('--tang', `${(fx - 0.5) * 61}deg`);
+    const quad=tableScene?.bettingBoxQuad?.(i),controls=seatEls[i].querySelector('.felt-bet-controls');
+    if(quad&&controls){
+      controls.style.transform=`matrix3d(${quadMatrix(quad.map(v=>[v.x-p.x,v.y-p.y]),128,100).join(',')})`;
+    }
   });
+  tableScene?.layoutCards?.();
   layoutHandTotals();
 }
 layoutSeats();
@@ -1035,8 +1223,8 @@ function cardEl(card, faceDown = false) {
   if (faceDown) { el.className = 'card back'; return el; }
   const red = card.s === '♥' || card.s === '♦';
   el.className = 'card' + (red ? ' red' : '');
-  if(performancePlayer){
-    el.style.backgroundImage=`url('${cardFaceArt(card).url}')`;el.style.backgroundSize='100% 100%';
+  if(performancePlayer||blenderTable){
+    el.style.backgroundImage=`url('${cardFaceArt(card,{jumbo:amiraBlender}).url}')`;el.style.backgroundSize='100% 100%';
     el.style.backgroundColor='transparent';el.setAttribute('aria-label',`${card.r}${card.s}`);return el;
   }
   el.innerHTML = `<div class="corner">${card.r}<br>${card.s}</div><div class="pip">${card.s}</div>`;
@@ -1047,11 +1235,17 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
   if(cardMotion?.performance && performancePlayer && tableScene) {
     const target=el.getBoundingClientRect();el.style.visibility='hidden';
     const corners=performanceCardCorners(el);
+    const box=el.closest('[data-box]')?.dataset.box;
+    const part=box!=null?'box'+box:faceDown?'dealer-hole':'dealer-up';
+    const assigned=!cardMotion.green&&[...(performanceManifest.takes??[]),...(performanceManifest.continuations??[])].find(t=>t.id===clipAssignments[part]);
     const delivery=cardMotion.performance.action==='deal-dealer'?cardMotion.performance:
       selectPlayerPerformance(performanceManifest,{x:target.x+target.width/2,y:target.y+target.height/2},{width:innerWidth,height:innerHeight},{staged:performanceStaged})??cardMotion.performance;
-    const take=selectSequencePerformance(performanceManifest,delivery,{staged:performanceContinuity,continues:cardMotion.continues});
+    const take=cardMotion.green?cardMotion.performance:assigned??selectSequencePerformance(performanceManifest,delivery,{staged:performanceContinuity,continues:cardMotion.continues});
+    const correlation=nativeObservation.context();
+    nativeObservation.emit('playback',{event:'deal',state:'selected',part,takeId:take.id,media:take.media?.src,card:faceDown?null:card,faceDown},correlation);
+    if(assigned)console.info('[performance] backoffice pick',part,assigned.id);
     return performancePlayer.play(take,{target,card,faceDown,corners,
-      origin:tableScene.shoeOutlet(),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';}})
+      origin:tableScene.shoeOutlet(),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';nativeObservation.emit('playback',{event:'deal',state:'landed',part,takeId:take.id,evidence:'player-onLand'},correlation);}})
       .catch(error=>{console.warn('[performance]',error.message);const status=$('#performance-status');if(status)status.textContent=error.message;})
       .finally(()=>{el.style.visibility='';});
   }
@@ -1062,7 +1256,7 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
     const handoff = canUseDealingTake()
       ? cardMotion?.handoff ?? {x:dealerRect.x+dealerRect.width*.55,y:dealerRect.y+dealerRect.height*.93}
       : null;
-    return tableScene.dealCard({target,card,faceDown,handoff,onCue:phase=>sfx.play(phase),duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
+    return tableScene.dealCard({target,element:el,card,faceDown,handoff,onCue:phase=>sfx.play(phase),duration:cardMotion?.duration,releaseFraction:cardMotion?.releaseFraction})
       .catch(error=>console.warn('[deal]',error.message)).finally(()=>{el.style.visibility='';});
   }
   const fallback = $('#shoe2d').getBoundingClientRect();
@@ -1086,6 +1280,7 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
   });
 }
 function updateBadge(container, cards) {
+  tableScene?.layoutCards?.();
   // the badge is parented OUTSIDE the cards container: inside it, it inherited
   // the hand's rotation and flattening and drifted whenever the hand was posed
   const isSub = container.classList?.contains('subhand');
@@ -1102,6 +1297,17 @@ function updateBadge(container, cards) {
   layoutHandTotals();
 }
 function layoutHandTotals(){
+  if(blenderTable){
+    const badge=$('#table2d > .hand-total');
+    const cards=[...document.querySelectorAll('#dealer-cards > .card')].map(el=>el.getBoundingClientRect());
+    if(badge&&cards.length){
+      const host=badge.parentElement.getBoundingClientRect();
+      const left=Math.min(...cards.map(r=>r.left));
+      const top=Math.min(...cards.map(r=>r.top)),bottom=Math.max(...cards.map(r=>r.bottom));
+      // Anchor the right edge so soft/two-digit totals expand away from cards.
+      Object.assign(badge.style,{left:`${left-host.left-10}px`,top:`${(top+bottom)/2-host.top}px`,transform:'translate(-100%,-50%)'});
+    }
+  }
   if(tableScene?.layoutHandTotals){tableScene.layoutHandTotals();return;}
   const badges=[...document.querySelectorAll('.seat:not(.seat-off) .hand-total')];
   for(const badge of badges)badge.style.setProperty('--badge-clear-y','0px');
@@ -1205,16 +1411,23 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
   container.style.setProperty('--cn', total);
   container.style.setProperty('--fan', Math.min(1, 3.2 / Math.max(2, total)).toFixed(3));
   container.appendChild(el);
+  if(astridGreenTake&&container.id==='dealer-cards')layoutGreenDealerCards(container,astridGreenTake);
+  if(astridGreenBoxTakes.length)layoutGreenBoxCards();
+  tableScene?.layoutCards?.();
   el.dealt = flyFromShoe(el, card, faceDown, motion);
   return el;
 }
 async function deliverCard(container, card, options={}) {
+  const correlation=nativeObservation.context();
   let motion;
+  const seatBox=container.closest('[data-box]')?.dataset.box;
+  const greenTake=selectGreenTake(astridGreenTakes,{dealer:DEALER.key,enabled:!astridDealingPaused,containerId:container.id,box:seatBox==null?null:Number(seatBox),split:container.classList.contains('subhand'),faceDown:options.faceDown===true,existingCards:container.querySelectorAll('.card').length});
+  const green=!!greenTake;
   const centre=container.getBoundingClientRect().x+container.getBoundingClientRect().width/2;
   const action=container.id==='dealer-cards'?'deal-dealer':centre<innerWidth*.42?'deal-left':centre>innerWidth*.58?'deal-right':'deal-centre';
-  const performanceTake=selectPerformance?.(performanceManifest,action,{staged:performanceStaged});
+  const performanceTake=green?greenTake:selectPerformance?.(performanceManifest,action,{staged:performanceStaged});
   if(performanceTake && !document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    motion={performance:performanceTake,continues:options.continues===true};
+    motion={performance:performanceTake,continues:options.continues===true,green};
   } else if (dealingActive && dealingCues && canUseDealingTake() && !document.hidden) {
     const current=engine.presentation;
     const lead=dealingCues.leadFrames;
@@ -1228,7 +1441,14 @@ async function deliverCard(container, card, options={}) {
       motion={handoff:{x:r.x+r.width*cue.x,y:r.y+r.height*cue.y},duration:dealingCues.durationMs,releaseFraction:dealingCues.releaseFraction};
     }
   }
-  await dealCardTo(container,card,{...options,motion}).dealt;
+  // A filmed take hides the waiting idle; ask for the hold first so the cut
+  // lands on a ready-pose frame, never mid-glance.
+  if(motion?.green)await astridWaiting?.holdAtBoundary();
+  const observedCard={event:'deal',to:container.id==='dealer-cards'?'dealer':'box',box:seatBox==null?null:Number(seatBox),card:options.faceDown?null:card,faceDown:options.faceDown===true};
+  nativeObservation.emit('playback',{...observedCard,state:'start',renderer:motion?.performance?'performance':'table-motion',evidence:'animation-request'},correlation);
+  try { await dealCardTo(container,card,{...options,motion}).dealt;
+    nativeObservation.emit('playback',{...observedCard,state:'end',evidence:'animation-promise'},correlation);
+  } catch(error) { nativeObservation.emit('playback',{...observedCard,state:'error',error:error.message},correlation);throw error; }
 }
 
 async function endDealingTake() {
@@ -1240,6 +1460,8 @@ async function endDealingTake() {
     const returning='idle-1/actions/action-return';
     engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);
   }
+  if(astridGreenTake&&$('#dealer-cards .card:not(.back)'))$('#green-upcard-replay').disabled=false;
+  greenBoxReplays(true);
 }
 async function revealHole(container, card) {
   const back = container.querySelector('.card.back');
@@ -1249,8 +1471,12 @@ async function revealHole(container, card) {
   el.style.setProperty('--ci', back.style.getPropertyValue('--ci') || 1);
   el.classList.add('flip');
   back.replaceWith(el);
+  nativeObservation.emit('playback',{event:'reveal',state:'presented',card,evidence:'DOM-replacement'});
+  if(astridGreenTake&&container.id==='dealer-cards')layoutGreenDealerCards(container,astridGreenTake);
 }
 function clearTable() {
+  if(astridGreenTake)$('#green-upcard-replay').disabled=true;
+  greenBoxReplays(false);
   document.querySelectorAll('.cards').forEach(c => (c.innerHTML = ''));
   document.querySelectorAll('.hand-total').forEach(b => b.remove());
   document.querySelectorAll('.result, .sideresult').forEach(r => { r.textContent = ''; r.className = r.className.split(' ')[0]; });
@@ -1629,7 +1855,7 @@ function chatLog(role, text, pending = false) {
 // voice would break the illusion worse than staying quiet.
 const VERA_BANK_URL = `${DEALER.base}/audio/en`;
 let veraBank = {};
-const bankReady = fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => {
+const bankReady = (greenActor?Promise.resolve({}):fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {})).then(b => {
   delete b.rules_decks; delete b.fair_rng;
   veraBank = b;
   // the caption must show what THIS dealer actually says
@@ -1670,7 +1896,7 @@ async function cutToTake(clip, signal) {
 
 let activeSpeech = null;
 async function playRecorded(id, audio, text, signal) {
-  if (voice.muted || document.hidden || signal?.aborted) return Promise.resolve();
+  if (greenActor || voice.muted || document.hidden || signal?.aborted) return Promise.resolve();
   if(performancePlayer?.joins)await performancePlayer.prepareSpeech(signal);
   if(voice.muted||document.hidden||signal?.aborted)return;
   const originalNative = speechMedia[DEALER.key]?.[id];
@@ -1692,6 +1918,12 @@ async function playRecorded(id, audio, text, signal) {
   }
   const clip = `idle-1/speak/${id}`;
   const matched = !native && engineUp && !!engine.index?.clips?.[clip];
+  const correlation=nativeObservation.context();
+  const observedSpeech={event:'speech',line:id,text,clip:matched?clip:null,media:native?.src??`${DEALER.base}/audio/en/${id}.mp3`,renderer:native?'embedded':matched?'indexed':'audio-only'};
+  let observedSpeechStarted=false;
+  const observedPlaying=()=>{observedSpeechStarted=true;nativeObservation.emit('playback',{...observedSpeech,state:'start',evidence:'media-playing'},correlation);};
+  audio.addEventListener('playing',observedPlaying,{once:true});
+  nativeObservation.emit('playback',{...observedSpeech,state:'selected'},correlation);
   const controller = new AbortController();
   const cancel = () => controller.abort();
   signal?.addEventListener('abort', cancel, {once:true});
@@ -1728,6 +1960,8 @@ async function playRecorded(id, audio, text, signal) {
       // Unmatched lines remain voice-over; never reuse a mouth saying other words.
     },
     onFinish: () => {
+      audio.removeEventListener('playing',observedPlaying);
+      nativeObservation.emit('playback',{...observedSpeech,state:audio.error?'error':observedSpeechStarted&&audio.ended?'end':'interrupted',evidence:'media-lifecycle'},correlation);
       if(faceToken)tableScene.endFacialSpeech(faceToken);
       signal?.removeEventListener('abort', cancel);
       if(video) {
@@ -1753,6 +1987,7 @@ async function playRecorded(id, audio, text, signal) {
 }
 
 function sayLine(id) {
+  if(greenActor)return false;
   const line = veraBank[id];
   if (!line) return false;
   if (voice.muted) { showCaption(line.text, Math.min(13000, 3500 + line.text.length * 70)); return true; }
@@ -1765,6 +2000,7 @@ function sayLine(id) {
 }
 
 function speakFor(text) {
+  if(greenActor)return;
   // free text has no recorded take and no audio - a talking mouth with no
   // sound reads as broken, so she considers instead: think/gesture clips
   // while the caption carries the words
@@ -1785,6 +2021,8 @@ async function sendChat() {
   if (!message || chatBusy) return;
   input.value = '';
   chatBusy = true;
+  const chatCorrelation=nativeObservation.context();
+  nativeObservation.emit('chat',{role:'user',text:message,source:'original-chat',contextMessages:chatHistory.slice(-12).map(({role,text})=>({role,text}))},chatCorrelation);
   chatLog('user', message);
   const pending = chatLog('vera', '<i>thinking…</i>', true);
   try {
@@ -1799,6 +2037,7 @@ async function sendChat() {
       // on screen are the same line - never a voice saying something else
       const spoken = say && veraBank[say] ? veraBank[say].text : null;
       const shown = spoken ?? reply;
+      nativeObservation.emit('chat',{role:'assistant',text:shown,line:say??null,source:'original-chat'},chatCorrelation);
       pending.querySelector('p').textContent = shown;
       chatHistory.push({ role: 'user', text: message }, { role: 'vera', text: shown });
       if (spoken) sayLine(say);
@@ -1820,7 +2059,7 @@ $('#gate-enter').onclick = () => {
   $('#gate').classList.add('hidden');
   voice.greeted = true;
   sfx.startAmbience();
-  voice.say('greeting', { force: true });
+  voice.say('greeting', { force: true })?.catch(error=>console.warn('[speak] greeting',error.message));
   // personalized follow-up once the generic voice greeting has landed
   setTimeout(() => {
     void veraEvent(`${player?.name ?? 'A player'} just sat down at your table with a balance of ${fmt(balance)}. Greet them by name.`, { minGap: 0 });
@@ -1838,6 +2077,9 @@ function setTable(id) {
   // a different table can mean a different dealer in a different room
   if ((next.dealer ?? 'vera') !== DEALER.key) {
     const q = new URLSearchParams({ dealer: next.dealer ?? 'vera', table: id });
+    for (const key of ['labObserverOrigin','labObserverChannel']) {
+      const value=new URLSearchParams(location.search).get(key);if(value)q.set(key,value);
+    }
     location.search = q.toString();
     return;
   }
@@ -1875,6 +2117,7 @@ for (const dealer of Object.values(DEALERS)) {
   };
   $('#dealer-options').appendChild(button);
 }
+installDealerVersionSwitcher({ dealer: DEALER.key, version: dealerV2Route ? 'v2' : 'original', isBusy: () => !!round || busy });
 
 
 buildChips();
@@ -1945,7 +2188,7 @@ setBanner('PLEASE PLACE BETS');
 
 // Optional rehearsal uses the exact in-game playback path, with no generation
 // or chat request. This lets every dealer and recorded line be checked locally.
-if (new URLSearchParams(location.search).has('rehearsal')) {
+if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehearsal')) {
   const panel = document.createElement('details'); panel.id = 'rehearsal'; panel.open = true;
   panel.addEventListener('toggle', () => { if(round&&!busy)activeBoxHighlight(); });
   panel.innerHTML = `<summary>Dealer rehearsal</summary>
@@ -1961,6 +2204,7 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
   const lineSelect = panel.querySelector('#rehearsal-line');
   const bank = await fetch(`${DEALER.base}/audio/en/bank.json`).then(r => r.json());
   for (const id of new Set([...VOICE_LINES, ...Object.keys(bank)])) {
+    if (astridSpeak&&!astridSpeak.has(id)) continue;
     if (voice.dead.has(id) && !bank[id]) continue;
     lineSelect.add(new Option(id.replaceAll('_', ' '), id));
   }
@@ -1969,17 +2213,30 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
     const id = lineSelect.value;
     const matched = !!engine.index?.clips?.[`idle-1/speak/${id}`];
     const native=speechMedia[DEALER.key]?.[id];
-    status.textContent = (native?.text ?? bank[id]?.text ?? LINES[id] ?? id) + (native ? ' — video with embedded audio.' : matched ? ' — matching clip available.' : ' — voice only; matching clip missing.');
+    status.textContent = (astridSpeak?.text(id) ?? native?.text ?? bank[id]?.text ?? LINES[id] ?? id) + (astridSpeak?.has(id) ? ' — green-screen take used in gameplay.' : native ? ' — video with embedded audio.' : matched ? ' — matching clip available.' : ' — voice only; matching clip missing.');
   };
   lineSelect.onchange = update; update();
-  const play = () => {
+  const play = async () => {
     const id = lineSelect.value;
     setMuted(false);
+    if (astridSpeak?.has(id)) return voice.say(id,{force:true});
     return speechTurn(signal => playRecorded(id, new Audio(`${DEALER.base}/audio/en/${id}.mp3`), bank[id]?.text ?? LINES[id] ?? id, signal));
   };
-  panel.querySelector('#rehearsal-play').onclick = play;
-  panel.querySelector('#rehearsal-repeat').onclick = () => { play(); play(); };
-  if (DEALER.key === 'astrid') {
+  const review = async count => {
+    const controls=[...panel.querySelectorAll('button,select')];
+    controls.forEach(control=>control.disabled=true);
+    try { for(let i=0;i<count;i++){
+      // The first gesture can unlock the automatic greeting. Queue the
+      // requested review behind it instead of silently dropping both plays.
+      while(speaking)await new Promise(resolve=>setTimeout(resolve,50));
+      await play();
+    } }
+    catch(error){status.textContent=`Playback failed: ${error.message}`;}
+    finally{controls.forEach(control=>control.disabled=false);}
+  };
+  panel.querySelector('#rehearsal-play').onclick = () => review(1);
+  panel.querySelector('#rehearsal-repeat').onclick = () => review(2);
+  if (DEALER.key === 'astrid'&&!astridRestart) {
     const { installPerformanceAuthoring } = await import('./performance-authoring.mjs');
     installPerformanceAuthoring({panel,tableScene});
     if(performanceStaged){const stage=document.createElement('div');stage.id='performance-stage-banner';stage.textContent='ASTRID · STAGED GAMEPLAY';$('#scene').append(stage);
@@ -1990,5 +2247,15 @@ if (new URLSearchParams(location.search).has('rehearsal')) {
 
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
+// The guest table has no entry gate. Astrid greets once her table is ready;
+// when the browser refuses autoplay, the greeting waits for the first gesture.
+if(astridSpeak)tableReady.then(()=>{
+  const greet=()=>{voice.greeted=true;return voice.say('greeting',{force:true});};
+  return Promise.resolve(greet()).catch(error=>{
+    console.info('[speak] greeting deferred to the first gesture:',error.message);
+    const once=()=>{removeEventListener('pointerdown',once);removeEventListener('keydown',once);greet()?.catch(e=>console.warn('[speak] greeting',e.message));};
+    addEventListener('pointerdown',once);addEventListener('keydown',once);
+  });
+}).catch(()=>{});
 
 document.querySelector('#sign-out').onclick=async()=>{await api('/api/auth/logout',{});location.reload();};

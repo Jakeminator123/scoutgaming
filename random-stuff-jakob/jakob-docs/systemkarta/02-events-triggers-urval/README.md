@@ -21,9 +21,17 @@ Sparat/valt exampleEvent eller mottagen instruktion + manuella testvärden
     → exakt bunden video eller standardens originalförval, annars märkt 2D-reserv
 ```
 
-Labbet kan läsa Partner-SSE och importera sparade instruktioner. Det skickar
-inga spelkommandon. Språk, återbesök, historikräknare,
-`chat.signal` och framtoning i eventtestet är testvärden. Den separata
+Labbet kan läsa native-observation, Partner-SSE och importerade instruktioner.
+Det skickar inga spelkommandon. I livejämförelsen räknas vunna/förlorade händer
+från mottagna publika `settle` efter senaste luckan. Observerad chatt före
+eventet får följa med som `observedChat` med källa/tid: högst 8 meddelanden,
+600 tecken vardera och 3 200 totalt. Chatt klassificeras inte automatiskt
+som känslotolkning och kan inte ändra motorn eller kandidaternas behörighet.
+Director måste kvittera kontextkontrakt v2; annars används tydligt märkt standard.
+Saknat språk,
+återbesök och chattsignal markeras som okända, även när kontraktet kräver neutrala
+standardvärden. I det manuella eventtestet är dessa fortfarande testvärden.
+Den separata
 Astrid-chatten har riktig textinput och ett eget socialt kontrakt; dess
 svar är inte automatiskt kopplade till eventtestets kontext.
 

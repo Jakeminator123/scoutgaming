@@ -1,0 +1,97 @@
+24/85
+48/85
+72/85
+masks: 85/85
+Keyed native 0/85 bounds [658, 20, 1304, 672]
+Keyed native 24/85 bounds [658, 22, 1305, 672]
+Keyed native 48/85 bounds [659, 26, 1305, 672]
+Keyed native 72/85 bounds [658, 26, 1305, 672]
+actor union bounds [658, 20, 1306, 673] crop [560, 0, 754, 682] previous [560, 0, 960, 760]
+{
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerbust/source.mp4",
+  "sourceSha256": "51f8e43704a9da3c4821e2034c98afb1c3c6f7f43feda1365c1ed9b8ac3dc99e",
+  "generationId": "n0XUXKw6zM0cT2ZeL7ON",
+  "jobId": "n0XUXKw6zM0cT2ZeL7ON",
+  "box": null,
+  "sourceDimensions": [
+    1920,
+    1080
+  ],
+  "frameCount": 85,
+  "fps": "24/1",
+  "actorUnionBounds": [
+    658,
+    20,
+    1306,
+    673
+  ],
+  "includedCardRegion": [
+    658,
+    20,
+    1306,
+    673
+  ],
+  "crop": [
+    560,
+    0,
+    754,
+    682
+  ],
+  "previousTakeCrop": [
+    560,
+    0,
+    960,
+    760
+  ],
+  "cropPolicy": "Measured actor alpha union plus 8px, extended to the included card region, even-aligned; previous origin kept where it still contains the actor",
+  "packedDimensions": [
+    754,
+    1364
+  ],
+  "packing": "RGB upper half; straight grayscale alpha lower half",
+  "sourceToCropRowMajor3x3": [
+    1,
+    0,
+    -560,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "cropToSourceRowMajor3x3": [
+    1,
+    0,
+    560,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "packedTopLeftPixelRects": {
+    "rgb": [
+      0,
+      0,
+      754,
+      682
+    ],
+    "alpha": [
+      0,
+      682,
+      754,
+      682
+    ]
+  },
+  "actorPackedSha256": "c49af339cc4a9adc641c12fc7bc04097ae87ac4e4d6356463575a7d19ee95b6d",
+  "restNativeFrame": 84,
+  "restFullSha256": "8c67fec234ff76a2e8aad93456d8148b12714f55f1c521ab98993c6b3c36e34f",
+  "restCropSha256": "48a13513cd27fd6ef7e8f88c64b2093b08ef1cec2c887e3c823198d892916186",
+  "matteImplementation": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-19/astrid-elevated-camera/mask-prep/key.py",
+  "matteImplementationSha256": "579e44faf1829ed8aa06d4d3c20bd312dd7f23a2424b859e9fe3d58f9338783e",
+  "semanticMasks": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerbust/mask/vision",
+  "rgbPolicy": "Fresh native source RGB, no recolouring, retime, interpolation, spatial warp or face repair; ordinary lossy H264 encoding only",
+  "status": "Box candidate matte. Card tracking, take composition and rendered gameplay are separate steps."
+}

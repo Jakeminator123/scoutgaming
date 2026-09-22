@@ -1,0 +1,21 @@
+{
+  "results": [
+    {
+      "id": "ac7852f7-bfcd-4481-8b9f-7b1726739d91",
+      "type": "video",
+      "status": "pending",
+      "model": "kling3_0",
+      "params": {
+        "prompt": "One continuous locked-camera realistic VFX greenscreen studio shot of the exact supplied Astrid. Start in the exact supplied ready pose. Deal exactly ONE lime-green tracking card from the fixed green dispenser to the single card location shown in the ending image, forward and to viewer-left. Her LEFT feeding hand on viewer RIGHT draws the existing card LOW and FLAT through the front horizontal mouth of the green dispenser, never off its top. Her RIGHT receiving hand on viewer LEFT meets the feeding hand beside the outlet and receives that same card. Briefly turn the rigid card over through a visibly thin edge using a compact wrist rotation, then make a low direct fingertip-driven slide along the green work surface to the ending card position. Receiving fingers remain physically in contact until the card is there. Then visibly release it and return the EMPTY hand to the exact supplied starting ready posture. The single landed card remains stationary for the rest of the shot. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then subtle breathing. The prop card is matte LIME GREEN on BOTH sides, has a thin dark outline and FOUR fixed MAGENTA corner dots on EACH side. Preserve the card's rigid rectangular shape, size and attached corner dots throughout the turn and motion; no white surface, rank, suit or printed playing-card design. This is a compositing source on plain emerald-green background and plain green work surface, with only Astrid and the green dispenser and ONE green marker card. Preserve her exact identity, face, hair, warm skin colour, black full-length sleeves, cream blouse, normal hand anatomy and proportions. Preserve green studio lighting, framing and locked camera. No casino environment, no extra props or table graphics, no second extraction or extra card, no hovering or self-moving card, no stretching or morphing, no camera movement, no dissolve, no speaking. Finish with both hands EMPTY in the supplied final ready pose and only the single landed green marker card.",
+        "aspect_ratio": "16:9",
+        "duration": 3,
+        "reference_images": [
+          "166e7630-08ef-4091-86c9-23ecbd0fd9ec",
+          "3d868f8b-86b5-44b3-a4a4-3e4f8d58e038"
+        ],
+        "mode": "std",
+        "sound": "off"
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-> **Historik:** ersatt av [V5](../v5-8-days-mvp/README.md) den 21 september 2026.
+> **Historik:** ersatt av [V5](../v5-7-days-mvp/README.md) den 21 september 2026.
 > Uppgifterna nedan beskriver V4:s då granskade revision; använd V5 för dagens arbete.
 
 # Croupier · V4 · åtta arbetsdagar

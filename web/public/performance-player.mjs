@@ -1,7 +1,8 @@
 import * as THREE from './vendor/three/three.module.js';
-import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame} from './performance-contact.mjs';
+import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,dealingCardSample} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
+import {edgeBlendGLSL,edgeUniforms,createSceneSampler} from './actor-edge-blend.mjs';
 import {deliveryReach,shiftCard,canRetargetTake} from './dealer-reach.mjs';
 import {selectSceneJoin,validateSceneJoin,sceneJoinPayload} from './scene-join.mjs';
 
@@ -71,13 +72,20 @@ export class PerformancePlayer {
   async source(take,signal) {
     const key=take.media.sha256;
     if(this.assets.has(key))return this.assets.get(key);
-    const response=await fetch(take.media.src,{signal});
-    if(!response.ok)throw new Error('Performance media is unavailable');
-    const bytes=await response.arrayBuffer();
-    const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
-    if(digest!==key)throw new Error('Performance media changed since review');
-    const url=URL.createObjectURL(new Blob([bytes],{type:'video/mp4'}));
-    this.assets.set(key,url);return url;
+    // One in-flight load per hash: two takes that share bytes (centre/dealer edge-v2) must not
+    // fetch, hash and mint a Blob URL twice, or the second URL is never revoked.
+    this.loading??=new Map();
+    if(this.loading.has(key))return this.loading.get(key);
+    const job=(async()=>{
+      const response=await fetch(take.media.src,{signal});
+      if(!response.ok)throw new Error('Performance media is unavailable');
+      const bytes=await response.arrayBuffer();
+      const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
+      if(digest!==key)throw new Error('Performance media changed since review');
+      const url=URL.createObjectURL(new Blob([bytes],{type:'video/mp4'}));
+      this.assets.set(key,url);return url;
+    })().finally(()=>{this.loading.delete(key);});
+    this.loading.set(key,job);return job;
   }
   async play(take,{card,faceDown=false,target,corners,origin,onCue=()=>{},onLand=()=>{}}) {
     const errors=validateContactTake(take,{approved:!(this.staged&&take.status==='review')});
@@ -144,6 +152,9 @@ export class PerformancePlayer {
       const end=(corners??[[target.x,target.y],[target.right,target.y],[target.right,target.bottom],[target.x,target.bottom]])
         .map(([x,y])=>[(x-fit.x)/fit.width,(y-fit.y)/fit.height,0]);
       const release=take.frames[take.events.release].card;
+      const landingFrame=take.events.land;
+      layer.dataset.landingFrame=String(landingFrame);
+      layer.dataset.dealingScale=String(take.tracking?.dealingPresentation?.scale??1);
       // The new photographic motion stays rigid. Only the released card
       // travels to its fan; stretching source pixels changes body proportions.
       const retarget=canRetargetTake(take,new URLSearchParams(location.search).get('reach')==='tracked');
@@ -175,20 +186,22 @@ export class PerformancePlayer {
             const atRest=!take.continuation&&sample.frame>=take.events.rest;
             if(sample.frame<startFrame){frameRequest=video.requestVideoFrameCallback(paint);return;}
             layer.dataset.frame=String(sample.frame);
-            layer.dataset.phase=sample.frame<take.events.pickup?'reach':sample.frame<take.events.release?'contact':sample.frame<take.events.land?'release':'return';
+            layer.dataset.phase=sample.frame<take.events.pickup?'reach':sample.frame<take.events.release?'contact':sample.frame<landingFrame?'release':'return';
             const reach=retarget?deliveryReach(take,sample.frame,end):null;
             let sampleCard=reach?shiftCard(sample.card,reach.delta):sample.card;
-            if(sample.frame>=take.events.release&&sample.frame<=take.events.land) {
+            if(!take.tracking?.keepSourceLanding&&sample.frame>=take.events.release&&sample.frame<=take.events.land) {
               const t=(sample.frame-take.events.release)/Math.max(1,take.events.land-take.events.release),u=1-(1-t)**2;
               const released=reach?shiftCard(release,reach.delta):release;
               sampleCard={...released,corners:released.corners.map((p,i)=>p.map((v,k)=>v+(end[i][k]-v)*u)),faceUp:!faceDown};
             }
-            // Hand the landed card back once, so the resting transition cannot
-            // fade, duplicate or pop its face/rotation at the end of the video.
-            if(sample.frame>=take.events.land){if(!landed)onLand();sampleCard=null;}
+            // Resting-card enlargement belongs to the table layout only.
+            // Apply the separate fixed dealing scale throughout contact;
+            // hand over once down and released, without a growth animation.
+            sampleCard=dealingCardSample(take,sampleCard);
+            if(sample.frame>=landingFrame){if(!landed)onLand();sampleCard=null;}
             visual.paint(sampleCard,reach);
             if(!painted){painted=true;this.held?.dispose();this.held=null;layer.style.visibility='';this.host.classList.add('performance-playing');this.onState(`Dealing ${take.action==='deal-dealer'?'to Astrid':'to player'}${faceDown?' · face down':''}`);}
-            landed ||= sample.frame>=take.events.land;
+            landed ||= sample.frame>=landingFrame;
             cue(sample.frame,{visible:!document.hidden});
             if(atRest){video.pause();clean();resolve();return;}
             frameRequest=video.requestVideoFrameCallback(paint);
@@ -284,7 +297,7 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
   const planes=[];
   for(const foreground of [false,true]) {
     const material=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-      uniforms:{reachShoulder:{value:new THREE.Vector2()},reachAnchor:{value:new THREE.Vector2()},reachDelta:{value:new THREE.Vector2()},sourceSize:{value:new THREE.Vector2(width,height)},actorColourGain:{value:new THREE.Vector3(...colourGain)},source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)}},
+      uniforms:{reachShoulder:{value:new THREE.Vector2()},reachAnchor:{value:new THREE.Vector2()},reachDelta:{value:new THREE.Vector2()},sourceSize:{value:new THREE.Vector2(width,height)},actorColourGain:{value:new THREE.Vector3(...colourGain)},source:{value:videoTexture},foreground:{value:foreground?1:0},actorPixel:{value:new THREE.Vector2(1/width,1/height)},...edgeUniforms()},
       vertexShader:`varying vec2 v; uniform vec2 reachAnchor,reachDelta,reachShoulder,sourceSize;
         void main(){v=uv;vec2 sourcePoint=vec2(uv.x,1.0-uv.y);
         vec2 arm=(reachAnchor-reachShoulder)*sourceSize;
@@ -298,7 +311,8 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
         float actorAt(vec2 uv){return texture2D(source,vec2(uv.x,uv.y*0.5)).r;}
         vec3 rgbAt(vec2 uv){return texture2D(source,vec2(uv.x,0.5+uv.y*0.5)).rgb;}
         ${actorEdgeGLSL}
-        void main(){vec4 actor=cleanActor(v);
+        ${edgeBlendGLSL}
+        void main(){vec4 actor=blendEdge(v,cleanActor(v));
         vec3 masks=texture2D(source,vec2(v.x,v.y*0.5)).rgb;
         // Split the same actor coverage around the card. Painting fingers
         // over a second complete actor made soft edges more opaque in action
@@ -323,16 +337,21 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
   // lighting made it cream in motion, then white when the DOM took over.
   const mat=new THREE.MeshBasicMaterial({map:front,transparent:true,alphaTest:.01,toneMapped:false,side:THREE.DoubleSide});
   const mesh=new THREE.Mesh(geo,mat);mesh.frustumCulled=false;mesh.renderOrder=1;scene.add(mesh);
-  return {paint(sample,reach){for(const plane of planes){plane.material.uniforms.reachShoulder.value.set(...(reach?.shoulder??[0,0]));plane.material.uniforms.reachAnchor.value.set(...(reach?.anchor??[0,0]));plane.material.uniforms.reachDelta.value.set(...(reach?.delta??[0,0]));}videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
+  const sceneSampler=createSceneSampler();
+  return {paint(sample,reach){for(const plane of planes){plane.material.uniforms.reachShoulder.value.set(...(reach?.shoulder??[0,0]));plane.material.uniforms.reachAnchor.value.set(...(reach?.anchor??[0,0]));plane.material.uniforms.reachDelta.value.set(...(reach?.delta??[0,0]));if(canvas.isConnected)sceneSampler.update(plane.material.uniforms,canvas);}videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
     for(let i=0;i<4;i++){const p=sample.corners[i];geo.attributes.position.setXYZ(i,p[0]*width,-p[1]*height,p[2]);}
     geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();mat.map=faceDown||!sample.faceUp?back:front;mat.needsUpdate=true;
-  }renderer.render(scene,camera);},dispose(){geo.dispose();mat.dispose();front.dispose();back.dispose();videoTexture.dispose();for(const plane of planes){plane.geometry.dispose();plane.material.dispose();}renderer.dispose();renderer.forceContextLoss();}};
+  }renderer.render(scene,camera);},dispose(){sceneSampler.dispose();geo.dispose();mat.dispose();front.dispose();back.dispose();videoTexture.dispose();for(const plane of planes){plane.geometry.dispose();plane.material.dispose();}renderer.dispose();renderer.forceContextLoss();}};
 }
 
 // The table's hands use affine CSS transforms (fan rotation, skew and felt
 // flattening). Preserve the four actual corners instead of landing on their
 // axis-aligned bounding rectangle and snapping to the fan afterward.
 export function cardLandingCorners(element) {
+  if(element.dataset?.feltCorners){
+    const quad=JSON.parse(element.dataset.feltCorners);
+    if(quad.length===4&&quad.every(p=>p.length===2&&p.every(Number.isFinite)))return quad;
+  }
   const bounds=element.getBoundingClientRect();let matrix=new DOMMatrix();
   for(let node=element;node instanceof Element;node=node.parentElement){
     const transform=getComputedStyle(node).transform;

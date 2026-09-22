@@ -1,8 +1,8 @@
 # Aktiv systemdokumentation
 
 Arbetsgången börjar i [Guide i labbet](http://127.0.0.1:4188/guide), vars källa
-är [lab/docs](../../lab/docs/README.md). Den aktuella åttadagarsplanen finns i
-[V5](../../docs/animation-events/v5-8-days-mvp/README.md).
+är [lab/docs](../../lab/docs/README.md). Den aktuella sjudagarsplanen finns i
+[V5](../../docs/animation-events/v5-7-days-mvp/README.md).
 
 ## Fördjupning
 
@@ -10,7 +10,7 @@ Arbetsgången börjar i [Guide i labbet](http://127.0.0.1:4188/guide), vars käl
   spegling, lokala miljöfiler och video-/indexeringsgränser.
 
 - [V5: samlad leverans och publicering](ARBETE-2026-09-21-V5.md):
-  dagens dokumentation, Kevin/Emils mål, talägarskap och verifierade publiceringslänkar.
+  daterad leverans från 21 september, Kevin/Emils mål och då verifierade publiceringslänkar.
 - [Samlad leverans: originalklipp och OpenClaw](ARBETE-2026-09-21-ORIGINAL-OCH-OPENCLAW.md):
   vad som byggts, antal klipp, API-kontroll, luckor i observationen och var allt kan provas.
 - [Handoff: originalspel till 2D-mockup](HANDOFF-2026-09-21-LIVE-OCH-2D.md):

@@ -107,7 +107,12 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
     reply = { advice: { requestId: prepared.requestId, catalogRevision: prepared.catalogRevision, variantId: prepared.eligible[index].id }, provider: { status: body.mode === 'random' ? 'local_random' : 'deterministic_rules' } };
   } else if (body.mode !== 'off') {
     if (settings.remoteUrl) {
-      try { reply = await remoteRequest('/api/studio/advice', { catalog, input: { ...input, event: prepared.event, context: prepared.context } }, settings, fetchImpl, Math.max(500, settings.adviceTimeoutMs + 1500)); }
+      try {
+        reply = await remoteRequest('/api/studio/advice', { catalog, input: { ...input, event: prepared.event, context: prepared.context } }, settings, fetchImpl, Math.max(500, settings.adviceTimeoutMs + 1500));
+        if (prepared.context.observedChat && (reply?.provider?.contextContractVersion !== 2 || reply.provider.observedChatMessages !== prepared.context.observedChat.messages.length)) {
+          reply = { advice: null, provider: { status: 'remote_context_not_supported_baseline' } };
+        }
+      }
       catch { reply = { advice: null, provider: { status: 'remote_unavailable_baseline' } }; }
     } else reply = await askDirector(prepared, settings, fetchImpl);
   }
@@ -134,6 +139,7 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
     decision: { requestId: prepared.requestId, variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, context: prepared.context, simulated: !observed, presentationReplay: observed },
     trace: result.trace, eligible: result.eligible, variant, asset: result.asset,
     videoGenerationId, provider: typeof reply?.provider?.status === 'string' ? reply.provider.status : 'unknown',
+    contextReceipt: { contractVersion: reply?.provider?.contextContractVersion ?? null, observedChatMessages: reply?.provider?.observedChatMessages ?? null },
   };
 }
 

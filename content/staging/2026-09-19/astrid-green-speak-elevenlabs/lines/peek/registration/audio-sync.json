@@ -1,0 +1,13 @@
+{
+ "line": "peek",
+ "takeSamples": 120832,
+ "lineSamples": 119952,
+ "sampleRate": 44100,
+ "lagSamples": 0,
+ "lagSeconds": 0.0,
+ "normalisedPeak": 1.0,
+ "takeOnsetSec": 0.05920634920634921,
+ "lineOnsetSec": 0.05920634920634921,
+ "takeDurationSec": 2.7399546485260773,
+ "lineDurationSec": 2.72
+}

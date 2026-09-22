@@ -1,0 +1,13 @@
+{
+ "line": "placebets",
+ "takeSamples": 99328,
+ "lineSamples": 98784,
+ "sampleRate": 44100,
+ "lagSamples": 0,
+ "lagSeconds": 0.0,
+ "normalisedPeak": 0.9999,
+ "takeOnsetSec": 0.08378684807256236,
+ "lineOnsetSec": 0.08378684807256236,
+ "takeDurationSec": 2.2523356009070294,
+ "lineDurationSec": 2.24
+}

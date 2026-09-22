@@ -1,6 +1,7 @@
 # Systemkarta — från spelfakta till uppspelning
 
-Uppdaterad 21 september 2026. Kartan beskriver den granskade koden
+Uppdaterad 22 september 2026. Kartan utgår från Jakobs `jakeminator123/work`,
+med Kevins källbranch som integrationsunderlag. Den beskriver den granskade koden
 och skiljer den från labbprov och återstående produktintegration.
 [Källregistret](KALLOR.md) anger revisioner, kontroller och begränsningar.
 
@@ -14,6 +15,8 @@ flowchart LR
     C --> E[Partner-presentation]
     E --> F[Partnerklient: svar eller SSE]
     D --> G[Bild, ljud och tidsmarkörer]
+    D --> O[Läsande native-observer]
+    O --> H
     F --> G
     F --> H[Labb: mottagna och importerade instruktioner]
     J[Sparade exempel + testkontext] --> H
@@ -23,11 +26,21 @@ flowchart LR
 **Två produktvägar finns.** Vanliga klienten använder `/api/table` och
 samordnar presentationen själv. Partnerklienten använder `/api/v1/table`,
 får `presentation[]` och kan få samma lista via `/api/v1/events`.
-Labbet kan testa exempel och återspela mottagna/importerade Partner-instruktioner.
+Native-svaret innehåller nu även samma publika presentationskontrakt. En
+opt-in-observer i spelfliken ger labbet det mottagna svaret, publik bordsvy och
+instrumenterade playback-/chattsignaler. Labbet kan testa exempel och återspela
+mottagna/importerade instruktioner.
 Båda går genom samma presentationsbeslut med OpenClaw som valbart mellanled.
-Native-publicering efter commit finns lokalt; liveleverans av riktiga rundposter
-och originalklientens uppspelningskvitton återstår att verifiera.
+Native-publicering till Partner sker efter commit för verifierad launch-session.
+Observerad klientuppspelning och SSE-instruktioner är olika bevis. En öppen
+SSE-transport utan rundposter ska inte visas som fungerande speltrafik.
+Aktuell Bettalotto-deploy och visuell/läppsynkad acceptans kräver egna prov.
 [Samlad leverans och gränser](../ARBETE-2026-09-21-ORIGINAL-OCH-OPENCLAW.md).
+
+Originalet `/` och Kevins nya `/v2/` är separata renderingslägen över samma
+spelregler. BO granskar och binder material; labbet jämför presentation från
+mottagna publika fakta. Kartans tidigare granskningar av den 20–21 september
+behåller sina datum och får inte läsas som verifiering av V2 eller dagens drift.
 
 ## Välj fråga
 

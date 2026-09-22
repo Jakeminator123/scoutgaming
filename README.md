@@ -23,9 +23,9 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
   is the source repository for the interactive documentation canvas. It does
   not own game outcomes or runtime contracts.
 - The active repo-near V5 documentation is under
-  [`docs/animation-events/v5-8-days-mvp/`](docs/animation-events/v5-8-days-mvp/README.md),
-  with a [portable seven-day handoff](docs/animation-events/v5-8-days-mvp/HANDOFF-7-DAGAR.md).
-  Eight remaining working days are Jakob's planning horizon, not a verified
+  [`docs/animation-events/v5-7-days-mvp/`](docs/animation-events/v5-7-days-mvp/README.md),
+  with a [portable seven-day handoff](docs/animation-events/v5-7-days-mvp/HANDOFF-7-DAGAR.md).
+  Seven remaining working days after the D0 start gate are Jakob's planning horizon, not a verified
   launch date or a new historical meeting decision.
 
 Jakob works on `jakeminator123/work`. Kevin owns integration decisions and the

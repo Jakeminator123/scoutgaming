@@ -1,0 +1,22 @@
+{
+  "generationId": "n0XUXKw6zM0cT2ZeL7ON",
+  "jobId": "n0XUXKw6zM0cT2ZeL7ON",
+  "provider": "ElevenLabs Image & Video API, model creatify-aurora 720p",
+  "action": "speak",
+  "line": "dealerbust",
+  "sourceSha256": "51f8e43704a9da3c4821e2034c98afb1c3c6f7f43feda1365c1ed9b8ac3dc99e",
+  "nativeTake": "take-dealerbust-creatify-aurora.mp4",
+  "nativeTakeSha256": "9fb758f825de7852e1173319f3279a8cb146797aa6df135fe3186f9c7c8591a0",
+  "status": "Kevin 2026-09-19: approved the greeting install and asked for all other lines the same way. Zero generation.",
+  "registration": {
+    "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+    "scale": 1.5,
+    "offset": [
+      0,
+      15
+    ],
+    "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+    "sourceFrames": 85
+  },
+  "readyPose": "frame 0 and the last frame (plate ready pose)"
+}

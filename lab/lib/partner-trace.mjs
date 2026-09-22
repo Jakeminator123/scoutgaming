@@ -18,6 +18,19 @@ export function sanitizeObservation(value, depth = 0) {
 }
 
 export function createPartnerTrace() { return { records: [], bytes: 0, limited: false }; }
+export function restartPartnerTrace(previous, { time = new Date().toISOString(), observedVersions = {} } = {}) {
+  const previousVersionByChannel = Object.create(null);
+  for (const record of previous.records) {
+    const channel = typeof record.channel === 'string' ? record.channel : 'configured-partner';
+    const version = record.data?.version;
+    if (Number.isSafeInteger(version) && version >= 0) previousVersionByChannel[channel] = Math.max(previousVersionByChannel[channel] ?? -1, version);
+  }
+  const boundaries = [observedVersions, ...previous.records.filter(record => record.data?.state === 'observation-reset').map(record => record.data.previousVersionByChannel)];
+  for (const boundary of boundaries) for (const [channel, version] of Object.entries(boundary ?? {})) if (Number.isSafeInteger(version) && version >= 0) previousVersionByChannel[channel] = Math.max(previousVersionByChannel[channel] ?? -1, version);
+  return appendPartnerTrace(createPartnerTrace(), { source: 'lab-observer', kind: 'status', time,
+    data: { state: 'observation-reset', reason: 'user-started-new-observation', gap: true, replay: false,
+      discardedRecords: previous.records.length, previousLimited: previous.limited, previousVersionByChannel } });
+}
 export function appendPartnerTrace(trace, envelope) {
   if (trace.limited) return trace;
   let record;
@@ -27,9 +40,13 @@ export function appendPartnerTrace(trace, envelope) {
   return { records: [...trace.records, record], bytes: trace.bytes + bytes, limited: false };
 }
 export function exportPartnerTrace(trace, { access = null, videoMapping = null, exportedAt = new Date().toISOString() } = {}) {
+  const native = trace.records.filter(record => record.source === 'native');
+  const playback = native.filter(record => record.kind === 'playback');
   return sanitizeObservation({ schemaVersion: 1, kind: 'croupier-partner-observation', exportedAt, access, videoMapping,
     limits: { recordLimit: TRACE_RECORD_LIMIT, byteLimit: TRACE_BYTE_LIMIT, reached: trace.limited },
-    evidence: { source: 'Partner SSE', replayAvailable: false, actualVideoPlaybackCaptured: false,
-      note: 'Mottagna presentationsinstruktioner och en separat videokarta. Varken klippstart, klippslut eller landningstid har observerats i originalspelaren. Avbrott och protokollgränser kan ge luckor.' },
+    evidence: { source: native.length ? 'Partner SSE + native popup observation' : 'Partner SSE', replayAvailable: false,
+      actualVideoPlaybackCaptured: playback.some(record => ['start', 'end', 'presented', 'landed'].includes(record.data?.state)),
+      nativePlaybackRecords: playback.length,
+      note: native.length ? 'Originalets offentliga serversvar, chatt och tillgängliga uppspelningskvitton tillsammans med Partner-instruktioner. Klippval är inte uppspelning; kvittona bevisar inte visuell kvalitet. Avbrott och protokollgränser kan ge luckor.' : 'Mottagna presentationsinstruktioner och en separat videokarta. Varken klippstart, klippslut eller landningstid har observerats i originalspelaren. Avbrott och protokollgränser kan ge luckor.' },
     records: trace.records });
 }

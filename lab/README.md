@@ -267,8 +267,9 @@ den 21 september. Endast `BETTALOTTO_API` läses från rotens `.env`, sedan
 `lab/.env.local`; processmiljön vinner. Detta ändrar inte Partner-observerns
 inläsning. Inga miljöfiler skrivs eller videobinära filer hämtas av knappen.
 
-Nycklar skapas i backoffice under API Keys. **Anslut läsande** gör en faktisk
-anslutning; ”konfigurerad” bevisar inte behörighet eller trafik. Saknade
+Nycklar skapas i backoffice under API Keys. **Anslut** verifierar åtkomsten,
+öppnar rätt originalsession och samordnar observation och labbföljning.
+”Konfigurerad” bevisar inte behörighet eller trafik. Saknade
 uppgifter visas som saknade. Loggen fylls aldrig med låtsad live-trafik.
 Ofullständiga nycklar och secrets stoppas av en lokal formatkontroll innan
 anslutning. Godkänt format bevisar inte att paret är giltigt, har rätt scope
@@ -282,28 +283,33 @@ verifierade launch-sessionens nyckel/spelare och endast vid versionsökning.
 Bryggan måste driftsättas på spelservern innan detta gäller live. **Launch → rund-event är ännu oprövat live.**
 En accepterad anslutning bevisar inte denna koppling. BO-inloggning ansluter inte labbet.
 Observern läser publicerade rundor och presentationsinstruktioner, gör inga
-spelhandlingar. **Följ nya instruktioner** eller explicit återspelning driver
-labbscenen från dessa fakta. Mottagen instruktion, lokalt variantval
+spelhandlingar. Automatisk följning efter **Anslut**, eller explicit återspelning,
+driver labbscenen från dessa fakta. Mottagen instruktion, lokalt variantval
 och uppspelningskvitto är tre skilda saker.
 
 SSE-källan saknar replay. Avbrott loggas som möjliga luckor och kräver ny
 uttrycklig anslutning; loggen är ingen fullständig spelhistorik. Lokala API:n
 är `/api/inputs` för status och `/api/inputs/events` för observation.
 
-### Observera originalspelet inför 2D-mockupen
+### Original och labb sida vid sida
 
-1. Öppna `/activity` och välj **Verifiera Partner-åtkomst**. Det signerar
-   `/api/v1/ping` och visar endast tid, spelar-ID och scopes.
-2. Välj **Hämta videokarta** och **Anslut läsande** före spelöppningen.
-3. **Öppna referensspelet** signerar `/api/v1/launch` med samma konfigurerade
-   spelar-ID. Hela originalklienten med sin videospelare öppnas i en egen flik.
-   Inloggningslänken är kortlivad och sparas inte i logg/protokoll. Välj
-   **Visa spelfliken här** för lokal bildvisning utan inspelning/uppladdning.
-   Webbläsaren låter dig välja flik; spelets knappar används i originalfliken.
-4. Använd en avsedd demospelare med verifierad intern demoplånbok för rundprov.
+1. Öppna `/activity` och välj **Anslut**. Labbservern verifierar scopes och
+   signerar launch för samma konfigurerade spelar-ID. SSE startas före
+   spelöppningen; en unik kanal binder observationen till just den nya fliken.
+2. Spela i originalfliken. **Transport ansluten · väntar på speldata** är
+   korrekt tills verkliga rundposter kommer. Den nya native-observern kräver
+   denna spelarkod på vald server och ett uttryckligt loopback-labb som opener.
+3. Välj originalfliken i bilddelningen för lokal bildvisning bredvid labbet.
+   Webbläsartillståndet kan inte automatiseras bort. Ingen bild spelas in eller
+   laddas upp och inget ljud fångas. Data kan fungera även utan delad bild.
+4. Labbet följer automatiskt med **Bara standard** utan modellkostnad.
+   **Variantval** byter urvalsläge; OpenClaw/Skuggläge kan göra modellanrop.
+   **Pausa labbet** stoppar lokal uppspelning. Videokarta, scopes, särskilda
+   filmlägen, konfigurationsomläsning och import/export finns i **Diagnostik**.
+5. Använd en avsedd demospelare med verifierad intern demoplånbok för rundprov.
    Liveöppningen den 21 september visade Astrid och 0,00 €; inga insatser,
    saldoändringar eller rundor gjordes. Nyckeln ger inte wallet-åtkomst.
-5. Kontrollera faktisk rundtrafik, koppla från och **Exportera observationsprotokoll**.
+6. Kontrollera faktisk rundtrafik, koppla från och **Exportera observationsprotokoll**.
    JSON-underlaget visas även för kopiering när webbläsaren inte hämtar filen.
 
 Protokollet håller hela mottagna rundmeddelanden före loggvisningens kortning.
@@ -312,15 +318,98 @@ Det stoppar uttryckligen vid 300 meddelanden eller 4 MiB, utan att kasta bort
 tömmer bara de 150 loggraderna. Nycklar maskeras och URL-frågesträngar utelämnas.
 Videokartan, verifierade scopes och avbrott följer med exporten.
 
+Vid fullständigt protokoll: exportera och välj **Ny observation** under
+Diagnostik. Det ersätter minnesprotokollet och stoppar den gamla labbkön;
+spelet, anslutningen och bilddelningen behålls. Bara kommande instruktioner
+följs. Gränsen höjs inte och gamla poster kastas aldrig tyst bort.
+
 Mapping beskriver registrerade klipp och BO-val; den är inget kvitto på klipp
-som faktiskt spelats. Protokollet saknar originalspelarens start/slut, kortlandning
-och fulla tabellsnapshots. Sekvenslistan återspelar mottagna instruktioner och
-öppnar dem i editorn med exakta publika fakta. Den återskapar inte en komplett
-beständig flerhandsvy eller originalets ännu okända tidslinje.
+som faktiskt spelats. Native-observern tillför publika kommandosvar/bordsvy samt
+instrumenterade playback- och chattsignaler, separat från SSE och labbkvitton.
+Källfönster, origin, kanal och sekvens kontrolleras; credentials och dolda kort
+filtreras bort. Labbet gör inga extra spelkommandon för att få signalerna.
+Senaste publika bordsvy visas med native-data; en enbart SSE-härledd vy är
+märkt partiell. Det är inte en garanti för identiska bild-/ljudframes.
+
+Variantbeslutets kontext bygger på mottagna avgjorda händer sedan senaste
+luckan. `context.observedChat` kan dessutom innehålla högst åtta observerade
+user/assistant-meddelanden, högst 600 tecken per meddelande och 3 200 totalt.
+Endast chatt mottagen före den aktuella instruktionen och efter senaste luckan
+följer med, med tidsstämplar och källan `native-observation`. Projektionen tar
+bara de tillåtna fälten; separata saldo-, spelar-ID- och authfält följer inte
+med. Kända credential-mönster och URL-parametrar filtreras. Chatttexten är
+underlag för val bland redan tillåtna varianter, aldrig instruktioner som kan
+ändra spelet, utöka kandidaterna eller beställa nytt tal.
+Saknat språk, återbesök och chattklassificering anges som otillgängliga;
+kontraktets neutrala reservvärden är inte bevis om spelaren. Manuella eventprov
+har fortsatt uttrycklig testkontext. Native-/SSE-dubbletter ska ge ett steg;
+konflikt eller lucka stoppar följningen.
+
+Director behöver kontextkontrakt version 2 och måste kvittera
+`contextContractVersion: 2` samt rätt `observedChatMessages`. Om den driftsatta
+tjänsten saknar kvittot spelar labbet standard med den synliga orsaken
+`remote_context_not_supported_baseline`. Den befintliga fjärrtjänstens prov
+gav denna reserv; den nya chattkontexten kräver därför Director-redeploy och
+nytt kompatibilitetsprov. Ingen sådan deploy påstås här. Schemat finns i
+`open-claw/lab/schemas/observed-chat.schema.json`; detta aktiverar inte
+produktens ännu återstående gemensamma OpenClaw-talägarskap.
 `/api/inputs/reference` är lokal status (GET) och explicit verify/launch/mapping
 (POST); alla destinationer och credentials bestäms på servern.
 
+## Isolerad lokal jämförelse
+
+Kör från repots rot, med labbets beroenden installerade:
+
+```powershell
+npm --prefix lab run build
+node tools/start-local-comparison.mjs
+```
+
+Öppna `http://127.0.0.1:4192/activity` och tryck **Anslut**. Spelet körs på
+`http://localhost:4194`, originalet på `/` och Kevins alternativ på `/v2/`.
+BO ligger på samma game-host under `/bo/`. Olika hostnamn håller testets
+spelcookies skilda från labbet. Tillfälliga databaser och en
+syntetisk demospelare skapas; `.env`-filer och riktiga konton/saldon används
+inte. Modell-, mail- och andra externa nätanrop är avstängda. Detta prov
+visar den lokala kedjan, inte en riktig OpenClaw-dialog eller Bettalotto-deploy.
+
+Stäng med Ctrl+C: testprocesserna stoppas och deras egna temporära data tas
+bort. Bygg om efter kodändringar; verktyget använder labbets byggda version.
+Automatiserad acceptans körs med `node test/local-comparison-browser.mjs`.
+Den kräver Playwright och Edge; ange `CROUPIER_PLAYWRIGHT_MODULE` till
+värdmiljöns `index.mjs` om paketet inte finns i repot. BO-inloggningen för QA
+finns endast i fixture-objektets minne och skrivs inte ut av CLI:t.
+Browserprovet använder verkliga lokala spelkommandon/SSE men ett uttryckligen
+syntetiskt chattsvar. Flikdelningens manuella tillstånd och läppsynk bedöms
+separat; testresultat dokumenteras i `docs/JOHN-HANDOFF.md`.
+
 ## Video och kvarvarande integration
+
+De 224 snapshot-generationerna finns redan i
+`C:/Users/jakem/CroupierAssets/bettalotto-generations`, labbets befintliga
+Windows-förval. Inventeringen 22 september kontrollerade ID och filstorlek
+224/224; den läste inte filmbytes och är inte visuell eller hashbunden acceptans.
+BO:s vanliga `web/public/bo/gen` saknades lokalt. För att prova samma befintliga
+arkiv i både labb och BO startas den isolerade jämförelsen uttryckligen så här:
+
+```powershell
+node tools/start-local-comparison.mjs --media-directory "C:/Users/jakem/CroupierAssets/bettalotto-generations"
+```
+
+Flaggan motsvarar `startLocalComparison({ generationDirectory })` och sätter
+`LAB_VIDEO_ARCHIVE` och `CROUPIER_GENERATIONS_DIR` bara i testprocesserna.
+Utan flaggan använder fixture:n en egen tom temporär generationsmapp.
+Det delade arkivet läses enbart och lämnas kvar när testet stängs. Inga kopior,
+nedladdningar eller env-filändringar görs. Detta mediearkiv är inte det
+pensionerade personarkivet och behöver inte Git-/AI-indexeras; det är inte
+belagt att det är samma tidigare nämnda slaskmapp.
+
+För vanlig produkt-/BO-start är `CROUPIER_GENERATIONS_DIR` en **valfri
+processinställning**; utan den gäller `web/public/bo/gen`. Den är inte
+ett namn som påträffats i inventeringen av Jakobs privata `.env`. Både BO-media och
+Generations-API använder katalogen med sina egna authkrav. Endast kända
+katalog-UUID:er och tillåtna filnamn kan öppnas; symlänkar och vägar utanför
+den verkliga katalogen avvisas. Byte-range och HEAD stöds för videopreview.
 
 Originalregistret läses från den befintliga
 [V3-snapshoten](../docs/animation-events/v3-video-map/snapshot.json).
@@ -339,7 +428,8 @@ automatiskt: exakt situation, dealer, riktning och eventuell talrad måste match
 
 Bestående spelarminne, produktens spelarchatt/moderering och en gemensam talägare
 återstår. Labbets originalförval återanvänder nu produktens mediespelarmoduler. Astrids separata idle-chattprov
-använder verkliga modellsvar; eventtestets kontext är fortfarande simulerad.
+använder verkliga modellsvar; det manuella eventtestets kontext är fortfarande
+simulerad medan livejämförelsen använder begränsade observerade fakta.
 IDE-agenternas GitLab-inbox hör inte hit. Videor måste granskas per take
 med text/ljud, hash och kalibrering innan de aktiveras i spelet. Nodträdet
 grupperar efter presentationssätt utan att ändra motorns kontrakt.

@@ -67,7 +67,7 @@ function matches(event, node) {
 export function buildPresentationSequence(records, project) {
   const result = { steps: [], notices: [], duplicates: 0, batchCount: 0, receivedCount: 0, truncated: false };
   if (!Array.isArray(records)) return { ...result, notices: [{ kind: 'invalid', recordIndex: null, message: 'Observationslistan är ogiltig.' }] };
-  const correlations = new Map(); const batches = new Set(); const versions = new Map();
+  const correlations = new Map(); const batches = new Set(); const versions = new Map(); const resetFloors = new Map();
   let bytes = 0;
   const addNotice = (kind, recordIndex, message) => result.notices.push({ kind, recordIndex, message });
   for (const [recordIndex, input] of records.slice(0, TRACE_RECORD_LIMIT).entries()) {
@@ -79,9 +79,14 @@ export function buildPresentationSequence(records, project) {
     if (bytes > TRACE_BYTE_LIMIT) { result.truncated = true; break; }
     if (!record(envelope)) { addNotice('invalid', recordIndex, 'En post är inte ett observationsobjekt.'); continue; }
     const data = record(envelope.data) ? envelope.data : envelope;
+    // Native diagnostics are retained in the full trace, not played as events.
+    if (envelope.source === 'native' && ['playback', 'chat', 'state'].includes(envelope.kind)) continue;
     const status = envelope.kind === 'status';
     if (status) {
       const state = text(data.state, 80) || 'okänd';
+      if (state === 'observation-reset' && record(data.previousVersionByChannel)) {
+        for (const [channel, version] of Object.entries(data.previousVersionByChannel)) if (text(channel) && integer(version, 0, Number.MAX_SAFE_INTEGER)) { resetFloors.set(channel, version); versions.set(channel, version); }
+      }
       addNotice(data.gap ? 'gap' : 'connection', recordIndex, `Anslutning: ${state}${text(data.reason) ? ` · ${data.reason}` : ''}. Tidigare eller mellanliggande events kan saknas.`);
       continue;
     }
@@ -91,6 +96,10 @@ export function buildPresentationSequence(records, project) {
     result.receivedCount++;
     const requestId = text(data.requestId); const version = integer(data.version, 0, Number.MAX_SAFE_INTEGER) ? data.version : null;
     const channel = text(envelope.channel) || 'configured-partner';
+    if (version !== null && resetFloors.has(channel) && version <= resetFloors.get(channel)) {
+      addNotice('connection', recordIndex, 'Ett tidigare kommando kom efter den nya observationsgränsen. Det sparas som data men spelas inte igen.');
+      continue;
+    }
     const envelopeId = text(envelope.id); const source = text(envelope.source, 80) || (data.type === 'round' ? 'partner' : 'partner-response');
     const receivedAt = text(envelope.time, 80); const upstreamId = text(envelope.upstreamId);
     const replay = envelope.replay === true || envelope.replayed === true || envelope.origin === 'import';

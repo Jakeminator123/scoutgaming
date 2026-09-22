@@ -2,10 +2,39 @@
 
 [Till systemkartan](README.md)
 
-**Uppdaterad 20 september 2026 inför V4.** Denna översyn gäller systemkartans
+**Uppdaterad 22 september 2026 för V5, D0 + sju dagar.** Översynen gäller systemkartans
 sex ämnen, deras README/källpekare och de två aktiva modellreferenserna.
 Kod, aktiva tekniska guider och daterad handoff är underlaget. Personarkiv,
-privata filer och medieinnehåll har inte lästs i denna översyn.
+medieinnehåll har inte lästs i denna översyn. Jakobs uttryckligen bifogade
+browseragent-underlag har använts för kraven; råkonversationen kopieras inte hit.
+
+## Aktuell integration · 22 september
+
+Återställningstaggen `backup/jakob-work-pre-kevin-20260922` pekar på
+`6fe7c82d1522db9c9d4f611ad44006648ec355aa`, Jakobs work före integrationen.
+Kevins MR !1 utgår från `b066a43ba18b7da8a405c99789374680c5ed07db`.
+Slutlig merge-/leveransrevision och testkvitton anges i
+[handoffen](../../../docs/JOHN-HANDOFF.md); en tagg återställer inte lokala
+o-committade filer eller en driftsatt databas.
+
+Kodunderlaget för livejämförelsen är
+[native-observern](../../../web/public/native-observation.mjs),
+[native-kommandosvaret](../../../web/native-table.mjs),
+[labbets meddelandekontroll](../../../lab/lib/native-observation.mjs) och
+[observerad kontext](../../../lab/lib/observation-context.mjs).
+Kommando, publik status, klientens playback och chatt skiljs från Partner-SSE.
+Endast explicit öppnad popup med rätt origin/kanal godtas. Labbets context
+redovisar observerade fakta och saknade uppgifter. Observerad chatt före eventet
+får följa med som märkt data: högst 8 meddelanden, 600 tecken per meddelande och
+3 200 totalt, avgränsat av senaste luckan. Separata saldo-, spelar-ID- och
+authfält projiceras bort. Director-kontraktet v2 kräver explicit kvitto;
+äldre remote ger standardreserv tills tjänsten uppdaterats och verifierats.
+
+Produktläsaren för BO-val finns nu i `web/public/app.mjs`. V2:s aktiva
+green-/speech-/dealingväg skiljer sig från originalet och från filmanifestet.
+Samma engine-index eller line-ID bevisar inte samma aktivt uppspelade take.
+Dokumentationen hävdar ingen ny visuell filmgranskning eller verifierad
+Bettalotto-deploy. Äldre inventeringsantal nedan behåller sina datum.
 
 ## Revisioner och proveniens
 
@@ -103,12 +132,13 @@ proveniens anges med datum/commit och aktiva sakuppgifter med direkta källor.
 ## Viktigaste rättelserna
 
 - Partner är ett gränssnitt in och ut. Native och Partner är separata
-  klientvägar; native publicerar inte automatiskt till Partner-SSE.
+  klientvägar; native publicerar efter commit när verifierad Partner-session finns.
 - SSE är scoped till nyckel + partner-playerId, har ingen replay och
   kräver signerad åtkomst. BO-inloggning är en annan behörighet.
 - Assets-manifestet läser filer, inkluderar även vissa review-takes och
   verifierar varken aktuell BO-bindning eller faktisk uppspelning.
-- Eventtest använder sparat exempel och manuella testvärden. Social
+- Eventtest använder sparat exempel och manuella testvärden; livejämförelsen
+  bygger begränsad kontext från verkligt mottagna publika events. Social
   Astrid-chatt är ett separat implementerat text-/policy-/modell-/talprov.
 - Lokal slump mellan tillåtna varianter finns. Takepooler och viktat
   takeval är fortfarande förslag. Social cooldown är ingen generell produktkö.
@@ -118,8 +148,8 @@ proveniens anges med datum/commit och aktiva sakuppgifter med direkta källor.
 
 ## Kvar att verifiera
 
-Aktuell serverrevision, behörig testsession och aktiva BO-bindningar saknas
-fortfarande i underlaget. Verklig återhämtning efter SSE-avbrott, wallet per
+Aktuell driftsatt serverrevision och dess aktiva BO-bindningar måste fortfarande
+beläggas separat från den lokala koden. Verklig återhämtning efter SSE-avbrott, wallet per
 klientväg, en gemensam adapter, en enda talägare, full videotäckning och
 hashbunden visuell QA är inte färdiga genom denna dokumentationsändring.
 
@@ -127,8 +157,9 @@ F-001–F-007 står kvar på sina dokumenterade evidens-/triagenivåer. F-005:s
 `split`/`splitFrom` behöver isolerad reproduktion. En omorganisation eller
 en passerad labbtestsvit är inget bevis att dessa fynd är lösta.
 
-Inga privata miljöfiler, nycklar, inloggningsnoter, samtalsexporter eller
-arkivinnehåll lästes. Inga nya API-, modell-, röst-, databas- eller
+Inga privata miljöfiler, nycklar, inloggningsnoter eller arkivinnehåll lästes.
+Endast den uttryckligen bifogade konversationen lästes som kravunderlag.
+Inga nya API-, modell-, röst-, databas- eller
 deploymentanrop gjordes av denna deluppgift. Ingen media avkodades eller
 indexerades till en modell. Kontroll av dokumentlänkar gäller filernas
 existens, inte hämtning av deras medieinnehåll.

@@ -4,11 +4,17 @@
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
 import { craigIdentity } from './craig-identity.mjs';
 import { playerAuth } from './player-auth.mjs';
+import { backofficeGameAuth } from './bo-game-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { isAgentFailure } from './agent-response.mjs';
 import { installPartnerApi } from './partner-api.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
+import { installGenerationsApi } from './generations-api.mjs';
+import { openGenerationMedia, serveGenerationMedia } from './generation-media.mjs';
+import { clipMapping } from './clip-mapping.mjs';
+import { loginLimiter } from './login-limiter.mjs';
+const boLogins = loginLimiter();
 import { readFileSync as readSync, writeFileSync as writeSync } from 'node:fs';
 import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
 import { join, normalize, extname, resolve } from 'node:path';
@@ -17,6 +23,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), 'public');
+const generationDirectory = process.env.CROUPIER_GENERATIONS_DIR ? resolve(process.env.CROUPIER_GENERATIONS_DIR) : join(root, 'bo/gen');
 
 // ---------- player database (demo money only) ----------
 // An explicit directory lets local QA exercise the real player/server without
@@ -91,6 +98,10 @@ API['/api/table'] = createNativeTableCommand({ db, getPlayer, logTx,
 
 // ---------- partner API v1 (operators / aggregators) ----------
 let partnerApi = null;
+const generationsApi = installGenerationsApi({ catalogPath: join(root, 'bo/generations.json'), genDir: generationDirectory,
+  verdicts: () => boLoad().genVerdicts ?? {}, tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
+  publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se',
+  mapping: () => clipMapping({ root, bo: boLoad(), publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) });
 function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', root }); }
 
 // ---------- backoffice (BO) ----------
@@ -111,6 +122,8 @@ const BO_DEFAULTS = {
   pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
   clipAssignments: {},
   neverAgain: {},
+  clipLandings: {},
+  genLandings: {},
   tournaments: [
     { id: 't1', name: 'Midnight Privé Open', format: 'Elimination · 20 rounds', buyin: 100, pool: 25000, entries: 184, cap: 250, starts: 'Tonight 00:00', state: 'registering' },
     { id: 't2', name: 'High Roller Sprint', format: 'Points race · 1 hour', buyin: 1000, pool: 50000, entries: 31, cap: 64, starts: 'Fri 21:00', state: 'registering' },
@@ -369,7 +382,8 @@ function boApi(url) {
   }
   if (url === '/api/bo/config') return cfg;
   if (url === '/api/bo/apikeys') return { keys: partner().keys.list(), scopes: partner().SCOPES, docs: '/docs/partner-api.html' };
-  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {} };
+  if (url === '/api/bo/gen-verdicts') return { genVerdicts: cfg.genVerdicts ?? {}, genLandings: cfg.genLandings ?? {}, parts: CLIP_PARTS };
+  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {}, landings: cfg.clipLandings ?? {} };
   if (url === '/api/bo/users') {
     return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
   }
@@ -521,6 +535,15 @@ async function boPost(url, body, who) {
   if (url === '/api/bo/apikeys/launch') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...partner().keys.mintLaunch(body.id, body) }; } catch (e) { return { error: e.message }; } }
   if (url === '/api/bo/apikeys/credit') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...partner().keys.credit(body.id, body) }; } catch (e) { return { error: e.message }; } }
   if (url === '/api/bo/apikeys/rotate') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return { ok: true, ...partner().keys.rotate(body.id) }; }
+  if (url === '/api/bo/clip-landing') {
+    // Human-verified observation: which table part the card in this clip actually went to. Separate from assignment.
+    const { clip, part, note } = body ?? {};
+    if (typeof clip !== 'string' || !clip) return { error: 'bad clip' };
+    cfg.clipLandings ??= {};
+    if (!part) delete cfg.clipLandings[clip];
+    else { if (!CLIP_PARTS.includes(part)) return { error: 'bad part' }; cfg.clipLandings[clip] = { part, note: String(note ?? '').slice(0, 200), by: who?.sub ?? who ?? null, at: new Date().toISOString() }; }
+    boSave(cfg); return { ok: true, landings: cfg.clipLandings };
+  }
   if (url === '/api/bo/clip-never') {
     // "Never again": awful takes / failed prompts go to a bin so nobody re-reviews or re-assigns them.
     const { clip, reason, undo } = body ?? {};
@@ -532,6 +555,25 @@ async function boPost(url, body, who) {
       for (const d of Object.values(cfg.clipAssignments ?? {})) for (const [part, a] of Object.entries(d)) if (a?.clip === clip) delete d[part];
     }
     boSave(cfg); return { ok: true, neverAgain: cfg.neverAgain, assignments: cfg.clipAssignments ?? {} };
+  }
+  if (url === '/api/bo/gen-landing') {
+    // Generations page: which table part the card in this video actually went to, marked by a human.
+    const { id, part, note } = body ?? {};
+    if (typeof id !== 'string' || !id) return { error: 'bad id' };
+    cfg.genLandings ??= {};
+    if (!part) delete cfg.genLandings[id];
+    else { if (!CLIP_PARTS.includes(part)) return { error: 'bad part' }; cfg.genLandings[id] = { part, note: String(note ?? '').slice(0, 200), by: who?.sub ?? who ?? null, at: new Date().toISOString() }; }
+    boSave(cfg); return { ok: true, genLandings: cfg.genLandings };
+  }
+  if (url === '/api/bo/gen-verdict') {
+    // Generations page: want / don't want per Higgsfield video, so nobody re-reviews the same output.
+    const { id, verdict, reason } = body ?? {};
+    if (typeof id !== 'string' || !id) return { error: 'bad id' };
+    cfg.genVerdicts ??= {};
+    if (!verdict) delete cfg.genVerdicts[id];
+    else if (verdict === 'want' || verdict === 'no') cfg.genVerdicts[id] = { verdict, reason: String(reason ?? '').slice(0, 300), by: who?.sub ?? who ?? null, at: new Date().toISOString() };
+    else return { error: 'bad verdict' };
+    boSave(cfg); return { ok: true, genVerdicts: cfg.genVerdicts };
   }
   if (url === '/api/bo/clip-assign') {
     const { dealer, part, clip } = body ?? {};
@@ -732,7 +774,10 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
   return css;
 }
 
-const auth=playerAuth(db,apiPlayer,craigIdentity(boDb));
+const scoutIdentity=craigIdentity(boDb);
+const auth=playerAuth(db,apiPlayer,scoutIdentity);
+const validLaunch=token=>{const claims=jwtVerify(token);return !!(claims?.sub&&claims.partner&&getPlayer(claims.sub));};
+const boGameAuth=backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL});
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
 function previewPlayer(req,res) {
@@ -748,8 +793,9 @@ function previewPlayer(req,res) {
 }
 createServer(async (req, res) => {
   const pathname=new URL(req.url,'http://local').pathname;
+  if(boGameAuth(req,res))return;
   { const u=new URL(req.url,'http://local'); const launch=u.searchParams.get('launch');
-    if(pathname==='/' && launch){ const claims=jwtVerify(launch);
+    if(['/', '/v2', '/v2/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!getPlayer(claims.sub)){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       const token=randomBytes(32).toString('hex'); const digest=createHash('sha256').update(token).digest('hex');
       db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp) VALUES (?,?,?,?)').run(digest,claims.sub,Date.now()+6*3600*1000,`partner:${claims.partner}`);
@@ -757,6 +803,7 @@ createServer(async (req, res) => {
       res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':`player_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=21600${secure}`});res.end();return; } }
   try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
   if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
+  if(pathname.startsWith('/api/v1/generations')&&await generationsApi(req,res,pathname))return;
   if(pathname==='/api/v1/events'&&req.method==='GET'){ partner().handleEvents(req,res,new URL(req.url,'http://local')); return; }
   if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await partner().handle(req,res,pathname); return; }
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
@@ -802,14 +849,19 @@ createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/api/bo/login') {
+    if(req.headers.origin && (!URL.canParse(req.headers.origin)||new URL(req.headers.origin).host!==req.headers.host)){res.writeHead(403);res.end('Invalid origin');return;}
     let body = '';
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
     req.on('end', () => {
       let who = null, uname = '';
-      try { const { user, pass } = JSON.parse(body || '{}'); uname = user; who = boCheckLogin(user, pass); } catch {}
-      if (!who) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
-      const tok = jwtSign({ sub: uname, role: who.role, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800` });
+      try { uname = JSON.parse(body || '{}').user; } catch {}
+      if (boLogins.blocked(req, uname)) { res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '900' }); res.end('{"error":"too many login attempts, try again in 15 minutes"}'); return; }
+      try { const { user, pass } = JSON.parse(body || '{}'); who = boCheckLogin(user, pass); } catch {}
+      if (!who) { boLogins.fail(req, uname); console.warn('[bo] failed login', uname, boLogins.ipOf(req)); res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
+      boLogins.ok(req, uname);
+      const tok = jwtSign({ sub: uname, role: who.role, aud:'backoffice', source_stamp:scoutIdentity.find(uname)?.stamp, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
+      const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control':'no-store', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}` });
       res.end('{"ok":true}');
     });
     return;
@@ -818,7 +870,7 @@ createServer(async (req, res) => {
   // reachable without a session; everything else in the BO needs one
   const boOpen = (req.method === 'GET' && (req.url === '/api/bo/config' || req.url === '/api/bo/me'))
     || (req.method === 'POST' && ['/api/bo/reset-request', '/api/bo/set-password'].includes(req.url))
-    || req.url === '/bo/login.html' || req.url.startsWith('/bo/set-password.html');
+    || pathname === '/bo/login.html' || req.url.startsWith('/bo/set-password.html');
   if ((req.url.startsWith('/api/bo/') || req.url === '/bo' || req.url.startsWith('/bo/')) && !boOpen
       && !boSessionOk(req)) {
     if (req.url.startsWith('/api/')) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"login required"}'); }
@@ -919,9 +971,22 @@ createServer(async (req, res) => {
   let decoded;
   try { decoded = decodeURIComponent(url.pathname); }
   catch { res.writeHead(400); res.end('bad request'); return; }
+  if (decoded === '/bo') { res.writeHead(303, { Location: '/bo/' + url.search }); res.end(); return; }
   let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '');
+  const generationPath = '/' + path.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (generationPath.startsWith('/bo/gen/')) {
+    // Repeat auth after decoding/normalization so encoded slashes cannot bypass
+    // the ordinary BO gate above. This mount never falls through to static files.
+    if (!boSessionOk(req)) { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); return; }
+    if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
+    let catalog; try { catalog = JSON.parse(readSync(join(root, 'bo/generations.json'), 'utf8')); } catch { catalog = []; }
+    const media = openGenerationMedia({ directory: generationDirectory, catalog, fileName: generationPath.slice('/bo/gen/'.length) });
+    if (!media) { res.writeHead(404, { 'Cache-Control': 'no-store' }); res.end('not found'); return; }
+    serveGenerationMedia(req, res, media); return;
+  }
+  if (['/v2', '/v2/', '/v2/index.html'].includes(decoded)) path = '/index.html';
   if (path === '/' || path === '\\') path = '/index.html';
-  if (path.endsWith('/')) path += 'index.html';   // directory index (e.g. /bo/)
+  if (/[/\\]$/.test(path)) path += 'index.html';   // directory index on Windows and POSIX
   const file = join(root, path);
   if (!file.startsWith(root) || !existsSync(file) || !statSync(file).isFile()) {
     res.writeHead(404); res.end('not found'); return;

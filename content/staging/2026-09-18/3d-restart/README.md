@@ -31,3 +31,23 @@ Vad skriptet gör: döper om platshållarkroppen, appendar anatomiska Armature +
 Resultat: 488 objekt, 33 actions, 93 props. Rendrat seat 3 ur master: `master-seat03.jpg`. Närbild på huvudet: `head-master2.png`, jämförelse mot källan: `head-compare.jpg` (identisk, mergen ändrar inget i huvudet).
 
 Kvarstår: håret är en målad kalott, huden vaxig, armrörelsen stel. Det är samma likhetsbrister som pausade spåret 13 sep, nu i en scen där allt annat sitter.
+
+## Astra casino floor in the real engine — 19 sep
+Astra (GPT-6 Astra, Higgsfield Blender plugin) built the casino floor from the commercial stills and exported it itself to `assets/astrid-3d/master/casino-floor-browser/`: a Draco glb at 9.7 MB, 8 baked 2K textures, three checkpoint .blend files and its own validation report.
+
+Re-exported without Draco (we have no DRACOLoader yet) to `web/public/assets/casino-floor.glb`, 17.5 MB, and loaded it in our own Three.js at 1280x720 via `web/public/floor-test.html`:
+
+| Metric | Result |
+|---|---|
+| Load | 110 ms from localhost |
+| Triangles | 238 666 |
+| Meshes / materials / textures | 21 / 6 / 8 |
+| Draw calls | 6 |
+| GPU triangles after culling | 191 804 |
+| Frame rate | 60 fps sustained, 26 on the first warm-up second |
+| Player anchors found | 4, one per table |
+| Scene size | 44 x 5 x 48 m |
+
+Screenshot: `floor-in-browser.png`. Six draw calls for a whole floor is the number that matters; the bake collapsed everything into a handful of materials. The mood matches the reference: dark room, warm pools of light on each table.
+
+Open: Draco support (9.7 vs 17.5 MB), dropping Astrid on the dealer anchors, and wiring this floor into `casino.mjs` in place of the procedural tables.

@@ -1,0 +1,32 @@
+[
+  {
+    "level": "info",
+    "message": "[dealer] engine ready: 39 clips, avc1.4D4028, hands matte on (4 clips)",
+    "timestamp": "2026-09-19T23:06:55.106Z",
+    "url": "http://astridmaskall.localhost:4211/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] start goodluck matched",
+    "timestamp": "2026-09-19T23:07:35.129Z",
+    "url": "http://astridmaskall.localhost:4211/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] end goodluck",
+    "timestamp": "2026-09-19T23:07:38.240Z",
+    "url": "http://astridmaskall.localhost:4211/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] start goodluck matched",
+    "timestamp": "2026-09-19T23:07:38.279Z",
+    "url": "http://astridmaskall.localhost:4211/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] end goodluck",
+    "timestamp": "2026-09-19T23:07:41.376Z",
+    "url": "http://astridmaskall.localhost:4211/app.mjs"
+  }
+]

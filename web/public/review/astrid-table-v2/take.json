@@ -1,0 +1,2475 @@
+{
+  "version": 1,
+  "id": "astrid-table-v2-first-upcard-de1f90a9",
+  "dealer": "astrid",
+  "action": "deal-dealer",
+  "status": "review",
+  "enabled": true,
+  "cameraApproval": "2026-09-19: user explicitly selected Use this angle for reference269f8943. Motion and gameplay remain under review. Table-v2 derivative uses saved PlateCam; removes the old20px gameplay-only Y offset, preserves native actor scale1.",
+  "media": {
+    "src": "review/astrid-table-v2/actor-packed.mp4",
+    "sha256": "64f0402477a887c2ffc1b6ec7e79a82782927992b16ed62c23c5bb4cea99d3d3",
+    "layout": "rgb-over-masks-r-actor-g-fingers",
+    "width": 960,
+    "height": 760,
+    "fps": 24,
+    "frames": 97
+  },
+  "camera": {
+    "width": 960,
+    "height": 760,
+    "shoeOutlet": [
+      0.7348958333333333,
+      0.8861842105263158
+    ],
+    "placement": {
+      "width": 1920,
+      "height": 1080,
+      "scale": 1,
+      "x": 560,
+      "y": 0,
+      "framingScale": 0.85
+    }
+  },
+  "events": {
+    "pickup": 0,
+    "release": 57,
+    "land": 58,
+    "rest": 96
+  },
+  "tracking": {
+    "kind": "chroma-card",
+    "sourceSha256": "dfaeea2b4dae3cad918a2a3af9114d261131939ea636cf2e3427172b3b33402b",
+    "keepSourceLanding": true,
+    "scope": "first-dealer-upcard-only",
+    "limitations": [
+      "All 97 native frames reviewed; plane fits during blur/occlusion are approximations, not calibrated rigid 3D reconstruction.",
+      "Frames27-29 lose all identifiable green/magenta marker evidence. Their thin plane and material corner correspondence are inferred with low confidence.",
+      "FaceUp false through29 and true from30 is an authored semantic face/back assignment at the visible wrist turn. Identical green faces cannot prove the physical side.",
+      "Printed-top UV orientation is authored so the landed card is upright to the player. A constant cyclic corner permutation is applied across all97frames; identical green markers do not identify a printed top edge.",
+      "Source starts with fingers already holding a partially exposed card. Do not synthesize a pre-source reach or delay card visibility until pickup.",
+      "First felt contact around33 is not finger release. Card continues sliding until43 and remains under fingers through56.",
+      "Final source hands differ from the initial at-shoe grasp. This clip is not an automatically seamless loop.",
+      "Replacement card must remain below actual finger matte; registration must move actor, shoe and card together.",
+      "These are source measurements, not rendered-gameplay acceptance."
+    ]
+  },
+  "frames": [
+    {
+      "frame": 0,
+      "card": {
+        "corners": [
+          [
+            0.7010416666666667,
+            0.8789473684210526,
+            0
+          ],
+          [
+            0.7479166666666667,
+            0.8223684210526315,
+            0
+          ],
+          [
+            0.7833333333333333,
+            0.8552631578947368,
+            0
+          ],
+          [
+            0.7447916666666666,
+            0.9118421052631579,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "visible-three-edge-plane-with-grip-occlusion",
+        "confidence": 0.76,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 1,
+      "card": {
+        "corners": [
+          [
+            0.6989583333333333,
+            0.8789473684210526,
+            0
+          ],
+          [
+            0.7489583333333333,
+            0.8223684210526315,
+            0
+          ],
+          [
+            0.7833333333333333,
+            0.8552631578947368,
+            0
+          ],
+          [
+            0.7427083333333333,
+            0.9131578947368421,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "visible-three-edge-plane-with-grip-occlusion",
+        "confidence": 0.76,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 2,
+      "card": {
+        "corners": [
+          [
+            0.6947916666666667,
+            0.8789473684210526,
+            0
+          ],
+          [
+            0.7489583333333333,
+            0.8223684210526315,
+            0
+          ],
+          [
+            0.7833333333333333,
+            0.8552631578947368,
+            0
+          ],
+          [
+            0.7375,
+            0.9157894736842105,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "visible-three-edge-plane-with-grip-occlusion",
+        "confidence": 0.76,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 3,
+      "card": {
+        "corners": [
+          [
+            0.6885416666666667,
+            0.8828947368421053,
+            0
+          ],
+          [
+            0.75,
+            0.8197368421052632,
+            0
+          ],
+          [
+            0.7833333333333333,
+            0.8552631578947368,
+            0
+          ],
+          [
+            0.728125,
+            0.9210526315789473,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "visible-three-edge-plane-with-grip-occlusion",
+        "confidence": 0.76,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 4,
+      "card": {
+        "corners": [
+          [
+            0.659375,
+            0.8723684210526316,
+            0
+          ],
+          [
+            0.75,
+            0.8013157894736842,
+            0
+          ],
+          [
+            0.7739583333333333,
+            0.8565789473684211,
+            0
+          ],
+          [
+            0.7010416666666667,
+            0.9289473684210526,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 5,
+      "card": {
+        "corners": [
+          [
+            0.659375,
+            0.8723684210526316,
+            0
+          ],
+          [
+            0.75,
+            0.8013157894736842,
+            0
+          ],
+          [
+            0.7739583333333333,
+            0.8565789473684211,
+            0
+          ],
+          [
+            0.7010416666666667,
+            0.9289473684210526,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 6,
+      "card": {
+        "corners": [
+          [
+            0.6395833333333333,
+            0.8473684210526315,
+            0
+          ],
+          [
+            0.71875,
+            0.7802631578947369,
+            0
+          ],
+          [
+            0.7520833333333333,
+            0.8342105263157895,
+            0
+          ],
+          [
+            0.6854166666666667,
+            0.9131578947368421,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 7,
+      "card": {
+        "corners": [
+          [
+            0.6135416666666667,
+            0.8131578947368421,
+            0
+          ],
+          [
+            0.6885416666666667,
+            0.7381578947368421,
+            0
+          ],
+          [
+            0.725,
+            0.8,
+            0
+          ],
+          [
+            0.6677083333333333,
+            0.8789473684210526,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 8,
+      "card": {
+        "corners": [
+          [
+            0.5791666666666667,
+            0.75,
+            0
+          ],
+          [
+            0.640625,
+            0.6618421052631579,
+            0
+          ],
+          [
+            0.6875,
+            0.725,
+            0
+          ],
+          [
+            0.628125,
+            0.8105263157894737,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 9,
+      "card": {
+        "corners": [
+          [
+            0.5635416666666667,
+            0.7210526315789474,
+            0
+          ],
+          [
+            0.621875,
+            0.6381578947368421,
+            0
+          ],
+          [
+            0.6729166666666667,
+            0.7026315789473684,
+            0
+          ],
+          [
+            0.6145833333333334,
+            0.7868421052631579,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 10,
+      "card": {
+        "corners": [
+          [
+            0.5635416666666667,
+            0.7210526315789474,
+            0
+          ],
+          [
+            0.621875,
+            0.6381578947368421,
+            0
+          ],
+          [
+            0.6729166666666667,
+            0.7026315789473684,
+            0
+          ],
+          [
+            0.6145833333333334,
+            0.7868421052631579,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 11,
+      "card": {
+        "corners": [
+          [
+            0.5489583333333333,
+            0.7026315789473684,
+            0
+          ],
+          [
+            0.6052083333333333,
+            0.6276315789473684,
+            0
+          ],
+          [
+            0.6541666666666667,
+            0.6842105263157895,
+            0
+          ],
+          [
+            0.5979166666666667,
+            0.7605263157894737,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 12,
+      "card": {
+        "corners": [
+          [
+            0.5197916666666667,
+            0.6789473684210526,
+            0
+          ],
+          [
+            0.575,
+            0.618421052631579,
+            0
+          ],
+          [
+            0.61875,
+            0.6697368421052632,
+            0
+          ],
+          [
+            0.56875,
+            0.7342105263157894,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 13,
+      "card": {
+        "corners": [
+          [
+            0.5083333333333333,
+            0.6763157894736842,
+            0
+          ],
+          [
+            0.5625,
+            0.6223684210526316,
+            0
+          ],
+          [
+            0.60625,
+            0.6657894736842105,
+            0
+          ],
+          [
+            0.55625,
+            0.7289473684210527,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 14,
+      "card": {
+        "corners": [
+          [
+            0.49583333333333335,
+            0.6763157894736842,
+            0
+          ],
+          [
+            0.5510416666666667,
+            0.6289473684210526,
+            0
+          ],
+          [
+            0.59375,
+            0.6697368421052632,
+            0
+          ],
+          [
+            0.5458333333333333,
+            0.7289473684210527,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 15,
+      "card": {
+        "corners": [
+          [
+            0.49583333333333335,
+            0.6763157894736842,
+            0
+          ],
+          [
+            0.5510416666666667,
+            0.6289473684210526,
+            0
+          ],
+          [
+            0.59375,
+            0.6697368421052632,
+            0
+          ],
+          [
+            0.5458333333333333,
+            0.7289473684210527,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 16,
+      "card": {
+        "corners": [
+          [
+            0.471875,
+            0.6789473684210526,
+            0
+          ],
+          [
+            0.53125,
+            0.6460526315789473,
+            0
+          ],
+          [
+            0.5708333333333333,
+            0.6881578947368421,
+            0
+          ],
+          [
+            0.5208333333333334,
+            0.7368421052631579,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 17,
+      "card": {
+        "corners": [
+          [
+            0.4635416666666667,
+            0.6815789473684211,
+            0
+          ],
+          [
+            0.521875,
+            0.6513157894736842,
+            0
+          ],
+          [
+            0.5583333333333333,
+            0.6907894736842105,
+            0
+          ],
+          [
+            0.5083333333333333,
+            0.7342105263157894,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 18,
+      "card": {
+        "corners": [
+          [
+            0.453125,
+            0.6815789473684211,
+            0
+          ],
+          [
+            0.5114583333333333,
+            0.6578947368421053,
+            0
+          ],
+          [
+            0.5479166666666667,
+            0.6947368421052632,
+            0
+          ],
+          [
+            0.49583333333333335,
+            0.7368421052631579,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "manually-reviewed-source-plane",
+        "confidence": 0.84,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 19,
+      "card": {
+        "corners": [
+          [
+            0.44479166666666664,
+            0.6868421052631579,
+            0
+          ],
+          [
+            0.5,
+            0.6631578947368421,
+            0
+          ],
+          [
+            0.5385416666666667,
+            0.7039473684210527,
+            0
+          ],
+          [
+            0.48854166666666665,
+            0.7368421052631579,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "two-hand-transfer-plane",
+        "confidence": 0.75,
+        "inferredCorners": [
+          2
+        ]
+      }
+    },
+    {
+      "frame": 20,
+      "card": {
+        "corners": [
+          [
+            0.43645833333333334,
+            0.6894736842105263,
+            0
+          ],
+          [
+            0.4947916666666667,
+            0.6684210526315789,
+            0
+          ],
+          [
+            0.5322916666666667,
+            0.7078947368421052,
+            0
+          ],
+          [
+            0.4791666666666667,
+            0.7394736842105263,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "two-hand-transfer-plane",
+        "confidence": 0.75,
+        "inferredCorners": [
+          2
+        ]
+      }
+    },
+    {
+      "frame": 21,
+      "card": {
+        "corners": [
+          [
+            0.43020833333333336,
+            0.6947368421052632,
+            0
+          ],
+          [
+            0.4895833333333333,
+            0.675,
+            0
+          ],
+          [
+            0.528125,
+            0.7118421052631579,
+            0
+          ],
+          [
+            0.465625,
+            0.7447368421052631,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "two-hand-transfer-plane",
+        "confidence": 0.75,
+        "inferredCorners": [
+          2
+        ]
+      }
+    },
+    {
+      "frame": 22,
+      "card": {
+        "corners": [
+          [
+            0.421875,
+            0.7052631578947368,
+            0
+          ],
+          [
+            0.484375,
+            0.6815789473684211,
+            0
+          ],
+          [
+            0.5229166666666667,
+            0.7210526315789474,
+            0
+          ],
+          [
+            0.46458333333333335,
+            0.75,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "two-hand-transfer-plane",
+        "confidence": 0.75,
+        "inferredCorners": [
+          2
+        ]
+      }
+    },
+    {
+      "frame": 23,
+      "card": {
+        "corners": [
+          [
+            0.421875,
+            0.7157894736842105,
+            0
+          ],
+          [
+            0.48541666666666666,
+            0.6960526315789474,
+            0
+          ],
+          [
+            0.521875,
+            0.7328947368421053,
+            0
+          ],
+          [
+            0.4625,
+            0.7605263157894737,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "two-hand-transfer-plane",
+        "confidence": 0.75,
+        "inferredCorners": [
+          2
+        ]
+      }
+    },
+    {
+      "frame": 24,
+      "card": {
+        "corners": [
+          [
+            0.428125,
+            0.7368421052631579,
+            0
+          ],
+          [
+            0.4895833333333333,
+            0.7118421052631579,
+            0
+          ],
+          [
+            0.5260416666666666,
+            0.7473684210526316,
+            0
+          ],
+          [
+            0.47291666666666665,
+            0.7763157894736842,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "blurred-wrist-plane",
+        "confidence": 0.57,
+        "inferredCorners": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "frame": 25,
+      "card": {
+        "corners": [
+          [
+            0.43854166666666666,
+            0.7671052631578947,
+            0
+          ],
+          [
+            0.5104166666666666,
+            0.7394736842105263,
+            0
+          ],
+          [
+            0.5333333333333333,
+            0.7671052631578947,
+            0
+          ],
+          [
+            0.49375,
+            0.7921052631578948,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "blurred-wrist-plane",
+        "confidence": 0.57,
+        "inferredCorners": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "frame": 26,
+      "card": {
+        "corners": [
+          [
+            0.4583333333333333,
+            0.7986842105263158,
+            0
+          ],
+          [
+            0.5291666666666667,
+            0.7671052631578947,
+            0
+          ],
+          [
+            0.5416666666666666,
+            0.7921052631578948,
+            0
+          ],
+          [
+            0.49166666666666664,
+            0.8078947368421052,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "blurred-wrist-plane",
+        "confidence": 0.57,
+        "inferredCorners": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "frame": 27,
+      "card": {
+        "corners": [
+          [
+            0.4625,
+            0.843421052631579,
+            0
+          ],
+          [
+            0.54375,
+            0.7907894736842105,
+            0
+          ],
+          [
+            0.5333333333333333,
+            0.8144736842105263,
+            0
+          ],
+          [
+            0.465625,
+            0.8644736842105263,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "inferred-edge-on-corner-correspondence",
+        "confidence": 0.32,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 28,
+      "card": {
+        "corners": [
+          [
+            0.521875,
+            0.7934210526315789,
+            0
+          ],
+          [
+            0.5302083333333333,
+            0.7921052631578948,
+            0
+          ],
+          [
+            0.48854166666666665,
+            0.9197368421052632,
+            0
+          ],
+          [
+            0.478125,
+            0.9197368421052632,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "inferred-edge-on-corner-correspondence",
+        "confidence": 0.32,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 29,
+      "card": {
+        "corners": [
+          [
+            0.521875,
+            0.7934210526315789,
+            0
+          ],
+          [
+            0.5302083333333333,
+            0.7921052631578948,
+            0
+          ],
+          [
+            0.48854166666666665,
+            0.9197368421052632,
+            0
+          ],
+          [
+            0.478125,
+            0.9197368421052632,
+            0
+          ]
+        ],
+        "faceUp": false
+      },
+      "tracking": {
+        "method": "inferred-edge-on-corner-correspondence",
+        "confidence": 0.32,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 30,
+      "card": {
+        "corners": [
+          [
+            0.521875,
+            0.756578947368421,
+            0
+          ],
+          [
+            0.5520833333333334,
+            0.7921052631578948,
+            0
+          ],
+          [
+            0.5072916666666667,
+            0.9105263157894737,
+            0
+          ],
+          [
+            0.496875,
+            0.8776315789473684,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "post-turn-visible-edge-with-hidden-top-corner",
+        "confidence": 0.62,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 31,
+      "card": {
+        "corners": [
+          [
+            0.4864583333333333,
+            0.7592105263157894,
+            0
+          ],
+          [
+            0.5416666666666666,
+            0.781578947368421,
+            0
+          ],
+          [
+            0.5135416666666667,
+            0.9131578947368421,
+            0
+          ],
+          [
+            0.471875,
+            0.875,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "post-turn-visible-edge-with-hidden-top-corner",
+        "confidence": 0.62,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 32,
+      "card": {
+        "corners": [
+          [
+            0.44895833333333335,
+            0.781578947368421,
+            0
+          ],
+          [
+            0.50625,
+            0.7763157894736842,
+            0
+          ],
+          [
+            0.5083333333333333,
+            0.9171052631578948,
+            0
+          ],
+          [
+            0.45,
+            0.9118421052631579,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 33,
+      "card": {
+        "corners": [
+          [
+            0.44166666666666665,
+            0.8039473684210526,
+            0
+          ],
+          [
+            0.496875,
+            0.7960526315789473,
+            0
+          ],
+          [
+            0.5083333333333333,
+            0.9157894736842105,
+            0
+          ],
+          [
+            0.44895833333333335,
+            0.9157894736842105,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 34,
+      "card": {
+        "corners": [
+          [
+            0.44166666666666665,
+            0.8039473684210526,
+            0
+          ],
+          [
+            0.496875,
+            0.7960526315789473,
+            0
+          ],
+          [
+            0.5083333333333333,
+            0.9157894736842105,
+            0
+          ],
+          [
+            0.44895833333333335,
+            0.9157894736842105,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 35,
+      "card": {
+        "corners": [
+          [
+            0.4354166666666667,
+            0.8184210526315789,
+            0
+          ],
+          [
+            0.49270833333333336,
+            0.8092105263157895,
+            0
+          ],
+          [
+            0.5041666666666667,
+            0.9131578947368421,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.9157894736842105,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 36,
+      "card": {
+        "corners": [
+          [
+            0.42291666666666666,
+            0.8236842105263158,
+            0
+          ],
+          [
+            0.4791666666666667,
+            0.8184210526315789,
+            0
+          ],
+          [
+            0.4895833333333333,
+            0.9078947368421053,
+            0
+          ],
+          [
+            0.4322916666666667,
+            0.9105263157894737,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 37,
+      "card": {
+        "corners": [
+          [
+            0.41458333333333336,
+            0.8210526315789474,
+            0
+          ],
+          [
+            0.471875,
+            0.8171052631578948,
+            0
+          ],
+          [
+            0.48125,
+            0.9026315789473685,
+            0
+          ],
+          [
+            0.42083333333333334,
+            0.9052631578947369,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 38,
+      "card": {
+        "corners": [
+          [
+            0.40625,
+            0.8184210526315789,
+            0
+          ],
+          [
+            0.46458333333333335,
+            0.8144736842105263,
+            0
+          ],
+          [
+            0.4708333333333333,
+            0.9,
+            0
+          ],
+          [
+            0.4125,
+            0.9026315789473685,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 39,
+      "card": {
+        "corners": [
+          [
+            0.40625,
+            0.8184210526315789,
+            0
+          ],
+          [
+            0.46458333333333335,
+            0.8144736842105263,
+            0
+          ],
+          [
+            0.4708333333333333,
+            0.9,
+            0
+          ],
+          [
+            0.4125,
+            0.9026315789473685,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 40,
+      "card": {
+        "corners": [
+          [
+            0.39375,
+            0.8131578947368421,
+            0
+          ],
+          [
+            0.4510416666666667,
+            0.8105263157894737,
+            0
+          ],
+          [
+            0.45625,
+            0.8947368421052632,
+            0
+          ],
+          [
+            0.39375,
+            0.8921052631578947,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 41,
+      "card": {
+        "corners": [
+          [
+            0.38958333333333334,
+            0.8105263157894737,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.45,
+            0.8921052631578947,
+            0
+          ],
+          [
+            0.38958333333333334,
+            0.8921052631578947,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 42,
+      "card": {
+        "corners": [
+          [
+            0.3875,
+            0.8105263157894737,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44895833333333335,
+            0.8894736842105263,
+            0
+          ],
+          [
+            0.38958333333333334,
+            0.8921052631578947,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "sliding-plane-with-hidden-far-right-corner",
+        "confidence": 0.8,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 43,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 44,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 45,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 46,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 47,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 48,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 49,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 50,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 51,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 52,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 53,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 54,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 55,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 56,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-plane-from-later-unoccluded-edges",
+        "confidence": 0.92,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 57,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 58,
+      "card": {
+        "corners": [
+          [
+            0.3885416666666667,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.44479166666666664,
+            0.8078947368421052,
+            0
+          ],
+          [
+            0.4479166666666667,
+            0.8881578947368421,
+            0
+          ],
+          [
+            0.38645833333333335,
+            0.8881578947368421,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 59,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 60,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 61,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 62,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 63,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 64,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 65,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 66,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 67,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 68,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 69,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 70,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 71,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 72,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 73,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 74,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 75,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 76,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 77,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 78,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 79,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 80,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 81,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 82,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 83,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 84,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 85,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 86,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 87,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 88,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 89,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 90,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 91,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 92,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 93,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 94,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 95,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 96,
+      "card": null,
+      "tracking": {
+        "method": "stationary-four-edge-and-marker-fit",
+        "confidence": 0.96,
+        "inferredCorners": []
+      }
+    }
+  ],
+  "calibrationSha256": "beb0a21d575c1c2bc32bfa0b391fb20afda431a7ba049c69125d7ff0e3efdd23"
+}

@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "dealer": "amira",
+  "id": "amira-room-composite-v1",
+  "referenceSpace": "1920x1080 approved plate; actor geometry unchanged",
+  "curveInput": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1
+  ],
+  "speech": {
+    "curve": [
+      0,
+      0.226,
+      0.444,
+      0.666,
+      0.78
+    ],
+    "saturation": 0.95,
+    "temperatureRGB": [
+      1.02,
+      0.975,
+      1.045
+    ]
+  },
+  "waiting": {
+    "curve": [
+      0,
+      0.244,
+      0.488,
+      0.712,
+      0.8
+    ],
+    "saturation": 0.98,
+    "temperatureRGB": [
+      1,
+      1,
+      1
+    ]
+  },
+  "edge": {
+    "erodePx": 1,
+    "featherPx": 2,
+    "wrapWidthPx": 2.5,
+    "wrapAmount": 0.15,
+    "roomRGB": [
+      0.71732,
+      0.4899,
+      0.24438
+    ],
+    "feltRGB": [
+      0.5344,
+      0.41805,
+      0.28475
+    ],
+    "lowerSpillAmount": 0.1,
+    "hair": {
+      "featherPx": 3.4,
+      "amount": 0.75,
+      "wrapAmount": 0.19,
+      "region": [0.28, 0.7, 0, 0.5],
+      "note": "Alpha only on dark pixels in the hair region; scaled from the 470px speech crop. No face or RGB blur."
+    }
+  },
+  "shape": {
+    "dodge": 0.1,
+    "burn": 0.12
+  },
+  "light": {
+    "keyPosition": [
+      -0.5,
+      4,
+      3
+    ],
+    "keyRGB": "#fff0df",
+    "keyIntensity": 2.4,
+    "hemisphereIntensity": 2.4,
+    "fillIntensity": 0.6,
+    "shadowRadius": 4,
+    "shadowMapSize": 1024,
+    "blurSamples": 8
+  },
+  "shadows": {
+    "contact": {
+      "opacity": 0.9,
+      "blurPx": 3,
+      "radiiPx": [
+        [
+          46,
+          10
+        ],
+        [
+          38,
+          9
+        ],
+        [
+          48,
+          12
+        ],
+        [
+          44,
+          12
+        ]
+      ],
+      "angles": [
+        0.78,
+        1.25,
+        0.4,
+        0.85
+      ],
+      "offsetPx": [
+        1,
+        4
+      ]
+    },
+    "cast": {
+      "opacity": 0.33,
+      "blurPx": 10,
+      "offsetPx": [
+        5,
+        -5
+      ],
+      "verticalCompression": 0.75,
+      "fadeDistancePx": 90,
+      "sourceBandAboveRailPx": 38
+    }
+  },
+  "finish": {
+    "grain": 0.015,
+    "brightness": 0.995,
+    "contrast": 1.01,
+    "vignette": 0.07
+  },
+  "contacts": "review/amira-composite/contacts.json",
+  "notes": [
+    "Fixed per-source-family curves; no exposure pumping",
+    "No re-key, RGB repaint, source rescale, regeneration or audio change",
+    "Speech plate is lower-resolution than waiting; missing detail cannot be recovered by a shader"
+  ],
+  "roomSha256": "8b7d4037c1599a690b65aec0c97240a9c7b15f47bcb4ad4a6e75668c83ae29d2"
+}

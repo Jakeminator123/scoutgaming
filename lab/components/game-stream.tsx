@@ -6,7 +6,7 @@ import type { PartnerTrace } from '../lib/partner-trace.mjs';
 import { buildPresentationSequence, type PresentationStep } from '../lib/presentation-sequence.mjs';
 import { resolveOriginalDefault, type OriginalMediaCatalog } from '../lib/original-media.mjs';
 import { videoFitsEvent } from '../lib/video-intake.mjs';
-import { neutralContext } from './test-context';
+import { observationContext, observedTable } from '../lib/observation-context.mjs';
 import { requestJson, type DirectorMode, type SimulationResult, type VideoInventory } from './studio-types';
 import { Stage, type PlaybackReceipt } from './stage';
 import { PresentationSequence } from './presentation-sequence';
@@ -18,6 +18,9 @@ import styles from './game-stream.module.css';
 export interface GameStreamProps {
   trace: PartnerTrace; project: StudioProject; videos: VideoInventory;
   originals: OriginalMediaCatalog | null; dealerId: DealerId; active: boolean;
+  autoFollow?: boolean;
+  followFromRecord?: number;
+  observationRevision?: number;
   onActivity: (entry: ActivityDraft) => void;
   onOpenEvent: (eventId: string, step: PresentationStep) => void;
 }
@@ -26,10 +29,10 @@ interface PlaybackRun {
   generation: number; controller: AbortController; step: PresentationStep;
   cleanup: () => void; finish: { resolve: () => void; reject: (error: Error) => void } | null;
 }
-export function GameStream({ trace, project, videos, originals, dealerId, active, onActivity, onOpenEvent }: GameStreamProps) {
-  const [view, setView] = useState<'original' | 'lab'>('original');
+export function GameStream({ trace, project, videos, originals, dealerId, active, autoFollow = false, followFromRecord, observationRevision = 0, onActivity, onOpenEvent }: GameStreamProps) {
   const [mode, setMode] = useState<DirectorMode>('off');
   const sequence = useMemo(() => buildPresentationSequence(trace.records, project), [trace.records, project]);
+  const table = useMemo(() => observedTable(trace.records, sequence), [trace.records, sequence]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [resultIdentity, setResultIdentity] = useState('');
@@ -44,6 +47,7 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
   const currentSequence = useRef(sequence); currentSequence.current = sequence;
   const currentContext = useRef({ active, project, dealerId, mode }); currentContext.current = { active, project, dealerId, mode };
   const live = useRef<{ controller: AbortController; queue: string[]; seen: Map<string, string>; notices: number; pumping: boolean } | null>(null);
+  const autoWasActive = useRef(false);
   const callback = useRef(playStep); callback.current = playStep;
 
   function cancel(message = 'Uppspelningen stoppades.') {
@@ -54,7 +58,13 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
   function stopFollow() { live.current?.controller.abort(); live.current = null; setFollowing(false); cancel(); }
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; live.current?.controller.abort(); live.current = null; cancel('Spelytan stängdes.'); }; }, []);
   useEffect(() => { stopFollow(); setResult(null); }, [dealerId, project, mode]);
-  useEffect(() => { if (!active || view !== 'lab') stopFollow(); }, [active, view]);
+  useEffect(() => { stopFollow(); setSelectedId(null); setResult(null); setError(''); autoWasActive.current = false; }, [observationRevision]);
+  useEffect(() => { if (!active) stopFollow(); }, [active]);
+  useEffect(() => {
+    if (autoFollow && active) startFollow(autoWasActive.current ? undefined : followFromRecord);
+    else if (!autoFollow) stopFollow();
+    autoWasActive.current = autoFollow;
+  }, [autoFollow, active, mode, dealerId, project, observationRevision]);
   useEffect(() => {
     const current = playback.current;
     if (current) {
@@ -87,12 +97,12 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
       } catch (cause) { if (mounted.current && live.current === run && !run.controller.signal.aborted) { setError(cause instanceof Error ? cause.message : 'Följningen stoppades.'); stopFollow(); } }
       finally { run.pumping = false; }
     })();
-  }, [sequence, trace.limited]);
-  function startFollow() {
+  }, [sequence, trace.limited, following]);
+  function startFollow(fromRecord?: number) {
     if (!active || playback.current || live.current) return;
     if (sequence.truncated || trace.limited) { setError('Observationen har nått sin gräns. Börja en ny observation innan du följer nya instruktioner.'); return; }
     setError('');
-    live.current = { controller: new AbortController(), queue: [], seen: new Map(sequence.steps.map(step => [step.id, stepIdentity(step)])), notices: sequence.notices.length, pumping: false };
+    live.current = { controller: new AbortController(), queue: fromRecord == null ? [] : sequence.steps.filter(step => step.recordIndex >= fromRecord).map(step => step.id), seen: new Map(sequence.steps.map(step => [step.id, stepIdentity(step)])), notices: sequence.notices.length, pumping: false };
     setFollowing(true);
   }
   async function playStep(requested: PresentationStep, { signal }: { signal: AbortSignal }) {
@@ -107,9 +117,12 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
     playback.current = current;
     signal.addEventListener('abort', abort, { once: true });
     const runId = `sequence-${step.id}-${current.generation}`;
+    const observed = observationContext(currentSequence.current, step, trace.records);
     onActivity({ source: step.replay ? 'lab' : 'partner', stage: 'input', status: 'received', runId, title: step.label, owner: 'Mottagen presentationsinstruktion', reason: 'Labbet återspelar publicerade kort, destination och exakt replik. Inget spelkommando skickas.', data: { source: step.source, replay: step.replay, requestId: step.requestId, version: step.version, presentationIndex: step.presentationIndex, event: step.event } });
     try {
-      const response = await requestJson<SimulationResult>('/api/presentation/decision', { method: 'POST', signal: controller.signal, body: JSON.stringify({ requestId: crypto.randomUUID(), project, dealerId, eventId: step.eventId, sourceEvent: step.event, sourceRef: { kind: step.replay ? 'import' : 'observed', channel: step.channel, requestId: step.requestId, version: step.version, presentationIndex: step.presentationIndex }, mode, context: neutralContext }) });
+      const decisionInput = { requestId: crypto.randomUUID(), project, dealerId, eventId: step.eventId, sourceEvent: step.event, sourceRef: { kind: step.replay ? 'import' : 'observed', channel: step.channel, requestId: step.requestId, version: step.version, presentationIndex: step.presentationIndex }, mode, context: observed.context };
+      onActivity({ source: 'lab', stage: 'input', status: 'received', runId, title: 'Underlag till presentationsbeslutet', owner: 'Labbets observerade kontext', reason: 'Exakt event och begränsad kontext från mottagna speldata. Saknad historik markeras; ingen spelhandling skickas.', data: { ...decisionInput, project: { gameId: project.gameId, revision: project.revision }, contextEvidence: observed.evidence } });
+      const response = await requestJson<SimulationResult>('/api/presentation/decision', { method: 'POST', signal: controller.signal, body: JSON.stringify(decisionInput) });
       const latest = currentSequence.current.steps.find(item => item.id === step.id);
       const context = currentContext.current;
       if (signal.aborted || controller.signal.aborted || playback.current !== current || !context.active || context.project !== project || context.dealerId !== dealerId || context.mode !== mode
@@ -117,7 +130,7 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
       if (!response.variant || !response.asset) throw new Error('Variantbeslutet saknar en spelbar variant eller 2D-reserv.');
       const completion = new Promise<void>((resolve, reject) => { current.finish = { resolve, reject }; });
       setResult(response); setResultIdentity(`${dealerId}:${stepIdentity(step)}`); setPlayId(current.generation); setPlaying(true); setBusy(false);
-      onActivity({ source: 'lab', stage: 'decision', status: 'selected', runId, title: response.variant?.label ?? step.label, owner: decisionAttribution(mode, response.decision?.reason, response.provider), reason: 'Presentation av mottagen instruktion. Manuellt neutral testkontext; inga spelarminnen antas.', data: { decision: response.decision, trace: response.trace, mode, contextOrigin: 'neutral-lab-context' } });
+      onActivity({ source: 'lab', stage: 'decision', status: 'selected', runId, title: response.variant?.label ?? step.label, owner: decisionAttribution(mode, response.decision?.reason, response.provider), reason: response.provider === 'remote_context_not_supported_baseline' ? 'Director-tjänsten saknar verifierat stöd för observerad chatt. Standard spelas tills tjänsten uppdaterats.' : 'Presentation av mottagen instruktion med observerade handresultat och tillgänglig chatt före eventet. Spelarhistorik och språk är okända.', data: { decision: response.decision, trace: response.trace, mode, contextEvidence: observed.evidence, contextReceipt: response.contextReceipt } });
       await completion;
     } finally {
       current.cleanup();
@@ -144,14 +157,19 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
   const video = videoId && sourceEvent ? videos.videos.find(video => video.id === videoId && video.available && videoFitsEvent(video, sourceEvent)) : null;
   const original = variant && line && variant.id === line.baselineVariantId && !variant.videoGenerationId && sourceEvent ? resolveOriginalDefault(originals, dealerId, sourceEvent) : null;
   return <div className={styles.surface}>
-    <div className={styles.modes} role="group" aria-label="Visning av spelet"><button aria-pressed={view === 'original'} onClick={() => setView('original')}>Referensspelet</button><button aria-pressed={view === 'lab'} onClick={() => setView('lab')}>Labbets presentation</button></div>
-    <div hidden={view !== 'original'}><ReferenceCapture onActivity={onActivity} /></div>
-    <div hidden={view !== 'lab'}>
-      <div className={styles.toolbar}><label>Variantval <select value={mode} disabled={playing || busy || following} onChange={e => setMode(e.target.value as DirectorMode)}><option value="off">Bara standard</option><option value="rules">Regler</option><option value="random">Slumpvariation</option><option value="active">OpenClaw</option><option value="shadow">Skuggläge</option></select></label><button className="text-button" disabled={!following && (playing || busy)} onClick={() => following ? stopFollow() : startFollow()}>{following ? 'Stoppa följning' : 'Följ nya instruktioner'}</button><small>{following ? 'Väntar på och spelar nya mottagna instruktioner i ordning.' : 'Samma speldata, labbets standard eller varianter.'}{mode === 'active' || mode === 'shadow' ? ' Uppspelning kan göra modellanrop.' : ''}</small></div>
-      {event && variant ? <Stage event={event} asset={currentResult?.asset ?? project.assets.find(asset => asset.id === variant.assetId)} dealer={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId} variantLabel={variant.label} playId={playId} playing={playing && active && view === 'lab' && !step?.blocked} hasResult={Boolean(currentResult)} busy={busy} videoUrl={video?.previewUrl} videoName={video?.label} videoMissing={Boolean(videoId && !video)} originalMedia={original} sourceIsObserved onPlaybackEvent={value => receipt(value, value.playId ?? playId)} onPlay={() => { if (step && !following && !playing && !busy) void playStep(step, { signal: new AbortController().signal }).catch(cause => { if (mounted.current) setError(cause.message); }); }} /> : <div className={styles.empty}><strong>Väntar på spelinstruktioner</strong><p>Anslut Partner-strömmen och spela i referensspelet. Här används mottagna speldata för labbets presentation.</p></div>}
+    <div className={styles.comparison}>
+    <section className={styles.column} aria-label="Originalspelet"><h4>Originalspelet</h4><ReferenceCapture onActivity={onActivity} /></section>
+    <section className={styles.column} aria-label="Labbets presentation"><h4>Labbets presentation <small>{following ? 'Följer nya speldata' : 'Pausad'}</small></h4>
+      <div className={styles.toolbar}><label>Variantval <select value={mode} disabled={playing || busy} onChange={e => { stopFollow(); setMode(e.target.value as DirectorMode); }}><option value="off">Bara standard</option><option value="rules">Regler</option><option value="random">Slumpvariation</option><option value="active">OpenClaw</option><option value="shadow">Skuggläge</option></select></label><button className="text-button" disabled={!following && (playing || busy)} onClick={() => following ? stopFollow() : startFollow()}>{following ? 'Pausa labbet' : 'Följ nya instruktioner'}</button><small>{following ? 'Varje steg väntar på labbspelarens avslut.' : 'Samma speldata, labbets standard eller varianter.'}{mode === 'active' || mode === 'shadow' ? ' Uppspelning kan göra modellanrop.' : ''}</small></div>
+      {event && variant ? <Stage event={event} asset={currentResult?.asset ?? project.assets.find(asset => asset.id === variant.assetId)} dealer={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId} variantLabel={variant.label} playId={playId} playing={playing && active && !step?.blocked} hasResult={Boolean(currentResult)} busy={busy} videoUrl={video?.previewUrl} videoName={video?.label} videoMissing={Boolean(videoId && !video)} originalMedia={original} sourceIsObserved onPlaybackEvent={value => receipt(value, value.playId ?? playId)} onPlay={() => { if (step && !following && !playing && !busy) void playStep(step, { signal: new AbortController().signal }).catch(cause => { if (mounted.current) setError(cause.message); }); }} /> : <div className={styles.empty}><strong>Väntar på spelinstruktioner</strong><p>Tryck Anslut och spela i originalfliken. Labbet följer nya mottagna instruktioner automatiskt.</p></div>}
       {error ? <p role="alert">{error}</p> : null}
+    </section>
     </div>
-    <PresentationSequence sequence={sequence} selectedId={step?.id} busy={busy || following || playing} onSelect={next => { cancel(); setSelectedId(next.id); setResult(null); }} onPlay={async (next, options) => { setView('lab'); await playStep(next, options); }} onOpenEvent={(id, next) => { stopFollow(); onOpenEvent(id, next); }} />
-    <p className={styles.note}>Bildströmmen visar originalfliken. Sekvensen bygger på publicerade instruktioner. Labbets klippstart och klippslut loggas separat; luckor i originalströmmen fylls inte ut.</p>
+    <section className={styles.publicTable} aria-label="Mottaget offentligt bord"><h4>Senast mottagna bord <small>{table.version == null ? 'Ingen speldata ännu' : `version ${table.version}`}</small></h4>
+      <p className={styles.note}>{table.partial ? 'Byggt från mottagna instruktioner; historik och split-omflyttningar kan saknas.' : 'Spelserverns offentliga svar. Animationen kan fortfarande spela tidigare steg.'}</p>
+      {table.round ? <><div className={styles.cardRow}><strong>Dealer</strong>{(table.round.dealer ?? []).map((card: { r?: string; s?: string; faceDown?: boolean }, index: number) => <span className={styles.card} key={index}>{card.faceDown || !card.r ? 'Dolt' : `${card.r}${card.s}`}</span>)}{table.round.holeDraw != null && !(table.round.dealer ?? []).some((card: { shoeDraw?: number }) => card.shoeDraw === table.round.holeDraw) ? <span className={styles.card}>Dolt</span> : null}</div><div className={styles.hands}>{(table.round.hands ?? []).map((hand: { box: number; cards: { r?: string; s?: string }[]; outcome?: string }, index: number) => <div className={styles.cardRow} key={`${hand.box}:${index}`}><strong>Plats {hand.box + 1}</strong>{(hand.cards ?? []).map((card, ci) => <span className={styles.card} key={ci}>{card.r ? `${card.r}${card.s}` : 'Dolt'}</span>)}{hand.outcome ? <small>{hand.outcome}</small> : null}</div>)}</div></> : <p className={styles.note}>Inget pågående bord i mottagen data.</p>}
+    </section>
+    <details className={styles.details}><summary>Spelsekvens · {sequence.steps.length} instruktioner · {sequence.batchCount} kommandosvar</summary><PresentationSequence sequence={sequence} selectedId={step?.id} busy={busy || following || playing} onSelect={next => { cancel(); setSelectedId(next.id); setResult(null); }} onPlay={playStep} onOpenEvent={(id, next) => { stopFollow(); onOpenEvent(id, next); }} /></details>
+    <p className={styles.note}>Samma publicerade speldata används i båda vyerna. Originalets bild och uppspelningskvitton, labbets beslut och labbets klippstarter är separata observationer.</p>
   </div>;
 }

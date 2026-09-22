@@ -1,6 +1,6 @@
 # API:er och miljövariabler — vad hör ihop?
 
-Kontrollerat mot koden 2026-09-21 och lokala filers **variabelnamn** 2026-09-22.
+Kodförklaringar uppdaterade 2026-09-22; lokala filers **variabelnamn** inventerades 2026-09-22.
 Här finns namn, placeringar och ansvar,
 **inga hemliga värden**. Filen är dokumentation; programmet läser inte den
 som konfiguration. En konfigurerad anslutning är inte ett verifierat driftläge.
@@ -69,6 +69,25 @@ Variabelnamnet är en lokal konvention; det är inte ett krav från Bettalotto.
 **Dagens videobank läser lokalt material och register.** Att lägga en token
 i `.env` startar ingen automatisk nedladdning eller synkning av generations-API:t.
 `LAB_VIDEO_ARCHIVE` i `lab/.env.local` kan ange var originalarkivet finns.
+Labbets befintliga Windows-förval är
+`C:/Users/jakem/CroupierAssets/bettalotto-generations`. Där matchade alla
+224 snapshot-ID:n sina förväntade filstorlekar i metadata-inventeringen
+22 september. Ingen generell hash-/innehålls- eller visuell acceptans följer
+av detta. Mappen är ett externt medieregister, inte det pensionerade
+personarkivet. Det är inte belagt att den är samma tidigare omtalade slaskmapp.
+
+**Ny valfri kodinställning, inte ett namn funnet i env-inventeringen ovan:**
+`CROUPIER_GENERATIONS_DIR` på produktservern anger en befintlig lokal
+generationskatalog för BO och Generations-API. Utan värde används fortsatt
+`web/public/bo/gen`. Den ändrar inga API-nycklar, behörigheter eller filbytes.
+BO-routen kräver BO-session; Generations-API kräver sin Bearer-lästoken.
+Endast katalogkända UUID:er/filer får läsas, med realpath-/symlänkskydd och
+byte-range/HEAD-stöd. Detta är inte ett allmänt filsystem-API.
+
+`node tools/start-local-comparison.mjs --media-directory "C:/Users/jakem/CroupierAssets/bettalotto-generations"`
+sätter både denna variabel och labbets `LAB_VIDEO_ARCHIVE` i de isolerade
+testprocesserna. Utan flaggan används fixture:ns tomma temporära mediekatalog.
+Ingen privat env-fil ändras och det valda arkivet lämnas kvar vid avslut.
 
 **Hämta videokarta** på `/activity` läser nu explicit
 `GET /api/v1/generations/mapping` med samma separata token. För just den
@@ -111,11 +130,12 @@ Live-ping verifierade **launch + events**. `events` är en separat lässcope;
 nyckeln saknar `play` och `wallet`. Labbet kan verifiera, öppna originalspelet
 och observera strömmen; det skickar inga bordskommandon eller saldoändringar.
 
-Kevin beskriver launch → spel → SSE med samma nyckel/spelare. Hämtad serverkod
-visar publicering från Partner-table, men ingen motsvarande native-koppling.
-Liveöppning och SSE fungerar; faktisk rundpublicering är fortfarande oprövad.
-En korrekt ansluten ström kan vara tom. Ingen replay finns efter avbrott.
-**Anslut läsande** i Händelseloggen startar observation, inte en spelrunda.
+Arbetsgrenens native-server publicerar nu efter commit till den verifierade
+Partner-launch-sessionen. Den läsande native-observern kompletterar SSE med
+publika kommandosvar och instrumenterade klientsignaler. **Anslut** samordnar
+spelöppning och labbföljning; det skickar ingen spelhandling. Spela i original-
+fliken. En ansluten transport kan vara tom och ingen replay finns efter avbrott.
+Lokala prov bevisar inte att motsvarande kod är deployad på Bettalotto.
 
 ## 3. Vår Director — labbets kontakt med OpenClaw
 

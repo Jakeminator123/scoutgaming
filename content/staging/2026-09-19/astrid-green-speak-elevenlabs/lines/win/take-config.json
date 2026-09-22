@@ -1,0 +1,22 @@
+{
+  "generationId": "8DAy8aReZIWwp4p4zpvd",
+  "jobId": "8DAy8aReZIWwp4p4zpvd",
+  "provider": "ElevenLabs Image & Video API, model creatify-aurora 720p",
+  "action": "speak",
+  "line": "win",
+  "sourceSha256": "8f0fc3203509c8b54991e1155fa2281285b5c32d5de76cbd64923294ac54a8e5",
+  "nativeTake": "take-win-creatify-aurora.mp4",
+  "nativeTakeSha256": "0cb38ae7b936323b44c06e697970b77e065a6750229758b73bad70dfcb394cd3",
+  "status": "Kevin 2026-09-19: approved the greeting install and asked for all other lines the same way. Zero generation.",
+  "registration": {
+    "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+    "scale": 1.5,
+    "offset": [
+      0,
+      15
+    ],
+    "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+    "sourceFrames": 89
+  },
+  "readyPose": "frame 0 and the last frame (plate ready pose)"
+}

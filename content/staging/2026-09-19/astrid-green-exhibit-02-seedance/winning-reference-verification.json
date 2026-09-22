@@ -1,0 +1,16 @@
+[
+  {
+    "mediaId": "43039066-9e6a-4e1d-9628-9e6a7629c194",
+    "savedFile": "winning-start.jpg",
+    "sha256": "65f5a02c5400702cc8958e9cf130b2bb5aa6fac2247a11eee0801170d632c013",
+    "matchesExistingFile": true,
+    "existingFile": "content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/far-left-anchor/motion/ready.jpg"
+  },
+  {
+    "mediaId": "0dc1ddf8-377d-43c4-84da-5188444aa08a",
+    "savedFile": "winning-end.jpg",
+    "sha256": "939dd655c7de51ce874507e78277f3e164bd4c8ddaadf3f3357920f68acec574",
+    "matchesExistingFile": true,
+    "existingFile": "content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/camera-review/seven-targets/box1-trial-spec/endpoint-upload.jpg"
+  }
+]

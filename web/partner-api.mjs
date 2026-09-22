@@ -17,6 +17,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
   db.exec(`CREATE TABLE IF NOT EXISTS partner_players (key_id TEXT NOT NULL, partner_player TEXT NOT NULL, player_id TEXT NOT NULL, PRIMARY KEY (key_id, partner_player))`);
   db.exec(`CREATE TABLE IF NOT EXISTS partner_idem (key_id TEXT NOT NULL, request_id TEXT NOT NULL, response TEXT NOT NULL, PRIMARY KEY (key_id, request_id))`);
 
+  // events = observe the SSE stream only; play implies it. A key with just events cannot launch or act.
   const SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
   const keys = {
     list() { return boDb.prepare('SELECT id, name, key, scopes, wallet_url, ip_allow, created_by, created_at, last_used, revoked_at FROM api_keys ORDER BY created_at DESC').all().map(r => ({ ...r, scopes: JSON.parse(r.scopes), key: r.key.slice(0, 12) + '…' })); },
@@ -38,7 +39,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       const ts = Math.floor(Date.now() / 1000), body = JSON.stringify({ playerId: pid, currency: currency || 'EUR' });
       const sig = createHmac('sha256', row.secret).update(`${ts}.POST./api/v1/launch.${body}`).digest('hex');
       return { playerId: pid, playerRef: p.id, balance: p.balance, currency: p.currency, expiresIn: 21600,
-        url: `${publicUrl}/?dealer=astrid&performance=staged&motion=smooth60&launch=${tok}`,
+        url: `${publicUrl}/?dealer=astrid&launch=${tok}`,
         curlLines: [`curl -X POST ${publicUrl}/api/v1/launch`, `  -H 'Content-Type: application/json'`, `  -H 'X-Api-Key: ${row.key}'`, `  -H 'X-Timestamp: ${ts}'`, `  -H 'X-Signature: ${sig}'`, `  -d '${body}'`],
         signedString: `${ts}.POST./api/v1/launch.${body}`,
         curlNote: 'Signature valid 5 minutes. signedString is the exact input to HMAC-SHA256 with the key secret.' };
@@ -129,7 +130,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
         const { playerId, currency, language, returnUrl } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });
         const p = playerFor(k, playerId, currency);
         const tok = jwtSign({ sub: p.id, partner: k.id, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
-        return send(200, { url: `${publicUrl}/?dealer=astrid&performance=staged&motion=smooth60&launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
+        return send(200, { url: `${publicUrl}/?dealer=astrid&launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
       if (pathname === '/api/v1/table') { const e = need(k, 'play'); if (e) return send(e.status, e);
         const { playerId, requestId, ...cmd } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });
         if (cmd.op !== 'state') { if (typeof requestId !== 'string' || !requestId) return send(400, { error: 'requestId required (idempotency)' });

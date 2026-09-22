@@ -4,7 +4,7 @@ Arbetsgren: `jakeminator123/work`. Detta dokument samlar leveransen i
 `d382b46` och fortsättningen med gemensamma presentationsbeslut och exakta
 talexempel. Texten nedan dokumenterar det då lokala kodarbetet. Den efterföljande V5-leveransen
 samlar dokumentation, kontraktskomplettering och publicering; se
-[V5](../../docs/animation-events/v5-8-days-mvp/README.md). Produktdeploy ingår inte.
+[V5](../../docs/animation-events/v5-7-days-mvp/README.md). Produktdeploy ingår inte.
 
 ## Så fungerar kedjan
 

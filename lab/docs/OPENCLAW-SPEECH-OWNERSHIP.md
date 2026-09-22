@@ -7,9 +7,16 @@ Kevin och Emil levererar matchande läppsynk, material och acceptans. Skapa inte
 en ny parallell kö eller en andra agent som väljer dialog.
 
 Detta är den delade källan för uppdraget. Den privata mappens gamla promptlänk
-pekar hit. [V5-planen](../../docs/animation-events/v5-8-days-mvp/s06-plan.md)
+pekar hit. [V5-planen](../../docs/animation-events/v5-7-days-mvp/s06-plan.md)
 anger omfattning och prioritering. Instruktionerna nedan gäller kommande
 implementation; inga föreslagna talfält är ett redan driftsatt API.
+
+**Tillkommet 22 september:** labbets variantkontrakt kan redan föra vidare
+begränsad native-chatt som `context.observedChat` (8 meddelanden, högst
+600 tecken vardera/3 200 totalt, före eventet och med proveniens). Director
+måste kvittera kontextkontrakt v2; äldre remote ger standardreserv tills
+redeploy/kompatibilitetsprov är gjort. Detta är variantunderlag, inte
+implementation av talbesluten och den gemensamma produktkö som beställs nedan.
 
 Arbeta i det befintliga Croupier-repot på Jakobs arbetsgren. Skapa inte en ny
 spelmotor, en parallell app eller ett nytt mediabibliotek. Kontrollera branch,

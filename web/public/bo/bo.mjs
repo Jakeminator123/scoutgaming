@@ -11,6 +11,7 @@ const SECTIONS=[
  ['ops','Operations','SCOUT LIVE CASINO · ALL SYSTEMS'],
  ['voice','Voice Lines','SYNC VERIFICATION · EVERY TAKE, AS THE GAME PLAYS IT'],
  ['clips','Dealing Clips','CLIP LIBRARY · TRANSPARENT FILTER · ASSIGN TO TABLE PARTS'],
+ ['gens','Generations','EVERY HIGGSFIELD VIDEO · WITH ITS PROMPT'],
  ['apikeys','API Keys','PARTNER INTEGRATIONS · SIGNED KEYS · SEAMLESS WALLET'],
  ['emails','Emails','BRAND TEMPLATES · TRANSACTIONAL & LIFECYCLE'],
  ['users','Users','CRAIG · ROLES & INVITES'],
@@ -22,7 +23,7 @@ const SECTIONS=[
  ['pay','Payments','WALLET · LEDGER'],
  ['shoes','Shoes & Decks','GAME INTEGRITY · RNG'],
 ];
-const ICONS={apikeys:'<circle cx="8" cy="14" r="4"/><path d="M11 11 L20 2 M16 6 l2 2 M13 9 l2 2"/>',clips:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9 l5 3 -5 3 Z"/>',users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+const ICONS={gens:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 9 l5 3 -5 3 z"/>',apikeys:'<circle cx="8" cy="14" r="4"/><path d="M11 11 L20 2 M16 6 l2 2 M13 9 l2 2"/>',clips:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9 l5 3 -5 3 Z"/>',users:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20 c1.2-4.5 4-6.5 7-6.5 s5.8 2 7 6.5"/><path d="M17 3 l1 2 2 .3 -1.5 1.5 .4 2 -1.9 -1 -1.9 1 .4 -2 L14 5.3 16 5 Z"/>',emails:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 l9 6 9-6"/>',voice:'<path d="M12 4 v16 M8 8 v8 M16 8 v8 M4 11 v2 M20 11 v2"/>',ops:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
  rooms:'<ellipse cx="12" cy="12" rx="9" ry="6"/><path d="M5 16 v3 M19 16 v3"/>',
  dealers:'<circle cx="12" cy="9" r="4"/><path d="M4 21 c1.5-5 4.5-7 8-7 s6.5 2 8 7"/>',
  pit:'<path d="M12 3 L20 6 V12 C20 17 16.5 20 12 21.5 C7.5 20 4 17 4 12 V6 Z"/>',
@@ -42,6 +43,7 @@ addEventListener('pagehide',()=>mediaPreviews.release(document));
 addEventListener('pageshow',event=>{if(event.persisted)void render(location.hash.slice(1)||'ops');});
 
 async function render(id){
+  render.closePreview?.(false);
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.id===id));
   const meta=SECTIONS.find(s=>s[0]===id)||SECTIONS[0];
   $('#title').textContent=meta[1]; $('#sub').textContent=meta[2];
@@ -113,9 +115,109 @@ async function render(id){
     draw(null);
     return;
   }
+  if(id==='gens'){
+    const [gens,vr]=await Promise.all([fetch('/bo/generations.json').then(r=>r.json()),api('/api/bo/gen-verdicts')]);
+    let verdicts=vr.genVerdicts??{};let landings=vr.genLandings??{};const GPARTS=vr.parts??['box0','box1','box2','box3','box4','box5','box6','dealer-up','dealer-hole','return','idle'];
+    const GP={box0:'Box 0 (far left)',box1:'Box 1',box2:'Box 2',box3:'Box 3 (centre)',box4:'Box 4',box5:'Box 5',box6:'Box 6 (far right)','dealer-up':'Dealer upcard','dealer-hole':'Dealer hole card',return:'Return to idle',idle:'Idle'};
+    const landBadge=id=>landings[id]?`<span class="pill live" style="background:#7cc6ff;color:#111">&#9673; LANDED &middot; ${(GP[landings[id].part]||landings[id].part).toUpperCase()}</span>`:'';
+    const st=render.genState??={q:'',model:'',croupier:true,v:'todo',land:''};
+    const models=[...new Set(gens.map(g=>g.model))].sort();
+    const byId=Object.fromEntries(gens.map(g=>[g.id,g]));
+    const esc=t=>String(t??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+    const thumb=g=>g.thumb?`/bo/gen/${g.id}-thumb${(g.thumb.match(/\.\w+$/)||['.jpg'])[0]}`:'';
+    const badge=g=>{const v=verdicts[g.id]?.verdict;return v==='want'?pill('&#10003; WANT','live'):v==='no'?`<span class="pill" style="border-color:var(--red);color:var(--red)">&#10006; DON'T WANT</span>`:'';};
+    const setVerdict=async(id,verdict,reason)=>{const r=await api('/api/bo/gen-verdict',{id,verdict,reason});if(!r.ok){toast(r.error||'failed');return false;}verdicts=r.genVerdicts;return true;};
+    const draw=()=>{
+      mediaPreviews.release(C);
+      const q=st.q.toLowerCase();
+      const base=gens.filter(g=>(!st.croupier||g.croupier)&&(!st.model||g.model===st.model)&&(!q||g.prompt.toLowerCase().includes(q)||g.id.includes(q))&&(!st.land||(st.land==='verified'?!!landings[g.id]:st.land==='unmarked'?!landings[g.id]:landings[g.id]?.part===st.land)));
+      const count=k=>base.filter(g=>k==='all'||(k==='todo'?!verdicts[g.id]:verdicts[g.id]?.verdict===k)).length;
+      const list=base.filter(g=>st.v==='all'||(st.v==='todo'?!verdicts[g.id]:verdicts[g.id]?.verdict===st.v));
+      C.innerHTML=`<div class="panel"><div class="t">FILTERS &middot; ${list.length} OF ${gens.length} GENERATIONS</div><div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input id="g-q" value="${esc(st.q)}" placeholder="search prompts" style="flex:1;min-width:200px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)">
+        <select id="g-model"><option value="">All models</option>${models.map(m=>`<option ${st.model===m?'selected':''}>${m}</option>`).join('')}</select>
+        <label style="font-size:11px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="g-cr" ${st.croupier?'checked':''}> Croupier only</label>
+        <select id="g-land"><option value="">Landed at: any</option><option value="verified" ${st.land==='verified'?'selected':''}>Landed at: marked</option><option value="unmarked" ${st.land==='unmarked'?'selected':''}>Landed at: not marked</option>${GPARTS.map(p=>`<option value="${p}" ${st.land===p?'selected':''}>Landed at: ${GP[p]||p}</option>`).join('')}</select>
+        <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['todo','UNREVIEWED'],['want','&#10003; WANT'],['no',"&#10006; DON'T WANT"],['all','ALL']].map(([k,l])=>`<button data-v="${k}" style="border:0;border-radius:0;${st.v===k?(k==='no'?'background:rgba(255,80,80,.18);color:var(--red)':'background:rgba(214,255,58,.15);color:var(--lime)'):''}">${l} (${count(k)})</button>`).join('')}</span>
+        ${list.length?`<button id="g-swipe" style="margin-left:auto;background:var(--lime);color:#111;border-color:var(--lime)">&#8646; SWIPE MODE (${list.length})</button>`:''}
+      </div></div>
+      <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+      ${list.map(g=>`<div data-g="${g.id}" style="border:1px solid ${verdicts[g.id]?.verdict==='want'?'var(--lime)':verdicts[g.id]?.verdict==='no'?'var(--red)':'var(--line)'};border-radius:10px;overflow:hidden;background:var(--panel2);position:relative">
+        <div style="position:absolute;top:8px;left:8px;z-index:2;display:flex;gap:4px">${badge(g)}<span data-gland-badge="${g.id}">${landBadge(g.id)}</span></div>
+        <video data-bo-preview src="/bo/gen/${g.id}.mp4" poster="${thumb(g)}" preload="none" controls muted playsinline style="width:100%;aspect-ratio:16/9;display:block;background:#000;object-fit:contain"></video>
+        <div style="padding:9px 11px">
+          <div style="display:flex;justify-content:space-between;gap:6px"><span class="mono" style="font-size:10px">${g.at.replace('T',' ')}</span>${pill(g.model,'live')}</div>
+          <div style="font-size:10px;color:var(--mut);margin-top:3px">${g.duration?g.duration+'s':''}${g.aspect?' &middot; '+g.aspect:''} &middot; <span class="mono">${g.id.slice(0,8)}</span>${verdicts[g.id]?.reason?` &middot; ${esc(verdicts[g.id].reason)}`:''}</div>
+          <div data-p style="font-size:11px;margin-top:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer" title="click to expand">${esc(g.prompt)||'<span style="color:var(--mut)">no prompt</span>'}</div>
+          <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="mono" style="font-size:9px;letter-spacing:.1em;color:var(--mut);white-space:nowrap">LANDED AT</span><select data-gland-part="${g.id}" style="flex:1 1 130px;min-width:0"><option value="">not marked</option>${GPARTS.map(p=>`<option value="${p}" ${landings[g.id]?.part===p?'selected':''}>${GP[p]||p}</option>`).join('')}</select><input data-gland-note="${g.id}" value="${esc(landings[g.id]?.note)}" placeholder="note" style="flex:1 1 80px;min-width:0;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-gland="${g.id}" style="flex:0 0 auto;border-color:#7cc6ff;color:#7cc6ff;font-size:9px">MARK</button></div>
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            ${(v=>`<button data-set="${g.id}" data-to="want" style="font-size:9px;${v==='want'?'background:var(--lime);color:#111;border-color:var(--lime)':'border-color:var(--lime);color:var(--lime)'}">&#10003; WANT</button><button data-set="${g.id}" data-to="no" style="font-size:9px;${v==='no'?'background:var(--red);color:#111;border-color:var(--red)':'border-color:rgba(255,80,80,.5);color:var(--red)'}">&#10006; DON'T WANT</button>${v?`<button data-set="${g.id}" data-to="" style="font-size:9px">&#8630; UNDO</button>`:''}`)(verdicts[g.id]?.verdict)}
+            <button data-copy="${g.id}" style="font-size:9px">COPY PROMPT</button><a href="/bo/gen/${g.id}.mp4" download style="font-size:9px" class="mono">MP4</a></div>
+        </div></div>`).join('')}</div>`;
+      mediaPreviews.bind(C);
+      $('#g-q').oninput=e=>{st.q=e.target.value;clearTimeout(draw.t);draw.t=setTimeout(()=>{if(location.hash!=='#gens')return;draw();const i=$('#g-q');i.focus();i.setSelectionRange(i.value.length,i.value.length);},250);};
+      $('#g-model').onchange=e=>{st.model=e.target.value;draw();};
+      $('#g-cr').onchange=e=>{st.croupier=e.target.checked;draw();};
+      $('#g-land').onchange=e=>{st.land=e.target.value;draw();};
+      C.querySelectorAll('[data-gland]').forEach(b=>b.onclick=async()=>{const id=b.dataset.gland;const part=C.querySelector(`[data-gland-part="${id}"]`).value;const note=C.querySelector(`[data-gland-note="${id}"]`).value;const r=await api('/api/bo/gen-landing',{id,part:part||null,note});if(!r.ok){toast(r.error||'failed');return;}landings=r.genLandings;const bd=C.querySelector(`[data-gland-badge="${id}"]`);if(bd)bd.innerHTML=landBadge(id);const t=b.textContent;b.textContent='\u2713 MARKED';b.style.background='#7cc6ff';b.style.color='#111';setTimeout(()=>{b.textContent=t;b.style.background='';b.style.color='';},1400);toast(part?`${id.slice(0,8)} landed at ${GP[part]||part}`:'landing cleared');});
+      C.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{st.v=b.dataset.v;draw();});
+      C.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>{el.style.webkitLineClamp=el.style.webkitLineClamp==='unset'?'5':'unset';});
+      C.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(byId[b.dataset.copy].prompt);}catch{}toast('prompt copied');});
+      C.querySelectorAll('[data-set]').forEach(b=>b.onclick=async()=>{if(await setVerdict(b.dataset.set,b.dataset.to||null)){toast(b.dataset.to==='want'?'want':b.dataset.to==='no'?"don't want":'reset');draw();}});
+      const sw=$('#g-swipe');if(sw)sw.onclick=()=>swipe(list.map(g=>g.id));
+    };
+    // Swipe mode: right = want, left = don't want, Z = undo, Esc = close.
+    const swipe=ids=>{
+      mediaPreviews.release(C);
+      let i=0,busy=false,closed=false;const hist=[];const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;touch-action:none';
+      document.body.appendChild(ov);
+      const close=(redraw=true)=>{if(closed)return;closed=true;document.removeEventListener('keydown',key);mediaPreviews.release(ov);ov.remove();render.closePreview=null;if(redraw)draw();};
+      render.closePreview=close;
+      const show=()=>{
+        if(closed)return;
+        mediaPreviews.release(ov);
+        if(i>=ids.length){ov.innerHTML=`<div class="mono" style="letter-spacing:.14em;color:var(--lime)">ALL ${ids.length} SWIPED</div><div style="display:flex;gap:10px">${hist.length?'<button data-u>&#8630; UNDO</button>':''}<button data-x>CLOSE</button></div>`;ov.querySelector('[data-x]').onclick=close;const u=ov.querySelector('[data-u]');if(u)u.onclick=undo;return;}
+        const g=byId[ids[i]];
+        ov.innerHTML=`<div class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--mut)">${i+1} / ${ids.length} &middot; &larr; DON'T WANT &middot; &rarr; WANT &middot; Z UNDO &middot; ESC CLOSE</div>
+          <div data-card style="width:min(820px,100%);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel2);transition:transform .22s,opacity .22s;position:relative;cursor:grab">
+            <div style="position:absolute;top:16px;left:16px;right:16px;z-index:2;display:flex;justify-content:space-between;pointer-events:none"><span data-l class="mono" style="opacity:0;border:2px solid var(--red);color:var(--red);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">DON'T WANT</span><span data-r class="mono" style="opacity:0;border:2px solid var(--lime);color:var(--lime);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">WANT</span></div>
+            <video data-bo-preview src="/bo/gen/${g.id}.mp4" poster="${thumb(g)}" autoplay loop muted playsinline style="width:100%;max-height:55vh;display:block;background:#000;object-fit:contain;pointer-events:none"></video>
+            <div style="padding:10px 14px"><div style="display:flex;justify-content:space-between;gap:8px"><span class="mono" style="font-size:10px">${g.at.replace('T',' ')} &middot; ${g.duration?g.duration+'s':''} &middot; ${g.id.slice(0,8)}</span>${pill(g.model,'live')}</div>
+            <div style="font-size:11px;margin-top:6px;line-height:1.45;max-height:16vh;overflow:auto">${esc(g.prompt)}</div></div>
+          </div>
+          <input data-reason placeholder="why not (optional)" style="width:min(820px,100%);font-size:12px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button data-a="left" style="border-color:rgba(255,80,80,.5);color:var(--red);padding:10px 18px">&#10006; DON'T WANT</button><button data-a="skip" style="padding:10px 18px">SKIP</button><button data-a="right" style="border-color:var(--lime);color:var(--lime);padding:10px 18px">&#10003; WANT</button><button data-u ${hist.length?'':'disabled'}>&#8630; UNDO</button><button data-x>CLOSE</button></div>`;
+        mediaPreviews.bind(ov);
+        ov.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>act(b.dataset.a));
+        ov.querySelector('[data-u]').onclick=undo;ov.querySelector('[data-x]').onclick=close;
+        const card=ov.querySelector('[data-card]');let x0=null,dx=0;
+        card.onpointerdown=e=>{x0=e.clientX;card.setPointerCapture(e.pointerId);card.style.transition='none';};
+        card.onpointermove=e=>{if(x0===null)return;dx=e.clientX-x0;card.style.transform=`translateX(${dx}px) rotate(${dx/20}deg)`;ov.querySelector('[data-l]').style.opacity=Math.max(0,-dx/120);ov.querySelector('[data-r]').style.opacity=Math.max(0,dx/120);};
+        card.onpointerup=()=>{if(x0===null)return;x0=null;card.style.transition='';if(dx>120)act('right');else if(dx<-120)act('left');else{card.style.transform='';ov.querySelectorAll('[data-l],[data-r]').forEach(e=>e.style.opacity=0);}dx=0;};
+      };
+      const act=async dir=>{
+        const g=byId[ids[i]];if(!g||busy||closed)return;busy=true;
+        try{
+          const prev=verdicts[g.id]?.verdict??null;
+          if(dir!=='skip'){const ok=await setVerdict(g.id,dir==='right'?'want':'no',dir==='left'?ov.querySelector('[data-reason]').value:'');if(!ok)return;}
+          if(closed)return;
+          hist.push({id:g.id,prev,skip:dir==='skip'});
+          const card=ov.querySelector('[data-card]');card.style.transform=dir==='left'?'translateX(-120vw) rotate(-25deg)':dir==='right'?'translateX(120vw) rotate(25deg)':'translateY(-120vh)';card.style.opacity=0;
+          await new Promise(r=>setTimeout(r,220));i++;show();
+        }finally{busy=false;}
+      };
+      const undo=async()=>{const h=hist.pop();if(!h)return;if(!h.skip)await setVerdict(h.id,h.prev);i--;show();toast('undone');};
+      const key=e=>{if(e.target.matches('input,select'))return;if(e.key==='ArrowLeft')act('left');else if(e.key==='ArrowRight')act('right');else if(e.key==='ArrowDown'||e.key===' '){e.preventDefault();act('skip');}else if(e.key==='z'||e.key==='Backspace')undo();else if(e.key==='Escape')close();};
+      document.addEventListener('keydown',key);
+      show();
+    };
+    draw();
+    return;
+  }
   if(id==='clips'){
     const lib=await api('/api/bo/clips');
-    const st=render.clipState??={dealer:'astrid',part:'',mode:'transparent',sort:'dealer',selected:null};
+    const st=render.clipState??={dealer:'astrid',part:'',mode:'transparent',sort:'dealer',selected:null,landing:''};
     const PARTN={box0:'Box 0 (far left)',box1:'Box 1',box2:'Box 2',box3:'Box 3 (centre)',box4:'Box 4',box5:'Box 5',box6:'Box 6 (far right)','dealer-up':'Dealer upcard','dealer-hole':'Dealer hole card',return:'Return to idle',idle:'Idle'};
     const byId=Object.fromEntries(lib.clips.map(c=>[c.id,c]));
     const assignedParts=id=>Object.entries(lib.assignments[st.dealer]??{}).filter(([,a])=>a.clip===id).map(([p])=>p);
@@ -126,8 +228,8 @@ async function render(id){
     const markCard=id=>{const el=C.querySelector(`[data-clip="${id}"]`);if(!el)return;const ps=assignedParts(id);el.style.borderColor=ps.length||st.selected===id?'var(--lime)':'var(--line)';el.style.boxShadow=ps.length?'0 0 0 2px rgba(214,255,58,.25)':'';el.querySelector('[data-badge]').innerHTML=cardBadge(byId[id]);};
     const draw=()=>{
       mediaPreviews.release(C);
-      const never=lib.neverAgain??{};
-      let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='never'?!!never[c.id]:!never[c.id]&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent))));
+      const never=lib.neverAgain??{};const land=lib.landings??{};
+      let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='never'?!!never[c.id]:!never[c.id]&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent)))&&(!st.landing||(st.landing==='verified'?!!land[c.id]:st.landing==='unverified'?!land[c.id]:land[c.id]?.part===st.landing)));
       const cmp={dealer:(a,b)=>a.dealer.localeCompare(b.dealer)||(a.part??'zz').localeCompare(b.part??'zz')||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),part:(a,b)=>(a.part??'zz').localeCompare(b.part??'zz')||a.dealer.localeCompare(b.dealer),frames:(a,b)=>(b.frames??0)-(a.frames??0)}[st.sort];
       list.sort(cmp);
       const asg=lib.assignments[st.dealer]??{};
@@ -137,7 +239,9 @@ async function render(id){
         <select id="cf-dealer"><option value="">All dealers</option>${lib.dealers.map(d=>`<option value="${d.key}" ${st.dealer===d.key?'selected':''}>${d.name}</option>`).join('')}</select>
         <select id="cf-part"><option value="">All table parts</option>${lib.parts.map(p=>`<option value="${p}" ${st.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select>
         <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['transparent','TRANSPARENT ONLY'],['full','FULL-SCENE ONLY'],['all','ALL'],['never',`&#10006; NEVER AGAIN (${Object.keys(never).length})`]].map(([k,l])=>`<button data-mode="${k}" style="border:0;border-radius:0;${st.mode===k?(k==='never'?'background:rgba(255,80,80,.18);color:var(--red)':'background:rgba(214,255,58,.15);color:var(--lime)'):''}">${l}</button>`).join('')}</span>
+        <select id="cf-landing"><option value="">Landed at: any</option><option value="verified" ${st.landing==='verified'?'selected':''}>Landed at: verified only</option><option value="unverified" ${st.landing==='unverified'?'selected':''}>Landed at: not yet marked</option>${lib.parts.map(p=>`<option value="${p}" ${st.landing===p?'selected':''}>Landed at: ${PARTN[p]}</option>`).join('')}</select>
         <select id="cf-sort">${[['dealer','Sort: dealer'],['part','Sort: table part'],['name','Sort: name'],['frames','Sort: length']].map(([k,l])=>`<option value="${k}" ${st.sort===k?'selected':''}>${l}</option>`).join('')}</select>
+        ${st.mode!=='never'&&list.length?`<button id="cf-swipe" style="margin-left:auto;background:var(--lime);color:#111;border-color:var(--lime)">&#8646; SWIPE MODE (${list.length})</button>`:''}
       </div></div>
       ${st.dealer?`<div class="panel"><div class="t">ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${sel?`&middot; <span style="color:var(--lime)">SELECTED: ${sel.name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}</div>
       <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
@@ -147,12 +251,13 @@ async function render(id){
       ${list.map(c=>`<div data-clip="${c.id}" style="border:1px solid ${st.selected===c.id||assignedParts(c.id).length?'var(--lime)':'var(--line)'};${assignedParts(c.id).length?'box-shadow:0 0 0 2px rgba(214,255,58,.25);':''}border-radius:10px;overflow:hidden;background:var(--panel2);cursor:pointer;position:relative"><div data-badge style="position:absolute;top:8px;left:8px;z-index:2">${cardBadge(c)}</div>
         ${c.src?`<video data-bo-preview src="/${c.src}" preload="metadata" muted playsinline controls style="width:100%;max-height:220px;display:block;background:#000;object-fit:contain"></video>`:`<div style="height:90px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
         <div style="padding:9px 11px">
-          <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
+          <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span><span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}<span data-landbadge="${c.id}">${land[c.id]?`<span class="pill live" style="background:#7cc6ff;color:#111">&#9673; LANDED &middot; ${PARTN[land[c.id].part].toUpperCase()}</span>`:''}</span></span></div>
           <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.status?' &middot; '+c.status:''}</div>
-          ${c.text?`<div style="font-size:11px;margin-top:5px;padding:6px 8px;border-left:2px solid var(--lime);background:rgba(214,255,58,.05)">&ldquo;${c.text}&rdquo;</div>`:''}${c.audio&&!c.src?`<audio src="/${c.audio}" controls preload="none" style="width:100%;height:26px;margin-top:5px"></audio>`:''}
+          ${c.text?`<div style="font-size:11px;margin-top:5px;padding:6px 8px;border-left:2px solid var(--lime);background:rgba(214,255,58,.05)">&ldquo;${c.text}&rdquo;</div>`:''}${c.audio&&!c.src?`<audio data-bo-preview src="/${c.audio}" controls preload="none" style="width:100%;height:26px;margin-top:5px"></audio>`:''}
           <div style="font-size:10px;color:var(--mut);margin-top:3px">${c.layout??''}${c.width?` &middot; ${c.width}&times;${c.height}`:''}${c.frames?` &middot; ${c.frames}f`:''}${c.fps?` @${c.fps}`:''}${c.route?`<br>route: <span class="mono">${c.route}</span>`:''}</div>
           ${never[c.id]?`<div style="margin-top:8px;padding:6px 8px;border:1px solid var(--red);border-radius:6px;font-size:11px"><span class="mono" style="color:var(--red);font-size:9px;letter-spacing:.12em">NEVER AGAIN</span> ${never[c.id].reason?'&middot; '+never[c.id].reason:''}<div style="font-size:9px;color:var(--mut);margin-top:2px">${never[c.id].by??''} ${never[c.id].at?never[c.id].at.slice(0,16).replace('T',' '):''}</div><button data-restore="${c.id}" style="margin-top:6px;padding:2px 8px;font-size:9px">RESTORE</button></div>`
           :`<div style="margin-top:8px;display:flex;gap:6px;align-items:center"><select data-assign-part="${c.id}" style="flex:1"><option value="">Assign to&hellip;</option>${lib.parts.map(p=>`<option value="${p}" ${c.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><button data-assign="${c.id}">ASSIGN</button></div>
+          <div data-land-row="${c.id}" style="margin-top:6px;display:flex;gap:6px;align-items:center"><span class="mono" style="font-size:9px;letter-spacing:.1em;color:var(--mut);white-space:nowrap">LANDED AT</span><select data-land-part="${c.id}" style="flex:1"><option value="">not marked</option>${lib.parts.map(p=>`<option value="${p}" ${land[c.id]?.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><input data-land-note="${c.id}" value="${(land[c.id]?.note??'').replace(/"/g,'&quot;')}" placeholder="note" style="width:110px;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-land="${c.id}" style="border-color:#7cc6ff;color:#7cc6ff;font-size:10px">MARK</button></div>
           <div data-never-row="${c.id}" style="margin-top:6px;display:flex;gap:6px;align-items:center"><input data-never-reason="${c.id}" placeholder="why it's awful (optional)" style="flex:1;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-never="${c.id}" style="border-color:rgba(255,80,80,.5);color:var(--red);font-size:10px">&#10006; NEVER AGAIN</button></div>`}
         </div></div>`).join('')}
       </div>`;
@@ -160,7 +265,9 @@ async function render(id){
       $('#cf-dealer').onchange=e=>{st.dealer=e.target.value;st.selected=null;draw();};
       $('#cf-part').onchange=e=>{st.part=e.target.value;draw();};
       $('#cf-sort').onchange=e=>{st.sort=e.target.value;draw();};
+      $('#cf-landing').onchange=e=>{st.landing=e.target.value;draw();};
       C.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{st.mode=b.dataset.mode;draw();});
+      const swb=$('#cf-swipe');if(swb)swb.onclick=()=>swipe(list.map(c=>c.id));
       const assign=async(dealer,part,clip,btn)=>{const prev=(lib.assignments[dealer]??{})[part]?.clip;const r=await api('/api/bo/clip-assign',{dealer,part,clip});if(!r.ok){toast(r.error||'failed');return;}
         lib.assignments=r.assignments;toast(clip?`${PARTN[part]} ← ${byId[clip]?.name??clip}`:`${PARTN[part]} cleared`);
         const tile=C.querySelector(`[data-part="${part}"]`);if(tile){tile.innerHTML=tileInner(part);tile.style.borderColor=clip?'var(--lime)':'var(--line)';tile.animate([{background:'rgba(214,255,58,.35)'},{background:'var(--panel2)'}],{duration:900});tile.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(dealer,b.dataset.clear,null));}
@@ -171,13 +278,66 @@ async function render(id){
       C.querySelectorAll('[data-part]').forEach(el=>el.onclick=e=>{if(e.target.closest('button'))return;if(!st.selected)return;assign(st.dealer,el.dataset.part,st.selected);});
       C.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));
       const neverAgain=async(id,undo)=>{const reason=C.querySelector(`[data-never-reason="${id}"]`)?.value??'';const r=await api('/api/bo/clip-never',{clip:id,reason,undo});if(!r.ok){toast(r.error||'failed');return;}lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;
-        const el=C.querySelector(`[data-clip="${id}"]`);if(el){el.animate([{opacity:1},{opacity:0,transform:'scale(.96)'}],{duration:350,fill:'forwards'});setTimeout(()=>el.remove(),360);}
+        const el=C.querySelector(`[data-clip="${id}"]`);if(el){mediaPreviews.release(el);el.animate([{opacity:1},{opacity:0,transform:'scale(.96)'}],{duration:350,fill:'forwards'});setTimeout(()=>el.remove(),360);}
         C.querySelectorAll('[data-part]').forEach(t=>{t.innerHTML=tileInner(t.dataset.part);t.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));});
         const nb=C.querySelector('[data-mode="never"]');if(nb)nb.innerHTML=`&#10006; NEVER AGAIN (${Object.keys(lib.neverAgain).length})`;
         toast(undo?`restored ${byId[id]?.name??id}`:`never again: ${byId[id]?.name??id}`);};
+      C.querySelectorAll('[data-land]').forEach(b=>b.onclick=async()=>{const id=b.dataset.land;const part=C.querySelector(`[data-land-part="${id}"]`).value;const note=C.querySelector(`[data-land-note="${id}"]`).value;const r=await api('/api/bo/clip-landing',{clip:id,part:part||null,note});if(!r.ok){toast(r.error||'failed');return;}lib.landings=r.landings;const bd=C.querySelector(`[data-landbadge="${id}"]`);if(bd)bd.innerHTML=r.landings[id]?`<span class="pill live" style="background:#7cc6ff;color:#111">&#9673; LANDED &middot; ${PARTN[r.landings[id].part].toUpperCase()}</span>`:'';const t=b.textContent;b.textContent='\u2713 MARKED';b.style.background='#7cc6ff';b.style.color='#111';setTimeout(()=>{b.textContent=t;b.style.background='';b.style.color='';},1400);toast(part?`${byId[id]?.name??id} landed at ${PARTN[part]}`:`landing cleared`);});
       C.querySelectorAll('[data-never]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.never,false));
       C.querySelectorAll('[data-restore]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.restore,true));
       C.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const c=byId[b.dataset.assign];const part=C.querySelector(`[data-assign-part="${c.id}"]`).value;if(!part){toast('pick a table part first');return;}if(st.dealer!==c.dealer){st.dealer=c.dealer;draw();}assign(c.dealer,part,c.id,C.querySelector(`[data-assign="${c.id}"]`));});
+    };
+    // Swipe mode: one clip at a time, left = never again, right = keep, up = assign to the chosen part, Z = undo.
+    const swipe=ids=>{
+      mediaPreviews.release(C);
+      let i=0,closed=false;const hist=[];const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;touch-action:none';
+      document.body.appendChild(ov);
+      const close=(redraw=true)=>{if(closed)return;closed=true;document.removeEventListener('keydown',key);mediaPreviews.release(ov);ov.remove();render.closePreview=null;if(redraw)draw();};
+      render.closePreview=close;
+      const show=()=>{
+        if(closed)return;
+        mediaPreviews.release(ov);
+        if(i>=ids.length){ov.innerHTML=`<div class="mono" style="letter-spacing:.14em;color:var(--lime)">ALL ${ids.length} CLIPS SWIPED</div><div style="display:flex;gap:10px">${hist.length?'<button data-u>&#8630; UNDO</button>':''}<button data-x>CLOSE</button></div>`;ov.querySelector('[data-x]').onclick=close;const u=ov.querySelector('[data-u]');if(u)u.onclick=undo;return;}
+        const c=byId[ids[i]];const cur=(lib.assignments[c.dealer]??{});
+        ov.innerHTML=`<div class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--mut)">${i+1} / ${ids.length} &middot; &larr; NEVER AGAIN &middot; &rarr; KEEP &middot; &uarr; ASSIGN &middot; Z UNDO &middot; ESC CLOSE</div>
+          <div data-card style="width:min(720px,100%);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel2);transition:transform .22s,opacity .22s;position:relative;cursor:grab">
+            <div style="position:absolute;top:16px;left:16px;right:16px;z-index:2;display:flex;justify-content:space-between;pointer-events:none"><span data-l class="mono" style="opacity:0;border:2px solid var(--red);color:var(--red);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">NEVER AGAIN</span><span data-r class="mono" style="opacity:0;border:2px solid var(--lime);color:var(--lime);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">KEEP</span></div>
+            ${c.src?`<video data-bo-preview src="/${c.src}" autoplay loop muted playsinline style="width:100%;max-height:60vh;display:block;background:#000;object-fit:contain;pointer-events:none"></video>`:`<div style="height:200px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:9px;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
+            <div style="padding:10px 14px"><div style="display:flex;justify-content:space-between;gap:8px"><span class="mono" style="font-size:11px;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
+            <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.frames?` &middot; ${c.frames}f`:''}${assignedParts(c.id).length?` &middot; <span style="color:var(--lime)">ASSIGNED ${assignedParts(c.id).map(p=>PARTN[p]).join(' + ')}</span>`:''}</div></div>
+          </div>
+          <div style="display:flex;gap:8px;width:min(720px,100%)"><input data-reason placeholder="why it's awful (optional)" style="flex:1;font-size:12px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><select data-part>${lib.parts.map(p=>`<option value="${p}" ${(c.part??'')===p?'selected':''}>${PARTN[p]}${cur[p]?' (taken)':''}</option>`).join('')}</select></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button data-a="left" style="border-color:rgba(255,80,80,.5);color:var(--red);padding:10px 18px">&#10006; NEVER AGAIN</button><button data-a="up" style="padding:10px 18px">&#8593; ASSIGN</button><button data-a="right" style="border-color:var(--lime);color:var(--lime);padding:10px 18px">&#10003; KEEP</button><button data-u ${hist.length?'':'disabled'}>&#8630; UNDO</button><button data-x>CLOSE</button></div>`;
+        mediaPreviews.bind(ov);
+        ov.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>act(b.dataset.a));
+        ov.querySelector('[data-u]').onclick=undo;ov.querySelector('[data-x]').onclick=close;
+        const card=ov.querySelector('[data-card]');let x0=null,y0=0,dx=0,dy=0;
+        card.onpointerdown=e=>{x0=e.clientX;y0=e.clientY;card.setPointerCapture(e.pointerId);card.style.transition='none';};
+        card.onpointermove=e=>{if(x0===null)return;dx=e.clientX-x0;dy=e.clientY-y0;card.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/20}deg)`;ov.querySelector('[data-l]').style.opacity=Math.max(0,-dx/120);ov.querySelector('[data-r]').style.opacity=Math.max(0,dx/120);};
+        card.onpointerup=()=>{if(x0===null)return;x0=null;card.style.transition='';if(dx>120)act('right');else if(dx<-120)act('left');else if(dy<-120)act('up');else{card.style.transform='';ov.querySelectorAll('[data-l],[data-r]').forEach(e=>e.style.opacity=0);}dx=dy=0;};
+      };
+      let busy=false;
+      const act=async dir=>{
+        const c=byId[ids[i]];if(!c||busy||closed)return;busy=true;
+        try{
+          if(dir==='left'){const reason=ov.querySelector('[data-reason]').value;const r=await api('/api/bo/clip-never',{clip:c.id,reason});if(!r.ok){toast(r.error||'failed');return;}lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;hist.push({k:'never',id:c.id});toast(`never again: ${c.name}`);}
+          else if(dir==='up'){const part=ov.querySelector('[data-part]').value;const prev=(lib.assignments[c.dealer]??{})[part]?.clip??null;const r=await api('/api/bo/clip-assign',{dealer:c.dealer,part,clip:c.id});if(!r.ok){toast(r.error||'failed');return;}lib.assignments=r.assignments;hist.push({k:'assign',dealer:c.dealer,part,prev});toast(`${PARTN[part]} ← ${c.name}`);}
+          else hist.push({k:'keep'});
+          if(closed)return;
+          const card=ov.querySelector('[data-card]');card.style.transform={left:'translateX(-120vw) rotate(-25deg)',right:'translateX(120vw) rotate(25deg)',up:'translateY(-120vh)'}[dir];card.style.opacity=0;
+          await new Promise(r=>setTimeout(r,220));i++;show();
+        }finally{busy=false;}
+      };
+      const undo=async()=>{
+        const h=hist.pop();if(!h)return;
+        if(h.k==='never'){const r=await api('/api/bo/clip-never',{clip:h.id,undo:true});if(r.ok){lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;}}
+        if(h.k==='assign'){const r=await api('/api/bo/clip-assign',{dealer:h.dealer,part:h.part,clip:h.prev});if(r.ok)lib.assignments=r.assignments;}
+        i--;show();toast('undone');
+      };
+      const key=e=>{if(e.target.matches('input,select'))return;if(e.key==='ArrowLeft')act('left');else if(e.key==='ArrowRight')act('right');else if(e.key==='ArrowUp'){e.preventDefault();act('up');}else if(e.key==='z'||e.key==='Backspace')undo();else if(e.key==='Escape')close();};
+      document.addEventListener('keydown',key);
+      show();
     };
     draw();
     return;

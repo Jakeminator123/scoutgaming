@@ -1,3 +1,92 @@
+## 2026-09-22 — Kevin-integrering i Jakobs work och gemensam livejämförelse
+
+Arbetet utgår från `jakeminator123/work`, inte från main. Backup-taggen
+`backup/jakob-work-pre-kevin-20260922` på GitLab och privata GitHub pekar på
+`6fe7c82d1522db9c9d4f611ad44006648ec355aa`. Fyra redan lokalt ändrade/nya filer
+säkerhetskopierades separat under den ignorerade
+`.croupier-inbox/checkpoints/pre-kevin-20260922`; de ingår inte i leveransen.
+Integrationen tar in Kevin/MR !1 från `b066a43ba18b7da8a405c99789374680c5ed07db`.
+Handoff-historiker, native→Partner-publicering, CRAIG/BO-auth och gäståtkomst
+bevaras. Original `/` och Kevin `/v2/` är separata presentationslägen.
+V2:s pausade Astrid-utdelningsfilmer aktiveras inte av denna integration.
+
+`/api/table` returnerar nu samma publika `presentation[]` som den redan
+efter-commit-publicerade Partner-strömmen. Senaste listan sparas transaktionellt
+för idempotenta retries. Ingen extra spelhandling skickas av labbet; kort,
+shoe, wallet och utbetalningar ägs fortfarande av samma servermotor.
+En uttryckligt aktiverad native-observer skickar offentliga serversvar,
+instrumenterade klipp-/tal-/kortkvitton och chatt till den öppnande lokala
+labbfliken. Origin, popup och engångskanal kontrolleras. Hemliga fält och
+URL-parametrar filtreras; dold hålkortsidentitet lämnar inte gränsen.
+Klippval, faktisk mediastart och animationsavslut är olika sorters bevis.
+
+Labbets Händelselogg har **Anslut**, original/labb samtidigt, automatisk
+framtidsföljning, separat senaste offentliga bordsvy och hopfälld Diagnostik.
+HTTP/native och SSE dedupliceras på kommando/version, inte på ungefärlig tid.
+Saknade instruktioner hittas inte på. Bilddelning kräver fortfarande
+webbläsarens uttryckliga flikval; speldata fungerar utan bilddelning.
+**Ny observation** startar ett nytt avgränsat minnesprotokoll utan en ny
+spelhandling. Exportera först om den gamla observationen ska bevaras.
+
+Variantbeslut får det exakta eventet, observerade resultat före det och högst
+åtta tidigare chattmeddelanden (600 tecken vardera, 3 200 totalt), med
+tidsgräns och proveniens. Okänd historik/språk markeras som okända. Modellen
+får bara välja redan tillåtna varianter; chatten är data, inte instruktioner.
+En separat context-v2-kvittens förhindrar att äldre Director-kod tyst kastar
+bort chattfältet. Ett begränsat riktigt shadow-prov mot befintliga Render
+visade `remote_context_not_supported_baseline`: tjänsten behöver uppdateras
+innan den observerade chatten kan påverka live-modellval. Labbet behåller
+standard och visar orsaken. Ingen Director-/Gateway-/Bettalotto-deploy är
+gjord i detta kvitto. Riktig spelar-chat ersätts inte av labbets operatorchatt.
+
+Mapping v2 skiljer materialkatalog från uppspelning, original från 34 V2-
+taluppsättningar och aktiva/pausade filmvägar. BO:s Generations-/swipevyer
+delar enkel-preview-hanteringen. Ett riktigt Windowsfel är rättat:
+normaliserade backslash-sökvägar hindrade `/bo/` från att hitta index.html.
+`/bo` leder nu till `/bo/`; autentisering ligger kvar före statisk servering.
+
+V5-källan är flyttad till `docs/animation-events/v5-7-days-mvp`: D0 + sju
+arbetsdagar. Aktiva länkar, Guide och Jakobs systemkarta är uppdaterade efter
+work-koden. Daterade drift- och granskningsbevis är fortfarande daterade;
+lokala docsändringar är inte automatisk wiki-/webbpublicering.
+
+Isolerat prov: bygg `lab`, kör `node tools/start-local-comparison.mjs` från
+reporoten. Riktigt lokalt spel: `http://localhost:4194`; labb:
+`http://127.0.0.1:4192/activity`. Temporära databaser, slumpade testnycklar och
+processlokal konfiguration används. Inga riktiga konton/saldon eller `.env`
+ändras, och externa modell-/mailanrop blockeras. Browserprovet i
+`test/local-comparison-browser.mjs` använder riktig spelmotor/native/SSE men
+ett uttryckligt syntetiskt chattsvar. Det ersätter inte ett live-providerprov.
+
+Valfria `CROUPIER_GENERATIONS_DIR` kopplar BO och dess token-skyddade API till
+en skrivskyddat serverad lokal mediemapp. Fixtureverktygets
+`--media-directory <katalog>` använder samma mapp även för labbet utan att
+kopiera filer eller ändra `.env`. Det befintliga externa mediearkivet
+`C:/Users/jakem/CroupierAssets/bettalotto-generations` innehåller 224 MP4-filer
+vars ID och storlekar matchar katalogen. Detta är inte en generell hash- eller
+kvalitetsacceptans, och inte det pensionerade personliga dokumentarkivet.
+BO-auth respektive API-token krävs; enbart katalogkända filnamn serveras,
+med skydd mot sökvägsflykt och symboliska länkar samt stöd för byteintervall.
+Inget arkiv raderas av fixtureverktygets städning.
+
+Verifierat: alla pre-commit-kommandon, dealer-audit med `--probe`, 322 labbtester,
+TypeScript och labbets produktionsbyggnad, 112 OpenClaw-tester, två isolerings-
+fixturetester och åtta medie-/authregressioner. Riktigt browserprov 2026-09-22
+bekräftade 12 sekvenssteg, 12 labbval, 12 uppspelningsavslut, 12 deduplicerade
+event och 17 native-uppspelningskvitton, samt observerad chatt i beslutspayload.
+Ny observation skapade inget extra spelkommando, SSE-abonnemang eller fönster.
+Mobilvyn hade ingen horisontell sidöverströmning. Alla fyra originaldealers
+samt Astrid/Amira V2 klarade `goodluck` via verkliga spelarens **Play twice**;
+stillbilder granskades, inte en ny fullständig läppsynkacceptans.
+BO-inloggning, Generations, swipe och Dealing Clips testades. Efter montering
+av det externa arkivet spelades ett Generations-stickprov faktiskt upp;
+två lokala Dealing Clips spelades också upp och det andra pausade det första.
+Browserproven gav inga JavaScript-fel. Privata körkvitton finns under den
+ignorerade `.croupier-inbox/qa-20260922/`, inte som en del av Git-leveransen.
+Ingen ny film genererades eller baslinje skrevs om. Befintliga saknade takes
+och mänsklig läppsynkacceptans kvarstår; automatiska prov godkänner dem inte.
+Ingen Jira-status ändrades utan aktuell issue/QA-verifiering.
+
 ## 2026-09-22 — äldre GitHub-adress, lokal env-inventering och kort start
 
 The old private `Jakeminator123/gitlab-work` repository is now a signpost:
@@ -62,7 +151,7 @@ was changed. Existing unrelated dirty and untracked files remain untouched.
 
 ## 2026-09-21 — portabel sjudagarshandoff för nya personer och agenter
 
-Added `docs/animation-events/v5-8-days-mvp/HANDOFF-7-DAGAR.md`: a portable
+Added `docs/animation-events/v5-7-days-mvp/HANDOFF-7-DAGAR.md`: a portable
 D0 + seven-day context pack for Cursor, Codex, browser-GPT and human handoff.
 It maps Jakob/Kevin/Emil ownership, canonical sources, product/lab/OpenClaw
 boundaries, repositories, storage, secrets by variable name, runtime and ops
@@ -184,7 +273,7 @@ wiki landing and video instructions were checked in the authenticated browser.
 Website CI succeeded; 17 local site tests and 44-file source/mirror sync passed.
 See docs/animation-events/V5-PUBLICATION.md for links, checks and boundaries.
 
-V5's canonical source is docs/animation-events/v5-8-days-mvp: seven chapters,
+V5's canonical source is docs/animation-events/v5-7-days-mvp: seven chapters,
 decisions, evidence and publication instructions. It replaces active V4 links
 without rewriting historical runtime evidence. Sources include today's active
 Jakob notes and selectively read local backoffice exports; raw logs, personal
@@ -2818,3 +2907,658 @@ visual content approval of those 224 videos. No paid model requests or real DB.
 Production build and TypeScript check passed at delivery. Jira connector unavailable; no Jira transitions.
 Remaining: operator classification/content review of originals; loop/interrupt
 policy and runtime promotion remain separate work, not silently enabled here.
+
+## 2026-09-19 — user-selected a9fa1da6 cutout, no new generation
+
+The user changed direction, prohibited new generation until explicit authorization, and took over clip selection. The previous overnight automation is paused. They selected existing Kling clip a9fa1da6-066c-47f4-8466-7f4924a3bfe2 (box2-reach.mp4, 73 native frames, 24 fps, 1280x720) and explicitly chose to keep Astrid **and the original card** while masking the background.
+
+Standalone masked result: web/public/review/astrid-a9fa1da6. Includes real-alpha WebM, RGB-over-gray-mask MP4, all 73 editable masks in ZIP, checkerboard preview and browser viewer. Source frame RGB is unchanged before ordinary video encoding; no retiming, interpolation, face repair or new generation. Removed room, table, shoe and stray table lettering; retained the original card through extraction, hand transfer, passage in front of the shoe, placement and empty return. Local reproducible processing and SHA/probe receipt: content/staging/2026-09-19/a9fa1da6-mask.
+
+Reviewed all 73 frames in contact sheets and actual browser alpha playback against checkerboard, light and dark backgrounds. Verified 73 output frames at 24 fps, actual decoded alpha (not just a metadata flag), and unchanged RGBA RGB channels before encoding. Pre-commit suite and audit-dealer-sync --probe passed. Saved light/dark browser evidence with the deliverable. Small segmentation edge imperfections and source-generated motion remain; this is not a new gameplay acceptance claim. The original loop endpoint is not identical to its start. No BO assignment, gameplay route, wallet or speech change.
+
+The normal 4173 server gates media behind authentication, so the viewer is currently served on localhost-only http://127.0.0.1:4198/ from the result directory, with no database or auth changes. Start again with python3 -m http.server 4198 --bind 127.0.0.1 --directory web/public/review/astrid-a9fa1da6 from the repo. User-visible tab was left open playing the cutout.
+
+
+## 2026-09-19 — green-screen first exhibit and recovered winning references
+
+User changed direction to hands-on green-screen generation, with a green tracking card; broad autonomous generation remains paused. Read live backoffice through the supplied existing deploy key, without writing remote files/data: 17 want and 52 no verdicts; a9fa1da6 is want/box2. Sanitized choices and receipts are in content/staging/2026-09-19/astrid-green-exhibit-01.
+
+Generated two GPT Image 2.5 green studio references and one Kling 3.0 test ac7852f7. Root inspected 16 sampled frames and rejected the motion: card moves independently while hands mostly remain resting. New references also redraw Astrid and change framing. The test is shown at local4198/green-exhibit-01 with a visible rejection warning, never installed in gameplay. Required pre-commit suites and dealer-sync probe passed; this does not approve the generated take.
+
+User explicitly demanded Seedance with their winning prompt. Copied the exact saved parameters from accepted9dc93653 (Seedance2.0,4s,1080p,std,high bitrate,silent) and changed only green environment/card wording; original and precise substitutions are in astrid-green-exhibit-02-seedance. Submitted ONE job175d2d0f-d5b2-4e3b-a0ec-23002a828eae using the already-generated green images. It has completed: source, probe, SHA, 20 sampled frames and observations are saved. It carries the card with the feeding hand directly across the body, with no receiving-hand transfer, and releases around3.2s instead of0.9s. The rejected green-reference likeness remains. Not installed; do not resubmit.
+
+User then challenged the likeness. Root recovered and byte-verified the actual winning inputs: start43039066 = far-left-anchor/motion/ready.jpg; end0dc1ddf8 = box1-trial-spec/endpoint-upload.jpg. Local copies and hashes are saved in the second exhibit directory. The actual winner's end image shows a turned head/body with a hand reaching the shoe, unlike the newly generated forward-facing green resting endpoint. Historical TRIAL.md prose claiming the endpoint leaves the actor unchanged conflicts with these verified pixels. The winning job had only these two image references, no portrait reference. Both originals were shown to the user. No additional images or jobs submitted after this discovery. Do not claim this Seedance output fixes the reference likeness. Preserve this audit and follow the user's reference direction. No production deployment, live database, wallet, game card, speech asset or 3D change.
+
+
+## 2026-09-19 — user corrects authoritative Astrid identity
+
+User explicitly rejected the recovered full-scene refs for likeness and directed use of `ref-identity.png`. Exact file found at /Users/solvifyab/Desktop/ref-identity.png,1440square,SHA d31c47ded053bfcaf8c8d54a5c806793e5818cede8453c7bfa0323d36a6b347b. This instruction supersedes the earlier recommendation to preserve the two old scene faces. The original was inspected, copied without alteration to content/staging/2026-09-19/astrid-identity-green, and uploaded through MCP as b2c16866-56c4-4406-bbb1-7fed713ca485.
+
+New green start75d580c2 uses only that user image; end2d808f07 uses the new start plus that original user image. Both were inspected. Seedance2.0 job6975244a-5b47-43e1-8176-5356066f3e72 is now submitted with green start/end AND the original identity image directly as an additional image reference. Preserves winner9dc93653's4s1080p,std,high bitrate,silent settings and mechanical-action/timing prompt; only green environment/card substitutions and an explicit identity-reference sentence differ. All requests, outputs and identity manifest saved in the new staging directory. Job6975244a completed and is saved with SHA/probe and20 sampled frames. The original identity photo is directly attached, but motion still raises the card to about chest height around1.17s, lacks a two-hand transfer and releases only around2.7s. No likeness or motion approval; exact source-frame composition also differs. Review at local4198/identity-green displays original identity plus source video with explicit limitations. No automatic wider generation or gameplay installation; do not resubmit.
+# 2026-09-19 — first dealer-upcard scope and elevated-camera correction
+
+Latest user correction supersedes the earlier acceptance of green6975244a: it is only Astrid's FIRST FACE-UP CARD TO HERSELF, and after seeing the table trial the user rejects its low/frontal camera. They require the elevated player-side broadcast angle of the supplied YouTube reference, including table/shoe references in generation. Retain original `/Users/solvifyab/Desktop/ref-identity.png` as sole identity source. Green studio, green shoe and green tracking card remain the direction. No 3D or broader overnight loop.
+
+Prior turn prepared97native24fps actor mattes and card-plane tracks under `content/staging/2026-09-19/astrid-green-table`, then a narrowly gated first-upcard integration. Its take is now explicitly `enabled:false`; app excludes it, and the build script also reproduces disabled state. Original source RGB was preserved before encoding, card track uses explicit inference flags, body fit is rigid. Shared player supports review-only chroma tracking and exact filmed landing. Experimental code and local artifacts are retained, not approved or deployed. Existing server cards/wallet and exact speech unchanged. Independent mask/track/integration agents did not edit overlapping game files.
+
+Seedance returnfc238e02 completed from exact old source96→0 endpoints plus original identity. Its empty hands move near shoe, but user camera rejection makes it obsolete; never installed. Required dealer-sync probe, pre-commit suites and three first-upcard scope tests passed before the new camera integration; full rendered acceptance did not pass.
+
+New GPT Image2.5 reference269f8943 completed using THREE actual references: original identityb2c16866, cached nativeYouTubeframe0 uploadffe36559, saved actual game-table cameraupload0fe2ef3d. User explicitly approved it: “Use this angle”. Matching end reference5b334c87 places a single green card in her own upcard location. Seedance2.0 jobde1f90a9-b8db-4a64-a46d-7c8f9d0665ef is COMPLETED (97 native frames at24fps,1920×1080, source SHA dfaeea2b4dae3cad918a2a3af9114d261131939ea636cf2e3427172b3b33402b). Do not poll or duplicate. Inputs, requests, results and approval are in `content/staging/2026-09-19/astrid-elevated-camera`. Initial source review shows one extraction, transfer/turn, dealer-center landing and empty return; frame0 already reaches the shoe, so entry is not matched to old idle. Masking/card tracking and actual table fit are in progress, not accepted. Local viewer: `http://127.0.0.1:4198/elevated-camera/`; serves from `web/public/review/astrid-a9fa1da6` with no database.
+
+Update: elevated take now masked, tracked and installed for **first dealer upcard only** at `http://astridelevated.localhost:4190/?dealer=astrid&performance=staged&astridGreen=review`. All97native mattes/tracks inspected. Source RGB preserved; actor fit rigid; actual shoe front lip and authoritative dealer-card DOM registered to new source. One actual isolated round completed with new J-clubs upcard, player hit, refresh preservation and settlement1000→995→1005. Nine replay screenshots cover pickup/turn/landing/return; browser warnings/errors empty. Four scoped tests, repository checks and sync probe pass. See `astrid-elevated-camera/REVIEW.md` and `gameplay-qa`. This is a visible first-card integration, not full visual acceptance: old/new clip cuts remain, green shoe is a geometric proxy, and blurred turn27–29 uses declared inferred correspondence. No further generation or production deployment. The table is left at betting with one5-unit centre stake ready for Deal Now.
+
+## 2026-09-19 — remove retired Astrid playback; keep green baseline
+
+User explicitly requested removal of every other Astrid clip, retaining elevated green take `de1f90a9` as the first successful baseline. They are correcting the table in Blender: do not edit that work or change the accepted source framing. A new green-screen waiting movement is future work; this turn did not submit any generation. The earlier broad overnight task remains paused.
+
+All ordinary 2D Astrid routes now disable the previous engine initialization, idle/gesture clips, recorded speech and audio, BO clip assignments, performance manifests, joins and ready loops. Old sources remain archived on disk. Only `review/astrid-elevated-table/take.json` can supply her first face-up dealer card; player deliveries, hole card and later dealer cards cannot consume this take. Other dealer playback, server-owned cards, wallets and databases are unchanged. Explicit 3D review remains outside this reset and paused.
+
+Waiting now displays a temporary still from masked source frame96: `review/astrid-elevated-table/rest.png`, cropped with the same `[560,0,960,760]` crop and registered by the same camera transform as the action. It hides during the retained action and returns afterward without revealing the old crossed-arm idle. The existing static room plate is preserved. No new camera scale, zoom, source retiming or table geometry change was made.
+
+Browser verification in isolated guest `astridreset.localhost:4190`: complete round, first dealer6-hearts, player3-clubs/A-diamonds, hitK-hearts, stand and settlement. Wallet1000→995→995, stake5/return0. A replay also used only `astrid-elevated-first-upcard-de1f90a9`; action and still had identical519.109×410.961px bounds at1280×720, old dealer wrapper stayed hidden, resting still hid during action and returned after it. No browser warnings/errors. User's existing elevated-table tab was refreshed and the new still verified at their portrait viewport; their hand was not played by the agent. Evidence: `astrid-elevated-camera/gameplay-reset-qa`.
+
+Four first-upcard scope tests, `audit-dealer-sync.mjs --probe` and `.githooks/pre-commit` passed. This verifies removal of old playback, not a finished dealer: waiting is intentionally still, speech is silent, and no green player-seat or later-card motion exists yet. Native source96→0 pose cut remains; do not describe it as a seamless idle or full motion acceptance.
+
+## 2026-09-19 — user's Blender table, elevated camera and smaller framing
+
+User provided `/Users/solvifyab/Desktop/table-v2.blend`, explicitly requested rebuilding the mask for that table, and then requested Astrid smaller/farther away like the generated preview. Original Blender file is untouched (SHA25606e425527ab43a22a0b503f2c2792f8dd0bacccf1cd6ff56c60c78c7a00fb0dc). Exact meshes/materials and PlateCam exported to `review/astrid-table-v2/table.glb`; fixed PRP_Card excluded so only server-issued cards appear. Game lighting is supplied separately. No generation jobs, credentials, database changes or deployment.
+
+Astrid now uses the imported perspective camera and table by default. Her existing approved de1f90a9 source was re-keyed across all97frames, reproducing the prior verified alpha exactly; masking does not change the recorded angle. Removed the old20px gameplay-only source Y offset. Latest requested framing is a shared0.85 composition scale: table, shoe, actor, tracked card and rest all pull back together, with no body stretch or isolated actor zoom. The unchanged source frame96 remains the temporary still while new idle movement is pending. All other Astrid clips remain disconnected.
+
+Evidence/rebuild scripts: `content/staging/2026-09-19/astrid-table-v2`. Actual isolated browser rounds on `astridblenderv2.localhost:4190`: first round playerK-spades/8-diamonds, dealer7-diamonds, hit and loss1000→995; final pulled-back round player8-spades/8-clubs, dealerQ-clubs, stand and loss995→990. Both returned to betting. First-upcard replay captured pickup/turn22/landed61/return91; final framing captured turn and landing in a new round. No console warning/error. Existing room retained; other dealers unchanged. Five scope/framing tests and required probe/precommit passed. Perspective card animation supports explicit viewport/world scale while preserving existing defaults.
+
+Current review tab: `http://astridblenderv2.localhost:4190/?dealer=astrid&table=blender`. User closed the previous elevated tab during this work. This is an integrated review, not full approval: native edge spill/blur and96→0 pose cut remain; new idle/speech/player-seat actions do not exist. The supplied hollow shoe has no card-stack mesh, so visual depletion is absent although authoritative counts remain in the server/HUD. User's new framing is a15% reduction chosen for immediate review; do not claim the user has accepted it yet.
+
+## 2026-09-19 — restore the complete Blender table support
+
+User reported the wooden base cut off before reaching the floor. The exported PRP_WalnutBase was complete, but rendering into the fitted video viewport clipped all geometry beyond the native16:9 frame. The base extends below that frame. `blender-table-scene.mjs` now renders into the full canvas and transforms the camera projection to preserve the exact source-frame registration. Astrid, tabletop, shoe and card pixel coordinates stay unchanged; geometry outside the film frame can now appear. The inverse projection and game-card raycast viewport are updated together. No Blender geometry, source footage, actor scale or mask changes.
+
+Verified full base visible at the user's1117×837 view and during the first-card replay. Isolated `astridbaseqa.localhost:4190` round: player5-spades/9-spades, dealer10-diamonds; hit3-hearts to17, then stand/settlement. Browser evidence and result are under `astrid-table-v2/base-qa`. No browser warning/error. Six focused tests pass, including source-pixel preservation, unprojection, base visibility outside the original frustum and repeat-resize stability at desktop/portrait sizes. Dealer-sync probe and repository precommit pass. This fixes the support clipping only; earlier motion/idle limitations remain.
+
+## 2026-09-19 — lower table viewpoint and ground the pedestal
+
+User then rejected the high, foreshortened camera and supplied a Blender viewport screenshot showing the full pedestal and foot. This request supersedes using the saved PlateCam transform unchanged. The runtime now derives a lower 34-degree table view from a 2.6 m distance to the rear edge, with a longer lens. It preserves that rear edge's screen position and scale, and reprojects the shoe outlet onto its original tabletop height at the filmed pickup pixel. Astrid's source image, native proportions, frame scale and tracked first-upcard landing remain unchanged. The 3D table perspective changes; this is not a regenerated lower-angle film. The source .blend and exported GLB are unchanged.
+
+Added a transparent shadow-receiving floor at the mesh's actual bottom, over the existing room carpet, and enabled mesh shadows. The full supplied wooden pedestal and bottom foot now show. Betting markers scale with the fitted table frame to avoid overlap at the shallower angle; desktop controls have less bottom padding to expose the foot. No original clips re-enabled, no new generation and no production deployment.
+
+Verified the lower view in the browser and an isolated seven-seat round at `astridlowerqa.localhost:4190`: 35 stake, one hit (rightmost15 +J-hearts bust25), six stands, dealer resolution and settlement returning10, final balance975. All seven card groups stayed on the felt, first-upcard replay rendered with the registered shoe, and no browser warnings/errors were logged. Evidence: `content/staging/2026-09-19/astrid-table-v2/lower-camera-qa`. Seven focused tests, dealer-sync probe and repository precommit pass. This remains a review of camera/base integration; source edge artifacts, the96→0 pose cut, and missing new idle/speech/player-seat actions remain as recorded above.
+
+## 2026-09-19 — restore branding, shoe pack, living idle and felt betting areas
+
+User requested the missing old branding and cards, then explicitly asked to bring back Astrid moving/looking while waiting. This supersedes the earlier ban on her original idle only. The original paired145-frame idle is restored through DealerEngine, with its full-actor mask and one uniform scale/translation matching the green take's head size. It hides while the approved first-upcard plays and resumes afterward. Old speech, player-dealing and other action fallbacks remain disabled. No generation jobs or credits used. The arm poses still cut between folded idle and the green dealing take; do not call this a seamless join.
+
+New `blender-table-details.mjs` places original Scout ink/payout lettering on the supplied felt, using `ScoutBrand.dc.html`, existing table-scene art and unchanged assets/cardback.png. A card pack and follower now sit inside PRP_Shoe, with length driven by server remaining/total counts, including empty/cut states. Acrylic renders its contents without an opaque shadow. Supplied Blender/GLB meshes and materials are unchanged on disk.
+
+User also requested boxes/chips to lie within the table. Seven actual3D ink planes now use the same camera/material lighting as branding. Their projected quads position the corresponding clickable DOM controls and chips through one homography. Main44-unit round chips fit60-unit circles; side12-unit chips fit the14-unit crescent. Previous chip ellipses were being squashed twice. The betting banner moved below the targets, avoiding the centre click obstruction.
+
+Actual `astridfeltqa.localhost:4190` guest round: seven5-unit main bets, box0PP5 and box6_21plus3_5 (total45); 16-card opening; hit rightmost17+10-spades to27; five stands with centre natural automatically resolved; settlement returned62.50, balance1000→955→1017.50. Shoe count/rendered pack agree415→399→398→397. All seven main targets and both side targets clicked successfully. Refresh preserved the hand/balance. Repeated idle cycles and hiding during green replay visually checked; no new QA warnings/errors. User subsequently started another two-seat round; left untouched. Final open review is `http://astridfeltqa.localhost:4190/?dealer=astrid&table=blender`.
+
+Eight focused checks, required dealer-sync probe and full precommit suites pass. Evidence: `content/staging/2026-09-19/astrid-table-v2/branding-qa`. The stopped4190 preview was restarted from existing `astrid-green-table/runtime`, keeping its saved isolated data and public symlink. No production data/deployment, media regeneration or other dealer playback changes. Source edge artifacts, differing idle/action appearance/pose, missing green player-seat/later-card motion and speech remain. Tiny side-chip numbers use the existing stake text for readability.
+
+## 2026-09-19 — replace frontal idle with elevated green take; ground all cards
+
+User rejected the restored frontal idle camera and explicitly authorized one replacement green-screen waiting clip using the approved elevated reference and original ref-identity.png. Seedance2.0 job87fc5852-f3a5-4046-a93f-f1ac21e35b0d completed:145native24fpsframes,6seconds1080p. Both endpoints use approved de1f90a9 native96; extra refs269f8943 camera and b2c16866 identity. No duplicate generation. Requests/results/references and complete matte review sheets are saved in `content/staging/2026-09-19/astrid-elevated-idle`. Source SHA93e4f6ee4b3bdbddbada796526f81505a2abe10ac7fde0629d41b5dd1503028f; packed SHA f7ef00558bb312157ca9d5a46f4fdde282f4d3e973b8a843a406e04af0494b1b.
+
+This supersedes the prior temporary frontal idle. Only the new actor-only idle now plays, registered with the exact retained action camera/crop; no old engine initialization or footage fallback. Same face, proportions, skin RGB and table-ready hands; living loop blinks and glances. The source green card pops in, but every prop/background pixel is masked out. All145 masks inspected. Loops observed repeatedly; action hides/resets idle, idle resumes after action. Actual rendered bounds were identical441.2421875x349.3125 at1280x720. User visual approval remains pending; native idle-to-action start still cuts into an already-reaching first frame. The smaller.85 framing, lowered34degree table-camera fit, Blender mesh/base/foot and source .blend remain unchanged.
+
+User additionally requested cards to blend into Blender felt like chips. New `blender-card-layout.mjs` projects actual world-plane corners for all7 player fans and split hands; thin contact shadows replace floating drop shadows. Dealer cards retain their filmed first-card contact quad. Animated cards use exact world landing orientation/size and the same face/back art. Outer split fans moved clear of shoe; long and repeated splits compress within their seat. Server/card/wallet ownership is unchanged.
+
+Real isolated `astridplaneqa.localhost:4190` round:35 openingstake across7boxes; box6 split2-hearts/2-clubs for5extra, draws5-diamonds andJ-hearts, onehit8-spades brought second split hand to20; then normal stands/settlement. Wallet1000→965→960→977.50, returned17.50. Shoe415→399→396. Reloads preserved state; all seven card groups plus split/extra-hit positions visually inspected. Green first-upcard replay and idle hiding/resumption checked. Console warning/errors empty. Evidence in elevated-idle/gameplay-qa.
+
+Ten focused tests, required syncprobe and fullprecommit pass. Shared animation defaults unchanged for other dealers; visual work scoped to Astrid per user. No production deployment, no other generation, old speech/player-action bank stays disconnected. This completes the requested idle-camera/card-plane review, not the full dealer-motion program.
+
+Concurrent filesystem work added `takes.json`/`take-box6.json` and multi-take routing to app.mjs/astrid-green-dealer.mjs during finalization. Those unrelated hunks/assets were preserved in the working tree and excluded from this commit using index-only staging. They are not covered by the above visual QA, which ran before that route was loaded. Do not attribute box6 footage to this idle/card-plane task.
+
+## 2026-09-19 — recover Astrid's stopped idle rendering
+
+User clarified that interactive means continuous motion and gameplay reactions, not spoken replies. Observed the actual astridplaneqa page frozen at idle cycle28/frame144 across two visible observations about one minute apart with no action playing. The old requestVideoFrameCallback returned on readyState<2 before rearming, permanently losing its paint loop at a transient loop-boundary seek.
+
+New isolated idle-video-loop helper always rearms native callbacks, falls back to the display clock if native callbacks disappear, and recovers unexpected paused/ended/stalled media while visible. Intentional dealing suspension remains excluded from recovery, then resumes normally. Added four regression tests to pre-commit. No body warp, playback speed change or source alteration. Rendered isolated astridaliveqa round completed opening, hit and settlement; loop advanced through60 cycles, and the original user table through64, exceeding the observed failure point. No console errors/warnings. Evidence in content/staging/2026-09-19/astrid-idle-loop-repair. Required pre-commit and dealer-sync probe passed.
+
+During verification the user rejected the broad head turns in the source87fc5852 and requested mainly eye contact, relaxed breathing and a subtly flirtatious feminine presence. This is separate from the fixed freeze. One replacement Seedance2.0 eight-second job2a721f7d is submitted with the exact same endpoints, approved elevated camera reference and original ref-identity.png. Receipt under astrid-eye-contact-idle. Do not duplicate. No claim of style acceptance until completed source and gameplay review. Concurrent player-box routing in app.mjs/astrid-green-dealer.mjs belongs to other work and is deliberately excluded from this freeze repair commit.
+
+## 2026-09-19 — green take 6a378270 installed as the first card of box 5
+
+Kevin approved Seedance take `6a378270-fc2a-4f14-972b-44820678ffa4` (97 native frames, 24 fps, 1920x1080, SHA 6047a7be…cabe8; source and receipts in `content/staging/2026-09-19/astrid-green-box-right`). The target moved twice during the work: first the far-right box 6, then "no new take, install it for box 5", then "the replaced card must not change size". Final state: the take is installed for **box 5 only** (second seat from the viewer's right); the clip's filmed landing spot is box 5's first-card position. Zero generation, no credits.
+
+Mask: the vetted elevated key (`astrid-elevated-camera/mask-prep/key.py` + settings) with the Apple Vision person matte, all 97 frames reviewed in `mask/qa`. The actor union is `[662,30,1348,772]`; the crop is measured, not assumed: `[560,0,920,850]` (same origin as the dealer take, lower and narrower) so the slide and rest at viewer-right fit. Packed media 920x1700, SHA 6650a315…ee5e2. Source RGB untouched before encoding. Card track: `card-track/build_track.py` treats the card as a rigid rectangle fixed to the rest size (70.9x116.8 source px) and solves only rotation and translation per frame from the magenta marker dots; frames 9-22 and 31-35 use the bright body rectangle, 23-30 (card lifted between the hands) and 36/38 are interpolated poses. `apparent-width.png` plots measured versus rigid width; during the carry the drawn card is about 1.2-1.5x wider than the filmed one. Authored events: pickup 9, release 58, land 59, rest 96. The scripts take `--take-dir` and a `take-config.json` so another source runs in one go.
+
+Runtime: `review/astrid-table-v2/takes.json` lists `take.json` (dealer upcard, unchanged) and `take-box5.json`; `loadGreenTakes` and `selectGreenTake` in `astrid-green-dealer.mjs` pick a take by action and box (first card, not split, face up). The box fan is registered to the filmed landing quad through the same `layoutGreenDealerCards` path as the dealer card, re-applied after the Blender felt layout. The dealer take plays unchanged; in one opening the box-5 clip runs first, other boxes use the 3D shoe path, then the dealer clip; no overlap. A second replay button replays box 5. `performance-contact.mjs` is unchanged.
+
+Verified in the isolated guest `astridboxright.localhost:4190` (evidence `astrid-green-box-right/gameplay-qa`, `result.json`): box 5 and box 2 staked, 7-spades dealt by the clip and handed to the DOM at the filmed quad, K-clubs fanned beside it, box 2 and dealer 8-diamonds normal, refresh mid-round kept identical rects, hit to 27, settlement 960 -> 965, back to betting, shoe 391 -> 384, no console warnings or errors. Nine focused tests (`pipeline/test-astrid-green-box-right.mjs`, `test-astrid-green-first-card.mjs`), the dealer-sync probe and the full pre-commit pass.
+
+Still broken, be honest: the box-5 fan sits right of and below the box-5 marker, over its chip, because that is where the hand left the card; the cut from the green idle into frame 0 and from the box take's rest frame into the dealer take's frame 0 (hand already at the shoe) is hard; the replacement is drawn at a fixed size while the filmed card foreshortens during the carry, and 23-30 is an interpolated pose; frames 9-11 draw over the shoe mouth; native spill on the gripping fingers and one green speck at the left shoulder in native 33; a split of box 5 falls back to the ordinary felt layout. Another session was editing app.mjs, the green idle and the felt layout in this worktree at the same time; only the box-take hunks are committed here. This is a working integration for Kevin's review, not visual acceptance.
+
+## 2026-09-19 — calmer eye-contact Astrid waiting performance
+
+Job2a721f7d completed and replaced rejected head-scanning87fc5852 in the elevated idle manifest. Same exact de1f90a9 native96 endpoints, camera269f8943 and original ref-identity.png b2c16866; Seedance2.0,8seconds1080p,193native24fps frames. No new reference generation, scale/camera change, face retouch, body warping or retiming. Forward gaze, one natural blink, a restrained soft smile and subtle shoulder/blouse breathing. All193 source-aligned actor mattes inspected. Raw model still moves a green prop card around5s; it is completely excluded from the actor output. Server-owned cards/shoe/wallet untouched.
+
+Public packed video: review/astrid-eye-contact-idle/actor-packed.mp4; selected by existing elevated-idle/idle.json. Source and original masks remain under content/staging/2026-09-19/astrid-eye-contact-idle with saved provider receipt, native source hash, request and all-frame QA. Current user preview is http://astridaliveqa.localhost:4190/?dealer=astrid&table=blender.
+
+Actual browser:19 observed loops, first-upcard hides/suspends idle and returns to the new moving take; centre5-unit round from995 completed7D/AD -> hit8D to16 -> stand -> loss990. No browser warning/error. Nine focused tests, repository pre-commit and sync probe pass. User subjective approval pending. Existing action-entry pose cut remains and there are no newly generated outcome-specific reactions or spoken replies. One replacement generated, no automatic wider batch.
+
+## 2026-09-19 — green waiting clip as Astrid's idle with a randomized scheduler
+
+Kevin's green-screen waiting clip `15777d5f-4085-484e-a170-eb5c9a13d7b0` (121 native frames, 24 fps, SHA 849b241e…65bf, `content/staging/2026-09-19/astrid-green-waiting`) now plays while Astrid waits on the Blender table, replacing the frame-96 still and the plain elevated loop (which stays as a fallback when `review/astrid-green-waiting/idle.json` is absent). Zero generation.
+
+Mask: same vetted key and person matte through the parameterized `astrid-green-box-right/mask/build.py --take-dir`; actor union `[658,26,1305,670]`, crop `[560,0,754,678]`, packed 754x1356, SHA 217de02e…c858; all frames reviewed in `mask/qa`. Segments were measured, not taken from the README: phase correlation of the head crop against frame 0 (`motion/head-motion.json`, `.png`, `head-sheet.jpg`) shows a glance toward viewer-LEFT over 6-40 (dx to -31 px) returning by 41, a glance toward viewer-RIGHT over 42-89 (dx to +30 px, blink) returning by 90, and calm breathing 90-120. Segments: base 90-120, glanceLeft 0-41, glanceRight 41-90, full 0-120; ready frames 0/41/90/120 differ by about 1 px full-frame (head crop 3.4-5 grey levels). `build-idle.mjs --install` writes `review/astrid-green-waiting/{idle.json,actor-packed.mp4}` with the dealer take's placement.
+
+Runtime: `astrid-idle-scheduler.mjs` (pure, seeded mulberry32) draws base loops with a 1-3 loop hold, then a glance with p=0.4, never two glances in a row and never more than 3 base loops without one; `astrid-green-waiting.mjs` plays the segments on one packed video through the actor compositor, logs `[idle] <segment>` and exposes the sequence on the canvas dataset. A green dealing take or replay asks for `holdAtBoundary()` and starts only at the running segment's end frame (a ready pose); the idle resumes with base when the scene releases. Dealer upcard and box-5 takes unchanged.
+
+Verified in `astridboxright.localhost:4190` (`astrid-green-waiting/gameplay-qa`): 62 s watch logged base,base,base,glanceRight,base,base,base,glanceLeft,base,base,base,full,base,base,full,… with screenshots of base and each glance; one round held the idle at frame 120 0.76 s after Deal Now, played the box-5 and dealer takes, resumed with base, hit/stand and settled 967.50 -> 977.50; no console warnings or errors. Four scheduler tests, the earlier nine, the dealer-sync probe and the full pre-commit pass.
+
+Still broken: a small head pop at each splice (ready frames are close, not identical) and a one-frame seek hitch at segment starts; the hold can delay a deal by up to 5 s during `full`; the waiting ready pose is not the dealing takes' frame 0, so those cuts stay hard; a take started outside the green path pauses the idle mid-segment. The Playwright browser is shared with another session on this machine. Not visual acceptance.
+
+## 2026-09-19 — Box 4 blue-card reference pair, built-in images after rejection
+
+Kevin asked root to take over Claude's Box4 plan: blue card/white border,
+magenta-yellow-cyan-white face corners, one white back-centre dot, physical
+size fixed on the table plane. Plates must be shown before a Seedance take.
+Box4 means zero-based, one seat viewer-right of centre. Current runtime
+PlateCam-lower-review and ordinary 72x103mm card layout yield native target
+corners1091.76/690.47,1154.09/683.44,1178.22/740.01,1113.72/747.56;
+centre59.09%/66.24%, above its chip. Generator source camera/framing remains
+approved269f8943; no camera, actor transform or game layout changed.
+
+Three Higgsfield GPTImage2.5 low-quality2k image jobs were submitted:
+start2ad17459, rejected-end9e7df4f0 (wrong rotation, duplicate magenta), and
+correction9b95f4a1 using a deterministic placement-guide reference. All
+completed, archived and UNAPPROVED. One-credit preflight each. User rejected
+photographic quality and explicitly directed GPT images to be generated here
+instead of spending Higgsfield credits. Do not reuse those images as inputs.
+
+Built-in image_gen then made a fresh pair directly from original approved
+plate269f8943 and exact /Users/solvifyab/Desktop/ref-identity.png for start;
+end uses that fresh start plus the projected card guide. Current candidate:
+content/staging/2026-09-19/astrid-blue-box4/builtin/start.png and end.png,
+1668x943 each. Full prompts and original output paths in builtin/prompts.json.
+StartSHA493c5f9b00516a219fde328dd8caf1147d86410fda47880c4f8a06d619bf42f0;
+endSHAba88f6be46e9ac9af0bd7ede6f6e7be492ff29ea628f26b7e5c5559fb66c09de.
+Both shown inline. One blue card per image; four distinct end marker colours
+observed. End blue-inner-boundary error against requested OUTER white border
+averages2.71native-equivalentpx,max3.24px. This is a geometry check, not
+acceptance. Outputs are generated edits, not pixel-identical preservation of
+Astrid or a higher-resolution master. User appearance/plate review pending.
+
+No Seedance job submitted, no gameplay/media-manifest installation, no wallet,
+database, existing source or other dealer change. Future tracking uses raw
+RGB before keying, fixed physical size; on-felt X/Z/yaw, lifted card rigid3D
+pose. Two dots alone do not uniquely solve unrestricted3D orientation;
+ambiguous frames require outline/temporal evidence or explicit inference.
+Repository pre-commit checks and audit-dealer-sync --probe passed. Browser
+round QA is not claimed for uninstalled reference stills.
+
+Earlier Box5 fixed-physical-size trial stays isolated/uninstalled under
+astrid-box5-rigid-track. It retained visible source/hand mismatch and cannot
+be described as accepted; no Box5 runtime replacement was made this turn.
+
+## 2026-09-19 — edge blend for the keyed Astrid, render side
+
+Kevin: the keyed edges look too sharp against the 3D environment. `web/public/actor-edge-blend.mjs` adds a `blendEdge` GLSL stage to both compositors (waiting idle in `actor-compositor.mjs`, takes in `performance-player.mjs`): erode the matte 1 px, feather the alpha 2 px (gaussian on alpha only, bounded by the cleaned matte), and wrap the outer band up to 15 % toward the colour behind her. RGB is never blurred. Defaults `edge=1,2,0.15`, URL-tunable, `?edgeHud=1` sliders, `window.astridEdge.set()` live. The wrap colour comes from a 4 Hz capture of the table canvas when available; since the Blender renderer keeps no drawing buffer and the room is CSS, it currently falls back to a wall tone above the rear rail and a felt tone below. Applied identically to the dealer upcard, the box-5 take and the idle. Zero generation, no re-masking.
+
+Evidence in `content/staging/2026-09-19/astrid-edge-blend`: before/after idle frames at base 104, 2x crops of hair, shoulder line, fingers on felt and the hand at the shoe, and the box-5 slide/landing and dealer landing with the blend on; no console warnings or errors; three focused tests (param parsing, clamps, shader contract), the dealer-sync probe and the full pre-commit pass.
+
+Still open: at the defaults the softening is subtle, and the wrap is a two-tone approximation rather than the true scene pixels; capturing the table canvas needs `preserveDrawingBuffer` or a render hook in `blender-table-scene.mjs`, which belongs to the other session's work. Not visual acceptance; Kevin tunes with the HUD.
+
+## 2026-09-19 — waiting idle corrected: combine the eye-contact loop with the glances
+
+Kevin: combine, not swap. The idle that was already playing, the eye-contact loop `2a721f7d-c2da-4e7a-9812-9d9b4a087232` (`review/astrid-eye-contact-idle/actor-packed.mp4`, 193 frames, packed SHA a847935b…ea8d, source SHA 67d9ee98…fa42, installed by 7dee851), stays the base; the green waiting clip `15777d5f` only contributes glanceLeft 0-41, glanceRight 41-90 and full 0-120. No frames 90-120 of the waiting clip are used as base. `build-idle.mjs` verifies the base media on disk by hash against `review/astrid-elevated-idle/idle.json` before composing `review/astrid-green-waiting/idle.json` (version 2: base + glances + segments + spliceOffset).
+
+Splice offset measured in the shared crop origin (560,0), base frame 0 against waiting frames 0/41/90/120: head phase-correlation dy -15.4/-15.1/-15.1/-14.7 px, torso -15.8/-15.3/-15.8/-15.5 px, dx within 0.5 px, silhouette top row 44 versus 26. The waiting clip sits about 15 px higher, so the glance layer is translated down 15.3 source px (scaled with the fit), no warping. Residual masked RGB difference about 14 grey levels: a pop remains at each splice.
+
+Runtime (`astrid-green-waiting.mjs`): the base video loops on its own canvas; at each loop boundary the scheduler (unchanged: 1-3 loop holds, p=0.4, never two glances in a row, forced after 3 loops) may switch to the glance canvas for one segment and back to base frame 0. A dealing take holds a glance at its end frame; base is held at once since every base frame is a ready pose. Verified in `astridboxright.localhost:4190` (`astrid-green-waiting/gameplay-qa`): 90 s log base,glanceRight,base,base,full,base,base,base,base,glanceLeft,base,base,base with glances at loops 1, 3 and 6 (a base loop is 8 s), screenshots of base and each glance with the offset applied (glance layer top 51.7 px versus base 44.6 px at the QA fit), and a round: held at base frame 121 within 40 ms of Deal Now, box-5 and dealer takes played, base resumed at frame 0, settled. No console warnings or errors; 16 focused tests, probe and pre-commit pass. Still: the splice pop, glance holds of up to 5 s before a deal, hard cuts into the dealing takes, shared Playwright browser. Not visual acceptance.
+
+## 2026-09-19 — approved built-in Box 4 pair tested once; motion not accepted
+
+Kevin approved the built-in pair with “Awesome” then “great”. Submitted one
+Seedance2.0 4s/1080p/std/high-bitrate/silent16:9 job via MCP: c01866d1-7c93-43a4-9493-73f7c66d3725,
+36-credit preflight. Start upload2d404615, endac6a5ea5, extra identityb2c16866.
+Exact request, receipt and source are in astrid-blue-box4. No Higgsfield image
+jobs this turn. No extra video submitted after reviewing the outcome.
+
+Source completed1920x1080,24fps,97frames, SHA38dad95f8ad60819bbb2604f85b4ce424d4db425324bdbd0aceca91eb759215a.
+Inspected native frame contact sheets, full-frame overview and browser replay.
+Blue card visibly extracts from the shoe, turns through edge-on frame28,
+shows front corner dots, lands at the intended Box4 target, and stays after
+empty return. But the same hand does all actions, no hand-to-hand transfer;
+a long presentation gesture replaces the quick turn/direct slide, release
+aroundframe55/2.29s, empty returnaroundframe68. Unwanted white Box4 text is
+also generated. Source fails the choreography gate: not masked or installed.
+
+Built inspect-source.py and check-rigid-fit.py solely in that staging folder.
+Blue-body evidence96/97frames missesframe28. False colour candidates include
+finger-edge ringing and cyan bleaching; not all detections are real dots.
+Bounded fixed72x103mm fit over FACE-UP frames31–96 gives stable landing
+(0.26px marker residual) without scaling, using runtime target camera.
+This residual uses marker offsets calibrated from the same finalframe;
+it is not independent accuracy. Partial-marker lifted poses remain inferred;
+frame43 edge mismatch persists. No pickup/turnover replacement track or
+complete-gameplay acceptance claimed. See source-review/review.json,
+rigid-fit.jpg and raw contact sheets. Retain approved plates, not failed
+choreography, for future work. No game, manifests, server cards/wallet/database,
+idle scheduler, or otherdealer changes made. Pre-commit and sync --probe pass.
+
+## 2026-09-19 — user requested live Box4 experiment despite source limitations
+
+Kevin said “try it lets see live”. Implemented an opt-in runtime route:
+http://astridbluebox4.localhost:4190/?dealer=astrid&table=blender&astridBlue=box4.
+Only that query appends review/astrid-blue-box4/take.json; ordinary take lists
+and Box5/dealer-upcard files remain unchanged. This is explicit user review
+of the previously rejected motion, not visual approval or another generation.
+
+Staging astrid-blue-box4 has build-preview-mask.py, build-preview-track.py,
+install-preview.mjs. Person matte plus approved green key removes background;
+blue card hull/border/dots removed except skin, preserving fingers above the
+replacement. Box4 text is removed with background. RGB unchanged. Crop560,0,
+960,800 shares approved .85 framing. Fixed72x103mm rigid model throughout:
+0–27 partial-body approximations,28–30 inferred rigid turn,31–96 prior marker
+fit. Back/front changes at29 between visible back/front evidence. Pickup0,
+release55,land56,rest96. Original24fps speed. Actor-packed SHA0a7beface3055fbe01523b9c6f3a88aedcae8eaf55279abe6e06b7a8eb3a9fab,
+calibrationdc45b2c93709c32f5c95b8fb5fb7dcef6a74926fba80d09c586ba29c529dd0f3.
+
+Verified actual guest gameplay in the visible IAB: $5 on zero-basedBox4,
+server cards K-diamonds/2-clubs (12), hit2-hearts (14), stand, loss settled
+1000->995 with totalbet0 and lastwin0. Replayed twice, captured presented
+frames6–79 including pickup25,front32,contact45,land56. New take ID observed
+on performance-layer, retarget=false; blue/text absent, game card under
+filmed fingers and target fan aligned. No console errors/warnings. Evidence
+under gameplay-qa. A second $5 Box4 round started and left open for replay.
+
+Remaining visual issues: source's slow upright presentation, missing hand
+transfer, approximate early pickup/turn, frame43 edge mismatch, and existing
+hard idle/action joins. No claim of smooth60 or complete source acceptance.
+Focused green-box routing tests4/4, pre-commit and sync --probe passed. Scope
+is Astrid only. Other dealers were covered by shared regression checks, not
+opened or changed. Unrelated app.mjs blank-line edit preserved unstaged.
+
+## 2026-09-19 — Box 4 opening pair and larger settled cards
+
+User accepted the live blue-card take and requested larger laid cards plus the
+same action for both opening cards. The opt-in `astridBlue=box4` now routes
+only the first two unsplit, face-up Box 4 cards through c01866d1. Other takes
+retain their previous routing; hits and split cards retain the ordinary path.
+No generation, media re-encode, actor scale, camera or wallet changes.
+
+Box 4 resting cards are 25% larger in the photographed table plane. The
+original tracked pickup/turn/release is preserved through source landing56;
+a separate 8-frame presentation adjustment settles the released card into
+its larger fan. DOM takes over at64 with the same final corners. The second
+card uses its own offset, with no movement or hiding of the first card.
+Replay now plays both authoritative cards sequentially. Source/media hashes
+are unchanged; calibration SHA is now
+86666241db588fce78a85b6bdf9fd2b22ddcd3416ef1238545d13c7759f9faca.
+
+Verified in rendered gameplay on isolated4190 guests. QA host
+astridbluepairqa: opening8-clubs/8-hearts, replayed both, hit and settled loss,
+balance1000->995, totalbet0. User preview astridbluebox4: actual opening
+5-spades/2-clubs, both c01866d1 deliveries observed; second frames2–96,
+first card visible throughout with exactly one unchanged quad. Larger pair
+remains on felt and clear of its chip. No warnings/errors on either guest.
+Left that live round open with `Replay box 4 both cards` available.
+Evidence: content/staging/2026-09-19/astrid-blue-box4/gameplay-pair-qa/.
+
+Focused routing/presentation tests7/7, pre-commit checks and dealer-sync
+--probe passed. Existing source pickup/turn limitations and hard idle/action
+joins remain; this is the user's accepted live experiment, not all-seat
+visual acceptance. Unrelated work, including app.mjs blank line, preserved.
+
+## 2026-09-19 — Separate moving and resting Box 4 card sizes
+
+User clarified the enlargement applies only to cards lying on the felt, and
+asked to reduce the moving Box 4 card. Removed the eight-frame growth
+animation. The source landing again hands over at56, with settled layout
+still1.25 and both opening deliveries enabled. The moving replacement now
+uses one constant0.80 display scale, anchored one quarter along its left
+grip edge so it does not pull away from the fingers. Actor pixels, hands,
+camera, stored source corners and the resting-card quads are unchanged.
+This is explicit presentation sizing, not a new measured physical track.
+Calibration SHA4e050362bed9039d51e09fe322a7e904c9a929b5d2b803879322d0cf854c98c5.
+
+Replayed both authoritative5-spades/2-clubs cards in current live tab22.
+Inspected the wrist turn, contact and release for both. Runtime showed0.8
+throughout, landing56, first card visible with one unchanged quad during
+second delivery; final quads exactly match the prior larger resting layout.
+No console warnings/errors. Existing guest balance985 and bet5 preserved.
+Evidence: astrid-blue-box4/gameplay-size-qa. Focused tests8/8, required
+pre-commit and sync --probe passed. Scope remains the opt-in Box4 preview;
+existing choreography/idle joins and imperfect tracking are not newly solved.
+
+## 2026-09-19 — Extend accepted Box 4 v1 to hits, splits and dealer draws
+
+User accepted v1 and asked for hits/splits at Box 4 and Astrid's own cards.
+The same opt-in `astridBlue=box4` now routes every face-up card added at
+zero-based Box 4 through c01866d1, including hits, doubles and split hands.
+It also loads an explicit repeatable dealer manifest that reuses the original
+de1f90a9 media for the upcard, face-down hole card and subsequent dealer draws.
+Ordinary manifests keep their prior first-card/opening-pair boundaries.
+No generation, new media bytes, camera change or server logic change.
+
+V1 moving Box 4 scale remains 0.80; unsplit resting scale remains 1.25.
+Split hands are separate compact fans on the calibrated felt plane, with
+bounded horizontal spread for later hits. Existing cards remain visible while
+the incoming card is supplied by the performance layer. The hole card uses
+the back artwork and carries no rank label before reveal.
+
+Rendered QA used an isolated guest runtime on4199, with a reordered test
+shoe preserving its undealt card multiset. Captured both split deliveries
+(8S/3D and8H/2C), the added4D on a split hand, and a filmed5H double on the
+other. Test round settled a15 loss to985. Some longer captures were interrupted
+by disappearing tabs; no visual acceptance was inferred from those gaps.
+The final continuous capture verified normal hit5S/2H +3D, stand, hole reveal,
+then filmed dealer draws4S and6H (5D/6C/4S/6H=21), settlement985->980,
+totalbet0. Own-card takes were observed across both complete draw animations,
+including contact and return. Opening hole-card contact was captured separately.
+No browser warnings/errors. Evidence: astrid-blue-box4/gameplay-actions-qa/.
+
+Focused tests15/15; pre-commit and dealer-sync --probe passed. New Box4
+calibration SHA0155d1c4f4696ab59d4222b04dde7b1bd70b371374b36c898c9aaf1b602831c4.
+This reuses the accepted source and photographed landing point; it does not
+create new hand choreography for each split fan. Existing idle/action joins,
+source pickup limitations and the v1 size change at landing remain. Other
+seats are not newly supported. Unrelated dirty work is preserved.
+
+## 2026-09-19 — Box 3 reference retry, not approved
+
+The user requested a new center Box 3 before/after pair for MiniMax H3, then
+rejected the generated face and image quality. Retried with two independent
+built-in GPT image edits of the original elevated 2688x1520 start plate;
+no chained edits of the rejected face drafts. The requested change was the
+blue tracking card, preserving Astrid, the camera and table.
+
+Evidence and exact prompts are in
+`content/staging/2026-09-19/astrid-h3-box3-v1/original-master-retry/`.
+Both outputs are only 1668x943 despite requesting the source dimensions.
+The face looks closer to the original but remains unapproved. The after
+image also retains a green card remnant at the shoe and misses the measured
+center-seat target; reject it for video. Do not use these outputs as approved
+H3 references or claim the resolution problem is fixed.
+
+Validation was visual image inspection and dimension/hash measurements.
+No H3 video was submitted, no reference was installed, and no gameplay/player
+files were changed. Accepted Box 4 v1 remains unchanged. The commit hook's
+checks and dealer-sync --probe passed; neither establishes image acceptance.
+Rendered gameplay QA was not rerun for this uninstalled image experiment.
+
+## 2026-09-19 — Astrid softer identity draft
+
+The user said the latest face still looked stern and older than the original
+Astrid, supplying an older video screenshot. Made two independent built-in
+GPT image edits of the current before plate, using Desktop/ref-identity.png
+as the face reference and the screenshot as additional reference in attempt 1.
+Saved both and the exact prompts under astrid-h3-box3-v1/soft-identity-review.
+The latest before-soft-identity.png has a softer mouth and slight smile;
+the angular face and stronger facial shadows still differ from the original.
+User likeness acceptance is pending. Dimensions are 1667x943, so no claim
+of restoring the native 2688x1520 master or exact pixel registration.
+
+Visual review covered face, framing, hands, shoe and card. The preceding
+after plate is still rejected. No H3 submission, gameplay installation,
+or changes to accepted Box 4. Commit-hook checks and dealer-sync --probe
+run for the saved media experiment; no rendered gameplay QA is implied.
+
+## 2026-09-19 — approved ElevenLabs SPEAK take mounted as Astrid's greeting
+
+Kevin approved the creatify-aurora greeting take `Mn2vLqTOAmDaJKBYJeKy` ("mount it, it was perfect"; 1280x704, 25 fps, 118 frames, embedded AAC; `content/staging/2026-09-19/astrid-green-speak-elevenlabs`). Zero generation, no credits.
+
+Registration measured, not assumed: the take is the 2688x1520 plate at 1280 wide, cropped to 704 rows. Gradient phase correlation with the actor masked out against frame 0 of the dealer take render (the placement basis) gives one rigid transform, scale 1.5 and offset (0,+15) px (left rail, right rail and shoe agree; the front rail alone reads +9, generative drift, left alone). `source.mp4` (SHA 9fea307b…d848) is that resample to 1920x1080, 25 -> 24 fps by frame drop so lip timing is untouched, padding in the take's own green, audio copied. The embedded audio cross-correlates with `greeting.mp3` at lag 0 (peak 1.00), so frame 0 is t=0 and the manifest offset is 0.
+
+Mask: vetted key through `astrid-green-box-right/mask/build.py --take-dir`; union [658,20,1305,673], crop [560,0,754,682] (dealer-take origin), packed 754x1364 SHA 0ff04351…3c6c; all 116 frames reviewed, clean. Against the base eye-contact idle her head/torso sit ~20 px and hands 6-10 px higher, a pose difference, so no splice offset is applied (`spliceOffset` in `speak.json` is runtime-tunable without re-encoding).
+
+Runtime: `web/public/astrid-green-speak.mjs` (`loadGreenSpeak`, `speakManifestErrors`, `installGreenSpeak`) plays the packed take through the actor compositor at the dealer take's placement over the held idle: `holdAtBoundary()` first, `performance-playing` on the scene while it plays so the idle hides and resumes base afterwards, cut in at frame 0 and out at 115 (both ready poses), the mp3 started on the first presented frame plus the measured offset; the start delta is measured on the next presented frame, logged as `[speak] <line> audio/video start delta`, exposed as `data-speak-start-delta-ms` and, when it exceeds a frame, the audio clock is moved once inside the leading silence (settled delta logged too). A dealing take appended while she speaks aborts the speak. `app.mjs`: `voice.say` routes a line with a green take on Astrid (`astridSpeak.has(t)`, Blender table only, other dealers untouched); since the guest table has no entry gate, Astrid greets once `tableReady` resolves, or on the first pointer/key gesture when the browser refuses autoplay. Manifest `review/astrid-green-speak/speak.json` + `actor-packed.mp4`, composed by `build-speak.mjs --install`. `.astrid-green-speak` layer z 25.
+
+Verified: headless Chrome (SwiftShader) load of `astridboxright.localhost:4190/?dealer=astrid&table=blender`: greeting plays 0-115 over the held idle, caption shown, base idle resumes, no app warnings or errors (only SwiftShader ReadPixels driver notices). Start delta run 1 -91 ms; run 2 -250 ms nudged to -106 ms settled; software rendering inflates it. Five new tests `pipeline/test-astrid-green-speak.mjs`, 24 focused, the dealer-sync probe and the full pre-commit pass. Per Kevin, no gameplay evidence run; he QAs on hardware.
+
+Still open: the cut pop (~20 px head) in and out of the speak; the true audio/video delta on real hardware is unmeasured; only the greeting has a take, every other Astrid line stays silent; a deal started mid-greeting cuts her off. Not visual acceptance.
+
+## 2026-09-19 — every Astrid line mounted as a keyed Creatify Aurora speak take
+
+Kevin approved the greeting install and asked for all other lines the same way. 16 downloaded takes (`content/staging/2026-09-19/astrid-green-speak-elevenlabs/take-<line>-creatify-aurora.mp4`, ids in `jobs.json`): blackjack, bust, chatter1, chatter2, dealerblackjack, dealerbust, double, farewell, goodluck, insurance, lose, peek, placebets, push, sidebet, win. Zero generation.
+
+Same recipe, scripted once (`build-lines.py`): the greeting registration (scale 1.5, offset 0,+15) was verified on blackjack, win and bust frame 0 (`registration/verify-take.py`, identical rail/shoe shifts) and reused, not re-solved; each take resampled to a 1920x1080 24 fps `lines/<line>/source.mp4` with its audio; vetted matte per line (crops [560,0,754,682], four lines at 752 wide; 36-93 frames); embedded audio cross-correlates with each mp3 at lag 0 (peak >= 0.9996), so every offset is 0. No take failed. All frames reviewed through `review-sheets/lines-1..4.jpg`.
+
+Runtime generalized rather than repeated: `speak.json` is version 2 with one media entry per line (`review/astrid-green-speak/<line>.mp4`, 17 files incl. greeting); `astrid-green-speak.mjs` keeps one decoded video and one recording per line, builds the actor compositor per utterance at that line's crop, and applies the same rules as the greeting (hold at a ready frame, `performance-playing` while it plays, base idle resumes, a dealing take aborts the speak). `voice.say('<line>')` on Astrid + Blender now plays whichever line has a take; chatter1/2, farewell and peek are in the manifest and reachable through the review hook `window.astridSay('<line>')`. The audio clock nudge is limited to a trailing audio clock (a leading one means late frames). Other dealers untouched.
+
+Found and fixed during the check: Chrome can deliver the video's `ended` before the last frame's callback, which left the greeting held at frame 114 for the 20 s timeout in one run; the runtime now presents the decoded last image as the cut-out frame on `ended` (the same guard `PerformancePlayer` has). Verified afterwards in two headless SwiftShader passes of `astridboxright.localhost:4190/?dealer=astrid&table=blender`: greeting on load, then win and bust through the hook, idle held and base resumed each time, no app warnings or errors. Five focused speak tests (now over all lines), 24 focused, dealer-sync probe and full pre-commit pass. No gameplay QA per Kevin.
+
+Still open: the cut pop into and out of each take (~20 px head vs the base idle) on every line; audio/video delta on real hardware unmeasured (console `[speak] <line> audio/video start delta`); a line said while a deal starts is cut off; SwiftShader timings in `runtime-check/result.json` are not representative.
+
+## 2026-09-19 — greeting eye holes repaired after user rejection
+
+The user reported disappearing eyes in the first masked lipsync. The original
+green-excess key partially removed the blue-green irises. Earlier claims
+that this greeting mask was clean are superseded by that rejection.
+`astrid-green-speak-elevenlabs/mask-face-repair/` reconstructs the original
+key and protects the enclosed high-confidence head interior; source RGB,
+outer silhouette, camera, crop, timing and paired greeting audio stay unchanged.
+Across 116 frames, 2,300 alpha pixels were repaired; restored pixels are255
+lossless and at least253 after H264 decoding. New packed SHA
+5b1f348737efd4374f498b23e21be935d8cdd450172af79e944a36845ca9dd75.
+Canonical greeting mask updated so future multi-line builds inherit it.
+Current greeting media uses a content-addressed filename to avoid stale cache.
+
+IAB rendered QA on isolated guest port4211 verified two greeting plays,
+mask visibility, waiting held during speech and resumed afterward. First
+repaired play reached frame115; measured start delta-25ms, settled-49ms.
+Evidence: hardware-review/face-repair-*. The pose jump at the speech/idle
+join remains; this is not a claim of perfect perceptual lip sync. User's
+existing port4190 round was left alone. Other concurrently installed speech
+lines have not received this specific eye repair/review. Five speak tests
+and dealer-sync --probe passed; full checks run on commit. No generation.
+The concurrent all-lines commit picked up the repair code and canonical
+mask while work was underway; this delivery adds its remaining media file,
+review notes and second-play evidence without reverting that work.
+
+## 2026-09-19 — approved Box3 H3 test ended in provider failure
+
+The user approved the softer Astrid face, requested Scout/card references,
+then authorized one test. `astrid-h3-box3-v1/test-01/` saves the full-scene
+start/end pair, distinct-marker card close-up, separate Scout cardback,
+exact requests, hashes and receipt. H3 rejects extra reference media when
+start/end keyframes are present (preflight had allowed it); the rejected
+request created no job. One corrected 4s 2K 16:9 keyframe-only job was
+submitted: d2295b53-09dc-4eb4-bffa-6ce4847a8897, estimated8credits.
+It returned terminal FAILED with no output URL or reason. Actual charge or
+refund is unknown. No duplicate submission, source video or gameplay install.
+Box4 v1 remains unchanged. Tell the user this failed; do not call it a render
+waiting for review and do not resubmit automatically.
+
+## 2026-09-20 — Astrid remaining eye masks and original-take speech joins
+
+Source clarification: use the post-reset elevated Creatify Aurora takes, specifically
+`take-goodluck-creatify-aurora.mp4`, not the pre-reset frontal Higgsfield bank.
+The user confirmed the camera angle. No generation, camera change or old-bank restore.
+
+All 16 remaining speech masks now use the greeting's opaque enclosed head interior
+repair. 944 frames, 13,760 repaired alpha pixels. Source RGB, registration, audio,
+crop and frame count retained. Encoded repaired alpha is >=250 in every affected
+pixel; dealerbust/farewell/placebets/sidebet need CRF0 to avoid alpha codec ringing.
+`all-lines-report.json` and the four all-lines QA sheets record the checks.
+
+Each of the 17 original recordings now has an entrance and exit motion map.
+Bidirectional DIS flow, bounded to 60 source pixels, bridges the ~20px head and
+6–10px hand pose difference over 220ms using premultiplied RGB/alpha interpolation.
+The entry captures the currently held ready idle; exit seeks and paints idle frame0
+before revealing it. Recorded speaking frames and paired mp3 are unchanged.
+Flow maps are measured against idle frame0; small breathing/blink differences in
+other held frames remain possible. This is an interpolated join, not newly filmed
+motion or a blanket visual acceptance of every source's face/quality.
+
+Runtime review used isolated guest port4211, with the actual rehearsal voice.say
+path. All17 lines played twice and returned to idle. Contact sheets inspected
+source/matte eyes and all entry/exit face intermediates. Runtime screenshots and
+logs are under hardware-review/joins. Goodluck frame series includes entrance,
+speech, exit and resumed idle. A CUA clipped capture returned one black thumbnail;
+subsequent full-viewport screenshots were used for per-line review.
+
+A repeated resume/play race found during QA was fixed. Greeting/goodluck/bust were
+rerun twice afterward without new warnings/errors. The first gesture's automatic
+greeting no longer silently drops a selected review, and the rehearsal caption
+now uses the exact green take's text instead of the old bank description.
+
+A real server-owned demo round: $5 on zero-based Box4; J-heart + 6-spade, hit
+4-club =20; dealer20; push, $5 returned, balance1000, idle moving afterward.
+Goodluck and push ran through the same new joins. Existing Box4 motion, dealer
+cards, chips/table, wallet and server logic were not edited. One idle watchdog
+recovery was observed during the multi-tab session; later idle motion was verified.
+Shared rehearsal UI regression: Vera/Amira/Mei goodluck twice, no bank changes.
+
+Six focused speak checks, full pre-commit suite and dealer-sync --probe passed.
+These checks do not establish perceptual lip-sync approval. Measured settled
+clock deltas in the runs ranged roughly -35 to -127ms; this task does not claim
+sample-perfect playback sync or native source quality beyond the supplied takes.
+User's existing localhost4190/Amira session and live database were left alone.
+
+## 2026-09-20 — Folded resting pose, physical bridge and speech height
+
+User chose folded hands like the original f599e503 idle and explicitly requested
+a transition from its end into the current ready pose. Implemented in
+`content/staging/2026-09-20/astrid-calm-rest/`; exact requests and receipts retained.
+One built-in GPT Image plate, Seedance2.5 folded idle744a9e34, rejected Seedance2.5
+bridge d51c19ba, corrected Seedance2.0 bridge92521ca6. No other generation jobs.
+
+New folded loop uses native frames72–144, omitting prolonged closed eyes at source
+start. Bridge retains native empty-hand unfolding frames40–96 at1.5x; six-frame
+silent optical-flow endpoint joins close small residual pose differences. Reverse
+playback gives the folded return. Rigid actor translations align the heads;
+camera, actor scale and table stay unchanged. No masks consume the eyes (encoded
+head alpha255; no repair pixels needed). The first bridge was rejected before
+installation for changed starting arm geometry.
+
+`astrid-folded-rest.mjs` wraps the existing ready/glance player. Folded breathing
+loops, unfolds into an existing glance every third loop, folds back, and waits
+for the physical bridge before speech/card actions. Consecutive speech keeps the
+ready pose. Assets bind to the current ready source hash. Optional manifest makes
+fallback to the existing waiting player possible if rest media cannot load.
+
+Also fixed speech rising: actor offset[0,20] applied uniformly to all17 recorded
+takes and their rebuilt entry/exit maps. No source speech RGB/audio changes.
+
+Actual isolated guest4211 rendered checks: repeated rest/bridge/glance/return,
+greeting and consecutive goodluck, request during folding, complete zero-based
+Box4 round (4H+8H, hit7S =19; dealer bust; $5 stake/$10 return/balance1005),
+dealerbust speech and resumed folded idle. Final log has no new warning/error.
+Vera/Amira/Mei two-play goodluck regression retained. 11 focused checks,
+full pre-commit and dealer-sync --probe passed. See the staging README and
+height-qa/gameplay-qa contact sheets/logs for evidence and source decisions.
+
+Small skin-tone/texture differences remain between independently generated sources.
+The reverse bridge is not a separately filmed return. No new broad visual acceptance
+of speech, lipsync or all seven seats is implied. User4190 session/database untouched;
+no production deployment or push. Review remains Astrid on port4211.
+
+## 2026-09-20 — Astrid color/scale and loop seam correction
+
+User rejected visible skin-tone/size shifts and broken loops in the folded-rest
+revision. Repaired from existing sources only; no new generation jobs.
+Staging: `content/staging/2026-09-20/astrid-seam-repair/`.
+
+All17 speech display copies now use a fixed first-plate uniform scale/translation
+and fixed measured RGB balance against the existing ready source. Exact text,
+original recordings, mp3 hashes, frame counts/fps and audio offsets stay unchanged.
+New enter/exit maps bind to the display hashes. They are review assets; previous
+visual acceptance is not inherited. Source build scripts follow hash-bound display
+revision/rest manifests so normal rebuilds cannot quietly restore old copies.
+
+Folded idle has a 12-frame motion-aligned moving overlap and adjacent-frame wrap.
+Out/back share that loop entry. Player waits for the boundary before unfolding,
+coalesces callers, and avoids an idle flash when readiness is requested during
+folding. Old full-head-turn glances are omitted from this folded cycle; native
+breathing/eyes remain. Pending holds/seeks settle on disposal.
+
+Rendered isolated guest4211: all17 lines, greeting/goodluck twice, multiple complete
+idle wraps, full Box4 round 5H+6H hit6D=17, insurance declined, stand, dealer bust,
+stake5/return10/balance1010 and resumed folded rest. No new warnings/errors. Shared
+Vera/Amira/Mei goodluck twice in a separate hidden rehearsal, unchanged media.
+Focused lifecycle/speech checks, full pre-commit and dealer-sync --probe passed.
+Independent audit:1060 speech frames, eye alpha>=250, no new opaque crop loss;
+loop wrap head difference25.32->1.91. Visual sheets and captured transition video
+retained. These measurements are not blanket source/lipsync/all-seat acceptance.
+
+Limits: waiting for a safe exit can add up to2.54s before unfolding. Return still
+reverses the silent bridge. Generated facial texture/expression differences remain;
+this correction addresses tone, scale and cuts, not a new identity generation.
+User4190 database/session untouched. No production deployment or push. CAC-9 remains
+In Dev: this seam work does not close its broader hand/fingertip masking expectation.
+
+
+## 2026-09-20 — Amira branded table, clear room, supplied speech and waiting loop
+
+User moved work to Amira and supplied17 raw talk clips plus waiting job5f2929a3.
+All are now mounted through the shared keyed player. Speech retains1,123 native
+25fps frames, exact captions/MP3 hashes and measured0ms embedded-audio lag.
+Face/eyes/namebadge alpha survives the exported matte (minimum253 face). Waiting
+retains121 native24fps frames from the named5s take, with a rigid(+11,+1)px
+translation to align the head. No additional video generation or source repaint.
+
+Amira uses table-v2.blend with Scout branding and restored warm felt#665139;
+Astrid felt returns to#263336. A built-in GPT Image room edit based on Amira's
+original removes the extra foreground table, raises lighting and shows more floor.
+Saved scene-clear-v2.png (1672x941), original preserved, prompt/receipt in
+content/staging/2026-09-20/amira-room-clean/.
+
+Fixed absent/tiny card artwork in Blender mode when PerformancePlayer is absent.
+Moving and settled cards share the face artwork, Amira with larger indices and
+stronger contrast. Physical card geometry unchanged. Dealer fan19cm ahead of
+rear edge and total positioned to its left. Astrid filmed dealing is temporarily
+paused per user request; shoe-to-seat delivery plus existing idle/speech remain.
+
+Rendered isolated guest4211: all17 Amira lines; greeting/goodluck twice; eight
+waiting wraps and speech return; seven-seat round through settlement (stake35,
+return40), hits; later center9S+7S hit/bust/settlement with jumbo artwork and new
+room (stake5/return0). Vera two-play regression complete. Fresh Mei/Astrid final
+rechecks were interrupted by closed tabs; final dealer-fan22->19cm capture also
+interrupted. Do not report those checks as completed.18 focused tests, full
+pre-commit and dealer-sync --probe pass. Evidence and limits in
+content/staging/2026-09-20/dealer-table-review/README.md.
+
+Limits: supplied1K speech differs in detail/tone/left-hand pose from newer2K idle.
+The boundary is still visible; no seamless-transition or all-line lip-sync approval.
+Speech waits up to5.04s for the front-facing idle endpoint. No raw/source assets,
+user4190/live DB, production or remote deployment changed. CAC-9 stays In Dev;
+Amira work does not close that broader Astrid report.
+
+## 2026-09-20 — Amira composite and idle/speech boundary repair
+
+Amira now uses opt-in `actor-composite-scene.mjs` / `actor-grade.mjs` with editable
+`review/amira-composite/profile.json`: fixed luminance-first speech/waiting grades,
+warm measured room/felt edge wrap, source-frame hand/forearm contact shadows,
+softened lower silhouette cast shadow, frontal soft table key and shared finish.
+No camera/actor scale/source matte/MP3 changes. Skin ROI median-luma gap .0693 to
+.0123; native1K speech softness remains. The common finish is browser GPU
+backdrop/grain/vignette, actor and shadows are WebGL. Local waiting measured
+rAF median16.7ms/p9518.0ms, not a universal60fps/source-resolution claim.
+
+User then specifically rejected Amira idle/speech transitions. Added34 fitted
+silent320ms joins, source-hash-bound, with both endpoints captured from the actual
+graded compositor. Native speech frames/clock/audio remain intact; no regeneration
+or re-key. Contact anchors and cast alpha follow the join. Waiting frame0 is
+prepared before reveal. Fixed existing registration converts into common crop
+space; actor perspective/size does not change. Other dealers retain their prior
+ungraded/packed-join branch.
+
+Evidence: `content/staging/2026-09-20/amira-composite/` (JSON, measured samples,
+same-frame hair/shoulder/hand before/after crops, actual guest hit/bust/settlement)
+and `amira-transitions/` (build, endpoint samples, real GPU entry/return sequences,
+all17 playback results, all-four two-play regression). No shader/playback errors.
+Seven focused tests, full pre-commit and dealer-sync --probe pass; legacy probe
+missing-take gaps unchanged. User visual acceptance still required; source pose
+and sharpness differences can remain perceptible. Speech can wait up to5s for
+the waiting endpoint. No credits, source regeneration, live DB, production or
+remote deployment. No broader Astrid/CAC-9 completion claim.
+
+Follow-up: user requested softer hair edges. Added opt-in Amira dark-hair-region
+alpha feather3.4px/75% and wrap19%, adjusted for native crop width. Face/eyes and
+all source RGB stay sharp; no new matte. Composited transition endpoints inherit
+the same treatment. Hair before/after evidence is in the composite directory.
+
+## 2026-09-20 — production original/V2 demo switcher
+
+User requested deployment with Astrid V2 and Amira V2 beneath the existing dealer switcher for a before/after demo. Published current keyed/Blender presentation under `/v2/` and added the comparison row to the captured original production frontend. Root original media/player stays available; both routes use the same authoritative API/session/wallet. Filmed Astrid dealing remains paused. No generation, backend restart or live database copy.
+
+See `docs/releases/dealer-v2-2026-09-20.md` and its SHA-256 manifest for exact routes, source capture, rollback and verification. Isolated production-backend preview passed both V2 complete rounds, wallet continuity, mid-round switch guard, original seven-seat hit targets and repeated speech regression. Repository checks passed. Public static files/range serving verified on server; final public browser view remains gated by existing HTTP login. Mobile viewport override did not apply, so mobile appearance is not marked verified. Only task-owned switcher/build/docs files are committed.
+
+## 2026-09-20 — BO session access to the game
+
+Fixed and deployed the separate HTTP Basic gate and missing BO-to-player session connection. An existing BO login in the same browser now authorizes the original/V2 game via a browser-bound single-use code; logged-out users sign in to BO and return to their selected dealer. The BO cookie stays on its own host. The ordinary CRAIG player link preserves wallet/table state and grants no backoffice privileges. Partner launch handling now also covers `/v2/`. Game APIs remain authenticated; no production guest mode or media/player presentation changes.
+
+See `docs/releases/bo-game-auth-2026-09-20.md` for protocol, release/rollback paths and verification limits. New actual-server authentication tests, existing password/CRAIG tests, eight table HTTP scenarios, full pre-commit and Caddy validation pass. Isolated browser completed BO login → Astrid V2 → $5 round/push/collection → original Amira → Amira V2 with the same session and $1,000 balance. Public browser now reaches BO sign-in instead of HTTP Basic/blocked-site errors. No production BO cookie existed in the test browser, so no real user's wallet was used to test live authenticated gameplay. Five scoped app files plus Caddy game routing deployed at 11:21 UTC; live databases were not copied or replaced.

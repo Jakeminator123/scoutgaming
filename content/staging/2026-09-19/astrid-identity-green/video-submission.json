@@ -1,0 +1,31 @@
+{
+  "results": [
+    {
+      "id": "6975244a-5b47-43e1-8176-5356066f3e72",
+      "type": "video",
+      "status": "pending",
+      "model": "seedance_2_0",
+      "params": {
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid green-screen studio scene. Start in the exact supplied ready pose. Deal exactly ONE green tracking card from the fixed shoe to the single card location shown in the ending image, the second player position from viewer-left. Extract from the actual shoe mouth, transfer to the receiving hand, briefly turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the green work surface to that location. The receiving fingers remain naturally in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the green work surface for the remainder. Aim for about 0.9 seconds from first extraction motion to release, and complete the empty return by about 1.5 seconds, followed by gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, green shoe, green work surface, plain green background, lighting, and camera. No second extraction or extra card, no new text or labels, no pose freeze, no hovering card, no body scaling, no body dragging, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card. The additional identity photograph defines Astrid's face, age, hair and clothing only; preserve that exact woman. The green start and end images define the studio setting; do not copy the casino background from the identity photograph.",
+        "aspect_ratio": "16:9",
+        "duration": 4,
+        "reference_images": [
+          "75d580c2-3243-4df9-ad43-83483de11250",
+          "2d808f07-d7f5-4685-a067-315871660a55",
+          "b2c16866-56c4-4406-bbb1-7fed713ca485"
+        ],
+        "resolution": "1080p",
+        "mode": "std",
+        "bitrate_mode": "high",
+        "generate_audio": false
+      }
+    }
+  ],
+  "adjustments": {
+    "medias[2].role": {
+      "requested": "image",
+      "used": "image_references",
+      "reason": "Seedance 2.0 backend expects schema-key media roles"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "offset": [0, 20],
+  "basis": "Idle 2a721f7d frame 0 versus speech ready endpoints, measured in shared 1920x1080 source coordinates. Head requires +19 to +21 px; torso +18 to +20 px. Apply one rigid actor translation to both speech playback and join endpoints, leaving camera, source pixels and paired audio unchanged.",
+  "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+}

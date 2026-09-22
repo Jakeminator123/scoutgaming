@@ -19,7 +19,11 @@ export function validateContactTake(take, {approved=false}={}) {
   check(['draft','review','rejected','contact-approved','approved'].includes(take.status), 'Unknown review status');
   check(take.dealer==='astrid', 'This capture belongs to Astrid');
   const proxy=take.tracking?.kind==='hand-proxy';
-  if(take.tracking){
+  const chroma=take.tracking?.kind==='chroma-card';
+  if(chroma){
+    check(take.status==='review'&&!approved,'Chroma tracking is restricted to staged review');
+    check(hash(take.tracking.sourceSha256)&&take.tracking.keepSourceLanding===true,'Chroma source and filmed landing required');
+  }else if(take.tracking){
     check(proxy&&take.status==='review'&&!approved, 'Hand proxies are restricted to staged review');
     check(hash(take.tracking.sourceSha256)&&integer(take.tracking.sourceStart)&&integer(take.tracking.sourceStop)&&take.tracking.sourceStop>take.tracking.sourceStart,'Invalid proxy source binding');
     check(Array.isArray(take.tracking.shoulder)&&take.tracking.shoulder.length===2&&take.tracking.shoulder.every(x=>finite(x)&&x>=0&&x<=1),'Invalid proxy shoulder');
@@ -27,11 +31,18 @@ export function validateContactTake(take, {approved=false}={}) {
   check(take.playbackRate===undefined||(finite(take.playbackRate)&&take.playbackRate>=1&&take.playbackRate<=2), 'Invalid silent-action playback rate');
   check(take.colourGain===undefined||(Array.isArray(take.colourGain)&&take.colourGain.length===3&&take.colourGain.every(v=>finite(v)&&v>=.5&&v<=1.5)), 'Invalid actor colour correction');
   const m=take.media ?? {}, c=take.camera ?? {}, e=take.events ?? {};
+  if(take.tracking?.deliveries!==undefined)check(chroma&&(take.action==='deal-dealer'?take.tracking.deliveries==='all-dealer-cards':Number.isInteger(take.box)&&take.tracking.deliveries==='all-box-cards'),'Invalid repeated-card routing');
+  if(take.tracking?.openingCards!==undefined)check(chroma&&Number.isInteger(take.box)&&[1,2].includes(take.tracking.openingCards),'Invalid opening-card routing');
+  const presentation=take.tracking?.presentation;
+  if(presentation)check(chroma&&presentation.scope==='settled-only'&&finite(presentation.scale)&&presentation.scale>=1&&presentation.scale<=1.5&&finite(presentation.fanStep)&&presentation.fanStep>0&&presentation.fanStep<=1&&presentation.settleFrames===undefined,'Invalid settled-card presentation');
+  const dealing=take.tracking?.dealingPresentation;
+  if(dealing)check(chroma&&finite(dealing.scale)&&dealing.scale>=.5&&dealing.scale<=1&&finite(dealing.gripAlongLeftEdge)&&dealing.gripAlongLeftEdge>=0&&dealing.gripAlongLeftEdge<=1,'Invalid dealing-card presentation');
   check(asset(m.src) && hash(m.sha256), 'Packed media path and SHA-256 are required');
   check(m.layout==='rgb-over-masks-r-actor-g-fingers', 'A single clock must carry RGB and both masks');
   check(integer(m.width)&&m.width>0&&integer(m.height)&&m.height>0, 'Invalid source dimensions');
   check(finite(m.fps)&&m.fps>0&&m.fps<=60&&integer(m.frames)&&m.frames>1, 'Invalid media frame count or rate');
   check(c.width===m.width&&c.height===m.height, 'Camera and source frame dimensions differ');
+  if(c.placement){const p=c.placement;check(chroma&&['width','height','scale'].every(k=>finite(p[k])&&p[k]>0)&&['x','y'].every(k=>finite(p[k])), 'Invalid rigid source placement');check(p.framingScale===undefined||(finite(p.framingScale)&&p.framingScale>0&&p.framingScale<=1),'Invalid shared composition framing');}
   check(hash(take.calibrationSha256), 'Calibration SHA-256 is required');
   check(Array.isArray(c.shoeOutlet)&&c.shoeOutlet.length===2&&c.shoeOutlet.every(x=>finite(x)&&x>=0&&x<=1), 'Measured shoe outlet is required');
   const ordered=['pickup','release','land','rest'];
@@ -44,7 +55,8 @@ export function validateContactTake(take, {approved=false}={}) {
     const card=frame?.card;
     check(card && Array.isArray(card.corners)&&card.corners.length===4 && card.corners.every(p=>Array.isArray(p)&&p.length===3&&p.every(finite)&&p[0]>=0&&p[0]<=1&&p[1]>=0&&p[1]<=1), `Frame ${i}: four measured card corners required`);
     check(typeof card?.faceUp==='boolean', `Frame ${i}: card orientation required`);
-    if(i<=e.release) check((proxy?frame?.contact?.measured===false&&typeof frame.contact.method==='string':frame?.contact?.measured===true) && Array.isArray(frame.contact.finger)&&frame.contact.finger.length===2&&frame.contact.finger.every(finite), `Frame ${i}: measured grip or explicit review proxy required`);
+    if(chroma)check(typeof frame.tracking?.method==='string'&&finite(frame.tracking?.confidence)&&frame.tracking.confidence>=0&&frame.tracking.confidence<=1&&Array.isArray(frame.tracking.inferredCorners),`Frame ${i}: source tracking evidence required`);
+    else if(i<=e.release) check((proxy?frame?.contact?.measured===false&&typeof frame.contact.method==='string':frame?.contact?.measured===true) && Array.isArray(frame.contact.finger)&&frame.contact.finger.length===2&&frame.contact.finger.every(finite), `Frame ${i}: measured grip or explicit review proxy required`);
   }
   if(approved) {
     check(['contact-approved','approved'].includes(take.status), 'Take has not passed contact review');
@@ -72,6 +84,16 @@ export function selectContactTake(manifest, action, {staged=false}={}) {
 
 export function calibrationPayload(take) {
   return JSON.stringify({camera:take.camera,events:take.events,frames:take.frames,...(take.colourGain?{colourGain:take.colourGain}:{}),...(take.playbackRate===undefined?{}:{playbackRate:take.playbackRate}),...(take.continuation?{continuation:take.continuation}:{}),...(take.tracking?{tracking:take.tracking}:{})});
+}
+
+// One fixed display scale for the whole delivery. Anchor it at the filmed
+// grip instead of the centre so shrinking the card does not pull it away
+// from the fingers. Resting-card layout has its own independent scale.
+export function dealingCardSample(take,card){
+  const p=take.tracking?.dealingPresentation;
+  if(!p||!card)return card;
+  const anchor=card.corners[0].map((v,k)=>v+(card.corners[3][k]-v)*p.gripAlongLeftEdge);
+  return {...card,corners:card.corners.map(c=>c.map((v,k)=>anchor[k]+(v-anchor[k])*p.scale))};
 }
 
 // An empty-hand return may replace only the tail after a measured landing.
@@ -164,13 +186,17 @@ export function contactCueClock(events, emit, {fps=24,playbackRate=1}={}) {
 }
 
 export function uniformRegistration(source, viewport) {
+  if(source.placement){
+    const p=source.placement,base=uniformRegistration({width:p.width,height:p.height,framingScale:p.framingScale},viewport),scale=base.scale*p.scale;
+    return {x:base.x+p.x*base.scale,y:base.y+p.y*base.scale,width:source.width*scale,height:source.height*scale,scale};
+  }
   const portrait=viewport.width<861&&viewport.height>viewport.width;
   // Reserve a real control band under the scene. Without it, placing totals
   // below the chips forces actions over cards or the wallet at 720px height.
   // Table, actor, shoe and tracked card all use this same transform.
   const sceneHeight=portrait?viewport.height:Math.max(1,viewport.height-136);
-  const scale=portrait?Math.min(viewport.height*.65/source.height,viewport.width/(source.width*.48))
-    :Math.min(viewport.width/source.width,sceneHeight/source.height);
+  const scale=(portrait?Math.min(viewport.height*.65/source.height,viewport.width/(source.width*.48))
+    :Math.min(viewport.width/source.width,sceneHeight/source.height))*(source.framingScale??1);
   return {scale,x:(viewport.width-source.width*scale)/2,y:portrait?viewport.height*.08:(sceneHeight-source.height*scale)/2,
     width:source.width*scale,height:source.height*scale};
 }

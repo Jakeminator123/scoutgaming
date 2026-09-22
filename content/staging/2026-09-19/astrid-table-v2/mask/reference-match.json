@@ -1,0 +1,32 @@
+{
+  "referenceOriginalDimensions": [
+    2048,
+    1158
+  ],
+  "comparisonOnlyReferenceResize": [
+    1920,
+    1080
+  ],
+  "matches": 18,
+  "inliers": 11,
+  "medianInlierReprojectionPixels": 0.6539208292961121,
+  "referenceToSourceComparisonHomography": [
+    [
+      1.0727661792094698,
+      0.08175993449955163,
+      -66.14444489262378
+    ],
+    [
+      -0.001713518979399205,
+      1.1480353366375389,
+      -42.053920837881
+    ],
+    [
+      3.071166997741292e-06,
+      0.00010066537436939985,
+      1.0
+    ]
+  ],
+  "note": "Read-only table/shoe feature alignment comparison. Never applied to the actor or generated output; no 3D camera-angle claim.",
+  "status": "Exploratory sparse fit; 11 inliers do not establish full camera equivalence. Do not apply this transform."
+}
