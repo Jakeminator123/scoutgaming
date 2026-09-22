@@ -116,10 +116,43 @@ html[data-dealer="astrid"] #room2::after { display:none; }
 html[data-performance-capture="true"] #scene > :not(#room):not(#room2):not(#dealer-wrap):not(#dealer-hands-wrap):not(#table-canvas) { visibility:hidden!important; }
 .performance-layer {position:absolute;z-index:24;pointer-events:none;}
 .performance-layer canvas {position:absolute;inset:0;width:100%;height:100%;}
+.astrid-rest-frame {position:absolute;z-index:24;pointer-events:none;}
+html[data-blender-table="true"] .seat-inner {transform:scale(var(--blender-seat-scale,1));}
+html[data-blender-table="true"] #banner {top:calc(var(--performance-rear) + var(--performance-table-height) * .9);pointer-events:none;}
+@media (min-width:861px) {
+  html[data-blender-table="true"] #hud-bottom {padding-bottom:0;}
+}
+html[data-astrid-rebuild="true"] #dealer-wrap,
+html[data-astrid-rebuild="true"] #dealer-hands-wrap,
+.performance-playing .astrid-rest-frame {visibility:hidden;}
 html[data-performance-staged="true"] #table2d {top:var(--performance-rear);height:var(--performance-table-height);bottom:auto;}
 html[data-performance-staged="true"] #deal-now {top:calc(var(--performance-rear) + var(--performance-table-height) * .8 + 20px);bottom:auto;}
 html[data-performance-staged="true"] #room2 {clip-path:inset(0 0 calc(100vh - var(--performance-rear)) 0);}
 .performance-playing #dealer-wrap, .performance-playing #dealer-hands-wrap {visibility:hidden;}
+.astrid-green-idle {position:absolute;z-index:24;pointer-events:none;}
+.astrid-green-speak {position:absolute;z-index:25;pointer-events:none;}
+.astrid-green-speak canvas {position:absolute;inset:0;width:100%;height:100%;}
+html[data-astrid-idle="green"] .astrid-rest-frame,
+.performance-playing .astrid-green-idle {visibility:hidden;}
+.felt-bet-controls {position:absolute;left:0;top:0;width:128px;height:100px;transform-origin:0 0;--arc-rot:0deg;--arc-x:64px;--arc-y:50px;--arc-w:128px;--arc-h:100px;}
+html[data-blender-table="true"] .felt-bet-controls .spot {left:64px;top:50px;width:60px;height:60px;transform:translate(-50%,-50%);border-color:transparent;background:transparent;}
+html[data-blender-table="true"] .felt-bet-controls .spot > svg {visibility:hidden;}
+html[data-blender-table="true"] .felt-bet-controls .arc-g,
+html[data-blender-table="true"] .felt-bet-controls .label-g {transform:none;}
+html[data-blender-table="true"] .felt-bet-controls .side {fill:transparent;stroke:transparent;}
+html[data-blender-table="true"] .felt-bet-controls .side-label {visibility:hidden;}
+html[data-blender-table="true"] .felt-bet-controls .side:hover {fill:#d6ff3a22;stroke:#d6ff3a66;}
+html[data-blender-table="true"] .felt-bet-controls .side-chip {top:50px;transform:translate(-50%,-50%);}
+html[data-blender-table="true"] .felt-bet-controls .pp-chip {left:19px;}
+html[data-blender-table="true"] .felt-bet-controls .tp-chip {left:109px;}
+/* Round chip artwork is projected once by the same plane as its betting box.
+   The old pre-flattened discs were squashed twice and side stacks overflowed. */
+html[data-blender-table="true"] .felt-bet-controls .spot .chipstack {--stack-w:44px;--stack-d:44px;--stack-step:.5px;}
+html[data-blender-table="true"] .felt-bet-controls .side-chip .chipstack {--stack-w:12px;--stack-d:12px;--stack-step:.15px;}
+html[data-blender-table="true"] .felt-bet-controls .side-chip .chipstack b {font-size:6px;}
+/* Cards use the same camera projection as the ink and chips. A paper-thin
+   contact shadow replaces the old floating six-pixel drop shadow. */
+html[data-blender-table="true"] .card[data-felt-card="true"] {box-shadow:0 1.2px 1.5px #0005,0 .3px .4px #0007;border-radius:6px;filter:brightness(.96);}
 .performance-active #actions, .performance-active #actions-top {visibility:hidden;}
 /* Every Astrid performance shares this one room. Legacy RGB is masked before
    display, including idle and embedded speech; no central background window. */
@@ -129,6 +162,14 @@ html[data-actor-isolated="true"] #room {
   background-size:cover;
   background-position:center;
   background-repeat:no-repeat;
+}
+/* Amira keeps her own golden salon behind the keyed actor and Blender table. */
+html[data-green-dealer="amira"] #dealer-wrap,
+html[data-green-dealer="amira"] #dealer-hands-wrap,
+html[data-green-dealer="amira"] #room2 {display:none;}
+html[data-green-dealer="amira"] #room {
+  background-image:linear-gradient(to bottom,transparent 45%,rgba(6,8,9,.18)),var(--room-plate);
+  background-size:cover;background-position:center;background-repeat:no-repeat;
 }
 #performance-status {border-top:1px solid #D6FF3A44;padding-top:10px;}
 #performance-stage-banner {position:absolute;right:20px;top:80px;z-index:48;padding:8px 12px;border:1px solid #d2b663;background:#10130eee;color:#dfcc9b;font:10px/1.4 Inter,Arial,sans-serif;border-radius:4px;}

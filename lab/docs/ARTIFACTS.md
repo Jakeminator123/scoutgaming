@@ -1,8 +1,8 @@
 # Artefaktkarta · labb, 2D, produktvideo och OpenClaw
 
-V5, 21 september 2026. Användarguiden finns fortsatt i `guide.json` och Guide.
+V5, uppdaterad 22 september 2026. Användarguiden finns fortsatt i `guide.json` och Guide.
 Den här kartan visar tekniska källor och ägare; den skapar inget andra
-medieregister. [Sprinten](../../docs/animation-events/v5-8-days-mvp/README.md)
+medieregister. [Sprinten](../../docs/animation-events/v5-7-days-mvp/README.md)
 är plan och handoff, inte runtimekonfiguration.
 
 ## Format och policy i labbet
@@ -37,6 +37,23 @@ utge sig för att vara ett nytt auktoritativt produktmanifest.
 
 ## Lokalt sparat och privat
 
+Livejämförelsens ansvar ligger i de befintliga ytorna:
+
+- `web/native-table.mjs`: publikt kommandosvar + presentation och publicering
+  efter commit, med återanvändbart retry-kvitto.
+- `web/public/native-observation.mjs`: opt-in-signaler från originalklienten;
+  ingen andra motor eller extra spelkommando.
+- `lab/lib/native-observation.mjs`: kontrollerar avsändarfönster, origin,
+  per-launch-kanal och meddelandeformat.
+- `lab/lib/partner-trace.mjs` och `presentation-sequence.mjs`: begränsat
+  protokoll, instruktioner, dubbletter och luckor.
+- `lab/lib/observation-context.mjs`: publika fakta och saknad kontext.
+- `open-claw/lab/schemas/observed-chat.schema.json`: kontextkontrakt v2 för
+  begränsad tidigare native-chatt. Director kvitterar version och antal;
+  labbet väljer standard om en äldre tjänst saknar kvittot.
+- `lab/components/partner-reference.tsx`, `game-stream.tsx` och
+  `activity-log.tsx`: Anslut, jämförelse, variantval, Diagnostik och logg.
+
 `lab/data/` (eller `LAB_STUDIO_DATA_DIR`) innehåller lokalt projekt, social
 policy, `videos/index.json`, uppladdade bytes och `videos/classifications.json`.
 Kategorisering av original är en hashbunden metadataöverlagring. Filerna är
@@ -46,6 +63,11 @@ lokala filmer. Dokumentera granskad överlämningsplats med takepaketet.
 
 Händelselogg/observationsprotokoll är flikminne och behöver export före reload.
 Privata QA- och användarloggar stannar utanför Git och publika wiki/webb.
+
+`tools/start-local-comparison.mjs` kör spelet och byggt labb med temporära
+databaser/processinställningar. Inga användar-env ändras; externa providers
+blockeras i provprocesserna. `test/local-comparison-browser.mjs` använder
+denna fixture för verklig lokal rundtrafik och ett märkt syntetiskt chattsvar.
 
 ## OpenClaw och nästa integrationskontrakt
 

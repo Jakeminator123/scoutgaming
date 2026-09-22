@@ -1,11 +1,15 @@
 #!/bin/sh
 set -eu
+node test/player-auth.mjs
+node test/craig-login.mjs
+node test/bo-game-auth.mjs
 node pipeline/audit-dealer-sync.mjs
 node pipeline/audit-performance.mjs
 node pipeline/audit-astrid-actor.mjs
 node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
 node --test test/performance-contact.mjs test/pack-contact-media.mjs test/table-audio.mjs test/shoe-contact-occlusion.mjs
 node --test test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
+node --test test/idle-video-loop.mjs
 node --test test/action-placement.mjs test/bugshot-report.mjs
 node test/blackjack-asset-state.mjs
 node --test test/dealer-motion.mjs test/dealer-skin-contact.mjs
@@ -13,3 +17,5 @@ node --test test/rigged-card-layout.mjs test/rigged-layout-contact.mjs test/rigg
 node --test test/dealer-collection.mjs
 node --test test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-face-bindings.mjs
 node --test test/native-partner-events.mjs test/bo-media-preview.mjs
+node --test test/native-observation.mjs test/clip-mapping.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
+node --test test/local-comparison-fixture.mjs test/generation-media.mjs

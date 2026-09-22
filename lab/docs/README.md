@@ -20,18 +20,34 @@ Historiska analyser och permanenta källankare ligger kvar i jakob-docs.
 De är fördjupning, inte ytterligare en startyta. Privata anteckningar lämnas orörda.
 
 **Händelseloggen** på `/activity` skiljer källa, eventdata, kontext, beslut och
-uppspelningskvitto. Den visar aktuella labbanrop och valfri läsande Partner-
-observation, högst 150 poster i flikens minne. Saknad konfiguration är inte
-en ansluten spelström. Uppspelning startas separat eller med **Följ nya instruktioner**. Konfiguration och
-gränser finns i [labbets README](../README.md#läsande-partner-ström).
-På samma yta finns Partner-verifiering, öppning av hela originalspelet,
-aktuell videokarta och JSON-export av hela mottagna presentationslistor.
-Originalbilden kan visas genom ett uttryckligt val av spelflik i webbläsaren.
-Labbpresentationen spelar samma mottagna eller importerade instruktioner;
-sekvenslistan kan öppna varje event i den befintliga editorn. HTTP/SSE-dubbletter
-slås ihop, medan konflikter och luckor stoppar uppspelningen. Originalspelarens
-faktiska klippstart/slut återstår. Den lokala native-till-Partner-bryggan är
-testad men måste driftsättas innan motsvarande liveflöde kan verifieras.
+uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
+originalsession och startar läsande observation och automatisk labbföljning.
+Originalbild och labbpresentation visas sida vid sida. Webbläsaren kräver
+fortfarande att du väljer spelflik för bilddelningen; speldata fungerar även
+utan bilden. Spela i originalfliken. Grundläget **Bara standard** gör inga
+modellanrop; välj OpenClaw eller Skuggläge om du vill prova modellval.
+
+Native-observern ger publika kommandosvar, bordsvy och instrumenterade
+playback-/chattsignaler. Partner-SSE är kompletterande rundinstruktioner.
+Transport ansluten betyder ännu inte speldata mottagna. Samma instruktion
+slås ihop; konflikter och luckor stoppar följningen. Kontextsidan anger vilka
+publika fakta OpenClaw får och vilka uppgifter som saknas.
+
+Den kan även skicka högst åtta observerade chattmeddelanden före aktuellt
+event (600 tecken vardera, 3 200 totalt) som märkt data för variantval.
+Director måste kvittera kontextkontrakt v2; äldre tjänst ger synlig
+standardreserv tills den uppdaterats. Detta gör inte OpenClaw till produktens
+färdiga talägare. Ett isolerat lokalt prov startas med
+`node tools/start-local-comparison.mjs` efter labbygge; se README:s provavsnitt.
+
+**Diagnostik** samlar verifiering, videokarta, import/export och särskilda
+videolägen. Sekvenssteg öppnar befintlig editor. Loggen håller högst 150
+poster; hela observationsprotokollet håller högst 300 meddelanden/4 MiB i
+flikens minne. Exportera före omladdning. Native-observation kräver den nya
+spelarkoden på vald server; lokal merge är inte Bettalotto-deploy.
+Vid full historik: exportera och välj **Ny observation** i Diagnostik.
+Det ersätter protokollet och gamla labbkön men behåller spelet och anslutningen.
+Konfiguration och gränser finns i [labbets README](../README.md#läsande-partner-ström).
 
 **Socialt svar** är ett eget idle-prov med en enda talägare och högst 25
 sekunder ljud. För långa ljud avvisas; avbrott/fel loggas. Modellens uttrycks-
@@ -43,7 +59,7 @@ förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna
 relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
 nuvarande kod från nästa steg; den aktiverar inte nya funktioner.
 
-Aktuell plan och publicerade läsytor finns i [V5 · åtta arbetsdagar](../../docs/animation-events/v5-8-days-mvp/README.md). Guide beskriver dagens labb; sprintplanens förslag aktiverar inga funktioner.
+Aktuell plan och publicerade läsytor finns i [V5 · sju arbetsdagar](../../docs/animation-events/v5-7-days-mvp/README.md). Guide beskriver dagens labb; sprintplanens förslag aktiverar inga funktioner.
 
 [Artefaktkarta: scheman, manifest och lagring](ARTIFACTS.md) ·
 [OpenClaw-talägarskap: implementationsbrief](OPENCLAW-SPEECH-OWNERSHIP.md) ·

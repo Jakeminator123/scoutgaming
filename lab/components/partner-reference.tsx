@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { exportPartnerTrace, type PartnerTrace } from '../lib/partner-trace.mjs';
+import { acceptNativeObservation } from '../lib/native-observation.mjs';
 import type { ActivityDraft } from './activity-log';
 import styles from './activity-log.module.css';
 
@@ -9,7 +10,7 @@ interface Configuration { configured: boolean; mappingConfigured: boolean; mappi
 interface Access { verifiedAt: string; playerId: string; scopes: string[] }
 interface Mapping { fetchedAt: string; source: string; actualPlayback: false; mapping: { revision?: string | null; dealers: Record<string, Record<string, unknown>>; backofficePicks?: unknown; notes?: string[] } }
 
-export function PartnerReference({ trace, connected, onActivity, onImport, children }: { trace: PartnerTrace; connected: boolean; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; children?: ReactNode }) {
+export function PartnerReference({ trace, connected, connection, dealerId = 'astrid', onConnect, onDisconnect, onNative, onActivity, onImport, onNewObservation, children, diagnostics }: { trace: PartnerTrace; connected: boolean; connection: string; dealerId?: string; onConnect: () => Promise<void>; onDisconnect: () => void; onNative: (record: Record<string, unknown>) => void; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; onNewObservation?: () => void; children?: ReactNode; diagnostics?: ReactNode }) {
   const [configuration, setConfiguration] = useState<Configuration | null>(null);
   const [access, setAccess] = useState<Access | null>(null);
   const [mapping, setMapping] = useState<Mapping | null>(null);
@@ -17,7 +18,24 @@ export function PartnerReference({ trace, connected, onActivity, onImport, child
   const [error, setError] = useState('');
   const [exportText, setExportText] = useState('');
   const gameWindow = useRef<Window | null>(null);
+  const observer = useRef<{ source: Window; origin: string; channel: string; lastSequence: number } | null>(null);
+  const observing = useRef(false);
+  const nativeCallback = useRef(onNative); nativeCallback.current = onNative;
   const importInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const receive = (message: MessageEvent) => {
+      const expected = observer.current;
+      if (!expected || !observing.current) return;
+      const record = acceptNativeObservation(message, expected);
+      if (!record) return;
+      if (record.kind === 'status' && record.data?.state === 'attached' && expected.lastSequence > 0) nativeCallback.current({ source: 'native', kind: 'status', time: record.time, data: { state: 'reconnected', gap: true, reason: 'original-page-reloaded' } });
+      else if (expected.lastSequence > 0 && Number(record.nativeSequence) > expected.lastSequence + 1) nativeCallback.current({ source: 'native', kind: 'status', time: record.time, data: { state: 'gap', gap: true, reason: 'native-sequence-gap' } });
+      expected.lastSequence = record.nativeSequence;
+      nativeCallback.current(record);
+    };
+    window.addEventListener('message', receive);
+    return () => { window.removeEventListener('message', receive); observer.current = null; };
+  }, []);
   useEffect(() => {
     let current = true;
     fetch('/api/inputs/reference', { cache: 'no-store' }).then(async response => {
@@ -32,12 +50,48 @@ export function PartnerReference({ trace, connected, onActivity, onImport, child
     if (!response.ok) throw new Error(data.error ?? 'API-anropet misslyckades.');
     return data;
   }
+  async function connectGame() {
+    if (busy) return;
+    if (gameWindow.current && !gameWindow.current.closed) {
+      observing.current = true;
+      gameWindow.current.focus();
+      try { await onConnect(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Strömmen kunde inte anslutas.'); }
+      return;
+    }
+    const game = window.open('about:blank', '_blank');
+    if (!game) { setError('Tillåt en ny flik för att ansluta referensspelet.'); return; }
+    gameWindow.current = game;
+    setBusy('connect'); setError('');
+    try {
+      const verified = await request('verify'); setAccess(verified);
+      if (!verified.scopes.includes('launch')) throw new Error('Partner-nyckeln saknar launch och kan inte öppna referensspelet.');
+      // Open the event channel before navigation so the first accepted round is
+      // not lost. Native observation remains usable if upstream SSE is absent.
+      try { await onConnect(); } catch (cause) {
+        onActivity({ source: 'partner', stage: 'connection', status: 'failed', title: 'Partner-strömmen kunde inte startas', owner: 'Läsande anslutning', reason: 'Originalfliken öppnas med native-observation. Kontrollera att speldata börjar komma.', data: { error: cause instanceof Error ? cause.message : 'Anslutningen misslyckades' } });
+      }
+      const data = await request('launch');
+      const url = new URL(data.url);
+      if (!configuration?.origin || url.origin !== configuration.origin) throw new Error('Referensspelet gav en oväntad adress.');
+      const channel = crypto.randomUUID();
+      observer.current = { source: game, origin: url.origin, channel, lastSequence: 0 };
+      observing.current = true;
+      url.searchParams.set('labObserverOrigin', window.location.origin);
+      url.searchParams.set('labObserverChannel', channel);
+      url.searchParams.set('dealer', dealerId);
+      game.location.replace(url.href);
+      onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Originalspel och labbföljning startade', owner: 'Partner-launch + native-observation', reason: 'Spela i originalfliken. Bilddelningen väljs i webbläsaren; data följs automatiskt.', data: { dealerId, presentationMode: data.presentationMode } });
+    } catch (cause) { game.close(); gameWindow.current = null; observer.current = null; onDisconnect(); setError(cause instanceof Error ? cause.message : 'Spelet kunde inte anslutas.'); }
+    finally { setBusy(''); }
+  }
+  function disconnect() { observing.current = false; onDisconnect(); }
   async function run(action: 'verify' | 'launch' | 'launch-staged-base' | 'mapping') {
     if (busy) return;
     const openingGame = action === 'launch' || action === 'launch-staged-base';
     // Reuse the current player tab; a second launch must not interrupt a hand.
     if (openingGame && gameWindow.current && !gameWindow.current.closed) { gameWindow.current.focus(); setError('Spelet är redan öppet. Avsluta rundan och stäng spelfliken före byte av videoläge.'); return; }
-    // Open synchronously with the user's click so popup protection does not drop the result.
+    // Diagnostic launch without observation. The main Anslut flow binds the
+    // trusted popup and its per-launch observation channel instead.
     const game = openingGame ? window.open('about:blank', '_blank') : null;
     if (openingGame && !game) { setError('Tillåt en ny flik för att öppna referensspelet.'); return; }
     if (game) { game.opener = null; gameWindow.current = game; }
@@ -82,16 +136,21 @@ export function PartnerReference({ trace, connected, onActivity, onImport, child
   const rounds = trace.records.filter(record => record.kind === 'round').length;
   const canLaunch = access?.scopes.includes('launch');
   return <section className={styles.reference} aria-label="Referensspel och observationsprotokoll">
-    <span className="eyebrow">BEFINTLIGT BLACKJACK → OBSERVATION → 2D-MOCKUP</span>
-    <h3>Följ spelet och videoflödet</h3>
-    <p>Öppna spelet via Partner och följ det här. Växla mellan originalflikens bild och labbets presentation av samma mottagna instruktioner.</p>
+    <span className="eyebrow">ETT SPEL · TVÅ PRESENTATIONER</span>
+    <h3>Originalet och labbet, sida vid sida</h3>
+    <p>Anslut öppnar rätt spelarsession och följer dess speldata. Spela i originalfliken; här ser du samma instruktioner, labbets variantval och faktisk uppspelning.</p>
+    <div className={styles.tools}><button className="primary-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
+    {!configuration?.configured ? <p className={styles.note}>{configuration ? 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
+    {error ? <p role="alert">{error}</p> : null}
+    {children}
+    <details className={styles.mapping}><summary>Diagnostik · videokarta, anslutning och observationsfiler</summary>
     <p><strong>Spelare:</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
     <div className={styles.tools}>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => void run('verify')}>{busy === 'verify' ? 'Verifierar…' : 'Verifiera Partner-åtkomst'}</button>
       <button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.mappingConfigured} onClick={() => void run('mapping')}>{busy === 'mapping' ? 'Hämtar…' : 'Hämta videokarta'}</button>
     </div>
-    {children}
+    {diagnostics}
     <details className={styles.mapping}>
       <summary>Testa Astrids grundfilmer</summary>
       <p>Öppnar staged-grundläget utan smooth60 eller rhythm. Grundfilmerna är märkta för granskning. Använd detta för att jämföra videolägen efter en avslutad runda.</p>
@@ -109,9 +168,10 @@ export function PartnerReference({ trace, connected, onActivity, onImport, child
       <ul>{mapping.mapping.notes?.map(note => <li key={note}>{note}</li>)}</ul>
     </details> : null}
     <div className={styles.protocol}><div><strong>Observationsprotokoll · {rounds} mottagna kommandomeddelanden</strong><p className={styles.note}>Hela mottagna presentationslistor sparas separat från den kortade loggvisningen. Protokollet finns kvar mellan labbets vyer tills sidan laddas om. {connected ? 'Observation pågår.' : 'Ingen aktiv anslutning.'}</p></div><button className="text-button" disabled={!trace.records.length && !mapping && !access} onClick={download}>Exportera observationsprotokoll</button>{onImport ? <><input ref={importInput} type="file" accept="application/json,.json" hidden onChange={event => void importObservation(event.target.files?.[0])} /><button className="text-button" disabled={connected} onClick={() => importInput.current?.click()}>Läs in observation</button></> : null}</div>
-    {trace.limited ? <p role="alert">Protokollet har nått sin gräns och fångar inga fler meddelanden. Exportera det; fortsatt trafik syns endast i loggvisningen.</p> : null}
+    {onNewObservation ? <div className={styles.protocol}><div><strong>Börja en ny historik här</strong><p className={styles.note}>Exportera först om du vill behålla protokollet. Ny observation ersätter dess {trace.records.length} poster och avbryter labbets gamla uppspelningskö. Spelet, anslutningen och bilddelningen behålls; bara framtida instruktioner följs.</p></div><button className="text-button" disabled={Boolean(busy)} onClick={() => { setExportText(''); onNewObservation(); }}>Ny observation</button></div> : null}
+    {trace.limited ? <p role="alert">Protokollet har nått sin gräns och fångar inga fler meddelanden. Exportera det och välj Ny observation för att fortsätta följa kommande händer.</p> : null}
     {exportText ? <details className={styles.mapping} open><summary>JSON-export redo</summary><p className={styles.note}>Samma underlag som i JSON-filen. Du kan också markera och kopiera det här. Exportera igen för att ta med senare meddelanden.</p><textarea className={styles.exportText} aria-label="Observationsprotokoll som JSON" readOnly value={exportText} rows={8} /></details> : null}
-    <p className={styles.note}>Protokollet innehåller inte originalspelarens faktiska klippstart, klippslut eller kortlandning. Dessa behöver observeras i spelaren innan sekvensen kan återges korrekt i 2D. En launch-länk och inloggningsuppgifter följer inte med exporten.</p>
-    {error ? <p role="alert">{error}</p> : null}
+    <p className={styles.note}>Native-observation kan komplettera Partner-instruktionerna med originalets offentliga serversvar, chatt och uppspelningskvitton. Äldre serverversioner kan sakna detta. Launch-länk och inloggningsuppgifter följer inte med exporten.</p>
+    </details>
   </section>;
 }

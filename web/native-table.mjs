@@ -1,9 +1,11 @@
 import { command as shoeCommand, newGame, gameView } from './shoe-game.mjs';
+import { presentationEvents } from './partner-presentation.mjs';
 
 // Keep the native table's wallet/shoe transaction in one place. Observation
 // happens only after commit and cannot turn an accepted command into a retry.
 export function createNativeTableCommand({ db, getPlayer, logTx, publish = () => {}, onPublishError = () => {} }) {
   db.exec('CREATE TABLE IF NOT EXISTS blackjack_tables (player_id TEXT PRIMARY KEY, state TEXT NOT NULL)');
+  db.exec('CREATE TABLE IF NOT EXISTS native_presentations (player_id TEXT PRIMARY KEY, request_id TEXT NOT NULL, version INTEGER NOT NULL, payload TEXT NOT NULL)');
   return ({ id, ...req }, session = null) => {
     let out, observation;
     db.exec('BEGIN IMMEDIATE');
@@ -20,7 +22,20 @@ export function createNativeTableCommand({ db, getPlayer, logTx, publish = () =>
       db.prepare('INSERT INTO blackjack_tables VALUES (?,?) ON CONFLICT(player_id) DO UPDATE SET state=excluded.state').run(id, JSON.stringify(g));
       db.prepare('UPDATE players SET balance=? WHERE id=?').run(balance, id);
       if (delta) logTx(id, req.op, delta, p.currency, 'server blackjack');
-      out = { ...view, balance };
+      let presentation = [];
+      if (req.op !== 'state') {
+        if (g.version > previousVersion) {
+          presentation = presentationEvents(previousView, view, req.op, { action: req.action });
+          db.prepare('INSERT INTO native_presentations VALUES (?,?,?,?) ON CONFLICT(player_id) DO UPDATE SET request_id=excluded.request_id,version=excluded.version,payload=excluded.payload')
+            .run(id, req.requestId, view.version, JSON.stringify(presentation));
+        } else {
+          const receipt = db.prepare('SELECT payload FROM native_presentations WHERE player_id=? AND request_id=? AND version=?').get(id, req.requestId, view.version);
+          if (receipt) presentation = JSON.parse(receipt.payload);
+        }
+      }
+      // The same public presentation contract as SSE, returned with the original
+      // response. The observer never reissues a command to obtain these signals.
+      out = { ...view, balance, requestId: req.requestId ?? null, op: req.op, presentation };
       if (req.op !== 'state' && g.version > previousVersion) {
         observation = { session, playerId: id, previousView, view, command: req, balance };
       }

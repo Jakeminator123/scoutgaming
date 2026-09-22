@@ -1,0 +1,3 @@
+import type { PresentationSequenceData, PresentationStep } from './presentation-sequence.mjs';
+export function observationContext(sequence: PresentationSequenceData, step: PresentationStep, records?: readonly any[]): { context: { chat: { signal: 'none' | 'praise' | 'inappropriate' }; playerHistory: { returning: boolean; preferredLanguage: null }; session: { recentWins: number; recentLosses: number }; observedChat?: { source: 'native-observation'; before: string; messages: { role: 'user' | 'assistant'; text: string; at: string }[] } }; evidence: Record<string, unknown> };
+export function observedTable(records: readonly any[], sequence: PresentationSequenceData): { source: string; version: number | null; round: any; shoe: any; partial: boolean };

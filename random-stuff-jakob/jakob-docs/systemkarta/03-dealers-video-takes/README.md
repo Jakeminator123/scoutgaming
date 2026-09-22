@@ -32,6 +32,30 @@ Manifestförekomst betyder inte godkänd take.
 
 ## Vilka register finns?
 
+Det externa generationsarkivet finns på
+`C:/Users/jakem/CroupierAssets/bettalotto-generations`, labbets befintliga
+Windows-förval. Metadata-inventering 22 september fann matchande ID och
+förväntad filstorlek för samtliga 224 snapshot-poster. Den läste inte
+filmbytes och bevisar inte innehåll, kvalitet eller aktiv produktbindning.
+Ingen ny nedladdning eller kopia behövs för att tillgängliggöra dessa filer.
+Detta är ett mediearkiv, inte Jakobs pensionerade personarkiv; om det är samma
+tidigare omtalade slaskmapp är inte fastställt.
+
+Den valfria produktinställningen `CROUPIER_GENERATIONS_DIR` gör samma arkiv
+läsbart i BO och Generations-API utan kopiering. Default är fortfarande
+`web/public/bo/gen`. BO kräver session och API:t sin lästoken. Bara kända
+katalog-ID:n och deklarerade thumbnail-namn godtas; realpath-/symlänkkontroll
+håller läsningen inom vald katalog. `--media-directory` i den isolerade
+startaren kopplar arkivet till både BO och labb enbart i processmiljön.
+
+Efter Kevins integration finns även en klientläsare för `clipAssignments`.
+Den filtrerar `neverAgain` och kan välja idle/staged-material för en stödd
+destination. Astrid V2 hoppar över dessa val och pausar filmad utdelning;
+vanlig originalväg och V2 får därför inte beskrivas med samma aktiva mappning.
+Videokartan är fortfarande katalogdata, inte bevis på den faktiskt valda taken.
+Green-talsmaterialets exakta text/ljud/video måste jämföras med den relevanta
+vägens talregister; identiska line-ID:n gör inte olika inspelningar utbytbara.
+
 - Produktmedia: Astrid i [dealers/astrid](../../../../web/public/dealers/astrid/),
   Vera i [dealer](../../../../web/public/dealer/), Amira i
   [dealers/amira](../../../../web/public/dealers/amira/) och Mei i

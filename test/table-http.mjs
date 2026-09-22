@@ -77,8 +77,17 @@ async function finish() {
 }
 try {
   for (const file of await readdir(web)) if (file.endsWith('.mjs')) await copyFile(join(web,file),join(dir,file));
-  await symlink(join(web,'public'), join(dir,'public'));
+  await symlink(join(web,'public'), join(dir,'public'), process.platform === 'win32' ? 'junction' : 'dir');
   await start();
+  let entryHtml;
+  for (const path of ['/', '/v2', '/v2/', '/v2/index.html']) {
+    const response = await fetch(origin + path + '?dealer=astrid', { redirect: 'manual' });
+    assert.equal(response.status, 200, `local guest entry ${path}`);
+    const html = await response.text();
+    entryHtml ??= html;
+    assert.equal(html, entryHtml, 'original and V2 use the same entry document; pathname chooses the presentation');
+  }
+  checks.push('Original/V2 routes: same shared entry document, local guest access preserved');
   player = await post('/api/player', {}); await refresh();
   db = new DatabaseSync(join(dir,'data/croupier.db'));
   assert.equal(state.balance,1000); assert.equal(state.shoe.remaining,415);
@@ -95,8 +104,12 @@ try {
 
   const visible = structuredClone(state);
   await stop(); await start(); await refresh();
-  const {shuffled, ...initialState} = visible;
-  assert.deepEqual(state, initialState); assert.deepEqual(snapshot(),initial);
+  const {shuffled, presentation: priorPresentation, op: priorOp, requestId: priorRequestId, ...initialState} = visible;
+  const {presentation, op, requestId, ...refreshedState} = state;
+  assert.equal(op, 'state'); assert.equal(requestId, null); assert.deepEqual(presentation, []);
+  assert.equal(priorOp, 'start'); assert.equal(priorRequestId, startRequest.requestId);
+  assert.ok(priorPresentation.length > 0);
+  assert.deepEqual(refreshedState, initialState); assert.deepEqual(snapshot(),initial);
   checks.push('Process restart: same guest session, cards, version, shoe and wallet; no second debit');
 
   const split = request('act',{action:'split'});

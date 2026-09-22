@@ -31,6 +31,20 @@ testvärden. De är inte ett bestående spelarminne eller automatiskt lästa
 från den sociala chatten. Den sociala labbchatten har begränsad samtalshistorik
 och lokal cooldown, men ingen generell kö till produktspelaren.
 
+Livejämförelsen använder däremot observerade publika handresultat och kan
+bifoga `context.observedChat` från originalfliken. Kontrakt v2 tillåter högst
+8 user/assistant-meddelanden, 600 tecken vardera och 3 200 totalt, med tid och
+proveniens före instruktionen. En lucka bryter kontextfönstret. Texten är
+data för variantval, inte order till modellen eller ett autentiserat minne.
+Saldo-, identitets- och authfält kopieras inte till denna projektion.
+Se [kontextschemat](../../../../open-claw/lab/schemas/observed-chat.schema.json).
+
+Director måste kvittera version 2 och antalet mottagna meddelanden. Det
+aktuella provet mot äldre remote saknade kvittot: labbet behåller då standard
+med `remote_context_not_supported_baseline`. Director-redeploy och ett nytt
+kompatibilitetsprov behövs innan chattstödet får kallas aktivt där. Detta
+är separat från produktens framtida gemensamma talägarskap.
+
 ## Ljudets roll
 
 ElevenLabs kan skapa ett explicit begärt talprov. Samma text/röst/modell/

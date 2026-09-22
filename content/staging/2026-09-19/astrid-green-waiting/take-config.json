@@ -1,0 +1,160 @@
+{
+  "jobId": "15777d5f-4085-484e-a170-eb5c9a13d7b0",
+  "generationId": "15777d5f",
+  "sourceSha256": "849b241e6a9b769bef1cd40299516c25f1a5aba28bf865b2d3593854731765bf",
+  "action": "idle",
+  "status": "Kevin 2026-09-19 (correction): COMBINE, not swap. The eye-contact loop 2a721f7d that was already playing stays the base idle; 15777d5f only contributes the glance segments, spliced at the base loop boundary. Zero generation.",
+  "readyPose": "frame 0 and frame 120 (mean abs diff 1.44 per README)",
+  "crop": [
+    560,
+    0,
+    754,
+    678
+  ],
+  "measured": {
+    "headCrop": [
+      870,
+      26,
+      180,
+      200
+    ],
+    "method": "phase correlation of the head crop against frame 0 (dx px) plus mean abs grey difference; motion/head-motion.json, head-motion.png, head-sheet.jpg",
+    "observed": "frames 0-5 ready; 6-40 head turns toward viewer-LEFT (her right, dx to -31 px at 23-28) and returns by 41; 42-89 head turns toward viewer-RIGHT (her left, dx to +30 px at 54-64) and returns by 90; 90-120 calm breathing, dx under 0.4 px. The README order (left first) is by viewer direction; the hands settle 1.4 px after frame 5 and stay.",
+    "seamsMeanAbsDiff(full,head)": {
+      "0-120": [
+        1.44,
+        4.31
+      ],
+      "0-41": [
+        1.31,
+        4.51
+      ],
+      "0-90": [
+        1.35,
+        3.57
+      ],
+      "41-90": [
+        0.94,
+        4.95
+      ],
+      "90-120": [
+        0.84,
+        3.43
+      ],
+      "41-120": [
+        1.07,
+        4.47
+      ],
+      "96-120": [
+        0.79,
+        2.46
+      ]
+    }
+  },
+  "segments": {
+    "glanceLeft": {
+      "start": 0,
+      "end": 41,
+      "note": "glance toward viewer-left (her right), back to ready at 41"
+    },
+    "glanceRight": {
+      "start": 41,
+      "end": 90,
+      "note": "glance toward viewer-right (her left) with a blink, back to ready at 90"
+    },
+    "full": {
+      "start": 0,
+      "end": 120,
+      "note": "the whole clip"
+    }
+  },
+  "readyFrames": [
+    0,
+    41,
+    90,
+    120
+  ],
+  "scheduler": {
+    "glanceProbability": 0.4,
+    "maxBaseRun": 3,
+    "holdLoops": [
+      1,
+      3
+    ],
+    "glances": [
+      "glanceLeft",
+      "glanceRight",
+      "full"
+    ]
+  },
+  "base": {
+    "jobId": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+    "manifest": "web/public/review/astrid-elevated-idle/idle.json",
+    "src": "review/astrid-eye-contact-idle/actor-packed.mp4",
+    "sha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+    "sourceSha256": "67d9ee9800577ae4fa336c66b02f95bdd7a2a847fccb01b613322fccbeadfa42",
+    "frames": 193,
+    "fps": 24,
+    "crop": [
+      560,
+      0,
+      960,
+      760
+    ],
+    "loopSeam": "frame 0 vs 192 rgb mean diff 2.75, alpha 0.52 (packed)"
+  },
+  "spliceMeasurement": {
+    "method": "packed frames compared in the shared crop origin (560,0): silhouette centroid and phase correlation of head (rows 20-240) and torso (rows 20-600) regions, base frame 0 versus 15777d5f frames 0/41/90/120",
+    "headShiftPx": {
+      "0": [
+        0.08,
+        -15.37
+      ],
+      "41": [
+        -0.14,
+        -15.05
+      ],
+      "90": [
+        0.49,
+        -15.1
+      ],
+      "120": [
+        0.17,
+        -14.74
+      ]
+    },
+    "torsoShiftPx": {
+      "0": [
+        -0.11,
+        -15.82
+      ],
+      "41": [
+        0.17,
+        -15.33
+      ],
+      "90": [
+        0.05,
+        -15.82
+      ],
+      "120": [
+        -0.02,
+        -15.53
+      ]
+    },
+    "silhouetteCentroidDeltaPx": [
+      -0.4,
+      -13.7
+    ],
+    "silhouetteTopRowBaseVsGlance": [
+      44,
+      26
+    ],
+    "maskedRgbMeanDiff": 14.0,
+    "conclusion": "the waiting clip sits about 15 px higher in the frame than the base loop with no horizontal offset; rigid offset applied to the glance layer at splice: +15.3 px down, 0 px across (source pixels, scaled with the fit)"
+  },
+  "spliceOffset": [
+    0,
+    15.3
+  ],
+  "restManifest": "../../2026-09-20/astrid-seam-repair/runtime/rest.json"
+}

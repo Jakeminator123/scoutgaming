@@ -8,7 +8,8 @@ och resultat. Presentation och modellråd kan inte ändra dessa beslut.
 
 ```text
 Spelarhandling → serverns shoe + Round + regler → publik gameView
-    ├── /api/table → vanliga klientens egen koreografi
+    ├── /api/table → publik vy + presentation[] → vanliga klientens koreografi
+    │                    └── läsande native-observer → labb
     └── /api/v1/table → presentation[] → partnerns klient
                            └── samma lista via /api/v1/events
 ```
@@ -31,9 +32,11 @@ Den skillnaden behöver ingå i ett verkligt integrationsprov.
 
 ## Eventströmmen är avgränsad
 
-SSE kräver signerad Partner-åtkomst med `play`-scope och rätt kombination
+SSE kräver signerad Partner-åtkomst med `events` eller `play` och rätt kombination
 av API-nyckel och partnerns `playerId`. En BO-inloggning räcker inte.
-Vanliga `/api/table` publicerar inte till denna ström i granskad kod.
+På arbetsgrenen publicerar `/api/table` efter transaktionscommit om sessionen
+kommer från en verifierad Partner-launch. Retry, state-read och nekade
+kommandon publicerar inte en ny runda. Detta måste driftsättas för att gälla live.
 
 `hello` är anslutningsmeddelandet; `round.events` innehåller presentationerna.
 `state` ger tom presentationslista. Ett cachat svar för samma `requestId`
@@ -42,6 +45,13 @@ via `Last-Event-ID`. Efter avbrott behövs återläst status och en beslutad
 återhämtningsstrategi; kör inte både svar och SSE som dubbla uppspelningar.
 
 ## Fältens betydelse
+
+Labbet får mest relevant information genom native-observern: det verkliga
+publika kommandosvaret plus klientens instrumenterade playback och chatt.
+Partner-SSE tillför en separat leverans av presentationerna och fungerar
+även utan bilddelning. BO:s register beskriver material/bindningar och saknar
+denna fulla klienttidslinje. Inga av dessa vägar ger labbet privat kortordning.
+Labbet skickar inga dubbla hit/start/stand-kommandon för att samla underlag.
 
 Fysisk `box` är 0–6. `handIndex` pekar in i handlistan och kan ändras vid
 split. Kortpositionen finns i `cards[]`; `shoeDraw` identifierar draget
@@ -67,5 +77,5 @@ ut. Publikt fält betyder heller inte automatiskt tillåtet modellinput.
   [presentationsprojektion och manifest](../../../../web/partner-presentation.mjs).
 - [Detaljerade payloads](../../2026-09-20-eventregister-och-mental-modell.md).
 
-Kodkontroll 20 september 2026 är inte verifiering av dagens Bettalotto-deploy,
+Kodkontroll 22 september 2026 är inte verifiering av dagens Bettalotto-deploy,
 behörighet, betalflöde eller aktiva session.

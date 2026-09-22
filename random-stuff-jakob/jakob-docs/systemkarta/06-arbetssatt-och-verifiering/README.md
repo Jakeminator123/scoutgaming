@@ -7,8 +7,8 @@ en kodfunktion och ett godkänt produktbeteende är olika saker.
 
 - **Kod och kontrakt:** Croupier-repot visar vad implementationen gör.
 - **Aktiv sprint:** [dokumentationsnavet](../../../../docs/animation-events/README.md)
-  leder till V4 och de föreslagna etapperna. Wiki och hemsida presenterar
-  samma plan; versionsnummer på planen är inte produktens version.
+  leder till V5 med D0 + sju arbetsdagar. Wiki och hemsida är separata läsytor;
+  kontrollera deras publicerade revision. Planens version är inte produktens version.
 - **Beslut och samarbete:** [wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home)
   och [arbetsflödet](../../../../docs/shared/WORKFLOW.md).
 - **Öppna observationer:** [findings](../../../../docs/findings/REGISTER.md)
@@ -32,10 +32,10 @@ inte fynd eller raderar Git-historik.
 **Visuell rehearsal** behövs för exakt tal, kontakt, rörelse och följduppspelning.
 **Aktuell bindningskontroll** behövs för att veta vad den riktiga sessionen väljer.
 
-Ingen enskild kontroll bevisar alla de andra. De senast dokumenterade rena
-testerna i handoffen är 192 labbtester och 98 Director/OpenClaw-tester
-(20 september 2026). Denna kartöversyn kör inte om produkt-/medietester
-och ger ingen ny visuell acceptans.
+Ingen enskild kontroll bevisar alla de andra. Daterade tester från
+20–21 september gäller sina dåvarande revisioner. Läs den senaste handoffen
+för integrationsleveransens faktiska körningar; denna kartöversyn ger ingen
+ny visuell acceptans och återanvänder inte gamla tester som nya resultat.
 
 Vid media-/spelarändringar gäller [projektreglerna](../../../../AGENTS.md),
 [pre-commit-listan](../../../../.githooks/pre-commit),

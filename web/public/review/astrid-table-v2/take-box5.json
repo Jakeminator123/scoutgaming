@@ -1,0 +1,2305 @@
+{
+  "version": 1,
+  "id": "astrid-table-v2-first-card-box5-6a378270",
+  "dealer": "astrid",
+  "action": "deal-right",
+  "box": 5,
+  "status": "review",
+  "enabled": true,
+  "cameraApproval": "2026-09-19: user explicitly selected Use this angle for reference269f8943. Motion and gameplay remain under review. Table-v2 derivative uses saved PlateCam; removes the old20px gameplay-only Y offset, preserves native actor scale1. Box-5 take reuses the same placement/framingScale; source registered by the shared plate, not re-fitted.",
+  "media": {
+    "src": "review/astrid-table-v2/actor-packed-box5.mp4",
+    "sha256": "6650a3158bee78cd3e2360c072a46eb5d42a41dda6c24eb1ad6c385b250ee5e2",
+    "layout": "rgb-over-masks-r-actor-g-fingers",
+    "width": 920,
+    "height": 850,
+    "fps": 24,
+    "frames": 97
+  },
+  "camera": {
+    "width": 920,
+    "height": 850,
+    "shoeOutlet": [
+      0.7635869565217391,
+      0.7870588235294118
+    ],
+    "placement": {
+      "width": 1920,
+      "height": 1080,
+      "scale": 1,
+      "x": 560,
+      "y": 0,
+      "framingScale": 0.85
+    }
+  },
+  "events": {
+    "pickup": 9,
+    "release": 58,
+    "land": 59,
+    "rest": 96
+  },
+  "tracking": {
+    "kind": "chroma-card",
+    "sourceSha256": "6047a7be3e4b7714ff331fa810244015d452ea51acb642f7047562f7bd7cabe8",
+    "keepSourceLanding": true,
+    "scope": "first-card-of-box5-only",
+    "landing": "filmed-quad-registers-the-box-fan",
+    "jobId": "6a378270-fc2a-4f14-972b-44820678ffa4",
+    "limitations": [
+      "The card is a rigid rectangle of fixed apparent size (the rest pose): perspective foreshortening while the card is lifted or tilted during the carry is NOT reproduced; the measured corners (orange in apparent-width.png) show how much the source card actually changes.",
+      "Per-frame pose is rotation + translation only, least squares over visible marker dots; two-dot and one-dot frames lean on the previous heading and are flagged inferredCorners.",
+      "Frames with no usable dot use the bright body rectangle for centre and heading, or an interpolated pose; both are flagged.",
+      "faceUp is authored: no edge-on turn is measured and identical green faces cannot prove the physical side.",
+      "The filmed landing is kept: the DOM card of the box is registered to the landed quad, so the box fan sits where the hand left the card, not on the betting marker.",
+      "The replacement is not drawn before the authored pickup frame; the filmed card protruding from the shoe before that is keyed out.",
+      "These are source measurements, not rendered-gameplay acceptance."
+    ]
+  },
+  "frames": [
+    {
+      "frame": 0,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 1,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 2,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 3,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 4,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 5,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 6,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 7,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 8,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 9,
+      "card": {
+        "corners": [
+          [
+            0.7132608695652174,
+            0.8476470588235294,
+            0
+          ],
+          [
+            0.6928260869565218,
+            0.767764705882353,
+            0
+          ],
+          [
+            0.7979347826086955,
+            0.689529411764706,
+            0
+          ],
+          [
+            0.8177173913043477,
+            0.7708235294117648,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 10,
+      "card": {
+        "corners": [
+          [
+            0.6777173913043478,
+            0.8328235294117646,
+            0
+          ],
+          [
+            0.6765217391304349,
+            0.7498823529411764,
+            0
+          ],
+          [
+            0.7965217391304348,
+            0.7030588235294117,
+            0
+          ],
+          [
+            0.7966304347826088,
+            0.7870588235294118,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 11,
+      "card": {
+        "corners": [
+          [
+            0.6267391304347825,
+            0.8017647058823529,
+            0
+          ],
+          [
+            0.6546739130434782,
+            0.7245882352941176,
+            0
+          ],
+          [
+            0.7820652173913043,
+            0.7302352941176471,
+            0
+          ],
+          [
+            0.7529347826086957,
+            0.8081176470588235,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 12,
+      "card": {
+        "corners": [
+          [
+            0.5729347826086956,
+            0.7705882352941177,
+            0
+          ],
+          [
+            0.6129347826086957,
+            0.6998823529411764,
+            0
+          ],
+          [
+            0.7375,
+            0.7297647058823529,
+            0
+          ],
+          [
+            0.6960869565217392,
+            0.8008235294117647,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 13,
+      "card": {
+        "corners": [
+          [
+            0.5504347826086957,
+            0.753764705882353,
+            0
+          ],
+          [
+            0.5904347826086958,
+            0.6830588235294118,
+            0
+          ],
+          [
+            0.715,
+            0.7128235294117646,
+            0
+          ],
+          [
+            0.673695652173913,
+            0.7839999999999999,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 14,
+      "card": {
+        "corners": [
+          [
+            0.5353260869565217,
+            0.7447058823529412,
+            0
+          ],
+          [
+            0.5706521739130435,
+            0.6711764705882353,
+            0
+          ],
+          [
+            0.6968478260869564,
+            0.6914117647058824,
+            0
+          ],
+          [
+            0.660217391304348,
+            0.7655294117647059,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 15,
+      "card": {
+        "corners": [
+          [
+            0.5241304347826088,
+            0.7424705882352941,
+            0
+          ],
+          [
+            0.5516304347826086,
+            0.6650588235294117,
+            0
+          ],
+          [
+            0.6791304347826086,
+            0.6698823529411765,
+            0
+          ],
+          [
+            0.6503260869565217,
+            0.748,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-two-dots",
+        "confidence": 0.65,
+        "inferredCorners": [
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "frame": 16,
+      "card": {
+        "corners": [
+          [
+            0.498695652173913,
+            0.7228235294117646,
+            0
+          ],
+          [
+            0.5390217391304348,
+            0.6523529411764706,
+            0
+          ],
+          [
+            0.6634782608695653,
+            0.6828235294117647,
+            0
+          ],
+          [
+            0.6217391304347826,
+            0.7536470588235294,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 17,
+      "card": {
+        "corners": [
+          [
+            0.48043478260869565,
+            0.7196470588235294,
+            0
+          ],
+          [
+            0.5264130434782608,
+            0.6532941176470588,
+            0
+          ],
+          [
+            0.6478260869565218,
+            0.6956470588235294,
+            0
+          ],
+          [
+            0.6004347826086958,
+            0.762235294117647,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 18,
+      "card": {
+        "corners": [
+          [
+            0.4657608695652174,
+            0.7102352941176471,
+            0
+          ],
+          [
+            0.5213043478260868,
+            0.6530588235294118,
+            0
+          ],
+          [
+            0.6345652173913043,
+            0.7165882352941176,
+            0
+          ],
+          [
+            0.577608695652174,
+            0.773764705882353,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 19,
+      "card": {
+        "corners": [
+          [
+            0.45152173913043475,
+            0.695764705882353,
+            0
+          ],
+          [
+            0.5149999999999999,
+            0.6494117647058824,
+            0
+          ],
+          [
+            0.6168478260869565,
+            0.7325882352941177,
+            0
+          ],
+          [
+            0.5519565217391303,
+            0.7785882352941176,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 20,
+      "card": {
+        "corners": [
+          [
+            0.442608695652174,
+            0.6950588235294117,
+            0
+          ],
+          [
+            0.508695652173913,
+            0.6532941176470588,
+            0
+          ],
+          [
+            0.6054347826086957,
+            0.7432941176470588,
+            0
+          ],
+          [
+            0.5379347826086958,
+            0.7848235294117647,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 21,
+      "card": {
+        "corners": [
+          [
+            0.4382608695652174,
+            0.6897647058823528,
+            0
+          ],
+          [
+            0.5065217391304347,
+            0.652235294117647,
+            0
+          ],
+          [
+            0.5982608695652175,
+            0.7481176470588236,
+            0
+          ],
+          [
+            0.528586956521739,
+            0.7852941176470588,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 22,
+      "card": {
+        "corners": [
+          [
+            0.4414130434782609,
+            0.688,
+            0
+          ],
+          [
+            0.5104347826086956,
+            0.652,
+            0
+          ],
+          [
+            0.6001086956521738,
+            0.7502352941176471,
+            0
+          ],
+          [
+            0.5296739130434782,
+            0.7856470588235294,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 23,
+      "card": {
+        "corners": [
+          [
+            0.4443478260869565,
+            0.695764705882353,
+            0
+          ],
+          [
+            0.5133695652173913,
+            0.66,
+            0
+          ],
+          [
+            0.6029347826086957,
+            0.758235294117647,
+            0
+          ],
+          [
+            0.532608695652174,
+            0.7935294117647059,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          3
+        ]
+      }
+    },
+    {
+      "frame": 24,
+      "card": {
+        "corners": [
+          [
+            0.4472826086956522,
+            0.7036470588235294,
+            0
+          ],
+          [
+            0.5163043478260869,
+            0.6678823529411765,
+            0
+          ],
+          [
+            0.6058695652173914,
+            0.766235294117647,
+            0
+          ],
+          [
+            0.5354347826086956,
+            0.8015294117647058,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          3
+        ]
+      }
+    },
+    {
+      "frame": 25,
+      "card": {
+        "corners": [
+          [
+            0.4502173913043479,
+            0.7114117647058824,
+            0
+          ],
+          [
+            0.5193478260869565,
+            0.6757647058823529,
+            0
+          ],
+          [
+            0.6086956521739131,
+            0.7742352941176471,
+            0
+          ],
+          [
+            0.5382608695652175,
+            0.8094117647058824,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          3
+        ]
+      }
+    },
+    {
+      "frame": 26,
+      "card": {
+        "corners": [
+          [
+            0.45315217391304347,
+            0.7191764705882352,
+            0
+          ],
+          [
+            0.5222826086956521,
+            0.6836470588235294,
+            0
+          ],
+          [
+            0.6116304347826087,
+            0.782235294117647,
+            0
+          ],
+          [
+            0.5410869565217391,
+            0.8174117647058823,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          3
+        ]
+      }
+    },
+    {
+      "frame": 27,
+      "card": {
+        "corners": [
+          [
+            0.45608695652173914,
+            0.7270588235294118,
+            0
+          ],
+          [
+            0.5253260869565217,
+            0.6915294117647058,
+            0
+          ],
+          [
+            0.6144565217391303,
+            0.7903529411764705,
+            0
+          ],
+          [
+            0.543913043478261,
+            0.8252941176470588,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          3
+        ]
+      }
+    },
+    {
+      "frame": 28,
+      "card": {
+        "corners": [
+          [
+            0.45902173913043476,
+            0.7348235294117648,
+            0
+          ],
+          [
+            0.5282608695652173,
+            0.699529411764706,
+            0
+          ],
+          [
+            0.6173913043478261,
+            0.7983529411764706,
+            0
+          ],
+          [
+            0.5467391304347826,
+            0.8332941176470587,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          3
+        ]
+      }
+    },
+    {
+      "frame": 29,
+      "card": {
+        "corners": [
+          [
+            0.46195652173913043,
+            0.7427058823529411,
+            0
+          ],
+          [
+            0.5313043478260869,
+            0.7074117647058823,
+            0
+          ],
+          [
+            0.6202173913043477,
+            0.8063529411764706,
+            0
+          ],
+          [
+            0.5495652173913043,
+            0.8411764705882353,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 30,
+      "card": {
+        "corners": [
+          [
+            0.46489130434782616,
+            0.7504705882352941,
+            0
+          ],
+          [
+            0.5342391304347827,
+            0.7152941176470589,
+            0
+          ],
+          [
+            0.6231521739130435,
+            0.8143529411764706,
+            0
+          ],
+          [
+            0.5523913043478261,
+            0.8490588235294119,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          3
+        ]
+      }
+    },
+    {
+      "frame": 31,
+      "card": {
+        "corners": [
+          [
+            0.4678260869565217,
+            0.7583529411764706,
+            0
+          ],
+          [
+            0.5372826086956521,
+            0.7231764705882353,
+            0
+          ],
+          [
+            0.6259782608695653,
+            0.8223529411764706,
+            0
+          ],
+          [
+            0.5552173913043478,
+            0.8570588235294118,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 32,
+      "card": {
+        "corners": [
+          [
+            0.486195652173913,
+            0.767764705882353,
+            0
+          ],
+          [
+            0.556304347826087,
+            0.7344705882352941,
+            0
+          ],
+          [
+            0.6428260869565219,
+            0.8360000000000001,
+            0
+          ],
+          [
+            0.5714130434782609,
+            0.8687058823529411,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 33,
+      "card": {
+        "corners": [
+          [
+            0.5077173913043477,
+            0.7775294117647058,
+            0
+          ],
+          [
+            0.5784782608695652,
+            0.7457647058823529,
+            0
+          ],
+          [
+            0.6631521739130434,
+            0.8491764705882352,
+            0
+          ],
+          [
+            0.591086956521739,
+            0.8803529411764706,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 34,
+      "card": {
+        "corners": [
+          [
+            0.5351086956521739,
+            0.792235294117647,
+            0
+          ],
+          [
+            0.6061956521739131,
+            0.7614117647058825,
+            0
+          ],
+          [
+            0.6896739130434782,
+            0.8658823529411764,
+            0
+          ],
+          [
+            0.6171739130434782,
+            0.8961176470588236,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 35,
+      "card": {
+        "corners": [
+          [
+            0.5630434782608695,
+            0.8035294117647059,
+            0
+          ],
+          [
+            0.6347826086956522,
+            0.7743529411764707,
+            0
+          ],
+          [
+            0.7161956521739131,
+            0.8807058823529412,
+            0
+          ],
+          [
+            0.6431521739130436,
+            0.9092941176470588,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-body-rectangle",
+        "confidence": 0.7,
+        "inferredCorners": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 36,
+      "card": {
+        "corners": [
+          [
+            0.5922826086956523,
+            0.8008235294117647,
+            0
+          ],
+          [
+            0.6664130434782608,
+            0.7797647058823529,
+            0
+          ],
+          [
+            0.7371739130434783,
+            0.8947058823529411,
+            0
+          ],
+          [
+            0.6617391304347826,
+            0.9149411764705883,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 37,
+      "card": {
+        "corners": [
+          [
+            0.622391304347826,
+            0.7984705882352942,
+            0
+          ],
+          [
+            0.6980434782608697,
+            0.786,
+            0
+          ],
+          [
+            0.7572826086956522,
+            0.908235294117647,
+            0
+          ],
+          [
+            0.6804347826086956,
+            0.9198823529411765,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-two-dots",
+        "confidence": 0.65,
+        "inferredCorners": [
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "frame": 38,
+      "card": {
+        "corners": [
+          [
+            0.6485869565217391,
+            0.8103529411764705,
+            0
+          ],
+          [
+            0.7244565217391304,
+            0.7987058823529412,
+            0
+          ],
+          [
+            0.7825000000000001,
+            0.9216470588235294,
+            0
+          ],
+          [
+            0.7055434782608695,
+            0.9324705882352942,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "interpolated-pose",
+        "confidence": 0.3,
+        "inferredCorners": [
+          1
+        ]
+      }
+    },
+    {
+      "frame": 39,
+      "card": {
+        "corners": [
+          [
+            0.6747826086956521,
+            0.8223529411764706,
+            0
+          ],
+          [
+            0.7507608695652175,
+            0.8115294117647058,
+            0
+          ],
+          [
+            0.8077173913043477,
+            0.9350588235294117,
+            0
+          ],
+          [
+            0.7306521739130435,
+            0.9449411764705883,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 40,
+      "card": {
+        "corners": [
+          [
+            0.6975,
+            0.8296470588235295,
+            0
+          ],
+          [
+            0.7734782608695652,
+            0.8194117647058824,
+            0
+          ],
+          [
+            0.8295652173913044,
+            0.9434117647058823,
+            0
+          ],
+          [
+            0.7523913043478261,
+            0.9527058823529411,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 41,
+      "card": {
+        "corners": [
+          [
+            0.7181521739130435,
+            0.835529411764706,
+            0
+          ],
+          [
+            0.7942391304347827,
+            0.8258823529411765,
+            0
+          ],
+          [
+            0.8494565217391304,
+            0.9503529411764705,
+            0
+          ],
+          [
+            0.7722826086956521,
+            0.9590588235294119,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 42,
+      "card": {
+        "corners": [
+          [
+            0.7365217391304347,
+            0.8424705882352942,
+            0
+          ],
+          [
+            0.8123913043478261,
+            0.8315294117647059,
+            0
+          ],
+          [
+            0.8695652173913043,
+            0.9550588235294117,
+            0
+          ],
+          [
+            0.7924999999999999,
+            0.9650588235294117,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 43,
+      "card": {
+        "corners": [
+          [
+            0.7518478260869565,
+            0.8471764705882353,
+            0
+          ],
+          [
+            0.8278260869565216,
+            0.8364705882352941,
+            0
+          ],
+          [
+            0.8846739130434783,
+            0.96,
+            0
+          ],
+          [
+            0.8076086956521739,
+            0.9698823529411764,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 44,
+      "card": {
+        "corners": [
+          [
+            0.7620652173913043,
+            0.8507058823529412,
+            0
+          ],
+          [
+            0.8379347826086958,
+            0.8390588235294119,
+            0
+          ],
+          [
+            0.8959782608695651,
+            0.9620000000000001,
+            0
+          ],
+          [
+            0.8190217391304347,
+            0.9727058823529411,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 45,
+      "card": {
+        "corners": [
+          [
+            0.7701086956521739,
+            0.8532941176470588,
+            0
+          ],
+          [
+            0.8459782608695652,
+            0.8414117647058824,
+            0
+          ],
+          [
+            0.9043478260869565,
+            0.9642352941176471,
+            0
+          ],
+          [
+            0.8273913043478262,
+            0.9751764705882353,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 46,
+      "card": {
+        "corners": [
+          [
+            0.7755434782608696,
+            0.856,
+            0
+          ],
+          [
+            0.8511956521739129,
+            0.8436470588235294,
+            0
+          ],
+          [
+            0.9103260869565217,
+            0.9660000000000001,
+            0
+          ],
+          [
+            0.8334782608695651,
+            0.9775294117647059,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 47,
+      "card": {
+        "corners": [
+          [
+            0.7794565217391304,
+            0.8571764705882353,
+            0
+          ],
+          [
+            0.8552173913043478,
+            0.8452941176470589,
+            0
+          ],
+          [
+            0.9136956521739129,
+            0.968,
+            0
+          ],
+          [
+            0.8366304347826088,
+            0.9790588235294119,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 48,
+      "card": {
+        "corners": [
+          [
+            0.7816304347826086,
+            0.857764705882353,
+            0
+          ],
+          [
+            0.8575000000000002,
+            0.8464705882352941,
+            0
+          ],
+          [
+            0.915108695652174,
+            0.9696470588235294,
+            0
+          ],
+          [
+            0.8381521739130434,
+            0.98,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 49,
+      "card": {
+        "corners": [
+          [
+            0.7819565217391306,
+            0.8572941176470589,
+            0
+          ],
+          [
+            0.8578260869565217,
+            0.8461176470588235,
+            0
+          ],
+          [
+            0.9153260869565216,
+            0.9692941176470588,
+            0
+          ],
+          [
+            0.8382608695652174,
+            0.9796470588235294,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 50,
+      "card": {
+        "corners": [
+          [
+            0.7818478260869565,
+            0.8574117647058823,
+            0
+          ],
+          [
+            0.8577173913043478,
+            0.846,
+            0
+          ],
+          [
+            0.9154347826086957,
+            0.9691764705882352,
+            0
+          ],
+          [
+            0.8383695652173913,
+            0.9796470588235294,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 51,
+      "card": {
+        "corners": [
+          [
+            0.781413043478261,
+            0.8576470588235294,
+            0
+          ],
+          [
+            0.8571739130434781,
+            0.8458823529411764,
+            0
+          ],
+          [
+            0.9155434782608696,
+            0.9687058823529412,
+            0
+          ],
+          [
+            0.8384782608695653,
+            0.9795294117647059,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 52,
+      "card": {
+        "corners": [
+          [
+            0.781086956521739,
+            0.857764705882353,
+            0
+          ],
+          [
+            0.8568478260869564,
+            0.8457647058823529,
+            0
+          ],
+          [
+            0.9154347826086957,
+            0.9683529411764706,
+            0
+          ],
+          [
+            0.8384782608695653,
+            0.9795294117647059,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 53,
+      "card": {
+        "corners": [
+          [
+            0.7799999999999999,
+            0.8587058823529411,
+            0
+          ],
+          [
+            0.8556521739130435,
+            0.8457647058823529,
+            0
+          ],
+          [
+            0.9155434782608696,
+            0.967764705882353,
+            0
+          ],
+          [
+            0.838695652173913,
+            0.9797647058823529,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-three-dots",
+        "confidence": 0.8,
+        "inferredCorners": [
+          0
+        ]
+      }
+    },
+    {
+      "frame": 54,
+      "card": {
+        "corners": [
+          [
+            0.7802173913043478,
+            0.8581176470588235,
+            0
+          ],
+          [
+            0.8559782608695652,
+            0.845529411764706,
+            0
+          ],
+          [
+            0.9153260869565216,
+            0.967764705882353,
+            0
+          ],
+          [
+            0.8383695652173913,
+            0.9794117647058823,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 55,
+      "card": {
+        "corners": [
+          [
+            0.7803260869565218,
+            0.8585882352941175,
+            0
+          ],
+          [
+            0.856086956521739,
+            0.8458823529411764,
+            0
+          ],
+          [
+            0.9156521739130435,
+            0.9678823529411765,
+            0
+          ],
+          [
+            0.838695652173913,
+            0.9797647058823529,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 56,
+      "card": {
+        "corners": [
+          [
+            0.7803260869565218,
+            0.8584705882352942,
+            0
+          ],
+          [
+            0.8559782608695652,
+            0.8457647058823529,
+            0
+          ],
+          [
+            0.9155434782608696,
+            0.9678823529411765,
+            0
+          ],
+          [
+            0.838695652173913,
+            0.9796470588235294,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 57,
+      "card": {
+        "corners": [
+          [
+            0.7803260869565218,
+            0.8584705882352942,
+            0
+          ],
+          [
+            0.8559782608695652,
+            0.8457647058823529,
+            0
+          ],
+          [
+            0.9155434782608696,
+            0.9678823529411765,
+            0
+          ],
+          [
+            0.838695652173913,
+            0.9796470588235294,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 58,
+      "card": {
+        "corners": [
+          [
+            0.7802173913043478,
+            0.8584705882352942,
+            0
+          ],
+          [
+            0.8558695652173914,
+            0.8457647058823529,
+            0
+          ],
+          [
+            0.9155434782608696,
+            0.967764705882353,
+            0
+          ],
+          [
+            0.8385869565217391,
+            0.9796470588235294,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 59,
+      "card": {
+        "corners": [
+          [
+            0.7803260869565218,
+            0.8584705882352942,
+            0
+          ],
+          [
+            0.8559782608695652,
+            0.8457647058823529,
+            0
+          ],
+          [
+            0.9155434782608696,
+            0.9678823529411765,
+            0
+          ],
+          [
+            0.838695652173913,
+            0.9796470588235294,
+            0
+          ]
+        ],
+        "faceUp": true
+      },
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 60,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 61,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 62,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 63,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 64,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 65,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 66,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 67,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 68,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 69,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 70,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 71,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 72,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 73,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 74,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 75,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 76,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 77,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 78,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 79,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 80,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 81,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 82,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 83,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 84,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 85,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 86,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 87,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 88,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 89,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 90,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 91,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 92,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 93,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 94,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 95,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    },
+    {
+      "frame": 96,
+      "card": null,
+      "tracking": {
+        "method": "rigid-fit-four-dots",
+        "confidence": 0.9,
+        "inferredCorners": []
+      }
+    }
+  ],
+  "calibrationSha256": "e3339fa2eb69708384e782907ac1bb76270a5acf67a1d96c0fd63e686b4ee0db"
+}

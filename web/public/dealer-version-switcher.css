@@ -1,0 +1,27 @@
+#dealer-picker[data-versions] { flex-direction:column; gap:0; padding-top:3px; }
+.dealer-original-row { display:flex; align-items:center; justify-content:center; gap:18px; width:100%; }
+#dealer-v2-options { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:4px 0 1px; margin-top:3px; border-top:1px solid #ffffff14; }
+.dealer-version-label { font:10px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:#91958e; margin-right:10px; }
+#dealer-v2-options button { display:flex; align-items:center; gap:8px; border:1px solid #ffffff20; padding:3px 12px 3px 4px; border-radius:18px; background:#ffffff04; color:#b6b8b2; font:12px Inter,sans-serif; cursor:pointer; }
+#dealer-v2-options img { width:25px; height:25px; object-fit:cover; border-radius:50%; }
+#dealer-v2-options button:hover { color:#fff; background:#ffffff0c; }
+#dealer-v2-options button[aria-pressed="true"] { color:#D6FF3A; border-color:#D6FF3A88; background:#D6FF3A0b; }
+#dealer-v2-options button:focus-visible { outline:2px solid #D6FF3A; outline-offset:2px; }
+body:has(#dealer-picker[data-versions]) #hud-bottom { bottom:var(--dealer-picker-height,86px); }
+#dealer-picker[data-versions] #dealer-switch-status { bottom:calc(100% + 6px); }
+@media (max-width:860px) and (orientation:portrait) {
+  .dealer-original-row { gap:6px; }
+  #dealer-picker[data-versions] #dealer-options { gap:3px; }
+  #dealer-picker[data-versions] #dealer-options button { font-size:10px; gap:4px; padding:3px 6px; }
+  #dealer-picker[data-versions] #dealer-options img { width:20px; height:20px; }
+  #dealer-v2-options button { min-height:40px; }
+  .dealer-version-label { font-size:9px; margin-right:4px; }
+  html.table-3d body:has(#dealer-picker[data-versions]) #table-pick { bottom:calc(134px + var(--dealer-picker-height,92px)); }
+}
+/* Reserve the second row without laying the chip tray over the centre bet. */
+@media (min-width:861px), (orientation:landscape) {
+  #dealer-v2-options { padding:2px 0 0; margin-top:1px; }
+  #dealer-v2-options img { width:21px; height:21px; }
+  body:has(#dealer-picker[data-versions="original"]) #hud-bottom { padding-bottom:2px; }
+}
+body:has(#dealer-picker[data-versions]) #chip-row { pointer-events:none; }

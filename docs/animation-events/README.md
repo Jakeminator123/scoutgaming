@@ -1,10 +1,10 @@
 # Croupier · Presentationsplan V5
 
-**Åtta återstående arbetsdagar.** Från verklig signal till rätt presentation,
+**Sju återstående arbetsdagar efter startgrinden D0.** Från verklig signal till rätt presentation,
 med tydliga bevis på vad som finns, vad labbet provar och vad som återstår.
 
-- [Läs V5](v5-8-days-mvp/README.md) · [Åttadagarsplanen](v5-8-days-mvp/s06-plan.md)
-- [Portabel handoff för den kvarvarande sjudagarsramen](v5-8-days-mvp/HANDOFF-7-DAGAR.md)
+- [Läs V5](v5-7-days-mvp/README.md) · [Sjudagarsplanen](v5-7-days-mvp/s06-plan.md)
+- [Portabel handoff för den kvarvarande sjudagarsramen](v5-7-days-mvp/HANDOFF-7-DAGAR.md)
 - [Öppna webbversionen](https://animation-events-v1.vercel.app/)
 - [Läs samma V5 i wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events)
 - [Systemkartan](../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
@@ -12,9 +12,13 @@ med tydliga bevis på vad som finns, vad labbet provar och vad som återstår.
 ## En modell, två läsytor
 
 Croupier-koden är källa för motor, spelstatus och uppspelning. V5-filerna här
-är sakunderlaget. GitLab-wikin och webbversionen presenterar samma texter;
+är sakunderlaget. GitLab-wikin och webbversionen är avsedda speglar av dessa texter;
 GitHub-repot innehåller webbversionens byggverktyg. Ingen av dokumentationsytorna
 är en spelmotor eller ett bevis på färdig produktintegration.
+
+Senaste dokumenterade publiceringskvitto är från 21 september. Ändringarna
+för sjudagarsramen och native-observationen behöver separat synk/publicering
+innan en extern läsyta får beskrivas som samma aktuella revision.
 
 Kevin äger produktintegration och motorn. Jakob arbetar på sin branch med
 presentationens logik och labb. Emil arbetar nära Kevin med video, takes och läppsynk. Jakobs OpenClaw-chatt ska
@@ -23,7 +27,7 @@ Se V5:s konkreta instruktioner för uppladdning, triggers och testkvitton.
 
 ## Versionsgräns
 
-V5 är aktuell. Åtta dagar är Jakobs nuvarande planeringsram, inte ett löfte
+V5 är aktuell. Sju dagar är Jakobs nuvarande planeringsram, inte ett löfte
 om godkänd lansering. V4, V3 och V2 är historiska dokumentversioner och ska inte
 användas som aktuell plan. Äldre adresser behålls för hänvisningar.
 

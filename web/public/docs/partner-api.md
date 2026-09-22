@@ -175,3 +175,32 @@ Using the /api/v1/history endpoint from the Croupier Partner API v1 (documentati
 ```
 Explain the Croupier Partner API v1 (documentation pasted below) to a product manager in under 200 words: what the operator must build, what Croupier owns, how money flows, and what is logged for regulators. Documentation:
 ```
+
+## Generations (read-only)
+
+The Higgsfield videos reviewed on the backoffice Generations page. Separate bearer token, read only: no writes, no deletes, no filesystem paths.
+
+```
+GET /api/v1/generations
+GET /api/v1/generations/:id/video      # MP4, supports Range: bytes=
+Authorization: Bearer <generations read token>
+```
+
+List fields: `id`, `prompt`, `model`, `duration`, `aspect`, `verdict` (`want` / `no` / null), `verdictReason`, `landedAt`, `size`, `sha256`, `downloadUrl` (null when the file is not on the server).
+
+```bash
+TOKEN=...
+curl -s -H "Authorization: Bearer $TOKEN" https://bettalotto.se/api/v1/generations | jq '.items[] | select(.verdict=="want") | {id,model,prompt}'
+curl -H "Authorization: Bearer $TOKEN" -o clip.mp4 https://bettalotto.se/api/v1/generations/<id>/video
+curl -H "Authorization: Bearer $TOKEN" -H "Range: bytes=0-1048575" -o first-mb.mp4 https://bettalotto.se/api/v1/generations/<id>/video
+```
+
+Tokens: `GENERATIONS_READ_TOKENS` in `/etc/croupier/agent.env` holds the sha256 digests of accepted tokens, comma separated. Add or remove a digest and restart the service to rotate.
+
+### Mapping: what plays today
+
+`GET /api/v1/generations/mapping` (same bearer token) returns, per dealer, every clip the game can play and the `show.*` event it serves: engine clips (idle, speech lines with text and audio, actions), Astrid's green takes on the default route, the staged performance takes, plus the backoffice picks, never-again list and want / don't want verdicts. Includes file path, format, frames, fps, hash, whether it loops or plays once, and which code selects it. `revision` is the running git commit.
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" https://bettalotto.se/api/v1/generations/mapping | jq '.dealers.astrid.greenTakes'
+```

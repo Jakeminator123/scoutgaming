@@ -1,0 +1,2220 @@
+{
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-19/astrid-eye-contact-idle/source.mp4",
+  "sourceSha256": "67d9ee9800577ae4fa336c66b02f95bdd7a2a847fccb01b613322fccbeadfa42",
+  "sourceDimensions": [
+    1920,
+    1080
+  ],
+  "frameCount": 193,
+  "fps": "24/1",
+  "crop": [
+    560,
+    0,
+    960,
+    760
+  ],
+  "packedDimensions": [
+    960,
+    1520
+  ],
+  "packing": "RGB upper half; straight grayscale alpha lower half",
+  "sourceToCropRowMajor3x3": [
+    1,
+    0,
+    -560,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "cropToSourceRowMajor3x3": [
+    1,
+    0,
+    560,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "packedTopLeftPixelRects": {
+    "rgb": [
+      0,
+      0,
+      960,
+      760
+    ],
+    "alpha": [
+      0,
+      760,
+      960,
+      760
+    ]
+  },
+  "settings": {
+    "schema": 1,
+    "purpose": "Elevated Astrid camera actor matte; no colour or geometry changes",
+    "greenExcessOpaque": 0.025,
+    "greenExcessTransparent": 0.155,
+    "markerWorkAreaNormalized": [
+      0.0,
+      0.28,
+      1.0,
+      1.0
+    ],
+    "markerColor": {
+      "minimumRed": 125,
+      "minimumBlue": 75,
+      "minimumRedMinusGreen": 30,
+      "minimumBlueMinusGreen": 8,
+      "minimumBlueGreenRatio": 1.15
+    },
+    "provisionalCropNormalized": [
+      0.2916666666666667,
+      0.0,
+      0.5,
+      0.7037037037037037
+    ],
+    "provisionalCropAt1920x1080": [
+      560,
+      0,
+      960,
+      760
+    ],
+    "cropStatus": "Provisional only. Every actual video frame and tracked card quad must be checked before cropping.",
+    "sourceRearRailTopYNormalized": 0.5,
+    "sourceRearRailBottomYNormalized": 0.522,
+    "foregroundDepth": "Torso lower edge behind table rear rail; filmed forearms/hands in front of felt; tracked replacement card behind retained fingers"
+  },
+  "rgbPolicy": "Original decoded source RGB preserved before ordinary lossy H264 encode",
+  "actorPackedSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+  "frames": [
+    {
+      "frame": 0,
+      "seconds": 0.0,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "424adbcad6bf39c9ba127447426bc2f7fa5eaa6b6a324471fef08fae9b96e0ed"
+    },
+    {
+      "frame": 1,
+      "seconds": 0.041666666666666664,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "b2b7534f6e40b6e7b67a6e404230104787ac0874f25593f2af16ed61e72bc962"
+    },
+    {
+      "frame": 2,
+      "seconds": 0.08333333333333333,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "e8a477b79129f40ac866c3126e70f4cbb7e964186d370564c0d504eb7c6cc4f0"
+    },
+    {
+      "frame": 3,
+      "seconds": 0.125,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "b8b24224c69f9c804db451ac04583b7d5f45bb64b35a13a301b961f2122e00a6"
+    },
+    {
+      "frame": 4,
+      "seconds": 0.16666666666666666,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "38672f1484b464fa38729af0b4d5c6c5ff4f0131ef25e7bd8b8f14c379a8bc55"
+    },
+    {
+      "frame": 5,
+      "seconds": 0.20833333333333334,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "782ca22493103017ffe9ae1116a2e134da6ee752a73047a17a813d0d462c333b"
+    },
+    {
+      "frame": 6,
+      "seconds": 0.25,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "b239a7f26e2b1decac97d4b75c2ee1584d252b14d6b2ea508ce96fde79491905"
+    },
+    {
+      "frame": 7,
+      "seconds": 0.2916666666666667,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "e32a83cafdab30337b99faebe92a6d0f4e3b64d45b0d1aca39c636a526719f58"
+    },
+    {
+      "frame": 8,
+      "seconds": 0.3333333333333333,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "5fdd0deb09239eeadcf95684298836490aab6882404d4836d98563f800645805"
+    },
+    {
+      "frame": 9,
+      "seconds": 0.375,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "21ae99efca061465c1fbf26b8f165df14edc90bfef145955569313160da41c6a"
+    },
+    {
+      "frame": 10,
+      "seconds": 0.4166666666666667,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "75b68795df837138800bb57d41983cc5665a5400ad0f1cb9d9c27daa6a478014"
+    },
+    {
+      "frame": 11,
+      "seconds": 0.4583333333333333,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "409715db507d5e91f4df2d1572190deb699bd78a837180ddae56a1b024cc420b"
+    },
+    {
+      "frame": 12,
+      "seconds": 0.5,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "da538992acc3c6a6e2d1fefa18fdd8e459101fc47fab6718e031e07aa0dd35d9"
+    },
+    {
+      "frame": 13,
+      "seconds": 0.5416666666666666,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "d756a40d08df9152454e882d0105db11cd7cb8befc79606256165ddbc3638c00"
+    },
+    {
+      "frame": 14,
+      "seconds": 0.5833333333333334,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "7cd485b91066a8201475200c9397a8bb6ca256235b4a1a23e244789b8cea15ae"
+    },
+    {
+      "frame": 15,
+      "seconds": 0.625,
+      "alphaBounds": [
+        661,
+        44,
+        1302,
+        679
+      ],
+      "alphaSha256": "367ad31702d63eb991425f11f1976714a67bc7157a4727db95d4d2603b9a4be0"
+    },
+    {
+      "frame": 16,
+      "seconds": 0.6666666666666666,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "b6d433f427aa5180e4c8f02a37389f096e4e17ff9b9d7eb10ed98423834c7643"
+    },
+    {
+      "frame": 17,
+      "seconds": 0.7083333333333334,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5df8b6f685de49d17010febaa8c45f753619913879f92996c50e57328611f080"
+    },
+    {
+      "frame": 18,
+      "seconds": 0.75,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d101e64780abfb53b59bccf21a63b442eb398e357c127f0b28501b23df1be817"
+    },
+    {
+      "frame": 19,
+      "seconds": 0.7916666666666666,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "0468b77b3bf8271639383016bac3e6cc1dd0b55dd887776c31b822eda7a9a095"
+    },
+    {
+      "frame": 20,
+      "seconds": 0.8333333333333334,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "443f475dc1e67f514115aa9ec01d9f557d9099922cd2f090bc304bb835c8f158"
+    },
+    {
+      "frame": 21,
+      "seconds": 0.875,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "3b9d8a668a0101a5421e3188fe85697b81d5de2f7d31db9951353200235fc064"
+    },
+    {
+      "frame": 22,
+      "seconds": 0.9166666666666666,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "21eaddbf28c8e736b6a082548a9ec6489af121812f47e4298ed2584ee818b270"
+    },
+    {
+      "frame": 23,
+      "seconds": 0.9583333333333334,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "8a98f48f0ef9609450cb06d9399b6ba41b8306812089a1952baa0bc6e88cb215"
+    },
+    {
+      "frame": 24,
+      "seconds": 1.0,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "a050484c4bd91bb91ed43634d172422b0db6f4cb52ed49679e8897820823bcfe"
+    },
+    {
+      "frame": 25,
+      "seconds": 1.0416666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "e5cb794bc365d1f56676754bae1e0d4c4dfb5658068f21784eaaed16a5fe3bde"
+    },
+    {
+      "frame": 26,
+      "seconds": 1.0833333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "28e94ed6a089cff19b9dad17ded06a280d7b9deb7b4475affc6bc3ff81002d72"
+    },
+    {
+      "frame": 27,
+      "seconds": 1.125,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f5c2096985367371af4cfa422e7264ff772639bd7e48fa32a56e6bc688ce6f5d"
+    },
+    {
+      "frame": 28,
+      "seconds": 1.1666666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4a4cd09d88e997a95a344fe107a083675093ab7cbadcd3f51a004a1da827c6b8"
+    },
+    {
+      "frame": 29,
+      "seconds": 1.2083333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "18d263883ba48734aba6bb059c7d7ded58e3f3ad60dff0877f0e6c856422b367"
+    },
+    {
+      "frame": 30,
+      "seconds": 1.25,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ced445b66f4bb20b6143f21e13a394b200924e6cdb6cea4a2191fa29280d4a9f"
+    },
+    {
+      "frame": 31,
+      "seconds": 1.2916666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ef6ce6cf2bae092a638147da236eb28988e85fbf69a53e3e5cbf1453250dd176"
+    },
+    {
+      "frame": 32,
+      "seconds": 1.3333333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "6d888ee55eeee08606db6fd438b3c85521278cf864ee726aa0a842f07fd7b5d4"
+    },
+    {
+      "frame": 33,
+      "seconds": 1.375,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "2c2ff517fb6c375c794e1e55311942b3693f9aa893c652c418cff0e6fce1cae4"
+    },
+    {
+      "frame": 34,
+      "seconds": 1.4166666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "49d43aa26e7192770f3325cf2b66d4dbe11ff42e5c686669a20b546e84f80318"
+    },
+    {
+      "frame": 35,
+      "seconds": 1.4583333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "51ae70d5b0032a5cb0d7fd9a42ff44521a45ba12c2081196e582f129e403bba7"
+    },
+    {
+      "frame": 36,
+      "seconds": 1.5,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "7de9c069df55ee50772b1e774edc22736b3379e03af0c0d010861e794a0be8d9"
+    },
+    {
+      "frame": 37,
+      "seconds": 1.5416666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "e1beb99e0aa10fb72da63cb85d6fb495a7f63f20d0fc2120be7e9902a26c09c5"
+    },
+    {
+      "frame": 38,
+      "seconds": 1.5833333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ae57e1046955cd12f1bb08f64396662342838f118c47eb4d41d6b370f7efd0a5"
+    },
+    {
+      "frame": 39,
+      "seconds": 1.625,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "383a467f0e8cb471cca001ea9baf2d8c7eceeab54ac0c25235b8690100afc5c4"
+    },
+    {
+      "frame": 40,
+      "seconds": 1.6666666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "0665c46a4820671d47ed1656ecf5163ca97ce5a7edc1558bbd7ea99d2737228b"
+    },
+    {
+      "frame": 41,
+      "seconds": 1.7083333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5a86e1d8b3522c57960a3a3ff7c30a92e8652b39afe1d06b0ca57377e25df02e"
+    },
+    {
+      "frame": 42,
+      "seconds": 1.75,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "1d23ea44e2843535ce165330cb20a77784fd97a5eb9d572140a55e8dbf31013a"
+    },
+    {
+      "frame": 43,
+      "seconds": 1.7916666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "117452299e510c7a190fc8cc4d17b91d41615eb7ba880eb10ec3041cb89163c8"
+    },
+    {
+      "frame": 44,
+      "seconds": 1.8333333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "84221b9106caf1bfde0cb476b6cae1126a4d6c19a263e8ddd73eb386e04f3b70"
+    },
+    {
+      "frame": 45,
+      "seconds": 1.875,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "2db660f6f9aeabe2cc141dc07e965b0dbf14f9a48f0ca52551f7a72bc7aa1a3f"
+    },
+    {
+      "frame": 46,
+      "seconds": 1.9166666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5582f1ab4b8d6615b56e85056c53e7d7cf3c3f5906de461386873d4830025426"
+    },
+    {
+      "frame": 47,
+      "seconds": 1.9583333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5e91596249451ff020ff244aa8442dc2c4e2c6142383e2b871a9b68066ffb0ea"
+    },
+    {
+      "frame": 48,
+      "seconds": 2.0,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f5df65a7ab9b37d2777d1b6ba1d2a90358c27ad64d8839345f9b00f0bc23c398"
+    },
+    {
+      "frame": 49,
+      "seconds": 2.0416666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4bb8e49ef01c0bb9c8f51574d646bc79a53bd711edb90be07256f6d5e16b5094"
+    },
+    {
+      "frame": 50,
+      "seconds": 2.0833333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "33346898a7111beb9c2213f55ddb9c8423e75de81528ce338f11259240b28f13"
+    },
+    {
+      "frame": 51,
+      "seconds": 2.125,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ba7c74850e63d1d26dd0e325dad5d00226c4b5294876b22363cf261d6e6cf2d0"
+    },
+    {
+      "frame": 52,
+      "seconds": 2.1666666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "38fab3a5d61b844ebb695ac1ad5fecccae020572daec6c7037b39d6b7793bbb3"
+    },
+    {
+      "frame": 53,
+      "seconds": 2.2083333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5b6ddd5077dbe34f9251b6ece63d944793cb31f33cb053b21513c3632e924c29"
+    },
+    {
+      "frame": 54,
+      "seconds": 2.25,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "9f9a3482e1d95684fd4faa5292e69ad3a01569706c3205d04a048d32d6497a6b"
+    },
+    {
+      "frame": 55,
+      "seconds": 2.2916666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "975191b5abfb05921a97112dc320a9a5c16d700baef34bdb03c45d490cf26f5c"
+    },
+    {
+      "frame": 56,
+      "seconds": 2.3333333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "e3bc978fc56b9b3d00bf00deed0b618868b037c19d86ace98240968751bc51dc"
+    },
+    {
+      "frame": 57,
+      "seconds": 2.375,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "63899e9856cafd803ed73735ac5864efc0cf9d9c07acb3d20421a739e4a4121b"
+    },
+    {
+      "frame": 58,
+      "seconds": 2.4166666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f4f3d8f32b852b57aa9a88c105e074874f22b23055612d8a9468cd087c607abf"
+    },
+    {
+      "frame": 59,
+      "seconds": 2.4583333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "63c774bdcb4f22f8b98a880f571d313ed81f66364637d7ad17f6c97b6effa1d0"
+    },
+    {
+      "frame": 60,
+      "seconds": 2.5,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "3fdbfd34467780c809bd435ca34c511294ead191b076395ecaf97dc6b6978a35"
+    },
+    {
+      "frame": 61,
+      "seconds": 2.5416666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "883b491eed7c0546061e3d70e178f5a17a9d92ae57117a329d541649106c8126"
+    },
+    {
+      "frame": 62,
+      "seconds": 2.5833333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "fb61e42fa8ed31a87cc93ce8efbfd243b876b934c7a31062fa41cb23b5fd6748"
+    },
+    {
+      "frame": 63,
+      "seconds": 2.625,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d96d767369c1344011beb1279296e600e80244bdc7efcc23ae564576be3890d0"
+    },
+    {
+      "frame": 64,
+      "seconds": 2.6666666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "eba448ac089ce3028767ec4f97ea9aae08a91dc51d35a2efbbdf3eb9a4b58115"
+    },
+    {
+      "frame": 65,
+      "seconds": 2.7083333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "6e917a12c0f34edc6faf6d1abbc59ba6454342fb1c3e226e685f4b711518c582"
+    },
+    {
+      "frame": 66,
+      "seconds": 2.75,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ad63e6fe08be7b1519ebf3939e1b862cba0bb6beb97ff5c0d43af100787a6739"
+    },
+    {
+      "frame": 67,
+      "seconds": 2.7916666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "6b49b50cb46eb0e09847f9af39be5458148daea66db277b66fc88c9f8c12be67"
+    },
+    {
+      "frame": 68,
+      "seconds": 2.8333333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "0d6b12a07c248fe97a7675a639cb73c1374f9f04825a1a2fd002d39850359cf7"
+    },
+    {
+      "frame": 69,
+      "seconds": 2.875,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "afec4cf3db1f719aa4a1fe219d8c1d1ef9032d4887245286bcb24a71b14431d7"
+    },
+    {
+      "frame": 70,
+      "seconds": 2.9166666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d204ee57e5c21a15cb6b11be4552f57da9f45d1c05ed3e78059243a9fc247e00"
+    },
+    {
+      "frame": 71,
+      "seconds": 2.9583333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "886ff835de330c415a5877f205e5f604e1bcc23f7307000a698bdc44f253a592"
+    },
+    {
+      "frame": 72,
+      "seconds": 3.0,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d8a71571368eddb696a6d23254c0976476f333b5d87189a6f519340c973bd493"
+    },
+    {
+      "frame": 73,
+      "seconds": 3.0416666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "a9edd3222f3cfa7be66ed7730634df0a9e237bde71e4df4405731a96c4d57234"
+    },
+    {
+      "frame": 74,
+      "seconds": 3.0833333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "65ad5c585652e7512fc21b6ccc982fa6c8d6f3443e4a17aeac1c0d8898fed672"
+    },
+    {
+      "frame": 75,
+      "seconds": 3.125,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "1adfce65f1f872a391ee4799cf5b0d283122ba32edd80b421a2a0c5c88b8423c"
+    },
+    {
+      "frame": 76,
+      "seconds": 3.1666666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "04446468c0abbc79a7bbe5fce39f499ad567bd12ada97940bdd16ad2453be8ba"
+    },
+    {
+      "frame": 77,
+      "seconds": 3.2083333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5ff48fc435e4896a2534ec446e7d57317852c8dfed46508000612a4b02337571"
+    },
+    {
+      "frame": 78,
+      "seconds": 3.25,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d436b9bfe514d768406594e8ffe9ee271031049ad2bcb1e46ae32e7bc48344d7"
+    },
+    {
+      "frame": 79,
+      "seconds": 3.2916666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "0f9a45aa5003f395704aa7a858e71f6488218aad31f69cbb4d5ed58cd24a379f"
+    },
+    {
+      "frame": 80,
+      "seconds": 3.3333333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "acf128253fae051f1e7027a363b5d9aad7daf765c066645adbfac8090920a209"
+    },
+    {
+      "frame": 81,
+      "seconds": 3.375,
+      "alphaBounds": [
+        661,
+        46,
+        1302,
+        679
+      ],
+      "alphaSha256": "2fc8a619f7760a561eaca46045d5719b8c03e6ed083f15f328e26fae51295300"
+    },
+    {
+      "frame": 82,
+      "seconds": 3.4166666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "89c196ed7584b8a206a7e3e91e893ffa66dd34bbc81bb7f7131e96ae8c35bd8f"
+    },
+    {
+      "frame": 83,
+      "seconds": 3.4583333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f7f65f96ab656f97d1cc9b6d25ca204fc1e78578aa5cbf3be911f46e9fd76139"
+    },
+    {
+      "frame": 84,
+      "seconds": 3.5,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "7fa70ca67ca7a4c6d29ddd8d316cbacfcae30635cae72da36a116a7d375a1fe0"
+    },
+    {
+      "frame": 85,
+      "seconds": 3.5416666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "b894e19257815ff1975d0dd5dbe2c32e60423060781139cca574bb22b2c0100a"
+    },
+    {
+      "frame": 86,
+      "seconds": 3.5833333333333335,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "0b0bf1f08c64c112567be76eacfd4c760d6e576e565f5d416591f088e170f627"
+    },
+    {
+      "frame": 87,
+      "seconds": 3.625,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "af9858f7665a1a5bce094cccb4fdc0fdf2f59bbaf8f5dce5612b8884dff267fd"
+    },
+    {
+      "frame": 88,
+      "seconds": 3.6666666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "fa271f22a034e97b0b365cba7257dd34597588138c38610b5c35fc0e30e57bf5"
+    },
+    {
+      "frame": 89,
+      "seconds": 3.7083333333333335,
+      "alphaBounds": [
+        661,
+        46,
+        1302,
+        679
+      ],
+      "alphaSha256": "f7689515fdcdf80a787876a763b7e9042d263a52cbea99960af172ecc670d70e"
+    },
+    {
+      "frame": 90,
+      "seconds": 3.75,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "8b520842febc7a97b3e8243e237ba10ca464dc9cbdc347d06b38d1d1ace8debc"
+    },
+    {
+      "frame": 91,
+      "seconds": 3.7916666666666665,
+      "alphaBounds": [
+        661,
+        46,
+        1302,
+        679
+      ],
+      "alphaSha256": "7da5351203a515d87702656e6287e4ae6ef0eb4fb53323956032c44b224c066e"
+    },
+    {
+      "frame": 92,
+      "seconds": 3.8333333333333335,
+      "alphaBounds": [
+        661,
+        46,
+        1302,
+        679
+      ],
+      "alphaSha256": "c5eb9323dec5228812d3c2a4742927479eb750c9e9224b20b1a5d986e53f4c8b"
+    },
+    {
+      "frame": 93,
+      "seconds": 3.875,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "a83eb0f4fab15b59fcd2f4b7e7101c1aa98e246a28415ea3ddcd5835172e8827"
+    },
+    {
+      "frame": 94,
+      "seconds": 3.9166666666666665,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ef1c9f3c0c77e19fb2edbbbc8ac51abd2244a6dcda29102d44d634df76b82bc0"
+    },
+    {
+      "frame": 95,
+      "seconds": 3.9583333333333335,
+      "alphaBounds": [
+        661,
+        46,
+        1302,
+        679
+      ],
+      "alphaSha256": "d87d989fec37b5852cbb9c77ddd1eeed9ac634eba1ebf5fd5ff43de5d1f9b4cb"
+    },
+    {
+      "frame": 96,
+      "seconds": 4.0,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "06464a2b31a4f5b6dd4f4d077e5ad08598c56c41cb26dff48d65b7676f45b18f"
+    },
+    {
+      "frame": 97,
+      "seconds": 4.041666666666667,
+      "alphaBounds": [
+        661,
+        46,
+        1302,
+        679
+      ],
+      "alphaSha256": "c05a52e2f5e7db0320619f5130ef77a4ef4ea71cb91c4f701f06c0102ed63846"
+    },
+    {
+      "frame": 98,
+      "seconds": 4.083333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "bd3f6a944cd89dfb10168d1eccb0978d3e62cbabe7afba86bfc96ff974358650"
+    },
+    {
+      "frame": 99,
+      "seconds": 4.125,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d792dc2c168d4d1f415b55cbdfe2d83b7334f77f21af537cc897727843936363"
+    },
+    {
+      "frame": 100,
+      "seconds": 4.166666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "659c56c557089cc00b471d41762f5dee3e13b44dc81874f5b384f67516e4bb7f"
+    },
+    {
+      "frame": 101,
+      "seconds": 4.208333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "96f6483e4dce7ebc5e255efd34e87191aac49f129903bccb085b6df582b50ac7"
+    },
+    {
+      "frame": 102,
+      "seconds": 4.25,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "e6a72bf80f391989c80320c3fd4769d570419c154cdda588829e5bf3d198ac51"
+    },
+    {
+      "frame": 103,
+      "seconds": 4.291666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "cd43b16cb045ef151fdf7e97336ce3de66a59f8e37de201d3ad7f2a04420b5e4"
+    },
+    {
+      "frame": 104,
+      "seconds": 4.333333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "0460bf0b26b67e333e224701a87c9451aa5a26dba0db0b74376095ef67cda3d0"
+    },
+    {
+      "frame": 105,
+      "seconds": 4.375,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "b4de18d1412359a0ce1489d4d9a5af220fe988b64e6c994260865be178b03a51"
+    },
+    {
+      "frame": 106,
+      "seconds": 4.416666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "49a5c22f2d2a1ced5b6e14eb116d5e38c1809a3de69e820b6a35267129f47cbb"
+    },
+    {
+      "frame": 107,
+      "seconds": 4.458333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f1270980359eeb2295c9dc270a022e6891d0fcfef2344a986fe412eea75f0e5f"
+    },
+    {
+      "frame": 108,
+      "seconds": 4.5,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "8053370d3f1cd31da66a27b1b2c7bda323ec59a2c8d5f8d4a2fddac8a5c6c823"
+    },
+    {
+      "frame": 109,
+      "seconds": 4.541666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "7baf7c63d4e69fed5d3061dd4fde8db6716883816d4d93188ff424bc937cb181"
+    },
+    {
+      "frame": 110,
+      "seconds": 4.583333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "1a81aff1c09e69749a9f30e77864db903750798e69fe939abfe9691b4ef2959e"
+    },
+    {
+      "frame": 111,
+      "seconds": 4.625,
+      "alphaBounds": [
+        661,
+        46,
+        1302,
+        679
+      ],
+      "alphaSha256": "290777f7645a8fe9ce7bc2344f900d409a3539bed640fc3bd94076360216c139"
+    },
+    {
+      "frame": 112,
+      "seconds": 4.666666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "45acef89375794fd9266797b01ef0500cd8d23ff9ffcd80ffc72d91c6e61f5b6"
+    },
+    {
+      "frame": 113,
+      "seconds": 4.708333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "06ab8372fa4cc1b61ac8158eff52e49196fbe7b71011c3afc2f115948943a09c"
+    },
+    {
+      "frame": 114,
+      "seconds": 4.75,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "6dd5dc28d66d8e7834c5a25b2da316694ba1a9eb1fda43219e9a3b39b68c334a"
+    },
+    {
+      "frame": 115,
+      "seconds": 4.791666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "2b360aa2e1da6fb1dea182b1d70faac903d5cb20574b8e6279c4151c7d001357"
+    },
+    {
+      "frame": 116,
+      "seconds": 4.833333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "a414c39e4a168fe35348f6e704dd85336dcff8b528fd0cf966ba536bc45fe84a"
+    },
+    {
+      "frame": 117,
+      "seconds": 4.875,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "15014e0bda842677eaed082c8116f847ccc1ee523ac3f63a3930133daea6860d"
+    },
+    {
+      "frame": 118,
+      "seconds": 4.916666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ff8eb57bbe8a7c1f413cb8c0e2653897123b8dc0b15cd7ad155c127774e39145"
+    },
+    {
+      "frame": 119,
+      "seconds": 4.958333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d33ab756585763fcf82526da4b91fdb392e7c9ecaaaebe639e7ea36e7408d8af"
+    },
+    {
+      "frame": 120,
+      "seconds": 5.0,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4dcb82a5a76e10be1542717769d8486e9e82596deb48a2cfc4695c3eb50ae051"
+    },
+    {
+      "frame": 121,
+      "seconds": 5.041666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f2e0f726799df56ad2486a2e3ee6d6e0e5639dc6eeefac358725a19c6907fc93"
+    },
+    {
+      "frame": 122,
+      "seconds": 5.083333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ad294ea5d0811aabc391dac4cca521f62b8db550bea51875046e604c76ce589d"
+    },
+    {
+      "frame": 123,
+      "seconds": 5.125,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "9efecf0f1d5fa2996906755e32d6172112ae1c9d487e7d04962c42e4f9478369"
+    },
+    {
+      "frame": 124,
+      "seconds": 5.166666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "1d8c2e738e0c234f31fde090f9d842da81dcd98b51d80e46eac03640006a5f0e"
+    },
+    {
+      "frame": 125,
+      "seconds": 5.208333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "9e5700511a280fd6f570c815c074f404498d3175cd8c68efb9a5b6bab439dc66"
+    },
+    {
+      "frame": 126,
+      "seconds": 5.25,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "b546507f2df66894c24292f519ca18a9d3df7938f7b9606feb1622bc5c75c375"
+    },
+    {
+      "frame": 127,
+      "seconds": 5.291666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5e1d4f7ba429b58e14381efdf6b331a67dce9c5d0315942109541d8967101e6e"
+    },
+    {
+      "frame": 128,
+      "seconds": 5.333333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "c35a6f76e13cb84623d9b3fd5650b22a8b765049d99559b008e8b2b08d75e8af"
+    },
+    {
+      "frame": 129,
+      "seconds": 5.375,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "1aaafbfd0d3e0423828903c9b323614fc7af33a428e0a39cd45442457b4fc9db"
+    },
+    {
+      "frame": 130,
+      "seconds": 5.416666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "3a3aa4955cd55cb4e349c2a3f0fb964a90726904931202efb7c18ac068d3cfca"
+    },
+    {
+      "frame": 131,
+      "seconds": 5.458333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ae0b5603425ce99f4d46cfd7dc1e0aaeec0202c30569ef9399cec90ffe359949"
+    },
+    {
+      "frame": 132,
+      "seconds": 5.5,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4f662d7aec7e2ab578eaddea97ea9860ec7e08860c398492962026a9167e2247"
+    },
+    {
+      "frame": 133,
+      "seconds": 5.541666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "7ea504bbb638b1b3227bcb49e1dc7d460dc2b931f9b84dca509ad13cfd476760"
+    },
+    {
+      "frame": 134,
+      "seconds": 5.583333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f733ef54fb142f17d77adebd572018ba8cc8ce053f6f1b01a6ddf274f57c194d"
+    },
+    {
+      "frame": 135,
+      "seconds": 5.625,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "1d5c25a16f07b7441940f0379e966dd3fb5001fdc671686395133e98635e3e07"
+    },
+    {
+      "frame": 136,
+      "seconds": 5.666666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "9be2303b173734e10f7440a5d3f05a63aff7590cd730578b603766e053967b1d"
+    },
+    {
+      "frame": 137,
+      "seconds": 5.708333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "18e9bcdb33dcb16dd520d56daeebb7a39e8234f136b91947adb1d63de44e8106"
+    },
+    {
+      "frame": 138,
+      "seconds": 5.75,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "b8596c356ba52e69d001b9f750e7a10045830dc923b2e1f9d1d450f58c7b555b"
+    },
+    {
+      "frame": 139,
+      "seconds": 5.791666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ff4c8db0fecbf4f3a4772cd66596ed0f602cebd189b96f2c3977938d246955b8"
+    },
+    {
+      "frame": 140,
+      "seconds": 5.833333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "b96cb0d64f26108b772e1f7c3610944cdf012f11ec0703233edfcdc339114d4f"
+    },
+    {
+      "frame": 141,
+      "seconds": 5.875,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d6f1b2d6d4e1485f011638d042ce8d7120fe6f94c9409ecd4c2ab39b7907b355"
+    },
+    {
+      "frame": 142,
+      "seconds": 5.916666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f1f86c926c766b478b03ed8ade79cf9131d1c7045e194b5dc0e665efbcdda363"
+    },
+    {
+      "frame": 143,
+      "seconds": 5.958333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "e7884af35f566207e91da1be2b37e3d72d04ec266f70caba5c5b4b2557b01337"
+    },
+    {
+      "frame": 144,
+      "seconds": 6.0,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d2048dcdeba027910b4ce335f46804d9c47afef6151360d88ec83dc46b4e694c"
+    },
+    {
+      "frame": 145,
+      "seconds": 6.041666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "0204c0fde539b90b79caa6a65305085d1be9a6adbf557bb3d7e82de144c3d395"
+    },
+    {
+      "frame": 146,
+      "seconds": 6.083333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "d4d2e2ef4892c2fdd7a6d3664767526929186546158509c05f36595fa36ed8ca"
+    },
+    {
+      "frame": 147,
+      "seconds": 6.125,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "8ad9f9b42a4854ae2b84e05b4175731ca8fa532a63cc9c4cd7fba340b282da1f"
+    },
+    {
+      "frame": 148,
+      "seconds": 6.166666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "cd5ab3f7cd28624ae0a2ce788a8c92a8d44b82a3d8a396b9d98a9b0d68fd269a"
+    },
+    {
+      "frame": 149,
+      "seconds": 6.208333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "34ec005f1e7122c1a7c9cd7852e72dcd4db90d0499015cfc7edaf7aac2f5f1f4"
+    },
+    {
+      "frame": 150,
+      "seconds": 6.25,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "2c777c7fbcb503073d13ca25978bbf4e2110e5e9a65a62b39a543d5682a8b414"
+    },
+    {
+      "frame": 151,
+      "seconds": 6.291666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4ee7c69036be82174b3001c1af24bd5fc48253d903c4ed91528b327f029226f6"
+    },
+    {
+      "frame": 152,
+      "seconds": 6.333333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4f6806d4fd4041da704e13934bdedffebb1886e26a2ebf986c7b70ea46a14c47"
+    },
+    {
+      "frame": 153,
+      "seconds": 6.375,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5b206ff59d4f4df3939bfb02df799b8a1e34e85eaeb97d446c8b1c14124ccdbf"
+    },
+    {
+      "frame": 154,
+      "seconds": 6.416666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "b19a778ac87417821317213da2558e3b0a99699c76af0931275d04331cd62302"
+    },
+    {
+      "frame": 155,
+      "seconds": 6.458333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "36fab02b29398194be4fda4f3e5f504114e9a71d2aa63604ef7a653f091dd3ce"
+    },
+    {
+      "frame": 156,
+      "seconds": 6.5,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "2239e8143bbbe06cb394f93bffce65f4488c1a0db22a564a40e896c62583f131"
+    },
+    {
+      "frame": 157,
+      "seconds": 6.541666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "7dd05836d21d53a40e8efe8fa2f9c28a4e76fb4573af4fdce765bd1bc486ae13"
+    },
+    {
+      "frame": 158,
+      "seconds": 6.583333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "0227ae52a34def42a9342ec52d0bb6659a52d0db571ad70f726d7d722325da4d"
+    },
+    {
+      "frame": 159,
+      "seconds": 6.625,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "016e4442f6d725230d43a69f3103e802d0623c4df0d3167ff312fa5a4fdad125"
+    },
+    {
+      "frame": 160,
+      "seconds": 6.666666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "9c21d7e2e0b949b3db703b366c138889c5340ce6974127befb6b780a2e73aa52"
+    },
+    {
+      "frame": 161,
+      "seconds": 6.708333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "e3060c4e0da0b7eec9c514a41d1d6f7ad690e938d8e36d7ff30e2e944889e42e"
+    },
+    {
+      "frame": 162,
+      "seconds": 6.75,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "576746cb8760c2a9ce7a72d5aa709969705aa08dc31851efafcb37a5811fc976"
+    },
+    {
+      "frame": 163,
+      "seconds": 6.791666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "cf4ff063014d9d2fbc3c333baece0b16fcc640d9c55203b10d4528f6c69cf61d"
+    },
+    {
+      "frame": 164,
+      "seconds": 6.833333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "fcfa13aa4a3ce9bab74124c58e99ec5aef3c6845079f1aa3495796b34a2fc669"
+    },
+    {
+      "frame": 165,
+      "seconds": 6.875,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f0380a4ba652f573154558fd1742fa924dd3699037ba8459c332d1c4153b3ae3"
+    },
+    {
+      "frame": 166,
+      "seconds": 6.916666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "e8a96a6928c69495ca55ade5495cee9e92be1894d7a4a60f7cdeb1860a6e8693"
+    },
+    {
+      "frame": 167,
+      "seconds": 6.958333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "009bbc14a032490819f48222aa7a043b9ac843b3de78bdbe756fd39d01f3a4c7"
+    },
+    {
+      "frame": 168,
+      "seconds": 7.0,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "9a623a9c5770f1e99da3389310f5379398f1b9bc7910303f41324ae2edda9558"
+    },
+    {
+      "frame": 169,
+      "seconds": 7.041666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "3cd48acf57f55aec230c8e40a285bbe4ea495b39c6bd7123dd7ce5ed1e31a78a"
+    },
+    {
+      "frame": 170,
+      "seconds": 7.083333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "35762dffe6331ab9266c29560c8b991d9f0357a2c34245443aca26b8392e6fe7"
+    },
+    {
+      "frame": 171,
+      "seconds": 7.125,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "2f202167894a07768e9f97ea2a59826a4daa2c78798b688a52ddaabe2a1c7da9"
+    },
+    {
+      "frame": 172,
+      "seconds": 7.166666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "096605a91ed112f1ce8dc2af387df4d9885fede62dda84c3ef100ee624b3b508"
+    },
+    {
+      "frame": 173,
+      "seconds": 7.208333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "53b05b6f596909f7e3c54e01295c806cd0e85d25d6a88407da1e1515531a8012"
+    },
+    {
+      "frame": 174,
+      "seconds": 7.25,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "da7708478adcb011fe9a98b11d027f920b5c4d091192c0114ca6ad35d02929ef"
+    },
+    {
+      "frame": 175,
+      "seconds": 7.291666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "5f54db3645a3e1bf89679b07ae0a251e29f2333a8a03f9ab435288b610eb85cb"
+    },
+    {
+      "frame": 176,
+      "seconds": 7.333333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "7ad51b76c65b628655c490306041cbc1e785b1d7f8572f95bbe3a840de1b76b6"
+    },
+    {
+      "frame": 177,
+      "seconds": 7.375,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4864afaa35a398c0ce7ebb0c709867b7197236284d9fed420da068bdda61d839"
+    },
+    {
+      "frame": 178,
+      "seconds": 7.416666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "8c3aafad5c8d89e3710ff6a860a37bf2fbb7c8a3440d21a20da2042fd70d1c9f"
+    },
+    {
+      "frame": 179,
+      "seconds": 7.458333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "6dafb273657bab2e320c8598e0e0383b777b50f1d4e52f093d933a804456f750"
+    },
+    {
+      "frame": 180,
+      "seconds": 7.5,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "f907a88f6ebe06b50e650779271de729553371c5b4a733c5a608f0e79b4ba26e"
+    },
+    {
+      "frame": 181,
+      "seconds": 7.541666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "7f09d58965a4a3b432d58f94d7144091eddaaaf41bcf4a471fce2e73a184a32c"
+    },
+    {
+      "frame": 182,
+      "seconds": 7.583333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "72597cbe9464b48d4316573c683fae46eb64732b8155e20a3b9541eb87b23b47"
+    },
+    {
+      "frame": 183,
+      "seconds": 7.625,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "da7b59cf5fbd5eac66433f83eb1360a3c69759af45cc9e23e0e50ea131905e18"
+    },
+    {
+      "frame": 184,
+      "seconds": 7.666666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4f719869978d8ca82b0b97bfb510c5a222b2130c6382b2b5887ae406086dd0d2"
+    },
+    {
+      "frame": 185,
+      "seconds": 7.708333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "3f12f492a80705431e6bd326b0b419098b9367b8a3410ebd38b0f79b9cd0bdf6"
+    },
+    {
+      "frame": 186,
+      "seconds": 7.75,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "a49aff829645cc541425f66ecf0d0635d22d723b61bc504bca81492e7831a60c"
+    },
+    {
+      "frame": 187,
+      "seconds": 7.791666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "4e11754bd6d7ae96ee38872facc279ecace5611ab4a784d0e8fe1a2aca01111b"
+    },
+    {
+      "frame": 188,
+      "seconds": 7.833333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "88a02e0cc8f8cd6f8539797ed0fc223aace2da52c479195b517f3131370fa856"
+    },
+    {
+      "frame": 189,
+      "seconds": 7.875,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "aad6d90dbf80214c138fa9efa235ca9bba19e1800d6edb1c5a4f916222a58cba"
+    },
+    {
+      "frame": 190,
+      "seconds": 7.916666666666667,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "8a92e6a5bb047f144c051c761e25e9c333169ff36b09c8f8ba3a5782b0db38c1"
+    },
+    {
+      "frame": 191,
+      "seconds": 7.958333333333333,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "1b1776b9248cb5e8b32d0e7eaa53864990104863ab092ce8539cb05ac600753a"
+    },
+    {
+      "frame": 192,
+      "seconds": 8.0,
+      "alphaBounds": [
+        661,
+        45,
+        1302,
+        679
+      ],
+      "alphaSha256": "ea3f0e6a371ba0f6a49d4fa7c24848c34c44caf67fe936aec5690459c725c3f3"
+    }
+  ],
+  "status": "Native matte candidate only; requires complete rendered motion and card registration review"
+}

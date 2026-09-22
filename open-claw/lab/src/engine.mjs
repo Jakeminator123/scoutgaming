@@ -35,8 +35,8 @@ function visibleCard(card) {
   return { r: card.r, s: card.s };
 }
 
-// Projection, not spreading: private state, money, free-form chat and user IDs
-// never enter the director request, even when accidentally supplied by a caller.
+// Projection, not spreading: private state, money and user IDs never enter the
+// director request. Observed chat has a separate bounded, explicitly sourced field.
 function projectEvent(source) {
   requireInput(record(source), 'event must be an object.');
   requireInput(SOURCE_TYPES.includes(source.type), 'Unknown runtime event type. Expected speak, deal, reveal, settle, turn or idle.', 'invalid_event_type');
@@ -110,6 +110,23 @@ function projectContext(value) {
     context.playerHistory.preferredLanguage = language;
   }
   for (const key of ['recentWins', 'recentLosses']) optionalInteger(source.session ?? {}, context.session, key, 0, 100);
+  if (own(source, 'observedChat')) {
+    const chat = source.observedChat;
+    requireInput(record(chat) && chat.source === 'native-observation' && typeof chat.before === 'string' && Number.isFinite(Date.parse(chat.before))
+      && Array.isArray(chat.messages) && chat.messages.length <= 8, 'observedChat needs native provenance, a cutoff time and at most eight messages.');
+    let total = 0;
+    const messages = chat.messages.map(message => {
+      requireInput(record(message) && ['user', 'assistant'].includes(message.role) && typeof message.text === 'string' && message.text.length > 0 && message.text.length <= 600
+        && typeof message.at === 'string' && Number.isFinite(Date.parse(message.at)) && Date.parse(message.at) <= Date.parse(chat.before), 'Observed chat message is invalid or newer than the event cutoff.');
+      total += message.text.length;
+      const text = message.text.replace(/\b(?:ck_live_|cs_|gen_)[A-Za-z0-9_-]{20,}\b/g, '[redacted]')
+        .replace(/(authorization|password|secret|api[_ -]?key|token)\s*[:=]\s*\S+/gi, '$1=[redacted]')
+        .replace(/https?:\/\/[^\s<>"']+/g, address => { try { const url = new URL(address); url.username = ''; url.password = ''; url.search = ''; url.hash = ''; return url.href; } catch { return '[redacted URL]'; } });
+      return { role: message.role, text, at: message.at };
+    });
+    requireInput(total <= 3200, 'Observed chat exceeds the 3200-character decision context limit.');
+    context.observedChat = { source: 'native-observation', before: chat.before, messages };
+  }
   return context;
 }
 

@@ -1,0 +1,13 @@
+{
+ "line": "bust",
+ "takeSamples": 60416,
+ "lineSamples": 59976,
+ "sampleRate": 44100,
+ "lagSamples": 0,
+ "lagSeconds": 0.0,
+ "normalisedPeak": 0.9996,
+ "takeOnsetSec": 0.0,
+ "lineOnsetSec": 0.0,
+ "takeDurationSec": 1.3699773242630386,
+ "lineDurationSec": 1.36
+}

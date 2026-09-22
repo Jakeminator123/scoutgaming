@@ -1,0 +1,7251 @@
+[
+  {
+    "sample": 1,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "62",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860140727,
+    "text": "4\n5"
+  },
+  {
+    "sample": 2,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "63",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860140784,
+    "text": "4\n5"
+  },
+  {
+    "sample": 3,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "64",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860140814,
+    "text": "4\n5"
+  },
+  {
+    "sample": 4,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "65",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860140850,
+    "text": "4\n5"
+  },
+  {
+    "sample": 8,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "66",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860140892,
+    "text": "4\n5"
+  },
+  {
+    "sample": 9,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "67",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860140948,
+    "text": "4\n5"
+  },
+  {
+    "sample": 10,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "68",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860140979,
+    "text": "4\n5"
+  },
+  {
+    "sample": 11,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "69",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141012,
+    "text": "4\n5"
+  },
+  {
+    "sample": 12,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "70",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141053,
+    "text": "4\n5"
+  },
+  {
+    "sample": 17,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "71",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141091,
+    "text": "4\n5"
+  },
+  {
+    "sample": 18,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "72",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141149,
+    "text": "4\n5"
+  },
+  {
+    "sample": 23,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "73",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141194,
+    "text": "4\n5"
+  },
+  {
+    "sample": 24,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "74",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141242,
+    "text": "4\n5"
+  },
+  {
+    "sample": 25,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "75",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141279,
+    "text": "4\n5"
+  },
+  {
+    "sample": 26,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "77",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141343,
+    "text": "4\n5"
+  },
+  {
+    "sample": 27,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "78",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141409,
+    "text": "4\n5"
+  },
+  {
+    "sample": 28,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "79",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141442,
+    "text": "4\n5"
+  },
+  {
+    "sample": 29,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "80",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141507,
+    "text": "4\n5"
+  },
+  {
+    "sample": 30,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "82",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141558,
+    "text": "4\n5"
+  },
+  {
+    "sample": 31,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "83",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141606,
+    "text": "4\n5"
+  },
+  {
+    "sample": 32,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "84",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141659,
+    "text": "4\n5"
+  },
+  {
+    "sample": 33,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "85",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141705,
+    "text": "4\n5"
+  },
+  {
+    "sample": 34,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "87",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141760,
+    "text": "4\n5"
+  },
+  {
+    "sample": 36,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "88",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141807,
+    "text": "4\n5"
+  },
+  {
+    "sample": 37,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "89",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141860,
+    "text": "4\n5"
+  },
+  {
+    "sample": 38,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "90",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141901,
+    "text": "4\n5"
+  },
+  {
+    "sample": 40,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "91",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860141944,
+    "text": "4\n5"
+  },
+  {
+    "sample": 41,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "92",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142001,
+    "text": "4\n5"
+  },
+  {
+    "sample": 42,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "93",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142034,
+    "text": "4\n5"
+  },
+  {
+    "sample": 43,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "94",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142062,
+    "text": "4\n5"
+  },
+  {
+    "sample": 44,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "95",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142100,
+    "text": "4\n5"
+  },
+  {
+    "sample": 55,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "96",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142146,
+    "text": "12\n5"
+  },
+  {
+    "sample": 77,
+    "performance": {
+      "action": "deal-right",
+      "dealingScale": "0.8",
+      "faceDown": "false",
+      "frame": "96",
+      "landingFrame": "56",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-blue-box4-c01866d1-live-experiment"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142249,
+    "text": "12\n5"
+  },
+  {
+    "sample": 82,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "1",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142294,
+    "text": "12\n5"
+  },
+  {
+    "sample": 91,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "2",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142326,
+    "text": "12\n5"
+  },
+  {
+    "sample": 105,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "3",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142375,
+    "text": "12\n5"
+  },
+  {
+    "sample": 115,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "4",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142409,
+    "text": "12\n5"
+  },
+  {
+    "sample": 131,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "5",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142476,
+    "text": "12\n5"
+  },
+  {
+    "sample": 140,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "6",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142508,
+    "text": "12\n5"
+  },
+  {
+    "sample": 149,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "7",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142541,
+    "text": "12\n5"
+  },
+  {
+    "sample": 159,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "8",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142576,
+    "text": "12\n5"
+  },
+  {
+    "sample": 173,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "9",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142625,
+    "text": "12\n5"
+  },
+  {
+    "sample": 181,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "10",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142659,
+    "text": "12\n5"
+  },
+  {
+    "sample": 195,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "11",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142727,
+    "text": "12\n5"
+  },
+  {
+    "sample": 204,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "12",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142759,
+    "text": "12\n5"
+  },
+  {
+    "sample": 217,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "13",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142810,
+    "text": "12\n5"
+  },
+  {
+    "sample": 226,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "14",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142840,
+    "text": "12\n5"
+  },
+  {
+    "sample": 241,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "15",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142893,
+    "text": "12\n5"
+  },
+  {
+    "sample": 251,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "16",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142927,
+    "text": "12\n5"
+  },
+  {
+    "sample": 265,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "17",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860142977,
+    "text": "12\n5"
+  },
+  {
+    "sample": 274,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "18",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143008,
+    "text": "12\n5"
+  },
+  {
+    "sample": 284,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "19",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143044,
+    "text": "12\n5"
+  },
+  {
+    "sample": 298,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "20",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143091,
+    "text": "12\n5"
+  },
+  {
+    "sample": 308,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "21",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143125,
+    "text": "12\n5"
+  },
+  {
+    "sample": 316,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "22",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143159,
+    "text": "12\n5"
+  },
+  {
+    "sample": 334,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "23",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143225,
+    "text": "12\n5"
+  },
+  {
+    "sample": 341,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "24",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143258,
+    "text": "12\n5"
+  },
+  {
+    "sample": 355,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "25",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143307,
+    "text": "12\n5"
+  },
+  {
+    "sample": 364,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "26",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143341,
+    "text": "12\n5"
+  },
+  {
+    "sample": 375,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "27",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143392,
+    "text": "12\n5"
+  },
+  {
+    "sample": 379,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "28",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143406,
+    "text": "12\n5"
+  },
+  {
+    "sample": 397,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "29",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143480,
+    "text": "12\n5"
+  },
+  {
+    "sample": 403,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "30",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143512,
+    "text": "12\n5"
+  },
+  {
+    "sample": 411,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "31",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143540,
+    "text": "12\n5"
+  },
+  {
+    "sample": 420,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "32",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143576,
+    "text": "12\n5"
+  },
+  {
+    "sample": 433,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "33",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143628,
+    "text": "12\n5"
+  },
+  {
+    "sample": 439,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "34",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143660,
+    "text": "12\n5"
+  },
+  {
+    "sample": 451,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "35",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143711,
+    "text": "12\n5"
+  },
+  {
+    "sample": 460,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "36",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143743,
+    "text": "12\n5"
+  },
+  {
+    "sample": 477,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "37",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143815,
+    "text": "12\n5"
+  },
+  {
+    "sample": 480,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "38",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143828,
+    "text": "12\n5"
+  },
+  {
+    "sample": 498,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "39",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143896,
+    "text": "12\n5"
+  },
+  {
+    "sample": 506,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "40",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143924,
+    "text": "12\n5"
+  },
+  {
+    "sample": 520,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "41",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860143974,
+    "text": "12\n5"
+  },
+  {
+    "sample": 530,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "42",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144007,
+    "text": "12\n5"
+  },
+  {
+    "sample": 540,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "43",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144041,
+    "text": "12\n5"
+  },
+  {
+    "sample": 550,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "44",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144073,
+    "text": "12\n5"
+  },
+  {
+    "sample": 570,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "45",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144143,
+    "text": "12\n5"
+  },
+  {
+    "sample": 577,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "46",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144177,
+    "text": "12\n5"
+  },
+  {
+    "sample": 591,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "47",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144225,
+    "text": "12\n5"
+  },
+  {
+    "sample": 601,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "48",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144259,
+    "text": "12\n5"
+  },
+  {
+    "sample": 611,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "49",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144292,
+    "text": "12\n5"
+  },
+  {
+    "sample": 621,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "50",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144330,
+    "text": "12\n5"
+  },
+  {
+    "sample": 639,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "51",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144393,
+    "text": "12\n5"
+  },
+  {
+    "sample": 649,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "52",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144426,
+    "text": "12\n5"
+  },
+  {
+    "sample": 662,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "53",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144473,
+    "text": "12\n5"
+  },
+  {
+    "sample": 672,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "54",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144508,
+    "text": "12\n5"
+  },
+  {
+    "sample": 681,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "55",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144543,
+    "text": "12\n5"
+  },
+  {
+    "sample": 696,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "56",
+      "landingFrame": "58",
+      "phase": "contact",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144591,
+    "text": "12\n5"
+  },
+  {
+    "sample": 711,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "57",
+      "landingFrame": "58",
+      "phase": "release",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144644,
+    "text": "12\n5"
+  },
+  {
+    "sample": 713,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "58",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144658,
+    "text": "12\n5"
+  },
+  {
+    "sample": 732,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "59",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144724,
+    "text": "12\n5"
+  },
+  {
+    "sample": 742,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "60",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144760,
+    "text": "12\n5"
+  },
+  {
+    "sample": 752,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "61",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144793,
+    "text": "12\n5"
+  },
+  {
+    "sample": 765,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "62",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144843,
+    "text": "12\n5"
+  },
+  {
+    "sample": 779,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "63",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144890,
+    "text": "12\n5"
+  },
+  {
+    "sample": 785,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "64",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144927,
+    "text": "12\n5"
+  },
+  {
+    "sample": 799,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "65",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860144978,
+    "text": "12\n5"
+  },
+  {
+    "sample": 808,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "66",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145008,
+    "text": "12\n5"
+  },
+  {
+    "sample": 815,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "67",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145043,
+    "text": "12\n5"
+  },
+  {
+    "sample": 826,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "68",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145092,
+    "text": "12\n5"
+  },
+  {
+    "sample": 840,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "69",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145142,
+    "text": "12\n5"
+  },
+  {
+    "sample": 848,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "70",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145178,
+    "text": "12\n5"
+  },
+  {
+    "sample": 860,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "71",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145223,
+    "text": "12\n5"
+  },
+  {
+    "sample": 870,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "72",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145260,
+    "text": "12\n5"
+  },
+  {
+    "sample": 882,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "73",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145309,
+    "text": "12\n5"
+  },
+  {
+    "sample": 892,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "74",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145343,
+    "text": "12\n5"
+  },
+  {
+    "sample": 902,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "75",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145377,
+    "text": "12\n5"
+  },
+  {
+    "sample": 915,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "76",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145424,
+    "text": "12\n5"
+  },
+  {
+    "sample": 925,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "77",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145459,
+    "text": "12\n5"
+  },
+  {
+    "sample": 939,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "78",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145508,
+    "text": "12\n5"
+  },
+  {
+    "sample": 947,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "79",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145541,
+    "text": "12\n5"
+  },
+  {
+    "sample": 959,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "80",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145591,
+    "text": "12\n5"
+  },
+  {
+    "sample": 973,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "81",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145642,
+    "text": "12\n5"
+  },
+  {
+    "sample": 979,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "82",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145674,
+    "text": "12\n5"
+  },
+  {
+    "sample": 988,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "83",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145711,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1002,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "84",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145760,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1014,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "85",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145808,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1024,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "86",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145844,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1038,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "87",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145893,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1046,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "88",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145927,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1055,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "89",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860145960,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1070,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "90",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860146010,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1077,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "91",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860146041,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1087,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "92",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860146076,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1104,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "93",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860146143,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1108,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "94",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860146159,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1125,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "95",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing performance-active",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860146224,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1133,
+    "performance": {
+      "action": "deal-dealer",
+      "dealingScale": "1",
+      "faceDown": "true",
+      "frame": "96",
+      "landingFrame": "58",
+      "phase": "return",
+      "playbackRate": "1",
+      "retarget": "false",
+      "startFrame": "0",
+      "take": "astrid-table-v2-all-dealer-cards-de1f90a9"
+    },
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "performance-playing",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860146263,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1156,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "ready"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860146344,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1361,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "0",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147058,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1371,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "2",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147093,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1388,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "3",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147161,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1396,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "6",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147191,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1416,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147257,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1426,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "9",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147291,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1434,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "10",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147324,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1444,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "11",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147360,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1459,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "12",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147408,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1467,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "15",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147441,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1491,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "16",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147527,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1505,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "19",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147573,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1516,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "20",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147610,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1522,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "21",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147644,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1530,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "23",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147675,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1540,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "24",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147710,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1558,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147776,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1573,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "28",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147826,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1582,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "29",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147858,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1595,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "30",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147908,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1605,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "33",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860147941,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1630,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "36",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148027,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1643,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "37",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148076,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1653,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "38",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148110,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1662,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "39",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148145,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1673,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "41",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148194,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1687,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "42",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148240,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1697,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "45",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148274,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1713,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148327,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1723,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "47",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148360,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1736,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "48",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148410,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1746,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "51",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148443,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1768,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148524,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1783,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148574,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1786,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "56",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148594,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1803,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "57",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148662,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1811,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "59",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148693,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1823,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148744,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1831,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "61",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148775,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1844,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "64",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148825,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1853,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "65",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148858,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1867,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "66",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148906,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1876,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "68",
+      "restLoops": "34",
+      "restState": "folding"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148944,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1883,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860148974,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1911,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "3",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149077,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1925,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149124,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1944,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "6",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149208,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1959,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149257,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1980,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "9",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149341,
+    "text": "12\n5"
+  },
+  {
+    "sample": 1990,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "10",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149374,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2012,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "12",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149460,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2021,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "13",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149492,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2047,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "15",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149593,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2056,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "16",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149626,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2075,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "18",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149711,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2084,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "19",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149740,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2112,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "21",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149845,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2121,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "22",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149878,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2145,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "24",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860149960,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2157,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150006,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2181,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "27",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150092,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2189,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "28",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150127,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2211,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "30",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150210,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2221,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "31",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150246,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2249,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "33",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150344,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2257,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "34",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150376,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2280,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "36",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150460,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2295,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "37",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150511,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2316,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "39",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150593,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2325,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "40",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150626,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2344,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "42",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150709,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2359,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "43",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150757,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2383,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "45",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150843,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2393,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150877,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2418,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "48",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860150956,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2432,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "49",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151011,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2452,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "51",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151076,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2465,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151125,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2488,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "54",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151210,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2496,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151241,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2525,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "57",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151342,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2535,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "58",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151375,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2561,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151459,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2574,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "61",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151510,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2599,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "63",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151593,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2608,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "64",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151626,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2630,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "66",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151709,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2644,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "67",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151758,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2662,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "69",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151824,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2677,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "70",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151873,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2700,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "72",
+      "restLoops": "34",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860151960,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2714,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "0",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152007,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2723,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "1",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152044,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2747,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "3",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152124,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2755,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "4",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152162,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2778,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "6",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152241,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2787,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "7",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152276,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2817,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "9",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152378,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2826,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "10",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152408,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2850,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "12",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152491,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2864,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "13",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152545,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2883,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "15",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152608,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2891,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "16",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152644,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2920,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "18",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152741,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2934,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "19",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152795,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2958,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "21",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152874,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2968,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "22",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152908,
+    "text": "12\n5"
+  },
+  {
+    "sample": 2990,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "24",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860152990,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3006,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "25",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153041,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3024,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "27",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153123,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3033,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "28",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153159,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3051,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "30",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153229,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3066,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "31",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153294,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3085,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "33",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153363,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3098,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "34",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153408,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3117,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "36",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153493,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3124,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "37",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153524,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3150,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "39",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153624,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3158,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "40",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153659,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3177,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "42",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153743,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3189,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "43",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153791,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3212,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "45",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153874,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3220,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "46",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153908,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3244,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "48",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860153992,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3251,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "49",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154023,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3274,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "51",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154111,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3284,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "52",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154158,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3305,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "54",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154241,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3312,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "55",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154292,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3332,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "57",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154359,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3347,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "58",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154409,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3367,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "60",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154495,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3378,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "61",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154544,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3396,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "63",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154610,
+    "text": "12\n5"
+  },
+  {
+    "sample": 3408,
+    "performance": {},
+    "rest": {
+      "engine": "three.js r180",
+      "restFrame": "64",
+      "restLoops": "35",
+      "restState": "rest"
+    },
+    "scene": "",
+    "speak": {
+      "speakFrame": "50",
+      "speakJob": "gUoli6tA6QtpwAbwP1xq",
+      "speakJoinProgress": "1.000",
+      "speakLine": "goodluck",
+      "speakSettledDeltaMs": "-66",
+      "speakStartDeltaMs": "-30",
+      "speakState": "idle"
+    },
+    "t": 1789860154662,
+    "text": "12\n5"
+  }
+]

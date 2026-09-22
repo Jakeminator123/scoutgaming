@@ -2,7 +2,7 @@ export interface ActivityEntry {
   id: string;
   time: string;
   runId?: string;
-  source: 'lab' | 'manual' | 'social' | 'partner' | 'player' | 'config';
+  source: 'lab' | 'manual' | 'social' | 'partner' | 'native' | 'player' | 'config';
   stage: 'input' | 'decision' | 'playback' | 'connection' | 'configuration';
   title: string;
   owner: string;

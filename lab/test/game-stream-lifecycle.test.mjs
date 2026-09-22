@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import React from 'react';
 import { webcrypto } from 'node:crypto';
 import { createSeedProject } from '../lib/studio-model.mjs';
+import { createPartnerTrace, appendPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -126,7 +127,6 @@ test('navigation during playback rejects the queue wait and late completion is i
 
 test('live follow ignores past instructions and drains new instructions only after each actual completion', async () => {
   const ui = setup([record([{ type: 'idle' }])]);
-  ui.button('Labbets presentation').onClick(); ui.flush();
   ui.button('Följ nya instruktioner').onClick(); ui.flush(); assert.equal(ui.requests.length, 0);
   ui.append(record([{ type: 'speak', line: 'goodluck' }, { type: 'idle' }], 2)); assert.equal(ui.requests.length, 1);
   ui.resolve(); await tick(); ui.flush(); assert.equal(ui.requests.length, 1);
@@ -135,12 +135,12 @@ test('live follow ignores past instructions and drains new instructions only aft
   ui.resolve(); await tick(); ui.flush(); ui.find(Stage).onPlaybackEvent({ phase: 'completed', medium: '2d' }); await tick(); ui.flush(); assert.equal(ui.requests.length, 3);
   ui.resolve(); await tick(); ui.flush(); ui.find(Stage).onPlaybackEvent({ phase: 'completed', medium: '2d' }); await tick(); ui.flush();
   assert.deepEqual(ui.requests.map(request => request.body.sourceEvent), [{ type: 'speak', line: 'goodluck' }, { type: 'idle' }, { type: 'speak', line: 'double' }]);
-  ui.button('Stoppa följning').onClick(); ui.flush();
+  ui.button('Pausa labbet').onClick(); ui.flush();
 });
 
 test('new connection gaps stop live follow instead of replaying a partial continuation', async () => {
   const ui = setup([record([{ type: 'idle' }])]);
-  ui.button('Labbets presentation').onClick(); ui.flush(); ui.button('Följ nya instruktioner').onClick(); ui.flush();
+  ui.button('Följ nya instruktioner').onClick(); ui.flush();
   ui.append(record([{ type: 'speak', line: 'double' }, { type: 'idle' }], 2));
   ui.resolve(); await tick(); ui.flush();
   ui.append({ kind: 'status', data: { state: 'disconnected', gap: true, reason: 'transport-error' } }); await tick(); ui.flush();
@@ -149,7 +149,7 @@ test('new connection gaps stop live follow instead of replaying a partial contin
 
 test('model failure releases busy state and stops follow without playing a later event', async () => {
   const ui = setup([record([{ type: 'idle' }])]);
-  ui.button('Labbets presentation').onClick(); ui.flush(); ui.button('Följ nya instruktioner').onClick(); ui.flush();
+  ui.button('Följ nya instruktioner').onClick(); ui.flush();
   ui.append(record([{ type: 'speak', line: 'goodluck' }, { type: 'idle' }], 2));
   ui.requests[0].reject(new Error('Model request failed')); await tick(); ui.flush();
   assert.ok(ui.button('Följ nya instruktioner')); assert.equal(ui.find(Stage).busy, false); assert.equal(ui.find(Stage).playing, false);
@@ -162,4 +162,64 @@ test('unmount aborts outstanding work and a stopped prior signal cannot cancel a
   assert.ok((await first.result).error);
   first.controller.abort(); ui.flush(); assert.equal(ui.find(Stage).playing, true);
   ui.unmount(); assert.ok((await second.result).error); assert.equal(ui.requests[1].signal.aborted, true);
+});
+
+test('connection arms follow automatically, keeps original visible and does not replay earlier rounds', async () => {
+  const ui = setup([record([{ type: 'idle' }])]);
+  ui.update({ autoFollow: true, followFromRecord: 1 });
+  assert.ok(ui.find(Reference)); assert.ok(ui.button('Pausa labbet'));
+  assert.equal(ui.requests.length, 0);
+  ui.append(record([{ type: 'speak', line: 'goodluck' }], 2));
+  assert.equal(ui.requests.length, 1);
+  ui.resolve(); await tick(); ui.flush();
+  assert.ok(ui.find(Reference)); assert.equal(ui.find(Stage).playing, true);
+  ui.update({ autoFollow: false }); await tick(); ui.flush();
+  assert.equal(ui.find(Stage).playing, false);
+});
+
+test('first round arriving in the same render as connected is not dropped', async () => {
+  const ui = setup([]);
+  ui.update({ autoFollow: true, followFromRecord: 0, trace: { records: [record([{ type: 'idle' }])], bytes: 0, limited: false } });
+  assert.equal(ui.requests.length, 1);
+  ui.unmount(); await tick();
+});
+
+test('returning to the activity view never replays the entire connected session', async () => {
+  const ui = setup([record([{ type: 'idle' }])]);
+  ui.update({ autoFollow: true, followFromRecord: 1 });
+  ui.update({ active: false });
+  ui.append(record([{ type: 'idle' }], 2));
+  ui.update({ active: true });
+  assert.equal(ui.requests.length, 0);
+  ui.append(record([{ type: 'idle' }], 3)); assert.equal(ui.requests.length, 1);
+  ui.unmount(); await tick();
+});
+
+test('observed settlement context is used without borrowing later outcomes or invented language', async () => {
+  const settle = { type: 'settle', dealerTotal: 23, dealerBlackjack: false, hands: [{ box: 3, outcome: 'win' }] };
+  const ui = setup([record([settle, { type: 'speak', line: 'win' }]), record([{ ...settle, hands: [{ box: 3, outcome: 'lose' }] }], 2)]);
+  const run = ui.play(1);
+  assert.deepEqual(ui.requests[0].body.context.session, { recentWins: 1, recentLosses: 0 });
+  assert.equal(ui.requests[0].body.context.playerHistory.preferredLanguage, null);
+  assert.equal(ui.requests[0].body.context.temperament, undefined);
+  run.controller.abort(); await run.result;
+});
+
+test('new observation cancels the old queue, clears limits, ignores delayed old commands and follows future steps', async () => {
+  const ui = setup([]);
+  ui.update({ autoFollow: true, followFromRecord: 0 });
+  const old = record([{ type: 'speak', line: 'goodluck' }, { type: 'idle' }], 1);
+  ui.append(old); assert.equal(ui.requests.length, 1);
+  const reset = restartPartnerTrace({ ...appendPartnerTrace(createPartnerTrace(), old), limited: true });
+  ui.update({ trace: reset, observationRevision: 1, followFromRecord: 1 });
+  await tick(); ui.flush();
+  assert.equal(ui.requests[0].signal.aborted, true);
+  assert.ok(ui.find(Reference)); assert.ok(ui.button('Pausa labbet'));
+  ui.append(old); assert.equal(ui.requests.length, 1);
+  ui.append(record([{ type: 'speak', line: 'double' }], 2)); assert.equal(ui.requests.length, 2);
+  ui.resolve(); await tick(); ui.flush();
+  assert.equal(ui.find(Stage).playing, true);
+  ui.find(Stage).onPlaybackEvent({ phase: 'completed', medium: '2d' });
+  await tick(); ui.flush();
+  assert.equal(ui.requests.length, 2);
 });

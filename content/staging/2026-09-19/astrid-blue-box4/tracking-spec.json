@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "box": 4,
+  "indexing": "zero-based; one position viewer-right of centre",
+  "scope": "one first player card; approved plates tested in job c01866d1; choreography failed review; diagnostic tracking only",
+  "cameraReferenceJob": "269f8943-e9ba-473e-9167-13774c61dd9f",
+  "identityReference": "ref-identity.png",
+  "identityMediaId": "b2c16866-56c4-4406-bbb1-7fed713ca485",
+  "widthMetres": 0.072,
+  "heightMetres": 0.103,
+  "bodyHex": "#164BDF",
+  "borderHex": "#FFFFFF",
+  "faceCornersClockwise": [
+    {"id": "far-left", "hex": "#FF30C8"},
+    {"id": "far-right", "hex": "#FFE500"},
+    {"id": "near-right", "hex": "#00E5FF"},
+    {"id": "near-left", "hex": "#FFFFFF"}
+  ],
+  "markerDiameterMetres": 0.006,
+  "markerInsetMetres": 0.009,
+  "back": "one white centre dot; no corner dots",
+  "tracking": {
+    "input": "raw native RGB before green-screen keying",
+    "scaleFitted": false,
+    "onFelt": "fixed physical rectangle on the calibrated table plane; translation and yaw only",
+    "inAir": "fixed physical rectangle; rigid 3D translation and rotation with temporal continuity",
+    "twoMarkers": "do not claim unique unconstrained 3D pose from two points; use visible outline and temporal pose prior or mark inferred",
+    "turn": "front/back classification from measured colour pattern; ambiguous frames remain unknown/inferred",
+    "occlusion": "retain finger mask above the replacement; inspect hand contact before installation",
+    "landing": "target.json matches the actual Box 4 first-card area; never move chip or fan to hide a bad source landing"
+  },
+  "releaseGate": "Review both plates with the user, then one Seedance take after acceptance; no wider batch. Check native source motion before masking or gameplay installation."
+}

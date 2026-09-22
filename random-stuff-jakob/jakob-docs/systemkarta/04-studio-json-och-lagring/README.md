@@ -43,6 +43,24 @@ Projektlagringen använder revision, historik och atomiskt skrivande.
 Social policy och ljudcache är separata från `project.json`. Inga av dessa
 lokala filer innebär automatiskt en driftsättning eller produktbindning.
 
+Generationsoriginalen ligger även utanför repot, i
+`C:/Users/jakem/CroupierAssets/bettalotto-generations`. Detta är labbets
+befintliga lokala arkivförval; `LAB_VIDEO_ARCHIVE` kan ange annan plats.
+224/224 snapshot-ID:n och filstorlekar matchade i metadata-inventeringen
+22 september. Inventeringen är inte en ny byte-/hash- eller visuell granskning.
+Behåll filmbytes där; media behöver inte kopieras in i Git eller inkluderas
+i semantisk repoindexering för att kunna spelas via en explicit lokal koppling.
+Mappen ska inte blandas ihop med det pensionerade personarkivet eller antas
+vara Jakobs tidigare nämnda slaskmapp utan separat belägg.
+
+Produktserverns valfria `CROUPIER_GENERATIONS_DIR` väljer läskatalog för BO
+och Generations-API, med `web/public/bo/gen` som oförändrat standardläge.
+Labbets `LAB_VIDEO_ARCHIVE` har separat ansvar. Den isolerade startarens
+`--media-directory` sätter båda till samma befintliga mapp i processerna;
+den skriver inte `.env`, kopierar inte filmer och raderar inte arkivet vid
+avslut. Varken variabeln eller flaggan är en ny uppladdning eller en automatisk
+Git-synk av video. Katalog-ID, filnamn, auth och realpath kontrolleras vid läsning.
+
 ## Vem läser vad?
 
 - [Studio-modellen](../../../../lab/lib/studio-model.mjs) kontrollerar

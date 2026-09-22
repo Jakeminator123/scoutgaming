@@ -1,0 +1,7 @@
+# Gameplay QA: green take 6a378270 as the first card of box 5
+
+Isolated guest table `http://astridboxright.localhost:4190/?dealer=astrid&table=blender` (fresh guest cookie in the 4190 runtime's own SQLite; no production, no real user DB). Kevin's final target: the seat second from the viewer's right, box 5, and the clip's landing spot is box 5's first-card position. The folder name still says box-right because the clip was first installed on box 6 before Kevin corrected the seat; `box6-evidence/` keeps three frames of that superseded install.
+
+`result.json` records the final round: box 5 and box 2 staked, Deal Now, box-5 take (7 of spades) frames 0-96, box 2 by the ordinary 3D shoe path, dealer upcard take frames 0-96, hole card, refresh mid-round with identical card rects, hit to 27, stands, settlement 960 -> 965, table back at PLEASE PLACE BETS, no console warnings or errors. `final-*.png` are the frames named in `result.json`. `dealer-sync.txt`, `pre-commit.txt` and `focused-tests.txt` are the repository checks run with the take installed.
+
+What this does not claim: visual acceptance. The fan sits where the hand left the card (right of and below the box-5 marker, over its chip), the cuts between idle, box take and dealer take are hard, and the replacement card is drawn at a fixed size through a carry where the filmed card is foreshortened. See `../card-track/README.md` for the size plot.

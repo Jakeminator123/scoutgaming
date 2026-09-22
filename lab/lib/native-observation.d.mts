@@ -1,0 +1,1 @@
+export function acceptNativeObservation(message: { source: unknown; origin: string; data: unknown }, expected: { source: unknown; origin: string; channel: string; lastSequence?: number }): Record<string, any> | null;

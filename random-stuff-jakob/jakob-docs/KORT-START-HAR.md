@@ -14,9 +14,17 @@ inte godkända takes utan hela kalibrerings-/acceptansflödet. `lab/` är den
 lokala studion för prov, observation och dokumentation; `open-claw/` är
 Director/Gateway-kopplingen. [Labbguiden](../../lab/docs/README.md),
 [aktuell sprint](../../docs/animation-events/README.md),
-[sjudagarshandoffen](../../docs/animation-events/v5-8-days-mvp/HANDOFF-7-DAGAR.md)
+[sjudagarshandoffen](../../docs/animation-events/v5-7-days-mvp/HANDOFF-7-DAGAR.md)
 och [systemkartan](systemkarta/README.md) ger detaljerna. Jira CAC äger status
 för faktiskt utvecklings- och QA-arbete.
+
+**Labbflödet:** På Händelseloggen väljer du **Anslut** och spelar i fliken
+som öppnas. Labbet följer publika instruktioner och visar sin presentation
+bredvid originalbilden; webbläsaren kräver eget flikval för bilden.
+**Diagnostik** samlar videokarta och import/export. `/` är originalspelet;
+`/v2/` är Kevins alternativa rendering med samma motor. BO är materialverktyget.
+Backup före Kevin är taggen `backup/jakob-work-pre-kevin-20260922` (`6fe7c82`);
+den skyddar committad kod, inte lokala data. Lokal integration är inte deploy.
 
 **Miljö och API:er:** Den privata `.env` i repots rot innehåller bl.a. lokal
 Director-koppling, röst-/generationsnamn och äldre Partner-namn.
@@ -30,8 +38,11 @@ Kopiera aldrig hemligheter till Git, chatt eller `NEXT_PUBLIC_*`.
 lokal mapp med MP4-material hämtat från Bettalotto för slask/mappning. Den är
 inte kanonisk produktkälla och ska inte automatiskt skannas, importeras eller
 raderas.
-Exakt sökväg och hemliga inställningsvärden dokumenteras inte här; använd
-`LAB_VIDEO_ARCHIVE` enligt miljöförklararen när ett uppdrag kräver arkivet.
+Ett konkret generationsarkiv är nu verifierat genom ID-/storleksmetadata:
+`C:/Users/jakem/CroupierAssets/bettalotto-generations` (224 poster). Det är
+labbets befintliga förval och inte det pensionerade personarkivet; om det
+är samma slaskmapp är inte belagt. `LAB_VIDEO_ARCHIVE` väljer annan plats.
+Hemliga inställningsvärden dokumenteras inte här.
 `.cursorindexingignore` utesluter lokala bygg-/beroendekataloger och binära
 video-, ljud-, bild- och 3D-format från semantisk indexering. Den raderar inga
 filer och ändrar inte Git-spårningen; källkod och JSON-manifest finns kvar för
