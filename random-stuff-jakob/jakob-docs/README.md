@@ -6,6 +6,9 @@ Arbetsgången börjar i [Guide i labbet](http://127.0.0.1:4188/guide), vars käl
 
 ## Fördjupning
 
+- [Kort start för Jakob och nya agenter](KORT-START-HAR.md): repokarta,
+  spegling, lokala miljöfiler och video-/indexeringsgränser.
+
 - [V5: samlad leverans och publicering](ARBETE-2026-09-21-V5.md):
   dagens dokumentation, Kevin/Emils mål, talägarskap och verifierade publiceringslänkar.
 - [Samlad leverans: originalklipp och OpenClaw](ARBETE-2026-09-21-ORIGINAL-OCH-OPENCLAW.md):

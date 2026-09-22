@@ -7,6 +7,13 @@ Variabelnamn och placeringar, **inga hemliga värden**. Detta är ett register,
 inte en konfigurationsfil som programmet läser. Avser labbet/OpenClaw, inte
 produktens databasnycklar eller IDE-agenternas separata GitLab-inbox.
 
+Lokal namninventering 2026-09-22: repots privata `.env` har 13
+tilldelningsnamn, bland annat äldre `LAB_PARTNER_*`; `lab/.env.local` har de
+tre aktuella `BETTALOTTO_PARTNER_*`-namnen. De incheckade
+`lab/.env.example` och `open-claw/lab/.env.example` är endast mallar.
+[Fullständig namnlista och filernas olika läsordning](random-stuff-jakob/jakob-docs/_env.explanation.md#lokal-inventering--namn-inte-värden).
+Ingen inventering verifierar värden, behörighet eller drift.
+
 ## Samma anslutningsnyckel, två namn
 
 **`LAB_REMOTE_TOKEN` i din lokala `.env` ska ha exakt samma värde som
