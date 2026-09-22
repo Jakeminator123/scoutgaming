@@ -24,6 +24,14 @@ Det äldre fjärr-Director-provet gav `remote_context_not_supported_baseline`
 utan kompatibelt kontextkvitto. Det belägger reservbeteendet och behovet av
 redeploy/nytt prov, inte att tjänsten redan använder den nya kontexten.
 
+En Director-deploy räcker inte ensam för liveflödet. Render bygger endast
+`open-claw/lab/`; det nya lokala Next-labbet och Bettalottos native-server/
+klient är separata leveranser. Bettalottos publika `app.mjs`- och
+`native-observation.mjs`-kontroller den 22 september gav 401, så dess
+driftsatta native-version är ännu okänd. Det krävs en behörig kontroll av
+versionen och en separat godkänd testsession före live-acceptans. Ingen
+Gateway-uppdatering behövs specifikt för det nya kontextkontraktet.
+
 Det isolerade [startverktyget](../../../tools/start-local-comparison.mjs) och
 [browserprovet](../../../test/local-comparison-browser.mjs) använder temporära
 DB:er/processinställningar, verkliga lokala bordskommandon och SSE, samt ett
