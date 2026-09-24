@@ -1,6 +1,7 @@
 # Astrid – dealerklipp, version 1 (2026-09-24)
 
-Klipp för Croupier-spelet, genererade med MiniMax H3. Det här är **version 1**: fler klipp och nya versioner kommer.
+Klipp för Croupier-spelet: kortutdelning och idle (MiniMax H3) samt repliker med läppsynk (MuseTalk + Cartesia).
+Det här är **version 1**: fler klipp och nya versioner kommer.
 
 ## Teknik (gäller alla klipp)
 
@@ -46,6 +47,13 @@ sista rutan; UI:t kan rita valören när klippet är slut (eller från den ruta 
 
 Förslag: spela `still`/`blink` mest, `glance`/`breath` ibland, `cheek`/`insulted` sällan. Alla kan loopas eller följa på varandra.
 
+## repliker/ – Astrid pratar (17 klipp, med ljud)
+
+Alla 17 repliker i Astrids `bank.json` som läppsynkade klipp på samma startbild, rösten Victoria (Cartesia).
+Filnamn = replik-id (`blackjack.mp4`, `dealerbust.mp4`, …). Börjar och slutar i startbilden precis som klippen ovan,
+så de kan spelas mellan idle och deal utan övertoning. Detaljer, texter och vilken spelhändelse som spelar vilket
+klipp: `repliker/README.md`.
+
 ## Kontakt
 
-Emil (konsult). Hur klippen tas fram finns i `croupier-consult/dealklipp/` (PLAN.md, METODIK-MINIMIFART.md).
+Emil (konsult).
