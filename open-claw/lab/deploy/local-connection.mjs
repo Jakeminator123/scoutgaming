@@ -266,8 +266,9 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
   const productUrl = `http://127.0.0.1:${productPort}`;
   const labUrl = `http://127.0.0.1:${labPort}`;
   const ports = [String(productPort), String(labPort)];
-  const productData = join(runDir, 'product');
   const labData = studioDataDir ? resolve(studioDataDir) : join(runDir, 'next-studio');
+  const persistentProfiles = streamLane === 'lissabon-stream-lane' && Boolean(studioDataDir);
+  const productData = persistentProfiles ? join(labData, 'players') : join(runDir, 'product');
   const useSpeechRelay = Boolean(configuration.speechUrl || configuration.speechToken);
   const productOrigin = !useSpeechRelay && configuration.baseUrl ? normalizedOrigin(configuration.baseUrl) : null;
   const speechOrigin = normalizedSpeechOrigin(configuration.speechUrl);
@@ -298,6 +299,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
         CROUPIER_PRESENTATION_STUDIO_DIR: labData,
         CROUPIER_STREAM_LANE: streamLane,
+        CROUPIER_LISSABON_PROFILES: persistentProfiles ? '1' : '',
         CROUPIER_PRESENTATION_DIRECTOR_URL: configuration.remoteUrl, CROUPIER_PRESENTATION_DIRECTOR_TOKEN: configuration.remoteToken,
         // The relay is the narrower transport and wins whenever it is present.
         // Never place the full Gateway bearer in that product child.

@@ -1952,6 +1952,31 @@ async function finish() {
 let chatHistory = [];
 let chatBusy = false;
 const pendingChatReplies = new Map();
+const compactChat = () => localPresentationEnabled && matchMedia('(max-width: 860px)').matches;
+let chatToggle, chatStatus, chatElapsed;
+function setChatOpen(open) {
+  $('#chat-log').classList.toggle('open', open);
+  chatToggle?.setAttribute('aria-expanded', String(open));
+  if (open && chatToggle) delete chatToggle.dataset.unread;
+}
+function setChatStatus(text) {
+  if (!chatStatus) return;
+  chatElapsed.textContent = '';
+  chatStatus.replaceChildren(...(text ? [document.createTextNode(text), chatElapsed] : []));
+}
+if (localPresentationEnabled) {
+  chatToggle = document.createElement('button'); chatToggle.id = 'chat-log-toggle';
+  chatToggle.type = 'button'; chatToggle.textContent = 'Chatt';
+  chatToggle.setAttribute('aria-label', 'Visa eller dölj chattloggen');
+  chatToggle.setAttribute('aria-controls', 'chat-log'); chatToggle.setAttribute('aria-expanded', 'false');
+  chatToggle.onclick = () => { clearTimeout(chatLog.t); setChatOpen(!$('#chat-log').classList.contains('open')); };
+  $('#chat').append(chatToggle);
+  chatStatus = document.createElement('span'); chatStatus.id = 'chat-status';
+  chatElapsed = document.createElement('span'); chatElapsed.setAttribute('aria-hidden', 'true');
+  chatStatus.setAttribute('role', 'status'); $('#chat').append(chatStatus);
+  $('#chat').addEventListener('keydown', event => { if (event.key === 'Escape') setChatOpen(false); });
+  matchMedia('(max-width: 860px)').addEventListener('change', event => { if (event.matches) setChatOpen(false); });
+}
 
 function chatLog(role, text, pending = false) {
   const panel = $('#chat-log');
@@ -1962,11 +1987,12 @@ function chatLog(role, text, pending = false) {
   const message = document.createElement('p'); message.textContent = text;
   row.append(name, message);
   panel.appendChild(row);
-  panel.classList.add('open');
+  setChatOpen(!compactChat());
+  if (compactChat() && role !== 'user' && chatToggle) chatToggle.dataset.unread = 'true';
   panel.scrollTop = panel.scrollHeight;
   while (panel.children.length > 24) panel.firstChild.remove();
   clearTimeout(chatLog.t);
-  chatLog.t = setTimeout(() => panel.classList.remove('open'), 26000);
+  chatLog.t = setTimeout(() => setChatOpen(false), 26000);
   return row;
 }
 
@@ -2135,7 +2161,7 @@ async function playChatDecision(decision, signal, jobId) {
       try {
         if (decision.visualMode === 'generated-lipsync-preview' && decision.speechPackage) {
           await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
-            onStart: text => showCaption(text, 27000),
+            onStart: text => { setChatStatus(`${DEALER.name} svarar`); showCaption(text, 27000); },
             onReceipt: receipt => nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync', ...receipt }),
           });
         } else await playNeutralTts(decision.exactText, signal);
@@ -2228,6 +2254,11 @@ async function sendChat() {
   if (!message || chatBusy) return;
   input.value = '';
   chatBusy = true;
+  $('#chat-send').disabled = true;
+  if (compactChat()) input.blur();
+  const requestedAt = performance.now();
+  setChatStatus('Förbereder svar…');
+  const waitTimer = localPresentationEnabled ? setInterval(() => { chatElapsed.textContent = ` ${Math.floor((performance.now() - requestedAt) / 1000)} s`; }, 1000) : null;
   const chatCorrelation=nativeObservation.context();
   const history = chatHistory.slice(-12).map(({ role, text }) => ({ role, text }));
   const requestId = crypto.randomUUID();
@@ -2247,16 +2278,22 @@ async function sendChat() {
     });
     const decision = await r.json();
     if (!r.ok) throw new Error(decision.error || `Chat unavailable (${r.status})`);
+    clearInterval(waitTimer);
+    setChatStatus(decision.kind === 'silence' ? '' : 'Svar klart · väntar på ledigt bord');
     if (decision.kind !== 'silence') localPresentation?.state({ ready: true });
     speechPoseGate.responseReady(requestId, decision);
     const receipt = await received.completion;
     if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
+    setChatStatus('');
   } catch (error) {
     speechPoseGate.cancel(requestId, error.message || 'chat-failed');
+    setChatStatus('Svaret avbröts. Försök igen.');
     if (!speechPoseGate.get(requestId)?.displayed) hint('CHAT', 'Dealer chat is unavailable for a moment.');
   } finally {
     pendingChatReplies.delete(requestId);
     chatBusy = false;
+    clearInterval(waitTimer);
+    $('#chat-send').disabled = false;
   }
 }
 
@@ -2454,6 +2491,10 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
 
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
+if (localPresentationEnabled) tableReady.then(async () => {
+  const { installLissabonProfileUi } = await import('./lissabon-profile.mjs');
+  await installLissabonProfileUi({ canSwitch: () => !round && !busy && !chatBusy });
+}).catch(error => console.warn('[Lissabon profile]', error.message));
 // The guest table has no entry gate. Astrid greets once her table is ready;
 // when the browser refuses autoplay, the greeting waits for the first gesture.
 if(astridSpeak)tableReady.then(()=>{

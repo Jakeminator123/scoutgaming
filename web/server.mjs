@@ -11,6 +11,7 @@ import { openClawChat } from './openclaw-chat.mjs';
 import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createPlayerChatMemory } from './player-chat-memory.mjs';
+import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { installPartnerApi } from './partner-api.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
@@ -703,6 +704,12 @@ const auth=playerAuth(db,apiPlayer,scoutIdentity);
 const validLaunch=token=>{const claims=jwtVerify(token);return !!(claims?.sub&&claims.partner&&getPlayer(claims.sub));};
 const boGameAuth=backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL});
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
+const lissabonProfiles = createLissabonProfiles({ db, createPlayer: apiPlayer,
+  enabled: guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
+    && process.env.CROUPIER_LISSABON_PROFILES === '1' && process.env.NODE_ENV !== 'production',
+  onSwitch: playerId => { for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
+});
+const playerSession = req => lissabonProfiles.session(req) ?? auth.session(req);
 db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
 function previewPlayer(req,res) {
   const token=(req.headers.cookie??'').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -716,6 +723,8 @@ function previewPlayer(req,res) {
   return p.id;
 }
 function chatSessionOwner(req, playerId) {
+  const localProfile = lissabonProfiles.session(req);
+  if (localProfile?.playerId === playerId) return localProfile.owner;
   const playerToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
   if (playerToken && auth.session(req)?.playerId === playerId) return `player-${createHash('sha256').update(playerToken).digest('hex')}`;
   const previewToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -741,10 +750,11 @@ createServer(async (req, res) => {
   if(pathname==='/api/v1/events'&&req.method==='GET'){ partner().handleEvents(req,res,new URL(req.url,'http://local')); return; }
   if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await partner().handle(req,res,pathname); return; }
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
-  let authenticated=auth.user(req);
+  let authenticated=playerSession(req)?.playerId ?? null;
   const guest=guestPreview && !authenticated && !backoffice && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=previewPlayer(req,res);
-  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest}));return;}
+  if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||req.method!=='GET')) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||req.method!=='GET'){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
@@ -905,7 +915,7 @@ createServer(async (req, res) => {
         if (!dealerId || !CHAT_REVISION.test(incoming.sessionRevision) || !CHAT_REVISION.test(incoming.roundRevision)) {
           res.writeHead(400, { 'Content-Type': 'application/json' }); res.end('{"error":"invalid_chat_context"}'); return;
         }
-        const session = auth.session(req);
+        const session = playerSession(req);
         const status = authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         const owner = chatSessionOwner(req, authenticated);
         const scope = { playerId: authenticated, dealerId };
@@ -917,7 +927,7 @@ createServer(async (req, res) => {
         const request = { requestId: incoming.requestId, message: incoming.message, history: memoryTurn.history };
         const readStatus = () => {
           if (playerChatMemory.profile(scope).revision !== memoryTurn.revision) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
-          return authoritativeChatStatus(authenticated, auth.session(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
+          return authoritativeChatStatus(authenticated, playerSession(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         };
         const decision = await completeChatWithSpeech({ request, status, owner,
           readOwner: () => chatSessionOwner(req, authenticated),
@@ -957,7 +967,7 @@ createServer(async (req, res) => {
     req.on('end', () => {
       let out;
       try {
-        const activeSession=auth.session(req);
+        const activeSession=playerSession(req);
         out = API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }, req.url === '/api/table' ? activeSession : null);
         if(req.url==='/api/player'&&activeSession?.displayName&&!out?.error)out={...out,name:activeSession.displayName};
       }

@@ -31,6 +31,11 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
   assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, data);
   assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, data);
   assert.notEqual(specs.product.dataDir, data);
+  assert.equal(specs.product.dataDir, join(data, 'players'));
+  assert.equal(specs.product.env.CROUPIER_LISSABON_PROFILES, '1');
+  const ordinary = childSpecifications(configuration, join(dir, 'ordinary'));
+  assert.equal(ordinary.product.dataDir, join(dir, 'ordinary', 'product'));
+  assert.equal(ordinary.product.env.CROUPIER_LISSABON_PROFILES, '');
   assert.equal(specs.product.env.CROUPIER_STREAM_LANE, 'lissabon-stream-lane');
   assert.equal(specs.lab.env.CROUPIER_STREAM_LANE, 'lissabon-stream-lane');
 

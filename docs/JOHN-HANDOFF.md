@@ -1,3 +1,67 @@
+## 2026-09-25 — Lissabon: synliga kort, lugn mobilchatt och sparade demoprofiler
+
+Granskning av milstolpen `26a5d3a` / `BRA_sammanbindning_av_KJE`.
+Gemensam runtime, manifest, exakta talpaket och beständig projektlagring
+behålls. Inga medier, hashar, kalibreringar eller godkännanden ändrades.
+Den ursprungliga milstolpetaggen flyttas inte.
+
+- Genererat tal använder lokal filmlagerordning: stillbild 1, film 2,
+  genererat tal 3, serverstyrda kort/insatser 20. Andra renderare behåller
+  sitt befintliga tal-lager. Talytan fångar inga pekhändelser.
+- Mobilens chattlogg öppnas manuellt med Chatt, inte på varje svar.
+  Nytt svar markeras med en punkt. Knappen/Escape stänger loggen.
+  Väntestatus visar förberedelse med tid, väntan på ledigt bord och talstart.
+  Dubbelsändning blockeras. Sekundräknaren aviseras inte varje sekund till
+  skärmläsare. Reservvarning och talets granskningsetikett flyttas från
+  ansikte/logotyp till bordet.
+- Jakob bad uttryckligen om enbart Astrid och synlig testning, samt valde
+  **lokal demoprofil med sparat minne**. Lissabon visar därför Astrid och
+  Byt profil i stället för dealer-/V2-väljaren. Gästläget finns kvar.
+- Profiler har servergenererade spelar-ID:n och eget Astrid-minne. Namnet
+  är visningsdata för OpenClaw, aldrig en minnesnyckel. Samma namn väljer
+  inte tyst någon annans profil. API:t kräver explicit Lissabon-konfiguration,
+  lokal utvecklingsserver, loopback-adress och rätt Origin för ändringar.
+  Profilerna är avsiktligt lösenordslösa och valbara på denna dator.
+- `lissabon/data/players/` sparar isolerade demo-databaser, profiler, bord,
+  saldon, sessioner och chatthistorik mellan starter. Allt ligger utanför Git.
+  Vanliga starter använder fortfarande tillfälliga databaser. Genererade
+  ljud-/videopaket är fortfarande tillfälliga; sparad text är inte sparad
+  film eller ett uppspelningskvitto. Den riktiga användardatabasen används inte.
+- Profilbyte spärras under en hand. Föregående profils session återkallas,
+  pågående modellförfrågan avbryts och andra Lissabon-spelflikar på samma
+  origin laddas om. Native-observation följer den faktiska Web-spelarens
+  profil; Partner-SSE från starthelperns separata syntetiska spelare är
+  endast kompletterande och ska inte läsas som profilens speltrafik.
+
+Verifiering: hela `.githooks/pre-commit` och `audit-dealer-sync.mjs --probe`
+passerar. Produktionsbygget av Lab passerar. Nya riktiga HTTP-prov kör
+produktchatten både med och utan Lissabon: rätt namn till modellkontraktet,
+separat historik för Alfa/Beta, återval av profil och avbrutet försenat svar.
+Profilproven täcker stängd/återöppnad SQLite-databas, samma ID/cookie/minne
+efter omstart, utgången/återkallad session, fel Origin/host, vanlig spelare
+utanför profilregistret, pågående hand samt avstängt API. Startprovet
+kontrollerar beständig spelarplats enbart för Lissabon.
+
+Live i 390×844: en isolerad $5-hand och ett riktigt OpenClaw → ElevenLabs →
+RunPod-svar om 8♣/6♦ och dealerns K♦. Talstart efter cirka 17 sekunder;
+44 observationer under cirka 9 sekunders uppspelning visade stängd logg,
+tal-lager 3 och kort-lager 20. Skärmbild visar kvarvarande kort och insats.
+Ingen horisontell overflow eller browserfel. Manuell öppning/stängning av
+logg och Escape provades. Stand avslutade handen. Ett efterföljande riktigt
+välkomstsvar spelades i den synliga Codex-fliken med labbets native-följning.
+Profilväljaren är liveöppnad i samma Astridflik efter serveromstart.
+Övriga dealers fick automatiska regressionskontroller men inga nya visuella
+prov efter Jakobs uttryckliga Astrid-avgränsning.
+
+Kvar: kortens placering/kontakt, saknade exakta filmer och subjektiv
+röst-/fonemvis läppsynkacceptans. Genereringens kötid varierar fortfarande.
+Minnet är de senaste 12 inläggen/8 000 tecknen, med 30 dagars inaktivitet;
+det är inte obegränsat långtidsminne eller lösenordsskyddad inloggning.
+Ingen Jira-anslutning/aktuell CAC-issue fanns, så inga statusar ändrades.
+Privata ospårade filer bevarades. De extra testbrowser-sessionerna stängdes;
+endast det isolerade serverparet 4200/4201 och den synliga Astrid-/labbfliken
+behålls för Jakobs pågående prov.
+
 ## 2026-09-25 — Lissabon stream lane säkrad för fortsatt Astrid-demo
 
 På Jakobs begäran är `lissabon/` den nya fokuserade demoingången, ovanpå
