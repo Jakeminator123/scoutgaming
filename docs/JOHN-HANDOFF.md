@@ -1,3 +1,33 @@
+## 2026-09-25 — Mobilprov med genererat tal och idlereaktion
+
+Jakob prioriterar naturlig chattröst och läppsynk före kortens landningspositioner.
+Inga spelar-, media- eller kalibreringsfiler ändrades i denna kontroll.
+De dokumenterade lokala portarna var stoppade; ett enda isolerat serverpar
+startades på **4200/4201** med `--generated-speech`. Privat konfigurationskontroll
+bekräftade ElevenLabs, scoped RunPod-endpoint och produktens speech-relä;
+Director health/API svarade 200. Inga credentials eller molninställningar ändrades.
+
+Lab `/activity` anslöts till Astrids verkliga `?dealer=astrid&presentation=local`.
+Spelfliken lämnades i **390×844**, med **Klippval: OpenClaw**, ljud på och
+Emils befintliga manifest/idlepolicy. Bara denna spelare och observationslabbet
+behölls. Klippväljaren är ett flikval och återgår till Standard vid omladdning;
+välj OpenClaw igen för AI-idlereaktioner. Genererat tal styrs separat av serverstarten.
+
+Verkligt chattprov 22:18:12 lokal tid: ”Du ser rätt sur ut, Astrid. Har du
+glömt hur man ler? Svara kort på svenska.” Director gav kontextkvitto v2.
+Web kvitterade `idle_insulted_f73_s301.mp4` med start/presented 22:18:15 och
+slut 22:18:19, därefter primär-idle. Svaret ”Jag ler när det lönar sig.”
+genererades via OpenClaw → ElevenLabs → RunPod. Samma spelares kvitton visar
+`source: generated-lipsync`, `state: start` 22:18:38 och `state: end`,
+`started: true` 22:18:39. Paket-ID: `generated-2969c4f2b3a0c5218439c4af5be4ee23`.
+Det gav cirka 25 sekunders väntetid till talstart; webbläsar-TTS användes inte.
+
+Paketets media ligger i den isolerade temporära körningen, inte i Git eller
+dealerbanken. `reviewStatus: pending` kvarstår: funktionella playbackkvitton
+är inte mänskligt godkännande av röst/läppsynk. Kortplacering och övergångens
+visuella passning kvarstår. Ingen Jira-anslutning eller angiven CAC-issue
+fanns för detta start-/konfigurationsprov. Befintliga tre ospårade filer bevarades.
+
 ## 2026-09-25 — Web äger Astrids lokala presentation
 
 Arbetet ligger i `C:\Users\jakem\Projects\croupier`, fortsatt på
