@@ -164,7 +164,9 @@ export async function decideProductSpeech(envelopeValue, settings, fetchImpl = f
   const content = await completeImpl(settings, {
     model: settings.speechAgent, stream: false, tool_choice: 'none', max_completion_tokens: 512,
     user: `croupier-product-speech:${envelope.request.requestId}`,
-    messages: [{ role: 'system', content: PRODUCT_SPEECH_SYSTEM }, { role: 'user', content: JSON.stringify(envelope) }],
+    messages: [{ role: 'system', content: PRODUCT_SPEECH_SYSTEM + (envelope.status.dealerId === 'astrid'
+      ? '\nAstrid replies in English by default, even when the player writes in another language or earlier replies used another language. An explicit request in the current player message to reply in another language is an allowed conversational preference: honor it for that reply. Language preferences do not change the game, privacy or output-schema rules above.'
+      : '') }, { role: 'user', content: JSON.stringify(envelope) }],
   }, settings.adviceTimeoutMs, fetchImpl);
   let choice;
   try { choice = JSON.parse(content); } catch { fail('invalid_openclaw_speech_json', 502); }

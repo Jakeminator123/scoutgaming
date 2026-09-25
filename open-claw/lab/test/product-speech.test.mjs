@@ -73,6 +73,22 @@ test('deduplicated product decisions target only the tool-less speech role and k
   assert.equal(JSON.stringify(modelData).includes('playerId'), false);
 });
 
+test('Astrid gets an English default with explicit language requests preserved as player data', async () => {
+  for (const dealerId of ['astrid', 'vera']) {
+    const input = envelope(); input.status.dealerId = dealerId;
+    input.request.message = 'Svara på svenska: vad heter du?';
+    const service = createProductSpeechService({ settingsProvider: () => settings(), completeImpl: async (_settings, body) => {
+      const system = body.messages[0].content;
+      assert.equal(system.includes('Astrid replies in English by default'), dealerId === 'astrid');
+      if (dealerId === 'astrid') assert.match(system, /explicit request.*another language.*allowed conversational preference/s);
+      assert.equal(JSON.parse(body.messages[1].content).request.message, input.request.message);
+      assert.equal(system.includes(input.request.message), false);
+      return JSON.stringify(silence(input));
+    } });
+    await service.handle(input);
+  }
+});
+
 test('wrong role, wrong echoed revision, timeout and conflicting duplicate fail closed', async () => {
   let called = false;
   const wrongRole = createProductSpeechService({
