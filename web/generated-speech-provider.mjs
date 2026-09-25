@@ -51,7 +51,8 @@ function request(value) {
     || !value.text.trim() || value.text !== value.text.trim() || value.text.length > GENERATED_SPEECH_LIMITS.textChars
     || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(value.text)
     || (value.signal !== undefined && !(value.signal instanceof AbortSignal))) fail('invalid_generated_speech_request', 400);
-  return { requestId: value.requestId, text: value.text, signal: value.signal };
+  return { requestId: value.requestId, text: value.text, signal: value.signal,
+    onProgress: typeof value.onProgress === 'function' ? value.onProgress : () => {} };
 }
 
 function wavFromPcm(pcm) {
@@ -142,6 +143,7 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
       try { return JSON.parse(data.toString('utf8')); } catch { fail('invalid_generated_speech_response'); }
     }
     try {
+      input.onProgress('voice');
       const pcm = await call(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(config.voiceId)}?output_format=pcm_24000`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'xi-api-key': config.elevenLabsApiKey },
         body: JSON.stringify({ text: input.text, model_id: config.modelId }),
@@ -150,21 +152,26 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
       const durationMs = pcm.length / (GENERATED_SPEECH_LIMITS.sampleRate * 2) * 1000;
       signal.throwIfAborted();
       // Never retry either paid POST. An uncertain start remains a failed ID.
+      input.onProgress('video-submit');
       let job = await runpod('run', { method: 'POST', body: JSON.stringify({
         input: { op: 'lipsync', wav_b64: wav.toString('base64'), crf: 13, preset: 'ultrafast' },
       }) });
       if (typeof job?.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(job.id)) fail('invalid_generated_speech_job');
       jobId = job.id;
+      let lastStatus;
       for (;;) {
         signal.throwIfAborted();
         if (job.id !== jobId) fail('generated_speech_job_mismatch');
         if (['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT'].includes(job.status)) { terminal = true; break; }
         if (!['IN_QUEUE', 'IN_PROGRESS'].includes(job.status)) fail('invalid_generated_speech_job');
+        if (job.status !== lastStatus) input.onProgress(job.status === 'IN_QUEUE' ? 'video-queue' : 'video-render');
+        lastStatus = job.status;
         await sleep(config.pollMs, signal);
         job = await runpod(`status/${encodeURIComponent(jobId)}`, { method: 'GET' });
       }
       if (job.status !== 'COMPLETED' || job.output?.error) fail('generated_speech_runpod_failed');
       const video = decodeVideo(job.output, durationMs);
+      input.onProgress('media');
       return {
         exactText: input.text, voiceId: config.voiceId, modelId: config.modelId,
         audio: { bytes: wav, sha256: digest(wav), durationMs: Math.round(durationMs), contentType: 'audio/wav' },

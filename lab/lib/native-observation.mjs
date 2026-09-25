@@ -1,5 +1,6 @@
 import { sanitizeObservation } from './partner-trace.mjs';
 import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
+import { CHAT_STAGES } from '../../web/public/chat-response.mjs';
 
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const MAX_BYTES = 256 * 1024;
@@ -30,6 +31,15 @@ export function acceptNativeObservation(message, expected) {
   }
   if (data.kind === 'status') {
     if (payload.state === 'attached') return { ...common, kind: 'status', data: { ...payload, gap: false } };
+    if (['chat-progress', 'chat-failed'].includes(payload.state)) {
+      if (typeof payload.requestId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(payload.requestId)) return null;
+      if (payload.state === 'chat-progress') {
+        if (!Object.hasOwn(CHAT_STAGES, payload.stage) || !Number.isSafeInteger(payload.elapsedMs) || payload.elapsedMs < 0) return null;
+        return { ...common, kind: 'status', data: { state: payload.state, requestId: payload.requestId, stage: payload.stage, elapsedMs: payload.elapsedMs, gap: false } };
+      }
+      if (typeof payload.reason !== 'string' || payload.reason.length > 200) return null;
+      return { ...common, kind: 'status', data: { state: payload.state, requestId: payload.requestId, reason: payload.reason, gap: false } };
+    }
     // Pose traces share the native transport sequence. Retain this bounded
     // diagnostic so the next command is not mistaken for a missing message.
     // In particular, speech-completed is not a media playback receipt.

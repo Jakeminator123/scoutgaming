@@ -1,3 +1,60 @@
+## 2026-09-25 — Lissabon: mätt chattlatens och förklarade avbrott
+
+Jakob bad om egen testning av sena/uteblivna läppsynksvar. Prov på den
+verkliga isolerade kedjan OpenClaw → ElevenLabs → RunPod → Astrids spelare:
+
+| Prov | Text | Röst | Video inkl. submit/kö/överföring | Till spelstart totalt |
+| --- | ---: | ---: | ---: | ---: |
+| Kort välkomstsvar | 1,68 s | 0,74 s | 5,51 s | 8,14 s |
+| Kort namnsvar | 1,70 s | 0,73 s | 5,94 s | 8,53 s |
+| Längre svar, 11,38 s tal | 1,49 s | 1,31 s | 13,60 s | 16,57 s |
+
+I dessa prov var observerad RunPod-kö cirka 0,54–0,57 s. Renderingssteget
+inklusive hämtning av färdigt resultat tog 4,7–12,8 s; lokal lagring och
+spelarens start stod för ungefär 0,2 s. Ett senare kortsvar i Jakobs eget
+demospel startade efter 8,32 s. Ett första prov före mätinstrumenteringen
+var klart inom 37 s, men talstarten fångades inte exakt. Tidigare 81 s och
+övriga stora toppar kan inte tillskrivas en specifik leverantör utan data.
+
+Ändringar:
+- Lokal chatt begär en bakåtkompatibel NDJSON-respons med allowlistade
+  framsteg och millisekunder. Vanliga JSON-klienter fungerar som tidigare.
+  Text/media lämnas fortfarande först efter färsk ägar-/rundkontroll.
+  Inga nycklar, provider-URL:er eller ljud/video skickas i progressramar.
+- UI visar text, röst, videokö, rendering och förberedelse. Tider finns i
+  statusens titel/DOM samt labbets validerade native-logg. Streamingfel och
+  ofullständiga svar behandlas som fel, inte tomma lyckade svar.
+- Lokal pose-gate behåller väntande/ännu ospelade svar vid dold flik och
+  kräver synlig flik och ledig, presenterad idle före start. Redan köat/
+  påbörjat tal avbryts fortfarande. Rund-/profilbyte, navigation och mute
+  behåller sina spärrar. Detta ändrar inte andra renderares standardpolicy.
+- Ett redan avbrutet/mutat mottagande startar ingen betald modellförfrågan.
+  Avbrott, upptagen tjänst, timeout, genereringsfel och modellvald tystnad
+  får begripliga meddelanden i stället för tyst bortfall/generiskt fel.
+- Lissabon erbjuder inte Astrids gamla bankrepliker till chattmodellen:
+  de kunde väljas men föll tillbaka till text-only i den lokala spelaren.
+  Genererade exakta svar använder den befintliga talpaketvägen. Modellens
+  rätt att välja tystnad finns kvar och redovisas i UI.
+
+Verifiering: samtliga kontroller i `.githooks/pre-commit` samt dealer-audit
+med `--probe` passerar. Medietestens kopierade serverfixture fick den nya
+delade modulen efter att först ha stoppats av en saknad import. Nya test
+täcker uppdelade UTF-8-strömramar, fel efter påbörjad respons, serverägt
+minne vid avbrott och dolt väntande svar följt av exakt en uppspelning.
+39 relevanta Lab-observations-/livscykeltester samt Lab typecheck passerar.
+Labbets nya loggvisning byggs/laddas vid nästa ordinarie Start-Lissabon;
+pågående hand avbröts inte för ett nytt produktionsbygge. Produktchatten
+med stegstatus och avbrottsfix är redan omladdad i den körande miljön. Riktiga svar
+spelades i den synliga Astridfliken, inklusive två direkt efter varandra
+och ett längre svar med observerad videouppspelning. Automatisk audit
+täcker alla dealers; inga andra dealerfönster öppnades.
+
+Kvar: GPU/helfilmsgenereringen är fortfarande sekventiell och dominerar
+väntetiden i de mätta proven. Ingen GPU-kapacitet, röstmodell, godkänd media
+eller kalibrering ändrades. Kallstarter och de gamla mycket långa topparna
+är inte separat verifierade. Ingen fonemvis visuell slutacceptans ges.
+Jira saknar anslutning här; inga CAC-statusar ändrades.
+
 ## 2026-09-25 — Lissabon: synliga kort, lugn mobilchatt och sparade demoprofiler
 
 Granskning av milstolpen `26a5d3a` / `BRA_sammanbindning_av_KJE`.

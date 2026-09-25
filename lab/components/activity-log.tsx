@@ -116,6 +116,12 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
     setNativeConnected(true); setReady(true);
     recordObservation(record);
     const data = record.data as Record<string, unknown> ?? {};
+    if (record.kind === 'status' && ['chat-progress', 'chat-failed'].includes(String(data.state))) {
+      onActivity({ source: 'native', stage: 'decision', status: data.state === 'chat-failed' ? 'failed' : 'observed',
+        runId: String(data.requestId), title: data.state === 'chat-failed' ? 'Chattsvaret avbröts' : `Chattsvar · ${data.stage} · ${(Number(data.elapsedMs) / 1000).toFixed(1)} s`,
+        owner: 'Astrids chatt och tal', reason: data.state === 'chat-failed' ? String(data.reason) : 'Tid sedan frågan skickades. Uppspelningen har ett separat kvitto.', data });
+      return;
+    }
     if (record.kind === 'status' && data.state === 'attached') setNativePresentationOwner(String(data.presentationOwner ?? 'legacy'));
     const playback = record.kind === 'playback';
     const phase = String(data.state ?? 'observed');

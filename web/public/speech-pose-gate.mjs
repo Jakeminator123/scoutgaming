@@ -73,6 +73,7 @@ export function createSpeechPoseGate({
   onTrace = () => {},
   now = () => Date.now(),
   initialState = defaultState(),
+  holdWhileHidden = false,
 } = {}) {
   if (typeof enqueue !== 'function' || typeof onDisplay !== 'function' || typeof onSpeech !== 'function'
     || typeof onCancel !== 'function' || typeof onTrace !== 'function' || typeof now !== 'function') fail('invalid_pose_gate_callbacks');
@@ -179,7 +180,7 @@ export function createSpeechPoseGate({
       controller: new AbortController(), stages: [], stageNames: new Set(), completion, resolveCompletion };
     records.set(record.jobId, record); stage(record, 'chat-received');
     if (!sameIdentity(record, state)) cancelRecord(record, 'stale-on-arrival');
-    else if (!state.visible) cancelRecord(record, 'hidden');
+    else if (!state.visible && !holdWhileHidden) cancelRecord(record, 'hidden');
     else if (state.muted) cancelRecord(record, 'muted');
     return { duplicate: false, completion, record: publicRecord(record) };
   }
@@ -210,7 +211,7 @@ export function createSpeechPoseGate({
     for (const record of records.values()) {
       if (['completed', 'cancelled', 'failed'].includes(record.status)) continue;
       if (!sameIdentity(record, state)) cancelRecord(record, `stale:${reason}`);
-      else if (!state.visible) cancelRecord(record, 'hidden');
+      else if (!state.visible && !(holdWhileHidden && ['waiting-response', 'held'].includes(record.status))) cancelRecord(record, 'hidden');
       else if (state.muted) cancelRecord(record, 'muted');
       else if (record.promoted && record.status !== 'speaking' && !poseReady(record)) cancelRecord(record, 'pose-lost-before-start');
     }

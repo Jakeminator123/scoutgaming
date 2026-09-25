@@ -10,6 +10,7 @@ import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
 import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
+import { CHAT_STAGES } from './public/chat-response.mjs';
 import { createPlayerChatMemory } from './player-chat-memory.mjs';
 import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { installPartnerApi } from './partner-api.mjs';
@@ -624,6 +625,11 @@ const CHAT_DEALERS = Object.freeze({ vera: 'dealer', astrid: 'dealers/astrid', a
 const CHAT_REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 
 function chatSpeechPolicy(dealerId) {
+  // The local Astrid renderer cannot verify legacy bank lines against its
+  // replacement films. Direct chat must use exact generated speech there.
+  if (process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' && dealerId === 'astrid') {
+    return { recordedLines: [], generatedText: true, silence: true, mediaFamilies: [] };
+  }
   let bank = {};
   try { bank = JSON.parse(readSync(join(root, CHAT_DEALERS[dealerId], 'audio/en/bank.json'), 'utf8')); }
   catch { /* Generated text or silence remains available. */ }
@@ -903,6 +909,13 @@ createServer(async (req, res) => {
   }
   if (req.method === 'POST' && req.url === '/chat') {
     const controller = new AbortController();
+    const stream = req.headers.accept === 'application/x-ndjson';
+    const startedAt = performance.now();
+    const frame = value => {
+      if (res.destroyed || res.writableEnded) return;
+      if (!res.headersSent) res.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' });
+      res.write(JSON.stringify(value) + '\n');
+    };
     const disconnected = () => { if (!res.writableEnded) controller.abort(); };
     res.once('close', disconnected);
     let body = '';
@@ -930,6 +943,7 @@ createServer(async (req, res) => {
           return authoritativeChatStatus(authenticated, playerSession(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         };
         const decision = await completeChatWithSpeech({ request, status, owner,
+          onProgress: stage => { if (stream && Object.hasOwn(CHAT_STAGES, stage)) frame({ type: 'progress', stage, elapsedMs: Math.round(performance.now() - startedAt) }); },
           readOwner: () => chatSessionOwner(req, authenticated),
           readStatus,
           signal: controller.signal,
@@ -941,11 +955,16 @@ createServer(async (req, res) => {
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
         memoryTurn.commit({ kind: decision.kind, exactText: decision.exactText });
+        if (stream) { frame({ type: 'result', decision }); res.end(); return; }
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(decision));
       } catch (e) {
         if (controller.signal.aborted) memoryTurn?.cancel(); else memoryTurn?.fail();
         if (res.destroyed) return;
+        if (stream && res.headersSent) {
+          frame({ type: 'error', error: controller.signal.aborted ? 'chat_cancelled' : e?.code || String(e.message || e) });
+          res.end(); return;
+        }
         if (controller.signal.aborted) {
           res.writeHead(409, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
           res.end(JSON.stringify({ error: controller.signal.reason === 'chat_memory_changed' ? 'chat_memory_changed' : 'chat_cancelled' }));

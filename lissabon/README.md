@@ -65,6 +65,18 @@ Nya meddelanden öppnar inte loggen automatiskt på mobil. En punkt visar ett
 nytt dealersvar. Väntestatus visar förberedelse, kö till ledigt bord och tal.
 Kort och insatsmarkeringar ligger ovanpå talfilmen under hela uppspelningen.
 
+Chatten visar nu vilket steg som pågår: Astrid tänker, rösten skapas,
+läppsynken köas/renderas och uppspelningen förbereds. Labbloggen får samma
+steg och tid sedan frågan skickades. Talet börjar fortfarande först när
+hela ljud-/videopaketet är färdigt. Ett flikbyte under genereringen behåller
+svaret tills du återvänder; redan påbörjat tal avbryts fortfarande när
+fliken döljs. Ny hand/bordsversion, profilbyte, navigation eller avstängt
+ljud kan avbryta ett svar och får en förklaring i chatten.
+
+Astrids Lissabon-chatt väljer genererade svar i stället för äldre bankrepliker
+som den lokala filmspelaren bara kunde visa som text. Om OpenClaw väljer
+tystnad visas det uttryckligen.
+
 ## Sparande
 
 - `profile.json`: Astrid, portar, genererat tal och källversion. OpenClaw är
@@ -103,7 +115,12 @@ nycklar, externa tjänster eller lokala filer som inte ligger i Git.
 ## Känt inför demo
 
 Chattsvar genereras färdigt innan uppspelning. Tidigare prov tog 15–25
-sekunder; Lissabon-provet tog 81 sekunder. Planera för varierande väntetid. Utdelning går före tal. Bildformatet är verifierat; röstens
+sekunder; Lissabon-provet tog 81 sekunder. Stegmätta prov den 25 september
+gav 8,1 och 8,5 sekunder för korta svar och 16,6 sekunder för ett längre
+svar med cirka 11 sekunders tal. OpenClaw tog 1,5–1,7 sekunder, rösten
+0,7–1,3 sekunder och videokedjan 5,5–13,6 sekunder. De äldre mycket långa
+proven saknar stegmätning och är inte förklarade ännu.
+Planera för varierande väntetid. Utdelning går före tal. Bildformatet är verifierat; röstens
 naturlighet och fonemvis läppsynk är inte slutgodkända.
 Mobilens automatiska chattöverlägg och talfilmens täckning av korten är
 åtgärdade. Kortens placering, kortkontakt och saknade exakta filmer behöver

@@ -65,6 +65,18 @@ test('unknown or malformed pose statuses remain rejected and cannot reset the na
   assert.ok(acceptNativeObservation(message('status', { state: 'attached' }), { ...expected, lastSequence: 100 }));
 });
 
+test('chat progress keeps only bounded timing fields and never claims media playback', () => {
+  const progress = { state: 'chat-progress', requestId: 'chat.1', stage: 'video-render', elapsedMs: 1234 };
+  const accepted = acceptNativeObservation(message('status', { ...progress, token: 'PRIVATE', events: [{ type: 'deal' }], actualPlaybackCaptured: true }), expected);
+  assert.deepEqual(accepted.data, { ...progress, gap: false });
+  assert.equal(accepted.actualPlaybackCaptured, false);
+  for (const patch of [{ stage: 'execute' }, { requestId: '../bad' }, { elapsedMs: -1 }, { elapsedMs: Infinity }, { elapsedMs: '3' }]) {
+    assert.equal(acceptNativeObservation(message('status', { ...progress, ...patch }), expected), null);
+  }
+  const failure = { state: 'chat-failed', requestId: 'chat.1', reason: 'generated_speech_timeout' };
+  assert.deepEqual(acceptNativeObservation(message('status', failure), expected).data, { ...failure, gap: false });
+});
+
 test('native and SSE instructions deduplicate; playback, chat and state never become extra game events', () => {
   const native = acceptNativeObservation(message(), expected);
   const records = [{ source: 'partner', kind: 'round', time: native.time, data: { type: 'round', requestId: 'r1', version: 1, events: presentation } }, native,

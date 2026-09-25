@@ -77,6 +77,14 @@ test('pending and completed duplicates use one paid pipeline; another ID is reje
   assert.equal(provider.status().busy, false);
 });
 
+test('progress distinguishes voice, queue, rendering and download without provider data', async () => {
+  let polls = 0;
+  const { provider } = fixture({ statusResponse: () => ++polls === 1 ? json({ id: 'job-1', status: 'IN_PROGRESS' }) : json(complete()) });
+  const stages = [];
+  await provider.generate({ ...input(), onProgress: stage => stages.push(stage) });
+  assert.deepEqual(stages, ['voice', 'video-submit', 'video-queue', 'video-render', 'media']);
+});
+
 test('failed and uncertain requests retain tombstones and do not retry either paid POST', async () => {
   const { provider, calls } = fixture({ startResponse: () => { throw new Error('secret URL and token must not surface'); } });
   await assert.rejects(provider.generate(input()), { code: 'generated_speech_provider_unavailable' });

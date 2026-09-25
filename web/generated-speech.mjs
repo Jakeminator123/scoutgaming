@@ -160,7 +160,7 @@ export function createGeneratedSpeechService(config, { provider = null } = {}) {
       await writeFile(reservation, JSON.stringify({ fingerprint, ownerHash }), { flag: 'wx', mode: 0o600 });
       reserved = true;
       runtime ??= createGeneratedSpeechProvider({ ...config, voiceId, modelId });
-      const result = await runtime.generate({ requestId: `speech-${key}`, text: input.text, signal: input.signal });
+      const result = await runtime.generate({ requestId: `speech-${key}`, text: input.text, signal: input.signal, onProgress: input.onProgress });
       if (input.signal?.aborted) fail('generated_speech_cancelled', 499);
       const id = randomBytes(16).toString('hex');
       const speechPackage = outputPackage(result, input, id);
