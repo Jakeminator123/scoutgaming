@@ -8,6 +8,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { readChatResponse } from '../web/public/chat-response.mjs';
 
 const PRIVATE_TRANSPORT_ENV = [
   'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',
@@ -144,6 +145,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   assert.equal(serialized.includes('cookie'), false);
   assert.equal(serialized.includes('clip'), false);
   assert.equal(projection.displayName, 'Product preview');
+  if (lissabon) assert.deepEqual(projection.allowedSpeech.recordedLines, []);
   // A shuffled opening can settle immediately (for example natural blackjack),
   // legitimately revealing the hole card and sometimes drawing further cards.
   // Compare exact public cards, not a fixed count for an assumed round phase.
@@ -199,6 +201,43 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       assert.equal(serialized.includes(client.cookie()), false, 'auth cookie stays local');
       assert.equal(serialized.includes('Fabricated assistant memory'), false);
     }
+  });
+
+  await t.test('streaming progress arrives before the model finishes; final result keeps the same ownership', async () => {
+    const { client, state } = await guest();
+    const release = deferred();
+    beforeRespond = async () => release.promise;
+    try {
+      const response = await fetch(origin + '/chat', { method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson', Cookie: client.cookie() },
+        body: JSON.stringify(chat(state)), signal: AbortSignal.timeout(5000) });
+      assert.match(response.headers.get('content-type'), /application\/x-ndjson/);
+      const reader = response.body.getReader(), first = await within(reader.read());
+      const initial = new TextDecoder().decode(first.value);
+      assert.match(initial, /"stage":"text"/);
+      assert.doesNotMatch(initial, /Exakt neutralt svar/);
+      release.resolve(); let output = initial;
+      for (;;) { const chunk = await reader.read(); if (chunk.done) break; output += new TextDecoder().decode(chunk.value); }
+      const frames = output.trim().split('\n').map(JSON.parse);
+      assert.equal(frames.at(-1).type, 'result');
+      assert.equal(frames.at(-1).decision.exactText, 'Exakt neutralt svar.');
+      assert.deepEqual(frames.filter(frame => frame.type === 'progress').map(frame => frame.stage), ['text', 'ready']);
+    } finally { release.resolve(); beforeRespond = null; }
+  });
+
+  await t.test('forget after streamed progress emits an error and no result or remembered reply', async () => {
+    const { client, state } = await guest();
+    const entered = deferred(), release = deferred();
+    beforeRespond = async () => { entered.resolve(); await release.promise; };
+    try {
+      const response = await fetch(origin + '/chat', { method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson', Cookie: client.cookie() },
+        body: JSON.stringify(chat(state)), signal: AbortSignal.timeout(5000) });
+      await within(entered.promise);
+      await client.post('/api/chat/memory/forget', { dealer: 'astrid' });
+      await assert.rejects(readChatResponse(response), /chat_cancelled/);
+      assert.deepEqual((await client.get('/api/chat/memory?dealer=astrid')).history, []);
+    } finally { release.resolve(); beforeRespond = null; }
   });
 
   await t.test('cookies and dealers isolate memory; forged IDs cannot read, write or forget another player', async () => {

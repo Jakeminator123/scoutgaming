@@ -12,8 +12,10 @@ function fixture(change = () => {}) {
   return { data, get jobs() { return jobs; }, changeOwner() { owner = 'session-two'; } };
 }
 test('fresh reply produces one preview in the bound session', async () => {
-  const f = fixture(), result = await completeChatWithSpeech(f.data);
+  const f = fixture(), progress = []; f.data.onProgress = stage => progress.push(stage);
+  const result = await completeChatWithSpeech(f.data);
   assert.equal(f.jobs, 1); assert.equal(result.visualMode, 'generated-lipsync-preview'); assert.ok(result.speechPackage);
+  assert.deepEqual(progress, ['text', 'ready']);
 });
 for (const change of ['owner', 'round', 'abort']) test(`${change} during model work prevents paid generation`, async () => {
   const f = fixture(control => change === 'owner' ? control.setOwner(null) : change === 'round' ? control.stale() : control.abort());

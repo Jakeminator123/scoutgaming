@@ -7,9 +7,10 @@ const actionState = dealerId => ({ ...identity(dealerId), dealerPose: 'deal-acti
 const proof = dealerId => ({ ...identity(dealerId), presentationId: `${dealerId}.idle.frame-42` });
 const job = dealerId => ({ jobId: `${dealerId}.chat.request-1`, ...identity(dealerId), requestFingerprint: `${dealerId}.message.hash-1` });
 
-function manualHarness(dealerId = 'astrid') {
+function manualHarness(dealerId = 'astrid', options = {}) {
   const queued = []; const output = [];
   const gate = createSpeechPoseGate({
+    ...options,
     initialState: actionState(dealerId),
     enqueue(run) { queued.push(run); },
     onDisplay(reply) { output.push(`display:${reply.exactText}`); },
@@ -36,6 +37,30 @@ test('reply stays outside speech queue and emits no output until an actual stand
   assert.equal(receipt.status, 'completed');
   assert.deepEqual(output, ['display:Hej.', 'speech:Hej.']);
   assert.deepEqual(receipt.stages.map(entry => entry.stage), SPEECH_POSE_STAGES);
+});
+
+test('local pending generation survives hiding and plays once after returning to an idle frame', async () => {
+  const { gate, queued, output } = manualHarness('astrid', { holdWhileHidden: true });
+  const accepted = gate.receive(job('astrid'));
+  gate.updateRendererState({ visible: false }, 'hidden');
+  assert.equal(gate.get(job('astrid').jobId).status, 'waiting-response');
+  gate.responseReady(job('astrid').jobId, { kind: 'generatedText', exactText: 'Kvar.' });
+  gate.updateRendererState({ actionOwner: 'none' }); gate.presentStandardIdle(proof('astrid'));
+  assert.equal(queued.length, 0); assert.deepEqual(output, []);
+  gate.updateRendererState({ visible: true }, 'visible');
+  assert.equal(queued.length, 1);
+  await queued[0](new AbortController().signal);
+  assert.equal((await accepted.completion).status, 'completed');
+  assert.deepEqual(output, ['display:Kvar.', 'speech:Kvar.']);
+});
+
+test('holding a hidden local reply never relaxes round, session, mute or navigation cancellation', async () => {
+  for (const change of [{ roundRevision: 4 }, { sessionRevision: 9 }, { muted: true }]) {
+    const { gate } = manualHarness('astrid', { holdWhileHidden: true });
+    const accepted = gate.receive(job('astrid'));
+    gate.updateRendererState({ visible: false }); gate.updateRendererState(change);
+    assert.equal((await accepted.completion).status, 'cancelled');
+  }
 });
 
 test('pending reply cannot deadlock an action that waits for the existing queue', () => {

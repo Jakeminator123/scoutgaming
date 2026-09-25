@@ -3,6 +3,7 @@ import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
 import { createSpeechPoseGate } from './speech-pose-gate.mjs';
+import { CHAT_STAGES, readChatResponse, chatFailureMessage } from './chat-response.mjs';
 import { playGeneratedSpeech, loadGeneratedSpeech } from './generated-speech-player.mjs';
 import { createNativeSpeechBridge } from './lab-speech-bridge.mjs';
 import { createTableAudio } from './table-audio.mjs';
@@ -438,6 +439,7 @@ const voice = {
 voice.load();
 speechPoseGate = createSpeechPoseGate({
   enqueue: rawSpeechTurn,
+  holdWhileHidden: localPresentationEnabled,
   initialState: {
     ...poseIdentity(), dealerPose: 'unknown', actionOwner: 'none', speechOwner: 'none', idlePresented: null,
     visible: !document.hidden, muted: voice.muted,
@@ -453,7 +455,7 @@ speechPoseGate = createSpeechPoseGate({
   },
   onSpeech: async (decision, { signal, job }) => playChatDecision(decision, signal, job.jobId),
   onCancel: (job, reason) => {
-    pendingChatReplies.get(job.jobId)?.controller?.abort();
+    pendingChatReplies.get(job.jobId)?.controller?.abort(reason);
     nativeObservation.emit('chat', { role: 'assistant', state: 'cancelled', reason,
       requestId: job.jobId, source: 'openclaw-chat' });
   },
@@ -2161,7 +2163,11 @@ async function playChatDecision(decision, signal, jobId) {
       try {
         if (decision.visualMode === 'generated-lipsync-preview' && decision.speechPackage) {
           await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
-            onStart: text => { setChatStatus(`${DEALER.name} svarar`); showCaption(text, 27000); },
+            onStart: text => {
+              const pending = pendingChatReplies.get(jobId);
+              if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));
+              setChatStatus(`${DEALER.name} svarar`); showCaption(text, 27000);
+            },
             onReceipt: receipt => nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync', ...receipt }),
           });
         } else await playNeutralTts(decision.exactText, signal);
@@ -2258,6 +2264,7 @@ async function sendChat() {
   if (compactChat()) input.blur();
   const requestedAt = performance.now();
   setChatStatus('Förbereder svar…');
+  if (chatStatus) { chatStatus.dataset.stages = '[]'; delete chatStatus.dataset.playbackMs; chatStatus.title = ''; }
   const waitTimer = localPresentationEnabled ? setInterval(() => { chatElapsed.textContent = ` ${Math.floor((performance.now() - requestedAt) / 1000)} s`; }, 1000) : null;
   const chatCorrelation=nativeObservation.context();
   const history = chatHistory.slice(-12).map(({ role, text }) => ({ role, text }));
@@ -2269,26 +2276,37 @@ async function sendChat() {
   chatHistory.push({ role: 'user', text: message });
   const received = speechPoseGate.receive({ jobId: requestId, ...identity, requestFingerprint: requestId });
   const controller = new AbortController();
-  pendingChatReplies.set(requestId, { correlation: chatCorrelation, message, controller });
+  pendingChatReplies.set(requestId, { correlation: chatCorrelation, message, controller, requestedAt });
+  const stages = [];
   try {
+    if (received.record.status === 'cancelled') throw new Error(received.record.reason);
     const r = await fetch('/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: localPresentationEnabled ? 'application/x-ndjson' : 'application/json' }, signal: controller.signal,
       body: JSON.stringify({ requestId, message, history, dealer: DEALER.key,
         sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
     });
-    const decision = await r.json();
-    if (!r.ok) throw new Error(decision.error || `Chat unavailable (${r.status})`);
+    const decision = await readChatResponse(r, progress => {
+      stages.push({ stage: progress.stage, elapsedMs: progress.elapsedMs });
+      if (chatStatus) {
+        chatStatus.dataset.stages = JSON.stringify(stages);
+        chatStatus.title = stages.map(item => `${CHAT_STAGES[item.stage]} ${(item.elapsedMs / 1000).toFixed(1)} s`).join('\n');
+      }
+      setChatStatus(CHAT_STAGES[progress.stage]);
+      nativeObservation.emit('status', { state: 'chat-progress', requestId, stage: progress.stage, elapsedMs: progress.elapsedMs }, chatCorrelation);
+    });
     clearInterval(waitTimer);
     setChatStatus(decision.kind === 'silence' ? '' : 'Svar klart · väntar på ledigt bord');
     if (decision.kind !== 'silence') localPresentation?.state({ ready: true });
     speechPoseGate.responseReady(requestId, decision);
     const receipt = await received.completion;
     if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
-    setChatStatus('');
+    if (receipt.status === 'cancelled') setChatStatus(chatFailureMessage(receipt.reason));
+    else setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.' : '');
   } catch (error) {
-    speechPoseGate.cancel(requestId, error.message || 'chat-failed');
-    setChatStatus('Svaret avbröts. Försök igen.');
-    if (!speechPoseGate.get(requestId)?.displayed) hint('CHAT', 'Dealer chat is unavailable for a moment.');
+    const reason = speechPoseGate.get(requestId)?.reason || error.message || 'chat-failed';
+    speechPoseGate.cancel(requestId, reason);
+    setChatStatus(chatFailureMessage(reason));
+    nativeObservation.emit('status', { state: 'chat-failed', requestId, reason }, chatCorrelation);
   } finally {
     pendingChatReplies.delete(requestId);
     chatBusy = false;
