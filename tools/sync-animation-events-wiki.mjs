@@ -79,11 +79,11 @@ function readRequired(root, relative) {
   return normalize(fs.readFileSync(target, 'utf8'));
 }
 
-function gitCommit(root) {
-  const result = spawnSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8', windowsHide: true });
+function gitCommit(root, sourcePaths) {
+  const result = spawnSync('git', ['-C', root, 'log', '-1', '--format=%H', '--', ...sourcePaths], { encoding: 'utf8', windowsHide: true });
   const value = result.status === 0 ? result.stdout.trim() : '';
   if (/^[a-f0-9]{40,64}$/.test(value)) return value;
-  throw new Error(`Cannot determine source commit: ${result.error?.message || result.stderr?.trim() || 'git returned no commit'}`);
+  throw new Error(`Cannot determine source commit for published files: ${result.error?.message || result.stderr?.trim() || 'git returned no commit'}`);
 }
 
 function wikiUrl(relative) {
@@ -160,7 +160,7 @@ function manifestPage(commit, records) {
 }
 
 function buildPlan(sourceRoot) {
-  const commit = gitCommit(sourceRoot);
+  const commit = gitCommit(sourceRoot, [...SOURCE_TO_WIKI.keys()]);
   const files = new Map();
   const records = [];
   for (const [sourcePath, targetPath] of SOURCE_TO_WIKI) {

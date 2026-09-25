@@ -17,7 +17,7 @@ och runtime-QA är fortsatt ogjorda.
 
 `tools/sync-animation-events-wiki.mjs` är en envägssynk utan nätanrop eller
 webbbygge. Den speglar tolv källfiler, bevarar äldre V5-adresser som korta
-hänvisningar och skriver commit/hashkvitto. Verifiering: 4/4 synktester och 4/4
+hänvisningar och skriver commit/hashkvitto. Verifiering: 5/5 synktester och 4/4
 studiokontraktstester, giltig `guide.json`, syntax/diffkontroll samt lokal kontroll
 att alla absoluta wikilänkar löser. Wiki-check efter push visade rätt
 Croupier-commit `927f99e` och filhashar.
@@ -98,6 +98,10 @@ Verifierat: 127/127 OpenClaw-labbtester och hela Git for Windows-pre-commit
 passerar. Regressionerna täcker fel roll, samtliga revisioner, saknad/halv
 transport, timeout, dubbelsvar/konflikt, promptinjektion, autentiseringsgräns,
 opak identitet, flera boxar och att deal inte deadlockas av väntande tal.
+Efter att riktiga relayvärden lades i den privata föräldramiljön isolerades även
+`product-chat-http` uttryckligen från ärvda speech-, Gateway- och providerfält.
+Ett separat poison-origin får nu noll anrop; de fem offlinekontraktsfilerna
+passerar 25/25 utan att testkommandot behöver sanera sin egen processmiljö.
 Ingen nyckel, Render-konfiguration, publik proxy, körande Gateway, port 4192/4194,
 mediefil eller eventstudiofil ändrades. Ingen Gatewayomstart eller redeploy
 gjordes; den nya rollen och adaptern är lokal kod tills den uttryckliga planen
