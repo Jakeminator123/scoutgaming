@@ -68,6 +68,20 @@ test('changed canonical text is detected after a successful sync', t => {
   assert.ok(drift.includes('animation-events/SYNC-MANIFEST.md'));
 });
 
+test('an unrelated repository commit does not invalidate the published source revision', t => {
+  const f = fixture(t);
+  const initial = f.run('--write');
+  assert.equal(initial.status, 0, initial.stderr);
+  const publishedCommit = JSON.parse(initial.stdout).sourceCommit;
+  fs.writeFileSync(path.join(f.source, 'UNRELATED.md'), '# Not published\n');
+  const git = (...args) => spawnSync('git', ['-C', f.source, ...args], { encoding: 'utf8', windowsHide: true });
+  assert.equal(git('add', 'UNRELATED.md').status, 0);
+  assert.equal(git('-c', 'user.name=Wiki test', '-c', 'user.email=wiki@example.invalid', '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', 'commit', '-m', 'Unrelated').status, 0);
+  const result = f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).sourceCommit, publishedCommit);
+});
+
 test('write requires a separate Git wiki worktree', t => {
   const f = fixture(t);
   const noGit = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-no-git-'));

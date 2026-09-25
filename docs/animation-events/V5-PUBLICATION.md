@@ -15,7 +15,7 @@
 Den nya `tools/sync-animation-events-wiki.mjs` läser tolv kanoniska
 Markdown-filer, skriver 38 wiki-filer inklusive äldre hänvisningsadresser och
 ett SHA-256-kvitto, men gör inga nätanrop, commits, pushar eller webbbyggen.
-Testerna för synkverktyget och studiokontraktet passerade 8/8; `guide.json`,
+Testerna för synkverktyget och studiokontraktet passerade 9/9; `guide.json`,
 syntax och diffkontroll verifierades separat. Alla absoluta interna wikilänkar
 löste mot en lokal sida före push.
 
