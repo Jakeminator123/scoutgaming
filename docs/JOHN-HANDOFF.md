@@ -1,3 +1,16 @@
+## 2026-09-25 — Astrids standardspråk: engelska
+
+På Jakobs begäran får Astrids produkt-speech-anrop en serverägd språkregel:
+engelska som standard även efter svensk historik eller en svenskskriven
+fråga, annat språk när spelaren uttryckligen ber om det i frågan. Regeln
+gäller Astrid; operatörschatt, andra dealers och spel-/sekretesskontrakt
+behåller sina instruktioner. Spelartext vävs aldrig in i systeminstruktionen.
+
+Produkt-speech- och kontraktstester passerar. Den lokala demomiljön använder
+den privata Director-relayn, så enbart lokal omstart ändrar inte dess prompt.
+Denna commit förbereder därför driftsättning på befintlig croupier-lab-director;
+driftkvitto och riktiga språkprov följer i nästa överlämningspost.
+
 ## 2026-09-25 — Lissabon: mätt chattlatens och förklarade avbrott
 
 Jakob bad om egen testning av sena/uteblivna läppsynksvar. Prov på den
