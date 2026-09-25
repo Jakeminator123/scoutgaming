@@ -1,4 +1,5 @@
 #!/bin/sh
+# Keep this hook LF-only; .gitattributes enforces it on Windows checkouts.
 set -eu
 node test/player-auth.mjs
 node test/craig-login.mjs

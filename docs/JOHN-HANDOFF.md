@@ -1,3 +1,38 @@
+## 2026-09-25 — Labbet läser Emils videomapp och shellradslut är låsta
+
+På `jakeminator123/work` är Videobankens grundkälla nu direkt
+`emil/dealklipp-v1/`, inte det raderade externa generationsarkivet. Ett
+incheckat metadataregister listar 31 befintliga MP4-filer (8 deal, 6 idle,
+17 repliker) med relativ sökväg, storlek och SHA-256. Filerna kopieras inte och
+MP4-innehållet semantiskt indexeras inte. Alla poster visas som omappade
+Astrid-kandidater i labbets inkorg; ingen eventkoppling, produktkoppling eller
+visuell acceptans görs automatiskt. En begärd preview hashkontrolleras alltid
+innan bytes serveras, även efter en lika stor snabb filändring på Windows.
+
+Rotens privata `.env` kontrollerades endast för variabelnamn: 14 unika namn och
+exakt en `CARTESIA_API_KEY`; inget värde lästes ut eller skrevs till Git.
+`_ENVIROMENT-INFO.md` beskriver placering, sekretess och att dagens labbkod ännu
+inte anropar Cartesia automatiskt. `LAB_VIDEO_ARCHIVE` är nu bara en valfri
+override för en rot med samma Emil-manifeststruktur.
+
+`core.autocrlf=true` hade, utan `.gitattributes`, gett CRLF/mixade radslut i
+shellfiler. `.gitattributes` låser nu `*.sh` och `.githooks/*` till LF; samtliga
+16 berörda arbetskopiefiler har noll CRLF. Git for Windows egen `sh` körde hela
+`.githooks/pre-commit` med exit 0. PowerShells första `bash` är däremot WSL och
+saknar `ffmpeg`; det separata WSL-felet ska inte förväxlas med hookens radslut.
+`rg`-felet är också separat: PATH väljer först en WinGet-symlink under
+`C:/Program Files`, som Codex-sandlådan inte får starta, medan Codex egen
+bundlade `rg.exe` fungerar.
+
+Verifiering: standardregistret rapporterar 31/31 filer tillgängliga och riktig
+preview av `deal_pos1.mp4` gav HTTP 200 med rätt längd/typ. 323/323 labbtester,
+TypeScript, `node pipeline/audit-dealer-sync.mjs --probe` (90 streams) och hela
+Git for Windows-hooken passerade. Produktspelaren och dess media ändrades inte;
+den fyrdealer-rehearsal som dokumenteras direkt nedan är därför fortfarande
+den senaste visuella produktkontrollen. Jakobs befintliga dirty-filer, inklusive
+`lab/next-env.d.ts`, lämnades utanför leveransen. Jira-anslutning saknades och
+ingen CAC-status ändrades.
+
 ## 2026-09-25 — Emils Astrid-klipp mergade till work som omappat labbunderlag
 
 På Jakobs uttryckliga begäran utgår arbetet från `jakeminator123/work`, inte

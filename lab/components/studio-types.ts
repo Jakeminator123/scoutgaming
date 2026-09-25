@@ -6,7 +6,7 @@ export type DirectorMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 
 export interface VideoEntry {
   classification?: VideoMetadata;
-  source?: 'archive' | 'upload';
+  source?: 'emil' | 'archive' | 'upload';
   addedAt?: string;
   id: string;
   label: string;

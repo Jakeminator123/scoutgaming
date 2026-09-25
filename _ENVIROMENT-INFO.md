@@ -7,7 +7,7 @@ Variabelnamn och placeringar, **inga hemliga värden**. Detta är ett register,
 inte en konfigurationsfil som programmet läser. Avser labbet/OpenClaw, inte
 produktens databasnycklar eller IDE-agenternas separata GitLab-inbox.
 
-Lokal namninventering 2026-09-22: repots privata `.env` har 13
+Lokal namninventering 2026-09-25: repots privata `.env` har 14
 tilldelningsnamn, bland annat äldre `LAB_PARTNER_*`; `lab/.env.local` har de
 tre aktuella `BETTALOTTO_PARTNER_*`-namnen. De incheckade
 `lab/.env.example` och `open-claw/lab/.env.example` är endast mallar.
@@ -40,6 +40,7 @@ för att starta om labbet. [Renders beskrivning](https://render.com/docs/bluepri
 | `OPENCLAW_GATEWAY_PASSWORD` | Gateway-processen, sätts automatiskt av startkoden | Samma `OPENCLAWAPI_KEY`, under OpenClaws interna variabelnamn. Fyll inte i ännu ett separat lösenord. |
 | `OPENCLAW_MODEL_API_KEY` | Render → `croupier-lab-openclaw` → Environment | Din befintliga modellleverantörsnyckel; inte dashboard-lösenordet eller labbnyckeln. |
 | `OPENAI_API_KEY` | Kan redan finnas lokalt för andra verktyg | Labbet kopierar/använder inte denna automatiskt. När OpenAI är leverantör ligger den valda OpenAI-nyckeln hos Gatewayen under namnet `OPENCLAW_MODEL_API_KEY`. |
+| `CARTESIA_API_KEY` | Lokalt → repots `.env` | Cartesia-nyckel för kommande lokala röst-/videoflöden. Namnet finns lokalt; dagens labbkod läser det ännu inte automatiskt. Värdet får inte läggas i Git eller exponeras som `NEXT_PUBLIC_*`. |
 | `ELEVENLABS_API_KEY` | Lokalt → repots `.env` | ElevenLabs-nyckel för studions separata röstprov och CLI-provverktyget. Inte automatiskt spelartal eller videolipsync. |
 | `ELEVENLABS_OC_API` | Valfritt alias i samma lokala `.env` | Provverktyget accepterar samma värde som ovan. Båda behövs inte; om båda finns måste de överensstämma. Namnet konfigurerar inte OpenClaw automatiskt. |
 
@@ -65,13 +66,23 @@ Valfria lokala inställningar i `lab/.env.local`:
 
 | Variabelnamn | Uppgift |
 | --- | --- |
-| `LAB_VIDEO_ARCHIVE` | Annan plats för originalvideorna, om standardarkivet inte används. |
+| `LAB_VIDEO_ARCHIVE` | Valfri alternativ rot för Emils videomapp. Utan variabel används repots `emil/dealklipp-v1/`. En alternativ rot måste ha samma undermappar/filer som manifestet. |
 | `LAB_STUDIO_DATA_DIR` | Annan datamapp för sparade projekt, exempelvis isolerade tester. |
 
 Anslutningsvariabler kan också läsas från `lab/.env.local`, men håll dem helst
 på ett ställe. Den filen går före rotens `.env`; redan satta processvariabler
 går före båda. Starta om den lokala servern efter miljöändringar. Startfilen
 återanvänder en redan körande server; den tvingar inte fram en omstart.
+
+## Videokällan i labbet
+
+Från 2026-09-25 är labbets grundkälla repomappen
+`emil/dealklipp-v1/`: 8 deal-klipp, 6 idle-klipp och 17 repliker. Det lilla
+`lab-video-manifest.json` innehåller endast filnamn, storlek och SHA-256 så att
+labbet kan visa och säkert spela exakt fil; MP4-innehållet semantiskt indexeras
+inte. Klippen börjar som okategoriserade Astrid-original och mappas till rätt
+event uttryckligen i Videobanken. Ingen produktkoppling eller visuell acceptans
+uppstår automatiskt.
 
 ## Render-inställningar — normalt redan satta av Blueprinten
 

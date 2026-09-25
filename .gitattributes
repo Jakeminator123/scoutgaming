@@ -1,0 +1,3 @@
+# Git Bash reads these files directly; CRLF can disable `set -e` and corrupt paths.
+*.sh text eol=lf
+.githooks/* text eol=lf
