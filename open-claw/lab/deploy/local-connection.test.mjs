@@ -67,7 +67,9 @@ test('child environments separate credentials, empty provider settings and use d
   const specs = childSpecifications(configuration, directory, { productPort: 4196, labPort: 4197 });
   assert.equal(specs.product.env.HOST, '127.0.0.1'); assert.equal(specs.lab.env.HOST, '127.0.0.1');
   assert.equal(specs.product.env.CROUPIER_DATA_DIR, join(directory, 'product'));
-  assert.equal(specs.lab.env.LAB_DATA_DIR, join(directory, 'lab-relay'));
+  assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, join(directory, 'next-studio'));
+  assert.equal(specs.lab.cwd, join(configuration.repoRoot, 'lab'));
+  assert.match(specs.lab.args.join(' '), /next.* start .*--port 4197/);
   assert.equal(specs.product.env.OPENCLAWAPI_KEY, 'fixture-gateway-only');
   assert.equal(specs.product.env.OPENCLAW_SPEECH_AGENT, 'openclaw/croupier-speech');
   assert.equal(specs.product.env.OPENCLAW_CHAT_AGENT, 'openclaw/croupier-chat');
@@ -85,12 +87,13 @@ test('child environments separate credentials, empty provider settings and use d
 test('isolated product can receive only the narrow Director speech credential', async t => {
   const productSpeechSecret = 'fixture-product-speech-only';
   const file = await privateFixture(t, {
+    OPENCLAW_BASE_URL: 'https://gateway.example.test', OPENCLAWAPI_KEY: 'fixture-full-gateway-must-not-forward',
     OPENCLAW_PRODUCT_SPEECH_URL: 'https://director.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: productSpeechSecret,
     OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', LAB_REMOTE_URL: 'https://director.example.test',
     LAB_REMOTE_TOKEN: 'fixture-lab-director-only',
   });
   const { configuration, report } = loadPrivateConnection({ envFiles: [file], env: {} });
-  assert.equal(report.productGateway.configured, false);
+  assert.equal(report.productGateway.configured, true);
   assert.equal(report.productSpeechRelay.configured, true);
   assert.equal(report.productSpeechRelay.role.status, 'expected');
   assert.equal(JSON.stringify(report).includes(productSpeechSecret), false);
@@ -100,8 +103,30 @@ test('isolated product can receive only the narrow Director speech credential', 
   assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_URL, 'https://director.example.test');
   assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, productSpeechSecret);
   assert.equal(specs.product.env.OPENCLAWAPI_KEY, '');
+  assert.equal(specs.product.env.OPENCLAW_BASE_URL, '');
+  assert.deepEqual(JSON.parse(specs.product.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), ['https://director.example.test']);
   assert.equal(specs.lab.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, '');
+  assert.equal(specs.lab.env.OPENCLAWAPI_KEY, '');
+  assert.equal(specs.lab.env.OPENCLAW_BASE_URL, '');
   assert.equal(JSON.stringify([specs.product.command, ...specs.product.args]).includes(productSpeechSecret), false);
+  const probed = [];
+  await probeConnections(configuration, { fetchImpl: async input => {
+    const url = new URL(input); probed.push(url.pathname);
+    return new Response(JSON.stringify(url.pathname === '/healthz' ? { ok: true } : { provider: { configured: true } }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+  } });
+  assert.deepEqual(probed, ['/healthz', '/api/status']);
+});
+
+test('launcher refuses a partial speech relay instead of falling back with mixed credentials', async t => {
+  const file = await privateFixture(t, {
+    OPENCLAW_BASE_URL: 'https://gateway.example.test', OPENCLAWAPI_KEY: 'fixture-full-gateway',
+    OPENCLAW_PRODUCT_SPEECH_URL: 'https://director.example.test',
+    LAB_REMOTE_URL: 'https://director.example.test', LAB_REMOTE_TOKEN: 'fixture-lab-director',
+  });
+  const productPort = await freePort(), labPort = await freePort();
+  await assert.rejects(startIsolatedConnection({ envFiles: [file], env: {}, productPort, labPort }), /must be configured together/);
 });
 
 test('read-only probes distinguish configured, reachable and model-not-run states', async t => {
@@ -127,7 +152,7 @@ test('read-only probes distinguish configured, reachable and model-not-run state
   assert.ok(!JSON.stringify(result).includes(directorSecret));
 });
 
-test('launcher starts isolated product and lab relay without using real databases', async t => {
+test('launcher starts isolated native and the real Next Eventstudio without using real databases', async t => {
   const gatewaySecret = 'fixture-gateway-launch';
   const directorSecret = 'fixture-director-launch';
   const gateway = await httpFixture(t, (_request, response) => { response.writeHead(200, { 'Content-Type': 'application/json' }); response.end('{"data":[]}'); });
@@ -142,12 +167,31 @@ test('launcher starts isolated product and lab relay without using real database
   const fixture = await startIsolatedConnection({ envFiles: [file], env: {}, productPort, labPort });
   t.after(() => fixture.stop());
   assert.equal((await fetch(fixture.urls.product + '/')).status, 200);
-  const localStatus = await fetch(fixture.urls.lab + '/api/status');
-  assert.equal(localStatus.status, 200);
-  assert.equal((await localStatus.json()).service, 'fixture-director');
+  const studioHealth = await fetch(fixture.urls.lab + '/api/health');
+  assert.equal(studioHealth.status, 200);
+  assert.deepEqual(await studioHealth.json(), { ok: true, service: 'croupier-next-studio', localOnly: true });
+  const project = await fetch(fixture.urls.lab + '/api/project');
+  assert.equal(project.status, 200);
+  assert.equal((await project.json()).status.provider, 'render-relay');
+  const reference = await fetch(fixture.urls.lab + '/api/inputs/reference');
+  assert.equal(reference.status, 200);
+  const referenceStatus = await reference.json();
+  assert.equal(referenceStatus.configured, true);
+  assert.equal(referenceStatus.origin, fixture.urls.product);
+  assert.match(referenceStatus.playerId, /^connection-/);
+  const verify = await fetch(fixture.urls.lab + '/api/inputs/reference', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"action":"verify"}',
+  });
+  assert.equal(verify.status, 200);
+  assert.deepEqual((await verify.json()).scopes, ['launch', 'events']);
+  const launch = await fetch(fixture.urls.lab + '/api/inputs/reference', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"action":"launch"}',
+  });
+  assert.equal(launch.status, 200);
+  assert.equal(new URL((await launch.json()).url).origin, fixture.urls.product);
   assert.ok(existsSync(join(fixture.runDir, 'product', 'croupier.db')));
   assert.ok(existsSync(join(fixture.runDir, 'product', 'craig.db')));
-  assert.ok(existsSync(join(fixture.runDir, 'lab-relay')));
+  assert.ok(existsSync(join(fixture.runDir, 'next-studio')));
   const serialized = JSON.stringify(fixture);
   assert.ok(!serialized.includes(gatewaySecret)); assert.ok(!serialized.includes(directorSecret));
   const runDir = fixture.runDir;

@@ -94,6 +94,52 @@ Native-spelet i `web/` är den enda lokala klient som ska sätta
 sedan den allowlistade projektionen till Director-adaptern. Detta ändrar inte
 spelets befintliga talkö eller renderergrind.
 
+### Exakt lokal start när Render och token är klara
+
+Helpern startar nu två verkliga, isolerade processer: native-servern från
+`web/server.mjs` och det redan byggda Next-programmet från `lab/`. Den startar
+inte längre den äldre Director-relayn på labbporten. Native får en egen
+tempdatabas och Next får en egen `LAB_STUDIO_DATA_DIR`. Helpern skapar dessutom
+en syntetisk Partner-nyckel och spelare med endast `launch` + `events` i
+tempdatabasen och ger dessa bara till Next-barnet. Därmed kan knappen **Anslut**
+på `/activity` öppna och observera samma isolerade nativebord utan en verklig
+spelare.
+
+När Gateway- och Director-revisionen är frisk och den separata speech-tokenen
+finns i de privata miljöerna:
+
+```powershell
+Test-Path lab/.next/BUILD_ID
+node open-claw/lab/deploy/local-connection.mjs --check
+node open-claw/lab/deploy/local-connection.mjs --start --product-port 4196 --lab-port 4197
+```
+
+Första kommandot ska ge `True`. Helpern bygger inte om Next och rör därför inte
+den delade jämförelsens bygg-/runtimefiler. Om bygget saknas ska arbetet stoppas
+och samordnas innan `npm --prefix lab run build`; bygg inte samtidigt som den
+delade 4192/4194-körningen granskas. `--check` skriver endast booleska statusfält,
+ursprung och rollstatus, aldrig hemlighetsvärden, och gör inget modellanrop. När
+speech-relayn är komplett väljs den före direkttransporten; kontrollen använder
+då inte en eventuell full Gateway-bearer ens för `/v1/models`.
+
+Öppna därefter `http://127.0.0.1:4197/activity` och välj **Anslut**. Next
+verifierar det syntetiska kontot mot `http://127.0.0.1:4196`, öppnar exakt det
+nativebordet och binder dess publika native-observation till den nya fliken.
+Kontrollera anslutningskvittot, spela bara med den syntetiska temp-spelaren och
+bekräfta att command-, playback- och chatthändelser visas i Next. Stoppa med
+Ctrl+C; båda processerna stoppas och helperns tempdatabaser tas bort.
+
+I relayläge är credentialgränsen nu tvingande även om rotens privata fil också
+råkar innehålla direkt-Gatewayuppgifter: nativebarnet får endast
+`OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` och talrollen;
+dess `OPENCLAW_BASE_URL` och `OPENCLAWAPI_KEY` töms. Next-barnet får endast
+`LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` och de syntetiska Partneruppgifterna;
+produkt-token, Gateway-bearer och providerinställningar töms. Båda barnen är
+förhindrade att läsa `.env`/`.env.local` och nätgrinden tillåter bara deras två
+loopbackportar samt respektive explicit konfigurerat HTTPS-origin. En halv
+speech-relaykonfiguration vägras i stället för att falla tillbaka med blandade
+credentials.
+
 En ändring i Git under `open-claw/` ändrar inte automatiskt den körande
 Gatewayen: dess `openclaw.json`, agentarbetsytor och sessioner ligger på Renders
 beständiga disk, och rollreconciliation/runtimepaket körs vid nästa explicit
@@ -131,12 +177,12 @@ en omstart före ny revision/hemlighet skulle bara starta gammalt beteende igen.
    `LAB_REMOTE_TOKEN` vara oförändrade. Kör dess vanliga studio-status/advice/chat
    som syntetiskt regressionsprov efter Directorstarten; det ska fortfarande
    träffa `croupier-director`/`croupier-chat`, aldrig `croupier-speech`.
-8. Starta isolerad native-QA på lediga loopbackportar, exempelvis 4196/4197, med ny
-   tempkatalog, separata `croupier.db`/`craig.db`, tom generationskatalog och
-   syntetiskt visningsnamn. Port 4192/4194 och deras processer får inte röras.
-   Använd `open-claw/lab/deploy/local-connection.mjs`; den kan vidarebefordra
-   den smala speech-URL:n/hemligheten endast till produktbarnet och tömmer alla
-   providerinställningar.
+8. Starta isolerad native-QA och riktiga byggda Next-Eventstudion på lediga
+   loopbackportar, exempelvis 4196/4197, enligt kommandona ovan. De använder ny
+   tempkatalog, separata `croupier.db`/`craig.db`, Next-data och syntetisk
+   Partner-spelare. Port 4192/4194 och deras processer får inte röras. Helpern
+   vidarebefordrar den smala speech-URL:n/hemligheten endast till produktbarnet,
+   Director-labbtoken endast till Next-barnet och tömmer providerinställningar.
 9. Kör ett enda syntetiskt adapterprov för vardera `recordedLine`,
    `generatedText` och `silence`, plus fel roll, fel revision, saknad koppling,
    timeout, dubbelsvar och promptinjektion. Kontrollera att inga riktiga
