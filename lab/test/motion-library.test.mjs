@@ -134,9 +134,9 @@ test('Stage keeps exact videos separate and owns cleanup for selection, replay a
   assert.match(source, /preference\.removeEventListener\('change', reduce\); playback\.cancel\(\)/);
   assert.match(source, /\[clip, durationMs, event\.id, dealer, shouldAnimate, playId, showVideo\]/);
   assert.match(source, /const shouldAnimate = playing && \(hasResult \|\| previewing\)/);
-  assert.match(source, /Spela vald variant/);
-  assert.match(source, /setFailedVideo\(''\); onPreview\(\)/);
-  assert.match(source, /setFailedVideo\(''\); onPlay\(\)/);
+  assert.match(source, /Spela valt klipp/);
+  assert.match(source, /setFailedVideos\(\[\]\); onPreview\(\)/);
+  assert.match(source, /setFailedVideos\(\[\]\); onPlay\(\)/);
   assert.match(source, /onEnded=\{e =>/);
   assert.match(source, /src=\{videoUrl\} controls=\{!blocked\} preload="metadata" autoPlay=\{playing && !blocked\} muted playsInline/);
   assert.doesNotMatch(source, /<video[^>]*\bloop\b/);

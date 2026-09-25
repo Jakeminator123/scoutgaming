@@ -1,0 +1,12 @@
+import type { StudioProject, StudioLine, StudioEvent, MediaVariantPolicy } from './studio-model.mjs';
+import type { VideoInventory, VideoEntry, MediaFamily } from '../components/studio-types';
+export const manualMediaSelection: { rules: boolean; model: boolean; random: boolean };
+export function validateMediaPolicy(policy: unknown, triggerIds?: string[]): StudioProject['mediaPolicy'];
+export function usesMediaFamilies(inventory: VideoInventory, dealerId: string): boolean;
+export function mediaVariantPolicy(project: StudioProject, family: MediaFamily, id: string): MediaVariantPolicy;
+export function mediaLineForEvent(project: StudioProject, inventory: VideoInventory, dealerId: string, eventId: string, event: Record<string, unknown>): { managed: boolean; family: MediaFamily | null; line: StudioLine };
+export function mediaVideoForEvent(inventory: VideoInventory, dealerId: string, eventId: string, event: Record<string, unknown>, id?: string | null): VideoEntry | null;
+export function mediaFamilyFolder(family: MediaFamily | null): string | null;
+export function mediaSituationLabel(situation: string): string;
+export function mediaExampleEvent(definition: StudioEvent, situation: string): Record<string, unknown>;
+export function mediaSituationForEvent(eventId: string, event: Record<string, unknown>): string | null;

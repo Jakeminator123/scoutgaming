@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { createSeedProject } from '../lib/studio-model.mjs';
-import * as server from '../lib/studio-server.mjs';
+import * as implementation from '../lib/studio-server.mjs';
+
+// These are the legacy classification/2D tests. Manifest playback has its own
+// explicit fixture, so a developer's current video bank cannot change results.
+const server = { ...implementation, simulateStudio: (body, options = {}) => implementation.simulateStudio(body, { videoRegistry: { videos: [], families: [] }, ...options }) };
 
 // Never read the operator's .env or contact an actual model/Gateway in these tests.
 const settings = (env = {}) => readSettings({ env, envFiles: [] });

@@ -1,63 +1,61 @@
 {
-  "title": "Från indata till synligt resultat.",
-  "intro": "Anslut originalspelet i Händelseloggen och jämför det med labbets presentation. Välj nod, koppla material och prova variantval i studion. Spelarchatt och operatörschatt har tydliga egna ingångar.",
+  "title": "Välj händelse. Spela rätt klipp.",
+  "intro": "Eventstudion och native-följningen använder samma videofamiljer. Mapparna avgör vilka klipp som hör ihop; projektets policy avgör när en variant får väljas.",
   "steps": [
     {
       "view": "tree",
-      "title": "1. Förstå behovet",
-      "body": "Välj croupier och presentationssätt: idle/bakgrund, engångshandling, exakt tal eller tur/resultat. Öppna ett event för att se dess verkliga exempeldata, förväntade fält och vad som saknas."
+      "title": "1. Välj plats eller replik",
+      "body": "Översikten visar kortdestinationer, exakta repliker och vänteläge. Plats 1–7 motsvarar box 0–6. Öppna en familj direkt i Eventstudion."
     },
     {
       "view": "videos",
-      "title": "2. Koppla rätt material",
-      "body": "Standardvarianten använder ett registrerat lokalt original när exakt replik eller kortdestination stöds. Videobanken visar källan och luckorna. Koppla en egen film när du vill ersätta förvalet; alternativen behåller egna kopplingar. Tillgänglig fil är inte visuellt godkännande. Övrig spelreplik har ett enkelt val av exakt tal-klipp; Astrid har 14 där och tre egna talnoder. Tur och resultat är spelmarkeringar, med resultattal i ett separat speak-event. Egna filmer läggs in i Videobanken: välj exakt situation/replik, koppla vid behov till projektutkastet och välj Spara projekt efteråt. Nya alternativ börjar med automatiskt urval avstängt."
+      "title": "2. Se filerna i mappen",
+      "body": "Astrids videobank läser emil/dealklipp-v1. Varje deal- och replikmapp har en standardfil och en variant-mapp. Idle har grundloopar direkt i idle/ och korta variationer i idle/variant/. Lägg nya klipp där, uppdatera manifestet med node pipeline/build-lab-video-manifest.mjs och välj Läs om videomapparna."
     },
     {
       "view": "lab",
-      "title": "3. Prova och spara",
-      "body": "Spela vald variant visar markerat material. Testa event låter OpenClaw välja bland tillåtna varianter. Ett event öppnat från en observation behåller sina verkliga spelfakta; chatt och historik är separat testkontext. Modellanrop sker först när du trycker. Standard är reserv vid fel. Eventprovet och sekvensspelaren delar samma beslutsväg. Ett upprepat besluts-ID återanvänder svaret utan nytt modellval; start/slut loggas separat av spelaren."
+      "title": "3. Spela och ställ in",
+      "body": "Spela valt klipp förhandsvisar filen direkt. Testa event provar standard, regler, slump eller OpenClaw. Nya varianter är manuella tills du tillåter ett automatiskt val. Spara projekt behåller policyn lokalt. Om variant-mappen är tom används standard. Varje replik och plats har egna val."
     },
     {
       "view": "activity",
-      "title": "4. Följ hela förloppet",
-      "body": "På Händelseloggen: tryck Anslut och spela i originalfliken som öppnas. Labbet följer nya spelinstruktioner automatiskt med Bara standard, utan modellkostnad. Välj originalfliken i webbläsarens bilddelning för att se original och labb sida vid sida. Variantval byter mellan standard, regler, slump och OpenClaw; modelllägen kan göra anrop. Pausa labbet stoppar följningen. Diagnostik samlar videokarta, behörigheter och import/export. Exportera protokollet före omladdning."
+      "title": "4. Följ nativeströmmen",
+      "body": "Tryck Anslut och spela i originalfliken. Labbet återspelar publicerade instruktioner med samma familjeval som Eventstudion. Kort, box och handindex kommer från mottagna data. Filval, faktisk start och avslut loggas separat. Grundläget Bara standard gör inga modellanrop. Exportera observationen före omladdning."
     }
   ],
   "boundaries": [
-    "Signal är samlingsordet för inkommande information: spelfakta, chatt eller uppspelningens status. Ett event är en namngiven händelse med data. De sex Partner-presentationstyperna är en del av detta, inte allt som kan hända i systemet.",
-    "De fyra presentationssätten är en vy över befintliga sex källtyper och 16 grupper. Tekniska ID:n och sparade projekt behålls. Idle är ett bakgrundsbehov, men videopreview spelas fortfarande en gång; redigerbara loopar och takepooler är inte införda.",
-    "Eventets kort och box kommer från källan. Box 0–6 betyder bordsplats 1–7, inte en identifierad spelare. Det manuella eventtestet har simulerad kontext. Livejämförelsen räknar avgjorda händer sedan senaste luckan och kan ge OpenClaw högst åtta observerade chattmeddelanden före eventet: 600 tecken vardera, 3 200 totalt, med källa och tid. Separata saldo-, auth- och identitetsfält skickas inte. Chatt är data för val bland tillåtna varianter, aldrig instruktioner som ändrar spelet. Saknat språk, återbesök och chattklassificering märks som okända; neutrala reservvärden är inte observerade fakta. Äldre Director som saknar kontextkvitto v2 ger en synlig standardreserv tills tjänsten uppdaterats. Variant-ID väljs efteråt; längd och landningstid hör till materialets metadata.",
-    "Standard är också en variant. Linje är behållaren för en dealers standard och alternativ. Utan egen videokoppling kan standard använda ett exakt registrerat lokalt original. Alternativ lånar inte förvalet. Want, filhash och kategorisering bevisar varken rätt person, visuell kvalitet eller läppsynk. Täckning för senare kort, split och övergångar är ofullständig.",
-    "2D är en mockup av presentation som ska vara videofiler. Biblioteket har 64 rörelsefiler, fyra per eventgrupp delade av fyra dealers, samt en social rörelsefil. Varianters namn ändrar inte rörelsen. Full täckning för kort, platser, split, timing, övergångar och repliker ska härledas från originalspelet. Riktig läppsynk saknas.",
-    "Socialt prov finns för Astrid i vänteläget: fritt textsvar och förvalt ElevenLabs-ljud, högst 25 sekunder tal. Standardfras vid uttryck är ett valbart undantag. Uttryckets cooldown stoppar inte fria svar. Socialt svar och handlingsprov får inte äga scenen samtidigt. Blinkningar startar inte om svaret. För långa ljud avvisas; stopp eller fel markeras som avbrutna prov. Riktig läppsynk och produktkoppling återstår. Välj labbnamn för återkomsthälsning och de senaste 12 inläggen (upp till 30 dagar); Glöm mig raderar appminnet. Berätta om Emil eller ett annat valt namn ger egna skämtpoem med valfritt tal upp till 25 sekunder. Även Vem är Jakob? och följdfrågor fungerar i båda labbchattarna. OpenAI-webbsökning reserverar 0,50 kr/försök, högst tio försök och cirka 5 kr/timme; vanlig chatt och ljud tillkommer.",
-    "Händelseloggen lagrar högst 150 poster i flikens minne och töms vid omladdning. Det fullständigare protokollet stoppar vid 300 meddelanden eller 4 MiB. Exportera och välj Ny observation i Diagnostik för att ersätta historiken och fortsätta med kommande instruktioner; spelet och anslutningen behålls. Ett modellförslag, en vald fil och en faktiskt avslutad uppspelning är skilda loggsteg. Inga exempelrader visas som mottagna live-events.",
-    "Anslut öppnar originalspelet för samma nyckel och spelare som SSE-observern. Transport ansluten betyder inte att speldata har kommit. Den nya native-observern ger verkliga publika kommandosvar och instrumenterade playback-/chattsignaler från just den öppnade fliken. Detta kräver rätt spelarkod på vald server och loopback-labb; en lokal merge deployar inte Bettalotto. Videokartan visar registrerat material och bindningar, inte spelade klipp. Protokollet håller högst 300 meddelanden eller 4 MiB och töms vid omladdning. Avbrott markeras som luckor; servern saknar historisk replay.",
-    "Originalbilden kommer från den spelflik du uttryckligen väljer i webbläsaren och visas lokalt utan inspelning, uppladdning eller fångat ljud. Dataobservationen fungerar separat från bilden. Labbet spelar samma mottagna instruktioner med egna materialval och kan ligga efter originalets animation. Publik bordsvy, originalets instrumenterade playback, labbval och labbkvitton har skilda källor. Samma instruktion via native och SSE blir ett steg; konflikter och luckor stoppar följningen. Klippval och programkvitton bevisar inte varje bildruta eller godkänd läppsynk.",
-    "Spelmotorn äger kort, regler, utfall, saldo och utbetalningar. OpenClaw får bara föreslå tillåten presentation. Sparade labbändringar publiceras inte automatiskt till spelet eller Render.",
-    "V5:s beställda produktintegration: Jakobs OpenClaw-chatt ska äga dialog och talbeslut. Kevin utvecklar befintlig gemensam klientkö; Kevin/Emils läppsynk utför det exakta talet. Detta är inte redan aktiverat i produkten. Scheman, manifestreferenser och implementationsbrief finns samlade i lab/docs/ARTIFACTS.md."
+    "Sidomenyn grupperar sex källtyper i 16 eventgrupper. En grupp kan innehålla flera exakta situationer: box2 väljer deal/deal_pos3/deal_pos3.mp4, oavsett kortets värde. Kortdata och handindex behålls separat.",
+    "Mottagna event behåller sin destination och replik. Ett manuellt exempel kan ändras med situationsväljaren. En saknad exakt familj ger 2D-reserv; spelaren lånar inte en annan plats eller replik.",
+    "Standard och varianter kommer från manifestet. Gamla 2D-demovarianter bevaras i äldre projekt men används inte för Astrids mappstyrda material. Vera, Amira och Mei behåller sin befintliga gemensamma originalspelare.",
+    "Idleeditorn har grundvikter, intervall, slumpvariation, cooldown och maxfrekvens. Visa planerat förlopp är en beräkning. Spela en minut spelar filmerna och loggar verklig start, avslut och återgång till basloop. Deal och tal avbryter idleprovet. Tidsandelar är uppskattningar från policyns klipplängder.",
+    "Box anger plats, inte person. Produktens OpenClaw-adapter får säkert displayName, upptagna boxar, synliga kort och publicerade events. Den får inte rått playerId, framtida sko eller dolt hålkort. En fullständig identitetslista för flera olika spelare per bord är inte implementerad.",
+    "Socialt labbprov och produktens spelarchatt är separata flöden. Produktkoden håller chattsvar tills standardpositionen har kvitterats. Fri text har ännu inget godkänt läppsynkat videopaket. Det sociala labbprovet kan använda separat TTS, högst 25 sekunder.",
+    "Spelmotorn äger kort, regler, saldo och utbetalningar. OpenClaw väljer tillåten presentation. En godkänd filhash eller ett uppspelningskvitto är inte ett mänskligt godkännande av läppsynk.",
+    "Anslutningens serveradress avgör om originalet är lokalt eller externt. tools/start-local-comparison.mjs startar ett isolerat lokalt spel och stänger av externa modellanslutningar. Att OpenClaw-koden finns betyder inte att en körande gateway är ansluten.",
+    "Händelseloggen håller 150 poster i flikens minne; observationsprotokollet högst 300 meddelanden eller 4 MiB. Samma instruktion via native och SSE slås ihop. Luckor och konflikter stoppar följningen. Exportera och välj Ny observation för att börja om med kommande data."
   ],
   "surfaces": [
     {
       "name": "Nodträdet",
-      "purpose": "Grupperar efter det som ska synas: idle, engångshandling, exakt tal eller tur/resultat. Visar eventfält, saknade uppgifter, separat kontext och markerad variant. Samma projekt som Eventstudion."
+      "purpose": "En översikt över de verkliga videofamiljerna. Öppna exakt plats eller replik."
     },
     {
       "name": "Eventstudion",
-      "purpose": "Redigera variantuppsättningen, prova material och kör urval. Testvärden används för eventtestet. Chatta med Astrid sitter direkt under bordets förhandsvisning och använder en egen social policy; hennes uttrycksförslag loggas medan scenen stannar i vänteläget."
+      "purpose": "Spela vald standard eller mappvariant, ställ in urvalspolicy och prova eventdata."
     },
     {
       "name": "Videobanken",
-      "purpose": "Original, kategorisering och exakta filkopplingar. Inkorg innehåller material som behöver klassificeras. En fil får bara kopplas till sin registrerade dealer och eventgrupp; situationen kontrolleras vid eventtest."
+      "purpose": "Bläddra och spela filer från samma fysiska mappar som Eventstudion använder."
     },
     {
       "name": "Händelselogg",
-      "purpose": "Anslut samlar rätt spelsession, läsande observation och automatisk labbföljning. Originalet och labbet visas sida vid sida med publika bordskort, gemensam logg och spårbar variantkontext. Native-svar, originalets instrumenterade playback/chatt och labbkvitton skiljs åt. Diagnostik samlar videokarta, scopes och observationsfiler; sekvenssteg öppnar eventeditorn."
+      "purpose": "Anslut originalet och följ publika spelfakta, valda filer och faktiska uppspelningskvitton."
     },
     {
       "name": "Chatt & OpenClaw",
-      "purpose": "Två tydliga chattvägar: Chatta med Astrid öppnar spelarchatten i hennes vänteläge. Operatörschatten svarar om det sparade labbprojektet. Anslutning, jämförelsetester och fristående röstprov finns kvar. Gateway-dashboarden är separat driftverktyg."
+      "purpose": "Separata ingångar till socialt prov och operatörschatt, anslutningsstatus, Gateway-dashboard och konfigurationskällor."
     }
   ],
-  "storage": "Projekt och social policy sparas lokalt och separat. Originalfiler ligger i generationsarkivet eller lokala uppladdningar; kategorisering ändrar bara metadata. Händelseloggen finns enbart i flikens minne. Partner-hemligheter stannar på den lokala servern. Labbprofilens valda namn och avgränsade samtalsminne sparas separat på Director. Det är inte Partner-spelarens identitet. Render är extern Director/OpenClaw-drift; lokala ändringar publiceras inte dit automatiskt.",
-  "authority": "Källtyper, ID:n och möjligheter finns i lab/policies/studio-contract.json. Nodträdets presentation-profile grupperar detta kontrakt utan att utöka det. Videoformatet finns i lab/schemas/video.schema.json. Tekniska README-filer är utvecklarreferenser; den här guiden är labbets gemensamma ingång."
+  "storage": "MP4-filerna ligger i emil/dealklipp-v1. Manifestet beskriver familjer, standard-ID:n och variant-ID:n. Projektets val ligger i lokal JSON: mediaPolicy för deal/repliker och idlePolicy för idle. Äldre projektdata bevaras. Hemligheter stannar på serversidan. Inget sparande i studion deployar automatiskt produkten eller OpenClaw.",
+  "authority": "Källans sex eventtyper och 16 grupper finns i lab/policies/studio-contract.json. Videofamiljerna finns i emil/dealklipp-v1/lab-video-manifest.json. Konfiguration av OpenClaw börjar i open-claw/lab/docs/README.md och dess officiella källindex."
 }

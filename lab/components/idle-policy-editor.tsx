@@ -52,6 +52,12 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   const [showPlan, setShowPlan] = useState(false);
   const [previewId, setPreviewId] = useState(policy.base[0]?.videoId ?? '');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [planIndex, setPlanIndex] = useState<number | null>(null);
+  const [playSerial, setPlaySerial] = useState(0);
+  const [playRequested, setPlayRequested] = useState(false);
+  const [actualLog, setActualLog] = useState<string[]>([]);
+  const playback = useRef<{ serial: number; started: boolean } | null>(null);
+  const segmentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preview = byId.get(previewId);
   const plan = useMemo(() => createIdlePreviewPlan(policy, { seed, durationMs: 60000 }), [policy, seed]);
   const primary = policy.base[0];
@@ -59,18 +65,48 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
 
   useEffect(() => {
     if (!blocked) return;
-    videoRef.current?.pause();
-    onBusyChange(false);
+    stop('Avbrutet av tal eller spelhandling');
   }, [blocked, onBusyChange]);
-  useEffect(() => () => { videoRef.current?.pause(); onBusyChange(false); }, [onBusyChange]);
+  useEffect(() => () => { if (segmentTimer.current) clearTimeout(segmentTimer.current); playback.current = null; videoRef.current?.pause(); onBusyChange(false); }, [onBusyChange]);
+
+  function log(text: string) { setActualLog(current => [...current, text].slice(-60)); }
+  function stop(reason = 'Stoppat') {
+    if (segmentTimer.current) clearTimeout(segmentTimer.current);
+    if (playback.current) log(reason);
+    playback.current = null; setPlanIndex(null); setPlayRequested(false);
+    videoRef.current?.pause(); onBusyChange(false);
+  }
+  function startClip(videoId: string, index: number | null) {
+    if (segmentTimer.current) clearTimeout(segmentTimer.current);
+    if (!byId.get(videoId)?.available) { stop('Klippet saknas — provet avbröts'); return; }
+    const serial = playSerial + 1;
+    playback.current = { serial, started: false };
+    setPlaySerial(serial); setPlanIndex(index); setPreviewId(videoId); setPlayRequested(true);
+    if (index !== null && plan[index].kind === 'variant') log(`scheduled · ${fileLabel(byId.get(videoId), videoId)}`);
+  }
+  function advance(serial: number) {
+    if (playback.current?.serial !== serial || !playback.current.started) return;
+    log(`${planIndex !== null && plan[planIndex].kind === 'base' ? 'base segment ended' : 'completed'} · ${fileLabel(preview, previewId)}`);
+    if (planIndex === null) {
+      if (family?.variantIds.includes(previewId)) {
+        log('base resumed'); startClip(primary.videoId, null);
+      } else stop('Klippet klart');
+    } else if (planIndex + 1 < plan.length) {
+      if (plan[planIndex].kind === 'variant' && plan[planIndex + 1].kind === 'base') log('base resumed');
+      startClip(plan[planIndex + 1].videoId, planIndex + 1);
+    } else stop('Minutprovet klart');
+  }
 
   function setPrimary(videoId: string) {
+    stop('Inställningen ändrades');
     onChange({ ...policy, base: weightedBase(policy.base, videoId, primary.weight) });
   }
   function setPrimaryWeight(weight: number) {
+    stop('Inställningen ändrades');
     onChange({ ...policy, base: weightedBase(policy.base, primary.videoId, weight) });
   }
   function updateVariant(videoId: string, patch: Partial<IdleVariantPolicy>) {
+    stop('Inställningen ändrades');
     onChange({ ...policy, variants: policy.variants.map(item => item.videoId === videoId ? { ...item, ...patch } : item) });
   }
   function setUse(item: IdleVariantPolicy, use: IdleVariantUse) {
@@ -84,8 +120,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     updateVariant(item.videoId, { automatic: { ...item.automatic, [key]: value } });
   }
   function play(videoId: string) {
-    setPreviewId(videoId);
-    window.requestAnimationFrame(() => void videoRef.current?.play());
+    stop(); setActualLog([]); startClip(videoId, null);
   }
 
   const events = plan.flatMap((segment, index) => segment.kind === 'variant' ? [
@@ -122,13 +157,22 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
 
     <section className={styles.section}>
       <div className={styles.sectionHeading}><span>3</span><div><h3>Prova en minut</h3><p>Samma seed ger samma förlopp. Det gör schemat lätt att kontrollera.</p></div></div>
-      <div className={styles.previewControls}><label>Seed<input type="number" min={0} max={4294967295} value={seed} onChange={event => setSeed(Math.max(0, Number(event.target.value)))} /></label><button type="button" className="primary-button" onClick={() => setShowPlan(value => !value)}>{showPlan ? 'Dölj förlopp' : 'Visa förlopp'}</button></div>
+      <div className={styles.previewControls}><label>Seed<input type="number" min={0} max={4294967295} value={seed} onChange={event => { stop('Seed ändrades'); setSeed(Math.max(0, Number(event.target.value))); }} /></label><button type="button" className="primary-button" disabled={blocked} onClick={() => { stop(); setActualLog([]); startClip(plan[0].videoId, 0); }}>Spela en minut</button><button type="button" className="text-button" onClick={() => setShowPlan(value => !value)}>{showPlan ? 'Dölj plan' : 'Visa planerat förlopp'}</button></div>
+      <p className="helper">Planen är beräknad från klipplängderna i policyn. Engångsvarianter får spela klart. Loggen nedan visar faktiska uppspelningshändelser.</p>
       {showPlan ? <><div className={styles.timeline} aria-label="Förhandsvisning av idleförlopp">{plan.map((segment, index) => <span key={`${segment.startMs}-${index}`} className={segment.kind === 'variant' ? styles.variantSegment : styles.baseSegment} style={{ width: `${(segment.endMs - segment.startMs) / 600}%` }} title={`${Math.round(segment.startMs / 100) / 10}s · ${fileLabel(byId.get(segment.videoId), segment.videoId)}`} />)}</div><ol className={styles.log}>{events.length ? events.map((entry, index) => <li key={`${entry.at}-${entry.label}-${index}`}><time>{(entry.at / 1000).toFixed(1)} s</time><code>{entry.label}</code><span>{fileLabel(byId.get(entry.videoId), entry.videoId)}</span></li>) : <li>Inga automatiska variationer under minuten.</li>}</ol></> : null}
     </section>
 
     <section className={styles.player} aria-label="Idleklippspelare">
       <div><span className="eyebrow">LOKALT VIDEOPROV</span><strong>{fileLabel(preview, previewId)}</strong><small>Provet styr inte spelet och stoppas när en annan spelare tar över.</small></div>
-      {preview?.available ? <video ref={videoRef} src={preview.previewUrl} muted playsInline controls onPlay={() => onBusyChange(true)} onPause={() => onBusyChange(false)} onEnded={() => onBusyChange(false)} /> : <p className={styles.warning}>Videon finns inte tillgänglig i labbets lokala mediekälla.</p>}
+      {preview?.available ? <video key={`${previewId}-${playSerial}`} ref={videoRef} src={preview.previewUrl} muted playsInline autoPlay={playRequested && !blocked} loop={Boolean(family?.standardIds.includes(previewId))} onPlaying={event => {
+        if (event.currentTarget !== videoRef.current || blocked || playback.current?.serial !== playSerial) { event.currentTarget.pause(); return; }
+        onBusyChange(true);
+        if (playback.current.started) return;
+        playback.current.started = true; log(`started · ${fileLabel(preview, previewId)}`);
+        if (planIndex !== null && plan[planIndex].kind === 'base') segmentTimer.current = setTimeout(() => advance(playSerial), plan[planIndex].endMs - plan[planIndex].startMs);
+      }} onPause={event => { if (event.currentTarget === videoRef.current && !event.currentTarget.ended && playback.current?.serial === playSerial) stop('Pausat'); }} onEnded={() => advance(playSerial)} onError={event => { if (event.currentTarget === videoRef.current) stop('Videofel — provet avbröts'); }} /> : <p className={styles.warning}>Videon finns inte tillgänglig i labbets lokala mediekälla.</p>}
+      <button type="button" className="text-button" onClick={() => stop()}>Stoppa idleprovet</button>
+      <ol className={`${styles.log} ${styles.actualLog}`} aria-label="Faktisk idleuppspelning">{actualLog.map((entry, index) => <li key={index}>{entry}</li>)}</ol>
     </section>
   </div>;
 }

@@ -598,11 +598,35 @@
         "$ref": "#/$defs/asset"
       }
     },
+    "mediaPolicy": {
+      "description": "Optional per-folder selection policy. Missing entries are manual only. Legacy project lines are preserved but do not supply candidates for manifest-owned dealers.",
+      "type": "array", "maxItems": 256,
+      "items": { "$ref": "#/$defs/mediaFamilyPolicy" }
+    },
     "idlePolicy": {
       "$ref": "#/$defs/idlePolicy"
     }
   },
   "$defs": {
+    "mediaFamilyPolicy": {
+      "type": "object", "additionalProperties": false, "required": ["familyId", "variants"],
+      "properties": {
+        "familyId": { "type": "string", "pattern": "^[a-z][a-z0-9_-]*/[a-z][a-z0-9._-]*/[a-z][a-z0-9_-]*$" },
+        "variants": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/mediaVariantPolicy" } }
+      }
+    },
+    "mediaVariantPolicy": {
+      "type": "object", "additionalProperties": false, "required": ["videoId", "selection", "priority", "triggerIds"],
+      "properties": {
+        "videoId": { "type": "string", "pattern": "^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$" },
+        "priority": { "type": "integer", "minimum": -100, "maximum": 100 },
+        "triggerIds": { "type": "array", "maxItems": 16, "uniqueItems": true, "items": { "type": "string" } },
+        "selection": {
+          "type": "object", "additionalProperties": false, "required": ["rules", "model", "random"],
+          "properties": { "rules": { "type": "boolean" }, "model": { "type": "boolean" }, "random": { "type": "boolean" } }
+        }
+      }
+    },
     "idlePolicy": {
       "type": "object",
       "additionalProperties": false,
