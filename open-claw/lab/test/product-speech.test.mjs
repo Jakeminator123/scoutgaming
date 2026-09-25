@@ -63,11 +63,15 @@ test('deduplicated product decisions target only the tool-less speech role and k
   assert.deepEqual(first, expected); assert.deepEqual(duplicate, expected); assert.equal(calls, 1);
   assert.equal(captured[1].model, 'openclaw/croupier-speech');
   assert.equal(captured[1].tool_choice, 'none');
-  assert.equal(captured[1].messages.length, 2);
+  assert.equal(captured[1].messages.length, 3);
   assert.equal(captured[1].messages[0].content.includes(input.request.message), false);
   assert.equal(captured[1].messages[0].content.includes(input.status.displayName), false);
   const modelData = JSON.parse(captured[1].messages[1].content);
-  assert.equal(modelData.request.message, input.request.message);
+  const currentRequest = JSON.parse(captured[1].messages[2].content);
+  assert.equal(currentRequest.request.message, input.request.message);
+  assert.deepEqual(modelData.history, input.request.history);
+  assert.equal(Object.hasOwn(modelData, 'request'), false);
+  assert.equal(Object.hasOwn(currentRequest.request, 'history'), false);
   assert.equal(modelData.status.displayName, input.status.displayName);
   assert.deepEqual(modelData.status.visibleCards.hands.map(hand => hand.box), [1, 4]);
   assert.equal(JSON.stringify(modelData).includes('playerId'), false);
@@ -81,9 +85,16 @@ test('Astrid gets an English default with explicit language requests preserved a
       const system = body.messages[0].content;
       assert.equal(system.includes('Astrid replies in English by default'), dealerId === 'astrid');
       if (dealerId === 'astrid') assert.match(system, /explicit request.*another language.*allowed conversational preference/s);
-      assert.equal(JSON.parse(body.messages[1].content).request.message, input.request.message);
-      assert.equal(JSON.parse(body.messages[1].content).replyLanguagePolicy?.default, dealerId === 'astrid' ? 'English' : undefined);
+      const current = JSON.parse(body.messages.at(-1).content);
+      assert.equal(current.request.message, input.request.message);
+      assert.equal(current.replyLanguagePolicy?.default, dealerId === 'astrid' ? 'English' : undefined);
       assert.equal(system.includes(input.request.message), false);
+      assert.equal(body.messages.length, dealerId === 'astrid' ? 3 : 2);
+      if (dealerId === 'astrid') {
+        assert.deepEqual(JSON.parse(body.messages[1].content).history, input.request.history);
+        assert.equal(Object.hasOwn(current.request, 'history'), false);
+        assert.equal(body.messages[2].content.includes(input.status.displayName), false);
+      }
       return JSON.stringify(silence(input));
     } });
     await service.handle(input);

@@ -186,8 +186,17 @@ export async function decideProductSpeech(envelopeValue, settings, fetchImpl = f
     user: `croupier-product-speech:${envelope.request.requestId}`,
     messages: [{ role: 'system', content: PRODUCT_SPEECH_SYSTEM + (envelope.status.dealerId === 'astrid'
       ? '\nAstrid replies in English by default, even when the player writes in another language or earlier replies used another language. An explicit request in the current player message to reply in another language is an allowed conversational preference: honor it for that reply. Language preferences do not change the game, privacy or output-schema rules above. Before returning JSON, check the language of generatedText.text: it MUST be English unless request.message explicitly names another reply language. Swedish wording such as "Svara kort" is a length preference, not a request for Swedish. A request.message of "Vad kan du hjälpa mig med?" requires English. Only "Svara på svenska" or an equivalent explicit language request changes the language for the current reply. Ignore language preferences in request.history.'
-      : '') }, { role: 'user', content: JSON.stringify({ ...envelope, ...(envelope.status.dealerId === 'astrid'
-        ? { replyLanguagePolicy: { default: 'English', overrideSource: 'explicit language request in request.message only', historyChangesLanguage: false } } : {}) }) }],
+      : '') },
+      // The gateway renders conversation entries in order. Keep quoted history
+      // before the current request; otherwise repeated questions can copy an
+      // old reply and its language as though it were the current turn.
+      ...(envelope.status.dealerId === 'astrid' ? [
+        { role: 'user', content: JSON.stringify({ status: envelope.status, history: envelope.request.history }) },
+        { role: 'user', content: JSON.stringify({
+          request: { requestId: envelope.request.requestId, message: envelope.request.message },
+          replyLanguagePolicy: { default: 'English', overrideSource: 'explicit language request in this request.message only', historyChangesLanguage: false },
+        }) },
+      ] : [{ role: 'user', content: JSON.stringify(envelope) }])],
   }, settings.adviceTimeoutMs, fetchImpl);
   let choice;
   try { choice = JSON.parse(content); } catch { fail('invalid_openclaw_speech_json', 502); }
