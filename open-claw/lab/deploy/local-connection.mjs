@@ -1,19 +1,22 @@
 #!/usr/bin/env node
-// Isolated local product + lab relay launcher. Secrets are read from existing
+// Isolated local product + real Next Eventstudio launcher. Secrets are read from existing
 // private env files, retained only in child environments, and never accepted as
 // command-line arguments or copied to the disposable data directories.
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import net from 'node:net';
+import { createHmac, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { syncBuiltinESMExports } from 'node:module';
+import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
 import { boundedJson } from '../src/openclaw.mjs';
 import { gatewayEndpoint, isLoopback } from '../src/settings.mjs';
+import { installPartnerApi } from '../../../web/partner-api.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const DEFAULT_PRODUCT_PORT = 4196;
@@ -178,7 +181,9 @@ export async function probeConnections(configuration, { fetchImpl = fetch } = {}
     productSpeechRelay: { configured: Boolean(configuration.speechUrl && configuration.speechToken), reachable: false, functionalModelProbe: 'not_run' },
     labDirector: { configured: Boolean(configuration.remoteUrl && configuration.remoteToken), reachable: false, authenticatedApi: false, functionalModelProbe: 'not_run' },
   };
-  if (result.productGateway.configured) {
+  // The narrow relay is the selected product transport whenever it is complete.
+  // Do not even exercise the full Gateway bearer in that mode.
+  if (result.productGateway.configured && !result.productSpeechRelay.configured) {
     try {
       const response = await fetchImpl(modelsEndpoint(configuration.baseUrl), {
         redirect: 'error', signal: AbortSignal.timeout(10000), headers: { Authorization: `Bearer ${configuration.gatewayKey}` },
@@ -236,8 +241,9 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
   const labUrl = `http://127.0.0.1:${labPort}`;
   const ports = [String(productPort), String(labPort)];
   const productData = join(runDir, 'product');
-  const labData = join(runDir, 'lab-relay');
-  const productOrigin = configuration.baseUrl ? normalizedOrigin(configuration.baseUrl) : null;
+  const labData = join(runDir, 'next-studio');
+  const useSpeechRelay = Boolean(configuration.speechUrl || configuration.speechToken);
+  const productOrigin = !useSpeechRelay && configuration.baseUrl ? normalizedOrigin(configuration.baseUrl) : null;
   const speechOrigin = normalizedSpeechOrigin(configuration.speechUrl);
   const directorOrigin = configuration.remoteUrl ? normalizedOrigin(configuration.remoteUrl, { remote: true }) : null;
   const commonEmpty = {
@@ -252,17 +258,21 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
       env: guardedEnvironment({ ...commonEmpty, NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
         CROUPIER_DATA_DIR: productData, CROUPIER_GENERATIONS_DIR: join(runDir, 'generations'), DEMO_GUEST_ACCESS: '1',
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
-        OPENCLAW_BASE_URL: configuration.baseUrl, OPENCLAWAPI_KEY: configuration.gatewayKey,
+        // The relay is the narrower transport and wins whenever it is present.
+        // Never place the full Gateway bearer in that product child.
+        OPENCLAW_BASE_URL: useSpeechRelay ? '' : configuration.baseUrl, OPENCLAWAPI_KEY: useSpeechRelay ? '' : configuration.gatewayKey,
         OPENCLAW_AGENT: configuration.directorAgent, OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: configuration.productAgent,
         OPENCLAW_PRODUCT_SPEECH_URL: configuration.speechUrl, OPENCLAW_PRODUCT_SPEECH_TOKEN: configuration.speechToken,
         OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs), LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
       }, [productOrigin, speechOrigin], ports),
     },
     lab: {
-      command: process.execPath, args: [join(configuration.repoRoot, 'open-claw', 'lab', 'src', 'server.mjs')], cwd: runDir,
-      readyText: 'Croupier lab:', dataDir: labData,
-      env: guardedEnvironment({ ...commonEmpty, NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(labPort),
-        LAB_DATA_DIR: labData, LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
+      command: process.execPath,
+      args: [join(configuration.repoRoot, 'lab', 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)],
+      cwd: join(configuration.repoRoot, 'lab'),
+      readyText: 'Ready in', dataDir: labData,
+      env: guardedEnvironment({ ...commonEmpty, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
+        LAB_STUDIO_DATA_DIR: labData, LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
         OPENCLAW_BASE_URL: '', OPENCLAWAPI_KEY: '', OPENCLAW_AGENT: configuration.directorAgent,
         OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs),
         OPENCLAW_PRODUCT_SPEECH_URL: '', OPENCLAW_PRODUCT_SPEECH_TOKEN: '',
@@ -307,12 +317,47 @@ async function startChild(specification) {
   } catch (error) { await stopChild(child); throw error; }
 }
 
+function configureSyntheticPartner(specs, repoRoot) {
+  const db = new DatabaseSync(join(specs.product.dataDir, 'croupier.db'));
+  const boDb = new DatabaseSync(join(specs.product.dataDir, 'craig.db'));
+  try {
+    const jwtSecret = Buffer.from(boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get().v, 'hex');
+    const jwtSign = payload => {
+      const text = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url') + '.' + Buffer.from(JSON.stringify(payload)).toString('base64url');
+      return text + '.' + createHmac('sha256', jwtSecret).update(text).digest('base64url');
+    };
+    const partner = installPartnerApi({
+      db, boDb, jwtSign, publicUrl: specs.urls.product, root: join(repoRoot, 'web', 'public'),
+      getPlayer: id => db.prepare('SELECT * FROM players WHERE id=?').get(id),
+      logTx: (playerId, type, amount, currency, meta) => db.prepare('INSERT INTO transactions(player_id,type,amount,currency,meta,at) VALUES(?,?,?,?,?,?)')
+        .run(playerId, type, amount, currency, meta, new Date().toISOString()),
+    });
+    const key = partner.keys.create({ name: 'Isolated connected QA', scopes: ['launch', 'events'] }, 'connection-qa');
+    const playerId = `connection-${randomUUID()}`;
+    partner.keys.mintLaunch(key.id, { playerId, currency: 'USD' });
+    partner.keys.credit(key.id, { playerId, amount: 1000 });
+    Object.assign(specs.lab.env, {
+      BETTALOTTO_PARTNER_BASE_URL: specs.urls.product,
+      BETTALOTTO_PARTNER_KEY_ID: key.key,
+      BETTALOTTO_PARTNER_SECRET: key.secret,
+      BETTALOTTO_PARTNER_PLAYER_ID: playerId,
+      BETTALOTTO_API: '',
+    });
+  } finally { db.close(); boDb.close(); }
+}
+
 export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env,
   productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT } = {}) {
-  if (productPort === labPort) throw new Error('Product and lab relay need separate ports.');
+  if (productPort === labPort) throw new Error('Product and Next Eventstudio need separate ports.');
   await unusedPort(productPort); await unusedPort(labPort);
   const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env });
-  if (!report.labDirector.configured) throw new Error('LAB_REMOTE_URL and LAB_REMOTE_TOKEN are required for the connected lab relay.');
+  if (!report.labDirector.configured) throw new Error('LAB_REMOTE_URL and LAB_REMOTE_TOKEN are required for the connected Next Eventstudio.');
+  if (report.productSpeechRelay.urlPresent !== report.productSpeechRelay.credentialPresent) {
+    throw new Error('OPENCLAW_PRODUCT_SPEECH_URL and OPENCLAW_PRODUCT_SPEECH_TOKEN must be configured together.');
+  }
+  if (!fs.existsSync(join(repoRoot, 'lab', '.next', 'BUILD_ID'))) {
+    throw new Error('A verified Next production build is required; run npm --prefix lab run build before starting the isolated connection.');
+  }
   if ((report.productGateway.configured || report.productSpeechRelay.configured) && report.productGateway.role.status !== 'expected') {
     throw new Error('Refusing a connected product start because the configured OpenClaw agent has a conflicting runtime contract.');
   }
@@ -330,6 +375,7 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
   try {
     await Promise.all([specs.product.dataDir, specs.lab.dataDir, join(runDir, 'generations')].map(directory => fsPromises.mkdir(directory, { recursive: true })));
     product = await startChild(specs.product);
+    configureSyntheticPartner(specs, repoRoot);
     lab = await startChild(specs.lab);
     return {
       urls: Object.freeze(specs.urls), runDir, report, stop,
@@ -363,11 +409,11 @@ async function main() {
   }
   const fixture = await startIsolatedConnection(cli);
   console.log(`Isolated product: ${fixture.urls.product}`);
-  console.log(`Isolated lab relay: ${fixture.urls.lab}`);
-  console.log(fixture.report.productGateway.configured
-    ? `Product Gateway configured; role contract: ${fixture.report.productGateway.role.status}.`
-    : fixture.report.productSpeechRelay.configured
-      ? `Product speech relay configured; role contract: ${fixture.report.productSpeechRelay.role.status}.`
+  console.log(`Isolated Next Eventstudio: ${fixture.urls.lab}`);
+  console.log(fixture.report.productSpeechRelay.configured
+    ? `Product speech relay configured; role contract: ${fixture.report.productSpeechRelay.role.status}.`
+    : fixture.report.productGateway.configured
+      ? `Product Gateway configured; role contract: ${fixture.report.productGateway.role.status}.`
       : `Product speech transport is not configured; direct Gateway missing ${[
       !fixture.report.productGateway.baseUrlPresent && 'OPENCLAW_BASE_URL',
       !fixture.report.productGateway.gatewayCredentialPresent && 'OPENCLAWAPI_KEY',
