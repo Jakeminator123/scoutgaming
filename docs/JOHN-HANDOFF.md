@@ -1,4 +1,26 @@
-## 2026-09-25 — Båda OpenClaw-labbtjänsterna driftsatta; separat speech-nyckel återstår
+## 2026-09-25 — OpenClaw-spelarchatt verifierad; extra alias-spärr borttagen
+
+Ny sparad speech-token aktiverades genom Director-deploy
+`dep-dar8aibtqb8s73ftoat0` av samma godkända `113dfd8`. Gateway oförändrad.
+Riktiga modellprov gav 200 för generatedText, recordedLine och silence.
+Native-chatten på 4196 svarade med exakt rätt kort på två boxar; även Nexts
+separata operatörschatt på 4197 gav provider responded. Behörighetsgränsen
+verifierades med status/speech: rätt token godtas, fel rolltoken/anonym nekas.
+
+Användaren vill inte ha vår extra startspärr mot tokenalias. Den är borttagen
+och pushad i `d570770`; befintlig autentisering och endpointgräns behålls.
+129/129 OpenClaw-tester passerade. Produkt-/posesviten hade ett första
+engångsfel men gav därefter 25/25 i sex samlade omkörningar; felets orsak är
+inte fastställd. Se [driftkvittots uppföljning](../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-25.md)
+för konkret runtimebevis och avgränsningar.
+
+4196/4197 lämnades igång för användarens fortsatta prov med syntetisk
+tempdatabas. 4192/4194 är fortfarande offline och orörda. Neutral bild och
+webbläsar-TTS används för generatedText; genererad lipsync är inte inkopplad.
+Inga media, riktiga spelardatabaser eller befintliga OpenAI-inställningar
+ändrades. De tre tidigare privata/untracked filerna lämnades orörda.
+
+## 2026-09-25 — Båda OpenClaw-labbtjänsterna driftsatta; separat speech-nyckel återstod
 
 Efter uttryckligt godkännande driftsattes exakt `113dfd8` på befintliga Render
 Gateway och Director. Båda visade Live. Runtimepaket `2026-09-25.1`, installerad

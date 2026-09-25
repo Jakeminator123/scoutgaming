@@ -1,8 +1,10 @@
 # Produktchatten: separat OpenClaw-roll och privat transport
 
-Status 2026-09-25: **Gateway och Director driftsatta på `113dfd8`; positivt
-produktchattprov blockerat av felaktig nyckelaliasering**. Användarens lokala
-speech-token matchar Gateway-nyckeln och måste ersättas med en separat nyckel.
+Status 2026-09-25: **Gateway och Director kör `113dfd8`; modellprov och faktisk
+native-spelarchatt är verifierade efter inläsning av användarens nya token**.
+Den extra alias-startspärren från `269a797` togs bort på användarens begäran i
+`d570770`. Autentisering och den befintliga gränsen mellan labb- och
+produktendpoint är kvar. Genererad läppsynk är inte inkopplad.
 Se [aktuellt driftkvitto och kvarvarande verifiering](DEPLOYMENT-RECEIPT-2026-09-25.md).
 Nedan bevaras kontraktet och driftplanen; alla steg är inte färdigverifierade.
 
@@ -152,9 +154,13 @@ en omstart före ny revision/hemlighet skulle bara starta gammalt beteende igen.
 
 1. Merg:a den granskade work-committen. Ändra inte `main` och använd repoets
    spegelhelper för en godkänd push.
-2. Skapa en ny slumpmässig `OPENCLAW_PRODUCT_SPEECH_TOKEN`. Den ska vara unik,
-   får inte vara `LAB_API_TOKEN`, `OPENCLAWAPI_KEY` eller modellnyckeln och får
-   inte läggas i Git, URL eller webbläsarkod.
+2. Använd samma `OPENCLAW_PRODUCT_SPEECH_TOKEN` i Director och den betrodda
+   produktservern. En separat slumpnyckel rekommenderas för att hålla
+   behörigheter och rotation isär; det är inte ett generellt förbud mot
+   tokenåteranvändning. Den extra startspärren mot Gateway-/modellnyckelalias
+   är borttagen. Befintligt endpointskydd kräver fortfarande att produkt-token
+   skiljer sig från `LAB_API_TOKEN`, så att den inte ger studioåtkomst.
+   Hemligheten får inte läggas i Git, URL eller webbläsarkod.
 3. Lägg hemligheten endast i Director-processen och den betrodda produktprocess
    som ska nå adaptern. Sätt produktens `OPENCLAW_PRODUCT_SPEECH_URL` till
    Directors exakta bara HTTPS-origin och
