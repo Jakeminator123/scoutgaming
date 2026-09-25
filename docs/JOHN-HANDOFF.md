@@ -1,3 +1,46 @@
+## 2026-09-26 — Lissabon: levande observation, spelresultat och idle-reaktioner
+
+På Jakobs begäran har Web/Lab-paret startats om. Osparade idleändringar
+upptäcktes i den gamla fliken och sparades först: cheek och glance är nu
+OpenClaw-val utöver insulted; blink är fortfarande automatisk. Det visade
+`Failed to fetch` sammanföll med stoppad lokal server under omstarten.
+
+Lissabon använder nu bara originalflikens native-observation, inte SSE för
+den syntetiska launch-spelaren. Det tar bort det missvisande transportfelet.
+150-radersvisningen är en ringbuffert; återkommande samma idle-kvitton
+komprimeras bara på skärmen. Det tidigare 300-postersprotokollet frös på
+gränsen: Lissabon har nu ett rullande 300/4 MiB-fönster med explicit lucka,
+antal bortfall och versionsgolv i exporten. Hela eventlistor behålls, nya
+meddelanden fortsätter. Avancerade/importerade observationer behåller sin
+befintliga stoppgräns. Reset behåller versionerna och nollställer idlefiltret.
+
+Produktchatten får i Lissabon en separat, allowlistad `playResults` från
+den valda profilens serverbokföring. Avslutade/collected rundor summeras
+per valuta: positiva och negativa rundnetton, insats, återbetalning och netto.
+Insättningar, startkredit, valutaväxling, gamla klient-syncar och andra profiler
+ingår inte. Pågående insats särredovisas. Underlaget gäller sparad demoprofil
+över besök/dealers, inte bara aktuell flik. Inga privata kort eller råa
+transaktioner lämnas till modellen. Ingen databas ändras av sammanställningen.
+
+Director får en Astrid renderer-idle-regel: normal fråga → normalt neutral
+baseline; insulted bara vid tydlig, aktuell förolämpning riktad mot Astrid.
+Prioritet ensam motiverar ingen reaktion; tidigare förolämpningar följer inte
+med. Cheek/glance är valfria sociala reaktioner, inte obligatorisk svarsinledning.
+
+Första språkdeployen `dae797c6` är Live i Render, deploy
+`dep-dareq5h42hec73aevdpg`. Riktigt prov gav svenska på uttrycklig begäran
+(7,04 s till tal), men nästa vanliga svenska fråga blev också svenska
+(13,06 s). Därför skärps språkregeln och en separat serverägd språkpolicy
+läggs intill modellindatan. Resultat-/reaktionsreglerna och denna skärpning
+behöver ny Director-deploy; slutliga livekvitton följer efter den.
+
+Verifierat hittills: Lab 472 tester och produktionsbygge; nya isolerade
+resultat-/HTTP-/relay-/idle-tester 50/50; alla pre-commit-kontroller och
+dealer-audit `--probe`. OpenClaw 135/136 i parallellkörning: befintligt
+10 ms batchbudgettest hann inte börja sitt enda modellförsök under lasten.
+Hela den berörda serverfilens 16 tester passerade vid separat omkörning.
+Inga medier ändrade eller visuellt nygodkända. Jira-åtkomst saknas i sessionen.
+
 ## 2026-09-25 — Astrids standardspråk: engelska
 
 På Jakobs begäran får Astrids produkt-speech-anrop en serverägd språkregel:

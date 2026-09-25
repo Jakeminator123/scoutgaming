@@ -22,6 +22,25 @@ export function appendActivity(entries, entry) {
   return [...entries, { ...entry, data: safeActivityData(entry.data) }].slice(-ACTIVITY_LIMIT);
 }
 
+// Keep the first real receipt of each idle state on screen. The full bounded
+// observation trace still receives every event, including repeated loops.
+export function createIdleLogFilter() {
+  let media = null; const states = new Set();
+  const keep = record => {
+    const data = record.data ?? {};
+    if (record.kind !== 'playback' || data.event !== 'idle' || typeof data.mediaId !== 'string') {
+      if (['playback', 'chat', 'round', 'state'].includes(record.kind) || data.state === 'attached') { media = null; states.clear(); }
+      return true;
+    }
+    if (media !== data.mediaId) { media = data.mediaId; states.clear(); }
+    if (!['start', 'presented', 'end', 'completed'].includes(data.state)) return true;
+    if (states.has(data.state)) return false;
+    states.add(data.state); return true;
+  };
+  keep.reset = () => { media = null; states.clear(); };
+  return keep;
+}
+
 export function decisionAttribution(mode, reason, provider) {
   if (mode === 'off') return 'Labbets standardval';
   if (mode === 'rules') return 'Lokal regelmotor';

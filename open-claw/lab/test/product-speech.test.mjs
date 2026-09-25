@@ -82,6 +82,7 @@ test('Astrid gets an English default with explicit language requests preserved a
       assert.equal(system.includes('Astrid replies in English by default'), dealerId === 'astrid');
       if (dealerId === 'astrid') assert.match(system, /explicit request.*another language.*allowed conversational preference/s);
       assert.equal(JSON.parse(body.messages[1].content).request.message, input.request.message);
+      assert.equal(JSON.parse(body.messages[1].content).replyLanguagePolicy?.default, dealerId === 'astrid' ? 'English' : undefined);
       assert.equal(system.includes(input.request.message), false);
       return JSON.stringify(silence(input));
     } });

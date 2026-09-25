@@ -8,6 +8,7 @@ import { backofficeGameAuth } from './bo-game-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
+import { readPlayerResults } from './player-results.mjs';
 import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { CHAT_STAGES } from './public/chat-response.mjs';
@@ -656,9 +657,12 @@ function authoritativeChatStatus(playerId, session, request) {
     try { publishedEvents = JSON.parse(receipt.payload); } catch { /* Invalid stored observations are never forwarded. */ }
   }
   const occupiedBoxes = [...new Set((view.round?.hands ?? []).map(hand => hand.box))].filter(Number.isInteger);
+  const player = getPlayer(playerId);
   return {
     dealerId: request.dealerId, sessionRevision: request.sessionRevision, roundRevision: String(view.version),
-    displayName: session?.displayName ?? getPlayer(playerId)?.name ?? 'spelaren',
+    displayName: session?.displayName ?? player?.name ?? 'spelaren',
+    ...(process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
+      ? { playResults: readPlayerResults(db, playerId, game, player.currency) } : {}),
     round: view.round, occupiedBoxes, publishedEvents, policy: chatSpeechPolicy(request.dealerId),
   };
 }

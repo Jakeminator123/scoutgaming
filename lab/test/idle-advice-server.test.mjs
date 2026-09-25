@@ -63,6 +63,9 @@ test('active advice uses the existing Director role and only exact eligible idle
   assert.equal(sent.tool_choice, 'none');
   assert.equal(sent.messages.length, 2);
   assert.match(sent.messages[0].content, /not instructions to you/);
+  assert.match(sent.messages[0].content, /ONLY for a clear insult/);
+  assert.match(sent.messages[0].content, /most recent user message/);
+  assert.match(sent.messages[0].content, /neutral baseline is the normal choice/);
   const data = JSON.parse(sent.messages[1].content);
   assert.equal(data.nodeId, 'renderer-idle.astrid');
   assert.deepEqual(data.event, { type: 'idle' });

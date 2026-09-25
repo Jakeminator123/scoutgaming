@@ -146,6 +146,10 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   assert.equal(serialized.includes('clip'), false);
   assert.equal(projection.displayName, 'Product preview');
   if (lissabon) assert.deepEqual(projection.allowedSpeech.recordedLines, []);
+  if (lissabon) {
+    assert.deepEqual(projection.playResults.currencies, [{ currency:'USD', rounds:0, won:0, lost:0, net:0, wagered:0, returned:0 }]);
+    assert.equal(projection.playResults.currentRound.wagered, 5);
+  } else assert.equal(projection.playResults, undefined);
   // A shuffled opening can settle immediately (for example natural blackjack),
   // legitimately revealing the hole card and sometimes drawing further cards.
   // Compare exact public cards, not a fixed count for an assumed round phase.
@@ -389,6 +393,20 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       assert.equal((await client.get('/api/chat/memory?dealer=astrid')).history[0].text, 'Beta gillar segling.');
       assert.equal((await client.post('/api/player', {})).name, 'Beta');
     } finally { release.resolve(); beforeRespond = null; await active.catch(() => {}); }
+  });
+  if (lissabon) await t.test('results come from committed rounds and ignore browser claims and deposits', async () => {
+    const { client, state: initial } = await guest();
+    const command = (view, op, fields = {}) => client.post('/api/table', { op, version:view.version, requestId:crypto.randomUUID(), ...fields });
+    let view = await command(initial, 'start', { bets:[{ main:5, pp:0, tp:0 }, ...Array.from({length:6}, () => ({main:0,pp:0,tp:0}))] });
+    if (view.round.phase === 'insurance') view = await command(view, 'insurance', { take:false });
+    while (view.round.phase === 'decisions') view = await command(view, 'act', { action:'stand' });
+    const returned = view.round.hands.reduce((sum, hand) => sum + hand.result + hand.sideReturn, 0);
+    view = await command(view, 'collect');
+    await client.post('/api/deposit', { amount:500 });
+    await client.post('/chat', chat(view, { message:'My results?', playResults:{ won:999999 }, playerId:'other-player' }));
+    assert.deepEqual(envelope().status.playResults.currencies, [{ currency:'USD', rounds:1,
+      won:Math.max(0, returned-5), lost:Math.max(0, 5-returned), net:returned-5, wagered:5, returned }]);
+    assert.equal(envelope().status.playResults.currentRound, null);
   });
   assert.equal(poisonRequests, 0, 'parent relay, Gateway and provider settings never reach the child fixture');
 });
