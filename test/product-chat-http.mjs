@@ -36,7 +36,8 @@ test('product /chat sends only the server-owned public projection to OpenClaw', 
     cwd: web,
     env: { ...process.env, HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory,
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
-      OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat' },
+      OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat',
+      OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   t.after(async () => {
@@ -69,7 +70,7 @@ test('product /chat sends only the server-owned public projection to OpenClaw', 
   assert.equal(captured.length, 1);
   assert.equal(captured[0].url, '/v1/chat/completions');
   assert.equal(captured[0].authorization, 'Bearer isolated-test-gateway-key');
-  assert.equal(captured[0].body.model, 'openclaw/croupier-chat');
+  assert.equal(captured[0].body.model, 'openclaw/croupier-speech');
   assert.equal(captured[0].body.tool_choice, 'none');
   const projection = JSON.parse(captured[0].body.messages.at(-1).content).status;
   const serialized = JSON.stringify(projection);

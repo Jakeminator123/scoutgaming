@@ -35,7 +35,7 @@ async function privateFixture(t, values) {
   return path;
 }
 
-test('private configuration reports presence and role conflicts without exposing credential values', async t => {
+test('private configuration reports the dedicated speech role without exposing credential values', async t => {
   const gatewaySecret = 'fixture-gateway-secret-do-not-print';
   const providerSecret = 'fixture-provider-secret-do-not-print';
   const directorSecret = 'fixture-director-secret-do-not-print';
@@ -48,7 +48,7 @@ test('private configuration reports presence and role conflicts without exposing
   assert.equal(report.labDirector.configured, true);
   assert.equal(report.credentials.gatewayAndModelDistinct, true);
   assert.equal(report.credentials.modelProviderForwardedToLocalChildren, false);
-  assert.equal(report.productGateway.role.status, 'conflict');
+  assert.equal(report.productGateway.role.status, 'expected');
   assert.equal(configuration.modelKey, undefined);
   assert.ok(!JSON.stringify(configuration).includes(gatewaySecret));
   assert.ok(!JSON.stringify(configuration).includes(directorSecret));
@@ -69,6 +69,8 @@ test('child environments separate credentials, empty provider settings and use d
   assert.equal(specs.product.env.CROUPIER_DATA_DIR, join(directory, 'product'));
   assert.equal(specs.lab.env.LAB_DATA_DIR, join(directory, 'lab-relay'));
   assert.equal(specs.product.env.OPENCLAWAPI_KEY, 'fixture-gateway-only');
+  assert.equal(specs.product.env.OPENCLAW_SPEECH_AGENT, 'openclaw/croupier-speech');
+  assert.equal(specs.product.env.OPENCLAW_CHAT_AGENT, 'openclaw/croupier-chat');
   assert.equal(specs.product.env.LAB_REMOTE_TOKEN, '');
   assert.equal(specs.lab.env.OPENCLAWAPI_KEY, '');
   assert.equal(specs.lab.env.LAB_REMOTE_TOKEN, 'fixture-director-only');
@@ -80,13 +82,35 @@ test('child environments separate credentials, empty provider settings and use d
   }
 });
 
+test('isolated product can receive only the narrow Director speech credential', async t => {
+  const productSpeechSecret = 'fixture-product-speech-only';
+  const file = await privateFixture(t, {
+    OPENCLAW_PRODUCT_SPEECH_URL: 'https://director.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: productSpeechSecret,
+    OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', LAB_REMOTE_URL: 'https://director.example.test',
+    LAB_REMOTE_TOKEN: 'fixture-lab-director-only',
+  });
+  const { configuration, report } = loadPrivateConnection({ envFiles: [file], env: {} });
+  assert.equal(report.productGateway.configured, false);
+  assert.equal(report.productSpeechRelay.configured, true);
+  assert.equal(report.productSpeechRelay.role.status, 'expected');
+  assert.equal(JSON.stringify(report).includes(productSpeechSecret), false);
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-openclaw-relay-spec-test-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const specs = childSpecifications(configuration, directory, { productPort: 4196, labPort: 4197 });
+  assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_URL, 'https://director.example.test');
+  assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, productSpeechSecret);
+  assert.equal(specs.product.env.OPENCLAWAPI_KEY, '');
+  assert.equal(specs.lab.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, '');
+  assert.equal(JSON.stringify([specs.product.command, ...specs.product.args]).includes(productSpeechSecret), false);
+});
+
 test('read-only probes distinguish configured, reachable and model-not-run states', async t => {
   const gatewaySecret = 'fixture-gateway-probe';
   const directorSecret = 'fixture-director-probe';
   const gateway = await httpFixture(t, (request, response) => {
     assert.equal(request.headers.authorization, `Bearer ${gatewaySecret}`);
     response.writeHead(200, { 'Content-Type': 'application/json' });
-    response.end(JSON.stringify({ data: [{ id: 'openclaw/croupier-chat' }] }));
+    response.end(JSON.stringify({ data: [{ id: 'openclaw/croupier-speech' }] }));
   });
   const director = await httpFixture(t, (request, response) => {
     if (request.url === '/api/status') assert.equal(request.headers.authorization, `Bearer ${directorSecret}`);
@@ -113,7 +137,7 @@ test('launcher starts isolated product and lab relay without using real database
     response.end(JSON.stringify(request.url === '/healthz' ? { ok: true } : { service: 'fixture-director', provider: { configured: true }, remote: { configured: false } }));
   });
   const file = await privateFixture(t, { OPENCLAW_BASE_URL: gateway, OPENCLAWAPI_KEY: gatewaySecret,
-    OPENCLAW_CHAT_AGENT: 'openclaw/croupier-speech-fixture', LAB_REMOTE_URL: director, LAB_REMOTE_TOKEN: directorSecret });
+    OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', LAB_REMOTE_URL: director, LAB_REMOTE_TOKEN: directorSecret });
   const productPort = await freePort(), labPort = await freePort();
   const fixture = await startIsolatedConnection({ envFiles: [file], env: {}, productPort, labPort });
   t.after(() => fixture.stop());
@@ -157,6 +181,7 @@ test('launcher refuses shared ports and its child guard blocks env reads and unr
 test('launcher refuses to connect product traffic to a known conflicting role', async t => {
   const file = await privateFixture(t, {
     OPENCLAW_BASE_URL: 'http://127.0.0.1:18789', OPENCLAWAPI_KEY: 'fixture-gateway-conflict',
+    OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-chat',
     LAB_REMOTE_URL: 'http://127.0.0.1:4189', LAB_REMOTE_TOKEN: 'fixture-director-conflict',
   });
   const productPort = await freePort(), labPort = await freePort();

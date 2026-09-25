@@ -30,6 +30,43 @@ endast dess temporära demosession nollställdes. Andra agentens samtidiga
 OpenClaw-kod och användarens tre tidigare untracked filer lämnas utanför commit.
 Jira/CAC-status har inte ändrats. Tidigare läppsynk-/integrationsluckor kvarstår.
 
+## 2026-09-25 — Separat verktygslös produktroll för OpenClaw-tal
+
+Produktchatten använder nu den nya, avgränsade rollen
+`openclaw/croupier-speech`; operatörsrollen `openclaw/croupier-chat` behåller sin
+tidigare innebörd. Talrollen har eget workspace/agentDir, inga skills, heartbeat
+eller verktyg och samma primära OpenAI-modell som den befintliga installationen.
+Gateway-planeringen avvisar drift i modell, verktygspolicy eller delad roll-state
+i stället för att skriva över den. Runtimepaketets manifest är
+`2026-09-25.1` och innehåller fem roller.
+
+Produktens befintliga serverägda projektion och enda talkö är bevarade. Det
+strikta kontraktet är fortfarande `recordedLine`/`generatedText`/`silence` med
+request-, dealer-, session- och rundrevisioner. Produktrollen får bara publik,
+allowlistad spelstatus; identitet, pengar, framtida shoe och skyddat hålkort
+stannar på servern. Opak spelaridentitet och samma spelares flera boxar bevaras.
+Visningsnamn och chatt behandlas som otrusted data. Svar och chattrad hålls till
+kvitterad verklig standard-idle, och väntande tal kan inte blockera deal.
+
+Direkt laptop→privat Gateway kräver en privat Gateway-URL som inte finns i den
+nuvarande miljön. Den rekommenderade vägen är därför den nya smala Director-
+adaptern `POST /api/product/speech`, med en separat token som inte får vara
+`LAB_API_TOKEN`. Adaptern godtar bara det validerade produktkontraktet, kräver
+exakt talroll, deduplicerar request-ID och ger inte åtkomst till status, studio
+eller Gatewayens generella `/v1`. Next Eventstudio fortsätter separat över
+`LAB_REMOTE_URL` och `/api/studio/*`; endast native-servern under `web/` ska få
+produktens speech-URL/token. Full drift- och säkerhetsplan finns i
+`open-claw/lab/docs/PRODUCT-SPEECH-DEPLOYMENT-SV.md`.
+
+Verifierat: 127/127 OpenClaw-labbtester och hela Git for Windows-pre-commit
+passerar. Regressionerna täcker fel roll, samtliga revisioner, saknad/halv
+transport, timeout, dubbelsvar/konflikt, promptinjektion, autentiseringsgräns,
+opak identitet, flera boxar och att deal inte deadlockas av väntande tal.
+Ingen nyckel, Render-konfiguration, publik proxy, körande Gateway, port 4192/4194,
+mediefil eller eventstudiofil ändrades. Ingen Gatewayomstart eller redeploy
+gjordes; den nya rollen och adaptern är lokal kod tills den uttryckliga planen
+godkänns och körs. Jira/CAC-status ändrades inte.
+
 ## 2026-09-25 — Eventstudion använder nu de exakta videomapparna i verklig uppspelning
 
 Uppföljning av `9f55d66`: manifestets exakta resolver fanns men var inte kopplad

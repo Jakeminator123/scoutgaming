@@ -10,6 +10,7 @@ import { askDirector, chatWithDirector, providerStatus, boundedJson, GatewayErro
 import { createDashboardProxy } from './dashboard-proxy.mjs';
 import { normalizeSocialInput, socialChat, validateSocialReply } from './social.mjs';
 import { createCompanionService, normalizeCompanionRequest } from './companion.mjs';
+import { createProductSpeechService, PRODUCT_SPEECH_AGENT, PRODUCT_SPEECH_PATH } from './product-speech.mjs';
 
 const SOURCE_TYPES = ['speak', 'deal', 'reveal', 'settle', 'turn', 'idle'];
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
@@ -32,7 +33,7 @@ async function bodyJson(req) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
   catch { throw new GatewayError('invalid_json', 400); }
 }
-function guard(req, settings) {
+function guard(req, settings, { token = settings.apiToken, productSpeech = false } = {}) {
   const local = isLoopback(settings.host);
   let requestHost;
   try { requestHost = new URL(`http://${req.headers.host}`).hostname; } catch { throw new GatewayError('invalid_host', 403); }
@@ -44,8 +45,8 @@ function guard(req, settings) {
   }
   if (req.headers['sec-fetch-site'] === 'cross-site') throw new GatewayError('foreign_origin', 403);
   if (!local) {
-    if (!settings.apiToken) throw new GatewayError('public_service_requires_lab_api_token', 503);
-    if (!equal(req.headers.authorization || '', `Bearer ${settings.apiToken}`)) throw new GatewayError('unauthorized', 401);
+    if (!token || (productSpeech && token === settings.apiToken)) throw new GatewayError(productSpeech ? 'product_speech_not_configured' : 'public_service_requires_lab_api_token', 503);
+    if (!equal(req.headers.authorization || '', `Bearer ${token}`)) throw new GatewayError('unauthorized', 401);
   }
 }
 
@@ -85,6 +86,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   let activeChat = 0;
   let activeSocialChat = 0;
   let companion;
+  const productSpeech = createProductSpeechService({ settingsProvider, fetchImpl });
   const decide = async (raw, settings, deadlineAt = Infinity) => {
     const input = normalizeInput(raw);
     const catalog = await store.load();
@@ -134,7 +136,8 @@ export async function createLabServer({ settings: settingsProvider = readSetting
       if (path === '/healthz' && req.method === 'GET') return respond(res, 200, { ok: true, service: 'croupier-openclaw-lab' });
       // Auth follows the actual listener, even when .env changes before a restart.
       const settings = { ...settingsProvider(), host: initial.host };
-      guard(req, settings);
+      guard(req, settings, path === PRODUCT_SPEECH_PATH
+        ? { token: settings.speechToken, productSpeech: true } : undefined);
       if (path.startsWith('/api/')) {
         const rateKey = req.socket.remoteAddress;
         const now = Date.now();
@@ -148,10 +151,15 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           '/api/studio/advice': ['POST'], '/api/studio/chat': ['POST'],
           '/api/studio/social-chat': ['POST'],
           '/api/studio/companion': ['POST'],
+          [PRODUCT_SPEECH_PATH]: ['POST'],
         };
         if (!allowed[path]) throw new GatewayError('not_found', 404);
         if (!allowed[path].includes(req.method)) throw new GatewayError('method_not_allowed', 405);
         let body = ['POST', 'PUT'].includes(req.method) ? await bodyJson(req) : undefined;
+        if (path === PRODUCT_SPEECH_PATH) {
+          if (settings.remoteUrl) throw new GatewayError('product_speech_relay_not_supported', 503);
+          return respond(res, 200, await productSpeech.handle(body));
+        }
         if (settings.remoteUrl && path !== '/api/scenarios') {
           if (path === '/api/studio/companion') body = normalizeCompanionRequest(body);
           else if (path === '/api/studio/social-chat') body = normalizeSocialInput(body);
@@ -169,7 +177,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           if (path === '/api/status') data.remote = { configured: true, status: 'connected' };
           return respond(res, 200, data);
         }
-        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', 'studio-social-chat-v1', ...(settings.companionEnabled !== false ? ['studio-companion-v1'] : [])] });
+        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', 'studio-social-chat-v1', ...(settings.companionEnabled !== false ? ['studio-companion-v1'] : []), ...(settings.speechToken && settings.speechToken !== settings.apiToken && settings.speechAgent === PRODUCT_SPEECH_AGENT ? ['product-speech-v1'] : [])] });
         if (path === '/api/studio/companion') {
           companion ??= createCompanionService({ directory: initial.dataDir, settings: settingsProvider, fetchImpl });
           return respond(res, 200, await companion.handle(body));

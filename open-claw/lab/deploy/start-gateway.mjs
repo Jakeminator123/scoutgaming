@@ -108,9 +108,11 @@ export async function prepareGatewayConfig(env, {
   try {
     await writeFile(candidate, `${JSON.stringify(plan.config, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
     await validateConfig(candidate, gatewayEnv);
-    if (plan.action === 'seed' || plan.action === 'migrate-legacy' || plan.action === 'reconcile-social') {
-      const agents = plan.action === 'reconcile-social'
-        ? [plan.config.agents.entries['croupier-social']] : Object.values(plan.config.agents.entries);
+    if (['seed', 'migrate-legacy', 'reconcile-social', 'reconcile-speech', 'reconcile-roles'].includes(plan.action)) {
+      const agents = plan.action === 'reconcile-social' ? [plan.config.agents.entries['croupier-social']]
+        : plan.action === 'reconcile-speech' ? [plan.config.agents.entries['croupier-speech']]
+          : plan.action === 'reconcile-roles' ? [plan.config.agents.entries['croupier-social'], plan.config.agents.entries['croupier-speech']]
+            : Object.values(plan.config.agents.entries);
       for (const agent of agents) {
         await mkdir(agent.workspace, { recursive: true, mode: 0o700 });
         await mkdir(agent.agentDir, { recursive: true, mode: 0o700 });
@@ -123,8 +125,9 @@ export async function prepareGatewayConfig(env, {
       if (await readExistingConfig(configPath) !== original) {
         throw new Error('OpenClaw configuration changed during startup; refusing to overwrite it. Restart after the other writer finishes.');
       }
-      if (['migrate-legacy', 'reconcile-ownership', 'reconcile-social'].includes(plan.action)) {
-        const suffix = { 'migrate-legacy': 'pre-dashboard-migration', 'reconcile-ownership': 'pre-ownership-migration', 'reconcile-social': 'pre-social-migration' }[plan.action];
+      if (['migrate-legacy', 'reconcile-ownership', 'reconcile-social', 'reconcile-speech', 'reconcile-roles'].includes(plan.action)) {
+        const suffix = { 'migrate-legacy': 'pre-dashboard-migration', 'reconcile-ownership': 'pre-ownership-migration',
+          'reconcile-social': 'pre-social-migration', 'reconcile-speech': 'pre-speech-migration', 'reconcile-roles': 'pre-role-migration' }[plan.action];
         backupPath = `${configPath}.${suffix}.bak`;
         try { await preserveConfigBackup(backupPath, original); } catch {
           throw new Error('Could not safely preserve the Gateway configuration backup. No configuration was replaced.');

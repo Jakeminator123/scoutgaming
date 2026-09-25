@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
-  "version": "2026-09-21.2",
+  "version": "2026-09-25.1",
   "openclawVersion": "2026.9.5",
   "roles": {
     "croupier-director": ["roles/croupier-director.md"],
     "croupier-chat": ["roles/croupier-chat.md", "knowledge/croupier-model.md", "knowledge/openclaw-sources.md"],
     "croupier-operator": ["roles/croupier-operator.md", "knowledge/croupier-model.md", "knowledge/openclaw-sources.md"],
-    "croupier-social": ["roles/croupier-social.md"]
+    "croupier-social": ["roles/croupier-social.md"],
+    "croupier-speech": ["roles/croupier-speech.md"]
   }
 }

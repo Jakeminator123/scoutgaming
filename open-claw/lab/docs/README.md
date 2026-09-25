@@ -16,6 +16,7 @@ versionen eller sakfrågan kräver det.
 
 - [Officiella källor och lokala konfigurationsfiler](OPENCLAW-DOCS.md)
 - [Verifierad lokal anslutning, isolerad start och kvarvarande produktblockerare](LOCAL-CONNECTION-SV.md)
+- [Separat produkt-speech-roll, säkerhetsgräns och exakt driftplan](PRODUCT-SPEECH-DEPLOYMENT-SV.md)
 - [Starta på Render](RENDER-START-SV.md)
 - [Logga in i OpenClaws egen dashboard](DASHBOARD-SV.md)
 - [Teknisk drift och nycklar](DEPLOYMENT.md)

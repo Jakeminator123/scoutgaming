@@ -54,6 +54,7 @@ test('exact legacy migration keeps a private backup and does not alter workspace
   old.gateway.controlUi = { enabled: false };
   delete old.agents.entries['croupier-operator'];
   delete old.agents.entries['croupier-social'];
+  delete old.agents.entries['croupier-speech'];
   delete old.agents.defaults;
   delete old.talk;
   old.tools.deny = ['*'];
@@ -101,6 +102,23 @@ test('adding the social role preserves existing agents and retains the pre-socia
   assert.equal(await readFile(result.backupPath, 'utf8'), original);
   for (const [id, agent] of Object.entries(existing.agents.entries)) assert.deepEqual(result.config.agents.entries[id], agent);
   assert.deepEqual(result.config.models, existing.models);
+  assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
+});
+
+test('adding the speech role preserves operator chat and retains the pre-speech config', async (t) => {
+  const env = await fixture(t);
+  const existing = gatewayConfig(env);
+  delete existing.agents.entries['croupier-speech'];
+  existing.agents.entries['croupier-chat'].name = 'Hand-edited lab chat';
+  const original = JSON.stringify(existing);
+  await writeFile(env.OPENCLAW_CONFIG_PATH, original);
+  const result = await prepareGatewayConfig(env, { validateConfig: validateFixture });
+  assert.equal(result.action, 'reconcile-speech');
+  assert.ok(result.backupPath.endsWith('.pre-speech-migration.bak'));
+  assert.equal(await readFile(result.backupPath, 'utf8'), original);
+  assert.deepEqual(result.config.agents.entries['croupier-chat'], existing.agents.entries['croupier-chat']);
+  assert.deepEqual(result.config.models, existing.models);
+  assert.deepEqual(result.config.agents.entries['croupier-speech'].tools.deny, ['*']);
   assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
 });
 
