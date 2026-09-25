@@ -4,12 +4,13 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const response = await fetch('/api/presentation/config', { cache: 'no-store' });
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
-  let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = 'off', presentationKind = null;
+  let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null;
   const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status'); host.append(status);
   const control = document.createElement('select'); control.setAttribute('aria-label', 'Klippval');
   for (const [value, text] of [['off','Standard'],['rules','Regler'],['random','Slump'],['active','OpenClaw'],['shadow','OpenClaw · skugga']]) {
     const option = document.createElement('option'); option.value = value; option.textContent = text; control.append(option);
   }
+  control.value = mode;
   control.className = 'local-presentation-mode'; host.append(control);
   const idle = createLiveIdleController({ policy: config.idlePolicy, inventory: config.inventory, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });

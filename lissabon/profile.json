@@ -1,0 +1,9 @@
+{
+  "id": "lissabon-stream-lane",
+  "dealer": "astrid",
+  "productPort": 4200,
+  "labPort": 4201,
+  "generatedSpeech": true,
+  "presentation": "local",
+  "sourceCommit": "e46bc8b8fd095d8c6eef769095e240616e8ee16a"
+}

@@ -187,7 +187,7 @@ test('launcher starts isolated native and the real Next Eventstudio without usin
   assert.equal((await fetch(fixture.urls.product + '/')).status, 200);
   const studioHealth = await fetch(fixture.urls.lab + '/api/health');
   assert.equal(studioHealth.status, 200);
-  assert.deepEqual(await studioHealth.json(), { ok: true, service: 'croupier-next-studio', localOnly: true });
+  assert.deepEqual(await studioHealth.json(), { ok: true, service: 'croupier-next-studio', localOnly: true, streamLane: null });
   const project = await fetch(fixture.urls.lab + '/api/project');
   assert.equal(project.status, 200);
   assert.equal((await project.json()).status.provider, 'render-relay');

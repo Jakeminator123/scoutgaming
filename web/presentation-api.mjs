@@ -56,7 +56,8 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       }
       if (pathname === '/api/presentation/config' && req.method === 'GET') {
         const [project, inventory] = await Promise.all([store.load(), loadVideoRegistry(registryOptions)]);
-        json(200, { owner: 'web', revision: project.revision, idlePolicy: project.idlePolicy, inventory }); return true;
+        json(200, { owner: 'web', revision: project.revision, idlePolicy: project.idlePolicy, inventory,
+          defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
       }
       if (!['/api/presentation/select', '/api/presentation/idle-advice'].includes(pathname) || req.method !== 'POST') fail('Unknown presentation endpoint', 404);
       let raw = '';
