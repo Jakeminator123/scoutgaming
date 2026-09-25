@@ -1,5 +1,24 @@
 ## 2026-09-26 — Lissabon: levande observation, spelresultat och idle-reaktioner
 
+Liveuppföljning: Director `b22731f0`, deploy `dep-darevr60tbcc73basu9g`,
+accepterar resultatkontraktet. Jakob-profilens fyra avslutade USD-rundor har
+vunnit 10, förlorat 10, netto 0, insatt/återbetalt 20; pågående insats 5.
+Frågan "Hur mycket har jag vunnit och förlorat? Svara kort." gav exakt dessa
+vinst-/förlust-/nettosiffror och neutral idle (`videoId:null`, responded).
+Talstart 29,826 s: text 1,840 s, röst 0,821 s, videokö 15,368 s,
+rendering/hämtning 11,398 s. Detta prov bekräftar varierande faktisk videokö.
+Direkt förolämpning gav insulted `921ae71d-11fa-01ec-f78a-b9ef7d8d7689`
+och talstart 6,392 s. Den löpande loggen observerades fortsätta vid 300 poster
+med 193 redovisade äldre bortfall och utan larm. OpenClaw 136/136 passerar
+även som hel svit vid omkörning.
+
+Engelsk standard följdes fortfarande inte av talmodellen trots API-regeln.
+Den aktiva talrollens AGENTS/SOUL/USER saknade språkregel (läsande kontroll,
+inga konton/nycklar ändrade). Regeln läggs därför även i det versionshanterade
+runtimepaketets croupier-speech-roll, villkorad på Astrid. Paketversion
+2026-09-26.1, 26 runtime-/starttester passerar; behöver Gateway-deploy och
+nytt riktigt språkprov innan engelskan kan kvitteras.
+
 På Jakobs begäran har Web/Lab-paret startats om. Osparade idleändringar
 upptäcktes i den gamla fliken och sparades först: cheek och glance är nu
 OpenClaw-val utöver insulted; blink är fortfarande automatisk. Det visade
