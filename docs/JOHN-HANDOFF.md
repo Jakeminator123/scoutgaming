@@ -1,3 +1,35 @@
+## 2026-09-25 — Läsbar, kompakt idleeditor och avgränsat wikiuppdrag
+
+Idleeditorns felaktiga ljusa `--surface`-reservtema är ersatt med labbets
+befintliga mörka färgtokens. Arbetsytan har maxbredd 1120 px, kompaktare
+variantkort och en separat sticky videoförhandsvisning på breda skärmar.
+Smalare skärmar får en kolumn. Preview bevarar originalets bildformat och
+förklarar att stående källvideo inte är ett separat mobilläge. Inga MP4-filer,
+manifest, schemapolicys, playbackbeslut eller OpenClaw-konfiguration ändrades.
+
+Verifierat: 360/360 labbtester (två nya tema-/kontrastregressioner), TypeScript
+och produktionsbuild. Browserkontroll av mörkt tema, basloopstart och
+blinkvariant med completed → base resumed; ingen konsolvarning/-error i
+kontrollfliken. Vid 390 px bredd är dokumentets innehåll 375 px (resten är
+scrollbar), utan horisontell sidöverströmning. Normal bredd återställd efter provet. ffprobe bekräftar
+1080×1920 / 9:16 för idle_still_f73_s302.mp4 och deal_pos3.mp4; inga omkodningar.
+Dealer rehearsal är den befintliga produktpanelen bakom `?rehearsal=1`,
+introducerad före denna leverans (historik ce9946d, 8 september).
+Dealer-sync --probe och hela Git for Windows-pre-commit passerar. Två fel i
+den parallella OpenClaw-ändringens tempimport/agentmålsassertion rapporterades
+till bygg3 och korrigerades av den agenten före slutligt full-hook-prov.
+
+`lab/docs/PARALLEL-DOCS-WIKI.md` är ett kopierbart uppdrag för dokumentationsagent:
+uppdatera aktiv systemkarta och wiki, verifiera speglarnas faktiska paritet,
+förbered wiki-only-publicering och återkom för godkännande före webbavveckling.
+Varken wiki, animation-events-v1, Vercel eller Gateway ändrades i denna leverans.
+Publiceringskvittot från 21 september är historik, inte dagens driftbevis.
+
+Den egna isolerade 4192/4194-fixturen startades om till det nya labbygget;
+endast dess temporära demosession nollställdes. Andra agentens samtidiga
+OpenClaw-kod och användarens tre tidigare untracked filer lämnas utanför commit.
+Jira/CAC-status har inte ändrats. Tidigare läppsynk-/integrationsluckor kvarstår.
+
 ## 2026-09-25 — Eventstudion använder nu de exakta videomapparna i verklig uppspelning
 
 Uppföljning av `9f55d66`: manifestets exakta resolver fanns men var inte kopplad
