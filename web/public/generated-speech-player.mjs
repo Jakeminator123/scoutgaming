@@ -54,10 +54,12 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, mount, s
     audioUrl = URL.createObjectURL(loaded.audio); videoUrl = URL.createObjectURL(loaded.video);
     audio = new Audio(audioUrl); audio.preload = 'auto';
     surface = document.createElement('div'); surface.className = 'generated-speech-surface';
-    surface.style.cssText = 'position:absolute;inset:0;z-index:25;background:#101618;display:grid;place-items:center;overflow:hidden;';
+    surface.style.cssText = 'position:absolute;inset:0;z-index:25;background:#101618;overflow:hidden;';
     video = document.createElement('video'); video.src = videoUrl; video.muted = true; video.playsInline = true; video.preload = 'auto';
     video.setAttribute('aria-label', 'Astrid · genererad läppsynk, labbprov');
-    video.style.cssText = 'width:100%;height:100%;object-fit:contain;';
+    // Match the local film's scene bounds. An in-flow grid video can retain
+    // its intrinsic portrait height and overflow before object-fit is applied.
+    video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;';
     const label = document.createElement('span'); label.textContent = 'Genererad läppsynk · labbprov · ej visuellt godkänt';
     label.style.cssText = 'position:absolute;top:8px;left:8px;padding:5px 8px;background:#101618dd;color:#eee;font:11px sans-serif;';
     surface.append(video, label); mount.append(surface);
