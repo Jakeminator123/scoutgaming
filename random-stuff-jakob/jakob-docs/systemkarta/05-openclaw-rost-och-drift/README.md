@@ -96,4 +96,4 @@ Fördjupning: [social labbchatt](../../../../lab/SOCIAL-CHAT.md),
 [socialt runtimekontrakt](../../../../open-claw/lab/docs/SOCIAL-CHAT.md),
 [drift](../../../../open-claw/lab/docs/DEPLOYMENT.md),
 [dashboard](../../../../open-claw/lab/docs/DASHBOARD-SV.md) och
-[dokumenterade variabelroller](../../../../_ENVIROMENT-INFO.md).
+[miljö-/API-förklararen med variabelnamn och läsordning](MILJO-OCH-API.md).

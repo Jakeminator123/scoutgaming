@@ -75,7 +75,7 @@ ut. Publikt fält betyder heller inte automatiskt tillåtet modellinput.
 - [Server och native table](../../../../web/server.mjs),
   [Partner, wallet och SSE](../../../../web/partner-api.mjs),
   [presentationsprojektion och manifest](../../../../web/partner-presentation.mjs).
-- [Detaljerade payloads](../../2026-09-20-eventregister-och-mental-modell.md).
+- [Detaljerade payloads](../02-events-triggers-urval/EVENTREGISTER.md).
 
 Kodkontroll 22 september 2026 är inte verifiering av dagens Bettalotto-deploy,
 behörighet, betalflöde eller aktiva session.

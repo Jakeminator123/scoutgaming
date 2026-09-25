@@ -1,21 +1,25 @@
 # Eventregister och mental mappmodell
 
-Aktiv referens, uppdaterad 20 september 2026 inför V4. Trädet nedan är en
+Aktiv referens, samlad och rättad 25 september 2026. Trädet nedan är en
 **logisk vy över referenser**, inte ett beslut att flytta videor eller ändra
-spelmotorns kontrakt. Börja gärna i [systemkartan](systemkarta/README.md).
+spelmotorns kontrakt. Börja gärna i [systemkartan](../README.md).
+
+Native/SSE, observation och kontext nedan beskriver den integrerade work-koden.
+Detaljerade seed-/medieräkningar och formatprov behåller sina ursprungliga
+datum och är inte nya drift- eller visuella godkännanden.
 
 Ursprungliga källankare: spelkod `d910ddc`, studio `b26ff83` och startprojekt
 `studio.2026-09-20.2`. Den senare systempaketskontrollen jämförde work/origin
 `a15b780` med main `b147659`; granskade server-, shoe-, Partner- och appfiler
 saknade diff. Den kontrollens handoff är `62784f4`. Aktuell serverrevision
 och aktiva BO-bindningar är fortfarande inte verifierade. Se
-[källregistret](systemkarta/KALLOR.md) och [aktiv sprint](../../docs/animation-events/README.md).
+[källregistret](../KALLOR.md) och [aktiv sprint](../../../../docs/animation-events/README.md).
 
 **Finns** betyder läst i kod/data. **Labb** betyder en implementerad
 illustration eller simulerad kontext. **Förslag** betyder ännu inte infört.
 `sourceStatus: verified` avser eventets källa, inte godkänd video.
 
-[Situationer, variantfamiljer och takes](2026-09-20-situationer-variantfamiljer-och-takes.md)
+[Situationer, variantfamiljer och takes](SIGNALER-OCH-TAKES.md)
 utvecklar Jakobs fråga om första/andra kortet, sju destinationer och växande
 videobehov. Den texten är den korta gemensamma ingången till hur modellen
 ska förstås; detta register behåller de fullständiga källorna och listorna.
@@ -125,19 +129,19 @@ En gemensam social reaktionskö till produktspelaren återstår.
 
 | Register | Auktoritativ källa i dag | Innehåll/status |
 | --- | --- | --- |
-| Spel | `gameId` i [projektet](../../lab/policies/project.seed.json), [valideringen](../../lab/lib/studio-model.mjs) | Endast `blackjack`. Roulette är en UI-platshållare. Ingen generell `games[]` finns. |
-| Dealers | `dealers[]`, `DEALER_IDS`; [produktens DEALERS](../../web/public/app.mjs) | `astrid`, `vera`, `amira`, `mei`. |
-| Motor och publik spelvy | [shoe-game.mjs](../../web/shoe-game.mjs), [blackjack.mjs](../../web/public/blackjack.mjs) | Regler, kommandon, interna händelser, publika fakta. |
-| Presentationstyper | [partner-presentation.mjs](../../web/partner-presentation.mjs) | Sex typer; rå kontraktskälla till labbets klassificering. |
+| Spel | `gameId` i [projektet](../../../../lab/policies/project.seed.json), [valideringen](../../../../lab/lib/studio-model.mjs) | Endast `blackjack`. Roulette är en UI-platshållare. Ingen generell `games[]` finns. |
+| Dealers | `dealers[]`, `DEALER_IDS`; [produktens DEALERS](../../../../web/public/app.mjs) | `astrid`, `vera`, `amira`, `mei`. |
+| Motor och publik spelvy | [shoe-game.mjs](../../../../web/shoe-game.mjs), [blackjack.mjs](../../../../web/public/blackjack.mjs) | Regler, kommandon, interna händelser, publika fakta. |
+| Presentationstyper | [partner-presentation.mjs](../../../../web/partner-presentation.mjs) | Sex typer; rå kontraktskälla till labbets klassificering. |
 | Labbnoder | `events[]` | 16 ordnade, låsta matchningar. |
 | Triggers | `triggers[]` | 9 namngivna startvillkor, redigerbara inom tillåtna fält. |
 | Dealerlinjer/varianter | `lines[].variants[]` | 64 linjer, 4 startvarianter vardera = 256 variantposter. |
 | Labbassets | `assets[]` | 64 delade animationsreferenser. |
-| Rörelsedata | [animations/index.json](../../lab/animations/index.json), 16 eventfiler | 64 tysta 2D-klipp; inte 256 dealerfilmer. |
-| Originalvideor och uppladdningar | [snapshot.json](../../docs/animation-events/v3-video-map/snapshot.json), [videoregistret](../../lab/lib/video-registry.mjs) | 224 daterat inventerade original, kompletterade med lokal intake och hashbunden kategorisering. Ingen produktaktivering. |
+| Rörelsedata | [animations/index.json](../../../../lab/animations/index.json), 16 eventfiler | 64 tysta 2D-klipp; inte 256 dealerfilmer. |
+| Originalvideor och uppladdningar | [snapshot.json](../../../../docs/animation-events/v3-video-map/snapshot.json), [videoregistret](../../../../lab/lib/video-registry.mjs) | 224 daterat inventerade original, kompletterade med lokal intake och hashbunden kategorisering. Ingen produktaktivering. |
 | Vanliga spelklipp | Dealernas `streams/index.json` | 90 indexposter lokalt; tal/idle/actions. |
-| Exakt tal | Dealerljudbanker, [speech-lines.mjs](../../web/public/speech-lines.mjs), [speech-media.json](../../web/public/speech-media.json) | Text, ljud, matchande klipp och vissa MP4 med inbyggt ljud. |
-| Fysiska takes | [Astrids performance-manifest](../../web/public/dealers/astrid/performance/manifest.json) | 4 grundtakes + 2 continuations, samtliga `review`; dessutom särskilda review-manifest för andra bearbetningar. |
+| Exakt tal | Dealerljudbanker, [speech-lines.mjs](../../../../web/public/speech-lines.mjs), [speech-media.json](../../../../web/public/speech-media.json) | Text, ljud, matchande klipp och vissa MP4 med inbyggt ljud. |
+| Fysiska takes | [Astrids performance-manifest](../../../../web/public/dealers/astrid/performance/manifest.json) | 4 grundtakes + 2 continuations, samtliga `review`; dessutom särskilda review-manifest för andra bearbetningar. |
 | Produktens aktiva val | Produktkonfiguration, körläge och aktuell kodrevision | Aktuella BO-bindningar är inte verifierade här. |
 
 Seedräkningen gäller `studio.2026-09-20.2`, inte automatiskt ett tidigare
@@ -160,7 +164,7 @@ Spelarens command
 Serverns shoe + Round + regler + transaktion
     ↓
 gameView(): filtrerad publik spelvy
-    ├── /api/table → vanliga webbklientens befintliga koreografi
+    ├── /api/table → native-koreografi + publikt presentation[]-kvitto
     └── /api/v1/table → presentationEvents(föregående vy, ny vy, op, extra)
                             ↓
                        presentation[] + samma lista via scoped SSE
@@ -169,17 +173,20 @@ Separat labbprov:
 Sparat exampleEvent + manuell kontext → projektion → eventnod → variantval
 ```
 
-Partner-flödet finns, men labbet prenumererar inte på ett riktigt spelbord.
-Den vanliga webbklienten använder sin egen kodväg. En gemensam adapter
-och en läsande livemonitor är förslag.
+Labbet har nu läsande Partner-SSE och en opt-in-observer i native-klienten.
+Observern lämnar publika kommandosvar samt instrumenterad uppspelning/chatt;
+labbet deduplicerar svar och SSE och skickar inga egna spelkommandon.
+Den vanliga klienten behåller sin koreografi. En gemensam produktadapter och
+talägare är fortfarande nästa integration, inte samma sak som labbmonitorn.
 
 Partner-API:t är dubbelriktat: partnern skickar kommandon in; status,
 presentation och tillgångsreferenser går ut. Utan `walletUrl` används
 intern demowallet. Med `walletUrl` är operatören saldots källa och den
 granskade Partner-table-vägen anropar `balance`, `bet` och `win`.
-En launch-URL öppnar native-klienten; dess `/api/table` går inte automatiskt
-genom Partner-table-vägens wallet eller SSE. Driftens kompletta wallet- och
-återhämtningsbeteende är inte verifierat av detta register.
+En launch-URL öppnar native-klienten. Dess verifierade Partner-session kan
+nu publicera accepterade kommandon efter commit till samma SSE-kanal; detta
+innebär inte att native-vägen använder Partner-table-vägens wallet-callbacks.
+Driftens kompletta wallet- och återhämtningsbeteende är inte verifierat här.
 
 ### Kommandon och intern motor
 
@@ -231,7 +238,7 @@ Partner-adaptern vidarebefordrar inte listan; den jämför publika vyer.
 | Round | `boxes[]`, `hands[]`, `dealer[]`, `phase`, `active`, `holeDraw`, `legalActions[]` |
 | Box/hand | `box`, `splitFrom`, `stake`, `pp`, `tp`, `cards[]`, `done`, `doubled`, `insured`, `result`, `sideReturn`, `sideLabels[]`, ibland `busted` |
 | Synligt kort | `r` (valör), `s` (färg), `shoeDraw` (dragets identitet/ordningsnummer) |
-| HTTP-svar | API:t tillför `balance`; Partner tillför även `requestId` och `presentation[]` |
+| HTTP-svar | Native och Partner tillför `balance`, `requestId` och `presentation[]`; native anger även `op` |
 
 Faserna är `dealing`, `insurance`, `decisions`, `dealer`, `settled`. De
 synkrona dealing/dealer-stegen kan passera inom samma command; alla faser
@@ -262,12 +269,12 @@ presentationslistan som `events` tillsammans med bland annat op/version/phase.
 De är transportmeddelanden, inte två extra presentationstyper.
 
 SSE är avgränsad till API-nyckel + partnerns `playerId` och kräver signerad
-åtkomst med `play`-scope. BO-inloggning räcker inte. Vanliga `/api/table`
-publicerar inte till strömmen. `state` och cachade `requestId`-svar ger
+åtkomst med `events` eller `play`. BO-inloggning räcker inte. Native `/api/table`
+publicerar efter commit för verifierad Partner-session. `state` och cachade `requestId`-svar ger
 ingen ny publicering. Det finns ingen replaybuffert eller `Last-Event-ID`-
 återhämtning i granskad kod. Klienten behöver beslutad återhämtning efter
 avbrott och får inte spela samma händelse från både svar och SSE.
-Källa: [partner-api.mjs](../../web/partner-api.mjs).
+Källa: [partner-api.mjs](../../../../web/partner-api.mjs).
 
 `/api/v1/assets` läser filbaserade index, banker och performance-manifest;
 det läser inte aktiva BO-bindningar. Takes som inte är `rejected` kan ingå,
@@ -368,10 +375,18 @@ till godtyckliga eventnoder i seedfilen.
 | `calm-mood` | temperament | `context.temperament.mood` | `eq "calm"` |
 | `playful-mood` | temperament | `context.temperament.mood` | `eq "playful"` |
 
-`deterministic` innebär här ett testbart villkor. Det innebär inte att
-sessionshistoriken redan hämtas från spelservern. Kontextfälten ovan fylls
-fortfarande med manuella testvärden. `temperament` beskriver dealerns uttryck.
-Det ska inte blandas ihop med den separata sociala chattens riktiga textinput.
+`deterministic` innebär här ett testbart villkor. I det manuella eventtestet
+är kontexten fortfarande testvärden; `temperament` beskriver dealerns uttryck.
+Livejämförelsen räknar däremot observerade vinster/förluster från publika
+`settle` sedan senaste luckan. Saknat språk, återbesök och chattklass är okända,
+även när kontraktet kräver neutrala reservvärden. Detta är inte full spelarhistorik.
+
+Livekontexten kan dessutom ge modellen högst åtta observerade chattmeddelanden
+före eventet, 600 tecken vardera och 3 200 totalt, via `context.observedChat`.
+Det är avgränsad data med tid/källa, inte ett nytt triggerfält eller order.
+Director måste kvittera kontext v2; annars används synlig standardreserv.
+Källa: [observation-context.mjs](../../../../lab/lib/observation-context.mjs).
+Den separata sociala labbchatten och produktens talägarskap är andra flöden.
 
 Följande ytterligare triggerposter kan beskrivas med **dagens tillåtna
 fält**, men har inte lagts in av denna dokumentationsuppgift:
@@ -390,7 +405,7 @@ villkor; varianten måste fortfarande tillåta valt urvalsläge via `selection`.
 AND/OR-träd finns inte i studioformatet.
 
 Tillåtna fält enligt `allowedPathDescriptors` i
-[studio-model.mjs](../../lab/lib/studio-model.mjs):
+[studio-model.mjs](../../../../lab/lib/studio-model.mjs):
 
 | Grupp | Samtliga tillåtna triggerfält |
 | --- | --- |
@@ -502,13 +517,13 @@ Ett **schema** beskriver formen. **Projekt-JSON** innehåller instanserna.
 **Rörelse-JSON** beskriver hur figuren rör sig. Samma ord ”JSON” betyder
 alltså inte att de tre filtyperna har samma ansvar.
 
-[studio.schema.json](../../lab/schemas/studio.schema.json) använder JSON Schema
+[studio.schema.json](../../../../lab/schemas/studio.schema.json) använder JSON Schema
 2020-12. `validateProject` gör dessutom korsreferenskontroller, låser nodernas
 ordning/källa och kräver alla 64 unika dealer/event-kombinationer. Det finns
 ingen generell möjlighet att lägga in ett nytt spel eller en femte dealer
 genom enbart en extra rad. Sådan utbyggnad kräver ändrade kontrakt.
 
-[event.schema.json](../../open-claw/lab/schemas/event.schema.json) beskriver
+[event.schema.json](../../../../open-claw/lab/schemas/event.schema.json) beskriver
 labbets tillåtna projektion, inte hela den ursprungliga Partner-responsen.
 `normalizeInput` är den körande gränsen som validerar och plockar ut fält.
 Schemafilerna ensamma utgör inte alla kontroller som programmet gör.
@@ -595,10 +610,10 @@ Operatörschatten är ett separat anrop om labbprojektet. Den är inte
 spelarchatt, spelminne eller en källa som får ändra spelresultat.
 
 Den lokala studion kan anropa Render Director som i sin tur anropar privat
-OpenClaw. [Handoffens daterade verifieringar](../../docs/JOHN-HANDOFF.md)
+OpenClaw. [Handoffens daterade verifieringar](../../../../docs/JOHN-HANDOFF.md)
 redovisar tidigare råd/operatörschatt på `7f056f7` och senare socialt
 labbprov på `6797b6a`. Ingen ny driftkontroll eller något modell-/deployanrop
-görs av detta dokument. [Socialchatten](../../lab/SOCIAL-CHAT.md) har eget
+görs av detta dokument. [Socialchatten](../../../../lab/SOCIAL-CHAT.md) har eget
 kontrakt; produktkoppling och godkända dealerfilmer är separata steg.
 
 ## 10. Media, takes och aktivering i samma logiska register
@@ -714,10 +729,10 @@ värdet från ett faktiskt motor-event, en publik vy, en härledning, en
 operatör eller ett förslag? Det är ett designförslag; dessa extrafält får
 inte stoppas direkt i dagens strikta studio-JSON.
 
-## 12. Verifiering och kvarstående gränser
+## 12. Historiska formatprov och kvarstående gränser
 
 Följande formatprov hör till den ursprungliga referensens daterade leverans;
-de är inte nya körningar i V4:s dokumentationsöversyn.
+de är inte nya körningar i dokumentstädningen den 25 september.
 
 Dokumentets lokala länkar kontrollerades. Alla 16 noder och nio starttriggers
 stämde med det lästa startprojektet. Båda JSON-exemplen parsades, och alla
@@ -735,6 +750,6 @@ godkännanden, belastning eller ett nytt spel-/modelltest.
 Den här leveransen ändrar dokumentation. Den ändrar inte policies, lagrade
 projekt, spelkod, media, databas eller OpenClaws konfiguration. Fullständig
 produktintegration, aktuella BO-bindningar och hashbunden visuell take-QA
-återstår. V4-översynens källor, nya preciseringar och avgränsning finns i
-[systemkartans källregister](systemkarta/KALLOR.md). Ingen media har avkodats
+återstår. Senare kod-/integrationsunderlag och avgränsning finns i
+[systemkartans källregister](../KALLOR.md). Ingen media har avkodats
 eller innehållsindexerats i den översynen; det personliga arkivet har inte lästs.

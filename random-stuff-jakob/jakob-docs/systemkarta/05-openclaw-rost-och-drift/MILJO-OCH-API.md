@@ -1,5 +1,8 @@
 # API:er och miljövariabler — vad hör ihop?
 
+Flyttad till systemkartan den 25 september 2026. Inventeringen nedan behåller
+sitt datum; privata env-filer har inte lästs på nytt vid dokumentstädningen.
+
 Kodförklaringar uppdaterade 2026-09-22; lokala filers **variabelnamn** inventerades 2026-09-22.
 Här finns namn, placeringar och ansvar,
 **inga hemliga värden**. Filen är dokumentation; programmet läser inte den
@@ -190,7 +193,8 @@ och konfigurerar inte en ny röstintegration på Render.
 
 De lokala `/api/...`-vägarna är delar av samma app på `127.0.0.1:4188`:
 
-- `/api/simulate`: prova varianturval med eventexempel och testkontext.
+- `/api/presentation/decision`: gemensamt variantbeslut för eventprov och
+  mottagna instruktioner. `/api/simulate` är kompatibilitetsalias.
 - `/api/chat`: operatörschatt om det senast sparade labbprojektet.
 - `/api/social` och `/api/social/chat`: social policy och spelarchatt med Astrid.
 - `/api/voice`, `/api/voice/[id]` och `/api/social/voice`: röstprov och ljud.
@@ -249,15 +253,15 @@ verktygsstöd och är inte en labbnyckel.
 
 ## Källor och fortsatt felsökning
 
-- [Labbets start- och anslutningsguide](../../lab/README.md)
-- [Detaljerade Render-inställningar](../../_ENVIROMENT-INFO.md)
-- [Director-inställningarnas faktiska inläsning](../../open-claw/lab/src/settings.mjs)
-- [Studions val av miljöfiler](../../lab/lib/studio-server.mjs)
-- [Partner-observer och formatkontroll](../../lab/lib/partner-observer.mjs)
-- [Partner API-kontrakt och scopes](../../web/public/docs/partner-api.md)
-- [Röstnyckelns inläsning](../../lab/lib/voice-preview.mjs)
-- [Render-tjänsterna](../../open-claw/lab/render.yaml)
-- [Produktservern](../../web/server.mjs)
+- [Labbets start- och anslutningsguide](../../../../lab/README.md)
+- [Detaljerade Render-inställningar](../../../../_ENVIROMENT-INFO.md)
+- [Director-inställningarnas faktiska inläsning](../../../../open-claw/lab/src/settings.mjs)
+- [Studions val av miljöfiler](../../../../lab/lib/studio-server.mjs)
+- [Partner-observer och formatkontroll](../../../../lab/lib/partner-observer.mjs)
+- [Partner API-kontrakt och scopes](../../../../web/public/docs/partner-api.md)
+- [Röstnyckelns inläsning](../../../../lab/lib/voice-preview.mjs)
+- [Render-tjänsterna](../../../../open-claw/lab/render.yaml)
+- [Produktservern](../../../../web/server.mjs)
 
 Första kontrollen vid fel är **vilken tjänst och vilken fil som läses**.
 Byt inte fungerande nycklar för att en annan integration saknar sina uppgifter.

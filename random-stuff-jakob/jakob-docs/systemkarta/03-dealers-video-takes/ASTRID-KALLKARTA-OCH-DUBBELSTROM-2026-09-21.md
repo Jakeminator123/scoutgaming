@@ -1,7 +1,7 @@
 # Astrid: källkarta, ägarskap och möjlig dubbelström
 
 [Till dealers, video och takes](README.md) ·
-[OpenClaw-prompten](../../PROMPT-OPENCLAW-SOM-TALAGARE.md)
+[Kanonisk brief för talägarskap](../../../../lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md)
 
 Kontrollerat i arbetskatalogen 21 september 2026. Kartan länkar till de
 ursprungliga registren i stället för att skapa ett nytt manifest. Inga

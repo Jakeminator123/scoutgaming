@@ -34,7 +34,7 @@ branch without an agreed integration step.
 
 ## Documentation navigation
 
-- [Jakob's short start guide](random-stuff-jakob/jakob-docs/KORT-START-HAR.md):
+- [Jakob's short start guide](random-stuff-jakob/jakob-docs/systemkarta/START-HAR.md):
   repo map, private mirror, local environment files and indexing boundary.
 - [System map](random-stuff-jakob/jakob-docs/systemkarta/README.md): explanations by system area.
 - [Findings](docs/findings/README.md): evidenced bugs, improvement proposals and open checks across this repository; implementation and QA remain in Jira CAC.
