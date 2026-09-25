@@ -1,5 +1,18 @@
 ## 2026-09-26 — Lissabon: levande observation, spelresultat och idle-reaktioner
 
+Språkuppföljning: Gateway `f2f24d30` är Live, deploy
+`dep-darf2h7pn0mc73ca7upg`; runtime 2026-09-26.1/hash
+`88b24ba4ea5c1fba2fe0ef844a1dd7c1838ebb2681ecac5c631c24c4cca2318b`
+och den verkliga talrollens AGENTS innehåller regeln. Ny chatt utan historik
+gav engelska, men upprepad resultatfråga med ett tidigare svenskt svar kopierade
+det svenska svaret. Samma fel reproducerades direkt genom relayn utan media.
+Historik/status och aktuell fråga separeras nu i två JSON-meddelanden, med
+aktuell fråga sist och serverägd språkpolicy intill. Avgränsade modellprov
+gav engelska som standard och svenska på uttrycklig begäran med samma gamla
+svenska resultattext i historiken. Ingen extra modellrunda tillkommer.
+Ändringen behöver Director-deploy och slutligt native-prov. Historik och
+minne raderas inte.
+
 Liveuppföljning: Director `b22731f0`, deploy `dep-darevr60tbcc73basu9g`,
 accepterar resultatkontraktet. Jakob-profilens fyra avslutade USD-rundor har
 vunnit 10, förlorat 10, netto 0, insatt/återbetalt 20; pågående insats 5.
