@@ -40,32 +40,27 @@ ursprungliga klientens faktiska bild- och ljudtidslinje.
   tidigare saknade grundreplikerna, bland annat greeting, peek och bust.
   Exakt replik krävs fortfarande; inga tekniska event-ID:n byts.
 
-## Mer än 16 filmer
+## Det aktiva mediemanifestet
 
-Antalen nedan är inventering från 21 september före Kevins integration.
-Kevins nya green-/review-material gör dem inte till en aktuell totalsumma.
-Jämför alltid den valda original-/V2-vägen och exakta filreferenser.
+Den aktuella produktkällan är `emil/dealklipp-v1/lab-video-manifest.json`,
+schema 2. Den har **31 poster i 26 familjer**: åtta deal-familjer, sjutton
+speech-familjer och en idle-familj. Dealern och exakt semantik väljer familj;
+vikt anger relativ urvalsegenskap, inte uppmätt faktisk andel.
 
-16 är antalet eventgrupper. Fyra dealers ger 64 standardlinjer. Seedprojektet
-har 256 variantposter och 64 delade 2D-rörelser, plus en social rörelse.
-Detta är olika slags poster, inte en räkning av färdiga filmer.
-
-Originalförvalskatalogen hade **84 tillgängliga poster**, varav **22 Astrid**:
-17 tal, ett idle och fyra staged-grundtagningar. API-kartan listade separat
-89 motorvideofiler, 78 ljudfiler och sex Astrid-staged-filer; alla 173 sökvägar
-fanns lokalt. Generationsarkivets 224 historiska poster är ytterligare en
-inventering med överlapp. Summera dem inte som unika eller godkända filmer.
+Box 0–6 mappar exakt till `deal_pos1`–`deal_pos7`. Tal väljs med exakt
+line-ID. Idle har två standardtagningar och fyra varianter; de är en annan
+struktur än en standard plus högst fyra alternativ i labbets projektmodell.
+Det externa generationsarkivets 224 historiska poster är inte längre normal
+runtimekälla och ska inte summeras med manifestet.
 
 ## Beställt nästa steg
 
-**Jakobs OpenClaw-chatt ska äga samtal och vad dealern säger.** Kevin ansvarar
-för produktadaptern, validering och en gemensam talkö; Emil och Kevin ansvarar
-för kompatibelt läppsynkat material. Modellen väljer exakt inspelad replik,
-ny text eller tystnad inom tillåtet sammanhang. Modellen äger aldrig spelet.
-
-Det lokala variantvalet och det sociala Astrid-provet finns. Produktens gamla
-talproducenter är ännu inte ersatta av en gemensam OpenClaw-väg. Vi ska mäta
-detta som en egen leverans, inte beskriva det som redan klart.
+**Jakobs OpenClaw-spår ska äga samtal och vad dealern säger.** En separat
+`openclaw/croupier-speech`-roll och en tunn Director-adapter för
+`/api/product/speech` finns och har passerat lokala kontraktstester. Befintlig
+OpenAI-koppling är kvar; detta är inte ett byte till Gemini. Privat transport,
+token, redeploy och prov i faktisk runtime återstår, så gamla produktvägar är
+ännu inte ersatta i drift. Modellen äger aldrig spelet.
 
 ## Minsta rimliga sprintleverans
 

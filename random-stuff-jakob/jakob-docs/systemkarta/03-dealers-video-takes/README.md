@@ -32,21 +32,21 @@ Manifestförekomst betyder inte godkänd take.
 
 ## Vilka register finns?
 
-Det externa generationsarkivet finns på
-`C:/Users/jakem/CroupierAssets/bettalotto-generations`, labbets befintliga
-Windows-förval. Metadata-inventering 22 september fann matchande ID och
-förväntad filstorlek för samtliga 224 snapshot-poster. Den läste inte
-filmbytes och bevisar inte innehåll, kvalitet eller aktiv produktbindning.
-Ingen ny nedladdning eller kopia behövs för att tillgängliggöra dessa filer.
-Detta är ett mediearkiv, inte Jakobs pensionerade personarkiv; om det är samma
-tidigare omtalade slaskmapp är inte fastställt.
+Den aktuella bank som Eventstudion och native-följningen använder för Astrid
+är `emil/dealklipp-v1/`. Dess deterministiska manifest v2 har **31 filer i 26
+familjer**: åtta dealfamiljer, sjutton exakta replikfamiljer och en idlefamilj.
+Filerna ligger så här:
 
-Den valfria produktinställningen `CROUPIER_GENERATIONS_DIR` gör samma arkiv
-läsbart i BO och Generations-API utan kopiering. Default är fortfarande
-`web/public/bo/gen`. BO kräver session och API:t sin lästoken. Bara kända
-katalog-ID:n och deklarerade thumbnail-namn godtas; realpath-/symlänkkontroll
-håller läsningen inom vald katalog. `--media-directory` i den isolerade
-startaren kopplar arkivet till både BO och labb enbart i processmiljön.
+- `deal/<familj>/<standard>.mp4` och valfri `variant/`;
+- `repliker/<line-id>/<standard>.mp4` och valfri `variant/`;
+- två basloopar i `idle/` och fyra engångsvariationer i `idle/variant/`.
+
+Tom variantmapp betyder standard. Projektpolicyn kan tillåta högst fyra
+filvarianter i en familj; den får aldrig låna från en annan box eller replik.
+Det äldre externa generationsarkivets 224 poster är daterad historik från
+22 september. Dess MP4-filer flyttades till Windows papperskorg den 25
+september och sökvägen är inte längre labbets standardkälla. Ingen filmbytes
+lästes i denna dokumentationskontroll.
 
 Efter Kevins integration finns även en klientläsare för `clipAssignments`.
 Den filtrerar `neverAgain` och kan välja idle/staged-material för en stödd
@@ -77,10 +77,16 @@ vägens talregister; identiska line-ID:n gör inte olika inspelningar utbytbara.
 
 ## Situation före uttryck
 
-Box 3:s första och andra kort kan ibland använda samma take med korrekt
-digital placering och kalibrering. Andra mål kan kräva andra filmade rörelser.
-Återanvändningen måste visas i produktspelaren; vänster/mitten/höger bevisar
-inte täckning för sju boxar, split och senare kort.
+Box **0–6** motsvarar `deal_pos1–7`. Exakt `speak.line` motsvarar exakt
+`repliker/<line-id>`. Kortvärde, `handIndex` och tillåten spelaridentitet är
+eventdata; de är inte separata filmer och ska inte härledas från
+vänster/mitten/höger. Dolda kort lämnar bara bakside-/faceDown-fakta över
+observationsgränsen, aldrig rang eller färg.
+
+Samma take kan ibland användas för flera kort till exakt samma box med korrekt
+digital placering och kalibrering. Återanvändningen måste visas i
+produktspelaren; mapp- eller manifestträff bevisar inte split, senare kort,
+kontakt eller korrekt start-/slutpose.
 
 Labbets variant har en animation och högst en videoreferens. Kategoriserad
 film kan bindas till rätt dealer/event; exakt replik/kortsituation kontrolleras
@@ -91,6 +97,14 @@ en komplett katalog över godkända produkttakes.
 **Förslag:** en variant kan få flera likvärdiga, kompatibla takes.
 Takepool, viktning, generell idle-sekvens och produktkoppling återstår.
 Produktens befintliga idle-scheduler och labbets `once`-preview är olika saker.
+
+Emils originalfiler är **1080×1920 (9:16)**. Det är filens bildformat, inte
+mobil-/desktoplayouten i Eventstudion eller spelet. Klienten skalar/beskär i
+sin egen yta. `?rehearsal=1` öppnar produktens befintliga QA-panel ovanpå den
+riktiga spelaren; den är inte en ny Eventstudio-flik. Frame 0/startbild och
+filernas uttalade retur till startpose är materialkontrakt. Den verkliga
+posegrinden måste ändå kvitteras i uppspelaren; filnamn eller preview räcker
+inte som verifiering av kompatibel övergång.
 
 ## Ljud och video ger också signaler
 

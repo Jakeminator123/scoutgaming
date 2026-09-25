@@ -1,8 +1,10 @@
 # S04 · OpenClaw äger talet, läppsynken följer beslutet
 
-**Beställd integration:** Jakobs OpenClaw-spår ska äga persona, chatt och vad
-dealern säger. Det är riktningen för produktarbetet. Dagens labbval är fungerande
-delar, men produktens samtliga talproducenter har ännu inte konsoliderats.
+**Byggt och testat lokalt:** en separat `openclaw/croupier-speech`-roll och en
+tunn Director-adapter för `/api/product/speech`. Befintlig OpenAI-koppling
+behålls. **Inte driftsatt:** privat produkttransport, token, redeploy och
+runtime-QA. Produktens samtliga talproducenter är därför ännu inte
+konsoliderade i faktisk drift.
 
 ## Ansvar mellan Jakob, Kevin och Emil
 
@@ -26,11 +28,10 @@ inte ändra spelordningen eller utlova ett annat resultat.
 
 Återanvänd befintlig Director/Gateway, speech-queue.mjs och samma spelarväg för
 alla fyra dealers. Produktens speltriggers och /chat använder redan klientkön,
-men deras text-/replikbeslut har flera ägare. Integrationen konsoliderar ägarskapet
-och utvecklar köns korrelation/livscykel; den börjar inte med en ny parallell kö.
-Talbeslutet behöver ett validerat utfall: exakt tillåtet `recordedLineId`,
-kort `generatedText` eller `silence`. Dessa är mål för integrationskontraktet;
-dagens variantbesluts-API är inte redan ett färdigt sådant tal-API.
+men deras text-/replikbeslut har flera ägare. Den lokala speech-adaptern ger ett
+validerat utfall: exakt tillåtet `recordedLineId`, kort `generatedText` eller
+`silence`. Att kontraktet passerar tester betyder inte att den privata
+produkttransporten eller kön är verifierad i drift.
 
 Alla spelrepliker och chattsvar ska gå genom samma köimplementation. Kevin
 äger dess tekniska livscykel, OpenClaw dess godkända samtalsbeslut. Käll-ID,

@@ -5,6 +5,12 @@ efter Kevin-integrationen den 22 september. Den beskriver den granskade koden
 och skiljer den från labbprov och återstående produktintegration.
 [Källregistret](KALLOR.md) anger revisioner, kontroller och begränsningar.
 
+Senaste kodankare för denna översyn är `113dfd8`: exakt manifest-v2-uppspelning
+och idlepolicy är lokalt verifierade; den separata OpenClaw-produktrollen och
+smala Director-adaptern är kodtestade men inte driftsatta. GitLab-wikin är den
+avsedda publicerade dokumentationsytan. Den fristående Vercel-sidan är en äldre
+21-septembersspegel och ska inte användas som bevis på dagens paritet.
+
 Börja i [Kort start för Jakob och agenter](START-HAR.md). Här finns nu även
 [miljö-/API-förklararen](05-openclaw-rost-och-drift/MILJO-OCH-API.md),
 [livejämförelsens status och acceptans](06-arbetssatt-och-verifiering/LIVEJAMFORELSE.md)
@@ -65,12 +71,13 @@ behåller sina datum och får inte läsas som verifiering av V2 eller dagens dri
 - [6. Arbetssätt och verifiering](06-arbetssatt-och-verifiering/README.md) —
   vilken källa som gäller och vad olika kontroller faktiskt bevisar.
 
-## Tre statusar genom hela kartan
+## Fyra statusord genom hela kartan
 
 **Kodkontrollerat** betyder att implementation eller data har lästs.
-**Labb** är en avgränsad lokal funktion, ofta med simulerad kontext.
-**Förslag** återstår att införa. Daterade test- och driftkvitton anger vad
-som fungerade då; de fastställer inte dagens driftsatta revision.
+**Lokalt provat** är en avgränsad körning, ibland med simulerad kontext.
+**Driftsatt/verifierat** kräver kontroll av den faktiska externa ytan och dess
+revision. **Återstår** är en konkret lucka eller ett beslut. Daterade test- och
+driftkvitton anger vad som fungerade då; de fastställer inte dagens drift.
 
 Blackjack och fyra dealers finns. Roulette är en platshållare. Startprojektets
 256 variantposter och 64 eventrörelser räknar labbreferenser, inte godkända

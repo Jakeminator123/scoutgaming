@@ -52,15 +52,22 @@ Alla av betyder manuell preview, även om triggerlistan är tom.
 **Schema:** formatets tillåtna fält och värden. **Policy:** regler för urval
 och beteende. **Manifest:** register över identiteter, mediareferenser och
 metadata; det är inte en logg över vad som faktiskt spelats.
+**Familj:** manifestets exakta urvalsgrupp. Aktuellt schema 2 har 26 familjer:
+åtta deal, sjutton speech och en idle. **Vikt:** relativ urvalsparameter, inte
+ett uppmätt löfte om faktisk trafikandel. **Idle-bas / idle-variant:** två
+roller i produktens idlepolicy; de ska inte blandas ihop med labbprojektets
+standard och högst fyra alternativ.
 **Klassificering:** operatörens uppgift om dealer/event/situation, knuten till
 material. **Bindning:** vald koppling mellan variant/produktplats och material.
 **Acceptans:** dokumenterad granskning av just den revisionen/taken.
 
 ## Beslut, kö och bevis
 
-**Director:** mellanled för validerade presentationsbeslut. **OpenClaw:** den
-anslutna modell-/samtalsvägen och beställda framtida talägaren. Gateway-åtkomst
-är inte i sig färdig produktintegration.
+**Director:** mellanled för validerade presentationsbeslut. **Operatörsroll:**
+hjälp och drift, inte dealer-dialog. **Socialt prov:** avgränsat labbexperiment.
+**Produktspeech-roll:** `openclaw/croupier-speech`, byggd och lokalt testad för
+dealer-dialog men ännu inte driftsatt. Gateway-åtkomst är inte i sig färdig
+produktintegration.
 
 **Besluts-ID:** identifierar ett variantval. **Källreferens:** korrelerar
 ursprungligt spel-/chattunderlag. **Köjobb:** en uppspelningsavsikt som ska ha

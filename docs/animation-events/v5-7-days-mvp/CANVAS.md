@@ -1,41 +1,60 @@
-# V5 · samma innehåll på wiki och webb
+# V5 · publicera wikin utan webbbygget
 
 **Visningsnamn: Croupier · Presentationsplan V5. Planeringsram: sju dagar efter D0.**
 
-Källan är `docs/animation-events/v5-7-days-mvp/` i Croupier. GitLab-wikin och
-GitHub-repot `Jakeminator123/animation-events-v1` är läsytor. Vercel bygger den
-stabila [webbsidan](https://animation-events-v1.vercel.app/) från GitHub.
-Det historiska `v1` i adressen ändras inte i denna leverans.
+Källan är `docs/animation-events/v5-7-days-mvp/` i Croupier. GitLab-wikin är
+den primära publicerade läsytan. Den separata GitHub/Vercel-webben är en äldre
+publik presentation och ska inte byggas, skrivas om eller stängas av wikisynken.
 
-## Uppdatera en gång och spegla
+## Publicera den aktuella källan
 
-Mappnamnet ändrades 22 september från `v5-8-days-mvp` till
-`v5-7-days-mvp`. Externa docs-repots synkverktyg kan fortfarande ha den äldre
-källvägen hårdkodad: uppdatera den i samma framtida publiceringsleverans och
-kontrollera manifestet. Lokala dokumentändringar publicerar inte wiki/Vercel.
+Använd ett separat, rent worktree för `croupier.wiki.git`:
 
-1. Ändra Croupiers V5-källa och kontrollera påståenden mot kod och prov.
-2. Committa den kanoniska dokumentationen på arbetsgrenen.
-3. I webb-repot: kör `node tools/sync-docs.mjs --croupier PATH --write`,
-   sedan `node build-static.mjs`.
-4. Kör synk igen med `--wiki WIKI_PATH --write`. Detta speglar Markdown och
-   färdig HTML och skriver källrevision samt filhashar i manifestet.
-5. Kör synken utan `--write`, webb-repots tester, `build-static.mjs --check`
-   och `tools/build-site.mjs`. Granska navigation, sök, plan och mobilbredd.
-6. Pusha Croupiers arbetsgren, wiki och webb-repots publiceringsgren. Kontrollera
-   innehållet på den faktiska webbplatsen och wikin efter publiceringen.
+```powershell
+node tools/sync-animation-events-wiki.mjs --wiki WIKI_PATH --write
+node tools/sync-animation-events-wiki.mjs --wiki WIKI_PATH
+git -C WIKI_PATH diff --check
+```
 
-Synkverktyget gör inga nätanrop, commits eller pushar. Källor kan läsas utan
-Jakobs privata anteckningar. Länkar anpassas per läsyta. GitLab-wikins HTML
-kan visas som källkod; länka därför till Vercel för den interaktiva webbvyn.
+Verktyget:
 
-## Historik och gränser
+- läser endast den kanoniska Markdown-källan i Croupier;
+- skriver Markdown, korta hänvisningssidor för äldre V5-adresser och
+  `animation-events/SYNC-MANIFEST.md` i wiki-worktreet;
+- skriver källcommit och SHA-256 för varje synkad källfil;
+- anpassar interna länkar till wikin och länkar övrig repodokumentation till
+  det exakta Croupier-committet;
+- gör inga nätanrop, commits eller pushar och rör inte webb-repot.
 
-V4:s texter och webbversion bevaras som historik och märks som ersatta.
-Aktiva startsidor/menyer pekar på V5. Äldre versionsuppgifter får inte
-massersättas så att historiska prov plötsligt ser nygjorda ut.
+Efter push: öppna den faktiska wikin som inloggad användare och kontrollera
+startsida, sidomeny, minst en korslänk, en äldre hänvisningsadress och
+synkkvittot. Hashparitet bevisar textversionen, inte rendering, godkänd video
+eller driftsatt produktintegration.
 
-Webbpublicering ändrar inte Bettalottos driftsättning, produktmanifest,
-OpenClaw-konfiguration eller sparade lokala labbprojekt. Media och råloggar
-kopieras inte till webb-repot. Jira CAC är arbetsstatus; dokumentens plan är
-underlaget för nästa leveranser.
+## Den separata webbplatsen
+
+[animation-events-v1.vercel.app](https://animation-events-v1.vercel.app/) är
+fortfarande publik och visar åttadagarsversionen från 21 september. Dess unika
+funktioner är fliknavigation, sök, hash-djuplänkar, mobil- och utskrifts-CSS samt
+HTML-snapshots av V2–V4. GitLab-wikin har i stället Markdown-navigation,
+versionshistorik och kommentarer men kräver inloggning.
+
+Webb-repots Vercel-bygge kör `tools/sync-docs.mjs`, som fortfarande har
+`docs/animation-events/v5-8-days-mvp` hårdkodat och skriver både GitHub-trädet
+och wiki-worktreet. Ett vanligt webbygge är därför inte en säker wikipublicering.
+Ingen Croupier-runtime är beroende av webbplatsen; förekomsterna är
+dokumentationslänkar.
+
+Rekommendationen är att först ersätta webbplatsen med en liten hänvisningssida
+till wikin, eftersom en total avstängning samtidigt tar bort den enda publika,
+inloggningsfria läsytan och de unika webbfunktionerna. Gör inget av detta utan
+ett uttryckligt beslut. Behåll repo, domänkoppling och Vercel-projekt tills
+beslutet har verifierats; då kan den senast kända webbrevisionen återdeployas
+som rollback.
+
+## Gränser
+
+V4 och äldre texter bevaras som daterad historik. Aktiva startsidor pekar på V5.
+Wiki-publicering ändrar inte Bettalottos driftsättning, produktmanifest,
+OpenClaw-konfiguration, sparade labbprojekt eller Jira CAC-status. Media,
+råloggar, personuppgifter och API-hemligheter publiceras inte.

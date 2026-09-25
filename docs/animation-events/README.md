@@ -3,22 +3,23 @@
 **Sju återstående arbetsdagar efter startgrinden D0.** Från verklig signal till rätt presentation,
 med tydliga bevis på vad som finns, vad labbet provar och vad som återstår.
 
-- [Läs V5](v5-7-days-mvp/README.md) · [Sjudagarsplanen](v5-7-days-mvp/s06-plan.md)
+- [Läs V5 i GitLab-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events) · [Läs källan](v5-7-days-mvp/README.md) · [Sjudagarsplanen](v5-7-days-mvp/s06-plan.md)
 - [Portabel handoff för den kvarvarande sjudagarsramen](v5-7-days-mvp/HANDOFF-7-DAGAR.md)
-- [Öppna webbversionen](https://animation-events-v1.vercel.app/)
-- [Läs samma V5 i wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events)
+- [Äldre publik webbversion från 21 september](https://animation-events-v1.vercel.app/) — inväntar beslut om omdirigering eller avveckling
 - [Systemkartan](../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
 
-## En modell, två läsytor
+## En källa, en primär publiceringsyta
 
 Croupier-koden är källa för motor, spelstatus och uppspelning. V5-filerna här
-är sakunderlaget. GitLab-wikin och webbversionen är avsedda speglar av dessa texter;
-GitHub-repot innehåller webbversionens byggverktyg. Ingen av dokumentationsytorna
-är en spelmotor eller ett bevis på färdig produktintegration.
+är sakunderlaget. GitLab-wikin är den primära läsytan och synkas direkt från
+Croupier med `node tools/sync-animation-events-wiki.mjs --wiki WIKI_PATH --write`.
+Synken bygger eller ändrar inte webbversionen. Ingen dokumentationsyta är en
+spelmotor eller ett bevis på färdig produktintegration.
 
-Senaste dokumenterade publiceringskvitto är från 21 september. Ändringarna
-för sjudagarsramen och native-observationen behöver separat synk/publicering
-innan en extern läsyta får beskrivas som samma aktuella revision.
+Webbversionen är en separat historisk publicering från 21 september. Den har
+fliknavigation, sök, hash-länkar, mobil/utskrifts-CSS och gamla V2–V4-snapshots,
+men visar fortfarande den äldre åttadagarsversionen. Den ska inte uppdateras eller
+stängas som bieffekt av wiki-publicering.
 
 Kevin äger produktintegration och motorn. Jakob arbetar på sin branch med
 presentationens logik och labb. Emil arbetar nära Kevin med video, takes och läppsynk. Jakobs OpenClaw-chatt ska
@@ -31,6 +32,7 @@ V5 är aktuell. Sju dagar är Jakobs nuvarande planeringsram, inte ett löfte
 om godkänd lansering. V4, V3 och V2 är historiska dokumentversioner och ska inte
 användas som aktuell plan. Äldre adresser behålls för hänvisningar.
 
-Ändra källan här, bygg och kontrollera speglarna, publicera sedan wiki och webb
-i samma leverans. Visa källa, testmiljö och kvarstående luckor intill påståendet.
+Ändra källan här, kontrollera den och publicera sedan wikin i en egen leverans.
+Ett separat beslut krävs för att omdirigera eller avveckla webbplatsen. Visa källa,
+testmiljö och kvarstående luckor intill påståendet.
 Spelarkod, media, runtimekontrakt och Jira-status ändras inte av ett dokumentbygge.

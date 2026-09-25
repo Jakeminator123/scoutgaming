@@ -24,15 +24,16 @@
     }
   ],
   "boundaries": [
-    "Sidomenyn grupperar sex källtyper i 16 eventgrupper. En grupp kan innehålla flera exakta situationer: box2 väljer deal/deal_pos3/deal_pos3.mp4, oavsett kortets värde. Kortdata och handindex behålls separat.",
+    "Sidomenyn grupperar sex källtyper i 16 eventgrupper. En grupp kan innehålla flera exakta situationer: box 0–6 väljer deal_pos1–7, medan kortvärde och handIndex behålls som eventdata. Box anger plats och tillåten serveridentitet hålls separat; vänster/mitten/höger är inte ett filmval.",
     "Mottagna event behåller sin destination och replik. Ett manuellt exempel kan ändras med situationsväljaren. En saknad exakt familj ger 2D-reserv; spelaren lånar inte en annan plats eller replik.",
     "Standard och varianter kommer från manifestet. Gamla 2D-demovarianter bevaras i äldre projekt men används inte för Astrids mappstyrda material. Vera, Amira och Mei behåller sin befintliga gemensamma originalspelare.",
-    "Idleeditorn har grundvikter, intervall, slumpvariation, cooldown och maxfrekvens. Visa planerat förlopp är en beräkning. Spela en minut spelar filmerna och loggar verklig start, avslut och återgång till basloop. Deal och tal avbryter idleprovet. Tidsandelar är uppskattningar från policyns klipplängder.",
+    "Idleeditorn skiljer basloop, automatisk idlevariant, regelstyrd variant och OpenClaw-valbar variant. Grundvikt är inte faktisk tidsandel. Visa planerat förlopp är en beräkning; Spela en minut spelar lokala filmer och loggar start, avslut och återgång. Deal och tal avbryter provet. Previewn bevisar inte produktens live-scheduler eller poseövergångar.",
     "Box anger plats, inte person. Produktens OpenClaw-adapter får säkert displayName, upptagna boxar, synliga kort och publicerade events. Den får inte rått playerId, framtida sko eller dolt hålkort. En fullständig identitetslista för flera olika spelare per bord är inte implementerad.",
-    "Socialt labbprov och produktens spelarchatt är separata flöden. Produktkoden håller chattsvar tills standardpositionen har kvitterats. Fri text har ännu inget godkänt läppsynkat videopaket. Det sociala labbprovet kan använda separat TTS, högst 25 sekunder.",
+    "Operatörschatt/Director, socialt labbprov och produktens strukturerade talbeslut är separata flöden. Produktkoden håller chattsvar tills standardpositionen har kvitterats. Fri text har ännu inget godkänt läppsynkat videopaket. Det sociala labbprovet kan använda separat TTS, högst 25 sekunder.",
     "Spelmotorn äger kort, regler, saldo och utbetalningar. OpenClaw väljer tillåten presentation. En godkänd filhash eller ett uppspelningskvitto är inte ett mänskligt godkännande av läppsynk.",
     "Anslutningens serveradress avgör om originalet är lokalt eller externt. tools/start-local-comparison.mjs startar ett isolerat lokalt spel och stänger av externa modellanslutningar. Att OpenClaw-koden finns betyder inte att en körande gateway är ansluten.",
-    "Händelseloggen håller 150 poster i flikens minne; observationsprotokollet högst 300 meddelanden eller 4 MiB. Samma instruktion via native och SSE slås ihop. Luckor och konflikter stoppar följningen. Exportera och välj Ny observation för att börja om med kommande data."
+    "Händelseloggen håller 150 poster i flikens minne; observationsprotokollet högst 300 meddelanden eller 4 MiB. Samma instruktion via native och SSE slås ihop. Luckor och konflikter stoppar följningen. Exportera och välj Ny observation för att börja om med kommande data.",
+    "Emils originalfiler är 1080×1920 (9:16), men filformatet bestämmer inte desktop-/mobilkompositionen. Produktens ?rehearsal=1 öppnar den befintliga QA-panelen i den riktiga spelaren; den skapar ingen Eventstudio-flik."
   ],
   "surfaces": [
     {
@@ -56,6 +57,6 @@
       "purpose": "Separata ingångar till socialt prov och operatörschatt, anslutningsstatus, Gateway-dashboard och konfigurationskällor."
     }
   ],
-  "storage": "MP4-filerna ligger i emil/dealklipp-v1. Manifestet beskriver familjer, standard-ID:n och variant-ID:n. Projektets val ligger i lokal JSON: mediaPolicy för deal/repliker och idlePolicy för idle. Äldre projektdata bevaras. Hemligheter stannar på serversidan. Inget sparande i studion deployar automatiskt produkten eller OpenClaw.",
+  "storage": "MP4-filerna ligger i emil/dealklipp-v1. Manifest v2 beskriver 26 familjer och 31 filer: deal/repliker med standardfil och valfri variant-mapp samt idle med basloopar och idle/variant. Projektets val ligger i lokal JSON: mediaPolicy för deal/repliker och idlePolicy för idle. Äldre projektdata bevaras. Hemligheter stannar på serversidan. Inget sparande i studion deployar automatiskt produkten eller OpenClaw.",
   "authority": "Källans sex eventtyper och 16 grupper finns i lab/policies/studio-contract.json. Videofamiljerna finns i emil/dealklipp-v1/lab-video-manifest.json. Konfiguration av OpenClaw börjar i open-claw/lab/docs/README.md och dess officiella källindex."
 }

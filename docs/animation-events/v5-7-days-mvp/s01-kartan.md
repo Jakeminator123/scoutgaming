@@ -43,9 +43,11 @@ playback-/chattsignaler. Partner-SSE är en separat leverans av rundinstruktione
 **Operatörschatt:** hjälp om labbprojektet; den är inte spelarchatten.
 
 Den gemensamma beslutstjänsten äger labbets presentationsval. Befintlig
-Director/Gateway används; en ny parallell AI-motor behövs inte. Jakobs
-OpenClaw-chatt ska bli samtals- och talägare när Kevin integrerar produktvägen.
-En fungerande Gateway-anslutning bevisar inte att den integrationen är gjord.
+Director/Gateway används. `openclaw/croupier-speech` skiljer produktens
+talbeslut från operatörsrollen och `/api/product/speech` har en tunn adapter
+med validerat kontrakt. Detta är lokalt testad kod, inte driftsatt produktväg;
+privat transport, token och runtime-QA återstår. En fungerande
+Gateway-anslutning bevisar inte att produkten använder rollen.
 
 ## Scheman, policy och 2D
 
@@ -66,10 +68,11 @@ lagring och ändringsväg. [Talägarskapets implementationsbrief](../../../lab/d
 
 ## Video, manifest och lokala data
 
-Produktoriginal ligger kvar under `web/public`. `speech-media.json`,
-dealerbankernas `audio/en/bank.json`, `streams/index.json` och Astrids
-`performance/manifest.json` har olika uppgifter. Flytta eller kopiera inte
-dessa till ett nytt labbregister som sedan börjar leva separat.
+Den aktiva dealerbanken ligger i `emil/dealklipp-v1/` och registreras av
+`lab-video-manifest.json` schema 2: 31 poster i 26 familjer. `mediaPolicy`
+beskriver urvalet och `idlePolicy` skiljer baser från varianter. Produktoriginal
+under `web/public`, `speech-media.json`, ljudbanker, streamindex och
+performance-manifest har andra roller; skapa inte ett parallellt register.
 
 Labbet läser originalen genom `lab/lib/original-media-server.mjs`. Egna
 uppladdningar sparas i `lab/data/videos/`, klassificering i samma områdes
@@ -97,4 +100,5 @@ material och konfiguration, inte en rikare alternativ spelmotor.
 
 Live kör den revision och de assets som faktiskt är driftsatta. `main` är
 ett branchnamn, inte bevis för dagens liveversion. V5-publicering uppdaterar
-dokumentationswebben; den är skild från deploy av spel, BO och Gateway.
+GitLab-wikin; den är skild från deploy av spel, BO, Gateway och den äldre
+Vercel-webben.
