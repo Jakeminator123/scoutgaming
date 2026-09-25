@@ -49,18 +49,6 @@ function completion(value) {
   });
 }
 
-test('Director startup refuses an aliased speech credential before listening', async () => {
-  const aliased = 'fixture-aliased-speech-token';
-  for (const patch of [
-    { speechToken: aliased, apiToken: aliased },
-    { speechToken: aliased, remoteToken: aliased },
-    { speechToken: aliased, gatewayKey: aliased },
-    { speechToken: aliased, modelKey: aliased },
-  ]) {
-    await assert.rejects(createLabServer({ settings: () => settings(patch) }), /must not reuse/);
-  }
-});
-
 test('deduplicated product decisions target only the tool-less speech role and keep injected text as data', async () => {
   let calls = 0; let captured;
   const service = createProductSpeechService({

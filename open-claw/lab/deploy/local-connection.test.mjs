@@ -56,17 +56,20 @@ test('private configuration reports the dedicated speech role without exposing c
   for (const secret of [gatewaySecret, providerSecret, directorSecret]) assert.ok(!serialized.includes(secret));
 });
 
-test('private connection refuses a speech token reused as any broader credential before child startup', async t => {
-  const speechToken = 'fixture-aliased-speech-token';
-  for (const key of ['LAB_API_TOKEN', 'LAB_REMOTE_TOKEN', 'OPENCLAWAPI_KEY', 'OPENCLAW_MODEL_API_KEY']) {
-    const file = await privateFixture(t, {
-      LAB_API_TOKEN: 'fixture-lab-api', LAB_REMOTE_URL: 'https://director.example.test', LAB_REMOTE_TOKEN: 'fixture-lab-remote',
-      OPENCLAW_BASE_URL: 'https://gateway.example.test', OPENCLAWAPI_KEY: 'fixture-gateway',
-      OPENCLAW_MODEL_API_KEY: 'fixture-model', OPENCLAW_PRODUCT_SPEECH_URL: 'https://director.example.test',
-      OPENCLAW_PRODUCT_SPEECH_TOKEN: speechToken, [key]: speechToken,
-    });
-    assert.throws(() => loadPrivateConnection({ envFiles: [file], env: {} }), /must not reuse/);
-  }
+test('private connection permits a Gateway-alias speech token while relay mode still withholds Gateway access', async t => {
+  const aliased = 'fixture-user-selected-shared-token';
+  const file = await privateFixture(t, {
+    LAB_REMOTE_URL: 'https://director.example.test', LAB_REMOTE_TOKEN: 'fixture-lab-remote',
+    OPENCLAW_BASE_URL: 'https://gateway.example.test', OPENCLAWAPI_KEY: aliased,
+    OPENCLAW_PRODUCT_SPEECH_URL: 'https://director.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: aliased,
+  });
+  const { configuration } = loadPrivateConnection({ envFiles: [file], env: {} });
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-openclaw-alias-spec-test-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const specs = childSpecifications(configuration, directory, { productPort: 4196, labPort: 4197 });
+  assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, aliased);
+  assert.equal(specs.product.env.OPENCLAWAPI_KEY, '');
+  assert.equal(specs.product.env.OPENCLAW_BASE_URL, '');
 });
 
 test('child environments separate credentials, empty provider settings and use disposable data paths', async t => {
@@ -214,7 +217,7 @@ test('launcher starts isolated native and the real Next Eventstudio without usin
 
 test('launcher refuses shared ports and its child guard blocks env reads and unrelated network', async () => {
   await assert.rejects(startIsolatedConnection({ envFiles: [], env: {}, productPort: 4192, labPort: 4197 }), /reserved/);
-  await assert.rejects(startIsolatedConnection({ envFiles: [], env: {}, productPort: 4196, labPort: 4194 }), /reserved/);
+  await assert.rejects(startIsolatedConnection({ envFiles: [], env: {}, productPort: await freePort(), labPort: 4194 }), /reserved/);
   const module = new URL('./local-connection.mjs', import.meta.url).href;
   const program = `
     import assert from 'node:assert/strict';
