@@ -1,0 +1,4063 @@
+{
+  "schemaVersion": 1,
+  "revision": "studio.2026-09-20.2",
+  "gameId": "blackjack",
+  "dealers": [
+    {
+      "id": "astrid",
+      "label": "Astrid"
+    },
+    {
+      "id": "vera",
+      "label": "Vera"
+    },
+    {
+      "id": "amira",
+      "label": "Amira"
+    },
+    {
+      "id": "mei",
+      "label": "Mei"
+    }
+  ],
+  "events": [
+    {
+      "id": "speak.goodluck",
+      "label": "Lycka till",
+      "description": "Startfrasen från presentation[]; tidigare språkönskemål är en separat, simulerad preferens.",
+      "sourceType": "speak",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "line": "goodluck"
+      },
+      "exampleEvent": {
+        "type": "speak",
+        "line": "goodluck",
+        "blocking": true
+      }
+    },
+    {
+      "id": "speak.insurance",
+      "label": "Försäkring erbjuds",
+      "description": "Spelmotorn har publicerat insurance; labbet ändrar bara hur informationen presenteras.",
+      "sourceType": "speak",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "line": "insurance"
+      },
+      "exampleEvent": {
+        "type": "speak",
+        "line": "insurance"
+      }
+    },
+    {
+      "id": "speak.double",
+      "label": "Dubbling bekräftad",
+      "description": "Frasen double kommer efter accepterad spelhandling, inte som ett råd att dubbla.",
+      "sourceType": "speak",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "line": "double"
+      },
+      "exampleEvent": {
+        "type": "speak",
+        "line": "double"
+      }
+    },
+    {
+      "id": "speak.other",
+      "label": "Övrig spelreplik",
+      "description": "Labbgrupp för flera publicerade line-namn, inklusive resultat och placebets. Exakt källreplik bevaras. En gemensam labbvideo är inte ett godkänt talpaket för alla dessa repliker.",
+      "sourceType": "speak",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {},
+      "exampleEvent": {
+        "type": "speak",
+        "line": "placebets"
+      }
+    },
+    {
+      "id": "deal.player.left",
+      "label": "Kort till vänster",
+      "description": "Publicerad deal med clip.action=deal-left, box 0–1. Varianten behåller samma destination.",
+      "sourceType": "deal",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "clip.action": "deal-left"
+      },
+      "exampleEvent": {
+        "type": "deal",
+        "to": "box",
+        "box": 0,
+        "handIndex": 0,
+        "card": {
+          "r": "8",
+          "s": "♣"
+        },
+        "faceDown": false,
+        "shoeDraw": 2,
+        "clip": {
+          "action": "deal-left"
+        }
+      }
+    },
+    {
+      "id": "deal.player.centre",
+      "label": "Kort till mitten",
+      "description": "Publicerad deal med clip.action=deal-centre, box 2–4. Labbrörelsen är en platshållare, inte kalibrerad video.",
+      "sourceType": "deal",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "clip.action": "deal-centre"
+      },
+      "exampleEvent": {
+        "type": "deal",
+        "to": "box",
+        "box": 3,
+        "handIndex": 0,
+        "card": {
+          "r": "A",
+          "s": "♥"
+        },
+        "faceDown": false,
+        "shoeDraw": 3,
+        "clip": {
+          "action": "deal-centre"
+        }
+      }
+    },
+    {
+      "id": "deal.player.right",
+      "label": "Kort till höger",
+      "description": "Publicerad deal med clip.action=deal-right, box 5–6. Varianten behåller samma kort och destination.",
+      "sourceType": "deal",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "clip.action": "deal-right"
+      },
+      "exampleEvent": {
+        "type": "deal",
+        "to": "box",
+        "box": 6,
+        "handIndex": 0,
+        "card": {
+          "r": "4",
+          "s": "♦"
+        },
+        "faceDown": false,
+        "shoeDraw": 4,
+        "clip": {
+          "action": "deal-right"
+        }
+      }
+    },
+    {
+      "id": "deal.dealer",
+      "label": "Kort till croupiern",
+      "description": "Även hålkortet kommer som deal. När faceDown=true projiceras card alltid till null.",
+      "sourceType": "deal",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "to": "dealer"
+      },
+      "exampleEvent": {
+        "type": "deal",
+        "to": "dealer",
+        "box": null,
+        "handIndex": null,
+        "card": null,
+        "faceDown": true,
+        "shoeDraw": 5,
+        "clip": {
+          "action": "deal-dealer"
+        }
+      }
+    },
+    {
+      "id": "reveal.dealer",
+      "label": "Visa croupierns kort",
+      "description": "reveal innehåller först nu det publicerade hålkortets rank och färg.",
+      "sourceType": "reveal",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {},
+      "exampleEvent": {
+        "type": "reveal",
+        "to": "dealer",
+        "card": {
+          "r": "K",
+          "s": "♠"
+        },
+        "shoeDraw": 5
+      }
+    },
+    {
+      "id": "turn.player",
+      "label": "Spelarens tur",
+      "description": "turn markerar box, handIndex och legalActions som motorn redan har beslutat.",
+      "sourceType": "turn",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {},
+      "exampleEvent": {
+        "type": "turn",
+        "box": 3,
+        "handIndex": 0,
+        "legalActions": [
+          "hit",
+          "stand",
+          "double"
+        ]
+      }
+    },
+    {
+      "id": "settle.blackjack",
+      "label": "Publicerad blackjack",
+      "description": "Semantisk mappning av settle.hands[].outcome=blackjack. Inga framtida kort eller odds används.",
+      "sourceType": "settle",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "hands.outcome": {
+          "includes": "blackjack"
+        }
+      },
+      "exampleEvent": {
+        "type": "settle",
+        "dealerTotal": 18,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "blackjack"
+          }
+        ]
+      }
+    },
+    {
+      "id": "settle.dealerBust",
+      "label": "Croupiern över 21",
+      "description": "Semantisk mappning av det publicerade dealerTotal. Enskilda handresultat bevaras.",
+      "sourceType": "settle",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "dealerTotal": {
+          "gt": 21
+        }
+      },
+      "exampleEvent": {
+        "type": "settle",
+        "dealerTotal": 23,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "win"
+          }
+        ]
+      }
+    },
+    {
+      "id": "settle.win",
+      "label": "Publicerad vinst",
+      "description": "Minst en publicerad hand har outcome=win. Detta är presentation, inte spelråd.",
+      "sourceType": "settle",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "hands.outcome": {
+          "includes": "win"
+        }
+      },
+      "exampleEvent": {
+        "type": "settle",
+        "dealerTotal": 18,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "win"
+          }
+        ]
+      }
+    },
+    {
+      "id": "settle.push",
+      "label": "Oavgjort",
+      "description": "Labbgrupp när alla publicerade handresultat är push. Motorns separata speak.line bevaras; exempelvis kan dealer-blackjack ge denna resultatgrupp men en annan talrad.",
+      "sourceType": "settle",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {
+        "hands.outcome": {
+          "all_eq": "push"
+        }
+      },
+      "exampleEvent": {
+        "type": "settle",
+        "dealerTotal": 20,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "push"
+          }
+        ]
+      }
+    },
+    {
+      "id": "settle.other",
+      "label": "Övrigt resultat / förlust",
+      "description": "Labbets fallback när tidigare resultatgrupper inte matchar. Blandade händer kan träffa tidigare grupper. Exakta handresultat och motorns separata speak.line bevaras.",
+      "sourceType": "settle",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {},
+      "exampleEvent": {
+        "type": "settle",
+        "dealerTotal": 20,
+        "dealerBlackjack": false,
+        "hands": [
+          {
+            "box": 3,
+            "outcome": "lose"
+          }
+        ]
+      }
+    },
+    {
+      "id": "idle.ready",
+      "label": "Bordet väntar",
+      "description": "Publicerad idle. En återvändande spelare är simulerad kontext tills en riktig livscykelkoppling finns.",
+      "sourceType": "idle",
+      "sourceRef": "web/partner-presentation.mjs#presentationEvents",
+      "sourceStatus": "verified",
+      "match": {},
+      "exampleEvent": {
+        "type": "idle"
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "id": "returning-player",
+      "label": "Återvändande spelare",
+      "category": "social",
+      "path": "context.playerHistory.returning",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "id": "preferred-german",
+      "label": "Önskar tyska",
+      "category": "social",
+      "path": "context.playerHistory.preferredLanguage",
+      "op": "eq",
+      "value": "de"
+    },
+    {
+      "id": "recent-losses",
+      "label": "Två redan avgjorda förluster",
+      "category": "deterministic",
+      "path": "context.session.recentLosses",
+      "op": "gte",
+      "value": 2
+    },
+    {
+      "id": "chat-praise",
+      "label": "Beröm i chatten",
+      "category": "social",
+      "path": "context.chat.signal",
+      "op": "eq",
+      "value": "praise"
+    },
+    {
+      "id": "chat-boundary",
+      "label": "Olämplig chatt",
+      "category": "social",
+      "path": "context.chat.signal",
+      "op": "eq",
+      "value": "inappropriate"
+    },
+    {
+      "id": "recent-wins",
+      "label": "Tre redan avgjorda vinster",
+      "category": "deterministic",
+      "path": "context.session.recentWins",
+      "op": "gte",
+      "value": 3
+    },
+    {
+      "id": "warm-mood",
+      "label": "Varm framtoning",
+      "category": "temperament",
+      "path": "context.temperament.mood",
+      "op": "eq",
+      "value": "warm"
+    },
+    {
+      "id": "calm-mood",
+      "label": "Lugn framtoning",
+      "category": "temperament",
+      "path": "context.temperament.mood",
+      "op": "eq",
+      "value": "calm"
+    },
+    {
+      "id": "playful-mood",
+      "label": "Lekfull framtoning (labbexempel)",
+      "category": "temperament",
+      "path": "context.temperament.mood",
+      "op": "eq",
+      "value": "playful"
+    }
+  ],
+  "lines": [
+    {
+      "dealerId": "astrid",
+      "eventId": "speak.goodluck",
+      "label": "Standardhälsning",
+      "baselineVariantId": "astrid.speak.goodluck.standard",
+      "variants": [
+        {
+          "id": "astrid.speak.goodluck.standard",
+          "label": "Standardhälsning",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.goodluck.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.goodluck.contextual",
+          "label": "Välkommen tillbaka · tyska",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player",
+            "preferred-german"
+          ],
+          "assetId": "speak.goodluck.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.goodluck.motion3",
+          "label": "Rodnande tack · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.goodluck.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.goodluck.motion4",
+          "label": "Lekfull dubbelvink · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.goodluck.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "speak.insurance",
+      "label": "Informera",
+      "baselineVariantId": "astrid.speak.insurance.standard",
+      "variants": [
+        {
+          "id": "astrid.speak.insurance.standard",
+          "label": "Informera",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.insurance.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.insurance.contextual",
+          "label": "Lugn information",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "speak.insurance.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.insurance.motion3",
+          "label": "Varmt tack · öppen hand · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.insurance.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.insurance.motion4",
+          "label": "Lätt nick · tydlig information · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.insurance.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "speak.double",
+      "label": "Bekräfta",
+      "baselineVariantId": "astrid.speak.double.standard",
+      "variants": [
+        {
+          "id": "astrid.speak.double.standard",
+          "label": "Bekräfta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.double.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.double.contextual",
+          "label": "Vänlig bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "speak.double.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.double.motion3",
+          "label": "Hand på hjärtat · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.double.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.double.motion4",
+          "label": "Dubbel nickning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.double.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "label": "Läs spelreplik",
+      "baselineVariantId": "astrid.speak.other.standard",
+      "variants": [
+        {
+          "id": "astrid.speak.other.standard",
+          "label": "Läs spelreplik",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.other.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.other.contextual",
+          "label": "Lugn gränssättning",
+          "priority": 10,
+          "triggerIds": [
+            "chat-boundary"
+          ],
+          "assetId": "speak.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.other.motion3",
+          "label": "Generat leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.speak.other.motion4",
+          "label": "Lekfull huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.other.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "deal.player.left",
+      "label": "Dela vänster",
+      "baselineVariantId": "astrid.deal.player.left.standard",
+      "variants": [
+        {
+          "id": "astrid.deal.player.left.standard",
+          "label": "Dela vänster",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.left.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.left.contextual",
+          "label": "Lugn delning vänster",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.player.left.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.left.motion3",
+          "label": "Varm blick åt vänster · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.left.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.left.motion4",
+          "label": "Lätt svep åt vänster · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.left.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "deal.player.centre",
+      "label": "Dela mitten",
+      "baselineVariantId": "astrid.deal.player.centre.standard",
+      "variants": [
+        {
+          "id": "astrid.deal.player.centre.standard",
+          "label": "Dela mitten",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.centre.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.centre.contextual",
+          "label": "Vänlig delning mitten",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "deal.player.centre.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.centre.motion3",
+          "label": "Tacksam nick mot mitten · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.centre.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.centre.motion4",
+          "label": "Litet studsande svep · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.centre.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "deal.player.right",
+      "label": "Dela höger",
+      "baselineVariantId": "astrid.deal.player.right.standard",
+      "variants": [
+        {
+          "id": "astrid.deal.player.right.standard",
+          "label": "Dela höger",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.right.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.right.contextual",
+          "label": "Lugn delning höger",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.player.right.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.right.motion3",
+          "label": "Leende åt höger · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.right.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.player.right.motion4",
+          "label": "Lätt svep åt höger · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.right.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "deal.dealer",
+      "label": "Dela croupier",
+      "baselineVariantId": "astrid.deal.dealer.standard",
+      "variants": [
+        {
+          "id": "astrid.deal.dealer.standard",
+          "label": "Dela croupier",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.dealer.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.dealer.contextual",
+          "label": "Lugn delning croupier",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.dealer.motion3",
+          "label": "Varm nick · eget kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.deal.dealer.motion4",
+          "label": "Liten cirkelgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.dealer.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "reveal.dealer",
+      "label": "Vänd kort",
+      "baselineVariantId": "astrid.reveal.dealer.standard",
+      "variants": [
+        {
+          "id": "astrid.reveal.dealer.standard",
+          "label": "Vänd kort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "reveal.dealer.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.reveal.dealer.contextual",
+          "label": "Lugn kortvändning",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "reveal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.reveal.dealer.motion3",
+          "label": "Mjuk blick · visa kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "reveal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.reveal.dealer.motion4",
+          "label": "Lätt presenterande gest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "reveal.dealer.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "turn.player",
+      "label": "Visa tur",
+      "baselineVariantId": "astrid.turn.player.standard",
+      "variants": [
+        {
+          "id": "astrid.turn.player.standard",
+          "label": "Visa tur",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "turn.player.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.turn.player.contextual",
+          "label": "Vänlig turmarkering",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player"
+          ],
+          "assetId": "turn.player.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.turn.player.motion3",
+          "label": "Varm inbjudan · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "turn.player.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.turn.player.motion4",
+          "label": "Två lätta pekningar · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "turn.player.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "settle.blackjack",
+      "label": "Bekräfta blackjack",
+      "baselineVariantId": "astrid.settle.blackjack.standard",
+      "variants": [
+        {
+          "id": "astrid.settle.blackjack.standard",
+          "label": "Bekräfta blackjack",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.blackjack.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.blackjack.contextual",
+          "label": "Lågmäld bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.blackjack.motion3",
+          "label": "Tacksam bugning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.blackjack.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.blackjack.motion4",
+          "label": "Lätt dubbelhälsning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "settle.dealerBust",
+      "label": "Visa resultat",
+      "baselineVariantId": "astrid.settle.dealerBust.standard",
+      "variants": [
+        {
+          "id": "astrid.settle.dealerBust.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.dealerBust.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.dealerBust.contextual",
+          "label": "Tacka för beröm",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "settle.dealerBust.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.dealerBust.motion3",
+          "label": "Rodnande leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.dealerBust.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.dealerBust.motion4",
+          "label": "Litet axelryck · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.dealerBust.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "settle.win",
+      "label": "Bekräfta vinst",
+      "baselineVariantId": "astrid.settle.win.standard",
+      "variants": [
+        {
+          "id": "astrid.settle.win.standard",
+          "label": "Bekräfta vinst",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.win.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.win.contextual",
+          "label": "Lågmäld vinstreaktion",
+          "priority": 10,
+          "triggerIds": [
+            "recent-wins"
+          ],
+          "assetId": "settle.win.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.win.motion3",
+          "label": "Varm gratulation · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.win.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.win.motion4",
+          "label": "Lätt öppen-handsgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.win.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "settle.push",
+      "label": "Visa oavgjort",
+      "baselineVariantId": "astrid.settle.push.standard",
+      "variants": [
+        {
+          "id": "astrid.settle.push.standard",
+          "label": "Visa oavgjort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.push.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.push.contextual",
+          "label": "Lugn bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "settle.push.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.push.motion3",
+          "label": "Vänligt leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.push.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.push.motion4",
+          "label": "Lekfull balansgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.push.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "settle.other",
+      "label": "Visa resultat",
+      "baselineVariantId": "astrid.settle.other.standard",
+      "variants": [
+        {
+          "id": "astrid.settle.other.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.other.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.other.contextual",
+          "label": "Neutral gränssättning",
+          "priority": 10,
+          "triggerIds": [
+            "chat-boundary"
+          ],
+          "assetId": "settle.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.other.motion3",
+          "label": "Vänlig omtanke · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.settle.other.motion4",
+          "label": "Mjuk huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.other.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "astrid",
+      "eventId": "idle.ready",
+      "label": "Vänta",
+      "baselineVariantId": "astrid.idle.ready.standard",
+      "variants": [
+        {
+          "id": "astrid.idle.ready.standard",
+          "label": "Vänta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "idle.ready.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.idle.ready.contextual",
+          "label": "Välkommen tillbaka",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player"
+          ],
+          "assetId": "idle.ready.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.idle.ready.motion3",
+          "label": "Generad hälsning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "idle.ready.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "astrid.idle.ready.motion4",
+          "label": "Liten hälsningsdans · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "idle.ready.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "speak.goodluck",
+      "label": "Standardhälsning",
+      "baselineVariantId": "vera.speak.goodluck.standard",
+      "variants": [
+        {
+          "id": "vera.speak.goodluck.standard",
+          "label": "Standardhälsning",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.goodluck.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.goodluck.contextual",
+          "label": "Välkommen tillbaka · tyska",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player",
+            "preferred-german"
+          ],
+          "assetId": "speak.goodluck.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.goodluck.motion3",
+          "label": "Rodnande tack · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.goodluck.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.goodluck.motion4",
+          "label": "Lekfull dubbelvink · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.goodluck.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "speak.insurance",
+      "label": "Informera",
+      "baselineVariantId": "vera.speak.insurance.standard",
+      "variants": [
+        {
+          "id": "vera.speak.insurance.standard",
+          "label": "Informera",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.insurance.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.insurance.contextual",
+          "label": "Lugn information",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "speak.insurance.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.insurance.motion3",
+          "label": "Varmt tack · öppen hand · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.insurance.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.insurance.motion4",
+          "label": "Lätt nick · tydlig information · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.insurance.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "speak.double",
+      "label": "Bekräfta",
+      "baselineVariantId": "vera.speak.double.standard",
+      "variants": [
+        {
+          "id": "vera.speak.double.standard",
+          "label": "Bekräfta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.double.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.double.contextual",
+          "label": "Vänlig bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "speak.double.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.double.motion3",
+          "label": "Hand på hjärtat · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.double.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.double.motion4",
+          "label": "Dubbel nickning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.double.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "speak.other",
+      "label": "Läs spelreplik",
+      "baselineVariantId": "vera.speak.other.standard",
+      "variants": [
+        {
+          "id": "vera.speak.other.standard",
+          "label": "Läs spelreplik",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.other.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.other.contextual",
+          "label": "Lugn gränssättning",
+          "priority": 10,
+          "triggerIds": [
+            "chat-boundary"
+          ],
+          "assetId": "speak.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.other.motion3",
+          "label": "Generat leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.speak.other.motion4",
+          "label": "Lekfull huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.other.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "deal.player.left",
+      "label": "Dela vänster",
+      "baselineVariantId": "vera.deal.player.left.standard",
+      "variants": [
+        {
+          "id": "vera.deal.player.left.standard",
+          "label": "Dela vänster",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.left.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.left.contextual",
+          "label": "Lugn delning vänster",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.player.left.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.left.motion3",
+          "label": "Varm blick åt vänster · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.left.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.left.motion4",
+          "label": "Lätt svep åt vänster · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.left.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "deal.player.centre",
+      "label": "Dela mitten",
+      "baselineVariantId": "vera.deal.player.centre.standard",
+      "variants": [
+        {
+          "id": "vera.deal.player.centre.standard",
+          "label": "Dela mitten",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.centre.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.centre.contextual",
+          "label": "Vänlig delning mitten",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "deal.player.centre.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.centre.motion3",
+          "label": "Tacksam nick mot mitten · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.centre.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.centre.motion4",
+          "label": "Litet studsande svep · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.centre.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "deal.player.right",
+      "label": "Dela höger",
+      "baselineVariantId": "vera.deal.player.right.standard",
+      "variants": [
+        {
+          "id": "vera.deal.player.right.standard",
+          "label": "Dela höger",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.right.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.right.contextual",
+          "label": "Lugn delning höger",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.player.right.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.right.motion3",
+          "label": "Leende åt höger · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.right.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.player.right.motion4",
+          "label": "Lätt svep åt höger · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.right.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "deal.dealer",
+      "label": "Dela croupier",
+      "baselineVariantId": "vera.deal.dealer.standard",
+      "variants": [
+        {
+          "id": "vera.deal.dealer.standard",
+          "label": "Dela croupier",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.dealer.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.dealer.contextual",
+          "label": "Lugn delning croupier",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.dealer.motion3",
+          "label": "Varm nick · eget kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.deal.dealer.motion4",
+          "label": "Liten cirkelgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.dealer.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "reveal.dealer",
+      "label": "Vänd kort",
+      "baselineVariantId": "vera.reveal.dealer.standard",
+      "variants": [
+        {
+          "id": "vera.reveal.dealer.standard",
+          "label": "Vänd kort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "reveal.dealer.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.reveal.dealer.contextual",
+          "label": "Lugn kortvändning",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "reveal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.reveal.dealer.motion3",
+          "label": "Mjuk blick · visa kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "reveal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.reveal.dealer.motion4",
+          "label": "Lätt presenterande gest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "reveal.dealer.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "turn.player",
+      "label": "Visa tur",
+      "baselineVariantId": "vera.turn.player.standard",
+      "variants": [
+        {
+          "id": "vera.turn.player.standard",
+          "label": "Visa tur",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "turn.player.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.turn.player.contextual",
+          "label": "Vänlig turmarkering",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player"
+          ],
+          "assetId": "turn.player.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.turn.player.motion3",
+          "label": "Varm inbjudan · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "turn.player.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.turn.player.motion4",
+          "label": "Två lätta pekningar · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "turn.player.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "settle.blackjack",
+      "label": "Bekräfta blackjack",
+      "baselineVariantId": "vera.settle.blackjack.standard",
+      "variants": [
+        {
+          "id": "vera.settle.blackjack.standard",
+          "label": "Bekräfta blackjack",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.blackjack.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.blackjack.contextual",
+          "label": "Lågmäld bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.blackjack.motion3",
+          "label": "Tacksam bugning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.blackjack.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.blackjack.motion4",
+          "label": "Lätt dubbelhälsning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "settle.dealerBust",
+      "label": "Visa resultat",
+      "baselineVariantId": "vera.settle.dealerBust.standard",
+      "variants": [
+        {
+          "id": "vera.settle.dealerBust.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.dealerBust.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.dealerBust.contextual",
+          "label": "Tacka för beröm",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "settle.dealerBust.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.dealerBust.motion3",
+          "label": "Rodnande leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.dealerBust.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.dealerBust.motion4",
+          "label": "Litet axelryck · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.dealerBust.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "settle.win",
+      "label": "Bekräfta vinst",
+      "baselineVariantId": "vera.settle.win.standard",
+      "variants": [
+        {
+          "id": "vera.settle.win.standard",
+          "label": "Bekräfta vinst",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.win.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.win.contextual",
+          "label": "Lågmäld vinstreaktion",
+          "priority": 10,
+          "triggerIds": [
+            "recent-wins"
+          ],
+          "assetId": "settle.win.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.win.motion3",
+          "label": "Varm gratulation · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.win.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.win.motion4",
+          "label": "Lätt öppen-handsgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.win.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "settle.push",
+      "label": "Visa oavgjort",
+      "baselineVariantId": "vera.settle.push.standard",
+      "variants": [
+        {
+          "id": "vera.settle.push.standard",
+          "label": "Visa oavgjort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.push.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.push.contextual",
+          "label": "Lugn bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "settle.push.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.push.motion3",
+          "label": "Vänligt leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.push.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.push.motion4",
+          "label": "Lekfull balansgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.push.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "settle.other",
+      "label": "Visa resultat",
+      "baselineVariantId": "vera.settle.other.standard",
+      "variants": [
+        {
+          "id": "vera.settle.other.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.other.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.other.contextual",
+          "label": "Neutral gränssättning",
+          "priority": 10,
+          "triggerIds": [
+            "chat-boundary"
+          ],
+          "assetId": "settle.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.other.motion3",
+          "label": "Vänlig omtanke · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.settle.other.motion4",
+          "label": "Mjuk huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.other.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "idle.ready",
+      "label": "Vänta",
+      "baselineVariantId": "vera.idle.ready.standard",
+      "variants": [
+        {
+          "id": "vera.idle.ready.standard",
+          "label": "Vänta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "idle.ready.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.idle.ready.contextual",
+          "label": "Välkommen tillbaka",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player"
+          ],
+          "assetId": "idle.ready.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.idle.ready.motion3",
+          "label": "Generad hälsning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "idle.ready.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "vera.idle.ready.motion4",
+          "label": "Liten hälsningsdans · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "idle.ready.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "speak.goodluck",
+      "label": "Standardhälsning",
+      "baselineVariantId": "amira.speak.goodluck.standard",
+      "variants": [
+        {
+          "id": "amira.speak.goodluck.standard",
+          "label": "Standardhälsning",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.goodluck.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.goodluck.contextual",
+          "label": "Välkommen tillbaka · tyska",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player",
+            "preferred-german"
+          ],
+          "assetId": "speak.goodluck.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.goodluck.motion3",
+          "label": "Rodnande tack · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.goodluck.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.goodluck.motion4",
+          "label": "Lekfull dubbelvink · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.goodluck.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "speak.insurance",
+      "label": "Informera",
+      "baselineVariantId": "amira.speak.insurance.standard",
+      "variants": [
+        {
+          "id": "amira.speak.insurance.standard",
+          "label": "Informera",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.insurance.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.insurance.contextual",
+          "label": "Lugn information",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "speak.insurance.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.insurance.motion3",
+          "label": "Varmt tack · öppen hand · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.insurance.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.insurance.motion4",
+          "label": "Lätt nick · tydlig information · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.insurance.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "speak.double",
+      "label": "Bekräfta",
+      "baselineVariantId": "amira.speak.double.standard",
+      "variants": [
+        {
+          "id": "amira.speak.double.standard",
+          "label": "Bekräfta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.double.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.double.contextual",
+          "label": "Vänlig bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "speak.double.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.double.motion3",
+          "label": "Hand på hjärtat · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.double.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.double.motion4",
+          "label": "Dubbel nickning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.double.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "speak.other",
+      "label": "Läs spelreplik",
+      "baselineVariantId": "amira.speak.other.standard",
+      "variants": [
+        {
+          "id": "amira.speak.other.standard",
+          "label": "Läs spelreplik",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.other.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.other.contextual",
+          "label": "Lugn gränssättning",
+          "priority": 10,
+          "triggerIds": [
+            "chat-boundary"
+          ],
+          "assetId": "speak.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.other.motion3",
+          "label": "Generat leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.speak.other.motion4",
+          "label": "Lekfull huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.other.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "deal.player.left",
+      "label": "Dela vänster",
+      "baselineVariantId": "amira.deal.player.left.standard",
+      "variants": [
+        {
+          "id": "amira.deal.player.left.standard",
+          "label": "Dela vänster",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.left.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.left.contextual",
+          "label": "Lugn delning vänster",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.player.left.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.left.motion3",
+          "label": "Varm blick åt vänster · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.left.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.left.motion4",
+          "label": "Lätt svep åt vänster · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.left.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "deal.player.centre",
+      "label": "Dela mitten",
+      "baselineVariantId": "amira.deal.player.centre.standard",
+      "variants": [
+        {
+          "id": "amira.deal.player.centre.standard",
+          "label": "Dela mitten",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.centre.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.centre.contextual",
+          "label": "Vänlig delning mitten",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "deal.player.centre.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.centre.motion3",
+          "label": "Tacksam nick mot mitten · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.centre.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.centre.motion4",
+          "label": "Litet studsande svep · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.centre.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "deal.player.right",
+      "label": "Dela höger",
+      "baselineVariantId": "amira.deal.player.right.standard",
+      "variants": [
+        {
+          "id": "amira.deal.player.right.standard",
+          "label": "Dela höger",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.right.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.right.contextual",
+          "label": "Lugn delning höger",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.player.right.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.right.motion3",
+          "label": "Leende åt höger · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.right.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.player.right.motion4",
+          "label": "Lätt svep åt höger · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.right.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "deal.dealer",
+      "label": "Dela croupier",
+      "baselineVariantId": "amira.deal.dealer.standard",
+      "variants": [
+        {
+          "id": "amira.deal.dealer.standard",
+          "label": "Dela croupier",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.dealer.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.dealer.contextual",
+          "label": "Lugn delning croupier",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.dealer.motion3",
+          "label": "Varm nick · eget kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.deal.dealer.motion4",
+          "label": "Liten cirkelgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.dealer.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "reveal.dealer",
+      "label": "Vänd kort",
+      "baselineVariantId": "amira.reveal.dealer.standard",
+      "variants": [
+        {
+          "id": "amira.reveal.dealer.standard",
+          "label": "Vänd kort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "reveal.dealer.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.reveal.dealer.contextual",
+          "label": "Lugn kortvändning",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "reveal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.reveal.dealer.motion3",
+          "label": "Mjuk blick · visa kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "reveal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.reveal.dealer.motion4",
+          "label": "Lätt presenterande gest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "reveal.dealer.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "turn.player",
+      "label": "Visa tur",
+      "baselineVariantId": "amira.turn.player.standard",
+      "variants": [
+        {
+          "id": "amira.turn.player.standard",
+          "label": "Visa tur",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "turn.player.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.turn.player.contextual",
+          "label": "Vänlig turmarkering",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player"
+          ],
+          "assetId": "turn.player.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.turn.player.motion3",
+          "label": "Varm inbjudan · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "turn.player.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.turn.player.motion4",
+          "label": "Två lätta pekningar · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "turn.player.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "settle.blackjack",
+      "label": "Bekräfta blackjack",
+      "baselineVariantId": "amira.settle.blackjack.standard",
+      "variants": [
+        {
+          "id": "amira.settle.blackjack.standard",
+          "label": "Bekräfta blackjack",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.blackjack.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.blackjack.contextual",
+          "label": "Lågmäld bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.blackjack.motion3",
+          "label": "Tacksam bugning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.blackjack.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.blackjack.motion4",
+          "label": "Lätt dubbelhälsning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "settle.dealerBust",
+      "label": "Visa resultat",
+      "baselineVariantId": "amira.settle.dealerBust.standard",
+      "variants": [
+        {
+          "id": "amira.settle.dealerBust.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.dealerBust.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.dealerBust.contextual",
+          "label": "Tacka för beröm",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "settle.dealerBust.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.dealerBust.motion3",
+          "label": "Rodnande leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.dealerBust.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.dealerBust.motion4",
+          "label": "Litet axelryck · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.dealerBust.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "settle.win",
+      "label": "Bekräfta vinst",
+      "baselineVariantId": "amira.settle.win.standard",
+      "variants": [
+        {
+          "id": "amira.settle.win.standard",
+          "label": "Bekräfta vinst",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.win.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.win.contextual",
+          "label": "Lågmäld vinstreaktion",
+          "priority": 10,
+          "triggerIds": [
+            "recent-wins"
+          ],
+          "assetId": "settle.win.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.win.motion3",
+          "label": "Varm gratulation · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.win.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.win.motion4",
+          "label": "Lätt öppen-handsgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.win.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "settle.push",
+      "label": "Visa oavgjort",
+      "baselineVariantId": "amira.settle.push.standard",
+      "variants": [
+        {
+          "id": "amira.settle.push.standard",
+          "label": "Visa oavgjort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.push.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.push.contextual",
+          "label": "Lugn bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "settle.push.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.push.motion3",
+          "label": "Vänligt leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.push.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.push.motion4",
+          "label": "Lekfull balansgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.push.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "settle.other",
+      "label": "Visa resultat",
+      "baselineVariantId": "amira.settle.other.standard",
+      "variants": [
+        {
+          "id": "amira.settle.other.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.other.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.other.contextual",
+          "label": "Neutral gränssättning",
+          "priority": 10,
+          "triggerIds": [
+            "chat-boundary"
+          ],
+          "assetId": "settle.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.other.motion3",
+          "label": "Vänlig omtanke · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.settle.other.motion4",
+          "label": "Mjuk huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.other.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "amira",
+      "eventId": "idle.ready",
+      "label": "Vänta",
+      "baselineVariantId": "amira.idle.ready.standard",
+      "variants": [
+        {
+          "id": "amira.idle.ready.standard",
+          "label": "Vänta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "idle.ready.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.idle.ready.contextual",
+          "label": "Välkommen tillbaka",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player"
+          ],
+          "assetId": "idle.ready.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.idle.ready.motion3",
+          "label": "Generad hälsning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "idle.ready.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "amira.idle.ready.motion4",
+          "label": "Liten hälsningsdans · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "idle.ready.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "speak.goodluck",
+      "label": "Standardhälsning",
+      "baselineVariantId": "mei.speak.goodluck.standard",
+      "variants": [
+        {
+          "id": "mei.speak.goodluck.standard",
+          "label": "Standardhälsning",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.goodluck.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.goodluck.contextual",
+          "label": "Välkommen tillbaka · tyska",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player",
+            "preferred-german"
+          ],
+          "assetId": "speak.goodluck.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.goodluck.motion3",
+          "label": "Rodnande tack · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.goodluck.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.goodluck.motion4",
+          "label": "Lekfull dubbelvink · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.goodluck.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "speak.insurance",
+      "label": "Informera",
+      "baselineVariantId": "mei.speak.insurance.standard",
+      "variants": [
+        {
+          "id": "mei.speak.insurance.standard",
+          "label": "Informera",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.insurance.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.insurance.contextual",
+          "label": "Lugn information",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "speak.insurance.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.insurance.motion3",
+          "label": "Varmt tack · öppen hand · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.insurance.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.insurance.motion4",
+          "label": "Lätt nick · tydlig information · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.insurance.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "speak.double",
+      "label": "Bekräfta",
+      "baselineVariantId": "mei.speak.double.standard",
+      "variants": [
+        {
+          "id": "mei.speak.double.standard",
+          "label": "Bekräfta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.double.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.double.contextual",
+          "label": "Vänlig bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "speak.double.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.double.motion3",
+          "label": "Hand på hjärtat · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.double.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.double.motion4",
+          "label": "Dubbel nickning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.double.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "speak.other",
+      "label": "Läs spelreplik",
+      "baselineVariantId": "mei.speak.other.standard",
+      "variants": [
+        {
+          "id": "mei.speak.other.standard",
+          "label": "Läs spelreplik",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.other.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.other.contextual",
+          "label": "Lugn gränssättning",
+          "priority": 10,
+          "triggerIds": [
+            "chat-boundary"
+          ],
+          "assetId": "speak.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.other.motion3",
+          "label": "Generat leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "speak.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.speak.other.motion4",
+          "label": "Lekfull huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "speak.other.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "deal.player.left",
+      "label": "Dela vänster",
+      "baselineVariantId": "mei.deal.player.left.standard",
+      "variants": [
+        {
+          "id": "mei.deal.player.left.standard",
+          "label": "Dela vänster",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.left.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.left.contextual",
+          "label": "Lugn delning vänster",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.player.left.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.left.motion3",
+          "label": "Varm blick åt vänster · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.left.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.left.motion4",
+          "label": "Lätt svep åt vänster · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.left.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "deal.player.centre",
+      "label": "Dela mitten",
+      "baselineVariantId": "mei.deal.player.centre.standard",
+      "variants": [
+        {
+          "id": "mei.deal.player.centre.standard",
+          "label": "Dela mitten",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.centre.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.centre.contextual",
+          "label": "Vänlig delning mitten",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "deal.player.centre.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.centre.motion3",
+          "label": "Tacksam nick mot mitten · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.centre.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.centre.motion4",
+          "label": "Litet studsande svep · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.centre.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "deal.player.right",
+      "label": "Dela höger",
+      "baselineVariantId": "mei.deal.player.right.standard",
+      "variants": [
+        {
+          "id": "mei.deal.player.right.standard",
+          "label": "Dela höger",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.right.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.right.contextual",
+          "label": "Lugn delning höger",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.player.right.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.right.motion3",
+          "label": "Leende åt höger · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.player.right.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.player.right.motion4",
+          "label": "Lätt svep åt höger · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.player.right.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "deal.dealer",
+      "label": "Dela croupier",
+      "baselineVariantId": "mei.deal.dealer.standard",
+      "variants": [
+        {
+          "id": "mei.deal.dealer.standard",
+          "label": "Dela croupier",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.dealer.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.dealer.contextual",
+          "label": "Lugn delning croupier",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "deal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.dealer.motion3",
+          "label": "Varm nick · eget kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "deal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.deal.dealer.motion4",
+          "label": "Liten cirkelgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "deal.dealer.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "reveal.dealer",
+      "label": "Vänd kort",
+      "baselineVariantId": "mei.reveal.dealer.standard",
+      "variants": [
+        {
+          "id": "mei.reveal.dealer.standard",
+          "label": "Vänd kort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "reveal.dealer.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.reveal.dealer.contextual",
+          "label": "Lugn kortvändning",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "reveal.dealer.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.reveal.dealer.motion3",
+          "label": "Mjuk blick · visa kort · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "reveal.dealer.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.reveal.dealer.motion4",
+          "label": "Lätt presenterande gest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "reveal.dealer.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "turn.player",
+      "label": "Visa tur",
+      "baselineVariantId": "mei.turn.player.standard",
+      "variants": [
+        {
+          "id": "mei.turn.player.standard",
+          "label": "Visa tur",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "turn.player.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.turn.player.contextual",
+          "label": "Vänlig turmarkering",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player"
+          ],
+          "assetId": "turn.player.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.turn.player.motion3",
+          "label": "Varm inbjudan · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "turn.player.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.turn.player.motion4",
+          "label": "Två lätta pekningar · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "turn.player.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "settle.blackjack",
+      "label": "Bekräfta blackjack",
+      "baselineVariantId": "mei.settle.blackjack.standard",
+      "variants": [
+        {
+          "id": "mei.settle.blackjack.standard",
+          "label": "Bekräfta blackjack",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.blackjack.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.blackjack.contextual",
+          "label": "Lågmäld bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.blackjack.motion3",
+          "label": "Tacksam bugning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.blackjack.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.blackjack.motion4",
+          "label": "Lätt dubbelhälsning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.blackjack.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "settle.dealerBust",
+      "label": "Visa resultat",
+      "baselineVariantId": "mei.settle.dealerBust.standard",
+      "variants": [
+        {
+          "id": "mei.settle.dealerBust.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.dealerBust.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.dealerBust.contextual",
+          "label": "Tacka för beröm",
+          "priority": 10,
+          "triggerIds": [
+            "chat-praise"
+          ],
+          "assetId": "settle.dealerBust.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.dealerBust.motion3",
+          "label": "Rodnande leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.dealerBust.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.dealerBust.motion4",
+          "label": "Litet axelryck · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.dealerBust.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "settle.win",
+      "label": "Bekräfta vinst",
+      "baselineVariantId": "mei.settle.win.standard",
+      "variants": [
+        {
+          "id": "mei.settle.win.standard",
+          "label": "Bekräfta vinst",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.win.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.win.contextual",
+          "label": "Lågmäld vinstreaktion",
+          "priority": 10,
+          "triggerIds": [
+            "recent-wins"
+          ],
+          "assetId": "settle.win.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.win.motion3",
+          "label": "Varm gratulation · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.win.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.win.motion4",
+          "label": "Lätt öppen-handsgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.win.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "settle.push",
+      "label": "Visa oavgjort",
+      "baselineVariantId": "mei.settle.push.standard",
+      "variants": [
+        {
+          "id": "mei.settle.push.standard",
+          "label": "Visa oavgjort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.push.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.push.contextual",
+          "label": "Lugn bekräftelse",
+          "priority": 10,
+          "triggerIds": [
+            "recent-losses"
+          ],
+          "assetId": "settle.push.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.push.motion3",
+          "label": "Vänligt leende · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.push.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.push.motion4",
+          "label": "Lekfull balansgest · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.push.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "settle.other",
+      "label": "Visa resultat",
+      "baselineVariantId": "mei.settle.other.standard",
+      "variants": [
+        {
+          "id": "mei.settle.other.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.other.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.other.contextual",
+          "label": "Neutral gränssättning",
+          "priority": 10,
+          "triggerIds": [
+            "chat-boundary"
+          ],
+          "assetId": "settle.other.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.other.motion3",
+          "label": "Vänlig omtanke · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "settle.other.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.settle.other.motion4",
+          "label": "Mjuk huvudlutning · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "settle.other.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "idle.ready",
+      "label": "Vänta",
+      "baselineVariantId": "mei.idle.ready.standard",
+      "variants": [
+        {
+          "id": "mei.idle.ready.standard",
+          "label": "Vänta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "idle.ready.standard",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.idle.ready.contextual",
+          "label": "Välkommen tillbaka",
+          "priority": 10,
+          "triggerIds": [
+            "returning-player"
+          ],
+          "assetId": "idle.ready.contextual",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.idle.ready.motion3",
+          "label": "Generad hälsning · labb",
+          "priority": 20,
+          "triggerIds": [
+            "chat-praise",
+            "warm-mood"
+          ],
+          "assetId": "idle.ready.motion3",
+          "videoGenerationId": null
+        },
+        {
+          "id": "mei.idle.ready.motion4",
+          "label": "Liten hälsningsdans · labb",
+          "priority": 15,
+          "triggerIds": [
+            "playful-mood",
+            "recent-wins"
+          ],
+          "assetId": "idle.ready.motion4",
+          "videoGenerationId": null
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "speak.goodluck.standard",
+      "label": "Standardhälsning",
+      "kind": "animation",
+      "animation": "wave",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "speak.goodluck.contextual",
+      "label": "Välkommen tillbaka · tyska",
+      "kind": "animation",
+      "animation": "wave",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "speak.insurance.standard",
+      "label": "Informera",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "speak.insurance.contextual",
+      "label": "Lugn information",
+      "kind": "animation",
+      "animation": "nod",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "speak.double.standard",
+      "label": "Bekräfta",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "speak.double.contextual",
+      "label": "Vänlig bekräftelse",
+      "kind": "animation",
+      "animation": "nod",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "speak.other.standard",
+      "label": "Läs spelreplik",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "speak.other.contextual",
+      "label": "Lugn gränssättning",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "deal.player.left.standard",
+      "label": "Dela vänster",
+      "kind": "animation",
+      "animation": "deal-left",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "deal.player.left.contextual",
+      "label": "Lugn delning vänster",
+      "kind": "animation",
+      "animation": "deal-left",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "deal.player.centre.standard",
+      "label": "Dela mitten",
+      "kind": "animation",
+      "animation": "deal-centre",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "deal.player.centre.contextual",
+      "label": "Vänlig delning mitten",
+      "kind": "animation",
+      "animation": "deal-centre",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "deal.player.right.standard",
+      "label": "Dela höger",
+      "kind": "animation",
+      "animation": "deal-right",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "deal.player.right.contextual",
+      "label": "Lugn delning höger",
+      "kind": "animation",
+      "animation": "deal-right",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "deal.dealer.standard",
+      "label": "Dela croupier",
+      "kind": "animation",
+      "animation": "deal-dealer",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "deal.dealer.contextual",
+      "label": "Lugn delning croupier",
+      "kind": "animation",
+      "animation": "deal-dealer",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "reveal.dealer.standard",
+      "label": "Vänd kort",
+      "kind": "animation",
+      "animation": "reveal",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "reveal.dealer.contextual",
+      "label": "Lugn kortvändning",
+      "kind": "animation",
+      "animation": "reveal",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "turn.player.standard",
+      "label": "Visa tur",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "turn.player.contextual",
+      "label": "Vänlig turmarkering",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "settle.blackjack.standard",
+      "label": "Bekräfta blackjack",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "settle.blackjack.contextual",
+      "label": "Lågmäld bekräftelse",
+      "kind": "animation",
+      "animation": "nod",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "settle.dealerBust.standard",
+      "label": "Visa resultat",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "settle.dealerBust.contextual",
+      "label": "Tacka för beröm",
+      "kind": "animation",
+      "animation": "wave",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "settle.win.standard",
+      "label": "Bekräfta vinst",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "settle.win.contextual",
+      "label": "Lågmäld vinstreaktion",
+      "kind": "animation",
+      "animation": "nod",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "settle.push.standard",
+      "label": "Visa oavgjort",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "settle.push.contextual",
+      "label": "Lugn bekräftelse",
+      "kind": "animation",
+      "animation": "reassure",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "settle.other.standard",
+      "label": "Visa resultat",
+      "kind": "animation",
+      "animation": "reassure",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "settle.other.contextual",
+      "label": "Neutral gränssättning",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "idle.ready.standard",
+      "label": "Vänta",
+      "kind": "animation",
+      "animation": "idle",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "idle.ready.contextual",
+      "label": "Välkommen tillbaka",
+      "kind": "animation",
+      "animation": "wave",
+      "color": "#d6b574",
+      "durationMs": 1700
+    },
+    {
+      "id": "speak.goodluck.motion3",
+      "label": "Rodnande tack · labb",
+      "kind": "animation",
+      "animation": "wave",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "speak.goodluck.motion4",
+      "label": "Lekfull dubbelvink · labb",
+      "kind": "animation",
+      "animation": "wave",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "speak.insurance.motion3",
+      "label": "Varmt tack · öppen hand · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "speak.insurance.motion4",
+      "label": "Lätt nick · tydlig information · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "speak.double.motion3",
+      "label": "Hand på hjärtat · labb",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "speak.double.motion4",
+      "label": "Dubbel nickning · labb",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "speak.other.motion3",
+      "label": "Generat leende · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "speak.other.motion4",
+      "label": "Lekfull huvudlutning · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "deal.player.left.motion3",
+      "label": "Varm blick åt vänster · labb",
+      "kind": "animation",
+      "animation": "deal-left",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "deal.player.left.motion4",
+      "label": "Lätt svep åt vänster · labb",
+      "kind": "animation",
+      "animation": "deal-left",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "deal.player.centre.motion3",
+      "label": "Tacksam nick mot mitten · labb",
+      "kind": "animation",
+      "animation": "deal-centre",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "deal.player.centre.motion4",
+      "label": "Litet studsande svep · labb",
+      "kind": "animation",
+      "animation": "deal-centre",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "deal.player.right.motion3",
+      "label": "Leende åt höger · labb",
+      "kind": "animation",
+      "animation": "deal-right",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "deal.player.right.motion4",
+      "label": "Lätt svep åt höger · labb",
+      "kind": "animation",
+      "animation": "deal-right",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "deal.dealer.motion3",
+      "label": "Varm nick · eget kort · labb",
+      "kind": "animation",
+      "animation": "deal-dealer",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "deal.dealer.motion4",
+      "label": "Liten cirkelgest · labb",
+      "kind": "animation",
+      "animation": "deal-dealer",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "reveal.dealer.motion3",
+      "label": "Mjuk blick · visa kort · labb",
+      "kind": "animation",
+      "animation": "reveal",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "reveal.dealer.motion4",
+      "label": "Lätt presenterande gest · labb",
+      "kind": "animation",
+      "animation": "reveal",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "turn.player.motion3",
+      "label": "Varm inbjudan · labb",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "turn.player.motion4",
+      "label": "Två lätta pekningar · labb",
+      "kind": "animation",
+      "animation": "point",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.blackjack.motion3",
+      "label": "Tacksam bugning · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.blackjack.motion4",
+      "label": "Lätt dubbelhälsning · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.dealerBust.motion3",
+      "label": "Rodnande leende · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.dealerBust.motion4",
+      "label": "Litet axelryck · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.win.motion3",
+      "label": "Varm gratulation · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.win.motion4",
+      "label": "Lätt öppen-handsgest · labb",
+      "kind": "animation",
+      "animation": "celebrate",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.push.motion3",
+      "label": "Vänligt leende · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.push.motion4",
+      "label": "Lekfull balansgest · labb",
+      "kind": "animation",
+      "animation": "neutral",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "settle.other.motion3",
+      "label": "Vänlig omtanke · labb",
+      "kind": "animation",
+      "animation": "reassure",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "settle.other.motion4",
+      "label": "Mjuk huvudlutning · labb",
+      "kind": "animation",
+      "animation": "reassure",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    },
+    {
+      "id": "idle.ready.motion3",
+      "label": "Generad hälsning · labb",
+      "kind": "animation",
+      "animation": "idle",
+      "color": "#d49fae",
+      "durationMs": 2100
+    },
+    {
+      "id": "idle.ready.motion4",
+      "label": "Liten hälsningsdans · labb",
+      "kind": "animation",
+      "animation": "idle",
+      "color": "#ab9cdb",
+      "durationMs": 2300
+    }
+  ],
+  "idlePolicy": {
+    "schemaVersion": 1,
+    "familyId": "astrid/idle.ready/ready",
+    "base": [
+      {
+        "videoId": "4a459446-ba3c-0075-04ab-ff6ed0b501a4",
+        "weight": 90,
+        "durationMs": 3040
+      },
+      {
+        "videoId": "9c8a4ed6-af99-b022-351a-58df8db6ddf8",
+        "weight": 10,
+        "durationMs": 3040
+      }
+    ],
+    "variants": [
+      {
+        "videoId": "f5a983d8-877e-317d-7b1c-2f4848c88488",
+        "durationMs": 3040,
+        "use": "automatic",
+        "automatic": {
+          "averageEveryMs": 25000,
+          "jitterMs": 5000,
+          "cooldownMs": 15000,
+          "maxPerMinute": 3
+        }
+      },
+      {
+        "videoId": "090751f3-fab4-327b-c5a2-0294f0de8bfe",
+        "durationMs": 3040,
+        "use": "manual",
+        "automatic": null
+      },
+      {
+        "videoId": "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
+        "durationMs": 3040,
+        "use": "manual",
+        "automatic": null
+      },
+      {
+        "videoId": "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
+        "durationMs": 3040,
+        "use": "openclaw",
+        "automatic": null
+      }
+    ]
+  }
+}

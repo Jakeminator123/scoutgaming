@@ -4,8 +4,11 @@ Croupier is the working blackjack demo with server-owned game state and a
 shared playback path for four AI dealers. It is a development product, not a
 certified RNG/RGS or a real-money system.
 
-For the separate local presentations editor, see [Croupier Studio in `lab/`](lab/README.md).
-On Windows, double-click [Start-Labb.cmd](Start-Labb.cmd). Key names and locations
+For the current Astrid demo, double-click [Start-Lissabon.cmd](Start-Lissabon.cmd)
+and follow [Lissabon stream lane](lissabon/README.md). It starts the connected
+game and focused lab with persistent local presentation settings.
+The earlier editor remains in [Croupier Studio](lab/README.md), via
+[Start-Labb.cmd](Start-Labb.cmd). Key names and locations
 (no secret values) are listed in [_ENVIROMENT-INFO.md](_ENVIROMENT-INFO.md).
 OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
 

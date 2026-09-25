@@ -1,3 +1,49 @@
+## 2026-09-25 — Lissabon stream lane säkrad för fortsatt Astrid-demo
+
+På Jakobs begäran är `lissabon/` den nya fokuserade demoingången, ovanpå
+samma Web-spelare, Emils manifest och gemensamma presentationsruntime.
+Basen före paketering är `e46bc8b`; leveransen märks med den annoterade
+Git-taggen `BRA_sammanbindning_av_KJE` på `jakeminator123/work`.
+
+- `Start-Lissabon.cmd` startar isolerat spel på 4200 och labb på 4201 med
+  genererat tal aktiverat. `/` i denna labbkörning leder till `/lissabon`.
+  Anslut öppnar Astrid med `presentation=local` och följer samma spelare.
+- Den nya ytan har Ström, Idle och Klipp & varianter. Ingen separat social
+  labbchatt eller alternativ spelrenderare ingår. Äldre provytor ligger kvar
+  under den vanliga studion för avancerat arbete; inga medier raderades.
+- Fryst `project.snapshot.json` hämtades från den fungerande körningens
+  projektstore (den körningen använde seed). Första start skapar
+  `lissabon/data/project.json`. Både Web och Lab läser samma beständiga mapp;
+  efterföljande starter bevarar sparade val. Databas och talcache är fortsatt
+  isolerade och tillfälliga. Privata nycklar och lokal data ligger utanför Git.
+- OpenClaw-klippval är standard enbart i Lissabon-körningen. Övriga
+  startvägar behåller Standard. Utvecklingen gäller endast Astrid.
+
+Verifierat: Next-produktionsbygge och typecheck; 468 labbtester, 15 tester
+för isolerad anslutning, särskilt Lissabon-test för delad lagring,
+standardläge, bevarade ändringar och att korrupt projekt inte skrivs över;
+hela `.githooks/pre-commit` samt `audit-dealer-sync.mjs --probe` passerade.
+Browser: rootomdirigering, Astrid-launch med förvalt OpenClaw, exakt
+box3 → deal_pos4 i editorn och sparande via UI. Ändrade blinkintervallet
+25 → 26 sekunder, startade om båda processerna och läste tillbaka 26;
+återställde därefter 25 via UI. Revisionshistorik finns lokalt.
+Obligatorisk regression: `goodluck` spelades två gånger i följd för alla fyra
+dealers via `?dealer=<name>&rehearsal=1`; kontrollerna återaktiverades utan
+playbackfel. Ingen media eller konfiguration för andra dealers ändrades.
+
+Ett riktigt chattsvar efter omstart: ”Välkomna till Lissabon, och ha det
+trevligt vid bordet.” Paket `generated-2481e9394cda34beaa73955744e61d7f`.
+Labbets native-observation registrerade `generated-lipsync` start 22:46:39
+och end 22:46:43, `started: true`. Chatt skickades 22:45:18: **81 sekunder**
+till talstart, jämfört med tidigare 15–25. Genereringen fungerar men
+väntetiden varierar; externa tjänsters kötid är inte garanterad.
+Röst och fonemvis läppsynk är fortfarande `reviewStatus: pending`.
+
+Kända fel från föregående prov kvarstår: mobilchatten kan täcka ansiktet,
+talytan kan täcka kortöverlägg och kortkontakt behöver kalibreras.
+Ingen CAC-status ändrades: Jira-anslutning/aktuell issue saknas i sessionen.
+Se `lissabon/README.md` för start, lagring och källreferenser.
+
 ## 2026-09-25 — Eget Astridprov: chatt, reaktion och demohand
 
 På Jakobs begäran provades enbart Astrid i separat browserflik på

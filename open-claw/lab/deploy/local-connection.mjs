@@ -257,7 +257,7 @@ function requireGeneratedSpeechConfiguration(configuration) {
   }
 }
 
-export function childSpecifications(configuration, runDir, { productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT } = {}) {
+export function childSpecifications(configuration, runDir, { productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, studioDataDir, streamLane = '' } = {}) {
   requireGeneratedSpeechConfiguration(configuration);
   for (const port of [productPort, labPort]) {
     if (RESERVED_SHARED_PORTS.has(port)) throw new Error(`Port ${port} is reserved for the shared comparison and will not be touched.`);
@@ -267,7 +267,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
   const labUrl = `http://127.0.0.1:${labPort}`;
   const ports = [String(productPort), String(labPort)];
   const productData = join(runDir, 'product');
-  const labData = join(runDir, 'next-studio');
+  const labData = studioDataDir ? resolve(studioDataDir) : join(runDir, 'next-studio');
   const useSpeechRelay = Boolean(configuration.speechUrl || configuration.speechToken);
   const productOrigin = !useSpeechRelay && configuration.baseUrl ? normalizedOrigin(configuration.baseUrl) : null;
   const speechOrigin = normalizedSpeechOrigin(configuration.speechUrl);
@@ -297,6 +297,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         CROUPIER_DATA_DIR: productData, CROUPIER_GENERATIONS_DIR: join(runDir, 'generations'), DEMO_GUEST_ACCESS: '1',
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
         CROUPIER_PRESENTATION_STUDIO_DIR: labData,
+        CROUPIER_STREAM_LANE: streamLane,
         CROUPIER_PRESENTATION_DIRECTOR_URL: configuration.remoteUrl, CROUPIER_PRESENTATION_DIRECTOR_TOKEN: configuration.remoteToken,
         // The relay is the narrower transport and wins whenever it is present.
         // Never place the full Gateway bearer in that product child.
@@ -313,6 +314,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
       readyText: 'Ready in', dataDir: labData,
       env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
         LAB_STUDIO_DATA_DIR: labData, LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
+        CROUPIER_STREAM_LANE: streamLane,
         OPENCLAW_BASE_URL: '', OPENCLAWAPI_KEY: '', OPENCLAW_AGENT: configuration.directorAgent,
         OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs),
         OPENCLAW_PRODUCT_SPEECH_URL: '', OPENCLAW_PRODUCT_SPEECH_TOKEN: '',
@@ -387,7 +389,7 @@ function configureSyntheticPartner(specs, repoRoot) {
 }
 
 export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env,
-  productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false } = {}) {
+  productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, studioDataDir, streamLane = '' } = {}) {
   if (productPort === labPort) throw new Error('Product and Next Eventstudio need separate ports.');
   await unusedPort(productPort); await unusedPort(labPort);
   const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech });
@@ -403,7 +405,7 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
     throw new Error('Refusing a connected product start because the configured OpenClaw agent has a conflicting runtime contract.');
   }
   const runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-openclaw-connection-'));
-  const specs = childSpecifications(configuration, runDir, { productPort, labPort });
+  const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, streamLane });
   let product, lab, stopped = false;
   const stop = async () => {
     if (stopped) return;

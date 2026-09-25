@@ -1,5 +1,10 @@
 # Guide — en gemensam ingång
 
+**Aktuell Astrid-demo:** [Lissabon stream lane](../../lissabon/README.md),
+startad med `Start-Lissabon.cmd`. `/lissabon` använder samma editorfunktioner
+och Web-spelare med beständig gemensam lagring och OpenClaw som standard.
+Guiden nedan gäller även det äldre, bredare labbet för avancerat arbete.
+
 Jakobs arbetsdokumentation visas i [Guide i labbet](http://127.0.0.1:4188/guide).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
 [studio-contract.json](../policies/studio-contract.json). Uppdatera dessa,
