@@ -147,10 +147,10 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
         <button type="button" className="text-button" onClick={() => play(item.videoId)} disabled={blocked}>Spela</button>
         <label>Används som<select value={item.use} onChange={event => setUse(item, event.target.value as IdleVariantUse)}><option value="manual">Manuell</option><option value="automatic">Automatisk</option><option value="rules">Regelstyrd</option><option value="openclaw">OpenClaw</option></select></label>
         {item.automatic ? <div className={styles.timing}>
-          <label>Ungefär var<input type="number" min={5} max={300} value={seconds(item.automatic.averageEveryMs)} onChange={event => setAutomatic(item, 'averageEveryMs', Math.max(5, Number(event.target.value)) * 1000)} /><span>sek</span></label>
-          <label>Slump ±<input type="number" min={0} max={60} value={seconds(item.automatic.jitterMs)} onChange={event => setAutomatic(item, 'jitterMs', Math.max(0, Number(event.target.value)) * 1000)} /><span>sek</span></label>
-          <label>Minsta paus<input type="number" min={0} max={300} value={seconds(item.automatic.cooldownMs)} onChange={event => setAutomatic(item, 'cooldownMs', Math.max(0, Number(event.target.value)) * 1000)} /><span>sek</span></label>
-          <label>Max/min<input type="number" min={1} max={12} value={item.automatic.maxPerMinute} onChange={event => setAutomatic(item, 'maxPerMinute', Math.max(1, Number(event.target.value)))} /></label>
+          <label><span>Ungefär var</span><input type="number" min={5} max={300} value={seconds(item.automatic.averageEveryMs)} onChange={event => setAutomatic(item, 'averageEveryMs', Math.max(5, Number(event.target.value)) * 1000)} /><span>sek</span></label>
+          <label><span>Slump ±</span><input type="number" min={0} max={60} value={seconds(item.automatic.jitterMs)} onChange={event => setAutomatic(item, 'jitterMs', Math.max(0, Number(event.target.value)) * 1000)} /><span>sek</span></label>
+          <label><span>Minsta paus</span><input type="number" min={0} max={300} value={seconds(item.automatic.cooldownMs)} onChange={event => setAutomatic(item, 'cooldownMs', Math.max(0, Number(event.target.value)) * 1000)} /><span>sek</span></label>
+          <label><span>Max/min</span><input type="number" min={1} max={12} value={item.automatic.maxPerMinute} onChange={event => setAutomatic(item, 'maxPerMinute', Math.max(1, Number(event.target.value)))} /></label>
         </div> : null}
       </div>)}</div>
     </section>
@@ -171,6 +171,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
         playback.current.started = true; log(`started · ${fileLabel(preview, previewId)}`);
         if (planIndex !== null && plan[planIndex].kind === 'base') segmentTimer.current = setTimeout(() => advance(playSerial), plan[planIndex].endMs - plan[planIndex].startMs);
       }} onPause={event => { if (event.currentTarget === videoRef.current && !event.currentTarget.ended && playback.current?.serial === playSerial) stop('Pausat'); }} onEnded={() => advance(playSerial)} onError={event => { if (event.currentTarget === videoRef.current) stop('Videofel — provet avbröts'); }} /> : <p className={styles.warning}>Videon finns inte tillgänglig i labbets lokala mediekälla.</p>}
+      <p className={styles.format}>Originalfilens bildformat bevaras utan beskärning. Ett stående klipp är inte ett separat mobilläge.</p>
       <button type="button" className="text-button" onClick={() => stop()}>Stoppa idleprovet</button>
       <ol className={`${styles.log} ${styles.actualLog}`} aria-label="Faktisk idleuppspelning">{actualLog.map((entry, index) => <li key={index}>{entry}</li>)}</ol>
     </section>
