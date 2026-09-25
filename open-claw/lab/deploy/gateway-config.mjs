@@ -148,7 +148,7 @@ export function gatewayConfig(env) {
   operator.workspace = path.join(stateDir, 'workspaces', 'croupier-operator');
   operator.agentDir = path.join(stateDir, 'agents', 'croupier-operator', 'agent');
   config.agents.entries['croupier-operator'] = operator;
-  const configured = applySocialRole(applyOwnershipDefaults(applyDashboardPolicy(config, env)), env);
+  const configured = applySpeechRole(applySocialRole(applyOwnershipDefaults(applyDashboardPolicy(config, env)), env), env);
   configured.gateway.auth.rateLimit = {
     maxAttempts: 10, windowMs: 60000, lockoutMs: 300000, exemptLoopback: false,
   };
@@ -213,6 +213,48 @@ export function applySocialRole(config, env) {
   return next;
 }
 
+// The product speech role is deliberately separate from the operator chat.
+// It reuses the already persisted provider/model but has isolated state and a
+// hard tool deny. Any drift in that security contract stops reconciliation.
+export function applySpeechRole(config, env) {
+  const next = structuredClone(config);
+  if (!isObject(next.agents?.entries)) throw new Error('Croupier speech role conflict: agent entries are missing.');
+  const entries = next.agents.entries;
+  const primary = entries['croupier-chat']?.model?.primary ?? entries['croupier-director']?.model?.primary;
+  if (typeof primary !== 'string' || !primary.trim()) throw new Error('Croupier speech role conflict: no existing model reference to reuse.');
+  const state = env.OPENCLAW_STATE_DIR || '/data/openclaw';
+  if (entries['croupier-speech'] === undefined) {
+    entries['croupier-speech'] = {
+      name: 'Croupier product speech decision',
+      workspace: path.join(state, 'workspaces', 'croupier-speech'),
+      agentDir: path.join(state, 'agents', 'croupier-speech', 'agent'),
+      model: { primary, fallbacks: [] }, skills: [],
+      memory: { search: { enabled: false } }, heartbeat: { every: '0m' },
+      tools: { profile: 'minimal', deny: ['*'], elevated: { enabled: false } },
+    };
+  }
+  const speech = entries['croupier-speech'];
+  if (!isObject(speech) || speech.model?.primary !== primary || !Array.isArray(speech.model?.fallbacks) || speech.model.fallbacks.length !== 0
+    || !Array.isArray(speech.tools?.deny) || !speech.tools.deny.includes('*') || speech.tools.elevated?.enabled !== false
+    || speech.memory?.search?.enabled !== false || speech.heartbeat?.every !== '0m'
+    || !Array.isArray(speech.skills) || speech.skills.length !== 0) {
+    throw new Error('Croupier speech role conflict: preserve the existing file and resolve its model, tools, memory, skills or heartbeat explicitly.');
+  }
+  const overlaps = (left, right) => {
+    const relative = path.relative(path.resolve(left), path.resolve(right));
+    return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+  };
+  const paths = [speech.workspace, speech.agentDir];
+  if (paths.some(value => typeof value !== 'string' || !path.isAbsolute(value))
+    || overlaps(paths[0], paths[1]) || overlaps(paths[1], paths[0])
+    || Object.entries(entries).some(([id, entry]) => id !== 'croupier-speech'
+      && [entry?.workspace, entry?.agentDir].some(other => typeof other === 'string' && path.isAbsolute(other)
+        && paths.some(value => overlaps(value, other) || overlaps(other, value))))) {
+    throw new Error('Croupier speech role conflict: speech workspace and agent state must be isolated.');
+  }
+  return next;
+}
+
 export function isLegacyGeneratedConfig(config, env) {
   try {
     const provider = config.models.providers['lab-provider'];
@@ -246,9 +288,12 @@ export function planGatewayConfig(existing, env) {
   }
   const ingress = applyDashboardPolicy(existing, env);
   const ownership = applyOwnershipDefaults(ingress);
-  const config = applySocialRole(ownership, env);
+  const social = applySocialRole(ownership, env);
+  const config = applySpeechRole(social, env);
   const action = isDeepStrictEqual(config, existing) ? 'reuse'
-    : !isDeepStrictEqual(config, ownership) ? 'reconcile-social'
+    : !isDeepStrictEqual(social, ownership) && !isDeepStrictEqual(config, social) ? 'reconcile-roles'
+    : !isDeepStrictEqual(social, ownership) ? 'reconcile-social'
+    : !isDeepStrictEqual(config, social) ? 'reconcile-speech'
     : isDeepStrictEqual(ingress, existing) ? 'reconcile-ownership' : 'reconcile-ingress';
   return { action, config };
 }

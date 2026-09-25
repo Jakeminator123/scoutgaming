@@ -6,7 +6,7 @@ och ett kompakt källindex. Det är egna sammanfattningar och länkar, inte en k
 av hela OpenClaws dokumentation. Nya begrepp märks som förslag när de inte är kod.
 
 Vid varje containerstart, även när `openclaw.json` återanvänds, synkar
-`../runtime-bundle.mjs` paketet till de fyra **befintligt konfigurerade** rollernas
+`../runtime-bundle.mjs` paketet till de fem **befintligt konfigurerade** rollernas
 arbetsytor. Den skapar inte nya roller eller verktygsbehörigheter. Saknad roll,
 delad/extern arbetsyta och handredigerat managed block rapporteras utan att
 skrivas över. Den befintliga Gateway-konfigurationen ägs inte av paketet.

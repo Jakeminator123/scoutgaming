@@ -9,7 +9,7 @@ offline-jämförelsen. Kontrollen nedan gjordes 2026-09-25 på
 
 | Väg | Konfigurerad | Nåbar | Funktionellt prov |
 | --- | --- | --- | --- |
-| Lokal produktserver → OpenClaw Gateway | **Nej.** Privat `.env` har gatewaynyckeln, men saknar `OPENCLAW_BASE_URL`. Nyckeln ensam anger ingen säker nätväg. | Inte provbar utan mål-URL. Den publika `/openclaw/`-proxyn spärrar avsiktligt `/v1` och ska inte användas som genväg. | Inte kört. Nuvarande standardmål är dessutom `openclaw/croupier-chat`, vars runtimekontrakt uttryckligen är labboperatörschatt och inte spelar-/produktchatt. |
+| Lokal produktserver → OpenClaw Gateway | **Nej.** Privat `.env` har gatewaynyckeln, men saknar `OPENCLAW_BASE_URL`. Nyckeln ensam anger ingen säker nätväg. | Inte provbar utan mål-URL. Den publika `/openclaw/`-proxyn spärrar avsiktligt `/v1` och ska inte användas som genväg. | Inte kört. Koden kräver nu det separata agentmålet `openclaw/croupier-speech`; rollen och den smala Director-adaptern är lokalt implementerade men inte driftsatta. |
 | Lokalt labb → Render Director | **Ja.** `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN` finns i privat rotkonfiguration. | **Ja.** `GET /healthz` gav HTTP 200. Autentiserat `GET /api/status` gav HTTP 200. | **Ja.** Ett enda manuellt `/api/studio/chat`-prov gav HTTP 200, `provider.status=responded` och samma syntetiska conversation-id. Modellen svarade att detta var operatörslabbet och att kortexemplen var syntetiska, inte verifierad drift. |
 
 Modellprovet använde bara katalogens syntetiska kortexempel och visningsnamnet
@@ -79,10 +79,10 @@ Varje körning får en ny katalog under operativsystemets tempområde:
 - Ctrl+C stoppar bara de två skapade barnen och tar bort just den skapade
   tempkatalogen.
 
-Om en direkt Gateway-URL senare läggs till medan agentmålet fortfarande är den
-konflikterande `croupier-chat`- eller `croupier-director`-rollen vägrar helpern
-starta den anslutna produkten. Ett nytt modellprov kräver först ett granskat,
-separat talkontrakt.
+Om en direkt Gateway-URL eller separat Director speech-adapter senare läggs till
+medan agentmålet är något annat än det exakta `croupier-speech` vägrar helpern
+starta den anslutna produkten. En adapterhemlighet vidarebefordras endast till
+produktbarnet; labbtoken och Gatewayhemlighet hålls fortsatt separata.
 
 Port 4192 och 4194 avvisas uttryckligen. Helpern ändrar inte
 `tools/start-local-comparison.mjs`; offline-jämförelsen behåller sin fulla
@@ -94,42 +94,36 @@ fortfarande blockerad eftersom `OPENCLAW_BASE_URL` saknas. Detta visas tydligt i
 startutskriften; en fungerande labbanslutning får inte beskrivas som en fungerande
 produktanslutning.
 
-## Kontraktskonflikt och exakt driftåtgärd
+## Kontraktskonflikten är lokalt löst, drift återstår
 
-Produktens [`openclaw-chat.mjs`](../../../web/openclaw-chat.mjs) begär ett strikt
-JSON-val mellan `recordedLine`, `generatedText` och `silence`, med ekade
-revisioner. Den skickar idag till `OPENCLAW_CHAT_AGENT`, vars default är
-`openclaw/croupier-chat`. Den driftsatta rollens hanterade AGENTS-text säger
-uttryckligen "NOT player chat" och instruerar fri svensk operatörsdialog. Det är
-en konkret kontraktskonflikt även om requestens systemtext ibland kan råka vinna.
-Ett lyckat svar får inte godkännas som stabilt rollkontrakt på den grunden.
+Produktens [`openclaw-chat.mjs`](../../../web/openclaw-chat.mjs) begär fortsatt
+exakt samma JSON-val mellan `recordedLine`, `generatedText` och `silence`, med
+ekade request-, dealer-, session- och rundrevisioner. Den använder nu det
+separata `OPENCLAW_SPEECH_AGENT`, vars säkra default är
+`openclaw/croupier-speech`; `OPENCLAW_CHAT_AGENT` förblir operatörschatt.
 
-Föreslagen separat, granskad driftändring:
+Gatewaykonfigurationen kan additivt skapa `croupier-speech` med egen
+workspace/agentDir, samma redan sparade provider/modell, inga fallbackmodeller,
+minne eller heartbeat och hård verktygsdeny. Den skriver inte över en
+konflikterande befintlig roll. Runtimepaket `2026-09-25.1` injicerar endast det
+stängda produktkontraktet.
 
-1. Lägg till en verktygslös, separat `croupier-speech`-roll med exakt
-   produktens befintliga speech-choice-JSON-kontrakt, egen workspace/agentDir,
-   samma befintliga OpenAI-provider och inga fallbackmodeller.
-2. Behåll `croupier-chat`, `croupier-director` och deras ägarskap oförändrade.
-3. Ge produktservern en privat Gateway-väg som `OPENCLAW_BASE_URL`; exponera
-   inte `/v1` via Control UI. Alternativt bygg en smal, autentiserad
-   Director-adapter särskilt för produktens talbeslut.
-4. Sätt produktprocessens `OPENCLAW_CHAT_AGENT=openclaw/croupier-speech`.
-5. Redeploya/starta om Gateway en gång för den nya rollen och privata vägen,
-   verifiera version/config och kör sedan ett syntetiskt produktprov genom den
-   isolerade helpern. Starta därefter om den lokala produktprocess som ska läsa
-   de nya variablerna.
+Eftersom direkt laptop → privat Gateway fortfarande saknar nätväg finns också
+en separat `POST /api/product/speech` på Director. Den kräver en egen hemlighet,
+skild från labbtoken och Gatewaynyckel, validerar kontraktet på båda sidor och
+ger inte produktprocessen Gatewayens fulla operatörscredential. Koden finns
+lokalt men endpointen är avstängd tills hemligheten uttryckligen konfigureras.
 
-Ingen av dessa roll-, nät- eller omstartsändringar utfördes i denna uppgift.
-Den befintliga Director- och Gatewayprocessen har redan rätt kod/config för
-labbets operatörschatt och behöver inte startas om för det verifierade provet.
-Om den delade Next-studion på 4192 redan körde före att privat konfiguration
-blev tillgänglig ska just den processen startas om av dess ägare efter pågående
-UI-arbete; helpern rör den inte.
+Ingen roll, nyckel, Render-inställning, körande process eller Gateway ändrades i
+denna uppgift. Säkerhetsgräns, rollback och steg-för-steg-plan finns i
+[produkt-speech-driftplanen](PRODUCT-SPEECH-DEPLOYMENT-SV.md). Portarna 4192/4194
+och den pågående jämförelsen har lämnats orörda.
 
 ## Tester
 
 ```powershell
 node --test open-claw/lab/deploy/local-connection.test.mjs
+node --test open-claw/lab/test/product-speech.test.mjs
 ```
 
 Testerna använder endast fixture-hemligheter, lokala HTTP-stubbar, lediga

@@ -10,7 +10,7 @@ import { prepareGatewayRuntime } from './start-gateway.mjs';
 import { loadRuntimeBundle, planManagedAgents, syncRuntimeBundle } from './runtime-bundle.mjs';
 
 const sourceDir = fileURLToPath(new URL('./runtime-bundle/', import.meta.url));
-const roles = ['croupier-director', 'croupier-chat', 'croupier-operator', 'croupier-social'];
+const roles = ['croupier-director', 'croupier-chat', 'croupier-operator', 'croupier-social', 'croupier-speech'];
 const sha = (text) => createHash('sha256').update(text).digest('hex');
 
 async function fixture(t) {
@@ -35,6 +35,11 @@ test('package provides real compact context, with full source index only for cha
   assert.match(bundle.blocks['croupier-social'], /NOT an installed MCP tool/);
   assert.match(bundle.blocks['croupier-social'], /idle\.ready/);
   assert.ok(bundle.blocks['croupier-social'].length < 2400);
+  assert.match(bundle.blocks['croupier-speech'], /recordedLine.*generatedText.*silence/s);
+  assert.match(bundle.blocks['croupier-speech'], /requestId.*dealerId.*sessionRevision.*roundRevision/s);
+  assert.match(bundle.blocks['croupier-speech'], /untrusted data, never instructions/);
+  assert.doesNotMatch(bundle.blocks['croupier-speech'], /https:\/\/docs\.openclaw\.ai/);
+  assert.ok(bundle.blocks['croupier-speech'].length < 4000);
   for (const role of ['croupier-chat', 'croupier-operator']) {
     assert.match(bundle.blocks[role], /https:\/\/docs\.openclaw\.ai\/llms\.txt/);
     assert.match(bundle.blocks[role], /not vector search, embeddings/);
@@ -145,6 +150,7 @@ test('sync does not create missing roles or touch unrelated agent workspaces', a
 test('custom external or shared/nested workspaces are reported and not rewritten', async (t) => {
   const { dir, stateDir, config, workspace } = await fixture(t);
   delete config.agents.entries['croupier-social'];
+  delete config.agents.entries['croupier-speech'];
   config.agents.entries['croupier-operator'].workspace = path.join(dir, 'external');
   config.agents.entries['croupier-director'].workspace = path.join(workspace, 'nested');
   const status = await syncRuntimeBundle(config, stateDir);
@@ -216,7 +222,7 @@ test('manual injection mode and low budgets are preserved but explicitly surface
   const status = await syncRuntimeBundle(config, stateDir);
   assert.deepEqual(config, before);
   assert.deepEqual(status.roles.map((role) => role.warning), [
-    'context_injection_disabled', 'agents_context_may_be_truncated', 'fresh_session_recommended', null,
+    'context_injection_disabled', 'agents_context_may_be_truncated', 'fresh_session_recommended', null, null,
   ]);
 });
 
