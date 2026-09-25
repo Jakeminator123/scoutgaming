@@ -117,7 +117,7 @@ en separat social rörelse. Seedens 256 variantkopplingar delar dessa filer
 alla kortsekvenser, sju exakta platser, split, övergångar och läppsynk täcks inte.
 
 API:er, nyckelroller och miljöfiler finns i
-[Jakobs miljöförklaring](../random-stuff-jakob/jakob-docs/_env.explanation.md).
+[Jakobs miljöförklaring](../random-stuff-jakob/jakob-docs/systemkarta/05-openclaw-rost-och-drift/MILJO-OCH-API.md).
 
 ## Filer och begrepp
 

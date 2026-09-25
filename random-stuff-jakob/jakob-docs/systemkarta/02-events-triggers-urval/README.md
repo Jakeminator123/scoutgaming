@@ -75,8 +75,8 @@ gemensam produktadapter återstår. Socialchattens lokala cooldown finns
 redan men är ingen generell produktkö. F-005:s `split`/`splitFrom`-fynd
 är fortsatt ett [öppet granskningsbehov](../../../../docs/findings/REGISTER.md).
 
-Fördjupning: [situationer](../../2026-09-20-situationer-variantfamiljer-och-takes.md),
-[fullt nod-/triggerregister](../../2026-09-20-eventregister-och-mental-modell.md),
+Fördjupning: [situationer](SIGNALER-OCH-TAKES.md),
+[fullt nod-/triggerregister](EVENTREGISTER.md),
 [studio-server](../../../../lab/lib/studio-server.mjs),
 [studio-modell](../../../../lab/lib/studio-model.mjs),
 [Director](../../../../open-claw/lab/src/engine.mjs) och

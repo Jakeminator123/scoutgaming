@@ -1,3 +1,41 @@
+## 2026-09-25 — Jakobs dokument samlade i systemkartan
+
+På Jakobs uttryckliga val levereras städningen på `jakeminator123/work`.
+Roten `random-stuff-jakob/jakob-docs/` har nu bara en aktiv README-vägvisare;
+den ignorerade privata åtkomstfilen ligger orörd. Fyra värdefulla referenser
+(kort start, miljö/API, signaler/takes och eventregister) är flyttade till
+systemkartans ämnen. Fem äldre rapporter/prompter är borttagna ur arbetskopian
+efter att relevant innehåll samlats i aktiva guider och
+[Livejämförelse](../random-stuff-jakob/jakob-docs/systemkarta/06-arbetssatt-och-verifiering/LIVEJAMFORELSE.md).
+
+[Kort start](../random-stuff-jakob/jakob-docs/systemkarta/START-HAR.md) är ingång
+för Jakob och agenter. [Dokumentordningen](../random-stuff-jakob/jakob-docs/systemkarta/06-arbetssatt-och-verifiering/DOKUMENTORDNING.md)
+anger varje flytt/ersättning och återställningsrevision `17afbf1`. Äldre
+leveransnotiser nedan behåller sina dåvarande filnamn som proveniens, inte
+som aktiva läsanvisningar. Det pensionerade personarkivet har inte lästs,
+flyttats eller återställts. Inga env-värden, privata åtkomstanteckningar,
+råloggar, media eller sparade labbprojekt har lästs eller ändrats i städningen.
+
+Gamla uppgifter om avsaknad av native→Partner-publicering och enbart manuell
+labbkontext är rättade mot den integrerade work-koden. Daterade testresultat
+skiljs från dagens drift. Ursprungliga källistor, kontraktsdetaljer och
+miljövariabelnamn är bevarade; miljöinventeringen behåller datum 22 september.
+Inkommande dokumentlänkar och de flyttade filernas relativa länkar är uppdaterade.
+
+Verifierat: 292 lokala länkar, inklusive 10 rubrikankare, i 24 dokument utan
+trasiga mål (handoffkontrollen gäller denna nya notis); alla nio ursprungliga rotfiler finns i
+Git vid `17afbf1`. `node --test lab/test/video-registry.test.mjs`: 13/13,
+inklusive ändrade bytes med oförändrad filstorlek efter cachelagring. Det gamla
+cachefelet återges därför inte som ett bekräftat aktuellt fel. `git diff --check`
+passerar. Inget gameplay eller media har ändrats; ingen ny fullständig runtime-,
+läppsynk-, deploy- eller Jira-QA påstås.
+
+Kvar: grön bild i labbets spegling observerades den 25 september medan
+originalfliken visade Astrid och labbet hade 0 instruktioner/0 kommandosvar.
+Orsak och en ny spelhand efter anslutning är inte belagda. Bettalottos
+native-version, Director-kontext v2 i drift och produktens gemensamma
+talägarskap kräver fortfarande egna behöriga integrationsprov.
+
 ## 2026-09-22 — Kevin-integrering i Jakobs work och gemensam livejämförelse
 
 Leveransen är pushad som `dff5712` till både kanoniska GitLab/work och privata

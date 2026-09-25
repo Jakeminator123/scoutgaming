@@ -5,6 +5,9 @@
 **Börja med frågan, välj sedan rätt källa.** Ett dokumentationsbeslut,
 en kodfunktion och ett godkänt produktbeteende är olika saker.
 
+För nuvarande läge och återstående prov: [Livejämförelse](LIVEJAMFORELSE.md).
+För var dokument ska ligga och vad som har flyttats: [Dokumentordning](DOKUMENTORDNING.md).
+
 - **Kod och kontrakt:** Croupier-repot visar vad implementationen gör.
 - **Aktiv sprint:** [dokumentationsnavet](../../../../docs/animation-events/README.md)
   leder till V5 med D0 + sju arbetsdagar. Wiki och hemsida är separata läsytor;

@@ -1,11 +1,10 @@
 # Samsyn: signaler, presentationsbehov, linjer och takes
 
-Uppdaterad 20 september 2026 inför V4. Senaste systempaketskontroll:
-work/origin `a15b780`, main `b147659`, handoff `62784f4`. Granskade server-,
-shoe-, Partner- och appfiler saknade diff mellan work och main. Den tidigare
-jämförelsen med labb `dcab124` och Kevin `626554d` är ett separat historiskt
-ankare; då skilde sig Astrid-uppspelningen. Detta är kodkontroll, ingen ny
-drift- eller media-QA. [Källor och gränser](systemkarta/KALLOR.md).
+Samlad och rättad 25 september 2026 för Jakobs work efter Kevin-integrationen.
+Begreppsunderlaget kommer från 20 september; work/main-jämförelsen `a15b780` /
+`b147659` och Kevin `626554d` är historiska ankare, inte dagens driftstatus.
+Native-publicering, läsande observation och chattkontext är nu implementerade
+i work. Live-acceptans är fortfarande separat. [Källor och gränser](../KALLOR.md).
 
 **Status:** begrepp och föreslagen riktning. Inga tekniska ID:n, sparade projekt,
 spelregler, spelare, talvägar eller media ändras av detta dokument.
@@ -41,6 +40,9 @@ I dagens kod finns flera slags input med olika ansvar:
 - **Text:** produktens äldre chatt och labbets separata Astrid/idle-prov.
 - **Kontext:** eventtestets språk, historik och framtoning är manuella
   testvärden. De är inte automatiskt läst spelarminne eller social chatt.
+  Livejämförelsen använder däremot mottagna publika handresultat och avgränsad
+  observerad chatt före eventet. Luckor bryter kontexten; okänd historik fylls
+  inte i. Directors kontext-v2-kvitto krävs för den nya chattprojektionen.
 - **Ljud/video:** beredskap, uppspelningstid, slut, avbrott, fel och cues
   samordnar presentationen. De skapar inga nya spelutfall.
 - **Konfiguration:** dealer, policy och mediereferenser begränsar valet.
@@ -75,7 +77,9 @@ inte framföras både från Partner-svaret/SSE och från statusjämförelsen.
 Privat kortordning och dolt kortinnehåll ska inte skickas till urvalsmodellen.
 
 Partner-SSE är avgränsad till signerad API-nyckel + partnerns `playerId`;
-native `/api/table` publicerar inte där. BO-inloggning räcker inte.
+`events` eller `play` räcker för läsning. Native `/api/table` publicerar nu
+efter commit för en verifierad Partner-launch-session och returnerar samma
+publika `presentation[]`. BO-inloggning räcker inte.
 Strömmen har ingen replay eller `Last-Event-ID`-återhämtning. `state` och
 cachade `requestId`-svar publicerar inte nya presentationer. En livemonitor
 behöver därför välja rätt källa och redovisa avbrott/återhämtning.
@@ -182,7 +186,13 @@ men kortljud, atmosfär, resultat och Partner-kontrakt ska inte raderas av misst
 Dubbel talning måste testas. Nytt ljud över gammal talvideo är inte godkänd
 läppsynk: använd tyst kompatibel rörelse eller ett exakt matchat talpaket.
 
-## Minsta sammanhängande förändring av labbet — förslag
+## Vidare riktning — skilj infört från förslag
+
+Work har nu nodträd, ett gemensamt presentationsbeslut, **Anslut**, samtidig
+original-/labbvy, automatisk kö och native/SSE-deduplicering. Den isolerade
+helheten är testad; detta bevisar inte live-deploy eller full take-/split-QA.
+Punkterna nedan är designprinciper och kvarvarande fördjupning, inte ett
+uppdrag att bygga en andra monitor eller ersätta dagens fungerande flöde.
 
 1. **Återanvänd, döp inte om allt.** Visa presentationsbehov överst och de
    sexton grupperna som genvägar. Behåll tekniska ID:n och sparade kopplingar
@@ -209,24 +219,24 @@ valbarheten; nya alternativ börjar manuellt. Detta är variantval, ingen
 viktad takepool. Socialchatten har också en lokal idle-reaktion och cooldown;
 det är ingen generell kö eller bestående social koppling i produkten.
 
-Ingen ny mappstruktur, runtimeadapter, takepool, talavstängning eller loop
+Ingen ny mediemappstruktur, runtimeadapter, takepool, talavstängning eller loop
 införs här. Körbara kontraktsfält, scheman och tester ändras först med respektive implementation.
 Detta begränsar nästa arbete till en verifierbar kedja i stället för fler knappar.
 
 ## Kodankare
 
-- [Motorns interna händelser](../../web/public/blackjack.mjs),
-  [publik status och kommandon](../../web/shoe-game.mjs),
-  [Partner, wallet och SSE](../../web/partner-api.mjs),
-  [Partner-projektion och filmanifest](../../web/partner-presentation.mjs).
+- [Motorns interna händelser](../../../../web/public/blackjack.mjs),
+  [publik status och kommandon](../../../../web/shoe-game.mjs),
+  [Partner, wallet och SSE](../../../../web/partner-api.mjs),
+  [Partner-projektion och filmanifest](../../../../web/partner-presentation.mjs).
 - Kevin `626554d`: [status, val och koreografi](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/app.mjs),
   [exakta takevillkor](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/astrid-green-dealer.mjs),
   [idle-scheduler](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/astrid-idle-scheduler.mjs),
   [uppspelare och cues](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/performance-player.mjs).
-- Labb: [befintligt kontrakt](../../lab/policies/studio-contract.json),
-  [test med exempel-event](../../lab/lib/studio-server.mjs),
-  [video/2D-preview](../../lab/components/stage.tsx),
-  [videobank och valbarhet](../../lab/VIDEO-LIBRARY.md),
-  [separat social chatt](../../lab/SOCIAL-CHAT.md).
-- [Detaljerat daterat eventregister](2026-09-20-eventregister-och-mental-modell.md)
+- Labb: [befintligt kontrakt](../../../../lab/policies/studio-contract.json),
+  [test med exempel-event](../../../../lab/lib/studio-server.mjs),
+  [video/2D-preview](../../../../lab/components/stage.tsx),
+  [videobank och valbarhet](../../../../lab/VIDEO-LIBRARY.md),
+  [separat social chatt](../../../../lab/SOCIAL-CHAT.md).
+- [Detaljerat daterat eventregister](EVENTREGISTER.md)
   behålls som källunderlag; denna text preciserar begreppen och nästa riktning.

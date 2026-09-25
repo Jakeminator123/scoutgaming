@@ -54,7 +54,7 @@ sekunder ljud. För långa ljud avvisas; avbrott/fel loggas. Modellens uttrycks-
 förslag visas separat från neutralt idle. Produktens talväg och riktig
 läppsynk är fortfarande separata integrationer. Se [socialt prov](../SOCIAL-CHAT.md).
 
-[Signal- och begreppskartan](../../random-stuff-jakob/jakob-docs/2026-09-20-situationer-variantfamiljer-och-takes.md)
+[Signal- och begreppskartan](../../random-stuff-jakob/jakob-docs/systemkarta/02-events-triggers-urval/SIGNALER-OCH-TAKES.md)
 förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna,
 relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
 nuvarande kod från nästa steg; den aktiverar inte nya funktioner.

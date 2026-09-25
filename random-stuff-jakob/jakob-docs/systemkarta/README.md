@@ -1,9 +1,14 @@
 # Systemkarta — från spelfakta till uppspelning
 
-Uppdaterad 22 september 2026. Kartan utgår från Jakobs `jakeminator123/work`,
-med Kevins källbranch som integrationsunderlag. Den beskriver den granskade koden
+Samlad 25 september 2026. Kartan utgår från Jakobs `jakeminator123/work`,
+efter Kevin-integrationen den 22 september. Den beskriver den granskade koden
 och skiljer den från labbprov och återstående produktintegration.
 [Källregistret](KALLOR.md) anger revisioner, kontroller och begränsningar.
+
+Börja i [Kort start för Jakob och agenter](START-HAR.md). Här finns nu även
+[miljö-/API-förklararen](05-openclaw-rost-och-drift/MILJO-OCH-API.md),
+[livejämförelsens status och acceptans](06-arbetssatt-och-verifiering/LIVEJAMFORELSE.md)
+och [dokumentordningen med flytt- och återställningslista](06-arbetssatt-och-verifiering/DOKUMENTORDNING.md).
 
 **Vad hände → vad behöver presenteras → vilket material passar → vad spelades?**
 
@@ -38,7 +43,7 @@ Native-publicering till Partner sker efter commit för verifierad launch-session
 Observerad klientuppspelning och SSE-instruktioner är olika bevis. En öppen
 SSE-transport utan rundposter ska inte visas som fungerande speltrafik.
 Aktuell Bettalotto-deploy och visuell/läppsynkad acceptans kräver egna prov.
-[Samlad leverans och gränser](../ARBETE-2026-09-21-ORIGINAL-OCH-OPENCLAW.md).
+[Samlad leverans och gränser](06-arbetssatt-och-verifiering/LIVEJAMFORELSE.md).
 
 Originalet `/` och Kevins nya `/v2/` är separata renderingslägen över samma
 spelregler. BO granskar och binder material; labbet jämför presentation från
@@ -72,8 +77,8 @@ Blackjack och fyra dealers finns. Roulette är en platshållare. Startprojektets
 dealerfilmer. Ett manifest visar tillgångar; det visar inte vilken film
 aktuella BO-bindningar och produktspelaren väljer.
 
-Fördjupa med [signaler, situationer och takes](../2026-09-20-situationer-variantfamiljer-och-takes.md),
-[detaljerat eventregister](../2026-09-20-eventregister-och-mental-modell.md),
+Fördjupa med [signaler, situationer och takes](02-events-triggers-urval/SIGNALER-OCH-TAKES.md),
+[detaljerat eventregister](02-events-triggers-urval/EVENTREGISTER.md),
 [aktiv sprint](../../../docs/animation-events/README.md) och
 [öppna fynd](../../../docs/findings/REGISTER.md).
 Den aktiva kartan behöver inte det personliga arkivet som läskälla.

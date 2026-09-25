@@ -85,4 +85,4 @@ Använd [Guide i labbet](http://127.0.0.1:4188/guide).
 Teknisk fördjupning finns i [lab/README](../../../../lab/README.md),
 [policyerna](../../../../lab/policies/README.md),
 [videobanken](../../../../lab/VIDEO-LIBRARY.md) och
-[eventregistret](../../2026-09-20-eventregister-och-mental-modell.md).
+[eventregistret](../02-events-triggers-urval/EVENTREGISTER.md).

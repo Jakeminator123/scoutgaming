@@ -1,7 +1,7 @@
 # Environment-info — labbet och OpenClaw
 
 För hela API-översikten inklusive Bettalotto Partner och generations-API:t, se
-[Jakobs miljöförklaring](random-stuff-jakob/jakob-docs/_env.explanation.md).
+[Jakobs miljöförklaring](random-stuff-jakob/jakob-docs/systemkarta/05-openclaw-rost-och-drift/MILJO-OCH-API.md).
 
 Variabelnamn och placeringar, **inga hemliga värden**. Detta är ett register,
 inte en konfigurationsfil som programmet läser. Avser labbet/OpenClaw, inte
@@ -11,7 +11,7 @@ Lokal namninventering 2026-09-22: repots privata `.env` har 13
 tilldelningsnamn, bland annat äldre `LAB_PARTNER_*`; `lab/.env.local` har de
 tre aktuella `BETTALOTTO_PARTNER_*`-namnen. De incheckade
 `lab/.env.example` och `open-claw/lab/.env.example` är endast mallar.
-[Fullständig namnlista och filernas olika läsordning](random-stuff-jakob/jakob-docs/_env.explanation.md#lokal-inventering--namn-inte-värden).
+[Fullständig namnlista och filernas olika läsordning](random-stuff-jakob/jakob-docs/systemkarta/05-openclaw-rost-och-drift/MILJO-OCH-API.md#lokal-inventering--namn-inte-värden).
 Ingen inventering verifierar värden, behörighet eller drift.
 
 ## Samma anslutningsnyckel, två namn

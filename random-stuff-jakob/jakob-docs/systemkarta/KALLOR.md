@@ -8,6 +8,23 @@ Kod, aktiva tekniska guider och daterad handoff är underlaget. Personarkiv,
 medieinnehåll har inte lästs i denna översyn. Jakobs uttryckligen bifogade
 browseragent-underlag har använts för kraven; råkonversationen kopieras inte hit.
 
+## Dokumentstädning · 25 september
+
+Fyra användbara rotfiler har flyttats in under systemkartans ämnen. Fem
+överspelade rapporter/prompter har ersatts av befintliga kanoniska guider och
+[samlad liveacceptans](06-arbetssatt-och-verifiering/LIVEJAMFORELSE.md).
+[Dokumentordningen](06-arbetssatt-och-verifiering/DOKUMENTORDNING.md) listar
+varje flytt och hur de borttagna rotfilerna återfinns vid revision `17afbf1`.
+Det pensionerade personarkivet ingår inte i detta arbete.
+
+Referensernas gamla påståenden om saknad native-publicering och enbart
+manuell labbkontext har rättats mot den integrerade work-koden. Ny riktad
+kontroll: `lab/test/video-registry.test.mjs`, 13/13 godkända, inklusive
+cacheinvalidering vid lika stor ändrad fil. Aktiva dokumentlänkar har
+kontrollerats. Detta är ingen ny medie-, deploy- eller fullständig systemaudit;
+miljöinventeringen nedan behåller sitt tidigare datum och inga privata
+env-värden har lästs. Äldre leveransnotiser nedan är fortfarande historik.
+
 ## Aktuell integration · 22 september
 
 Återställningstaggen `backup/jakob-work-pre-kevin-20260922` pekar på
@@ -65,8 +82,8 @@ driftkontroll, testkörning eller visuell acceptans.
 - [Partnertransport, wallet och SSE](../../../web/partner-api.mjs).
 - [Presentation och filbaserat assets-manifest](../../../web/partner-presentation.mjs).
 - [Klientens koreografi](../../../web/public/app.mjs).
-- [Situationer och takes](../2026-09-20-situationer-variantfamiljer-och-takes.md)
-  och [eventregister](../2026-09-20-eventregister-och-mental-modell.md).
+- [Situationer och takes](02-events-triggers-urval/SIGNALER-OCH-TAKES.md)
+  och [eventregister](02-events-triggers-urval/EVENTREGISTER.md).
 
 Denna översyn följde särskilt Partner-table, `publish`, abonnenternas
 scope, `handleEvents`, launch, walletanrop och `buildAssetsManifest`.
