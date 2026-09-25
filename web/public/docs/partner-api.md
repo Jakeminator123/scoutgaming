@@ -49,11 +49,13 @@ Lists tables, dealers, limits and rules.
 Get a game URL for one of your players. Open it in an iframe or a new tab. The session lasts 6 hours.
 ```json
 // request
-{ "playerId": "your-player-123", "currency": "EUR", "language": "sv", "returnUrl": "https://your-site/lobby" }
+{ "playerId": "your-player-123", "displayName": "Jakob", "currency": "EUR", "language": "sv", "returnUrl": "https://your-site/lobby" }
 // response
 { "url": "https://bettalotto.se/?dealer=astrid&…&launch=<token>", "expiresIn": 21600, "playerRef": "…" }
 ```
-`playerId` is your identifier. We map it to an internal player on first use.
+`playerId` is your stable technical identifier. We map it to an internal player on first use; changing `displayName` never opens another profile, wallet or memory. Optional `displayName` is untrusted presentation data only: it is normalized, limited to 40 characters and never used for authentication. If it is omitted, the dealer uses the neutral name `spelaren` ("the player"). Do not put instructions or secrets in this field.
+
+One authenticated player can currently place bets on several boxes in the same round. A box is a table position, not a separate player identity.
 
 
 ### Getting a test session without writing code

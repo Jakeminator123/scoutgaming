@@ -1,316 +1,579 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "source": "emil/dealklipp-v1",
+  "families": [
+    {
+      "id": "astrid/deal.player.left/box0",
+      "dealerId": "astrid",
+      "eventId": "deal.player.left",
+      "situation": "box0",
+      "playbackType": "once",
+      "standardIds": [
+        "5c23fe9a-d68c-b3e5-05b3-86a215d9eeb3"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/deal.player.left/box1",
+      "dealerId": "astrid",
+      "eventId": "deal.player.left",
+      "situation": "box1",
+      "playbackType": "once",
+      "standardIds": [
+        "3f9a555f-0893-f080-6900-ec32e78e2733"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/deal.player.centre/box2",
+      "dealerId": "astrid",
+      "eventId": "deal.player.centre",
+      "situation": "box2",
+      "playbackType": "once",
+      "standardIds": [
+        "fcc47560-694c-0e8f-20fd-55cb1e280252"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/deal.player.centre/box3",
+      "dealerId": "astrid",
+      "eventId": "deal.player.centre",
+      "situation": "box3",
+      "playbackType": "once",
+      "standardIds": [
+        "2afa062b-4674-ff72-b2cb-c958a359ebf3"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/deal.player.centre/box4",
+      "dealerId": "astrid",
+      "eventId": "deal.player.centre",
+      "situation": "box4",
+      "playbackType": "once",
+      "standardIds": [
+        "7c704054-deb8-d8ee-2e48-5418553e65b8"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/deal.player.right/box5",
+      "dealerId": "astrid",
+      "eventId": "deal.player.right",
+      "situation": "box5",
+      "playbackType": "once",
+      "standardIds": [
+        "69b1402e-17ae-4539-2b0f-5a77beb99e38"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/deal.player.right/box6",
+      "dealerId": "astrid",
+      "eventId": "deal.player.right",
+      "situation": "box6",
+      "playbackType": "once",
+      "standardIds": [
+        "041df107-fe70-fe85-0e94-c7b08726d04c"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/deal.dealer/dealer-up",
+      "dealerId": "astrid",
+      "eventId": "deal.dealer",
+      "situation": "dealer-up",
+      "playbackType": "once",
+      "standardIds": [
+        "83dc9b09-a09d-337d-298a-3e70eadf3767"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/blackjack",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "blackjack",
+      "playbackType": "once",
+      "standardIds": [
+        "91ed722c-d43c-1171-1c63-506d6363def7"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/bust",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "bust",
+      "playbackType": "once",
+      "standardIds": [
+        "38e6517a-c522-d5f0-a28d-7341e9ae9099"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/chatter1",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "chatter1",
+      "playbackType": "once",
+      "standardIds": [
+        "3dab190d-7ae2-4627-e55c-a3e0a4cce09d"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/chatter2",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "chatter2",
+      "playbackType": "once",
+      "standardIds": [
+        "1ed86ffa-67f9-4d5d-785a-61f3a175cb2e"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/dealerblackjack",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "dealerblackjack",
+      "playbackType": "once",
+      "standardIds": [
+        "eb80750f-4773-dd8e-a22d-a25ca99ec7ff"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/dealerbust",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "dealerbust",
+      "playbackType": "once",
+      "standardIds": [
+        "7b1a6c0c-422f-e3f6-8508-0d1f905783c0"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.double/double",
+      "dealerId": "astrid",
+      "eventId": "speak.double",
+      "situation": "double",
+      "playbackType": "once",
+      "standardIds": [
+        "89f925bb-1996-895d-b7ef-51591ff72cf0"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/farewell",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "farewell",
+      "playbackType": "once",
+      "standardIds": [
+        "3f32419b-0369-ed6c-2d54-29a352b88b5c"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.goodluck/goodluck",
+      "dealerId": "astrid",
+      "eventId": "speak.goodluck",
+      "situation": "goodluck",
+      "playbackType": "once",
+      "standardIds": [
+        "28edfd14-064e-8b87-30fa-030042cc6b3b"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/greeting",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "greeting",
+      "playbackType": "once",
+      "standardIds": [
+        "02cc408d-6ed2-f7eb-5c37-17f7c2f8cab7"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.insurance/insurance",
+      "dealerId": "astrid",
+      "eventId": "speak.insurance",
+      "situation": "insurance",
+      "playbackType": "once",
+      "standardIds": [
+        "9f23e445-5510-64c2-8c09-becde4ce1fba"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/lose",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "lose",
+      "playbackType": "once",
+      "standardIds": [
+        "3e727d4b-a84c-4cc5-0c6c-d8074820c8b3"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/peek",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "peek",
+      "playbackType": "once",
+      "standardIds": [
+        "6364bddf-3f82-8136-abd1-e78e04b9a998"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/placebets",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "placebets",
+      "playbackType": "once",
+      "standardIds": [
+        "f5713247-0b01-6919-78d1-143aed59312e"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/push",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "push",
+      "playbackType": "once",
+      "standardIds": [
+        "e5e6ea99-cc54-b587-c774-0d36b7ba8f8f"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/sidebet",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "sidebet",
+      "playbackType": "once",
+      "standardIds": [
+        "9c7dbcdf-6f85-239b-6e6f-3b2f3589748c"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/speak.other/win",
+      "dealerId": "astrid",
+      "eventId": "speak.other",
+      "situation": "win",
+      "playbackType": "once",
+      "standardIds": [
+        "809dcaec-0bb4-6986-2379-1aa795ecbdaf"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/idle.ready/ready",
+      "dealerId": "astrid",
+      "eventId": "idle.ready",
+      "situation": "ready",
+      "playbackType": "idle-pool",
+      "standardIds": [
+        "9c8a4ed6-af99-b022-351a-58df8db6ddf8",
+        "4a459446-ba3c-0075-04ab-ff6ed0b501a4"
+      ],
+      "variantIds": [
+        "f5a983d8-877e-317d-7b1c-2f4848c88488",
+        "090751f3-fab4-327b-c5a2-0294f0de8bfe",
+        "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
+        "921ae71d-11fa-01ec-f78a-b9ef7d8d7689"
+      ]
+    }
+  ],
   "items": [
     {
       "id": "5c23fe9a-d68c-b3e5-05b3-86a215d9eeb3",
-      "relativePath": "deal/deal_pos1.mp4",
+      "familyId": "astrid/deal.player.left/box0",
+      "role": "standard",
+      "relativePath": "deal/deal_pos1/deal_pos1.mp4",
       "extension": "mp4",
       "size": 4353251,
-      "sha256": "5c23fe9ad68cb3e505b386a215d9eeb3075ede7fdd3d155f429ef6fc81ba05ff",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · deal/deal_pos1" }
+      "sha256": "5c23fe9ad68cb3e505b386a215d9eeb3075ede7fdd3d155f429ef6fc81ba05ff"
     },
     {
       "id": "3f9a555f-0893-f080-6900-ec32e78e2733",
-      "relativePath": "deal/deal_pos2.mp4",
+      "familyId": "astrid/deal.player.left/box1",
+      "role": "standard",
+      "relativePath": "deal/deal_pos2/deal_pos2.mp4",
       "extension": "mp4",
       "size": 4173515,
-      "sha256": "3f9a555f0893f0806900ec32e78e2733dcdc61a399d69cb0e1dfea3ac8fc64fb",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · deal/deal_pos2" }
+      "sha256": "3f9a555f0893f0806900ec32e78e2733dcdc61a399d69cb0e1dfea3ac8fc64fb"
     },
     {
       "id": "fcc47560-694c-0e8f-20fd-55cb1e280252",
-      "relativePath": "deal/deal_pos3.mp4",
+      "familyId": "astrid/deal.player.centre/box2",
+      "role": "standard",
+      "relativePath": "deal/deal_pos3/deal_pos3.mp4",
       "extension": "mp4",
       "size": 4126836,
-      "sha256": "fcc47560694c0e8f20fd55cb1e2802529686dc0ed374b62e1371732927cb134d",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · deal/deal_pos3" }
+      "sha256": "fcc47560694c0e8f20fd55cb1e2802529686dc0ed374b62e1371732927cb134d"
     },
     {
       "id": "2afa062b-4674-ff72-b2cb-c958a359ebf3",
-      "relativePath": "deal/deal_pos4.mp4",
+      "familyId": "astrid/deal.player.centre/box3",
+      "role": "standard",
+      "relativePath": "deal/deal_pos4/deal_pos4.mp4",
       "extension": "mp4",
       "size": 3940477,
-      "sha256": "2afa062b4674ff72b2cbc958a359ebf39cec0a48bbe328d95fff65642f7c1ba3",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · deal/deal_pos4" }
+      "sha256": "2afa062b4674ff72b2cbc958a359ebf39cec0a48bbe328d95fff65642f7c1ba3"
     },
     {
       "id": "7c704054-deb8-d8ee-2e48-5418553e65b8",
-      "relativePath": "deal/deal_pos5.mp4",
+      "familyId": "astrid/deal.player.centre/box4",
+      "role": "standard",
+      "relativePath": "deal/deal_pos5/deal_pos5.mp4",
       "extension": "mp4",
       "size": 3719148,
-      "sha256": "7c704054deb8d8ee2e485418553e65b87235ba8edee90b4cb5986d26f8d4226e",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · deal/deal_pos5" }
+      "sha256": "7c704054deb8d8ee2e485418553e65b87235ba8edee90b4cb5986d26f8d4226e"
     },
     {
       "id": "69b1402e-17ae-4539-2b0f-5a77beb99e38",
-      "relativePath": "deal/deal_pos6.mp4",
+      "familyId": "astrid/deal.player.right/box5",
+      "role": "standard",
+      "relativePath": "deal/deal_pos6/deal_pos6.mp4",
       "extension": "mp4",
       "size": 3836766,
-      "sha256": "69b1402e17ae45392b0f5a77beb99e38e54fb1a17578695bac0f95b116ea21a4",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · deal/deal_pos6" }
+      "sha256": "69b1402e17ae45392b0f5a77beb99e38e54fb1a17578695bac0f95b116ea21a4"
     },
     {
       "id": "041df107-fe70-fe85-0e94-c7b08726d04c",
-      "relativePath": "deal/deal_pos7.mp4",
+      "familyId": "astrid/deal.player.right/box6",
+      "role": "standard",
+      "relativePath": "deal/deal_pos7/deal_pos7.mp4",
       "extension": "mp4",
       "size": 4035008,
-      "sha256": "041df107fe70fe850e94c7b08726d04ca4ca8a77bc4d722dee4bb636587d5f55",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · deal/deal_pos7" }
+      "sha256": "041df107fe70fe850e94c7b08726d04ca4ca8a77bc4d722dee4bb636587d5f55"
     },
     {
       "id": "83dc9b09-a09d-337d-298a-3e70eadf3767",
-      "relativePath": "deal/deal_posdealer.mp4",
+      "familyId": "astrid/deal.dealer/dealer-up",
+      "role": "standard",
+      "relativePath": "deal/deal_posdealer/deal_posdealer.mp4",
       "extension": "mp4",
       "size": 3053175,
-      "sha256": "83dc9b09a09d337d298a3e70eadf376761df260ec0fb425559ee67830fba5e87",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · deal/deal_posdealer" }
-    },
-    {
-      "id": "f5a983d8-877e-317d-7b1c-2f4848c88488",
-      "relativePath": "idle/idle_blink_f73_s303.mp4",
-      "extension": "mp4",
-      "size": 2560447,
-      "sha256": "f5a983d8877e317d7b1c2f4848c884888517e8aa9e1cb301eb89fefad0032a78",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · idle/idle_blink_f73_s303" }
+      "sha256": "83dc9b09a09d337d298a3e70eadf376761df260ec0fb425559ee67830fba5e87"
     },
     {
       "id": "9c8a4ed6-af99-b022-351a-58df8db6ddf8",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "standard",
       "relativePath": "idle/idle_breath_f73_s303.mp4",
       "extension": "mp4",
       "size": 2575447,
-      "sha256": "9c8a4ed6af99b022351a58df8db6ddf88542c7c76f876c193a6fbb8690960982",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · idle/idle_breath_f73_s303" }
-    },
-    {
-      "id": "090751f3-fab4-327b-c5a2-0294f0de8bfe",
-      "relativePath": "idle/idle_cheek_f73_s301.mp4",
-      "extension": "mp4",
-      "size": 2829729,
-      "sha256": "090751f3fab4327bc5a20294f0de8bfed26f851451baaceffa0bec4a8226dd37",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · idle/idle_cheek_f73_s301" }
-    },
-    {
-      "id": "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
-      "relativePath": "idle/idle_glance_f73_s301.mp4",
-      "extension": "mp4",
-      "size": 2661732,
-      "sha256": "4b60e48bcdf4cd776ef087af6d6b5b9e03dc54e2d0a1e6dc104490090ed31ddd",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · idle/idle_glance_f73_s301" }
-    },
-    {
-      "id": "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
-      "relativePath": "idle/idle_insulted_f73_s301.mp4",
-      "extension": "mp4",
-      "size": 2665281,
-      "sha256": "921ae71d11fa01ecf78ab9ef7d8d768906f930eeb6d7832e05a0bea488628beb",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · idle/idle_insulted_f73_s301" }
+      "sha256": "9c8a4ed6af99b022351a58df8db6ddf88542c7c76f876c193a6fbb8690960982"
     },
     {
       "id": "4a459446-ba3c-0075-04ab-ff6ed0b501a4",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "standard",
       "relativePath": "idle/idle_still_f73_s302.mp4",
       "extension": "mp4",
       "size": 2766598,
-      "sha256": "4a459446ba3c007504abff6ed0b501a4c6e9355897cad3090f44a606186ef5ad",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · idle/idle_still_f73_s302" }
+      "sha256": "4a459446ba3c007504abff6ed0b501a4c6e9355897cad3090f44a606186ef5ad"
+    },
+    {
+      "id": "f5a983d8-877e-317d-7b1c-2f4848c88488",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_blink_f73_s303.mp4",
+      "extension": "mp4",
+      "size": 2560447,
+      "sha256": "f5a983d8877e317d7b1c2f4848c884888517e8aa9e1cb301eb89fefad0032a78"
+    },
+    {
+      "id": "090751f3-fab4-327b-c5a2-0294f0de8bfe",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_cheek_f73_s301.mp4",
+      "extension": "mp4",
+      "size": 2829729,
+      "sha256": "090751f3fab4327bc5a20294f0de8bfed26f851451baaceffa0bec4a8226dd37"
+    },
+    {
+      "id": "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_glance_f73_s301.mp4",
+      "extension": "mp4",
+      "size": 2661732,
+      "sha256": "4b60e48bcdf4cd776ef087af6d6b5b9e03dc54e2d0a1e6dc104490090ed31ddd"
+    },
+    {
+      "id": "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_insulted_f73_s301.mp4",
+      "extension": "mp4",
+      "size": 2665281,
+      "sha256": "921ae71d11fa01ecf78ab9ef7d8d768906f930eeb6d7832e05a0bea488628beb"
     },
     {
       "id": "91ed722c-d43c-1171-1c63-506d6363def7",
-      "relativePath": "repliker/blackjack.mp4",
+      "familyId": "astrid/speak.other/blackjack",
+      "role": "standard",
+      "relativePath": "repliker/blackjack/blackjack.mp4",
       "extension": "mp4",
       "size": 1559912,
-      "sha256": "91ed722cd43c11711c63506d6363def79a95d07932f3cb9982a08961253245b8",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/blackjack" }
+      "sha256": "91ed722cd43c11711c63506d6363def79a95d07932f3cb9982a08961253245b8"
     },
     {
       "id": "38e6517a-c522-d5f0-a28d-7341e9ae9099",
-      "relativePath": "repliker/bust.mp4",
+      "familyId": "astrid/speak.other/bust",
+      "role": "standard",
+      "relativePath": "repliker/bust/bust.mp4",
       "extension": "mp4",
       "size": 775132,
-      "sha256": "38e6517ac522d5f0a28d7341e9ae90992b92b3bf3219eecd931decc1f1cce555",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/bust" }
+      "sha256": "38e6517ac522d5f0a28d7341e9ae90992b92b3bf3219eecd931decc1f1cce555"
     },
     {
       "id": "3dab190d-7ae2-4627-e55c-a3e0a4cce09d",
-      "relativePath": "repliker/chatter1.mp4",
+      "familyId": "astrid/speak.other/chatter1",
+      "role": "standard",
+      "relativePath": "repliker/chatter1/chatter1.mp4",
       "extension": "mp4",
       "size": 1083658,
-      "sha256": "3dab190d7ae24627e55ca3e0a4cce09d8c39886bbd282a68648494b769d1ca68",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/chatter1" }
+      "sha256": "3dab190d7ae24627e55ca3e0a4cce09d8c39886bbd282a68648494b769d1ca68"
     },
     {
       "id": "1ed86ffa-67f9-4d5d-785a-61f3a175cb2e",
-      "relativePath": "repliker/chatter2.mp4",
+      "familyId": "astrid/speak.other/chatter2",
+      "role": "standard",
+      "relativePath": "repliker/chatter2/chatter2.mp4",
       "extension": "mp4",
       "size": 1069687,
-      "sha256": "1ed86ffa67f94d5d785a61f3a175cb2ef5e65bef6c9a3d084991bfd848c45dfc",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/chatter2" }
+      "sha256": "1ed86ffa67f94d5d785a61f3a175cb2ef5e65bef6c9a3d084991bfd848c45dfc"
     },
     {
       "id": "eb80750f-4773-dd8e-a22d-a25ca99ec7ff",
-      "relativePath": "repliker/dealerblackjack.mp4",
+      "familyId": "astrid/speak.other/dealerblackjack",
+      "role": "standard",
+      "relativePath": "repliker/dealerblackjack/dealerblackjack.mp4",
       "extension": "mp4",
       "size": 1015817,
-      "sha256": "eb80750f4773dd8ea22da25ca99ec7ffffee78e2052fbe51fcd70e1d2140231d",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/dealerblackjack" }
+      "sha256": "eb80750f4773dd8ea22da25ca99ec7ffffee78e2052fbe51fcd70e1d2140231d"
     },
     {
       "id": "7b1a6c0c-422f-e3f6-8508-0d1f905783c0",
-      "relativePath": "repliker/dealerbust.mp4",
+      "familyId": "astrid/speak.other/dealerbust",
+      "role": "standard",
+      "relativePath": "repliker/dealerbust/dealerbust.mp4",
       "extension": "mp4",
       "size": 1094113,
-      "sha256": "7b1a6c0c422fe3f685080d1f905783c09c731d44acf4cf2b7f32c4a6d1f21ada",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/dealerbust" }
+      "sha256": "7b1a6c0c422fe3f685080d1f905783c09c731d44acf4cf2b7f32c4a6d1f21ada"
     },
     {
       "id": "89f925bb-1996-895d-b7ef-51591ff72cf0",
-      "relativePath": "repliker/double.mp4",
+      "familyId": "astrid/speak.double/double",
+      "role": "standard",
+      "relativePath": "repliker/double/double.mp4",
       "extension": "mp4",
       "size": 1058559,
-      "sha256": "89f925bb1996895db7ef51591ff72cf08d6bf54b4c40828952b59994ef246ba0",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/double" }
+      "sha256": "89f925bb1996895db7ef51591ff72cf08d6bf54b4c40828952b59994ef246ba0"
     },
     {
       "id": "3f32419b-0369-ed6c-2d54-29a352b88b5c",
-      "relativePath": "repliker/farewell.mp4",
+      "familyId": "astrid/speak.other/farewell",
+      "role": "standard",
+      "relativePath": "repliker/farewell/farewell.mp4",
       "extension": "mp4",
       "size": 1029521,
-      "sha256": "3f32419b0369ed6c2d5429a352b88b5c80cfc9159bf341e5093b9513d86ba05f",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/farewell" }
+      "sha256": "3f32419b0369ed6c2d5429a352b88b5c80cfc9159bf341e5093b9513d86ba05f"
     },
     {
       "id": "28edfd14-064e-8b87-30fa-030042cc6b3b",
-      "relativePath": "repliker/goodluck.mp4",
+      "familyId": "astrid/speak.goodluck/goodluck",
+      "role": "standard",
+      "relativePath": "repliker/goodluck/goodluck.mp4",
       "extension": "mp4",
       "size": 1072958,
-      "sha256": "28edfd14064e8b8730fa030042cc6b3b3cc440ea5a664d131116fd5c3aeaa515",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/goodluck" }
+      "sha256": "28edfd14064e8b8730fa030042cc6b3b3cc440ea5a664d131116fd5c3aeaa515"
     },
     {
       "id": "02cc408d-6ed2-f7eb-5c37-17f7c2f8cab7",
-      "relativePath": "repliker/greeting.mp4",
+      "familyId": "astrid/speak.other/greeting",
+      "role": "standard",
+      "relativePath": "repliker/greeting/greeting.mp4",
       "extension": "mp4",
       "size": 1614179,
-      "sha256": "02cc408d6ed2f7eb5c3717f7c2f8cab776cb966bfb728b4284c1c5cf8c6897ad",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/greeting" }
+      "sha256": "02cc408d6ed2f7eb5c3717f7c2f8cab776cb966bfb728b4284c1c5cf8c6897ad"
     },
     {
       "id": "9f23e445-5510-64c2-8c09-becde4ce1fba",
-      "relativePath": "repliker/insurance.mp4",
+      "familyId": "astrid/speak.insurance/insurance",
+      "role": "standard",
+      "relativePath": "repliker/insurance/insurance.mp4",
       "extension": "mp4",
       "size": 1051079,
-      "sha256": "9f23e445551064c28c09becde4ce1fba7c16d22111ca3376938a2c384a165e26",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/insurance" }
+      "sha256": "9f23e445551064c28c09becde4ce1fba7c16d22111ca3376938a2c384a165e26"
     },
     {
       "id": "3e727d4b-a84c-4cc5-0c6c-d8074820c8b3",
-      "relativePath": "repliker/lose.mp4",
+      "familyId": "astrid/speak.other/lose",
+      "role": "standard",
+      "relativePath": "repliker/lose/lose.mp4",
       "extension": "mp4",
       "size": 925230,
-      "sha256": "3e727d4ba84c4cc50c6cd8074820c8b31c8229d76305e9db5674508ca368830e",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/lose" }
+      "sha256": "3e727d4ba84c4cc50c6cd8074820c8b31c8229d76305e9db5674508ca368830e"
     },
     {
       "id": "6364bddf-3f82-8136-abd1-e78e04b9a998",
-      "relativePath": "repliker/peek.mp4",
+      "familyId": "astrid/speak.other/peek",
+      "role": "standard",
+      "relativePath": "repliker/peek/peek.mp4",
       "extension": "mp4",
       "size": 1075085,
-      "sha256": "6364bddf3f828136abd1e78e04b9a998654eb7effdbdb1f61ff9d52f493cd589",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/peek" }
+      "sha256": "6364bddf3f828136abd1e78e04b9a998654eb7effdbdb1f61ff9d52f493cd589"
     },
     {
       "id": "f5713247-0b01-6919-78d1-143aed59312e",
-      "relativePath": "repliker/placebets.mp4",
+      "familyId": "astrid/speak.other/placebets",
+      "role": "standard",
+      "relativePath": "repliker/placebets/placebets.mp4",
       "extension": "mp4",
       "size": 1030449,
-      "sha256": "f57132470b01691978d1143aed59312ed9ff00db5d8392461ed6cbb578e988e4",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/placebets" }
+      "sha256": "f57132470b01691978d1143aed59312ed9ff00db5d8392461ed6cbb578e988e4"
     },
     {
       "id": "e5e6ea99-cc54-b587-c774-0d36b7ba8f8f",
-      "relativePath": "repliker/push.mp4",
+      "familyId": "astrid/speak.other/push",
+      "role": "standard",
+      "relativePath": "repliker/push/push.mp4",
       "extension": "mp4",
       "size": 1030314,
-      "sha256": "e5e6ea99cc54b587c7740d36b7ba8f8f75b67b6a057b946fa268cc1b7b3ba473",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/push" }
+      "sha256": "e5e6ea99cc54b587c7740d36b7ba8f8f75b67b6a057b946fa268cc1b7b3ba473"
     },
     {
       "id": "9c7dbcdf-6f85-239b-6e6f-3b2f3589748c",
-      "relativePath": "repliker/sidebet.mp4",
+      "familyId": "astrid/speak.other/sidebet",
+      "role": "standard",
+      "relativePath": "repliker/sidebet/sidebet.mp4",
       "extension": "mp4",
       "size": 1062262,
-      "sha256": "9c7dbcdf6f85239b6e6f3b2f3589748c3ddd9184748e53b41e9a9c8939717391",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/sidebet" }
+      "sha256": "9c7dbcdf6f85239b6e6f3b2f3589748c3ddd9184748e53b41e9a9c8939717391"
     },
     {
       "id": "809dcaec-0bb4-6986-2379-1aa795ecbdaf",
-      "relativePath": "repliker/win.mp4",
+      "familyId": "astrid/speak.other/win",
+      "role": "standard",
+      "relativePath": "repliker/win/win.mp4",
       "extension": "mp4",
       "size": 1088582,
-      "sha256": "809dcaec0bb4698623791aa795ecbdafeb3de5b44a6595c608ed87d6b8e0f7ba",
-      "verdict": "unreviewed",
-      "source": "emil",
-      "placement": { "dealer": "astrid", "label": "Emil · repliker/win" }
+      "sha256": "809dcaec0bb4698623791aa795ecbdafeb3de5b44a6595c608ed87d6b8e0f7ba"
     }
   ]
 }

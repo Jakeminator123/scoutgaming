@@ -2,6 +2,7 @@ import { installDealerVersionSwitcher, dealerVersionPath, V2_DEALERS } from './d
 import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
+import { createSpeechPoseGate } from './speech-pose-gate.mjs';
 import { createTableAudio } from './table-audio.mjs';
 import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
@@ -49,6 +50,10 @@ const DEALERS = {
             table: 'dealers/mei/table.png' },
 };
 const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
+const clientSessionRevision = crypto.randomUUID();
+let tableVersion = 0;
+let speechPoseGate = null;
+let idlePresentationSequence = 0;
 const dealerV2Route = location.pathname === '/v2' || location.pathname.startsWith('/v2/');
 const nativeObservation = createNativeObservation({ href: location.href, opener: window.opener });
 nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original' });
@@ -252,12 +257,27 @@ function showPoster() {
   img.src = `${DEALER.base}/poster.jpg`;
 }
 
+const poseIdentity = () => ({ dealerId: DEALER.key, sessionRevision: clientSessionRevision, roundRevision: String(tableVersion) });
+function updatePoseState(next, reason) {
+  return speechPoseGate?.updateRendererState({ ...poseIdentity(), ...next }, reason);
+}
+function presentStandardIdle(source = 'renderer') {
+  if (!speechPoseGate) return;
+  const presentationId = `${source}:${++idlePresentationSequence}`;
+  updatePoseState({ dealerPose: 'standard-idle' }, 'standard-idle');
+  speechPoseGate.presentStandardIdle({ ...poseIdentity(), presentationId });
+}
+
 const engine = new DealerEngine($('#dealer'), DEALER.base, {
   log: m => console.info('[dealer]', m),
   handsCanvas: $('#dealer-hands'),
   actorMatteBase:actorProvenance?'dealers/astrid/actor':null,handsCut:DEALER.anchor,
 });
-engine.onPresentClip = (clip, playbackRequestId) => nativeObservation.clip(clip, playbackRequestId, DEALER.key);
+engine.onPresentClip = (clip, playbackRequestId) => {
+  nativeObservation.clip(clip, playbackRequestId, DEALER.key);
+  if (clip === CLIP.idle) presentStandardIdle(`engine-${playbackRequestId ?? 'cycle'}`);
+  else updatePoseState({ dealerPose: clip.includes('/speak/') ? 'speech' : 'action', idlePresented: null }, 'clip-presented');
+};
 let engineUp = false;
 let speaking = false;
 let dealingActive = false;
@@ -344,7 +364,15 @@ const speechQueue = createSpeechQueue({
   canPlay: () => !voice.muted && !document.hidden,
   beforePlay: () => { if(!performancePlayer?.ready)performancePlayer?.cancel(); },
 });
-const speechTurn = fn => speechQueue.enqueue(fn);
+const rawSpeechTurn = fn => speechQueue.enqueue(fn);
+const speechTurn = fn => rawSpeechTurn(async signal => {
+  updatePoseState({ dealerPose: 'speech', speechOwner: 'game', idlePresented: null }, 'game-speech-started');
+  try { return await fn(signal); }
+  finally {
+    updatePoseState({ dealerPose: 'unknown', speechOwner: 'none', idlePresented: null }, 'game-speech-completed');
+    if (greenActor || engine.presentedClip === CLIP.idle) presentStandardIdle('game-speech-return');
+  }
+});
 
 const voice = {
   muted: localStorage.getItem('croupier-muted') === '1',
@@ -390,6 +418,29 @@ const voice = {
   },
 };
 voice.load();
+speechPoseGate = createSpeechPoseGate({
+  enqueue: rawSpeechTurn,
+  initialState: {
+    ...poseIdentity(), dealerPose: 'unknown', actionOwner: 'none', speechOwner: 'none', idlePresented: null,
+    visible: !document.hidden, muted: voice.muted,
+  },
+  onDisplay: async (decision, job) => {
+    const pending = pendingChatReplies.get(job.jobId);
+    if (!pending || decision.kind === 'silence') return;
+    const text = decision.exactText;
+    chatLog('vera', text);
+    nativeObservation.emit('chat', { role: 'assistant', text, line: decision.lineId ?? null,
+      source: 'openclaw-chat', speechKind: decision.kind }, pending.correlation);
+    chatHistory.push({ role: 'assistant', text });
+  },
+  onSpeech: async (decision, { signal, job }) => playChatDecision(decision, signal, job.jobId),
+  onCancel: (job, reason) => nativeObservation.emit('chat', { role: 'assistant', state: 'cancelled', reason,
+    requestId: job.jobId, source: 'openclaw-chat' }),
+  onTrace: entry => nativeObservation.emit('chat-pose', entry),
+});
+queueMicrotask(() => {
+  if (greenActor || engine.presentedClip === CLIP.idle) presentStandardIdle('initial-ready');
+});
 // ---- live keyframe debug overlay: ?kf=1 (or press K). Draws the gate's
 // measured keyframes on the LIVE dealer while she speaks: mouth box, nose
 // anchor, and a lane where audio phrases (shifted by the shipped delay) sit
@@ -461,6 +512,7 @@ const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); sou
 function setMuted(muted) {
   if (muted) { speechQueue.cancel(); activeSpeech?.abort(); bankAudio?.pause(); speaking = false; }
   voice.muted = muted; localStorage.setItem('croupier-muted', muted ? '1' : '0'); renderSound();
+  updatePoseState({ muted }, muted ? 'muted' : 'unmuted');
   if (muted) { tableAudio.reset(); sfx.stopAmbience(); }
   else { tableAudio.unlock(); sfx.startAmbience(); }
 }
@@ -500,8 +552,10 @@ const sfx = {
 };
 sfx.load();
 document.addEventListener('visibilitychange', () => {
+  updatePoseState({ visible: !document.hidden }, document.hidden ? 'hidden' : 'visible');
   if(document.hidden){speechQueue.cancel();activeSpeech?.abort();sfx.stopAmbience();tableAudio.reset();}
 });
+addEventListener('pagehide', () => speechPoseGate?.navigate(), { once: true });
 for (const ev of ['pointerdown', 'keydown', 'visibilitychange']) {
   document.addEventListener(ev, () => { if (!document.hidden) {tableAudio.unlock();sfx.keepAmbience();} }, { passive: true });
 }
@@ -739,7 +793,7 @@ async function loadPlayer() {
   } catch { /* server db unavailable: play on with the local demo balance */ }
 }
 function syncBalance() { /* Server table commands now persist the wallet. */ }
-let tableVersion = 0, shoeState = null, observedTableView = null;
+let shoeState = null, observedTableView = null;
 function showShoe(state) {
   if (!state) return;
   shoeState = state; tableScene?.setShoe(state);
@@ -752,13 +806,22 @@ function roundView(data) {
 async function tableCommand(op, extra = {}) {
   if (!player) await loadPlayer();
   if (!player) throw new Error('Cannot connect to the game server');
+  if (op !== 'state') updatePoseState({ dealerPose: 'action', actionOwner: `table-${op}`, idlePresented: null }, 'table-command-started');
   const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), ...extra };
   let out;
   for (let attempt=0; attempt<2; attempt++) {
     try { out = await api('/api/table', payload); break; }
-    catch (e) { if (attempt || !/fetch|network|load failed/i.test(e.message)) throw e; }
+    catch (e) {
+      if (attempt || !/fetch|network|load failed/i.test(e.message)) {
+        if (op !== 'state') updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-command-failed');
+        throw e;
+      }
+    }
   }
   tableVersion = out.version;
+  updatePoseState({ roundRevision: String(tableVersion),
+    ...(op === 'state' ? { actionOwner: 'none' } : {}) }, 'table-version-committed');
+  if (op === 'state' && greenActor) presentStandardIdle('state-restored');
   nativeObservation.command(payload, out, observedTableView, DEALER.key);
   observedTableView = out;
   tableScene?.setTableSnapshot?.(out,{collecting:op==='collect'});
@@ -797,8 +860,8 @@ async function prepareTable() {
   return out;
 }
 
-// Vera reacts to table events through her live brain (throttled, text captions)
-let veraBusy = false, lastVeraComment = 0;
+// Automatic event speech is intentionally disabled until it can use the same
+// request/revision/pose contract as explicit player chat.
 function showCaption(text, ms = 6500) {
   const cap = $('#caption');
   cap.textContent = text; cap.classList.add('show');
@@ -806,25 +869,7 @@ function showCaption(text, ms = 6500) {
   showCaption.t = setTimeout(() => cap.classList.remove('show'), ms);
 }
 const AUTO_COMMENTARY = false; // Re-enable after core gameplay acceptance.
-async function veraEvent(text, { minGap = 18000 } = {}) {
-  if (!AUTO_COMMENTARY) return;
-
-  const now = Date.now();
-  if (veraBusy || now - lastVeraComment < minGap) return;
-  veraBusy = true; lastVeraComment = now;
-  try {
-    const r = await fetch('/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, event: true, dealer: DEALER.key }),
-    });
-    const { reply } = await r.json();
-    if (reply) speechTurn(() => new Promise(res => {
-      showCaption(reply); speakFor(reply);
-      setTimeout(res, Math.min(9000, 1200 + reply.length * 55));
-    }));
-  } catch { /* brain offline: stay quiet */ }
-  finally { veraBusy = false; }
-}
+async function veraEvent() { if (!AUTO_COMMENTARY) return; }
 const ledger = (why, delta) => console.info('[ledger]', why, delta, '->', balance);
 let selected = 5;
 let bets = Array.from({ length: SEATS }, () => ({ main: 0, pp: 0, tp: 0 }));
@@ -1451,7 +1496,7 @@ async function deliverCard(container, card, options={}) {
   } catch(error) { nativeObservation.emit('playback',{...observedCard,state:'error',error:error.message},correlation);throw error; }
 }
 
-async function endDealingTake() {
+async function endDealingTake({ deferIdle = false } = {}) {
   dealingActive=false;
   // The filmed return owns the actor until its final pose and the matching
   // idle frame have both been presented. Speech/decisions wait for this.
@@ -1459,6 +1504,10 @@ async function endDealingTake() {
   if(engineUp && !speaking && engine.presentedClip===CLIP.deal) {
     const returning='idle-1/actions/action-return';
     engine.interrupt(engine.index.clips[returning] ? returning : CLIP.idle);
+  }
+  if (!deferIdle) {
+    updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'action-completed');
+    if (greenActor || performancePlayer || engine.presentedClip === CLIP.idle) presentStandardIdle('action-return');
   }
   if(astridGreenTake&&$('#dealer-cards .card:not(.back)'))$('#green-upcard-replay').disabled=false;
   greenBoxReplays(true);
@@ -1550,6 +1599,9 @@ $('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await en
 
 async function beginDealingTake() {
   try {
+  const currentOwner = speechPoseGate?.state.actionOwner ?? 'none';
+  updatePoseState({ dealerPose: 'action', actionOwner: currentOwner === 'none' ? 'dealer-action' : currentOwner,
+    idlePresented: null }, 'action-started');
   await speechQueue.idle;
   if(tableScene?.rigged){console.info('[deal] Rigged contact review sequence');return;}
   if(performancePlayer){if(performancePlayer.joins)performancePlayer.beginSequence();console.info('[deal] Presented-frame performance sequence');return;}
@@ -1814,8 +1866,10 @@ async function finish() {
   if (totalWin > 0) void veraEvent(`Round settled: ${who} collected ${fmt(totalWin)} this round${anyPlayerBJ ? ' including a natural blackjack' : ''}.`);
   else void veraEvent(`Round settled: the house took this one; ${who} won nothing back.`, { minGap: 45000 });
   await Promise.all([sleep(1800), speechQueue.idle]);
-  await endDealingTake();
+  await endDealingTake({ deferIdle: true });
   if(tableScene?.collectCards)await tableScene.collectCards({onCue:phase=>sfx.play(phase)});
+  updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-cleared');
+  if (greenActor || performancePlayer || engine.presentedClip === CLIP.idle) presentStandardIdle('table-cleared');
   round = null; busy = false;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
   undoStack = [];
@@ -1826,20 +1880,19 @@ async function finish() {
   voice.say('placebets');
 }
 
-// ---------- chat: Vera's live brain ----------
-// Posts to /chat, which relays to the headless-claude subscription on
-// scout-hel1. While her reply is on screen a speak clip runs, so her mouth
-// moves for the duration she is "talking" (the baked clips are lip-synced to
-// their own recorded lines; arbitrary chat text is mouth-movement, not visemes).
-const SPEAK_CLIPS = ['idle-1/speak/greeting', 'idle-1/speak/goodluck', 'idle-1/speak/win', 'idle-1/speak/push'];
+// ---------- chat: OpenClaw decision + renderer-owned pose gate ----------
 let chatHistory = [];
 let chatBusy = false;
+const pendingChatReplies = new Map();
 
 function chatLog(role, text, pending = false) {
   const panel = $('#chat-log');
   const row = document.createElement('div');
   row.className = `msg ${role}` + (pending ? ' pending' : '');
-  row.innerHTML = `<b>${role === 'user' ? (player?.name ?? 'You') : 'Vera'}</b><p>${text}</p>`;
+  const name = document.createElement('b');
+  name.textContent = role === 'user' ? (player?.name ?? 'You') : DEALER.name;
+  const message = document.createElement('p'); message.textContent = text;
+  row.append(name, message);
   panel.appendChild(row);
   panel.classList.add('open');
   panel.scrollTop = panel.scrollHeight;
@@ -1849,13 +1902,9 @@ function chatLog(role, text, pending = false) {
   return row;
 }
 
-// Vera only ever speaks in her OWN voice. Every spoken line is a recorded
-// Vera take (dealer/audio/en/*.mp3); the brain picks which one fits, and
-// anything off-book is shown as text without a voice. A synthetic system
-// voice would break the illusion worse than staying quiet.
 const VERA_BANK_URL = `${DEALER.base}/audio/en`;
 let veraBank = {};
-const bankReady = (greenActor?Promise.resolve({}):fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {})).then(b => {
+const bankReady = fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => {
   delete b.rules_decks; delete b.fair_rng;
   veraBank = b;
   // the caption must show what THIS dealer actually says
@@ -1930,7 +1979,6 @@ async function playRecorded(id, audio, text, signal) {
   activeSpeech = controller;
   bankAudio = audio;
   voice.playing = true;
-  clearTimeout(speakFor.t);
   return playSpeech({
     audio, signal: controller.signal,
     prepare: async signal => {
@@ -1986,6 +2034,61 @@ async function playRecorded(id, audio, text, signal) {
   });
 }
 
+function playNeutralTts(exactText, signal) {
+  if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance !== 'function') {
+    throw new Error('Exact browser speech is unavailable');
+  }
+  return new Promise((resolve, reject) => {
+    const utterance = new SpeechSynthesisUtterance(exactText);
+    utterance.lang = document.documentElement.lang || navigator.language || 'en';
+    const cleanup = () => signal?.removeEventListener('abort', abort);
+    const abort = () => { speechSynthesis.cancel(); cleanup(); reject(new DOMException('Speech cancelled', 'AbortError')); };
+    utterance.onstart = () => showCaption(exactText, Math.min(13000, 3500 + exactText.length * 70));
+    utterance.onend = () => { cleanup(); $('#caption').classList.remove('show'); resolve(); };
+    utterance.onerror = event => {
+      cleanup(); $('#caption').classList.remove('show');
+      reject(signal?.aborted ? new DOMException('Speech cancelled', 'AbortError') : new Error(event.error || 'Speech failed'));
+    };
+    if (signal?.aborted) { abort(); return; }
+    signal?.addEventListener('abort', abort, { once: true });
+    speechSynthesis.speak(utterance);
+  });
+}
+
+async function playChatDecision(decision, signal, jobId) {
+  if (decision.kind === 'silence') return;
+  updatePoseState({ dealerPose: decision.kind === 'generatedText' ? 'standard-idle' : 'speech',
+    speechOwner: `chat-${jobId}`, idlePresented: null }, 'chat-speech-started');
+  try {
+    if (decision.kind === 'generatedText') {
+      speaking = true;
+      try { await playNeutralTts(decision.exactText, signal); }
+      finally { speaking = false; }
+      return;
+    }
+    await bankReady;
+    const line = veraBank[decision.lineId];
+    if (!line || line.text !== decision.exactText) throw new Error('Recorded speech package changed');
+    if (astridSpeak?.has(decision.lineId)) {
+      speaking = true;
+      await astridSpeak.say(decision.lineId, {
+        signal,
+        onStart: text => showCaption(text, Math.min(13000, 3500 + text.length * 70)),
+        onPresent: details => nativeObservation.emit('playback', { event: 'speech', state: 'start', line: decision.lineId,
+          ...details, evidence: 'presented-frame', source: 'openclaw-chat' }),
+        onFinish: () => { speaking = false; $('#caption').classList.remove('show'); },
+      });
+      return;
+    }
+    if (greenActor) throw new Error('Recorded line has no approved synchronized take in this renderer');
+    const audio = new Audio(`${VERA_BANK_URL}/${decision.lineId}.mp3`); audio.volume = .95;
+    await playRecorded(decision.lineId, audio, decision.exactText, signal);
+  } finally {
+    updatePoseState({ dealerPose: 'unknown', speechOwner: 'none', idlePresented: null }, 'chat-speech-completed');
+    if (greenActor || engine.presentedClip === CLIP.idle) presentStandardIdle('chat-speech-return');
+  }
+}
+
 function sayLine(id) {
   if(greenActor)return false;
   const line = veraBank[id];
@@ -1999,19 +2102,6 @@ function sayLine(id) {
   return true;
 }
 
-function speakFor(text) {
-  if(greenActor)return;
-  // free text has no recorded take and no audio - a talking mouth with no
-  // sound reads as broken, so she considers instead: think/gesture clips
-  // while the caption carries the words
-  const clip = [CLIP.think, CLIP.gest, CLIP.headTilt].find(k => engine.index?.clips?.[k]);
-  if (!clip) { trigger(CLIP.gest); return; }
-  engine.interrupt?.(clip);
-  const ms = Math.min(9000, 1200 + text.length * 55);
-  clearTimeout(speakFor.t);
-  speakFor.t = setTimeout(() => trigger(CLIP.idle), ms);
-}
-
 $('#chat-send').onclick = sendChat;
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 
@@ -2022,37 +2112,32 @@ async function sendChat() {
   input.value = '';
   chatBusy = true;
   const chatCorrelation=nativeObservation.context();
-  nativeObservation.emit('chat',{role:'user',text:message,source:'original-chat',contextMessages:chatHistory.slice(-12).map(({role,text})=>({role,text}))},chatCorrelation);
+  const history = chatHistory.slice(-12).map(({ role, text }) => ({ role, text }));
+  const requestId = crypto.randomUUID();
+  const identity = poseIdentity();
+  nativeObservation.emit('chat',{role:'user',text:message,source:'openclaw-chat',contextMessages:history},chatCorrelation);
   chatLog('user', message);
-  const pending = chatLog('vera', '<i>thinking…</i>', true);
+  chatHistory.push({ role: 'user', text: message });
+  const received = speechPoseGate.receive({ jobId: requestId, ...identity, requestFingerprint: requestId });
+  pendingChatReplies.set(requestId, { correlation: chatCorrelation, message });
   try {
     const r = await fetch('/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history: chatHistory.slice(-12), dealer: DEALER.key }),
+      body: JSON.stringify({ requestId, message, history, dealer: DEALER.key,
+        sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
     });
-    const { reply, say } = await r.json();
-    if (reply || say) {
-      pending.classList.remove('pending');
-      // when she has a recorded take for this, the spoken words and the words
-      // on screen are the same line - never a voice saying something else
-      const spoken = say && veraBank[say] ? veraBank[say].text : null;
-      const shown = spoken ?? reply;
-      nativeObservation.emit('chat',{role:'assistant',text:shown,line:say??null,source:'original-chat'},chatCorrelation);
-      pending.querySelector('p').textContent = shown;
-      chatHistory.push({ role: 'user', text: message }, { role: 'vera', text: shown });
-      if (spoken) sayLine(say);
-      else speechTurn(() => new Promise(res => {
-        showCaption(shown, Math.min(13000, 3500 + shown.length * 70)); speakFor(shown);
-        setTimeout(res, Math.min(9000, 1200 + shown.length * 55));
-      }));
-    } else {
-      pending.querySelector('p').textContent = 'I have lost my earpiece for a moment — try me again.';
-      pending.classList.remove('pending');
-    }
-  } catch {
-    pending.querySelector('p').textContent = 'I have lost my earpiece for a moment — try me again.';
-    pending.classList.remove('pending');
-  } finally { chatBusy = false; }
+    const decision = await r.json();
+    if (!r.ok) throw new Error(decision.error || `Chat unavailable (${r.status})`);
+    speechPoseGate.responseReady(requestId, decision);
+    const receipt = await received.completion;
+    if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
+  } catch (error) {
+    speechPoseGate.cancel(requestId, error.message || 'chat-failed');
+    if (!speechPoseGate.get(requestId)?.displayed) hint('CHAT', 'Dealer chat is unavailable for a moment.');
+  } finally {
+    pendingChatReplies.delete(requestId);
+    chatBusy = false;
+  }
 }
 
 $('#gate-enter').onclick = () => {
@@ -2179,7 +2264,8 @@ if (pitBtn) {
 }
 
 // QA hook: lets a test drive the table without playing 20 rounds first
-window.__croupier = { engine, CLIP, supervisorMayLook, supEl, sayLine, veraBank, get round() { return round; } };
+window.__croupier = { engine, CLIP, supervisorMayLook, supEl, sayLine, veraBank, speechPoseGate,
+  get round() { return round; } };
 
 renderBets();
 setBanner('PLEASE PLACE BETS');

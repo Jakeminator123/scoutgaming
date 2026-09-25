@@ -4,6 +4,18 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { buildAssetsManifest, presentationEvents } from './partner-presentation.mjs';
 
+const DISPLAY_NAME_FORBIDDEN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
+export function normalizeDisplayName(value) {
+  if (value === undefined || value === null) return 'spelaren';
+  if (typeof value !== 'string') throw new Error('displayName must be a string');
+  const normalized = value.normalize('NFC');
+  if (DISPLAY_NAME_FORBIDDEN.test(normalized)) throw new Error('displayName contains control or formatting characters');
+  const compact = normalized.replace(/\p{White_Space}+/gu, ' ').trim();
+  if (!compact) throw new Error('displayName must not be empty');
+  if ([...compact].length > 40) throw new Error('displayName must be at most 40 characters');
+  return compact;
+}
+
 export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root }) {
   // SSE subscribers per (key,player): partner clients receive presentation events as they happen.
   const subs = new Map(); const chan = (k, pid) => `${k}:${pid}`;
@@ -30,13 +42,14 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
         .run(id, name.trim().slice(0, 80), key, secret, JSON.stringify(sc), walletUrl || null, ipAllow || null, who ?? null, new Date().toISOString());
       return { id, name: name.trim(), key, secret, scopes: sc, walletUrl: walletUrl || null, note: 'Secret is shown ONCE. Store it now.' };
     },
-    mintLaunch(id, { playerId, currency, language } = {}) {
+    mintLaunch(id, { playerId, displayName, currency, language } = {}) {
       const row = boDb.prepare('SELECT * FROM api_keys WHERE id=? AND revoked_at IS NULL').get(id);
       if (!row) throw new Error('unknown or revoked key');
       const pid = String(playerId || 'test-' + randomBytes(3).toString('hex'));
       const p = playerFor({ ...row, scopes: JSON.parse(row.scopes) }, pid, currency || 'EUR');
-      const tok = jwtSign({ sub: p.id, partner: row.id, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: null });
-      const ts = Math.floor(Date.now() / 1000), body = JSON.stringify({ playerId: pid, currency: currency || 'EUR' });
+      const presentedAs = normalizeDisplayName(displayName);
+      const tok = jwtSign({ sub: p.id, partner: row.id, displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: null });
+      const ts = Math.floor(Date.now() / 1000), body = JSON.stringify({ playerId: pid, displayName: presentedAs, currency: currency || 'EUR' });
       const sig = createHmac('sha256', row.secret).update(`${ts}.POST./api/v1/launch.${body}`).digest('hex');
       return { playerId: pid, playerRef: p.id, balance: p.balance, currency: p.currency, expiresIn: 21600,
         url: `${publicUrl}/?dealer=astrid&launch=${tok}`,
@@ -80,7 +93,10 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
     const m = db.prepare('SELECT player_id FROM partner_players WHERE key_id=? AND partner_player=?').get(k.id, partnerPlayer);
     if (m) return getPlayer(m.player_id);
     const id = randomUUID();
-    db.prepare('INSERT INTO players (id, name, currency, balance, created_at) VALUES (?,?,?,?,?)').run(id, `${k.name}:${partnerPlayer}`.slice(0, 40), currency || 'EUR', 0, new Date().toISOString());
+    // The partner playerId is a technical mapping key, never a name used to
+    // address the player. Per-launch presentation data lives in the signed
+    // claim/session and cannot change this profile identity.
+    db.prepare('INSERT INTO players (id, name, currency, balance, created_at) VALUES (?,?,?,?,?)').run(id, 'spelaren', currency || 'EUR', 0, new Date().toISOString());
     db.prepare('INSERT INTO partner_players VALUES (?,?,?)').run(k.id, partnerPlayer, id);
     return getPlayer(id);
   }
@@ -127,9 +143,10 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       if (pathname === '/api/v1/lobby') { const e = need(k, 'lobby'); if (e) return send(e.status, e);
         return send(200, { tables: [{ id: 'astrid-blackjack', game: 'blackjack', dealer: 'astrid', name: 'Dark Hall', decks: 8, cutAfter: 312, boxes: 7, minBet: 5, maxBet: 2000, sideBets: ['perfectPairs', '21+3'], blackjackPays: '3:2', dealerStandsSoft17: true, aiDealer: true }] }); }
       if (pathname === '/api/v1/launch') { const e = need(k, 'launch'); if (e) return send(e.status, e);
-        const { playerId, currency, language, returnUrl } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });
+        const { playerId, displayName, currency, language, returnUrl } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });
+        const presentedAs = normalizeDisplayName(displayName);
         const p = playerFor(k, playerId, currency);
-        const tok = jwtSign({ sub: p.id, partner: k.id, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
+        const tok = jwtSign({ sub: p.id, partner: k.id, displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
         return send(200, { url: `${publicUrl}/?dealer=astrid&launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
       if (pathname === '/api/v1/table') { const e = need(k, 'play'); if (e) return send(e.status, e);
         const { playerId, requestId, ...cmd } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });

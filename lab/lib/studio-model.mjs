@@ -1,5 +1,6 @@
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
+import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
 
 // Pure, browser-safe policy model. This file never reads environment, network,
 // player identities, game state or media files. JSON is the editable artefact.
@@ -52,7 +53,7 @@ export class StudioValidationError extends Error {
   }
 }
 
-export function createSeedProject() { return clone(seed); }
+export function createSeedProject() { return { ...clone(seed), idlePolicy: createDefaultIdlePolicy() }; }
 
 // Illustration choices must not reverse a published deal or hide a reveal.
 // This is NOT media acceptance: exact dealer/line/take validation belongs to
@@ -77,8 +78,12 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project')) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy'])) throw new StudioValidationError(errors);
   if (project.schemaVersion !== 1) error('schemaVersion', 'ska vara 1');
+  if (Object.hasOwn(project, 'idlePolicy')) {
+    try { validateIdlePolicy(project.idlePolicy); }
+    catch (cause) { error('idlePolicy', cause instanceof Error ? cause.message : 'ogiltig policy'); }
+  }
   id(project.revision, 'revision');
   if (project.gameId !== 'blackjack') error('gameId', 'endast blackjack är implementerat; roulette är en platshållare');
   const dealerIds = new Set();

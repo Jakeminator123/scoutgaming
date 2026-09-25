@@ -26,6 +26,11 @@ function loadTs(relativeFile) {
 
 const { EventTree } = loadTs('./event-tree.tsx');
 const { studioViewForPath, viewPaths } = loadTs('./studio-types.ts');
+const mediaManifest = JSON.parse(readFileSync(new URL('../../emil/dealklipp-v1/lab-video-manifest.json', import.meta.url), 'utf8'));
+const mediaInventory = {
+  families: mediaManifest.families,
+  videos: mediaManifest.items.map(item => ({ ...item, available: true, fileName: item.relativePath.split('/').at(-1) })),
+};
 
 function render(project, overrides = {}) {
   const line = project.lines.find(item => item.dealerId === 'astrid');
@@ -111,6 +116,22 @@ test('generic speech lab node warns that one file cannot serve every exact sourc
   const html = render(project, { event, line, variant: line.variants[0] });
   assert.match(html, /samlar flera exakta replik-ID:n/);
   assert.match(html, /Riktigt tal kräver exakt text, ljud, video och godkänd synk/);
+});
+
+test('tree keeps event groups and exposes exact media families, pools and inactive variants beneath them', () => {
+  const project = createSeedProject();
+  const event = project.events.find(item => item.id === 'speak.other');
+  const line = project.lines.find(item => item.dealerId === 'astrid' && item.eventId === event.id);
+  const html = render(project, { event, line, variant: line.variants[0], inventory: mediaInventory });
+  assert.match(html, /14 exakta mediefamiljer/);
+  for (const situation of ['greeting', 'placebets', 'blackjack']) assert.match(html, new RegExp(`Mediefamilj ${situation}`));
+  assert.match(html, /3 exakta mediefamiljer/);
+  for (const situation of ['box2', 'box3', 'box4']) assert.match(html, new RegExp(`Mediefamilj ${situation}`));
+  assert.match(html, /0 varianter — standard används/);
+  assert.match(html, /Standardpool · engångsvarianter återgår till poolen/);
+  assert.match(html, /idle_insulted_f73_s301\.mp4/);
+  assert.match(html, /Manuell\/inaktiv tills en explicit granskad projektpolicy/);
+  assert.match(html, /Mappplacering aktiverar aldrig OpenClaw/);
 });
 
 function renderEvent(project, id) {

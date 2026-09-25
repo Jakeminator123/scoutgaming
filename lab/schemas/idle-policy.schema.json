@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://croupier.local/schemas/idle-policy.schema.json",
+  "title": "Croupier lab idle policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "familyId", "base", "variants"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "familyId": { "const": "astrid/idle.ready/ready" },
+    "base": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/base" }
+    },
+    "variants": {
+      "type": "array",
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/variant" }
+    }
+  },
+  "$defs": {
+    "videoId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+    },
+    "duration": {
+      "type": "integer",
+      "minimum": 200,
+      "maximum": 60000
+    },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["videoId", "weight", "durationMs"],
+      "properties": {
+        "videoId": { "$ref": "#/$defs/videoId" },
+        "weight": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "durationMs": { "$ref": "#/$defs/duration" }
+      }
+    },
+    "automatic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["averageEveryMs", "jitterMs", "cooldownMs", "maxPerMinute"],
+      "properties": {
+        "averageEveryMs": { "type": "integer", "minimum": 5000, "maximum": 300000 },
+        "jitterMs": { "type": "integer", "minimum": 0, "maximum": 60000 },
+        "cooldownMs": { "type": "integer", "minimum": 0, "maximum": 300000 },
+        "maxPerMinute": { "type": "integer", "minimum": 1, "maximum": 12 }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["videoId", "durationMs", "use", "automatic"],
+      "properties": {
+        "videoId": { "$ref": "#/$defs/videoId" },
+        "durationMs": { "$ref": "#/$defs/duration" },
+        "use": { "enum": ["manual", "automatic", "rules", "openclaw"] },
+        "automatic": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/automatic" }
+          ]
+        }
+      }
+    }
+  }
+}

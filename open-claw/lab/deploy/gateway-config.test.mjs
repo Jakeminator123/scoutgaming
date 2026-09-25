@@ -24,6 +24,18 @@ test('generated configuration refers to secrets without writing their values', (
   assert.equal(config.models.providers['lab-provider'].apiKey.id, 'OPENCLAW_MODEL_API_KEY');
 });
 
+test('the seeded provider keeps the approved OpenAI base URL, model and API tuple', () => {
+  const config = gatewayConfig(example);
+  const provider = config.models.providers['lab-provider'];
+  assert.equal(provider.baseUrl, 'https://api.openai.com/v1');
+  assert.equal(provider.api, 'openai-responses');
+  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.4-mini']);
+  for (const agent of Object.values(config.agents.entries)) {
+    assert.equal(agent.model.primary, 'lab-provider/gpt-5.4-mini');
+    assert.deepEqual(agent.model.fallbacks, []);
+  }
+});
+
 test('chat cannot gain tools or share the presentation agent workspace', () => {
   const config = gatewayConfig(example);
   const director = config.agents.entries['croupier-director'];

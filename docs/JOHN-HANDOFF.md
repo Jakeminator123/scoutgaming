@@ -1,3 +1,60 @@
+## 2026-09-25 — Manifest v2, idlepolicy och OpenClaw-styrd talkö
+
+På `jakeminator123/work` är `emil/dealklipp-v1` nu organiserad som exakta
+mediefamiljer. Deal- och replikfamiljer har var sin standardfil och en
+versionshanterad `variant/`; MP4-bytes, UUID, storlek och SHA-256 är oförändrade.
+Det validerade manifest v2-kontraktet har 31 poster i 26 familjer och genereras
+deterministiskt. Generatorn ignorerar `.gitkeep`, avvisar otillåtna/dubbla
+sökvägar, ID:n, familjer och symlänkar utanför banken samt verifierar hash och
+storlek före uppspelning. Exakt familj löses utan lån mellan replik, box eller
+position; fallback är variant → familjens standard → 2D.
+
+En senare uttrycklig idle-instruktion är den gällande modellen: två basloopar
+(`idle_still`, `idle_breath`) och fyra engångsvarianter under `idle/variant/`
+(`blink`, `cheek`, `glance`, `insulted`). Eventstudions förenklade idleeditor
+visar fysisk familjestruktur, separat behörighet för schedule/rules/OpenClaw,
+intervall, jitter, cooldown, maxfrekvens, deterministisk preview, beräknad
+tidsandel och övergångslogg. Deal och tal avbryter idle; en engångsvariant går
+tillbaka till baspoolen. Originalspelarens explicita allowlist innehåller nu
+`actor-edge-blend.mjs` och `actor-grade.mjs`, och testet verifierar hela den
+tillåtna statiska importkedjan.
+
+Produktens `/chat` är nu en OpenClaw-adapter över serverauktoritativ och explicit
+allowlistad publik spelstatus. Modellen får inte rått Partner-`playerId`, cookie,
+wallethemligheter, framtida shoe eller dolt hålkort. OpenClaw får bara välja
+registrerad replik, genererad text eller tystnad; sökväg, URL, timing och
+`playNow` avvisas. OpenAI-kontraktet är oförändrat: bas-URL
+`https://api.openai.com/v1`, modell `gpt-5.4-mini`, API `openai-responses` och
+nyckelvariabel `OPENCLAW_MODEL_API_KEY`.
+
+Ett svar kan beräknas under en action men hålls som `pendingChatReply` utanför
+den enda befintliga talkön. Chattrad, caption, ljud och visuell talpresentation
+släpps först efter kvitterad faktisk standard-idle med aktuella dealer-, session-
+och rundrevisioner. Grinden hanterar stale state, cancellation och exakt-en-gång
+utan att deadlocka dealen. Ett formellt talpaket binder exakt text, ljud, video,
+hashar, frame-index, kalibrering och reviewstatus. Fri modelltext använder exakt
+TTS mot neutral idle och får aldrig återanvända ett gammalt mun-klipp.
+
+Partner-launch har ett frivilligt signerat och normaliserat `displayName` på
+högst 40 kodpunkter. Namnet är endast otrusted presentationsdata; saknat eller
+ogiltigt namn blir neutrala `spelaren`. Teknisk identitet är fortsatt stabil och
+server-side, och samma autentiserade spelare kan fortfarande spela flera boxar.
+
+Verifiering: manifestcheck 31/31 poster och 26 familjer; 346/346 labbtester;
+lab TypeScript och produktionsbuild; 85/85 OpenClaw-/gatewaytester; de nya
+produkt-, pose-, talpakets-, Partner- och allowlistkontrakten; hela Git for
+Windows `.githooks/pre-commit`; samt `node pipeline/audit-dealer-sync.mjs
+--probe` passerade för alla fyra dealers. På isolerad `localhost:4196` och
+separat datakatalog spelades `greeting` två gånger i följd för Vera, Astrid,
+Amira och Mei genom den riktiga rehearsal-spelaren. Kontrollerna återaktiverades,
+varje dealer återgick till renderad idle och webbläsarkonsolen hade noll varningar
+eller fel.
+
+Detta är inte ett mänskligt godkännande av läppsynk eller kontaktkvalitet.
+Auditens kända saknade tal-/acceptansluckor kvarstår, och ändrad ljud- eller
+videohash kräver ny visuell granskning per rad. Jira/CAC var inte anslutet i
+denna miljö, så ingen issue eller status kunde läsas eller ändras.
+
 ## 2026-09-25 — Labbet läser Emils videomapp och shellradslut är låsta
 
 På `jakeminator123/work` är Videobankens grundkälla nu direkt

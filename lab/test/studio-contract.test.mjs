@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import contract from '../policies/studio-contract.json' with { type: 'json' };
@@ -10,6 +10,7 @@ import seed from '../policies/project.seed.json' with { type: 'json' };
 import { validateVideoMetadata, videoFitsLine, videoFitsEvent } from '../lib/video-intake.mjs';
 import { classifyVideo, readClassifications } from '../lib/video-classifications.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
+import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
 
 const metadata = { label:'QA left', dealerId:'astrid', eventId:'deal.player.left', kind:'action', role:'standard', situation:'box0', notes:'', playback:'once' };
 test('canonical manifest, seed, schema and runtime classifications agree for every dealer/group/situation', () => {
@@ -43,32 +44,39 @@ test('unknown, unclassified, wrong kind/dealer/group, imprecise and proposed loo
 async function fixture(t) {
   const root=await mkdtemp(join(tmpdir(),'croupier-classification-'));t.after(()=>rm(root,{recursive:true,force:true}));
   const archiveDir=join(root,'archive');await mkdir(archiveDir);
-  const id='c01866d1-7c93-43a4-9493-73f7c66d3725', bytes=Buffer.from('test-only-original-no-mutation');
-  const sha256=createHash('sha256').update(bytes).digest('hex');
-  const file=join(archiveDir,`${id}.mp4`);await writeFile(file,bytes);
-  const snapshotPath=join(root,'snapshot.json');await writeFile(snapshotPath,JSON.stringify({items:[{id,sha256,size:bytes.length,verdict:'want'}]}));
+  const targetPath='deal/deal_pos1/deal_pos1.mp4', bytes=Buffer.from('test-only-original-no-mutation');
+  const items=[];
+  for (const definition of MEDIA_FAMILY_DEFINITIONS) {
+    for (const relativePath of definition.standardPaths) {
+      const content=relativePath===targetPath?bytes:Buffer.from(`fixture:${relativePath}`);
+      const sha256=createHash('sha256').update(content).digest('hex');
+      items.push({id:videoIdFromSha256(sha256),familyId:definition.id,role:'standard',relativePath,extension:'mp4',size:content.length,sha256});
+      const mediaPath=join(archiveDir,...relativePath.split('/'));await mkdir(dirname(mediaPath),{recursive:true});await writeFile(mediaPath,content);
+    }
+    await mkdir(join(archiveDir,...definition.variantDirectory.split('/')),{recursive:true});
+  }
+  const families=MEDIA_FAMILY_DEFINITIONS.map(definition=>({id:definition.id,dealerId:definition.dealerId,eventId:definition.eventId,situation:definition.situation,playbackType:definition.playbackType,standardIds:definition.standardPaths.map(path=>items.find(item=>item.relativePath===path).id),variantIds:[]}));
+  const target=items.find(item=>item.relativePath===targetPath),id=target.id,sha256=target.sha256,file=join(archiveDir,...targetPath.split('/'));
+  const snapshotPath=join(root,'snapshot.json');await writeFile(snapshotPath,JSON.stringify({schemaVersion:2,source:'emil/dealklipp-v1',families,items}));
   return {id,sha256,file,bytes,options:{archiveDir,snapshotPath,uploadDir:join(root,'uploads')}};
 }
-test('classifying an existing archive is durable, exact-hash scoped and does not copy or mutate original media',async t=>{
+test('manifest-owned media keeps its physical family and cannot be reclassified by an overlay',async t=>{
   const f=await fixture(t),registry=await loadVideoRegistry(f.options);
-  assert.equal(videoFitsLine(registry.videos[0],'astrid',metadata.eventId),false);
-  await classifyVideo({id:f.id,sha256:f.sha256,metadata,previous:null},registry,f.options);
-  const saved=await loadVideoRegistry(f.options);
-  assert.deepEqual(saved.videos[0].classification,metadata);assert.equal(saved.videos[0].source,'archive');assert.equal(saved.videos[0].available,true);
+  const video=registry.videos.find(item=>item.id===f.id);
+  assert.equal(video.eventId,metadata.eventId);assert.equal(video.situation,metadata.situation);assert.equal(video.familyId,'astrid/deal.player.left/box0');
+  await assert.rejects(classifyVideo({id:f.id,sha256:f.sha256,metadata,previous:null},registry,f.options),e=>e.statusCode===409);
+  const saved=await loadVideoRegistry(f.options),savedVideo=saved.videos.find(item=>item.id===f.id);
+  assert.equal(savedVideo.classification,undefined);assert.equal(savedVideo.source,'emil');assert.equal(savedVideo.available,true);
   assert.deepEqual(await readFile(f.file),f.bytes);
   const response=await getVideoResponse(f.id,new Request(`http://localhost:4188/api/videos/${f.id}`),f.options);
   assert.equal(response.status,200);assert.deepEqual(Buffer.from(await response.arrayBuffer()),f.bytes);
-  await assert.rejects(classifyVideo({id:f.id,sha256:f.sha256,metadata:{...metadata,label:'stale'},previous:null},registry,f.options),e=>e.statusCode===409);
-  await assert.rejects(classifyVideo({id:f.id,sha256:f.sha256,metadata:{...metadata,playback:'loop'},previous:metadata},saved,f.options),e=>e.statusCode===400);
-  await assert.rejects(classifyVideo({id:f.id,sha256:'0'.repeat(64),metadata,previous:metadata},saved,f.options),e=>e.statusCode===409);
-  await classifyVideo({id:f.id,sha256:f.sha256,metadata:{...metadata,label:'updated'},previous:metadata},saved,f.options);
-  assert.equal((await readClassifications(f.options))[0].metadata.label,'updated');
+  assert.deepEqual(await readClassifications(f.options),[]);
 });
 test('corrupt overlay remains intact and cannot be overwritten by a new classification',async t=>{
   const f=await fixture(t);await mkdir(f.options.uploadDir);
   const path=join(f.options.uploadDir,'classifications.json');await writeFile(path,'broken');
   const registry=await loadVideoRegistry(f.options);
-  assert.equal(registry.videos[0].classification,undefined);
-  await assert.rejects(classifyVideo({id:f.id,sha256:f.sha256,metadata},registry,f.options),e=>e.statusCode===503);
+  assert.equal(registry.videos.find(item=>item.id===f.id).classification,undefined);
+  await assert.rejects(readClassifications(f.options),e=>e.statusCode===503);
   assert.equal(await readFile(path,'utf8'),'broken');assert.deepEqual(await readFile(f.file),f.bytes);
 });

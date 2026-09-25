@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { DealerId, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant } from '../lib/studio-model.mjs';
 import type { DirectorMode, VideoInventory } from './studio-types';
 import { modeExplanations, modeLabels } from './gateway-panel';
@@ -51,6 +51,30 @@ function SituationSummary({ event, variant, durationMs }: { event: StudioEvent; 
     <details className={styles.rawPayload}><summary>Visa hela sparade eventexemplet</summary><pre>{JSON.stringify(example, null, 2)}</pre></details>
     <div className={styles.coverageNote}>Testa eventet i Eventstudion för att se faktisk beslutsfattare, orsak och uppspelningsresultat i loggen. En filkoppling är inte ett visuellt godkännande.</div>
   </section>;
+}
+
+function MediaFamilyList({ families, inventory, expanded }: { families: NonNullable<VideoInventory['families']>; inventory: VideoInventory; expanded: boolean }) {
+  if (!families.length) return null;
+  const videos = new Map(inventory.videos.map(video => [video.id, video]));
+  return <details className={styles.rawPayload} open={expanded}>
+    <summary>{families.length} exakta mediefamilj{families.length === 1 ? '' : 'er'}</summary>
+    {families.map(family => {
+      const standards = family.standardIds.map(id => videos.get(id));
+      const variants = family.variantIds.map(id => videos.get(id));
+      const availableVariants = variants.filter(video => video?.available);
+      return <section key={family.id} className={styles.coverageNote} aria-label={`Mediefamilj ${family.situation}`}>
+        <strong>{family.situation}</strong><code>{family.id}</code>
+        <dl className={styles.metadata}>
+          <div><dt>Exakt event</dt><dd><code>{family.eventId}</code></dd></div>
+          <div><dt>Playbacktyp</dt><dd>{family.playbackType === 'idle-pool' ? 'Standardpool · engångsvarianter återgår till poolen' : 'En gång'}</dd></div>
+          <div><dt>{family.playbackType === 'idle-pool' ? 'Standardpool' : 'Standardvideo'}</dt><dd>{standards.map((video, index) => <span key={family.standardIds[index]}>{video?.fileName ?? family.standardIds[index]}{video?.available ? '' : ' · saknas'}{index < standards.length - 1 ? ', ' : ''}</span>)}</dd></div>
+          <div><dt>Tillgängliga varianter</dt><dd>{availableVariants.length}/{family.variantIds.length}</dd></div>
+          <div><dt>Urvalspolicy</dt><dd>Manuell/inaktiv tills en explicit granskad projektpolicy tillåter varianten. Mappplacering aktiverar aldrig OpenClaw.</dd></div>
+        </dl>
+        {family.variantIds.length ? <ul className={styles.conditionList}>{variants.map((video, index) => <li key={family.variantIds[index]}><strong>{video?.fileName ?? family.variantIds[index]}</strong><span>{video?.available ? 'Tillgänglig · fortfarande manuell/inaktiv' : 'Saknas · standard används'}</span></li>)}</ul> : <p><strong>0 varianter — standard används</strong></p>}
+      </section>;
+    })}
+  </details>;
 }
 
 export function EventTree({ project, inventory, originals, dealerId, event, line, variant, mode, onSelectDealer, onSelectEvent, onSelectVariant, onEdit, onVideos, onOpenClaw }: EventTreeProps) {
@@ -107,7 +131,10 @@ export function EventTree({ project, inventory, originals, dealerId, event, line
           <div className={styles.outputFilters} role="group" aria-label="Filtrera efter presentationssätt"><button aria-pressed={outputFilter === 'all'} onClick={() => setOutputFilter('all')}>Alla {project.events.length}</button>{outputGroups.map(group => <button key={group.id} aria-pressed={outputFilter === group.id} onClick={() => setOutputFilter(group.id)}>{group.symbol} {group.label} <span>{group.events.length}</span></button>)}</div>
           <div className={`${styles.outputGroups} ${outputFilter !== 'all' ? styles.singleOutputGroup : ''}`}>{outputGroups.filter(group => outputFilter === 'all' || outputFilter === group.id).map(group => <section className={styles.outputGroup} key={group.id} aria-label={group.label}>
             <div className={styles.outputHeading}><span aria-hidden="true">{group.symbol}</span><div><h3>{group.label}</h3><p>{group.summary}</p></div><span>{group.events.length}</span></div>
-            <div className={styles.eventColumn}>{group.events.map(item => <button key={item.id} className={`${styles.node} ${styles.eventNode} ${item.id === event.id ? styles.selected : ''}`} aria-pressed={item.id === event.id} onClick={() => { onSelectEvent(item.id); setSelection('event'); }}><span aria-hidden="true">{symbols[item.sourceType]}</span><span><strong>{item.label}</strong><small title="Källtyp · Labbets nod-ID">({item.sourceType} · {item.id})</small></span></button>)}</div>
+            <div className={styles.eventColumn}>{group.events.map(item => {
+              const families = (inventory.families ?? []).filter(family => family.dealerId === dealerId && family.eventId === item.id);
+              return <Fragment key={item.id}><button className={`${styles.node} ${styles.eventNode} ${item.id === event.id ? styles.selected : ''}`} aria-pressed={item.id === event.id} onClick={() => { onSelectEvent(item.id); setSelection('event'); }}><span aria-hidden="true">{symbols[item.sourceType]}</span><span><strong>{item.label}</strong><small title="Källtyp · Labbets nod-ID">({item.sourceType} · {item.id})</small></span></button><MediaFamilyList families={families} inventory={inventory} expanded={item.id === event.id} /></Fragment>;
+            })}</div>
             <p className={styles.outputPlayback}>{group.playback}</p>
           </section>)}</div>
           <p className={styles.groupingNote}>16 grupper är inte 16 videobehov. Mål, hand, kortposition och exakt replik kan behöva olika material. Social chatt och ljudets start/slut är andra signalflöden, inte fler av dessa sex källtyper.</p>

@@ -1,18 +1,16 @@
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
-import { access, lstat, open, readFile, realpath } from 'node:fs/promises';
+import { access, lstat, open, realpath } from 'node:fs/promises';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { readUploads, uploadDirectory } from './video-uploads.mjs';
 import { readClassifications } from './video-classifications.mjs';
+import { mediaDefinitionForPath, readLabVideoManifest } from './lab-video-manifest.mjs';
 
 // Server-only: the browser receives logical IDs, never archive paths or credentials.
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
-const SHA256 = /^[a-f0-9]{64}$/;
 const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
 const EMIL_SOURCE = ['emil', 'dealklipp-v1'];
-const MAX_SNAPSHOT_BYTES = 5 * 1024 * 1024;
-const MAX_ENTRIES = 10_000;
 const verified = new Map();
 
 class RegistryError extends Error {
@@ -36,24 +34,10 @@ function safeRelativeMediaPath(value, extension) {
 }
 
 async function readEntries(options) {
-  const file = snapshotPath(options);
-  const info = await lstat(file);
-  if (!info.isFile() || info.size > MAX_SNAPSHOT_BYTES) throw new RegistryError(503, 'Video inventory unavailable.');
-  const snapshot = JSON.parse(await readFile(file, 'utf8'));
-  if (!Array.isArray(snapshot.items) || snapshot.items.length > MAX_ENTRIES) throw new RegistryError(503, 'Video inventory unavailable.');
-  const entries = new Map();
-  for (const item of snapshot.items) {
-    const extension = item?.extension ?? 'mp4';
-    if (!item || !UUID.test(item.id) || !SHA256.test(item.sha256)
-      || !['mp4', 'webm'].includes(extension)
-      || (item.relativePath !== undefined && !safeRelativeMediaPath(item.relativePath, extension))
-      || (item.source !== undefined && item.source !== 'emil')
-      || !Number.isSafeInteger(item.size) || item.size < 1 || entries.has(item.id)) {
-      throw new RegistryError(503, 'Video inventory unavailable.');
-    }
-    entries.set(item.id, item);
-  }
-  return entries;
+  try {
+    const snapshot = await readLabVideoManifest(snapshotPath(options));
+    return { entries: new Map(snapshot.items.map(item => [item.id, item])), families: snapshot.families };
+  } catch { throw new RegistryError(503, 'Video inventory unavailable.'); }
 }
 
 function selectArchive(options) {
@@ -87,7 +71,10 @@ function cacheKey(path, entry, info) {
 
 async function inspectFile(archive, entry) {
   const relativeFile = entry.relativePath ?? `${entry.id}.${entry.extension ?? 'mp4'}`;
-  if (!safeRelativeMediaPath(relativeFile, entry.extension ?? 'mp4')) throw new RegistryError(403, 'Unsafe local video file.');
+  if (entry.familyId) {
+    const placement = mediaDefinitionForPath(relativeFile);
+    if (!placement || placement.definition.id !== entry.familyId || placement.role !== entry.role) throw new RegistryError(403, 'Unsafe local video file.');
+  } else if (!safeRelativeMediaPath(relativeFile, entry.extension ?? 'mp4')) throw new RegistryError(403, 'Unsafe local video file.');
   const file = join(archive, ...relativeFile.split('/'));
   const info = await lstat(file, { bigint: true });
   if (info.isSymbolicLink() || !info.isFile()) throw new RegistryError(403, 'Unsafe local video file.');
@@ -103,13 +90,33 @@ function text(value, max = 100) {
   return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : '';
 }
 
-function publicEntry(entry, available, integrity) {
+function publicEntry(entry, available, integrity, family) {
   if (entry.classification) return {
     id: entry.id, label: entry.classification.label, dealer: entry.classification.dealerId,
     fileName: `${entry.id}.${entry.extension}`, verdict: 'unrated', bytes: entry.size,
     sha256: entry.sha256, available, previewUrl: `/api/videos/${entry.id}`,
     reviewStatus: 'unreviewed', integrity, suggestedEventId: entry.classification.eventId,
     bindingScope: 'lab-only', source: 'upload', classification: entry.classification, addedAt: entry.addedAt,
+  };
+  if (family) return {
+    id: entry.id,
+    label: `Astrid · ${family.situation} · ${entry.role === 'standard' ? 'standard' : 'variant'}`,
+    dealer: family.dealerId,
+    fileName: basename(entry.relativePath),
+    verdict: 'unrated',
+    bytes: entry.size,
+    sha256: entry.sha256,
+    available,
+    previewUrl: `/api/videos/${entry.id}`,
+    reviewStatus: 'unreviewed',
+    integrity,
+    bindingScope: 'lab-only',
+    source: 'emil',
+    familyId: family.id,
+    role: entry.role,
+    eventId: family.eventId,
+    situation: family.situation,
+    playbackType: family.playbackType,
   };
   const dealerHint = text(entry.placement?.dealer, 40).toLowerCase();
   const dealer = DEALERS.has(dealerHint) ? dealerHint : undefined;
@@ -148,8 +155,8 @@ export async function loadVideoRegistry(options = {}) {
       'Grundkällan är Emils mapp; filmerna är inte eventmappade förrän de kategoriseras i labbet.',
     ],
   };
-  let entries;
-  try { entries = await readEntries(options); summary.snapshotReadable = true; }
+  let entries, families = [];
+  try { ({ entries, families } = await readEntries(options)); summary.snapshotReadable = true; }
   catch { summary.notes.push('Originalregistret kunde inte läsas.'); entries = new Map(); }
   let uploads = [];
   try { uploads = await readUploads(options); }
@@ -166,6 +173,7 @@ export async function loadVideoRegistry(options = {}) {
   try { classifications = await readClassifications(options); }
   catch { summary.notes.push('Kategorisering kunde inte läsas. Inga nya klassificeringar används.'); }
   const classified = new Map(classifications.map(item => [item.id, item]));
+  const familyById = new Map(families.map(family => [family.id, family]));
   // Sequential metadata checks avoid opening hundreds of files at once.
   for (const entry of entries.values()) {
     let available = false, integrity = 'unavailable';
@@ -179,9 +187,9 @@ export async function loadVideoRegistry(options = {}) {
         if (error.code === 'ENOENT') summary.missing += 1;
       }
     }
-    const video = publicEntry(entry, available, integrity);
+    const video = publicEntry(entry, available, integrity, familyById.get(entry.familyId));
     const recorded = classified.get(video.id);
-    if (recorded && recorded.sha256 === video.sha256) {
+    if (!video.familyId && recorded && recorded.sha256 === video.sha256) {
       video.classification = recorded.metadata;
       video.label = recorded.metadata.label;
       video.dealer = recorded.metadata.dealerId;
@@ -193,7 +201,7 @@ export async function loadVideoRegistry(options = {}) {
   }
   summary.total = videos.length;
   summary.unavailable = summary.total - summary.available;
-  return { videos, summary };
+  return { videos, families, summary };
 }
 
 const commonHeaders = {
@@ -231,7 +239,7 @@ export async function getVideoResponse(id, request, options = {}) {
   let handle;
   try {
     let entry, uploaded, snapshotFailed = false;
-    try { entry = (await readEntries(options)).get(id); }
+    try { entry = (await readEntries(options)).entries.get(id); }
     catch { snapshotFailed = true; }
     if (!entry) {
       uploaded = (await readUploads(options)).find(v => v.id === id);

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "familyId": "astrid/idle.ready/ready",
+  "base": [
+    {
+      "videoId": "4a459446-ba3c-0075-04ab-ff6ed0b501a4",
+      "weight": 90,
+      "durationMs": 3040
+    },
+    {
+      "videoId": "9c8a4ed6-af99-b022-351a-58df8db6ddf8",
+      "weight": 10,
+      "durationMs": 3040
+    }
+  ],
+  "variants": [
+    {
+      "videoId": "f5a983d8-877e-317d-7b1c-2f4848c88488",
+      "durationMs": 3040,
+      "use": "automatic",
+      "automatic": {
+        "averageEveryMs": 25000,
+        "jitterMs": 5000,
+        "cooldownMs": 15000,
+        "maxPerMinute": 3
+      }
+    },
+    {
+      "videoId": "090751f3-fab4-327b-c5a2-0294f0de8bfe",
+      "durationMs": 3040,
+      "use": "manual",
+      "automatic": null
+    },
+    {
+      "videoId": "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
+      "durationMs": 3040,
+      "use": "manual",
+      "automatic": null
+    },
+    {
+      "videoId": "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
+      "durationMs": 3040,
+      "use": "openclaw",
+      "automatic": null
+    }
+  ]
+}

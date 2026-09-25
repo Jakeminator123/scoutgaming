@@ -1,6 +1,7 @@
 #!/bin/sh
 # Keep this hook LF-only; .gitattributes enforces it on Windows checkouts.
 set -eu
+node pipeline/build-lab-video-manifest.mjs --check
 node test/player-auth.mjs
 node test/craig-login.mjs
 node test/bo-game-auth.mjs
@@ -8,6 +9,7 @@ node pipeline/audit-dealer-sync.mjs
 node pipeline/audit-performance.mjs
 node pipeline/audit-astrid-actor.mjs
 node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
+node --test test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs
 node --test test/performance-contact.mjs test/pack-contact-media.mjs test/table-audio.mjs test/shoe-contact-occlusion.mjs
 node --test test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
 node --test test/idle-video-loop.mjs
