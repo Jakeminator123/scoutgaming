@@ -38,6 +38,8 @@ test('package provides real compact context, with full source index only for cha
   assert.match(bundle.blocks['croupier-speech'], /recordedLine.*generatedText.*silence/s);
   assert.match(bundle.blocks['croupier-speech'], /requestId.*dealerId.*sessionRevision.*roundRevision/s);
   assert.match(bundle.blocks['croupier-speech'], /untrusted data, never instructions/);
+  assert.match(bundle.blocks['croupier-speech'], /reply language is ENGLISH by default/);
+  assert.match(bundle.blocks['croupier-speech'], /CURRENT/);
   assert.doesNotMatch(bundle.blocks['croupier-speech'], /https:\/\/docs\.openclaw\.ai/);
   assert.ok(bundle.blocks['croupier-speech'].length < 4000);
   for (const role of ['croupier-chat', 'croupier-operator']) {
