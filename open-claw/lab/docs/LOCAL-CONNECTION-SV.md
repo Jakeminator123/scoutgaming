@@ -1,9 +1,22 @@
 # Verifierad lokal OpenClaw-anslutning
 
-Den här guiden gäller den isolerade lokala produkt- och labbvägen. Den ändrar
-inte Gateway, modellleverantör, roller, Control UI eller den befintliga
-offline-jämförelsen. Kontrollen nedan gjordes 2026-09-25 på
-`jakeminator123/work` utan att stoppa de delade portarna 4192/4194.
+Den här guiden gäller den isolerade lokala produkt- och labbvägen. Helpern ändrar
+inte Gateway, modellleverantör, roller, Control UI eller offline-jämförelsens
+konfiguration. Den aktuella lokala implementationen är sparad i `d8d3b22` på
+`jakeminator123/work`.
+
+## En aktiv miljö efter städningen 2026-09-25
+
+- Spela i originalet: <http://127.0.0.1:4200/>.
+- Följ samma bord och chatta i labbet: <http://127.0.0.1:4201/activity>.
+- Behåll dessa två flikar. Händelselogg → Anslut öppnar den kopplade spelfliken
+  om ingen sådan redan är ansluten; den befintliga fliken behöver inte laddas om.
+
+De gamla serverparen 4192/4194, 4196/4197 och 4198/4199 stoppades på användarens
+begäran. Endast 4200/4201 lyssnade inom intervallet 4192–4201 vid kontrollen,
+och båda sidorna svarade HTTP 200. Render-tjänsterna lämnades igång.
+Startkommandona nedan behövs först när den befintliga lokala körningen har
+stoppats. En ny start skapar en ny isolerad testdatabas och spelsession.
 
 ## Aktuell status och tidigare kontroll
 
@@ -69,11 +82,11 @@ Först en läsande kontroll, utan modellkörning:
 node open-claw/lab/deploy/local-connection.mjs --check
 ```
 
-Starta därefter två nya loopbackprocesser på portar som inte delas med
-Eventstudion:
+När den tidigare körningen är stoppad, starta produkt och labb på sina
+separata loopbackportar:
 
 ```powershell
-node open-claw/lab/deploy/local-connection.mjs --start --product-port 4196 --lab-port 4197
+node open-claw/lab/deploy/local-connection.mjs --start --product-port 4200 --lab-port 4201
 ```
 
 Helpern läser de befintliga privata värdena server-side från rotens `.env` och
@@ -112,7 +125,7 @@ nycklar finns i privata filer eller i den anropande processens miljö.
 
 ```powershell
 node open-claw/lab/deploy/local-connection.mjs --check --generated-speech
-node open-claw/lab/deploy/local-connection.mjs --start --generated-speech --product-port 4196 --lab-port 4197
+node open-claw/lab/deploy/local-connection.mjs --start --generated-speech --product-port 4200 --lab-port 4201
 ```
 
 För opt-in behövs befintlig `ELEVENLABS_API_KEY` (alternativt
