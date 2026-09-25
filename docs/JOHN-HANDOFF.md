@@ -1,3 +1,21 @@
+## 2026-09-26 — Idle-varianter: högst 12
+
+Idlepolicyn tar högst 12 engångsvarianter. Samma tak gäller runtime-valideringen,
+`idle-policy.schema.json` och studioschemats `idlePolicy.variants`. Beskrivning
+på högst 80 tecken är ett tillåtet fält i båda schemana. Tolv unika varianter
+godkänns; den trettonde avvisas. Grundloopar är oförändrat högst 4.
+
+`idle_smile.mp4` och `idle_yawn.mp4` ligger i manifestet och i idlepolicyn, med
+korta beskrivningar. Sex varianter används. Lab-seed behåller blink som
+automatisk; cheek, glance, smile och yawn är manuella där, insulted är OpenClaw.
+Lissabons snapshot och den sparade lokala profilen har alla sex som OpenClaw.
+Den skillnaden är inte ihopdragen. Ingen RunPod-kapacitet har ändrats.
+
+Lissabon startades lokalt. Labbet på 4201 och spelet på 4200 svarade.
+Idle-fliken visade sex OpenClaw-klipp, och `idle_smile` spelade klart och
+återgick till grundloopen. Sprintläget 26 september står i
+`docs/animation-events/v5-7-days-mvp/s06-plan.md`.
+
 ## 2026-09-26 — Lissabon: levande observation, spelresultat och idle-reaktioner
 
 Slutverifierat i befintlig Jakob-profil: Director `7597c2ec`, Live-deploy

@@ -23,6 +23,15 @@ function isolatedTransportEnvironment(parent, fixture) {
   return { ...parent, ...Object.fromEntries(PRIVATE_TRANSPORT_ENV.map(key => [key, ''])), ...fixture };
 }
 
+function suppliedEnvelope(body) {
+  const context = JSON.parse(body.messages[1].content);
+  if (body.messages.length === 2) return context;
+  assert.equal(body.messages.length, 3);
+  const current = JSON.parse(body.messages[2].content.split('\n')[0]);
+  assert.equal(current.replyLanguagePolicy.default, 'English');
+  return { status: context.status, request: { ...current.request, history: context.history } };
+}
+
 async function freePort() {
   const socket = createNetServer(); socket.listen(0, '127.0.0.1'); await once(socket, 'listening');
   const port = socket.address().port; await new Promise(resolve => socket.close(resolve)); return port;
@@ -55,7 +64,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   const gateway = createHttpServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = JSON.parse(raw); captured.push({ url: req.url, authorization: req.headers.authorization, body });
-    const supplied = JSON.parse(body.messages.at(-1).content);
+    const supplied = suppliedEnvelope(body);
     await beforeRespond?.(supplied, res);
     if (res.destroyed) return;
     const { requestId } = supplied.request;
@@ -112,7 +121,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   }
   const client = createClient();
   const post = client.post;
-  const envelope = (index = captured.length - 1) => JSON.parse(captured[index].body.messages.at(-1).content);
+  const envelope = (index = captured.length - 1) => suppliedEnvelope(captured[index].body);
   const chat = (view, extras = {}) => ({ requestId: crypto.randomUUID(), message: 'A fixture question.', history: [],
     dealer: 'astrid', sessionRevision: crypto.randomUUID(), roundRevision: String(view.version), ...extras });
   async function guest() {
@@ -136,7 +145,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   assert.equal(captured[0].authorization, 'Bearer isolated-test-gateway-key');
   assert.equal(captured[0].body.model, 'openclaw/croupier-speech');
   assert.equal(captured[0].body.tool_choice, 'none');
-  const projection = JSON.parse(captured[0].body.messages.at(-1).content).status;
+  const projection = envelope(0).status;
   const serialized = JSON.stringify(projection);
   assert.equal(serialized.includes('playerId'), false);
   assert.equal(serialized.includes('balance'), false);

@@ -52,6 +52,28 @@ följa med till nästa vanliga fråga. Spara inställningar medan den lokala
 servern kör. Vid anslutningsfel finns utkastet kvar i fliken; försök spara
 igen innan du laddar om den.
 
+I **Idle → Korta variationer** finns sex klipp: blink, cheek, glance,
+insulted, smile och yawn. Lissabon erbjuder alla sex till OpenClaw.
+**När passar klippet?** är en kort beskrivning (80 tecken) som skickas
+tillsammans med klippets identitet vid nästa beslut. Exempel: leende vid
+beröm/tack, gäspning när spelaren nämner trötthet, insulted enbart vid en
+aktuell förolämpning. Beskrivningen är vägledning, inte en tvingande trigger.
+
+**Används som** väljer ägare:
+- **OpenClaw:** väljer efter ett nytt chattmeddelande; neutralt/no-op är tillåtet.
+  Högst en spelad reaktion per minut, och ett råd förfaller efter 30 sekunder.
+  Ingen modell frågas periodiskt bara för att spelaren väntar.
+- **Automatisk:** intervall, slumpmarginal, minsta paus och maxfrekvens;
+  chatten tolkas inte. Passar exempelvis blinkning.
+- **Manuell:** bara knappen Spela i labbet.
+- **Regelstyrd:** saknar ännu ansluten idle-trigger och kan därför inte
+  nyväljas i panelen. Spel-/replikfamiljernas regler är en annan funktion.
+
+Spara och ladda om spelfliken för att synka policyn. **OpenClaw behöver inte
+startas om.** Endast registrerade, tillåtna och tillgängliga filer skickas
+som kandidater. Fler filer i mappen kräver uppdaterat manifest och en
+idlepolicy-post med uppmätt längd; en fil på disk aktiveras inte av sig själv.
+
 ## Spelarprofil och minne
 
 **Byt profil** i Astrids spelflik väljer en sparad profil eller skapar en ny.
@@ -82,6 +104,21 @@ svaret tills du återvänder; redan påbörjat tal avbryts fortfarande när
 fliken döljs. Ny hand/bordsversion, profilbyte, navigation eller avstängt
 ljud kan avbryta ett svar och får en förklaring i chatten.
 
+**Väntar på video-GPU** betyder RunPods jobbkö, inte köade idle-klipp.
+Kedjan är text → röst → GPU-kö → färdig läppsynksfilm → neutral startposition
+→ uppspelning. Idlecontrollern har ett aktuellt klipp och högst ett färskt
+reaktionsförslag; den bygger ingen lång spellista. Färdigt tal går före.
+I ett uppmätt 40,396-sekundersprov tog GPU-kön 31,228 s, rendering/hämtning
+6,835 s och steget från färdigt paket till uppspelningsstart 0,126 s.
+
+Avlästa RunPod-inställningar 2026-09-26: workersMin 0, workersMax 5,
+idleTimeout 60 s, QUEUE_DELAY 4 s och FlashBoot på. Kön kan omfatta väntan
+på en ledig arbetare och kallstart; det enskilda provet skiljer inte dessa.
+En varm arbetare under demon är nästa åtgärd att prova, med löpande kostnad.
+Ingen kapacitet eller debiteringsinställning har ändrats.
+Se [RunPods workerinställningar](https://github.com/runpod/docs/blob/main/serverless/endpoints/endpoint-configurations.mdx)
+och [latensoptimering](https://github.com/runpod/docs/blob/main/serverless/development/optimization.mdx).
+
 Astrids Lissabon-chatt väljer genererade svar i stället för äldre bankrepliker
 som den lokala filmspelaren bara kunde visa som text. Om OpenClaw väljer
 tystnad visas det uttryckligen.
@@ -105,7 +142,8 @@ du vill behålla diagnostiken. Detta är inte profilens sparade spelhistorik.
   standardklippval i denna körprofil; andra startvägar behåller sina val.
 - `project.snapshot.json`: fryst projekt från den fungerande strömmen.
   Första start kopierar det till `data/project.json`. Befintliga ändringar
-  skrivs aldrig över. Det gemensamma schemat innehåller fyra dealers;
+  skrivs inte över; nya registrerade idleklipp och saknade beskrivningar
+  läggs till via vanlig revisionshistorik. Det gemensamma schemat innehåller fyra dealers;
   Lissabons arbetsyta är begränsad till Astrid.
 - `data/project.json` och `data/history/`: lokala inställningar och
   revisionskopior överlever omstart men ligger utanför Git. Säkerhetskopiera

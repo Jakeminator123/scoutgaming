@@ -3,7 +3,7 @@
 export const CHAT_STAGES = Object.freeze({
   text: 'Astrid tänker…', voice: 'Skapar rösten…',
   'video-submit': 'Skickar rösten till läppsynk…',
-  'video-queue': 'Väntar på läppsynk…', 'video-render': 'Skapar läppsynk…',
+  'video-queue': 'Väntar på video-GPU…', 'video-render': 'Skapar läppsynk…',
   media: 'Förbereder uppspelning…', ready: 'Svar klart · väntar på ledigt bord',
 });
 

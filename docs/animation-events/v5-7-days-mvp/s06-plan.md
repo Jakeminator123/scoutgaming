@@ -6,6 +6,24 @@ den aktuella planen från 22 september. Kevin äger produktintegration; Emil tar
 tillsammans med Kevin. Jakob lämnar detta underlag och ska inte behöva vara
 online för rutinval. Datumen sätts efter faktisk bemanning.
 
+## Sprintläge · 26 september 2026
+
+Flera videouppspelningar är ännu inte en ström. Inspelade klipp, Lissabons
+följning av spelfliken och genererat tal med läppsynk går på olika vägar.
+De ska sammansvetsas. Det görs efter mötet 27 september.
+
+- **Emil** har fått läppsynken att fungera.
+- **Kevin** är oklar här. Vi har inte talat om sammanslagningen.
+- **Jakob** har bundit ihop den lokala kedjan och vävt in OpenClaw.
+
+Kvar står att läppsynken tar för lång tid, att varianterna är för få, att
+engelsk valröst inte är löst, och att labb-ytan är för rörig. Väntan på
+läppsynk sitter i videokedjan. Det är inte en kö av idle-klipp framför svaret.
+
+En Codex-session dog samma kväll på fel API-nyckel (`401 Unauthorized`)
+medan idle-arbetet låg osparat. Det var inte ett fel i Croupier. Arbetet
+togs vidare i den lokala checkouten. Ingen nyckel hör hemma i den här texten.
+
 ## D0 · starta från rätt läge
 
 **Kevin:** läs V5, hämta arbetsgrenens commit och välj en isolerad produktväg

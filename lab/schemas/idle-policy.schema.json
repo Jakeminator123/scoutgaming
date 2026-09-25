@@ -16,7 +16,7 @@
     },
     "variants": {
       "type": "array",
-      "maxItems": 4,
+      "maxItems": 12,
       "items": { "$ref": "#/$defs/variant" }
     }
   },
@@ -56,6 +56,7 @@
       "additionalProperties": false,
       "required": ["videoId", "durationMs", "use", "automatic"],
       "properties": {
+        "description": { "type": "string", "maxLength": 80, "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$" },
         "videoId": { "$ref": "#/$defs/videoId" },
         "durationMs": { "$ref": "#/$defs/duration" },
         "use": { "enum": ["manual", "automatic", "rules", "openclaw"] },

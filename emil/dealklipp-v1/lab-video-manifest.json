@@ -291,7 +291,9 @@
         "f5a983d8-877e-317d-7b1c-2f4848c88488",
         "090751f3-fab4-327b-c5a2-0294f0de8bfe",
         "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
-        "921ae71d-11fa-01ec-f78a-b9ef7d8d7689"
+        "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
+        "c9b09866-50f7-2e05-0301-7e02499f50a2",
+        "15748c18-f7b6-912a-639f-55e632db34d3"
       ]
     }
   ],
@@ -421,6 +423,24 @@
       "extension": "mp4",
       "size": 2665281,
       "sha256": "921ae71d11fa01ecf78ab9ef7d8d768906f930eeb6d7832e05a0bea488628beb"
+    },
+    {
+      "id": "c9b09866-50f7-2e05-0301-7e02499f50a2",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_smile.mp4",
+      "extension": "mp4",
+      "size": 315478,
+      "sha256": "c9b0986650f72e0503017e02499f50a2ff36881999ff5f57c5d0998e05aeda51"
+    },
+    {
+      "id": "15748c18-f7b6-912a-639f-55e632db34d3",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_yawn.mp4",
+      "extension": "mp4",
+      "size": 309588,
+      "sha256": "15748c18f7b6912a639f55e632db34d3102a63677a45ec192a591469261c8abd"
     },
     {
       "id": "91ed722c-d43c-1171-1c63-506d6363def7",
