@@ -1,3 +1,4 @@
+import { playLocalFilm } from './local-film-player.mjs';
 import * as THREE from './vendor/three/three.module.js';
 import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,dealingCardSample} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
@@ -15,6 +16,13 @@ export class PerformancePlayer {
     this.sequence=false;this.releaseWaiters=new Set();
     this.resize=()=>{if(!this.held)return;const fit=uniformRegistration(this.held.camera,{width:innerWidth,height:innerHeight});Object.assign(this.held.layer.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});};
     window.addEventListener('resize',this.resize);
+  }
+  async playLocalClip(take, { signal, ...options } = {}) {
+    // Reuse verified media loading; raw portrait films do not claim contact cues.
+    signal?.throwIfAborted();
+    const src = await this.source(take, signal);
+    signal?.throwIfAborted();
+    return playLocalFilm({ host: this.host, src, signal, ...options });
   }
   cancel() { this.active?.abort(); }
   beginSequence() {this.sequence=true;}
@@ -70,12 +78,22 @@ export class PerformancePlayer {
   }
   async preload(takes) { await Promise.all(takes.map(take=>this.source(take))); }
   async source(take,signal) {
+    signal?.throwIfAborted();
     const key=take.media.sha256;
     if(this.assets.has(key))return this.assets.get(key);
     // One in-flight load per hash: two takes that share bytes (centre/dealer edge-v2) must not
     // fetch, hash and mint a Blob URL twice, or the second URL is never revoked.
     this.loading??=new Map();
-    if(this.loading.has(key))return this.loading.get(key);
+    if(this.loading.has(key)) {
+      try { return await this.loading.get(key); }
+      catch(error) {
+        signal?.throwIfAborted();
+        // A new owner may have joined the previous owner's cancelled download.
+        // Retry only that cancellation; corrupt or unavailable media still fails.
+        if(error.name!=='AbortError')throw error;
+        return this.source(take,signal);
+      }
+    }
     const job=(async()=>{
       const response=await fetch(take.media.src,{signal});
       if(!response.ok)throw new Error('Performance media is unavailable');

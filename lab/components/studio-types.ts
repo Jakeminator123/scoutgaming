@@ -26,7 +26,7 @@ export interface VideoEntry {
   reviewStatus: 'unreviewed';
   integrity: 'unchecked' | 'verified' | 'unavailable';
   suggestedEventId?: string;
-  bindingScope: 'lab-only';
+  bindingScope: 'lab-only' | 'shared-local';
 }
 
 export interface MediaFamily {

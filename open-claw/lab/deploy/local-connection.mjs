@@ -243,7 +243,7 @@ function guardedEnvironment(extra, origins, ports) {
   return {
     ...cleanBaseEnvironment(),
     NODE_OPTIONS: `--import=data:text/javascript;base64,${Buffer.from(preload).toString('base64')}`,
-    CROUPIER_CONNECTION_ALLOWED_ORIGINS: JSON.stringify(origins.filter(Boolean)),
+    CROUPIER_CONNECTION_ALLOWED_ORIGINS: JSON.stringify([...new Set(origins.filter(Boolean))]),
     CROUPIER_CONNECTION_LOCAL_PORTS: ports.join(','),
     NEXT_TELEMETRY_DISABLED: '1',
     OPENCLAW_MODEL_API_KEY: '', OPENCLAW_MODEL_BASE_URL: '', OPENCLAW_MODEL_ID: '', OPENCLAW_MODEL_API: '',
@@ -296,13 +296,15 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
       env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('product'), NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
         CROUPIER_DATA_DIR: productData, CROUPIER_GENERATIONS_DIR: join(runDir, 'generations'), DEMO_GUEST_ACCESS: '1',
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
+        CROUPIER_PRESENTATION_STUDIO_DIR: labData,
+        CROUPIER_PRESENTATION_DIRECTOR_URL: configuration.remoteUrl, CROUPIER_PRESENTATION_DIRECTOR_TOKEN: configuration.remoteToken,
         // The relay is the narrower transport and wins whenever it is present.
         // Never place the full Gateway bearer in that product child.
         OPENCLAW_BASE_URL: useSpeechRelay ? '' : configuration.baseUrl, OPENCLAWAPI_KEY: useSpeechRelay ? '' : configuration.gatewayKey,
         OPENCLAW_AGENT: configuration.directorAgent, OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: configuration.productAgent,
         OPENCLAW_PRODUCT_SPEECH_URL: configuration.speechUrl, OPENCLAW_PRODUCT_SPEECH_TOKEN: configuration.speechToken,
         OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs), LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
-      }, [productOrigin, speechOrigin, ...speechOrigins], ports),
+      }, [productOrigin, speechOrigin, directorOrigin, ...speechOrigins], ports),
     },
     lab: {
       command: process.execPath,

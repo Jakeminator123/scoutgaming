@@ -8,6 +8,7 @@ inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
 Utvecklarreferenser: [start och arkitektur](../README.md),
 [videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../schemas/video.schema.json).
 [Dashboardens Scout-design, rörelse och lokala körning](DASHBOARD-DESIGN.md).
+[Gemensam lokal presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Eventgrupperna ska överensstämma med projektets seed och motorns källkontrakt.
 Nodträdet grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
 tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
@@ -22,10 +23,11 @@ De är fördjupning, inte ytterligare en startyta. Privata anteckningar lämnas 
 **Händelseloggen** på `/activity` skiljer källa, eventdata, kontext, beslut och
 uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
 originalsession och startar läsande observation och automatisk labbföljning.
-Originalbild och labbpresentation visas sida vid sida. Webbläsaren kräver
-fortfarande att du väljer spelflik för bilddelningen; speldata fungerar även
-utan bilden. Spela i originalfliken. Grundläget **Standard** gör inga
-AI-klippval; välj OpenClaw eller Skuggläge om du vill prova modellval.
+För Astrid öppnas nu `?dealer=astrid&presentation=local`: Web är ensam spelare
+och Lab visar **En spelare · Web**. Spela och chatta i spelfliken. Valfri
+bilddelning speglar just den fliken; speldata fungerar även utan bilden.
+Grundläget **Standard** gör inga AI-klippval; välj OpenClaw eller Skuggläge
+i spelets klippväljare om du vill prova modellval.
 Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 
 ## Idle i Eventstudion
@@ -75,7 +77,8 @@ Startpolicyn visar `idle_still` med 90 % grundvikt och schemalägger blinkning
 ungefär var 25:e sekund med ±5 sekunders variation. Eftersom blinkklippet tar
 tid blir `idle_still` i praktiken ungefär 79 %, vilket editorn visar. Ett
 spel-, deal- eller talprov äger spelaren och blockerar idleprovet tills det är
-klart. Policyn sparas lokalt med projektet och publiceras inte till spelet.
+klart. Policyn sparas lokalt med projektet. Den lokala Web-spelaren läser samma
+projekt; ladda om spelfliken efter ändringar i idlepolicyn. Ingen fjärrdrift deployas.
 
 Grundvikt är alltså inte faktisk tidsandel. Automatisk idlevariant följer
 intervall, jitter, cooldown och maxfrekvens. Regelstyrd och OpenClaw-valbar
@@ -85,8 +88,8 @@ start/slut/återgång. Labbytan i Händelseloggen använder dessutom en levande
 idle-controller med samma sparade policy: verkligt `ended` väljer nästa klipp,
 och cooldown/maxfrekvens räknas från faktiska starter. Deal går först och färdigt
 tal återställer en ny primärbas innan talgrinden öppnas. Varianter eller sekundär
-bas ger aldrig standardpositionskvitto. Detta är labbets renderer, inte en
-ersättning av produktens ursprungliga idle-scheduler.
+bas ger aldrig standardpositionskvitto. I Astrids lokala presentationsläge
+används controllern av Web; Lab startar ingen parallell följningsfilm.
 
 I OpenClaw-/Skuggläge kan en färsk observerad användarchatt också ge ett råd
 för uttryckligen OpenClaw-valbara `idle/variant/`-filer. Det är en lokal

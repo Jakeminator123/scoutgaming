@@ -35,6 +35,7 @@ const dataDir = process.env.CROUPIER_DATA_DIR ? resolve(process.env.CROUPIER_DAT
 mkdirSync(dataDir, { recursive: true });
 const db = new DatabaseSync(join(dataDir, 'croupier.db'));
 const playerChatMemory = createPlayerChatMemory(db);
+let presentationApi;
 const activePlayerChats = new Map();
 db.exec(`
   CREATE TABLE IF NOT EXISTS players (
@@ -754,6 +755,12 @@ createServer(async (req, res) => {
     res.writeHead(403);res.end('Invalid origin');return;
   }
   if(!backoffice) res.setHeader('Cache-Control','no-store');
+  if (pathname.startsWith('/api/presentation/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
+    try {
+      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db });
+      if (await presentationApi(req, res, pathname, authenticated)) return;
+    } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Local presentation unavailable' })); return; }
+  }
   if (pathname === '/api/chat/memory' || pathname === '/api/chat/memory/forget') {
     const respond = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' }); res.end(JSON.stringify(value)); };
     const handle = incoming => {
