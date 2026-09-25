@@ -1,7 +1,10 @@
 # Produktchatten: separat OpenClaw-roll och privat transport
 
-Status 2026-09-25: **lokalt implementerad och testad, inte driftsatt**. Ingen
-privat nyckel, Render-inställning, körande Gateway eller publik proxy ändrades.
+Status 2026-09-25: **Gateway och Director driftsatta på `113dfd8`; positivt
+produktchattprov blockerat av felaktig nyckelaliasering**. Användarens lokala
+speech-token matchar Gateway-nyckeln och måste ersättas med en separat nyckel.
+Se [aktuellt driftkvitto och kvarvarande verifiering](DEPLOYMENT-RECEIPT-2026-09-25.md).
+Nedan bevaras kontraktet och driftplanen; alla steg är inte färdigverifierade.
 
 ## Låst kontrakt
 
@@ -196,7 +199,9 @@ en omstart före ny revision/hemlighet skulle bara starta gammalt beteende igen.
     aktiveras. Roll tillbaka genom att ta bort produktens speech-URL/token och
     starta om produktprocessen; lämna `croupier-chat` och övriga roller orörda.
 
-Ingen av steg 2–11 har utförts i den här lokala uppgiften.
+Den ursprungliga implementationen utförde inte steg 2–11. Senare godkänd
+driftsättning och partiell verifiering redovisas separat i driftkvittot ovan;
+tolka inte checklistan eller en grön Render-status som färdig end-to-end-QA.
 
 ## Lokala tester
 

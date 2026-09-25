@@ -1,3 +1,29 @@
+## 2026-09-25 — Båda OpenClaw-labbtjänsterna driftsatta; separat speech-nyckel återstår
+
+Efter uttryckligt godkännande driftsattes exakt `113dfd8` på befintliga Render
+Gateway och Director. Båda visade Live. Runtimepaket `2026-09-25.1`, installerad
+`croupier-speech`, oförändrad operatörsmodell och verktygsförbud verifierades.
+Gatewayens schema är giltigt utan varningar med startwrapperns miljö.
+Director annonserar `product-speech-v1`; labbtoken och anonyma anrop nekas på
+produktens speech-endpoint.
+
+Den nya lokala speech-tokenen är dock identisk med Gateway-nyckeln. Ingen
+hemlighet skrevs ut; positivt speech-/modellprov stoppades före anropet och
+användaren ombads skapa en unik token i Director och privat lokal `.env`.
+Det anslutna provet på 4196/4197 stoppades, med inga kvarvarande lyssnare;
+offlinejämförelsen 4192/4194 lämnades orörd. Provet hann verifiera två boxars
+verkliga kort/event och originalspelarens start/slutkvitton i Next-loggen,
+men inte ett fungerande OpenClaw-produktsvar. Inga media eller riktiga
+spelarkonton ändrades. Jira/CAC var inte anslutet och ingen status ändrades.
+
+Read-only granskning av `EmaCodeHero/astrid-lipsync-demo-2` på `1e271e1` visar
+en relevant exakt-text → Cartesia → RunPod-väg utan Gemini via `/api/speak`.
+Ingen kod kopierades: återanvändningsrätt, separat GPU-worker och kostnadsram
+behöver klarläggas. Vår posegrind/talkö och hashbundna talpaket måste behållas.
+Se [fullt driftkvitto](../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-25.md)
+för avgränsningar, testbevis och återstartssteg. Tidigare anteckningar nedan om
+att ingen remote-driftsättning skett är historiska, inte aktuell status.
+
 ## 2026-09-25 — Aktuell systemkarta, direkt wiki-synk och verifierad publicering
 
 GitLab-wikin är nu primär publicerad dokumentationsyta för animation-events.
