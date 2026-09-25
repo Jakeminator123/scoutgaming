@@ -6,6 +6,20 @@ nedan för de skärpta reglerna och kategorisering av befintliga original.
 
 ## Användning
 
+### Nuvarande grundkälla: Emils mapp
+
+Från 25 september 2026 läser Videobanken som standard de 31 MP4-filerna direkt
+ur `emil/dealklipp-v1/` via mappens `lab-video-manifest.json`. Filerna kopieras
+inte till `lab/data/`, och videoinnehållet semantiskt indexeras inte. Manifestet
+ger stabilt ID, relativ sökväg, storlek och SHA-256; hela hashen kontrolleras
+först när ett klipp spelas.
+
+Alla poster är Astrid-kandidater men avsiktligt omappade. De syns därför i
+**Inkorg · kategorisera** tills rätt event, typ, roll och konkret situation har
+valts manuellt. Detta gör inte klippen runtime-godkända och ändrar inte
+produktspelaren. `LAB_VIDEO_ARCHIVE` kan peka på en annan rot endast om den har
+samma manifeststyrda mappstruktur.
+
 ### Lokala original som standardförval
 
 Från 21 september läser `/api/original-media` det lokala produktregistret.
@@ -92,9 +106,9 @@ om automatiskt. Standardvarianten kan inte begränsas eller raderas.
   återanvänder tidigare post vid ett nytt försök.
 - GET/HEAD och byteintervall använder samma verifierade filhandtag och
   SHA-256-kontroll som originalbanken. Endast localhost/samma ursprung tillåts.
-- Det äldre generationsarkivet är oförändrat och visas tillsammans med
-  uppladdningarna. Det äldre fältnamnet `videoGenerationId` används även för
-  uppladdade video-ID:n för att bevara projektformatets befintliga kopplingar.
+- Emils manifeststyrda mapp visas tillsammans med uppladdningarna. Det äldre
+  fältnamnet `videoGenerationId` används även för dessa video-ID:n och uppladdade
+  video-ID:n för att bevara projektformatets befintliga kopplingar.
 - En kategoriserad uppladdning får inte bindas till fel dealer/event.
   Vid eventtest ger fel exakt replik eller kortsituation 2D-reserv med spår.
   Manuell preview spelar det explicit valda klippet för inspektion.

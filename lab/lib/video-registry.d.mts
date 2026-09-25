@@ -2,7 +2,7 @@ import type { VideoMetadata } from './video-intake.mjs';
 export interface VideoRegistryOptions { archiveDir?: string | null; snapshotPath?: string; uploadDir?: string }
 export interface RegistryVideo {
   classification?: VideoMetadata;
-  source?: 'archive' | 'upload';
+  source?: 'emil' | 'archive' | 'upload';
   addedAt?: string;
   id: string;
   label: string;
@@ -24,7 +24,7 @@ export interface VideoRegistry {
   summary: {
     total: number; available: number; missing: number; unavailable: number;
     configured: boolean; readable: boolean; snapshotReadable: boolean;
-    archiveSource: 'explicit' | 'environment' | 'local-default' | 'none';
+    archiveSource: 'explicit' | 'environment' | 'emil-default' | 'none';
     intakeCounts: Record<'want' | 'no' | 'unrated', number>;
     notes: string[];
   };

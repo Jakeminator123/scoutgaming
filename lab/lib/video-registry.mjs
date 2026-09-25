@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { access, lstat, open, readFile, realpath } from 'node:fs/promises';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { readUploads, uploadDirectory } from './video-uploads.mjs';
 import { readClassifications } from './video-classifications.mjs';
@@ -10,7 +10,7 @@ import { readClassifications } from './video-classifications.mjs';
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
-const LOCAL_ARCHIVE = 'C:/Users/jakem/CroupierAssets/bettalotto-generations';
+const EMIL_SOURCE = ['emil', 'dealklipp-v1'];
 const MAX_SNAPSHOT_BYTES = 5 * 1024 * 1024;
 const MAX_ENTRIES = 10_000;
 const verified = new Map();
@@ -19,11 +19,20 @@ class RegistryError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
 
+function repositoryRoot() {
+  return basename(process.cwd()) === 'lab' ? resolve(process.cwd(), '..') : process.cwd();
+}
+
 function snapshotPath(options) {
   if (options.snapshotPath) return resolve(options.snapshotPath);
-  // Next runs with lab/ as cwd; node tests may run with the repository as cwd.
-  const root = basename(process.cwd()) === 'lab' ? dirname(process.cwd()) : process.cwd();
-  return join(root, 'docs', 'animation-events', 'v3-video-map', 'snapshot.json');
+  return join(repositoryRoot(), ...EMIL_SOURCE, 'lab-video-manifest.json');
+}
+
+function safeRelativeMediaPath(value, extension) {
+  if (typeof value !== 'string' || value.length > 240 || value.includes('\\') || isAbsolute(value)) return false;
+  const parts = value.split('/');
+  return parts.every(part => part && part !== '.' && part !== '..')
+    && value.toLowerCase().endsWith(`.${extension}`);
 }
 
 async function readEntries(options) {
@@ -34,7 +43,11 @@ async function readEntries(options) {
   if (!Array.isArray(snapshot.items) || snapshot.items.length > MAX_ENTRIES) throw new RegistryError(503, 'Video inventory unavailable.');
   const entries = new Map();
   for (const item of snapshot.items) {
+    const extension = item?.extension ?? 'mp4';
     if (!item || !UUID.test(item.id) || !SHA256.test(item.sha256)
+      || !['mp4', 'webm'].includes(extension)
+      || (item.relativePath !== undefined && !safeRelativeMediaPath(item.relativePath, extension))
+      || (item.source !== undefined && item.source !== 'emil')
       || !Number.isSafeInteger(item.size) || item.size < 1 || entries.has(item.id)) {
       throw new RegistryError(503, 'Video inventory unavailable.');
     }
@@ -46,9 +59,7 @@ async function readEntries(options) {
 function selectArchive(options) {
   if (Object.hasOwn(options, 'archiveDir')) return { path: options.archiveDir, source: options.archiveDir ? 'explicit' : 'none' };
   if (process.env.LAB_VIDEO_ARCHIVE) return { path: process.env.LAB_VIDEO_ARCHIVE, source: 'environment' };
-  return process.platform === 'win32'
-    ? { path: LOCAL_ARCHIVE, source: 'local-default' }
-    : { path: null, source: 'none' };
+  return { path: join(repositoryRoot(), ...EMIL_SOURCE), source: 'emil-default' };
 }
 
 function samePath(a, b) {
@@ -75,11 +86,14 @@ function cacheKey(path, entry, info) {
 }
 
 async function inspectFile(archive, entry) {
-  const file = join(archive, `${entry.id}.${entry.extension ?? 'mp4'}`);
+  const relativeFile = entry.relativePath ?? `${entry.id}.${entry.extension ?? 'mp4'}`;
+  if (!safeRelativeMediaPath(relativeFile, entry.extension ?? 'mp4')) throw new RegistryError(403, 'Unsafe local video file.');
+  const file = join(archive, ...relativeFile.split('/'));
   const info = await lstat(file, { bigint: true });
   if (info.isSymbolicLink() || !info.isFile()) throw new RegistryError(403, 'Unsafe local video file.');
   const canonical = await realpath(file);
-  if (!samePath(file, canonical) || !samePath(dirname(canonical), archive)) throw new RegistryError(403, 'Video file must be inside the archive.');
+  const distance = relative(archive, canonical);
+  if (!samePath(file, canonical) || !distance || distance.startsWith('..') || isAbsolute(distance)) throw new RegistryError(403, 'Video file must be inside the archive.');
   if (info.size !== BigInt(entry.size)) throw new RegistryError(409, 'Video differs from the inventory.');
   await access(file, constants.R_OK);
   return { file, info };
@@ -105,7 +119,7 @@ function publicEntry(entry, available, integrity) {
     id: entry.id,
     label: `${dealer ? dealer[0].toUpperCase() + dealer.slice(1) : 'Okänd dealer'} · ${hint || entry.id.slice(0, 8)}`,
     ...(dealer ? { dealer } : {}),
-    fileName: `${entry.id}.mp4`,
+    fileName: entry.relativePath ? basename(entry.relativePath) : `${entry.id}.mp4`,
     verdict: ['want', 'no'].includes(entry.verdict) ? entry.verdict : 'unrated',
     bytes: entry.size,
     sha256: entry.sha256,
@@ -116,7 +130,7 @@ function publicEntry(entry, available, integrity) {
     integrity,
     ...(eventId && /^[a-zA-Z0-9._-]+$/.test(eventId) ? { suggestedEventId: eventId } : {}),
     bindingScope: 'lab-only',
-    source: 'archive',
+    source: entry.source === 'emil' ? 'emil' : 'archive',
   };
 }
 
@@ -131,6 +145,7 @@ export async function loadVideoRegistry(options = {}) {
       'Want är ett intake-omdöme, inte ett godkännande. Alla kopplingar här är endast för labbet.',
       'Dealer och event är sorteringsförslag, inte verifierat videoinnehåll.',
       'Tillgänglig betyder läsbar fil med rätt storlek. SHA-256 kontrolleras före uppspelning.',
+      'Grundkällan är Emils mapp; filmerna är inte eventmappade förrän de kategoriseras i labbet.',
     ],
   };
   let entries;
@@ -145,7 +160,7 @@ export async function loadVideoRegistry(options = {}) {
   }
   let archive;
   try { archive = await archiveLocation(selection); summary.readable = true; }
-  catch { summary.notes.push('Det lokala videoarkivet är inte tillgängligt. Ange LAB_VIDEO_ARCHIVE på servern.'); }
+  catch { summary.notes.push('Emils videomapp är inte tillgänglig. LAB_VIDEO_ARCHIVE kan ange en alternativ rot med samma manifeststruktur.'); }
   const videos = [];
   let classifications = [];
   try { classifications = await readClassifications(options); }
@@ -231,15 +246,16 @@ export async function getVideoResponse(id, request, options = {}) {
     const openedInfo = await handle.stat({ bigint: true });
     if (!openedInfo.isFile() || fingerprint(openedInfo) !== fingerprint(info)) throw new RegistryError(409, 'Video changed during verification.');
     const key = cacheKey(file, entry, openedInfo);
-    if (!verified.has(key)) {
-      const hash = createHash('sha256');
-      for await (const chunk of handle.createReadStream({ autoClose: false, start: 0 })) hash.update(chunk);
-      if (hash.digest('hex') !== entry.sha256 || fingerprint(await handle.stat({ bigint: true })) !== fingerprint(openedInfo)) {
-        throw new RegistryError(409, 'Video hash differs from the inventory.');
-      }
-      if (verified.size >= 512) verified.delete(verified.keys().next().value);
-      verified.set(key, true);
+    // Windows timestamp precision can miss a rapid same-size rewrite. Hash every
+    // requested preview so cached metadata can never authorize changed bytes.
+    const hash = createHash('sha256');
+    for await (const chunk of handle.createReadStream({ autoClose: false, start: 0 })) hash.update(chunk);
+    if (hash.digest('hex') !== entry.sha256 || fingerprint(await handle.stat({ bigint: true })) !== fingerprint(openedInfo)) {
+      for (const cached of verified.keys()) if (cached.startsWith(`${file}:`)) verified.delete(cached);
+      throw new RegistryError(409, 'Video hash differs from the inventory.');
     }
+    if (verified.size >= 512) verified.delete(verified.keys().next().value);
+    verified.set(key, true);
     const etag = `"sha256-${entry.sha256}"`;
     let range = { start: 0, end: entry.size - 1 }, status = 200;
     const rangeHeader = request.method === 'GET' && request.headers.get('range');

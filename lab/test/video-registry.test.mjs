@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { getVideoResponse, loadVideoRegistry } from '../lib/video-registry.mjs';
 
@@ -24,7 +24,10 @@ async function fixture(t, extra = {}) {
     ...extra,
   };
   await writeFile(snapshotPath, JSON.stringify({ items: [item] }));
-  const file = join(archiveDir, `${id}.mp4`);
+  const file = item.relativePath
+    ? join(archiveDir, ...item.relativePath.split('/'))
+    : join(archiveDir, `${id}.mp4`);
+  await mkdir(dirname(file), { recursive: true });
   await writeFile(file, bytes);
   return { root, file, archiveDir, snapshotPath };
 }
@@ -56,6 +59,22 @@ test('dealer labels normalize case without upgrading an intake to approval', asy
   assert.equal(videos[0].dealer, 'astrid');
   assert.match(videos[0].label, /^Astrid/);
   assert.equal(videos[0].reviewStatus, 'unreviewed');
+});
+
+test('nested Emil paths stay inside the manifest root and remain unclassified', async t => {
+  const options = await fixture(t, {
+    relativePath: 'deal/deal_pos1.mp4', source: 'emil',
+    placement: { dealer: 'astrid', label: 'Emil · deal/deal_pos1' },
+  });
+  const { videos, summary } = await loadVideoRegistry(options);
+  assert.equal(summary.archiveSource, 'explicit');
+  assert.equal(videos[0].source, 'emil');
+  assert.equal(videos[0].fileName, 'deal_pos1.mp4');
+  assert.equal(videos[0].classification, undefined);
+  assert.equal(videos[0].suggestedEventId, undefined);
+  const response = await getVideoResponse(id, request(), options);
+  assert.equal(response.status, 200);
+  assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
 });
 
 test('preview verifies full hash then serves bytes; subsequent metadata marks verified', async t => {
