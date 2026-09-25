@@ -20,7 +20,9 @@ node lissabon/start.mjs --check
 ```
 
 `--check` provar befintliga privata anslutningar utan att starta spelet eller
-generera tal. `--no-open` används från Codex. `--skip-build` är bara för
+generera tal. Produkt-speech-relayn visar `reachable: null` eftersom dess
+smala endpoint kräver ett riktigt modellanrop för att provas; det betyder
+inte anslutningsfel. `--no-open` används från Codex. `--skip-build` är bara för
 utveckling efter ett verifierat `npm --prefix lab run build`.
 En redan körande Lissabon öppnas igen. Andra processer på 4200/4201 stoppas
 aldrig automatiskt; avsluta deras startprocess först.
@@ -132,7 +134,10 @@ sekunder; Lissabon-provet tog 81 sekunder. Stegmätta prov den 25 september
 gav 8,1 och 8,5 sekunder för korta svar och 16,6 sekunder för ett längre
 svar med cirka 11 sekunders tal. OpenClaw tog 1,5–1,7 sekunder, rösten
 0,7–1,3 sekunder och videokedjan 5,5–13,6 sekunder. De äldre mycket långa
-proven saknar stegmätning och är inte förklarade ännu.
+proven saknar stegmätning och är inte förklarade ännu. Ett senare resultatprov
+tog 29,8 sekunder, varav 15,4 sekunder i videokö och 11,4 sekunder i
+rendering/hämtning. Ett annat tog 39,4 sekunder med 32,2 sekunder i
+rendering/hämtning. Videokedjan är den största uppmätta flaskhalsen.
 Planera för varierande väntetid. Utdelning går före tal. Bildformatet är verifierat; röstens
 naturlighet och fonemvis läppsynk är inte slutgodkända.
 Mobilens automatiska chattöverlägg och talfilmens täckning av korten är
