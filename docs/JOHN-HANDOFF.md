@@ -1,3 +1,28 @@
+## 2026-09-25 — Sparad leverans och en enda aktiv lokal miljö
+
+Implementation och tidigare verifiering är sparade i `d8d3b22` på
+`jakeminator123/work`, levererad till kanoniska GitLab och privata
+`Jakeminator123/github-work`. Den här uppföljningen ändrar bara dokumentation,
+inte spelkod, media, modellinställningar eller driftsättning.
+
+På användarens begäran stängdes sex överflödiga browserflikar och de tre äldre
+lokala serverparen: 4192/4194, 4196/4197 och 4198/4199. Kvar finns endast
+produktens originalspel på <http://127.0.0.1:4200/> och labbet på
+<http://127.0.0.1:4201/activity>, med deras två befintliga browserflikar.
+Den aktuella spelsessionen behölls utan omladdning. Båda HTTP-sidorna svarade
+200 och endast 4200/4201 lyssnade inom det kontrollerade portintervallet
+4192–4201 efter städningen. OpenClaw-tjänsterna på Render lämnades igång.
+
+Använd [startguiden](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md) för en ny
+körning; starta inte ett extra serverpar medan dessa portar redan används.
+Varje helperstart skapar en isolerad testdatabas, inte beständigt produktminne.
+Tidigare uppgifter nedan om kvarlämnade 4192–4199-processer är historiska.
+Mänsklig lipsyncgranskning och saknade exakta klipp kvarstår enligt leveransen
+nedan. Starthelperns 15/15 tester och `git diff --check` passerade vid denna
+uppföljning. Hela spelarsviten kördes inte om för dokumentationsändringen;
+inga nya visuella godkännanden gjordes.
+De tre tidigare privata/untracked användarfilerna lämnas fortsatt utanför Git.
+
 ## 2026-09-25 — Länkad bordschatt, genererad läppsynk och levande idlepolicy
 
 Aktuell lokal labbväg: ett auktoritativt spel, samma publicerade native-
