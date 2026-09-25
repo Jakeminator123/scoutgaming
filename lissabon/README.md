@@ -10,6 +10,7 @@ Milstolpetagg: **`BRA_sammanbindning_av_KJE`** på `jakeminator123/work`.
 1. Dubbelklicka **Start-Lissabon.cmd** här eller i projektroten.
 2. Starten bygger labbet och öppnar <http://127.0.0.1:4201/lissabon>.
 3. Tryck **Anslut**. Astrid öppnas i en spelflik som följs av labbets logg.
+   Välj eller skapa din lokala demoprofil, eller fortsätt som gäst.
    Spela och chatta där. Välj mobilstorlek i webbläsaren för mobilgranskning.
 4. Behåll startfönstret öppet. **Ctrl+C** stoppar båda servrarna.
 
@@ -42,6 +43,28 @@ Web är ensam spelare. Chattsvar genereras i spelet. Manuella klipp- och
 idleförhandsvisningar är granskning, inte en andra spelström. Den äldre
 studion finns kvar under `/tree` för avancerat arbete.
 
+## Spelarprofil och minne
+
+**Byt profil** i Astrids spelflik väljer en sparad profil eller skapar en ny.
+Varje profil har ett eget server-ID. Visningsnamnet skickas till OpenClaw,
+men namnet används aldrig som nyckel för chatthistoriken. Namnkrockar kräver
+att du väljer den befintliga profilen eller ett annat namn.
+
+Det är lokala demoprofiler utan lösenord: den som använder denna dator kan
+välja dem. API:t är bara aktiverat i Lissabons isolerade loopback-körning.
+Vanliga Scout-konton och den riktiga användardatabasen används inte.
+
+Astrids minne består av de senaste 12 chattinläggen, högst 8 000 tecken och
+30 dagar utan nya meddelanden. Det är sparad samtalshistorik, inte obegränsat
+långtidsminne. **Minne → Radera mitt minne hos denna dealer** rensar den.
+Avsluta handen och invänta svaret före profilbyte. Profilbyte laddar om öppna
+Lissabon-spelflikar på samma origin; gamla svar får inte följa med.
+
+Mobilchatten öppnas med **Chatt** och stängs med samma knapp eller Escape.
+Nya meddelanden öppnar inte loggen automatiskt på mobil. En punkt visar ett
+nytt dealersvar. Väntestatus visar förberedelse, kö till ledigt bord och tal.
+Kort och insatsmarkeringar ligger ovanpå talfilmen under hela uppspelningen.
+
 ## Sparande
 
 - `profile.json`: Astrid, portar, genererat tal och källversion. OpenClaw är
@@ -53,9 +76,12 @@ studion finns kvar under `/tree` för avancerat arbete.
 - `data/project.json` och `data/history/`: lokala inställningar och
   revisionskopior överlever omstart men ligger utanför Git. Säkerhetskopiera
   dem separat eller gör en granskad ny snapshot vid nästa milstolpe.
-- Demodatabas, spelare, chattminne och genererade svar är tillfälliga per
-  serverstart i en separat Windows Temp-mapp. Normal avstängning rensar den.
-  Den verkliga användardatabasen används inte.
+- `data/players/`: isolerade demodatabaser med profiler, demo-bord, saldon,
+  sessioner och chatthistorik överlever omstart. De är privata och ignoreras
+  av Git. Säkerhetskopiera vid behov medan servrarna är stoppade.
+- Genererade ljud-/videopaket är fortfarande tillfälliga per start i en
+  separat Windows Temp-mapp. Normal avstängning rensar den. Sparat chattminne
+  innebär inte att gamla talfilmer finns kvar eller kan spelas igen.
 
 ## Gemensamma källor
 
@@ -79,6 +105,7 @@ nycklar, externa tjänster eller lokala filer som inte ligger i Git.
 Chattsvar genereras färdigt innan uppspelning. Tidigare prov tog 15–25
 sekunder; Lissabon-provet tog 81 sekunder. Planera för varierande väntetid. Utdelning går före tal. Bildformatet är verifierat; röstens
 naturlighet och fonemvis läppsynk är inte slutgodkända.
-Mobilchatten kan täcka ansiktet, talfilmen kan täcka kortöverlägg och
-kortkontakt behöver kalibreras. Detta är en säkrad utvecklingsmilstolpe.
+Mobilens automatiska chattöverlägg och talfilmens täckning av korten är
+åtgärdade. Kortens placering, kortkontakt och saknade exakta filmer behöver
+fortsatt granskas. Detta är en säkrad utvecklingsmilstolpe.
 Se [handoffen](../docs/JOHN-HANDOFF.md) för prov och kvarvarande fel.
