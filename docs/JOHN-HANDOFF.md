@@ -1,3 +1,40 @@
+## 2026-09-25 — Eget Astridprov: chatt, reaktion och demohand
+
+På Jakobs begäran provades enbart Astrid i separat browserflik på
+`localhost:4200/?dealer=astrid&presentation=local`, med OpenClaw-klippval
+och den redan körande isolerade testdatabasen. Hans spelflik på 127.0.0.1
+ändrades inte. Ingen spelar- eller mediakod ändrades i detta testpass.
+
+- Vanlig svensk hälsning gav ”Jag mår bra i kväll, tack. Det känns lugnt här
+  vid bordet.” Nytt talpaket `generated-57a2b396f7c42e900be39d7b247b8f1d`,
+  ljud 3 297 ms; aktiv läppsynkvideo observerades efter cirka 15 sekunder.
+  390×844 behöll rätt format, följt av återgång till primär-idle.
+- Spydig kommentar gav ”Nej, jag är bara fokuserad. Kort och gott.” med nytt
+  genererat talpaket. Vid ett separat omprov efter avslutad hand verifierades
+  `idle_insulted_f73_s301.mp4`, `presentationState: presented` och verklig
+  video med `paused: false`, innan chattsvaret var färdigt.
+- En isolerad $5-demohand på box 4 och chatt under initialutdelningen gav
+  korrekt svar: ”Du har 10♥ och 9♠, totalt 19. Dealern visar 3♦.” Det dolda
+  kortet avslöjades inte. Paket `generated-4079dcb16b472eb50b72ed268d50425c`,
+  ljud 5 294 ms. Talvideo observerades efter utdelningen. Stand avslutade
+  handen och återgång till betting verifierades. Inga konsolfel noterades.
+
+**Två reproducerade öppna fel, prioriterade före kortkalibrering:**
+
+1. På 390×844 täcker den automatiskt öppnade chattloggen ansikte/mun medan
+   det genererade svaret spelas. Skärmbilden visar chattpanelen över ansiktet;
+   `chatLog` öppnar den på varje svar och håller den öppen i 26 sekunder.
+2. Genererad talvideo täcker befintliga kort, totalsiffror och insatsmarkörer.
+   Under kortsvaret fanns 3♦/hålkort och 10♥/9♠ kvar i DOM men syntes inte;
+   samma kort syntes direkt när talytan togs bort. Talytans `z-index:25`
+   ligger över `#table2d` på 20. Detta är lagerordning mellan bildytor, inte felaktig
+   serverstate eller det tidigare åtgärdade formatfelet.
+
+Talpaketen har fortsatt `reviewStatus: pending`; detta test fastställer
+funktionell uppspelning och synliga UI-fel, inte fonemvis läppsynkacceptans
+eller ett subjektivt godkännande av röstens naturlighet. Ingen aktuell
+CAC-issue/Jira-anslutning fanns för att föra dessa fynd till live-trackern.
+
 ## 2026-09-25 — Samma bildformat för genererade chattsvar och idle
 
 Jakobs två bilder visade att den genererade talfilmen zoomade in jämfört med
