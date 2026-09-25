@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSocialPolicy, createSocialStore } from '../lib/social-store.mjs';
 import { createSocialService, socialEndpoint } from '../lib/social-server.mjs';
+import { speechVisitor } from '../lib/generated-speech-server.mjs';
 
 const settings = { remoteUrl: 'https://director.example.test', remoteToken: 'fixture-only-secret' };
 const noCall = () => assert.fail('No external call allowed.');
@@ -194,4 +195,113 @@ test('HTTP endpoints expose no credentials and reject foreign origin', async t =
   assert.equal(foreign.status, 403);
   const save = await socialEndpoint(request('/api/social', 'PUT', { policy: body.policy, expectedRevision: body.policy.revision }), options);
   assert.equal(save.status, 200); assert.notEqual((await save.json()).policy.revision, body.policy.revision);
+});
+
+test('generated speech receipts bind browser owner as well as conversation/request IDs', async t => {
+  const { store } = await fixture(t); let modelCalls = 0;
+  const generated = [];
+  const service = createSocialService({ store, settings, fetchImpl: fakeModel({}, () => modelCalls++), generateVoice: noCall,
+    generatedSpeechService: () => ({ generate: async value => { generated.push(value); return { fixtureOwner: value.owner }; } }),
+  });
+  const first = await service.chat(input(), null, 'owner-a');
+  assert.deepEqual(await service.chat(input(), null, 'owner-a'), first);
+  const second = await service.chat(input(), null, 'owner-b');
+  assert.equal(modelCalls, 2);
+  assert.equal(generated.length, 2);
+  assert.equal(first.speechPackage.fixtureOwner, 'owner-a');
+  assert.equal(second.speechPackage.fixtureOwner, 'owner-b');
+  assert.ok(generated.every(value => value.signal instanceof AbortSignal));
+});
+
+test('abort before/during the model prevents later paid speech and propagates the request signal', async t => {
+  const { store } = await fixture(t);
+  const aborted = new AbortController(); aborted.abort();
+  const closed = createSocialService({ store, settings, fetchImpl: noCall, generatedSpeechService: noCall, generateVoice: noCall });
+  await assert.rejects(closed.chat(input(), null, 'owner-a', { signal: aborted.signal }), error => error.statusCode === 499);
+  const controller = new AbortController(); let modelSignal;
+  const service = createSocialService({ store, settings, generatedSpeechService: noCall, generateVoice: noCall,
+    fetchImpl: async (url, options) => { modelSignal = options.signal; controller.abort(); return fakeModel()(url, options); },
+  });
+  await assert.rejects(service.chat(input(), null, 'owner-a', { signal: controller.signal }), error => error.statusCode === 499);
+  assert.equal(modelSignal.aborted, true);
+});
+
+test('abort during generated speech cancels its job and cannot be returned as a successful text fallback', async t => {
+  const { store } = await fixture(t);
+  const controller = new AbortController(); let started;
+  const startedPromise = new Promise(resolve => { started = resolve; });
+  let receivedSignal;
+  const service = createSocialService({ store, settings, fetchImpl: fakeModel(), generateVoice: noCall,
+    generatedSpeechService: () => ({ generate: ({ signal }) => new Promise((resolve, reject) => {
+      receivedSignal = signal; signal.addEventListener('abort', () => reject(new Error('aborted private provider')), { once: true }); started();
+    }) }),
+  });
+  const pending = service.chat(input(), null, 'owner-a', { signal: controller.signal });
+  const rejected = assert.rejects(pending, error => error.statusCode === 499 && !error.message.includes('private'));
+  await startedPromise; controller.abort(); await rejected;
+  assert.equal(receivedSignal.aborted, true);
+});
+
+test('forgetting companion identity clears and aborts every owner-bound session', async t => {
+  const { store } = await fixture(t); let modelCalls = 0, allStarted;
+  const started = new Promise(resolve => { allStarted = resolve; });
+  const signals = [];
+  const service = createSocialService({ store, settings, fetchImpl: fakeModel({}, () => modelCalls++), generateVoice: noCall,
+    generatedSpeechService: () => ({ generate: ({ signal }) => new Promise((resolve, reject) => {
+      signals.push(signal); signal.addEventListener('abort', () => reject(new Error('cancelled')), { once: true });
+      if (signals.length === 2) allStarted();
+    }) }),
+  });
+  const first = assert.rejects(service.chat(input(), 'companion-identity', 'owner-a'), error => error.statusCode === 499);
+  const second = assert.rejects(service.chat(input(), 'companion-identity', 'owner-b'), error => error.statusCode === 499);
+  await started; service.forgetSession('companion-identity');
+  await Promise.all([first, second]);
+  assert.ok(signals.every(signal => signal.aborted));
+  await service.chat(input({ voice: false }), 'companion-identity', 'owner-a');
+  assert.equal(modelCalls, 3, 'forgotten receipts cannot satisfy a later request');
+});
+
+test('GET establishes speech ownership before long requests; cookie-less POST spends nothing', async t => {
+  const { store } = await fixture(t);
+  const speechStatus = () => ({ configured: true, enabled: true, preview: true, dealerId: 'astrid', reviewStatus: 'pending' });
+  const options = { store, settings, voiceSettings: { key: '', mismatch: false }, speechStatus, service: { chat: noCall, voice: noCall } };
+  const initial = await socialEndpoint(request('/api/social', 'GET'), options);
+  assert.equal(initial.status, 200);
+  const cookie = initial.headers.get('set-cookie');
+  assert.match(cookie, /lab_speech_session=.*HttpOnly; SameSite=Strict/);
+  const visitor = speechVisitor(request('/api/social/chat', 'POST', input(), { Cookie: cookie.split(';')[0] }));
+  assert.ok(visitor.owner.startsWith('lab-')); assert.equal(visitor.cookie, null);
+  const noCookie = await socialEndpoint(request('/api/social/chat', 'POST', input()), options);
+  assert.equal(noCookie.status, 409);
+  assert.ok(noCookie.headers.get('set-cookie'));
+  const invalid = speechVisitor(request('/api/social', 'GET', null, { Cookie: 'lab_speech_session=' + '-'.repeat(36) }));
+  assert.equal(invalid.owner, null);
+});
+
+test('POST passes stable speech owner and request AbortSignal, not a new cookie per request', async t => {
+  const { store } = await fixture(t); let args;
+  const options = { store, settings, voiceSettings: { key: '', mismatch: false }, speechStatus: () => ({ configured: true }), service: {
+    chat: async (...input) => { args = input; return { reply: 'fixture text' }; }, voice: noCall,
+  } };
+  const first = await socialEndpoint(request('/api/social', 'GET'), options);
+  const cookie = first.headers.get('set-cookie').split(';')[0];
+  const req = request('/api/social/chat', 'POST', input(), { Cookie: cookie });
+  const result = await socialEndpoint(req, options);
+  assert.equal(result.status, 200);
+  assert.equal(args[2], speechVisitor(req).owner);
+  assert.equal(args[3].signal, req.signal);
+  assert.equal(result.headers.get('set-cookie'), null);
+});
+
+test('generated speech failures keep real model text and never switch to another paid voice provider', async t => {
+  const { store } = await fixture(t); let generationCalls = 0;
+  const service = createSocialService({ store, settings, fetchImpl: fakeModel(), generateVoice: noCall,
+    generatedSpeechService: () => ({ generate: async () => { generationCalls++; throw new Error('private RunPod error'); } }),
+  });
+  const result = await service.chat(input(), null, 'owner-a');
+  assert.equal(result.reply, createSocialPolicy().response.fixedText);
+  assert.match(result.voiceError, /ingen automatisk ny generering/);
+  assert.equal(result.speechPackage, undefined);
+  assert.deepEqual(await service.chat(input(), null, 'owner-a'), result);
+  assert.equal(generationCalls, 1);
 });

@@ -5,6 +5,7 @@ import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
 import { observationContext, observedTable } from '../lib/observation-context.mjs';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { createPartnerTrace, appendPartnerTrace, exportPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
+import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
 
 const source = {}, expected = { source, origin: 'https://bettalotto.se', channel: 'fixture-channel', lastSequence: 0 };
 const project = createSeedProject();
@@ -26,6 +27,42 @@ test('oversize and malformed commands are discarded; credentials and signed addr
   assert.equal(acceptNativeObservation(message('command', { requestId: 'r1', op: 'start', view: {}, presentation }), expected), null);
   const result = acceptNativeObservation(message('playback', { state: 'selected', token: 'private', src: 'https://bettalotto.se/a.mp4?secret=hidden' }), expected);
   assert.equal(result.data.token, '[dolt]'); assert.equal(result.data.src, 'https://bettalotto.se/a.mp4');
+});
+
+test('bounded pose diagnostics keep the native sequence contiguous without inventing game events or playback', () => {
+  const connection = { ...expected };
+  const records = [];
+  const payloads = [{ kind: 'status', payload: { state: 'attached' } },
+    ...SPEECH_POSE_STAGES.map(stage => ({ kind: 'status', payload: { state: 'chat-pose', jobId: 'chat:job.1', stage, at: 1234,
+      gap: true, events: [{ type: 'idle' }], actualPlaybackCaptured: true, token: 'PRIVATE' } })),
+    { kind: 'command', payload: { requestId: 's1', op: 'state', view: { version: 0, round: null }, presentation: [] } }];
+  for (const [index, entry] of payloads.entries()) {
+    const incoming = message(entry.kind, entry.payload); incoming.data.sequence = index + 1;
+    const accepted = acceptNativeObservation(incoming, connection);
+    assert.ok(accepted, `${entry.kind}/${entry.payload.stage ?? entry.payload.state ?? entry.payload.op}`);
+    assert.equal(accepted.nativeSequence, connection.lastSequence + 1);
+    connection.lastSequence = accepted.nativeSequence;
+    assert.equal(accepted.actualPlaybackCaptured, false);
+    if (entry.payload.state === 'chat-pose') assert.deepEqual(accepted.data,
+      { state: 'chat-pose', jobId: 'chat:job.1', stage: entry.payload.stage, at: 1234, gap: false });
+    records.push(accepted);
+  }
+  const sequence = buildPresentationSequence(records, project);
+  assert.deepEqual(sequence.steps, []);
+  assert.ok(sequence.notices.every(notice => notice.kind === 'connection'));
+  let trace = createPartnerTrace(); for (const record of records) trace = appendPartnerTrace(trace, record);
+  assert.equal(exportPartnerTrace(trace).evidence.actualVideoPlaybackCaptured, false);
+});
+
+test('unknown or malformed pose statuses remain rejected and cannot reset the native sequence', () => {
+  const pose = { state: 'chat-pose', jobId: 'chat.1', stage: 'speech-completed', at: 1234 };
+  for (const patch of [{ state: 'unknown' }, { stage: 'execute' }, { jobId: '' }, { jobId: 'x'.repeat(129) },
+    { jobId: '../unsafe' }, { at: undefined }, { at: '1234' }, { at: -1 }, { at: Infinity }, { at: 1.5 }]) {
+    assert.equal(acceptNativeObservation(message('status', { ...pose, ...patch }), expected), null);
+  }
+  assert.equal(acceptNativeObservation(message('status', pose), { ...expected, lastSequence: 1 }), null);
+  assert.equal(acceptNativeObservation(message('status', pose), { ...expected, lastSequence: 100 }), null);
+  assert.ok(acceptNativeObservation(message('status', { state: 'attached' }), { ...expected, lastSequence: 100 }));
 });
 
 test('native and SSE instructions deduplicate; playback, chat and state never become extra game events', () => {

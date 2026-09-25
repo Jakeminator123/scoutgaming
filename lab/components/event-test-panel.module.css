@@ -2,3 +2,30 @@
 
 .selectionSummary{margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid var(--line)}.selectionSummary strong{color:var(--text);font-size:13px}.selectionSummary p{font-size:12px;color:var(--muted);line-height:1.7;margin:6px 0}.advanced{margin-top:20px;border-top:1px solid var(--line);padding-top:14px}.advanced>summary{cursor:pointer;font-size:12px;color:var(--muted)}.advanced .mode{margin-bottom:0}
 .poseSimulation{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--panel) 88%,transparent)}.poseSimulation>div p{margin:4px 0 10px;color:var(--muted);font-size:12px}.poseSimulation ol{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0 8px;padding:0;list-style:none}.poseSimulation li{min-height:52px;padding:8px;border:1px solid var(--line);border-radius:8px;opacity:.48}.poseSimulation li code,.poseSimulation li span{display:block}.poseSimulation li code{color:var(--muted);font-size:10px}.poseSimulation li span{margin-top:4px;font-size:11px}.poseSimulation .activeStage{opacity:1;border-color:var(--lime);box-shadow:0 0 0 1px color-mix(in srgb,var(--lime) 35%,transparent)}.poseSimulation .completedStage{opacity:.82;border-color:color-mix(in srgb,var(--lime) 45%,var(--line))}.poseSimulation>small{color:var(--muted)}@media(max-width:760px){.poseSimulation ol{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.panel { width: 100%; max-width: 960px; box-sizing: border-box; margin-top: 16px; border-color: var(--line, #394842); }
+.panel > summary { padding: 15px 18px; }
+.summaryText strong { font-size: 16px; }
+.summaryText small { margin-top: 3px; }
+.body { padding: 0 18px 18px; }
+.intro { margin: 0; padding: 12px 0; max-width: 75ch; }
+.selectionSummary { padding-bottom: 12px; margin-bottom: 14px; }
+.mode { margin: 2px 0 10px; grid-template-columns: minmax(180px, .7fr) minmax(180px, 1fr); gap: 18px; }
+.mode p { margin: 20px 0 0; }
+.modeHelp > summary, .testContext > summary { font-size: 12px; line-height: 1.7; cursor: pointer; color: var(--text, #d6e2d8); }
+.modeHelp > p { max-width: 68ch; }
+.modeHelp dl { display: grid; gap: 10px; margin: 12px 0; }
+.modeHelp dl > div { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; }
+.modeHelp dt { font-size: 12px; color: var(--text, #d6e2d8); }
+.modeHelp dd { margin: 0; font-size: 12px; line-height: 1.6; color: var(--muted, #a2b5bc); }
+.testContext > summary > span { margin-left: 8px; font-size: 11px; color: var(--muted, #a2b5bc); }
+.testContext > fieldset { margin-top: 14px; }
+.run { padding-top: 12px; margin-top: 14px; }
+.advanced { margin-top: 16px; padding-top: 12px; }
+.poseSimulation li { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .mode { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .mode p { margin-top: 8px; }
+  .modeHelp dl > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+  .testContext > summary > span { display: block; margin-left: 17px; }
+}

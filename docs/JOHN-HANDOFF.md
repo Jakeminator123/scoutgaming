@@ -1,3 +1,94 @@
+## 2026-09-25 — Länkad bordschatt, genererad läppsynk och levande idlepolicy
+
+Aktuell lokal labbväg: ett auktoritativt spel, samma publicerade native-
+instruktioner till originalet och labbet, men varsin presentation. Labbet spelar
+Astrids exakta manifestfamiljer och kvitterar verklig MP4-start/slut. Ingen
+ny kortgenerator, inget separat kort per videofil och inga ändrade mediabytes.
+Luckor och konflikter stoppar följningen; pose-statusmeddelanden tappas inte
+längre som falska transportluckor. MP4-spelaren har epochskydd, riktiga
+slutkvitton, start-/stallgränser och ingen falsk duration-baserad completion.
+
+Under Händelseloggens labbbild finns nu **Chatta vid detta bord**. En separat,
+loopback-/origin-/fönster-/kanal-/noncebunden brygga skickar bara text och
+request-ID till originalets autentiserade `/chat`. Den kan inte skicka kort,
+spelaridentitet eller spelkommandon. Produktservern äger synliga kort och
+spelarminne. Modellen får inte framtida shoe eller dolt hålkort. Browserhistorik
+ignoreras; minnet binds på servern till autentiserad spelare och dealer med
+12 meddelanden/8 000 tecken, 30 dagars inaktivitet och dedup/tombstones.
+Originalchattens **Minne** visar omfattning och kan glömma historiken samt
+avbryta ett pågående svar. Minnet säger genererat svar, inte bevisat spelat.
+
+Explicit `--generated-speech` i starthelpern aktiverar OpenClaw-text →
+ElevenLabs Sarah/multilingual-v2, exakt PCM24k-WAV → Emils RunPod-lipsyncprofil
+Astrid spel2x. API-kontraktet kontrollerades read-only mot privata repo-
+commit `133f2e4392d43de1c30dc5edd1b1f6762934efcb`; ingen privat källkod
+kopierades. Den scoped endpointkonfigurationen ligger endast privat/ignorerat.
+Standardstart aktiverar inga taljobb. OpenAI-provider och modell är oförändrade.
+Jobben begränsas, avbryts när ägarskap/runda ändras och återförsöks inte
+automatiskt efter osäkra betalda anrop. Temporära media ligger utanför repot
+och kräver rätt session. Ljud/video överförs till labbet utan credentials och
+hashverifieras igen. Paket v2 binder exakt text, ljud, video, 24fps/index och
+profil; review-status är alltid pending, aldrig ärvt visuellt godkännande.
+
+Modell/TTS/GPU får förbereda under deal. Labbet håller sedan svaret tills en
+ny verkligt renderad primärbas finns. Deal går före färdigt/pågående tal;
+blinkningar och sekundärbas öppnar aldrig talgrinden. Native-eventrepliker
+behåller sin exakta replikfamilj, separat från fri chatt. Modellvalet
+`recordedLine` är tills vidare text-only i den länkade labbchatten när exakt
+labbtake saknas; originalets och native-eventens inspelade tal påverkas inte.
+
+Händelseloggens idle använder samma sparade policy som Eventstudion: viktad
+bas, intervall/jitter, cooldown och rullande max/min, driven av verkligt
+klippslut. OpenClaw får högst fyra uttryckligen tillåtna idlevarianter, med
+30 sekunders råd-TTL och globalt högst en spelad AI-idlereaktion/minut.
+Rådgivaren använder befintligt `/api/studio/advice`, kräver kontextkvitto v2
+och gör inte renderer-idle till ett nytt native-event. Paus, läges-/rundbyte,
+nyare chatt och avbrott invaliderar gamla råd; browserabort når providern.
+Standard och skuggläge kan aldrig spela AI-idleråd. Minutpreviewns max/min-fel
+är också rättat. Tom familjs variantmapp betyder fortfarande standard utan AI.
+
+Båda jämförelseytorna har separata Dator/Mobil-ramar. Hela Emils 9:16-film
+bevaras; ramen skapar inte widescreeninnehåll eller ändrar originalfönstrets
+layout. Eventtestpanelen har tydligt klippläge och hopfälld testkontext/hjälp.
+Fristående chattprov är märkt som separat och behåller oskickad text. Verkliga
+mappfiler, inte gamla demoalternativ, används även i operatörens katalog.
+Den lokala operatörspromptförbättringen är **inte** en ny Render-deploy;
+remote kör fortfarande den tidigare uttryckligen godkända `113dfd8`.
+
+Livebevis: ett bord gav 5♦/K♠/15 och dealer 10♠, ett nytt isolerat bord gav
+5♦/7♣/12 och dealer 2♥. Båda motsvarade OpenClaws svar och labbets verkliga
+tal-/videokvitton. Testnamnet QA-Lina återkallades korrekt i nästa svar från
+serverminnet. Den senare rundan återgick till vänteläge och labbet fortsatte
+följa. Schemalagd blink gav started/presented/completed. Syntetiskt Director-
+prov valde den tillåtna `idle_insulted_f73_s301.mp4` med v2-kvitto. Slutligt
+browserprov gav därefter faktiskt started/presented 18:05:37 och completed
+18:05:40 för samma klipp/råd-ID. Genererat chattsvar spelade 18:05:56–18:05:59
+efter återgång till primärbas. Ett separat regressionsfall säkerställer att
+`silence` aldrig tar poseägarskap eller avbryter en pågående idlevariant.
+
+Verifierat: labbsviten 467/467, TypeScript och produktionsbuild; OpenClaw 135/135;
+hela `.githooks/pre-commit` inklusive nya tal-/brygg-/minnestester;
+`audit-dealer-sync --probe` för fyra dealers. Vera, Astrid, Amira och Mei
+spelade goodluck två gånger efter varandra i den riktiga rehearsalspelaren och
+återgick till idle. Befintliga saknade takes och mänsklig lipsyncgranskning
+återstår. Inga nya visuella approvals eller baselineändringar gjordes.
+Ett slumpberoende äldre HTTP-test antog exakt ett öppet dealerkort även vid
+dealer-blackjack; det kontrollerar nu faktisk publik state/reveal utan att
+släppa igenom hålkort. Regressionen passerade 15 separata omkörningar.
+
+Eventstudion kontrollerades på bred skärm och 390 px; ingen horisontell
+överströmning (375/375 px innehåll). Labbet hade inga konsolfel. Originalfliken
+visade ett Electron shell-initfel utanför appkällan, men spel/observation och
+minnespanel fungerade. Bilddelning av originalfliken är fortsatt ett explicit
+webbläsarval. Saknade exakta dealer-hole/turn-filmer ger märkt 2D-reserv,
+inte fel plats/replik. Läppsynken behöver fortsatt mänsklig granskning per take.
+
+Senaste separata slutprovet använder 4200/4201; användarens 4198/4199-hand
+lämnades kvar. Startinstruktioner i `open-claw/lab/docs/LOCAL-CONNECTION-SV.md`.
+Guiden och den kopierbara `lab/docs/PARALLEL-EVENTSTUDIO-UI.md` är uppdaterade.
+Jira/CAC var inte tillgängligt. Vercel och wikins publicering ändrades inte.
+Tre tidigare privata/untracked användarfiler bevaras utanför leveransen.
+
 ## 2026-09-25 — OpenClaw-spelarchatt verifierad; extra alias-spärr borttagen
 
 Ny sparad speech-token aktiverades genom Director-deploy

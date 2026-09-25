@@ -87,21 +87,22 @@ export function createIdlePreviewPlan(input, { seed = 1, durationMs = 60000 } = 
   integer(seed, 0, 0xffffffff, 'preview.seed'); integer(durationMs, 1000, 600000, 'preview.durationMs');
   const random = mulberry32(seed);
   const automatic = policy.variants.filter(item => item.use === 'automatic');
-  const state = new Map(automatic.map(item => [item.videoId, { next: nextDue(item, 0, random), last: -Infinity, count: 0 }]));
+  const state = new Map(automatic.map(item => [item.videoId, { next: nextDue(item, 0, random), last: -Infinity, starts: [] }]));
   const plan = [];
   let now = 0;
   while (now < durationMs && plan.length < 1000) {
     const due = automatic
       .filter(item => {
         const current = state.get(item.videoId);
-        return current.next <= now && now - current.last >= item.automatic.cooldownMs && current.count < item.automatic.maxPerMinute * Math.ceil(durationMs / 60000);
+        current.starts = current.starts.filter(start => now - start < 60000);
+        return current.next <= now && now - current.last >= item.automatic.cooldownMs && current.starts.length < item.automatic.maxPerMinute;
       })
       .sort((a, b) => state.get(a.videoId).next - state.get(b.videoId).next)[0];
     const item = due ?? chooseWeighted(policy.base, random);
     const endMs = Math.min(durationMs, now + item.durationMs);
     plan.push({ kind: due ? 'variant' : 'base', videoId: item.videoId, startMs: now, endMs, reason: due ? 'scheduled' : 'weighted-base' });
     if (due) {
-      const current = state.get(due.videoId); current.last = now; current.count++; current.next = nextDue(due, now, random);
+      const current = state.get(due.videoId); current.last = now; current.starts.push(now); current.next = nextDue(due, now, random);
     }
     now = endMs;
   }

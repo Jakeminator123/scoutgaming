@@ -58,22 +58,24 @@ export function EventTestPanel({ open, onOpen, mode, onMode, configured, context
     return () => window.clearTimeout(timer);
   }, [poseStep]);
   return <details className={styles.panel} open={open} onToggle={e => onOpen(e.currentTarget.open)}>
-    <summary><span className={styles.summaryText}><strong>Testa event</strong><small>Prova variantvalet för {dealer} med en simulerad situation.</small></span><span className={styles.badge}>{modeLabels[mode]}</span></summary>
+    <summary><span className={styles.summaryText}><strong>Testa event</strong><small>Simulera ett klippval för {dealer}. Ingen spelhandling skickas.</small></span><span className={styles.badge}>{modeLabels[mode]}</span></summary>
     <div className={styles.body}>
-      <p className={styles.intro}><strong>{eventLabel}</strong> bestämmer handlingen. Testsituationen hjälper urvalet att välja en av dina förberedda varianter; den lägger ingen extra animation ovanpå videon.</p>
-      <div className={styles.selectionSummary}><strong>{mode === 'active' ? 'OpenClaw väljer bland tillåtna varianter' : `Jämförelsetest: ${modeLabels[mode]}`}</strong><p>{mode === 'active' ? 'Fel eller otillåtet svar ger standardvarianten.' : modeExplanations[mode]}{mode === 'off' ? ' Testsituationen ändrar inte valet i detta läge.' : ''}</p>{mode !== 'active' ? <button type="button" className="text-button" onClick={() => onMode('active')}>Återgå till OpenClaw</button> : null}</div>
+      <p className={styles.intro}><strong>{eventLabel}</strong> väljer handlingen. Här testar du vilken av dess förberedda videor som väljs — inte själva spelet eller chattsvaret.</p>
+      <div className={styles.selectionSummary}>
+        <div className={styles.mode}><label>Vem väljer klippet?<select aria-label="Urvalsläge för eventtest" value={mode} onChange={e => onMode(e.target.value as DirectorMode)}>{(['off', 'rules', 'active', 'shadow', 'random'] as DirectorMode[]).map(id => <option key={id} value={id}>{modeLabels[id]}</option>)}</select></label><p>{modeExplanations[mode]}{mode === 'off' ? ' Testsituationen ändrar inte valet i detta läge.' : ''}</p></div>
+        <details className={styles.modeHelp}><summary>Vad betyder lägena?</summary><dl>{(['off', 'rules', 'active', 'shadow', 'random'] as DirectorMode[]).map(id => <div key={id}><dt>{modeLabels[id]}</dt><dd>{modeExplanations[id]}</dd></div>)}</dl><p>Det här väljer klippvariant. Det byter inte AI för chatten eller vem som bestämmer korten.</p></details>
+      </div>
       {!configured && usesModel ? <p className="connection-warning">OpenClaw är inte konfigurerat. Testet använder standardvarianten.</p> : null}
-      <TestContextPanel value={context} onChange={onContext} />
-      <details className={styles.advanced}><summary>Avancerade jämförelsetester</summary><p className={styles.note}>Behåll OpenClaw för vanligt variantval. Övriga lägen hjälper dig att jämföra och felsöka.</p><div className={styles.mode}><label>Urval för detta test<select aria-label="Urvalsläge för eventtest" value={mode} onChange={e => onMode(e.target.value as DirectorMode)}>{(['active', 'shadow', 'off', 'rules', 'random'] as DirectorMode[]).map(id => <option key={id} value={id}>{modeLabels[id]}</option>)}</select></label></div></details>
-      <section className={styles.poseSimulation} aria-label="Simulera chattens startpositionsgrind">
-        <div><strong>Startpositionsgrind</strong><p>Simulera att ett OpenClaw-svar hålls utanför talkön tills den verkliga standard-idlen har presenterats.</p></div>
-        <button type="button" className="text-button" onClick={() => setPoseStep(0)} disabled={poseStep >= 0 && poseStep < poseStages.length - 1}>Simulera chat → pose → tal</button>
-        <ol>{poseStages.map(([id, label], index) => <li key={id} data-stage={id} className={index < poseStep ? styles.completedStage : index === poseStep ? styles.activeStage : ''}><code>{id}</code><span>{label}</span></li>)}</ol>
-        {poseStep >= 0 ? <small role="status">{poseStep === poseStages.length - 1 ? 'Sekvens klar. Ingen assistenttext eller media släpptes före standard-idle.' : `Steg ${poseStep + 1} av ${poseStages.length}`}</small> : null}
-      </section>
+      <details className={styles.testContext}><summary>Testsituation <span>{mode === 'off' ? 'påverkar inte Standard' : 'simulerad indata'}</span></summary><TestContextPanel value={context} onChange={onContext} /></details>
       <div className={styles.run}><p>{usesModel ? 'Testa event kan göra ett modellanrop. Spelresultatet ändras inte.' : 'Lokalt test. Inget modellanrop och inget ändrat spelresultat.'}</p><button type="button" className="primary-button" disabled={busy || blocked} onClick={onRun}>{blocked ? 'Socialt svar pågår' : busy ? 'Testar…' : 'Testa event'}</button></div>
       {result ? <section className={styles.result} aria-label="Resultat från eventtest" role="status"><span>VALD VARIANT</span><h3>{result.variant?.label ?? 'Beslut klart'}</h3><p>{reasonDescriptions[result.decision?.reason ?? ''] ?? 'Se beslutsspåret för exakt orsak.'}</p><small>{result.videoGenerationId ? 'Kopplad video · 2D-reserv om filen inte kan spelas' : originalLabel ? `Originalförval · ${originalLabel}` : '2D-reserv · ingen video vald'} · {providerDescriptions[result.provider ?? ''] ?? 'Se tekniskt beslutsspår'}</small></section> : <p className={styles.note}>{previewKind === 'selected' ? 'Du förhandsvisar en vald variant. Det är inget godkänt regelbeslut. Kör Testa event för att prova urvalet.' : previewKind === 'social' ? 'Scenen visar ett chattsvar, inte ett eventtest. Kör Testa event för att prova variantvalet.' : 'Inget test kört för dessa inställningar. Spela vald variant är en separat förhandsvisning utan regelval.'}</p>}
       {result ? <details className={styles.technical}><summary>Tekniskt beslutsspår</summary><p className={styles.note}>Källtyp: {sourceType}. Tillåtna varianter i svaret: {result.eligible?.length ?? '–'}.</p><pre>{JSON.stringify(result, null, 2)}</pre></details> : null}
+      <details className={styles.advanced}><summary>Visa principen: tal först i startposition</summary><section className={styles.poseSimulation} aria-label="Simulera chattens startpositionsgrind">
+        <div><strong>Pedagogisk demo, inte ett livetest</strong><p>Illustrerar avsedd ordning: svar väntar tills standard-idlen visas. Timern nedan läser inga spel- eller uppspelningskvitton.</p></div>
+        <button type="button" className="text-button" onClick={() => setPoseStep(0)} disabled={poseStep >= 0 && poseStep < poseStages.length - 1}>Visa exempelförlopp</button>
+        <ol>{poseStages.map(([id, label], index) => <li key={id} data-stage={id} className={index < poseStep ? styles.completedStage : index === poseStep ? styles.activeStage : ''}><code>{id}</code><span>{label}</span></li>)}</ol>
+        {poseStep >= 0 ? <small role="status">{poseStep === poseStages.length - 1 ? 'Exemplet är klart. Verklig uppspelning verifieras i Händelselogg, inte av denna demo.' : `Exempelsteg ${poseStep + 1} av ${poseStages.length}`}</small> : null}
+      </section></details>
     </div>
   </details>;
 }

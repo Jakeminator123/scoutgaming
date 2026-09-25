@@ -24,8 +24,9 @@ uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
 originalsession och startar läsande observation och automatisk labbföljning.
 Originalbild och labbpresentation visas sida vid sida. Webbläsaren kräver
 fortfarande att du väljer spelflik för bilddelningen; speldata fungerar även
-utan bilden. Spela i originalfliken. Grundläget **Bara standard** gör inga
-modellanrop; välj OpenClaw eller Skuggläge om du vill prova modellval.
+utan bilden. Spela i originalfliken. Grundläget **Standard** gör inga
+AI-klippval; välj OpenClaw eller Skuggläge om du vill prova modellval.
+Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 
 ## Idle i Eventstudion
 
@@ -80,8 +81,19 @@ Grundvikt är alltså inte faktisk tidsandel. Automatisk idlevariant följer
 intervall, jitter, cooldown och maxfrekvens. Regelstyrd och OpenClaw-valbar
 variant kräver en separat tillåten orsak; manuell variant schemaläggs inte.
 Det deterministiska enminutsprovet spelar verkliga lokala filer och loggar
-start/slut/återgång, men är inte produktens live-scheduler. En enkel filpreview
-bevisar varken scheduler, kompatibel start-/slutpose eller produktintegration.
+start/slut/återgång. Labbytan i Händelseloggen använder dessutom en levande
+idle-controller med samma sparade policy: verkligt `ended` väljer nästa klipp,
+och cooldown/maxfrekvens räknas från faktiska starter. Deal går först och färdigt
+tal återställer en ny primärbas innan talgrinden öppnas. Varianter eller sekundär
+bas ger aldrig standardpositionskvitto. Detta är labbets renderer, inte en
+ersättning av produktens ursprungliga idle-scheduler.
+
+I OpenClaw-/Skuggläge kan en färsk observerad användarchatt också ge ett råd
+för uttryckligen OpenClaw-valbara `idle/variant/`-filer. Det är en lokal
+renderer-möjlighet, inte ett påhittat native-event. Högst 30 sekunders giltighet
+och en spelad AI-idlereaktion per minut; nyare chatt, ändrad runda, paus eller
+lägesbyte kasserar gammalt råd. Skuggläge spelar aldrig rådet. Ingen modell
+anropas för manuell/automatisk idle eller en familj utan tillåten AI-variant.
 
 Native-observern ger publika kommandosvar, bordsvy och instrumenterade
 playback-/chattsignaler. Partner-SSE är kompletterande rundinstruktioner.
@@ -92,8 +104,7 @@ publika fakta OpenClaw får och vilka uppgifter som saknas.
 Den kan även skicka högst åtta observerade chattmeddelanden före aktuellt
 event (600 tecken vardera, 3 200 totalt) som märkt data för variantval.
 Director måste kvittera kontextkontrakt v2; äldre tjänst ger synlig
-standardreserv tills den uppdaterats. Detta gör inte OpenClaw till produktens
-färdiga talägare. Ett isolerat lokalt prov startas med
+standardreserv tills den uppdaterats. Ett isolerat offlineprov startas med
 `node tools/start-local-comparison.mjs` efter labbygge; se README:s provavsnitt.
 
 **Diagnostik** samlar verifiering, videokarta, import/export och särskilda
@@ -107,14 +118,35 @@ Konfiguration och gränser finns i [labbets README](../README.md#läsande-partne
 
 Källklippen från Emil är 1080×1920 (9:16). Det beskriver filens pixelformat,
 inte att Eventstudion eller spelet har en enda låst mobil layout. Respektive
-klient skalar och beskär materialet i sin egen desktop-/mobilyta. Produktens
+klient har sin egen desktop-/mobilyta. Jämförelsen har nu Dator/Mobil-ramar
+på båda sidor; labbet visar hela källfilen utan beskärning. Originalflikens
+faktiska fönsterstorlek måste fortfarande ändras för ett riktigt mobilprov.
+Produktens
 `?rehearsal=1` öppnar den befintliga QA-panelen ovanpå den riktiga
 produktspelaren; det är inte en ny Eventstudio-flik.
 
-**Socialt svar** är ett eget idle-prov med en enda talägare och högst 25
-sekunder ljud. För långa ljud avvisas; avbrott/fel loggas. Modellens uttrycks-
-förslag visas separat från neutralt idle. Produktens talväg och riktig
-läppsynk är fortfarande separata integrationer. Se [socialt prov](../SOCIAL-CHAT.md).
+**Chatta vid det anslutna bordet** ligger under labbets jämförelsebild. En
+avgränsad brygga skickar bara text till originalets autentiserade chatt; servern
+hämtar publika kort och spelarminne. Fri text kan förberedas som ElevenLabs-ljud
+och matchande RunPod-video medan spelet dealar. Talpaketet överförs tillbaka
+utan sessionnycklar och spelas först efter en ny renderad primärbas i labbet.
+Deal avbryter tal; gamla svar, fel hashar och fel revisioner får inte spelas.
+Native-eventrepliker behåller sin separata exakta replik-/familjemappning.
+
+Spelarminnet är serverbundet per autentiserad spelare/dealer, högst 12
+meddelanden/8 000 tecken och 30 dagars inaktivitet. Originalchattens **Minne**
+visar omfattning och kan glömma historiken. Det är konversationsminne, inte
+verifierat uppspelningsminne. Tillfälliga testdatabaser raderas vid teststopp.
+
+Anslutet prov med genererat tal kräver explicit `--generated-speech` i
+[starthelpern](../../open-claw/lab/docs/LOCAL-CONNECTION-SV.md); standardstart
+förbrukar inga ElevenLabs-/RunPod-jobb. OpenAI-modellen är oförändrad. Genererade
+takepaket är hashbundna previews, **inte mänskligt godkänd läppsynk**.
+Modellvalet `recordedLine` visas tills vidare bara som text i den länkade labbchatten
+om en exakt labbtake saknas; native-eventets inspelade replik påverkas inte.
+
+**Fristående chattprov** i Eventstudion har egen provkontext och högst 25
+sekunder ljud. Det styr inte det anslutna bordet. Se [socialt prov](../SOCIAL-CHAT.md).
 
 [Signal- och begreppskartan](../../random-stuff-jakob/jakob-docs/systemkarta/02-events-triggers-urval/SIGNALER-OCH-TAKES.md)
 förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna,

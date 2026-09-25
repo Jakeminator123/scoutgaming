@@ -7,12 +7,14 @@ import React from 'react';
 import { webcrypto } from 'node:crypto';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { createPartnerTrace, appendPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
+import { acceptNativeObservation } from '../lib/native-observation.mjs';
+import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 const source = readFileSync(new URL('../components/game-stream.tsx', import.meta.url), 'utf8');
 const compiled = transformSync(source, { filename: 'game-stream.tsx', jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
-const Stage = () => null, Sequence = () => null, Reference = () => null;
+const Stage = () => null, Sequence = () => null, Reference = () => null, Idle = () => null, Chat = () => null, Reactions = () => null;
 const record = (events, version = 1, requestId = `command.${version}`) => ({ id: `observation:${version}`, source: 'partner', time: '2026-09-21T12:00:00Z', data: { type: 'round', requestId, version, events } });
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const outcome = promise => promise.then(() => ({ completed: true }), error => ({ error }));
@@ -21,6 +23,8 @@ const outcome = promise => promise.then(() => ({ completed: true }), error => ({
 // and the network remain explicit deferred boundaries; no live commands or media.
 function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'goodluck' }])]) {
   const hooks = []; let cursor = 0, dirty = false, tree; const effects = [], requests = [], activity = [];
+  let clock = 0;
+  const documentListeners = new Map(), document = { hidden: false, addEventListener: (key, fn) => documentListeners.set(key, fn), removeEventListener: key => documentListeners.delete(key) };
   const project = createSeedProject();
   let props = { trace: { records, bytes: 0, limited: false }, project, videos: { videos: [] }, originals: null, dealerId: 'astrid', active: true, onActivity: entry => activity.push(entry), onOpenEvent() {} };
   const same = (a, b) => a && b && a.length === b.length && a.every((item, index) => Object.is(item, b[index]));
@@ -28,6 +32,8 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
     useState(initial) { const index = cursor++; hooks[index] ??= { value: typeof initial === 'function' ? initial() : initial }; return [hooks[index].value, value => { const next = typeof value === 'function' ? value(hooks[index].value) : value; if (!Object.is(next, hooks[index].value)) { hooks[index].value = next; dirty = true; } }]; },
     useRef(initial) { const index = cursor++; hooks[index] ??= { current: initial }; return hooks[index]; },
     useMemo(factory, deps) { const index = cursor++; if (!hooks[index] || !same(hooks[index].deps, deps)) hooks[index] = { deps, value: factory() }; return hooks[index].value; },
+    useCallback(callback, deps) { const index = cursor++; if (!hooks[index] || !same(hooks[index].deps, deps)) hooks[index] = { deps, value: callback }; return hooks[index].value; },
+    useContext() { return { binding: null, connected: false }; },
     useEffect(effect, deps) { const index = cursor++; if (!hooks[index] || !same(hooks[index].deps, deps)) { const previous = hooks[index]; hooks[index] = { deps, cleanup: previous?.cleanup }; effects.push(() => { previous?.cleanup?.(); hooks[index].cleanup = effect(); }); } },
   };
   const mocks = {
@@ -39,10 +45,14 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
       const body = JSON.parse(init.body); const entry = { url, body, signal: init.signal, resolve, reject }; requests.push(entry);
       init.signal.addEventListener('abort', () => reject(new Error('Request aborted')), { once: true });
     }) },
-    './stage': { Stage }, './presentation-sequence': { PresentationSequence: Sequence }, './reference-capture': { ReferenceCapture: Reference },
+    './stage': { Stage }, './presentation-sequence': { PresentationSequence: Sequence }, './reference-capture': { ReferenceCapture: Reference }, './presentation-frame': { PresentationFrame: () => null },
+    './lab-idle-surface': { LabIdleSurface: Idle }, './native-lab-chat': { NativeLabChat: Chat },
+    './idle-reactions': { IdleReactions: Reactions },
+    './native-speech-context': { NativeSpeechContext: {} },
+    '../lib/live-idle.mjs': { ...require('../lib/live-idle.mjs'), createLiveIdleController: options => require('../lib/live-idle.mjs').createLiveIdleController({ ...options, now: () => clock }) },
   };
   const module = { exports: {} };
-  vm.runInNewContext(compiled.code, { module, exports: module.exports, AbortController, Error, Promise, crypto: webcrypto,
+  vm.runInNewContext(compiled.code, { module, exports: module.exports, AbortController, Error, Promise, document, crypto: webcrypto,
     require: name => name === 'react' ? react : name.endsWith('.module.css') ? { __esModule: true, default: {} } : mocks[name] ?? require(name) });
   function flush() {
     for (let count = 0; count < 20; count++) {
@@ -65,6 +75,8 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
   }
   function play(index = 0) { const seq = find(Sequence); const controller = new AbortController(); const result = outcome(seq.onPlay(seq.sequence.steps[index], { signal: controller.signal, mode: 'replay' })); flush(); return { result, controller }; }
   flush(); return { flush, find, button, update, append, resolve, play, requests, activity, project,
+    mode(value) { find('select').onChange({ target: { value } }); flush(); },
+    advance(ms) { clock += ms; }, hide(value = true) { document.hidden = value; documentListeners.get('visibilitychange')?.(); flush(); },
     unmount() { for (const hook of hooks) hook?.cleanup?.(); } };
 }
 
@@ -181,6 +193,179 @@ test('first round arriving in the same render as connected is not dropped', asyn
   const ui = setup([]);
   ui.update({ autoFollow: true, followFromRecord: 0, trace: { records: [record([{ type: 'idle' }])], bytes: 0, limited: false } });
   assert.equal(ui.requests.length, 1);
+  ui.unmount(); await tick();
+});
+
+test('the selected physical idle base runs before events and only its presented frame unlocks linked chat', async () => {
+  const ui = setup([]), baseId = '11111111-1111-4111-8111-111111111111', familyId = 'astrid/idle.ready/ready';
+  ui.project.idlePolicy = { schemaVersion: 1, familyId, base: [{ videoId: baseId, weight: 100, durationMs: 1000 }], variants: [] };
+  ui.update({ autoFollow: true, followFromRecord: 0, videos: {
+    families: [{ id: familyId, dealerId: 'astrid', playbackType: 'idle-pool', standardIds: [baseId], variantIds: [] }],
+    videos: [{ id: baseId, familyId, role: 'standard', available: true, previewUrl: '/api/videos/base' }],
+  } });
+  assert.equal(ui.find(Idle).url, '/api/videos/base'); assert.equal(ui.find(Chat).idleReady, false);
+  assert.equal(ui.requests.length, 0); assert.equal(ui.find(Sequence).sequence.steps.length, 0);
+  ui.find(Idle).onReceipt({ phase: 'presented', videoId: baseId, kind: 'base' }); ui.flush(); assert.equal(ui.find(Chat).idleReady, true);
+  ui.append(record([{ type: 'speak', line: 'goodluck' }]));
+  assert.equal(ui.find(Chat).actionBusy, true); assert.equal(ui.find(Chat).idleReady, false);
+  ui.resolve(); await tick(); ui.flush(); assert.equal(ui.find(Idle), undefined);
+  ui.find(Stage).onPlaybackEvent({ phase: 'completed', medium: '2d' }); await tick(); ui.flush();
+  assert.ok(ui.find(Idle)); assert.equal(ui.find(Chat).idleReady, false);
+  ui.find(Idle).onReceipt({ phase: 'presented', videoId: baseId, kind: 'base' }); ui.flush(); assert.equal(ui.find(Chat).idleReady, true);
+  ui.find(Chat).onStatusChange({ state: 'held', pending: true }); ui.flush(); assert.equal(ui.find(Chat).idleReady, false);
+  ui.find(Chat).onSettled(); ui.flush(); assert.equal(ui.find(Chat).idleReady, false);
+  assert.equal(ui.requests.length, 1); ui.unmount(); await tick();
+});
+
+test('a missing base, another family or a folder variant never provides an idle speech proof', () => {
+  for (const patch of [{ available: false }, { familyId: 'astrid/speak.goodluck/goodluck' }, { role: 'variant' }]) {
+    const ui = setup([]), familyId = 'astrid/idle.ready/ready';
+    const baseId = '11111111-1111-4111-8111-111111111111';
+    ui.project.idlePolicy = { schemaVersion: 1, familyId, base: [{ videoId: baseId, weight: 100, durationMs: 1000 }], variants: [] };
+    ui.update({ videos: { families: [{ id: familyId, dealerId: 'astrid', playbackType: 'idle-pool', standardIds: [baseId], variantIds: [] }],
+      videos: [{ id: baseId, familyId, role: 'standard', available: true, previewUrl: '/base', ...patch }] } });
+    assert.equal(ui.find(Idle), undefined); assert.equal(ui.find(Chat).idleReady, false); ui.unmount();
+  }
+});
+
+function scheduledIdleUi() {
+  const ui = setup([]), base = '11111111-1111-4111-8111-111111111111', blink = '22222222-2222-4222-8222-222222222222';
+  const familyId = 'astrid/idle.ready/ready';
+  ui.project.idlePolicy = { schemaVersion: 1, familyId, base: [{ videoId: base, weight: 100, durationMs: 1000 }],
+    variants: [{ videoId: blink, durationMs: 1000, use: 'automatic', automatic: { averageEveryMs: 5000, jitterMs: 0, cooldownMs: 30000, maxPerMinute: 2 } }] };
+  const videos = { families: [{ id: familyId, dealerId: 'astrid', playbackType: 'idle-pool', standardIds: [base], variantIds: [blink] }],
+    videos: [{ id: base, familyId, role: 'standard', available: true, previewUrl: '/base' }, { id: blink, familyId, role: 'variant', available: true, previewUrl: '/blink' }] };
+  ui.update({ autoFollow: true, followFromRecord: 0, videos });
+  const emit = (phase, surface = ui.find(Idle)) => { surface.onReceipt({ phase, kind: surface.kind, videoId: surface.videoId }); ui.flush(); };
+  return { ui, base, blink, videos, emit };
+}
+
+test('automatic idle follows saved policy while generating; ready speech replaces variants and needs a fresh primary frame', () => {
+  const { ui, base, blink, emit } = scheduledIdleUi();
+  emit('presented'); const oldBase = ui.find(Idle);
+  ui.find(Chat).onStatusChange({ state: 'preparing', pending: true }); ui.flush();
+  assert.equal(ui.find(Idle).videoId, base); assert.equal(ui.find(Idle).repeat, false);
+  ui.advance(5000); emit('completed'); assert.equal(ui.find(Idle).videoId, blink);
+  const variant = ui.find(Idle); emit('presented');
+  variant.onReady(true); ui.flush(); assert.equal(ui.find(Chat).idleReady, false);
+  assert.equal(ui.requests.length, 0); assert.equal(ui.find(Sequence).sequence.steps.length, 0);
+  ui.find(Chat).onStatusChange({ state: 'held', pending: true }); ui.flush();
+  assert.equal(ui.find(Idle).videoId, base); assert.equal(ui.find(Idle).repeat, true); assert.equal(ui.find(Chat).idleReady, false);
+  emit('presented', oldBase); emit('completed', variant); assert.equal(ui.find(Chat).idleReady, false);
+  emit('presented'); assert.equal(ui.find(Chat).idleReady, true);
+  ui.find(Chat).onStatusChange({ state: 'playing', pending: true }); ui.flush();
+  assert.equal(ui.find(Idle), undefined); assert.equal(ui.find(Chat).idleReady, false);
+  ui.find(Chat).onSettled(); ui.flush();
+  assert.equal(ui.find(Idle).kind, 'base'); assert.equal(ui.find(Idle).repeat, false); assert.equal(ui.find(Chat).idleReady, false);
+  assert.equal(ui.requests.length, 0); ui.unmount();
+});
+
+test('deal interrupts an idle variant immediately and does not erase its real-start cooldown', async () => {
+  const { ui, base, blink, emit } = scheduledIdleUi();
+  emit('started'); ui.advance(5000); emit('completed'); assert.equal(ui.find(Idle).videoId, blink);
+  emit('started'); const oldVariant = ui.find(Idle);
+  ui.append(record([{ type: 'speak', line: 'goodluck' }], 1));
+  assert.equal(ui.find(Idle), undefined); assert.equal(ui.find(Chat).actionBusy, true); assert.equal(ui.requests.length, 1);
+  emit('completed', oldVariant); assert.equal(ui.requests.length, 1);
+  ui.advance(1000); ui.resolve(); await tick(); ui.flush();
+  ui.find(Stage).onPlaybackEvent({ phase: 'completed', medium: '2d' }); await tick(); ui.flush();
+  assert.equal(ui.find(Idle).videoId, base); emit('started'); ui.advance(5000); emit('completed');
+  assert.equal(ui.find(Idle).videoId, base, 'blink cooldown survives a short deal and new table version');
+  assert.equal(ui.find(Sequence).sequence.steps.length, 1);
+  ui.update({ observationRevision: 1 }); emit('started'); ui.advance(5000); emit('completed');
+  assert.equal(ui.find(Idle).videoId, blink, 'explicit new observation resets the idle identity');
+  ui.unmount(); await tick();
+});
+
+test('hidden views stop idle media and returning never accepts a stale frame or catches up missed blinks', () => {
+  const { ui, base, emit } = scheduledIdleUi(); emit('presented'); const stale = ui.find(Idle);
+  ui.hide(); assert.equal(ui.find(Idle), undefined); assert.equal(ui.find(Chat).idleReady, false);
+  ui.advance(60000); ui.hide(false); assert.equal(ui.find(Idle).videoId, base);
+  emit('presented', stale); assert.equal(ui.find(Chat).idleReady, false);
+  emit('presented'); assert.equal(ui.find(Chat).idleReady, true);
+  emit('completed'); assert.equal(ui.find(Idle).kind, 'base'); ui.unmount();
+});
+
+function aiIdleUi() {
+  const fixture = scheduledIdleUi(), { ui, videos } = fixture;
+  const reaction = '33333333-3333-4333-8333-333333333333';
+  ui.project.idlePolicy = { ...ui.project.idlePolicy, variants: [...ui.project.idlePolicy.variants,
+    { videoId: reaction, durationMs: 1000, use: 'openclaw', automatic: null }] };
+  const inventory = { ...videos, families: videos.families.map(item => ({ ...item, variantIds: [...item.variantIds, reaction] })),
+    videos: [...videos.videos, { id: reaction, familyId: ui.project.idlePolicy.familyId, role: 'variant', available: true, previewUrl: '/reaction' }] };
+  ui.update({ videos: inventory });
+  ui.append({ source: 'native', kind: 'state', data: { view: { version: 0, round: null }, version: 0 } });
+  ui.mode('active');
+  return { ...fixture, reaction };
+}
+
+test('switching to Standard or pausing revokes an accepted pending AI offer and rejects late offers without stopping the base', () => {
+  for (const stop of [ui => ui.mode('off'), ui => { ui.button('Pausa labbet').onClick(); ui.flush(); }]) {
+    const { ui, reaction, base, emit } = aiIdleUi(); emit('started');
+    const offer = ui.find(Reactions).onOffer, stillPlayingBase = ui.find(Idle);
+    assert.equal(offer({ videoId: reaction, requestId: 'advice.1', expiresAt: 10000 }), true);
+    stop(ui);
+    assert.equal(offer({ videoId: reaction, requestId: 'advice.late', expiresAt: 10000 }), false);
+    emit('presented', stillPlayingBase); assert.equal(ui.find(Chat).idleReady, true, 'ordinary base was not replaced');
+    ui.advance(1000); emit('completed'); assert.equal(ui.find(Idle).videoId, base);
+    assert.equal(ui.find(Idle).kind, 'base'); assert.equal(ui.requests.length, 0); ui.unmount();
+  }
+});
+
+test('stop also revokes an AI clip selected for loading, while real-start AI quota survives pause/resume', () => {
+  for (const started of [false, true]) {
+    const { ui, reaction, base, emit } = aiIdleUi(); emit('started');
+    assert.equal(ui.find(Reactions).onOffer({ videoId: reaction, requestId: 'advice.1', expiresAt: 10000 }), true);
+    emit('completed'); const selected = ui.find(Idle); assert.equal(selected.videoId, reaction);
+    if (started) emit('started');
+    ui.button('Pausa labbet').onClick(); ui.flush(); assert.equal(ui.find(Idle).videoId, base);
+    emit('started', selected); emit('completed', selected); assert.equal(ui.find(Idle).videoId, base);
+    ui.button('Följ nya instruktioner').onClick(); ui.flush();
+    assert.equal(ui.find(Reactions).onOffer({ videoId: reaction, requestId: 'advice.2', expiresAt: 10000 }), !started,
+      'only the actual start spends quota; changing follow state must not reset it');
+    ui.unmount();
+  }
+});
+
+test('changing mode or follow state never resets automatic idle cooldown', () => {
+  const { ui, blink, base, reaction, emit } = aiIdleUi(); emit('started'); ui.advance(5000); emit('completed');
+  assert.equal(ui.find(Idle).videoId, blink); emit('started'); emit('completed');
+  assert.equal(ui.find(Reactions).onOffer({ videoId: reaction, requestId: 'advice.1', expiresAt: 15000 }), true);
+  ui.mode('off'); emit('started'); ui.advance(5000); emit('completed');
+  assert.equal(ui.find(Idle).videoId, base, 'automatic cooldown is preserved after switching to Standard');
+  ui.button('Pausa labbet').onClick(); ui.flush(); emit('started'); ui.advance(5000); emit('completed');
+  assert.equal(ui.find(Idle).videoId, base, 'automatic cooldown is preserved after pausing'); ui.unmount();
+});
+
+test('native pose diagnostics neither pause auto-follow nor complete a pending presentation', async () => {
+  const ui = setup([]);
+  ui.update({ autoFollow: true, followFromRecord: 0 });
+  const popup = {}, expected = { source: popup, origin: 'http://localhost:4198', channel: 'pose-fixture', lastSequence: 0 };
+  const receive = (kind, payload) => {
+    const entry = acceptNativeObservation({ source: popup, origin: expected.origin,
+      data: { type: 'croupier-native-observation', version: 1, channel: expected.channel,
+        sequence: expected.lastSequence + 1, at: '2026-09-25T12:00:00Z', kind, payload } }, expected);
+    assert.ok(entry); expected.lastSequence = entry.nativeSequence; ui.append(entry);
+  };
+  receive('status', { state: 'attached' });
+  for (const stage of SPEECH_POSE_STAGES) receive('status', { state: 'chat-pose', jobId: 'chat.1', stage, at: 1234 });
+  receive('command', { requestId: 'state.0', op: 'state', view: { version: 0, round: null }, presentation: [] });
+  assert.ok(ui.button('Pausa labbet'));
+  assert.equal(ui.requests.length, 0);
+  assert.equal(ui.find(Sequence).sequence.steps.length, 0);
+  receive('command', { requestId: 'start.1', op: 'start', view: { version: 1, round: null },
+    presentation: [{ type: 'speak', line: 'goodluck' }, { type: 'idle' }] });
+  assert.equal(ui.requests.length, 1);
+  ui.resolve(); await tick(); ui.flush();
+  receive('status', { state: 'chat-pose', jobId: 'chat.2', stage: 'speech-completed', at: 1235 });
+  await tick(); ui.flush();
+  assert.ok(ui.button('Pausa labbet'));
+  assert.equal(ui.requests.length, 1);
+  assert.equal(ui.find(Stage).playing, true);
+  assert.equal(ui.find(Sequence).sequence.steps.length, 2);
+  ui.find(Stage).onPlaybackEvent({ phase: 'completed', medium: '2d' });
+  await tick(); ui.flush();
+  assert.equal(ui.requests.length, 2);
   ui.unmount(); await tick();
 });
 

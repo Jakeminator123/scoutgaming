@@ -12,6 +12,7 @@ const code = transformSync(readFileSync(new URL('../components/partner-reference
   filename: 'partner-reference.tsx', jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' },
 }).code;
 const tick = () => new Promise(resolve => setImmediate(resolve));
+const speechContext = React.createContext(null);
 function setup({ origin = 'http://127.0.0.1:4194', connect = async () => {}, launchOrigin = origin } = {}) {
   const hooks = [], effects = [], calls = [], received = [], activity = [];
   let cursor = 0, dirty = false, tree;
@@ -33,13 +34,15 @@ function setup({ origin = 'http://127.0.0.1:4194', connect = async () => {}, lau
       const { action } = JSON.parse(options.body); calls.push(action);
       return Response.json(action === 'verify' ? { scopes: ['events', 'launch'], playerId: 'fixture' } : { url: `${launchOrigin}/?launch=PRIVATE`, expiresIn: 60 });
     },
-    require: name => name === 'react' ? react : name.endsWith('.module.css') ? { __esModule: true, default: {} } : require(name),
+    require: name => name === 'react' ? react : name === './native-speech-context' ? { NativeSpeechContext: speechContext }
+      : name.endsWith('.module.css') ? { __esModule: true, default: {} } : require(name),
   });
   function flush() { for (let i = 0; i < 20; i++) { dirty = false; cursor = 0; tree = module.exports.PartnerReference(props); for (const effect of effects.splice(0)) effect(); if (!dirty) return; } throw Error('Render failed to settle'); }
   function nodes(node, found = []) { if (Array.isArray(node)) node.forEach(child => nodes(child, found)); else if (node?.props) { found.push(node); nodes(node.props.children, found); } return found; }
   function button(label) { return nodes(tree).find(node => node.type === 'button' && node.props.children === label)?.props; }
   flush();
   return { calls, popup, received, activity, flush, button, update(next) { props = { ...props, ...next }; flush(); },
+    speech: () => nodes(tree).find(node => node.type === speechContext.Provider).props.value,
     receive(data, overrides = {}) { listeners.get('message')({ source: popup, origin, data, ...overrides }); },
     message(kind, payload, sequence = 1) { return { type: 'croupier-native-observation', version: 1, channel: new URL(popup.url).searchParams.get('labObserverChannel'), sequence, at: '2026-09-22T12:00:00Z', kind, payload }; },
   };
@@ -85,4 +88,33 @@ test('Ny observation preserves the popup/native channel and does not open a conn
   assert.equal(ui.popup.url, url); assert.equal(ui.popup.closed, false);
   ui.receive(ui.message('chat', { role: 'user', text: 'After reset' }));
   assert.equal(ui.received.length, 1);
+});
+
+test('pose diagnostics advance the real receiver cursor; true missing messages and page reloads still emit gaps', async () => {
+  const ui = setup(); await tick(); ui.flush(); ui.button('Anslut').onClick(); await tick(); ui.flush();
+  ui.receive(ui.message('status', { state: 'attached' }, 1));
+  ui.receive(ui.message('status', { state: 'chat-pose', jobId: 'job.1', stage: 'held-for-pose', at: 1234 }, 2));
+  ui.receive(ui.message('playback', { state: 'idle' }, 3));
+  assert.equal(ui.received.filter(record => record.data?.gap).length, 0);
+  ui.receive(ui.message('playback', { state: 'idle' }, 5));
+  assert.deepEqual(ui.received.filter(record => record.data?.gap).map(record => record.data.reason), ['native-sequence-gap']);
+  ui.receive(ui.message('status', { state: 'attached' }, 1));
+  assert.deepEqual(ui.received.filter(record => record.data?.gap).map(record => record.data.reason), ['native-sequence-gap', 'original-page-reloaded']);
+});
+
+test('speech capability binds only after trusted attachment and renews on original reload, never exports a window', async () => {
+  const ui = setup(); await tick(); ui.flush(); ui.button('Anslut').onClick(); await tick(); ui.flush();
+  assert.equal(ui.speech().binding, null);
+  const attached = ui.message('status', { state: 'attached' }, 1);
+  ui.receive(attached, { source: {} }); ui.flush(); assert.equal(ui.speech().binding, null);
+  ui.receive(attached, { origin: 'http://localhost:1234' }); ui.flush(); assert.equal(ui.speech().binding, null);
+  ui.receive(attached); ui.update({ connected: true });
+  const first = ui.speech().binding;
+  assert.equal(first.source, ui.popup); assert.equal(first.origin, new URL(ui.popup.url).origin);
+  assert.equal(first.channel, attached.channel); assert.equal(ui.speech().connected, true);
+  ui.receive(ui.message('status', { state: 'chat-pose', jobId: 'job.1', stage: 'speech-completed', at: 1234 }, 2)); ui.flush();
+  assert.equal(ui.speech().binding, first);
+  ui.receive(attached); ui.flush(); assert.equal(ui.speech().binding.revision, first.revision + 1);
+  assert.ok(!JSON.stringify(ui.received).includes('PRIVATE'));
+  assert.ok(ui.received.every(record => record.data?.source !== ui.popup));
 });

@@ -39,3 +39,27 @@
 .compact form > .options { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
 .compact form > .check { grid-column: 1; grid-row: 3; min-width: 0; }
 .compact form > .actions { grid-column: 2; grid-row: 3; min-width: 0; }
+
+/* The chat is a separate optional tool, not another full-width scene. */
+.chatAnchor, .sceneReply { width: 100%; max-width: 960px; box-sizing: border-box; }
+.speechStage { position: relative; isolation: isolate; }
+.speechHost { position: absolute; inset: 0; z-index: 25; border-radius: 12px; overflow: hidden; pointer-events: none; }
+.speechHost:empty { display: none; }
+.compact { margin-top: 12px; border: 1px solid var(--line, #394842); border-radius: 10px; background: var(--panel, #1c2526); }
+.chatDisclosure > summary { list-style: none; cursor: pointer; margin: 0; min-height: 42px; }
+.chatDisclosure > summary::-webkit-details-marker { display: none; }
+.chatDisclosure > summary::after { content: '+'; color: var(--muted, #a2b5bc); font-size: 20px; }
+.chatDisclosure[open] > summary::after { content: '−'; }
+.chatDisclosure > summary > div { flex: 1; min-width: 0; }
+.chatDisclosure .heading small { display: block; margin-top: 4px; font-size: 11px; line-height: 1.5; color: var(--muted, #a2b5bc); }
+.chatDisclosure[open] > summary { padding-bottom: 10px; margin-bottom: 8px; border-bottom: 1px solid var(--line, #394842); }
+.chatDisclosure .tools { max-width: 760px; }
+.chatDisclosure .explanation { max-width: 70ch; }
+.chatDisclosure .field textarea { max-height: 240px; }
+.sceneReply { padding: 10px 14px; background: transparent; border-color: var(--line, #394842); }
+@media (max-width: 480px) {
+  .chatDisclosure .replyMode { max-width: 110px; text-align: right; }
+  .compact form { grid-template-columns: minmax(0, 1fr); }
+  .compact form > .check, .compact form > .actions, .compact form > .options { grid-column: 1; grid-row: auto; }
+  .compact .actions { align-items: stretch; }
+}

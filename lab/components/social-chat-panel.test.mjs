@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import vm from 'node:vm';
+import { modeLabels } from '../lib/director-modes.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -11,12 +12,14 @@ const source = readFileSync(new URL('./social-chat-panel.tsx', import.meta.url),
 const compiled = transformSync(source, { filename: 'social-chat-panel.tsx', jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
 const policy = { schemaVersion: 1, revision: 'social-fixture-123', trigger: { id: 'social.ledsen', label: 'Ledsen', enabled: true, directive: 'Reagera på ohövlighet.', threshold: 0.7 }, response: { mode: 'fixed', fixedText: 'Oj, nu var du oförskämd.' }, cooldownMs: 5000 };
 const status = { policy, configured: true, voiceConfigured: true };
-const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
+const flush = async () => { for (let i = 0; i < 16; i++) await Promise.resolve(); };
 
 // Focused hook harness: exercises real handlers and cancellation without a browser,
 // a model, external audio or an additional test dependency.
-function harness({ compact = false, companionEnabled = false, voiceConfigured = true, dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); } } = {}) {
-  const slots = [], requests = [], reactions = [], audio = [], effects = [], ownership = [], activities = [];
+function harness({ compact = false, companionEnabled = false, voiceConfigured = true, generatedSpeechConfigured = false, autoFrames = true, dealerId = 'astrid', eventId = 'idle.ready', draftCache, duration = 2, blocked = false, respond = async () => { throw new Error('Unexpected request'); }, playGenerated = async () => { throw new Error('Unexpected generated playback'); } } = {}) {
+  const slots = [], requests = [], reactions = [], audio = [], generated = [], effects = [], ownership = [], activities = [];
+  const frames = new Map(); let frameSequence = 0;
+  const requestAnimationFrame = fn => { const id = ++frameSequence; frames.set(id, fn); if (autoFrames) queueMicrotask(() => { if (frames.delete(id)) fn(); }); return id; };
   let cursor = 0, cancel;
   const listeners = new Map();
   const equalDeps = (a, b) => Boolean(a && b && a.length === b.length && a.every((item, i) => Object.is(item, b[i])));
@@ -35,12 +38,12 @@ function harness({ compact = false, companionEnabled = false, voiceConfigured = 
   }
   const module = { exports: {} };
   const document = { hidden: false, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) };
-  vm.runInNewContext(compiled, { module, exports: module.exports, Error, AbortController, structuredClone, crypto: { randomUUID }, Audio: FakeAudio, document, window: { confirm: () => true, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
-    require: name => name === 'react' ? hooks : name === './studio-types' ? { requestJson: async (url, init = {}) => { requests.push({ url, init }); return url === '/api/social' && !init.method ? structuredClone({ ...status, voiceConfigured, companionEnabled }) : respond(url, init); } } : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : require(name),
+  vm.runInNewContext(compiled, { module, exports: module.exports, Error, AbortController, structuredClone, crypto: { randomUUID }, Audio: FakeAudio, document, window: { confirm: () => true, requestAnimationFrame, cancelAnimationFrame: id => frames.delete(id), addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
+    require: name => name === 'react' ? hooks : name === './studio-types' ? { requestJson: async (url, init = {}) => { requests.push({ url, init }); return url === '/api/social' && !init.method ? structuredClone({ ...status, voiceConfigured, companionEnabled, generatedSpeech: { configured: generatedSpeechConfigured } }) : respond(url, init); } } : name === '../../web/public/generated-speech-player.mjs' ? { playGeneratedSpeech: async (value, options) => { generated.push({ value, options }); return playGenerated(value, options); } } : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : require(name),
   });
-  const props = { compact, dealerId, eventId, draftCache, blocked, onBusyChange: value => ownership.push(value), onActivity: value => activities.push(value), onGoToIdle() {}, registerCancel: fn => { cancel = fn; }, onBegin() {}, onReaction: (...args) => reactions.push(args) };
+  const props = { compact, dealerId, eventId, draftCache, blocked, speechHost: { current: { testId: 'same-stage-host' } }, onBusyChange: value => ownership.push(value), onActivity: value => activities.push(value), onGoToIdle() {}, registerCancel: fn => { cancel = fn; }, onBegin() {}, onReaction: (...args) => reactions.push(args) };
   function render() { cursor = 0; const tree = module.exports.SocialChatPanel(props); while (effects.length) effects.shift()(); return tree; }
-  return { render, props, requests, reactions, audio, ownership, activities, document, listeners, exports: module.exports, cancel: (reason) => cancel?.(reason), unmount: () => slots.forEach(slot => slot.cleanup?.()) };
+  return { render, props, requests, reactions, audio, generated, frames, ownership, activities, document, listeners, exports: module.exports, cancel: (reason) => cancel?.(reason), unmount: () => slots.forEach(slot => slot.cleanup?.()) };
 }
 function find(node, predicate) {
   if (!node || typeof node !== 'object') return undefined;
@@ -58,9 +61,9 @@ const replyFor = (body, extra = {}) => ({ requestId: body.requestId, policyRevis
 
 test('chat defaults to speech but never generates it until sending; only one settings section is exposed', async () => {
   const instance = await ready({ compact: true }), tree = instance.render();
-  assert.match(text(tree), /Chatta med Astrid/);
+  assert.match(text(tree), /Fristående chattprov med Astrid/);
   for (const label of ['Inställningar', 'Uttryck och svar', 'Standardfrasens ljud']) {
-    const details = find(tree, node => node.type === 'details' && text(node).includes(label));
+    const details = find(tree, node => node.type === 'details' && [node.props.children].flat().some(child => child?.type === 'summary' && text(child).includes(label)));
     assert.ok(details); assert.notEqual(details.props.open, true);
   }
   const voice = find(tree, node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs');
@@ -80,6 +83,28 @@ test('only Astrid idle exposes an enabled player chat; other scenes offer explic
     assert.equal(instance.requests.filter(item => item.init.method === 'POST').length, 0);
     instance.unmount();
   }
+});
+
+test('compact chat is collapsed beside deal clips, opens at idle and keeps drafts when toggled', async () => {
+  const instance = await ready({ compact: true, eventId: 'deal.player.left' });
+  const disclosure = tree => find(tree, node => node.type === 'details' && node.props.className === 'chatDisclosure');
+  assert.equal(disclosure(instance.render()).props.open, false);
+  assert.match(text(instance.render()), /Separat chattprov/);
+  disclosure(instance.render()).props.onToggle({ currentTarget: { open: true } });
+  assert.equal(disclosure(instance.render()).props.open, true);
+  instance.props.eventId = 'idle.ready'; instance.render();
+  assert.equal(disclosure(instance.render()).props.open, true);
+  typeMessage(instance, 'Behåll mitt utkast');
+  disclosure(instance.render()).props.onToggle({ currentTarget: { open: false } });
+  assert.equal(disclosure(instance.render()).props.open, false);
+  assert.equal(messageField(instance.render()).props.value, 'Behåll mitt utkast');
+  assert.equal(instance.requests.filter(item => item.init.method).length, 0);
+  instance.props.eventId = 'deal.player.right'; instance.render();
+  assert.equal(disclosure(instance.render()).props.open, false);
+  assert.equal(messageField(instance.render()).props.value, 'Behåll mitt utkast');
+  instance.props.eventId = 'idle.ready'; instance.render();
+  assert.equal(disclosure(instance.render()).props.open, true);
+  instance.unmount();
 });
 
 test('scene cancellation aborts in-flight chat and ignores late replies without playing audio or motion', async () => {
@@ -146,6 +171,10 @@ test('editing social policy does not save implicitly and disables test until exp
   const name = find(instance.render(), node => node.type === 'input' && node.props.value === 'Ledsen');
   name.props.onChange({ target: { value: 'Min ledsna reaktion' } });
   typeMessage(instance, 'Hej');
+  const disclosure = find(instance.render(), node => node.type === 'details' && node.props.className === 'chatDisclosure');
+  disclosure.props.onToggle({ currentTarget: { open: false } });
+  assert.ok(find(instance.render(), node => node.type === 'input' && node.props.value === 'Min ledsna reaktion'));
+  assert.match(text(find(instance.render(), node => node.type === 'summary' && node.props.className === 'heading')), /Osparad policy/);
   assert.equal(button(instance.render(), 'Skicka till Astrid').props.disabled, true);
   assert.equal(instance.requests.filter(item => item.init.method).length, 0);
   assert.equal(button(instance.render(), 'Spara sociala inställningar').props.disabled, false);
@@ -192,6 +221,119 @@ test('voice preference stays on but unavailable ElevenLabs sends text-only and c
   assert.equal(JSON.parse(instance.requests.find(item => item.url === '/api/social/chat').init.body).voice, false);
   assert.equal(instance.audio.length, 0);
   assert.equal(instance.activities.find(item => item.type === 'social.responded').data.output, 'text');
+  instance.unmount();
+});
+
+test('configured generated package owns one exact paired playback in the same scene, never a second audio player', async () => {
+  let complete;
+  const instance = await ready({ generatedSpeechConfigured: true, voiceConfigured: false,
+    respond: async (_url, init) => replyFor(JSON.parse(init.body), {
+      speechPackage: { packageId: 'fixture-paired-package' },
+      audio: { id: 'a'.repeat(64), audioUrl: `/api/voice/${'a'.repeat(64)}`, text: policy.response.fixedText, cached: true },
+    }),
+    playGenerated: async (_value, options) => {
+      options.onStart(); options.onReceipt({ state: 'start', packageId: 'fixture-paired-package', reviewStatus: 'pending' });
+      await new Promise(resolve => { complete = resolve; });
+      options.onReceipt({ state: 'end', packageId: 'fixture-paired-package', reviewStatus: 'pending' });
+    },
+  });
+  assert.match(text(instance.render()), /ElevenLabs \+ läppsynk · labbprov, ej visuellt godkänt/);
+  typeMessage(instance, 'Hej, säg något kort.'); submit(instance); await flush();
+  assert.equal(instance.generated.length, 1);
+  const { options } = instance.generated[0];
+  assert.equal(options.exactText, policy.response.fixedText);
+  assert.equal(options.dealerId, 'astrid');
+  assert.equal(options.mount, instance.props.speechHost.current);
+  const request = instance.requests.find(item => item.url === '/api/social/chat');
+  assert.equal(options.signal, request.init.signal);
+  assert.equal(JSON.parse(request.init.body).voice, true);
+  assert.equal(instance.audio.length, 0);
+  assert.equal(instance.reactions.length, 1);
+  assert.equal(instance.ownership.at(-1), true);
+  typeMessage(instance, 'Ett till'); submit(instance);
+  assert.equal(instance.requests.filter(item => item.init.method === 'POST').length, 1);
+  complete(); await flush();
+  assert.equal(instance.ownership.at(-1), false);
+  const receipts = instance.activities.filter(item => item.type.startsWith('social.audio.'));
+  assert.deepEqual(receipts.map(item => item.type), ['social.audio.started', 'social.audio.completed']);
+  assert.ok(receipts.every(item => item.data.lipsyncVerified === false && item.data.reviewStatus === 'pending'));
+  instance.unmount();
+});
+
+test('cancel before the scene frame prevents generated playback and leaves no frame callback', async () => {
+  const instance = await ready({ generatedSpeechConfigured: true, autoFrames: false,
+    respond: async (_url, init) => replyFor(JSON.parse(init.body), { speechPackage: { packageId: 'fixture-before-frame' } }),
+  });
+  typeMessage(instance, 'Hej'); submit(instance); await flush();
+  assert.equal(instance.frames.size, 1);
+  assert.equal(instance.generated.length, 0);
+  instance.cancel('user-stop'); await flush();
+  assert.equal(instance.frames.size, 0);
+  assert.equal(instance.generated.length, 0);
+  assert.equal(instance.audio.length, 0);
+  assert.equal(instance.ownership.at(-1), false);
+  instance.unmount();
+});
+
+test('generated playback cancels through the shared request signal on stop, scene change, blocking and unmount', async () => {
+  for (const operation of ['stop', 'scene', 'blocked', 'unmount']) {
+    const instance = await ready({ generatedSpeechConfigured: true,
+      respond: async (_url, init) => replyFor(JSON.parse(init.body), { speechPackage: { packageId: 'fixture-cancellation' } }),
+      playGenerated: async (_value, options) => {
+        options.onStart(); options.onReceipt({ state: 'start', reviewStatus: 'pending' });
+        await new Promise((_resolve, reject) => options.signal.addEventListener('abort', () => {
+          options.onReceipt({ state: 'interrupted', reviewStatus: 'pending' }); reject(new Error('fixture cancelled'));
+        }, { once: true }));
+      },
+    });
+    typeMessage(instance, 'Hej'); submit(instance); await flush();
+    assert.equal(instance.generated.length, 1, operation);
+    const signal = instance.generated[0].options.signal;
+    if (operation === 'stop') instance.cancel('user-stop');
+    if (operation === 'scene') { instance.props.eventId = 'deal.player.left'; instance.render(); }
+    if (operation === 'blocked') { instance.props.blocked = true; instance.render(); }
+    if (operation === 'unmount') instance.unmount();
+    await flush();
+    assert.equal(signal.aborted, true, operation);
+    assert.equal(instance.audio.length, 0, operation);
+    assert.equal(instance.ownership.at(-1), false, operation);
+    assert.ok(instance.activities.some(item => item.type === 'social.audio.cancelled'), operation);
+    assert.ok(!instance.activities.some(item => item.type === 'social.audio.completed'), operation);
+    if (operation !== 'unmount') instance.unmount();
+  }
+});
+
+test('muting ignores unexpected generated packages; missing host or unconfigured preview never starts them', async () => {
+  for (const operation of ['muted', 'no-host', 'unconfigured']) {
+    const instance = await ready({ generatedSpeechConfigured: operation !== 'unconfigured',
+      respond: async (_url, init) => replyFor(JSON.parse(init.body), { speechPackage: { packageId: 'fixture-gated' } }),
+    });
+    if (operation === 'muted') find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs').props.onChange({ target: { checked: false } });
+    if (operation === 'no-host') instance.props.speechHost.current = null;
+    typeMessage(instance, 'Hej'); submit(instance); await flush();
+    assert.equal(instance.generated.length, 0, operation);
+    assert.equal(instance.audio.length, 0, operation);
+    assert.equal(instance.ownership.at(-1), false, operation);
+    if (operation !== 'muted') assert.ok(find(instance.render(), node => node.props?.role === 'alert'), operation);
+    instance.unmount();
+  }
+});
+
+test('a rejected generated package keeps its text reply but never falls through to another audio or automatic regeneration', async () => {
+  const instance = await ready({ generatedSpeechConfigured: true,
+    respond: async (_url, init) => replyFor(JSON.parse(init.body), {
+      speechPackage: { packageId: 'fixture-rejected' },
+      audio: { id: 'a'.repeat(64), audioUrl: `/api/voice/${'a'.repeat(64)}`, text: policy.response.fixedText, cached: true },
+    }),
+    playGenerated: async () => { throw new Error('Generated speech media hash mismatch'); },
+  });
+  typeMessage(instance, 'Hej'); submit(instance); await flush();
+  assert.equal(instance.generated.length, 1);
+  assert.equal(instance.audio.length, 0);
+  assert.equal(instance.requests.filter(item => item.init.method === 'POST').length, 1);
+  assert.equal(instance.ownership.at(-1), false);
+  assert.match(text(instance.render()), /Generated speech media hash mismatch/);
+  assert.match(text(instance.render()), /Oj, nu var du oförskämd/);
   instance.unmount();
 });
 
@@ -283,12 +425,16 @@ test('studio uses a distinct direct-preview state, cancellation and separate soc
   assert.match(studio, /cancelSocial\.current\?\.\(\)/);
   assert.match(readFileSync(new URL('./event-test-panel.tsx', import.meta.url), 'utf8'), /Det är inget godkänt regelbeslut/);
   assert.match(studio, /<SocialChatPanel/);
+  assert.match(studio, /speechHost=\{speechHost\}/);
+  assert.match(studio, /<div className=\{socialStyles\.speechStage\}><Stage/);
+  assert.match(studio, /<div ref=\{speechHost\} className=\{socialStyles\.speechHost\} \/><\/div>/);
   assert.match(studio, /aria-live="polite" aria-atomic="true"/);
   assert.match(studio, /<p>\{socialReply\}<\/p>/);
   assert.match(studio, /previewKind !== 'social'/);
   assert.match(studio, /prefers-reduced-motion: reduce/);
   assert.match(studio, /Visa chatten/);
-  assert.match(readFileSync(new URL('./gateway-panel.tsx', import.meta.url), 'utf8'), /off: 'Bara standard'/);
+  assert.equal(modeLabels.off, 'Standard');
+  assert.match(readFileSync(new URL('./gateway-panel.tsx', import.meta.url), 'utf8'), /export \{ modeLabels, modeExplanations \}/);
 });
 
 test('companion asks a new visitor, restores returned memory and forgets without generating speech', async () => {

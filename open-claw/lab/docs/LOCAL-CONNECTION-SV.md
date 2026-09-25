@@ -5,7 +5,23 @@ inte Gateway, modellleverantör, roller, Control UI eller den befintliga
 offline-jämförelsen. Kontrollen nedan gjordes 2026-09-25 på
 `jakeminator123/work` utan att stoppa de delade portarna 4192/4194.
 
-## Tre olika kontrollnivåer
+## Aktuell status och tidigare kontroll
+
+Uppföljning 2026-09-25: exakt `113dfd8` är nu driftsatt på Gateway och Director,
+och produktens smala `/api/product/speech` är konfigurerad och liveverifierad.
+Direkt laptop → privat Gateway saknar fortfarande URL, men behövs inte när
+speech-reläet används. OpenAI-provider och modell är oförändrade. Se
+[driftkvittot](DEPLOYMENT-RECEIPT-2026-09-25.md).
+
+Den isolerade körningen med `--generated-speech` har dessutom verifierats hela
+vägen: länkad labbchatt → autentiserad produktchatt → OpenClaw → ElevenLabs →
+RunPod → hashkontrollerat talpaket → labbuppspelning i standardposition.
+Ett faktiskt lokalt bord gav svaret 5♦ + K♠ = 15 och dealer 10♠; hålkortet
+förblev dolt. Detta bevisar funktion, inte mänskligt godkänd läppsynk.
+Idle-rådgivaren har separat verifierat Director-svar med kontextkontrakt v2;
+det innebär inte att varje modellförslag leder till ett spelat klipp.
+
+### Historiskt första prov, före speech-driftsättningen
 
 | Väg | Konfigurerad | Nåbar | Funktionellt prov |
 | --- | --- | --- | --- |
@@ -88,13 +104,56 @@ Port 4192 och 4194 avvisas uttryckligen. Helpern ändrar inte
 `tools/start-local-comparison.mjs`; offline-jämförelsen behåller sin fulla
 externa nätspärr, blockerade env-filer och tomma providerinställningar.
 
-Med dagens privata konfiguration startar det isolerade labbreläet anslutet till
-Director. Produktservern startar med en egen databas, men dess OpenClaw-chat är
-fortfarande blockerad eftersom `OPENCLAW_BASE_URL` saknas. Detta visas tydligt i
-startutskriften; en fungerande labbanslutning får inte beskrivas som en fungerande
-produktanslutning.
+### Valfritt genererat tal och läppsynk i den isolerade körningen
 
-## Kontraktskonflikten är lokalt löst, drift återstår
+Detta är en explicit preview, inte ett godkännande av läppsynkens visuella
+kvalitet. Standardstarten ovan aktiverar inte ElevenLabs eller RunPod, även om
+nycklar finns i privata filer eller i den anropande processens miljö.
+
+```powershell
+node open-claw/lab/deploy/local-connection.mjs --check --generated-speech
+node open-claw/lab/deploy/local-connection.mjs --start --generated-speech --product-port 4196 --lab-port 4197
+```
+
+För opt-in behövs befintlig `ELEVENLABS_API_KEY` (alternativt
+`ELEVENLABS_OC_API`), `RUNPOD_API_KEY` och en separat
+`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Det äldre `RUNPOD_ENDPOINT_ID` används
+aldrig som reserv. Saknas något vägrar starten innan barnprocesserna skapas.
+`--check` visar enbart närvaro och konfigurationsstatus; inget tal eller GPU-jobb
+skapas av kontrollen.
+
+Helpern läser i ordning `.env`, `lab/.env.local` och
+`lab/.env.generated-speech.local`; explicita processvärden har högst prioritet.
+Den sista filen kan därför innehålla enbart det nya scoped-endpoint-ID:t.
+Nycklar behöver inte kopieras dit eller anges på kommandoraden.
+
+Endast opt-in-körningen får server-side talnycklarna och de ytterligare
+nätmålen `https://api.elevenlabs.io` och `https://api.runpod.ai`. Produkt och
+labb får varsin tom cache under körningens `speech/product` respektive
+`speech/lab`, flaggan `CROUPIER_GENERATED_SPEECH=1` och explicit
+`CROUPIER_GENERATED_SPEECH_PREVIEW=1`. Cacherna försvinner med testkörningen.
+OpenClaws modellnyckel vidarebefordras fortfarande inte, och gränsen mellan
+produktens speech-token och labbets Director-token behålls. Generering som
+uttryckligen begärs i chatten kan förbruka ElevenLabs-/RunPod-krediter.
+
+Med dagens privata konfiguration använder labbet Director och produktservern
+det separata speech-reläet. `--check` är ändå auktoritativt för en ny körning:
+en nåbar tjänst utan rätt roll eller credential är inte en fungerande chatt.
+
+Under **Händelselogg → Anslut** öppnas originalet. Spela där och skriv under
+labbets bild i **Chatta med Astrid vid detta bord**. Den bryggan kan bara skicka
+chatttext, inte kort, identitet eller spelkommandon. Meddelande och video väntar
+på renderad primär-idle; deal får alltid företräde. Vanliga native-eventrepliker
+spelas fortfarande från exakt replikfamilj. **Fristående chattprov** och
+operatörschatten är inte kopplade till den autentiserade spelaren.
+
+Produktservern behåller kort och spelaridentitet som auktoritet. Konversations-
+minnet binds till autentiserad spelare och dealer, högst 12 meddelanden och
+8 000 tecken, med 30 dagars inaktivitetsgräns. **Minne** i originalchatten kan
+glömma den historiken; pågående svar avbryts. Den temporära QA-databasen raderas
+vid Ctrl+C, så dess spelarminne överlever inte en ny helperkörning.
+
+## Talrollen och transportgränsen
 
 Produktens [`openclaw-chat.mjs`](../../../web/openclaw-chat.mjs) begär fortsatt
 exakt samma JSON-val mellan `recordedLine`, `generatedText` och `silence`, med
@@ -110,12 +169,13 @@ stängda produktkontraktet.
 
 Eftersom direkt laptop → privat Gateway fortfarande saknar nätväg finns också
 en separat `POST /api/product/speech` på Director. Den kräver en egen hemlighet,
-skild från labbtoken och Gatewaynyckel, validerar kontraktet på båda sidor och
+skild från labbtoken, validerar kontraktet på båda sidor och
 ger inte produktprocessen Gatewayens fulla operatörscredential. Koden finns
-lokalt men endpointen är avstängd tills hemligheten uttryckligen konfigureras.
+och endpointen är aktiverad i den verifierade deploymenten ovan.
 
-Ingen roll, nyckel, Render-inställning, körande process eller Gateway ändrades i
-denna uppgift. Säkerhetsgräns, rollback och steg-för-steg-plan finns i
+Den senare driftsättningen gjordes efter separat uttryckligt godkännande.
+Den lokala läppsynk-/idle-integrationen kräver ingen ytterligare Gateway-deploy.
+Säkerhetsgräns, rollback och steg-för-steg-plan finns i
 [produkt-speech-driftplanen](PRODUCT-SPEECH-DEPLOYMENT-SV.md). Portarna 4192/4194
 och den pågående jämförelsen har lämnats orörda.
 

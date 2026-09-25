@@ -1,4 +1,5 @@
 import { sanitizeObservation } from './partner-trace.mjs';
+import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
 
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const MAX_BYTES = 256 * 1024;
@@ -27,6 +28,16 @@ export function acceptNativeObservation(message, expected) {
       phase: payload.view.round?.phase ?? null, events: payload.presentation,
       view: payload.view, previousView: payload.previousView, dealerId: payload.dealer } };
   }
-  if (data.kind === 'status') return payload.state === 'attached' ? { ...common, kind: 'status', data: { ...payload, gap: false } } : null;
+  if (data.kind === 'status') {
+    if (payload.state === 'attached') return { ...common, kind: 'status', data: { ...payload, gap: false } };
+    // Pose traces share the native transport sequence. Retain this bounded
+    // diagnostic so the next command is not mistaken for a missing message.
+    // In particular, speech-completed is not a media playback receipt.
+    if (payload.state !== 'chat-pose' || !SPEECH_POSE_STAGES.includes(payload.stage)
+      || typeof payload.jobId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(payload.jobId)
+      || !Number.isSafeInteger(payload.at) || payload.at < 0) return null;
+    return { ...common, kind: 'status', data: { state: 'chat-pose', jobId: payload.jobId,
+      stage: payload.stage, at: payload.at, gap: false } };
+  }
   return { ...common, kind: data.kind, data: payload };
 }

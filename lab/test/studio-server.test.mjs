@@ -254,7 +254,7 @@ test('chat validates input, cannot mutate catalog and uses no model tools', asyn
   const original = JSON.stringify(project);
   let captured;
   const result = await server.studioChat({ dealerId: 'astrid', message: 'Förklara mitt eventträd.', conversationId: 'fixture-chat-123' }, {
-    project, settings: directSettings(), fetchImpl: async (_url, options) => {
+    project, videoRegistry: { families: [], videos: [] }, settings: directSettings(), fetchImpl: async (_url, options) => {
       captured = JSON.parse(options.body);
       return Response.json({ choices: [{ message: { content: 'Du har en skyddad standardlinje.' } }] });
     },

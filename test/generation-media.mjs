@@ -84,6 +84,7 @@ test('default media directory cannot bypass BO auth or catalog checks through Wi
       await copyFile(new URL(file, source), join(web, file === 'server.mjs' ? 'server-under-test.mjs' : file));
     }
     await copyFile(new URL('public/blackjack.mjs', source), join(web, 'public/blackjack.mjs'));
+    await copyFile(new URL('public/speech-package.mjs', source), join(web, 'public/speech-package.mjs'));
     // Exercise the real server's default directory, not the comparison fixture's
     // intentional empty-media override. Only this disposable child loses it.
     await writeFile(join(web, 'server.mjs'), "delete process.env.CROUPIER_GENERATIONS_DIR; await import('./server-under-test.mjs');\n");
