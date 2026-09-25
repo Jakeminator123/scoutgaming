@@ -6,9 +6,10 @@ import { getMotionClip, motionAllowedForSource, stageBaseAnimation } from '../li
 import { playMotion } from '../lib/motion-player.mjs';
 import { OriginalMediaPlayer } from './original-media-player';
 import type { OriginalMediaEntry } from '../lib/original-media.mjs';
+import type { VideoEntry } from './studio-types';
 import motionStyles from './stage-motion.module.css';
 
-export interface PlaybackReceipt { phase: 'started' | 'completed' | 'failed' | 'fallback'; medium: 'video' | '2d'; playId?: number; reason?: string; durationMs?: number; currentTimeMs?: number }
+export interface PlaybackReceipt { phase: 'started' | 'completed' | 'failed' | 'fallback'; medium: 'video' | '2d'; playId?: number; reason?: string; durationMs?: number; currentTimeMs?: number; mediaId?: string; fileName?: string; familyId?: string }
 
 function PlayingCard({ rank, suit, back = false, className = '' }: { rank: string; suit: string; back?: boolean; className?: string }) {
   return <div className={`playing-card ${back ? 'card-back' : ''} ${suit === '♥' || suit === '♦' ? 'red-suit' : ''} ${className}`}>
@@ -16,7 +17,7 @@ function PlayingCard({ rank, suit, back = false, className = '' }: { rank: strin
   </div>;
 }
 
-export function Stage({ event, asset, dealer, variantLabel, playId, playing, hasResult, onPlay, busy, videoUrl, videoName, videoMissing = false, originalMedia, sourceIsObserved = false, onPreview, previewing = false, previewLabel = 'Spela vald variant', onPlaybackEnd, onPlaybackEvent, blocked = false }: {
+export function Stage({ event, asset, dealer, variantLabel, playId, playing, hasResult, onPlay, busy, videoUrl: requestedUrl, videoName: requestedName, videoId: requestedId, familyId, fallbackVideo, videoMissing = false, originalMedia, sourceIsObserved = false, onPreview, previewing = false, previewLabel = 'Spela valt klipp', onPlaybackEnd, onPlaybackEvent, blocked = false }: {
   event: StudioEvent;
   asset?: StudioAsset;
   dealer: string;
@@ -28,6 +29,9 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
   busy: boolean;
   videoUrl?: string;
   videoName?: string;
+  videoId?: string;
+  familyId?: string;
+  fallbackVideo?: VideoEntry | null;
   videoMissing?: boolean;
   originalMedia?: OriginalMediaEntry | null;
   sourceIsObserved?: boolean;
@@ -39,7 +43,16 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
   blocked?: boolean;
 }) {
   const [preview, setPreview] = useState<'animation' | 'video'>('video');
-  const [failedVideo, setFailedVideo] = useState('');
+  const [failedVideos, setFailedVideos] = useState<string[]>([]);
+  const useStandard = Boolean((requestedUrl && failedVideos.includes(`${playId}:${requestedUrl}`) || videoMissing && requestedId) && fallbackVideo?.available
+    && familyId && fallbackVideo.familyId === familyId && fallbackVideo.id !== requestedId);
+  const videoUrl = useStandard ? fallbackVideo!.previewUrl : requestedUrl;
+  const videoName = useStandard ? fallbackVideo!.fileName : requestedName;
+  const videoId = useStandard ? fallbackVideo!.id : requestedId;
+  const failedVideo = failedVideos.includes(`${playId}:${videoUrl}`);
+  const canTryStandard = Boolean(!useStandard && fallbackVideo?.available && familyId && fallbackVideo.familyId === familyId && fallbackVideo.id !== requestedId);
+  const failureMessage = canTryStandard ? 'Provar standardvideon i samma mapp.' : 'Visar 2D-reserv.';
+  const failVideo = () => setFailedVideos(current => [...current.slice(-3), `${playId}:${videoUrl}`]);
   const [failedOriginal, setFailedOriginal] = useState('');
   const sceneRef = useRef<HTMLDivElement>(null);
   const actorRef = useRef<HTMLDivElement>(null);
@@ -53,21 +66,22 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
   const videoTurn = useRef<{ identity: string; phase: 'ready' | 'playing' | 'completed' | 'cancelled' | 'failed' } | null>(null);
   const originalIdentity = `${originalMedia?.id}:${playId}`;
   const showOriginal = preview === 'video' && !videoUrl && !videoMissing && Boolean(originalMedia?.available) && failedOriginal !== originalIdentity;
-  const showFileVideo = preview === 'video' && Boolean(videoUrl) && failedVideo !== videoUrl;
+  const showFileVideo = preview === 'video' && Boolean(videoUrl) && !failedVideo;
   const showVideo = showOriginal || showFileVideo;
   const mediaName = showOriginal ? originalMedia?.label : videoName;
   const videoIdentity = JSON.stringify([event.id, dealer, videoUrl, playId, showVideo, blocked]);
   if (videoTurn.current?.identity !== videoIdentity) videoTurn.current = { identity: videoIdentity, phase: 'ready' };
   const turn = videoTurn.current;
   const isCurrentVideo = (element: HTMLVideoElement) => videoTurn.current === turn && videoRef.current === element && showVideo && !blocked;
-  const fallbackReason = preview === 'animation' ? 'Bara 2D valt' : failedOriginal === originalIdentity ? 'Originalklippet kunde inte spelas · visar 2D-reserv' : failedVideo && failedVideo === videoUrl ? 'Videon kunde inte spelas · visar 2D-reserv' : videoMissing ? 'Kopplad fil saknas · visar 2D-reserv' : 'Ingen video för denna situation · visar 2D-reserv';
+  const fallbackReason = preview === 'animation' ? 'Bara 2D valt' : failedOriginal === originalIdentity ? 'Originalklippet kunde inte spelas · visar 2D-reserv' : failedVideo ? 'Videon kunde inte spelas · visar 2D-reserv' : videoMissing ? 'Kopplad fil saknas · visar 2D-reserv' : 'Ingen video för denna situation · visar 2D-reserv';
   const requestedClip = getMotionClip(asset?.id);
   const clip = motionAllowedForSource(requestedClip, event.sourceType) ? requestedClip : undefined;
   const durationMs = asset?.durationMs ?? clip?.durationMs ?? 1700;
   const animation = stageBaseAnimation(event, asset?.animation);
   const shouldAnimate = playing && (hasResult || previewing);
   const reportPlaybackEnd = useEffectEvent((finishedId: number) => { if (finishedId === playId) onPlaybackEnd?.(); });
-  const reportPlayback = useEffectEvent((receipt: PlaybackReceipt) => onPlaybackEvent?.(receipt));
+  const emitPlayback = (receipt: PlaybackReceipt) => onPlaybackEvent?.({ ...receipt, ...(receipt.medium === 'video' && videoId ? { mediaId: videoId, fileName: videoName, familyId } : {}) });
+  const reportPlayback = useEffectEvent(emitPlayback);
   const eventCard = event.exampleEvent.card as { r?: string; s?: string } | null | undefined;
   const rank = eventCard?.r ?? (sourceIsObserved ? '' : 'A');
   const suit = eventCard?.s ?? (sourceIsObserved ? '' : '♠');
@@ -102,8 +116,8 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
     const timer = window.setTimeout(() => {
       if (videoTurn.current !== turn || turn.phase !== 'ready' || !videoRef.current) return;
       turn.phase = 'failed'; videoRef.current.pause();
-      reportPlayback({ playId, phase: 'fallback', medium: 'video', reason: 'Videon startade inte inom sex sekunder. Visar 2D-reserv.' });
-      setFailedVideo(videoUrl ?? '');
+      reportPlayback({ playId, phase: 'fallback', medium: 'video', reason: `Videon startade inte inom sex sekunder. ${failureMessage}` });
+      failVideo();
     }, 6000);
     return () => window.clearTimeout(timer);
   }, [showVideo, playing, playId, videoUrl, blocked, videoIdentity]);
@@ -122,15 +136,15 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
       if (element.paused || turn.phase === 'failed') { element.pause(); return; }
       if (turn.phase === 'playing') return;
       turn.phase = 'playing';
-      onPlaybackEvent?.({ playId, phase: 'started', medium: 'video', durationMs: Number.isFinite(element.duration) ? Math.round(element.duration * 1000) : undefined });
+      emitPlayback({ playId, phase: 'started', medium: 'video', durationMs: Number.isFinite(element.duration) ? Math.round(element.duration * 1000) : undefined });
     }} onEnded={e => {
       if (!isCurrentVideo(e.currentTarget) || turn.phase !== 'playing') return;
       turn.phase = 'completed';
-      onPlaybackEvent?.({ playId, phase: 'completed', medium: 'video', currentTimeMs: Math.round(e.currentTarget.currentTime * 1000) }); onPlaybackEnd?.();
+      emitPlayback({ playId, phase: 'completed', medium: 'video', currentTimeMs: Math.round(e.currentTarget.currentTime * 1000) }); onPlaybackEnd?.();
     }} onError={e => {
       if (!isCurrentVideo(e.currentTarget) || turn.phase === 'failed') return;
       turn.phase = 'failed'; e.currentTarget.pause();
-      onPlaybackEvent?.({ playId, phase: 'fallback', medium: 'video', reason: 'Videon kunde inte spelas. Visar 2D-reserv.' }); setFailedVideo(videoUrl ?? '');
+      emitPlayback({ playId, phase: 'fallback', medium: 'video', reason: `Videon kunde inte spelas. ${failureMessage}` }); failVideo();
     }} aria-label={`Exakt labbkopplat original: ${videoName ?? 'video'}`} /><span>Originalvideo · eget ljud av från start · inte runtime-godkänd</span></div> : <div ref={sceneRef} className={`stage-scene ${motionStyles.scene} ${shouldAnimate ? 'is-playing' : ''} motion-${animation}`} key={`${event.id}-${playId}`} data-motion-asset={clip?.assetId} style={{ '--motion-duration': `${durationMs}ms`, '--asset-color': asset?.color ?? '#a5d9cb' } as CSSProperties} aria-hidden="true">
       <div className="stage-halo" />
       <div className="stage-lines" />
@@ -150,6 +164,6 @@ export function Stage({ event, asset, dealer, variantLabel, playId, playing, has
       <div className="turn-indicator" />
       <div className="stage-sparkles"><i /><i /><i /><i /><i /><i /></div>
     </div>}
-    <div className="stage-bottom"><div className="stage-caption"><span className="eyebrow">{showVideo ? 'EXAKT KOPPLAD VIDEOGENERERING' : playing || previewing ? 'SPELAR LABBANIMATION' : 'REDO FÖR FÖRHANDSVISNING'}</span><strong>{variantLabel}</strong><span className={motionStyles.motionLabel}>{showVideo ? mediaName : <>{fallbackReason}{clip ? <> · {clip.label}</> : null}</>}</span></div><div className={motionStyles.actions}>{onPreview ? <button type="button" className={motionStyles.previewButton} onClick={() => { setFailedVideo(''); onPreview(); }} disabled={busy || blocked}><span aria-hidden="true">▷ </span>{previewLabel}</button> : null}<button type="button" className="play-button" onClick={() => { setFailedVideo(''); onPlay(); }} disabled={busy || blocked}><span aria-hidden="true">{busy ? '◌' : '▶'}</span>{blocked ? 'Socialt svar pågår' : busy ? 'Beräknar…' : 'Testa event'}</button></div></div>
+    <div className="stage-bottom"><div className="stage-caption"><span className="eyebrow">{showVideo ? 'EXAKT KOPPLAD VIDEOGENERERING' : playing || previewing ? 'SPELAR LABBANIMATION' : 'REDO FÖR FÖRHANDSVISNING'}</span><strong>{variantLabel}</strong><span className={motionStyles.motionLabel}>{showVideo ? mediaName : <>{fallbackReason}{clip ? <> · {clip.label}</> : null}</>}</span></div><div className={motionStyles.actions}>{onPreview ? <button type="button" className={motionStyles.previewButton} onClick={() => { setFailedVideos([]); onPreview(); }} disabled={busy || blocked}><span aria-hidden="true">▷ </span>{previewLabel}</button> : null}<button type="button" className="play-button" onClick={() => { setFailedVideos([]); onPlay(); }} disabled={busy || blocked}><span aria-hidden="true">{busy ? '◌' : '▶'}</span>{blocked ? 'Socialt svar pågår' : busy ? 'Beräknar…' : 'Testa event'}</button></div></div>
   </section>;
 }

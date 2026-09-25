@@ -29,6 +29,7 @@
 .log { max-height: 220px; overflow: auto; margin: 12px 0 0; padding: 0; list-style: none; font-size: 11px; }
 .log li { display: grid; grid-template-columns: 46px 86px 1fr; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--line, #e3e3e3); }
 .log time { color: var(--muted, #686868); font-variant-numeric: tabular-nums; }
+.actualLog li { display: block; overflow-wrap: anywhere; }
 .player { display: grid; gap: 10px; padding-top: 4px; }
 .player > div { display: grid; gap: 3px; }
 .player video { width: 100%; max-height: 260px; border-radius: 10px; background: #111; }

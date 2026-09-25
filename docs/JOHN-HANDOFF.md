@@ -1,3 +1,67 @@
+## 2026-09-25 — Eventstudion använder nu de exakta videomapparna i verklig uppspelning
+
+Uppföljning av `9f55d66`: manifestets exakta resolver fanns men var inte kopplad
+till Eventstudions och native-följningens faktiska klippval. De visade fortfarande
+gamla seedvarianter och generiska originalförval. Båda vägarna använder nu samma
+exakta mediefamilj: box 0–6 → deal_pos1–7 och event.line → motsvarande replik.
+Kortets värde och handIndex bevaras som eventdata, inte som separata videofiler.
+
+Sidomeny, översikt, videobank och varianteditor visar den fysiska familjestrukturen
+och de verkliga filerna. Tom variantmapp betyder standard, utan modellanrop även
+i aktivt/skuggläge. Nya filvarianter börjar manuella tills per-familj-policy
+uttryckligen tillåter rules/model/random. Valfria mediaPolicy-fält är validerade i
+modell och schema. Befintliga sparade projekt och andra dealers bevaras; gamla
+demovarianter används inte för manifestägda Astrid. Ingen MP4 ändrades eller flyttades.
+
+Uppspelningen lämnar kvitto med mediaId, fileName och familyId. En saknad/felande
+variant provar standarden i exakt samma familj och därefter 2D, aldrig grannens
+position eller en annan mening. Otydlig dealer-faceDown väljer ingen familj.
+Fel och sena callbacks är avgränsade till sitt spel-ID.
+
+Idleeditorn har en enda videoförhandsvisning, verkligt minutprov, seed och separata
+planerade respektive faktiska loggar. Basloopar hålls igång under plansegmentet,
+engångsvarianter får spela klart och återgår till bas. Timeravslut för bas heter
+`base segment ended`, inte ett påstått naturligt video-completed. Stop/byte/tal
+invaliderar playback synkront; sena start/end kan inte återta ägarskap.
+Detta är ett lokalt policyprov, inte produktens driftsatta OpenClaw-idlescheduler
+eller bevis på kompatibla poseövergångar/läppsynk.
+
+Verifierat 2026-09-25:
+
+- 358/358 labbtester, TypeScript, produktionsbuild, git diff --check och hela
+  Git for Windows-pre-commit passerar. Dealer-sync --probe passerar alla fyra.
+- I browsern spelade deal_pos3.mp4 färdigt (3375 ms). En riktig isolerad
+  native-runda gav K♣ och 2♦ till box 2/handIndex 0; båda gav samma deal_pos3.mp4
+  med slutkvitton. Öppna dealerkortet 3♥ gav deal_posdealer.mp4. Goodluck gav
+  goodluck.mp4. Dold dealer/turn/reveal utan egen familj visades som tydlig 2D-reserv.
+- Minutprov med seed 25 spelade basloopar, två faktiska blinkningar och
+  återgångar; avslutades med `Minutprovet klart`, pausad video och inga konsolfel.
+  Slutlig idle-layout verifierad utan dubblerad Stage. Stop/action-race och
+  variant→standard→2D är komponenttestade.
+- Vera, Astrid, Amira och Mei kördes med rehearsal=1 och goodluck två gånger;
+  kontrollerna återaktiverades och inga konsolfel noterades. Detta är teknisk
+  regression, inte ny mänsklig lipsync-acceptans. Befintliga acceptansluckor kvarstår.
+- Read-only-underagent granskade resolver, server, Stage, GameStream och idle;
+  identifierade race/fail-closed-fall rättades och regressionstestades.
+
+Lokal jämförelse lämnas på 127.0.0.1:4192 och localhost:4194, startad med
+tools/start-local-comparison.mjs --media-directory emil/dealklipp-v1. Den använder
+temporär isolerad DB och blockerar externa provideranrop. Omstarter nollställde
+bara denna demosession, inte produktdata eller Gateway. Native-observationen är
+publik och identitetsfiltrerad; den är inte OpenClaws autentiserade identitetskälla.
+
+OpenClaw-källindex och konfigurationslänkar finns nu även i labbets Guide och
+Chatt & OpenClaw. Ingen dokumentations-MCP/fulltextdatabas installerades. Den
+parallella anslutningsguiden från `1219d98` dokumenterar fungerande operatörsrelay
+men blockerad produktchat (saknad privat Gateway-URL och fel rollkontrakt).
+Se open-claw/lab/docs/LOCAL-CONNECTION-SV.md. OpenAI/provider och hemligheter är
+oförändrade. Ingen extern redeploy eller Gatewayomstart gjordes.
+
+Nästa avgränsade agentprompt: lab/docs/PARALLEL-OPENCLAW-SPEECH.md. Första
+anslutningsprompten finns kvar som spårbarhet i PARALLEL-OPENCLAW-STARTUP.md.
+Jira/CAC saknades i denna verktygsmiljö; ingen issuestatus ändrades. De tre
+tidigare privata/untracked användarfilerna lämnades orörda och utanför commit.
+
 ## 2026-09-25 — Manifest v2, idlepolicy och OpenClaw-styrd talkö
 
 På `jakeminator123/work` är `emil/dealklipp-v1` nu organiserad som exakta

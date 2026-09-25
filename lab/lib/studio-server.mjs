@@ -7,6 +7,7 @@ import { buildRuntimeCatalog, validateProject } from './studio-model.mjs';
 import { createProjectStore, StudioError } from './project-store.mjs';
 import { loadVideoRegistry } from './video-registry.mjs';
 import { selectionFor, videoFitsLine, videoFitsEvent } from './video-intake.mjs';
+import { mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
 
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export function studioStore() { return createProjectStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR, 'data')); }
@@ -61,30 +62,33 @@ export function decisionCatalog(project, dealerId, mode = 'active') {
 }
 
 export async function validateVideoBindings(project, { registry } = {}) {
-  const bound = project.lines.flatMap(line => line.variants).filter(variant => variant.videoGenerationId !== null);
-  if (!bound.length) return;
   registry ??= await loadVideoRegistry();
+  const legacyLines = project.lines.filter(line => !usesMediaFamilies(registry, line.dealerId));
+  const bound = legacyLines.flatMap(line => line.variants).filter(variant => variant.videoGenerationId !== null);
+  if (!bound.length) return;
   const known = new Set(registry.videos.map(video => video.id));
   if (bound.some(variant => !known.has(variant.videoGenerationId))) throw new StudioError('En videokoppling saknas i det kända registret. Välj en fil i Videobanken.', 422);
   const videos = new Map(registry.videos.map(v => [v.id, v]));
-  for (const line of project.lines) for (const variant of line.variants) {
+  for (const line of legacyLines) for (const variant of line.variants) {
     if (variant.videoGenerationId && !videoFitsLine(videos.get(variant.videoGenerationId), line.dealerId, line.eventId)) throw new StudioError(`${variant.id}: videon saknar giltig kategorisering för denna linje. Kategorisera i Videobankens Inkorg eller koppla loss filmen.`, 422);
   }
 }
 
 export async function simulateStudio(body, { settings = settingsNow(), fetchImpl = fetch, videoRegistry, random = Math.random } = {}) {
   if (!['off', 'rules', 'random', 'shadow', 'active'].includes(body?.mode)) throw new StudioError('Välj standard, regler, slump, shadow eller active.');
-  const project = validateProject(body.project);
-  if (!videoRegistry && project.lines.some(l => l.variants.some(v => v.videoGenerationId))) videoRegistry = await loadVideoRegistry();
-  await validateVideoBindings(project, { registry: videoRegistry });
-  const event = project.events.find(item => item.id === body.eventId);
+  const savedProject = validateProject(body.project);
+  videoRegistry ??= await loadVideoRegistry();
+  await validateVideoBindings(savedProject, { registry: videoRegistry });
+  const event = savedProject.events.find(item => item.id === body.eventId);
   if (!event) throw new StudioError('Eventet finns inte i kontraktet.');
-  const catalog = decisionCatalog(project, body.dealerId, body.mode);
   const observed = Object.hasOwn(body, 'sourceEvent');
   if (observed && Object.hasOwn(body, 'exampleEvent')) throw new StudioError('Välj ett mottaget event eller ett labbexempel.');
   // Both routes use the same input projection, matching and variant gate. A
   // recorded instruction must never be replaced by the editor's example.
   const input = { requestId: body.requestId ?? randomUUID(), event: observed ? body.sourceEvent : (body.exampleEvent ?? event.exampleEvent), context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
+  const media = mediaLineForEvent(savedProject, videoRegistry, body.dealerId, event.id, input.event);
+  const project = media.managed ? { ...savedProject, lines: savedProject.lines.map(line => line.dealerId === body.dealerId && line.eventId === event.id ? media.line : line) } : savedProject;
+  const catalog = decisionCatalog(project, body.dealerId, body.mode);
   let prepared = prepareDecision(catalog, input);
   if (prepared.node.id !== body.eventId) throw new StudioError('Källeventet matchar inte vald eventgrupp.');
   // Reject incompatible explicit alternatives BEFORE asking the adviser. The
@@ -93,7 +97,7 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
   const excluded = new Set(lineForEvent.variants.filter(variant => {
     if (variant.id === lineForEvent.baselineVariantId || !variant.videoGenerationId) return false;
     const video = videoRegistry?.videos.find(item => item.id === variant.videoGenerationId);
-    return !video?.available || !videoFitsEvent(video, prepared.event);
+    return !video?.available || (media.managed ? !mediaVideoForEvent(videoRegistry, body.dealerId, event.id, prepared.event, video.id) : !videoFitsEvent(video, prepared.event));
   }).map(variant => variant.id));
   if (excluded.size) {
     catalog.events.find(item => item.id === event.id).variants = prepared.node.variants.filter(variant => !excluded.has(variant.id));
@@ -105,6 +109,8 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
   if (body.mode === 'rules' || body.mode === 'random') {
     const index = body.mode === 'random' ? Math.min(prepared.eligible.length - 1, Math.max(0, Math.floor(random() * prepared.eligible.length))) : 0;
     reply = { advice: { requestId: prepared.requestId, catalogRevision: prepared.catalogRevision, variantId: prepared.eligible[index].id }, provider: { status: body.mode === 'random' ? 'local_random' : 'deterministic_rules' } };
+  } else if (media.managed && prepared.eligible.length === 1 && body.mode !== 'off') {
+    reply = { advice: null, provider: { status: 'only_standard_no_model' } };
   } else if (body.mode !== 'off') {
     if (settings.remoteUrl) {
       try {
@@ -130,13 +136,18 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
   let videoGenerationId = variant.videoGenerationId;
   if (videoGenerationId) {
     videoRegistry ??= await loadVideoRegistry();
-    if (!videoFitsEvent(videoRegistry.videos.find(v => v.id === videoGenerationId), prepared.event)) {
+    if (media.managed ? !mediaVideoForEvent(videoRegistry, body.dealerId, event.id, prepared.event, videoGenerationId) : !videoFitsEvent(videoRegistry.videos.find(v => v.id === videoGenerationId), prepared.event)) {
       videoGenerationId = null;
       result.trace.push({ stage: 'video', status: 'fallback', detail: 'Videons exakta situation/replik matchar inte exempel-eventet. Visar variantens 2D-reserv.' });
     }
   }
+  const selectedVideo = videoRegistry.videos.find(video => video.id === videoGenerationId);
+  const mediaReceipt = media.managed ? { familyId: media.family?.id ?? null, situation: media.family?.situation ?? null,
+    videoId: videoGenerationId, fileName: selectedVideo?.fileName ?? null, sha256: selectedVideo?.sha256 ?? null,
+    standard: variant.id === media.line.baselineVariantId, reason: videoGenerationId ? 'exact_family' : 'no_exact_video_2d' } : null;
+  if (mediaReceipt) result.trace.push({ stage: 'media-family', status: videoGenerationId ? 'selected' : 'fallback', detail: videoGenerationId ? `${mediaReceipt.familyId} → ${mediaReceipt.fileName}` : 'Ingen video för exakt situation. 2D-reserven används.' });
   return {
-    decision: { requestId: prepared.requestId, variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, context: prepared.context, simulated: !observed, presentationReplay: observed },
+    decision: { requestId: prepared.requestId, variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, media: mediaReceipt, context: prepared.context, simulated: !observed, presentationReplay: observed },
     trace: result.trace, eligible: result.eligible, variant, asset: result.asset,
     videoGenerationId, provider: typeof reply?.provider?.status === 'string' ? reply.provider.status : 'unknown',
     contextReceipt: { contractVersion: reply?.provider?.contextContractVersion ?? null, observedChatMessages: reply?.provider?.observedChatMessages ?? null },

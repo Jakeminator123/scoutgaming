@@ -29,6 +29,26 @@ modellanrop; välj OpenClaw eller Skuggläge om du vill prova modellval.
 
 ## Idle i Eventstudion
 
+Astrids Eventstudio och native-följning använder nu samma exakta mediefamilj:
+`box0` → `deal_pos1`, …, `box6` → `deal_pos7`, samt exakt `speak.line` →
+`repliker/<line>/`. Situationsväljaren ändrar bara manuella exempel; mottagna
+events behåller kort, box, handindex och replik. Standardfil och varianter
+kommer från manifestet, inte från projektets gamla 2D-demovarianter.
+
+`mediaPolicy` är ett frivilligt tillägg till projektets schema v1. Äldre projekt
+och egna ändringar skrivs inte över. För en manifeststyrd dealer ersätter en
+tillfällig vy den aktuella linjens kandidater med exakt familjs standard och
+högst fyra tillgängliga mappvarianter. Saknad policy innebär manuell variant.
+Regler, slump och OpenClaw kräver uttrycklig tillåtelse. Okända eller saknade
+varianter lånar aldrig en annan familjs media. Övriga dealers behåller sin
+befintliga originalväg. Uppdatera manifestet efter filändringar och använd
+**Läs om videomapparna**; knappen skriver inte om eller flyttar mediefiler.
+
+Översikten och Videobanken visar samma fysiska familjer. Uppspelningskvittot för
+en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
+räknas inte som uppspelat. OpenClaw-källorna finns även i Guide och Chatt &
+OpenClaw. Parallell anslutningsuppgift: [agentprompt](PARALLEL-OPENCLAW-STARTUP.md).
+
 Välj **Astrid → Vänteläge** för den förenklade idleeditorn. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
 består av `idle_still` och `idle_breath`. `idle_blink`, `idle_cheek`,

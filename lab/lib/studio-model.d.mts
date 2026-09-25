@@ -13,7 +13,9 @@ export interface IdleBaseVideo { videoId: string; weight: number; durationMs: nu
 export interface IdleAutomaticPolicy { averageEveryMs: number; jitterMs: number; cooldownMs: number; maxPerMinute: number }
 export interface IdleVariantPolicy { videoId: string; durationMs: number; use: 'manual' | 'automatic' | 'rules' | 'openclaw'; automatic: IdleAutomaticPolicy | null }
 export interface IdlePolicy { schemaVersion: 1; familyId: 'astrid/idle.ready/ready'; base: IdleBaseVideo[]; variants: IdleVariantPolicy[] }
-export interface StudioProject { schemaVersion: 1; revision: string; gameId: 'blackjack'; dealers: {id: DealerId; label: string}[]; events: StudioEvent[]; triggers: StudioTrigger[]; lines: StudioLine[]; assets: StudioAsset[]; idlePolicy?: IdlePolicy }
+export interface MediaVariantPolicy { videoId: string; selection: VariantSelection; priority: number; triggerIds: string[] }
+export interface MediaFamilyPolicy { familyId: string; variants: MediaVariantPolicy[] }
+export interface StudioProject { schemaVersion: 1; revision: string; gameId: 'blackjack'; dealers: {id: DealerId; label: string}[]; events: StudioEvent[]; triggers: StudioTrigger[]; lines: StudioLine[]; assets: StudioAsset[]; idlePolicy?: IdlePolicy; mediaPolicy?: MediaFamilyPolicy[] }
 export interface PathDescriptor { path: string; label: string; category: TriggerCategory; kind: 'enum' | 'boolean' | 'number' | 'string' | 'array'; values?: Scalar[]; min?: number; max?: number; operators: PredicateOperator[] }
 export interface RuntimeCatalog { schemaVersion: 1; revision: string; sourceNote: string; triggerSources: {id: string; label: string; description: string; status: string}[]; events: (StudioEvent & {baselineVariantId: string; variants: {id: string; label: string; priority: number; when: {all: {path: string; op: PredicateOperator; value: Scalar | Scalar[]}[]}; assetId: string}[]})[]; assets: StudioAsset[] }
 export const DEALER_IDS: readonly DealerId[];

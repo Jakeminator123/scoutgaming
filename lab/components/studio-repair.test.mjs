@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../lib/studio-model.mjs';
+import manifest from '../../emil/dealklipp-v1/lab-video-manifest.json' with { type: 'json' };
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -33,12 +34,28 @@ function loadComponent(relativeFile) {
       : name === './studio-types' ? loadComponent('./studio-types.ts')
       : name === './event-test-panel' ? loadComponent('./event-test-panel.tsx')
       : name === './speech-source' ? loadComponent('./speech-source.tsx')
+      : name === './media-family-editor' ? loadComponent('./media-family-editor.tsx')
+      : name === './family-video-library' ? loadComponent('./family-video-library.tsx')
         : mocks[name] ?? require(name),
   }, { filename: relativeFile });
   return module.exports;
 }
 const { Studio } = loadComponent('./studio.tsx');
 const render = project => renderToStaticMarkup(React.createElement(Studio, { initialProject: project, initialVideos: { videos: [] }, initialStatus: {} }));
+
+test('manifest-owned studio displays real files and zero folder variants instead of the seed demos', () => {
+  const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, fileName: item.relativePath.split('/').at(-1), available: true })) };
+  const project = createSeedProject(), before = JSON.stringify(project);
+  const html = renderToStaticMarkup(React.createElement(Studio, { initialProject: project, initialVideos: inventory, initialStatus: {} }));
+  assert.match(html, /Standard och varianter/);
+  assert.match(html, /goodluck.mp4/);
+  assert.match(html, /0 varianter — standardfilen används/);
+  assert.doesNotMatch(html, /Rodnande tack|Lekfull dubbelvink|Välkommen tillbaka · tyska|Lägg till variant/);
+  assert.equal(JSON.stringify(project), before);
+  const overview = renderToStaticMarkup(React.createElement(Studio, { initialProject: project, initialVideos: inventory, initialStatus: {}, initialView: 'tree' }));
+  assert.match(overview, /deal\/deal_pos3/);
+  assert.match(overview, /repliker\/goodluck/);
+});
 
 test('event test has one mode selector, explicit run action and result only after a real test', () => {
   const { EventTestPanel } = loadComponent('./event-test-panel.tsx');
@@ -130,8 +147,8 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
   assert.match(html, /Spelarchatt med Astrid →/);
   assert.match(html, /Fråga OpenClaw om labbet →/);
-  assert.match(html, /<option value="active" selected="">OpenClaw/);
-  assert.match(html, /ett modellanrop kan göras när du trycker/);
+  assert.match(html, /<option value="off" selected="">Bara standard/);
+  assert.match(html, /kör jämförelseläget Bara standard/);
   assert.doesNotMatch(html, /Din regi|En tydlig kedja, hela vägen/);
   const { TestContextPanel, neutralContext } = loadComponent('./test-context.tsx');
   const contextHtml = renderToStaticMarkup(React.createElement(TestContextPanel, { value: neutralContext, onChange() {} }));

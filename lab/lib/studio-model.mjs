@@ -1,6 +1,7 @@
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
+import { validateMediaPolicy } from './media-family-policy.mjs';
 
 // Pure, browser-safe policy model. This file never reads environment, network,
 // player identities, game state or media files. JSON is the editable artefact.
@@ -78,7 +79,11 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy'])) throw new StudioValidationError(errors);
+  if (Object.hasOwn(project, 'mediaPolicy')) {
+    try { validateMediaPolicy(project.mediaPolicy, Array.isArray(project.triggers) ? project.triggers.map(trigger => trigger?.id) : []); }
+    catch (cause) { error('mediaPolicy', cause.message); }
+  }
   if (project.schemaVersion !== 1) error('schemaVersion', 'ska vara 1');
   if (Object.hasOwn(project, 'idlePolicy')) {
     try { validateIdlePolicy(project.idlePolicy); }
@@ -221,6 +226,7 @@ export function removeTrigger(project, triggerId) {
   return editProject(project, next => {
     if (!next.triggers.some(trigger => trigger.id === triggerId)) throw new StudioValidationError(['triggers: triggern finns inte']);
     const references = next.lines.flatMap(line => line.variants.filter(variant => variant.triggerIds.includes(triggerId)).map(variant => `${line.dealerId}/${line.eventId}/${variant.label}`));
+    references.push(...(next.mediaPolicy ?? []).flatMap(family => family.variants.filter(variant => variant.triggerIds.includes(triggerId)).map(variant => `${family.familyId}/${variant.videoId}`)));
     if (references.length) throw new StudioValidationError([`triggers: triggern används av ${references.length} variant(er). Koppla först bort den uttryckligen från berörda varianter: ${references.slice(0, 4).join(', ')}${references.length > 4 ? ', …' : ''}`]);
     next.triggers = next.triggers.filter(trigger => trigger.id !== triggerId);
   });

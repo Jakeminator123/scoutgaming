@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { createSeedProject } from '../lib/studio-model.mjs';
+import { createDefaultIdlePolicy } from '../lib/idle-policy.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -13,12 +14,13 @@ function component(file, name, props) {
   const hooks = {
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
     useRef(value) { const i = cursor++; return slots[i] ??= { current: value }; },
+    useMemo(fn, deps) { const i = cursor++; if (!sameDeps(slots[i]?.deps, deps)) slots[i] = { deps, value: fn() }; return slots[i].value; },
     useEffect(fn, deps) { const i = cursor++; if (!sameDeps(slots[i]?.deps, deps)) { const old = slots[i]; slots[i] = { deps, cleanup: old?.cleanup }; effects.push(() => { old?.cleanup?.(); slots[i].cleanup = fn(); }); } },
     useEffectEvent(fn) { const i = cursor++; slots[i] = fn; return (...args) => slots[i](...args); }, useDeferredValue(value) { return value; },
   };
   const module = { exports: {} };
   const code = transformSync(readFileSync(new URL(file, import.meta.url), 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-  vm.runInNewContext(code, { module, exports: module.exports, window: { setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); }, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
+  vm.runInNewContext(code, { module, exports: module.exports, setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); }, window: { setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); }, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
   function bindRefs(tree) {
     if (!tree || typeof tree !== 'object') return;
     if (Array.isArray(tree)) { tree.forEach(bindRefs); return; }
@@ -43,6 +45,25 @@ const project = createSeedProject();
 function stage(extra = {}) {
   return component('./stage.tsx', 'Stage', { event: project.events[0], asset: project.assets[0], dealer: 'Astrid', variantLabel: 'Standard', playId: 0, playing: false, hasResult: false, busy: false, onPlay() {}, onPreview() {}, ...extra });
 }
+test('idle minute keeps base loops alive and rejects late start/finish after stop or action takeover', () => {
+  for (const reason of ['stop', 'action']) {
+    const policy = createDefaultIdlePolicy(), busy = [];
+    const inventory = { families: [{ id: policy.familyId, standardIds: policy.base.map(row => row.videoId), variantIds: policy.variants.map(row => row.videoId) }],
+      videos: [...policy.base, ...policy.variants].map(row => ({ id: row.videoId, available: true, fileName: row.videoId + '.mp4', previewUrl: '/api/videos/' + row.videoId })) };
+    const h = component('./idle-policy-editor.tsx', 'IdlePolicyEditor', { policy, inventory, blocked: false, onChange() {}, onBusyChange: value => busy.push(value) });
+    button(h.render(), 'Spela en minut').props.onClick();
+    const video = byType(h.render(), 'video'), oldElement = video.props.ref.current;
+    assert.equal(video.props.loop, true, 'base lasts until its planned segment ends, not just one MP4 iteration');
+    if (reason === 'stop') button(h.render(), 'Stoppa idleprovet').props.onClick();
+    else { h.props.blocked = true; h.render(); }
+    video.props.onPlaying({ currentTarget: oldElement });
+    video.props.onEnded({ currentTarget: oldElement });
+    assert.equal(oldElement.paused, true);
+    assert.ok(!busy.includes(true), 'late callback cannot reacquire ownership');
+    assert.equal(h.timers.size, 0);
+  }
+});
+
 test('video is preferred automatically but does not autoplay just by choosing a binding', () => {
   const h = stage({ videoUrl: '/api/videos/one' });
   assert.equal(byType(h.render(), 'video').props.autoPlay, false);
@@ -65,12 +86,38 @@ test('decode failure falls back; explicit replay retries, another film is not po
   const h = stage({ videoUrl: '/api/videos/one', onPreview() { previews++; } });
   videoEvent(byType(h.render(), 'video'), 'onError');
   assert.equal(byType(h.render(), 'video'), undefined);
-  find(h.render(), node => node.type === 'button' && Array.isArray(node.props.children) && node.props.children.includes('Spela vald variant')).props.onClick();
+  find(h.render(), node => node.type === 'button' && Array.isArray(node.props.children) && node.props.children.includes('Spela valt klipp')).props.onClick();
   assert.equal(previews, 1);
   assert.ok(byType(h.render(), 'video'));
   videoEvent(byType(h.render(), 'video'), 'onError'); h.props.videoUrl = '/api/videos/two';
   assert.ok(byType(h.render(), 'video'));
 });
+test('a failed file variant tries its exact family standard once, then 2D; new play retries', () => {
+  const receipts = [];
+  const h = stage({ playing: true, playId: 1, videoUrl: '/variant', videoId: 'variant', familyId: 'same',
+    fallbackVideo: { available: true, previewUrl: '/standard', id: 'standard', familyId: 'same', fileName: 'standard.mp4' }, onPlaybackEvent: r => receipts.push(r) });
+  videoEvent(byType(h.render(), 'video'), 'onError');
+  const standard = byType(h.render(), 'video');
+  assert.equal(standard.props.src, '/standard');
+  videoEvent(standard, 'onPlaying');
+  assert.equal(receipts.at(-1).fileName, 'standard.mp4');
+  videoEvent(standard, 'onError');
+  assert.equal(byType(h.render(), 'video'), undefined);
+  h.props.playId++;
+  assert.equal(byType(h.render(), 'video').props.src, '/variant');
+  h.props.fallbackVideo.familyId = 'other';
+  videoEvent(byType(h.render(), 'video'), 'onError');
+  assert.equal(byType(h.render(), 'video'), undefined, 'never borrow a different family');
+});
+
+test('a stale missing variant URL falls back to its same-family standard without borrowing for null decisions', () => {
+  const h = stage({ playing: true, playId: 1, videoMissing: true, videoId: 'missing', familyId: 'same',
+    fallbackVideo: { available: true, previewUrl: '/standard', id: 'standard', familyId: 'same', fileName: 'standard.mp4' } });
+  assert.equal(byType(h.render(), 'video').props.src, '/standard');
+  h.props.videoId = undefined;
+  assert.equal(byType(h.render(), 'video'), undefined);
+});
+
 test('Bara 2D is an explicit override; switching back restores exact bound video', () => {
   const h = stage({ videoUrl: '/api/videos/one' });
   button(h.render(), 'Bara 2D').props.onClick();

@@ -1,0 +1,18 @@
+.situation { display: grid; gap: 12px; padding: 20px 24px; border: 1px solid var(--border, #343c3e); border-radius: 12px; background: #202628; margin-bottom: 18px; }
+.situation p { margin: 0; }
+.situation small { color: #b1bdbd; }
+.situation pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.situation summary, .instructions summary, .policy summary { cursor: pointer; color: #c8da57; }
+.folder { display: grid; gap: 10px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #343c3e; }
+.folder code, .instructions code { overflow-wrap: anywhere; color: #cad6d5; font-size: 12px; }
+.folder small { color: #9aacad; line-height: 1.6; }
+.empty { padding: 16px; border-radius: 8px; background: #273932; color: #d0e7da; line-height: 1.6; }
+.policy { display: grid; gap: 16px; margin: 24px 0; }
+.policy h3 { font-size: 16px; }
+.instructions { margin: 24px 0; line-height: 1.6; }
+.inspector { align-self: start; }
+.overviewGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.familyButton { display: grid; gap: 8px; text-align: left; padding: 18px; border: 1px solid #455153; border-radius: 8px; background: #273033; }
+.familyButton:hover { border-color: #c8da57; }
+.familyButton code { color: #bbceca; font-size: 12px; overflow-wrap: anywhere; }
+.familyButton small { color: #9aacad; }

@@ -150,9 +150,9 @@ export async function loadVideoRegistry(options = {}) {
     archiveSource: selection.source, intakeCounts: { want: 0, no: 0, unrated: 0 },
     notes: [
       'Want är ett intake-omdöme, inte ett godkännande. Alla kopplingar här är endast för labbet.',
-      'Dealer och event är sorteringsförslag, inte verifierat videoinnehåll.',
+      'Manifestets familj väljer exakt destination eller replik. Kopplingen är inte visuell acceptans.',
       'Tillgänglig betyder läsbar fil med rätt storlek. SHA-256 kontrolleras före uppspelning.',
-      'Grundkällan är Emils mapp; filmerna är inte eventmappade förrän de kategoriseras i labbet.',
+      'Standard och varianter kommer från Emils mappar. Variantpolicy sparas i labbprojektet.',
     ],
   };
   let entries, families = [];

@@ -9,7 +9,8 @@ import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 import { validateVideoMetadata, videoFitsEvent, MAX_VIDEO_BYTES } from '../lib/video-intake.mjs';
 import { createSeedProject, validateProject, addVariant, buildRuntimeCatalog } from '../lib/studio-model.mjs';
 import { auditStudio } from '../lib/studio-audit.mjs';
-import { simulateStudio, decisionCatalog, validateVideoBindings } from '../lib/studio-server.mjs';
+import { simulateStudio as simulate, decisionCatalog, validateVideoBindings } from '../lib/studio-server.mjs';
+const simulateStudio = (body, options = {}) => simulate(body, { videoRegistry: { videos: [], families: [] }, ...options });
 import { prepareDecision } from '../../open-claw/lab/src/engine.mjs';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 

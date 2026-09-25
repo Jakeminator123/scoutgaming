@@ -5,6 +5,7 @@ import type { DealerId, StudioProject } from '../lib/studio-model.mjs';
 import type { PartnerTrace } from '../lib/partner-trace.mjs';
 import { buildPresentationSequence, type PresentationStep } from '../lib/presentation-sequence.mjs';
 import { resolveOriginalDefault, type OriginalMediaCatalog } from '../lib/original-media.mjs';
+import { mediaLineForEvent, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
 import { videoFitsEvent } from '../lib/video-intake.mjs';
 import { observationContext, observedTable } from '../lib/observation-context.mjs';
 import { requestJson, type DirectorMode, type SimulationResult, type VideoInventory } from './studio-types';
@@ -150,18 +151,19 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
   const currentResult = step && resultIdentity === `${dealerId}:${stepIdentity(step)}` && !step.blocked ? result : null;
   const definition = project.events.find(event => event.id === step?.eventId);
   const event = definition && step && typeof step.event === 'object' && step.event ? { ...definition, exampleEvent: step.event as Record<string, unknown> } : null;
-  const line = event && project.lines.find(line => line.dealerId === dealerId && line.eventId === event.id);
+  const media = event ? mediaLineForEvent(project, videos, dealerId, event.id, event.exampleEvent) : null;
+  const line = media?.line;
   const variant = currentResult?.variant ?? line?.variants.find(variant => variant.id === line.baselineVariantId);
   const videoId = currentResult ? currentResult.videoGenerationId : variant?.videoGenerationId;
   const sourceEvent = (currentResult?.decision?.sourceEvent ?? event?.exampleEvent) as Record<string, unknown> | undefined;
-  const video = videoId && sourceEvent ? videos.videos.find(video => video.id === videoId && video.available && videoFitsEvent(video, sourceEvent)) : null;
-  const original = variant && line && variant.id === line.baselineVariantId && !variant.videoGenerationId && sourceEvent ? resolveOriginalDefault(originals, dealerId, sourceEvent) : null;
+  const video = media?.managed && sourceEvent && event ? mediaVideoForEvent(videos, dealerId, event.id, sourceEvent, videoId) : videoId && sourceEvent ? videos.videos.find(video => video.id === videoId && video.available && videoFitsEvent(video, sourceEvent)) : null;
+  const original = !media?.managed && variant && line && variant.id === line.baselineVariantId && !variant.videoGenerationId && sourceEvent ? resolveOriginalDefault(originals, dealerId, sourceEvent) : null;
   return <div className={styles.surface}>
     <div className={styles.comparison}>
     <section className={styles.column} aria-label="Originalspelet"><h4>Originalspelet</h4><ReferenceCapture onActivity={onActivity} /></section>
     <section className={styles.column} aria-label="Labbets presentation"><h4>Labbets presentation <small>{following ? 'Följer nya speldata' : 'Pausad'}</small></h4>
       <div className={styles.toolbar}><label>Variantval <select value={mode} disabled={playing || busy} onChange={e => { stopFollow(); setMode(e.target.value as DirectorMode); }}><option value="off">Bara standard</option><option value="rules">Regler</option><option value="random">Slumpvariation</option><option value="active">OpenClaw</option><option value="shadow">Skuggläge</option></select></label><button className="text-button" disabled={!following && (playing || busy)} onClick={() => following ? stopFollow() : startFollow()}>{following ? 'Pausa labbet' : 'Följ nya instruktioner'}</button><small>{following ? 'Varje steg väntar på labbspelarens avslut.' : 'Samma speldata, labbets standard eller varianter.'}{mode === 'active' || mode === 'shadow' ? ' Uppspelning kan göra modellanrop.' : ''}</small></div>
-      {event && variant ? <Stage event={event} asset={currentResult?.asset ?? project.assets.find(asset => asset.id === variant.assetId)} dealer={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId} variantLabel={variant.label} playId={playId} playing={playing && active && !step?.blocked} hasResult={Boolean(currentResult)} busy={busy} videoUrl={video?.previewUrl} videoName={video?.label} videoMissing={Boolean(videoId && !video)} originalMedia={original} sourceIsObserved onPlaybackEvent={value => receipt(value, value.playId ?? playId)} onPlay={() => { if (step && !following && !playing && !busy) void playStep(step, { signal: new AbortController().signal }).catch(cause => { if (mounted.current) setError(cause.message); }); }} /> : <div className={styles.empty}><strong>Väntar på spelinstruktioner</strong><p>Tryck Anslut och spela i originalfliken. Labbet följer nya mottagna instruktioner automatiskt.</p></div>}
+      {event && variant ? <Stage event={event} asset={currentResult?.asset ?? project.assets.find(asset => asset.id === variant.assetId)} dealer={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId} variantLabel={variant.label} playId={playId} playing={playing && active && !step?.blocked} hasResult={Boolean(currentResult)} busy={busy} videoUrl={video?.previewUrl} videoName={video?.fileName ?? video?.label} videoId={videoId ?? undefined} familyId={media?.family?.id ?? video?.familyId} fallbackVideo={media?.managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, media.line?.variants[0]?.videoGenerationId) : null} videoMissing={Boolean(videoId && !video)} originalMedia={original} sourceIsObserved onPlaybackEvent={value => receipt(value, value.playId ?? playId)} onPlay={() => { if (step && !following && !playing && !busy) void playStep(step, { signal: new AbortController().signal }).catch(cause => { if (mounted.current) setError(cause.message); }); }} /> : <div className={styles.empty}><strong>Väntar på spelinstruktioner</strong><p>Tryck Anslut och spela i originalfliken. Labbet följer nya mottagna instruktioner automatiskt.</p></div>}
       {error ? <p role="alert">{error}</p> : null}
     </section>
     </div>

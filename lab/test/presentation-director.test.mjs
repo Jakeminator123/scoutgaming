@@ -61,7 +61,7 @@ test('invalid identity or source provenance cannot reach the decision engine', a
 test('real engine fallback, rules and shadow have honest ownership; source references never enter model input', async () => {
   const project = createSeedProject(); let calls = 0;
   const settings = readSettings({ env: { OPENCLAW_BASE_URL: 'http://127.0.0.1:18789', OPENCLAWAPI_KEY: 'fixture' }, envFiles: [] });
-  const decide = createPresentationDirector({ decide: body => simulateStudio(body, { settings, fetchImpl: async (_url, options) => {
+  const decide = createPresentationDirector({ decide: body => simulateStudio(body, { settings, videoRegistry: { videos: [], families: [] }, fetchImpl: async (_url, options) => {
     calls++;
     assert.ok(!options.body.includes('private-correlation'));
     const opportunity = JSON.parse(JSON.parse(options.body).messages[1].content);

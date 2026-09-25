@@ -15,6 +15,7 @@ ingen hämtning av länkarnas innehåll och ingen ny verktygsbehörighet.
 versionen eller sakfrågan kräver det.
 
 - [Officiella källor och lokala konfigurationsfiler](OPENCLAW-DOCS.md)
+- [Verifierad lokal anslutning, isolerad start och kvarvarande produktblockerare](LOCAL-CONNECTION-SV.md)
 - [Starta på Render](RENDER-START-SV.md)
 - [Logga in i OpenClaws egen dashboard](DASHBOARD-SV.md)
 - [Teknisk drift och nycklar](DEPLOYMENT.md)
