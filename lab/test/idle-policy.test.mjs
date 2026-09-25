@@ -1,0 +1,56 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import schema from '../schemas/idle-policy.schema.json' with { type: 'json' };
+import { createDefaultIdlePolicy, validateIdlePolicy, idleShareEstimate, createIdlePreviewPlan } from '../lib/idle-policy.mjs';
+
+test('the simple idle policy has two base loops and exactly four one-shot variants', () => {
+  const policy = createDefaultIdlePolicy();
+  assert.equal(validateIdlePolicy(policy), policy);
+  assert.equal(policy.base.length, 2);
+  assert.equal(policy.base.reduce((sum, item) => sum + item.weight, 0), 100);
+  assert.equal(policy.variants.length, 4);
+  assert.deepEqual(policy.variants.map(item => item.use), ['automatic', 'manual', 'manual', 'openclaw']);
+  assert.equal(schema.properties.variants.maxItems, 4);
+});
+
+test('idle policy roles exactly mirror the physical manifest folders', async () => {
+  const policy = createDefaultIdlePolicy();
+  const manifest = JSON.parse(await readFile(new URL('../../emil/dealklipp-v1/lab-video-manifest.json', import.meta.url), 'utf8'));
+  const family = manifest.families.find(item => item.id === policy.familyId);
+  assert.deepEqual(new Set(policy.base.map(item => item.videoId)), new Set(family.standardIds));
+  assert.deepEqual(new Set(policy.variants.map(item => item.videoId)), new Set(family.variantIds));
+  const items = new Map(manifest.items.map(item => [item.id, item]));
+  assert.ok(policy.base.every(item => items.get(item.videoId).relativePath.match(/^idle\/[^/]+\.mp4$/)));
+  assert.ok(policy.variants.every(item => items.get(item.videoId).relativePath.match(/^idle\/variant\/[^/]+\.mp4$/)));
+});
+
+test('blink cadence leaves the primary base loop at about eighty percent actual time', () => {
+  const policy = createDefaultIdlePolicy();
+  const estimate = idleShareEstimate(policy);
+  assert.ok(estimate.shares[policy.base[0].videoId] > .78 && estimate.shares[policy.base[0].videoId] < .81);
+  assert.ok(estimate.shares[policy.variants[0].videoId] > .11 && estimate.shares[policy.variants[0].videoId] < .13);
+});
+
+test('preview plans are deterministic, bounded and return to a base clip after automatic variants', () => {
+  const policy = createDefaultIdlePolicy();
+  const first = createIdlePreviewPlan(policy, { seed: 42 });
+  const second = createIdlePreviewPlan(policy, { seed: 42 });
+  assert.deepEqual(first, second);
+  assert.notDeepEqual(first, createIdlePreviewPlan(policy, { seed: 43 }));
+  assert.equal(first[0].kind, 'base');
+  assert.equal(first.at(-1).endMs, 60000);
+  const automatic = first.findIndex(item => item.kind === 'variant');
+  assert.ok(automatic > 0);
+  assert.equal(first[automatic + 1].kind, 'base');
+  assert.ok(first.filter(item => item.kind === 'variant').length <= 3);
+});
+
+test('invalid weights, duplicate media and a fifth variant are rejected', () => {
+  const weights = createDefaultIdlePolicy(); weights.base[0].weight = 80;
+  assert.throws(() => validateIdlePolicy(weights), /summera till 100/);
+  const duplicate = createDefaultIdlePolicy(); duplicate.variants[0].videoId = duplicate.base[0].videoId;
+  assert.throws(() => validateIdlePolicy(duplicate), /dubblerat/);
+  const tooMany = createDefaultIdlePolicy(); tooMany.variants.push(structuredClone(tooMany.variants[1])); tooMany.variants[4].videoId = '11111111-1111-1111-1111-111111111111';
+  assert.throws(() => validateIdlePolicy(tooMany), /högst fyra/);
+});

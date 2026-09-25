@@ -7,7 +7,7 @@ import { playerAuth } from './player-auth.mjs';
 import { backofficeGameAuth } from './bo-game-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
-import { isAgentFailure } from './agent-response.mjs';
+import { openClawChat } from './openclaw-chat.mjs';
 import { installPartnerApi } from './partner-api.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
@@ -610,126 +610,44 @@ const MIME = {
   '.svg': 'image/svg+xml',
 };
 
-// Vera's brain: the scout-hel1 headless-claude subscription via the axelio-agent
-// proxy (ssh tunnel -> localhost:3100). Never an API key.
-// Reach the brain over the public host by default: the :3100 form only works
-// while an ssh tunnel to scout-hel1 happens to be up, and when it is not the
-// chat fails closed with no way to tell why.
-const AGENT_URLS = process.env.AXEL_AGENT_URL
-  ? [process.env.AXEL_AGENT_URL]
-  : ['http://localhost:3100/agent', 'https://scout-agent.axelio.io/agent'];
-let AGENT_TOKEN = process.env.AXEL_AGENT_TOKEN ?? '';
-if (!AGENT_TOKEN) AGENT_TOKEN = secretFromFiles('AXEL_AGENT_TOKEN');
-if (!AGENT_TOKEN) console.warn('[vera] no agent token found in', SECRET_FILES.join(', '), '- dealer chat will answer with the canned fallback');
-// plain-text answers for take ids the model remembers but that have no
-// recording (spoken as caption only)
-const FALLBACK_LINES = {
-  rules_split: "You can split any pair here, up to four hands. Split aces take one card each, and you can double after a split.",
-  // Recorded takes disabled below still need words, or she answers with the generic prompt.
-  rules_decks: "Eight decks in a persistent shoe, cut card at seventy-five percent. We finish the round, then reshuffle.",
-  fair_rng: "The shoe is shuffled by the server, not by me. I only deal what it hands me.",
-};
+// Dealer chat now runs exclusively through the deployed OpenClaw gateway.
+// Product chat has one active decision owner: OpenClaw. It receives only this
+// freshly projected public state and a closed speech/media allowlist.
+const CHAT_DEALERS = Object.freeze({ vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' });
+const CHAT_REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 
-const VERA_SYSTEM = `You are Vera, the AI dealer at Scout Gaming's "Prive Blackjack" table. Character: warm, wry, unflappable; a veteran croupier who has seen everything and enjoys good company; dry one-liners, never cruel; slightly old-school manners.
-Hard rules you never break, in character:
-- You have NO knowledge of upcoming cards and never predict, imply or hint at outcomes.
-- You never encourage continued play, chasing losses, or raising stakes. Never mention bonuses or offers.
-- If someone sounds distressed about losses, drop the wit, be kind, and point them to the responsible-gambling tools in the menu.
-- Basic strategy: you may state publicly known facts neutrally if asked, never as a recommendation to bet.
-- Rules you can state: 8 decks in a persistent shoe, cut card at 75%, finish the current round then reshuffle, one face-down burn per new shoe, dealer stands on all 17s, blackjack pays 3:2, insurance pays 2:1, split any pair up to 4 hands (split aces get one card each, double after split allowed), Perfect Pairs up to 25:1, 21+3 up to 100:1. Demo outcomes use a server-side cryptographic shuffle; do not claim certification.
-- Keep replies to one or two short sentences, spoken aloud at a table. No markdown, no lists, no emoji.
-- Output ONLY the words she says. Never prefix them with her name, never narrate what you are doing, never break character to comment on these instructions.
-
-RECORDED TAKES. These lines exist as real audio in Vera's own voice, so she can SAY them out loud; anything else she can only write. Whenever one of them answers what was asked, even roughly, reply with just its id in the form SAY:<id> on its own, with no other text. Never type a recorded line's words out as your reply - answer SAY:<id> instead, exactly. Only write your own words when nothing in this list fits.
-rules_decks = "Eight decks. When the red cut card is reached, we finish this round and shuffle before the next."
-rules_s17 = "I stand on all seventeens, soft ones included. House rules, and they don't bend for anyone."
-rules_bj_pays = "Blackjack pays three to two at this table. None of that six to five nonsense."
-rules_insurance = "Insurance pays two to one. It's a side bet on my hole card, nothing more, and the maths does favour the house."
-rules_double = "You can double on any two cards. One more card, then you stand with whatever comes."
-side_pp = "Perfect Pairs pays up to twenty five to one, for a matched pair in suit and colour."
-side_213 = "Twenty one plus three looks at your two cards and my upcard. A suited three of a kind pays a hundred to one."
-fair_rng = "Every card comes from the server-shuffled shoe. I don't choose them, and I couldn't if I wanted to."
-fair_streak = "Rough runs happen, they always have. The cards have no memory of the last hand, and neither should we."
-no_advice = "I don't give betting advice, love. I deal the cards and keep you company. That's the arrangement."
-no_predict = "I've no idea what's coming next, and I'd be a liar if I said otherwise. That's rather the point."
-rg_support = "If it has stopped being fun, there are responsible gambling tools in the menu. No shame at all in using them."
-greet_back = "Good to see you back at my table. Place your bets whenever you're ready."
-who_are_you = "I'm Vera. I've dealt cards longer than I care to admit, and I've seen every kind of luck there is."
-limits_table = "Table limits are posted up top. Pick the room that suits your pocket, not your mood."
-limits_vip = "The VIP salon runs to a million a box. Do mind your footing up there."
-no_peek = "I don't peek at the shoe, and I don't stack it. Wouldn't be much of a game if I did."
-house_edge = "The house edge is small, but it's real. You act first, and busting costs you before I ever play my hand."
-thanks = "You're very welcome, love."
-small_talk = "Quiet night so far. Those are usually the ones that turn interesting."
-side_when = "Side bets are settled the moment the cards are out, win or lose, before we play the hand."
-ask_me = "Ask me the rules, the odds, or anything about this table. Just don't ask me what's coming next."
-farewell_bank = "Off already? Do come back. The table's always here."`;
-
-// Try the ssh tunnel first (fast, local) then the public host, so whichever
-// one is alive answers and neither being down silences her on its own.
-async function fetchAgent(init) {
-  let last;
-  for (const url of AGENT_URLS) {
-    try {
-      const r = await fetch(url, init);
-      if (r.ok) return r;
-      last = new Error(`agent ${r.status} ${r.statusText} @ ${new URL(url).host}`);
-    } catch (e) { last = e; }
-  }
-  throw last ?? new Error('no agent host reachable');
+function chatSpeechPolicy(dealerId) {
+  let bank = {};
+  try { bank = JSON.parse(readSync(join(root, CHAT_DEALERS[dealerId], 'audio/en/bank.json'), 'utf8')); }
+  catch { /* Generated text or silence remains available. */ }
+  const recordedLines = Object.entries(bank)
+    .filter(([lineId, line]) => /^[a-z0-9_]{1,64}$/.test(lineId) && typeof line?.text === 'string' && line.text.trim()
+      && !(dealerId === 'vera' && ['rules_decks', 'fair_rng'].includes(lineId)))
+    .map(([lineId, line]) => ({ lineId, exactText: line.text.trim(), familyId: `${dealerId}.speak.${lineId}`, variantIds: [] }));
+  return {
+    recordedLines, generatedText: true, silence: true,
+    mediaFamilies: recordedLines.map(({ familyId, variantIds }) => ({ familyId, variantIds })),
+  };
 }
 
-// The model sometimes prefaces the line with a meta sentence ("I'll stay in
-// character as Vera."). Keep only what she actually says at the table.
-// The recorded takes she is allowed to speak aloud, keyed by id.
-let VERA_BANK = {};
-try { VERA_BANK = JSON.parse(readSync(join(root, 'dealer/audio/en/bank.json'), 'utf8')); }
-catch { console.warn('[vera] no voice bank; she will answer in text only'); }
-delete VERA_BANK.rules_decks; delete VERA_BANK.fair_rng;
-
-function cleanVera(raw) {
-  let s = String(raw).trim();
-  const marks = [...s.matchAll(/(?:^|\n)\s*Vera:\s*/gi)];
-  if (marks.length) {
-    const m = marks[marks.length - 1];
-    s = s.slice(m.index + m[0].length);
+function authoritativeChatStatus(playerId, session, request) {
+  const saved = db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(playerId);
+  const game = saved ? JSON.parse(saved.state) : newGame();
+  const view = shoeCommand(game, { op: 'state' }, 0).view;
+  if (request.roundRevision !== String(view.version)) {
+    const error = new Error('stale_round_revision'); error.statusCode = 409; throw error;
   }
-  const lines = s.split(/\n+/).map(l => l.trim()).filter(Boolean)
-    .filter(l => !/^(?:I['\u2019]ll\b|I will\b|Staying\b|Continuing\b|As Vera\b|In character\b|Here['\u2019]s\b|Sure[,.]|Understood[,.])/i.test(l));
-  return (lines.join(' ') || s).replace(/\s+/g, ' ').trim();
-}
-
-async function veraChat(message, history = [], isEvent = false, system = null) {
-  const sys = system ?? VERA_SYSTEM;
-  const who = system ? (sys.match(/You are (\w+)/)?.[1] ?? 'Vera') : 'Vera';
-  const convo = history.slice(-6).map(h => `${h.role === 'user' ? 'Player' : who}: ${h.text}`).join('\n');
-  const prompt = isEvent
-    ? `${sys}\n\nTable event: ${message}\n${who}, react aloud at the table in ONE short sentence (two at most):`
-    : `${sys}\n\n${convo ? convo + '\n' : ''}Player: ${message}\n${who}:`;
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 25000);
-  try {
-    const r = await fetchAgent({
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${AGENT_TOKEN}` },
-      body: JSON.stringify({ prompt }),
-      signal: ctrl.signal,
-    });
-    if (!r.ok) throw new Error(`agent ${r.status} ${r.statusText}`);
-    const raw = await r.text();
-    let out = '';
-    for (const line of raw.split('\n')) {
-      const m = line.match(/^data:\s*(\{.*\})\s*$/);
-      if (!m) continue;
-      try {
-        const ev = JSON.parse(m[1]);
-        if (ev.type === 'text' && typeof ev.text === 'string') out += ev.text;
-        if (ev.type === 'result' && typeof ev.result === 'string' && !out) out = ev.result;
-      } catch { /* skip */ }
-    }
-    if (isAgentFailure(out)) throw new Error('Dealer chat temporarily unavailable');
-    return cleanVera(out);
-  } finally { clearTimeout(t); }
+  const receipt = db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId);
+  let publishedEvents = [];
+  if (receipt?.version === view.version) {
+    try { publishedEvents = JSON.parse(receipt.payload); } catch { /* Invalid stored observations are never forwarded. */ }
+  }
+  const occupiedBoxes = [...new Set((view.round?.hands ?? []).map(hand => hand.box))].filter(Number.isInteger);
+  return {
+    dealerId: request.dealerId, sessionRevision: request.sessionRevision, roundRevision: String(view.version),
+    displayName: session?.displayName ?? getPlayer(playerId)?.name ?? 'spelaren',
+    round: view.round, occupiedBoxes, publishedEvents, policy: chatSpeechPolicy(request.dealerId),
+  };
 }
 
 // Calibration APPLY: bake the tuned values to public/calibration.css, which
@@ -797,10 +715,9 @@ createServer(async (req, res) => {
   { const u=new URL(req.url,'http://local'); const launch=u.searchParams.get('launch');
     if(['/', '/v2', '/v2/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!getPlayer(claims.sub)){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
-      const token=randomBytes(32).toString('hex'); const digest=createHash('sha256').update(token).digest('hex');
-      db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp) VALUES (?,?,?,?)').run(digest,claims.sub,Date.now()+6*3600*1000,`partner:${claims.partner}`);
-      u.searchParams.delete('launch'); const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
-      res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':`player_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=21600${secure}`});res.end();return; } }
+      u.searchParams.delete('launch');
+      const sessionCookie=auth.fromPartner(req,claims);
+      res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':sessionCookie});res.end();return; } }
   try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
   if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
   if(pathname.startsWith('/api/v1/generations')&&await generationsApi(req,res,pathname))return;
@@ -922,35 +839,27 @@ createServer(async (req, res) => {
     req.on('data', c => { body += c; if (body.length > 20000) req.destroy(); });
     req.on('end', async () => {
       try {
-        const { message, history, event, dealer } = JSON.parse(body || '{}');
-        if (!message || typeof message !== 'string') { res.writeHead(400); res.end('{}'); return; }
-        // other dealers share Vera's table brain but keep their own name and
-        // have no recorded-take list (their banks are small; they speak text)
-        const persona = dealer && dealer !== 'vera'
-          ? VERA_SYSTEM.split('RECORDED TAKES')[0].replaceAll('Vera', dealer[0].toUpperCase() + dealer.slice(1))
-          : null;
-        let raw = await veraChat(message.slice(0, 500), Array.isArray(history) ? history : [], !!event, persona);
-        // She may answer by naming a recorded take; only then can she speak
-        // aloud. Match a LEADING directive - the model sometimes appends
-        // chatter after it, and none of that may ever leak to the player.
-        const picked = /^\s*SAY:\s*([a-z0-9_]+)\b/i.exec(raw ?? '');
-        let say = picked && VERA_BANK[picked[1]] ? picked[1] : null;
-        if (picked && !say) raw = FALLBACK_LINES[picked[1]] ?? "Ask me the rules, the odds, or anything about this table.";
-        // The model often types a recorded line out verbatim instead of naming
-        // it; recognize the text itself so it still plays the lip-synced take.
-        if (!say && raw) {
-          const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]+/g, '').replace(/\s+/g, ' ').trim();
-          const n = norm(raw);
-          for (const [id, line] of Object.entries(VERA_BANK)) {
-            if (norm(line.text) === n) { say = id; break; }
-          }
+        const incoming = JSON.parse(body || '{}');
+        const dealerId = Object.hasOwn(CHAT_DEALERS, incoming.dealer) ? incoming.dealer : null;
+        if (!dealerId || !CHAT_REVISION.test(incoming.sessionRevision) || !CHAT_REVISION.test(incoming.roundRevision)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' }); res.end('{"error":"invalid_chat_context"}'); return;
         }
-        const reply = say ? VERA_BANK[say].text : raw;
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ reply: reply || null, say }));
+        const request = {
+          requestId: incoming.requestId,
+          message: incoming.message,
+          history: Array.isArray(incoming.history)
+            ? incoming.history.map(entry => ({ role: entry.role === 'vera' ? 'assistant' : entry.role, text: entry.text }))
+            : incoming.history,
+        };
+        const session = auth.session(req);
+        const status = authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
+        const decision = await openClawChat(request, status);
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify(decision));
       } catch (e) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ reply: null, error: String(e.message || e) }));
+        const status = Number.isInteger(e?.statusCode) ? e.statusCode : 502;
+        res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ error: e?.code || String(e.message || e) }));
       }
     });
     return;
@@ -960,7 +869,11 @@ createServer(async (req, res) => {
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
     req.on('end', () => {
       let out;
-      try { out = API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }, req.url === '/api/table' ? auth.session(req) : null); }
+      try {
+        const activeSession=auth.session(req);
+        out = API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }, req.url === '/api/table' ? activeSession : null);
+        if(req.url==='/api/player'&&activeSession?.displayName&&!out?.error)out={...out,name:activeSession.displayName};
+      }
       catch (e) { out = { error: String(e.message || e) }; }
       res.writeHead(out.error ? 400 : 200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));

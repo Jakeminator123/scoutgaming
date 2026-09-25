@@ -18,7 +18,10 @@ test('seed contains blackjack, four dealers, sixteen locked nodes and 64 editabl
   assert.equal(p.lines.length, 64);
   assert.ok(p.lines.every(line => line.variants.length === 4));
   assert.equal(p.assets.length, 64);
+  assert.equal(p.idlePolicy.base.length, 2);
+  assert.equal(p.idlePolicy.variants.length, 4);
   assert.equal(schema.properties.events.minItems, p.events.length);
+  assert.equal(schema.$defs.idlePolicy.properties.variants.maxItems, 4);
   assert.equal(schema.$defs.variant.properties.videoGenerationId.oneOf[0].type, 'null');
 });
 
@@ -241,6 +244,13 @@ test('old two-variant projects stay valid; no auto-expansion or label replacemen
   const before = structuredClone(p);
   assert.deepEqual(validateProject(p), before);
   assert.equal(p.lines[0].variants.length, 2);
+});
+
+test('old projects without idle policy remain readable while edited policies are validated', () => {
+  const legacy = createSeedProject(); delete legacy.idlePolicy;
+  assert.equal(validateProject(legacy), legacy);
+  const invalid = createSeedProject(); invalid.idlePolicy.base[0].weight = 80;
+  assert.throws(() => validateProject(invalid), /idlePolicy.*summera till 100/);
 });
 
 test('lab assets cannot reverse a published deal or replace a reveal', () => {

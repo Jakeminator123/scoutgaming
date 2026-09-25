@@ -4,6 +4,7 @@ import { loadOriginalMediaCatalog, getOriginalMediaResponse } from '../lib/origi
 import { resolveOriginalDefault, isOriginalMediaId } from '../lib/original-media.mjs';
 import { validateContactTake, calibrationPayload } from '../../web/public/performance-contact.mjs';
 import { createHash } from 'node:crypto';
+import path from 'node:path';
 
 const request = (pathname, options) => new Request(`http://127.0.0.1:4188/api/original-media/${pathname}`, options);
 const catalog = await loadOriginalMediaCatalog();
@@ -63,4 +64,31 @@ test('allowlisted bytes support HEAD/range and correctly reject malformed byte r
   for (const rangeHeader of ['bytes=4-2', 'bytes=-0', 'bytes=999999999-', 'bytes=1-4,6-8']) {
     const result = await getOriginalMediaResponse(parts, request(parts.join('/'), { headers: { range: rangeHeader } })); assert.equal(result.status, 416);
   }
+});
+
+test('the complete static original-player import graph is explicitly allowlisted', async () => {
+  const pending = ['dealer-engine.mjs', 'speech-playback.mjs', 'performance-player.mjs', 'performance-contact.mjs'];
+  const visited = new Set();
+  const staticImports = source => [
+    ...source.matchAll(/\b(?:import|export)\s*(?:[^'"]*?\bfrom\s*)?['"]([^'"]+)['"]/g),
+    ...source.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g),
+  ].map(match => match[1]).filter(specifier => specifier.startsWith('.'));
+  while (pending.length) {
+    const relative = pending.shift();
+    if (visited.has(relative)) continue;
+    visited.add(relative);
+    const parts = ['assets', ...relative.split('/')];
+    const response = await getOriginalMediaResponse(parts, request(parts.join('/')));
+    assert.equal(response.status, 200, relative);
+    assert.match(response.headers.get('content-type') ?? '', /javascript/, relative);
+    const source = await response.text();
+    for (const specifier of staticImports(source)) {
+      const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(relative), specifier));
+      assert.ok(!dependency.startsWith('../') && dependency !== '..' && !path.posix.isAbsolute(dependency), `${relative} imports outside public root: ${specifier}`);
+      pending.push(dependency);
+    }
+  }
+  assert.ok(visited.has('actor-edge-blend.mjs'));
+  assert.ok(visited.has('actor-grade.mjs'));
+  assert.ok(visited.has('vendor/three/three.core.min.js'));
 });

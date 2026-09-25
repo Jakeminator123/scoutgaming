@@ -5,16 +5,20 @@ export function playerAuth(db, createPlayer, identity = null) {
     CREATE TABLE IF NOT EXISTS player_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL);`);
   db.exec('CREATE TABLE IF NOT EXISTS craig_player_links (craig_user_id TEXT PRIMARY KEY, player_id TEXT UNIQUE NOT NULL)');
   if(!db.prepare('PRAGMA table_info(player_sessions)').all().some(c=>c.name==='source_stamp'))db.exec('ALTER TABLE player_sessions ADD COLUMN source_stamp TEXT');
+  if(!db.prepare('PRAGMA table_info(player_sessions)').all().some(c=>c.name==='display_name'))db.exec('ALTER TABLE player_sessions ADD COLUMN display_name TEXT');
   const digest=t=>createHash('sha256').update(t).digest('hex');
   const attempts=new Map();
   function session(req) {
     const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
     if (!token) return null;
-    const session=db.prepare('SELECT player_id,source_stamp FROM player_sessions WHERE digest=? AND expires>?').get(digest(token),Date.now());
+    const session=db.prepare('SELECT player_id,source_stamp,display_name FROM player_sessions WHERE digest=? AND expires>?').get(digest(token),Date.now());
     if(!session)return null;
     // Partner-launched sessions belong to an operator's player, not a Craig user, so they carry a partner stamp instead of a Craig fingerprint.
     if(identity && !String(session.source_stamp??'').startsWith('partner:')){const link=db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id);if(!link || !session.source_stamp || identity.stamp(link.craig_user_id)!==session.source_stamp)return null;}
-    return { playerId: session.player_id, partnerKeyId: String(session.source_stamp ?? '').startsWith('partner:') ? session.source_stamp.slice(8) || null : null };
+    const partnerKeyId=String(session.source_stamp ?? '').startsWith('partner:') ? session.source_stamp.slice(8) || null : null;
+    return partnerKeyId
+      ? { playerId: session.player_id, partnerKeyId, displayName: session.display_name || 'spelaren' }
+      : { playerId: session.player_id, partnerKeyId: null };
   }
   const user = req => session(req)?.playerId ?? null;
   const cookie=(req,token,age,sameSite='Strict')=>`player_session=${token}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${age}${(req.socket.encrypted || process.env.NODE_ENV==='production') ? '; Secure' : ''}`;
@@ -27,13 +31,18 @@ export function playerAuth(db, createPlayer, identity = null) {
   function issue(req,account,maxAge=86400,sameSite='Strict') {
     const token=randomBytes(32).toString('hex'),now=Date.now();
     db.prepare('DELETE FROM player_sessions WHERE expires<=?').run(now);
-    db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp) VALUES (?,?,?,?)').run(digest(token),account.player_id,now+maxAge*1000,account.source_stamp??null);
+    db.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp,display_name) VALUES (?,?,?,?,?)').run(digest(token),account.player_id,now+maxAge*1000,account.source_stamp??null,account.display_name??null);
     return cookie(req,token,maxAge,sameSite);
   }
   function fromBackoffice(req,existing,maxAge=86400) {
     db.exec('BEGIN IMMEDIATE');
     try {const header=issue(req,linkIdentity(existing),maxAge,'Lax');db.exec('COMMIT');return header;}
     catch(e){db.exec('ROLLBACK');throw e;}
+  }
+  function fromPartner(req,claims,maxAge=21600) {
+    if(typeof claims?.sub!=='string'||!claims.sub||typeof claims?.partner!=='string'||!claims.partner)throw Error('Invalid Partner launch claims.');
+    const displayName=typeof claims.displayName==='string'&&claims.displayName ? claims.displayName : 'spelaren';
+    return issue(req,{player_id:claims.sub,source_stamp:`partner:${claims.partner}`,display_name:displayName},maxAge,'Lax');
   }
   async function handle(req,res) {
     if (!['/api/auth/login','/api/auth/register','/api/auth/logout'].includes(req.url)) return false;
@@ -81,5 +90,5 @@ export function playerAuth(db, createPlayer, identity = null) {
     }catch(e){reply(400,{error:e.message});}
     return true;
   }
-  return {user,session,handle,fromBackoffice};
+  return {user,session,handle,fromBackoffice,fromPartner};
 }

@@ -20,6 +20,7 @@ const mocks = {
   './video-library': { VideoLibrary: empty, VariantVideoBinding: empty },
   './variant-selection': { VariantSelectionEditor: empty },
   './gateway-panel': { GatewayPanel: empty, modeLabels: { off: 'Bara standard', rules: 'Regler', random: 'Slumpvariation', shadow: 'Skuggläge', active: 'OpenClaw' }, modeExplanations: { off: 'Alltid standardvarianten. Ingen modell kontaktas.' } },
+  './idle-policy-editor': { IdlePolicyEditor: empty },
   './test-context': { TestContextPanel: empty, neutralContext: {} },
 };
 function loadComponent(relativeFile) {

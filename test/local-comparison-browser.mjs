@@ -27,7 +27,14 @@ try {
   context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   // Deterministic, clearly synthetic chat response; real model capability is
   // checked separately. No play commands or SSE data are mocked in this test.
-  await context.route('**/chat', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ reply: 'Isolated QA reply.', say: null }) }));
+  await context.route('**/chat', route => {
+    const input = route.request().postDataJSON();
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+      kind: 'generatedText', requestId: input.requestId, dealerId: input.dealer,
+      sessionRevision: input.sessionRevision, roundRevision: input.roundRevision,
+      exactText: 'Isolated QA reply.', visualMode: 'neutral', provider: 'responded',
+    }) });
+  });
   await context.addInitScript(() => {
     window.__qaNative = [];
     window.__qaLabCompleted = new Set();

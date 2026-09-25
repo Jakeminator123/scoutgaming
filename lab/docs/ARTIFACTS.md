@@ -10,13 +10,24 @@ medieregister. [Sprinten](../../docs/animation-events/v5-7-days-mvp/README.md)
 - `lab/schemas/studio.schema.json`: sparat projekt, linjer, triggers, varianter.
 - `lab/schemas/video.schema.json`: kategorisering; exakt situation för tal/kort.
 - `lab/schemas/social.schema.json`: Astrids avgränsade sociala policy.
+- `lab/schemas/idle-policy.schema.json`: tvådelad idlepolicy med 1–4
+  grundloopar och högst fyra engångsvarianter.
 - `lab/policies/studio-contract.json`: gemensamma ID:n, situationer, ordlista,
   tillåtna urval och gränser. Kontrakt och schema ska stämma överens.
-- `lab/policies/project.seed.json`, `social.seed.json`: startprojekt/policy.
+- `lab/policies/project.seed.json`, `social.seed.json` och
+  `idle-policy.seed.json`: startprojekt och avgränsade policyer.
 - `lab/animations/`: 64 delade eventrörelser och separat social 2D-rörelse.
   Pose-spår är mockup, inte video eller läppsynk.
 
 ## Media och deras befintliga manifest
+
+- `emil/dealklipp-v1/lab-video-manifest.json`: hashstabilt labbmanifest.
+  Varje `deal/<familj>/` och `repliker/<familj>/` har ett standardklipp och en
+  `variant/`-mapp. För idle är filer direkt i `idle/` grundloopar och filer i
+  `idle/variant/` engångsvarianter. `pipeline/build-lab-video-manifest.mjs`
+  bygger och kontrollerar samma struktur.
+- `lab/lib/idle-policy.mjs`: validering, faktisk tidsandelsberäkning och
+  seedad enminutsförhandsvisning för Eventstudion.
 
 - `web/public/speech-media.json`: exakta native-talpakets mediereferenser.
 - `web/public/speech-lines.mjs`: gemensamma inspelade grundtexter; en dealers

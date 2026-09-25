@@ -3,6 +3,11 @@ export interface VideoRegistryOptions { archiveDir?: string | null; snapshotPath
 export interface RegistryVideo {
   classification?: VideoMetadata;
   source?: 'emil' | 'archive' | 'upload';
+  familyId?: string;
+  role?: 'standard' | 'variant';
+  eventId?: string;
+  situation?: string;
+  playbackType?: 'once' | 'idle-pool';
   addedAt?: string;
   id: string;
   label: string;
@@ -19,8 +24,18 @@ export interface RegistryVideo {
   suggestedEventId?: string;
   bindingScope: 'lab-only';
 }
+export interface MediaFamily {
+  id: string;
+  dealerId: 'astrid';
+  eventId: string;
+  situation: string;
+  playbackType: 'once' | 'idle-pool';
+  standardIds: string[];
+  variantIds: string[];
+}
 export interface VideoRegistry {
   videos: RegistryVideo[];
+  families: MediaFamily[];
   summary: {
     total: number; available: number; missing: number; unavailable: number;
     configured: boolean; readable: boolean; snapshotReadable: boolean;

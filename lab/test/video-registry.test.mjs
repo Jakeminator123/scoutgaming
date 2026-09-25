@@ -5,11 +5,13 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { getVideoResponse, loadVideoRegistry } from '../lib/video-registry.mjs';
+import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
 
-const id = 'c01866d1-7c93-43a4-9493-73f7c66d3725';
-const unknownId = '00000000-0000-0000-0000-000000000000';
 const bytes = Buffer.from('test-only-local-video-bytes');
 const hash = createHash('sha256').update(bytes).digest('hex');
+const id = videoIdFromSha256(hash);
+const unknownId = '00000000-0000-0000-0000-000000000000';
+const targetPath = 'deal/deal_pos1/deal_pos1.mp4';
 
 async function fixture(t, extra = {}) {
   const root = await mkdtemp(join(tmpdir(), 'croupier-video-registry-'));
@@ -17,61 +19,63 @@ async function fixture(t, extra = {}) {
   const archiveDir = join(root, 'archive');
   await mkdir(archiveDir);
   const snapshotPath = join(root, 'snapshot.json');
-  const item = {
-    id, size: bytes.length, sha256: hash, duration: 4, verdict: 'want',
-    placement: { dealer: 'astrid', node: 'deal.player.left', label: 'Vänster utdelning' },
-    prompt: 'PRIVATE_PROMPT', downloadUrl: 'https://private.invalid?token=PRIVATE_TOKEN',
-    ...extra,
-  };
-  await writeFile(snapshotPath, JSON.stringify({ items: [item] }));
-  const file = item.relativePath
-    ? join(archiveDir, ...item.relativePath.split('/'))
-    : join(archiveDir, `${id}.mp4`);
-  await mkdir(dirname(file), { recursive: true });
-  await writeFile(file, bytes);
+  const items = [];
+  for (const definition of MEDIA_FAMILY_DEFINITIONS) for (const relativePath of definition.standardPaths) {
+    const content = relativePath === targetPath ? bytes : Buffer.from(`fixture:${relativePath}`);
+    const sha256 = createHash('sha256').update(content).digest('hex');
+    const item = { id: videoIdFromSha256(sha256), familyId: definition.id, role: 'standard', relativePath, extension: 'mp4', size: content.length, sha256, ...(relativePath === targetPath ? extra : {}) };
+    items.push(item);
+    const path = join(archiveDir, ...relativePath.split('/'));
+    await mkdir(dirname(path), { recursive: true }); await writeFile(path, content);
+    await mkdir(join(archiveDir, ...definition.variantDirectory.split('/')), { recursive: true });
+  }
+  const families = MEDIA_FAMILY_DEFINITIONS.map(definition => ({ id: definition.id, dealerId: definition.dealerId, eventId: definition.eventId, situation: definition.situation, playbackType: definition.playbackType,
+    standardIds: definition.standardPaths.map(path => items.find(item => item.relativePath === path).id), variantIds: [] }));
+  await writeFile(snapshotPath, JSON.stringify({ schemaVersion: 2, source: 'emil/dealklipp-v1', families, items }));
+  const file = join(archiveDir, ...targetPath.split('/'));
   return { root, file, archiveDir, snapshotPath };
 }
 function request(method = 'GET', headers = {}) {
   return new Request(`http://localhost:4188/api/videos/${id}`, { method, headers });
 }
 
-test('inventory has safe bounded metadata; want never implies approval', async t => {
+test('inventory has safe bounded family metadata without upgrading media to approval', async t => {
   const options = await fixture(t);
   const result = await loadVideoRegistry(options);
-  assert.equal(result.videos.length, 1);
-  assert.equal(result.videos[0].verdict, 'want');
-  assert.equal(result.videos[0].reviewStatus, 'unreviewed');
-  assert.equal(result.videos[0].integrity, 'unchecked');
-  assert.equal(result.videos[0].available, true);
-  assert.equal(result.videos[0].bindingScope, 'lab-only');
+  assert.equal(result.videos.length, 27);
+  const video = result.videos.find(item => item.id === id);
+  assert.equal(video.verdict, 'unrated');
+  assert.equal(video.reviewStatus, 'unreviewed');
+  assert.equal(video.integrity, 'unchecked');
+  assert.equal(video.available, true);
+  assert.equal(video.bindingScope, 'lab-only');
+  assert.equal(video.familyId, 'astrid/deal.player.left/box0');
   assert.equal(result.summary.readable, true);
-  assert.equal(result.summary.intakeCounts.want, 1);
+  assert.equal(result.summary.intakeCounts.unrated, 27);
   const json = JSON.stringify(result);
-  assert.ok(!json.includes('PRIVATE_'));
-  assert.ok(!json.includes('private.invalid'));
   assert.ok(!json.includes(options.root));
   assert.ok(!json.includes('archiveDir'));
 });
 
-test('dealer labels normalize case without upgrading an intake to approval', async t => {
-  const options = await fixture(t, { placement: { dealer: ' Astrid ', node: 'deal.player.right', label: 'Höger' } });
+test('locked family metadata supplies dealer and exact situation without classification', async t => {
+  const options = await fixture(t);
   const { videos } = await loadVideoRegistry(options);
-  assert.equal(videos[0].dealer, 'astrid');
-  assert.match(videos[0].label, /^Astrid/);
-  assert.equal(videos[0].reviewStatus, 'unreviewed');
+  const video = videos.find(item => item.id === id);
+  assert.equal(video.dealer, 'astrid');
+  assert.equal(video.eventId, 'deal.player.left');
+  assert.equal(video.situation, 'box0');
+  assert.equal(video.classification, undefined);
 });
 
 test('nested Emil paths stay inside the manifest root and remain unclassified', async t => {
-  const options = await fixture(t, {
-    relativePath: 'deal/deal_pos1.mp4', source: 'emil',
-    placement: { dealer: 'astrid', label: 'Emil · deal/deal_pos1' },
-  });
+  const options = await fixture(t);
   const { videos, summary } = await loadVideoRegistry(options);
   assert.equal(summary.archiveSource, 'explicit');
-  assert.equal(videos[0].source, 'emil');
-  assert.equal(videos[0].fileName, 'deal_pos1.mp4');
-  assert.equal(videos[0].classification, undefined);
-  assert.equal(videos[0].suggestedEventId, undefined);
+  const video = videos.find(item => item.id === id);
+  assert.equal(video.source, 'emil');
+  assert.equal(video.fileName, 'deal_pos1.mp4');
+  assert.equal(video.classification, undefined);
+  assert.equal(video.suggestedEventId, undefined);
   const response = await getVideoResponse(id, request(), options);
   assert.equal(response.status, 200);
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
@@ -128,7 +132,7 @@ test('unknown IDs, paths and arbitrary URLs cannot address files', async t => {
 });
 
 test('missing file and unavailable archive remain explicit; unconfigured archive does not leak paths', async t => {
-  const options = await fixture(t, { verdict: 'unreviewed' });
+  const options = await fixture(t);
   await rm(options.file);
   const registry = await loadVideoRegistry(options);
   assert.equal(registry.videos[0].available, false);

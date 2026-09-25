@@ -27,6 +27,26 @@ fortfarande att du väljer spelflik för bilddelningen; speldata fungerar även
 utan bilden. Spela i originalfliken. Grundläget **Bara standard** gör inga
 modellanrop; välj OpenClaw eller Skuggläge om du vill prova modellval.
 
+## Idle i Eventstudion
+
+Välj **Astrid → Vänteläge** för den förenklade idleeditorn. Den har tre delar:
+grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
+består av `idle_still` och `idle_breath`. `idle_blink`, `idle_cheek`,
+`idle_glance` och `idle_insulted` är de högst fyra engångsvarianterna.
+
+Mappstrukturen är kontraktet för släktskapet:
+
+- `emil/dealklipp-v1/idle/*.mp4` är loopande grundklipp.
+- `emil/dealklipp-v1/idle/variant/*.mp4` är korta varianter.
+- policyn `lab/policies/idle-policy.seed.json` bestämmer grundvikter och om en
+  variant är manuell, automatisk, regelstyrd eller OpenClaw-valbar.
+
+Startpolicyn visar `idle_still` med 90 % grundvikt och schemalägger blinkning
+ungefär var 25:e sekund med ±5 sekunders variation. Eftersom blinkklippet tar
+tid blir `idle_still` i praktiken ungefär 79 %, vilket editorn visar. Ett
+spel-, deal- eller talprov äger spelaren och blockerar idleprovet tills det är
+klart. Policyn sparas lokalt med projektet och publiceras inte till spelet.
+
 Native-observern ger publika kommandosvar, bordsvy och instrumenterade
 playback-/chattsignaler. Partner-SSE är kompletterande rundinstruktioner.
 Transport ansluten betyder ännu inte speldata mottagna. Samma instruktion

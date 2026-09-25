@@ -7,6 +7,11 @@ export type DirectorMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 export interface VideoEntry {
   classification?: VideoMetadata;
   source?: 'emil' | 'archive' | 'upload';
+  familyId?: string;
+  role?: 'standard' | 'variant';
+  eventId?: string;
+  situation?: string;
+  playbackType?: 'once' | 'idle-pool';
   addedAt?: string;
   id: string;
   label: string;
@@ -24,8 +29,19 @@ export interface VideoEntry {
   bindingScope: 'lab-only';
 }
 
+export interface MediaFamily {
+  id: string;
+  dealerId: 'astrid';
+  eventId: string;
+  situation: string;
+  playbackType: 'once' | 'idle-pool';
+  standardIds: string[];
+  variantIds: string[];
+}
+
 export interface VideoInventory {
   videos: VideoEntry[];
+  families?: MediaFamily[];
   summary?: {
     total: number;
     available: number;
