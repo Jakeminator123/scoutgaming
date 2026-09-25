@@ -23,8 +23,10 @@ Lokal studio → lokal server → Render Director → privat OpenClaw Gateway
 - **Operatörschatt:** frågor om labbprojektet; separat från spelarchatt.
 - **Social Astrid-chatt:** riktig textinput, egen sparad policy och
   validerad text/reaktion i `idle.ready`. Valfritt exakt ElevenLabs-tal.
-- **Produktens chatt:** en äldre egen väg i webbklienten; labbchatten har
-  inte ersatt den.
+- **Produktens strukturerade talbeslut:** `/chat` projicerar allowlistade
+  publika spelfakta och accepterar endast `recordedLine`, `generatedText`
+  eller `silence`. Den nya rollen `openclaw/croupier-speech` är skild från
+  operatörschatten. Koden är lokal och testad; rollen/adaptern är inte driftsatt.
 
 Eventtestets `chat.signal`, språk, återkomst och historikräknare är manuella
 testvärden. De är inte ett bestående spelarminne eller automatiskt lästa
@@ -45,6 +47,13 @@ med `remote_context_not_supported_baseline`. Director-redeploy och ett nytt
 kompatibilitetsprov behövs innan chattstödet får kallas aktivt där. Detta
 är separat från produktens framtida gemensamma talägarskap.
 
+Commit `1219d98` är den daterade utgångspunkten: fungerande lokal
+operatörsrelay men saknad privat produkt-Gateway-URL och fel standardroll för
+produktkontraktet. Commit `113dfd8` löser rollkonflikten i kod med en separat,
+verktygslös speech-roll och en smal Director-adapter. Den saknade privata
+transporten, ny separat token, Gateway-/Director-redeploy och isolerad runtime-QA
+återstår. OpenAI-provider/modell behålls; Gemini ska inte ersätta den.
+
 ## Ljudets roll
 
 ElevenLabs kan skapa ett explicit begärt talprov. Samma text/röst/modell/
@@ -54,8 +63,12 @@ inspelad dealerfilm.
 
 Ljudets beredskap, uppspelningstid, slut och avbrott kan vara styrsignaler
 för presentationen. Ingen mikrofon-/taligenkänningsingång hittades i de
-granskade klient- och labbvägarna. Att låta en enda ny talägare ersätta den
-gamla är en önskad integrationsriktning, ännu inte en utförd avstängning.
+granskade klient- och labbvägarna. Produktkoden håller ett svar utanför kön
+tills den riktiga spelaren kvitterat aktuell `standard-idle`; först då får
+chattrad, caption, ljud och visuell presentation släppas till den befintliga
+enda talkön. Den posegrinden är kod- och regressionstestad, men inte verifierad
+mot en ny driftsatt speech-roll. En fil som börjar/slutar i startbilden eller
+en fristående preview bevisar inte att grinden passerade i produkten.
 
 ## Vad vet vi om drift?
 
@@ -97,3 +110,5 @@ Fördjupning: [social labbchatt](../../../../lab/SOCIAL-CHAT.md),
 [drift](../../../../open-claw/lab/docs/DEPLOYMENT.md),
 [dashboard](../../../../open-claw/lab/docs/DASHBOARD-SV.md) och
 [miljö-/API-förklararen med variabelnamn och läsordning](MILJO-OCH-API.md).
+Den exakta kvarvarande driftsordningen finns i
+[produktens speech-plan](../../../../open-claw/lab/docs/PRODUCT-SPEECH-DEPLOYMENT-SV.md).

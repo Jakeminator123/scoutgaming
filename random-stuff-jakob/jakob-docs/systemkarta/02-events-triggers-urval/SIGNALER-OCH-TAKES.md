@@ -147,12 +147,13 @@ Ja, som befintliga genvägar och migreringsankare, inte som komplett kontrakt:
 Motorn har tio interna eventnamn; Partner har sex presentationstyper; labbet
 har sexton grupper. Inget av dessa antal anger hur många filmer som behövs.
 
-### Deal: vad betyder 2 + 3 + 2?
+### Deal: exakt position, inte riktningsgissning
 
-Partner/labb grupperar box 0–1 till vänster, 2–4 till mitten, 5–6 till höger.
-Det är sju platser. Croupiern är en separat mottagare. Kevins native-klient
-använder också faktiskt skärmmål och take-kompatibilitet; 2+3+2 är inte en
-garanti för hur alla filmrörelser kan återanvändas.
+De äldre eventgrupperna sorterar box 0–1 som vänster, 2–4 som mitten och 5–6
+som höger. Den aktuella Astrid-resolvern väljer ändå **exakt familj**:
+box 0–6 → `deal_pos1–7`; croupierns öppna kort → `deal_posdealer`.
+Vänster/mitten/höger är navigationsgrupper, inte ett tillstånd att låna
+grannens film. Otydligt eller dolt dealer-event utan stödd familj blir 2D-reserv.
 
 Exempel: **box 5, ursprunglig hand, andra kortet, öppet kort**. Boxen, handen
 och kortpositionen avgör vilka takes som kan fungera. Därefter kan uttrycket
@@ -167,24 +168,30 @@ kombination måste ha en unik film" är styrkt utan granskade takes.
 
 ### Idle: ett annat slags behov
 
-Idle behöver normalt ingen box eller kortposition. Här är basloop, små
-blickinslag, repetitionsregler och när nästa handling får bryta in relevanta.
-Kevins Astrid-spelare har redan en sådan specifik idle-scheduler med separata
-medier och ready-pose-gränser. Labbets råvideopreview spelar däremot en fil
-en gång. En generell redigerbar sekvens-/loopfunktion är ännu inte införd.
+Idle behöver normalt ingen box eller kortposition. Manifest v2 har två
+basloopar i `idle/` och fyra engångsvariationer i `idle/variant/`. Policyn
+skiljer basvikt, automatisk variant (intervall, jitter, cooldown, maxfrekvens),
+regelstyrd variant och OpenClaw-valbar variant. Grundvikt är inte samma sak som
+faktisk tidsandel när engångsklipp tar tid.
 
-## Tal: beslutad riktning, inte genomförd avstängning
+Eventstudions enminutsprov spelar lokala filer, loggar planerad och faktisk
+start/slut samt återgång till bas. Det är ett policyprov, inte verifiering av
+produktens live-scheduler, ready-pose-grind eller läppsynk. En vanlig
+filpreview bevisar ännu mindre.
 
-Jakob vill ersätta Kevins gamla talväg helt i den nya integrationen. Mål:
-**en enda talägare**, med förinspelade standardfraser och OpenClaw/ElevenLabs
-för tillåtna genererade svar. `speak.line` kan fortfarande vara inkommande
-replikavsikt, utan att aktivera den gamla ljudbanken parallellt.
+## Tal: lokalt kontrakt klart, driftsättning återstår
 
-Denna dokumentationsändring stänger inte av någon produktkod. Vid övergången
-behöver gammal talägare stängas av i vald integrationsväg för alla fyra dealers,
-men kortljud, atmosfär, resultat och Partner-kontrakt ska inte raderas av misstag.
-Dubbel talning måste testas. Nytt ljud över gammal talvideo är inte godkänd
-läppsynk: använd tyst kompatibel rörelse eller ett exakt matchat talpaket.
+Produktens kod har nu en separat verktygslös roll,
+`openclaw/croupier-speech`, som bara får välja `recordedLine`,
+`generatedText` eller `silence` över allowlistad publik status. Operatörschatt,
+socialt labbprov och produktbeslut är separata flöden. Svar väntar på verkligt
+kvitterad `standard-idle` innan den enda befintliga talkön får chattrad, caption,
+ljud och presentation.
+
+Roll och smal Director-adapter är kod- och regressionstestade i `113dfd8`,
+men saknar ännu privat transport, separat driftstoken, redeploy och isolerad
+runtime-QA. OpenAI behålls som provider. Nytt ljud över gammal talvideo är inte
+godkänd läppsynk: använd neutral idle/tystnad eller ett exakt matchat talpaket.
 
 ## Vidare riktning — skilj infört från förslag
 

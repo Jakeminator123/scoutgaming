@@ -38,14 +38,13 @@ egna Environment-inställningar. [Miljöförklararen](05-openclaw-rost-och-drift
 listar samtliga kontrollerade namn, ansvar och läsordning — inga värden.
 Kopiera aldrig hemligheter till Git, chatt eller `NEXT_PUBLIC_*`.
 
-**Video och indexering:** Enligt Jakob finns utöver repots media en separat
-lokal mapp med MP4-material hämtat från Bettalotto för slask/mappning. Den är
-inte kanonisk produktkälla och ska inte automatiskt skannas, importeras eller
-raderas.
-Ett konkret generationsarkiv är nu verifierat genom ID-/storleksmetadata:
-`C:/Users/jakem/CroupierAssets/bettalotto-generations` (224 poster). Det är
-labbets befintliga förval och inte det pensionerade personarkivet; om det
-är samma slaskmapp är inte belagt. `LAB_VIDEO_ARCHIVE` väljer annan plats.
+**Video och indexering:** Den aktuella labbkällan för Emils Astrid-material är
+`emil/dealklipp-v1/` i repot. Manifest v2 har 31 oförändrade MP4-filer i 26
+exakta familjer: deal, repliker och idle. Det tidigare externa
+`C:/Users/jakem/CroupierAssets/bettalotto-generations` användes som daterat
+inventeringsunderlag men dess MP4-filer flyttades till Windows papperskorg den
+25 september; sökvägen är inte längre standardkälla. `LAB_VIDEO_ARCHIVE` är
+endast en valfri override till en rot med samma Emil-manifeststruktur.
 Hemliga inställningsvärden dokumenteras inte här.
 `.cursorindexingignore` utesluter lokala bygg-/beroendekataloger och binära
 video-, ljud-, bild- och 3D-format från semantisk indexering. Den raderar inga

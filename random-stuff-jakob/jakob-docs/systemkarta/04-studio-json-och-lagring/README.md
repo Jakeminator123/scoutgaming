@@ -9,6 +9,7 @@ Medierna ligger separat.** Ett begripligt träd behöver inte bli nya diskmappar
 lab/
 ├── policies/project.seed.json    startdata
 ├── policies/studio-contract.json fasta grupper och situationer
+├── policies/idle-policy.seed.json basvikter och idlebehörigheter
 ├── schemas/                     läsbara formatkontrakt
 ├── animations/                  64 eventrörelser + separat social rörelse
 └── data/                        lokalt, Git-ignorerat
@@ -31,6 +32,13 @@ video-ID; fältet heter fortfarande `videoGenerationId` även för uppladdningar
 `selection.rules/model/random` styr vilka automatiska urval som får använda
 ett alternativ. Triggers ger ytterligare villkor.
 
+För Astrids manifestägda familjer skapar studion i stället en tillfällig vy av
+exakt mottagen box/replik. Manifest v2 i `emil/dealklipp-v1` har 31 filer och
+26 familjer. `mediaPolicy` tillåter högst fyra varianter per deal-/replikfamilj;
+tom `variant/` ger standard. `idlePolicy` äger två basloopars vikter och de
+fyra idlevarianternas användning: manuell, automatisk, regelstyrd eller
+OpenClaw-valbar. De två policyerna ska inte konkurrera om idle.
+
 ## Vad sparas när?
 
 Videointake sparar MP4/WebM och metadata i den lokala banken. Att koppla en
@@ -43,23 +51,18 @@ Projektlagringen använder revision, historik och atomiskt skrivande.
 Social policy och ljudcache är separata från `project.json`. Inga av dessa
 lokala filer innebär automatiskt en driftsättning eller produktbindning.
 
-Generationsoriginalen ligger även utanför repot, i
-`C:/Users/jakem/CroupierAssets/bettalotto-generations`. Detta är labbets
-befintliga lokala arkivförval; `LAB_VIDEO_ARCHIVE` kan ange annan plats.
-224/224 snapshot-ID:n och filstorlekar matchade i metadata-inventeringen
-22 september. Inventeringen är inte en ny byte-/hash- eller visuell granskning.
-Behåll filmbytes där; media behöver inte kopieras in i Git eller inkluderas
-i semantisk repoindexering för att kunna spelas via en explicit lokal koppling.
-Mappen ska inte blandas ihop med det pensionerade personarkivet eller antas
-vara Jakobs tidigare nämnda slaskmapp utan separat belägg.
+Den aktuella standardkällan för Astrids nya familjer är den versionshanterade
+`emil/dealklipp-v1/`; inga MP4 kopieras till `lab/data/`. `LAB_VIDEO_ARCHIVE`
+kan endast ersätta roten med en annan katalog som har samma manifeststruktur.
+Det tidigare externa generationsarkivet är inte längre standard efter att dess
+MP4-filer flyttades till papperskorgen den 25 september. Produktens separata
+`CROUPIER_GENERATIONS_DIR` och BO-katalog har ett annat ansvar.
 
-Produktserverns valfria `CROUPIER_GENERATIONS_DIR` väljer läskatalog för BO
-och Generations-API, med `web/public/bo/gen` som oförändrat standardläge.
-Labbets `LAB_VIDEO_ARCHIVE` har separat ansvar. Den isolerade startarens
-`--media-directory` sätter båda till samma befintliga mapp i processerna;
-den skriver inte `.env`, kopierar inte filmer och raderar inte arkivet vid
-avslut. Varken variabeln eller flaggan är en ny uppladdning eller en automatisk
-Git-synk av video. Katalog-ID, filnamn, auth och realpath kontrolleras vid läsning.
+Idleeditorns planerade minut är deterministisk utifrån seed, vikter, intervall,
+jitter, cooldown och maxfrekvens. **Grundvikt är inte faktisk tidsandel**:
+engångsvariationernas klipptid minskar baslooparnas andel. Det lokala
+minutprovet spelar filerna, loggar start/slut och återgår till bas, men är inte
+bevis på produktens live-scheduler eller en godkänd poseövergång.
 
 ## Vem läser vad?
 

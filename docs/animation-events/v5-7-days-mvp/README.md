@@ -1,17 +1,18 @@
 # Croupier · Presentationsplan V5
 
-**22 september 2026 · sju återstående arbetsdagar · Jakob, Kevin och Emil.**
+**25 september 2026 · sju återstående arbetsdagar · Jakob, Kevin och Emil.**
 
-[Öppna webbsidan](https://animation-events-v1.vercel.app/) ·
-[Läs wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events) ·
+[Läs den aktuella wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events) ·
+[Äldre publik webbsida från 21 september](https://animation-events-v1.vercel.app/) ·
 [Nästa sju dagar](s06-plan.md) ·
 [Portabel sjudagarshandoff](HANDOFF-7-DAGAR.md)
 
-Vi har nu en lokal kedja från mottagen presentationsinstruktion till
-variantbeslut och uppspelning av befintligt material. Nästa mål är att ansluta
-Jakobs OpenClaw-chatt som gemensam samtals- och talägare i produkten, med
-Kevin/Emils exakta läppsynkade material och Kevins gemensamma uppspelningskö.
-Spelservern behåller alla spelbeslut.
+Vi har en lokalt verifierad kedja från mottagen presentationsinstruktion till
+variantbeslut och uppspelning. Det aktiva manifestet har schema 2 och innehåller
+31 poster i 26 familjer: åtta deal-familjer, sjutton speech-familjer och en
+idle-familj. Produktens separata OpenClaw-talroll och Director-adapter är byggda
+och testade lokalt, men privat produkttransport, token, driftsättning och runtime-QA
+återstår. Spelservern behåller alla spelbeslut.
 
 ## Börja där arbetet finns
 
@@ -39,11 +40,11 @@ av Bettalotto. Live-revisionen är ännu inte belagd; generations-API:t gav
 [Ändrat från V4](DECISIONS.md) · [Källor och prov](RUNTIME-EVIDENCE.md) ·
 [Publicering och historik](CANVAS.md)
 
-## En källa, två läsytor
+## En källa, en verifierad wiki
 
-Denna mapp är sakunderlaget. GitLab-wiki och GitHub/Vercel är V5:s läsytor.
-Den lokala uppdateringen 22 september behöver separat synk/publicering;
-senaste daterade publiceringskvittot är 21 september. Kontrollera källrevisionen.
-`animation-events-v1` är det historiska repo- och domännamnet; innehållet är
-V5. V4 bevaras som daterad historik. Privata loggar, råa konversationer,
-personuppgifter och API-hemligheter publiceras inte.
+Denna mapp är sakunderlaget. GitLab-wikin synkas direkt med Croupiers verktyg och
+får ett källcommit och SHA-256 per fil. GitHub/Vercel är en separat äldre
+åttadagarswebb från 21 september och ingår inte längre i normal wiki-publicering.
+`animation-events-v1` är det historiska repo- och domännamnet. V4 bevaras som
+daterad historik. Privata loggar, råa konversationer, personuppgifter och
+API-hemligheter publiceras inte.

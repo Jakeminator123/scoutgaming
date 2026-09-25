@@ -35,6 +35,15 @@ Astrids Eventstudio och native-följning använder nu samma exakta mediefamilj:
 events behåller kort, box, handindex och replik. Standardfil och varianter
 kommer från manifestet, inte från projektets gamla 2D-demovarianter.
 
+Manifest v2 har 26 familjer och 31 filer: åtta dealfamiljer, sjutton
+replikfamiljer och en idlefamilj. Deal/replik använder
+`deal/<familj>/<standard>.mp4` respektive
+`repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då
+standard. Idle har två basloopar direkt i `idle/` och högst fyra
+engångsvariationer i `idle/variant/`. Högst fyra filvarianter får vara
+valbara per familj. Filnärvaro, hash och playbackkvitto är fortfarande inte
+ett mänskligt godkännande av läppsynk eller kortkontakt.
+
 `mediaPolicy` är ett frivilligt tillägg till projektets schema v1. Äldre projekt
 och egna ändringar skrivs inte över. För en manifeststyrd dealer ersätter en
 tillfällig vy den aktuella linjens kandidater med exakt familjs standard och
@@ -67,6 +76,13 @@ tid blir `idle_still` i praktiken ungefär 79 %, vilket editorn visar. Ett
 spel-, deal- eller talprov äger spelaren och blockerar idleprovet tills det är
 klart. Policyn sparas lokalt med projektet och publiceras inte till spelet.
 
+Grundvikt är alltså inte faktisk tidsandel. Automatisk idlevariant följer
+intervall, jitter, cooldown och maxfrekvens. Regelstyrd och OpenClaw-valbar
+variant kräver en separat tillåten orsak; manuell variant schemaläggs inte.
+Det deterministiska enminutsprovet spelar verkliga lokala filer och loggar
+start/slut/återgång, men är inte produktens live-scheduler. En enkel filpreview
+bevisar varken scheduler, kompatibel start-/slutpose eller produktintegration.
+
 Native-observern ger publika kommandosvar, bordsvy och instrumenterade
 playback-/chattsignaler. Partner-SSE är kompletterande rundinstruktioner.
 Transport ansluten betyder ännu inte speldata mottagna. Samma instruktion
@@ -88,6 +104,12 @@ spelarkoden på vald server; lokal merge är inte Bettalotto-deploy.
 Vid full historik: exportera och välj **Ny observation** i Diagnostik.
 Det ersätter protokollet och gamla labbkön men behåller spelet och anslutningen.
 Konfiguration och gränser finns i [labbets README](../README.md#läsande-partner-ström).
+
+Källklippen från Emil är 1080×1920 (9:16). Det beskriver filens pixelformat,
+inte att Eventstudion eller spelet har en enda låst mobil layout. Respektive
+klient skalar och beskär materialet i sin egen desktop-/mobilyta. Produktens
+`?rehearsal=1` öppnar den befintliga QA-panelen ovanpå den riktiga
+produktspelaren; det är inte en ny Eventstudio-flik.
 
 **Socialt svar** är ett eget idle-prov med en enda talägare och högst 25
 sekunder ljud. För långa ljud avvisas; avbrott/fel loggas. Modellens uttrycks-

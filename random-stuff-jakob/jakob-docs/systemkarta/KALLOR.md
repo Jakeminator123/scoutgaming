@@ -2,6 +2,31 @@
 
 [Till systemkartan](README.md)
 
+## Aktuell dokumentationskontroll · 25 september
+
+Kodankare: `113dfd8a840eccfa159aa15b6be478738467dde5`. Labbets Guide renderar
+`lab/docs/guide.json` och ordlistan i `lab/policies/studio-contract.json` via
+`lab/components/studio-guide.tsx`; en tredje fristående användarguide behövs
+inte. Manifest v2 i `emil/dealklipp-v1/lab-video-manifest.json` innehåller 31
+poster i 26 familjer. Resolvern väljer exakt box/replik, idlepolicyn skiljer
+basloopar från manuella, automatiska, regelstyrda och OpenClaw-valbara
+engångsvariationer, och playbackkvittot innehåller fil/familj.
+
+OpenClaw-kontrollen börjar i `open-claw/lab/docs/README.md` och den låsta
+2026.9.5-källan. `1219d98` bevisade operatörsrelay men inte produktväg.
+`113dfd8` tillför en separat verktygslös `croupier-speech`-roll och smal
+Director-adapter; 127 OpenClaw-tester och hela pre-commit passerade i dess
+leveranskvitto. Ingen Gateway/Director redeploy, ny driftstoken eller produkt-
+runtime-QA är gjord. OpenAI-provider/modell är bevarad.
+
+Publiceringskontrollen jämförde GitLab-wikin `6d2996e` och webb-repot/Vercel
+`f43806b` mot den lokala källan. Båda externa läsytorna var kvar på den
+21-septembers publicering som fortfarande använde `v5-8-days-mvp`; den
+publicerade webbsidan visade innehållsfingeravtryck `7b010e2b2054`. GitLab
+kräver autentisering men wikin kunde klonas över SSH. Ny wiki-synk sker direkt
+från Croupier och behöver varken webbbygge eller Vercel. Separat publicerings-
+kvitto finns i `docs/animation-events/V5-PUBLICATION.md`.
+
 **Uppdaterad 22 september 2026 för V5, D0 + sju dagar.** Översynen gäller systemkartans
 sex ämnen, deras README/källpekare och de två aktiva modellreferenserna.
 Kod, aktiva tekniska guider och daterad handoff är underlaget. Personarkiv,

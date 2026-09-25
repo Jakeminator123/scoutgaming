@@ -1,5 +1,29 @@
 # V5 · källor, prov och bevisgränser
 
+## Aktuellt ankare · 25 september 2026
+
+Croupier-ankaret är `113dfd8a840eccfa159aa15b6be478738467dde5`. Det aktiva
+dealerregistret är `emil/dealklipp-v1/lab-video-manifest.json`, schema 2, med
+31 poster i 26 familjer: åtta deal, sjutton speech och en idle. Box 0–6 mappar
+exakt till `deal_pos1`–`deal_pos7`; tal matchas på line-ID. Idlepolicyn har två
+baser och fyra varianter. Det externa 224-postersarkivet är historiskt och inte
+normal runtimekälla.
+
+Commit `113dfd8` skiljer ut produktrollen `openclaw/croupier-speech` och ger
+en tunn Director-adapter för `/api/product/speech`. 127 OpenClaw-tester och
+pre-commit-listan passerade i leveranskvittot. OpenAI-kopplingen är kvar.
+Privat produkttransport, token, redeploy och runtime-QA återstår, så detta är
+lokalt verifierad kod och inte bevis på driftsatt talägarskap.
+
+Commit `c1622bde` gav den kompakta idle-editorn. 360 labbtester, TypeScript,
+bygge, desktop/390 px-browserprov, dealer-sync-audit och rehearsal-kontroll
+passerade enligt handoffen. Detta verifierar editorns och spelarvägens
+livscykel, inte visuell läppsynk för enskilda takes.
+
+GitLab-wikin är den primära dokumentationsytan. Den separata Vercel-webben
+visar fortfarande 21 septembers åttadagarsversion; dess deploy eller existens
+bevisar inte att detta ankare är publicerat.
+
 ## Integrationsunderlag · 22 september 2026
 
 Nuvarande dokumentation gäller Jakobs `jakeminator123/work` med Kevins

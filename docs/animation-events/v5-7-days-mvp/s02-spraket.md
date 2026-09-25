@@ -27,6 +27,12 @@ Native-bryggan skickar först efter commit. Retry, state-read, stale/nekade
 kommandon och rollback får inte bli nya spelade rundor. En publiceringsstörning
 ska inte återkalla ett redan committat spelkommando.
 
+Håll även isär fyra observationsnivåer: native-observationen läser klientens
+publika fakta och instrumenterade signaler; Partner-SSE levererar
+presentationsinstruktioner; uppspelningskvittot beskriver vad spelaren gjorde;
+modellindata är ett filtrerat urval av tillåtna fakta. Privata fält, framtida
+kort och dolt hålkort tillhör ingen av de publika modellindataflödena.
+
 ## Variantbeslut är inte playback
 
 `POST /api/presentation/decision` tar emot ett eget besluts-ID och separat
@@ -70,9 +76,10 @@ Högst åtta user/assistant-meddelanden från native-observationen får ge
 variantkontext, med källa och tid före eventet. Gränsen är 600 tecken per
 meddelande och 3 200 totalt; en lucka bryter historiken. Separata identitets-,
 saldo- och authfält följer inte med. Chatttext är indata, inte instruktioner.
-Den uppdaterade Director måste kvittera kontrakt v2 och antal mottagna
-meddelanden. Äldre remote ger `remote_context_not_supported_baseline` och
-standarduppspelning tills redeploy/nytt prov belägger stödet.
+Director måste kvittera rätt kontrakt och antal mottagna meddelanden.
+Produktens separata speech-roll och adapter har lokala kontraktstester, men
+äldre remote/runtime är fortfarande baseline tills redeploy och nytt prov
+belägger privat transport, token och faktisk användning.
 
 Det äldre isolerade provet med 12 importerade steg avser revisionen från
 21 september. Aktuell integration och operatörens flikval behöver sina egna

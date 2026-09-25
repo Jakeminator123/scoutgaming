@@ -1,8 +1,20 @@
 # S03 · Kevin och Emil: lägg in video och koppla triggers
 
-Detta går att göra nu i det lokala labbet. Webbsidan och wikin är instruktionen;
-själva filuppladdningen görs i labbets **Videobank**, inte på Vercel-sidan eller
-i backoffice. Sparat labbprojekt blir inte automatiskt aktivt i spelet.
+Produktens aktuella dealerbank byggs i en separat stagingkatalog och registreras
+i `emil/dealklipp-v1/lab-video-manifest.json`; wikin är instruktion, inte
+medielagring. Labbets **Videobank** är fortfarande en lokal experimentyta.
+En uppladdning där blir inte automatiskt aktiv i produkten.
+
+## Produktens granskningsväg först
+
+Varje ändrad replik är ett paket: exakt text, ljud, video, frame-index,
+kalibrering och acceptansnotis. Nytt ljud- eller videohash ogiltigförklarar
+tidigare visuellt godkännande. Bygg ersättningstakes i staging; skriv inte över
+kalibrerat material i liveindex och ta inte bort metadata för att kringgå
+skyddet. Kör `node pipeline/audit-dealer-sync.mjs --probe` och pre-commit-
+kontrollerna. Granska Vera, Astrid, Amira och Mei via
+`?dealer=<namn>&rehearsal=1`, två plays i följd. Baseline, hash och waveform
+är inte ensamma bevis för läppsynk.
 
 ## Förbered en liten, exakt leverans
 
@@ -90,7 +102,8 @@ lokalt original. En explicit koppling går före. Alternativ utan egen film
 får sin 2D-reserv och lånar aldrig standardtal. `videoGenerationId` är ett
 äldre fältnamn som även används för uppladdade video-ID:n.
 
-Registrerade Astrid-original omfattar 17 tal, ett idle och fyra staged-baser.
-Staged-fortsättningar är inte fristående basfilmer. Avvisad gammal Astrid-action
-återinförs inte. Plats 0/3/6 och dealer är avgränsade grundmål; full täckning
-för senare kort, alla platser, split och övergångar återstår.
+Det aktiva manifestet omfattar åtta exakta deal-familjer, sjutton speech-
+familjer och en idle-familj. Box 0–6 mappar till `deal_pos1`–`deal_pos7`;
+tal matchas på exakt line-ID. Idle har två baser och fyra varianter. Full
+plats-/splitkontakt och visuell acceptans måste fortfarande beläggas i den
+faktiska rehearsal-spelaren.
