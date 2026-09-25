@@ -1,3 +1,34 @@
+## 2026-09-25 — Samma bildformat för genererade chattsvar och idle
+
+Jakobs två bilder visade att den genererade talfilmen zoomade in jämfört med
+Emils idlefilm. Felet reproducerades i en separat lokal browserprofil via
+`localhost:4200`, utan att avbryta hans spelrunda på `127.0.0.1:4200`.
+Båda källfilmerna är 1080×1920. Vid viewport 1282×1366 hade idleelementet
+rätt mått, men talvideon blev **1282×2279,109375** i sin 1282×1366-container.
+Gridens implicita minsta spårstorlek lät videons naturliga proportioner växa
+utanför ytan, som sedan klippte bilden trots `object-fit: contain`.
+
+`web/public/generated-speech-player.mjs` placerar nu videon absolut inom
+talytan, med samma inset, bredd, höjd och contain som den lokala filmspelaren.
+Det behövs ingen grid för centrering. Talpaket, mediabytes, kalibrering,
+hashkontroller och spelordning är oförändrade.
+
+Ett riktigt nytt OpenClaw/ElevenLabs/RunPod-chattsvar verifierade efter ändringen
+att talvideo och idlebild har identiska elementmått i **1282×1366** och
+**390×844**. Screenshots under uppspelning och efter återgång till idle visar
+att förstoring/beskärning är borta. Detta är formatverifiering, inte ett nytt
+visuellt läppsynkgodkännande. Kvar: kortöverläggens placering och chattpanelens
+täckning av ansiktet på smal skärm är separata frågor.
+
+Hela `.githooks/pre-commit` och `node pipeline/audit-dealer-sync.mjs --probe`
+passerade. Befintlig `goodluck` spelades två gånger i följd för alla fyra
+dealers via den riktiga rehearsalspelaren, utan playbackfel eller konsolfel.
+Detta var bara obligatorisk regression; Jakob förtydligade att utvecklingen
+nu gäller **enbart Astrid**. Inga andra dealers ändrades. Hans Astridflik
+laddades om efter avslutad runda och Klippval återställdes till OpenClaw;
+den separata provfliken stängdes. Jira-anslutning och aktuell CAC-issue saknades;
+inga trackerstatusar ändrades. De tre tidigare ospårade filerna bevarades.
+
 ## 2026-09-25 — Mobilprov med genererat tal och idlereaktion
 
 Jakob prioriterar naturlig chattröst och läppsynk före kortens landningspositioner.
