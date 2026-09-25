@@ -100,7 +100,7 @@ test('child environments separate credentials, empty provider settings and use d
   }
 });
 
-test('isolated product can receive only the narrow Director speech credential', async t => {
+test('isolated product keeps speech and presentation credentials separate without Gateway access', async t => {
   const productSpeechSecret = 'fixture-product-speech-only';
   const file = await privateFixture(t, {
     OPENCLAW_BASE_URL: 'https://gateway.example.test', OPENCLAWAPI_KEY: 'fixture-full-gateway-must-not-forward',
@@ -118,6 +118,8 @@ test('isolated product can receive only the narrow Director speech credential', 
   const specs = childSpecifications(configuration, directory, { productPort: 4196, labPort: 4197 });
   assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_URL, 'https://director.example.test');
   assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, productSpeechSecret);
+  assert.equal(specs.product.env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN, 'fixture-lab-director-only');
+  assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, specs.lab.env.LAB_STUDIO_DATA_DIR);
   assert.equal(specs.product.env.OPENCLAWAPI_KEY, '');
   assert.equal(specs.product.env.OPENCLAW_BASE_URL, '');
   assert.deepEqual(JSON.parse(specs.product.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), ['https://director.example.test']);
@@ -331,7 +333,7 @@ test('generated speech forwards only scoped provider credentials and separate di
     assert.equal(spec.env.RUNPOD_ENDPOINT_ID, '');
     assert.equal(spec.env.OPENCLAWAPI_KEY, '');
     assert.equal(spec.env.OPENCLAW_MODEL_API_KEY, '');
-    assert.deepEqual(JSON.parse(spec.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), [origin, 'https://api.elevenlabs.io', 'https://api.runpod.ai']);
+    assert.deepEqual(JSON.parse(spec.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), [origin, ...(name === 'product' ? ['https://director.example.test'] : []), 'https://api.elevenlabs.io', 'https://api.runpod.ai']);
     const command = JSON.stringify([spec.command, ...spec.args]);
     assert.ok(!command.includes(eleven)); assert.ok(!command.includes(runpod));
     assert.ok(!Object.keys(spec.env).some(key => key.startsWith('NEXT_PUBLIC_')));

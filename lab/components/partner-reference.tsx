@@ -84,6 +84,7 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
       url.searchParams.set('labObserverOrigin', window.location.origin);
       url.searchParams.set('labObserverChannel', channel);
       url.searchParams.set('dealer', dealerId);
+      if (dealerId === 'astrid') url.searchParams.set('presentation', 'local');
       game.location.replace(url.href);
       onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Originalspel och labbföljning startade', owner: 'Partner-launch + native-observation', reason: 'Spela i originalfliken. Bilddelningen väljs i webbläsaren; data följs automatiskt.', data: { dealerId, presentationMode: data.presentationMode } });
     } catch (cause) { game.close(); gameWindow.current = null; observer.current = null; onDisconnect(); setError(cause instanceof Error ? cause.message : 'Spelet kunde inte anslutas.'); }
@@ -141,9 +142,9 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   const rounds = trace.records.filter(record => record.kind === 'round').length;
   const canLaunch = access?.scopes.includes('launch');
   return <section className={styles.reference} aria-label="Referensspel och observationsprotokoll">
-    <span className="eyebrow">ETT SPEL · TVÅ PRESENTATIONER</span>
-    <h3>Originalet och labbet, sida vid sida</h3>
-    <p>Anslut öppnar rätt spelarsession och följer dess speldata. Spela i originalfliken; här ser du samma instruktioner, labbets variantval och faktisk uppspelning.</p>
+    <span className="eyebrow">{dealerId === 'astrid' ? 'ETT SPEL · EN PRESENTATION' : 'ETT SPEL · TVÅ PRESENTATIONER'}</span>
+    <h3>{dealerId === 'astrid' ? 'Spela i Web. Konfigurera och följ i Lab.' : 'Originalet och labbet, sida vid sida'}</h3>
+    <p>{dealerId === 'astrid' ? 'Anslut öppnar Astrid med Emils lokala filmer. Spela och chatta i spelfliken; här ser du samma spelares klippval och faktiska uppspelning.' : 'Anslut öppnar rätt spelarsession och följer dess speldata. Spela i originalfliken; här ser du samma instruktioner, labbets variantval och faktisk uppspelning.'}</p>
     <div className={styles.tools}><button className="primary-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
     {!configuration?.configured ? <p className={styles.note}>{configuration ? 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
     {error ? <p role="alert">{error}</p> : null}

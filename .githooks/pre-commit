@@ -23,3 +23,4 @@ node --test test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-face-
 node --test test/native-partner-events.mjs test/bo-media-preview.mjs
 node --test test/native-observation.mjs test/clip-mapping.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 node --test test/local-comparison-fixture.mjs test/generation-media.mjs
+node --test test/local-presentation.mjs

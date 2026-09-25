@@ -52,13 +52,21 @@ const DEALERS = {
             table: 'dealers/mei/table.png' },
 };
 const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
+const localPresentationEnabled = DEALER.key === 'astrid' && new URLSearchParams(location.search).get('presentation') === 'local';
+let localPresentation = null;
+if (localPresentationEnabled) {
+  document.documentElement.dataset.presentation = 'local';
+  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/local-presentation.css'; document.head.append(css);
+  $('#supervisor')?.removeAttribute('src');
+  $('#supervisor')?.load();
+}
 const clientSessionRevision = crypto.randomUUID();
 let tableVersion = 0;
 let speechPoseGate = null;
 let idlePresentationSequence = 0;
 const dealerV2Route = location.pathname === '/v2' || location.pathname.startsWith('/v2/');
 const nativeObservation = createNativeObservation({ href: location.href, opener: window.opener });
-nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original' });
+nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original', presentationOwner: localPresentationEnabled ? 'web-local' : 'legacy' });
 if (!dealerV2Route && DEALER.key === 'amira') DEALER.scene = 'dealers/amira/scene.png';
 if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
 {
@@ -80,7 +88,7 @@ if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVe
 const riggedReview=DEALER.key==='astrid'&&new URLSearchParams(location.search).get('scene')==='rigged-review';
 // Astrid's replacement waiting loop uses the approved elevated green camera.
 // Old frontal idle, speech and dealing fallbacks stay retired.
-const astridRestart=dealerV2Route&&DEALER.key==='astrid'&&!riggedReview;
+const astridRestart=!localPresentationEnabled&&dealerV2Route&&DEALER.key==='astrid'&&!riggedReview;
 const amiraBlender=dealerV2Route&&DEALER.key==='amira';
 const amiraComposite=amiraBlender&&new URLSearchParams(location.search).get('composite')!=='off'?await loadActorComposite().catch(error=>{console.warn('[composite]',error.message);return null;}):null;
 const amiraSpeakTake=amiraBlender?await loadGreenSpeak('review/amira-green-speak/speak.json','amira'):null;
@@ -93,8 +101,8 @@ if(astridRestart){
   document.documentElement.dataset.actorIsolated='true';
   document.documentElement.dataset.astridDealing='paused';
 }
-const speechMedia = greenActor?{}:await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
-const performanceStaged=astridRestart||(!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged');
+const speechMedia = (greenActor||localPresentationEnabled)?{}:await fetch('speech-media.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+const performanceStaged=!localPresentationEnabled&&(astridRestart||(!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged'));
 const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
 const performanceMotion=new URLSearchParams(location.search).get('motion');
 const astridGreenReview=astridRestart;
@@ -148,7 +156,7 @@ if(performanceStaged&&!astridDealingPaused) {
   }catch(error){console.info('[performance]',error.message);}
 }
 let dealingCues = null;
-if (!astridRestart&&DEALER.dealingCues) {
+if (!localPresentationEnabled&&!astridRestart&&DEALER.dealingCues) {
   try {
     const response = await fetch(DEALER.dealingCues);
     if (response.ok) dealingCues = await response.json();
@@ -160,7 +168,9 @@ let tableScene = null;
 // pending. Waiting for gameplay controls leaves the shoe at the old viewport.
 addEventListener('resize', () => tableScene?.resize());
 try {
-  if(riggedReview){
+  if(localPresentationEnabled){
+    // The portrait film already contains its table. DOM cards remain authoritative.
+  }else if(riggedReview){
     const {createRiggedTableScene}=await import('./rigged-table-scene.mjs');
     tableScene=await createRiggedTableScene($('#table-canvas'),{faceStudy:new URLSearchParams(location.search).get('face')==='anatomical'});
     const css=document.createElement('link');css.rel='stylesheet';css.href='rigged-review.css';document.head.append(css);
@@ -324,7 +334,7 @@ if(astridRestart){
   if(waiting)astridWaiting=await installGreenWaiting($('#scene'),waiting,{composite});
   else installGreenRestFrame($('#scene'),{...line,rest:amiraSpeakTake.rest,dealerName:DEALER.name});
   astridSpeak=await installGreenSpeak($('#scene'),amiraSpeakTake,{waiting:()=>astridWaiting,composite});
-}else try {
+}else if(!localPresentationEnabled)try {
   await engine.init();
   if(engine.fullActor){
     document.documentElement.dataset.actorIsolated='true';
@@ -368,10 +378,12 @@ const speechQueue = createSpeechQueue({
 });
 const rawSpeechTurn = fn => speechQueue.enqueue(fn);
 const speechTurn = fn => rawSpeechTurn(async signal => {
+  localPresentation?.state({ speech: true });
   updatePoseState({ dealerPose: 'speech', speechOwner: 'game', idlePresented: null }, 'game-speech-started');
   try { return await fn(signal); }
   finally {
     updatePoseState({ dealerPose: 'unknown', speechOwner: 'none', idlePresented: null }, 'game-speech-completed');
+    localPresentation?.state({ speech: false });
     if (greenActor || engine.presentedClip === CLIP.idle) presentStandardIdle('game-speech-return');
   }
 });
@@ -383,7 +395,7 @@ const voice = {
   greeted: false,
   dead: new Set(),
   load() {
-    if(greenActor)return;
+    if(greenActor||localPresentationEnabled)return;
     for (const t of VOICE_LINES) {
       const a = new Audio(`${DEALER.base}/audio/en/${t}.mp3`);
       a.preload = 'auto';
@@ -394,6 +406,10 @@ const voice = {
     }
   },
   say(t, { force = false } = {}) {
+    if(localPresentationEnabled){
+      if(this.muted || speechQueue.pending > 0 && !force)return;
+      return speechTurn(signal => localPresentation?.present({ type: 'speak', line: t }, { signal }));
+    }
     if(greenActor){
       if(!astridSpeak?.has(t)||this.muted||speechQueue.pending>0&&!force)return;
       console.info('[voice]', t, 'green speak take', 'muted=' + this.muted, 'force=' + force);
@@ -443,6 +459,24 @@ speechPoseGate = createSpeechPoseGate({
   },
   onTrace: entry => nativeObservation.emit('status', { state: 'chat-pose', ...entry }),
 });
+if (localPresentationEnabled) {
+  try {
+    const [{ PerformancePlayer }, { createLocalPresentation }] = await Promise.all([import('./performance-player.mjs'), import('./local-presentation.mjs')]);
+    performancePlayer = new PerformancePlayer({ host: $('#scene') });
+    localPresentation = await createLocalPresentation({ player: performancePlayer, host: $('#scene'), dealerId: DEALER.key,
+      version: () => tableVersion, muted: () => voice.muted,
+      receipt: entry => nativeObservation.emit('playback', entry),
+      onIdle: () => presentStandardIdle('local-primary-frame'),
+      onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
+    });
+    localPresentation.start();
+    window.addEventListener('pagehide', () => localPresentation.close(), { once: true });
+  } catch (error) {
+    console.error('[local presentation]', error.message);
+    const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
+    status.textContent = 'Lokal video kunde inte startas · 2D-reserv'; $('#scene').append(status);
+  }
+}
 queueMicrotask(() => {
   if (greenActor || engine.presentedClip === CLIP.idle) presentStandardIdle('initial-ready');
 });
@@ -811,6 +845,7 @@ function roundView(data) {
 async function tableCommand(op, extra = {}) {
   if (!player) await loadPlayer();
   if (!player) throw new Error('Cannot connect to the game server');
+  if (op !== 'state') localPresentation?.state({ action: true });
   if (op !== 'state') updatePoseState({ dealerPose: 'action', actionOwner: `table-${op}`, idlePresented: null }, 'table-command-started');
   const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), ...extra };
   let out;
@@ -827,6 +862,7 @@ async function tableCommand(op, extra = {}) {
   updatePoseState({ roundRevision: String(tableVersion),
     ...(op === 'state' ? { actionOwner: 'none' } : {}) }, 'table-version-committed');
   if (op === 'state' && greenActor) presentStandardIdle('state-restored');
+  if (op === 'state') localPresentation?.state({ action: false });
   nativeObservation.command(payload, out, observedTableView, DEALER.key);
   observedTableView = out;
   tableScene?.setTableSnapshot?.(out,{collecting:op==='collect'});
@@ -945,6 +981,19 @@ const playedBoxes = () => {
 };
 
 function layoutSeats() {
+  if (localPresentationEnabled) {
+    const width = Math.min(innerWidth, innerHeight * 9 / 16), height = width * 16 / 9;
+    const left = (innerWidth - width) / 2, top = (innerHeight - height) / 2;
+    const table = $('#table2d').getBoundingClientRect(), boxes = playedBoxes();
+    seatEls.forEach((el, i) => el.classList.toggle('seat-off', !boxes.includes(i)));
+    boxes.forEach((box, k) => {
+      const x = .13 + .74 * k / Math.max(1, boxes.length - 1);
+      const y = .68 + .035 * Math.sin(Math.PI * k / Math.max(1, boxes.length - 1));
+      Object.assign(seatEls[box].style, { left: (left + x * width - table.left) + 'px', top: (top + y * height - table.top) + 'px' });
+    });
+    Object.assign($('#dealer-cards').style, { left: (left + width * .5 - table.left) + 'px', top: (top + height * .58 - table.top) + 'px' });
+    return;
+  }
   const imgEl = document.querySelector('#tableimg');
   const img = imgEl?.getBoundingClientRect();
   const table = document.querySelector('#table2d').getBoundingClientRect();
@@ -1281,6 +1330,7 @@ function cardEl(card, faceDown = false) {
   return el;
 }
 function flyFromShoe(el, card, faceDown, cardMotion) {
+  if (localPresentationEnabled && arguments[3]?.localCompleted) return Promise.resolve();
   if(tableScene?.rigged)return tableScene.dealCard({element:el,onCue:phase=>sfx.play(phase)});
   if(cardMotion?.performance && performancePlayer && tableScene) {
     const target=el.getBoundingClientRect();el.style.visibility='hidden';
@@ -1471,6 +1521,15 @@ async function deliverCard(container, card, options={}) {
   const correlation=nativeObservation.context();
   let motion;
   const seatBox=container.closest('[data-box]')?.dataset.box;
+  if (localPresentationEnabled) {
+    const event = { type: 'deal', to: container.id === 'dealer-cards' ? 'dealer' : 'box',
+      box: seatBox == null ? null : Number(seatBox), shoeDraw: options.shoeDraw ?? card?.shoeDraw };
+    const played = await localPresentation?.present(event);
+    const element = dealCardTo(container, card, { ...options, motion: { localCompleted: played } });
+    await element.dealt;
+    nativeObservation.emit('playback', { event: 'deal', state: 'landed', ...event, type: undefined, renderer: '2d', evidence: 'DOM-card-presented', calibratedContact: false }, correlation);
+    return;
+  }
   const greenTake=selectGreenTake(astridGreenTakes,{dealer:DEALER.key,enabled:!astridDealingPaused,containerId:container.id,box:seatBox==null?null:Number(seatBox),split:container.classList.contains('subhand'),faceDown:options.faceDown===true,existingCards:container.querySelectorAll('.card').length});
   const green=!!greenTake;
   const centre=container.getBoundingClientRect().x+container.getBoundingClientRect().width/2;
@@ -1512,7 +1571,8 @@ async function endDealingTake({ deferIdle = false } = {}) {
   }
   if (!deferIdle) {
     updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'action-completed');
-    if (greenActor || performancePlayer || engine.presentedClip === CLIP.idle) presentStandardIdle('action-return');
+    if (!localPresentationEnabled && (greenActor || performancePlayer || engine.presentedClip === CLIP.idle)) presentStandardIdle('action-return');
+    localPresentation?.state({ action: false });
   }
   if(astridGreenTake&&$('#dealer-cards .card:not(.back)'))$('#green-upcard-replay').disabled=false;
   greenBoxReplays(true);
@@ -1757,6 +1817,8 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
     }
     renderBets();
     if (round.phase === 'decisions') {
+      localPresentation?.state({ action: false });
+      updatePoseState({ actionOwner: 'none' }, 'player-action-completed');
       busy=false;
       trigger(CLIP.think);
       setTimeout(() => { if (round && round.phase === 'decisions' && !busy) activeBoxHighlight(); }, 280);
@@ -1874,7 +1936,8 @@ async function finish() {
   await endDealingTake({ deferIdle: true });
   if(tableScene?.collectCards)await tableScene.collectCards({onCue:phase=>sfx.play(phase)});
   updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-cleared');
-  if (greenActor || performancePlayer || engine.presentedClip === CLIP.idle) presentStandardIdle('table-cleared');
+  if (!localPresentationEnabled && (greenActor || performancePlayer || engine.presentedClip === CLIP.idle)) presentStandardIdle('table-cleared');
+  localPresentation?.state({ action: false });
   round = null; busy = false;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));
   undoStack = [];
@@ -1950,6 +2013,7 @@ async function cutToTake(clip, signal) {
 
 let activeSpeech = null;
 async function playRecorded(id, audio, text, signal) {
+  if (localPresentationEnabled) return localPresentation?.present({ type: 'speak', line: id }, { signal });
   if (greenActor || voice.muted || document.hidden || signal?.aborted) return Promise.resolve();
   if(performancePlayer?.joins)await performancePlayer.prepareSpeech(signal);
   if(voice.muted||document.hidden||signal?.aborted)return;
@@ -2062,6 +2126,7 @@ function playNeutralTts(exactText, signal) {
 
 async function playChatDecision(decision, signal, jobId) {
   if (decision.kind === 'silence') return;
+  localPresentation?.state({ speech: true, ready: false });
   updatePoseState({ dealerPose: decision.kind === 'generatedText' && !decision.speechPackage ? 'standard-idle' : 'speech',
     speechOwner: `chat-${jobId}`, idlePresented: null }, 'chat-speech-started');
   try {
@@ -2076,6 +2141,11 @@ async function playChatDecision(decision, signal, jobId) {
         } else await playNeutralTts(decision.exactText, signal);
       }
       finally { speaking = false; }
+      return;
+    }
+    if (localPresentationEnabled) {
+      showCaption(decision.exactText, 5000);
+      nativeObservation.emit('playback', { event: 'speech', state: 'fallback', reason: 'recorded-chat-exact-text-unverified', renderer: 'text-only' });
       return;
     }
     await bankReady;
@@ -2098,6 +2168,7 @@ async function playChatDecision(decision, signal, jobId) {
   } finally {
     $('#caption').classList.remove('show');
     updatePoseState({ dealerPose: 'unknown', speechOwner: 'none', idlePresented: null }, 'chat-speech-completed');
+    localPresentation?.state({ speech: false, ready: false });
     if (greenActor || engine.presentedClip === CLIP.idle) presentStandardIdle('chat-speech-return');
   }
 }
@@ -2162,6 +2233,7 @@ async function sendChat() {
   const requestId = crypto.randomUUID();
   const identity = poseIdentity();
   nativeObservation.emit('chat',{role:'user',text:message,source:'openclaw-chat',contextMessages:history},chatCorrelation);
+  localPresentation?.observeChat(message);
   chatLog('user', message);
   chatHistory.push({ role: 'user', text: message });
   const received = speechPoseGate.receive({ jobId: requestId, ...identity, requestFingerprint: requestId });
@@ -2175,6 +2247,7 @@ async function sendChat() {
     });
     const decision = await r.json();
     if (!r.ok) throw new Error(decision.error || `Chat unavailable (${r.status})`);
+    if (decision.kind !== 'silence') localPresentation?.state({ ready: true });
     speechPoseGate.responseReady(requestId, decision);
     const receipt = await received.completion;
     if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
@@ -2274,6 +2347,7 @@ let roundsSinceLook = 0, nextLookAfter = 4 + Math.floor(Math.random() * 4);
 const supEl = $('#supervisor');
 let supBusy = false;
 function supervisorMayLook({ force = false } = {}) {
+  if (localPresentationEnabled) return false;
   if (round || busy || supBusy || !supEl) return false;
   if (!force && ++roundsSinceLook < nextLookAfter) return false;
   roundsSinceLook = 0;

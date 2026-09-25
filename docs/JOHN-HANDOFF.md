@@ -1,3 +1,58 @@
+## 2026-09-25 — Web äger Astrids lokala presentation
+
+Arbetet ligger i `C:\Users\jakem\Projects\croupier`, fortsatt på
+`jakeminator123/work`. Chattens ursprungliga projektetikett JakobScrape var
+missvisande; inga filer i det repot ändrades. De tre befintliga privata/
+untracked filerna i Croupier är bevarade utanför leveransen. Inga nycklar,
+mediabytes, kalibreringar eller visuella godkännanden har ändrats.
+
+`?dealer=astrid&presentation=local` använder nu Emils 9:16-filmer i det riktiga
+Web-spelet. Urval, exakta mediefamiljer och idlecontroller har extraherats till
+`presentation-runtime/`; Lab återanvänder dem. Web äger filmens hela livscykel
+genom PerformancePlayer, medan Lab konfigurerar och observerar samma spelare.
+**Anslut** öppnar det lokala läget. Lab monterar ingen andra Astridspelare före
+anslutning, efter loggnollställning eller vid byte av dealer i editorn.
+
+Dealval slås upp i serverns publicerade native-instruktioner för rätt spelare,
+version, box och shoeDraw. Browsern kan inte ersätta kort/handindex, och dolt
+hålkort skickas inte till Director. Sparat projekt delas av Web och Lab.
+Standard/regler/slump/OpenClaw/skugga finns i spelets klippväljare.
+OpenClaw-idleråd och serverbunden bordschatt är kvar. Generering får förberedas
+under deal; uppspelning kräver ny presenterad primärbas. Sena chatt-/idle-
+callbacks och avbrutna delade filhämtningar kan inte stoppa nästa deal.
+`silence` tar inte över idle. Läs [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md)
+för policyuppdatering, transport och begränsningar.
+
+Verifierat: **468/468 labbtester**, **135/135 OpenClaw-tester**, TypeScript och
+produktionsbuild; **8/8 nya produkt-/livscykeltester**, hela pre-commit och
+`audit-dealer-sync --probe`. Revisionstester omfattar fel spelare/kort/version,
+äkta start/bild/slut, försenade callbacks, chattsvar under deal, avbruten gemensam
+hämtning och Lab-ägarskap över loggnollställning.
+Rehearsal i den riktiga spelaren körde `goodluck` två gånger i följd för Vera,
+Astrid, Amira och Mei, med separata start/slut och inga konsolfel. Det ger
+funktionsbevis, inte mänskligt godkänd läppsynk.
+
+Browserprovet körde riktiga isolerade demohänder med goodluck, exakt boxfilm,
+dealerfilm, markerad 2D-reserv för saknat hålkort och återgång till idle.
+Mobilprov 390×844 visade hela 9:16-filmen och inga horisontella överflöden;
+chatt och tre spelplatser ryms. Lab fick Web-spelarens verkliga idle-start/
+presented/end-kvitton och visade **En spelare · Web** utan Lab-följningsfilm.
+Senaste chattprovet avbröts med `stale:table-version-committed` när en ny
+spelrunda började. Inget nytt komplett genererat talpaket liveverifierades i
+denna leverans; tidigare funktionsprov och nya regressionsprov är skilda bevis.
+
+Kvar: råfilmerna saknar kalibrerad pickup/release/land-kontakt. Korten är
+serverstyrda 2D-överlägg; deras kvitto anger `calibratedContact: false`.
+Saknade exakta filmer ger märkt 2D-reserv. Inspelade fria chattsvar utan exakt
+verifierat text/video-paket är text-only. Mänsklig läppsynkgranskning kvarstår.
+Ingen Jira-issue angavs och ingen Jira-anslutning var tillgänglig för statusändring.
+
+Efter användarens begärda stängning och omstart kör bara det isolerade
+serverparet **4200/4201** inom kontrollerat intervall 4188–4301. Slutkörningen
+startades med `--generated-speech`; check verifierade befintlig konfiguration
+och Director health/API 200 utan ändrad Render/provider/modell. Helpern använder
+temporär databas, spelarminne och projektkatalog. Öppna ingen extra serveruppsättning.
+
 ## 2026-09-25 — Sparad leverans och en enda aktiv lokal miljö
 
 Implementation och tidigare verifiering är sparade i `d8d3b22` på

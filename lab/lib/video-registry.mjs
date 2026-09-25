@@ -110,7 +110,7 @@ function publicEntry(entry, available, integrity, family) {
     previewUrl: `/api/videos/${entry.id}`,
     reviewStatus: 'unreviewed',
     integrity,
-    bindingScope: 'lab-only',
+    bindingScope: 'shared-local',
     source: 'emil',
     familyId: family.id,
     role: entry.role,
@@ -149,7 +149,7 @@ export async function loadVideoRegistry(options = {}) {
     configured: Boolean(selection.path), readable: false, snapshotReadable: false,
     archiveSource: selection.source, intakeCounts: { want: 0, no: 0, unrated: 0 },
     notes: [
-      'Want är ett intake-omdöme, inte ett godkännande. Alla kopplingar här är endast för labbet.',
+      'Want är ett intake-omdöme, inte ett godkännande. Emils exakta familjer delas med Webs lokala presentationsläge.',
       'Manifestets familj väljer exakt destination eller replik. Kopplingen är inte visuell acceptans.',
       'Tillgänglig betyder läsbar fil med rätt storlek. SHA-256 kontrolleras före uppspelning.',
       'Standard och varianter kommer från Emils mappar. Variantpolicy sparas i labbprojektet.',

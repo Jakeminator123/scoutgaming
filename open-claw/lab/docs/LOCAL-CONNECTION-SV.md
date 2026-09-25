@@ -2,13 +2,14 @@
 
 Den här guiden gäller den isolerade lokala produkt- och labbvägen. Helpern ändrar
 inte Gateway, modellleverantör, roller, Control UI eller offline-jämförelsens
-konfiguration. Den aktuella lokala implementationen är sparad i `d8d3b22` på
-`jakeminator123/work`.
+konfiguration. Arbetet fortsätter på `jakeminator123/work` i
+`C:\Users\jakem\Projects\croupier`. Den gemensamma lokala uppspelningen beskrivs
+i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 ## En aktiv miljö efter städningen 2026-09-25
 
-- Spela i originalet: <http://127.0.0.1:4200/>.
-- Följ samma bord och chatta i labbet: <http://127.0.0.1:4201/activity>.
+- Spela och chatta: <http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
+- Konfigurera och observera samma spelare: <http://127.0.0.1:4201/activity>.
 - Behåll dessa två flikar. Händelselogg → Anslut öppnar den kopplade spelfliken
   om ingen sådan redan är ansluten; den befintliga fliken behöver inte laddas om.
 
@@ -99,8 +100,11 @@ Varje körning får en ny katalog under operativsystemets tempområde:
   generationskatalog;
 - labbreläet får en separat `LAB_DATA_DIR`;
 - båda binder bara `127.0.0.1`;
-- gatewaynyckeln finns bara i produktbarnets miljö och Director-token bara i
-  labbbarnets miljö;
+- direkt Gateway-nyckel finns bara i produktbarnets miljö när speech-relä saknas;
+- produktens presentationsadapter och Lab får samma befintliga Director-token
+  via separata servervariabler; spelets taladapter behåller sin separata token.
+  Web får `CROUPIER_PRESENTATION_DIRECTOR_URL/TOKEN` och samma projektkatalog
+  genom `CROUPIER_PRESENTATION_STUDIO_DIR`. Inga av dessa värden går till browsern;
 - modellnyckel/providerinställningar är tomma i båda barnen eftersom modellen
   redan ägs av den privata Gatewayen;
 - en egen nätvakt tillåter bara de två loopbackportarna och respektive
@@ -111,7 +115,8 @@ Varje körning får en ny katalog under operativsystemets tempområde:
 Om en direkt Gateway-URL eller separat Director speech-adapter senare läggs till
 medan agentmålet är något annat än det exakta `croupier-speech` vägrar helpern
 starta den anslutna produkten. En adapterhemlighet vidarebefordras endast till
-produktbarnet; labbtoken och Gatewayhemlighet hålls fortsatt separata.
+produktbarnets taladapter; presentationsadaptern använder Directors befintliga
+behörighet. Detta skapar ingen ny scoped token eller ändrar modellkonfiguration.
 
 Port 4192 och 4194 avvisas uttryckligen. Helpern ändrar inte
 `tools/start-local-comparison.mjs`; offline-jämförelsen behåller sin fulla
@@ -153,9 +158,9 @@ Med dagens privata konfiguration använder labbet Director och produktservern
 det separata speech-reläet. `--check` är ändå auktoritativt för en ny körning:
 en nåbar tjänst utan rätt roll eller credential är inte en fungerande chatt.
 
-Under **Händelselogg → Anslut** öppnas originalet. Spela där och skriv under
-labbets bild i **Chatta med Astrid vid detta bord**. Den bryggan kan bara skicka
-chatttext, inte kort, identitet eller spelkommandon. Meddelande och video väntar
+Under **Händelselogg → Anslut** öppnas Astrid med lokal presentation. Spela och
+chatta direkt i spelfliken. Lab visar **En spelare · Web** och dess kvitton.
+Det lokala läget monterar ingen extra Lab-spelare eller bordschatt. Video väntar
 på renderad primär-idle; deal får alltid företräde. Vanliga native-eventrepliker
 spelas fortfarande från exakt replikfamilj. **Fristående chattprov** och
 operatörschatten är inte kopplade till den autentiserade spelaren.

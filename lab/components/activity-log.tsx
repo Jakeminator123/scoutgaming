@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { eventSummary, type ActivityEntry } from '../lib/activity-log.mjs';
 import styles from './activity-log.module.css';
+import { ReferenceCapture } from './reference-capture';
 import { PartnerReference } from './partner-reference';
 import { createPartnerTrace, appendPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { GameStream, type GameStreamProps } from './game-stream';
@@ -22,6 +23,7 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
   const stream = useRef<EventSource | null>(null);
   const [connected, setConnected] = useState(false);
   const [nativeConnected, setNativeConnected] = useState(false);
+  const [nativePresentationOwner, setNativePresentationOwner] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [followFromRecord, setFollowFromRecord] = useState(0);
   const [observationRevision, setObservationRevision] = useState(0);
@@ -114,6 +116,7 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
     setNativeConnected(true); setReady(true);
     recordObservation(record);
     const data = record.data as Record<string, unknown> ?? {};
+    if (record.kind === 'status' && data.state === 'attached') setNativePresentationOwner(String(data.presentationOwner ?? 'legacy'));
     const playback = record.kind === 'playback';
     const phase = String(data.state ?? 'observed');
     const status = playback ? ({ start: 'started', end: 'completed', error: 'failed', interrupted: 'cancelled', selected: 'selected' } as const)[phase as 'start'] ?? 'observed' : 'observed';
@@ -136,10 +139,13 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
 
   const visible = entries.filter(entry => filter === 'all' || entry.stage === filter).slice(full ? -150 : -5).reverse();
   const rounds = trace.records.filter(record => record.kind === 'round').length;
+  // Astrid launches the shared Web runtime. Do not start a second renderer while
+  // the attachment is pending, or when the bounded observation log is reset.
+  const webOwnsPresentation = streamView?.dealerId === 'astrid' || nativePresentationOwner === 'web-local';
   const liveStatus = !connected && !nativeConnected ? `${connection}${rounds ? ` · ${rounds} sparade meddelanden` : ''}` : rounds ? `Speldata mottagna · ${rounds} meddelanden${nativeConnected ? ' · native-observation' : ''}` : nativeConnected ? 'Original anslutet · väntar på en spelrunda' : connection;
   return <section className={styles.panel} aria-label="Händelselogg i realtid">
     <header className={styles.header}><div><span className="eyebrow">INDATA → BESLUT → UPPSPELNING</span><h2>Händelselogg <small>{entries.length}/150</small></h2><p>Det som faktiskt händer i den här fliken. Källan och beslutsfattaren följer varje steg.</p></div><div className={styles.tools}>{!full ? <><button className="text-button" onClick={() => setExpanded(value => !value)}>{expanded ? 'Fäll ihop' : 'Visa senaste'}</button><button className="text-button" onClick={onOpen}>Öppna loggen →</button></> : <button className="text-button" disabled={!entries.length} onClick={onClear}>Töm visningen</button>}</div></header>
-    <div hidden={!full}><PartnerReference trace={trace} connected={connected || nativeConnected} connection={liveStatus} dealerId={streamView?.dealerId} onConnect={connect} onDisconnect={() => disconnect()} onNative={receiveNative} onNewObservation={newObservation} onActivity={onActivity} onImport={records => { setReady(false); let imported = createPartnerTrace(); for (const record of records) imported = appendPartnerTrace(imported, record); setTrace(imported); }} diagnostics={<div className={styles.connection}><div><strong>{connection}</strong><p>Partner SSE och originalflikens observation kompletterar varandra. Om inga rundor kommer: spela i fliken som Anslut öppnade och kontrollera serverversionen. Äldre drift kan sakna native-observation.</p><button className="text-button" onClick={() => void readConfiguration()}>Läs om konfiguration</button></div><div>{configuration && !configuration.configured ? <p>{[...configuration.missing, ...configuration.invalid].join(', ')}</p> : <p>Konfiguration finns på den lokala servern.</p>}{statusError ? <p role="alert">{statusError}</p> : null}</div></div>}>{streamView ? <GameStream {...streamView} trace={trace} active={full} autoFollow={ready} followFromRecord={followFromRecord} observationRevision={observationRevision} onActivity={onActivity} /> : null}</PartnerReference></div>
+    <div hidden={!full}><PartnerReference trace={trace} connected={connected || nativeConnected} connection={liveStatus} dealerId={streamView?.dealerId} onConnect={connect} onDisconnect={() => disconnect()} onNative={receiveNative} onNewObservation={newObservation} onActivity={onActivity} onImport={records => { setReady(false); let imported = createPartnerTrace(); for (const record of records) imported = appendPartnerTrace(imported, record); setTrace(imported); }} diagnostics={<div className={styles.connection}><div><strong>{connection}</strong><p>Partner SSE och originalflikens observation kompletterar varandra. Om inga rundor kommer: spela i fliken som Anslut öppnade och kontrollera serverversionen. Äldre drift kan sakna native-observation.</p><button className="text-button" onClick={() => void readConfiguration()}>Läs om konfiguration</button></div><div>{configuration && !configuration.configured ? <p>{[...configuration.missing, ...configuration.invalid].join(', ')}</p> : <p>Konfiguration finns på den lokala servern.</p>}{statusError ? <p role="alert">{statusError}</p> : null}</div></div>}>{webOwnsPresentation ? <section aria-label="Web äger presentationen"><h3>En spelare · Web</h3><p>Spela och chatta i spelfliken. Web använder Eventstudions sparade familjer och idlepolicy. Loggen visar dess verkliga klippval och uppspelning. Ingen parallell labbfilm körs.</p><ReferenceCapture onActivity={onActivity} /></section> : streamView ? <GameStream {...streamView} trace={trace} active={full} autoFollow={ready} followFromRecord={followFromRecord} observationRevision={observationRevision} onActivity={onActivity} /> : null}</PartnerReference></div>
     {full || expanded ? <>
       <div className={styles.filters} role="group" aria-label="Filtrera logg"><button aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Alla</button>{Object.entries(stageNames).map(([id, label]) => <button key={id} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}</div>
       {!visible.length ? <p className={styles.empty}>Inga registrerade händelser i detta urval. Kör Testa event, spela en variant, använd chatten eller anslut den läsande strömmen. Inga exempelrader visas som verkliga händelser.</p> : <ol className={styles.timeline}>{visible.map(entry => <li key={entry.id} data-status={entry.status}><div className={styles.timestamp}><time dateTime={entry.time}>{new Date(entry.time).toLocaleTimeString('sv-SE')}</time><span>{stageNames[entry.stage]}</span></div><div className={styles.body}><div className={styles.tags}><span>{sourceNames[entry.source]}</span><span>{statusNames[entry.status]}</span></div><h3>{entry.title}</h3><p><strong>Vem:</strong> {entry.owner}. <strong>Varför:</strong> {entry.reason}</p>{entry.runId ? <small className={styles.run}>Förlopp {entry.runId}</small> : null}{entry.data != null ? <details><summary>Visa faktisk data och fält</summary><pre>{JSON.stringify(entry.data, null, 2)}</pre></details> : null}</div></li>)}</ol>}

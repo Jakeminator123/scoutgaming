@@ -48,7 +48,7 @@ test('inventory has safe bounded family metadata without upgrading media to appr
   assert.equal(video.reviewStatus, 'unreviewed');
   assert.equal(video.integrity, 'unchecked');
   assert.equal(video.available, true);
-  assert.equal(video.bindingScope, 'lab-only');
+  assert.equal(video.bindingScope, 'shared-local');
   assert.equal(video.familyId, 'astrid/deal.player.left/box0');
   assert.equal(result.summary.readable, true);
   assert.equal(result.summary.intakeCounts.unrated, 27);
