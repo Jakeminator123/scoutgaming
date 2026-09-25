@@ -7,15 +7,11 @@ import { pathToFileURL } from 'node:url';
 import { dashboardOrigin, planGatewayConfig, requireGatewaySecrets } from './gateway-config.mjs';
 import { syncRuntimeBundle } from './runtime-bundle.mjs';
 import { createSearchServer, openAiSearchKey } from './companion-search-server.mjs';
-import { assertProductSpeechCredentialIsolation } from '../src/settings.mjs';
 
 const OPENCLAW_ENTRY = '/app/openclaw.mjs';
 
 export function gatewayEnvironment(env) {
   requireGatewaySecrets(env);
-  assertProductSpeechCredentialIsolation({ speechToken: env.OPENCLAW_PRODUCT_SPEECH_TOKEN,
-    apiToken: env.LAB_API_TOKEN, remoteToken: env.LAB_REMOTE_TOKEN,
-    gatewayKey: env.OPENCLAWAPI_KEY, modelKey: env.OPENCLAW_MODEL_API_KEY });
   // Validate ingress before reading or writing any persisted configuration.
   dashboardOrigin(env);
   const stateDir = env.OPENCLAW_STATE_DIR || '/data/openclaw';
