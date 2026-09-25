@@ -194,7 +194,9 @@ function modelsEndpoint(baseUrl) {
 export async function probeConnections(configuration, { fetchImpl = fetch } = {}) {
   const result = {
     productGateway: { configured: Boolean(configuration.baseUrl && configuration.gatewayKey), reachable: false, functionalModelProbe: 'not_run' },
-    productSpeechRelay: { configured: Boolean(configuration.speechUrl && configuration.speechToken), reachable: false, functionalModelProbe: 'not_run' },
+    // The narrow endpoint has no read-only probe: do not report an untested
+    // speech request as a failed connection. Only a real model call verifies it.
+    productSpeechRelay: { configured: Boolean(configuration.speechUrl && configuration.speechToken), reachable: null, functionalModelProbe: 'not_run' },
     labDirector: { configured: Boolean(configuration.remoteUrl && configuration.remoteToken), reachable: false, authenticatedApi: false, functionalModelProbe: 'not_run' },
   };
   // The narrow relay is the selected product transport whenever it is complete.

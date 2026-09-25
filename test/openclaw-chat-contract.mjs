@@ -116,10 +116,13 @@ test('display name and chat prompt injection remain JSON data with history befor
   assert.equal(body.messages[0].content.includes(state.displayName), false);
   assert.equal(body.messages[0].content.includes(injected.message), false);
   const data = JSON.parse(body.messages[1].content);
-  const current = JSON.parse(body.messages[2].content);
+  const current = JSON.parse(body.messages[2].content.split('\n')[0]);
   assert.equal(current.request.message, injected.message);
   assert.equal(Object.hasOwn(current.request, 'history'), false);
   assert.deepEqual(data.history, injected.history);
+  const instruction = body.messages[2].content.split('\n')[1];
+  assert.equal(instruction.includes(injected.message), false);
+  assert.equal(instruction.includes(state.displayName), false);
   assert.equal(data.status.displayName, state.displayName);
 });
 

@@ -10,8 +10,25 @@ Historik/status och aktuell fråga separeras nu i två JSON-meddelanden, med
 aktuell fråga sist och serverägd språkpolicy intill. Avgränsade modellprov
 gav engelska som standard och svenska på uttrycklig begäran med samma gamla
 svenska resultattext i historiken. Ingen extra modellrunda tillkommer.
-Ändringen behöver Director-deploy och slutligt native-prov. Historik och
-minne raderas inte.
+Director `cd562f57` är driftsatt, `dep-darf7kh7lnhs73d5j56g`.
+Native-provet i befintlig Jakob-profil gav nu "You have won 10 USD and lost
+10 USD. Net is 0." med talstart 9,765 s och neutral idle (`responded`).
+Uttrycklig svenska gav "Välkommen!" med talstart 8,206 s. Ett prov precis
+vid deployövergången gav fortfarande svenska; nedanstående slutprov avser
+den färdiga driften. En upprepad namnfråga efter svensk begäran föll dock
+tillbaka till svenska. Därför kompletteras den sista JSON-indatan med en
+fast, explicit applikationsuppgift i samma meddelande. Ett sammanhängande
+modellprov med den verkliga längre historiken gav därefter "You are Jakob."
+→ "Välkommen!" på begäran → "You are Jakob.". Kräver sista Director-deploy
+och native-prov. Historik och minne raderas inte.
+
+Senaste automatiska verifiering: OpenClaw 136/136, produktens språk-/chat-
+kontrakt 13/13 och start-/anslutningstester 15/15. `--check` rapporterar nu
+relayn som `reachable:null`/`functionalModelProbe:not_run`: ett ej utfört
+modellprov är inte ett anslutningsfel. Lab har bekräftat Sparat lokalt med
+cheek/glance/insulted som OpenClaw, blink automatisk. Nya oregistrerade
+`idle_smile.mp4` och `idle_yawn.mp4` har inte ändrats eller lagts till.
+Web/Lab lämnas igång med en Astrid-flik och en Lissabon-flik.
 
 Liveuppföljning: Director `b22731f0`, deploy `dep-darevr60tbcc73basu9g`,
 accepterar resultatkontraktet. Jakob-profilens fyra avslutade USD-rundor har

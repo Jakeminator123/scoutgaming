@@ -195,7 +195,7 @@ export async function decideProductSpeech(envelopeValue, settings, fetchImpl = f
         { role: 'user', content: JSON.stringify({
           request: { requestId: envelope.request.requestId, message: envelope.request.message },
           replyLanguagePolicy: { default: 'English', overrideSource: 'explicit language request in this request.message only', historyChangesLanguage: false },
-        }) },
+        }) + '\nApplication task: Answer the CURRENT request immediately above. Write the text in English by default. If that current message explicitly asks for a different reply language, use that language instead. Prior replies are facts to recall, not text or language to copy. Return only the required JSON choice.' },
       ] : [{ role: 'user', content: JSON.stringify(envelope) }])],
   }, settings.adviceTimeoutMs, fetchImpl);
   let choice;

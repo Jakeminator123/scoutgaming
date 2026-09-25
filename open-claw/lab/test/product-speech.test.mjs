@@ -67,7 +67,7 @@ test('deduplicated product decisions target only the tool-less speech role and k
   assert.equal(captured[1].messages[0].content.includes(input.request.message), false);
   assert.equal(captured[1].messages[0].content.includes(input.status.displayName), false);
   const modelData = JSON.parse(captured[1].messages[1].content);
-  const currentRequest = JSON.parse(captured[1].messages[2].content);
+  const currentRequest = JSON.parse(captured[1].messages[2].content.split('\n')[0]);
   assert.equal(currentRequest.request.message, input.request.message);
   assert.deepEqual(modelData.history, input.request.history);
   assert.equal(Object.hasOwn(modelData, 'request'), false);
@@ -85,7 +85,7 @@ test('Astrid gets an English default with explicit language requests preserved a
       const system = body.messages[0].content;
       assert.equal(system.includes('Astrid replies in English by default'), dealerId === 'astrid');
       if (dealerId === 'astrid') assert.match(system, /explicit request.*another language.*allowed conversational preference/s);
-      const current = JSON.parse(body.messages.at(-1).content);
+      const current = JSON.parse(body.messages.at(-1).content.split('\n')[0]);
       assert.equal(current.request.message, input.request.message);
       assert.equal(current.replyLanguagePolicy?.default, dealerId === 'astrid' ? 'English' : undefined);
       assert.equal(system.includes(input.request.message), false);
@@ -93,6 +93,9 @@ test('Astrid gets an English default with explicit language requests preserved a
       if (dealerId === 'astrid') {
         assert.deepEqual(JSON.parse(body.messages[1].content).history, input.request.history);
         assert.equal(Object.hasOwn(current.request, 'history'), false);
+        const instruction = body.messages[2].content.split('\n')[1];
+        assert.match(instruction, /Prior replies are facts to recall, not text or language to copy/);
+        assert.equal(instruction.includes(input.request.message), false);
         assert.equal(body.messages[2].content.includes(input.status.displayName), false);
       }
       return JSON.stringify(silence(input));
