@@ -33,7 +33,10 @@
 .variantList { display: grid; gap: 8px; }
 .variant { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-soft); }
 .variant > label { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 180px); align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
-.variant select, .previewControls input, .timing input { width: 100%; min-height: 34px; border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; background: var(--bg); color: var(--text); }
+.variant select, .variant input, .previewControls input, .timing input { width: 100%; min-height: 34px; border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; background: var(--bg); color: var(--text); }
+.variant > .description { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+.description span, .useHelp { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.useHelp { grid-column: 1 / -1; margin: 0; }
 .timing { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding-top: 4px; }
 .timing label { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; font-size: 11px; color: var(--muted); }
 .timing label > span:first-child { grid-column: 1 / -1; }

@@ -38,18 +38,18 @@ async function fixture(t, { variant = false } = {}) {
   return { root, legacy };
 }
 
-test('checked-in manifest has 26 exact families, 31 hash-stable items and the locked idle roles', async () => {
+test('checked-in manifest has 26 exact families, 33 hash-stable items and the locked idle roles', async () => {
   const manifest = await readLabVideoManifest(repositoryManifest);
   assert.equal(manifest.families.length, 26);
-  assert.equal(manifest.items.length, 31);
-  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 31);
+  assert.equal(manifest.items.length, 33);
+  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 33);
   for (const item of manifest.items) {
     assert.equal(item.id, videoIdFromSha256(item.sha256));
     assert.doesNotMatch(item.relativePath, /\.gitkeep$/);
   }
   const idle = manifest.families.find(family => family.id === 'astrid/idle.ready/ready');
   assert.equal(idle.standardIds.length, 2);
-  assert.equal(idle.variantIds.length, 4);
+  assert.equal(idle.variantIds.length, 6);
   assert.deepEqual(
     idle.variantIds.map(id => manifest.items.find(item => item.id === id).relativePath).sort(),
     [
@@ -57,6 +57,8 @@ test('checked-in manifest has 26 exact families, 31 hash-stable items and the lo
       'idle/variant/idle_cheek_f73_s301.mp4',
       'idle/variant/idle_glance_f73_s301.mp4',
       'idle/variant/idle_insulted_f73_s301.mp4',
+      'idle/variant/idle_smile.mp4',
+      'idle/variant/idle_yawn.mp4',
     ],
   );
 });

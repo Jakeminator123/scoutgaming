@@ -43,13 +43,13 @@ Astrids Eventstudio och native-följning använder nu samma exakta mediefamilj:
 events behåller kort, box, handindex och replik. Standardfil och varianter
 kommer från manifestet, inte från projektets gamla 2D-demovarianter.
 
-Manifest v2 har 26 familjer och 31 filer: åtta dealfamiljer, sjutton
+Manifest v2 har 26 familjer och 33 filer: åtta dealfamiljer, sjutton
 replikfamiljer och en idlefamilj. Deal/replik använder
 `deal/<familj>/<standard>.mp4` respektive
 `repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då
-standard. Idle har två basloopar direkt i `idle/` och högst fyra
-engångsvariationer i `idle/variant/`. Högst fyra filvarianter får vara
-valbara per familj. Filnärvaro, hash och playbackkvitto är fortfarande inte
+standard. Idle har två basloopar direkt i `idle/` och sex
+engångsvariationer i `idle/variant/` (policyn stöder högst 12).
+Deal-/replikfamiljer tillåter högst fyra filvarianter. Filnärvaro, hash och playbackkvitto är fortfarande inte
 ett mänskligt godkännande av läppsynk eller kortkontakt.
 
 `mediaPolicy` är ett frivilligt tillägg till projektets schema v1. Äldre projekt
@@ -69,7 +69,9 @@ OpenClaw. Parallell anslutningsuppgift: [agentprompt](PARALLEL-OPENCLAW-STARTUP.
 Välj **Astrid → Vänteläge** för den förenklade idleeditorn. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
 består av `idle_still` och `idle_breath`. `idle_blink`, `idle_cheek`,
-`idle_glance` och `idle_insulted` är de högst fyra engångsvarianterna.
+`idle_glance`, `idle_insulted`, `idle_smile` och `idle_yawn` är engångsvarianter.
+Beskriv **När passar klippet?** med högst 80 tecken. Texten följer kandidaten
+till OpenClaw som konfigurationsdata, inte som en systeminstruktion.
 
 Mappstrukturen är kontraktet för släktskapet:
 
@@ -78,16 +80,19 @@ Mappstrukturen är kontraktet för släktskapet:
 - policyn `lab/policies/idle-policy.seed.json` bestämmer grundvikter och om en
   variant är manuell, automatisk, regelstyrd eller OpenClaw-valbar.
 
-Startpolicyn visar `idle_still` med 90 % grundvikt och schemalägger blinkning
+Det avancerade labbets startpolicy visar `idle_still` med 90 % grundvikt och schemalägger blinkning
 ungefär var 25:e sekund med ±5 sekunders variation. Eftersom blinkklippet tar
 tid blir `idle_still` i praktiken ungefär 79 %, vilket editorn visar. Ett
 spel-, deal- eller talprov äger spelaren och blockerar idleprovet tills det är
 klart. Policyn sparas lokalt med projektet. Den lokala Web-spelaren läser samma
-projekt; ladda om spelfliken efter ändringar i idlepolicyn. Ingen fjärrdrift deployas.
+projekt; ladda om spelfliken efter ändringar i idlepolicyn. Lissabons snapshot
+erbjuder i stället alla sex variationer till OpenClaw. Ingen fjärrdrift deployas
+och OpenClaw behöver inte startas om när beskrivningar eller val ändras.
 
 Grundvikt är alltså inte faktisk tidsandel. Automatisk idlevariant följer
-intervall, jitter, cooldown och maxfrekvens. Regelstyrd och OpenClaw-valbar
-variant kräver en separat tillåten orsak; manuell variant schemaläggs inte.
+intervall, jitter, cooldown och maxfrekvens. OpenClaw-valbar variant kräver en
+färsk chattmöjlighet; manuell variant schemaläggs inte. Regelstyrd idle har
+ännu ingen ansluten trigger och kan inte nyväljas i editorn.
 Det deterministiska enminutsprovet spelar verkliga lokala filer och loggar
 start/slut/återgång. Labbytan i Händelseloggen använder dessutom en levande
 idle-controller med samma sparade policy: verkligt `ended` väljer nästa klipp,

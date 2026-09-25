@@ -75,8 +75,16 @@ function idleCatalog(project, dealerId, registry) {
   };
   const primary = member(policy.base[0].videoId, 'standard');
   if (!primary) return { reason: 'idle_primary_unavailable_baseline' };
-  const videos = policy.variants.filter(item => item.use === 'openclaw').slice(0, 4)
-    .map(item => member(item.videoId, 'variant')).filter(Boolean);
+  const videos = policy.variants.filter(item => item.use === 'openclaw')
+    .flatMap(item => {
+      const video = member(item.videoId, 'variant');
+      if (!video) return [];
+      // Reuse the deployed catalog's bounded label field. Descriptions remain
+      // untrusted candidate data; no Gateway prompt/config restart is needed.
+      const description = item.description?.trim();
+      const label = description ? `${video.fileName.slice(0, 117 - description.length)} · ${description}` : video.fileName;
+      return [{ ...video, adviceLabel: label }];
+    });
   if (!videos.length) return { reason: 'only_standard_no_model' };
 
   // The old catalog schema requires all six source types. These five inert
@@ -89,7 +97,7 @@ function idleCatalog(project, dealerId, registry) {
     // The existing Director prefers an applicable contextual candidate with
     // higher priority. This is advice, not a rule match: baseline/abstention
     // remain valid and finalizeDecision never forces an alternative.
-    ...videos.map(video => ({ id: `${dealerId}.idle.ready.file-${video.id}`, label: video.fileName,
+    ...videos.map(video => ({ id: `${dealerId}.idle.ready.file-${video.id}`, label: video.adviceLabel,
       priority: 10, when: { all: [] }, assetId }))];
   const idle = { id: `renderer-idle.${dealerId}`, label: 'Local renderer idle',
     description: 'Local renderer-idle opportunity, not a published native game instruction. Baseline means no action.',

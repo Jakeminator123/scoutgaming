@@ -45,16 +45,16 @@ test('operator catalog describes every exact real family, not the saved seed dem
   assert.deepEqual(project, before, 'chat projection never migrates or saves the operator project');
 });
 
-test('idle inventory preserves two weighted bases and the real four one-shot uses', () => {
+test('idle inventory preserves two weighted bases and the real six one-shot uses', () => {
   const catalog = buildOperatorCatalog(createSeedProject(), inventory(), 'astrid');
   const node = familyNode(catalog, 'astrid/idle.ready/ready');
-  assert.equal(node.variants.length, 6);
+  assert.equal(node.variants.length, 8);
   const labels = node.variants.map(variant => variant.label).join('\n');
   assert.match(labels, /90 % grundvikt/);
   assert.match(labels, /10 % grundvikt/);
   assert.match(labels, /automatisk 25±5 s; paus 15 s; max 3\/min/);
   assert.match(labels, /OpenClaw \(idlepolicy\)/);
-  assert.equal(node.variants.filter(variant => variant.label.endsWith(' · manuell')).length, 2);
+  assert.equal(node.variants.filter(variant => variant.label.endsWith(' · manuell')).length, 4);
 });
 
 test('real alternatives remain visible with explicit selection flags and matching triggers', () => {

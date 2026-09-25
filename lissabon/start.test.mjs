@@ -26,6 +26,19 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
   await prepareProject(data);
   assert.deepEqual(await store.load(), saved);
 
+  const old = structuredClone(saved);
+  old.idlePolicy.variants = old.idlePolicy.variants.slice(0, 4);
+  old.idlePolicy.variants[0].description = 'Keep my own description.';
+  await store.save(old, saved.revision);
+  await prepareProject(data);
+  const upgraded = await store.load();
+  assert.equal(upgraded.idlePolicy.variants.length, 6);
+  assert.deepEqual(upgraded.idlePolicy.variants.slice(0, 4), old.idlePolicy.variants);
+  assert.deepEqual(upgraded.idlePolicy.base, old.idlePolicy.base);
+  assert.ok(upgraded.idlePolicy.variants.slice(4).every(item => item.use === 'openclaw'));
+  // Continue the HTTP assertions with the current stored revision.
+  const restored = await store.save(saved, upgraded.revision);
+
   const { configuration } = loadPrivateConnection({ envFiles: [], env: {} });
   const specs = childSpecifications(configuration, join(dir, 'disposable'), { productPort: 4200, labPort: 4201, studioDataDir: data, streamLane: 'lissabon-stream-lane' });
   assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, data);
@@ -46,7 +59,7 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
     try {
       const config = await (await fetch(`http://127.0.0.1:${server.address().port}/api/presentation/config`)).json();
       assert.equal(config.defaultMode, expected);
-      assert.equal(config.revision, saved.revision);
+      assert.equal(config.revision, restored.revision);
       assert.deepEqual(config.idlePolicy, saved.idlePolicy);
     } finally { server.closeAllConnections(); await new Promise(yes => server.close(yes)); }
   }

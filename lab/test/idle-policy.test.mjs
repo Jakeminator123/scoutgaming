@@ -4,14 +4,14 @@ import { readFile } from 'node:fs/promises';
 import schema from '../schemas/idle-policy.schema.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy, idleShareEstimate, createIdlePreviewPlan } from '../lib/idle-policy.mjs';
 
-test('the simple idle policy has two base loops and exactly four one-shot variants', () => {
+test('the simple idle policy has two base loops and six one-shot variants', () => {
   const policy = createDefaultIdlePolicy();
   assert.equal(validateIdlePolicy(policy), policy);
   assert.equal(policy.base.length, 2);
   assert.equal(policy.base.reduce((sum, item) => sum + item.weight, 0), 100);
-  assert.equal(policy.variants.length, 4);
-  assert.deepEqual(policy.variants.map(item => item.use), ['automatic', 'manual', 'manual', 'openclaw']);
-  assert.equal(schema.properties.variants.maxItems, 4);
+  assert.equal(policy.variants.length, 6);
+  assert.deepEqual(policy.variants.map(item => item.use), ['automatic', 'manual', 'manual', 'openclaw', 'manual', 'manual']);
+  assert.equal(schema.properties.variants.maxItems, 12);
 });
 
 test('idle policy roles exactly mirror the physical manifest folders', async () => {
@@ -23,6 +23,18 @@ test('idle policy roles exactly mirror the physical manifest folders', async () 
   const items = new Map(manifest.items.map(item => [item.id, item]));
   assert.ok(policy.base.every(item => items.get(item.videoId).relativePath.match(/^idle\/[^/]+\.mp4$/)));
   assert.ok(policy.variants.every(item => items.get(item.videoId).relativePath.match(/^idle\/variant\/[^/]+\.mp4$/)));
+});
+
+test('old policies remain readable and descriptions are bounded plain data', () => {
+  const policy = createDefaultIdlePolicy();
+  for (const item of policy.variants) delete item.description;
+  assert.equal(validateIdlePolicy(policy), policy);
+  for (const description of ['x'.repeat(81), 'bad\ntext', 3]) {
+    policy.variants[0].description = description;
+    assert.throws(() => validateIdlePolicy(policy), /description/);
+  }
+  policy.variants[0].description = 'A smile, not an instruction.';
+  assert.equal(validateIdlePolicy(policy), policy);
 });
 
 test('blink cadence leaves the primary base loop at about eighty percent actual time', () => {
@@ -46,13 +58,20 @@ test('preview plans are deterministic, bounded and return to a base clip after a
   assert.ok(first.filter(item => item.kind === 'variant').length <= 3);
 });
 
-test('invalid weights, duplicate media and a fifth variant are rejected', () => {
+test('invalid weights, duplicate media and more than twelve variants are rejected', () => {
   const weights = createDefaultIdlePolicy(); weights.base[0].weight = 80;
   assert.throws(() => validateIdlePolicy(weights), /summera till 100/);
   const duplicate = createDefaultIdlePolicy(); duplicate.variants[0].videoId = duplicate.base[0].videoId;
   assert.throws(() => validateIdlePolicy(duplicate), /dubblerat/);
-  const tooMany = createDefaultIdlePolicy(); tooMany.variants.push(structuredClone(tooMany.variants[1])); tooMany.variants[4].videoId = '11111111-1111-1111-1111-111111111111';
-  assert.throws(() => validateIdlePolicy(tooMany), /högst fyra/);
+  const twelve = createDefaultIdlePolicy();
+  twelve.variants = Array.from({ length: 12 }, (_, index) => ({
+    videoId: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    durationMs: 3040, use: 'manual', automatic: null,
+  }));
+  assert.equal(validateIdlePolicy(twelve).variants.length, 12);
+  const tooMany = structuredClone(twelve);
+  tooMany.variants.push({ videoId: '00000000-0000-4000-8000-00000000000c', durationMs: 3040, use: 'manual', automatic: null });
+  assert.throws(() => validateIdlePolicy(tooMany), /högst 12/);
 });
 
 test('multi-minute previews enforce maxPerMinute in each rolling minute, not as an upfront total budget', () => {

@@ -23,25 +23,43 @@
         "jitterMs": 5000,
         "cooldownMs": 15000,
         "maxPerMinute": 3
-      }
+      },
+      "description": "Neutral blinkning under lyssnande när ingen tydlig känsloreaktion passar."
     },
     {
       "videoId": "090751f3-fab4-327b-c5a2-0294f0de8bfe",
       "durationMs": 3040,
       "use": "manual",
-      "automatic": null
+      "automatic": null,
+      "description": "Lekfull reaktion på ett vänligt skämt. Inte irritation."
     },
     {
       "videoId": "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
       "durationMs": 3040,
       "use": "manual",
-      "automatic": null
+      "automatic": null,
+      "description": "Eftertänksam sidoblick vid fundering. Inte ett obligatoriskt svarsförspel."
     },
     {
       "videoId": "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
       "durationMs": 3040,
       "use": "openclaw",
-      "automatic": null
+      "automatic": null,
+      "description": "Endast en tydlig, aktuell förolämpning riktad mot Astrid. Aldrig vanlig fråga."
+    },
+    {
+      "videoId": "c9b09866-50f7-2e05-0301-7e02499f50a2",
+      "durationMs": 3042,
+      "use": "manual",
+      "automatic": null,
+      "description": "Varmt leende vid beröm, tack eller ett vänligt och skämtsamt utbyte."
+    },
+    {
+      "videoId": "15748c18-f7b6-912a-639f-55e632db34d3",
+      "durationMs": 3042,
+      "use": "manual",
+      "automatic": null,
+      "description": "Diskret gäspning när spelaren själv nämner trötthet. Inte vid vanliga frågor."
     }
   ]
 }

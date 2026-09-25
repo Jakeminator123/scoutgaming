@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadPrivateConnection, probeConnections, startIsolatedConnection } from '../open-claw/lab/deploy/local-connection.mjs';
 import { validateProject } from '../lab/lib/studio-model.mjs';
+import { createProjectStore } from '../lab/lib/project-store.mjs';
 import profile from './profile.json' with { type: 'json' };
 
 const directory = dirname(fileURLToPath(import.meta.url));
@@ -16,7 +17,20 @@ export async function prepareProject(dataDir = join(directory, 'data')) {
   try { await writeFile(join(dataDir, 'project.json'), snapshot, { flag: 'wx' }); }
   catch (error) { if (error.code !== 'EEXIST') throw error; }
   // A broken saved project is reported, never silently replaced by the snapshot.
-  validateProject(JSON.parse(await readFile(join(dataDir, 'project.json'), 'utf8')));
+  const saved = validateProject(JSON.parse(await readFile(join(dataDir, 'project.json'), 'utf8')));
+  // Add deliberately registered lane clips without replacing the operator's
+  // existing modes, timings, descriptions or base weights. Save through the
+  // normal revision/history path so upgrading an older lane is reversible.
+  if (saved.idlePolicy) {
+    const defaults = JSON.parse(snapshot).idlePolicy.variants;
+    const draft = structuredClone(saved);
+    for (const variant of defaults) {
+      const existing = draft.idlePolicy.variants.find(item => item.videoId === variant.videoId);
+      if (!existing) draft.idlePolicy.variants.push(variant);
+      else if (!Object.hasOwn(existing, 'description')) existing.description = variant.description;
+    }
+    if (JSON.stringify(draft) !== JSON.stringify(saved)) await createProjectStore(dataDir).save(draft, saved.revision);
+  }
   return dataDir;
 }
 function openBrowser(url) {

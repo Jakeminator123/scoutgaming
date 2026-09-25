@@ -642,7 +642,7 @@
         },
         "variants": {
           "type": "array",
-          "maxItems": 4,
+          "maxItems": 12,
           "items": { "$ref": "#/$defs/idleVariant" }
         }
       }
@@ -675,6 +675,7 @@
       "properties": {
         "videoId": { "type": "string", "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$" },
         "durationMs": { "type": "integer", "minimum": 200, "maximum": 60000 },
+        "description": { "type": "string", "maxLength": 80, "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$" },
         "use": { "enum": ["manual", "automatic", "rules", "openclaw"] },
         "automatic": {
           "oneOf": [

@@ -11,6 +11,7 @@ content/bake/masks/
 content/cutout/
 .lipsync-venv/
 .env
+inbox-token.txt
 vendor/
 
 # Personal historical reports are kept outside the active checkout.

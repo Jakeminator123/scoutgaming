@@ -11,10 +11,10 @@ export class IdlePolicyError extends Error {
 
 function fail(message) { throw new IdlePolicyError(message); }
 function object(value) { return Boolean(value) && typeof value === 'object' && !Array.isArray(value); }
-function exact(value, fields, at) {
+function exact(value, fields, at, optional = []) {
   if (!object(value)) fail(`${at} ska vara ett objekt`);
   const keys = Object.keys(value);
-  if (keys.length !== fields.length || fields.some(field => !Object.hasOwn(value, field)) || keys.some(key => !fields.includes(key))) fail(`${at} har fel fält`);
+  if (fields.some(field => !Object.hasOwn(value, field)) || keys.some(key => !fields.includes(key) && !optional.includes(key))) fail(`${at} har fel fält`);
 }
 function integer(value, min, max, at) { if (!Number.isInteger(value) || value < min || value > max) fail(`${at} ska vara ett heltal ${min}–${max}`); }
 
@@ -22,7 +22,7 @@ export function validateIdlePolicy(value) {
   exact(value, ['schemaVersion', 'familyId', 'base', 'variants'], 'idlePolicy');
   if (value.schemaVersion !== 1 || value.familyId !== FAMILY) fail('version eller mediefamilj stöds inte');
   if (!Array.isArray(value.base) || value.base.length < 1 || value.base.length > 4) fail('base ska innehålla 1–4 grundloopar');
-  if (!Array.isArray(value.variants) || value.variants.length > 4) fail('variants får innehålla högst fyra engångsklipp');
+  if (!Array.isArray(value.variants) || value.variants.length > 12) fail('variants får innehålla högst 12 engångsklipp');
   const ids = new Set();
   let weight = 0;
   for (const [index, item] of value.base.entries()) {
@@ -32,7 +32,9 @@ export function validateIdlePolicy(value) {
   }
   if (weight !== 100) fail('grundlooparnas vikter ska summera till 100');
   for (const [index, item] of value.variants.entries()) {
-    exact(item, ['videoId', 'durationMs', 'use', 'automatic'], `variants[${index}]`);
+    exact(item, ['videoId', 'durationMs', 'use', 'automatic'], `variants[${index}]`, ['description']);
+    if (Object.hasOwn(item, 'description') && (typeof item.description !== 'string' || item.description.length > 80
+      || /[\u0000-\u001f\u007f-\u009f]/.test(item.description))) fail(`variants[${index}].description ska vara högst 80 tecken utan kontrolltecken`);
     if (!UUID.test(item.videoId) || ids.has(item.videoId)) fail(`variants[${index}].videoId är ogiltigt eller dubblerat`);
     ids.add(item.videoId); integer(item.durationMs, 200, 60000, `variants[${index}].durationMs`);
     if (!USES.has(item.use)) fail(`variants[${index}].use är okänt`);
