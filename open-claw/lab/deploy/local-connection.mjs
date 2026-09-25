@@ -15,7 +15,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
 import { boundedJson } from '../src/openclaw.mjs';
-import { gatewayEndpoint, isLoopback } from '../src/settings.mjs';
+import { assertProductSpeechCredentialIsolation, gatewayEndpoint, isLoopback } from '../src/settings.mjs';
 import { installPartnerApi } from '../../../web/partner-api.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -24,7 +24,7 @@ const DEFAULT_LAB_PORT = 4197;
 const RESERVED_SHARED_PORTS = new Set([4192, 4194]);
 const GUARD_INSTALLED = Symbol.for('croupier.openclaw-local-connection.guard');
 const PRIVATE_KEYS = new Set([
-  'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
+  'LAB_API_TOKEN', 'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
   'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
   'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY',
 ]);
@@ -136,6 +136,8 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
       : { status: 'unverified', detail: 'The target is not defined by this helper; verify its deployed AGENTS contract before a model probe.' };
   const remoteToken = values.LAB_REMOTE_TOKEN?.trim() || '';
   const speechToken = values.OPENCLAW_PRODUCT_SPEECH_TOKEN?.trim() || '';
+  assertProductSpeechCredentialIsolation({ speechToken, apiToken: values.LAB_API_TOKEN,
+    remoteToken, gatewayKey, modelKey });
   const configuration = { repoRoot, baseUrl, speechUrl, remoteUrl, productAgent, directorAgent, timeoutMs: Math.round(timeout) };
   // Keep credentials accessible to the in-memory launcher/probe, but make an
   // accidental JSON/string inspection safe by default.

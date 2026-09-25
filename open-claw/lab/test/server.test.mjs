@@ -33,6 +33,21 @@ test('only the named OpenClaw credential is used; no implicit OpenAI fallback', 
   assert.throws(() => gatewayEndpoint('https://user:pass@example.com'));
 });
 
+test('Director settings reject a product speech token aliased to any broader credential', () => {
+  const speech = 'fixture-aliased-speech-token';
+  const base = {
+    LAB_API_TOKEN: 'fixture-lab-api', LAB_REMOTE_TOKEN: 'fixture-lab-remote',
+    OPENCLAWAPI_KEY: 'fixture-gateway', OPENCLAW_MODEL_API_KEY: 'fixture-model-provider',
+    OPENCLAW_PRODUCT_SPEECH_TOKEN: speech,
+  };
+  for (const key of ['LAB_API_TOKEN', 'LAB_REMOTE_TOKEN', 'OPENCLAWAPI_KEY', 'OPENCLAW_MODEL_API_KEY']) {
+    assert.throws(() => readSettings({ env: { ...base, [key]: speech }, envFiles: [] }), /must not reuse/);
+  }
+  const result = readSettings({ env: base, envFiles: [] });
+  assert.equal(result.speechToken, speech);
+  assert.equal(result.modelKey, undefined);
+});
+
 test('dashboard origin is explicit, or opted in to the Render web service origin', () => {
   const env = { RENDER_EXTERNAL_URL: 'https://lab.example', OPENCLAW_DASHBOARD_ALLOW_LOOPBACK: 'true' };
   assert.equal(readSettings({ env, envFiles: [] }).dashboardOrigin, '');

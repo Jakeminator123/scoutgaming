@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve, join, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { timingSafeEqual, createHash } from 'node:crypto';
-import { LAB_ROOT, readSettings, isLoopback } from './settings.mjs';
+import { LAB_ROOT, assertProductSpeechCredentialIsolation, readSettings, isLoopback } from './settings.mjs';
 import { catalogStore } from './store.mjs';
 import { normalizeInput, prepareDecision, finalizeDecision } from './engine.mjs';
 import { askDirector, chatWithDirector, providerStatus, boundedJson, GatewayError } from './openclaw.mjs';
@@ -71,7 +71,12 @@ async function relay(path, method, body, settings, fetchImpl) {
 }
 
 export async function createLabServer({ settings: settingsProvider = readSettings, fetchImpl = fetch, root = LAB_ROOT, batchBudgetMs = 25000 } = {}) {
-  const initial = { ...settingsProvider() };
+  const validatedSettings = () => {
+    const settings = { ...settingsProvider() };
+    assertProductSpeechCredentialIsolation(settings);
+    return settings;
+  };
+  const initial = validatedSettings();
   if (!isLoopback(initial.host) && !initial.apiToken) throw new Error('LAB_API_TOKEN is required when HOST is not loopback.');
   // This is a native-auth transport, never a relay authenticated with our keys.
   // Snapshot at startup: editing .env cannot widen a running public listener.
@@ -86,7 +91,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   let activeChat = 0;
   let activeSocialChat = 0;
   let companion;
-  const productSpeech = createProductSpeechService({ settingsProvider, fetchImpl });
+  const productSpeech = createProductSpeechService({ settingsProvider: validatedSettings, fetchImpl });
   const decide = async (raw, settings, deadlineAt = Infinity) => {
     const input = normalizeInput(raw);
     const catalog = await store.load();
@@ -135,7 +140,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
       const path = new URL(req.url, 'http://lab.invalid').pathname;
       if (path === '/healthz' && req.method === 'GET') return respond(res, 200, { ok: true, service: 'croupier-openclaw-lab' });
       // Auth follows the actual listener, even when .env changes before a restart.
-      const settings = { ...settingsProvider(), host: initial.host };
+      const settings = { ...validatedSettings(), host: initial.host };
       guard(req, settings, path === PRODUCT_SPEECH_PATH
         ? { token: settings.speechToken, productSpeech: true } : undefined);
       if (path.startsWith('/api/')) {
@@ -179,7 +184,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
         }
         if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', 'studio-social-chat-v1', ...(settings.companionEnabled !== false ? ['studio-companion-v1'] : []), ...(settings.speechToken && settings.speechToken !== settings.apiToken && settings.speechAgent === PRODUCT_SPEECH_AGENT ? ['product-speech-v1'] : [])] });
         if (path === '/api/studio/companion') {
-          companion ??= createCompanionService({ directory: initial.dataDir, settings: settingsProvider, fetchImpl });
+          companion ??= createCompanionService({ directory: initial.dataDir, settings: validatedSettings, fetchImpl });
           return respond(res, 200, await companion.handle(body));
         }
         if (path === '/api/studio/social-chat') {

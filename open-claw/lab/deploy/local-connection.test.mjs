@@ -56,6 +56,19 @@ test('private configuration reports the dedicated speech role without exposing c
   for (const secret of [gatewaySecret, providerSecret, directorSecret]) assert.ok(!serialized.includes(secret));
 });
 
+test('private connection refuses a speech token reused as any broader credential before child startup', async t => {
+  const speechToken = 'fixture-aliased-speech-token';
+  for (const key of ['LAB_API_TOKEN', 'LAB_REMOTE_TOKEN', 'OPENCLAWAPI_KEY', 'OPENCLAW_MODEL_API_KEY']) {
+    const file = await privateFixture(t, {
+      LAB_API_TOKEN: 'fixture-lab-api', LAB_REMOTE_URL: 'https://director.example.test', LAB_REMOTE_TOKEN: 'fixture-lab-remote',
+      OPENCLAW_BASE_URL: 'https://gateway.example.test', OPENCLAWAPI_KEY: 'fixture-gateway',
+      OPENCLAW_MODEL_API_KEY: 'fixture-model', OPENCLAW_PRODUCT_SPEECH_URL: 'https://director.example.test',
+      OPENCLAW_PRODUCT_SPEECH_TOKEN: speechToken, [key]: speechToken,
+    });
+    assert.throws(() => loadPrivateConnection({ envFiles: [file], env: {} }), /must not reuse/);
+  }
+});
+
 test('child environments separate credentials, empty provider settings and use disposable data paths', async t => {
   const file = await privateFixture(t, {
     OPENCLAW_BASE_URL: 'http://127.0.0.1:18789', OPENCLAWAPI_KEY: 'fixture-gateway-only',
