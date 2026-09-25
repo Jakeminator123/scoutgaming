@@ -32,6 +32,17 @@ test('startup maps the one secret to native password auth and removes retired re
   assert.throws(() => gatewayEnvironment({ ...env, OPENCLAW_CONFIG_PATH: path.join(env.OPENCLAW_STATE_DIR, '..', 'outside.json') }), /inside/);
 });
 
+test('Gateway startup refuses a product speech token aliased to a broader credential', async t => {
+  const env = await fixture(t);
+  const speech = 'fixture-aliased-speech-token';
+  const base = { ...env, LAB_API_TOKEN: 'fixture-lab-api', LAB_REMOTE_TOKEN: 'fixture-lab-remote',
+    OPENCLAW_PRODUCT_SPEECH_TOKEN: speech };
+  for (const key of ['LAB_API_TOKEN', 'LAB_REMOTE_TOKEN', 'OPENCLAWAPI_KEY', 'OPENCLAW_MODEL_API_KEY']) {
+    assert.throws(() => gatewayEnvironment({ ...base, [key]: speech }), /must not reuse/);
+  }
+  assert.equal(gatewayEnvironment(base).OPENCLAW_PRODUCT_SPEECH_TOKEN, speech);
+});
+
 test('first start seeds once; a native settings edit and its raw formatting survive the next start', async (t) => {
   const env = await fixture(t);
   const first = await prepareGatewayConfig(env, { validateConfig: validateFixture });
