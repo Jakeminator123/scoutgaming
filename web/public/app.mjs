@@ -3,6 +3,8 @@ import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
 import { createSpeechPoseGate } from './speech-pose-gate.mjs';
+import { playGeneratedSpeech, loadGeneratedSpeech } from './generated-speech-player.mjs';
+import { createNativeSpeechBridge } from './lab-speech-bridge.mjs';
 import { createTableAudio } from './table-audio.mjs';
 import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
@@ -434,9 +436,12 @@ speechPoseGate = createSpeechPoseGate({
     chatHistory.push({ role: 'assistant', text });
   },
   onSpeech: async (decision, { signal, job }) => playChatDecision(decision, signal, job.jobId),
-  onCancel: (job, reason) => nativeObservation.emit('chat', { role: 'assistant', state: 'cancelled', reason,
-    requestId: job.jobId, source: 'openclaw-chat' }),
-  onTrace: entry => nativeObservation.emit('chat-pose', entry),
+  onCancel: (job, reason) => {
+    pendingChatReplies.get(job.jobId)?.controller?.abort();
+    nativeObservation.emit('chat', { role: 'assistant', state: 'cancelled', reason,
+      requestId: job.jobId, source: 'openclaw-chat' });
+  },
+  onTrace: entry => nativeObservation.emit('status', { state: 'chat-pose', ...entry }),
 });
 queueMicrotask(() => {
   if (greenActor || engine.presentedClip === CLIP.idle) presentStandardIdle('initial-ready');
@@ -2057,12 +2062,19 @@ function playNeutralTts(exactText, signal) {
 
 async function playChatDecision(decision, signal, jobId) {
   if (decision.kind === 'silence') return;
-  updatePoseState({ dealerPose: decision.kind === 'generatedText' ? 'standard-idle' : 'speech',
+  updatePoseState({ dealerPose: decision.kind === 'generatedText' && !decision.speechPackage ? 'standard-idle' : 'speech',
     speechOwner: `chat-${jobId}`, idlePresented: null }, 'chat-speech-started');
   try {
     if (decision.kind === 'generatedText') {
       speaking = true;
-      try { await playNeutralTts(decision.exactText, signal); }
+      try {
+        if (decision.visualMode === 'generated-lipsync-preview' && decision.speechPackage) {
+          await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
+            onStart: text => showCaption(text, 27000),
+            onReceipt: receipt => nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync', ...receipt }),
+          });
+        } else await playNeutralTts(decision.exactText, signal);
+      }
       finally { speaking = false; }
       return;
     }
@@ -2084,6 +2096,7 @@ async function playChatDecision(decision, signal, jobId) {
     const audio = new Audio(`${VERA_BANK_URL}/${decision.lineId}.mp3`); audio.volume = .95;
     await playRecorded(decision.lineId, audio, decision.exactText, signal);
   } finally {
+    $('#caption').classList.remove('show');
     updatePoseState({ dealerPose: 'unknown', speechOwner: 'none', idlePresented: null }, 'chat-speech-completed');
     if (greenActor || engine.presentedClip === CLIP.idle) presentStandardIdle('chat-speech-return');
   }
@@ -2105,6 +2118,39 @@ function sayLine(id) {
 $('#chat-send').onclick = sendChat;
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 
+// Memory belongs to the authenticated server player, not this tab's display log.
+const chatMemory = document.createElement('details');
+chatMemory.id = 'chat-memory';
+const memorySummary = document.createElement('summary'); memorySummary.textContent = 'Minne';
+const memoryPanel = document.createElement('div');
+const memoryInfo = document.createElement('p');
+memoryInfo.textContent = 'Upp till 12 chattinlägg per spelare och dealer, högst 30 dagar utan nya meddelanden. Sparade svar kan ha genererats utan att spelas upp.';
+const memoryStatus = document.createElement('p'); memoryStatus.setAttribute('role', 'status');
+const memoryForget = document.createElement('button'); memoryForget.type = 'button'; memoryForget.textContent = 'Radera mitt minne hos denna dealer';
+const memoryLimit = document.createElement('small'); memoryLimit.textContent = 'Raderar lokalt spelarchattminne, inte leverantörernas loggar. Stoppar ett pågående svar.';
+memoryPanel.append(memoryInfo, memoryStatus, memoryForget, memoryLimit); chatMemory.append(memorySummary, memoryPanel); $('#chat').append(chatMemory);
+chatMemory.addEventListener('toggle', async () => {
+  if (!chatMemory.open) return;
+  try {
+    await tableReady;
+    const response = await fetch(`/api/chat/memory?dealer=${encodeURIComponent(DEALER.key)}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error();
+    const profile = await response.json();
+    memoryStatus.textContent = `${profile.history.length} sparade inlägg för ${DEALER.name}.`;
+  } catch { memoryStatus.textContent = 'Minnet kunde inte läsas.'; }
+});
+memoryForget.onclick = async () => {
+  memoryForget.disabled = true;
+  try {
+    const response = await fetch('/api/chat/memory/forget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealer: DEALER.key }) });
+    if (!response.ok) throw new Error();
+    for (const [requestId] of pendingChatReplies) speechPoseGate.cancel(requestId, 'chat-memory-forgotten');
+    chatHistory = []; $('#chat-log').replaceChildren();
+    memoryStatus.textContent = 'Minnet hos denna dealer är raderat.';
+  } catch { memoryStatus.textContent = 'Minnet kunde inte raderas. Försök igen.'; }
+  finally { memoryForget.disabled = false; }
+};
+
 async function sendChat() {
   const input = $('#chat-input');
   const message = input.value.trim();
@@ -2119,10 +2165,11 @@ async function sendChat() {
   chatLog('user', message);
   chatHistory.push({ role: 'user', text: message });
   const received = speechPoseGate.receive({ jobId: requestId, ...identity, requestFingerprint: requestId });
-  pendingChatReplies.set(requestId, { correlation: chatCorrelation, message });
+  const controller = new AbortController();
+  pendingChatReplies.set(requestId, { correlation: chatCorrelation, message, controller });
   try {
     const r = await fetch('/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
       body: JSON.stringify({ requestId, message, history, dealer: DEALER.key,
         sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
     });
@@ -2345,3 +2392,32 @@ if(astridSpeak)tableReady.then(()=>{
 }).catch(()=>{});
 
 document.querySelector('#sign-out').onclick=async()=>{await api('/api/auth/logout',{});location.reload();};
+
+// Separate explicit chat capability for the bound local lab. It cannot issue
+// table commands or supply cards/identity. Only this authenticated native server
+// produces the response; the lab owns its own presentation/standard-idle gate.
+const labSpeechBridge = createNativeSpeechBridge({ href: location.href, opener: window.opener,
+  loadMedia: loadGeneratedSpeech,
+  onSubmit: async ({ requestId, text, signal }) => {
+    if (chatBusy) throw new Error('A chat request is already active');
+    await tableReady;
+    if (signal.aborted) return;
+    if (chatBusy) throw new Error('A chat request is already active');
+    chatBusy = true;
+    const identity = poseIdentity();
+    nativeObservation.emit('chat', { role: 'user', text, source: 'linked-lab-chat', requestId });
+    try {
+      const response = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+        body: JSON.stringify({ requestId, message: text, history: [], dealer: DEALER.key,
+          sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
+      });
+      if (!response.ok) throw new Error('Linked chat unavailable');
+      const decision = await response.json();
+      const current = poseIdentity();
+      if (signal.aborted || current.dealerId !== identity.dealerId || current.sessionRevision !== identity.sessionRevision || current.roundRevision !== identity.roundRevision) throw new Error('Stale linked chat');
+      await labSpeechBridge.ready(decision);
+    } finally { chatBusy = false; }
+  },
+});
+window.addEventListener('message', event => labSpeechBridge.accept(event));
+window.addEventListener('pagehide', () => labSpeechBridge.close(), { once: true });

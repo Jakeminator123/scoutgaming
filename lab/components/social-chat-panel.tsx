@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { requestJson } from './studio-types';
 import { createSocialPlayback, SOCIAL_SPEECH_LIMIT_MS, type SocialPlayback } from '../lib/social-playback.mjs';
+import { playGeneratedSpeech } from '../../web/public/generated-speech-player.mjs';
 import styles from './social-chat-panel.module.css';
 
 export interface SocialPolicy {
@@ -12,7 +13,7 @@ export interface SocialPolicy {
   response: { mode: 'fixed' | 'free'; fixedText: string };
   cooldownMs: number;
 }
-interface SocialStatus { policy: SocialPolicy; configured: boolean; voiceConfigured: boolean; companionEnabled?: boolean }
+interface SocialStatus { policy: SocialPolicy; configured: boolean; voiceConfigured: boolean; generatedSpeech?: { configured: boolean }; companionEnabled?: boolean }
 interface CompanionProfile { name: string | null; greeting: string; names: string[]; history: ChatMessage[]; retentionDays: number }
 export interface SocialDraftCache { status: SocialStatus; draft: SocialPolicy }
 interface SocialAudio { audioUrl: string; id: string; text: string; cached: boolean }
@@ -21,6 +22,7 @@ interface SocialReply {
   requestId: string; policyRevision: string; reply: string; triggerId: 'social.ledsen' | null;
   confidence: number; provider: 'responded'; assetId: 'social.ledsen' | 'idle.ready.standard';
   audio?: SocialAudio; voiceError?: string; suppressed?: string; systemNotice?: boolean;
+  speechPackage?: unknown;
   companion?: { profile: CompanionProfile; comedy: boolean; search: { status: string; results: { title: string; url: string; snippet: string }[] } };
 }
 interface Props {
@@ -32,6 +34,7 @@ interface Props {
   onBegin: () => void;
   onReaction: (assetId: 'social.ledsen' | 'idle.ready.standard', label: string, exactReply: string) => void;
   draftCache?: RefObject<SocialDraftCache | null>;
+  speechHost?: RefObject<HTMLDivElement | null>;
   blocked?: boolean;
   onBusyChange?: (busy: boolean) => void;
   onActivity?: (activity: SocialActivity) => void;
@@ -39,6 +42,23 @@ interface Props {
 export interface SocialActivity { type: string; requestId?: string; reason: string; data?: Record<string, unknown> }
 
 const audioPath = /^\/api\/voice\/[a-f0-9]{64}$/;
+// The shared browser module is plain JS. Keep the consumer contract explicit;
+// that player validates exact text, dealer, URLs, hashes and durations at runtime.
+const playGeneratedPreview = playGeneratedSpeech as (value: unknown, options: {
+  exactText: string; dealerId: string; mount: HTMLDivElement; signal: AbortSignal;
+  onStart: () => void;
+  onReceipt: (receipt?: { state: string; packageId?: string; evidence?: string; reviewStatus?: string }) => void;
+}) => Promise<void>;
+
+function nextRenderedFrame(signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal.aborted) { reject(new Error('Speech preview cancelled')); return; }
+    let frame: number;
+    const abort = () => { window.cancelAnimationFrame(frame); signal.removeEventListener('abort', abort); reject(new Error('Speech preview cancelled')); };
+    signal.addEventListener('abort', abort, { once: true });
+    frame = window.requestAnimationFrame(() => { signal.removeEventListener('abort', abort); resolve(); });
+  });
+}
 
 export function socialHistory(messages: readonly ChatMessage[]) {
   const history = messages.filter((item): item is ChatMessage & { role: 'user' | 'assistant' } => item.role !== 'system' && item.content.trim().length > 0 && item.content.length <= 1000).slice(-12);
@@ -48,7 +68,7 @@ export function socialHistory(messages: readonly ChatMessage[]) {
 }
 
 /** Separate social-lab policy and conversation. It never edits the presentation project. */
-export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle, registerCancel, onBegin, onReaction, draftCache, blocked = false, onBusyChange, onActivity }: Props) {
+export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle, registerCancel, onBegin, onReaction, draftCache, speechHost, blocked = false, onBusyChange, onActivity }: Props) {
   const [status, setStatus] = useState<SocialStatus | null>(() => draftCache?.current?.status ?? null);
   const [draft, setDraft] = useState<SocialPolicy | null>(() => draftCache?.current?.draft ?? null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -64,6 +84,7 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
   const [profileError, setProfileError] = useState('');
   const [fun, setFun] = useState(true);
   const [web, setWeb] = useState(true);
+  const [expanded, setExpanded] = useState(!compact || dealerId === 'astrid' && eventId === 'idle.ready');
   const request = useRef<AbortController | null>(null);
   const generation = useRef(0);
   const conversation = useRef('');
@@ -75,6 +96,9 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
   const gates = useRef({ blocked, allowed: dealerId === 'astrid' && eventId === 'idle.ready' });
   gates.current = { blocked, allowed: dealerId === 'astrid' && eventId === 'idle.ready' };
   const sceneAllowed = dealerId === 'astrid' && eventId === 'idle.ready';
+  const generatedSpeechConfigured = status?.generatedSpeech?.configured === true;
+  const voiceAvailable = Boolean(status?.voiceConfigured || generatedSpeechConfigured);
+  useEffect(() => { setExpanded(!compact || sceneAllowed); }, [compact, sceneAllowed]);
   const dirty = Boolean(draft && status && JSON.stringify(draft) !== JSON.stringify(status.policy));
   useEffect(() => { if (draftCache && draft && status) draftCache.current = { draft, status }; }, [draftCache, draft, status]);
   useEffect(() => {
@@ -100,6 +124,7 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
     return () => { cancel('social-panel-unmounted'); registerCancel(null); };
   }, [cancel, registerCancel]);
   useEffect(() => { if (!sceneAllowed) cancel('left-astrid-idle'); }, [sceneAllowed, cancel]);
+  useEffect(() => { if (blocked && owned.current) cancel('speech-owner-busy'); }, [blocked, cancel]);
   useEffect(() => {
     function hidden() { if (document.hidden) cancel('page-hidden'); }
     function leaving() { cancel('page-left'); }
@@ -193,7 +218,7 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
   async function send() {
     if (!sceneAllowed || blocked || !status?.configured || !draft || dirty || busy || owned.current || !message.trim() || status.companionEnabled && !profile?.name) return;
     const content = message.trim(), history = socialHistory(messages), policy = status.policy;
-    const wantsVoice = voice && status.voiceConfigured;
+    const wantsVoice = voice && voiceAvailable;
     const requestId = crypto.randomUUID();
     if (!conversation.current) conversation.current = `lab-social-${crypto.randomUUID()}`;
     const task = begin('chat');
@@ -213,8 +238,27 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
       setReply(next); setMessages(current => [...current, { role: 'assistant', content: next.reply }]);
       if (next.companion) setProfile(next.companion.profile);
       onReaction(next.assetId, next.triggerId ? policy.trigger.label : 'Neutralt vänteläge', next.reply);
-      callbacks.current.onActivity?.({ type: 'social.responded', requestId, reason: next.triggerId ? 'validated-social-trigger' : 'neutral-idle-response', data: { reply: next.reply, suggestedAssetId: next.assetId, displayedAssetId: 'idle.ready.standard', confidence: next.confidence, expressionSuppressed: next.suppressed ?? null, decisionOwner: 'OpenClaw + local-social-policy', textOwner: next.triggerId && policy.response.mode === 'fixed' ? 'saved-social-policy' : 'OpenClaw', output: wantsVoice && next.audio ? 'text-and-optional-idle-speech' : 'text', lipsyncVerified: false } });
-      if (next.audio && wantsVoice) {
+      callbacks.current.onActivity?.({ type: 'social.responded', requestId, reason: next.triggerId ? 'validated-social-trigger' : 'neutral-idle-response', data: { reply: next.reply, suggestedAssetId: next.assetId, displayedAssetId: 'idle.ready.standard', confidence: next.confidence, expressionSuppressed: next.suppressed ?? null, decisionOwner: 'OpenClaw + local-social-policy', textOwner: next.triggerId && policy.response.mode === 'fixed' ? 'saved-social-policy' : 'OpenClaw', output: wantsVoice && next.speechPackage ? 'text-and-generated-lipsync-preview' : wantsVoice && next.audio ? 'text-and-optional-idle-speech' : 'text', lipsyncVerified: false } });
+      if (next.speechPackage && wantsVoice) {
+        if (!generatedSpeechConfigured) throw new Error('Genererat talpaket kom utan aktiverad läppsynksförhandsvisning och spelades inte.');
+        setBusy('playback');
+        // onReaction renders the neutral scene and this host. Wait for that
+        // frame, then recheck ownership so a late reply cannot start playback.
+        await nextRenderedFrame(task.controller.signal);
+        if (!task.current()) return;
+        if (!gates.current.allowed || gates.current.blocked || !speechHost?.current) throw new Error('Läppsynksprovet får bara starta i Astrids vänteläge med en monterad scen.');
+        await playGeneratedPreview(next.speechPackage, {
+          exactText: next.reply, dealerId, mount: speechHost.current, signal: task.controller.signal,
+          onStart: () => { if (task.current()) setAudioPlaying(true); },
+          onReceipt: (receipt?: { state: string; packageId?: string; evidence?: string; reviewStatus?: string }) => {
+            if (!receipt) return;
+            const phase = receipt.state === 'start' ? 'started' : receipt.state === 'end' ? 'completed' : 'cancelled';
+            if (task.current() && phase !== 'started') setAudioPlaying(false);
+            callbacks.current.onActivity?.({ type: `social.audio.${phase}`, requestId, reason: `generated-speech-${receipt.state}`, data: { ...receipt, medium: 'audio-and-video', displayedAssetId: 'generated-lipsync-preview', maxDurationMs: SOCIAL_SPEECH_LIMIT_MS, lipsyncVerified: false } });
+          },
+        });
+        if (task.current()) setNotice('Läppsynksprovet är klart. Genererad video och exakt röst spelades tillsammans; visuell granskning återstår.');
+      } else if (next.audio && wantsVoice) {
         if (next.audio.text !== next.reply) throw new Error('Ljudets text matchar inte svaret. Ljudet spelades inte upp.');
         setSavedAudio(next.audio); await playAudio(next.audio);
       }
@@ -248,8 +292,9 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
   }
 
   return <section className={`${styles.panel} ${compact ? styles.compact : ''}`} aria-labelledby="social-chat-heading">
-    <div className={styles.heading}><h2 id="social-chat-heading">Chatta med Astrid</h2><span className={styles.replyMode}>{draft?.response.mode === 'fixed' ? 'Standardfras vid uttryck' : 'Fritt svar'}</span></div>
     {busy === 'chat' || busy === 'playback' || busy === 'voice' || blocked ? <div className={styles.liveStatus} role="status"><span>{busy === 'chat' ? 'Astrid funderar…' : busy === 'playback' ? audioPlaying ? 'Astrid talar…' : 'Förbereder ljud…' : busy === 'voice' ? 'Skapar ljud…' : 'Scenen används av ett annat prov'}</span>{busy === 'chat' || busy === 'playback' || busy === 'voice' ? <button className="text-button" type="button" onClick={() => cancel('user-stop')}>Stoppa</button> : null}</div> : null}
+    <details className={styles.chatDisclosure} open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
+    <summary className={styles.heading}><div><h2 id="social-chat-heading">Fristående chattprov med Astrid</h2><small>Separat chattprov · inga kort eller spelare från originalbordet · {sceneAllowed ? 'Astrid väntar' : 'öppna i Astrids vänteläge'}</small></div><span className={styles.replyMode}>{dirty ? 'Osparad policy' : draft?.response.mode === 'fixed' ? 'Standardfras vid uttryck' : 'Fritt svar'}</span></summary>
     {!sceneAllowed ? <div className={styles.sceneGate}><button className="text-button" type="button" onClick={onGoToIdle}>Gå till Astrids vänteläge för att chatta →</button></div> : null}
     {!draft || !status ? <div className={styles.loading}><p>{busy === 'loading' ? 'Ansluter chatten…' : 'Chattinställningarna kunde inte läsas.'}</p>{!busy ? <button className="text-button" type="button" onClick={() => void loadPolicy()}>Försök igen</button> : null}</div> : <>
       {status.companionEnabled ? <div className={styles.visitor}>
@@ -261,7 +306,7 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
       {messages.length ? <div className={styles.chat} aria-live="polite">{messages.map((item, index) => <div key={index} className={item.role === 'user' ? styles.playerMessage : item.role === 'system' ? styles.systemMessage : styles.astridMessage}><span>{item.role === 'user' ? 'DU' : item.role === 'system' ? 'SYSTEM' : 'ASTRID'}</span><p>{item.content}</p></div>)}</div> : null}
       <form onSubmit={event => { event.preventDefault(); void send(); }}>
         <label className={styles.field}><span className="sr-only">Meddelande till Astrid</span><textarea rows={2} maxLength={1000} value={message} disabled={!sceneAllowed || blocked || !status.configured || Boolean(busy)} placeholder="Skriv som en spelare vid bordet…" onChange={event => { if (!owned.current) setMessage(event.target.value); }} /></label>
-        <label className={styles.check}><input aria-label="Ljud från ElevenLabs" type="checkbox" checked={voice} disabled={blocked || !status.voiceConfigured || Boolean(busy)} onChange={event => { if (owned.current || blocked) return; cancel(); onBegin(); setVoice(event.target.checked); }} /><span>Ljud <small>{status.voiceConfigured ? 'ElevenLabs · använder krediter' : 'ElevenLabs ej anslutet'}</small></span></label>
+        <label className={styles.check}><input aria-label="Ljud från ElevenLabs" type="checkbox" checked={voice} disabled={blocked || !voiceAvailable || Boolean(busy)} onChange={event => { if (owned.current || blocked) return; cancel(); onBegin(); setVoice(event.target.checked); }} /><span>{generatedSpeechConfigured ? 'Tal + läppsynk' : 'Ljud'} <small>{generatedSpeechConfigured ? 'ElevenLabs + läppsynk · labbprov, ej visuellt godkänt · använder krediter' : status.voiceConfigured ? 'ElevenLabs · använder krediter' : 'ElevenLabs ej anslutet'}</small></span></label>
         {status.companionEnabled ? <div className={styles.options}>
           <label><input type="checkbox" checked={fun} disabled={Boolean(busy) || blocked} onChange={e => setFun(e.target.checked)} /> Skämtläge</label>
           <label><input type="checkbox" checked={web} disabled={Boolean(busy) || blocked} onChange={e => setWeb(e.target.checked)} /> Tillåt webbsökning</label>
@@ -271,7 +316,7 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
       </form>
       {reply?.companion?.search && reply.companion.search.status !== 'not_requested' ? <div className={styles.sources}><small>{reply.companion.search.status === 'searched' ? 'Källor från webbsökningen' : reply.companion.search.status === 'hourly_limit' ? 'Timgränsen är nådd. Ingen ny sökning gjordes.' : 'Webbsökningen kunde inte hämta resultat.'}</small>{reply.companion.search.results.filter(source => /^https?:\/\//.test(source.url)).map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title}</a>)}</div> : null}
       {!status.configured ? <p className={styles.draftWarning}>OpenClaw är inte konfigurerat.</p> : dirty ? <p className={styles.draftWarning}>Spara ändringarna under Inställningar för att chatta.</p> : null}
-      <details className={styles.tools}><summary>Inställningar{dirty ? ' · osparat' : ''}</summary>
+      <details className={styles.tools}><summary>Inställningar för chattprovet{dirty ? ' · osparat' : ''}</summary>
         <p className={styles.explanation}>Text och uttryck är två separata val. Fritt svar är normalläget. Standardfras används bara om du väljer det och uttryckets villkor matchar.</p>
         {reply ? <div className={styles.decision}><strong>{reply.triggerId ? `${status.policy.trigger.label} föreslogs` : 'Ingen social reaktion valdes'}</strong><span>{reply.suppressed ? `Uttrycket begränsades: ${reply.suppressed}. ` : ''}Scenen behåller vänteläget under talet. Kön för ett efterföljande uttrycksklipp är ännu inte ansluten.</span><code>Förslag: {reply.assetId} · Visas: idle.ready.standard</code></div> : null}
         <details className={styles.settings}>
@@ -289,10 +334,11 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
         <div className={styles.actions}><code>social.ledsen · {status.policy.revision.slice(0, 12)}</code><button className="primary-button" type="button" disabled={blocked || !dirty || Boolean(busy)} onClick={() => void savePolicy()}>{busy === 'saving' ? 'Sparar…' : 'Spara sociala inställningar'}</button></div><button className="text-button" type="button" disabled={blocked || Boolean(busy)} onClick={() => { if (!dirty || window.confirm('Läs in den sparade sociala policyn och kasta detta sociala utkast?')) void loadPolicy(); }}>Läs om sparad social policy</button>
       </details>
       <details className={styles.audioTools}><summary>Standardfrasens ljud <span>Valfritt</span></summary><div><p>Skriv en kort standardfras avsedd att sägas inom 25 sekunder. Skapa dess ljud utan att skicka ett chattmeddelande. Samma text och röst återanvänder ljudet. Nytt ljud kan kosta krediter; ingen video eller läppsynk skapas. Ljud som visar längre speltid än 25 sekunder avvisas före start; en tidsvakt stoppar även felaktig eller okänd speltid.</p></div><button className="text-button" type="button" onClick={() => void createFixedAudio()} disabled={!sceneAllowed || blocked || !status.voiceConfigured || dirty || Boolean(busy) || draft.response.mode !== 'fixed'}>{busy === 'voice' ? 'Skapar ljud…' : 'Skapa / spara standardfrasens ljud'}</button>{!status.voiceConfigured ? <p>ElevenLabs behöver konfigureras lokalt för tal.</p> : null}{draft.response.mode !== 'fixed' ? <p>Välj fast standardfras under Reaktion och svar för att skapa detta ljud.</p> : null}</details>{savedAudio ? <div className={styles.savedAudio}><p>Exakt ljudtext: ”{savedAudio.text}”</p><button className="primary-button" type="button" disabled={!sceneAllowed || blocked || dirty || Boolean(busy)} onClick={() => void replay()}>▶ Spela sparat ljud igen (manuellt)</button>{audioPlaying ? <button className="text-button" type="button" onClick={() => cancel('user-stop')}>Stoppa ljud</button> : null}</div> : null}
-        <p className={styles.explanation}>Tal är förvalt, högst 25 sekunder, och skapas när du skickar. Avmarkera Ljud för enbart text. Nytt ljud kan kosta ElevenLabs-krediter; samma exakta text och röst kan återanvända cachen. Ljudet läser samma text som chattsvaret. Läppsynk är inte ansluten.</p>
+        <p className={styles.explanation}>Tal är förvalt, högst 25 sekunder, och skapas när du skickar. Avmarkera ljudvalet för enbart text. Ljudet läser samma text som chattsvaret. {generatedSpeechConfigured ? 'ElevenLabs-rösten och genererad läppsynksvideo spelas tillsammans i scenen som ett labbprov. Visuell granskning återstår; generering kan använda ElevenLabs- och RunPod-krediter.' : 'Nytt ljud kan kosta ElevenLabs-krediter; samma exakta text och röst kan återanvända cachen. Läppsynk är inte ansluten.'}</p>
         <p className={styles.explanation}>Samtalet finns i den öppna labbpanelen. Det ändrar inte kort, saldo eller resultat. Operatörschatten och IDE-inboxen är separata.</p>
       </details>
     </>}
+    </details>
     {notice && !compact ? <p className={styles.notice} role="status">{notice}</p> : null}{error ? <p className="inline-error" role="alert">{error}</p> : null}
   </section>;
 }

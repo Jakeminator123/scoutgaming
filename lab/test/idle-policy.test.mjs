@@ -54,3 +54,12 @@ test('invalid weights, duplicate media and a fifth variant are rejected', () => 
   const tooMany = createDefaultIdlePolicy(); tooMany.variants.push(structuredClone(tooMany.variants[1])); tooMany.variants[4].videoId = '11111111-1111-1111-1111-111111111111';
   assert.throws(() => validateIdlePolicy(tooMany), /högst fyra/);
 });
+
+test('multi-minute previews enforce maxPerMinute in each rolling minute, not as an upfront total budget', () => {
+  const policy = createDefaultIdlePolicy();
+  policy.variants[0].automatic = { averageEveryMs: 5000, jitterMs: 0, cooldownMs: 0, maxPerMinute: 1 };
+  const variants = createIdlePreviewPlan(policy, { seed: 1, durationMs: 180000 }).filter(item => item.kind === 'variant');
+  assert.equal(variants.length, 3);
+  assert.equal(variants.filter(item => item.startMs < 60000).length, 1);
+  for (let i = 1; i < variants.length; i++) assert.ok(variants[i].startMs - variants[i - 1].startMs >= 60000);
+});

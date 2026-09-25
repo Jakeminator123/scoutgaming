@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { DealerId, StudioProject } from '../lib/studio-model.mjs';
 import type { PartnerTrace } from '../lib/partner-trace.mjs';
 import { buildPresentationSequence, type PresentationStep } from '../lib/presentation-sequence.mjs';
@@ -12,6 +12,14 @@ import { requestJson, type DirectorMode, type SimulationResult, type VideoInvent
 import { Stage, type PlaybackReceipt } from './stage';
 import { PresentationSequence } from './presentation-sequence';
 import { ReferenceCapture } from './reference-capture';
+import { PresentationFrame } from './presentation-frame';
+import { LabIdleSurface, type IdleSurfaceReceipt } from './lab-idle-surface';
+import { NativeLabChat } from './native-lab-chat';
+import { IdleReactions } from './idle-reactions';
+import { NativeSpeechContext } from './native-speech-context';
+import { createLiveIdleController, type LiveIdleController, type LiveIdleSnapshot } from '../lib/live-idle.mjs';
+import type { LinkedStatus } from '../lib/native-lab-chat.mjs';
+import { modeLabels, modeExplanations } from '../lib/director-modes.mjs';
 import type { ActivityDraft } from './activity-log';
 import { decisionAttribution } from '../lib/activity-log.mjs';
 import styles from './game-stream.module.css';
@@ -42,6 +50,21 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
   const [playId, setPlayId] = useState(0);
   const [following, setFollowing] = useState(false);
   const [error, setError] = useState('');
+  const { binding: nativeBinding } = useContext(NativeSpeechContext);
+  const [visible, setVisible] = useState(true);
+  const [idleState, setIdleState] = useState<LiveIdleSnapshot>({ clip: null, idleReady: false, state: 'unavailable' });
+  const [speechPriority, setSpeechPriority] = useState({ ready: false, playing: false });
+  const [idleError, setIdleError] = useState('');
+  const idleController = useRef<LiveIdleController | null>(null);
+  const idleDealer = useRef(dealerId);
+  const idleReceipts = useRef(new Set<string>());
+  const idleIdentity = `${dealerId}:${observationRevision}:${nativeBinding?.channel ?? 'local'}:${nativeBinding?.revision ?? 0}`;
+  const idleScene = { active, visible, actionBusy: playing || busy, speechReady: speechPriority.ready, speechPlaying: speechPriority.playing,
+    identity: idleIdentity, revision: `${table.version ?? 'unknown'}:${mode}:${following ? 'following' : 'paused'}` };
+  const latestIdleScene = useRef(idleScene); latestIdleScene.current = idleScene;
+  const idleAdviceAllowed = useRef(false); idleAdviceAllowed.current = active && visible && following && mode === 'active';
+  const offerIdleVariant = useCallback((offer: { videoId: string; requestId: string; expiresAt: number }) => idleAdviceAllowed.current && (idleController.current?.offerVariant(offer) ?? false), []);
+  const speechHost = useRef<HTMLDivElement>(null);
   const playback = useRef<PlaybackRun | null>(null);
   const generation = useRef(0);
   const mounted = useRef(true);
@@ -51,12 +74,74 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
   const autoWasActive = useRef(false);
   const callback = useRef(playStep); callback.current = playStep;
 
+  useEffect(() => {
+    const change = () => setVisible(!document.hidden);
+    change(); document.addEventListener('visibilitychange', change);
+    return () => document.removeEventListener('visibilitychange', change);
+  }, []);
+  useEffect(() => {
+    const policy = project.idlePolicy;
+    if (!policy) { idleController.current?.close(); idleController.current = null; setIdleState({ clip: null, idleReady: false, state: 'unavailable' }); return; }
+    try {
+      if (!idleController.current || idleDealer.current !== dealerId) {
+        idleController.current?.close(); idleReceipts.current.clear(); idleDealer.current = dealerId;
+        idleController.current = createLiveIdleController({ policy, inventory: videos, dealerId, initialScene: { ...latestIdleScene.current, visible: !document.hidden } });
+      } else idleController.current.updatePolicy(policy, videos);
+      setIdleError(''); setIdleState(idleController.current.snapshot());
+    } catch {
+      idleController.current?.close(); idleController.current = null;
+      setIdleState({ clip: null, idleReady: false, state: 'unavailable' }); setIdleError('Idlepolicyn kunde inte läsas. Ingen idlevariant eller talposition har antagits.');
+    }
+  }, [project.idlePolicy, videos, dealerId]);
+  useEffect(() => {
+    if (idleController.current) setIdleState(idleController.current.updateScene(idleScene));
+  }, [active, visible, playing, busy, speechPriority.ready, speechPriority.playing, idleIdentity, table.version, mode, following, project.idlePolicy, videos, dealerId]);
+  useEffect(() => () => { idleController.current?.close(); idleController.current = null; }, []);
+  function speechStatus(value: LinkedStatus) {
+    const next = value.state === 'held' ? { ready: true, playing: false }
+      : value.state === 'playing' ? { ready: true, playing: true }
+      : !value.pending || value.state === 'preparing' ? { ready: false, playing: false } : null;
+    if (!next) return;
+    setSpeechPriority(previous => previous.ready === next.ready && previous.playing === next.playing ? previous : next);
+    if (idleController.current) setIdleState(idleController.current.updateScene({ ...latestIdleScene.current, speechReady: next.ready, speechPlaying: next.playing }));
+  }
+  function idleReceipt(owner: LiveIdleController | null, playId: number, value: IdleSurfaceReceipt) {
+    if (!owner || idleController.current !== owner || owner.snapshot().clip?.playId !== playId) return;
+    const selected = owner.snapshot().clip;
+    const key = `${playId}:${value.phase}`;
+    if (idleReceipts.current.has(key)) return;
+    idleReceipts.current.add(key);
+    if (idleReceipts.current.size > 100) idleReceipts.current = new Set([key]);
+    if (value.phase === 'started') setIdleState(owner.started(playId));
+    else if (value.phase === 'presented') setIdleState(owner.presented(playId));
+    else if (value.phase === 'completed') setIdleState(owner.completed(playId));
+    else if (value.phase === 'failed') setIdleState(owner.failed(playId));
+    else return;
+    onActivity({ source: 'player', stage: 'playback', status: value.phase === 'presented' ? 'observed' : value.phase,
+      runId: `live-idle-${playId}`, title: `${value.kind === 'variant' ? 'Idlevariant' : 'Basloop'} · ${value.phase === 'presented' ? 'bild renderad' : value.phase}`,
+      owner: 'Labbets idlepolicy', reason: value.reason ?? 'Kvitto från den verkliga idleuppspelningen. Detta avslutar ingen spelinstruktion.',
+      data: { ...value, playId, scope: 'idle-policy', selectionReason: selected?.reason,
+        adviceRequestId: selected?.requestId, instructionCompleted: false } });
+  }
+
   function cancel(message = 'Uppspelningen stoppades.') {
     const current = playback.current; playback.current = null;
     current?.controller.abort(); current?.cleanup(); current?.finish?.reject(new Error(message));
     if (mounted.current) { setPlaying(false); setBusy(false); }
   }
-  function stopFollow() { live.current?.controller.abort(); live.current = null; setFollowing(false); cancel(); }
+  function stopFollow() {
+    idleAdviceAllowed.current = false;
+    const idle = idleController.current;
+    if (idle) {
+      // Revoke both a pending offer and an AI clip already selected for loading.
+      // A short pause/resume of that clip preserves real-start cooldown history;
+      // ordinary baseloops/automatic variants are not stopped by this control.
+      if (idle.snapshot().clip?.reason === 'openclaw') idle.updateScene({ active: false });
+      const next = idle.updateScene({ ...latestIdleScene.current, revision: `${latestIdleScene.current.revision}:stopped` });
+      if (mounted.current) setIdleState(next);
+    }
+    live.current?.controller.abort(); live.current = null; setFollowing(false); cancel();
+  }
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; live.current?.controller.abort(); live.current = null; cancel('Spelytan stängdes.'); }; }, []);
   useEffect(() => { stopFollow(); setResult(null); }, [dealerId, project, mode]);
   useEffect(() => { stopFollow(); setSelectedId(null); setResult(null); setError(''); autoWasActive.current = false; }, [observationRevision]);
@@ -143,7 +228,7 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
     if (!current?.finish || current.generation !== receiptGeneration || current.controller.signal.aborted) return;
     const latest = currentSequence.current.steps.find(step => step.id === current.step.id);
     if (!latest || latest.blocked || stepIdentity(latest) !== stepIdentity(current.step)) { cancel('Instruktionen har ändrats.'); return; }
-    onActivity({ source: 'player', stage: 'playback', status: value.phase === 'fallback' ? 'failed' : value.phase, runId: `sequence-${current.step.id}-${current.generation}`, title: `${value.medium === 'video' ? 'Original/video' : '2D-reserv'} · ${current.step.label}`, owner: 'Labbets spelare', reason: value.reason ?? 'Uppspelningskvitto från labbet, inte från referensspelet.', data: value });
+    onActivity({ source: 'player', stage: 'playback', status: value.phase === 'fallback' ? 'failed' : value.phase, runId: `sequence-${current.step.id}-${current.generation}`, title: `${value.medium === 'video' ? 'Labbvideo' : '2D-reserv'} · ${current.step.label}`, owner: 'Labbets spelare', reason: value.reason ?? 'Uppspelningskvitto från labbet, inte från referensspelet.', data: value });
     if (value.phase === 'completed') { playback.current = null; current.cleanup(); setPlaying(false); current.finish.resolve(); }
     else if (value.phase === 'failed') cancel(value.reason ?? 'Uppspelningen misslyckades.');
   }
@@ -158,12 +243,31 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
   const sourceEvent = (currentResult?.decision?.sourceEvent ?? event?.exampleEvent) as Record<string, unknown> | undefined;
   const video = media?.managed && sourceEvent && event ? mediaVideoForEvent(videos, dealerId, event.id, sourceEvent, videoId) : videoId && sourceEvent ? videos.videos.find(video => video.id === videoId && video.available && videoFitsEvent(video, sourceEvent)) : null;
   const original = !media?.managed && variant && line && variant.id === line.baselineVariantId && !variant.videoGenerationId && sourceEvent ? resolveOriginalDefault(originals, dealerId, sourceEvent) : null;
+  const idleClip = idleState.clip;
+  const idleVideo = idleClip ? videos.videos.find(item => item.id === idleClip.videoId && item.available) : null;
+  const idleOwner = idleController.current;
+  const idleKey = `${idleIdentity}:${idleClip?.playId ?? 'none'}`;
   return <div className={styles.surface}>
+    <IdleReactions records={trace.records} project={project} dealerId={dealerId} mode={mode} revision={table.version}
+      boundary={`${observationRevision}`} active={active && following} onOffer={offerIdleVariant} onActivity={onActivity} />
     <div className={styles.comparison}>
-    <section className={styles.column} aria-label="Originalspelet"><h4>Originalspelet</h4><ReferenceCapture onActivity={onActivity} /></section>
+    <section className={styles.column} aria-label="Originalspelet"><h4>Originalspelet</h4><PresentationFrame label="Originalspelet" captured><ReferenceCapture onActivity={onActivity} /></PresentationFrame></section>
     <section className={styles.column} aria-label="Labbets presentation"><h4>Labbets presentation <small>{following ? 'Följer nya speldata' : 'Pausad'}</small></h4>
-      <div className={styles.toolbar}><label>Variantval <select value={mode} disabled={playing || busy} onChange={e => { stopFollow(); setMode(e.target.value as DirectorMode); }}><option value="off">Bara standard</option><option value="rules">Regler</option><option value="random">Slumpvariation</option><option value="active">OpenClaw</option><option value="shadow">Skuggläge</option></select></label><button className="text-button" disabled={!following && (playing || busy)} onClick={() => following ? stopFollow() : startFollow()}>{following ? 'Pausa labbet' : 'Följ nya instruktioner'}</button><small>{following ? 'Varje steg väntar på labbspelarens avslut.' : 'Samma speldata, labbets standard eller varianter.'}{mode === 'active' || mode === 'shadow' ? ' Uppspelning kan göra modellanrop.' : ''}</small></div>
-      {event && variant ? <Stage event={event} asset={currentResult?.asset ?? project.assets.find(asset => asset.id === variant.assetId)} dealer={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId} variantLabel={variant.label} playId={playId} playing={playing && active && !step?.blocked} hasResult={Boolean(currentResult)} busy={busy} videoUrl={video?.previewUrl} videoName={video?.fileName ?? video?.label} videoId={videoId ?? undefined} familyId={media?.family?.id ?? video?.familyId} fallbackVideo={media?.managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, media.line?.variants[0]?.videoGenerationId) : null} videoMissing={Boolean(videoId && !video)} originalMedia={original} sourceIsObserved onPlaybackEvent={value => receipt(value, value.playId ?? playId)} onPlay={() => { if (step && !following && !playing && !busy) void playStep(step, { signal: new AbortController().signal }).catch(cause => { if (mounted.current) setError(cause.message); }); }} /> : <div className={styles.empty}><strong>Väntar på spelinstruktioner</strong><p>Tryck Anslut och spela i originalfliken. Labbet följer nya mottagna instruktioner automatiskt.</p></div>}
+      <div className={styles.toolbar}><label>Vem väljer klippet? <select value={mode} disabled={playing || busy} onChange={e => { stopFollow(); setMode(e.target.value as DirectorMode); }}>{(Object.keys(modeLabels) as DirectorMode[]).map(value => <option key={value} value={value}>{modeLabels[value]}</option>)}</select></label><button className="text-button" disabled={!following && (playing || busy)} onClick={() => following ? stopFollow() : startFollow()}>{following ? 'Pausa labbet' : 'Följ nya instruktioner'}</button><small>{following ? 'Varje steg väntar på labbspelarens avslut.' : 'Samma speldata, labbets standard eller varianter.'}</small></div>
+      <p className={styles.note}>Vid spelhändelser: {modeExplanations[mode]} Saknas tillåtna varianter spelas standard utan AI-anrop. Automatiska idlevariationer följer den sparade idlepolicyn. Detta val styr klipp, inte chattens svarstext.</p>
+      <PresentationFrame label="Labbets presentation">
+      <div className={styles.speechStage}>
+      {idleClip && idleVideo && active && !playing && !busy && !speechPriority.playing ? <LabIdleSurface key={idleKey} url={idleVideo.previewUrl} videoId={idleVideo.id}
+        kind={idleClip.kind} repeat={idleClip.repeat} standardBase={idleClip.standardBase} onReady={() => {}}
+        onReceipt={value => idleReceipt(idleOwner, idleClip.playId, value)} /> : speechPriority.playing && !playing && !busy ? <div className="stage-video" aria-hidden="true" /> : event && variant ? <Stage event={event} asset={currentResult?.asset ?? project.assets.find(asset => asset.id === variant.assetId)} dealer={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId} variantLabel={variant.label} playId={playId} playing={playing && active && !step?.blocked} hasResult={Boolean(currentResult)} busy={busy} videoUrl={video?.previewUrl} videoName={video?.fileName ?? video?.label} videoId={videoId ?? undefined} familyId={media?.family?.id ?? video?.familyId} fallbackVideo={media?.managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, media.line?.variants[0]?.videoGenerationId) : null} videoMissing={Boolean(videoId && !video)} originalMedia={original} sourceIsObserved onPlaybackEvent={value => receipt(value, value.playId ?? playId)} onPlay={() => { if (step && !following && !playing && !busy) void playStep(step, { signal: new AbortController().signal }).catch(cause => { if (mounted.current) setError(cause.message); }); }} /> : <div className={styles.empty}><strong>Väntar på spelinstruktioner</strong><p>Tryck Anslut och spela i originalfliken. Labbet följer nya mottagna instruktioner automatiskt.</p></div>}
+      <div ref={speechHost} className={styles.speechHost} />
+      </div>
+      </PresentationFrame>
+      <NativeLabChat dealerId={dealerId} dealerLabel={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId}
+        active={active && following} actionBusy={playing || busy} idleReady={idleState.idleReady && !playing && !busy && !speechPriority.playing}
+        roundVersion={table.version} boundary={`${observationRevision}`} speechHost={speechHost}
+        onStatusChange={speechStatus} onSettled={() => speechStatus({ state: 'completed', pending: false })} onActivity={onActivity} />
+      {idleError ? <p role="alert">{idleError}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
     </section>
     </div>

@@ -28,6 +28,8 @@ const PRIVATE_KEYS = new Set([
   'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
   'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY',
 ]);
+const GENERATED_SPEECH_KEYS = ['ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
+const GENERATED_SPEECH_ORIGINS = ['https://api.elevenlabs.io', 'https://api.runpod.ai'];
 
 function blockedError() {
   return Object.assign(new Error('Only the isolated local services and configured OpenClaw origins are reachable.'), { code: 'OPENCLAW_CONNECTION_NETWORK_BLOCKED' });
@@ -109,15 +111,16 @@ function readEnvFile(file) {
   catch (error) { if (error.code === 'ENOENT') return {}; throw new Error('Could not parse private OpenClaw environment configuration.'); }
 }
 
-export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env } = {}) {
+export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env, generatedSpeech = false } = {}) {
   repoRoot = resolve(repoRoot);
-  envFiles ??= [join(repoRoot, '.env'), join(repoRoot, 'lab', '.env.local')];
+  envFiles ??= [join(repoRoot, '.env'), join(repoRoot, 'lab', '.env.local'), join(repoRoot, 'lab', '.env.generated-speech.local')];
   const values = {};
+  const allowedKeys = generatedSpeech ? [...PRIVATE_KEYS, ...GENERATED_SPEECH_KEYS] : PRIVATE_KEYS;
   for (const file of envFiles) {
     const parsed = readEnvFile(file);
-    for (const key of PRIVATE_KEYS) if (parsed[key] !== undefined) values[key] = parsed[key];
+    for (const key of allowedKeys) if (parsed[key] !== undefined) values[key] = parsed[key];
   }
-  for (const key of PRIVATE_KEYS) if (env[key] !== undefined) values[key] = env[key];
+  for (const key of allowedKeys) if (env[key] !== undefined) values[key] = env[key];
   const gatewayKey = values.OPENCLAWAPI_KEY?.trim() || '';
   const modelKey = values.OPENCLAW_MODEL_API_KEY?.trim() || '';
   const baseUrl = values.OPENCLAW_BASE_URL?.trim() || '';
@@ -136,15 +139,28 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
       : { status: 'unverified', detail: 'The target is not defined by this helper; verify its deployed AGENTS contract before a model probe.' };
   const remoteToken = values.LAB_REMOTE_TOKEN?.trim() || '';
   const speechToken = values.OPENCLAW_PRODUCT_SPEECH_TOKEN?.trim() || '';
-  const configuration = { repoRoot, baseUrl, speechUrl, remoteUrl, productAgent, directorAgent, timeoutMs: Math.round(timeout) };
+  const elevenLabsKey = values.ELEVENLABS_API_KEY?.trim() || values.ELEVENLABS_OC_API?.trim() || '';
+  const runpodKey = values.RUNPOD_API_KEY?.trim() || '';
+  // Do not fall back to the legacy RUNPOD_ENDPOINT_ID used by other experiments.
+  const speechEndpointId = values.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID?.trim() || '';
+  if (speechEndpointId && !/^[a-zA-Z0-9_-]{1,128}$/.test(speechEndpointId)) throw new Error('CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID must be an endpoint ID, not a URL.');
+  const configuration = { repoRoot, baseUrl, speechUrl, remoteUrl, productAgent, directorAgent, timeoutMs: Math.round(timeout), generatedSpeech: Boolean(generatedSpeech) };
   // Keep credentials accessible to the in-memory launcher/probe, but make an
   // accidental JSON/string inspection safe by default.
   Object.defineProperties(configuration, {
     gatewayKey: { value: gatewayKey, enumerable: false },
     speechToken: { value: speechToken, enumerable: false },
     remoteToken: { value: remoteToken, enumerable: false },
+    elevenLabsKey: { value: elevenLabsKey, enumerable: false },
+    runpodKey: { value: runpodKey, enumerable: false },
+    speechEndpointId: { value: speechEndpointId, enumerable: false },
   });
   const report = {
+    generatedSpeech: {
+      enabled: Boolean(generatedSpeech), configured: Boolean(generatedSpeech && elevenLabsKey && runpodKey && speechEndpointId),
+      elevenLabsCredentialPresent: Boolean(elevenLabsKey), runpodCredentialPresent: Boolean(runpodKey), scopedEndpointPresent: Boolean(speechEndpointId),
+      previewOnly: Boolean(generatedSpeech), visualApproval: 'not_verified', functionalProbe: 'not_run',
+    },
     productGateway: {
       configured: Boolean(baseUrl && gatewayKey), baseUrlPresent: Boolean(baseUrl), gatewayCredentialPresent: Boolean(gatewayKey),
       origin: normalizedOrigin(baseUrl), agent: productAgent, role,
@@ -235,7 +251,17 @@ function guardedEnvironment(extra, origins, ports) {
   };
 }
 
+function requireGeneratedSpeechConfiguration(configuration) {
+  if (configuration.generatedSpeech && !(configuration.elevenLabsKey && configuration.runpodKey && configuration.speechEndpointId)) {
+    throw new Error('--generated-speech requires existing ELEVENLABS_API_KEY (or ELEVENLABS_OC_API), RUNPOD_API_KEY and the separate CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID.');
+  }
+}
+
 export function childSpecifications(configuration, runDir, { productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT } = {}) {
+  requireGeneratedSpeechConfiguration(configuration);
+  for (const port of [productPort, labPort]) {
+    if (RESERVED_SHARED_PORTS.has(port)) throw new Error(`Port ${port} is reserved for the shared comparison and will not be touched.`);
+  }
   runDir = resolve(runDir);
   const productUrl = `http://127.0.0.1:${productPort}`;
   const labUrl = `http://127.0.0.1:${labPort}`;
@@ -249,13 +275,25 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
   const commonEmpty = {
     CROUPIER_ENV_FILE: join(runDir, 'disabled.env'), RESEND_API_KEY: '', AXEL_AGENT_TOKEN: '', AXEL_AGENT_URL: '',
     GENERATIONS_READ_TOKENS: '', ELEVENLABS_API_KEY: '', ELEVENLABS_OC_API: '',
+    RUNPOD_API_KEY: '', RUNPOD_ENDPOINT_ID: '', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: '',
+    CROUPIER_GENERATED_SPEECH: '', CROUPIER_GENERATED_SPEECH_DIR: '', CROUPIER_GENERATED_SPEECH_PREVIEW: '',
     OPENCLAW_DASHBOARD_ENABLED: 'false', OPENCLAW_DASHBOARD_ORIGIN: '', OPENCLAW_HOSTPORT: '',
   };
+  const speechOrigins = configuration.generatedSpeech ? GENERATED_SPEECH_ORIGINS : [];
+  const generatedSpeechEnvironment = role => configuration.generatedSpeech ? {
+    ELEVENLABS_API_KEY: configuration.elevenLabsKey,
+    RUNPOD_API_KEY: configuration.runpodKey,
+    CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: configuration.speechEndpointId,
+    CROUPIER_GENERATED_SPEECH: '1',
+    CROUPIER_GENERATED_SPEECH_DIR: join(runDir, 'speech', role),
+    // This is an explicitly isolated local preview, never visual take approval.
+    CROUPIER_GENERATED_SPEECH_PREVIEW: '1',
+  } : {};
   return {
     product: {
       command: process.execPath, args: [join(configuration.repoRoot, 'web', 'server.mjs')], cwd: runDir,
       readyText: 'croupier demo on', dataDir: productData,
-      env: guardedEnvironment({ ...commonEmpty, NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
+      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('product'), NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
         CROUPIER_DATA_DIR: productData, CROUPIER_GENERATIONS_DIR: join(runDir, 'generations'), DEMO_GUEST_ACCESS: '1',
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
         // The relay is the narrower transport and wins whenever it is present.
@@ -264,20 +302,20 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         OPENCLAW_AGENT: configuration.directorAgent, OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: configuration.productAgent,
         OPENCLAW_PRODUCT_SPEECH_URL: configuration.speechUrl, OPENCLAW_PRODUCT_SPEECH_TOKEN: configuration.speechToken,
         OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs), LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
-      }, [productOrigin, speechOrigin], ports),
+      }, [productOrigin, speechOrigin, ...speechOrigins], ports),
     },
     lab: {
       command: process.execPath,
       args: [join(configuration.repoRoot, 'lab', 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)],
       cwd: join(configuration.repoRoot, 'lab'),
       readyText: 'Ready in', dataDir: labData,
-      env: guardedEnvironment({ ...commonEmpty, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
+      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
         LAB_STUDIO_DATA_DIR: labData, LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
         OPENCLAW_BASE_URL: '', OPENCLAWAPI_KEY: '', OPENCLAW_AGENT: configuration.directorAgent,
         OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs),
         OPENCLAW_PRODUCT_SPEECH_URL: '', OPENCLAW_PRODUCT_SPEECH_TOKEN: '',
         LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
-      }, [directorOrigin], ports),
+      }, [directorOrigin, ...speechOrigins], ports),
     },
     urls: { product: productUrl, lab: labUrl },
   };
@@ -347,10 +385,11 @@ function configureSyntheticPartner(specs, repoRoot) {
 }
 
 export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env,
-  productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT } = {}) {
+  productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false } = {}) {
   if (productPort === labPort) throw new Error('Product and Next Eventstudio need separate ports.');
   await unusedPort(productPort); await unusedPort(labPort);
-  const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env });
+  const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech });
+  requireGeneratedSpeechConfiguration(configuration);
   if (!report.labDirector.configured) throw new Error('LAB_REMOTE_URL and LAB_REMOTE_TOKEN are required for the connected Next Eventstudio.');
   if (report.productSpeechRelay.urlPresent !== report.productSpeechRelay.credentialPresent) {
     throw new Error('OPENCLAW_PRODUCT_SPEECH_URL and OPENCLAW_PRODUCT_SPEECH_TOKEN must be configured together.');
@@ -373,7 +412,9 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
     await fsPromises.rm(absolute, { recursive: true, force: true });
   };
   try {
-    await Promise.all([specs.product.dataDir, specs.lab.dataDir, join(runDir, 'generations')].map(directory => fsPromises.mkdir(directory, { recursive: true })));
+    await Promise.all([specs.product.dataDir, specs.lab.dataDir, join(runDir, 'generations'),
+      ...(generatedSpeech ? [specs.product.env.CROUPIER_GENERATED_SPEECH_DIR, specs.lab.env.CROUPIER_GENERATED_SPEECH_DIR] : []),
+    ].map(directory => fsPromises.mkdir(directory, { recursive: true })));
     product = await startChild(specs.product);
     configureSyntheticPartner(specs, repoRoot);
     lab = await startChild(specs.lab);
@@ -385,24 +426,25 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
   } catch (error) { await stop(); throw error; }
 }
 
-function parseCli(argv) {
+export function parseCli(argv) {
   if (argv.some(value => /^--.*(?:key|token|secret|password)/i.test(value))) throw new Error('Credentials must be read from existing private configuration, never command-line arguments.');
-  let mode = 'check', productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT;
+  let mode = 'check', productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false;
   for (let index = 0; index < argv.length; index++) {
     const value = argv[index];
     if (value === '--check') mode = 'check';
     else if (value === '--start') mode = 'start';
+    else if (value === '--generated-speech') generatedSpeech = true;
     else if (value === '--product-port') productPort = Number(argv[++index]);
     else if (value === '--lab-port') labPort = Number(argv[++index]);
     else throw new Error(`Unknown option: ${value}`);
   }
-  return { mode, productPort, labPort };
+  return { mode, productPort, labPort, generatedSpeech };
 }
 
 async function main() {
   const cli = parseCli(process.argv.slice(2));
   if (cli.mode === 'check') {
-    const { configuration, report } = loadPrivateConnection();
+    const { configuration, report } = loadPrivateConnection({ generatedSpeech: cli.generatedSpeech });
     const probe = await probeConnections(configuration);
     console.log(JSON.stringify({ report, probe }, null, 2));
     return;
@@ -410,6 +452,7 @@ async function main() {
   const fixture = await startIsolatedConnection(cli);
   console.log(`Isolated product: ${fixture.urls.product}`);
   console.log(`Isolated Next Eventstudio: ${fixture.urls.lab}`);
+  if (fixture.report.generatedSpeech.enabled) console.log('Generated speech: isolated ElevenLabs + RunPod preview enabled; visual lip-sync approval is pending. Generation may use provider credits.');
   console.log(fixture.report.productSpeechRelay.configured
     ? `Product speech relay configured; role contract: ${fixture.report.productSpeechRelay.role.status}.`
     : fixture.report.productGateway.configured

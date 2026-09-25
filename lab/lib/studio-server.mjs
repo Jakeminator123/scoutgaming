@@ -8,6 +8,7 @@ import { createProjectStore, StudioError } from './project-store.mjs';
 import { loadVideoRegistry } from './video-registry.mjs';
 import { selectionFor, videoFitsLine, videoFitsEvent } from './video-intake.mjs';
 import { mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
+import { buildOperatorCatalog } from './operator-catalog.mjs';
 
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export function studioStore() { return createProjectStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR, 'data')); }
@@ -154,11 +155,13 @@ export async function simulateStudio(body, { settings = settingsNow(), fetchImpl
   };
 }
 
-export async function studioChat(body, { settings = settingsNow(), fetchImpl = fetch, project } = {}) {
-  project ??= await studioStore().load();
-  const catalog = decisionCatalog(project, body?.dealerId);
-  const input = { event: catalog.events[0].exampleEvent, mode: 'active' };
+export async function studioChat(body, { settings = settingsNow(), fetchImpl = fetch, project, videoRegistry } = {}) {
   if (typeof body?.message !== 'string' || !body.message.trim() || body.message.length > 4000 || !/^[a-zA-Z0-9_-]{8,100}$/.test(body?.conversationId || '')) throw new StudioError('Ogiltigt chattmeddelande eller samtals-ID.');
+  const draft = Object.hasOwn(body, 'project');
+  project = draft ? validateProject(body.project) : project ?? await studioStore().load();
+  videoRegistry ??= await loadVideoRegistry();
+  const catalog = buildOperatorCatalog(project, videoRegistry, body.dealerId, { scope: draft ? 'draft' : 'saved' });
+  const input = { event: catalog.events[0].exampleEvent, mode: 'active' };
   if (settings.remoteUrl) return remoteRequest('/api/studio/chat', { catalog, input, message: body.message, conversationId: body.conversationId }, settings, fetchImpl, 32000);
   return chatWithDirector(body, settings, fetchImpl, catalog);
 }

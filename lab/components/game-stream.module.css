@@ -1,6 +1,9 @@
 .surface { margin-top: 20px; min-width: 0; }
 .comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
 .column { min-width: 0; }
+.speechStage { position: relative; isolation: isolate; }
+.speechHost { position: absolute; inset: 0; z-index: 25; pointer-events: none; }
+.speechHost:empty { display: none; }
 .column h4, .publicTable h4 { margin: 0 0 12px; font-size: 15px; }
 .column h4 small, .publicTable h4 small { display: inline-block; margin-left: 8px; color: var(--muted); font-size: 11px; font-weight: 400; }
 .column :global(.stage-panel) { margin-top: 0; }

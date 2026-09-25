@@ -8,6 +8,9 @@ import { backofficeGameAuth } from './bo-game-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
+import { getGeneratedSpeechService } from './generated-speech.mjs';
+import { completeChatWithSpeech } from './generated-speech-chat.mjs';
+import { createPlayerChatMemory } from './player-chat-memory.mjs';
 import { installPartnerApi } from './partner-api.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
@@ -31,6 +34,8 @@ const generationDirectory = process.env.CROUPIER_GENERATIONS_DIR ? resolve(proce
 const dataDir = process.env.CROUPIER_DATA_DIR ? resolve(process.env.CROUPIER_DATA_DIR) : join(fileURLToPath(new URL('.', import.meta.url)), 'data');
 mkdirSync(dataDir, { recursive: true });
 const db = new DatabaseSync(join(dataDir, 'croupier.db'));
+const playerChatMemory = createPlayerChatMemory(db);
+const activePlayerChats = new Map();
 db.exec(`
   CREATE TABLE IF NOT EXISTS players (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, currency TEXT NOT NULL DEFAULT 'USD',
@@ -709,6 +714,17 @@ function previewPlayer(req,res) {
   res.setHeader('Set-Cookie',`preview_session=${fresh}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`);
   return p.id;
 }
+function chatSessionOwner(req, playerId) {
+  const playerToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
+  if (playerToken && auth.session(req)?.playerId === playerId) return `player-${createHash('sha256').update(playerToken).digest('hex')}`;
+  const previewToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
+  if (guestPreview && previewToken) {
+    const digest = createHash('sha256').update(previewToken).digest('hex');
+    const session = db.prepare('SELECT player_id FROM preview_sessions WHERE digest=? AND expires>?').get(digest, Date.now());
+    if (session?.player_id === playerId) return `preview-${digest}`;
+  }
+  throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
+}
 createServer(async (req, res) => {
   const pathname=new URL(req.url,'http://local').pathname;
   if(boGameAuth(req,res))return;
@@ -738,6 +754,40 @@ createServer(async (req, res) => {
     res.writeHead(403);res.end('Invalid origin');return;
   }
   if(!backoffice) res.setHeader('Cache-Control','no-store');
+  if (pathname === '/api/chat/memory' || pathname === '/api/chat/memory/forget') {
+    const respond = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' }); res.end(JSON.stringify(value)); };
+    const handle = incoming => {
+      try {
+        chatSessionOwner(req, authenticated);
+        const dealerId = incoming.dealer;
+        if (!Object.hasOwn(CHAT_DEALERS, dealerId)) throw Object.assign(new Error('invalid_chat_dealer'), { statusCode: 400 });
+        const scope = { playerId: authenticated, dealerId };
+        if (pathname.endsWith('/forget')) {
+          const key = JSON.stringify([authenticated, dealerId]);
+          activePlayerChats.get(key)?.abort('chat_memory_changed');
+          respond(200, playerChatMemory.forget(scope));
+        } else respond(200, playerChatMemory.profile(scope));
+      } catch (error) { respond(error.statusCode || 400, { error: error.code || error.message }); }
+    };
+    if (pathname === '/api/chat/memory' && req.method === 'GET') handle({ dealer: new URL(req.url, 'http://local').searchParams.get('dealer') });
+    else if (pathname.endsWith('/forget') && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; if (body.length > 2000) req.destroy(); });
+      req.on('end', () => { try { handle(JSON.parse(body || '{}')); } catch { respond(400, { error: 'invalid_request' }); } });
+    } else respond(405, { error: 'method_not_allowed' });
+    return;
+  }
+  if (pathname.startsWith('/api/generated-speech/')) {
+    try {
+      const match = /^\/api\/generated-speech\/([a-f0-9-]{32,64})\/(audio|video)$/.exec(pathname);
+      const service = getGeneratedSpeechService();
+      if (!match || !service || !['GET', 'HEAD'].includes(req.method)) { res.writeHead(404); res.end(); return; }
+      const media = await service.media({ id: match[1], kind: match[2], owner: chatSessionOwner(req, authenticated) });
+      res.writeHead(200, { 'Content-Type': media.contentType, 'Content-Length': media.bytes.length, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' });
+      res.end(req.method === 'HEAD' ? undefined : media.bytes);
+    } catch (error) { res.writeHead(error.statusCode || 404); res.end(); }
+    return;
+  }
   if (req.method === 'POST' && req.url === '/calibration') {
     let body = '';
     req.on('data', c => { body += c; if (body.length > 60000) req.destroy(); });
@@ -835,31 +885,61 @@ createServer(async (req, res) => {
     return;
   }
   if (req.method === 'POST' && req.url === '/chat') {
+    const controller = new AbortController();
+    const disconnected = () => { if (!res.writableEnded) controller.abort(); };
+    res.once('close', disconnected);
     let body = '';
     req.on('data', c => { body += c; if (body.length > 20000) req.destroy(); });
     req.on('end', async () => {
+      let memoryTurn, memoryKey;
       try {
         const incoming = JSON.parse(body || '{}');
         const dealerId = Object.hasOwn(CHAT_DEALERS, incoming.dealer) ? incoming.dealer : null;
         if (!dealerId || !CHAT_REVISION.test(incoming.sessionRevision) || !CHAT_REVISION.test(incoming.roundRevision)) {
           res.writeHead(400, { 'Content-Type': 'application/json' }); res.end('{"error":"invalid_chat_context"}'); return;
         }
-        const request = {
-          requestId: incoming.requestId,
-          message: incoming.message,
-          history: Array.isArray(incoming.history)
-            ? incoming.history.map(entry => ({ role: entry.role === 'vera' ? 'assistant' : entry.role, text: entry.text }))
-            : incoming.history,
-        };
         const session = auth.session(req);
         const status = authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
-        const decision = await openClawChat(request, status);
+        const owner = chatSessionOwner(req, authenticated);
+        const scope = { playerId: authenticated, dealerId };
+        memoryTurn = playerChatMemory.begin({ ...scope, requestId: incoming.requestId, message: incoming.message });
+        memoryKey = JSON.stringify([authenticated, dealerId]);
+        activePlayerChats.set(memoryKey, controller);
+        // Neither a browser-supplied player ID nor fabricated assistant history
+        // may enter the model. Stable identity and bounded recall are server-owned.
+        const request = { requestId: incoming.requestId, message: incoming.message, history: memoryTurn.history };
+        const readStatus = () => {
+          if (playerChatMemory.profile(scope).revision !== memoryTurn.revision) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
+          return authoritativeChatStatus(authenticated, auth.session(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
+        };
+        const decision = await completeChatWithSpeech({ request, status, owner,
+          readOwner: () => chatSessionOwner(req, authenticated),
+          readStatus,
+          signal: controller.signal,
+          decide: (value, state) => openClawChat(value, state, { fetchImpl: (url, options = {}) => fetch(url, {
+            ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
+          }) }),
+          service: getGeneratedSpeechService(),
+        });
+        // completeChatWithSpeech rechecks ownership/round after all async work.
+        // Persist a generated response, never claim the browser has played it.
+        memoryTurn.commit({ kind: decision.kind, exactText: decision.exactText });
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(decision));
       } catch (e) {
+        if (controller.signal.aborted) memoryTurn?.cancel(); else memoryTurn?.fail();
+        if (res.destroyed) return;
+        if (controller.signal.aborted) {
+          res.writeHead(409, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+          res.end(JSON.stringify({ error: controller.signal.reason === 'chat_memory_changed' ? 'chat_memory_changed' : 'chat_cancelled' }));
+          return;
+        }
         const status = Number.isInteger(e?.statusCode) ? e.statusCode : 502;
         res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify({ error: e?.code || String(e.message || e) }));
+      } finally {
+        if (activePlayerChats.get(memoryKey) === controller) activePlayerChats.delete(memoryKey);
+        res.removeListener('close', disconnected);
       }
     });
     return;

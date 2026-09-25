@@ -1,4 +1,5 @@
 export const SPEECH_PACKAGE_SCHEMA_VERSION = 1;
+export const GENERATED_SPEECH_PACKAGE_SCHEMA_VERSION = 2;
 export const SPEECH_PACKAGE_SOURCES = Object.freeze(['recordedLine', 'generatedText']);
 export const SPEECH_REVIEW_STATUSES = Object.freeze(['pending', 'approved', 'rejected']);
 
@@ -57,7 +58,9 @@ function normalizeVideo(value) {
 export function normalizeSpeechPackage(value) {
   const fields = ['schemaVersion', 'packageId', 'revision', 'dealerId', 'exactText', 'source', 'audio', 'video',
     'audioDelayMs', 'entryPose', 'exitPose', 'calibrationRevision', 'reviewStatus'];
-  if (!exact(value, fields) || value.schemaVersion !== SPEECH_PACKAGE_SCHEMA_VERSION || !id(value.packageId)
+  const generatedLipsync = value?.schemaVersion === GENERATED_SPEECH_PACKAGE_SCHEMA_VERSION;
+  if (generatedLipsync) fields.push('generation');
+  if (!exact(value, fields) || ![SPEECH_PACKAGE_SCHEMA_VERSION, GENERATED_SPEECH_PACKAGE_SCHEMA_VERSION].includes(value.schemaVersion) || !id(value.packageId)
     || !id(value.revision) || !id(value.dealerId, 64) || !speechText(value.exactText)
     || !Number.isInteger(value.audioDelayMs) || value.audioDelayMs < -5000 || value.audioDelayMs > 5000
     || !id(value.entryPose) || !id(value.exitPose) || !id(value.calibrationRevision)
@@ -65,18 +68,35 @@ export function normalizeSpeechPackage(value) {
   const source = normalizeSource(value.source);
   const audio = normalizeAudio(value.audio);
   const video = normalizeVideo(value.video);
+  let generation;
+  if (generatedLipsync) {
+    const metadata = value.generation;
+    const artifactId = /^generated-([a-f0-9]{32})$/.exec(value.packageId)?.[1];
+    if (source.kind !== 'generatedText' || source.voiceId !== 'EXAVITQu4vr4xnSDxMaL' || video.presentation !== 'lipsync' || value.dealerId !== 'astrid'
+      || !artifactId || audio.url !== `/api/generated-speech/${artifactId}/audio` || video.url !== `/api/generated-speech/${artifactId}/video`
+      || value.entryPose !== 'standard-idle' || value.exitPose !== 'standard-idle' || value.audioDelayMs !== 0
+      || value.reviewStatus !== 'pending' || value.calibrationRevision !== 'unreviewed-fixed-24fps'
+      || !exact(metadata, ['requestId', 'provider', 'modelId', 'avatarId', 'profileRevision', 'textSha256', 'audioSha256'])
+      || !id(metadata.requestId) || metadata.provider !== 'elevenlabs-runpod' || metadata.modelId !== 'eleven_multilingual_v2'
+      || metadata.avatarId !== 'astrid_spel2x' || metadata.profileRevision !== 'astrid-spel2x-preview-v1' || !hash(metadata.textSha256)
+      || metadata.audioSha256 !== audio.sha256 || audio.durationMs > 25000
+      || video.fps !== 24 || Math.abs(video.frameCount / video.fps * 1000 - audio.durationMs) > 1000) fail('invalid_generated_lipsync_package');
+    generation = { requestId: metadata.requestId, provider: metadata.provider, modelId: metadata.modelId, avatarId: metadata.avatarId,
+      profileRevision: metadata.profileRevision, textSha256: metadata.textSha256, audioSha256: metadata.audioSha256 };
+  }
   if (source.kind === 'recordedLine' && video.presentation !== 'lipsync') fail('recorded_line_requires_lipsync_video');
-  if (source.kind === 'generatedText') {
+  if (source.kind === 'generatedText' && !generatedLipsync) {
     if (video.presentation !== 'neutral') fail('generated_text_requires_neutral_video');
     if (!['standard-idle', 'neutral'].includes(value.entryPose) || !['standard-idle', 'neutral'].includes(value.exitPose)) {
       fail('generated_text_requires_neutral_pose');
     }
   }
   return {
-    schemaVersion: SPEECH_PACKAGE_SCHEMA_VERSION, packageId: value.packageId, revision: value.revision,
+    schemaVersion: value.schemaVersion, packageId: value.packageId, revision: value.revision,
     dealerId: value.dealerId, exactText: value.exactText, source, audio, video,
     audioDelayMs: value.audioDelayMs, entryPose: value.entryPose, exitPose: value.exitPose,
     calibrationRevision: value.calibrationRevision, reviewStatus: value.reviewStatus,
+    ...(generation ? { generation } : {}),
   };
 }
 

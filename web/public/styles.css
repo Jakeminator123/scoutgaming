@@ -855,6 +855,12 @@ body.in-round #table-pick { opacity: .3; pointer-events: none; }
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
 #chat button:hover { border-color: rgba(214,255,58,.55); background: rgba(214,255,58,.10); }
+#chat-memory { font: 12px/1.45 'Inter', sans-serif; color: #c9cbd2; pointer-events: auto; }
+#chat-memory summary { cursor: pointer; padding: 6px; }
+#chat-memory > div { position: absolute; right: 0; top: calc(100% + 9px); z-index: 80; width: min(320px, 80vw); padding: 14px; border: 1px solid #46522b; border-radius: 12px; background: #121619; box-shadow: 0 12px 36px #0008; }
+#chat-memory p { margin: 0 0 10px; }
+#chat-memory button { width: auto; height: auto; border-radius: 8px; margin-bottom: 8px; }
+#chat-memory small { display: block; color: #a8b0a3; }
 #chat-log {
   position: absolute; top: calc(100% + 9px); right: 0; width: 330px; max-height: 46vh;
   display: none; flex-direction: column; gap: 8px; overflow-y: auto; pointer-events: auto;

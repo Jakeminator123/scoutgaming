@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { exportPartnerTrace, type PartnerTrace } from '../lib/partner-trace.mjs';
 import { acceptNativeObservation } from '../lib/native-observation.mjs';
+import { NativeSpeechContext, type NativeSpeechBinding } from './native-speech-context';
 import type { ActivityDraft } from './activity-log';
 import styles from './activity-log.module.css';
 
@@ -17,6 +18,7 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [exportText, setExportText] = useState('');
+  const [speechBinding, setSpeechBinding] = useState<NativeSpeechBinding | null>(null);
   const gameWindow = useRef<Window | null>(null);
   const observer = useRef<{ source: Window; origin: string; channel: string; lastSequence: number } | null>(null);
   const observing = useRef(false);
@@ -28,6 +30,9 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
       if (!expected || !observing.current) return;
       const record = acceptNativeObservation(message, expected);
       if (!record) return;
+      if (record.kind === 'status' && record.data?.state === 'attached') setSpeechBinding(previous => ({
+        source: expected.source, origin: expected.origin, channel: expected.channel, revision: (previous?.revision ?? 0) + 1,
+      }));
       if (record.kind === 'status' && record.data?.state === 'attached' && expected.lastSequence > 0) nativeCallback.current({ source: 'native', kind: 'status', time: record.time, data: { state: 'reconnected', gap: true, reason: 'original-page-reloaded' } });
       else if (expected.lastSequence > 0 && Number(record.nativeSequence) > expected.lastSequence + 1) nativeCallback.current({ source: 'native', kind: 'status', time: record.time, data: { state: 'gap', gap: true, reason: 'native-sequence-gap' } });
       expected.lastSequence = record.nativeSequence;
@@ -142,7 +147,7 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
     <div className={styles.tools}><button className="primary-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
     {!configuration?.configured ? <p className={styles.note}>{configuration ? 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
     {error ? <p role="alert">{error}</p> : null}
-    {children}
+    <NativeSpeechContext.Provider value={{ binding: speechBinding, connected }}>{children}</NativeSpeechContext.Provider>
     <details className={styles.mapping}><summary>Diagnostik · videokarta, anslutning och observationsfiler</summary>
     <p><strong>Spelare:</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
     <div className={styles.tools}>

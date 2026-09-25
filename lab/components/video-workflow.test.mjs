@@ -9,29 +9,73 @@ import { createDefaultIdlePolicy } from '../lib/idle-policy.mjs';
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 function component(file, name, props) {
-  const slots = [], effects = [], timers = new Map(), nodes = new Map(); let cursor = 0, timerId = 0;
+  // Minimal commit/effect renderer, not a FileVideo stub: every function child
+  // gets its own hook slots and keyed lifecycle, and host refs are bound before
+  // effects run. Removed keys execute cleanup and detach their actual refs.
+  const instances = new Map(), nodes = new Map(), modules = new Map(), effects = [], timers = new Map(), intervals = new Set();
+  let current, timerId = 0, now = 0, seenInstances, seenNodes;
   const sameDeps = (a, b) => a && b && a.length === b.length && a.every((item, index) => Object.is(item, b[index]));
   const hooks = {
-    useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
-    useRef(value) { const i = cursor++; return slots[i] ??= { current: value }; },
-    useMemo(fn, deps) { const i = cursor++; if (!sameDeps(slots[i]?.deps, deps)) slots[i] = { deps, value: fn() }; return slots[i].value; },
-    useEffect(fn, deps) { const i = cursor++; if (!sameDeps(slots[i]?.deps, deps)) { const old = slots[i]; slots[i] = { deps, cleanup: old?.cleanup }; effects.push(() => { old?.cleanup?.(); slots[i].cleanup = fn(); }); } },
-    useEffectEvent(fn) { const i = cursor++; slots[i] = fn; return (...args) => slots[i](...args); }, useDeferredValue(value) { return value; },
+    useState(initial) { const owner = current, { slots } = owner, i = owner.cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], value => { if (owner.mounted) slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
+    useRef(value) { const i = current.cursor++; return current.slots[i] ??= { current: value }; },
+    useMemo(fn, deps) { const { slots } = current, i = current.cursor++; if (!sameDeps(slots[i]?.deps, deps)) slots[i] = { deps, value: fn() }; return slots[i].value; },
+    useEffect(fn, deps) { const owner = current, { slots } = owner, i = owner.cursor++; if (!sameDeps(slots[i]?.deps, deps)) { const old = slots[i]; slots[i] = { deps, cleanup: old?.cleanup }; effects.push(() => { if (!owner.mounted) return; old?.cleanup?.(); slots[i].cleanup = fn(); }); } },
+    useEffectEvent(fn) { const { slots } = current, i = current.cursor++; slots[i] = fn; return (...args) => slots[i](...args); }, useDeferredValue(value) { return value; },
   };
-  const module = { exports: {} };
-  const code = transformSync(readFileSync(new URL(file, import.meta.url), 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-  vm.runInNewContext(code, { module, exports: module.exports, setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); }, window: { setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); }, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
-  function bindRefs(tree) {
-    if (!tree || typeof tree !== 'object') return;
-    if (Array.isArray(tree)) { tree.forEach(bindRefs); return; }
-    if (tree.props?.ref) {
-      const key = `${tree.type}:${tree.key ?? ''}:${tree.props.className ?? ''}`;
-      if (!nodes.has(key)) nodes.set(key, { dataset: {}, paused: !tree.props.autoPlay, duration: 3, currentTime: 3, pauseCalls: 0, pause() { this.paused = true; this.pauseCalls++; } });
-      tree.props.ref.current = nodes.get(key);
-    }
-    bindRefs(tree.props?.children);
+  const clock = {
+    setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; },
+    clearTimeout(id) { timers.delete(id); intervals.delete(id); },
+    setInterval(fn) { const id = ++timerId; timers.set(id, fn); intervals.add(id); return id; },
+    clearInterval(id) { timers.delete(id); intervals.delete(id); },
+  };
+  function load(filename) {
+    if (modules.has(filename)) return modules.get(filename).exports;
+    const module = { exports: {} }; modules.set(filename, module);
+    const code = transformSync(readFileSync(new URL(filename, import.meta.url), 'utf8'), { filename, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
+    vm.runInNewContext(code, { module, exports: module.exports, ...clock, performance: { now: () => now }, window: { ...clock, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './file-video' ? load('./file-video.tsx') : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
+    return module.exports;
   }
-  return { props, timers, exports: module.exports, render() { cursor = 0; const tree = module.exports[name](props); bindRefs(tree); while (effects.length) effects.shift()(); return tree; } };
+  function renderFunction(fn, values, path) {
+    let owner = instances.get(path);
+    if (!owner) { owner = { slots: [], cursor: 0, mounted: true }; instances.set(path, owner); }
+    seenInstances.add(path); owner.cursor = 0;
+    const parent = current; current = owner;
+    let tree;
+    try { tree = fn(values); } finally { current = parent; }
+    return expand(tree, path);
+  }
+  function expand(tree, path) {
+    if (!tree || typeof tree !== 'object') return tree;
+    if (Array.isArray(tree)) return tree.map((child, index) => expand(child, `${path}/${child?.key ?? index}`));
+    const ownPath = `${path}/${typeof tree.type === 'function' ? tree.type.name : String(tree.type)}:${tree.key ?? ''}`;
+    if (typeof tree.type === 'function') return renderFunction(tree.type, tree.props, ownPath);
+    if (tree.props?.ref) {
+      seenNodes.add(ownPath);
+      if (!nodes.has(ownPath)) nodes.set(ownPath, { ref: tree.props.ref, element: {
+        dataset: {}, paused: !tree.props.autoPlay, ended: false, duration: 3, currentTime: 0, pauseCalls: 0, playCalls: 0,
+        pause() { this.paused = true; this.pauseCalls++; },
+        play() { this.paused = false; this.ended = false; this.playCalls++; return this.playResult?.() ?? Promise.resolve(); },
+      } });
+      tree.props.ref.current = nodes.get(ownPath).element;
+    }
+    return tree.props ? { ...tree, props: { ...tree.props, children: expand(tree.props.children, ownPath) } } : tree;
+  }
+  function cleanupMissing() {
+    for (const [path, owner] of instances) if (!seenInstances.has(path)) {
+      owner.mounted = false; for (const slot of owner.slots) slot?.cleanup?.(); instances.delete(path);
+    }
+    for (const [path, node] of nodes) if (!seenNodes.has(path)) {
+      // A stable hook ref may already point at its newly keyed host element.
+      if (node.ref.current === node.element) node.ref.current = null;
+      nodes.delete(path);
+    }
+  }
+  const exports = load(file);
+  return { props, timers, exports,
+    render() { seenInstances = new Set(); seenNodes = new Set(); const tree = renderFunction(exports[name], props, '$root'); cleanupMissing(); while (effects.length) effects.shift()(); return tree; },
+    unmount() { seenInstances = new Set(); seenNodes = new Set(); cleanupMissing(); },
+    advance(ms) { now += ms; for (const [id, callback] of [...timers]) { if (!timers.has(id)) continue; if (!intervals.has(id)) timers.delete(id); callback(); } },
+  };
 }
 function find(node, predicate) {
   if (!node || typeof node !== 'object') return;
@@ -40,7 +84,12 @@ function find(node, predicate) {
 }
 const byType = (tree, type) => find(tree, node => node.type === type);
 const button = (tree, label) => find(tree, node => node.type === 'button' && node.props.children === label);
-function videoEvent(video, name) { const element = video.props.ref.current; if (name === 'onPlaying') element.paused = false; video.props[name]({ currentTarget: element }); }
+function videoEvent(video, name) {
+  const element = video.props.ref.current;
+  if (name === 'onPlaying') { element.paused = false; element.ended = false; }
+  if (name === 'onEnded') { element.ended = true; element.paused = true; element.currentTime = element.duration; }
+  video.props[name]({ currentTarget: element });
+}
 const project = createSeedProject();
 function stage(extra = {}) {
   return component('./stage.tsx', 'Stage', { event: project.events[0], asset: project.assets[0], dealer: 'Astrid', variantLabel: 'Standard', playId: 0, playing: false, hasResult: false, busy: false, onPlay() {}, onPreview() {}, ...extra });
@@ -66,13 +115,16 @@ test('idle minute keeps base loops alive and rejects late start/finish after sto
 
 test('video is preferred automatically but does not autoplay just by choosing a binding', () => {
   const h = stage({ videoUrl: '/api/videos/one' });
-  assert.equal(byType(h.render(), 'video').props.autoPlay, false);
+  const selected = byType(h.render(), 'video').props.ref.current;
+  assert.equal(selected.playCalls, 0); assert.equal(selected.paused, true);
   h.props.playing = true; h.props.playId++;
   const first = byType(h.render(), 'video');
-  assert.equal(first.props.autoPlay, true);
+  assert.equal(first.props.ref.current.playCalls, 1); assert.equal(first.props.ref.current.paused, false);
   assert.equal(first.props.loop, undefined);
+  const oldElement = first.props.ref.current;
   h.props.playId++;
-  assert.notEqual(byType(h.render(), 'video').key, first.key);
+  assert.notEqual(byType(h.render(), 'video').props.ref.current, oldElement);
+  assert.equal(oldElement.paused, true, 'keyed child unmount cleans up old playback');
 });
 test('missing/unbound variant falls back to its 2D asset even after a video variant', () => {
   const h = stage({ videoUrl: '/api/videos/one' });
@@ -157,14 +209,15 @@ test('social takeover pauses existing video and drops its late receipts', () => 
   for (const name of ['onPlaying', 'onEnded', 'onError']) first.props[name]({ currentTarget: element });
   assert.equal(receipts.length, 1); assert.equal(ended, 0); assert.ok(byType(h.render(), 'video'));
 });
-test('an old callback cannot pause a current play on the same reused video element', () => {
+test('dealer switch remounts the file child; old callbacks cannot pause or complete its successor', () => {
   const receipts = [];
   const h = stage({ videoUrl: '/api/videos/one', playing: true, playId: 1, onPlaybackEvent(value) { receipts.push(value); } });
   const first = byType(h.render(), 'video'), element = first.props.ref.current; videoEvent(first, 'onPlaying');
   h.props.dealer = 'Vera'; const current = byType(h.render(), 'video'); videoEvent(current, 'onPlaying');
-  assert.equal(current.props.ref.current, element);
+  assert.notEqual(current.props.ref.current, element);
+  assert.equal(element.paused, true, 'dealer key change unmounts and pauses old child');
   first.props.onPlaying({ currentTarget: element }); first.props.onEnded({ currentTarget: element }); first.props.onError({ currentTarget: element });
-  assert.equal(element.paused, false); assert.deepEqual(receipts.map(item => item.phase), ['started', 'started']);
+  assert.equal(current.props.ref.current.paused, false); assert.deepEqual(receipts.map(item => item.phase), ['started', 'started']);
   videoEvent(current, 'onEnded'); assert.equal(receipts.at(-1).phase, 'completed');
 });
 test('clearing playing pauses same-bound video, invalidates queued end, and permits explicit native replay', () => {
@@ -176,6 +229,67 @@ test('clearing playing pauses same-bound video, invalidates queued end, and perm
   assert.equal(ended, 0); assert.deepEqual(receipts.map(item => item.phase), ['started']);
   videoEvent(stopped, 'onPlaying'); videoEvent(stopped, 'onEnded');
   assert.equal(ended, 1); assert.deepEqual(receipts.map(item => item.phase), ['started', 'started', 'completed']);
+});
+
+test('stopped file drops late playing/error/ended callbacks without selecting a fallback', () => {
+  const receipts = [];
+  const h = stage({ videoUrl: '/one', playing: true, playId: 1, onPlaybackEvent: receipt => receipts.push(receipt) });
+  const first = byType(h.render(), 'video'), element = first.props.ref.current;
+  videoEvent(first, 'onPlaying');
+  h.props.playing = false; h.render();
+  first.props.onPlaying({ currentTarget: element });
+  first.props.onError({ currentTarget: element });
+  first.props.onEnded({ currentTarget: element });
+  assert.deepEqual(receipts.map(receipt => receipt.phase), ['started']);
+  assert.equal(byType(h.render(), 'video').props.src, '/one');
+  assert.equal(element.paused, true);
+});
+
+test('late rejected play promise cannot fail a newer effect generation on the same child', async () => {
+  const receipts = [];
+  const h = stage({ videoUrl: '/one', playId: 1, onPlaybackEvent: receipt => receipts.push(receipt) });
+  const selected = byType(h.render(), 'video'), element = selected.props.ref.current;
+  let rejectOld;
+  const oldPlay = new Promise((_resolve, reject) => { rejectOld = reject; });
+  let playCalls = 0;
+  element.playResult = () => ++playCalls === 1 ? oldPlay : Promise.resolve();
+  h.props.playing = true; h.render();
+  h.props.playing = false; h.render();
+  h.props.playing = true; const current = byType(h.render(), 'video');
+  assert.strictEqual(current.props.ref.current, element, 'no key change: this tests effect generation, not remount cleanup');
+  videoEvent(current, 'onPlaying');
+  rejectOld(new Error('old interrupted play'));
+  await Promise.resolve(); await Promise.resolve();
+  assert.deepEqual(receipts.map(receipt => receipt.phase), ['started']);
+  assert.equal(byType(h.render(), 'video').props.src, '/one');
+  assert.equal(element.paused, false);
+});
+
+test('completion requires actual ended media evidence; watchdog/timeupdate and duplicate events finish once', () => {
+  const receipts = []; let ended = 0;
+  const h = stage({ videoUrl: '/one', playing: true, playId: 1, onPlaybackEvent: receipt => receipts.push(receipt), onPlaybackEnd: () => ended++ });
+  const video = byType(h.render(), 'video'), element = video.props.ref.current;
+  videoEvent(video, 'onPlaying'); videoEvent(video, 'onPlaying');
+  video.props.onEnded({ currentTarget: element });
+  h.advance(3500);
+  assert.deepEqual(receipts.map(receipt => receipt.phase), ['started'], 'duration elapsed is not an ended receipt');
+  element.ended = true; element.currentTime = element.duration;
+  video.props.onTimeUpdate({ currentTarget: element });
+  h.advance(250); video.props.onEnded({ currentTarget: element });
+  assert.equal(ended, 1);
+  assert.deepEqual(receipts.map(receipt => receipt.phase), ['started', 'completed']);
+});
+
+test('unmount cleans up the real file child timer and video and rejects every late callback', () => {
+  const receipts = [];
+  const h = stage({ videoUrl: '/one', playing: true, playId: 1, onPlaybackEvent: receipt => receipts.push(receipt) });
+  const video = byType(h.render(), 'video'), element = video.props.ref.current;
+  videoEvent(video, 'onPlaying'); assert.equal(h.timers.size, 1);
+  h.unmount();
+  assert.equal(element.paused, true); assert.equal(h.timers.size, 0);
+  element.ended = true;
+  for (const name of ['onPlaying', 'onEnded', 'onError', 'onTimeUpdate']) video.props[name]({ currentTarget: element });
+  assert.deepEqual(receipts.map(receipt => receipt.phase), ['started']);
 });
 test('test result with no video and social reply never borrow selected standard film', () => {
   const { previewVideoIdFor } = component('./studio-types.ts', '', {}).exports;

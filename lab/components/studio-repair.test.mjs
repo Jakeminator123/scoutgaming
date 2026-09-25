@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../lib/studio-model.mjs';
+import { modeLabels, modeExplanations } from '../lib/director-modes.mjs';
 import manifest from '../../emil/dealklipp-v1/lab-video-manifest.json' with { type: 'json' };
 
 const require = createRequire(import.meta.url);
@@ -20,7 +21,7 @@ const mocks = {
   './trigger-editor': { TriggerEditor: empty, categoryLabels: {}, defaultValue: () => null },
   './video-library': { VideoLibrary: empty, VariantVideoBinding: empty },
   './variant-selection': { VariantSelectionEditor: empty },
-  './gateway-panel': { GatewayPanel: empty, modeLabels: { off: 'Bara standard', rules: 'Regler', random: 'Slumpvariation', shadow: 'Skuggläge', active: 'OpenClaw' }, modeExplanations: { off: 'Alltid standardvarianten. Ingen modell kontaktas.' } },
+  './gateway-panel': { GatewayPanel: empty, modeLabels, modeExplanations },
   './idle-policy-editor': { IdlePolicyEditor: empty },
   './test-context': { TestContextPanel: empty, neutralContext: {} },
 };
@@ -62,8 +63,10 @@ test('event test has one mode selector, explicit run action and result only afte
   const props = { open: true, onOpen() {}, mode: 'off', onMode() {}, configured: false, context: {}, onContext() {}, dealer: 'Astrid', eventLabel: 'Bordet väntar', sourceType: 'idle', result: null, previewKind: null, busy: false, onRun() {} };
   const html = renderToStaticMarkup(React.createElement(EventTestPanel, props));
   assert.equal((html.match(/<option /g) ?? []).length, 5);
-  assert.match(html, /<details><summary>Avancerade jämförelsetester/);
-  assert.match(html, /Återgå till OpenClaw/);
+  assert.match(html, /Vem väljer klippet\?/);
+  assert.match(html, /<details><summary>Vad betyder lägena\?/);
+  assert.match(html, /<details><summary>Visa principen: tal först i startposition/);
+  assert.doesNotMatch(html, /Återgå till OpenClaw/);
   assert.match(html, /Inget test kört/);
   assert.doesNotMatch(html, /VALD VARIANT|Tekniskt beslutsspår/);
   assert.match(html, /Lokalt test. Inget modellanrop/);
@@ -145,9 +148,9 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.match(html, /<strong>Testa event<\/strong>/);
   assert.match(html, /Urvalsläge för eventtest/);
   assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
-  assert.match(html, /Spelarchatt med Astrid →/);
+  assert.match(html, /Spelarchatt vid bordet →/);
   assert.match(html, /Fråga OpenClaw om labbet →/);
-  assert.match(html, /<option value="off" selected="">Bara standard/);
+  assert.match(html, /<option value="off" selected="">Standard/);
   assert.match(html, /kör jämförelseläget Bara standard/);
   assert.doesNotMatch(html, /Din regi|En tydlig kedja, hela vägen/);
   const { TestContextPanel, neutralContext } = loadComponent('./test-context.tsx');
