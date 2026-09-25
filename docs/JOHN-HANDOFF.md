@@ -1,3 +1,39 @@
+## 2026-09-25 — Aktuell systemkarta, direkt wiki-synk och verifierad publicering
+
+GitLab-wikin är nu primär publicerad dokumentationsyta för animation-events.
+Croupier-commit `927f99e5a23db6ba9058611b1727d3e4f926af2f` finns på både kanoniska
+GitLab och den privata GitHub-referensspegeln. Wiki-commit
+`7705d5a5ffb9be91282f53b61b117e05350f45ee` är pushad till `croupier.wiki.git`
+`main`. Startsida, sidomeny, aktuell V5, synkkvitto och äldre hänvisningsadress
+granskades i den faktiska inloggade GitLab-vyn.
+
+Systemkartan, labbguiden och V5 beskriver nu manifest v2 med 31 poster i 26
+familjer, exakt box 0–6 → `deal_pos1`–`deal_pos7`, sjutton speech-familjer,
+idlebaser/varianter, viktens begränsning samt skillnaden mellan 9:16-källfil,
+layout och produktens rehearsal-panel. OpenClaws operatörsroll, sociala prov och
+produktspeech-roll hålls isär. `8b985de` isolerar dessutom ansluten Next-QA och
+dokumenterar två verkliga lokala processer; privat transport, token, redeploy
+och runtime-QA är fortsatt ogjorda.
+
+`tools/sync-animation-events-wiki.mjs` är en envägssynk utan nätanrop eller
+webbbygge. Den speglar tolv källfiler, bevarar äldre V5-adresser som korta
+hänvisningar och skriver commit/hashkvitto. Verifiering: 4/4 synktester och 4/4
+studiokontraktstester, giltig `guide.json`, syntax/diffkontroll samt lokal kontroll
+att alla absoluta wikilänkar löser. Wiki-check efter push visade rätt
+Croupier-commit `927f99e` och filhashar.
+
+Den separata Vercel-sajten är medvetet orörd. Den är fortsatt publik men visar
+21 septembers åttadagarsversion från GitHub-commit `f43806b`, fingerprint
+`7b010e2b2054`. Webbbygget har gammal hårdkodad källväg och kan även skriva
+wiki; det används därför inte längre för normal wiki-publicering. Webbens sök,
+flikar, hash-länkar, mobil-/utskrifts-CSS, äldre HTML-snapshots och publika
+åtkomst försvinner vid full avstängning. Rekommendation: hänvisningssida först,
+med `f43806b` som rollback. Inga Vercel-/GitHub-webb-, domän-, deploy- eller
+raderingsåtgärder utfördes; inväntar Jakobs uttryckliga beslut.
+
+Jira/CAC ändrades inte eftersom dokumentationsuppdraget saknade tillgängligt
+ärende/anslutning. De tre tidigare privata/untracked användarfilerna bevarades.
+
 ## 2026-09-25 — Läsbar, kompakt idleeditor och avgränsat wikiuppdrag
 
 Idleeditorns felaktiga ljusa `--surface`-reservtema är ersatt med labbets
