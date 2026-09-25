@@ -45,6 +45,13 @@ Web är ensam spelare. Chattsvar genereras i spelet. Manuella klipp- och
 idleförhandsvisningar är granskning, inte en andra spelström. Den äldre
 studion finns kvar under `/tree` för avancerat arbete.
 
+Läget **OpenClaw** gör en idlevariation till ett tillåtet alternativ. Vanliga
+frågor ska normalt behålla grundloopen. `idle_insulted` är avsedd för en tydlig
+förolämpning riktad mot Astrid i det senaste meddelandet; reaktionen ska inte
+följa med till nästa vanliga fråga. Spara inställningar medan den lokala
+servern kör. Vid anslutningsfel finns utkastet kvar i fliken; försök spara
+igen innan du laddar om den.
+
 ## Spelarprofil och minne
 
 **Byt profil** i Astrids spelflik väljer en sparad profil eller skapar en ny.
@@ -137,7 +144,8 @@ svar med cirka 11 sekunders tal. OpenClaw tog 1,5–1,7 sekunder, rösten
 proven saknar stegmätning och är inte förklarade ännu. Ett senare resultatprov
 tog 29,8 sekunder, varav 15,4 sekunder i videokö och 11,4 sekunder i
 rendering/hämtning. Ett annat tog 39,4 sekunder med 32,2 sekunder i
-rendering/hämtning. Videokedjan är den största uppmätta flaskhalsen.
+rendering/hämtning. Sista kortsvaret tog 40,4 sekunder, varav 31,2 i
+videokö. Videokedjan är den största uppmätta flaskhalsen.
 Planera för varierande väntetid. Utdelning går före tal. Bildformatet är verifierat; röstens
 naturlighet och fonemvis läppsynk är inte slutgodkända.
 Mobilens automatiska chattöverlägg och talfilmens täckning av korten är

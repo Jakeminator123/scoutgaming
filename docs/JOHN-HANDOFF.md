@@ -1,26 +1,23 @@
 ## 2026-09-26 — Lissabon: levande observation, spelresultat och idle-reaktioner
 
-Språkuppföljning: Gateway `f2f24d30` är Live, deploy
+Slutverifierat i befintlig Jakob-profil: Director `7597c2ec`, Live-deploy
+`dep-darfaenavr4c73eeh9mg`. Gateway `f2f24d30` är Live, deploy
 `dep-darf2h7pn0mc73ca7upg`; runtime 2026-09-26.1/hash
 `88b24ba4ea5c1fba2fe0ef844a1dd7c1838ebb2681ecac5c631c24c4cca2318b`
-och den verkliga talrollens AGENTS innehåller regeln. Ny chatt utan historik
-gav engelska, men upprepad resultatfråga med ett tidigare svenskt svar kopierade
-det svenska svaret. Samma fel reproducerades direkt genom relayn utan media.
-Historik/status och aktuell fråga separeras nu i två JSON-meddelanden, med
-aktuell fråga sist och serverägd språkpolicy intill. Avgränsade modellprov
-gav engelska som standard och svenska på uttrycklig begäran med samma gamla
-svenska resultattext i historiken. Ingen extra modellrunda tillkommer.
-Director `cd562f57` är driftsatt, `dep-darf7kh7lnhs73d5j56g`.
-Native-provet i befintlig Jakob-profil gav nu "You have won 10 USD and lost
+och den verkliga talrollens AGENTS innehåller språkregeln. Historik/status
+och aktuell fråga separeras i två JSON-meddelanden. Aktuell fråga kommer
+sist med serverägd språkpolicy och en fast applikationsuppgift. Detta behövdes
+eftersom enbart systemregeln och omordnad JSON fortfarande kunde kopiera
+tidigare svenska svar. Ingen extra modellrunda tillkommer; minnet behålls.
+
+Slutlig sammanhängande native-serie, med gammal svensk historik kvar:
+"Vad heter jag? Svara med en kort mening." → "You are Jakob." (6,644 s),
+uttrycklig svenska → "Välkommen!" (6,812 s), samma namnfråga igen →
+"You are Jakob." (40,396 s). Sista provets 31,228 s var videokö och
+6,835 s rendering/hämtning; text tog 1,352 s och röst 0,677 s. Alla tre
+fick uppspelningsstart. Varierande videokö är en kvarvarande flaskhals.
+Resultatfrågan gav före sista förstärkningen "You have won 10 USD and lost
 10 USD. Net is 0." med talstart 9,765 s och neutral idle (`responded`).
-Uttrycklig svenska gav "Välkommen!" med talstart 8,206 s. Ett prov precis
-vid deployövergången gav fortfarande svenska; nedanstående slutprov avser
-den färdiga driften. En upprepad namnfråga efter svensk begäran föll dock
-tillbaka till svenska. Därför kompletteras den sista JSON-indatan med en
-fast, explicit applikationsuppgift i samma meddelande. Ett sammanhängande
-modellprov med den verkliga längre historiken gav därefter "You are Jakob."
-→ "Välkommen!" på begäran → "You are Jakob.". Kräver sista Director-deploy
-och native-prov. Historik och minne raderas inte.
 
 Senaste automatiska verifiering: OpenClaw 136/136, produktens språk-/chat-
 kontrakt 13/13 och start-/anslutningstester 15/15. `--check` rapporterar nu
@@ -42,12 +39,8 @@ och talstart 6,392 s. Den löpande loggen observerades fortsätta vid 300 poster
 med 193 redovisade äldre bortfall och utan larm. OpenClaw 136/136 passerar
 även som hel svit vid omkörning.
 
-Engelsk standard följdes fortfarande inte av talmodellen trots API-regeln.
-Den aktiva talrollens AGENTS/SOUL/USER saknade språkregel (läsande kontroll,
-inga konton/nycklar ändrade). Regeln läggs därför även i det versionshanterade
-runtimepaketets croupier-speech-roll, villkorad på Astrid. Paketversion
-2026-09-26.1, 26 runtime-/starttester passerar; behöver Gateway-deploy och
-nytt riktigt språkprov innan engelskan kan kvitteras.
+Runtimepaketets språkregel är villkorad på Astrid. De 26 runtime-/start-
+testerna passerade; inga konton, nycklar eller verktygsbehörigheter ändrades.
 
 På Jakobs begäran har Web/Lab-paret startats om. Osparade idleändringar
 upptäcktes i den gamla fliken och sparades först: cheek och glance är nu
@@ -75,13 +68,6 @@ Director får en Astrid renderer-idle-regel: normal fråga → normalt neutral
 baseline; insulted bara vid tydlig, aktuell förolämpning riktad mot Astrid.
 Prioritet ensam motiverar ingen reaktion; tidigare förolämpningar följer inte
 med. Cheek/glance är valfria sociala reaktioner, inte obligatorisk svarsinledning.
-
-Första språkdeployen `dae797c6` är Live i Render, deploy
-`dep-dareq5h42hec73aevdpg`. Riktigt prov gav svenska på uttrycklig begäran
-(7,04 s till tal), men nästa vanliga svenska fråga blev också svenska
-(13,06 s). Därför skärps språkregeln och en separat serverägd språkpolicy
-läggs intill modellindatan. Resultat-/reaktionsreglerna och denna skärpning
-behöver ny Director-deploy; slutliga livekvitton följer efter den.
 
 Verifierat hittills: Lab 472 tester och produktionsbygge; nya isolerade
 resultat-/HTTP-/relay-/idle-tester 50/50; alla pre-commit-kontroller och
