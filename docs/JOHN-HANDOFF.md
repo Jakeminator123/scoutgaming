@@ -1,3 +1,40 @@
+## 2026-09-25 — Emils Astrid-klipp mergade till work som omappat labbunderlag
+
+På Jakobs uttryckliga begäran utgår arbetet från `jakeminator123/work`, inte
+från main. Före integrationen skapades och verifierades den annoterade
+GitLab-taggen `work-before-emil-videos-2026-09-25` över
+`64f1669a3484fce3c7a3ad4d8207106b1bf3deea`. Taggen och branchoperationerna
+gick via SSH-remoten `git@gitlab.com:scout-gg/croupier.git`.
+
+`origin/emil/dealklipp-v1` mergades som `167d2ddea8c82d30ccae121d1954731fde64d3a4`.
+Den isolerade katalogen `emil/dealklipp-v1/` innehåller åtta utdelningsklipp,
+sex idle-klipp, sjutton exakta tal-klipp, en startbild och textmetadata. Inga
+befintliga produktmediafiler ersattes. Repoets `.cursorindexingignore` utesluter
+MP4 och övriga binära bild-/ljudformat från semantisk indexering; README och
+JSON-sidecars förblir läsbara för den kommande mappningen.
+
+Labbets lokala uppladdningsbank `lab/data/videos/` fanns inte. Det externa
+originalarkivet `C:/Users/jakem/CroupierAssets/bettalotto-generations` innehöll
+224 MP4-filer, 1 022 561 047 byte. Dessa flyttades till Windows papperskorg;
+noll MP4 återstår där och katalogens enda JSON-metadatafil behölls. Detta är
+återställningsbart från papperskorgen. Produktens spårade dealer-/reviewmedia,
+databaser, env-filer och Jakobs befintliga dirty-filer lämnades orörda.
+
+Emils filer är ännu inte registrerade mot labbets videoindex, event, situationer
+eller projektvarianter och används inte av produktspelaren. Nästa steg är den
+uttryckliga mappningen; ingen take, läppsynk eller kortkontakt godkänns av denna
+integration.
+
+Verifiering: `node pipeline/audit-dealer-sync.mjs --probe` passerade samtliga
+90 befintliga streams. Alla kommandon i `.githooks/pre-commit` passerade när de
+kördes direkt med Windows Node/FFmpeg-miljön. Själva Bash-hookfilen hade CRLF i
+arbetskopian och kunde därför inte användas som ett tillförlitligt wrapperkvitto.
+På isolerad `localhost:4194` med tillfällig databas visades Vera, Astrid, Amira
+och Mei i faktisk rehearsal. Varje dealers `greeting` spelades två gånger med
+två matchade start/slut-par; knappen blev åter tillgänglig och browserkonsolen
+hade inga varningar eller fel. Detta verifierar oförändrad befintlig spelarväg,
+inte uppspelning av de ännu omappade Emil-klippen.
+
 ## 2026-09-25 — Jakobs dokument samlade i systemkartan
 
 På Jakobs uttryckliga val levereras städningen på `jakeminator123/work`.
