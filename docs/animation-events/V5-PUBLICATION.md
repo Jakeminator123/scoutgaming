@@ -1,4 +1,53 @@
-# V5 · publiceringskvitto 21 september 2026
+# V5 · publiceringskvitto 25 september 2026
+
+## GitLab-wikin är nu den aktuella publiceringsytan
+
+- Kanonisk Croupier-källa: `927f99e5a23db6ba9058611b1727d3e4f926af2f`
+  på `jakeminator123/work`, verifierad lika på GitLab och den privata
+  GitHub-referensspegeln.
+- GitLab-wiki: `7705d5a5ffb9be91282f53b61b117e05350f45ee` på `main`.
+- [Aktuell V5-wiki](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events)
+  och [synkkvitto](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events/SYNC-MANIFEST).
+- Separat äldre webbkälla: `f43806ba57de3b96a3840de86794a2b1b6fbd904`
+  i `Jakeminator123/animation-events-v1`, fortfarande publicerad på
+  [animation-events-v1.vercel.app](https://animation-events-v1.vercel.app/).
+
+Den nya `tools/sync-animation-events-wiki.mjs` läser tolv kanoniska
+Markdown-filer, skriver 38 wiki-filer inklusive äldre hänvisningsadresser och
+ett SHA-256-kvitto, men gör inga nätanrop, commits, pushar eller webbbyggen.
+Testerna för synkverktyget och studiokontraktet passerade 8/8; `guide.json`,
+syntax och diffkontroll verifierades separat. Alla absoluta interna wikilänkar
+löste mot en lokal sida före push.
+
+Efter publiceringen verifierades den inloggade GitLab-wikin: aktuell
+sjudadagars-V5 renderades, sidomenyn pekade på de nya kapitlen, synkkvittot
+visade exakt Croupier-commit och källhashar, och en äldre åttadagarsadress
+renderade en tydlig hänvisning till rätt aktuell sida. Wikin kräver inloggning.
+
+## Separat webbutredning — ingen avveckling utförd
+
+Vercel-sajten och dess GitHub-repo ändrades inte. Sajten visar fortsatt den
+äldre åttadagarsversionen från 21 september, fingerprint `7b010e2b2054`.
+Vercel-projektet heter `animation-events-v1`, bygger GitHub `main` och kör ett
+synkverktyg som fortfarande har `v5-8-days-mvp` hårdkodat och kan skriva både
+webbträd och wiki. Därför är webbbygget avsiktligt bortkopplat från normal
+wikipublicering.
+
+Webbens unika funktioner är publik inloggningsfri åtkomst, fliknavigation,
+sök, hash-djuplänkar, mobil-/utskrifts-CSS och HTML-snapshots av V2–V4. Ingen
+Croupier-runtime beror på webbplatsen; förekomsterna är dokumentationslänkar.
+Rekommendationen är en liten hänvisningssida till wikin före full avstängning.
+Repo, domänkoppling och Vercel-projekt bör bevaras tills beslutet är verifierat;
+`f43806b` är känd rollbackrevision. Ingen omdirigering, redeploy, domänändring
+eller radering har utförts.
+
+Jira CAC ändrades inte eftersom inget tillgängligt ärende eller anslutning
+identifierades för dokumentationsuppdraget. De tre befintliga privata/untracked
+användarfilerna lämnades orörda.
+
+---
+
+# Historiskt publiceringskvitto · 21 september 2026
 
 ## Pushad källa och läsytor
 
