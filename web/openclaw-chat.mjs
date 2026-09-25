@@ -143,6 +143,16 @@ export function projectOpenClawGameStatus(authoritative) {
     displayName, publishedEvents: eventsSource.map(projectPublishedEvent),
     visibleCards: { hands, dealer: { cards: dealerCards, publicTotal: publicTotal(dealerCards) } },
     occupiedBoxes,
+    // Explicit server-owned summary; never copy arbitrary wallet/state fields.
+    ...(authoritative.playResults ? { playResults: {
+      scope: authoritative.playResults.scope, accounting: authoritative.playResults.accounting,
+      currencies: authoritative.playResults.currencies.map(({ currency, rounds, won, lost, net, wagered, returned }) =>
+        ({ currency, rounds, won, lost, net, wagered, returned })),
+      currentRound: authoritative.playResults.currentRound ? {
+        currency: authoritative.playResults.currentRound.currency, wagered: authoritative.playResults.currentRound.wagered,
+        phase: authoritative.playResults.currentRound.phase,
+      } : null,
+    } } : {}),
     allowedSpeech: {
       recordedLines: policy.recordedLines.map(({ lineId, exactText, familyId, variantIds }) => ({ lineId, exactText, familyId, variantIds })),
       generatedText: policy.generatedText, silence: policy.silence, mediaFamilies: policy.mediaFamilies,

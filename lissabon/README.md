@@ -77,6 +77,19 @@ Astrids Lissabon-chatt väljer genererade svar i stället för äldre bankreplik
 som den lokala filmspelaren bara kunde visa som text. Om OpenClaw väljer
 tystnad visas det uttryckligen.
 
+Astrid ska svara på engelska som standard. Be uttryckligen om ett annat
+språk i den aktuella frågan om du vill byta. Spelresultaten kommer från
+profilens serverbokföring: avslutade, utbetalda rundor, uppdelade per valuta.
+Vinster/förluster är nettot per runda; återbetald insats räknas inte som vinst.
+Pågående insats redovisas separat. Insättningar och startpengar ingår inte.
+
+Lissabons logg följer den valda profilens spelflik direkt. Den synliga loggen
+visar högst 150 senaste poster och döljer upprepningar av samma idle-varv.
+Observationsprotokollet fortsätter efter 300 poster med ett rullande fönster
+(även begränsat till 4 MiB); exporten markerar när äldre poster saknas.
+Hela presentationslistor behålls inom fönstret. Exportera före omladdning om
+du vill behålla diagnostiken. Detta är inte profilens sparade spelhistorik.
+
 ## Sparande
 
 - `profile.json`: Astrid, portar, genererat tal och källversion. OpenClaw är

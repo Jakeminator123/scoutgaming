@@ -11,6 +11,7 @@ export interface ActivityEntry {
   data?: unknown;
 }
 export const ACTIVITY_LIMIT: number;
+export function createIdleLogFilter(): ((record: Record<string, unknown>) => boolean) & { reset(): void };
 export function safeActivityData(value: unknown): unknown;
 export function appendActivity(entries: ActivityEntry[], entry: ActivityEntry): ActivityEntry[];
 export function decisionAttribution(mode: string, reason?: string, provider?: string): string;
