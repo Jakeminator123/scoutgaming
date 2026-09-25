@@ -9,6 +9,17 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
+const PRIVATE_TRANSPORT_ENV = [
+  'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',
+  'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
+  'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
+  'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL', 'OPENCLAW_MODEL_ID', 'OPENCLAW_MODEL_API',
+];
+
+function isolatedTransportEnvironment(parent, fixture) {
+  return { ...parent, ...Object.fromEntries(PRIVATE_TRANSPORT_ENV.map(key => [key, ''])), ...fixture };
+}
+
 async function freePort() {
   const socket = createNetServer(); socket.listen(0, '127.0.0.1'); await once(socket, 'listening');
   const port = socket.address().port; await new Promise(resolve => socket.close(resolve)); return port;
@@ -17,6 +28,10 @@ async function freePort() {
 test('product /chat sends only the server-owned public projection to OpenClaw', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-product-chat-'));
   const appPort = await freePort();
+  let poisonRequests = 0;
+  const poison = createHttpServer((_req, res) => { poisonRequests++; res.writeHead(418); res.end(); });
+  poison.listen(0, '127.0.0.1'); await once(poison, 'listening');
+  const poisonOrigin = `http://127.0.0.1:${poison.address().port}`;
   const captured = [];
   const gateway = createHttpServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
@@ -34,15 +49,20 @@ test('product /chat sends only the server-owned public projection to OpenClaw', 
   const web = fileURLToPath(new URL('../web/', import.meta.url));
   const server = spawn(process.execPath, [join(web, 'server.mjs')], {
     cwd: web,
-    env: { ...process.env, HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory,
+    env: isolatedTransportEnvironment({ ...process.env,
+      OPENCLAW_PRODUCT_SPEECH_URL: poisonOrigin, OPENCLAW_PRODUCT_SPEECH_TOKEN: 'poison-relay-token',
+      OPENCLAW_BASE_URL: poisonOrigin, OPENCLAWAPI_KEY: 'poison-gateway-key',
+      OPENCLAW_MODEL_API_KEY: 'poison-provider-key', OPENCLAW_MODEL_BASE_URL: poisonOrigin,
+    }, { HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory,
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
       OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat',
-      OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' },
+      OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' }),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   t.after(async () => {
     if (server.exitCode === null) { const stopped = once(server, 'exit'); server.kill('SIGTERM'); await stopped; }
     await new Promise(resolve => gateway.close(resolve));
+    await new Promise(resolve => poison.close(resolve));
     await rm(directory, { recursive: true, force: true });
   });
   await new Promise((resolve, reject) => {
@@ -86,4 +106,5 @@ test('product /chat sends only the server-owned public projection to OpenClaw', 
   await post('/chat', { requestId: crypto.randomUUID(), message: 'Sent?', history: [], dealer: 'astrid',
     sessionRevision: crypto.randomUUID(), roundRevision: '0' }, 409);
   assert.equal(captured.length, 1, 'stale chat never reaches OpenClaw');
+  assert.equal(poisonRequests, 0, 'parent relay, Gateway and provider settings never reach the child fixture');
 });
