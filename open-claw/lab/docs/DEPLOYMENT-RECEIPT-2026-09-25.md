@@ -1,6 +1,52 @@
 # Driftkvitto 2026-09-25 — OpenClaw speech
 
-## Verifierat, inte likställt med färdig spelarchatt
+## Uppföljning efter ny token — anslutningen verifierad
+
+Användaren sparade en ny speech-token. Den accepterades av Director efter en
+ny driftsättning av samma godkända `113dfd8`, deploy
+`dep-dar8aibtqb8s73ftoat0`, start 16:29:29 svensk tid. Render visade Live.
+Gatewayen driftsattes inte om. En vanlig **Restart service** på Render tar
+inte in sparade men odriftsatta envändringar; en deploy behövdes.
+Se [Render: restarting a service](https://render.com/docs/deploys#restarting-a-service).
+
+Verifierat efter denna deploy:
+
+- Labbtoken på status: 200. Produkt-token på status: 401.
+- Labbtoken respektive anonym på produkt-speech: 401.
+- Produkt-token med avsiktligt ogiltigt envelope: 400
+  `invalid_product_speech_envelope`, alltså passerad autentisering.
+- Tre syntetiska riktiga modellprov gav 200 med korrekt kontrakt:
+  `generatedText` (3,743 s), `recordedLine` (1,568 s), `silence` (2,335 s).
+  Textprovet återgav testnamnet och två boxars givna kort exakt; alla fyra
+  request/dealer/session/round-fälten matchade. Detta var riktiga modellprov,
+  inte mockar; tiderna är enskilda observationer, inte prestandalöften.
+- Browserprov i native på 4196: fråga skickad under inledande utdelning.
+  Astrid visade `Box 1: K♣ och A♥. Box 4: 8♣ och A♦.` i chatten, exakt samma
+  kort som DOM-korten på dessa två boxar. Index 1/4 motsvarar plats 2/5 i UI.
+  Talcaption visades och försvann igen; inga warning/error i native-konsolen.
+  Detta verifierar chattsvaret och TTS-visningskedjan, inte subjektiv
+  ljudkvalitet, exakt frame-timing eller genererad läppsynk.
+- Riktiga Next på 4197 → `/api/chat` → Directors studiochatt gav 200 och
+  `provider.status=responded`, med svar i labboperatörens rådgivarroll.
+  Produktchatten och operatörschatten fungerar alltså via separata kontrakt.
+
+Den extra alias-startspärren från `269a797` avlägsnades på användarens uttryckliga
+begäran i `d570770`, pushad till båda work-speglarna. 41/41 riktade tester och
+129/129 OpenClaw-tester passerade. Den ursprungliga 113-autentiseringen finns
+kvar: produkt-token ger inte studioåtkomst. Nativebarnet får i relayläge
+fortfarande inte Gateway-nyckeln; bara produktens URL/token skickas vidare.
+
+Fem produkt-/pose-/talpaketstestfiler gav först ett engångsfel i den samlade
+körningen. HTTP-testet separat, hela sviten igen och fem ytterligare samlade
+körningar gav därefter 25/25 vardera. Felet återkom inte; det räknas inte som
+utrett eller fixat. Inga spel-/mediefiler ändrades i denna uppföljning.
+
+Anslutna provprocesser lämnades igång på 4196/4197 med temporär syntetisk data.
+4192/4194 är fortsatt den separata offlinejämförelsen och ändrades inte.
+Varken en färdig lipsync-integration, ljudkvalitet för alla röster eller
+full browser-QA av alla dealers/alla avbrottssituationer hävdas här.
+
+## Första driftsättningen — historik och dåvarande blockerare
 
 Efter Jakobs uttryckliga godkännande driftsattes exakt
 `113dfd8a840eccfa159aa15b6be478738467dde5` på båda befintliga Render-labbtjänsterna:
