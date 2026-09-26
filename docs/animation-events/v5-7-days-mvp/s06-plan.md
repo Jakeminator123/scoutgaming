@@ -8,16 +8,19 @@ online för rutinval. Datumen sätts efter faktisk bemanning.
 
 ## Sprintläge · 26 september 2026
 
-Flera videouppspelningar är ännu inte en ström. Inspelade klipp, Lissabons
-följning av spelfliken och genererat tal med läppsynk går på olika vägar.
-De ska sammansvetsas. Det görs efter mötet 27 september.
+Lissabon-demon har redan en Astrid-spelflik och en labbvy som följer samma
+spelares verkliga uppspelning. Inspelade händelserepliker och fritt genererade
+chattsvar använder fortfarande olika produktvägar för beslut och tal. Det är
+den sammanslagningen som återstår efter mötet 27 september.
 
 - **Emil** har fått läppsynken att fungera.
 - **Kevin** är oklar här. Vi har inte talat om sammanslagningen.
 - **Jakob** har bundit ihop den lokala kedjan och vävt in OpenClaw.
 
-Kvar står att läppsynken tar för lång tid, att varianterna är för få, att
-engelsk valröst inte är löst, och att labb-ytan är för rörig. Väntan på
+Kvar står att läppsynken ibland tar för lång tid, att fler granskade varianter
+behövs, att den engelska röstens kvalitet och val behöver granskas och att den
+bredare labb-ytan är för rörig. Astrids engelska standardsvar i Lissabon är
+separat verifierade. Väntan på
 läppsynk sitter i videokedjan. Det är inte en kö av idle-klipp framför svaret.
 
 En Codex-session dog samma kväll på fel API-nyckel (`401 Unauthorized`)
