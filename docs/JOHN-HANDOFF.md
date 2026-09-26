@@ -1,5 +1,17 @@
 ## 2026-09-26 — Idle-varianter: högst 12
 
+Efterhandsgranskning av Cursor-commit `13c91af`: Lissabon har en enda
+Astrid-spelflik med native-observation. Skillnaden mot den kvarvarande
+produktintegrationen är preciserad i sprintanteckningen. I det levande
+Lissabon-provet valde OpenClaw `idle_yawn` på ett nytt meddelande om trötthet
+och `idle_smile` på beröm. Båda fick startkvitto och leendet fick dessutom
+presenterad-kvitto i Webs spelare; ett separat lokalt videoprov visade avslut och återgång till
+grundloopen. Detta verifierar val och uppspelning, inte visuell kvalitet på
+varje bildruta. Ett nytt kort svar tog 35,817 s till uppspelningsstart:
+videokö 0,542 s och rendering/hämtning 32,546 s. Det kompletterar tidigare
+31,228 s i videokö; båda faserna kan dominera. RunPod-kapaciteten är fortsatt
+oförändrad.
+
 Idlepolicyn tar högst 12 engångsvarianter. Samma tak gäller runtime-valideringen,
 `idle-policy.schema.json` och studioschemats `idlePolicy.variants`. Beskrivning
 på högst 80 tecken är ett tillåtet fält i båda schemana. Tolv unika varianter
