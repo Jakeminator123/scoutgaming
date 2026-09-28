@@ -1,5 +1,28 @@
 # Astrid: kamera, tal och granskning
 
+## Pågående nytt röstläge efter Jakobs-v1
+
+Jakobs nya uppdrag ersätter per-tur-granskningen nedan: **Record** slår på
+lokal lyssning efter ”Astrid”; **Play** styr det befintliga spelljudet.
+Efter aktiveringsordet skickas turen automatiskt vid 1 150 ms tystnad.
+Text och bilder visas inte i normalvyn. Fem sekunders långtryck på någon
+av knapparna öppnar en tillfällig logg; långtrycket utför inte kortklicket.
+
+Lokalt talstöd krävs i webbläsaren; ingen molnreserv för aktiveringsordet
+används. En rullande ljudbuffert om högst tre sekunder finns bara i RAM
+och följer med efter aktivering så att frågans början inte tappas. Hela
+ljudfilen begränsas till 30 sekunder. Kamerabilder börjar tas först efter
+aktivering. Spelarbyte, dold flik och Record av avbryter väntande inspelning.
+Första Record-aktiveringen visar samtycke till automatisk sändning.
+
+**Inte färdigaktiverat:** engelsk talöversättning från svenska/engelska
+inväntar leverantörsval. Det nya klientkontraktet behöver serverstöd för
+automatisk språkidentifiering och engelsk uttext; gamla Cartesia-konfigurationen
+uppfyller inte det kontraktet. Ingen ny ljudleverantör har anropats. Fysisk
+wake/mikrofon i Chrome och hela kedjan med engelsk text återstår att prova.
+Devservrarna är fortfarande stoppade. Följande dokumenterar den tidigare
+granskningsversionens verifieringsläge och aktivering.
+
 28 september 2026. **Bild och ljud är Av som standard. Servertranskription är
 implementerad och leverantörsprovet godkänt; syntetiska Chrome-prov passerar.
 Bildtolkning genom Director/OpenClaw har nu passerat med syntetisk JPEG.

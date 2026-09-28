@@ -1,5 +1,6 @@
 export const CAMERA_AUDIO_SECONDS = 30;
 export const CAMERA_AUDIO_MAX_BYTES = 44 + 48000 * 2 * CAMERA_AUDIO_SECONDS;
+export const CAMERA_AUDIO_PREROLL_MAX_MS = 3000;
 
 // A local level gate, not speech recognition. Debouncing rejects a single click;
 // the transcription provider decides whether the captured audio contains words.
@@ -30,17 +31,33 @@ export function encodeCameraWav(chunks, sampleRate) {
   return bytes;
 }
 
+function preRollActivity(pcm, sampleRate) {
+  const activity = createCameraAudioActivity(), window = Math.round(sampleRate / 10);
+  let rms = 0, preRollSpeech = false;
+  for (let start = 0; start < pcm.length; start += window) {
+    const end = Math.min(start + window, pcm.length);
+    let power = 0;
+    for (let index = start; index < end; index++) power += (pcm[index] / 32768) ** 2;
+    const level = Math.sqrt(power / (end - start));
+    rms = Math.max(rms, level);
+    if (activity(level, (end - start) / sampleRate * 1000)) preRollSpeech = true;
+  }
+  return { rms, preRollSpeech };
+}
+
 export async function createAstridAudioRecorder({ stream, AudioContextClass, AudioWorkletNodeClass,
-  signal, onSample = () => {}, onLimit = () => {}, onError = () => {} }) {
+  signal, onSample = () => {}, onLimit = () => {}, onError = () => {}, armed = false, preRollMs = CAMERA_AUDIO_PREROLL_MAX_MS }) {
   signal.throwIfAborted();
+  if (typeof armed !== 'boolean' || !Number.isInteger(preRollMs) || preRollMs < 0 || preRollMs > CAMERA_AUDIO_PREROLL_MAX_MS) throw new Error('invalid_audio_preroll');
   const context = new AudioContextClass({ sampleRate: 16000 });
-  let node, source, stopped = false, total = 0, power = 0, windowCount = 0;
+  let node, source, stopped = false, total = 0, power = 0, windowCount = 0, recording = !armed;
+  let preRollReceived = !armed, preRollSamples = 0, limitReached = false;
   const chunks = [], activity = createCameraAudioActivity();
   function stop(discard = false) {
     if (stopped) return null;
     stopped = true;
     signal.removeEventListener('abort', abort);
-    if (node) { node.port.onmessage = null; node.onprocessorerror = null; node.port.close(); node.disconnect(); }
+    if (node) { node.port.onmessage = null; node.onprocessorerror = null; node.port.postMessage({ type: 'discard' }); node.port.close(); node.disconnect(); }
     source?.disconnect();
     void context.close().catch(() => {});
     try { return discard || total < context.sampleRate / 10 ? null : encodeCameraWav(chunks, context.sampleRate); }
@@ -54,23 +71,49 @@ export async function createAstridAudioRecorder({ stream, AudioContextClass, Aud
     signal.throwIfAborted();
     await context.resume();
     signal.throwIfAborted();
-    node = new AudioWorkletNodeClass(context, 'astrid-camera-audio', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
+    node = new AudioWorkletNodeClass(context, 'astrid-camera-audio', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: { armed, preRollMs } });
     node.onprocessorerror = () => { stop(true); onError(); };
     node.port.onmessage = ({ data }) => {
-      if (stopped || !(data instanceof ArrayBuffer) || data.byteLength % 2) return;
-      const received = new Int16Array(data), remaining = context.sampleRate * CAMERA_AUDIO_SECONDS - total;
+      const prefix = data?.type === 'pre-roll';
+      const bytes = prefix ? data.pcm : data;
+      if (stopped || !(bytes instanceof ArrayBuffer) || bytes.byteLength % 2) return;
+      const received = new Int16Array(bytes);
+      if (!recording || prefix && (preRollReceived || received.length > context.sampleRate * preRollMs / 1000) || !prefix && !preRollReceived) {
+        received.fill(0); return;
+      }
+      if (prefix) preRollReceived = true;
+      const remaining = context.sampleRate * CAMERA_AUDIO_SECONDS - total;
       const pcm = received.subarray(0, Math.max(0, remaining));
-      chunks.push(pcm); total += pcm.length;
+      received.subarray(pcm.length).fill(0);
+      if (pcm.length) chunks.push(pcm);
+      total += pcm.length;
+      if (prefix) {
+        preRollSamples = pcm.length;
+        // Report only whether the buffer held voice-level activity. The owner can
+        // start its current silence timer at wake without replaying old pauses.
+        onSample({ ...preRollActivity(pcm, context.sampleRate), speaking: false, at: 0 });
+        return;
+      }
       for (const sample of pcm) power += (sample / 32768) ** 2;
       windowCount += pcm.length;
       if (windowCount >= context.sampleRate / 10) {
         const rms = Math.sqrt(power / windowCount), elapsedMs = windowCount / context.sampleRate * 1000;
         power = 0; windowCount = 0;
-        onSample({ rms, speaking: activity(rms, elapsedMs), at: total / context.sampleRate * 1000 });
+        // VAD and camera timing start at wake; buffered pauses are never replayed.
+        onSample({ rms, speaking: activity(rms, elapsedMs), at: (total - preRollSamples) / context.sampleRate * 1000 });
       }
-      if (!stopped && total >= context.sampleRate * CAMERA_AUDIO_SECONDS) onLimit();
+      if (!stopped && !limitReached && total >= context.sampleRate * CAMERA_AUDIO_SECONDS) { limitReached = true; onLimit(); }
     };
     source = context.createMediaStreamSource(stream); source.connect(node); node.connect(context.destination);
-    return { stop };
+    return {
+      stop,
+      activate() {
+        if (stopped || recording) return false;
+        recording = true;
+        node.port.postMessage({ type: 'activate' });
+        return true;
+      },
+      get recording() { return !stopped && recording; },
+    };
   } catch (error) { stop(true); throw error; }
 }
