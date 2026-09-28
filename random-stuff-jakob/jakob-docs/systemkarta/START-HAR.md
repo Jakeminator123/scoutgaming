@@ -2,13 +2,10 @@
 
 Aktiv startpunkt, samlad i systemkartan den 25 september 2026.
 
-**Källa:** GitLab `scout-gg/croupier`, branch `jakeminator123/work` för Jakobs
-arbete. [Privat GitHub-kopia](https://github.com/Jakeminator123/github-work)
-finns för browser-GPT som inte når GitLab; samma commit ska finnas på båda.
-Den äldre GitHub-adressen `gitlab-work` är bara en vägvisare, inte en arbetsyta.
-Använd `node tools/push-work-mirrors.mjs` för godkända leveranser på Jakobs
-branch. Skriptet pushar GitLab först, sedan GitHub och jämför commit-ID. Det är
-en agent-/manuell standard, inte en obevakad serverregel. Pusha aldrig `main`.
+**Aktuell källa:** privata [GitHub-repot `Jakeminator123/github-work`](https://github.com/Jakeminator123/github-work),
+branch `jakemanator123-github-work`. Läs [migrationsreglerna](../../../docs/GITHUB-MIGRATION.md)
+och `AGENTS.md` före ändringar. Leverera med `node tools/push-github-work.mjs`;
+GitLab-inbox, wiki och spegling är pausade. Pusha aldrig `main`.
 
 **Vad är vad?** `web/` är spelet och dess serverägda kort, shoe, wallet och
 Partner-API. `content/` och `assets/` innehåller dealer-media och 3D; ändra
@@ -55,6 +52,6 @@ index, starta en omindexering där efter att undantagen har laddats.
 
 **Vid överlämning:** Kontrollera branch och aktuell Jira-issue, läs
 `AGENTS.md`, ändra endast uppgiftsägda filer, kör relevanta tester, notera
-utfall/luckor i `docs/JOHN-HANDOFF.md`, och verifiera båda remote-commitarna.
+utfall/luckor i `docs/JOHN-HANDOFF.md`, och verifiera GitHub-commiten.
 Uppdatera rätt ämnessida enligt [dokumentordningen](06-arbetssatt-och-verifiering/DOKUMENTORDNING.md)
 i stället för att lägga nya fristående rapporter i `jakob-docs/`.

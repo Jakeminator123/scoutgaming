@@ -1,3 +1,18 @@
+## 2026-09-28 — avgränsad dokumentstädning efter GitHub-checkpoint
+
+Utgångspunkt `e03b5d0`. 28 spårade historiska/engångsfiler togs bort ur
+arbetskopian (151 085 byte); samtliga verifierades i `Jakobs-v1` före
+raderingen. V3/V4-planerna, en gammal GitLab-issueprompt och två inaktiva
+Cursor-regler ersattes inte av en ny arkivmapp. Den historiska
+`astrid_motorklipp.txt` har inga kodberoenden; systemkartans hänvisning pekar
+nu till checkpointversionen. Aktiva start- och dokumentationslänkar uppdaterades.
+Detaljer, kvarvarande kandidater och verifiering: `docs/REPOSITORY-CLEANUP.md`.
+13 ändrade Markdown-filer gav inga brutna relativa länkar; `git diff --check`
+och hela pre-commit-kedjan passerade.
+Importerad worker, RunPods befintliga GitLab-imageberoende, spel, media,
+databaser och ignorerade filer lämnades orörda. Äldre daterade avsnitt nedan
+beskriver sina dåvarande lägen och är inte aktuella arbetsinstruktioner.
+
 ## 2026-09-28 — Gemensam checkpoint före större ändringar
 
 Jakob begärde uttryckligen commit/push av aktuellt läge. Städchatten och
@@ -4692,7 +4707,7 @@ The speech/idle-to-dealing room and pose transition is still visible: legacy cli
 
 # Astrid actual-game dealing and transition checkpoint — 9 September 2026
 
-For a clean continuation prompt, use [PROJECT-HANDOVER-PROMPT.md](PROJECT-HANDOVER-PROMPT.md). It incorporates the useful parts of the older Claude handover while distinguishing historical instructions from the current implementation and Kevin's latest direction.
+For a clean continuation prompt, use the historical [PROJECT-HANDOVER-PROMPT.md in Jakobs-v1](https://github.com/Jakeminator123/github-work/blob/Jakobs-v1/docs/PROJECT-HANDOVER-PROMPT.md). It incorporates the useful parts of the older Claude handover while distinguishing historical instructions from the current implementation and Kevin's latest direction.
 
 The active review path is `/?dealer=astrid&performance=staged&rehearsal=1` in the existing blackjack application. The normal dealer routes and existing speech assets remain preserved. This is a staged playable implementation, not completion of every item in the realistic-table plan.
 

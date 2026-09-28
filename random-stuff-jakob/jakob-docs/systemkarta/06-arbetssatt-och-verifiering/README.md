@@ -12,8 +12,9 @@ För var dokument ska ligga och vad som har flyttats: [Dokumentordning](DOKUMENT
 - **Aktiv sprint:** [dokumentationsnavet](../../../../docs/animation-events/README.md)
   leder till V5 med D0 + sju arbetsdagar. Wiki och hemsida är separata läsytor;
   kontrollera deras publicerade revision. Planens version är inte produktens version.
-- **Beslut och samarbete:** [wikin](https://gitlab.com/scout-gg/croupier/-/wikis/home)
-  och [arbetsflödet](../../../../docs/shared/WORKFLOW.md).
+- **Beslut och samarbete:** [GitHub-migrationen](../../../../docs/GITHUB-MIGRATION.md)
+  anger aktuell leveransväg; [arbetsflödet](../../../../docs/shared/WORKFLOW.md)
+  är historiskt underlag.
 - **Öppna observationer:** [findings](../../../../docs/findings/REGISTER.md)
   behåller evidens och beslutsspår.
 - **Leverans och testkvitto:** [JOHN-HANDOFF](../../../../docs/JOHN-HANDOFF.md)
@@ -58,5 +59,6 @@ sin evidensnivå och triage tills det finns nytt underlag. Den här
 dokumentationsöversynen ändrar ingen Jira-status.
 
 För Windows-kontroller finns [testmiljön](../../../../docs/WINDOWS-MEDIA-TESTS.md).
-För riktad agentkommunikation finns [inboxguiden](../../../../docs/shared/AGENT-INBOX.md).
+Den tidigare [inboxguiden](../../../../docs/shared/AGENT-INBOX.md) är historisk;
+GitLab-inboxen är pausad.
 Kartan startar ingen bakgrundspollning eller automatisk dokumentcrawl.

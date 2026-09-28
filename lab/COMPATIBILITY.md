@@ -48,5 +48,5 @@ speech-line + godkänd take**, med text/ljud, hash, landning, status och befintl
 fallback. Den vanliga spelklientens anslutningspunkt återstår att fastställa;
 Partner-API:ets `presentation[]` är inte redan inkopplat i den klienten.
 
-Se [V3:s kontrakt och beslutsgräns](../docs/animation-events/v3-9-days-mvp/s03-eventtradet.md)
+Se [V3:s historiska kontrakt och beslutsgräns](https://github.com/Jakeminator123/github-work/blob/Jakobs-v1/docs/animation-events/v3-9-days-mvp/s03-eventtradet.md)
 och [videoregistrets nivåer](../docs/animation-events/v3-video-map/README.md).

@@ -5,11 +5,12 @@ efter Kevin-integrationen den 22 september. Den beskriver den granskade koden
 och skiljer den från labbprov och återstående produktintegration.
 [Källregistret](KALLOR.md) anger revisioner, kontroller och begränsningar.
 
-Senaste kodankare för denna översyn är `113dfd8`: exakt manifest-v2-uppspelning
-och idlepolicy är lokalt verifierade; den separata OpenClaw-produktrollen och
-smala Director-adaptern är kodtestade men inte driftsatta. GitLab-wikin är den
-avsedda publicerade dokumentationsytan. Den fristående Vercel-sidan är en äldre
-21-septembersspegel och ska inte användas som bevis på dagens paritet.
+Kodankaret för kartans översyn är `113dfd8`: exakt manifest-v2-uppspelning
+och idlepolicy var då lokalt verifierade; den separata OpenClaw-produktrollen
+och smala Director-adaptern var kodtestade men inte driftsatta. För aktuellt
+GitHub-/molnläge, läs [V2-statusen](../../../docs/STATUS-OCH-TESTPLAN-V2.md)
+och [GitHub-migreringen](../../../docs/GITHUB-MIGRATION.md). GitLab-wikin är
+pausad och den fristående Vercel-sidan är en äldre 21-septembersspegel.
 
 Börja i [Kort start för Jakob och agenter](START-HAR.md). Här finns nu även
 [miljö-/API-förklararen](05-openclaw-rost-och-drift/MILJO-OCH-API.md),

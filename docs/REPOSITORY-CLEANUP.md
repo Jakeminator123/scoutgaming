@@ -1,5 +1,39 @@
 # Repostädning inför GitHub-arbetet
 
+## Avgränsad omgång efter `e03b5d0`, 28 september 2026
+
+28 spårade filer, sammanlagt 151 085 byte (cirka 147,5 KiB), togs bort:
+
+- 22 V3/V4-plan- och beslutsfiler under `docs/animation-events/` (111 995
+  byte). V5 är aktiv källa; den gamla publiceringskoden läser uttryckligen V5.
+  Aktiva länkar till specifika V3-fakta pekar nu på `Jakobs-v1`.
+- `random-stuff-jakob/astrid_motorklipp.txt`, en daterad JSON-inventering
+  utan kod-, test- eller byggreferenser. Systemkartans historiska hänvisning
+  pekar nu på [bevarad Git-version](https://github.com/Jakeminator123/github-work/blob/Jakobs-v1/random-stuff-jakob/astrid_motorklipp.txt).
+- Engångsprompten `ASTRID-2D-AVATAR-PACK-PROMPT.md`, gamla
+  `docs/shared/AGENT-HANDOFF.md` och `GITLAB-ISSUE-TILL-KEVIN.md` samt två
+  Cursor-regler som bara gällde den pensionerade `jakeminator123/work`.
+
+Filnamnsreferenser i kod, tester, byggskript och aktiva dokument kontrollerades
+före radering. Alla 28 filer verifierades i taggen `Jakobs-v1` och kan läsas
+med `git show Jakobs-v1:<sökväg>` eller återställas därifrån vid ett riktat
+behov. Äldre handoffavsnitt får stå kvar som daterad proveniens.
+Startvägen i systemkartan och presentationsplanen pekar nu till GitHub/V5.
+
+Importerade `services/astrid-gpu-worker/.gitlab-ci.yml` och dess gamla
+deployexempel är inaktiva i Croupiers GitHub-flöde. De behålls som källhistorik
+medan den befintliga RunPod-endpointen enligt tidigare driftskontroll fortfarande
+hämtar från `registry.gitlab.com`; ingen ny livekontroll eller extern ändring
+gjordes här. Worker-/gatewaykod, avatarer, mediemanifest, kalibreringar,
+modellvikter, privata data, `.env`, ignorerade filer och aktiva byggmappar
+bevarades. Det pensionerade privata arkivet undersöktes inte.
+
+Verifiering i denna omgång: 13 ändrade Markdown-filer kontrollerades för
+relativa länkar (inga brutna), `git diff --check` passerade och hela
+`.githooks/pre-commit` avslutades med status 0. Medieauditens 43 objekt i
+26 familjer matchade baslinjen; detta är ingen ny visuell läppsynkacceptans.
+Inga produktservrar eller betalda tjänster startades.
+
 ## Uppföljning: uttryckligen godkänd radering 28 september
 
 Jakob godkände att hela `.croupier-inbox/` raderades, även privata utkast,

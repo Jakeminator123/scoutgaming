@@ -163,7 +163,7 @@ en sådan adapter kopplas in.
 
 ## Underlag och verifiering
 
-- V3-referensen är `docs/animation-events/v3-9-days-mvp/` och den aktuella
+- [V3-referensen i `Jakobs-v1`](https://github.com/Jakeminator123/github-work/tree/Jakobs-v1/docs/animation-events/v3-9-days-mvp) och den då aktuella
   Croupier-koden. Labbet är ett separat experiment på Jakobs begäran;
   produktintegration förblir Kevins beslut.
 - Jämförelsen av de två användarlevererade ziparna: V2:s fem filer är

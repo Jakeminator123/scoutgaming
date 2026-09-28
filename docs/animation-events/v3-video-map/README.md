@@ -79,9 +79,10 @@ ingår i den här leveransen.
 - [Partner-presentation](../../../web/partner-presentation.mjs),
   [labbkatalog](../../../open-claw/lab/config/catalog.json) och
   [labbets matchning](../../../open-claw/lab/src/engine.mjs).
-- [V3 eventträdet](../v3-9-days-mvp/s03-eventtradet.md),
-  [säker presentation](../v3-9-days-mvp/s04-saker-presentation.md) och
-  [beslutslogg](../v3-9-days-mvp/DECISIONS.md).
+- Historiska V3-källor i `Jakobs-v1`:
+  [eventträdet](https://github.com/Jakeminator123/github-work/blob/Jakobs-v1/docs/animation-events/v3-9-days-mvp/s03-eventtradet.md),
+  [säker presentation](https://github.com/Jakeminator123/github-work/blob/Jakobs-v1/docs/animation-events/v3-9-days-mvp/s04-saker-presentation.md) och
+  [beslutslogg](https://github.com/Jakeminator123/github-work/blob/Jakobs-v1/docs/animation-events/v3-9-days-mvp/DECISIONS.md).
 - Kevins [beskrivning av nuvarande placering](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3869613874)
   och [förslag om katalogträd och YAML](https://gitlab.com/scout-gg/croupier/-/work_items/1#note_3869829140).
 - Lokal kod lästes vid 4492eea och jämfördes även efter den andra uppgiftens

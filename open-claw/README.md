@@ -11,4 +11,4 @@
   Det äldre dokumentationspaketet är borttaget ur arbetskopian och bevarat i taggen.
 
 Labbet kör separat från det vanliga spelet. Produktintegration är inte genomförd
-och kräver avstämning med Kevin enligt [V4](../docs/animation-events/v4-8-days-mvp/README.md).
+och kräver avstämning enligt [aktuell presentationsplan](../docs/animation-events/README.md).
