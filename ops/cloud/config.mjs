@@ -54,6 +54,7 @@ function optionalPair(env, urlName, tokenName) {
 
 export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (env.NODE_ENV !== 'production') fail('NODE_ENV');
+  if (env.CROUPIER_PLAYER_ACCOUNTS && !['0', '1'].includes(env.CROUPIER_PLAYER_ACCOUNTS)) fail('CROUPIER_PLAYER_ACCOUNTS');
   for (const name of ['DEMO_GUEST_ACCESS', 'CROUPIER_GENERATED_SPEECH_PREVIEW',
     'CROUPIER_LISSABON_PROFILES']) {
     if (env[name] === '1') fail(name);
@@ -132,6 +133,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, publicPort, dataRoot, paths, videoArchive,
     director, productSpeech, labRemote, timeoutMs, camera, generatedSpeech, streaming,
+    playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret } : null,
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
     translationKey: camera ? translationKey : '',
@@ -186,6 +188,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
       env: { ...shared, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
         BO_URL: config.boOrigin, LAB_PUBLIC_URL: config.labOrigin,
         CROUPIER_CLOUD_RUNTIME: '1',
+        CROUPIER_PLAYER_ACCOUNTS: config.playerAccounts ? '1' : '',
         ...(config.bootstrapAdmin ? {
           CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: config.bootstrapAdmin.user,
           CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: config.bootstrapAdmin.password,

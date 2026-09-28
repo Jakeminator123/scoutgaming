@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blackjack · Astrid</title>
+  <link rel="stylesheet" href="/blackjack-entry.css">
+  <script type="module" src="/blackjack-entry.mjs"></script>
+</head>
+<body><main>
+  <p class="eyebrow">ASTRID · BLACKJACK</p>
+  <h1>Välkommen till bordet.</h1>
+  <p>Logga in för att spela med Astrid. Vi använder demokrediter.</p>
+  <p id="status" role="status">Kontrollerar inloggning…</p>
+  <form hidden>
+    <fieldset id="account-kind"><legend>Konto</legend>
+      <label><input type="radio" name="kind" value="player" checked> Spelarkonto</label>
+      <label><input type="radio" name="kind" value="scout"> Befintligt Scout-konto</label>
+    </fieldset>
+    <label for="username">Användarnamn</label>
+    <input id="username" name="username" autocomplete="username" maxlength="254" required>
+    <label for="password">Lösenord</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" maxlength="128" required>
+    <button id="submit" type="submit">Logga in</button>
+    <button id="toggle" class="secondary" type="button">Skapa spelarkonto</button>
+  </form>
+</main></body></html>

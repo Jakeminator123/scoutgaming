@@ -24,6 +24,16 @@ const fixture = () => ({
 });
 const LAB_SECRET = '0123456789abcdef'.repeat(4);
 
+test('player registration is opt-in and reaches only the Web child', () => {
+  for (const value of ['', '0', '1']) {
+    const env = { ...fixture(), CROUPIER_PLAYER_ACCOUNTS: value };
+    const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+    assert.equal(specs.web.env.CROUPIER_PLAYER_ACCOUNTS, value === '1' ? '1' : '');
+    assert.equal(specs.lab.env.CROUPIER_PLAYER_ACCOUNTS, undefined);
+  }
+  assert.throws(() => validateCloudConfig({ ...fixture(), CROUPIER_PLAYER_ACCOUNTS: 'yes' }));
+});
+
 test('three exact public origins share one port and two loopback children', () => {
   const env = fixture();
   const config = validateCloudConfig(env);
