@@ -1,5 +1,10 @@
 # V4-workflow för Jakob
 
+> Historiskt arbetssätt. Sedan 28 september gäller GitHub-only på
+> `jakemanator123-github-work` i `Jakeminator123/github-work`.
+> GitLab-inbox, wiki-publicering och spegling är pausade.
+> Följ [aktuell migration](../GITHUB-MIGRATION.md) och `AGENTS.md`.
+
 Detta arbetssätt gäller `jakeminator123/work`. Det är inte en instruktion till
 Kevin eller hans agenter och får inte kopieras till hans branch som en automatisk
 regel.

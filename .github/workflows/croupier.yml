@@ -1,0 +1,54 @@
+name: Croupier GitHub checks
+
+on:
+  push:
+    branches: [jakemanator123-github-work]
+  pull_request:
+    branches: [jakemanator123-github-work]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: croupier-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  presentation-studio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: lab/package-lock.json
+      - run: npm --prefix lab ci
+      - run: npm --prefix lab test
+      - run: npm --prefix lab run build
+      - run: npm --prefix open-claw/lab test
+      - run: npm --prefix open-claw/lab run check
+
+  dealer-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: lab/package-lock.json
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg jq
+      - run: npm --prefix lab ci
+      - name: Shared pre-commit regression suite
+        run: sh .githooks/pre-commit
+      - run: node pipeline/audit-dealer-sync.mjs --probe
+      - run: node pipeline/audit-performance.mjs --probe
+      - run: node pipeline/audit-astrid-actor.mjs --probe
+      - run: node test/shoe-game.mjs
+      - run: node test/table-http.mjs
+      - run: node test/split-rules.mjs
+      - run: node --test test/croupier-inbox.mjs test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs

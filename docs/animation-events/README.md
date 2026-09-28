@@ -1,5 +1,12 @@
 # Croupier · Presentationsplan V5
 
+> **28 september: GitHub V2-arbete.** Aktiv branch är
+> `jakemanator123-github-work` i `Jakeminator123/github-work`.
+> V1 är sparad som `Jakobs-v1`; GitLab och wiki-synken är pausade.
+> Nedanstående tidsplan/publiceringsflöde är historiskt underlag.
+> Läs [migreringen](../GITHUB-MIGRATION.md) och
+> [molnförberedelserna](../CLOUD-MIGRATION.md) för aktuellt läge.
+
 **Sju återstående arbetsdagar efter startgrinden D0.** Från verklig signal till rätt presentation,
 med tydliga bevis på vad som finns, vad labbet provar och vad som återstår.
 
