@@ -1,3 +1,16 @@
+## 2026-09-28 — GitLab inbox credential clarity
+
+The existing Jakob project token works with GitLab's Notes API and expires
+2026-10-20. No replacement token or GitLab setting was created. The inbox now
+reports `credential_unreadable` for local token-file permission errors; the
+agent instructions retry the same read-only check once with approved access.
+The inbox guide explains the existing private file and that GitLab already
+provides the API. `node --check tools/croupier-inbox.mjs` and `git diff --check`
+passed. A read-only `git ls-remote` also confirmed the existing GitLab SSH remote
+works with approved access. This sandbox still needs approved access to read
+the AppData token file and SSH `known_hosts`; no GitLab post, push or remote
+setting change was made.
+
 ## 2026-09-26 — Idle-varianter: högst 12
 
 Efterhandsgranskning av Cursor-commit `13c91af`: Lissabon har en enda

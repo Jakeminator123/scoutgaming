@@ -32,6 +32,9 @@ command. Never reuse another chat/subagent's ID. Keep the ID across renames.
   unrelated work. Do NOT launch browser fallback on ordinary turns. For explicit
   inbox work or a task blocked on a reply, use a connected tool or one logged-in
   browser refresh, reading only new comments. Never extract cookies/search logs for tokens.
+- `credential_unreadable`: retry the same read-only check once with approved access
+  to the configured token file. Do not treat a local file permission error as a
+  missing or invalid GitLab token.
 
 ## Sending (read docs/shared/AGENT-INBOX.md for commands and setup)
 

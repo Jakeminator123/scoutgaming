@@ -49,6 +49,14 @@ en gräns för hela agentens kostnad. Andra chattar väcks inte automatiskt.
 
 ## Saknas API-inloggning?
 
+För Jakob är detta redan uppsatt: `GITLAB_TOKEN_FILE` pekar på en privat fil i
+`AppData/Local/Croupier/inbox-credentials/`. Filen innehåller tokenvärdet, inte
+en länk till GitLab. Inboxen använder det för GitLabs befintliga Notes API;
+inget nytt API eller någon ny token behöver skapas. Om `check` svarar
+`credential_unreadable` får agenten prova samma läskontroll en gång med
+filåtkomst. Det betyder inte att token är ogiltig.
+Vanlig Git-hämtning och push använder repots separata SSH-anslutning till GitLab.
+
 Använd befintlig lämplig GitLab-token; en ny behöver inte skapas bara för detta.
 Konfigurera `GITLAB_TOKEN_FILE` i IDE-processens miljö till en privat lokal fil
 utanför Git, eller använd `GITLAB_TOKEN` i processmiljön. Klistra aldrig in
