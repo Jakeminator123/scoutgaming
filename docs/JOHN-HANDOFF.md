@@ -1,3 +1,15 @@
+## 2026-09-28 — Samlad V2-lägesbild och testplan
+
+På Jakobs begäran sammanställdes `docs/STATUS-OCH-TESTPLAN-V2.md` från
+migration/städning, molnleveransen och streamingarbetet, avstämt mot `44feeec`.
+GitHub-körning 36474929456 kontrollerades på nytt: alla tre jobb success.
+CPU-imagebygge 36471104794 vid `7644c44` kontrollerades också: success.
+Dokumentet skiljer detta från riktig GPU-inferens och faktisk molndrift,
+beskriver kvarvarande GitLab-registerberoende och start-/WebSocket-spärrar,
+samt ger genomförandeordning och 12 acceptansprov. Backup- och browserprov
+refereras till tidigare kvitton; de kördes inte om för dokumentet.
+Inga driftresurser beställdes, privata data flyttades eller startspärrar ändrades.
+
 ## 2026-09-28 — Godkänd rensning av lokal inbox och gamla arkiv
 
 Jakob godkände permanent radering av hela `.croupier-inbox/`: 153 ignorerade
