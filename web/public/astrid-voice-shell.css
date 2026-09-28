@@ -1,0 +1,18 @@
+/* Astrid's conversation controls; game actions and the other dealers are unchanged. */
+.astrid-voice-ui #sound-btn,
+.astrid-voice-ui #chat-log-toggle,
+.astrid-voice-ui #caption { display: none !important; }
+.astrid-voice-ui #chat { width: auto; min-width: 0; }
+.astrid-voice-ui #astrid-camera [hidden] { display: none !important; }
+.astrid-voice-ui #astrid-camera #chat-log {
+  position: static; width: 100%; box-sizing: border-box; max-height: 35vh;
+  margin-top: 12px; box-shadow: none;
+}
+.astrid-voice-ui.astrid-voice-log-open #astrid-camera #chat-log {
+  display: flex; opacity: 1; visibility: visible; pointer-events: auto; transform: none;
+}
+.astrid-voice-ui #astrid-camera #chat-input { max-width: 75%; }
+.astrid-voice-ui #astrid-camera #chat-status { display: block; position: static; }
+.astrid-voice-ui #astrid-camera #chat-memory > div {
+  position: static; width: auto; max-width: 100%; box-shadow: none;
+}

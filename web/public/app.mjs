@@ -564,6 +564,7 @@ function setMuted(muted) {
   updatePoseState({ muted }, muted ? 'muted' : 'unmuted');
   if (muted) { tableAudio.reset(); sfx.stopAmbience(); }
   else { tableAudio.unlock(); sfx.startAmbience(); }
+  astridCamera?.refreshPlayback();
 }
 soundBtn.onclick = () => setMuted(!voice.muted);
 const tableAudio=createTableAudio({createContext:()=>new AudioContext(),canPlay:()=>!voice.muted&&!document.hidden,
@@ -2237,7 +2238,14 @@ const astridCamera = DEALER.key === 'astrid' && localPresentationEnabled
   ? createAstridCameraControl({ container: $('#chat'), identity: () => ({ ...poseIdentity(), playerId: player?.id }),
     canStart: () => !chatBusy && !speaking && !busy,
     onActivity: () => probeClient?.activity(),
+    onPlaybackToggle: () => setMuted(!voice.muted),
+    getPlaybackEnabled: () => !voice.muted,
+    onLogToggle: open => { setChatOpen(open); document.body.classList.toggle('astrid-voice-log-open', open); },
     send: ({ message, images, profileRevision }) => sendChat({ message, images, profileRevision }) }) : null;
+if (astridCamera) {
+  document.body.classList.add('astrid-voice-ui');
+  const voiceStyle = document.createElement('link'); voiceStyle.rel = 'stylesheet'; voiceStyle.href = '/astrid-voice-shell.css'; document.head.append(voiceStyle);
+}
 
 // Memory belongs to the authenticated server player, not this tab's display log.
 const chatMemory = document.createElement('details');
@@ -2250,6 +2258,11 @@ const memoryStatus = document.createElement('p'); memoryStatus.setAttribute('rol
 const memoryForget = document.createElement('button'); memoryForget.type = 'button'; memoryForget.textContent = 'Radera mitt minne hos denna dealer';
 const memoryLimit = document.createElement('small'); memoryLimit.textContent = 'Raderar lokalt spelarchattminne, inte leverantörernas loggar. Stoppar ett pågående svar.';
 memoryPanel.append(memoryInfo, memoryStatus, memoryForget, memoryLimit); chatMemory.append(memorySummary, memoryPanel); $('#chat').append(chatMemory);
+if (astridCamera?.debugContainer) {
+  astridCamera.debugContainer.append($('#chat-input'), $('#chat-send'), $('#chat-log'), chatStatus, chatMemory);
+  chatToggle.hidden = true;
+  setChatOpen(false);
+}
 chatMemory.addEventListener('toggle', async () => {
   if (!chatMemory.open) return;
   try {

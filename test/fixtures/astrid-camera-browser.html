@@ -1,12 +1,13 @@
 <!doctype html>
-<html lang="sv"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Astrid bild och ljud · syntetisk QA</title><link rel="stylesheet" href="/styles.css">
-<style>body{margin:0;padding:24px;background:#101618;color:#eee;font:16px system-ui;overflow:auto}main{max-width:760px}button{padding:10px;margin:8px}pre{white-space:pre-wrap}#fixture{min-height:80px}.astrid-camera-panel{position:relative;top:auto;right:auto;margin-top:12px}#astrid-camera{width:min(380px,90vw)}#astrid-camera summary{display:inline-block}h1{font-size:24px}</style>
-<main><h1>Astrid bild och ljud · syntetisk QA</h1>
-<p>Ingen riktig kamera, mikrofon, spelprofil, databas eller modell används. Komponentprovet spelar in en syntetisk ton via riktig AudioWorklet men ersätter transkriptionssvaret. Inget ljud lämnar webbläsaren.</p>
-<button id="run">Kör syntetiska kamerafall</button>
-<button id="voice">Verifiera lokal ljudinspelning med testljud</button>
-<p id="capability"></p><pre id="results" role="status">Redo</pre><div id="fixture"></div>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Astrid voice · synthetic QA</title><link rel="stylesheet" href="/styles.css">
+<style>body{margin:0;padding:24px;background:#101618;color:#eee;font:16px system-ui;overflow:auto}main{max-width:760px}button{padding:10px;margin:8px}pre{white-space:pre-wrap}#fixture{position:relative;min-height:80px;margin-top:20px}#fixture #astrid-camera{width:min(380px,90vw)}h1{font-size:24px}</style>
+<main><h1>Astrid voice · synthetic QA</h1>
+<p>No real camera, microphone, SpeechRecognition, player profile, database or provider is used. The component test injects a fake local wake-word detector, canvas video and an inaudible oscillator stream. AudioWorklet recording, the local pre-roll, silence detection and JPEG capture are real browser code. Configuration, English transcription and Astrid's reply are stubbed; nothing is uploaded.</p>
+<p>This checks Record → consent → simulated “Astrid” → automatic send, without a preview or manual Send button. It does not verify native wake-word availability, provider translation, a real microphone, or lip sync.</p>
+<button id="run">Run synthetic voice and camera cases</button>
+<button id="voice">Check AudioWorklet with existing goodluck test audio</button>
+<p id="capability"></p><pre id="results" role="status">Ready</pre><div id="fixture"></div>
 </main>
 <script type="module">
 import { createAstridCameraControl } from '/astrid-camera-control.mjs';
@@ -14,73 +15,136 @@ import { createAstridAudioRecorder } from '/astrid-camera-audio.mjs';
 const results = document.querySelector('#results'), fixture = document.querySelector('#fixture');
 const write = value => { results.textContent += '\n' + value; };
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const until = async check => { for (let n = 0; n < 120; n++) { if (check()) return; await pause(100); } throw new Error('timeout'); };
-const assert = (ok, message) => { if (!ok) throw new Error(message); };
+let caseFailure = null;
+const until = async check => { for (let n = 0; n < 150; n++) { if (caseFailure) throw caseFailure; if (check()) return; await pause(100); } throw new Error('timed out waiting for the synthetic case'); };
+const assert = (ok, message) => { if (!ok) { caseFailure = new Error(message); throw caseFailure; } };
 document.querySelector('#capability').textContent = `AudioWorklet: ${Boolean(window.AudioWorkletNode)} · ${navigator.userAgent}`;
 let lastControl;
+const setRunning = running => { document.querySelector('#run').disabled = running; document.querySelector('#voice').disabled = running; };
+const currentConfig = { enabled: true, profileRevision: 'a'.repeat(64), transcription: { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }, vision: { enabled: true } };
+const button = label => [...fixture.querySelectorAll('button')].find(node => node.getAttribute('aria-label') === label || node.textContent === label);
+async function checkImage(url) {
+  assert(url.startsWith('data:image/jpeg;base64,'), 'image is not JPEG');
+  assert(atob(url.split(',')[1]).length <= 65536, 'image exceeds byte limit');
+  const image = new Image(); image.src = url;
+  try { await image.decode(); assert(Math.max(image.naturalWidth, image.naturalHeight) <= 384, 'image exceeds dimensions'); }
+  finally { image.src = ''; }
+}
 document.querySelector('#run').onclick = async event => {
-  event.target.disabled = true; results.textContent = 'Kör…';
+  setRunning(true); results.textContent = 'Running synthetic cases…';
   try {
-    for (const [name, speech, expected] of [['tystnad', 0, 0], ['kort tal', 900, 1], ['långt tal', 3800, 2], ['tal med kort paus', 3800, 2]]) {
-      lastControl?.stop(); fixture.replaceChildren();
-      let tracks = [], sourceAudio, toneGain, drawTimer, permissionCalls = 0, sent = 0, uploads = 0;
-      const mediaDevices = { getUserMedia: async () => {
-        permissionCalls++; const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480;
-        const ctx = canvas.getContext('2d'); let frame = 0;
-        const draw = () => { ctx.fillStyle = frame++ % 2 ? '#1266af' : '#21aa65'; ctx.fillRect(0, 0, 640, 480); ctx.fillStyle = 'white'; ctx.font = '40px sans-serif'; ctx.fillText('SYNTHETIC QA', 120, 240); };
-        draw(); drawTimer = setInterval(draw, 100);
-        const video = canvas.captureStream(12); sourceAudio = new AudioContext(); await sourceAudio.resume();
-        const destination = sourceAudio.createMediaStreamDestination(), oscillator = sourceAudio.createOscillator(); toneGain = sourceAudio.createGain();
-        oscillator.frequency.value = 400; oscillator.connect(toneGain); toneGain.connect(destination); toneGain.gain.value = 0; oscillator.start();
-        const stream = new MediaStream([...video.getVideoTracks(), ...destination.stream.getAudioTracks()]); tracks = stream.getTracks(); return stream;
+    for (const [name, speech, expected, prefix] of [
+      ['silence and explicit stop', 0, 0], ['short speech', 900, 1],
+      ['long speech', 4500, 2], ['speech with a short pause', 4500, 2],
+      ['short speech entirely in pre-roll', 900, 1, true],
+      ['legacy server capability blocked', 0, 0],
+    ]) {
+      lastControl?.stop(); fixture.replaceChildren(); caseFailure = null;
+      const tracks = [], contexts = [], oscillators = [], drawTimers = [], recorders = [], wakes = [];
+      let sourceAudio, toneGain, permissionCalls = 0, cameraCalls = 0, sent = 0, uploads = 0, playback = false;
+      const blocked = name.startsWith('legacy');
+      const mediaDevices = { getUserMedia: async constraints => {
+        permissionCalls++;
+        let stream;
+        if (constraints.video) {
+          assert(constraints.audio === false, 'camera request must not reopen audio'); cameraCalls++;
+          const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480;
+          const ctx = canvas.getContext('2d'); let frame = 0;
+          const draw = () => { ctx.fillStyle = frame++ % 2 ? '#1266af' : '#21aa65'; ctx.fillRect(0, 0, 640, 480); ctx.fillStyle = 'white'; ctx.font = '40px sans-serif'; ctx.fillText('SYNTHETIC QA', 120, 240); };
+          draw(); drawTimers.push(setInterval(draw, 100)); stream = canvas.captureStream(12);
+        } else {
+          assert(constraints.audio && constraints.video === false, 'wake preparation must be microphone-only');
+          sourceAudio = new AudioContext(); contexts.push(sourceAudio); await sourceAudio.resume();
+          const destination = sourceAudio.createMediaStreamDestination(), oscillator = sourceAudio.createOscillator();
+          oscillators.push(oscillator); toneGain = sourceAudio.createGain();
+          oscillator.frequency.value = 400; oscillator.connect(toneGain); toneGain.connect(destination); toneGain.gain.value = 0; oscillator.start();
+          stream = destination.stream;
+        }
+        tracks.push(...stream.getTracks()); return stream;
       } };
       try {
         const control = createAstridCameraControl({ container: fixture,
           identity: () => ({ playerId: 'synthetic', dealerId: 'astrid', sessionRevision: 'qa', roundRevision: '0' }), mediaDevices,
+          createWakeWord: options => {
+            const wake = { active: false, async start() { this.active = true; options.onStatus({ state: 'listening' }); return true; },
+              stop() { this.active = false; }, ready: () => options.canWake(),
+              trigger() { assert(this.active && this.ready(), 'fake wake triggered before local buffer was ready'); this.stop(); options.onWake(); } };
+            wakes.push(wake); return wake;
+          },
           createRecorder: async options => {
-            const recorder = await createAstridAudioRecorder(options), at = sourceAudio.currentTime;
-            if (speech) {
-              toneGain.gain.setValueAtTime(0.1, at + 0.2); toneGain.gain.setValueAtTime(0, at + (speech + 200) / 1000);
-              if (name.includes('paus')) { toneGain.gain.setValueAtTime(0, at + 1.5); toneGain.gain.setValueAtTime(0.1, at + 1.8); }
-            }
-            return recorder;
+            assert(options.armed === true && options.preRollMs === 3000, 'missing local pre-roll');
+            const recorder = await createAstridAudioRecorder(options); recorders.push(recorder); return recorder;
           },
           fetchImpl: async (url, init) => {
             if (url.endsWith('/transcription')) {
               uploads++; assert(tracks.every(track => track.readyState === 'ended'), 'upload before devices stop');
               assert(init.body instanceof Uint8Array && init.body.length > 44, 'missing recorded WAV');
-              return { ok: true, json: async () => ({ text: 'Synthetic camera test' }) };
+              assert(init.headers['X-Astrid-Language'] === 'auto', 'missing auto-language contract');
+              return { ok: true, json: async () => ({ text: 'Synthetic English voice test' }) };
             }
-            return { ok: true, json: async () => ({ enabled: true, profileRevision: 'a'.repeat(64), transcription: { enabled: true } }) };
+            assert(url === '/api/astrid/observation', 'unexpected stub request');
+            return { ok: true, json: async () => blocked ? { ...currentConfig, transcription: { enabled: true } } : currentConfig };
           },
-          send: async ({ message, images }) => { assert(message === 'Synthetic camera test', 'wrong transcript'); assert(images.length === expected, 'send count'); sent++; return true; },
+          send: async ({ message, images, voice, profileRevision }) => {
+            assert(message === 'Synthetic English voice test' && voice === true && profileRevision === currentConfig.profileRevision, 'wrong automatic voice payload');
+            assert(images.length === expected, `${name}: expected ${expected} JPEGs, got ${images.length}`);
+            for (const image of images) await checkImage(image);
+            sent++; return true;
+          },
+          onPlaybackToggle: () => { playback = !playback; }, getPlaybackEnabled: () => playback,
         });
         lastControl = control; await pause(0);
-        assert(permissionCalls === 0, 'off requested devices'); fixture.querySelector('details').open = true; await pause(0);
-        [...fixture.querySelectorAll('button')].find(button => button.textContent === 'Starta kamera och mikrofon').click();
-        await until(() => fixture.querySelector('summary').textContent.endsWith('· På'));
-        if (!speech) { await pause(600); [...fixture.querySelectorAll('button')].find(button => button.textContent === 'Stoppa').click(); }
-        await until(() => !fixture.querySelector('.astrid-camera-review').hidden && ![...fixture.querySelectorAll('button')].find(button => button.textContent === 'Skicka till Astrid').disabled);
-        const images = [...fixture.querySelectorAll('.astrid-camera-pictures img')];
-        assert(images.length === expected, `${name}: expected ${expected}, got ${images.length}`);
-        for (const img of images) { await img.decode(); assert(Math.max(img.naturalWidth, img.naturalHeight) <= 384, 'dimensions'); assert(atob(img.src.split(',')[1]).length <= 65536, 'bytes'); }
-        assert(tracks.length === 2 && tracks.every(track => track.readyState === 'ended'), 'tracks still live'); assert(sent === 0, 'sent before review');
-        assert(uploads === (speech ? 1 : 0), 'unexpected transcription uploads');
-        if (expected) { [...fixture.querySelectorAll('button')].find(button => button.textContent === 'Skicka till Astrid').click(); await until(() => sent === 1); }
-        write(`PASS ${name}: ${images.length} JPEG, riktig lokal ljudinspelning, tracks stoppade, explicit granskning.`);
-      } finally { lastControl?.stop(); clearInterval(drawTimer); tracks.forEach(track => track.stop()); await sourceAudio?.close(); }
+        assert(!control.active && !control.busy && permissionCalls === 0 && wakes.length === 0, 'page did not load off');
+        button('Enable Astrid playback').click(); await pause(0);
+        assert(playback && permissionCalls === 0 && wakes.length === 0, 'Play must only toggle playback');
+        button('Enable voice listening').click();
+        assert(!fixture.querySelector('dialog').hidden && permissionCalls === 0, 'devices opened before consent');
+        button('Enable voice').click();
+        if (blocked) {
+          await pause(0);
+          assert(!control.active && permissionCalls === 0 && uploads === 0 && wakes.length === 0, 'legacy settings enabled automatic capture');
+          assert(fixture.querySelector('[role="status"]').textContent === 'English speech translation is not configured on this server.', 'missing capability reason');
+          write('PASS legacy capabilities: clear block, no wake, devices or upload.'); continue;
+        }
+        await until(() => wakes[0]?.ready());
+        assert(control.active && !control.busy && cameraCalls === 0 && uploads === 0, 'wake idle must not block Probe or request a camera');
+        assert(recorders.length === 1 && !recorders[0].recording, 'armed audio must wait for wake');
+        const schedule = () => {
+          const at = sourceAudio.currentTime;
+          toneGain.gain.setValueAtTime(0.1, at + 0.2); toneGain.gain.setValueAtTime(0, at + (speech + 200) / 1000);
+          if (name.includes('short pause')) { toneGain.gain.setValueAtTime(0, at + 1.5); toneGain.gain.setValueAtTime(0.1, at + 1.8); }
+          return at + (speech + 200) / 1000;
+        };
+        if (prefix) { const endsAt = schedule(); await until(() => sourceAudio.currentTime >= endsAt + 0.1); assert(uploads === 0 && cameraCalls === 0, 'pre-roll escaped before wake'); }
+        wakes[0].trigger(); assert(control.busy && recorders[0].recording, 'wake did not activate the same recorder synchronously');
+        if (!prefix) {
+          await until(() => cameraCalls === 1 && fixture.querySelector('video').readyState >= 2);
+          if (speech) schedule();
+        }
+        if (!speech) { await pause(600); button('Stop voice listening').click(); }
+        else await until(() => sent === 1 && !control.busy && wakes.length === 2 && wakes[1].ready());
+        assert(uploads === (speech ? 1 : 0) && sent === (speech ? 1 : 0), 'unexpected automatic transcription or send count');
+        assert(fixture.querySelector('.astrid-voice-debug').hidden && !fixture.querySelector('img, textarea'), 'normal controls exposed a review or transcript');
+        if (control.active) button('Stop voice listening').click();
+        assert(!control.active && tracks.every(track => track.readyState === 'ended'), 'stop left devices active');
+        write(`PASS ${name}: ${expected} JPEGs, ${uploads} stub transcription and ${sent} automatic send; real local AudioWorklet, all tracks stopped.`);
+      } finally {
+        lastControl?.stop(); drawTimers.forEach(clearInterval); tracks.forEach(track => track.stop());
+        oscillators.forEach(oscillator => { try { oscillator.stop(); oscillator.disconnect(); } catch {} });
+        await Promise.all(contexts.map(context => context.close().catch(() => {})));
+      }
     }
-    write('PASS komponentprov klart. Inget verkligt ljud eller transkriptionsanrop.');
-  } catch (error) { lastControl?.stop(); write('FAIL ' + error.message); } finally { event.target.disabled = false; }
+    write('PASS synthetic component cases complete. Native wake, provider translation and real devices remain untested.');
+  } catch (error) { lastControl?.stop(); write('FAIL ' + error.message); } finally { setRunning(false); }
 };
 document.querySelector('#voice').onclick = async event => {
-  event.target.disabled = true;
+  setRunning(true);
   let context, stream, recorder;
   const controller = new AbortController();
   try {
     context = new AudioContext(); await context.resume();
     const response = await fetch('/dealers/astrid/audio/en/goodluck.mp3');
-    if (!response.ok) throw new Error(`Testljudet saknas (${response.status}).`);
+    if (!response.ok) throw new Error(`Existing test audio is missing (${response.status}).`);
     const buffer = await context.decodeAudioData(await response.arrayBuffer());
     const source = context.createBufferSource(); source.buffer = buffer;
     const destination = context.createMediaStreamDestination(); source.connect(destination); stream = destination.stream;
@@ -88,9 +152,9 @@ document.querySelector('#voice').onclick = async event => {
     recorder = await createAstridAudioRecorder({ stream, AudioContextClass: AudioContext, AudioWorkletNodeClass: AudioWorkletNode,
       signal: controller.signal, onSample: sample => { if (sample.speaking) activity++; } });
     const ended = new Promise(resolve => { source.onended = resolve; }); source.start(); await ended; await pause(200);
-    const wav = recorder.stop(); assert(wav?.length > 44 && activity > 0, 'saknar ljud eller lokal aktivitet');
-    write(`PASS befintligt Astrid-testljud genom riktig AudioWorklet: ${wav.length} WAV-bytes, ${activity} aktivitetsprov. Transkription är inte provad här.`);
+    const wav = recorder.stop(); assert(wav?.length > 44 && activity > 0, 'missing audio or local activity');
+    write(`PASS existing goodluck.mp3 through real AudioWorklet: ${wav.length} WAV bytes, ${activity} activity samples. No transcription or wake-word recognition was tested.`);
     wav.fill(0);
-  } catch (error) { write('LJUD: ' + error.message); } finally { controller.abort(); recorder?.stop(true); stream?.getTracks().forEach(track => track.stop()); await context?.close(); event.target.disabled = false; }
+  } catch (error) { write('AUDIO: ' + error.message); } finally { controller.abort(); recorder?.stop(true); stream?.getTracks().forEach(track => track.stop()); await context?.close(); setRunning(false); }
 };
 </script></html>

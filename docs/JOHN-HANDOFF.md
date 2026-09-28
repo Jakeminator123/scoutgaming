@@ -1,3 +1,49 @@
+## 2026-09-28 — Pågående förenkling av Astrids röstläge efter Jakobs-v1
+
+Jakob har ändrat uppdraget: Record slår på lokal lyssning efter ”Astrid”.
+Därefter ska ljud och eventuella kamerabilder skickas automatiskt efter
+1 150 ms tystnad (tidigare 650 ms). Normalvyn visar bara Play och Record;
+fem sekunders långtryck öppnar loggen. Första aktiveringen kräver ett
+sessionssamtycke till automatisk sändning. Det ersätter den tidigare
+manuella gransknings-/Skicka-vyn för Astrid. Play styr befintligt spelljud.
+
+Arbetet är ännu inte levererat: lokal wake, begränsad ljudbuffert och UI
+utvecklas; engelsk talöversättning från svenska/engelska inväntar Jakobs
+val av leverantör. Cartesia har inte verifierat stöd för språkparametern
+`auto` eller direkt engelsk översättning; anta inte sådant stöd. Ingen
+ny ljudleverantör har anropats. Devservrarna är fortsatt stoppade och
+`Jakobs-v1` är oförändrad. Verkligt wake-/mikrofonprov i Chrome återstår.
+
+Verifiering av hittillsvarande kod: alla 27 pre-commit-kommandon passerade,
+varav kameragruppen har 67 tester. Den omfattar verkligt samspel mellan
+wake-modulen och kontrollen med simulerad Recognition, korta prefixfraser,
+sen konfiguration, avbrott och avsaknad av engelsk serverkapacitet.
+Fyradealer-audit med `--probe` passerade befintlig asset-baseline; detta
+godkänner inte visuell läppsynk eller fysiskt mikrofonprov. Kvitton finns
+privat i `C:/WINDOWS/TEMP/croupier-qa-preserved-6CcPDB/astrid-voice-gates/`.
+
+Det nya automatläget kräver uttryckligen `transcription.outputLanguage=en`
+och `transcription.acceptsAutoLanguage=true` i serverns konfigurationssvar.
+Gamla Cartesia-konfigurationen ger en tydlig spärr innan mikrofon eller
+uppladdning startar. Backend och samtyckets providernamn ska färdigställas
+efter Jakobs leverantörsval; först därefter kan hela kedjan verifieras.
+Den syntetiska browser-fixturen har uppdaterats för Record/wake/autosend
+och kontrollerats syntaktiskt. Den använder riktig lokal AudioWorklet men
+stubbad wake/STT; den har inte körts i browser i denna leverans.
+
+Bildstöd: både GPT-6 Luna och GPT-5.6 Terra tar emot bilder enligt aktuella
+officiella modellsidor. Begränsningen till Luna finns i produktserverns
+observation-grind och Gateway-konfigurationens `CROUPIER_SPEECH_VISION`.
+Terra har ännu inte verifierats genom vår driftsatta bildkedja. Modellerna
+anropas hos OpenAI; Render är värd för Director/Gateway, inte modellvikterna.
+Källor: https://developers.openai.com/api/docs/models/gpt-6-luna och
+https://developers.openai.com/api/docs/models/gpt-5.6-terra.
+
+GitHub-/branchflytten sköts av en annan agent. Arbetskopian är nu verifierat
+på `jakemanator123-github-work` med `origin` till
+`git@github.com:Jakeminator123/github-work.git`; röständringarna följde med.
+Denna röstuppgift gör inga branchbyten eller pushar medan flytten samordnas.
+
 ## 2026-09-28 — Jakobs-v1 checkpoint och stoppade devservrar
 
 På Jakobs uttryckliga begäran sparas alla kvarvarande projektändringar som
