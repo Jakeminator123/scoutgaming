@@ -5,6 +5,18 @@ Detta är den korta notisen i repots rot. Detaljer och testkrav finns i
 Skriv datum, ändring och verifiering här när arbetet går vidare; skilj alltid
 förslag från implementerad kod och verkligt godkänd drift.
 
+## 29 september 2026 – Emils V3 arkiverad och mindre containerkontext
+
+Emils inaktiva V3-demo (240 filer, 66 160 426 byte) togs ur arbetskopian.
+Hela trädet, inklusive 217 MP4 och egna manifest, kopierades byteverifierat
+till `C:\Users\jakem\Desktop\croupier\BACKUP-LAB-to-HUB` med SHA-256-index.
+Git-commit `9e2048a6` bevarar en andra återställningsväg. Rotens
+`.dockerignore` utesluter nu också redigerbara 3D-källor under
+`assets/astrid-3d/` och `assets/blackjack-3d/`; publicerade exportfiler
+i `web/public/` behålls. Fyra avvisade 3D-studier (240 filer, cirka 941,9 MiB)
+kopierades till arkivet men ligger kvar i repot: automatisk granskning
+stoppade borttagning av unika original. Se [städrapporten](docs/REPOSITORY-CLEANUP.md).
+
 ## 29 september 2026 – gemensamt Lab och filmad kortvändning
 
 Lissabons kod/start är samlad i Lab. Gamla duplicerade standarder och

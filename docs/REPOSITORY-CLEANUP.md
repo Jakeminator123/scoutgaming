@@ -1,5 +1,37 @@
 # Repostädning inför GitHub-arbetet
 
+## V3 arkiverad och 3D-källor uteslutna ur Docker, 29 september 2026
+
+Den fristående `emil/astrid-demo-v3-reference/` togs bort ur arbetskopian:
+240 spårade filer, 66 160 426 byte (63,1 MiB), varav 217 MP4. Hela mappträdet,
+dess manifest och demoexempel finns byteverifierade på
+`C:\Users\jakem\Desktop\croupier\BACKUP-LAB-to-HUB\repo-files\emil\astrid-demo-v3-reference\`.
+`backup-manifest.json` där innehåller filvisa SHA-256-värden och `INDEX.md`
+listar denna samt tidigare städning. Gruppen finns också i commit `9e2048a6`
+och taggen `Jakobs-v1`; återställ riktat med
+`git restore --source=9e2048a6 --staged --worktree -- emil/astrid-demo-v3-reference`.
+Sökning i kod, tester, byggskript och aktiva dokument fann ingen konsument;
+endast daterad handoff och `emil/README.md` nämnde den. Den var redan utanför
+Dockerkontexten. Ingen MP4 kodades om eller komprimerades.
+
+Samma externa backup innehåller dessutom fyra sammanhängande avvisade
+3D-studier: `content/staging/2026-09-11/astrid-replacement/` och
+`content/staging/2026-09-12/{astrid-closeup,astrid-rest-study,upright-controller}/`.
+Det är 240 spårade filer och 987 631 568 byte (cirka 941,9 MiB), inklusive
+åtta symboliska länkar vars mål står i `backup-manifest.json`. September-12-skript refererar
+till september-11-originalen; inga produkt-, Lab-, test- eller molnreferenser
+hittades. **Dessa fyra grupper är inte raderade.** Automatisk granskning
+avvisade radering eftersom unika original och återbyggnadsunderlag kräver
+ett separat uttryckligt beslut även med backup. Ingen kringväg användes.
+
+Rotens `.dockerignore` utesluter nu även `assets/astrid-3d/` (cirka 563 MiB)
+och `assets/blackjack-3d/` (cirka 220 MiB). Deras kända läsare är offline-
+byggskript i `pipeline/`; spelets webbkod laddar de publicerade kopiorna i
+`web/public/`. Källorna finns kvar lokalt och i Git. Det minskar den planerade
+rot-Dockerkontexten med cirka 783 MiB, men en faktisk image har inte byggts
+eller mätts här. Aktiva dealerfilmer, manifest, databaser, projekt och det
+pensionerade privata personarkivet är orörda.
+
 ## Historiska 3D- och videogranskningspaket, 29 september 2026
 
 Två avgränsade, spårade granskningspaket togs bort ur arbetskopian:

@@ -1,3 +1,25 @@
+## 2026-09-29 — städarkiv, V3 och containerkontext
+
+Emils fristående V3-demo (240 filer, 63,1 MiB, inklusive manifest) är borttagen
+ur arbetskopian efter SHA-256-verifierad kopia till
+`C:\Users\jakem\Desktop\croupier\BACKUP-LAB-to-HUB`.
+`backup-manifest.json` listar varje fil; Git-commit `9e2048a6` bevarar hela
+trädet. `emil/dealklipp-v1/` är fortsatt aktiv och orörd.
+
+Fyra avvisade 3D-studier under `content/staging/2026-09-11/` och `2026-09-12/`
+kopierades som ett sammanhängande paket (240 filer, cirka 941,9 MiB). De
+ligger kvar i repot: automatisk granskning stoppade borttagning av unika
+original och återbyggnadsunderlag. Tidigare handofflänkar till dem fungerar
+alltså fortsatt. Produktkod och molnbygge refererar inte till dem; senare
+staging-skript gör det. Ingen produktmedia, kalibrering eller avatar ändrades.
+
+Rotens `.dockerignore` utesluter nu också `assets/astrid-3d/` och
+`assets/blackjack-3d/` från det planerade produktbygget. Offlinekällorna
+finns kvar i Git; webbläsaren använder exporter i `web/public/`. Detta är
+statisk beroendegranskning, inte ett byggt eller driftsatt imageprov.
+Full inventering, återställning och prov finns i
+[städrapporten](REPOSITORY-CLEANUP.md).
+
 ## 2026-09-29 — Lab/Lissabon samlat, Kevin hole/flip och förladdning
 
 Astrids fokuserade studio finns nu i gemensamma Lab på `/`, avancerade
