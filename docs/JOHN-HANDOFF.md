@@ -1,3 +1,38 @@
+## 2026-09-28 — Ny omstart och faktisk browserkontroll av tal/video
+
+På Jakobs begäran stoppades förra serverparet och dess startprocess;
+process-/portkontrollen var tom före omstart. Labbet byggdes igen och ett
+enda par på localhost:4210/4211 startade med samma sparade projekt och
+isolerade testprofil. Kameraflaggan är på. Inga spelkort eller konton ändrades.
+
+Den aktuella Chrome-anslutningen fungerar nu för produktsidan på 4210.
+Den tidigare spelfliken fanns inte längre i den färska fliklistan; en ny
+öppnades och lämnas kvar. Den visar Astrid med `presentation=local` och
+Jakob · TESTMINNEN, inklusive den tidigare pågående handen. Videoelementet
+spelar med readyState 4 och utan mediafel.
+
+Ett märkt ljud-/videoprov skickades genom den vanliga chatten. Terra svarade
+"Hello! Sound and video test received." Röst och läppsynkvideo skapades,
+browsern slutförde talflödet och inga console warnings/errors rapporterades.
+DOM-mätningen visar 16 124 ms till talstart, RunPod-kö 132 ms och rendering
+10 877 ms. Detta bekräftar uppspelning, inte mänsklig läppsynkacceptans.
+Chattradens gamla förbereder-tooltip blev kvar efter spelning; avslutat
+talflöde och mätningen användes som kvitto.
+
+Den syntetiska kamerafixturen kördes i samma Chrome: tystnad 0 JPEG, kort tal
+1, långt tal 2 och tal med kort paus 2. Riktig AudioWorklet användes, spåren
+stängdes före simulerad transkription och explicit granskning kontrollerades.
+Befintligt goodluck-testljud gav 71 468 WAV-byte och 18 aktivitetsprov genom
+inspelaren. Ingen fysisk kamera/mikrofon eller extern bildmodell användes.
+Provfliken och dess tillfälliga public-kopia togs bort; skärmbild är privat
+vid QA-återstartsfilen, utanför Git.
+
+Det sparade modellvalet var Terra, vilket stänger av hela bild/ljudpanelen
+i den nuvarande Luna-begränsade kopplingen. Labbet på 4211 nekades av en
+sparad browserbehörighet. Ingen fil-/API-omväg användes för att byta modellen.
+Jakob fick länken och instruktionen Probe → GPT-6 Luna → Spara.
+Fysisk inspelning samt bild → OpenClaw → modell och bildlagring återstår.
+
 ## 2026-09-28 — Astrids Deal-frekvenser och fungerande servertranskription
 
 Astrids Deal-panel använder samma nya frekvenseditor i Lissabon och stora
