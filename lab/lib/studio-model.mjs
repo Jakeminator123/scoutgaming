@@ -41,7 +41,7 @@ export const allowedPathDescriptors = Object.freeze([
 ]);
 export const ALLOWED_PATH_DESCRIPTORS = allowedPathDescriptors;
 const descriptorByPath = new Map(allowedPathDescriptors.map(item => [item.path, item]));
-const animationNames = new Set(seed.assets.map(asset => asset.animation));
+const animationNames = new Set(contract.animations);
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const canonical = value => JSON.stringify(value, function (key, value) {
   return record(value) ? Object.fromEntries(Object.keys(value).sort().map(k => [k, value[k]])) : value;

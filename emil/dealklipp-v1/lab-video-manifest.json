@@ -97,6 +97,28 @@
       "variantIds": []
     },
     {
+      "id": "astrid/deal.dealer/dealer-hole",
+      "dealerId": "astrid",
+      "eventId": "deal.dealer",
+      "situation": "dealer-hole",
+      "playbackType": "once",
+      "standardIds": [
+        "a7f2629f-471c-bab9-14fa-ef8ddcb59a3f"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "astrid/reveal.dealer/dealer-hole",
+      "dealerId": "astrid",
+      "eventId": "reveal.dealer",
+      "situation": "dealer-hole",
+      "playbackType": "once",
+      "standardIds": [
+        "40f478e6-50da-84a8-f2ca-30da7b65c5eb"
+      ],
+      "variantIds": []
+    },
+    {
       "id": "astrid/speak.other/blackjack",
       "dealerId": "astrid",
       "eventId": "speak.other",
@@ -311,6 +333,24 @@
     }
   ],
   "items": [
+    {
+      "id": "40f478e6-50da-84a8-f2ca-30da7b65c5eb",
+      "familyId": "astrid/reveal.dealer/dealer-hole",
+      "role": "standard",
+      "relativePath": "deal/deal_flip/deal_flip.mp4",
+      "extension": "mp4",
+      "size": 2366246,
+      "sha256": "40f478e650da84a8f2ca30da7b65c5ebea208ef2a543307d64aaad2dae140341"
+    },
+    {
+      "id": "a7f2629f-471c-bab9-14fa-ef8ddcb59a3f",
+      "familyId": "astrid/deal.dealer/dealer-hole",
+      "role": "standard",
+      "relativePath": "deal/deal_hole/deal_hole.mp4",
+      "extension": "mp4",
+      "size": 3232429,
+      "sha256": "a7f2629f471cbab914faef8ddcb59a3f788f4dc688db1a4cd946462b10b49c58"
+    },
     {
       "id": "5c23fe9a-d68c-b3e5-05b3-86a215d9eeb3",
       "familyId": "astrid/deal.player.left/box0",

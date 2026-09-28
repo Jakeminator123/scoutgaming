@@ -1,2 +1,2 @@
 @echo off
-call "%~dp0lissabon\Start-Lissabon.cmd"
+call "%~dp0Start-Lab.cmd" %*

@@ -1,9 +1,9 @@
 # Guide — en gemensam ingång
 
-**Aktuell Astrid-demo:** [Lissabon stream lane](../../lissabon/README.md),
-startad med `Start-Lissabon.cmd`. `/lissabon` använder samma editorfunktioner
-och Web-spelare med beständig gemensam lagring och OpenClaw som standard.
-Guiden nedan gäller även det äldre, bredare labbet för avancerat arbete.
+**Aktuell Astrid-demo:** gemensamma [Lab](../README.md) på `/`.
+Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
+tjänster. `Start-Lab.cmd` behåller den befintliga privata anslutna profilen.
+Avancerade verktyg finns på `/tree`; `/lissabon` omdirigerar till `/`.
 
 Jakobs arbetsdokumentation visas i [Guide i labbet](http://127.0.0.1:4188/guide).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
@@ -36,7 +36,7 @@ i spelets klippväljare om du vill prova modellval.
 Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 
 Astrids valbara kamera/mikrofon finns i samma spelflik, Av som standard.
-Starta det enda serverparet med `node lissabon/start.mjs --astrid-camera --no-open`
+Starta det enda serverparet med `node lab/start.mjs --astrid-camera --no-open`
 för att göra knappen tillgänglig; en redan körande server måste stoppas först.
 Luna och Terra stöder bilder när uppdaterad Gateway/Director körs med
 `CROUPIER_SPEECH_VISION=1`. Record aktiverar lokal lyssning efter ”Astrid”;
@@ -57,7 +57,7 @@ Astrids Eventstudio och native-följning använder nu samma exakta mediefamilj:
 events behåller kort, box, handindex och replik. Standardfil och varianter
 kommer från manifestet, inte från projektets gamla 2D-demovarianter.
 
-Manifest v2 har 26 familjer: åtta dealfamiljer, sjutton
+Manifest v2 har 28 familjer: nio dealfamiljer, en kortvändningsfamilj, sjutton
 replikfamiljer och en idlefamilj. Deal/replik använder
 `deal/<familj>/<standard>.mp4` respektive
 `repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då

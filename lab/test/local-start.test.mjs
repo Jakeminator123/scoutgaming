@@ -1,14 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve, basename } from 'node:path';
-import { prepareProject } from './start.mjs';
-import { childSpecifications, loadPrivateConnection } from '../open-claw/lab/deploy/local-connection.mjs';
-import { createPresentationApi } from '../web/presentation-api.mjs';
-import { createProjectStore } from '../lab/lib/project-store.mjs';
+import { prepareProject, localDataDir } from '../start.mjs';
+import { childSpecifications, loadPrivateConnection } from '../../open-claw/lab/deploy/local-connection.mjs';
+import { createPresentationApi } from '../../web/presentation-api.mjs';
+import { createProjectStore } from '../lib/project-store.mjs';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
+
+test('a guard-only legacy directory does not redirect Lab data after restart', async t => {
+  const repo = await mkdtemp(join(tmpdir(), 'croupier-data-location-'));
+  t.after(() => rm(repo, { recursive: true, force: true }));
+  assert.equal(localDataDir(repo), join(repo, 'lab/data'));
+  await mkdir(join(repo, 'lissabon/data'), { recursive: true });
+  await writeFile(join(repo, 'lissabon/data/.local-session.sqlite'), 'fixture');
+  assert.equal(localDataDir(repo), join(repo, 'lab/data'));
+  await writeFile(join(repo, 'lissabon/data/project.json'), '{}');
+  assert.equal(localDataDir(repo), join(repo, 'lissabon/data'));
+});
 
 test('lane shares durable project, preserves saved edits and refuses a corrupt project', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'lissabon-test-'));

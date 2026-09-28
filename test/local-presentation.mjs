@@ -23,6 +23,9 @@ test('a browser can identify a deal but cannot change its card, hand or hidden s
   assert.equal(presentationInput(hole, [hole]).card, null);
   assert.throws(() => presentationInput({ ...source, box: 2 }, [source]), /committed/);
   assert.throws(() => presentationInput({ ...source, shoeDraw: 8 }, [source]), /committed/);
+  const reveal = { type: 'reveal', to: 'dealer', shoeDraw: 9, card: { r: 'Q', s: '♠' } };
+  assert.throws(() => presentationInput(reveal, [hole]), /committed/);
+  assert.deepEqual(presentationInput({ ...reveal, card: { r: 'A', s: '♥' } }, [reveal]), reveal);
 });
 
 test('native endpoint selects the same exact family, deduplicates requests and rejects another player or revision', async t => {
@@ -43,6 +46,13 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   assert.deepEqual(await (await choose()).json(), result);
   assert.equal((await choose({ version: 1 })).status, 409);
   assert.equal((await choose({}, { 'x-fixture-player': 'somebody-else' })).status, 409);
+  const reveal = { type: 'reveal', to: 'dealer', shoeDraw: 9, card: { r: 'Q', s: '♠' } };
+  assert.equal((await choose({ event: reveal })).status, 409);
+  db.prepare('UPDATE native_presentations SET payload=? WHERE player_id=?').run(JSON.stringify([source, reveal]), 'qa');
+  assert.equal((await choose({ event: reveal, version: 1 })).status, 409);
+  assert.equal((await choose({ event: reveal }, { 'x-fixture-player': 'somebody-else' })).status, 409);
+  const flip = await (await choose({ event: { ...reveal, card: { r: 'A', s: '♥' } } })).json();
+  assert.equal(flip.video.fileName, 'deal_flip.mp4'); assert.deepEqual(flip.decision.sourceEvent.card, reveal.card);
   const media = await fetch(origin + result.video.src, { headers: { range: 'bytes=0-15' } });
   assert.equal(media.status, 206); assert.equal((await media.arrayBuffer()).byteLength, 16);
   assert.equal(media.headers.get('cache-control'), 'private, no-store');

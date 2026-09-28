@@ -125,7 +125,7 @@ async function startChild(args, options, readyText, onSpawn = () => {}) {
  * await fixture.startLab();       // after `npm run build` has completed in lab/
  * await fixture.stop();           // stops children and removes its own temp data
  */
-export async function startLocalComparison({ startLab = true, gamePort = 4194, labPort = 4192, repoRoot = DEFAULT_ROOT, generationDirectory } = {}) {
+export async function startLocalComparison({ startLab = true, gamePort = 4194, labPort = 4192, repoRoot = DEFAULT_ROOT, generationDirectory, streamLane = '', prepare, prepareStudio } = {}) {
   repoRoot = resolve(repoRoot);
   if (generationDirectory !== undefined) {
     generationDirectory = resolve(generationDirectory);
@@ -146,6 +146,8 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
   const password = randomBytes(24).toString('base64url'), username = 'comparison-qa', email = 'comparison@example.invalid';
   const readToken = randomBytes(32).toString('base64url');
   const env = session.environment(isolatedEnv(runDir, [gamePort, labPort]));
+  env.CROUPIER_PRESENTATION_STUDIO_DIR = env.LAB_STUDIO_DATA_DIR;
+  env.CROUPIER_STREAM_LANE = streamLane;
   if (generationDirectory) env.LAB_VIDEO_ARCHIVE = generationDirectory;
   env.CROUPIER_GENERATIONS_DIR = generationDirectory || env.LAB_VIDEO_ARCHIVE;
   let gameChild, labChild, stopped = false, stopping, labStarting = null;
@@ -180,6 +182,8 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
   };
   try {
     await Promise.all([dataDir, env.LAB_STUDIO_DATA_DIR, env.LAB_DATA_DIR, ...(!generationDirectory ? [env.LAB_VIDEO_ARCHIVE] : [])].map(dir => fsPromises.mkdir(dir, { recursive: true })));
+    await prepareStudio?.(env.LAB_STUDIO_DATA_DIR);
+    await prepare?.(session);
     const seed = new DatabaseSync(join(dataDir, 'craig.db'));
     try {
       seed.exec('CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,email TEXT,salt TEXT,hash TEXT,role TEXT NOT NULL,created_at TEXT NOT NULL)');

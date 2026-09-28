@@ -70,6 +70,7 @@
             "deal.player.centre",
             "deal.player.right",
             "deal.dealer",
+            "reveal.dealer",
             "idle.ready"
           ]
         },

@@ -7,8 +7,8 @@ import { calibration } from '../web/public/kevin-cards/calibration.mjs';
 import { createCardCursor } from '../web/public/local-card-overlay.mjs';
 import { firstFaceTime } from '../web/public/kevin-cards/card-face-projection.js';
 
-test('all eight calibrations remain bound to the actual local MP4 bytes', () => {
-  assert.equal(calibration.videos.length, 8);
+test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
+  assert.equal(calibration.videos.length, 10);
   for (const video of calibration.videos) {
     const bytes = readFileSync(new URL(`../emil/dealklipp-v1/${video.path}`, import.meta.url));
     assert.equal(createHash('sha256').update(bytes).digest('hex'), video.sha256, video.path);
@@ -41,6 +41,21 @@ test('restore, split and revealed hole follow the server snapshot without exposi
   assert.ok(draw(svg, 1)); assert.ok(draw(svg, 3)); assert.equal(draw(svg, 5), undefined); assert.equal(draw(svg, 6), undefined);
   split.dealer.push(card('K', '♥', 4)); cursor.reveal(split); assert.equal(draw(svg, 4).attrs['data-card'], 'K♥');
   cursor.restore(split); assert.ok(draw(svg, 5)); assert.ok(draw(svg, 6)); assert.equal(draw(svg, 4).attrs['data-card'], 'K♥');
+});
+
+test('hole and flip use their exact measured frames without exposing the committed hidden value early', () => {
+  const { svg, cards } = setup(), cursor = createCardCursor(cards), round = fixture();
+  cursor.restore(round);
+  const hole = cursor.begin(calibration.videos.find(v => v.track === 'hole'), { type: 'deal', to: 'dealer', faceDown: true, shoeDraw: 4 });
+  cursor.frame(hole, 44 / 24); assert.equal(draw(svg, 4), undefined);
+  cursor.frame(hole, 45 / 24); assert.equal(draw(svg, 4).attrs['data-card'], 'hidden');
+  assert.equal(cursor.finish(hole, 4, true), true);
+  round.dealer.push(card('K', '♥', 4)); cursor.sync(round);
+  assert.equal(draw(svg, 4).attrs['data-card'], 'hidden');
+  const flip = cursor.begin(calibration.videos.find(v => v.track === 'flip'), { type: 'reveal', to: 'dealer', shoeDraw: 4 });
+  cursor.frame(flip, 30 / 24); assert.equal(draw(svg, 4).attrs['data-card'], 'hidden');
+  cursor.frame(flip, 31 / 24); assert.equal(draw(svg, 4).attrs['data-card'], 'K♥');
+  assert.equal(cursor.finish(flip, 4, true), true);
 });
 
 test('a retried film hides its half-presented incoming face and ignores the old frames', () => {

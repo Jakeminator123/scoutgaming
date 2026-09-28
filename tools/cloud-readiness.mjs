@@ -14,7 +14,7 @@ export const SOURCE_FILES = [
   'web/public/performance-player.mjs', 'web/presentation-api.mjs',
   'lab/lib/http-guard.mjs', 'lab/lib/project-store.mjs', 'lab/lib/partner-observer.mjs',
   'web/lissabon-profiles.mjs', 'web/generated-speech.mjs',
-  'lissabon/start.mjs', 'lissabon/project.snapshot.json', 'lab/package-lock.json',
+  'lab/start.mjs', 'lab/policies/project.seed.json', 'lab/package-lock.json',
 ];
 export const ARCHITECTURE_BLOCKERS = [
   { id: 'durable-state', files: ['web/server.mjs', 'lab/lib/project-store.mjs'],

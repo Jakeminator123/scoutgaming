@@ -1,4 +1,5 @@
 import { playLocalFilm } from './local-film-player.mjs';
+import { createVerifiedVideoBuffer } from './verified-video-buffer.mjs';
 import * as THREE from './vendor/three/three.module.js';
 import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,dealingCardSample} from './performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
@@ -18,11 +19,44 @@ export class PerformancePlayer {
     window.addEventListener('resize',this.resize);
   }
   async playLocalClip(take, { signal, ...options } = {}) {
-    // Reuse verified media loading; raw portrait films do not claim contact cues.
     signal?.throwIfAborted();
-    const src = await this.source(take, signal);
-    signal?.throwIfAborted();
-    return playLocalFilm({ host: this.host, src, signal, ...options });
+    const started = performance.now(), slot = this.localPrepared;
+    this.localPrepared = null;
+    let lease, video;
+    const prepared = slot?.key === take.media.sha256;
+    const abortPrepared = () => slot?.cancel();
+    if (prepared) signal?.addEventListener('abort', abortPrepared, { once: true });
+    try {
+      if (prepared) { lease = await slot.job; video = slot.video; }
+      else { slot?.cancel(); lease = await (this.localBuffer ??= createVerifiedVideoBuffer()).acquire(take.media, signal); }
+      signal?.throwIfAborted();
+      const mediaReadyMs = performance.now() - started;
+      return await playLocalFilm({ host: this.host, src: lease.src, video, signal, ...options,
+        onReceipt: event => options.onReceipt?.({ ...event, elapsedMs: Math.round(performance.now() - started),
+          mediaReadyMs: Math.round(mediaReadyMs), preloadHit: !!prepared, cacheHit: lease.cached }) });
+    } finally {
+      signal?.removeEventListener('abort', abortPrepared);
+      if (prepared) slot.cancel(); else lease?.release();
+    }
+  }
+  prepareLocalClip(take) {
+    if (this.localPrepared?.key === take.media.sha256) return;
+    this.cancelLocalPreparation();
+    const controller = new AbortController(), video = document.createElement('video');
+    video.preload = 'auto'; video.muted = true; video.playsInline = true;
+    let lease;
+    const slot = { key: take.media.sha256, video,
+      cancel: () => { controller.abort(); video.pause(); video.removeAttribute('src'); video.load(); lease?.release(); } };
+    this.localPrepared = slot;
+    slot.job = (this.localBuffer ??= createVerifiedVideoBuffer()).acquire(take.media, controller.signal).then(value => {
+      lease = value;
+      if (controller.signal.aborted) { lease.release(); throw new DOMException('Preparation replaced', 'AbortError'); }
+      video.src = lease.src; video.load(); return lease;
+    });
+    void slot.job.catch(() => { if (this.localPrepared === slot) this.localPrepared = null; slot.cancel(); });
+  }
+  cancelLocalPreparation() {
+    this.localPrepared?.cancel(); this.localPrepared = null;
   }
   cancel() { this.active?.abort(); }
   beginSequence() {this.sequence=true;}
@@ -301,7 +335,7 @@ export class PerformancePlayer {
       this.active=null;this.host.classList.remove('performance-active');
     }
   }
-  dispose(){this.cancel();this.release();window.removeEventListener('resize',this.resize);for(const url of this.assets.values())URL.revokeObjectURL(url);this.assets.clear();}
+  dispose(){this.cancelLocalPreparation();this.localBuffer?.close();this.cancel();this.release();window.removeEventListener('resize',this.resize);for(const url of this.assets.values())URL.revokeObjectURL(url);this.assets.clear();}
 }
 
 function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=[1,1,1]) {

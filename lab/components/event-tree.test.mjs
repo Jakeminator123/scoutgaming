@@ -57,7 +57,7 @@ test('node tree displays all four dealers, sixteen lab nodes and the fixed six-t
 test('tree renders actual saved variant count without filling missing demo alternatives', () => {
   const project = createSeedProject();
   const line = project.lines.find(item => item.dealerId === 'astrid');
-  line.variants = line.variants.slice(0, 2);
+  line.variants.push({ ...structuredClone(line.variants[0]), id: line.variants[0].id + '-custom', label: 'Own saved variant' });
   const html = render(project);
   assert.match(html, /06 · 2 VARIANTER FÖR SAMMA BEHOV/);
   assert.equal((html.match(/class="variantNode/g) ?? []).length, 2);

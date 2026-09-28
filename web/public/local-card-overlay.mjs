@@ -28,29 +28,33 @@ export function createCardCursor(renderer) {
       const token = ++serial;
       renderer.sourceStarted();
       const seat = event?.to === 'dealer' ? 'dealer' : String(event?.box + 1);
-      const asset = calibration.videos.find(v => v.sha256 === video?.sha256 && v.track === seat);
-      const calibrated = Boolean(asset && !event.faceDown && known(event.shoeDraw));
+      const track = event?.type === 'reveal' ? 'flip' : event?.faceDown ? 'hole' : seat;
+      const asset = calibration.videos.find(v => v.sha256 === video?.sha256 && v.track === track);
+      const calibrated = Boolean(asset && known(event.shoeDraw));
       focus = event?.handIndex ?? round?.active;
-      pending = { token, draw: event?.shoeDraw, calibrated, seat, framed: false };
+      pending = { token, draw: event?.shoeDraw, calibrated, seat, track, framed: false };
       // A failed variant may have shown frames before a standard retry starts.
       // Restart this draw's visibility with the new film, retaining older cards.
-      visible.delete(pending.draw);
+      if (track === 'flip') revealed = false;
+      else visible.delete(pending.draw);
       render();
-      if (calibrated) renderer.beginDeal(seat, pending.draw);
+      if (calibrated) renderer.beginDeal(seat, pending.draw, track);
       return token;
     },
     frame(token, time) {
       if (pending?.token !== token || !pending.calibrated || !Number.isFinite(time) || time < 0) return;
-      if (time + 1e-6 >= firstFaceTime(pending.seat) && !visible.has(pending.draw)) {
+      if (time + 1e-6 >= firstFaceTime(pending.track) && (!visible.has(pending.draw) || pending.track === 'flip' && !revealed)) {
+        if (pending.track === 'flip') revealed = true;
         visible.add(pending.draw); render();
       }
       renderer.advanceDeal(time);
-      if (time >= DEAL_CONTACT[pending.seat].contact) pending.framed = true;
+      if (time >= DEAL_CONTACT[pending.track].contact) pending.framed = true;
     },
     finish(token, draw, completed) {
       if (pending?.token !== token) return false;
       const calibrated = Boolean(completed && pending.calibrated && pending.framed);
       if (known(draw)) visible.add(draw);
+      if (pending.track === 'flip') revealed = true;
       pending = null; renderer.endDeal(); render();
       return calibrated;
     },

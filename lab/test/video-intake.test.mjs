@@ -1,3 +1,4 @@
+import { createLegacyProject as createSeedProject } from './fixtures/legacy-project.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
@@ -7,7 +8,7 @@ import { createHash } from 'node:crypto';
 import { uploadVideo, readUploads } from '../lib/video-uploads.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 import { validateVideoMetadata, videoFitsEvent, MAX_VIDEO_BYTES } from '../lib/video-intake.mjs';
-import { createSeedProject, validateProject, addVariant, buildRuntimeCatalog } from '../lib/studio-model.mjs';
+import { validateProject, addVariant, buildRuntimeCatalog } from '../lib/studio-model.mjs';
 import { auditStudio } from '../lib/studio-audit.mjs';
 import { simulateStudio as simulate, decisionCatalog, validateVideoBindings } from '../lib/studio-server.mjs';
 const simulateStudio = (body, options = {}) => simulate(body, { videoRegistry: { videos: [], families: [] }, ...options });

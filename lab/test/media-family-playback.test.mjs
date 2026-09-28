@@ -65,6 +65,7 @@ test('manual preview and native decisions use the same exact replik and do not m
 test('missing exact media cannot borrow another box, original default, upcard or sentence', async () => {
   const registry = inventory();
   registry.videos.find(video => video.fileName === 'deal_pos3.mp4').available = false;
+  registry.videos.find(video => video.fileName === 'deal_hole.mp4').available = false;
   for (const [id, event] of [[group(2), deal(2)], ['deal.dealer', { type: 'deal', to: 'dealer', box: null, handIndex: null, faceDown: true, clip: { action: 'deal-dealer' } }], ['speak.other', { type: 'speak', line: 'not_recorded' }]]) {
     const result = await simulateStudio(body(id, event), options(registry));
     assert.equal(result.videoGenerationId, null);

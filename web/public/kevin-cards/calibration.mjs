@@ -76,6 +76,16 @@ export const calibration = {
       "sha256": "83dc9b09a09d337d298a3e70eadf376761df260ec0fb425559ee67830fba5e87",
       "track": "dealer",
       "path": "deal/deal_posdealer/deal_posdealer.mp4"
+    },
+    {
+      "sha256": "a7f2629f471cbab914faef8ddcb59a3f788f4dc688db1a4cd946462b10b49c58",
+      "track": "hole",
+      "path": "deal/deal_hole/deal_hole.mp4"
+    },
+    {
+      "sha256": "40f478e650da84a8f2ca30da7b65c5ebea208ef2a543307d64aaad2dae140341",
+      "track": "flip",
+      "path": "deal/deal_flip/deal_flip.mp4"
     }
   ]
 };

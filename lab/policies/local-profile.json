@@ -1,0 +1,17 @@
+{
+  "id": "lissabon-stream-lane",
+  "dealer": "astrid",
+  "productPort": 4200,
+  "labPort": 4201,
+  "generatedSpeech": true,
+  "presentation": "local",
+  "sourceCommit": "e46bc8b8fd095d8c6eef769095e240616e8ee16a",
+  "openClawIdleIds": [
+    "f5a983d8-877e-317d-7b1c-2f4848c88488",
+    "090751f3-fab4-327b-c5a2-0294f0de8bfe",
+    "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
+    "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
+    "c9b09866-50f7-2e05-0301-7e02499f50a2",
+    "15748c18-f7b6-912a-639f-55e632db34d3"
+  ]
+}

@@ -279,5 +279,19 @@
     "historyMessages": 30,
     "historyChars": 8000,
     "maxFacts": 20
-  }
+  },
+  "animations": [
+    "wave",
+    "neutral",
+    "nod",
+    "point",
+    "deal-left",
+    "deal-centre",
+    "deal-right",
+    "deal-dealer",
+    "reveal",
+    "celebrate",
+    "reassure",
+    "idle"
+  ]
 }

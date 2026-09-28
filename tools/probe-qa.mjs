@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { startIsolatedConnection } from '../open-claw/lab/deploy/local-connection.mjs';
-import { prepareProject } from '../lissabon/start.mjs';
+import { prepareProject } from '../lab/start.mjs';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { createDefaultProbePolicy } from '../lab/lib/probe-policy.mjs';
 import { demoProbeMemories } from '../lab/lib/probe-fixtures.mjs';

@@ -1,7 +1,12 @@
-import { StudioPage } from './studio-page';
-import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { LissabonStudio } from '@/components/lissabon-studio';
+import { studioInitialData } from '@/lib/studio-server.mjs';
+import { assertLocalPageRequest } from '@/lib/http-guard.mjs';
 export const dynamic = 'force-dynamic';
-export default function Page() {
-  if (process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane') redirect('/lissabon');
-  return <StudioPage />;
+export const metadata = { title: 'Astrid Studio' };
+export default async function Page() {
+  const h = await headers();
+  assertLocalPageRequest(new Request(`http://${h.get('host') || 'invalid'}/`, { headers: h }));
+  const data = await studioInitialData();
+  return <LissabonStudio initialProject={data.project} initialVideos={data.videos} connectedLane={process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'} />;
 }
