@@ -20,8 +20,8 @@ alwaysApply: true
 - Emil works closely with Kevin on video. New video assets land on the branch
   Kevin designates. Jakob consumes them through manifests, identifiers and
   handoff rather than directing a parallel video workflow.
-- Active docs: `docs/animation-events/v3-9-days-mvp/`. Historical V2:
-  `docs/animation-events/archive/v2-long-term-goal-best-rng/`.
+- Active docs: `docs/animation-events/v3-9-days-mvp/`. Historical V2 is removed
+  from this checkout and preserved in [Jakobs-v1](https://github.com/Jakeminator123/github-work/tree/Jakobs-v1/docs/animation-events/archive/v2-long-term-goal-best-rng).
 - Never push `main`, rebase shared branches or force-push. Do not create an
   integration MR until its target has been explicitly agreed.
 - Inbox: one quick `/ping-croupier` check at the start of every new user turn;

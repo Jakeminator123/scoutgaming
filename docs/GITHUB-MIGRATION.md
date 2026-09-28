@@ -34,7 +34,8 @@ arbetsbranchen i detta GitHub-repo. Aktivera hooks i en ny checkout med
 `git config core.hooksPath .githooks`.
 
 GitLab-inboxens `check` och `send` avslutas före tokenläsning och nätåtkomst
-med status `disabled`. Lokala cursors, drafts och checkpoints är kvar.
+med status `disabled`. Lokala cursors, drafts och checkpoints raderades senare
+den 28 september på Jakobs uttryckliga begäran tillsammans med hela inboxmappen.
 Den timvisa GitLab/CI-uppföljningen i chatten NY1 är pausad.
 GitLab-wikin uppdateras inte under pausen. Äldre instruktioner om GitLab i
 historiska dokument ersätts av `AGENTS.md` och `tools/repository-policy.json`.
@@ -63,7 +64,8 @@ och GitHub-målet; varje agent committar endast egna filer.
 Separata commits på den gemensamma branchen följer med nästa GitHub-push.
 
 Fyra gamla engångsprompter har tagits bort och kan läsas via v1-taggen.
-Inbox, sparade profiler och mediaunderlag bevaras. Se
+Inboxen raderades senare på uttrycklig begäran; sparade profiler och
+mediaunderlag bevaras. Se
 [städrapporten](REPOSITORY-CLEANUP.md) för exakta filer och beroenden.
 
 ## Drift nästa steg

@@ -1,3 +1,24 @@
+## 2026-09-28 — Godkänd rensning av lokal inbox och gamla arkiv
+
+Jakob godkände permanent radering av hela `.croupier-inbox/`: 153 ignorerade
+filer, 13,7 MiB, inklusive privata utkast/QA/checkpoints. De finns inte i
+Git-taggen och har inte kopierats till ett nytt arkiv. Chef var inaktiv.
+Pausad GitLab-inbox förblir pausad; ingen automatisk återinitialisering.
+Gamla testbygget `.next-probe`, dess genererade tsconfig, TypeScript-cache
+och pensionerad Cursor-läsmarkering togs också bort: totalt cirka 166,6 MiB.
+Nuvarande `.next`, node_modules, databaser, profiler, hemligheter och media
+behålls för pågående arbete. Inga lokala produktservrar startades.
+
+39 gamla spårade dokument/mallfiler togs bort: GitLab-MR-mallen,
+PROJECT-PROMPT och två pensionerade dokumentationsarkiv. Alla finns i
+`Jakobs-v1`; aktiva länkar flyttas till checkpointen. Underagentens
+referensgranskning hittade inga kod-/test-/byggberoenden till dessa filer.
+Se `REPOSITORY-CLEANUP.md` för avgränsning och återställningsinformation.
+Inga gameplay- eller mediaändringar och inget nytt visuellt godkännande.
+Verifiering: 33 inbox-/chef-/GitHub-policytester passerade. `check` gav
+`disabled`, chef `inactive`, och ingen inboxmapp återskapades. Diffens
+whitespacekontroll passerade.
+
 ## 2026-09-28 — Whisper till engelska och Terra-bilder
 
 Astrids inkommande ljud använder nu OpenAI Whisper `whisper-1` via audio/translations.

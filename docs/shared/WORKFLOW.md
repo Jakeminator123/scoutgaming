@@ -17,8 +17,8 @@ regel.
 3. [GitHub `animation-events-v1` · V4](https://github.com/Jakeminator123/animation-events-v1):
    källrepo för den interaktiva V4-canvasen och den publika presentationen.
 4. `docs/animation-events/v4-8-days-mvp/`: repo-nära V4-underlag.
-5. `docs/animation-events/archive/v2-long-term-goal-best-rng/`: oförändrat
-   V2-arkiv.
+5. [V2-arkivet i Jakobs-v1](https://github.com/Jakeminator123/github-work/tree/Jakobs-v1/docs/animation-events/archive/v2-long-term-goal-best-rng):
+   bevarad historik, borttagen ur arbetskopian.
 
 Canvasen är facit för hur presentationen är uppbyggd. Croupier är fortsatt
 facit för motor, RNG, events, media och faktisk runtime.

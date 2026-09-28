@@ -1,8 +1,0 @@
-{
-  "schemaVersion": "director-advice.v1",
-  "opportunityId": "opp-demo-104",
-  "contextDigest": "sha256:e6248e4ba9c5ac2530a756177591bad02119f35210a38c7a7d1a42c320de621e",
-  "policyRevision": "policy-demo-7",
-  "catalogRevision": "catalog-demo-3",
-  "candidateId": "candidate-attention-a"
-}

@@ -19,7 +19,7 @@ agentregler eller beslut om produktintegration.
 - [Systemkarta](../../random-stuff-jakob/jakob-docs/systemkarta/README.md): ämnesvis förklaring av systemet.
 - [Findings för hela repot](../findings/README.md): buggar, förbättringar och öppna kontroller med evidens; Jira CAC behåller implementation och QA-status.
 - Aktivt V4-underlag: `docs/animation-events/v4-8-days-mvp/`
-- Arkiverad V2: `docs/animation-events/archive/v2-long-term-goal-best-rng/`
+- Arkiverad V2: [bevarad i Jakobs-v1](https://github.com/Jakeminator123/github-work/tree/Jakobs-v1/docs/animation-events/archive/v2-long-term-goal-best-rng), borttagen ur arbetskopian.
 - [Arbetssätt](https://gitlab.com/scout-gg/croupier/-/wikis/workflow)
 - [Animationsevents](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events)
 - [Canvas och synkregel](https://gitlab.com/scout-gg/croupier/-/wikis/canvas-workflow)
