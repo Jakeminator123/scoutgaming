@@ -2,6 +2,7 @@
 // Read-only preparation report. Never imports a server, reads .env files, opens
 // databases, probes providers, or reads media bytes. Configuration values stay private.
 import { lstat, readFile, realpath } from 'node:fs/promises';
+import { isIP } from 'node:net';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,13 +22,13 @@ export const ARCHITECTURE_BLOCKERS = [
   { id: 'studio-access', files: ['lab/lib/http-guard.mjs'],
     requirement: 'Implement authenticated HTTPS studio access. Current page and API guards allow loopback only.' },
   { id: 'partner-origin', files: ['lab/lib/partner-observer.mjs'],
-    requirement: 'Explicitly allow the configured cloud game origin. Current observer accepts only bettalotto.se or loopback.' },
+    requirement: 'Set BETTALOTTO_PARTNER_BASE_URL and CROUPIER_GAME_ORIGIN to the same exact HTTPS game origin, then verify the authenticated observer.' },
   { id: 'profile-access', files: ['web/lissabon-profiles.mjs', 'web/server.mjs'],
     requirement: 'Use authenticated cloud identity or a protected demo. Local passwordless profile switching is loopback-only and disabled in production.' },
   { id: 'speech-activation', files: ['web/generated-speech.mjs'],
-    requirement: 'Add explicit cloud speech activation; current generated speech requires loopback HOST and preview flags.' },
+    requirement: 'Configure CROUPIER_CLOUD_GENERATED_SPEECH with production HTTPS origin, private speech store and provider credentials; verify authenticated paid speech flow.' },
   { id: 'media-location', files: ['web/presentation-api.mjs', 'lab/lib/video-registry.mjs'],
-    requirement: 'Ship exact manifest media at emil/dealklipp-v1, or implement one shared media-location contract. Product currently ignores LAB_VIDEO_ARCHIVE.' },
+    requirement: 'Mount one durable LAB_VIDEO_ARCHIVE containing the exact manifest and media for product and Lab, and verify hashes and Range responses.' },
   { id: 'process-state', files: ['web/partner-api.mjs', 'web/server.mjs'],
     requirement: 'Keep one long-lived product replica initially. SSE subscribers and active chat/Probe state are process-local; scaling needs durable coordination.' },
   { id: 'deployment-verification', files: ['docs/CLOUD-MIGRATION.md'],
@@ -51,12 +52,24 @@ function secureUrl(value) {
       && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ? 'https' : 'invalid-cloud-url';
   } catch { return 'invalid-cloud-url'; }
 }
-async function mediaReport(root) {
-  const archive = join(root, 'emil/dealklipp-v1');
-  const manifestPath = join(archive, 'lab-video-manifest.json');
+function secureOrigin(value) {
+  if (!present(value)) return false;
+  try {
+    const url = new URL(value);
+    return secureUrl(value) === 'https' && !url.port && url.pathname === '/'
+      && !isIP(url.hostname) && url.hostname.includes('.') && !url.hostname.endsWith('.local')
+      && value === url.origin;
+  } catch { return false; }
+}
+async function mediaReport(root, env) {
+  const archive = Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE') ? env.LAB_VIDEO_ARCHIVE : join(root, 'emil/dealklipp-v1');
   const result = { status: 'unavailable', items: 0, present: 0, missing: 0, invalid: 0, sizeMismatch: 0,
     validation: 'Metadata and file sizes only; no hashes, decoding, or visual acceptance.' };
+  if (typeof archive !== 'string' || !isAbsolute(archive)) return result;
+  const manifestPath = join(archive, 'lab-video-manifest.json');
   try {
+    const archiveInfo = await lstat(archive);
+    if (!archiveInfo.isDirectory() || archiveInfo.isSymbolicLink()) return result;
     const info = await lstat(manifestPath);
     if (!info.isFile() || info.isSymbolicLink() || info.size > 5 * 1024 * 1024) return result;
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
@@ -101,15 +114,23 @@ export async function collectCloudReadiness({ root = repository, env = process.e
   return {
     schemaVersion: 1, ready: false, status: 'migration-required',
     scope: 'Read-only local evidence and supplied process environment; no .env values, database contents, media bytes or network requests.',
-    sources, media: await mediaReport(root),
+    sources, media: await mediaReport(root, env),
     configuration: { directories,
       sharedStudioDirectory: shared ? resolve(env.LAB_STUDIO_DATA_DIR) === resolve(env.CROUPIER_PRESENTATION_STUDIO_DIR) : null,
       urls, credentials,
+      mediaArchive: { configured: Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE'),
+        absolute: isAbsolute(env.LAB_VIDEO_ARCHIVE ?? ''),
+        status: !Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE') ? 'repo-default'
+          : !isAbsolute(env.LAB_VIDEO_ARCHIVE ?? '') ? 'invalid-path' : await kind(env.LAB_VIDEO_ARCHIVE) },
+      partnerOrigin: secureOrigin(env.BETTALOTTO_PARTNER_BASE_URL)
+        && env.BETTALOTTO_PARTNER_BASE_URL === env.CROUPIER_GAME_ORIGIN
+          ? 'matched-https-origin' : 'not-configured-or-mismatch',
       speechEndpoint: !present(env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID) ? 'missing'
         : /^[A-Za-z0-9_-]{1,100}$/.test(env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID) ? 'id-present' : 'invalid-id',
       streamLane: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'lissabon' : 'not-lissabon',
       generatedSpeechEnabled: env.CROUPIER_GENERATED_SPEECH === '1',
       generatedSpeechPreviewEnabled: env.CROUPIER_GENERATED_SPEECH_PREVIEW === '1',
+      cloudGeneratedSpeechRequested: env.CROUPIER_CLOUD_GENERATED_SPEECH === '1',
       currentSpeechHostGateSatisfied: ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(env.HOST),
     },
     blockers: ARCHITECTURE_BLOCKERS,

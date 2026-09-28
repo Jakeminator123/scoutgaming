@@ -1,0 +1,58 @@
+# Applies only when the repository root is the Docker build context.
+# The existing OpenClaw images use open-claw/lab/.dockerignore instead.
+
+# Git, local agent state, and CI/development metadata.
+.git
+.github
+.gitlab
+.githooks
+.agents
+.cursor
+.croupier-inbox
+**/.DS_Store
+**/*.log
+
+# Rebuild dependencies and Next output inside a controlled image build.
+node_modules
+**/node_modules
+lab/.next
+lab/.next-probe
+lab/tsconfig.tsbuildinfo
+**/test-results
+**/coverage
+
+# Never send local keys or mutable player/studio data to a builder.
+.env
+.env.*
+**/.env
+**/.env.*
+inbox-token.txt
+_ENVIROMENT-INFO.md
+**/*.pem
+**/*.p12
+**/*.pfx
+web/data
+lab/data
+lissabon/data
+open-claw/lab/data
+
+# Source/render experiments. Published runtime assets stay in web/public,
+# content/dealers, content/persona, assets, and emil/dealklipp-v1.
+content/staging
+content/bake
+content/raw-all
+content/raw-speak
+content/raw-speak2
+content/raw-super
+content/raw2
+content/encoded2
+emil/astrid-demo-v3-reference
+
+# Documentation, review sources, and tests are not runtime inputs.
+docs
+test
+lab/test
+open-claw/lab/test
+design-kit
+reference
+random-stuff-jakob

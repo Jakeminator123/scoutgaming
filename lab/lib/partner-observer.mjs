@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from 'node:crypto';
+import { isIP } from 'node:net';
 import { assertLocalRequest, errorResponse, jsonResponse } from './http-guard.mjs';
 import { StudioError } from './project-store.mjs';
 
@@ -14,21 +15,26 @@ const MAX_CONNECTION_BYTES = 16 * 1024 * 1024;
 const encoder = new TextEncoder();
 
 export function partnerEnvironment(env) {
-  return Object.fromEntries([...REQUIRED, 'BETTALOTTO_PARTNER_BASE_URL'].map(name => [name,
+  return Object.fromEntries([...REQUIRED, 'BETTALOTTO_PARTNER_BASE_URL', 'CROUPIER_GAME_ORIGIN'].map(name => [name,
     // A present canonical value wins even when blank: never silently replace an
     // intentional empty/invalid setting with credentials from another namespace.
-    env[name] !== undefined ? env[name] : env[name.replace('BETTALOTTO_PARTNER_', 'LAB_PARTNER_')],
+    env[name] !== undefined ? env[name] : name.startsWith('BETTALOTTO_PARTNER_') ? env[name.replace('BETTALOTTO_PARTNER_', 'LAB_PARTNER_')] : undefined,
   ]));
 }
 
 // This is an operator-configured observer, never a client-selected HTTP proxy.
 // Loopback is allowed only for deliberately configured, isolated local servers.
-function approvedOrigin(value) {
+function approvedOrigin(value, cloudOrigin) {
   try {
     const url = new URL(value || 'https://bettalotto.se');
     if (url.username || url.password || url.search || url.hash || url.pathname !== '/') return null;
     if (url.origin === 'https://bettalotto.se') return url.origin;
     if (['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) && ['http:', 'https:'].includes(url.protocol)) return url.origin;
+    // A cloud game is an exact server-side allowlist entry, never a request
+    // parameter. Reject IPs, local names and non-default ports as destinations.
+    if (cloudOrigin && url.protocol === 'https:' && !url.port && !isIP(url.hostname)
+      && url.hostname.includes('.') && !url.hostname.endsWith('.local')
+      && cloudOrigin === url.origin && cloudOrigin === value) return url.origin;
   } catch { /* Never return an invalid URL: it may contain credentials. */ }
   return null;
 }
@@ -38,7 +44,7 @@ function configuration(env) {
   const invalid = REQUIRED.filter(name => !missing.includes(name) &&
     (env[name].length > 512 || /[\r\n\0]/.test(env[name]) ||
       CREDENTIAL_FORMATS[name] && !CREDENTIAL_FORMATS[name].test(env[name])));
-  const origin = approvedOrigin(env.BETTALOTTO_PARTNER_BASE_URL);
+  const origin = approvedOrigin(env.BETTALOTTO_PARTNER_BASE_URL, env.CROUPIER_GAME_ORIGIN);
   if (!origin) invalid.push('BETTALOTTO_PARTNER_BASE_URL');
   return { configured: missing.length === 0 && invalid.length === 0, missing, invalid,
     endpoint: origin ? `${origin}/api/v1/events` : null, scope: 'events or play',
@@ -91,7 +97,7 @@ export function createPartnerObserver({ env = () => process.env, fetchImpl = fet
 
   function stream(request) {
     const currentEnv = environment();
-    const configEnv = Object.fromEntries([...REQUIRED, 'BETTALOTTO_PARTNER_BASE_URL'].map(name => [name, currentEnv[name]]));
+    const configEnv = Object.fromEntries([...REQUIRED, 'BETTALOTTO_PARTNER_BASE_URL', 'CROUPIER_GAME_ORIGIN'].map(name => [name, currentEnv[name]]));
     const config = configuration(configEnv);
     if (!config.configured) return jsonResponse({ ...config, error: 'Partner-observatören är inte konfigurerad på labbservern.' }, 503);
     if (active >= maxConnections) return jsonResponse({ error: 'För många eventobservatörer är öppna. Stäng en anslutning först.' }, 429);

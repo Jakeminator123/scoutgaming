@@ -32,7 +32,7 @@ export function presentationInput(event, published) {
 }
 
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data')),
-  registryOptions = { snapshotPath: join(root, 'emil/dealklipp-v1/lab-video-manifest.json'), archiveDir: join(root, 'emil/dealklipp-v1'), uploadDir: join(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data'), 'videos') },
+  registryOptions = { env, repositoryRoot: root, uploadDir: join(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data'), 'videos') },
   select = selectPresentation } = {}) {
   const decisions = new Map();
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };

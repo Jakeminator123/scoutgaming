@@ -25,7 +25,9 @@ function repositoryRoot() {
 
 function snapshotPath(options) {
   if (options.snapshotPath) return resolve(options.snapshotPath);
-  return join(repositoryRoot(), ...EMIL_SOURCE, 'lab-video-manifest.json');
+  const selection = selectArchive(options);
+  if (!selection.path || !isAbsolute(selection.path)) throw new RegistryError(403, 'Absolute video archive required.');
+  return join(selection.path, 'lab-video-manifest.json');
 }
 
 let pendingRescan;
@@ -66,8 +68,9 @@ async function readEntries(options) {
 
 function selectArchive(options) {
   if (Object.hasOwn(options, 'archiveDir')) return { path: options.archiveDir, source: options.archiveDir ? 'explicit' : 'none' };
-  if (process.env.LAB_VIDEO_ARCHIVE) return { path: process.env.LAB_VIDEO_ARCHIVE, source: 'environment' };
-  return { path: join(repositoryRoot(), ...EMIL_SOURCE), source: 'emil-default' };
+  const env = options.env ?? process.env;
+  if (Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE')) return { path: env.LAB_VIDEO_ARCHIVE, source: 'environment' };
+  return { path: join(options.repositoryRoot ?? repositoryRoot(), ...EMIL_SOURCE), source: 'emil-default' };
 }
 
 function samePath(a, b) {
@@ -76,6 +79,7 @@ function samePath(a, b) {
 
 async function archiveLocation(selection) {
   if (!selection.path || typeof selection.path !== 'string') throw new RegistryError(503, 'Local video archive is not configured.');
+  if (!isAbsolute(selection.path)) throw new RegistryError(403, 'Absolute video archive required.');
   const absolute = resolve(selection.path);
   const info = await lstat(absolute);
   if (!info.isDirectory() || info.isSymbolicLink()) throw new RegistryError(403, 'Unsafe local video archive.');
@@ -191,7 +195,7 @@ export async function loadVideoRegistry(options = {}) {
   }
   let archive;
   try { archive = await archiveLocation(selection); summary.readable = true; }
-  catch { summary.notes.push('Emils videomapp är inte tillgänglig. LAB_VIDEO_ARCHIVE kan ange en alternativ rot med samma manifeststruktur.'); }
+  catch { summary.notes.push('Emils videomapp är inte tillgänglig. LAB_VIDEO_ARCHIVE måste ange en absolut rot med samma manifeststruktur.'); }
   const videos = [];
   let classifications = [];
   try { classifications = await readClassifications(options); }

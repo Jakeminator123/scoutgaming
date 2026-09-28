@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { constants } from 'node:fs';
 import { lstat, mkdir, open, readdir, realpath, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
+import { isIP } from 'node:net';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
@@ -36,8 +37,19 @@ const safeFailure = error => error instanceof GeneratedSpeechServiceError ? erro
   [400, 409, 429, 499, 502, 503, 504].includes(error?.statusCode) ? error.statusCode : 503);
 
 function configuration(env) {
-  const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && env.CROUPIER_GENERATED_SPEECH_PREVIEW === '1'
+  const localPreview = env.CROUPIER_GENERATED_SPEECH_PREVIEW === '1'
     && ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(env.HOST);
+  let cloudPreview = false;
+  if (env.CROUPIER_CLOUD_GENERATED_SPEECH === '1' && env.NODE_ENV === 'production'
+    && env.DEMO_GUEST_ACCESS !== '1' && ['0.0.0.0', '::', '[::]'].includes(env.HOST)) {
+    try {
+      const url = new URL(env.PUBLIC_URL);
+      cloudPreview = url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash
+        && url.pathname === '/' && !url.port && !isIP(url.hostname) && url.hostname.includes('.')
+        && !url.hostname.endsWith('.local') && url.hostname !== 'localhost';
+    } catch { /* Invalid cloud origins cannot enable paid generation. */ }
+  }
+  const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview);
   const value = { directory: env.CROUPIER_GENERATED_SPEECH_DIR,
     cartesiaApiKey: env.CARTESIA_API_KEY,
     runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
