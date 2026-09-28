@@ -3,6 +3,7 @@
 set -eu
 node pipeline/build-lab-video-manifest.mjs --check
 node test/player-auth.mjs
+node --test test/agent-talk.mjs test/player-signup.mjs test/blackjack-entry-http.mjs
 node test/craig-login.mjs
 node test/bo-game-auth.mjs
 node pipeline/audit-dealer-sync.mjs

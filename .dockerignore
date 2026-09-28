@@ -9,6 +9,8 @@
 .agents
 .cursor
 .croupier-inbox
+agent-talk/state.json*
+agent-talk/write.lock
 **/.DS_Store
 **/*.log
 

@@ -798,7 +798,8 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
 }
 
 const scoutIdentity=craigIdentity(boDb);
-const auth=playerAuth(db,apiPlayer,scoutIdentity);
+const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
+const auth=playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts});
 const validLaunch=token=>{const claims=jwtVerify(token);return !!(claims?.sub&&claims.partner&&getPlayer(claims.sub));};
 const boGameAuth=backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL});
 const boLabAuth=backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
@@ -806,7 +807,7 @@ const boLabAuth=backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSe
   labPublicUrl:process.env.LAB_PUBLIC_URL});
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const lissabonProfiles = createLissabonProfiles({ db, createPlayer: apiPlayer,
-  enabled: guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
+  enabled: !playerAccounts && guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
     && process.env.CROUPIER_LISSABON_PROFILES === '1' && process.env.NODE_ENV !== 'production',
   onSwitch: playerId => { speechStreamService?.cancelPlayer(playerId); probeRuntime.cancel({playerId,dealerId:'astrid'}); for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
 });
@@ -862,7 +863,7 @@ const server = createServer(async (req, res) => {
   const guest=guestPreview && !authenticated && !backoffice && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=previewPlayer(req,res);
   if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
-  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||req.method!=='GET')) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||req.method!=='GET'){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
@@ -1237,6 +1238,7 @@ const server = createServer(async (req, res) => {
     serveGenerationMedia(req, res, media); return;
   }
   if (['/v2', '/v2/', '/v2/index.html'].includes(decoded)) path = '/index.html';
+  if (decoded === '/blackjack' || decoded === '/blackjack/') path = '/blackjack-entry.html';
   if (path === '/' || path === '\\') path = '/index.html';
   if (/[/\\]$/.test(path)) path += 'index.html';   // directory index on Windows and POSIX
   const file = join(root, path);

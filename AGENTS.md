@@ -1,5 +1,13 @@
 # Croupier continuity and dealer regression rules
 
+## Local agent coordination
+
+Follow `agent-talk/README.md`. Run `node tools/agent-talk.mjs status <your-id>`
+at task start, between work steps (about every 30 seconds while active), and
+before commit/push. Claim affected paths before editing; use ping/ack for
+overlap and done to release. Keep major progress notes short. No background
+polling; file messages do not wake paused agents or override user instructions.
+
 ## GitHub-only work — 2026-09-28
 
 Work only on `jakemanator123-github-work`, in `Jakeminator123/github-work`.
