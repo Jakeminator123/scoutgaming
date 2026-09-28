@@ -1,6 +1,6 @@
 import { mkdir, realpath } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { readFileSync, readlinkSync } from 'node:fs';
+import { basename, join, resolve } from 'node:path';
 import { createServer } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
@@ -43,9 +43,12 @@ function alive(pid) {
 export function matchesLocalSessionProcess(identity, current) {
   if (!current) return true;
   if (identity) return current.startTime ? identity.startTime === current.startTime : true;
-  if (!current.name) return true;
-  return /^(node|nodejs|npm|npx|cmd|powershell|pwsh|sh|bash|dash|bun|deno)(\.exe)?$/i.test(current.name)
-    || /^(next-server|next-router|croupier)(?:\b|[-(])/i.test(current.name);
+  // Linux comm is a mutable thread name (Node 24 uses MainThread). Inspect
+  // the executable instead; an unreadable executable must fail closed.
+  const name = Object.hasOwn(current, 'executableName') ? current.executableName : current.name;
+  if (!name) return true;
+  return /^(node|nodejs|npm|npx|cmd|powershell|pwsh|sh|bash|dash|bun|deno)(\.exe)?$/i.test(name)
+    || /^(next-server|next-router|croupier)(?:\b|[-(])/i.test(name);
 }
 
 function processSnapshots(pids) {
@@ -67,7 +70,11 @@ function processSnapshots(pids) {
       for (const pid of live) {
         try {
           const stat = readFileSync(`/proc/${pid}/stat`, 'utf8'), end = stat.lastIndexOf(')');
-          snapshots.set(pid, { name: stat.slice(stat.indexOf('(') + 1, end), startTime: `${boot}:${stat.slice(end + 2).split(/\s+/)[19]}` });
+          let executableName = null;
+          try { executableName = basename(readlinkSync(`/proc/${pid}/exe`)).replace(/ \(deleted\)$/, ''); }
+          catch { /* Permission/exit races leave legacy PIDs protected. */ }
+          snapshots.set(pid, { name: stat.slice(stat.indexOf('(') + 1, end), executableName,
+            startTime: `${boot}:${stat.slice(end + 2).split(/\s+/)[19]}` });
         } catch { /* A process may exit between liveness and inspection. */ }
       }
     } else {

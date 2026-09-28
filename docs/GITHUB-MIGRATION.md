@@ -2,7 +2,9 @@
 
 Aktiv branch: `jakemanator123-github-work` i det privata repot
 [Jakeminator123/github-work](https://github.com/Jakeminator123/github-work).
-`origin` pekar på GitHub. Arbetet fortsätter från samma historik och alla
+`origin` pekar på GitHub och den nya branchen är repots standardbranch.
+Migrationen `b3e830a` och Astrid-förberedelsen `e3eec8f` har verifierats på
+GitHub med matchande commit-ID. Arbetet fortsätter från samma historik och alla
 pågående filer i den delade arbetskopian har bevarats.
 
 ## Återgångspunkt
@@ -42,6 +44,16 @@ studio-test/bygge, befintliga dealerregressioner, djupa mediaaudits samt
 inbox-, samordnings-, GitHub-policy- och molnförberedelsetester.
 Workflowet använder Node 24, ffmpeg och labbets låsta npm-beroenden.
 Ett konfigurerat workflow är inte ett kvitto på godkänd fjärrkörning.
+
+Första [GitHub-körningen](https://github.com/Jakeminator123/github-work/actions/runs/36461925827)
+avslöjade fyra inaktuella studiotester och att dealerjobbet saknade ett
+studiobygge före sitt riktiga starttest. Testerna använder nu den befintliga
+43-filmscheckpointen och sju uttryckligen aktiverade idlevarianter, aktuell
+2D-reservflagga och den nya frekvenseditor-importen. Alla 482 studiotester
+passerade lokalt efter rättningen. Inga mediefiler eller baseline ändrades.
+Workflowet bygger studion även inför dealerregressionen och använder
+aktuella v7-versioner enligt [checkout](https://github.com/actions/checkout)
+och [setup-node](https://github.com/actions/setup-node).
 
 ## Parallellt arbete och städning
 

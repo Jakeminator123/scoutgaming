@@ -119,13 +119,21 @@ test('manual, rules, automatic, different-family and unavailable videos cannot b
   }
 });
 
-test('all and only six explicitly OpenClaw-enabled variants can be eligible', async () => {
+test('all and only seven explicitly OpenClaw-enabled seed variants can be eligible', async () => {
   const input = body();
+  const registry = inventory();
+  const seedFiles = input.project.idlePolicy.variants.map(item => registry.videos.find(video => video.id === item.videoId).fileName).sort();
+  assert.deepEqual(seedFiles, [
+    'croupier_coffie.mp4', 'idle_blink_f73_s303.mp4', 'idle_cheek_f73_s301.mp4',
+    'idle_glance_f73_s301.mp4', 'idle_insulted_f73_s301.mp4', 'idle_smile.mp4', 'idle_yawn.mp4',
+  ]);
+  const coffee = registry.videos.find(video => video.fileName === 'croupier_coffie.mp4');
+  assert.equal(input.project.idlePolicy.variants.find(item => item.videoId === coffee.id).use, 'manual', 'the seventh seed clip starts as manual');
   for (const item of input.project.idlePolicy.variants) { item.use = 'openclaw'; item.automatic = null; }
-  const f = fixture();
+  const f = fixture({ registry });
   await f.advise(input);
   const data = JSON.parse(f.calls[0].payload.messages[1].content);
-  assert.equal(data.candidates.length, 7, 'six alternatives plus primary no-op baseline');
+  assert.equal(data.candidates.length, 8, 'seven explicitly enabled alternatives plus primary no-op baseline');
   assert.deepEqual(new Set(data.candidates.map(item => item.variantId)), new Set(['astrid.idle.ready.standard', ...input.project.idlePolicy.variants.map(item => choice(item.videoId))]));
 });
 

@@ -1,5 +1,20 @@
 ## 2026-09-28 — GitHub-only och underlag för molndrift
 
+Uppföljning efter första GitHub-CI: både jobb startade från GitHub, men
+studiojobbet hittade fyra föråldrade testantaganden och dealerjobbet saknade
+ett Next-bygge före startprovet. Testfixtures är rättade mot befintlig
+43-filmscheckpoint, sju uttryckligen aktiverade idlevarianter, 2D-reservens
+beroenden och frekvenseditor-importen. Alla 482 studiotester passerar lokalt.
+Workflowet bygger nu studion före startregressionen och använder Actions v7.
+
+Linux CI hittade också en riktig sessionsbugg: Node kan kalla huvudtråden
+MainThread. Legacy-PID-kontrollen använder nu `/proc/<pid>/exe` för programmets
+identitet; processens födelsetid avgör fortfarande PID-återanvändning. Nekad
+inspektion spärrar fortsatt en ny start. Ett verkligt Linux-test med namngiven
+Node-barnprocess misslyckades före fixen och passerade efter; 11/11 sessions-
+tester passerade på Ubuntu/WSL Node 22. Node 24 verifieras i nästa GitHub-CI.
+Ingen spelregel, mediafil, asset-baseline eller användardata ändrades av detta.
+
 På Jakobs begäran används nu endast `jakemanator123-github-work` i privata
 `Jakeminator123/github-work`. `origin` har bytts till GitHub. `Jakobs-v1`
 är verifierad på både GitLab och GitHub vid `600093e`, samma SHA som sista
