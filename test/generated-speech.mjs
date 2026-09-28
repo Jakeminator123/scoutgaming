@@ -46,6 +46,8 @@ test('production speech needs an explicit cloud opt-in, HTTPS origin and authent
     CARTESIA_API_KEY: 'fixture-cartesia-secret', RUNPOD_API_KEY: 'fixture-runpod-secret',
     CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
   assert.equal(generatedSpeechStatus(env).configured, true);
+  assert.equal(generatedSpeechStatus({ ...env, HOST: '127.0.0.1', CROUPIER_CLOUD_RUNTIME: '1' }).configured, true,
+    'a guarded cloud Web child can use loopback behind the HTTPS gateway');
   for (const patch of [
     { CROUPIER_CLOUD_GENERATED_SPEECH: '0' }, { NODE_ENV: 'development' }, { HOST: '127.0.0.1' },
     { PUBLIC_URL: 'http://astrid.example.com' }, { PUBLIC_URL: 'https://localhost' },

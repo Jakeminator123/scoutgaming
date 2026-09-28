@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { REPOSITORY, childSpecifications, inspectCloudDisk, validateCloudConfig } from './config.mjs';
+import { REPOSITORY, childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from './config.mjs';
 import { createCloudGateway } from './gateway.mjs';
 import { closeGateway, startChildren } from './process-group.mjs';
 
@@ -17,6 +17,7 @@ export function assertCloudAccessReady() {
 async function preflight(env) {
   const config = validateCloudConfig(env);
   await inspectCloudDisk(config);
+  await inspectCloudBootstrap(config);
   const build = await stat(join(REPOSITORY, 'lab/.next/BUILD_ID')).catch(() => null);
   if (!build?.isFile()) throw new Error('A production Lab build is required.');
   return config;

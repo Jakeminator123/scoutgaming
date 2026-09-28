@@ -184,7 +184,13 @@ hostnames eller en uttrycklig, testad uppdelning av rutterna i ingången.
 - `CROUPIER_STREAM_LANE=lissabon-stream-lane`: rätt Astrid-policy.
 - `LAB_REMOTE_URL/TOKEN`: labbets Director.
 - `CROUPIER_PRESENTATION_DIRECTOR_URL/TOKEN`: produktens presentationsråd.
-- `OPENCLAW_PRODUCT_SPEECH_URL/TOKEN`: separat produktroll för chatt/tal.
+- `OPENCLAW_PRODUCT_SPEECH_URL/TOKEN`: krävs för molnstartens separata
+  produktroll för chatt/tal. `OPENCLAW_TIMEOUT_MS` är 8000 som standard
+  och kan sättas mellan 1000 och 30000.
+- `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD`: hemligheter för första
+  uppstart med tom CRAIG-databas. Efter att administratören skapats tar
+  operatören bort dem från värdplattformens hemligheter. Ingen befintlig
+  användare skrivs över.
 - `CARTESIA_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`: tal/video.
 - `CROUPIER_ASTRID_TRANSLATION_KEY`: giltig OpenAI API-nyckel endast på
   produktservern för `whisper-1` och `/v1/audio/translations`. Den får aldrig
@@ -197,8 +203,11 @@ hostnames eller en uttrycklig, testad uppdelning av rutterna i ingången.
   inte som bevis för rätt konfiguration.
 - `CROUPIER_GENERATED_SPEECH_DIR`: privat katalog utanför checkout.
 - `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_CLOUD_GENERATED_SPEECH=1`: separat
-  molnaktivering. Kräver `NODE_ENV=production`, publik `HOST`, en riktig
-  `PUBLIC_URL` med HTTPS, avstängt gästläge och privat katalog/nycklar ovan.
+  molnaktivering. Kräver `NODE_ENV=production`, en riktig `PUBLIC_URL` med
+  HTTPS, avstängt gästläge och privat katalog/nycklar ovan. Den samordnade
+  molnstarten sätter `CROUPIER_CLOUD_RUNTIME=1` för produktprocessen på
+  `127.0.0.1` bakom den kontrollerade HTTPS-ingången; direkta molnservrar
+  kräver i stället en publik `HOST`.
   Lokal förhandsvisning använder fortsatt `CROUPIER_GENERATED_SPEECH_PREVIEW=1`
   och loopback-HOST. Detta är en konfigurationsmöjlighet, inte ett genomfört
   leverantörsprov i den nya driften.

@@ -40,8 +40,10 @@ function configuration(env) {
   const localPreview = env.CROUPIER_GENERATED_SPEECH_PREVIEW === '1'
     && ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(env.HOST);
   let cloudPreview = false;
+  const cloudHost = ['0.0.0.0', '::', '[::]'].includes(env.HOST)
+    || (env.CROUPIER_CLOUD_RUNTIME === '1' && env.HOST === '127.0.0.1');
   if (env.CROUPIER_CLOUD_GENERATED_SPEECH === '1' && env.NODE_ENV === 'production'
-    && env.DEMO_GUEST_ACCESS !== '1' && ['0.0.0.0', '::', '[::]'].includes(env.HOST)) {
+    && env.DEMO_GUEST_ACCESS !== '1' && cloudHost) {
     try {
       const url = new URL(env.PUBLIC_URL);
       cloudPreview = url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash

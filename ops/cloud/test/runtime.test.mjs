@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import { createServer, request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
-import { childSpecifications, inspectCloudDisk, validateCloudConfig } from '../config.mjs';
+import { DatabaseSync } from 'node:sqlite';
+import { childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from '../config.mjs';
 import { createCloudGateway, proxyHeaders, upstreamForHost, upstreamForRequest } from '../gateway.mjs';
 import { startChildren, terminateChild } from '../process-group.mjs';
 import { assertCloudAccessReady } from '../start.mjs';
@@ -18,6 +19,8 @@ const fixture = () => ({
   CROUPIER_GAME_ORIGIN: 'https://game.example.test',
   BETTALOTTO_PARTNER_BASE_URL: 'https://game.example.test',
   CROUPIER_STREAM_LANE: 'lissabon-stream-lane',
+  OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
+  OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-product-speech-token',
 });
 const LAB_SECRET = '0123456789abcdef'.repeat(4);
 
@@ -38,6 +41,8 @@ test('three exact public origins share one port and two loopback children', () =
   assert.equal(specs.web.env.LAB_PUBLIC_URL, config.labOrigin);
   assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, specs.web.env.CROUPIER_PRESENTATION_STUDIO_DIR);
   assert.equal(specs.web.env.CROUPIER_DATA_DIR, join(config.dataRoot, 'players'));
+  assert.equal(specs.web.env.CROUPIER_CLOUD_RUNTIME, '1');
+  assert.equal(specs.web.env.OPENCLAW_TIMEOUT_MS, '8000');
   assert.equal(specs.web.env.UNRELATED_SECRET, undefined);
   assert.equal(specs.lab.env.UNRELATED_SECRET, undefined);
   assert.equal(specs.web.env.DEMO_GUEST_ACCESS, '');
@@ -61,11 +66,56 @@ test('configuration rejects local or ambiguous exposure and conflicting storage'
     { CROUPIER_GAME_ORIGIN: 'https://other.example.test' },
     { PORT: '4173' },
     { DEMO_GUEST_ACCESS: '1' },
+    { OPENCLAW_PRODUCT_SPEECH_URL: '' },
+    { OPENCLAW_TIMEOUT_MS: '100' },
+    { CROUPIER_GENERATED_SPEECH_STREAMING: '1' },
     { LAB_STUDIO_DATA_DIR: join(tmpdir(), 'unrelated-studio') },
     { CROUPIER_CLOUD_DATA_ROOT: '.' },
   ]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), ...change }));
   }
+});
+
+test('cloud bootstrap, camera, and paid speech credentials are opt-in and Web-only', () => {
+  const env = { ...fixture(),
+    CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'cloudadmin',
+    CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: 'fixture-private-passphrase-2026',
+    CROUPIER_ASTRID_CAMERA: '1',
+    CROUPIER_ASTRID_TRANSLATION_KEY: 'fixture-openai-key',
+    CROUPIER_GENERATED_SPEECH: '1', CROUPIER_CLOUD_GENERATED_SPEECH: '1',
+    CARTESIA_API_KEY: 'fixture-cartesia-key', RUNPOD_API_KEY: 'fixture-runpod-key',
+    CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint', OPENCLAW_TIMEOUT_MS: '12000',
+    AMBIENT_SECRET: 'do-not-forward',
+  };
+  const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+  assert.equal(specs.web.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER, env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER);
+  assert.equal(specs.web.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD, env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD);
+  assert.equal(specs.web.env.CROUPIER_ASTRID_CAMERA, '1');
+  assert.equal(specs.web.env.CROUPIER_ASTRID_TRANSLATION_KEY, env.CROUPIER_ASTRID_TRANSLATION_KEY);
+  assert.equal(specs.web.env.CROUPIER_GENERATED_SPEECH, '1');
+  assert.equal(specs.web.env.CROUPIER_CLOUD_GENERATED_SPEECH, '1');
+  assert.equal(specs.web.env.CARTESIA_API_KEY, env.CARTESIA_API_KEY);
+  assert.equal(specs.web.env.RUNPOD_API_KEY, env.RUNPOD_API_KEY);
+  assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID, env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID);
+  assert.equal(specs.web.env.OPENCLAW_TIMEOUT_MS, '12000');
+  for (const name of ['CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD', 'CROUPIER_ASTRID_TRANSLATION_KEY',
+    'CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'AMBIENT_SECRET']) assert.equal(specs.lab.env[name], undefined, name);
+  assert.equal(specs.web.env.AMBIENT_SECRET, undefined);
+  assert.equal(specs.web.env.CROUPIER_GENERATED_SPEECH_STREAMING, '');
+  for (const change of [
+    { CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: '' },
+    { CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'kevin' },
+    { CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'CloudAdmin' },
+    { CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: 'short' },
+    { CROUPIER_ASTRID_TRANSLATION_KEY: '' },
+    { CROUPIER_GENERATED_SPEECH: '0' },
+    { CARTESIA_API_KEY: '' },
+    { CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: '' },
+  ]) assert.throws(() => validateCloudConfig({ ...env, ...change }));
+  const inactive = childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET });
+  assert.equal(inactive.web.env.CROUPIER_ASTRID_CAMERA, '');
+  assert.equal(inactive.web.env.CROUPIER_GENERATED_SPEECH, '');
+  assert.equal(inactive.web.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD, undefined);
 });
 
 test('disk preflight accepts its actual directory despite Windows path casing', async () => {
@@ -76,6 +126,29 @@ test('disk preflight accepts its actual directory despite Windows path casing', 
     assert.match(basename(directory), /^croupier-cloud-disk-/);
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('read-only bootstrap preflight requires credentials until CRAIG has an account', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-cloud-bootstrap-check-'));
+  try {
+    const env = { ...fixture(), CROUPIER_CLOUD_DATA_ROOT: directory };
+    const config = validateCloudConfig(env);
+    const dbPath = join(config.paths.players, 'craig.db');
+    await assert.rejects(inspectCloudBootstrap(config), /CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/);
+    await assert.rejects(stat(dbPath), { code: 'ENOENT' });
+    assert.equal(await inspectCloudBootstrap(validateCloudConfig({ ...env,
+      CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'cloudadmin',
+      CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: 'fixture-private-passphrase-2026',
+    })), undefined);
+    await mkdir(config.paths.players);
+    const db = new DatabaseSync(dbPath);
+    try {
+      db.exec('CREATE TABLE users (username TEXT NOT NULL)');
+      await assert.rejects(inspectCloudBootstrap(config), /CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/);
+      db.prepare('INSERT INTO users (username) VALUES (?)').run('cloudadmin');
+      assert.equal(await inspectCloudBootstrap(config), undefined);
+    } finally { db.close(); }
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
 test('game Host cannot reach BO routes except the exact public config GET', () => {

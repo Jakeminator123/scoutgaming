@@ -23,11 +23,26 @@ origins in `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`, `CROUPIER_GAME_ORIGIN`, and
 `BETTALOTTO_PARTNER_BASE_URL`. Game, BO, and Lab must have three distinct
 hostnames; the partner base and game origin must equal `PUBLIC_URL`.
 `CROUPIER_STREAM_LANE` must be `lissabon-stream-lane`.
-Optional Director and product speech relay URL/token pairs are passed only to
-their intended child. Optional Partner observer credentials are passed only to
-Lab. Paid generated speech, camera, guest profiles, and passwordless local
-profiles are disabled in this first package. `LAB_VIDEO_ARCHIVE`, if supplied,
+The product speech relay URL/token pair is required; the Director URL/token
+pair is optional. Each pair reaches only its intended child. Optional Partner
+observer credentials are passed only to Lab. Guest profiles and passwordless
+local profiles are disabled. `OPENCLAW_TIMEOUT_MS` defaults to 8000 and must
+be between 1000 and 30000. On a new empty CRAIG database, provide a strong
+`CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD` pair through host secrets for
+the first boot, then remove it after the account is created. Never put those
+values in Git or command logs. `LAB_VIDEO_ARCHIVE`, if supplied,
 must be an absolute existing directory and is passed identically to both apps.
+
+Camera and transcription are off by default. Opt in with
+`CROUPIER_ASTRID_CAMERA=1` and a dedicated Web-only
+`CROUPIER_ASTRID_TRANSLATION_KEY`. Whisper translation returns English.
+Image understanding additionally requires verified Luna/Terra vision support
+on the deployed external OpenClaw Gateway. Nonstream generated speech/video
+is also off by default; opt in with both `CROUPIER_GENERATED_SPEECH=1` and
+`CROUPIER_CLOUD_GENERATED_SPEECH=1`, plus Web-only Cartesia and RunPod
+credentials and `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. The Web child listens
+on loopback behind the guarded HTTPS gateway. WebSocket speech streaming is
+disabled until the gateway supports upgrades and a real worker passes QA.
 
 The gateway would listen on one public `PORT`: exact game and BO Host headers
 route to loopback Web, and the exact Lab Host routes to loopback Next. On the
@@ -50,11 +65,13 @@ revoked after a role or password is changed back. Public Lab handoff starts are
 rate limited and capped in persistent state.
 Local identity, route, and guard tests pass, but actual public-host routing and
 cookie behavior remain unverified. The proxy does not support WebSocket
-upgrades. This initial package deliberately disables paid speech and camera,
-so it is not a complete remote Astrid experience.
+upgrades. Camera and paid media now have explicit opt-in configuration, but
+their provider and browser paths have not passed a staged deployment test;
+this is not yet a complete remote Astrid experience.
 
 `node ops/cloud/start.mjs --check` performs read-only layout validation after a
-production Lab build exists. It returns 2 while launch is blocked. The launcher
+production Lab build exists. It also rejects an empty or missing CRAIG database
+without bootstrap credentials. It returns 2 while launch is blocked. The launcher
 would stop accepting requests, let in-flight requests drain briefly, terminate
 Lab then Web, and force-stop unresponsive children. Child stdout/stderr is not
 forwarded because initial startup may contain credentials. The current Web

@@ -1,6 +1,7 @@
 import { access, lstat, realpath } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { isIP } from 'node:net';
+import { DatabaseSync } from 'node:sqlite';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -53,11 +54,32 @@ function optionalPair(env, urlName, tokenName) {
 
 export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (env.NODE_ENV !== 'production') fail('NODE_ENV');
-  for (const name of ['DEMO_GUEST_ACCESS', 'CROUPIER_GENERATED_SPEECH',
-    'CROUPIER_CLOUD_GENERATED_SPEECH', 'CROUPIER_GENERATED_SPEECH_PREVIEW',
-    'CROUPIER_ASTRID_CAMERA', 'CROUPIER_LISSABON_PROFILES']) {
+  for (const name of ['DEMO_GUEST_ACCESS', 'CROUPIER_GENERATED_SPEECH_PREVIEW',
+    'CROUPIER_GENERATED_SPEECH_STREAMING', 'CROUPIER_LISSABON_PROFILES']) {
     if (env[name] === '1') fail(name);
   }
+  const bootstrapUser = env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER || '';
+  const bootstrapPassword = env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD || '';
+  if (Boolean(bootstrapUser) !== Boolean(bootstrapPassword)
+    || (bootstrapUser && (!/^[a-z][a-z0-9._-]{2,63}$/.test(bootstrapUser)
+      || bootstrapUser.toLowerCase() === 'kevin'
+      || bootstrapPassword.length < 16 || bootstrapPassword.length > 256
+      || /[\u0000-\u001f\u007f-\u009f]/u.test(bootstrapPassword)))) fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
+  const camera = env.CROUPIER_ASTRID_CAMERA === '1';
+  if (env.CROUPIER_ASTRID_CAMERA && !['0', '1'].includes(env.CROUPIER_ASTRID_CAMERA)) fail('CROUPIER_ASTRID_CAMERA');
+  const translationKey = env.CROUPIER_ASTRID_TRANSLATION_KEY || '';
+  if (camera && (!translationKey || translationKey.length > 2048 || /\s/.test(translationKey))) fail('CROUPIER_ASTRID_TRANSLATION_KEY');
+  const generatedSpeech = env.CROUPIER_GENERATED_SPEECH === '1' && env.CROUPIER_CLOUD_GENERATED_SPEECH === '1';
+  if (Boolean(env.CROUPIER_GENERATED_SPEECH === '1') !== Boolean(env.CROUPIER_CLOUD_GENERATED_SPEECH === '1')
+    || (env.CROUPIER_GENERATED_SPEECH && !['0', '1'].includes(env.CROUPIER_GENERATED_SPEECH))
+    || (env.CROUPIER_CLOUD_GENERATED_SPEECH && !['0', '1'].includes(env.CROUPIER_CLOUD_GENERATED_SPEECH))) {
+    fail('CROUPIER_GENERATED_SPEECH/CROUPIER_CLOUD_GENERATED_SPEECH');
+  }
+  const cartesiaKey = env.CARTESIA_API_KEY || '';
+  const runpodKey = env.RUNPOD_API_KEY || '';
+  const runpodEndpointId = env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID || '';
+  if (generatedSpeech && (![cartesiaKey, runpodKey].every(value => value.length > 0 && value.length <= 2048 && !/\s/.test(value))
+    || !/^[A-Za-z0-9_-]{1,100}$/.test(runpodEndpointId))) fail('CARTESIA_API_KEY/RUNPOD_API_KEY/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID');
   const gameOrigin = httpsOrigin(env.PUBLIC_URL, 'PUBLIC_URL');
   const boOrigin = httpsOrigin(env.BO_URL, 'BO_URL');
   const labOrigin = httpsOrigin(env.LAB_PUBLIC_URL, 'LAB_PUBLIC_URL');
@@ -89,7 +111,10 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   }
   const director = optionalPair(env, 'CROUPIER_PRESENTATION_DIRECTOR_URL', 'CROUPIER_PRESENTATION_DIRECTOR_TOKEN');
   const productSpeech = optionalPair(env, 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN');
+  if (!productSpeech.url) fail('OPENCLAW_PRODUCT_SPEECH_URL/TOKEN');
   const labRemote = optionalPair(env, 'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN');
+  const timeoutMs = Number(env.OPENCLAW_TIMEOUT_MS ?? 8000);
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 30000) fail('OPENCLAW_TIMEOUT_MS');
   const partnerKeys = ['BETTALOTTO_PARTNER_KEY_ID', 'BETTALOTTO_PARTNER_SECRET', 'BETTALOTTO_PARTNER_PLAYER_ID'];
   const partnerPresent = partnerKeys.map(name => Boolean(env[name]));
   if (partnerPresent.some(Boolean) && !partnerPresent.every(Boolean)) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
@@ -97,7 +122,10 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, publicPort, dataRoot, paths, videoArchive,
-    director, productSpeech, labRemote,
+    director, productSpeech, labRemote, timeoutMs, camera, generatedSpeech,
+    bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
+    translationKey: camera ? translationKey : '',
+    speechProvider: generatedSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null,
     partner: partnerPresent.every(Boolean) ? Object.fromEntries(partnerKeys.map(name => [name, env[name]])) : null });
 }
 
@@ -112,6 +140,24 @@ export async function inspectCloudDisk(config) {
     const archive = await lstat(config.videoArchive).catch(() => null);
     if (!archive?.isDirectory() || archive.isSymbolicLink()) fail('LAB_VIDEO_ARCHIVE');
   }
+}
+
+// A read-only preflight prevents --check from approving a blank CRAIG volume
+// that the Web child would reject on startup. It never creates a database.
+export async function inspectCloudBootstrap(config) {
+  if (config.bootstrapAdmin) return;
+  const dbPath = join(config.paths.players, 'craig.db');
+  const info = await lstat(dbPath).catch(() => null);
+  if (!info?.isFile() || info.isSymbolicLink()
+    || !samePath(await realpath(dbPath).catch(() => ''), dbPath)) {
+    fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
+  }
+  let db;
+  try {
+    db = new DatabaseSync(dbPath, { readOnly: true });
+    if (!db.prepare('SELECT COUNT(*) AS n FROM users').get().n) fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
+  } catch { fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD'); }
+  finally { db?.close(); }
 }
 
 export function childSpecifications(config, env = process.env, { labInternalSecret } = {}) {
@@ -129,15 +175,29 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
     web: { command: process.execPath, args: [join(REPOSITORY, 'web/server.mjs')], cwd: REPOSITORY,
       env: { ...shared, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
         BO_URL: config.boOrigin, LAB_PUBLIC_URL: config.labOrigin,
+        CROUPIER_CLOUD_RUNTIME: '1',
+        ...(config.bootstrapAdmin ? {
+          CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: config.bootstrapAdmin.user,
+          CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: config.bootstrapAdmin.password,
+        } : {}),
         DEMO_GUEST_ACCESS: '', CROUPIER_LISSABON_PROFILES: '',
         CROUPIER_DATA_DIR: config.paths.players, CROUPIER_PRESENTATION_STUDIO_DIR: config.paths.studio,
         CROUPIER_GENERATIONS_DIR: config.paths.generations, CROUPIER_GENERATED_SPEECH_DIR: config.paths.speech,
-        CROUPIER_GENERATED_SPEECH: '', CROUPIER_CLOUD_GENERATED_SPEECH: '',
-        CROUPIER_ASTRID_CAMERA: '',
+        CROUPIER_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
+        CROUPIER_CLOUD_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
+        CROUPIER_GENERATED_SPEECH_STREAMING: '',
+        ...(config.speechProvider ? {
+          CARTESIA_API_KEY: config.speechProvider.cartesiaKey,
+          RUNPOD_API_KEY: config.speechProvider.runpodKey,
+          CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: config.speechProvider.runpodEndpointId,
+        } : {}),
+        CROUPIER_ASTRID_CAMERA: config.camera ? '1' : '',
+        CROUPIER_ASTRID_TRANSLATION_KEY: config.translationKey,
         CROUPIER_PRESENTATION_DIRECTOR_URL: config.director.url,
         CROUPIER_PRESENTATION_DIRECTOR_TOKEN: config.director.token,
         OPENCLAW_PRODUCT_SPEECH_URL: config.productSpeech.url,
-        OPENCLAW_PRODUCT_SPEECH_TOKEN: config.productSpeech.token } },
+        OPENCLAW_PRODUCT_SPEECH_TOKEN: config.productSpeech.token,
+        OPENCLAW_TIMEOUT_MS: String(config.timeoutMs) } },
     lab: { command: process.execPath,
       args: [join(REPOSITORY, 'lab/node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(LAB_PORT)],
       cwd: join(REPOSITORY, 'lab'),
