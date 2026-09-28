@@ -25,7 +25,7 @@
     {
       "view": "probe",
       "title": "5. Prova Astrids egna initiativ",
-      "body": "Välj Probe i Lissabon eller stora labbet. Av är standard. Textprov använder syntetiska spelare utan röst/video. Automatiskt väntar på ett lugnt bord. Spara gemensam policy och modell; spelaren läser nästa version utan omstart. Separat talprov kräver en knapp i Astrids verkliga spelare."
+      "body": "Välj Probe i Lissabon eller stora labbet. Av är standard. Textprov använder syntetiska spelare utan röst/video. Automatiskt väntar på ett lugnt bord. Snabbt inaktivitetsprov väljer 5 sekunders inaktivitet, 15 sekunders paus, 100 procent sannolikhet och högst 12 initiativ per timme. Egen väntetid kan vara ned till 1 sekund. Spara gemensam policy och modell; spelaren läser nästa version utan omstart. Tiden att skapa svaret och talfilmen tillkommer. Ha spelfliken synlig och ljudet på. Efter ett obesvarat initiativ krävs ny spelaraktivitet. Separat talprov kräver en knapp i Astrids verkliga spelare."
     }
   ],
   "boundaries": [

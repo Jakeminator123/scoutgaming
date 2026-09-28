@@ -4,6 +4,33 @@
 Aktuell källa för uppdraget är [agentprompten](ASTRID-CAMERA-AGENT-PROMPT.md).
 Designunderlaget finns i [kameraplanen](../../open-claw/lab/docs/ASTRID-CAMERA-VOICE-PLAN.md).
 
+## Aktivering för det godkända provet
+
+Jakob har godkänt driftsättning och generalrepetition. Senaste verifierade
+driftkontroll nedan föregår kameradeploy; ett fungerande lokalt spel bevisar
+inte att bildvägen är driftsatt. Codex webbplatsbehörighet blockerar för
+närvarande agentens kontroll av Render.
+
+1. På Render: driftsätt aktuell `jakeminator123/work` för både
+   `croupier-lab-openclaw` (Gateway) och `croupier-lab-director`. Gateway ska
+   ha `CROUPIER_SPEECH_VISION=1`. Behåll befintlig version, modellnycklar och
+   verktygsgränser. Verifiera först en syntetisk bild och dess lagring enligt
+   checklistan nedan.
+2. Avsluta det befintliga lokala serverparet via dess startfönster när handen
+   är avslutad. Från reporoten: `node lissabon/start.mjs --astrid-camera --no-open`.
+   Använd QA-launcherns `astridCamera: true` när det isolerade provparet ska
+   köras. Ett andra startkommando ändrar inte flaggan i en redan körande server.
+3. Lissabon → Probe: välj **GPT-6 Luna** och spara. Öppna Astrid via **Ström →
+   Anslut**, med `presentation=local`, i Chrome. Ladda om befintlig spelflik.
+4. I spelfliken: **Kamera · Av → Starta kamera och mikrofon**, godkänn enheterna,
+   tala och granska text/bilder. **Skicka till Astrid** skickar just den turen.
+   Funktionen delar stillbilder och transkriberat tal, inte kontinuerlig video
+   eller rått mikrofonljud till OpenClaw. Bilder kan finnas i OpenClaws historik.
+
+Codex webbplatsbehörighet och Chromes kamera-/mikrofonbehörighet är separata.
+Den första behövs bara för agentens browserkontroll; den andra behövs för
+själva produktfunktionen.
+
 ## Produktflöde
 
 I Astrids riktiga Lissabon-spelare (`?dealer=astrid&presentation=local`) finns
@@ -115,13 +142,13 @@ av under slutkontrollen; inga ersättningsservrar startades.
 
 ## Kvar innan aktivering
 
-1. Slutligt deploymentgodkännande enligt agentprompten: ny Director och
-   Gateway från kameracommit, med Lunas bildmetadata opt-in.
+1. Driftsätt enligt Jakobs godkännande: ny Director och Gateway från aktuell
+   work-version, med Lunas bildmetadata opt-in.
 2. Starta högst ett isolerat Lissabon-par, på annan hostname än vanliga spelet,
    med separat bevarad QA-spelardatabas. Återanvänd browserflikarna.
    Använd `startIsolatedConnection` med `astridCamera: true`, aldrig en direkt
-   serverstart som går förbi sessionsspärren. En ny start kräver Jakobs besked
-   eftersom han uttryckligen har bett att servrarna lämnas avstängda.
+   serverstart som går förbi sessionsspärren. Generalrepetitionen är godkänd;
+   samordna med det enda befintliga paret innan dess nästa start.
 3. Prova syntetisk JPEG genom hela Web → Director → Gateway → Luna-vägen.
    Bekräfta faktisk modell och var bilddata finns i session/transkript/loggar.
 4. Slutför fyradealerrehearsal och registrera per-line-resultat. Tekniska

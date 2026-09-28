@@ -40,6 +40,11 @@ export function ProbeEditor({policy,onChange,onActivity}:{policy:ProbePolicy;onC
       <label className="field">Minsta paus mellan initiativ (sekunder)<input type="number" min={1} max={86400} value={policy.cooldownMs/1000} onChange={e=>edit({cooldownMs:Number(e.target.value)*1000})}/></label>
       <label className="field">Modell för Astrids chatt och Probe<select value={policy.model} onChange={e=>edit({model:e.target.value as ProbePolicy['model']})}>{PROBE_MODELS.map(model=><option key={model.id} value={model.id}>{model.label}</option>)}</select><small>Gäller Astrids vanliga chattsvar, Probe och minnesutdrag. Samma val sparas i båda labben.</small></label>
     </div>
+    <div>
+      <button type="button" className="text-button" onClick={()=>edit({mode:'automatic',inactivityMs:5000,cooldownMs:15000,probability:1,maxPerHour:12})}>Snabbt inaktivitetsprov</button>
+      <p>Väljer Automatiskt, 5 sekunders inaktivitet, 15 sekunders paus, 100 % sannolikhet och högst 12 initiativ per timme. Spara för att använda värdena i spelet. Du kan också välja en egen väntetid, ned till 1 sekund.</p>
+      <p>Tiden anger när Astrid får börja förbereda svaret. Att skapa repliken, rösten och talfilmen tar ytterligare tid. Ha spelfliken synlig, ljudet på och Tillåt Astrids egna talinitiativ ikryssat under Minne. Efter ett obesvarat initiativ väntar hon tills du blir aktiv igen; hon kan även välja tystnad om ett lämpligt minne saknas.</p>
+    </div>
     <details><summary>Fler inställningar</summary><div className={styles.grid}>
       <label className="field">Sannolikhet per tillfälle (%)<input type="number" min={0} max={100} value={Math.round(policy.probability*100)} onChange={e=>edit({probability:Number(e.target.value)/100})}/></label>
       <label className="field">Högst initiativ per timme<input type="number" min={1} max={12} value={policy.maxPerHour} onChange={e=>edit({maxPerHour:Number(e.target.value)})}/></label>
