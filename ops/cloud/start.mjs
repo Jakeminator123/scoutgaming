@@ -6,12 +6,37 @@ import { fileURLToPath } from 'node:url';
 import { REPOSITORY, childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from './config.mjs';
 import { createCloudGateway } from './gateway.mjs';
 import { closeGateway, startChildren } from './process-group.mjs';
+import { verifyCloudAccess } from './access-check.mjs';
 
-// This code-level gate cannot be enabled by deployment environment variables.
-// Replace it only alongside an authenticated Lab/Web access implementation and
-// its public-host, Origin, cookie, and proxy tests.
-export function assertCloudAccessReady() {
-  throw new Error('Cloud start blocked: live authenticated access and deployment verification are incomplete.');
+// Deliberate pilot opt-in is not a claim of production acceptance.
+export function assertCloudAccessReady(env = process.env) {
+  if (env.CROUPIER_CLOUD_LAUNCH !== 'pilot') {
+    throw new Error('Cloud start requires CROUPIER_CLOUD_LAUNCH=pilot. Public deployment acceptance is still required.');
+  }
+}
+
+function listen(server, port, host) {
+  return new Promise((resolveReady, reject) => {
+    const failed = error => { server.off('listening', ready); reject(error); };
+    const ready = () => { server.off('error', failed); resolveReady(); };
+    server.once('error', failed);
+    server.once('listening', ready);
+    server.listen(port, host);
+  });
+}
+
+export async function openCheckedGateway(gateway, config, { checkAccess = verifyCloudAccess, signal } = {}) {
+  try {
+    // No externally reachable listener until actual local access checks pass.
+    await listen(gateway, 0, '127.0.0.1');
+    await checkAccess(config, { gatewayPort: gateway.address().port });
+    await closeGateway(gateway);
+    if (signal?.aborted) throw new Error('Cloud start was interrupted.');
+    await listen(gateway, config.publicPort, '0.0.0.0');
+  } catch (error) {
+    await closeGateway(gateway);
+    throw error;
+  }
 }
 
 async function preflight(env) {
@@ -29,24 +54,22 @@ export async function main(args = process.argv.slice(2), env = process.env) {
   }
   const config = await preflight(env);
   if (args[0] === '--check') {
-    console.log('Cloud layout valid; launch remains blocked pending live access and deployment verification.');
-    return 2;
+    console.log('Cloud configuration valid. No services started; public TLS, login, persistence and playback are not verified.');
+    return 0;
   }
-  assertCloudAccessReady();
-  // Unreachable until a reviewed code change replaces the gate above.
+  assertCloudAccessReady(env);
   const labInternalSecret = randomBytes(32).toString('hex');
   const abort = new AbortController();
-  process.once('SIGINT', () => abort.abort());
-  process.once('SIGTERM', () => abort.abort());
-  for (const path of Object.values(config.paths)) await mkdir(path, { recursive: true, mode: 0o700 });
-  const children = await startChildren(childSpecifications(config, env, { labInternalSecret }), { signal: abort.signal });
-  const gateway = createCloudGateway(config, { labInternalSecret });
+  const stop = () => abort.abort();
+  process.once('SIGINT', stop);
+  process.once('SIGTERM', stop);
+  let children, gateway;
   try {
-    await new Promise((yes, no) => {
-      gateway.once('error', no);
-      gateway.listen(config.publicPort, '0.0.0.0', () => { gateway.off('error', no); yes(); });
-    });
-    console.log('Cloud gateway listening; Web and Lab are on loopback.');
+    for (const path of Object.values(config.paths)) await mkdir(path, { recursive: true, mode: 0o700 });
+    children = await startChildren(childSpecifications(config, env, { labInternalSecret }), { signal: abort.signal });
+    gateway = createCloudGateway(config, { labInternalSecret });
+    await openCheckedGateway(gateway, config, { signal: abort.signal });
+    console.log('Cloud pilot listening after local access checks; public deployment acceptance remains outstanding.');
     const interrupted = new Promise(resolveDone => {
       abort.signal.addEventListener('abort', () => resolveDone('signal'), { once: true });
       if (abort.signal.aborted) resolveDone('signal');
@@ -55,8 +78,14 @@ export async function main(args = process.argv.slice(2), env = process.env) {
     if (reason !== 'signal') throw new Error('A cloud child exited unexpectedly.');
     return 0;
   } finally {
-    await closeGateway(gateway);
-    await children.stop();
+    try { await closeGateway(gateway); }
+    finally {
+      try { await children?.stop(); }
+      finally {
+        process.off('SIGINT', stop);
+        process.off('SIGTERM', stop);
+      }
+    }
   }
 }
 
