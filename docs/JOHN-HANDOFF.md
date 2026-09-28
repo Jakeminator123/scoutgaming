@@ -1,3 +1,32 @@
+## 2026-09-28 — Devchatt återställd efter nätverksnekad serverstart
+
+Den öppna Astrid-fliken visade "Svaret kunde inte slutföras". Båda
+lokalservrarna och labbets röstkonfiguration svarade normalt, men ett
+syntetiskt gästprov genom produktens `/chat` gav `product_speech_unreachable`
+direkt efter textsteget. Utgående HTTPS från den begränsade körmiljön gav
+`EACCES`; ett separat OpenClaw-textprov med godkänd nätverksåtkomst svarade
+på 3,3 s. Det var startmiljöns nätverksbehörighet som stoppade devchatten.
+
+Den verifierade Lissabon-startprocessen stoppades och samma befintliga
+bygge startades med godkänd nätverksåtkomst:
+`node lissabon/start.mjs --no-open --skip-build`. Startarens egna begränsning
+till konfigurerade tjänster behölls. Profiler, pågående sparad hand,
+projektinställningar och andra agenters filer ersattes inte.
+
+Efter omstart verifierades **produktens riktiga `/chat`-kedja** med en
+separat syntetisk demogäst: text "Hello" efter 1 389 ms, video-submit efter
+1 725 ms, render påbörjad efter 44 591 ms, färdigt talpaket efter 71 428 ms.
+RunPod rapporterade 42 400 ms kö och 25 828 ms exekvering. Slutresultatet var
+`generatedText` med `speechPackage`. Detta verifierar OpenClaw → Victoria →
+RunPod genom devservern, inte visuell läppsynk eller faktisk uppspelning i
+Jakobs flik. Ingen ny testfråga lades i Jakobs personliga chatthistorik.
+
+Startguiden `lissabon/README.md` förklarar felet och återstarten. Ingen
+produktkod ändrades. Dokumentationsdiffen är kontrollerad; kod-/medietester
+har inte körts om för dessa dokumentationsändringar. Probe-uppdraget låg
+redan pushat i `c18c3cc`. Nästa agent kan fortsätta därifrån. Kvarvarande
+lång väntan i GPU-kön är separat från det återställda anslutningsfelet.
+
 ## 2026-09-28 — Uppdrag för Astrid Probe förberett
 
 Jakob vill ha en separat Probe-kategori för sporadiska, personliga

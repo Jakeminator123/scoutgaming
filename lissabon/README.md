@@ -32,6 +32,21 @@ mediefiler och projektets privata miljöinställningar. Nycklar kopieras inte
 hit. Se [anslutningsguiden](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
 Nya chattsvar använder konfigurerade modell-, ljud- och videotjänster.
 
+### Om sidan fungerar men chatten inte når OpenClaw
+
+En Codex-startad server måste ha nätverksåtkomst till de konfigurerade
+tjänsterna. En server som startats i en nätverksbegränsad körmiljö kan visa
+hela spelet lokalt men ge `product_speech_unreachable` direkt efter
+"Astrid tänker". Ett separat lyckat `--check` med större behörighet ändrar
+inte den redan körande serverns behörighet.
+
+Kontrollera den faktiska `/chat`-vägen med en isolerad demogäst. Om
+anslutningen nekas med `EACCES`, stoppa Lissabons egen startprocess och
+starta den med rätt nätverksåtkomst. Behåll startarens begränsning till
+konfigurerade tjänster. Befintliga sparade profiler och inställningar
+ligger kvar. `--skip-build` kan användas när exakt samma kod redan är byggd.
+Enbart omladdning av webbläsaren löser inte serverns nätverksbehörighet.
+
 ## Arbetsytan
 
 - **Ström:** Astrid och verkliga beslut och uppspelningskvitton.
