@@ -49,7 +49,7 @@ test('real product HTTP result survives into authenticated stream; memory forget
   Object.assign(env, { HOST: '127.0.0.1', PORT: String(port), NODE_ENV: 'development', CROUPIER_DATA_DIR: join(directory, 'db'), CROUPIER_PRESENTATION_STUDIO_DIR: join(directory, 'studio'),
     DEMO_GUEST_ACCESS: '1', CROUPIER_LISSABON_PROFILES: '', CROUPIER_STREAM_LANE: '', CROUPIER_ASTRID_CAMERA: '',
     CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1', CROUPIER_GENERATED_SPEECH_DIR: join(directory, 'speech'),
-    CROUPIER_SPEECH_STREAM_WORKER_SECRET: secret, CROUPIER_SPEECH_STREAM_TICKET_SECRET: secret, CARTESIA_API_KEY: 'isolated-test-key',
+    CROUPIER_SPEECH_STREAM_WORKER_SECRET: secret, CROUPIER_SPEECH_STREAM_TICKET_SECRET: `ticket-${secret}`, CARTESIA_API_KEY: 'isolated-test-key',
     OPENCLAW_BASE_URL: `http://127.0.0.1:${llm.address().port}`, OPENCLAWAPI_KEY: 'fixture-key', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat' });
   child = spawn(process.execPath, ['--import', new URL('./fixtures/generated-speech-stream-fetch.mjs', import.meta.url).href, fileURLToPath(new URL('../web/server.mjs', import.meta.url))], {
     cwd: fileURLToPath(new URL('../web/', import.meta.url)), env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],

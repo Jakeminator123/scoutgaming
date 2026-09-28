@@ -302,6 +302,7 @@ def streaming_infer(pcm, rate, left, start, end, total):
     Starts/contexts are multiples of 12 frames, hence exact at 16 kHz. Only
     utterance boundaries get ramps; context boundaries never add silence/fades.
     """
+    analysis_started = time.monotonic()
     y = np.frombuffer(pcm, dtype='<i2').astype(np.float32) / 32768.0
     y16 = librosa.resample(y, orig_sr=rate, target_sr=16000) if rate != 16000 else y
     from streaming import model_sample_count
@@ -309,11 +310,27 @@ def streaming_infer(pcm, rate, left, start, end, total):
     if len(y16) < required:
         y16 = np.pad(y16, (0, required-len(y16)))
     chunks = whisper_chunks(y16)[start-left:end-left]
+    streaming_infer.timings['audio_analysis'] = streaming_infer.timings.get('audio_analysis', 0) + (time.monotonic() - analysis_started) * 1000
     # At supported rates the last partial frame may round down by one sample.
     if len(chunks) != end-start:
         raise RuntimeError(f'Whisper frame count {len(chunks)} != {end-start}')
-    for i, face in enumerate(generate(chunks), start):
-        yield compose_crop(face, ramp(i, total if total is not None else end + 100)).tobytes()
+    faces = iter(generate(chunks))
+    i = start
+    while True:
+        inference_started = time.monotonic()
+        try:
+            face = next(faces)
+        except StopIteration:
+            break
+        streaming_infer.timings['inference'] = streaming_infer.timings.get('inference', 0) + (time.monotonic() - inference_started) * 1000
+        composition_started = time.monotonic()
+        crop = compose_crop(face, ramp(i, total if total is not None else end + 100)).tobytes()
+        streaming_infer.timings['composition'] = streaming_infer.timings.get('composition', 0) + (time.monotonic() - composition_started) * 1000
+        yield crop
+        i += 1
+
+
+streaming_infer.timings = {}
 
 
 def serve_session(url, ttl, token=None, worker_id=None):
@@ -378,4 +395,4 @@ for line in sys.stdin:
         n, T = one(job["wav"], job["out"], int(job.get("crf", 18)), job.get("preset", "veryfast"))
         say(ok=True, frames=n, t=T)
     except Exception as e:
-        say(ok=False, error=f"{type(e).__name__}: {e}")
+        say(ok=False, error="session failed" if "session" in job else f"{type(e).__name__}: {e}")

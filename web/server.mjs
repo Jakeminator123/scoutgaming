@@ -1150,7 +1150,15 @@ const server = createServer(async (req, res) => {
           if (conversation && !probeStore.conversationCurrent(scope, conversation)) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
           return authoritativeChatStatus(authenticated, playerSession(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         };
+        const speechTrace = randomBytes(8).toString('hex');
         const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
+          onTiming: (stage, ms) => {
+            if (speechStreamService && incoming.acceptsSpeechStream === true && Number.isSafeInteger(ms) && ms >= 0) {
+              // A request-local random correlation key; never log text, player ids,
+              // cookies, tickets, provider responses or credential-bearing URLs.
+              console.info(JSON.stringify({ event: 'astrid_speech_timing', trace: speechTrace, stage, ms }));
+            }
+          },
           onProgress: (stage, metrics) => { if (stream && Object.hasOwn(CHAT_STAGES, stage)) frame({ type: 'progress', stage, elapsedMs: Math.round(performance.now() - startedAt), ...(metrics ? { metrics } : {}) }); },
           onDecision: exactText => { if (stream) frame({ type: 'preview', exactText }); },
           readOwner: () => chatSessionOwner(req, authenticated),

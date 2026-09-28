@@ -2191,6 +2191,10 @@ async function playChatDecision(decision, signal, jobId) {
               if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));
               setChatStatus(`${DEALER.name} svarar`); showCaption(text, 27000);
             },
+            onFirstFrame: () => {
+              const pending = pendingChatReplies.get(jobId);
+              if (chatStatus && pending) chatStatus.dataset.firstFrameMs = String(Math.round(performance.now() - pending.requestedAt));
+            },
             onReceipt: receipt => {
               const pending = pendingChatReplies.get(jobId); if (pending) pending.playbackReceipt = receipt;
               nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync-stream',

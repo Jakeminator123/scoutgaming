@@ -168,6 +168,10 @@ class FragmentMuxer:
         self.bytes = 0
         self.stderr = bytearray()
         self.proc = None
+        try:
+            self.encoder = encoder_args[encoder_args.index('-c:v') + 1]
+        except (ValueError, IndexError):
+            raise ValueError('explicit video encoder required')
         if 'libx264' in encoder_args:
             # ultrafast otherwise writes Constrained Baseline despite -profile high.
             encoder_args = [*encoder_args, '-x264-params', '8x8dct=1:cabac=1']
@@ -269,28 +273,59 @@ def render(timeline, infer, muxer_factory, emit):
     muxer = None
     frames = 0
     started = time.monotonic()
+    first_fragment_ms = None
+    analysis_wait_ms = 0
+    mux_input_ms = 0
+    encoder_started = None
+    timing = getattr(infer, 'timings', None)
+    if timing is not None:
+        timing.clear()
+
+    def measured_emit(data):
+        nonlocal first_fragment_ms
+        if first_fragment_ms is None:
+            first_fragment_ms = round((time.monotonic() - started) * 1000)
+        emit(data)
+
     try:
         while True:
+            wait_started = time.monotonic()
             segment = timeline.segment(muxer.check if muxer else None)
+            analysis_wait_ms += round((time.monotonic() - wait_started) * 1000)
             if segment is None:
                 break
             start, end, left, window, audio, total = segment
             if muxer is None:
-                muxer = muxer_factory(emit, timeline.cancelled)
+                encoder_started = time.monotonic()
+                muxer = muxer_factory(measured_emit, timeline.cancelled)
             muxer.audio.put(audio)
             count = 0
             for crop in infer(window, timeline.rate, left, start, end, total):
                 if timeline.cancelled.is_set():
                     raise Cancelled()
+                input_started = time.monotonic()
                 muxer.video.put(crop)
+                mux_input_ms += round((time.monotonic() - input_started) * 1000)
                 count += 1
             if count != end-start:
                 raise RuntimeError(f'model returned {count} frames, expected {end-start}')
             frames += count
         if muxer:
             muxer.finish()
-        return {'frames': frames, 'ms': {'tot': round((time.monotonic()-started)*1000)},
-                'bytes': muxer.bytes if muxer else 0}
+        ms = {'tot': round((time.monotonic()-started)*1000),
+              'input_wait': analysis_wait_ms, 'mux_backpressure': mux_input_ms,
+              'overlay_encode_wall': round((time.monotonic()-encoder_started)*1000) if muxer else 0}
+        if first_fragment_ms is not None:
+            ms['first_fragment'] = first_fragment_ms
+        if timing is not None:
+            ms.update({name: round(value) for name, value in timing.items()})
+        # An explicit encoder was selected and FFmpeg exited 0 after draining.
+        # A successful NVENC result proves this session encoded with NVENC;
+        # the startup capability probe alone does not.
+        proc = getattr(muxer, 'proc', None) if muxer else None
+        return {'frames': frames, 'ms': ms, 'bytes': muxer.bytes if muxer else 0,
+                'encoder': getattr(muxer, 'encoder', None),
+                'encoder_verified': bool(proc and proc.returncode == 0)}
     except Cancelled:
         if muxer and muxer.error:
             raise muxer.error

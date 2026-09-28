@@ -56,6 +56,7 @@ jobs:
       - run: node test/table-http.mjs
       - run: node test/split-rules.mjs
       - run: node --test test/croupier-inbox.mjs test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs
+      - run: node --test ops/cloud/test/*.test.mjs
 
   lipsync-worker:
     runs-on: ubuntu-latest
