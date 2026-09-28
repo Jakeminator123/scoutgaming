@@ -52,14 +52,14 @@ export function VoicePreviewPanel({ latestReply = '' }: { latestReply?: string }
   }
 
   return <section className={styles.panel} aria-labelledby="voice-preview-heading">
-    <div className={styles.heading}><span className="eyebrow">FRISTÅENDE LJUDPROV</span><h2 id="voice-preview-heading">Prova rösten</h2><span className={styles.voice}>Sarah · ElevenLabs</span></div>
+    <div className={styles.heading}><span className="eyebrow">FRISTÅENDE LJUDPROV</span><h2 id="voice-preview-heading">Prova rösten</h2><span className={styles.voice}>Victoria · Cartesia</span></div>
     <p>Lyssna på en kort text. Detta är inte spelarchatt, lipsync eller ljud till en dealerfilm.</p>
     <div className={styles.tabs} role="group" aria-label="Text till röstprovet"><button type="button" aria-pressed={mode === 'preset'} disabled={busy} onClick={() => changeMode('preset')}>Standardfras</button><button type="button" aria-pressed={mode === 'custom'} disabled={busy} onClick={() => changeMode('custom')}>Egen text / chattsvar</button></div>
     {mode === 'preset' ? <label className={styles.field}>Välj labbfras<select value={phraseId} disabled={busy || !status} onChange={event => { clearPlayback(); setPhraseId(event.target.value); }}>{status?.phrases.map(phrase => <option value={phrase.id} key={phrase.id}>{phrase.label}</option>)}</select></label> : <button className="text-button" type="button" onClick={useReply} disabled={!latestReply || busy}>Använd senaste OpenClaw-svaret som text</button>}
     <label className={styles.field}>Exakt text som skickas<textarea value={text} rows={3} readOnly={mode === 'preset'} disabled={busy} onChange={event => { clearPlayback(); setCustomText(event.target.value); }} aria-describedby="voice-preview-cost voice-preview-count" /></label>
     <div id="voice-preview-count" className={styles.count}>{text.length} / 500 tecken</div>
     {tooLong ? <p role="alert" className="inline-error">Texten är för lång. Korta den själv till högst 500 tecken; inget kapas automatiskt.</p> : null}
-    <p className={styles.cost} id="voice-preview-cost">Knappen skickar texten till ElevenLabs och kan förbruka krediter. Samma text och röstinställningar återanvänder ett sparat lokalt ljudprov. Ingen automatisk generering eller omkörning.</p>
+    <p className={styles.cost} id="voice-preview-cost">Knappen skickar texten till Cartesia och kan förbruka krediter. Samma text och röstinställningar återanvänder ett sparat lokalt ljudprov. Ingen automatisk generering eller omkörning.</p>
     <p className={styles.status}>{status?.message ?? 'Läser lokal konfiguration…'}</p>
     <button className="primary-button" type="button" onClick={() => void generate()} disabled={busy || !status?.configured || !text.trim() || tooLong}>{busy ? 'Genererar röstprov…' : 'Generera röstprov'}</button>
     {error ? <p className="inline-error" role="alert">{error}</p> : null}

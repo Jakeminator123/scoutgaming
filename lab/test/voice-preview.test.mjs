@@ -20,22 +20,18 @@ function request(method = 'POST', body = { text: 'Hej!' }, extraHeaders = {}) {
 }
 
 test('stock voice and three demo phrases are fixed, separate from game event contracts', () => {
-  assert.equal(VOICE_PREVIEW.voiceId, 'EXAVITQu4vr4xnSDxMaL');
-  assert.equal(VOICE_PREVIEW.modelId, 'eleven_multilingual_v2');
+  assert.equal(VOICE_PREVIEW.voiceId, 'dc30854e-e398-4579-9dc8-16f6cb2c19b9');
+  assert.equal(VOICE_PREVIEW.modelId, 'sonic-3.5');
   assert.deepEqual(VOICE_PHRASES.map(item => item.label), ['Välkommen', 'Godkväll', 'Tjena']);
   assert.ok(VOICE_PHRASES.every(item => item.text.length <= 500 && !Object.hasOwn(item, 'eventId')));
 });
 
-test('existing credentials support either alias, reject mismatches and never appear in status', () => {
-  for (const env of [{ ELEVENLABS_API_KEY: 'a-secret' }, { ELEVENLABS_OC_API: 'a-secret' }, { ELEVENLABS_API_KEY: 'a-secret', ELEVENLABS_OC_API: 'a-secret' }]) {
-    const settings = readVoiceSettings({ env, envFiles: [] });
-    assert.equal(settings.key, 'a-secret');
-    assert.equal(voicePreviewStatus(settings).configured, true);
-    assert.ok(!JSON.stringify(voicePreviewStatus(settings)).includes('a-secret'));
-  }
-  const mismatch = readVoiceSettings({ env: { ELEVENLABS_API_KEY: 'first-secret', ELEVENLABS_OC_API: 'other-secret' }, envFiles: [] });
-  assert.equal(mismatch.key, ''); assert.equal(mismatch.mismatch, true);
-  assert.equal(voicePreviewStatus(mismatch).configured, false);
+test('Cartesia credential is required and never appears in status', () => {
+  const settings = readVoiceSettings({ env: { CARTESIA_API_KEY: 'a-secret' }, envFiles: [] });
+  assert.equal(settings.key, 'a-secret');
+  assert.equal(voicePreviewStatus(settings).configured, true);
+  assert.ok(!JSON.stringify(voicePreviewStatus(settings)).includes('a-secret'));
+  assert.equal(voicePreviewStatus(readVoiceSettings({ env: { ELEVENLABS_API_KEY: 'old-provider' }, envFiles: [] })).configured, false);
   assert.equal(voicePreviewStatus(readVoiceSettings({ env: {}, envFiles: [] })).configured, false);
 });
 
@@ -50,11 +46,12 @@ test('explicit generation writes content-addressed audio/metadata then reuses ca
   const settings = await fixture(t); let calls = 0;
   const result = await generateVoicePreview({ text: 'Hej!' }, { settings, fetchImpl: async (url, options) => {
     calls++;
-    assert.equal(String(url), 'https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL?output_format=mp3_44100_128');
-    assert.equal(options.headers['xi-api-key'], settings.key);
+    assert.equal(String(url), 'https://api.cartesia.ai/tts/bytes');
+    assert.equal(options.headers.Authorization, `Bearer ${settings.key}`);
+    assert.equal(options.headers['Cartesia-Version'], '2026-08-14');
     assert.equal(options.redirect, 'error');
     assert.ok(options.signal instanceof AbortSignal);
-    assert.deepEqual(JSON.parse(options.body), { text: 'Hej!', model_id: VOICE_PREVIEW.modelId, voice_settings: VOICE_PREVIEW.voiceSettings });
+    assert.deepEqual(JSON.parse(options.body), { transcript: 'Hej!', voice: VOICE_PREVIEW.voiceId, model_id: VOICE_PREVIEW.modelId, output_format: VOICE_PREVIEW.outputFormat });
     return provider();
   } });
   assert.equal(calls, 1); assert.equal(result.cached, false);

@@ -1,7 +1,7 @@
 # Lissabon stream lane · Astrid
 
 Vår fortsatta lokala demoingång: Emils filmer, gemensamma klippval,
-idle-reaktioner, OpenClaw-chatten och ElevenLabs/RunPod-svar med läppsynk
+idle-reaktioner, OpenClaw-chatten och Cartesia/RunPod-svar med läppsynk
 i samma bildformat. Basversion före paketering: `e46bc8b`.
 Milstolpetagg: **`BRA_sammanbindning_av_KJE`** på `jakeminator123/work`.
 

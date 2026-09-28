@@ -263,12 +263,12 @@ test('separate private speech file supplies the scoped endpoint after the base f
   const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-speech-config-test-'));
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   await mkdir(join(repoRoot, 'lab'));
-  await writeFile(join(repoRoot, '.env'), 'ELEVENLABS_OC_API=fixture-root-eleven\nRUNPOD_API_KEY=fixture-root-runpod\nRUNPOD_ENDPOINT_ID=legacy-root-endpoint\n');
+  await writeFile(join(repoRoot, '.env'), 'CARTESIA_API_KEY=fixture-root-cartesia\nRUNPOD_API_KEY=fixture-root-runpod\nRUNPOD_ENDPOINT_ID=legacy-root-endpoint\n');
   await writeFile(join(repoRoot, 'lab', '.env.local'), 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=earlier-scoped-endpoint\n');
   await writeFile(join(repoRoot, 'lab', '.env.generated-speech.local'), 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=dedicated-scoped-endpoint\n');
   const { configuration, report } = loadPrivateConnection({ repoRoot, env: {}, generatedSpeech: true });
   assert.equal(configuration.speechEndpointId, 'dedicated-scoped-endpoint');
-  assert.equal(configuration.elevenLabsKey, 'fixture-root-eleven');
+  assert.equal(configuration.cartesiaKey, 'fixture-root-cartesia');
   assert.equal(configuration.runpodKey, 'fixture-root-runpod');
   assert.equal(report.generatedSpeech.configured, true);
   assert.ok(!JSON.stringify({ configuration, report }).includes('dedicated-scoped-endpoint'));
@@ -278,7 +278,7 @@ test('separate private speech file supplies the scoped endpoint after the base f
 
 test('default launcher ignores inherited and file speech credentials and leaves provider origins blocked', async t => {
   const values = {
-    ELEVENLABS_API_KEY: 'fixture-elevenlabs-disabled', ELEVENLABS_OC_API: 'fixture-elevenlabs-alias-disabled',
+    CARTESIA_API_KEY: 'fixture-cartesia-disabled', ELEVENLABS_API_KEY: 'fixture-elevenlabs-disabled', ELEVENLABS_OC_API: 'fixture-elevenlabs-alias-disabled',
     RUNPOD_API_KEY: 'fixture-runpod-disabled', RUNPOD_ENDPOINT_ID: 'legacy-unused-endpoint',
     CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'scoped-unused-endpoint', CROUPIER_GENERATED_SPEECH: '1',
     CROUPIER_GENERATED_SPEECH_DIR: 'untrusted-shared-directory', CROUPIER_GENERATED_SPEECH_PREVIEW: '1',
@@ -292,16 +292,16 @@ test('default launcher ignores inherited and file speech credentials and leaves 
     for (const key of Object.keys(values)) assert.equal(spec.env[key], '', key);
     assert.deepEqual(JSON.parse(spec.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), []);
   }
-  assert.equal(configuration.elevenLabsKey, '');
+  assert.equal(configuration.cartesiaKey, '');
   assert.equal(configuration.runpodKey, '');
 });
 
 test('generated speech forwards only scoped provider credentials and separate disposable speech directories', async t => {
-  const eleven = 'fixture-elevenlabs-opt-in';
+  const cartesia = 'fixture-cartesia-opt-in';
   const runpod = 'fixture-runpod-opt-in';
   const endpoint = 'fixture-scoped-speech-endpoint';
   const file = await privateFixture(t, {
-    ELEVENLABS_OC_API: eleven, RUNPOD_API_KEY: runpod, CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: endpoint,
+    CARTESIA_API_KEY: cartesia, RUNPOD_API_KEY: runpod, CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: endpoint,
     RUNPOD_ENDPOINT_ID: 'fixture-legacy-endpoint-do-not-use', OPENCLAW_MODEL_API_KEY: 'fixture-model-never-forward',
     OPENCLAW_BASE_URL: 'https://gateway.example.test', OPENCLAWAPI_KEY: 'fixture-gateway-never-forward',
     OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-speech-only',
@@ -309,10 +309,10 @@ test('generated speech forwards only scoped provider credentials and separate di
   });
   const { configuration, report } = loadPrivateConnection({ envFiles: [file], env: {}, generatedSpeech: true });
   assert.deepEqual(report.generatedSpeech, {
-    enabled: true, configured: true, elevenLabsCredentialPresent: true, runpodCredentialPresent: true,
+    enabled: true, configured: true, cartesiaCredentialPresent: true, runpodCredentialPresent: true,
     scopedEndpointPresent: true, previewOnly: true, visualApproval: 'not_verified', functionalProbe: 'not_run',
   });
-  for (const value of [eleven, runpod, endpoint]) {
+  for (const value of [cartesia, runpod, endpoint]) {
     assert.ok(!JSON.stringify(report).includes(value));
     assert.ok(!JSON.stringify(configuration).includes(value));
   }
@@ -326,16 +326,17 @@ test('generated speech forwards only scoped provider credentials and separate di
     const spec = specs[name];
     assert.equal(spec.env.CROUPIER_GENERATED_SPEECH, '1');
     assert.equal(spec.env.CROUPIER_GENERATED_SPEECH_PREVIEW, '1');
-    assert.equal(spec.env.ELEVENLABS_API_KEY, eleven);
+    assert.equal(spec.env.CARTESIA_API_KEY, cartesia);
+    assert.equal(spec.env.ELEVENLABS_API_KEY, '');
     assert.equal(spec.env.ELEVENLABS_OC_API, '');
     assert.equal(spec.env.RUNPOD_API_KEY, runpod);
     assert.equal(spec.env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID, endpoint);
     assert.equal(spec.env.RUNPOD_ENDPOINT_ID, '');
     assert.equal(spec.env.OPENCLAWAPI_KEY, '');
     assert.equal(spec.env.OPENCLAW_MODEL_API_KEY, '');
-    assert.deepEqual(JSON.parse(spec.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), [origin, ...(name === 'product' ? ['https://director.example.test'] : []), 'https://api.elevenlabs.io', 'https://api.runpod.ai']);
+    assert.deepEqual(JSON.parse(spec.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), [origin, ...(name === 'product' ? ['https://director.example.test'] : []), 'https://api.cartesia.ai', 'https://api.runpod.ai']);
     const command = JSON.stringify([spec.command, ...spec.args]);
-    assert.ok(!command.includes(eleven)); assert.ok(!command.includes(runpod));
+    assert.ok(!command.includes(cartesia)); assert.ok(!command.includes(runpod));
     assert.ok(!Object.keys(spec.env).some(key => key.startsWith('NEXT_PUBLIC_')));
   }
   assert.throws(() => childSpecifications(configuration, directory, { productPort: 4192 }), /reserved/);
@@ -344,15 +345,15 @@ test('generated speech forwards only scoped provider credentials and separate di
 
 test('generated speech never substitutes the legacy endpoint and refuses incomplete opt-in settings', async t => {
   const file = await privateFixture(t, {
-    ELEVENLABS_API_KEY: 'fixture-elevenlabs', RUNPOD_API_KEY: 'fixture-runpod', RUNPOD_ENDPOINT_ID: 'legacy-only-endpoint',
+    CARTESIA_API_KEY: 'fixture-cartesia', RUNPOD_API_KEY: 'fixture-runpod', RUNPOD_ENDPOINT_ID: 'legacy-only-endpoint',
   });
   const { configuration, report } = loadPrivateConnection({ envFiles: [file], env: {}, generatedSpeech: true });
   assert.equal(report.generatedSpeech.configured, false);
   assert.equal(report.generatedSpeech.scopedEndpointPresent, false);
   assert.equal(configuration.speechEndpointId, '');
   assert.throws(() => childSpecifications(configuration, tmpdir()), /separate CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID/);
-  for (const missing of ['ELEVENLABS_API_KEY', 'RUNPOD_API_KEY']) {
-    const values = { ELEVENLABS_API_KEY: 'fixture-elevenlabs', RUNPOD_API_KEY: 'fixture-runpod', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'scoped-endpoint' };
+  for (const missing of ['CARTESIA_API_KEY', 'RUNPOD_API_KEY']) {
+    const values = { CARTESIA_API_KEY: 'fixture-cartesia', RUNPOD_API_KEY: 'fixture-runpod', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'scoped-endpoint' };
     delete values[missing];
     const partial = loadPrivateConnection({ envFiles: [], env: values, generatedSpeech: true });
     assert.equal(partial.report.generatedSpeech.configured, false);
@@ -370,10 +371,10 @@ test('opt-in provider origins do not open unrelated network or env-file access i
     const allowed = [];
     globalThis.fetch = async input => { allowed.push(String(input)); return new Response('{}'); };
     installConnectionProcessGuard();
-    await fetch('https://api.elevenlabs.io/v1/text-to-speech/fixture');
+    await fetch('https://api.cartesia.ai/tts/bytes');
     await fetch('https://api.runpod.ai/v2/fixture/status/fixture-job');
     assert.equal(allowed.length, 2);
-    for (const url of ['http://api.runpod.ai/v2/fixture', 'https://runpod.ai/', 'https://other.api.runpod.ai/', 'https://api.elevenlabs.io.evil.invalid/', 'http://127.0.0.1:4194/']) {
+    for (const url of ['http://api.runpod.ai/v2/fixture', 'https://runpod.ai/', 'https://other.api.runpod.ai/', 'https://api.cartesia.ai.evil.invalid/', 'http://127.0.0.1:4194/']) {
       await assert.rejects(fetch(url), error => error.code === 'OPENCLAW_CONNECTION_NETWORK_BLOCKED');
     }
     assert.throws(() => readFileSync('.env.local'), error => error.code === 'ENOENT');
@@ -381,7 +382,7 @@ test('opt-in provider origins do not open unrelated network or env-file access i
   `;
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', program], {
     windowsHide: true, encoding: 'utf8', timeout: 15000,
-    env: { CROUPIER_CONNECTION_ALLOWED_ORIGINS: JSON.stringify(['https://api.elevenlabs.io', 'https://api.runpod.ai']), CROUPIER_CONNECTION_LOCAL_PORTS: '4196,4197' },
+    env: { CROUPIER_CONNECTION_ALLOWED_ORIGINS: JSON.stringify(['https://api.cartesia.ai', 'https://api.runpod.ai']), CROUPIER_CONNECTION_LOCAL_PORTS: '4196,4197' },
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /opt-in connection guard passed/);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from '../web/generated-speech-provider.mjs';
 
-const config = () => ({ elevenLabsApiKey: 'test-eleven-key', runpodApiKey: 'test-runpod-key', runpodEndpointId: 'test-endpoint' });
+const config = () => ({ cartesiaApiKey: 'test-cartesia-key', runpodApiKey: 'test-runpod-key', runpodEndpointId: 'test-endpoint' });
 const input = (requestId = 'speech-1') => ({ requestId, text: 'Good evening.' });
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const pcm = () => Buffer.alloc(48000, 4);
@@ -14,7 +14,7 @@ function fixture({ ttsResponse, startResponse, statusResponse, options = {} } = 
   const calls = [];
   const fetchImpl = async (url, init) => {
     calls.push({ url, ...init });
-    if (url.includes('api.elevenlabs.io')) return ttsResponse?.(url, init) ?? new Response(pcm(), { headers: { 'content-type': 'audio/pcm' } });
+    if (url.includes('api.cartesia.ai')) return ttsResponse?.(url, init) ?? new Response(pcm(), { headers: { 'content-type': 'audio/pcm' } });
     if (url.endsWith('/run')) return startResponse?.(url, init) ?? json({ id: 'job-1', status: 'IN_QUEUE' });
     if (url.includes('/status/')) return statusResponse?.(url, init) ?? json(complete());
     if (url.includes('/cancel/')) return json({ status: 'CANCELLED' });
@@ -29,20 +29,22 @@ test('construction/import does not read configuration from env or start provider
   const provider = createGeneratedSpeechProvider(config(), { fetchImpl: () => { calls++; assert.fail(); } });
   assert.deepEqual(provider.status(), { configured: true, busy: false, requests: 0, retainedBytes: 0 });
   assert.equal(calls, 0);
-  assert.equal(GENERATED_SPEECH_DEFAULTS.voiceId, 'EXAVITQu4vr4xnSDxMaL');
-  assert.equal(GENERATED_SPEECH_DEFAULTS.modelId, 'eleven_multilingual_v2');
+  assert.equal(GENERATED_SPEECH_DEFAULTS.voiceId, 'dc30854e-e398-4579-9dc8-16f6cb2c19b9');
+  assert.equal(GENERATED_SPEECH_DEFAULTS.modelId, 'sonic-3.5');
   assert.throws(() => createGeneratedSpeechProvider({}), { code: 'generated_speech_not_configured' });
   assert.throws(() => createGeneratedSpeechProvider({ ...config(), runpodEndpointId: 'https://attacker.example' }), { code: 'generated_speech_not_configured' });
   assert.throws(() => createGeneratedSpeechProvider({ ...config(), timeoutMs: 300001 }), { code: 'generated_speech_not_configured' });
 });
 
-test('exact ElevenLabs PCM becomes the same WAV sent to RunPod and returned with hashes', async () => {
+test('exact Cartesia PCM becomes the same WAV sent to RunPod and returned with hashes', async () => {
   const { provider, calls } = fixture();
   const result = await provider.generate(input());
   assert.equal(result.exactText, input().text);
-  assert.equal(calls[0].url, `https://api.elevenlabs.io/v1/text-to-speech/${GENERATED_SPEECH_DEFAULTS.voiceId}?output_format=pcm_24000`);
-  assert.deepEqual(JSON.parse(calls[0].body), { text: input().text, model_id: GENERATED_SPEECH_DEFAULTS.modelId });
-  assert.equal(calls[0].headers['xi-api-key'], config().elevenLabsApiKey);
+  assert.equal(calls[0].url, 'https://api.cartesia.ai/tts/bytes');
+  assert.deepEqual(JSON.parse(calls[0].body), { transcript: input().text, voice: GENERATED_SPEECH_DEFAULTS.voiceId,
+    model_id: GENERATED_SPEECH_DEFAULTS.modelId, output_format: { container: 'raw', encoding: 'pcm_s16le', sample_rate: 24000 } });
+  assert.equal(calls[0].headers.authorization, `Bearer ${config().cartesiaApiKey}`);
+  assert.equal(calls[0].headers['Cartesia-Version'], '2026-08-14');
   const sent = JSON.parse(calls[1].body);
   assert.deepEqual(Object.keys(sent.input).sort(), ['crf', 'op', 'preset', 'wav_b64']);
   assert.equal(sent.input.op, 'lipsync');
@@ -57,8 +59,8 @@ test('exact ElevenLabs PCM becomes the same WAV sent to RunPod and returned with
   assert.equal(result.video.sha256, hash(mp4()));
   assert.equal(result.video.frameCount, 24);
   assert.equal(result.video.fps, 24);
-  assert.deepEqual(result.provider, { kind: 'elevenlabs-runpod' });
-  assert.equal(JSON.stringify(result).includes('test-eleven-key'), false);
+  assert.deepEqual(result.provider, { kind: 'cartesia-runpod' });
+  assert.equal(JSON.stringify(result).includes('test-cartesia-key'), false);
   assert.equal(JSON.stringify(result).includes('test-runpod-key'), false);
   assert.ok(calls.every(call => call.redirect === 'error'));
 });
@@ -168,7 +170,7 @@ test('cancel while waiting stops and cancels only the known own job, preserving 
   const provider = createGeneratedSpeechProvider(config(), {
     fetchImpl: async (url, init) => {
       calls.push({ url, ...init });
-      if (url.includes('elevenlabs')) return new Response(pcm());
+      if (url.includes('cartesia')) return new Response(pcm());
       if (url.endsWith('/run')) return json({ id: 'own-job', status: 'IN_QUEUE' });
       if (url.endsWith('/cancel/own-job')) return json({ status: 'CANCELLED' });
       assert.fail('must not poll after abort');

@@ -6,9 +6,10 @@ import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:p
 import { fileURLToPath } from 'node:url';
 import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
 import { normalizeSpeechPackage } from './public/speech-package.mjs';
+import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
-const PROFILE = 'astrid-spel2x-preview-v1';
+const PROFILE = ASTRID_VOICE_PROFILE.profileRevision;
 const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const AUDIO_LIMIT = 44 + 24000 * 2 * 25;
 const STORE_LIMIT = 256 * 1024 * 1024;
@@ -38,12 +39,12 @@ function configuration(env) {
   const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && env.CROUPIER_GENERATED_SPEECH_PREVIEW === '1'
     && ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(env.HOST);
   const value = { directory: env.CROUPIER_GENERATED_SPEECH_DIR,
-    elevenLabsApiKey: env.ELEVENLABS_API_KEY || env.ELEVENLABS_OC_API,
+    cartesiaApiKey: env.CARTESIA_API_KEY,
     runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
     voiceId: GENERATED_SPEECH_DEFAULTS.voiceId, modelId: GENERATED_SPEECH_DEFAULTS.modelId };
   const token = input => typeof input === 'string' && input.length > 0 && input.length <= 2048 && !/\s/.test(input);
   const configured = enabled && privateDirectory(value.directory)
-    && token(value.elevenLabsApiKey) && token(value.runpodApiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(value.runpodEndpointId ?? '');
+    && token(value.cartesiaApiKey) && token(value.runpodApiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(value.runpodEndpointId ?? '');
   return { enabled, configured, value };
 }
 
@@ -121,7 +122,7 @@ export function createGeneratedSpeechService(config, { provider = null } = {}) {
     if (requests >= GENERATED_SPEECH_LIMITS.requestLedger || bytes + AUDIO_LIMIT + GENERATED_SPEECH_LIMITS.videoBytes > STORE_LIMIT) fail('generated_speech_store_full', 503);
   }
   function outputPackage(result, input, artifactId) {
-    if (result?.exactText !== input.text || result?.voiceId !== voiceId || result?.modelId !== modelId || result?.provider?.kind !== 'elevenlabs-runpod') fail('generated_speech_output_mismatch', 502);
+    if (result?.exactText !== input.text || result?.voiceId !== voiceId || result?.modelId !== modelId || result?.provider?.kind !== ASTRID_VOICE_PROFILE.provider) fail('generated_speech_output_mismatch', 502);
     for (const [kind, max, contentType] of [['audio', AUDIO_LIMIT, 'audio/wav'], ['video', GENERATED_SPEECH_LIMITS.videoBytes, 'video/mp4']]) {
       const media = result[kind];
       if (!Buffer.isBuffer(media?.bytes) || !media.bytes.length || media.bytes.length > max || media.contentType !== contentType || digest(media.bytes) !== media.sha256) fail('generated_speech_output_mismatch', 502);
@@ -131,7 +132,7 @@ export function createGeneratedSpeechService(config, { provider = null } = {}) {
       audio: { url: `/api/generated-speech/${artifactId}/audio`, sha256: result.audio.sha256, durationMs: result.audio.durationMs },
       video: { videoId: `generated-${artifactId}.video`, url: `/api/generated-speech/${artifactId}/video`, sha256: result.video.sha256, fps: result.video.fps, frameCount: result.video.frameCount, presentation: 'lipsync' },
       audioDelayMs: 0, entryPose: 'standard-idle', exitPose: 'standard-idle', calibrationRevision: 'unreviewed-fixed-24fps', reviewStatus: 'pending',
-      generation: { requestId: input.requestId, provider: 'elevenlabs-runpod', modelId, avatarId: 'astrid_spel2x', profileRevision: PROFILE, textSha256: digest(input.text), audioSha256: result.audio.sha256 } });
+      generation: { requestId: input.requestId, provider: ASTRID_VOICE_PROFILE.provider, modelId, avatarId: 'astrid_spel2x', profileRevision: PROFILE, textSha256: digest(input.text), audioSha256: result.audio.sha256 } });
   }
   async function execute(input, ownerHash, key, fingerprint) {
     await store();

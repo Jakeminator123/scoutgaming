@@ -145,7 +145,7 @@ produktspelaren; det är inte en ny Eventstudio-flik.
 
 **Chatta vid det anslutna bordet** ligger under labbets jämförelsebild. En
 avgränsad brygga skickar bara text till originalets autentiserade chatt; servern
-hämtar publika kort och spelarminne. Fri text kan förberedas som ElevenLabs-ljud
+hämtar publika kort och spelarminne. Fri text kan förberedas som Cartesia-ljud
 och matchande RunPod-video medan spelet dealar. Talpaketet överförs tillbaka
 utan sessionnycklar och spelas först efter en ny renderad primärbas i labbet.
 Deal avbryter tal; gamla svar, fel hashar och fel revisioner får inte spelas.
@@ -158,7 +158,7 @@ verifierat uppspelningsminne. Tillfälliga testdatabaser raderas vid teststopp.
 
 Anslutet prov med genererat tal kräver explicit `--generated-speech` i
 [starthelpern](../../open-claw/lab/docs/LOCAL-CONNECTION-SV.md); standardstart
-förbrukar inga ElevenLabs-/RunPod-jobb. OpenAI-modellen är oförändrad. Genererade
+förbrukar inga Cartesia-/RunPod-jobb. OpenAI-modellen är oförändrad. Genererade
 takepaket är hashbundna previews, **inte mänskligt godkänd läppsynk**.
 Modellvalet `recordedLine` visas tills vidare bara som text i den länkade labbchatten
 om en exakt labbtake saknas; native-eventets inspelade replik påverkas inte.

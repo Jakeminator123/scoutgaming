@@ -6,15 +6,15 @@ import { createHash, randomUUID } from 'node:crypto';
 import lockfile from 'proper-lockfile';
 import { StudioError } from './project-store.mjs';
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
+import { ASTRID_VOICE_PROFILE } from '../../web/public/astrid-voice-profile.mjs';
 
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
 const ID = /^[a-f0-9]{64}$/;
 const inFlight = new Map();
 export const VOICE_PREVIEW = Object.freeze({
-  voiceId: 'EXAVITQu4vr4xnSDxMaL', voiceName: 'Sarah', modelId: 'eleven_multilingual_v2',
-  outputFormat: 'mp3_44100_128', maxTextLength: 500,
-  voiceSettings: Object.freeze({ stability: 0.55, similarity_boost: 0.75, style: 0, use_speaker_boost: true }),
+  voiceId: ASTRID_VOICE_PROFILE.voiceId, voiceName: ASTRID_VOICE_PROFILE.name, modelId: ASTRID_VOICE_PROFILE.modelId,
+  outputFormat: Object.freeze({ container: 'mp3', sample_rate: 44100, bit_rate: 128000 }), maxTextLength: 500,
 });
 export const VOICE_PHRASES = Object.freeze([
   Object.freeze({ id: 'welcome', label: 'Välkommen', text: 'Välkommen till bordet! Jag heter Astrid.' }),
@@ -28,16 +28,13 @@ export function readVoiceSettings({ env = process.env, envFiles = [resolve(LAB_D
   for (const file of envFiles) {
     try {
       const parsed = parseEnv(readFileSync(file, 'utf8'));
-      for (const key of ['ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API']) if (parsed[key] !== undefined) values[key] = parsed[key];
+      if (parsed.CARTESIA_API_KEY !== undefined) values.CARTESIA_API_KEY = parsed.CARTESIA_API_KEY;
     } catch (error) { if (error.code !== 'ENOENT') throw new StudioError('Rotens miljöfil kunde inte läsas.', 503); }
   }
-  for (const key of ['ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API']) if (env[key] !== undefined) values[key] = env[key];
-  const primary = values.ELEVENLABS_API_KEY?.trim() || '';
-  const alias = values.ELEVENLABS_OC_API?.trim() || '';
-  const mismatch = Boolean(primary && alias && primary !== alias);
+  if (env.CARTESIA_API_KEY !== undefined) values.CARTESIA_API_KEY = env.CARTESIA_API_KEY;
   return {
-    key: mismatch ? '' : primary || alias,
-    mismatch,
+    key: values.CARTESIA_API_KEY?.trim() || '',
+    mismatch: false,
     cacheDir: resolve(env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR, 'data'), 'voice-cache'),
   };
 }
@@ -45,7 +42,7 @@ export function readVoiceSettings({ env = process.env, envFiles = [resolve(LAB_D
 export function voicePreviewStatus(settings = readVoiceSettings()) {
   return {
     configured: Boolean(settings.key) && !settings.mismatch,
-    message: settings.mismatch ? 'ElevenLabs-nyckelns två namn har olika värden. Ange samma värde innan röstprov.' : settings.key ? 'ElevenLabs-nyckel finns på servern. Ingen röst genereras förrän du trycker på knappen.' : 'Lägg ELEVENLABS_API_KEY i rotens .env. ELEVENLABS_OC_API är ett valfritt alias med samma värde.',
+    message: settings.key ? 'Cartesia-nyckel finns på servern. Ingen röst genereras förrän du trycker på knappen.' : 'Lägg CARTESIA_API_KEY i rotens .env.',
     voiceName: VOICE_PREVIEW.voiceName, modelId: VOICE_PREVIEW.modelId,
     maxTextLength: VOICE_PREVIEW.maxTextLength, phrases: VOICE_PHRASES,
   };
@@ -60,7 +57,7 @@ export function voicePreviewText(body) {
 }
 
 function fingerprint(text) {
-  return { schemaVersion: 1, purpose: 'standalone-lab-voice-preview', text, voiceId: VOICE_PREVIEW.voiceId, modelId: VOICE_PREVIEW.modelId, outputFormat: VOICE_PREVIEW.outputFormat, voiceSettings: VOICE_PREVIEW.voiceSettings };
+  return { schemaVersion: 2, purpose: 'standalone-lab-voice-preview', text, voiceId: VOICE_PREVIEW.voiceId, modelId: VOICE_PREVIEW.modelId, outputFormat: VOICE_PREVIEW.outputFormat };
 }
 export function voicePreviewId(text) { return createHash('sha256').update(JSON.stringify(fingerprint(text))).digest('hex'); }
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -110,10 +107,10 @@ async function cachedVoice(id, cacheDir) {
 async function boundedAudio(response) {
   if (response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'audio/mpeg' || Number(response.headers.get('content-length')) > MAX_AUDIO_BYTES) {
     await response.body?.cancel();
-    throw new StudioError('ElevenLabs returnerade inte ett rimligt MP3-röstprov.', 502);
+    throw new StudioError('Cartesia returnerade inte ett rimligt MP3-röstprov.', 502);
   }
   const reader = response.body?.getReader();
-  if (!reader) throw new StudioError('ElevenLabs returnerade inget ljud.', 502);
+  if (!reader) throw new StudioError('Cartesia returnerade inget ljud.', 502);
   const chunks = []; let size = 0;
   try {
     for (;;) {
@@ -140,12 +137,12 @@ async function generateOnce(text, id, settings, fetchImpl) {
     if (!settings.key || settings.mismatch) throw new StudioError(voicePreviewStatus(settings).message, 503);
     let audio;
     try {
-      const response = await fetchImpl(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_PREVIEW.voiceId}?output_format=${VOICE_PREVIEW.outputFormat}`, {
+      const response = await fetchImpl('https://api.cartesia.ai/tts/bytes', {
         method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
-        headers: { 'xi-api-key': settings.key, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
-        body: JSON.stringify({ text, model_id: VOICE_PREVIEW.modelId, voice_settings: VOICE_PREVIEW.voiceSettings }),
+        headers: { Authorization: `Bearer ${settings.key}`, 'Cartesia-Version': '2026-08-14', 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
+        body: JSON.stringify({ transcript: text, voice: VOICE_PREVIEW.voiceId, model_id: VOICE_PREVIEW.modelId, output_format: VOICE_PREVIEW.outputFormat }),
       });
-      if (!response.ok) { await response.body?.cancel(); throw new StudioError(`ElevenLabs svarade ${response.status}. Ingen automatisk omkörning görs.`, 502); }
+      if (!response.ok) { await response.body?.cancel(); throw new StudioError(`Cartesia svarade ${response.status}. Ingen automatisk omkörning görs.`, 502); }
       audio = await boundedAudio(response);
     } catch (error) {
       if (error instanceof StudioError) throw error;

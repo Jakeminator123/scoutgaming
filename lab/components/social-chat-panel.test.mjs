@@ -66,7 +66,7 @@ test('chat defaults to speech but never generates it until sending; only one set
     const details = find(tree, node => node.type === 'details' && [node.props.children].flat().some(child => child?.type === 'summary' && text(child).includes(label)));
     assert.ok(details); assert.notEqual(details.props.open, true);
   }
-  const voice = find(tree, node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs');
+  const voice = find(tree, node => node.type === 'input' && node.props['aria-label'] === 'Ljud från Cartesia');
   assert.ok(voice); assert.equal(voice.props.checked, true);
   assert.match(text(tree), /använder krediter/);
   assert.equal(button(tree, 'Skicka till Astrid').props.disabled, true);
@@ -156,7 +156,7 @@ test('cooldown is a system message, never a spoken Astrid reply or model-history
 
 test('speech is on by default, exact matched audio plays once and cancellation pauses it', async () => {
   const instance = await ready({ respond: async (url, init) => { const body = JSON.parse(init.body); return replyFor(body, { audio: { id: 'a'.repeat(64), audioUrl: `/api/voice/${'a'.repeat(64)}`, text: policy.response.fixedText, cached: true } }); } });
-  const toggle = find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs');
+  const toggle = find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från Cartesia');
   assert.ok(toggle); assert.equal(toggle.props.checked, true);
   typeMessage(instance, 'Ett test'); submit(instance); await flush();
   assert.equal(JSON.parse(instance.requests.find(item => item.url === '/api/social/chat').init.body).voice, true);
@@ -187,7 +187,7 @@ test('two saved-audio replays preserve a neutral model choice without another pa
     triggerId: null, assetId: 'idle.ready.standard', confidence: 0.1, reply: replyText,
     audio: { id: 'c'.repeat(64), audioUrl: `/api/voice/${'c'.repeat(64)}`, text: replyText, cached: true },
   }) });
-  const toggle = find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs');
+  const toggle = find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från Cartesia');
   assert.equal(toggle.props.checked, true);
   typeMessage(instance, 'Hej!'); submit(instance); await flush();
   for (let replay = 0; replay < 2; replay++) {
@@ -205,16 +205,16 @@ test('two saved-audio replays preserve a neutral model choice without another pa
 
 test('muting speech prevents playback even if the response unexpectedly contains audio', async () => {
   const instance = await ready({ respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'b'.repeat(64), audioUrl: `/api/voice/${'b'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
-  find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs').props.onChange({ target: { checked: false } });
+  find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från Cartesia').props.onChange({ target: { checked: false } });
   typeMessage(instance, 'Ett tyst test'); submit(instance); await flush();
   assert.equal(JSON.parse(instance.requests.find(item => item.url === '/api/social/chat').init.body).voice, false);
   assert.equal(instance.reactions.length, 1); assert.equal(instance.audio.length, 0);
   instance.unmount();
 });
 
-test('voice preference stays on but unavailable ElevenLabs sends text-only and cannot play unexpected audio', async () => {
+test('voice preference stays on but unavailable Cartesia sends text-only and cannot play unexpected audio', async () => {
   const instance = await ready({ voiceConfigured: false, respond: async (url, init) => replyFor(JSON.parse(init.body), { audio: { id: 'b'.repeat(64), audioUrl: `/api/voice/${'b'.repeat(64)}`, text: policy.response.fixedText, cached: true } }) });
-  const toggle = find(instance.render(), node => node.props?.['aria-label'] === 'Ljud från ElevenLabs');
+  const toggle = find(instance.render(), node => node.props?.['aria-label'] === 'Ljud från Cartesia');
   assert.equal(toggle.props.checked, true);
   assert.equal(toggle.props.disabled, true);
   typeMessage(instance, 'Hej'); submit(instance); await flush();
@@ -237,7 +237,7 @@ test('configured generated package owns one exact paired playback in the same sc
       options.onReceipt({ state: 'end', packageId: 'fixture-paired-package', reviewStatus: 'pending' });
     },
   });
-  assert.match(text(instance.render()), /ElevenLabs \+ läppsynk · labbprov, ej visuellt godkänt/);
+  assert.match(text(instance.render()), /Victoria \+ läppsynk · labbprov, ej visuellt godkänt/);
   typeMessage(instance, 'Hej, säg något kort.'); submit(instance); await flush();
   assert.equal(instance.generated.length, 1);
   const { options } = instance.generated[0];
@@ -308,7 +308,7 @@ test('muting ignores unexpected generated packages; missing host or unconfigured
     const instance = await ready({ generatedSpeechConfigured: operation !== 'unconfigured',
       respond: async (_url, init) => replyFor(JSON.parse(init.body), { speechPackage: { packageId: 'fixture-gated' } }),
     });
-    if (operation === 'muted') find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från ElevenLabs').props.onChange({ target: { checked: false } });
+    if (operation === 'muted') find(instance.render(), node => node.type === 'input' && node.props['aria-label'] === 'Ljud från Cartesia').props.onChange({ target: { checked: false } });
     if (operation === 'no-host') instance.props.speechHost.current = null;
     typeMessage(instance, 'Hej'); submit(instance); await flush();
     assert.equal(instance.generated.length, 0, operation);

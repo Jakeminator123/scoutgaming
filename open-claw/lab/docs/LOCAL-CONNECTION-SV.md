@@ -125,7 +125,7 @@ externa nätspärr, blockerade env-filer och tomma providerinställningar.
 ### Valfritt genererat tal och läppsynk i den isolerade körningen
 
 Detta är en explicit preview, inte ett godkännande av läppsynkens visuella
-kvalitet. Standardstarten ovan aktiverar inte ElevenLabs eller RunPod, även om
+kvalitet. Standardstarten ovan aktiverar inte Cartesia eller RunPod, även om
 nycklar finns i privata filer eller i den anropande processens miljö.
 
 ```powershell
@@ -133,8 +133,7 @@ node open-claw/lab/deploy/local-connection.mjs --check --generated-speech
 node open-claw/lab/deploy/local-connection.mjs --start --generated-speech --product-port 4200 --lab-port 4201
 ```
 
-För opt-in behövs befintlig `ELEVENLABS_API_KEY` (alternativt
-`ELEVENLABS_OC_API`), `RUNPOD_API_KEY` och en separat
+För opt-in behövs befintlig `CARTESIA_API_KEY`, `RUNPOD_API_KEY` och en separat
 `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Det äldre `RUNPOD_ENDPOINT_ID` används
 aldrig som reserv. Saknas något vägrar starten innan barnprocesserna skapas.
 `--check` visar enbart närvaro och konfigurationsstatus; inget tal eller GPU-jobb
@@ -146,13 +145,13 @@ Den sista filen kan därför innehålla enbart det nya scoped-endpoint-ID:t.
 Nycklar behöver inte kopieras dit eller anges på kommandoraden.
 
 Endast opt-in-körningen får server-side talnycklarna och de ytterligare
-nätmålen `https://api.elevenlabs.io` och `https://api.runpod.ai`. Produkt och
+nätmålen `https://api.cartesia.ai` och `https://api.runpod.ai`. Produkt och
 labb får varsin tom cache under körningens `speech/product` respektive
 `speech/lab`, flaggan `CROUPIER_GENERATED_SPEECH=1` och explicit
 `CROUPIER_GENERATED_SPEECH_PREVIEW=1`. Cacherna försvinner med testkörningen.
 OpenClaws modellnyckel vidarebefordras fortfarande inte, och gränsen mellan
 produktens speech-token och labbets Director-token behålls. Generering som
-uttryckligen begärs i chatten kan förbruka ElevenLabs-/RunPod-krediter.
+uttryckligen begärs i chatten kan förbruka Cartesia-/RunPod-krediter.
 
 Med dagens privata konfiguration använder labbet Director och produktservern
 det separata speech-reläet. `--check` är ändå auktoritativt för en ny körning:
