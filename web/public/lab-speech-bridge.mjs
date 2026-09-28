@@ -41,6 +41,10 @@ function send(binding, nonce, kind, payload, transfer = []) {
 function decision(value) {
   if (!object(value) || !['generatedText', 'recordedLine', 'silence'].includes(value.kind) || !id(value.requestId)
     || !['astrid', 'vera', 'amira', 'mei'].includes(value.dealerId) || !revision(value.sessionRevision) || !revision(value.roundRevision)) throw Error('invalid-decision');
+  // This bridge transfers finalized media bytes between two local origins.
+  // A native-origin WebSocket ticket cannot be used by the lab-origin player.
+  // Reject unsupported delivery before projecting fields or loading media.
+  if (value.speechStream != null || value.visualMode === 'generated-lipsync-stream-preview') throw Error('unsupported-speech-stream');
   const result = { kind: value.kind, requestId: value.requestId, dealerId: value.dealerId,
     sessionRevision: value.sessionRevision, roundRevision: value.roundRevision };
   if (value.kind === 'silence') return result;

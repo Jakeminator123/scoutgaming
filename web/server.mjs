@@ -13,6 +13,7 @@ import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { readPlayerResults } from './player-results.mjs';
 import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
+import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
 import { CHAT_STAGES } from './public/chat-response.mjs';
 import { createPlayerChatMemory } from './player-chat-memory.mjs';
 import { createPlayerProbeStore } from './player-probe-store.mjs';
@@ -43,6 +44,7 @@ const db = new DatabaseSync(join(dataDir, 'croupier.db'));
 const playerChatMemory = createPlayerChatMemory(db);
 let presentationApi;
 const activePlayerChats = new Map();
+let speechStreamService = null;
 const probeStore = createPlayerProbeStore(db, playerChatMemory);
 let activeProbeRuntime;
 async function loadProbeRuntime() {
@@ -783,7 +785,7 @@ const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const lissabonProfiles = createLissabonProfiles({ db, createPlayer: apiPlayer,
   enabled: guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
     && process.env.CROUPIER_LISSABON_PROFILES === '1' && process.env.NODE_ENV !== 'production',
-  onSwitch: playerId => { probeRuntime.cancel({playerId,dealerId:'astrid'}); for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
+  onSwitch: playerId => { speechStreamService?.cancelPlayer(playerId); probeRuntime.cancel({playerId,dealerId:'astrid'}); for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
 });
 const playerSession = req => lissabonProfiles.session(req) ?? auth.session(req);
 db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
@@ -811,7 +813,7 @@ function chatSessionOwner(req, playerId) {
   }
   throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
 }
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   const pathname=new URL(req.url,'http://local').pathname;
   if(boGameAuth(req,res))return;
   { const u=new URL(req.url,'http://local'); const launch=u.searchParams.get('launch');
@@ -823,7 +825,7 @@ createServer(async (req, res) => {
   try {
     const loggingOut=pathname==='/api/auth/logout'?auth.session(req):null;
     if(await auth.handle(req,res)){
-      if(loggingOut && res.statusCode===200)probeRuntime.cancel({playerId:loggingOut.playerId,dealerId:'astrid'},'logout');
+      if(loggingOut && res.statusCode===200){speechStreamService?.cancelPlayer(loggingOut.playerId);probeRuntime.cancel({playerId:loggingOut.playerId,dealerId:'astrid'},'logout');}
       return;
     }
   } catch { if(!res.headersSent){res.writeHead(400);res.end('Invalid request');}return; }
@@ -892,6 +894,7 @@ createServer(async (req, res) => {
       if(pathname==='/api/probe/presence')json(200,await probeRuntime.presence(scope,body,owner));
       else if(pathname==='/api/probe/forget'){
         activePlayerChats.get(JSON.stringify([authenticated,'astrid']))?.abort('chat_memory_changed');
+        speechStreamService?.cancelPlayer(authenticated);
         probeRuntime.forget(scope,body.factId);json(200,await probeRuntime.inspect(scope));
       }
       else if(pathname==='/api/probe/decide'||pathname==='/api/probe/receipt'||pathname==='/api/probe/test'){
@@ -922,6 +925,7 @@ createServer(async (req, res) => {
         if (pathname.endsWith('/forget')) {
           const key = JSON.stringify([authenticated, dealerId]);
           activePlayerChats.get(key)?.abort('chat_memory_changed');
+          if (dealerId === 'astrid') speechStreamService?.cancelPlayer(authenticated);
           probeRuntime.forget(scope);
           respond(200, playerChatMemory.forget(scope));
         } else respond(200, playerChatMemory.profile(scope));
@@ -1068,7 +1072,7 @@ createServer(async (req, res) => {
     });
     req.on('end', async () => {
       if (tooLarge) return;
-      let memoryTurn, memoryKey;
+      let memoryTurn, memoryKey, expectedMemoryRevision;
       try {
         const incoming = JSON.parse(body || '{}');
         const dealerId = Object.hasOwn(CHAT_DEALERS, incoming.dealer) ? incoming.dealer : null;
@@ -1078,6 +1082,7 @@ createServer(async (req, res) => {
         const session = playerSession(req);
         const status = authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         const owner = chatSessionOwner(req, authenticated);
+        if (dealerId === 'astrid') speechStreamService?.cancelOwner(owner);
         const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
         let observation;
         if (incoming.observation !== undefined) {
@@ -1095,6 +1100,7 @@ createServer(async (req, res) => {
         const scope = { playerId: authenticated, dealerId };
         await probeRuntime.cancel(scope);
         memoryTurn = playerChatMemory.begin({ ...scope, requestId: incoming.requestId, message: incoming.message });
+        expectedMemoryRevision = memoryTurn.revision;
         memoryKey = JSON.stringify([authenticated, dealerId]);
         activePlayerChats.set(memoryKey, controller);
         const conversation = probeConfig ? probeStore.conversation(scope, probeConfig.policy) : null;
@@ -1110,11 +1116,11 @@ createServer(async (req, res) => {
               throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
             }
           }
-          if (playerChatMemory.profile(scope).revision !== memoryTurn.revision) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
+          if (playerChatMemory.profile(scope).revision !== expectedMemoryRevision) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
           if (conversation && !probeStore.conversationCurrent(scope, conversation)) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
           return authoritativeChatStatus(authenticated, playerSession(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         };
-        const decision = await completeChatWithSpeech({ request, status, owner,
+        const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
           onProgress: (stage, metrics) => { if (stream && Object.hasOwn(CHAT_STAGES, stage)) frame({ type: 'progress', stage, elapsedMs: Math.round(performance.now() - startedAt), ...(metrics ? { metrics } : {}) }); },
           onDecision: exactText => { if (stream) frame({ type: 'preview', exactText }); },
           readOwner: () => chatSessionOwner(req, authenticated),
@@ -1124,10 +1130,13 @@ createServer(async (req, res) => {
             ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
           }) }),
           service: getGeneratedSpeechService(),
+          streamService: incoming.acceptsSpeechStream === true ? speechStreamService : null,
         });
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
-        memoryTurn.commit({ kind: decision.kind, exactText: decision.exactText });
+        const memoryReceipt = memoryTurn.commit({ kind: decision.kind, exactText: decision.exactText });
+        // This reply's own commit is expected; a later forget/turn remains stale.
+        expectedMemoryRevision = memoryReceipt.revision;
         if(dealerId==='astrid')void probeRuntime.rememberMessage(scope,incoming.requestId,incoming.message).catch(()=>{});
         if (stream) { frame({ type: 'result', decision }); res.end(); return; }
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -1218,4 +1227,13 @@ createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': size, ...cache });
     createReadStream(file).pipe(res);
   }
-}).listen(port, host, () => console.log(`croupier demo on http://${host}:${port}`));
+});
+if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
+  const streaming = generatedSpeechStreamConfiguration(process.env);
+  if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
+  speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
+    resolveOwner: (req, playerId) => chatSessionOwner(req, playerId),
+  });
+  server.once('close', () => speechStreamService.close());
+}
+server.listen(port, host, () => console.log(`croupier demo on http://${host}:${port}`));
