@@ -9,6 +9,13 @@ import { issueTicket, ticketAuthenticator } from '../auth.mjs';
 const secret = 'test-worker-secret-with-at-least-32-characters';
 const ticketSecret = 'test-ticket-secret-with-at-least-32-characters';
 const origin = 'https://game.example.test';
+async function eventually(predicate, description) {
+  const deadline = Date.now() + 1000;
+  while (!predicate()) {
+    assert.ok(Date.now() < deadline, description);
+    await new Promise(resolve => setTimeout(resolve, 5));
+  }
+}
 function messages(ws) {
   const queue = [], waiting = [];
   ws.on('message', (data, binary) => {
@@ -56,7 +63,7 @@ test('disconnect holds worker until cancellation acknowledgement', { timeout: 50
   c.send(JSON.stringify({ t: 'start', rate: 24000, protocol: 2 })); await fromWorker();
   c.close(); assert.equal((await fromWorker()).t, 'abort'); assert.equal(f.relay.status().available, 0);
   w.send(JSON.stringify({ t: 'done', id: ready.id, aborted: true }));
-  await new Promise(resolve => setTimeout(resolve, 20));
+  await eventually(() => f.relay.status().available === 1, 'worker must be released after its acknowledgement');
   assert.equal(f.relay.status().available, 1);
 });
 
@@ -108,7 +115,8 @@ test('disconnect before start releases warm worker without cancellation', { time
   const f = await fixture(t);
   const w = f.worker(); await once(w, 'open');
   const c = f.client(), readC = messages(c); await readC(); c.close();
-  await once(c, 'close'); await new Promise(resolve => setTimeout(resolve, 20));
+  await once(c, 'close');
+  await eventually(() => f.relay.status().available === 1, 'server must release the unstarted session');
   assert.equal(f.relay.status().available, 1); assert.equal(w.readyState, WebSocket.OPEN);
 });
 
@@ -119,7 +127,9 @@ test('null and non-object controls are rejected without crashing service', { tim
     const c = f.client(), readC = messages(c); await readC(); c.send(data);
     assert.equal((await readC()).error, 'Invalid control'); await once(c, 'close');
   }
-  w.send('null'); await once(w, 'close');
+  w.send('null'); assert.equal((await once(w, 'close'))[0], 1008);
+  // Peer close can arrive before the relay receives its own socket close event.
+  await eventually(() => f.relay.status().workers === 0, 'server must remove the rejected worker');
   assert.equal(f.relay.status().workers, 0);
 });
 
@@ -127,7 +137,8 @@ test('stale source cannot attach to replacement utterance owned by same session'
   const f = await fixture(t, { allowClientPCM: false });
   const w = f.worker(); await once(w, 'open');
   const a = f.client(), readA = messages(a); const first = await readA();
-  a.close(); await once(a, 'close'); await new Promise(resolve => setTimeout(resolve, 10));
+  a.close(); await once(a, 'close');
+  await eventually(() => f.relay.status().available === 1, 'server must release the previous session');
   const b = f.client(), readB = messages(b); const second = await readB();
   assert.notEqual(first.id, second.id);
   assert.throws(() => f.relay.openSource({ userId: 'user1', sessionId: 'session1', id: first.id, rate: 24000 }), /owned/);
