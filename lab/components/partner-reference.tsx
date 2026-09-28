@@ -1,4 +1,5 @@
 'use client';
+import { labUrl } from "../lib/lab-url.mjs";
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { exportPartnerTrace, type PartnerTrace } from '../lib/partner-trace.mjs';
@@ -43,14 +44,14 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   }, []);
   useEffect(() => {
     let current = true;
-    fetch('/api/inputs/reference', { cache: 'no-store' }).then(async response => {
+    fetch(labUrl('/api/inputs/reference'), { cache: 'no-store' }).then(async response => {
       if (!response.ok) throw new Error();
       const data = await response.json(); if (current) setConfiguration(data);
     }).catch(() => { if (current) setError('Referensspelets konfiguration kunde inte läsas.'); });
     return () => { current = false; };
   }, []);
   async function request(action: string) {
-    const response = await fetch('/api/inputs/reference', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+    const response = await fetch(labUrl('/api/inputs/reference'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error ?? 'API-anropet misslyckades.');
     return data;

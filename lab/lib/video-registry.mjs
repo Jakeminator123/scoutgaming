@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { labUrl } from "./lab-url.mjs";
 import { constants } from 'node:fs';
 import { access, lstat, open, realpath, writeFile, rename, unlink } from 'node:fs/promises';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
@@ -122,7 +123,7 @@ function publicEntry(entry, available, integrity, family) {
   if (entry.classification) return {
     id: entry.id, label: entry.classification.label, dealer: entry.classification.dealerId,
     fileName: `${entry.id}.${entry.extension}`, verdict: 'unrated', bytes: entry.size,
-    sha256: entry.sha256, available, previewUrl: `/api/videos/${entry.id}`,
+    sha256: entry.sha256, available, previewUrl: labUrl(`/api/videos/${entry.id}`),
     reviewStatus: 'unreviewed', integrity, suggestedEventId: entry.classification.eventId,
     bindingScope: 'lab-only', source: 'upload', classification: entry.classification, addedAt: entry.addedAt,
   };
@@ -135,7 +136,7 @@ function publicEntry(entry, available, integrity, family) {
     bytes: entry.size,
     sha256: entry.sha256,
     available,
-    previewUrl: `/api/videos/${entry.id}`,
+    previewUrl: labUrl(`/api/videos/${entry.id}`),
     reviewStatus: 'unreviewed',
     integrity,
     bindingScope: 'shared-local',
@@ -160,7 +161,7 @@ function publicEntry(entry, available, integrity, family) {
     sha256: entry.sha256,
     ...(Number.isFinite(entry.duration) && entry.duration > 0 ? { duration: entry.duration } : {}),
     available,
-    previewUrl: `/api/videos/${entry.id}`,
+    previewUrl: labUrl(`/api/videos/${entry.id}`),
     reviewStatus: 'unreviewed',
     integrity,
     ...(eventId && /^[a-zA-Z0-9._-]+$/.test(eventId) ? { suggestedEventId: eventId } : {}),

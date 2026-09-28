@@ -1,4 +1,5 @@
 'use client';
+import { labUrl } from "../lib/lab-url.mjs";
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import styles from './original-media-player.module.css';
 
@@ -58,5 +59,5 @@ export function OriginalMediaPlayer({ mediaId, playId, playing, event, onPlaybac
       frame.current?.contentWindow?.postMessage({ type: 'croupier-original-control', channel: currentChannel, mediaId, command: 'play', event: sourceEvent.current }, window.location.origin);
     }
   }, [playing, currentChannel, mediaId]);
-  return <div className={styles.preview}><iframe ref={frame} key={currentChannel} title="Lokalt originalförval · samma mediespelare" src={`/api/original-media/player?id=${encodeURIComponent(mediaId)}&channel=${encodeURIComponent(currentChannel)}`} allow="autoplay" referrerPolicy="no-referrer" /><span>Lokalt originalförval · ej ny visuell acceptans</span></div>;
+  return <div className={styles.preview}><iframe ref={frame} key={currentChannel} title="Lokalt originalförval · samma mediespelare" src={labUrl(`/api/original-media/player?id=${encodeURIComponent(mediaId)}&channel=${encodeURIComponent(currentChannel)}`)} allow="autoplay" referrerPolicy="no-referrer" /><span>Lokalt originalförval · ej ny visuell acceptans</span></div>;
 }

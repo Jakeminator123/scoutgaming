@@ -37,6 +37,16 @@ export function upstreamForRequest({ headers, method, url }, config) {
   if (!path) return null;
   if (host === new URL(config.gameOrigin).host) {
     if (path === LAB_CHECK) return null; // The identity check is gateway-internal only.
+    if (config.singleOrigin) {
+      // Reject noncanonical aliases at the mount boundary rather than allowing
+      // Web and Next to interpret encoded/dot/case variants differently.
+      if (path === '/studio' || path.startsWith('/studio/')) {
+        const raw = new URL(url, config.gameOrigin).pathname;
+        if (!(raw === '/studio' || raw.startsWith('/studio/')) || /%|\\|\/\//.test(raw)) return null;
+        return LAB_PORT;
+      }
+      return WEB_PORT;
+    }
     if (boPath(path) && !(method === 'GET' && url === '/api/bo/config')) return null;
     return WEB_PORT;
   }

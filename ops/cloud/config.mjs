@@ -90,13 +90,22 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   const runpodEndpointId = env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID || '';
   if (generatedSpeech && (![cartesiaKey, runpodKey].every(value => value.length > 0 && value.length <= 2048 && !/\s/.test(value))
     || !/^[A-Za-z0-9_-]{1,100}$/.test(runpodEndpointId))) fail('CARTESIA_API_KEY/RUNPOD_API_KEY/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID');
-  const gameOrigin = httpsOrigin(env.PUBLIC_URL, 'PUBLIC_URL');
-  const boOrigin = httpsOrigin(env.BO_URL, 'BO_URL');
-  const labOrigin = httpsOrigin(env.LAB_PUBLIC_URL, 'LAB_PUBLIC_URL');
-  if (gameOrigin === labOrigin) fail('LAB_PUBLIC_URL');
-  if (boOrigin === gameOrigin || boOrigin === labOrigin) fail('BO_URL');
-  if (httpsOrigin(env.CROUPIER_GAME_ORIGIN, 'CROUPIER_GAME_ORIGIN') !== gameOrigin
-    || httpsOrigin(env.BETTALOTTO_PARTNER_BASE_URL, 'BETTALOTTO_PARTNER_BASE_URL') !== gameOrigin) {
+  const layout = env.CROUPIER_CLOUD_LAYOUT || 'separate-hosts';
+  if (!['separate-hosts', 'single-origin'].includes(layout)) fail('CROUPIER_CLOUD_LAYOUT');
+  const singleOrigin = layout === 'single-origin';
+  const gameOrigin = httpsOrigin(env.PUBLIC_URL || (singleOrigin ? env.RENDER_EXTERNAL_URL : ''), 'PUBLIC_URL');
+  const boOrigin = httpsOrigin(env.BO_URL || (singleOrigin ? gameOrigin : ''), 'BO_URL');
+  const labOrigin = httpsOrigin(env.LAB_PUBLIC_URL || (singleOrigin ? gameOrigin : ''), 'LAB_PUBLIC_URL');
+  if (singleOrigin) {
+    if (boOrigin !== gameOrigin || labOrigin !== gameOrigin) fail('CROUPIER_CLOUD_LAYOUT origins');
+  } else {
+    if (gameOrigin === labOrigin) fail('LAB_PUBLIC_URL');
+    if (boOrigin === gameOrigin || boOrigin === labOrigin) fail('BO_URL');
+  }
+  const labBasePath = singleOrigin ? '/studio' : '';
+  if (env.CROUPIER_LAB_BASE_PATH !== undefined && env.CROUPIER_LAB_BASE_PATH !== labBasePath) fail('CROUPIER_LAB_BASE_PATH');
+  if (httpsOrigin(env.CROUPIER_GAME_ORIGIN || (singleOrigin ? gameOrigin : ''), 'CROUPIER_GAME_ORIGIN') !== gameOrigin
+    || httpsOrigin(env.BETTALOTTO_PARTNER_BASE_URL || (singleOrigin ? gameOrigin : ''), 'BETTALOTTO_PARTNER_BASE_URL') !== gameOrigin) {
     fail('CROUPIER_GAME_ORIGIN/BETTALOTTO_PARTNER_BASE_URL');
   }
   if (env.CROUPIER_STREAM_LANE !== 'lissabon-stream-lane') fail('CROUPIER_STREAM_LANE');
@@ -131,7 +140,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (partnerPresent.every(Boolean) && (!/^ck_live_[A-Za-z0-9_-]{24}$/.test(env.BETTALOTTO_PARTNER_KEY_ID)
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
-  return Object.freeze({ gameOrigin, boOrigin, labOrigin, publicPort, dataRoot, paths, videoArchive,
+  return Object.freeze({ gameOrigin, boOrigin, labOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
     director, productSpeech, labRemote, timeoutMs, camera, generatedSpeech, streaming,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret } : null,
@@ -188,6 +197,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
       env: { ...shared, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
         BO_URL: config.boOrigin, LAB_PUBLIC_URL: config.labOrigin,
         CROUPIER_CLOUD_RUNTIME: '1',
+        CROUPIER_CLOUD_LAYOUT: config.singleOrigin ? 'single-origin' : 'separate-hosts',
         CROUPIER_PLAYER_ACCOUNTS: config.playerAccounts ? '1' : '',
         ...(config.bootstrapAdmin ? {
           CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: config.bootstrapAdmin.user,
@@ -220,6 +230,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
       cwd: join(REPOSITORY, 'lab'),
       env: { ...shared, HOST: '127.0.0.1', PORT: String(LAB_PORT), CROUPIER_LAB_DIST_DIR: '.next',
         LAB_PUBLIC_URL: config.labOrigin, CROUPIER_LAB_INTERNAL_SECRET: labInternalSecret,
+        CROUPIER_LAB_BASE_PATH: config.labBasePath,
         LAB_STUDIO_DATA_DIR: config.paths.studio, CROUPIER_GAME_ORIGIN: config.gameOrigin,
         BETTALOTTO_PARTNER_BASE_URL: config.gameOrigin,
         ...(config.partner ?? {}), LAB_REMOTE_URL: config.labRemote.url, LAB_REMOTE_TOKEN: config.labRemote.token } },

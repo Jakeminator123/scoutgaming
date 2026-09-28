@@ -69,7 +69,7 @@ export async function startChildren(specs, { spawnProcess = spawn, wait = waitFo
       { cwd: specs.lab.cwd, env: specs.lab.env, stdio: 'ignore', windowsHide: true });
     lab.on('error', () => {});
     labExit = new Promise(resolve => lab.once('exit', () => resolve('lab-exit')));
-    await wait(lab, 'http://127.0.0.1:4188/api/health', async response => {
+    await wait(lab, `http://127.0.0.1:4188${specs.lab.env.CROUPIER_LAB_BASE_PATH || ''}/api/health`, async response => {
       if (response.status !== 200) return false;
       const health = await response.json();
       return health?.service === 'croupier-next-studio' && health.streamLane === 'lissabon-stream-lane';

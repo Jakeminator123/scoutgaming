@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from 'node:crypto';
+import { stripLabBasePath } from "./lab-url.mjs";
 import { isIP } from 'node:net';
 import { assertLocalRequest, errorResponse, jsonResponse } from './http-guard.mjs';
 import { StudioError } from './project-store.mjs';
@@ -198,8 +199,8 @@ export function createPartnerObserver({ env = () => process.env, fetchImpl = fet
       if (request.method !== 'GET') return jsonResponse({ error: 'Endast läsning är tillåten.' }, 405);
       const url = new URL(request.url);
       if (url.search) throw new StudioError('Partnerinställningar anges endast på labbservern.');
-      if (url.pathname === '/api/inputs') return jsonResponse(status());
-      if (url.pathname === '/api/inputs/events') return stream(request);
+      if (stripLabBasePath(url.pathname) === '/api/inputs') return jsonResponse(status());
+      if (stripLabBasePath(url.pathname) === '/api/inputs/events') return stream(request);
       return jsonResponse({ error: 'Okänd eventobservatör.' }, 404);
     } catch (error) { return errorResponse(error); }
   }

@@ -1,4 +1,5 @@
 'use client';
+import { labUrl } from "../lib/lab-url.mjs";
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { requestJson } from './studio-types';
@@ -200,7 +201,7 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
     const run = generation.current;
     setBusy('playback');
     playback.current ??= createSocialPlayback({
-      createAudio: source => new Audio(source),
+      createAudio: source => new Audio(labUrl(source)),
       onState: state => {
         setAudioPlaying(state === 'playing');
         if (state !== 'idle') callbacks.current.onActivity?.({ type: `social.audio.${state === 'playing' ? 'started' : 'loading'}`, requestId: activeRequestId.current, reason: state === 'playing' ? 'browser-audio-playing' : 'audio-metadata-preflight', data: { maxDurationMs: SOCIAL_SPEECH_LIMIT_MS, displayedAssetId: 'idle.ready.standard', lipsyncVerified: false } });

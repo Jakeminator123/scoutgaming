@@ -1,4 +1,5 @@
 import type { StudioAsset, StudioVariant } from '../lib/studio-model.mjs';
+import { labUrl, stripLabBasePath } from "../lib/lab-url.mjs";
 import type { VideoMetadata } from '../lib/video-intake.mjs';
 
 export type StudioView = 'tree' | 'lab' | 'videos' | 'activity' | 'openclaw' | 'guide' | 'probe';
@@ -90,15 +91,15 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
   return social ? undefined : result ? result.videoGenerationId : variant.videoGenerationId;
 }
 
-export const viewPaths: Record<StudioView, string> = { tree: '/tree', lab: '/', videos: '/videos', activity: '/activity', openclaw: '/openclaw', guide: '/guide', probe: '/probe' };
+export const viewPaths: Record<StudioView, string> = { tree: labUrl('/tree'), lab: labUrl('/'), videos: labUrl('/videos'), activity: labUrl('/activity'), openclaw: labUrl('/openclaw'), guide: labUrl('/guide'), probe: labUrl('/probe') };
 
 export function studioViewForPath(path: string): StudioView {
-  const segment = path.split('/').filter(Boolean)[0];
+  const segment = stripLabBasePath(path).split('/').filter(Boolean)[0];
   return segment === 'tree' || segment === 'videos' || segment === 'activity' || segment === 'openclaw' || segment === 'guide' || segment === 'probe' ? segment : 'lab';
 }
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
+  const response = await fetch(labUrl(url), { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const detail = typeof data.error === 'string' ? data.error : typeof data.message === 'string' ? data.message : 'Begäran misslyckades.';

@@ -804,7 +804,7 @@ const validLaunch=token=>{const claims=jwtVerify(token);return !!(claims?.sub&&c
 const boGameAuth=backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL});
 const boLabAuth=backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
   authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
-  labPublicUrl:process.env.LAB_PUBLIC_URL});
+  labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'});
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const lissabonProfiles = createLissabonProfiles({ db, createPlayer: apiPlayer,
   enabled: !playerAccounts && guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'

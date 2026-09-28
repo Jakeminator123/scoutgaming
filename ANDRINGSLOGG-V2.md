@@ -1,5 +1,18 @@
 # V2 – kort ändringslogg och nästa beslut
 
+## 2026-09-29 – Render utan egen domän
+
+- Uttryckligt single-origin-läge: spel `/`, BO `/bo`, Lab `/studio`.
+  Inloggning och adminroller behålls; det är inte samma browserisolering som
+  separata domäner. Labs länkar/API/medieadresser följer den byggda sökvägen.
+- Diskstart för exakt `/var/data`, sedan körs apparna utan root. Lokala
+  databaser, filmer och den pågående förhandsvisningen är orörda.
+- 494 Lab-test, 40 moln-/auth-testposter, Next-produktionsbygge och fyrdealers
+  hash/probe-kontroll passerar. Ingen ny visuell acceptans eller GPU-körning.
+- Render-formuläret är förberett, men tjänsten är ännu inte skapad: säkert
+  införda anslutningsnycklar och Jakobs adminlösenord återstår före Deploy.
+  [Molnstartens handoff](docs/CLOUD-LAUNCH-HANDOFF.md) innehåller nästa steg.
+
 Detta är den korta notisen i repots rot. Detaljer och testkrav finns i
 [status- och testplanen](docs/STATUS-OCH-TESTPLAN-V2.md).
 Skriv datum, ändring och verifiering här när arbetet går vidare; skilj alltid

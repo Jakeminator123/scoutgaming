@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
+import { stripLabBasePath } from './lab-url.mjs';
 import { StudioError } from './project-store.mjs';
 import { StudioValidationError } from './studio-model.mjs';
 import { LabInputError } from '../../open-claw/lab/src/engine.mjs';
@@ -21,7 +22,7 @@ function requestBoundary(request) {
   if (local) {
     if (cloudConfigured) {
       const url = new URL(request.url);
-      if (request.method !== 'GET' || url.pathname !== '/api/health') throw new StudioError('Lokal åtkomst är avstängd i molnläget.', 403);
+      if (request.method !== 'GET' || stripLabBasePath(url.pathname) !== '/api/health') throw new StudioError('Lokal åtkomst är avstängd i molnläget.', 403);
     }
     return { mode: 'local', host: local };
   }

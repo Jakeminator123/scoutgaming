@@ -1,4 +1,5 @@
 'use client';
+import { labUrl } from "../lib/lab-url.mjs";
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { VoiceResult, VoiceStatus } from '../lib/voice-preview.mjs';
@@ -63,6 +64,6 @@ export function VoicePreviewPanel({ latestReply = '' }: { latestReply?: string }
     <p className={styles.status}>{status?.message ?? 'Läser lokal konfiguration…'}</p>
     <button className="primary-button" type="button" onClick={() => void generate()} disabled={busy || !status?.configured || !text.trim() || tooLong}>{busy ? 'Genererar röstprov…' : 'Generera röstprov'}</button>
     {error ? <p className="inline-error" role="alert">{error}</p> : null}
-    {result ? <div className={styles.result} aria-live="polite"><strong>{result.cached ? 'Återanvänt från lokal cache' : 'Nytt röstprov sparat lokalt'}</strong><audio ref={bindAudio} controls preload="metadata" src={result.audioUrl} aria-label={`Röstprov med ${result.voiceName}`} /><p>Tryck på play för att lyssna. Ljudet spelas inte upp automatiskt.</p></div> : null}
+    {result ? <div className={styles.result} aria-live="polite"><strong>{result.cached ? 'Återanvänt från lokal cache' : 'Nytt röstprov sparat lokalt'}</strong><audio ref={bindAudio} controls preload="metadata" src={labUrl(result.audioUrl)} aria-label={`Röstprov med ${result.voiceName}`} /><p>Tryck på play för att lyssna. Ljudet spelas inte upp automatiskt.</p></div> : null}
   </section>;
 }

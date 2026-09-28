@@ -1,4 +1,5 @@
 import { basename, resolve } from 'node:path';
+import { stripLabBasePath } from "./lab-url.mjs";
 import { createHash } from 'node:crypto';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { normalizeSocialInput, socialChat, validateSocialReply } from '../../open-claw/lab/src/social.mjs';
@@ -122,7 +123,7 @@ function currentService() { return service ??= createSocialService(); }
 export async function socialEndpoint(request, { store = socialStore(), service: suppliedService, settings, voiceSettings, speechStatus = generatedSpeechStatus, fetchImpl = fetch } = {}) {
   try {
     assertLocalRequest(request);
-    const path = new URL(request.url).pathname;
+    const path = stripLabBasePath(new URL(request.url).pathname);
     const config = settings ?? settingsNow();
     if (path === '/api/social' && request.method === 'GET') {
       const generatedSpeech = speechStatus();
