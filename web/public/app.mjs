@@ -2589,7 +2589,7 @@ if (DEALER.key === 'astrid') {
     identity: poseIdentity,
     flags: ownJobId => ({ present: !document.hidden, sound: !voice.muted,
       typing: Boolean($('#chat-input').value.trim()) || document.activeElement === $('#chat-input'),
-      quiet: probePresentationQuiet({busy,round,chatBusy,speaking,pending:speechQueue.pending,gate:speechPoseGate,ownJobId}) }),
+      quiet: probePresentationQuiet({busy,round,chatBusy,speaking,pending:speechQueue.pending,gate:speechPoseGate,ownJobId,idleBackground:localPresentation?.idleBackground}) }),
     mount: memoryPanel,
     report: ({state,...entry}) => nativeObservation.emit('status', { ...entry, state:'probe', stage:state }),
     cancelDelivery: (id,reason) => speechPoseGate.cancel(id,reason),
@@ -2599,10 +2599,11 @@ if (DEALER.key === 'astrid') {
       const pending={...options,probe:true,correlation:nativeObservation.context(),requestedAt:performance.now(),playbackReceipt:null};
       pendingChatReplies.set(id,pending);
       try {
+        localPresentation?.state({ ready: true });
         speechPoseGate.responseReady(id,decision);
         const result=await received.completion;
         return {...result,playback:pending.playbackReceipt};
-      }finally{pendingChatReplies.delete(id);}
+      }finally{pendingChatReplies.delete(id);if(!pendingChatReplies.size)localPresentation?.state({ready:false});}
     },
   });
   $('#chat-input').addEventListener('input',()=>probeClient.activity());

@@ -24,14 +24,21 @@ for(const model of PROBE_MODEL_IDS.filter(id=>id!=='gateway-default')){
       const result=await requestProductProbe({version:1,requestId:randomUUID(),purpose:'probe',model,reasoning:'gateway-default',context:fixture.context},settings);
       results.push({model,caseId:fixture.id,expected:fixture.expected,firstRequest:index===0,...result});
       console.log(`${model} ${fixture.id}: ${result.choice.speak?'speech text':'silence'} (${result.metrics?.modelMs??'?'} ms)`);
-    }catch(error){blocked=error.code??'probe_unavailable';results.push({model,caseId:fixture.id,error:blocked});break;}
+    }catch(error){
+      const code=error.code??'probe_unavailable';
+      results.push({model,caseId:fixture.id,error:code});
+      console.error(`${model} ${fixture.id}: ${code}`);
+      // A rejected model answer is a measured failure, not a reason to hide
+      // the remaining candidates. Never retry a generation automatically.
+      if(['probe_http_401','probe_http_403','probe_relay_needs_deployment','probe_unreachable'].includes(code)){blocked=code;break;}
+    }
   }
   if(blocked)break;
 }
 const quantile=(rows,q)=>rows.length?rows.toSorted((a,b)=>a-b)[Math.min(rows.length-1,Math.ceil(rows.length*q)-1)]:null;
 const summary=PROBE_MODEL_IDS.filter(id=>id!=='gateway-default').map(model=>{
   const rows=results.filter(row=>row.model===model && row.metrics),warm=rows.filter(row=>!row.firstRequest && row.metrics.modelMs>0).map(row=>row.metrics.modelMs);
-  return {model,completed:rows.length,firstRequestMs:rows.find(row=>row.firstRequest)?.metrics.modelMs??null,p50Ms:quantile(warm,.5),p95Ms:quantile(warm,.95),
+  return {model,completed:rows.length,failed:results.filter(row=>row.model===model&&row.error).length,firstRequestMs:rows.find(row=>row.firstRequest)?.metrics.modelMs??null,p50Ms:quantile(warm,.5),p95Ms:quantile(warm,.95),
     unexpectedSpeech:rows.filter(row=>row.expected==='silence'&&row.choice.speak).length};
 });
 await writeFile(resolve(output),JSON.stringify({at:new Date().toISOString(),scope:'synthetic-text-only',blocked,summary,results,

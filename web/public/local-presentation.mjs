@@ -107,5 +107,6 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   control.onchange = () => { adviceController?.abort(); mode = control.value; state({}); receipt({ event: 'configuration', state: 'selected', mode }); };
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, start: resumeIdle,
+    get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
     close() { closed = true; adviceController?.abort(); ++serial; stop(); idle.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };
 }

@@ -11,6 +11,21 @@ import { createSeedProject, validateProject } from '../lab/lib/studio-model.mjs'
 import { rebaseProjectDraft } from '../lab/lib/project-rebase.mjs';
 import { probePresentationQuiet } from '../web/public/probe-client.mjs';
 
+test('background idle does not cancel preparation, but cannot authorize a new probe or mask gameplay',()=>{
+  const input={busy:false,round:null,chatBusy:false,speaking:false,pending:0,ownJobId:'preparing',idleBackground:true,
+    gate:{state:{actionOwner:'none',dealerPose:'action'},get:()=>null}};
+  assert.equal(probePresentationQuiet(input),true);
+  assert.equal(probePresentationQuiet({...input,ownJobId:null}),false);
+  assert.equal(probePresentationQuiet({...input,idleBackground:false}),false);
+  assert.equal(probePresentationQuiet({...input,busy:true}),false);
+  assert.equal(probePresentationQuiet({...input,round:{phase:'dealing'}}),false);
+  assert.equal(probePresentationQuiet({...input,chatBusy:true}),false);
+  assert.equal(probePresentationQuiet({...input,pending:1}),false);
+  assert.equal(probePresentationQuiet({...input,speaking:true}),false);
+  input.gate.get=()=>({status:'held'});assert.equal(probePresentationQuiet(input),true);
+  input.gate.state.actionOwner='deal';assert.equal(probePresentationQuiet(input),false);
+});
+
 const DAY=86400000,scope={playerId:'synthetic-anna',dealerId:'astrid'};
 const present={present:true,quiet:true,typing:false,enabled:true,sound:true};
 const choice={speak:true,text:'Are you still there, Anna?',memoryIds:[],topicId:'name-check',reason:'generated'};

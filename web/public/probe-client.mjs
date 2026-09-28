@@ -1,11 +1,14 @@
 // Presence is a UI veto. Authenticated server state and the durable reservation
 // decide whether an initiative is allowed; the timer never chooses one itself.
-export function probePresentationQuiet({busy,round,chatBusy,speaking,pending,gate,ownJobId}) {
+export function probePresentationQuiet({busy,round,chatBusy,speaking,pending,gate,ownJobId,idleBackground=false}) {
   if(busy || round || chatBusy || gate.state.actionOwner!=='none')return false;
   const ownSpeech=ownJobId && ['displaying','speaking'].includes(gate.get(ownJobId)?.status);
   // The gate invokes beforeDisplay from inside the existing speech queue.
   // That one owned job must not veto itself; any second queued job does.
-  return ownSpeech ? pending===1 : !speaking && pending===0 && gate.state.dealerPose==='standard-idle';
+  // A background idle variation may finish while the low-priority package is
+  // prepared. The pose gate still requires a presented primary frame to start.
+  const preparing=Boolean(ownJobId && (!gate.get(ownJobId) || gate.get(ownJobId).status==='held'));
+  return ownSpeech ? pending===1 : !speaking && pending===0 && (gate.state.dealerPose==='standard-idle' || preparing && idleBackground);
 }
 export function createProbeClient({ identity, flags, deliver, cancelDelivery, report, mount, fetchImpl=fetch }) {
   const tab=crypto.randomUUID();
@@ -13,12 +16,18 @@ export function createProbeClient({ identity, flags, deliver, cancelDelivery, re
   let enabled=localStorage.getItem('croupier-proactive-speech')!=='off';
   const labels={off:'Probe är avstängt',text:'Textprov är valt',inactive:'Väntar på inaktivitet',quiet:'Väntar på lugnt läge',absent:'Fliken är inte aktiv',muted:'Proaktivt tal eller ljud är avstängt',sampled:'Tillfället är redan prövat',chance:'Slumpen valde tystnad',cooldown:'Paus mellan repliker',hourly:'Timtaket är nått',busy:'Förbereder ett initiativ',reserved:'Förbereder ett initiativ',no_memory:'Saknar relevant minne',silence:'Astrid valde tystnad',repeated:'Redan sagt',generated:'Tal klart',playing:'Spelar probe',played:'Spelade probe',cancelled:'Initiativ avbrutet',failed:'Provet misslyckades',interrupted:'Förra försöket avbröts'};
   const status=document.createElement('p');status.setAttribute('role','status');
+  const trialStatus=document.createElement('p');trialStatus.setAttribute('role','status');trialStatus.hidden=true;
   const list=document.createElement('ul');
   const label=document.createElement('label'),toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=enabled;
   label.style.cssText='display:flex;align-items:center;gap:8px';toggle.style.cssText='width:auto;flex:0 0 auto;margin:0';
   label.append(toggle,document.createTextNode('Tillåt Astrids egna talinitiativ'));
-  mount.append(label,status,list);
+  mount.append(label,status,trialStatus,list);
   function show(reason){status.textContent=labels[reason]??reason;}
+  function showTrial(job,reason,detail=''){
+    if(!job.synthetic)return;
+    trialStatus.hidden=false;trialStatus.dataset.probeTrial=reason;
+    trialStatus.textContent=`Senaste talprov: ${labels[reason]??reason}${detail?` (${labels[detail]??detail})`:''}${job.result?.choice?.text?` · ${job.result.choice.text}`:''}`;
+  }
   const snapshot=()=>({...flags(active?.id??null),enabled});
   async function post(path,body={},signal){
     const response=await fetchImpl(`/api/probe/${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab,...identity(),...body}),signal});
@@ -27,6 +36,7 @@ export function createProbeClient({ identity, flags, deliver, cancelDelivery, re
   function cancel(reason='player_activity'){
     const job=active;if(!job)return;
     job.controller.abort(reason);cancelDelivery(job.id,reason);active=null;
+    showTrial(job,'cancelled',reason);
     if(job.result?.ticket)void post('receipt',{ticket:job.result.ticket,state:'cancelled',synthetic:Boolean(job.result.synthetic)}).catch(()=>{});
   }
   function activity(){
@@ -47,28 +57,32 @@ export function createProbeClient({ identity, flags, deliver, cancelDelivery, re
   async function receipt(job,state){return post('receipt',{ticket:job.result.ticket,state,synthetic:Boolean(job.result.synthetic)});}
   async function run(test){
     if(active||stopped)return;
-    const state=snapshot();if(!state.present||!state.quiet||state.typing||!state.sound||!state.enabled){show('quiet');return;}
-    const job={id:crypto.randomUUID(),controller:new AbortController(),playing:false,result:null};active=job;
+    const state=snapshot();if(!state.present||!state.quiet||state.typing||!state.sound||!state.enabled){show('quiet');if(test)showTrial({synthetic:true},'quiet');return;}
+    const job={id:crypto.randomUUID(),controller:new AbortController(),playing:false,result:null,synthetic:Boolean(test)};active=job;
+    showTrial(job,'busy');
     const started=performance.now();
     try{
       const result=await post(test?'test':'decide',{requestId:job.id,...test},job.controller.signal);job.result=result;
       if(active!==job||job.controller.signal.aborted)return;
       show(result.reason);
+      showTrial(job,result.reason);
       if(result.ticket||test)report({state:'decision',requestId:job.id,source:'probe',synthetic:Boolean(test),reason:result.reason,choice:result.choice,metrics:result.metrics,policyRevision:result.policyRevision});
       if(!result.decision)return;
       if(!result.decision.speechPackage)throw new Error('probe_package_missing');
       const authorize=async()=>{
         const latest=snapshot();if(active!==job||!latest.present||!latest.quiet||latest.typing||!latest.sound||!latest.enabled)throw new Error('stale_probe');
-        const accepted=await receipt(job,'playing');if(!accepted.accepted)throw new Error('stale_probe');job.playing=true;
+        const accepted=await receipt(job,'playing');if(!accepted.accepted)throw new Error('stale_probe');job.playing=true;showTrial(job,'playing');
       };
       const delivery=await deliver(result.decision,{controller:job.controller,synthetic:Boolean(test),beforeDisplay:authorize,beforeStart:authorize});
       if(active!==job||delivery.status!=='completed'||delivery.playback?.state!=='end'||!delivery.playback.started)throw new Error('probe_playback_incomplete');
-      await receipt(job,'played');show('played');
+      await receipt(job,'played');show('played');showTrial(job,'played');
       report({state:'played',source:'probe',requestId:job.id,synthetic:Boolean(test),packageId:delivery.playback.packageId,totalMs:Math.round(performance.now()-started),metrics:result.metrics});
     }catch(error){
+      const wasAborted=job.controller.signal.aborted;
       cancelDelivery(job.id,'probe_failed');
-      if(job.result?.ticket)await receipt(job,job.controller.signal.aborted?'cancelled':'failed').catch(()=>{});
-      if(!job.controller.signal.aborted){show(error.message);report({state:'failed',source:'probe',requestId:job.id,reason:error.message});}
+      if(job.result?.ticket)await receipt(job,wasAborted?'cancelled':'failed').catch(()=>{});
+      if(!wasAborted){show(error.message);showTrial(job,'failed',error.message);report({state:'failed',source:'probe',requestId:job.id,reason:error.message});}
+      else showTrial(job,'cancelled',String(job.controller.signal.reason??'interrupted'));
     }finally{if(active===job)active=null;}
   }
   async function heartbeat(allowRun=true){
@@ -76,7 +90,7 @@ export function createProbeClient({ identity, flags, deliver, cancelDelivery, re
     sending=true;const activity=activityPending;activityPending=false;
     try{
       const state=snapshot();
-      if(active&&(!state.present||!state.quiet||state.typing||!state.sound||!state.enabled))cancel('presence_changed');
+      if(active&&(!state.present||!state.quiet||state.typing||!state.sound||!state.enabled))cancel(!state.present?'absent':!state.sound||!state.enabled?'muted':state.typing?'player_typing':'quiet');
       const response=await post('presence',{flags:state,activity});
       if(active?.result?.policyRevision && active.result.policyRevision!==response.revision)cancel('policy_changed');
       renderFacts(response.facts);

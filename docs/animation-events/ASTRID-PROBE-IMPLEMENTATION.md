@@ -97,28 +97,29 @@ fallbacks och manuella modellmetadata bevaras. HTTP-schemat stöder inte
 `reasoning_effort`, därför visas ärligt `gateway-default`, inte ett skenbart
 val mellan none/low. Ingen jämförd modell har utsetts till vinnare.
 
-## Driftkvarstående
+## Drift och uppmätta prov
 
-Kontroll den 28 september: Director `/api/status` svarade 200 med befintliga
-capabilities men **utan `product-probe-v1`**. Första syntetiska modellprovet
-fick HTTP 401 på den ännu saknade produktvägen. Jämförelsen avbröts där;
-inga 20-fallsresultat, latenspercentiler eller kostnadsslutsatser finns.
-Detta ska inte tolkas som att användaren behöver skapa en ny token.
+Gateway och Director kör nu `70ef43f` med Probe och de tre modellkandidaterna.
+Åtta autentiserings-/schemaprov och en full 60-fallsjämförelse passerade.
+Luna gav relevanta initiativ och var snabbare än Terra i detta lilla prov;
+standardmodellen är oförändrad. Latens, begränsningar, deploy-ID och
+kvarvarande uppspelningskontroll finns i
+[driftkvittot](../../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-28.md).
 
-Efter granskad commit/push: driftsätt samma commit på befintliga Director
-och Gateway. Använd Manual Deploy, ingen Blueprint Sync, ny tjänst eller
-ändrad GPU-budget. Kontrollera att `product-probe-v1` finns, att de gamla
-token-gränserna består och att Gateway faktiskt laddat kandidaterna.
-Starta sedan om det lokala bygget kontrollerat när ägaren är klar med det.
-Pågående gemensamma 4200/4201 har inte startats om av detta arbete.
+Rätt ingång är Lissabon på 4201 och **Anslut** till
+`?dealer=astrid&presentation=local` på 4200. Porträttklippen används även på
+dator. Repetitionsläget utan `presentation=local` är den äldre vägen.
+Isolerade QA-prov körs på localhost:4210/4211 med separat projekt/databas.
 
-Kör `node tools/probe-model-eval.mjs --output <privat-testfil.json>` med
-befintlig nätåtkomst. Det provar samma 20 syntetiska fall per modell, utan
-TTS/GPU, och särredovisar första anropet, varma p50/p95 och oväntat tal.
-Anropet rapporterar begärt modell-ID; det bevisar inte den laddade modellen.
-Tokenförbrukning/kostnad saknas i relay-svaret. Naturlighet och faktatrohet
-behöver fortfarande granskas. Prova därefter två genererade talpaket i
-Astrids faktiska spelare och dokumentera avbrott samt synk separat.
+Talprovets senaste resultat ligger kvar även när närvarostatus uppdateras.
+En vanlig idlevariation avbryter inte ett pågående förberedelsearbete.
+Spelhandling, annan chatt/tal, profilbyte och övriga färskhetskrav stoppar
+fortfarande arbetet. Färdigt tal inväntar ett faktiskt presenterat neutralt
+bildläge genom samma posegrind som vanlig chatt.
+
+Kör `node tools/probe-model-eval.mjs --output <privat-testfil.json>` för en
+ny syntetisk jämförelse. Verktyget registrerar enskilda modellfel utan att
+försöka samma generation igen; autentiserings-/anslutningsfel stoppar serien.
 
 ## Rollback
 

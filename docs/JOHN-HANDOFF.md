@@ -1,3 +1,41 @@
+## 2026-09-28 — Probe i drift och rätt Lissabon-presentation
+
+Gateway/Director är live på `70ef43f`; de gamla driftblockerarna nedan är
+ersatta av [driftkvittot](../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-28.md).
+Åtta auth-/schemaprov passerade. Alla tre modellkandidater finns i beständig
+Gateway-konfiguration med oförändrad primärmodell och nekade verktyg.
+60 syntetiska textfall passerade; varm p50: 5.4-mini 977 ms, Luna 1342 ms,
+Terra 1847 ms. Luna är en rimlig testkandidat, inget generellt vinnarbesked.
+
+Browser-QA hittade en viktig presentationsgräns: en normal idlevariation
+kunde stoppa väntande Probe-video. För ett redan pågående initiativ tillåts
+nu bakgrundsidle under förberedelsen. Kortspel, annan chatt/tal, frånvaro,
+avstängt ljud och gamla revisioner stoppar fortfarande. Färdigt paket går
+till samma neutrala posegrind som vanlig chatt. Talprovet visar dessutom ett
+bestående resultat med avbrottsorsak. Fel i en benchmarkgeneration registreras
+utan automatisk retry och utan att dölja resterande modellkandidater.
+
+Verifierat: 23/23 riktade Probe-/presentationstester inklusive bakgrundsidle
+mot spelhandling, samt `audit-dealer-sync --probe` (Astrid 17 repliker,
+0 saknade takes; inget visuellt godkännande). Ett syntetiskt Luna-paket nådde
+faktiskt `played` i Astrids `presentation=local` på localhost:4210. Därefter
+började Jakob använda denna QA-session; lämna den och dess processer ifred.
+Två nya genererade tal i följd återstår att verifiera i en ledig testsession.
+Samtliga 25 kommandon i `.githooks/pre-commit` passerade efter rättningen.
+
+Rätt vanlig ingång: `http://127.0.0.1:4201/lissabon` → Anslut →
+`http://127.0.0.1:4200/?dealer=astrid&presentation=local`.
+`rehearsal=1` ensamt använder den äldre vägen. Porträttfilmerna från Emil
+används även på dator; inga särskilda datorfilmer har antagits finnas.
+Andra agentens `4988f96`, mediafiler och lokala klippval bevaras.
+
+Kamera/mikrofon är inte aktiverat. Version 2026.9.5 dokumenterar bilddelar,
+men produktkontrakt och modellmetadata är textbaserade. Konkret avgränsning,
+samtycke, storleksgränser, VAD och återstående verifiering finns i
+[kameraplanen](../open-claw/lab/docs/ASTRID-CAMERA-VOICE-PLAN.md).
+Inget råljuds- eller bildstöd har påståtts fungera i drift. Jira-anslutning
+saknades fortfarande; inga CAC-statusar ändrades.
+
 ## 2026-09-28 — Astrid: 30 idlevarianter och klipp från croupier_kaffe
 
 Jakob bad om högst 30 idlevarianter, import av klipp från
