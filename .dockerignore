@@ -39,7 +39,9 @@ lissabon/data
 open-claw/lab/data
 
 # Source/render experiments. Published runtime assets stay in web/public,
-# content/dealers, content/persona, assets, and emil/dealklipp-v1.
+# content/dealers, content/persona, and emil/dealklipp-v1.
+assets/astrid-3d
+assets/blackjack-3d
 content/staging
 content/bake
 content/raw-all
