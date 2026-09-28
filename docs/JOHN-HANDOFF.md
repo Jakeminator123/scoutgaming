@@ -1,3 +1,11 @@
+## 2026-09-28 — Emil's Astrid demo V3 saved as inactive reference
+
+Downloaded [`EmaCodeHero/astrid-demo-v3`](https://gitlab.com/EmaCodeHero/astrid-demo-v3) at commit `91aed7e8b99100a7b09198b3d704bd0ebde62a85` into `emil/astrid-demo-v3-reference/`. This preserves all 217 MP4 clips, the 7 JSON metadata/bank files, 9 PNG plates/masks, the upstream README and integration guide, and four small public demo files. See `SOURCE.md` there for the inventory and integration boundary. All copied files were byte-compared with the upstream checkout; every manifest media URL resolved to a local file. No live media, player mapping, speech route, or four-dealer behavior changed.
+
+Potential value beyond the videos: exact speech/event banks in four languages, deal positions and masks, a common start plate, and a reference for the demo's clip switching and generated speech pipeline. These are reference inputs, not accepted product assets. Visual lip-sync, frame timing, contact, and card geometry still require per-take review before any integration. The upstream warm-GPU timing is a demo claim, not a measured Lissabon result.
+
+Validation: 239 upstream files matched the copied files by SHA-256; all 218 manifest media URLs resolve; `node pipeline/audit-dealer-sync.mjs --probe` and the complete `.githooks/pre-commit` suite passed. Four-dealer visual rehearsal was not repeated because no active playback asset or mapping changed; it remains required when a take is actually integrated. Existing audit gaps remain (Vera 8, Amira 2, Mei 3 missing speech takes; visual lip-sync acceptance pending).
+
 ## 2026-09-28 — GitLab inbox credential clarity
 
 The existing Jakob project token works with GitLab's Notes API and expires
