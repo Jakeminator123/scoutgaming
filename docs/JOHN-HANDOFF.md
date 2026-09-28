@@ -5649,7 +5649,9 @@ Aktiv spel- och minnesdatabas är `lissabon/data/players/croupier.db`; `craig.db
 Inget av detta ska raderas vid omstart. En privat, hashverifierad kopia av
 38 tillåtna filer (4 564 123 byte) togs medan det samordnade serverparet var
 stoppat, med `tools/backup-lissabon-state.mjs`, utanför checkouten i Jakobs
-Documents. Originalen och sparade val är orörda. Återställning har inte provats.
+Documents. Originalen och sparade val är orörda. En isolerad filåterläsning
+och SQLite-integritetskontroll beskrivs längre ned; en spelrunda efter
+återställning återstår.
 
 Behåll ett källrepo för Web, Lab, OpenClaw och delade medier. De nya
 konfigurationsvägarna ger Web och Lab samma absoluta `LAB_VIDEO_ARCHIVE`,
@@ -5689,6 +5691,12 @@ drift krävs dessutom transaktionssäker extern SQL-lagring, objektlagring för
 uppladdningar/klipp och en beständig jobbväg för lång renderering. Lokal
 produkt och Lab är fortsatt stoppade.
 
+Den privata backupen provåterlästes 2026-09-28 i en tillfällig katalog utanför
+checkouten. Alla 38 manifestposter matchade sina SHA-256-värden och både
+`croupier.db` och `craig.db` gav `PRAGMA integrity_check = ok`. Provkopian
+togs bort efter kontrollen; originalen och backupen är orörda. Detta verifierar
+filerna, inte en fullständig molnstart eller en spelrunda efter återställning.
+
 ## 2026-09-28 — opt-in strömmad läppsynk
 
 Emils fristående worker har kopierats med källproveniens till
@@ -5708,8 +5716,10 @@ visuell läppsynkacceptans. Inga befintliga dealerassets, kalibreringar eller
 baslinjer ändrades. Produkt- och labbservrarna förblir stoppade.
 
 Den aktuella privata RunPod-talkonfigurationen gav HTTP 200 vid läsande
-hälsokontroll. Ingen GPU-image har byggts/publicerats och inga betalda jobb
-startats. Separat test-endpoint, kostnadsram, verklig kvalitet/latens och alla
+hälsokontroll. CPU-provbygget från `7644c44` passerade i GitHub-körning
+`36471104794`: hela imagen, båda avatarerna och streamingimport verifierades.
+Byggsteget tog 5 min 36 s. Ingen image publicerades och inga betalda GPU-jobb
+startades. Separat test-endpoint, kostnadsram, verklig kvalitet/latens och alla
 fyra dealers tvåspelsrepetition återstår. Molnscaffoldens startspärr är kvar;
 dess proxy saknar ännu WebSocket-stöd. Integrationens pilot kräver samma origin
 för spel och streaming. Se `docs/STREAMING-INTEGRATION.md` för driftkrav.
@@ -5729,3 +5739,28 @@ GitHubs tre kontroller passerade för `f4e2b8e` (körning `36470135995`). Ett
 separat manuellt jobb, `astrid-gpu-build.yml`, förbereder CPU-provbygge av hela
 GPU-imagen med båda avatarerna. Det publicerar ingen image och startar ingen
 GPU-handler. Byggresultat måste kontrolleras separat från kodtesterna.
+
+## 2026-09-28 — förberedd BO- och Lab-åtkomst för en molnvärd
+
+`ops/cloud/` skiljer nu på spel-, BO- och Lab-värd. Spelet får bara läsa
+BO-konfigurationens publika GET; andra BO-rutter stannar på BO-värden. Lab
+kräver administratörsinloggning på BO, engångskod bunden till den startande
+Lab-webbläsaren och en värdbunden HttpOnly-cookie. Ingången kontrollerar den
+aktuella CRAIG-identiteten för varje Lab-anrop och ger därefter Next Lab en
+intern behörighet som webbläsaren inte kan sätta. Okända värdar och
+förfalskade forwarding-headers avvisas.
+
+BO- och Lab-sessioner har nu en växande behörighetsversion i CRAIG. Roll- eller
+lösenordsändring återkallar äldre sessioner permanent, även om det tidigare
+värdet återställs. Lab-inloggningens publika start begränsas till 120 per minut
+och 500 väntande poster. Efter en lyckad inloggning öppnas önskad Lab-sida,
+men frågeparametrar sparas inte i överlämningen.
+
+Riktade tester för BO/spel, BO/Lab, molningång, Lab-guard och
+molnberedskapsrapport passerade. Den läsande molnkontrollen accepterade en
+isolerad datakatalog men returnerade fortsatt kod 2, eftersom startspärren är
+kvar. Ingen container, betald tjänst eller devserver startades. Verklig HTTPS,
+cookiebeteende, beständighet efter processomstart, medier och hela Astrids
+tal-/bildkedja måste fortfarande verifieras på den avsedda värden innan
+startspärren kan tas bort. Detta paket inaktiverar ännu genererat tal och
+kamera i molnläget; se `docs/CLOUD-MIGRATION.md`.

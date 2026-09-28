@@ -73,6 +73,24 @@ tal till engelska, Cartesia ger Astrids röst och RunPod talvideo.
 Den befintliga Render-installationen ersätter inte produktservern, dess
 databaser eller det lokala labbet.
 
+## Förberedd molningång, ännu spärrad
+
+`ops/cloud/` har nu en isolerad ingång med tre exakta HTTPS-värdnamn: spel,
+BO och Lab. En administratör loggar in på BO och får en kort engångsöverlämning
+till Lab. Lab-cookien är värdbunden och HttpOnly; ingången frågar Web om
+administratörens aktuella roll, lösenordsavtryck och en växande
+behörighetsversion vid varje Lab-begäran. En återställd roll eller ett
+återställt lösenord återaktiverar inte en äldre BO- eller Lab-session.
+Först därefter skickar ingången en intern behörighet till Next Lab. Riktade
+lokala tester täcker routning, felaktiga värdar, förfalskade headers,
+utgången/återanvänd kod, begränsat antal väntande inloggningar och ändrad
+eller borttagen administratör.
+
+Startspärren i `ops/cloud/start.mjs` står kvar. Ingen container är byggd eller
+publicerad, och verklig HTTPS-inloggning, cookies, omstart och hela
+Astrid-flödet är inte verifierade. Det första driftpaketet stänger också av
+genererat tal och kamera tills en separat skyddad aktivering och prov finns.
+
 ## Ett källrepo, separata driftsenheter
 
 Behåll ett monorepo på `jakemanator123-github-work` nu. Produktservern,
@@ -130,7 +148,7 @@ Den ska inte byggas om som bieffekt av denna migration.
 
 | Källa | Nuvarande hinder | Förberedelse |
 | --- | --- | --- |
-| `lab/lib/http-guard.mjs` | Sidor och API tillåter endast loopback | Lägg till explicit autentiserat cloudläge med kontrollerade HTTPS-origins |
+| `lab/lib/http-guard.mjs` | Autentiserat cloudläge är implementerat men inte driftprovat | Verifiera verklig HTTPS, Lab-cookie, nekade origins och intern behörighet innan startspärren tas bort |
 | `lab/lib/partner-observer.mjs` | Molnspel kräver en uttrycklig tillåten origin | Ange samma exakta HTTPS-origin i `CROUPIER_GAME_ORIGIN` och `BETTALOTTO_PARTNER_BASE_URL`; verifiera därefter autentiserad observation |
 | `web/lissabon-profiles.mjs`, `web/server.mjs` | Profiler saknar lösenord och kräver lokal utvecklingsdrift | Använd autentiserad identitet eller skyddad demoåtkomst; behåll lokal profilspärr |
 | `web/generated-speech.mjs` | Molntal kräver uttrycklig aktivering, privat lagring och giltig HTTPS-origin | Ange `CROUPIER_CLOUD_GENERATED_SPEECH=1` i produktion med autentiserad spelare och verifiera hela det betalda ljud-/videoflödet |

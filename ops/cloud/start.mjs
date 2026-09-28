@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { randomBytes } from 'node:crypto';
 import { mkdir, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +11,7 @@ import { closeGateway, startChildren } from './process-group.mjs';
 // Replace it only alongside an authenticated Lab/Web access implementation and
 // its public-host, Origin, cookie, and proxy tests.
 export function assertCloudAccessReady() {
-  throw new Error('Cloud start blocked: authenticated public access and route verification are incomplete.');
+  throw new Error('Cloud start blocked: live authenticated access and deployment verification are incomplete.');
 }
 
 async function preflight(env) {
@@ -27,17 +28,18 @@ export async function main(args = process.argv.slice(2), env = process.env) {
   }
   const config = await preflight(env);
   if (args[0] === '--check') {
-    console.log('Cloud layout valid; launch remains blocked pending authenticated access and deployment verification.');
+    console.log('Cloud layout valid; launch remains blocked pending live access and deployment verification.');
     return 2;
   }
   assertCloudAccessReady();
   // Unreachable until a reviewed code change replaces the gate above.
+  const labInternalSecret = randomBytes(32).toString('hex');
   const abort = new AbortController();
   process.once('SIGINT', () => abort.abort());
   process.once('SIGTERM', () => abort.abort());
   for (const path of Object.values(config.paths)) await mkdir(path, { recursive: true, mode: 0o700 });
-  const children = await startChildren(childSpecifications(config, env), { signal: abort.signal });
-  const gateway = createCloudGateway(config);
+  const children = await startChildren(childSpecifications(config, env, { labInternalSecret }), { signal: abort.signal });
+  const gateway = createCloudGateway(config, { labInternalSecret });
   try {
     await new Promise((yes, no) => {
       gateway.once('error', no);

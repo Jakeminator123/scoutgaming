@@ -20,7 +20,7 @@ export const ARCHITECTURE_BLOCKERS = [
   { id: 'durable-state', files: ['web/server.mjs', 'lab/lib/project-store.mjs'],
     requirement: 'Provide durable SQLite and a shared writable project/history directory; deployment checkout or function temporary storage is insufficient.' },
   { id: 'studio-access', files: ['lab/lib/http-guard.mjs'],
-    requirement: 'Implement authenticated HTTPS studio access. Current page and API guards allow loopback only.' },
+    requirement: 'BO-to-Lab admin handoff and per-request identity checks exist in the gated cloud scaffold; verify real HTTPS routing, cookies, denial paths and session expiry before launch.' },
   { id: 'partner-origin', files: ['lab/lib/partner-observer.mjs'],
     requirement: 'Set BETTALOTTO_PARTNER_BASE_URL and CROUPIER_GAME_ORIGIN to the same exact HTTPS game origin, then verify the authenticated observer.' },
   { id: 'profile-access', files: ['web/lissabon-profiles.mjs', 'web/server.mjs'],

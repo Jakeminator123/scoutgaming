@@ -3,8 +3,10 @@
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
 import { craigIdentity } from './craig-identity.mjs';
+import { installBoAuthEpoch } from './bo-auth-epoch.mjs';
 import { playerAuth } from './player-auth.mjs';
 import { backofficeGameAuth } from './bo-game-auth.mjs';
+import { backofficeLabAuth } from './bo-lab-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
@@ -205,7 +207,8 @@ function dealerScan() {
 // ---------- BO auth: JWT + craig (the auth DB) ----------
 // Backoffice users live in CRAIG - their own SQLite DB (data/craig.db),
 // separate from the players DB. Auth is a stateless HS256 JWT in an HttpOnly
-// cookie, so logins survive server restarts.
+// cookie, checked against a monotonic CRAIG auth epoch after every role or
+// password change. Current logins survive server restarts.
 const boDb = new DatabaseSync(join(dataDir, 'craig.db'));
 boDb.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -240,6 +243,7 @@ try { boDb.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch { /* exists 
   }
 }
 const ROLE_RANK = { reader: 0, staff: 1, admin: 2, superadmin: 3 };
+const boAuthEpoch = installBoAuthEpoch(boDb);
 function boSecret() {
   const row = boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
   if (row) return Buffer.from(row.v, 'hex');
@@ -294,10 +298,11 @@ function boSessionOk(req) {
   // CRAIG login may authorize backoffice routes or the BO-to-game handoff.
   if (!claims || claims.aud !== 'backoffice' || claims.partner ||
       typeof claims.sub !== 'string' || !Object.hasOwn(ROLE_RANK, claims.role) ||
-      typeof claims.source_stamp !== 'string') return null;
+      typeof claims.source_stamp !== 'string' || !Number.isSafeInteger(claims.auth_epoch)) return null;
   const account = scoutIdentity.find(claims.sub);
   if (!account || account.stamp !== claims.source_stamp ||
-      boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id)?.role !== claims.role) return null;
+      boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id)?.role !== claims.role ||
+      claims.auth_epoch !== boAuthEpoch(account.id)) return null;
   return { ...claims, sub: account.name };
 }
 
@@ -781,6 +786,9 @@ const scoutIdentity=craigIdentity(boDb);
 const auth=playerAuth(db,apiPlayer,scoutIdentity);
 const validLaunch=token=>{const claims=jwtVerify(token);return !!(claims?.sub&&claims.partner&&getPlayer(claims.sub));};
 const boGameAuth=backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL});
+const boLabAuth=backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
+  authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
+  labPublicUrl:process.env.LAB_PUBLIC_URL});
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const lissabonProfiles = createLissabonProfiles({ db, createPlayer: apiPlayer,
   enabled: guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
@@ -816,6 +824,7 @@ function chatSessionOwner(req, playerId) {
 const server = createServer(async (req, res) => {
   const pathname=new URL(req.url,'http://local').pathname;
   if(boGameAuth(req,res))return;
+  if(boLabAuth(req,res))return;
   { const u=new URL(req.url,'http://local'); const launch=u.searchParams.get('launch');
     if(['/', '/v2', '/v2/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!getPlayer(claims.sub)){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
@@ -991,7 +1000,8 @@ const server = createServer(async (req, res) => {
       try { const { user, pass } = JSON.parse(body || '{}'); who = boCheckLogin(user, pass); } catch {}
       if (!who) { boLogins.fail(req, uname); console.warn('[bo] failed login', uname, boLogins.ipOf(req)); res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
       boLogins.ok(req, uname);
-      const tok = jwtSign({ sub: who.name, role: who.role, aud:'backoffice', source_stamp:who.stamp, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
+      const tok = jwtSign({ sub: who.name, role: who.role, aud:'backoffice', source_stamp:who.stamp,
+        auth_epoch:boAuthEpoch(who.id), exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
       const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control':'no-store', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}` });
       res.end('{"ok":true}');

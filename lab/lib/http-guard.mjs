@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { StudioError } from './project-store.mjs';
 import { StudioValidationError } from './studio-model.mjs';
 import { LabInputError } from '../../open-claw/lab/src/engine.mjs';
@@ -13,22 +14,64 @@ function localHost(request) {
   return host;
 }
 
+function requestBoundary(request) {
+  const cloudConfigured = Boolean(process.env.LAB_PUBLIC_URL || process.env.CROUPIER_LAB_INTERNAL_SECRET);
+  let local;
+  try { local = localHost(request); } catch (error) { if (!cloudConfigured) throw error; }
+  if (local) {
+    if (cloudConfigured) {
+      const url = new URL(request.url);
+      if (request.method !== 'GET' || url.pathname !== '/api/health') throw new StudioError('Lokal åtkomst är avstängd i molnläget.', 403);
+    }
+    return { mode: 'local', host: local };
+  }
+  const publicUrl = process.env.LAB_PUBLIC_URL;
+  const secret = process.env.CROUPIER_LAB_INTERNAL_SECRET;
+  let expected;
+  try { expected = new URL(publicUrl); } catch { throw new StudioError('Molnåkomst är inte konfigurerad.', 403); }
+  if (expected.protocol !== 'https:' || publicUrl !== expected.origin || !secret || Buffer.byteLength(secret) < 32) {
+    throw new StudioError('Molnåkomst är inte konfigurerad.', 403);
+  }
+  const url = new URL(request.url);
+  const host = request.headers.get('host');
+  const provided = request.headers.get('x-croupier-lab-authorized');
+  const actual = typeof provided === 'string' ? Buffer.from(provided) : Buffer.alloc(0);
+  const key = Buffer.from(secret);
+  if (host !== expected.host || url.host !== expected.host || !['http:', 'https:'].includes(url.protocol)
+    || request.headers.get('x-forwarded-host') !== expected.host
+    || request.headers.get('x-forwarded-proto') !== 'https'
+    || actual.length !== key.length || !timingSafeEqual(actual, key)) {
+    throw new StudioError('Labbåtkomst kräver giltig autentisering.', 403);
+  }
+  return { mode: 'cloud', host, origin: expected.origin };
+}
+
 export function assertLocalRequest(request) {
-  const host = localHost(request);
+  const boundary = requestBoundary(request);
   const origin = request.headers.get('origin');
   if (origin) {
     let from;
     try { from = new URL(origin); } catch { throw new StudioError('Ogiltigt ursprung.', 403); }
-    if (from.host !== host || !['http:', 'https:'].includes(from.protocol)) throw new StudioError('Begäran måste komma från labbet.', 403);
+    if (boundary.mode === 'cloud') {
+      if (origin !== boundary.origin || from.origin !== boundary.origin) throw new StudioError('Begäran måste komma från labbet.', 403);
+    } else if (from.host !== boundary.host || !['http:', 'https:'].includes(from.protocol)) {
+      throw new StudioError('Begäran måste komma från labbet.', 403);
+    }
   }
-  if (request.headers.get('sec-fetch-site') === 'cross-site') throw new StudioError('Begäran måste komma från labbet.', 403);
+  if (boundary.mode === 'cloud' && !['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !origin) {
+    throw new StudioError('Begäran kräver samma ursprung som labbet.', 403);
+  }
+  const site = request.headers.get('sec-fetch-site');
+  if (site === 'cross-site' || (boundary.mode === 'cloud' && site === 'same-site')) {
+    throw new StudioError('Begäran måste komma från labbet.', 403);
+  }
 }
 
 // Opening the page from a bookmark, extension or external link is not an API call.
 // Only top-level document GET navigation gets the cross-site exception. Fetch/RSC
 // requests retain the strict origin checks, and this guard is never used by APIs.
 export function assertLocalPageRequest(request) {
-  localHost(request);
+  requestBoundary(request);
   if (request.method !== 'GET' || request.headers.has('next-action')) throw new StudioError('Labbsidan öppnas med en vanlig GET-navigering.', 403);
   const destination = request.headers.get('sec-fetch-dest');
   if (['iframe', 'frame', 'embed', 'object'].includes(destination)) throw new StudioError('Öppna labbet som en egen sida.', 403);
