@@ -48,7 +48,9 @@
       "standardIds": [
         "2afa062b-4674-ff72-b2cb-c958a359ebf3"
       ],
-      "variantIds": []
+      "variantIds": [
+        "d3dd14f4-3940-5249-b65d-4f6678a54822"
+      ]
     },
     {
       "id": "astrid/deal.player.centre/box4",
@@ -362,6 +364,15 @@
       "extension": "mp4",
       "size": 3940477,
       "sha256": "2afa062b4674ff72b2cbc958a359ebf39cec0a48bbe328d95fff65642f7c1ba3"
+    },
+    {
+      "id": "d3dd14f4-3940-5249-b65d-4f6678a54822",
+      "familyId": "astrid/deal.player.centre/box3",
+      "role": "variant",
+      "relativePath": "deal/deal_pos4/variant/box_4_varaint.mp4",
+      "extension": "mp4",
+      "size": 1879487,
+      "sha256": "d3dd14f439405249b65d4f6678a5482295817a36e115a3fc26055609b5356f61"
     },
     {
       "id": "7c704054-deb8-d8ee-2e48-5418553e65b8",

@@ -1,3 +1,19 @@
+## 2026-09-28 — Jakobs-v1 checkpoint och stoppade devservrar
+
+På Jakobs uttryckliga begäran sparas alla kvarvarande projektändringar som
+checkpointen `Jakobs-v1`: box 4-variant med tillhörande manifest, Windows-
+startskript, chef-kommandobrygga, avataruppdrag och tekniska referensfiler.
+Referensfilerna innehåller klippmetadata respektive två anslutningsstatusar;
+inga konversationsexporter eller privata nycklar läggs till. Befintliga
+ignorerade profiler, hemligheter och lokala labbval ingår inte i Git-taggen.
+
+Det enda Lissabon-paret på 4200/4201 stoppades. Portkontrollen bekräftade
+inga lyssnare på Croupiers använda utvecklingsportar; inga servrar startades
+igen. Senaste verifiering är de 27 kontrollerna och riktade testerna nedan,
+körda med samma befintliga box 4-fil och manifest. Checkpointen är inte ett
+nytt visuellt godkännande av klippet. Fysisk kamera/mikrofon, bildlagring,
+labbuppföljning och senaste GitLab-CI återstår enligt föregående överlämning.
+
 ## 2026-09-28 — Bild/ljud aktiverat i Jakobs aktuella Chrome och omstartsspärr reparerad
 
 Jakobs aktuella flik var vanliga Lissabon på 127.0.0.1:4200/4201, inte det

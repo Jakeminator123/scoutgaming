@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "croupier-partner-observation",
+  "exportedAt": "2026-09-21T00:07:56.650Z",
+  "access": null,
+  "videoMapping": null,
+  "limits": {
+    "recordLimit": 300,
+    "byteLimit": 4194304,
+    "reached": false
+  },
+  "evidence": {
+    "source": "Partner SSE",
+    "replayAvailable": false,
+    "actualVideoPlaybackCaptured": false,
+    "note": "Mottagna presentationsinstruktioner och en separat videokarta. Varken klippstart, klippslut eller landningstid har observerats i originalspelaren. Avbrott och protokollgränser kan ge luckor."
+  },
+  "records": [
+    {
+      "id": "7c12b87a-8b97-4d56-aa28-251ba189a60d:1",
+      "time": "2026-09-21T00:06:50.132Z",
+      "source": "partner",
+      "kind": "status",
+      "data": {
+        "state": "connecting",
+        "reason": "observation-starts-now",
+        "gap": true,
+        "replay": false,
+        "readOnly": true
+      }
+    },
+    {
+      "id": "7c12b87a-8b97-4d56-aa28-251ba189a60d:2",
+      "time": "2026-09-21T00:06:50.362Z",
+      "source": "partner",
+      "kind": "status",
+      "data": {
+        "state": "connected",
+        "reason": "no-replay",
+        "gap": true,
+        "replay": false,
+        "readOnly": true
+      }
+    }
+  ]
+}
