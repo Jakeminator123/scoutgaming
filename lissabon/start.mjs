@@ -40,11 +40,12 @@ function openBrowser(url) {
   const child = spawn(command, args, { windowsHide: true, stdio: 'ignore' });
   child.on('error', () => console.log(`Öppna ${url} i webbläsaren.`));
 }
-async function buildLab() {
+async function buildLab(session) {
   console.log('Bygger Lissabon-labbet…');
   const child = spawn(process.execPath, [join(root, 'lab/node_modules/next/dist/bin/next'), 'build', '--webpack'], {
-    cwd: join(root, 'lab'), windowsHide: true, stdio: 'inherit', env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+    cwd: join(root, 'lab'), windowsHide: true, stdio: 'inherit', env: session.environment({ ...process.env, NEXT_TELEMETRY_DISABLED: '1' }),
   });
+  try { session.trackChild(child); } catch (error) { child.kill(); throw error; }
   await new Promise((yes, no) => { child.once('error', no); child.once('exit', code => code === 0 ? yes() : no(new Error(`Labbbygget misslyckades (${code}). Kör npm --prefix lab ci om beroenden saknas.`))); });
 }
 export async function main(args = process.argv.slice(2)) {
@@ -58,20 +59,16 @@ export async function main(args = process.argv.slice(2)) {
   const running = await fetch(`http://127.0.0.1:${profile.labPort}/api/health`, { signal: AbortSignal.timeout(2000) }).then(r => r.json()).catch(() => null);
   if (running?.service === 'croupier-next-studio' && running.streamLane === profile.id) {
     console.log(`Lissabon kör redan: ${url}`);
-    if (!args.includes('--no-open')) openBrowser(url);
     return;
   }
   if (running) throw new Error(`Port ${profile.labPort} används av ett annat labb. Stoppa dess startprocess först; ingen process stängs automatiskt.`);
-  // Check both ports before rebuilding shared Next output.
-  const { createServer } = await import('node:net');
-  for (const port of [profile.productPort, profile.labPort]) {
-    const server = createServer();
-    await new Promise((yes, no) => { server.once('error', no); server.listen(port, '127.0.0.1', yes); });
-    await new Promise(yes => server.close(yes));
-  }
-  const studioDataDir = await prepareProject();
-  if (!args.includes('--skip-build')) await buildLab();
-  const fixture = await startIsolatedConnection({ ...profile, studioDataDir, streamLane: profile.id });
+  const studioDataDir = join(directory, 'data');
+  const fixture = await startIsolatedConnection({ ...profile, studioDataDir, streamLane: profile.id,
+    prepare: async session => {
+      await prepareProject(studioDataDir);
+      if (!args.includes('--skip-build')) await buildLab(session);
+    },
+  });
   console.log(`Lissabon redo: ${url}\nTryck Anslut för att öppna Astrid och följa samma ström.\nCtrl+C stoppar båda servrarna. Sparade klippval finns kvar i lissabon/data.`);
   const stop = async () => { await fixture.stop(); process.exit(0); };
   process.once('SIGINT', stop); process.once('SIGTERM', stop);

@@ -4,6 +4,10 @@ import { createServer } from 'node:net';
 import { createHmac } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { mkdtemp, symlink, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
 
 async function freePort(host) {
@@ -14,9 +18,12 @@ async function freePort(host) {
   return port;
 }
 
-test('comparison seeds isolated BO/Partner data and leaves only local disposable state', async () => {
+test('comparison seeds isolated BO/Partner data and leaves only local disposable state', async t => {
   const gamePort = await freePort('localhost'), labPort = await freePort('127.0.0.1');
-  const fixture = await startLocalComparison({ startLab: false, gamePort, labPort });
+  const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-comparison-repo-test-'));
+  await symlink(fileURLToPath(new URL('../web/', import.meta.url)), join(repoRoot, 'web'), process.platform === 'win32' ? 'junction' : 'dir');
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const fixture = await startLocalComparison({ repoRoot, startLab: false, gamePort, labPort });
   const post = (path, body, headers = {}) => fetch(fixture.gameUrl + path, {
     method: 'POST', headers: { 'Content-Type': 'application/json', Origin: fixture.gameUrl, ...headers }, body: JSON.stringify(body),
   });

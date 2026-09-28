@@ -37,7 +37,6 @@ try {
             throw "Port $Port anvands, men svarar inte som Croupier Studio. Ingen process har stoppats."
         }
         Write-Host "Labbet kor redan: $labUrl"
-        if (-not $NoBrowser -and -not $CheckOnly) { Start-Process $labUrl }
         exit 0
     }
 
@@ -58,8 +57,6 @@ try {
         $labNpm = Get-Command npm.cmd -ErrorAction SilentlyContinue
         if (-not $labNpm) { throw 'npm saknas i Node.js-installationen.' }
         Write-Host 'Forsta starten: installerar labbets lasta beroenden. Inga nycklar andras.'
-        & $labNpm.Source --prefix $labPath ci
-        if ($LASTEXITCODE -ne 0) { throw 'Installationen misslyckades. Se meddelandet ovan och forsok igen.' }
     }
     if ($CheckOnly) {
         Write-Host "Kontroll klar: Node.js, labb och ledig port $Port. Ingenting har startats."
@@ -88,7 +85,7 @@ try {
     }
     Push-Location -LiteralPath $labPath
     try {
-        & $labNodeExecutable $labNext dev --webpack --hostname 127.0.0.1 --port $Port
+        & $labNodeExecutable (Join-Path $PSScriptRoot 'tools/start-lab-session.mjs') --port $Port
         $labExitCode = $LASTEXITCODE
     } finally { Pop-Location }
 } catch {

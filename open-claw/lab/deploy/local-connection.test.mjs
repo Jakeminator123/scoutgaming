@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile, symlink } from 'node:fs/promises';
 import { createServer as createHttpServer } from 'node:http';
 import { createServer as createNetServer } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import {
   childSpecifications, installConnectionProcessGuard, loadPrivateConnection,
   parseCli, probeConnections, startIsolatedConnection,
 } from './local-connection.mjs';
+import { acquireLocalSession } from './local-session.mjs';
 
 async function freePort() {
   const server = createNetServer();
@@ -33,6 +35,14 @@ async function privateFixture(t, values) {
   await writeFile(path, Object.entries(values).map(([key, value]) => `${key}=${value}`).join('\n'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   return path;
+}
+
+async function runtimeFixture(t) {
+  const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-connection-repo-test-'));
+  const source = fileURLToPath(new URL('../../../', import.meta.url));
+  for (const directory of ['web', 'lab']) await symlink(join(source, directory), join(repoRoot, directory), process.platform === 'win32' ? 'junction' : 'dir');
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  return repoRoot;
 }
 
 test('private configuration reports the dedicated speech role without exposing credential values', async t => {
@@ -202,7 +212,7 @@ test('launcher refuses a partial speech relay instead of falling back with mixed
     LAB_REMOTE_URL: 'https://director.example.test', LAB_REMOTE_TOKEN: 'fixture-lab-director',
   });
   const productPort = await freePort(), labPort = await freePort();
-  await assert.rejects(startIsolatedConnection({ envFiles: [file], env: {}, productPort, labPort }), /must be configured together/);
+  await assert.rejects(startIsolatedConnection({ repoRoot: dirname(file), envFiles: [file], env: {}, productPort, labPort }), /must be configured together/);
 });
 
 test('read-only probes distinguish configured, reachable and model-not-run states', async t => {
@@ -240,7 +250,8 @@ test('launcher starts isolated native and the real Next Eventstudio without usin
   const file = await privateFixture(t, { OPENCLAW_BASE_URL: gateway, OPENCLAWAPI_KEY: gatewaySecret,
     OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', LAB_REMOTE_URL: director, LAB_REMOTE_TOKEN: directorSecret });
   const productPort = await freePort(), labPort = await freePort();
-  const fixture = await startIsolatedConnection({ envFiles: [file], env: {}, productPort, labPort });
+  const repoRoot = await runtimeFixture(t);
+  const fixture = await startIsolatedConnection({ repoRoot, envFiles: [file], env: {}, productPort, labPort });
   t.after(() => fixture.stop());
   assert.equal((await fetch(fixture.urls.product + '/')).status, 200);
   const studioHealth = await fetch(fixture.urls.lab + '/api/health');
@@ -273,6 +284,8 @@ test('launcher starts isolated native and the real Next Eventstudio without usin
   const runDir = fixture.runDir;
   await fixture.stop();
   assert.equal(existsSync(runDir), false);
+  const released = await acquireLocalSession({ repoRoot, productPort, labPort });
+  await released.release();
 });
 
 test('launcher refuses shared ports and its child guard blocks env reads and unrelated network', async () => {
@@ -305,7 +318,7 @@ test('launcher refuses to connect product traffic to a known conflicting role', 
     LAB_REMOTE_URL: 'http://127.0.0.1:4189', LAB_REMOTE_TOKEN: 'fixture-director-conflict',
   });
   const productPort = await freePort(), labPort = await freePort();
-  await assert.rejects(startIsolatedConnection({ envFiles: [file], env: {}, productPort, labPort }), /conflicting runtime contract/);
+  await assert.rejects(startIsolatedConnection({ repoRoot: dirname(file), envFiles: [file], env: {}, productPort, labPort }), /conflicting runtime contract/);
 });
 
 test('generated speech is explicit CLI opt-in and never takes credentials from arguments', () => {
