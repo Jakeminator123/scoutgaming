@@ -1,3 +1,28 @@
+## 2026-09-28 — Omstart med kamera och utökade privata testminnen
+
+På Jakobs uttryckliga begäran stoppades Lissabon-paret 4200/4201 och dess
+startprocess. Den bevarade QA-starten byggde senaste labbet och startade ett
+enda par på localhost:4210/4211 med `astridCamera:true`. Portkontrollen visar
+bara detta par på de berörda Croupier-portarna. Starta inte ett parallellt par.
+Samma `lissabon/data` används för klippval och inställningar; spelar-DB är
+fortsatt separat och profilen heter **Jakob · TESTMINNEN**.
+
+Fem begärda testminnen har lagts till genom minnesmodulens käll-/extraktionsväg.
+Tidigare fem minnen och spelhistorik bevarades. De tio minnena finns i vanlig
+chattkontext. Ett inaktivitetsprov på en separat DB-kopia verifierade att de
+nya arbets-/chefsminnena ingår bland Probes fem tillgängliga kandidater.
+Inga riktiga spelarkonton eller serverresultat ändrades. Testinnehåll,
+DB-backup och kvitto finns privat vid QA-återstartsfilen, utanför Git.
+
+Den gemensamma Probe-policyn sparades med Automatiskt, Luna, 5 s inaktivitet,
+15 s paus, 100 procents chans och tak 12/timme; minnen 30 dagar. Övriga
+inställningar bevarades och projektets vanliga revisionshistorik skapades.
+Browserns egna ljud-/initiativval måste vara på. Ett obesvarat initiativ
+väntar fortfarande på ny aktivitet. Faktisk Probe-uppspelning är inte
+verifierad här, och kamerans syntetiska drift-/lagringsprov återstår.
+Jakob uppger att Render-stegen är klara; aktuell driftsättning har inte
+verifierats av agenten. Sparad browserblockering kvarstår senast känt.
+
 ## 2026-09-28 — Snabbare Probe och tydlig kameraaktivering
 
 Jakob testar själv i sin browser och vill kunna prova kortare inaktivitet.
