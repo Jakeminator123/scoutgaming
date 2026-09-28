@@ -6,7 +6,8 @@ import { tmpdir } from 'node:os';
 import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { acquireLocalSession } from './local-session.mjs';
+import { DatabaseSync } from 'node:sqlite';
+import { acquireLocalSession, matchesLocalSessionProcess } from './local-session.mjs';
 import { startIsolatedConnection } from './local-connection.mjs';
 import { startLocalComparison } from '../../../tools/start-local-comparison.mjs';
 import { startLabSession } from '../../../tools/start-lab-session.mjs';
@@ -29,6 +30,16 @@ async function ports() {
   const [productPort, labPort] = held.map(server => server.address().port);
   for (const server of held) await new Promise(yes => server.close(yes));
   return { productPort, labPort };
+}
+
+function changeSession(root, change) {
+  const db = new DatabaseSync(join(root, 'lissabon', 'data', '.local-session.sqlite'));
+  try {
+    const row = db.prepare('SELECT payload FROM local_session WHERE id=1').get();
+    const state = JSON.parse(row.payload);
+    change(state);
+    db.prepare('UPDATE local_session SET payload=?,revision=revision+1 WHERE id=1').run(JSON.stringify(state));
+  } finally { db.close(); }
 }
 
 async function stop(child) {
@@ -68,6 +79,47 @@ test('different ports and a standalone lab share one session; release allows the
   } finally { await session.release(); }
   const replacement = await acquireLocalSession({ repoRoot, labPort: next.labPort });
   await replacement.release();
+});
+
+test('process identity detects reused PIDs and conservatively handles legacy session rows', () => {
+  const original = { name: 'node', startTime: '638946341234567890' };
+  assert.equal(matchesLocalSessionProcess(original, { ...original }), true);
+  assert.equal(matchesLocalSessionProcess(original, { ...original, startTime: '638946341234567891' }), false, 'A reused Node PID is not the old child.');
+  assert.equal(matchesLocalSessionProcess(original, { name: 'conhost', startTime: '638946341234567999' }), false);
+  assert.equal(matchesLocalSessionProcess(original, { name: 'next-server', startTime: original.startTime }), true, 'Changing a process title does not change its identity.');
+  assert.equal(matchesLocalSessionProcess(undefined, { name: 'conhost', startTime: 'current' }), false, 'Legacy build PIDs reused by conhost must not permanently lock the repo.');
+  for (const name of ['node', 'node.exe', 'cmd', 'powershell', 'next-server (v16)']) {
+    assert.equal(matchesLocalSessionProcess(undefined, { name, startTime: 'current' }), true, `Legacy ${name} remains protected.`);
+  }
+  assert.equal(matchesLocalSessionProcess(undefined, null), true, 'Inspection failures remain conservative.');
+  assert.equal(matchesLocalSessionProcess(original, { name: 'node', startTime: null }), true);
+});
+
+test('a live PID with a different birth identity is reclaimed for both stale owners and children', async t => {
+  const repoRoot = await testRoot(t), pair = await ports();
+  for (const role of ['owner', 'child']) {
+    await acquireLocalSession({ repoRoot, ...pair });
+    changeSession(repoRoot, state => {
+      assert.ok(state.processIdentities?.[process.pid]?.startTime, 'The current process must have an OS birth identity.');
+      state.ownerPid = role === 'owner' ? process.pid : 0;
+      state.childPids = role === 'child' ? [process.pid] : [];
+      state.processIdentities[process.pid].startTime = 'a-previous-process-with-this-pid';
+    });
+    const recovered = await acquireLocalSession({ repoRoot, ...pair });
+    await recovered.release();
+  }
+});
+
+test('a legacy identity-free live Node child still prevents another session', async t => {
+  const repoRoot = await testRoot(t), pair = await ports();
+  const session = await acquireLocalSession({ repoRoot, ...pair });
+  try {
+    changeSession(repoRoot, state => { state.ownerPid = 0; state.childPids = [process.pid]; delete state.processIdentities; });
+    await assert.rejects(acquireLocalSession({ repoRoot, ...await ports() }), { code: 'CROUPIER_SESSION_ACTIVE' });
+  } finally {
+    changeSession(repoRoot, state => { state.childPids = []; });
+    await session.release();
+  }
 });
 
 test('simultaneous independent starters elect exactly one owner', async t => {

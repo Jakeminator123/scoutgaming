@@ -1,8 +1,10 @@
 import { mkdir, realpath } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createServer } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
+import { execFileSync } from 'node:child_process';
 
 const SESSION_DB = 'CROUPIER_LOCAL_SESSION_DB';
 const SESSION_TOKEN = 'CROUPIER_LOCAL_SESSION_TOKEN';
@@ -23,6 +25,9 @@ function read(db) {
     || ![value.productPort, value.labPort].filter(port => port !== null).every(port => Number.isInteger(port) && port > 0 && port <= 65535)
     || !Number.isInteger(value.labPort)
     || !value.childPids.every(pid => Number.isInteger(pid) && pid > 0)) throw new Error('Croupiers sessionspost är ogiltig; ingen ny session startades.');
+  if (value.processIdentities !== undefined && (!value.processIdentities || typeof value.processIdentities !== 'object' || Array.isArray(value.processIdentities)
+    || Object.entries(value.processIdentities).some(([pid, identity]) => !/^[1-9]\d*$/.test(pid) || !identity || typeof identity.name !== 'string'
+      || typeof identity.startTime !== 'string' || !identity.startTime))) throw new Error('Croupiers processidentitet är ogiltig; ingen ny session startades.');
   return { ...value, token: row.token, revision: row.revision };
 }
 
@@ -30,6 +35,55 @@ function alive(pid) {
   if (!pid) return false;
   try { process.kill(pid, 0); return true; }
   catch (error) { return error.code !== 'ESRCH'; }
+}
+
+// An absent inspection is inconclusive, so fail closed. Old sessions only kept
+// PIDs: retain known launch/build runtimes, but a verified conhost/browser/etc.
+// cannot be one of those processes merely because Windows reused its PID.
+export function matchesLocalSessionProcess(identity, current) {
+  if (!current) return true;
+  if (identity) return current.startTime ? identity.startTime === current.startTime : true;
+  if (!current.name) return true;
+  return /^(node|nodejs|npm|npx|cmd|powershell|pwsh|sh|bash|dash|bun|deno)(\.exe)?$/i.test(current.name)
+    || /^(next-server|next-router|croupier)(?:\b|[-(])/i.test(current.name);
+}
+
+function processSnapshots(pids) {
+  const live = [...new Set(pids)].filter(alive);
+  if (!live.length) return new Map();
+  const snapshots = new Map(live.map(pid => [pid, null]));
+  try {
+    if (process.platform === 'win32') {
+      // One inspection for live PIDs only, outside every SQLite transaction.
+      // Ticks are strings: a JSON number would lose process-start precision.
+      const script = `$rows = @(Get-Process -Id ${live.join(',')} -ErrorAction SilentlyContinue | ForEach-Object { $entry = $_; $started = $null; try { $started = $entry.StartTime.ToUniversalTime().Ticks.ToString() } catch {}; @{ pid = $entry.Id; name = $entry.ProcessName; startTime = $started } }); ConvertTo-Json -InputObject $rows -Compress`;
+      const output = execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
+        windowsHide: true, encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      const rows = JSON.parse(output.replace(/^\uFEFF/, ''));
+      for (const row of Array.isArray(rows) ? rows : [rows]) if (snapshots.has(row?.pid)) snapshots.set(row.pid, { name: row.name, startTime: row.startTime });
+    } else if (process.platform === 'linux') {
+      const boot = readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim();
+      for (const pid of live) {
+        try {
+          const stat = readFileSync(`/proc/${pid}/stat`, 'utf8'), end = stat.lastIndexOf(')');
+          snapshots.set(pid, { name: stat.slice(stat.indexOf('(') + 1, end), startTime: `${boot}:${stat.slice(end + 2).split(/\s+/)[19]}` });
+        } catch { /* A process may exit between liveness and inspection. */ }
+      }
+    } else {
+      const output = execFileSync('ps', ['-p', live.join(','), '-o', 'pid=,lstart=,comm='], { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] });
+      for (const line of output.trim().split('\n')) {
+        const match = line.trim().match(/^(\d+)\s+((?:\S+\s+){4}\S+)\s+(.+)$/);
+        if (match) snapshots.set(Number(match[1]), { name: match[3].split('/').at(-1), startTime: match[2] });
+      }
+    }
+  } catch { /* Permission/inspection failures keep the live PID protected. */ }
+  return snapshots;
+}
+
+function processIdentity(pid) {
+  const identity = processSnapshots([pid]).get(pid);
+  return identity?.startTime && typeof identity.name === 'string' ? identity : null;
 }
 
 async function portBusy(port, host) {
@@ -41,7 +95,8 @@ async function portBusy(port, host) {
 }
 
 async function occupied(state, { owner = true } = {}) {
-  if (owner && alive(state.ownerPid) || state.childPids.some(alive)) return true;
+  const snapshots = processSnapshots([...(owner ? [state.ownerPid] : []), ...state.childPids]);
+  if ([...snapshots].some(([pid, current]) => matchesLocalSessionProcess(state.processIdentities?.[pid], current))) return true;
   for (const port of [state.productPort, state.labPort].filter(port => port !== null)) {
     if (await portBusy(port, '127.0.0.1') || await portBusy(port, '::1')) return true;
   }
@@ -70,7 +125,9 @@ function mutate(file, token, change) {
 
 export function registerLocalSessionChild(file, token, pid = process.pid) {
   if (!Number.isInteger(pid) || pid <= 0) throw new Error('Invalid Croupier child PID.');
-  mutate(file, token, state => ({ ...state, childPids: [...new Set([...state.childPids, pid])] }));
+  const identity = processIdentity(pid);
+  mutate(file, token, state => ({ ...state, childPids: [...new Set([...state.childPids, pid])],
+    processIdentities: { ...state.processIdentities, ...(identity ? { [pid]: identity } : {}) } }));
 }
 
 // Runs through NODE_OPTIONS before a server/build (including inherited workers).
@@ -91,7 +148,8 @@ export async function acquireLocalSession({ repoRoot, productPort = null, labPor
   await mkdir(directory, { recursive: true });
   const file = join(directory, '.local-session.sqlite');
   const token = randomUUID();
-  const initial = { ownerPid: process.pid, childPids: [], productPort, labPort };
+  const identity = processIdentity(process.pid);
+  const initial = { ownerPid: process.pid, childPids: [], productPort, labPort, processIdentities: identity ? { [process.pid]: identity } : {} };
   for (;;) {
     const { inserted, current } = database(file, db => {
       const inserted = db.prepare('INSERT OR IGNORE INTO local_session(id,token,revision,payload) VALUES(1,?,1,?)').run(token, JSON.stringify(initial));

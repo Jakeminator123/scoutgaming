@@ -1,3 +1,47 @@
+## 2026-09-28 — Bild/ljud aktiverat i Jakobs aktuella Chrome och omstartsspärr reparerad
+
+Jakobs aktuella flik var vanliga Lissabon på 127.0.0.1:4200/4201, inte det
+tidigare QA-paret på localhost:4210/4211. Luna var redan sparad, men
+`lissabon/start.mjs` kördes utan `--astrid-camera`. Den generiska texten
+om att vänta på transkription/bildstöd dolde den konkreta startorsaken.
+
+Backend skiljer nu funktionsflagga, transkription och bildkapacitet åt.
+Taltranskription fungerar även med Terra; bilder kräver fortsatt Luna.
+Panelen visar konkreta felorsaker och uppdaterar kapaciteten när den öppnas,
+utan att störa pågående inspelning/granskning eller utöka kameratillståndet
+efter ett mikrofonklick. Bilder skickas fortfarande bara efter granskning.
+
+Omstarten blottlade en verklig PID-återanvändningsbugg i sessionsspärren:
+en gammal byggprocess hade blivit en orelaterad conhost. Spärren sparar nu
+processens startidentitet och hanterar gamla poster konservativt. Ingen
+låspost raderades och inget orelaterat program avslutades. Starten återtog
+den gamla sessionen korrekt; enbart 4200/4201 lyssnar. Den startades med
+`node lissabon/start.mjs --no-open --skip-build --astrid-camera`, samma
+sparade projekt och profiler. QA-återställningspekaren är markerad stoppad.
+
+Den befintliga Chrome-spelfliken återanvändes och laddades om efter kontroll
+att inga text- eller bildutkast fanns. Jakob, saldo och val återkom. Kamerapanelen
+har en aktiv Starta-knapp och status ”Av · inget tillstånd begärt”. Ingen
+fysisk enhet startades. Astrids video spelar med readyState 4 utan mediafel.
+
+Verifiering: samtliga 27 pre-commit-kommandon, 42 kamera-/ljudprov,
+32 produkt-HTTP-prov och fyradealerasset-audit med `--probe` passerade.
+Efter sessionsändringen passerade även 9/9 sessionsprov och 17/17
+anslutningsprov. Ett riktigt syntetiskt JPEG-prov via `openClawChat` →
+Director → OpenClaw gav korrekt svar: blå cirkel, sedan röd kvadrat,
+1 875 ms. Luna begärdes; inga riktiga spelaruppgifter/DB eller foton användes.
+Provbild, kvitto och screenshot finns privat vid den bevarade QA-återstarten.
+
+Kvar: fysisk mikrofon/kamera i användarens Chrome, faktisk bildlagring och
+Gateway-modellidentifierare (Render är fortsatt nekat av sparad Codex-
+webbplatsbehörighet), samt full visuell fyradealerrehearsal. Tidigare verklig
+Cartesia-transkription och genererat tal/video är godkända tekniskt, inte
+mänsklig läppsynk. Ingen ny Render-deploy behövdes eller gjordes här.
+Jira CAC är fortsatt inte tillgängligt i verktygen. På Jakobs begäran ligger
+labbuppföljning och CI-jobbet presentation-studio efter kameraarbetet; en
+tyst timvis tråduppföljning påminner en gång om kvarstående arbete. CI-felet
+är ännu inte kontrollerat mot senaste pipeline och får inte kallas löst.
+
 ## 2026-09-28 — Ny omstart och faktisk browserkontroll av tal/video
 
 På Jakobs begäran stoppades förra serverparet och dess startprocess;

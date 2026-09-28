@@ -2,28 +2,35 @@
 
 28 september 2026. **Bild och ljud är Av som standard. Servertranskription är
 implementerad och leverantörsprovet godkänt; syntetiska Chrome-prov passerar.
-Fysisk inspelning och bildvägen genom OpenClaw återstår att prova.**
+Bildtolkning genom Director/OpenClaw har nu passerat med syntetisk JPEG.
+Fysisk inspelning och kontroll av faktisk bildlagring återstår.**
 Aktuell källa för uppdraget är [agentprompten](ASTRID-CAMERA-AGENT-PROMPT.md).
 Designunderlaget finns i [kameraplanen](../../open-claw/lab/docs/ASTRID-CAMERA-VOICE-PLAN.md).
 
 ## Aktivering för det godkända provet
 
-Jakob har godkänt driftsättning och generalrepetition. Senaste verifierade
-driftkontroll nedan föregår kameradeploy; ett fungerande lokalt spel bevisar
-inte att bildvägen är driftsatt. Codex webbplatsbehörighet blockerar för
-närvarande agentens kontroll av Render.
+Jakob har godkänt driftsättning och generalrepetition. Ett syntetiskt
+bildprov genom produktens `openClawChat` och befintlig Director/Gateway gav
+korrekt svar 28 september: blå cirkel till vänster, röd kvadrat till höger.
+Luna begärdes uttryckligen; svarstid 1 875 ms, JPEG 5 764 byte. Ingen kamera,
+spelardatabas, röstgenerering eller privat bild användes. Den faktiska
+modellidentifieraren i Gateway och bildens lagring kunde inte läsas eftersom
+Codex fortfarande nekas Render av en sparad webbplatsbehörighet.
 
-1. På Render: driftsätt aktuell `jakeminator123/work` för både
+1. Vid en ny installation på Render: driftsätt aktuell `jakeminator123/work` för både
    `croupier-lab-openclaw` (Gateway) och `croupier-lab-director`. Gateway ska
    ha `CROUPIER_SPEECH_VISION=1`. Behåll befintlig version, modellnycklar och
    verktygsgränser. Verifiera först en syntetisk bild och dess lagring enligt
-   checklistan nedan.
+   checklistan nedan. Den befintliga bildvägen har redan klarat bildprovet
+   ovan; ingen ny deployment gjordes för att åtgärda den lokala knappen.
 2. Avsluta det befintliga lokala serverparet via dess startfönster när handen
    är avslutad. Från reporoten: `node lissabon/start.mjs --astrid-camera --no-open`.
    Använd QA-launcherns `astridCamera: true` när det isolerade provparet ska
    köras. Ett andra startkommando ändrar inte flaggan i en redan körande server.
 3. Lissabon → Probe: välj **GPT-6 Luna** och spara. Öppna Astrid via **Ström →
    Anslut**, med `presentation=local`. Ladda om befintlig spelflik.
+   Med en annan modell fungerar mikrofon/transkription separat; knappen
+   heter då **Starta mikrofon** och inga kamerabilder tas.
 4. I spelfliken: **Bild och ljud · Av → Starta kamera och mikrofon**, godkänn enheterna,
    tala och granska text/bilder. **Skicka till Astrid** skickar just den turen.
    Funktionen delar stillbilder och transkriberat tal, inte kontinuerlig video
@@ -32,6 +39,19 @@ närvarande agentens kontroll av Render.
 Codex webbplatsbehörighet och Chromes kamera-/mikrofonbehörighet är separata.
 Den första behövs bara för agentens browserkontroll; den andra behövs för
 själva produktfunktionen.
+
+### Varför knappen kunde vara låst
+
+Den 28 september körde Jakobs aktuella Chrome-flik åter vanliga Lissabon
+på 127.0.0.1:4200/4201. Luna var sparad, men startprocessen saknade
+`--astrid-camera`. Den gamla gemensamma feltexten skilde inte detta från
+saknad Cartesia-konfiguration eller annat modellval. Tidigare fungerande
+QA-start på localhost:4210/4211 hade inte aktiverat denna separata start.
+
+Servern rapporterar nu funktion, transkription och bildkapacitet var för sig.
+Klienten visar den konkreta orsaken och läser om inställningar när panelen
+öppnas utan att ändra aktiv inspelning eller granskning. Tal fungerar även
+med Terra; bildkontraktet kräver fortsatt Luna. Inga modellval ändrades.
 
 ## Produktflöde
 

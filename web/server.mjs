@@ -823,10 +823,13 @@ createServer(async (req, res) => {
   if (pathname === '/api/astrid/observation' && req.method === 'GET') {
     try {
       const config = await probeRuntime.config();
-      const enabled = astridCameraEnabled && config.policy.model === 'gpt-6-luna';
+      const enabled = astridCameraEnabled;
       const profileRevision = enabled ? createHash('sha256').update(chatSessionOwner(req, authenticated)).digest('hex') : null;
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
       res.end(JSON.stringify({ enabled, profileRevision, model: config.policy.model,
+        reason: !enabled ? 'feature_disabled' : !astridTranscription.configured ? 'transcription_unavailable' : null,
+        vision: { enabled: enabled && config.policy.model === 'gpt-6-luna',
+          reason: !enabled ? 'feature_disabled' : config.policy.model !== 'gpt-6-luna' ? 'model_not_verified' : null },
         transcription: { enabled: enabled && astridTranscription.configured, provider: 'cartesia', model: 'ink-whisper' } }));
     } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"enabled":false}'); }
     return;
@@ -838,7 +841,7 @@ createServer(async (req, res) => {
     catch { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"stale_transcription_context"}'); return; }
     await astridTranscription.handle(req, res, { enabled: astridCameraEnabled, profileRevision,
       checkCurrent: async context => {
-        if (ownerRevision() !== profileRevision || (await probeRuntime.config()).policy.model !== 'gpt-6-luna') {
+        if (ownerRevision() !== profileRevision) {
           throw Object.assign(new Error('stale_transcription_context'), { code: 'stale_transcription_context', statusCode: 409 });
         }
         authoritativeChatStatus(authenticated, playerSession(req), context);

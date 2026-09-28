@@ -14,6 +14,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
 import { createPlayerProbeStore } from '../web/player-probe-store.mjs';
 import { createDefaultProbePolicy } from '../lab/lib/probe-policy.mjs';
+import { createProjectStore } from '../lab/lib/project-store.mjs';
 
 const PRIVATE_TRANSPORT_ENV = [
   'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',
@@ -21,7 +22,7 @@ const PRIVATE_TRANSPORT_ENV = [
   'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
   'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL', 'OPENCLAW_MODEL_ID', 'OPENCLAW_MODEL_API',
   'CROUPIER_GENERATED_SPEECH', 'CROUPIER_GENERATED_SPEECH_PREVIEW', 'CROUPIER_GENERATED_SPEECH_DIR',
-  'CROUPIER_ASTRID_CAMERA',
+  'CROUPIER_ASTRID_CAMERA', 'CARTESIA_API_KEY',
   'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID', 'ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API', 'RUNPOD_API_KEY',
 ];
 
@@ -96,6 +97,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       CROUPIER_PRESENTATION_STUDIO_DIR: join(directory,'studio'),
       CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '', CROUPIER_LISSABON_PROFILES: lissabon ? '1' : '',
       CROUPIER_ASTRID_CAMERA: lissabon ? '1' : '',
+      CARTESIA_API_KEY: 'isolated-fixture-not-a-live-key',
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
       OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat',
       OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' }),
@@ -481,6 +483,9 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     const a = await guest(), b = await guest();
     const config = await a.client.get('/api/astrid/observation');
     assert.equal(config.enabled, lissabon);
+    assert.equal(config.transcription.enabled, lissabon);
+    assert.equal(config.vision.enabled, lissabon);
+    assert.equal(config.reason, lissabon ? null : 'feature_disabled');
     const input = chat(a.state);
     const image = syntheticJpegUrl();
     const observation = { version: 1, turnId: input.requestId, consentTurnId: input.requestId,
@@ -521,6 +526,32 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.deepEqual(sent.slice(1), [{ type: 'image_url', image_url: { url: image } }]);
     assert.equal(JSON.stringify(await a.client.get('/api/chat/memory?dealer=astrid')).includes(image), false);
     assert.equal(captured.length, before + 1);
+  });
+
+  await t.test('changing the speech model preserves transcription and keeps unverified images blocked', async () => {
+    const a = await guest();
+    const store = createProjectStore(join(directory, 'studio'));
+    const original = await store.load();
+    const changed = structuredClone(original);
+    changed.probePolicy = { ...createDefaultProbePolicy(), model: 'gpt-5.6-terra' };
+    const saved = await store.save(changed, original.revision);
+    try {
+      const config = await a.client.get('/api/astrid/observation');
+      assert.equal(config.enabled, lissabon);
+      assert.equal(config.transcription.enabled, lissabon, 'audio does not depend on vision support');
+      assert.equal(config.vision.enabled, false);
+      assert.equal(config.vision.reason, lissabon ? 'model_not_verified' : 'feature_disabled');
+      if (lissabon) {
+        assert.match(config.profileRevision, /^[a-f0-9]{64}$/);
+        const input = chat(a.state);
+        const before = captured.length;
+        const result = await a.client.post('/chat', { ...input, observation: { version: 1,
+          turnId: input.requestId, consentTurnId: input.requestId,
+          profileRevision: config.profileRevision, images: [syntheticJpegUrl()] } }, 409);
+        assert.equal(result.error, 'observation_model_not_verified');
+        assert.equal(captured.length, before);
+      }
+    } finally { await store.save(original, saved.revision); }
   });
   assert.equal(poisonRequests, 0, 'parent relay, Gateway and provider settings never reach the child fixture');
 

@@ -36,7 +36,12 @@ i spelets klippväljare om du vill prova modellval.
 Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 
 Astrids valbara kamera/mikrofon finns i samma spelflik, Av som standard.
-Aktivering väntar på driftprov. Se [implementation och verifieringsläge](../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md)
+Starta det enda serverparet med `node lissabon/start.mjs --astrid-camera --no-open`
+för att göra knappen tillgänglig; en redan körande server måste stoppas först.
+Välj Luna i Probe för bildstöd. Med andra modeller fungerar mikrofonen separat.
+Kamera/mikrofon startar först vid spelarens klick. Syntetisk bildtolkning är
+verifierad; fysisk inspelning och bildlagringskontroll återstår.
+Se [implementation och verifieringsläge](../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md)
 och [OpenClaws källindex](../../open-claw/lab/docs/OPENCLAW-DOCS.md).
 
 ## Idle i Eventstudion
