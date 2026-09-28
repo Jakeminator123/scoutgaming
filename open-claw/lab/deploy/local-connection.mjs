@@ -259,7 +259,8 @@ function requireGeneratedSpeechConfiguration(configuration) {
   }
 }
 
-export function childSpecifications(configuration, runDir, { productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, studioDataDir, streamLane = '' } = {}) {
+export function childSpecifications(configuration, runDir, { productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, studioDataDir, streamLane = '', labDistDir = '.next' } = {}) {
+  if(!/^\.[a-z0-9-]+$/.test(labDistDir))throw new Error('Invalid isolated lab build directory.');
   requireGeneratedSpeechConfiguration(configuration);
   for (const port of [productPort, labPort]) {
     if (RESERVED_SHARED_PORTS.has(port)) throw new Error(`Port ${port} is reserved for the shared comparison and will not be touched.`);
@@ -317,6 +318,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
       cwd: join(configuration.repoRoot, 'lab'),
       readyText: 'Ready in', dataDir: labData,
       env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
+        CROUPIER_LAB_DIST_DIR: labDistDir,
         LAB_STUDIO_DATA_DIR: labData, LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
         CROUPIER_STREAM_LANE: streamLane,
         OPENCLAW_BASE_URL: '', OPENCLAWAPI_KEY: '', OPENCLAW_AGENT: configuration.directorAgent,
@@ -393,7 +395,8 @@ function configureSyntheticPartner(specs, repoRoot) {
 }
 
 export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env,
-  productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, studioDataDir, streamLane = '' } = {}) {
+  productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, studioDataDir, streamLane = '', labDistDir = '.next' } = {}) {
+  if(!/^\.[a-z0-9-]+$/.test(labDistDir))throw new Error('Invalid isolated lab build directory.');
   if (productPort === labPort) throw new Error('Product and Next Eventstudio need separate ports.');
   await unusedPort(productPort); await unusedPort(labPort);
   const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech });
@@ -402,14 +405,14 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
   if (report.productSpeechRelay.urlPresent !== report.productSpeechRelay.credentialPresent) {
     throw new Error('OPENCLAW_PRODUCT_SPEECH_URL and OPENCLAW_PRODUCT_SPEECH_TOKEN must be configured together.');
   }
-  if (!fs.existsSync(join(repoRoot, 'lab', '.next', 'BUILD_ID'))) {
+  if (!fs.existsSync(join(repoRoot, 'lab', labDistDir, 'BUILD_ID'))) {
     throw new Error('A verified Next production build is required; run npm --prefix lab run build before starting the isolated connection.');
   }
   if ((report.productGateway.configured || report.productSpeechRelay.configured) && report.productGateway.role.status !== 'expected') {
     throw new Error('Refusing a connected product start because the configured OpenClaw agent has a conflicting runtime contract.');
   }
   const runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-openclaw-connection-'));
-  const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, streamLane });
+  const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, streamLane, labDistDir });
   let product, lab, stopped = false;
   const stop = async () => {
     if (stopped) return;

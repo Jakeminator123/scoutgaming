@@ -151,6 +151,23 @@ async function post(base, token, body = envelope()) {
   });
 }
 
+test('Probe keeps product and studio tokens separate and validates before any model call', async t => {
+  let calls=0;
+  const base=await running(t,async()=>{calls++;return completion({speak:false,text:'',memoryIds:[],topicId:'',reason:'silence'});});
+  const input={version:1,requestId:'probe-token-test',purpose:'probe',model:'gateway-default',reasoning:'gateway-default',
+    context:{now:Date.now(),displayName:'Synthetic Anna',language:'en',history:[],memories:[],recentTopics:[],nameAllowed:true,quiet:true}};
+  const send=(path,token,body=input)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});
+  for(const token of [null,labToken,'wrong-token'])assert.equal((await send('/api/product/probe',token)).status,401);
+  assert.equal((await send('/api/studio/probe',speechToken)).status,401);
+  assert.equal((await send('/api/product/probe',speechToken,{...input,playerId:'forged'})).status,400);
+  assert.equal(calls,0);
+  assert.equal((await send('/api/product/probe',speechToken)).status,200);
+  assert.equal((await send('/api/studio/probe',labToken,{...input,requestId:'studio-probe-token-test'})).status,200);
+  assert.equal(calls,2);
+  const status=await fetch(base+'/api/status',{headers:{Authorization:`Bearer ${labToken}`}});
+  assert.ok((await status.json()).capabilities.includes('product-probe-v1'));
+});
+
 test('Director adapter grants its separate token only the bounded speech endpoint', async t => {
   let calls = 0;
   const base = await running(t, async (_url, options) => {

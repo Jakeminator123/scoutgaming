@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://croupier.local/schemas/probe-policy.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "mode",
+    "inactivityMs",
+    "cooldownMs",
+    "maxPerHour",
+    "probability",
+    "anecdoteCooldownDays",
+    "memoryEnabled",
+    "memoryDays",
+    "maxFacts",
+    "model",
+    "reasoning"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "mode": {
+      "enum": [
+        "off",
+        "text",
+        "automatic"
+      ]
+    },
+    "inactivityMs": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 3600000
+    },
+    "cooldownMs": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 86400000
+    },
+    "maxPerHour": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 12
+    },
+    "probability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "anecdoteCooldownDays": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30
+    },
+    "memoryEnabled": {
+      "type": "boolean"
+    },
+    "memoryDays": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30
+    },
+    "maxFacts": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "model": {
+      "enum": [
+        "gateway-default",
+        "gpt-5.4-mini",
+        "gpt-6-luna",
+        "gpt-5.6-terra"
+      ]
+    },
+    "reasoning": {
+      "const": "gateway-default"
+    }
+  }
+}

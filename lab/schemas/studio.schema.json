@@ -605,6 +605,9 @@
     },
     "idlePolicy": {
       "$ref": "#/$defs/idlePolicy"
+    },
+    "probePolicy": {
+      "$ref": "probe-policy.schema.json"
     }
   },
   "$defs": {
@@ -642,7 +645,7 @@
         },
         "variants": {
           "type": "array",
-          "maxItems": 12,
+          "maxItems": 30,
           "items": { "$ref": "#/$defs/idleVariant" }
         }
       }

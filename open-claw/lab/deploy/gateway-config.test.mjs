@@ -29,7 +29,7 @@ test('the seeded provider keeps the approved OpenAI base URL, model and API tupl
   const provider = config.models.providers['lab-provider'];
   assert.equal(provider.baseUrl, 'https://api.openai.com/v1');
   assert.equal(provider.api, 'openai-responses');
-  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.4-mini']);
+  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.4-mini','gpt-6-luna','gpt-5.6-terra']);
   for (const agent of Object.values(config.agents.entries)) {
     assert.equal(agent.model.primary, 'lab-provider/gpt-5.4-mini');
     assert.deepEqual(agent.model.fallbacks, []);
@@ -110,6 +110,7 @@ function legacyConfig(env = example) {
   delete config.agents.defaults;
   delete config.talk;
   config.tools.deny = ['*'];
+  config.models.providers['lab-provider'].models=config.models.providers['lab-provider'].models.slice(0,1);
   return config;
 }
 

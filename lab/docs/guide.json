@@ -21,6 +21,11 @@
       "view": "activity",
       "title": "4. Följ nativeströmmen",
       "body": "Tryck Anslut för Astrid och spela och chatta i spelfliken. Web spelar Emils filmer med Eventstudions sparade policy. Lab visar En spelare · Web och observerar samma klippval, verkliga start och avslut. Klippväljaren i spelet erbjuder Standard, Regler, Slump och OpenClaw; chattsvar är separat. Spara idleändringar och ladda om spelet för att läsa dem. Exportera observationen före omladdning."
+    },
+    {
+      "view": "probe",
+      "title": "5. Prova Astrids egna initiativ",
+      "body": "Välj Probe i Lissabon eller stora labbet. Av är standard. Textprov använder syntetiska spelare utan röst/video. Automatiskt väntar på ett lugnt bord. Spara gemensam policy och modell; spelaren läser nästa version utan omstart. Separat talprov kräver en knapp i Astrids verkliga spelare."
     }
   ],
   "boundaries": [
@@ -29,13 +34,14 @@
     "Standard och varianter kommer från manifestet. Gamla 2D-demovarianter bevaras i äldre projekt men används inte för Astrids mappstyrda material. Vera, Amira och Mei behåller sin befintliga gemensamma originalspelare.",
     "Idleeditorn skiljer basloop, automatisk variation, OpenClaw och manuellt prov. Regelstyrd idle har ännu ingen ansluten trigger. Beskriv När passar klippet? med högst 80 tecken; beskrivningen följer klippet till OpenClaw. Kaffeklippet läggs till som manuell variant. Grundvikt och schemats uppskattning räknar inte in tal eller modellreaktioner. Färdigt tal avbryter idle och återgår till neutral startposition; ingen lång idle-kö byggs. Spela en minut provar bara grundloopar och tidsstyrda variationer.",
     "Box anger plats, inte person. Produktens OpenClaw-adapter får säkert displayName, upptagna boxar, synliga kort och publicerade events. Den får inte rått playerId, framtida sko eller dolt hålkort. En fullständig identitetslista för flera olika spelare per bord är inte implementerad.",
-    "Bordschatten i spelfliken använder autentiserad session, publika kort och serverbundet minne. OpenClaw genererar svaret; med uttryckligt generated-speech-läge ger ElevenLabs ljud och RunPod matchande Astrid-video. Paketet får förberedas under deal men visas först vid ny renderad standardposition. Händelserepliker behåller sitt exakta native-event och blandas inte ihop med fri chatt. Inspelade chattsvar utan verifierad exakt text/video är text-only. Genererad läppsynk är preview, inte visuellt godkänd.",
-    "Spelarminnet binds på servern till autentiserad spelare och dealer, aldrig ett ID inskickat av chatten. Högst 12 meddelanden/8 000 tecken och 30 dagars inaktivitet. Genererat svar är inte bevis på uppspelning. Minne i originalets chatt visar omfattning och låter dig glömma den spelarens dealerhistorik. Den isolerade testdatabasen och dess minne försvinner när testservern stoppas.",
+    "Bordschatten i spelfliken använder autentiserad session, publika kort och serverbundet minne. OpenClaw genererar svaret; med uttryckligt generated-speech-läge ger Cartesia Victoria ljud och RunPod matchande Astrid-video. Paketet får förberedas under deal men visas först vid ny renderad standardposition. Händelserepliker behåller sitt exakta native-event och blandas inte ihop med fri chatt. Inspelade chattsvar utan verifierad exakt text/video är text-only. Genererad läppsynk är preview, inte visuellt godkänd.",
+    "Spelarminnet binds på servern till autentiserad spelare och dealer, aldrig ett ID inskickat av chatten. Högst 30 meddelanden/8 000 tecken och 30 dagars inaktivitet. Genererat svar är inte bevis på uppspelning. Minne i originalets chatt visar omfattning och låter dig glömma den spelarens dealerhistorik. Den isolerade testdatabasen och dess minne försvinner när testservern stoppas.",
     "OpenClaw-läget kan också föreslå en uttryckligen tillåten idle/variant efter en färsk observerad chatt. Rådet får högst 30 sekunder och högst en sådan reaktion spelas per minut. Skuggläge loggar men spelar inte förslaget; Standard gör inga sådana modellval. Nyare chatt, ändrad runda, paus eller lägesbyte kasserar gammalt råd. Varianten måste vara OpenClaw-valbar. Automatiska variationer följer sina tider oberoende av AI-klippläget. Ingen modell frågas periodiskt under tyst väntan. Spara och ladda om spelet; OpenClaw behöver inte startas om. Operatörschatten och Fristående chattprov styr inte det anslutna bordet.",
     "Spelmotorn äger kort, regler, saldo och utbetalningar. OpenClaw väljer tillåten presentation. En godkänd filhash eller ett uppspelningskvitto är inte ett mänskligt godkännande av läppsynk.",
     "Anslutningens serveradress avgör om originalet är lokalt eller externt. tools/start-local-comparison.mjs startar ett isolerat lokalt spel och stänger av externa modellanslutningar. Att OpenClaw-koden finns betyder inte att en körande gateway är ansluten.",
     "Händelseloggen håller 150 poster i flikens minne; observationsprotokollet högst 300 meddelanden eller 4 MiB. Samma instruktion via native och SSE slås ihop. Luckor och konflikter stoppar följningen. Exportera och välj Ny observation för att börja om med kommande data.",
-    "Emils originalfiler är 1080×1920 (9:16). Web visar hela filmen utan beskärning, även på dator. Korten är serverstyrda 2D-överlägg; materialet har ännu ingen kalibrerad kontakt med handen. Saknat exakt Astrid-klipp visas som fel i labbprovet. Produktens ?rehearsal=1 är den befintliga QA-panelen i den riktiga spelaren, inte en Eventstudio-flik."
+    "Emils originalfiler är 1080×1920 (9:16). Web visar hela filmen utan beskärning, även på dator. Korten är serverstyrda 2D-överlägg; materialet har ännu ingen kalibrerad kontakt med handen. Saknat exakt Astrid-klipp visas som fel i labbprovet. Produktens ?rehearsal=1 är den befintliga QA-panelen i den riktiga spelaren, inte en Eventstudio-flik.",
+    "Probe: normalt 90 sekunders inaktivitet, minst 5 minuters paus, 3 per timme och 30 procent per tillfälle. Ett obesvarat initiativ tills spelaren åter blir aktiv. Belagda fakta lever högst 30 dagar; samma anekdot spärras 7 dagar. Glöm stoppar även väntande arbete. Senaste avslutade rundans netto skickas separat till vanlig chatt; totalresultat är inte resultatet för förra rundan."
   ],
   "surfaces": [
     {
@@ -57,8 +63,12 @@
     {
       "name": "Chatt & OpenClaw",
       "purpose": "Separata ingångar till socialt prov och operatörschatt, anslutningsstatus, Gateway-dashboard och konfigurationskällor."
+    },
+    {
+      "name": "Probe",
+      "purpose": "Gemensam policy, modellval, syntetiska textprov och belagda minnen. Verkliga minnen visas endast i den autentiserade spelflikens Minne."
     }
   ],
-  "storage": "MP4-filerna ligger i emil/dealklipp-v1. Manifest v2 beskriver 26 familjer: deal/repliker med standardfil och valfri variant-mapp samt idle med basloopar och idle/variant. Läs in nya filer uppdaterar det lokala manifestet. Projektets val ligger i lokal JSON: mediaPolicy för deal/repliker och idlePolicy för idle. Äldre projektdata bevaras. Hemligheter stannar på serversidan. Inget sparande i studion deployar automatiskt produkten eller OpenClaw.",
+  "storage": "MP4-filerna ligger i emil/dealklipp-v1. Manifest v2 beskriver 26 familjer: deal/repliker med standardfil och valfri variant-mapp samt idle med basloopar och idle/variant. Läs in nya filer uppdaterar det lokala manifestet. Projektets val ligger i lokal JSON: mediaPolicy för deal/repliker och idlePolicy för idle. Äldre projektdata bevaras. Hemligheter stannar på serversidan. Inget sparande i studion deployar automatiskt produkten eller OpenClaw. Probe sparas i samma projekts probePolicy. HTTP 409 erbjuder sammanslagning med explicit konfliktval.",
   "authority": "Källans sex eventtyper och 16 grupper finns i lab/policies/studio-contract.json. Videofamiljerna finns i emil/dealklipp-v1/lab-video-manifest.json. Konfiguration av OpenClaw börjar i open-claw/lab/docs/README.md och dess officiella källindex."
 }

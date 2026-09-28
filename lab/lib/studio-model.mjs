@@ -2,6 +2,7 @@ import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
 import { validateMediaPolicy } from './media-family-policy.mjs';
+import { createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
 
 // Pure, browser-safe policy model. This file never reads environment, network,
 // player identities, game state or media files. JSON is the editable artefact.
@@ -54,7 +55,7 @@ export class StudioValidationError extends Error {
   }
 }
 
-export function createSeedProject() { return { ...clone(seed), idlePolicy: createDefaultIdlePolicy() }; }
+export function createSeedProject() { return { ...clone(seed), idlePolicy: createDefaultIdlePolicy(), probePolicy: createDefaultProbePolicy() }; }
 
 // Illustration choices must not reverse a published deal or hide a reveal.
 // This is NOT media acceptance: exact dealer/line/take validation belongs to
@@ -79,7 +80,11 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy'])) throw new StudioValidationError(errors);
+  if (Object.hasOwn(project, 'probePolicy')) {
+    try { validateProbePolicy(project.probePolicy); }
+    catch (cause) { error('probePolicy', cause.message); }
+  }
   if (Object.hasOwn(project, 'mediaPolicy')) {
     try { validateMediaPolicy(project.mediaPolicy, Array.isArray(project.triggers) ? project.triggers.map(trigger => trigger?.id) : []); }
     catch (cause) { error('mediaPolicy', cause.message); }

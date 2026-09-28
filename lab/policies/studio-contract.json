@@ -145,6 +145,11 @@
       "id": "speech-package",
       "label": "Läppsynkpaket",
       "definition": "Exakt text, ljud, video, frame-index, kalibrering och acceptans för samma take. Nya bytes kräver ny visuell granskning."
+    },
+    {
+      "id": "probe",
+      "label": "Probe",
+      "definition": "Astrids frivilliga talinitiativ vid inaktivitet. Av, Textprov eller Automatiskt. Samma policy i Lissabon och stora labbet; spelmotorns event-ID:n är oförändrade."
     }
   ],
   "events": [
@@ -264,5 +269,15 @@
       "sourceType": "idle",
       "situations": []
     }
-  ]
+  ],
+  "probe": {
+    "policy": "probe-policy.seed.json",
+    "schema": "../schemas/probe-policy.schema.json",
+    "dealer": "astrid",
+    "source": "server-presence-and-completed-evidence",
+    "speechRole": "openclaw/croupier-speech",
+    "historyMessages": 30,
+    "historyChars": 8000,
+    "maxFacts": 20
+  }
 }

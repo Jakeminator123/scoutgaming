@@ -10,8 +10,11 @@ import { createDefaultIdlePolicy } from '../lib/idle-policy.mjs';
 import type { MediaVariantPolicy, StudioProject } from '../lib/studio-model.mjs';
 import { requestJson, type VideoInventory } from './studio-types';
 import styles from './lissabon-studio.module.css';
+import {ProbeEditor} from './probe-editor';
+import {ProjectConflict} from './project-conflict';
+import {createDefaultProbePolicy} from '../lib/probe-policy.mjs';
 
-type View = 'stream' | 'idle' | 'deal' | 'clips';
+type View = 'stream' | 'idle' | 'deal' | 'clips' | 'probe';
 export function LissabonStudio({ initialProject, initialVideos, connectedLane }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean }) {
   const [project, setProject] = useState(initialProject);
   const [saved, setSaved] = useState(JSON.stringify(initialProject));
@@ -22,6 +25,7 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [conflict,setConflict]=useState(false);
   const [selection, setSelection] = useState<{ eventId: string; situation: string } | null>(null);
   const [variantId, setVariantId] = useState('');
   const dirty = JSON.stringify(project) !== saved;
@@ -42,9 +46,9 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
       const response = await requestJson<{ project: StudioProject }>('/api/project', { method: 'PUT', body: JSON.stringify({ project: submitted, expectedRevision: submitted.revision }) });
       setSaved(JSON.stringify(response.project));
       setProject(current => current === submitted ? response.project : { ...current, revision: response.project.revision });
-      setNotice('Sparat för Lissabon. Nya deal- och replikval läses av spelet direkt. Ladda om spelfliken efter ändrad idlepolicy, när handen är avslutad.');
+      setNotice('Sparat för Lissabon. Nya deal- och replikval läses av spelet direkt. Probe använder senaste sparade val inför nästa beslut. Ladda om spelfliken efter ändrad idlepolicy, när handen är avslutad.');
       record({ source: 'config', stage: 'configuration', status: 'completed', title: 'Lissabon-inställningar sparade', owner: 'Gemensam projektlagring', reason: 'Web och Lab läser samma sparade projekt.', data: { revision: response.project.revision } });
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Kunde inte spara.'); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Kunde inte spara.');setConflict((cause as {statusCode?:number})?.statusCode===409); }
     finally { setSaving(false); }
   }
   async function refresh() {
@@ -74,13 +78,15 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
   const video = definition && event && variant && mediaVideoForEvent(videos, 'astrid', definition.id, event, variant.videoGenerationId);
   return <div className={styles.shell}>
     <header className={styles.header}><div><span className="eyebrow">ASTRID · LOKAL DEMO</span><h1>Lissabon<span>stream lane</span></h1></div>
-      <nav aria-label="Lissabon">{([['stream', 'Ström'], ['idle', 'Idle'], ['deal', 'Deal'], ['clips', 'Repliker']] as const).map(([id, label]) => <button className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => { setSelection(null); setView(id); }}>{label}</button>)}</nav>
+      <nav aria-label="Lissabon">{([['stream', 'Ström'], ['idle', 'Idle'], ['deal', 'Deal'], ['clips', 'Repliker'], ['probe','Probe']] as const).map(([id, label]) => <button className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => { setSelection(null); setView(id); }}>{label}</button>)}<a href="/openclaw">OpenClaw ↗</a></nav>
       <div className={styles.save}><span>{dirty ? 'Osparade ändringar' : 'Sparat lokalt'}</span><button className="primary-button" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button></div>
     </header>
     <main className={styles.main}>
       {!connectedLane ? <p role="alert" className="feedback error">Det här labbet startades utan Lissabon-profilen. Starta med Start-Lissabon.cmd för rätt ström, tal och gemensam lagring.</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {notice ? <p role="status" className="feedback success">{notice}</p> : null}
+      {conflict?<ProjectConflict base={JSON.parse(saved)} draft={project} onResolve={(remote,merged)=>{setSaved(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Utkastet är sammanslaget. Granska dina val och spara.');}}/>:null}
+      {view==='probe'?<fieldset className={styles.fields} disabled={saving||!connectedLane}><ProbeEditor policy={project.probePolicy??createDefaultProbePolicy()} onChange={policy=>edit(draft=>{draft.probePolicy=policy;})} onActivity={record}/></fieldset>:null}
       <div hidden={view !== 'stream' || !connectedLane}>
         <p className={styles.intro}>Astrid med Emils klipp, OpenClaw och genererade röstsvar med läppsynk. Anslut öppnar spelfliken och följer dess uppspelning här.</p>
         {connectedLane ? <ActivityLog focused entries={entries} onActivity={record} onClear={() => setEntries([])} full onOpen={() => setView('stream')} streamView={{ project, videos, originals: null, dealerId: 'astrid', onOpenEvent: eventId => open(eventId, '') }} /> : null}

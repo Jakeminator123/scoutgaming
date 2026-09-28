@@ -58,6 +58,7 @@ test('exact legacy migration keeps a private backup and does not alter workspace
   delete old.agents.defaults;
   delete old.talk;
   old.tools.deny = ['*'];
+  old.models.providers['lab-provider'].models=old.models.providers['lab-provider'].models.slice(0,1);
   const original = `${JSON.stringify(old, null, 2)}\n`;
   await writeFile(env.OPENCLAW_CONFIG_PATH, original);
   const retainedDir = path.join(env.OPENCLAW_STATE_DIR, 'agents', 'croupier-chat', 'sessions');

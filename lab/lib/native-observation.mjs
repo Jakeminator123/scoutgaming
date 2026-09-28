@@ -31,6 +31,10 @@ export function acceptNativeObservation(message, expected) {
   }
   if (data.kind === 'status') {
     if (payload.state === 'attached') return { ...common, kind: 'status', data: { ...payload, gap: false } };
+    if(payload.state==='probe'){
+      if(!['decision','played','failed'].includes(payload.stage) || typeof payload.requestId!=='string' || payload.requestId.length>100)return null;
+      return {...common,kind:'status',data:{...payload,gap:false}};
+    }
     if (['chat-progress', 'chat-failed'].includes(payload.state)) {
       if (typeof payload.requestId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(payload.requestId)) return null;
       if (payload.state === 'chat-progress') {

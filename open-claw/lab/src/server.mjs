@@ -11,6 +11,7 @@ import { createDashboardProxy } from './dashboard-proxy.mjs';
 import { normalizeSocialInput, socialChat, validateSocialReply } from './social.mjs';
 import { createCompanionService, normalizeCompanionRequest } from './companion.mjs';
 import { createProductSpeechService, PRODUCT_SPEECH_AGENT, PRODUCT_SPEECH_PATH } from './product-speech.mjs';
+import { createProductProbeService, PRODUCT_PROBE_PATH } from './product-probe.mjs';
 
 const SOURCE_TYPES = ['speak', 'deal', 'reveal', 'settle', 'turn', 'idle'];
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
@@ -87,6 +88,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   let activeSocialChat = 0;
   let companion;
   const productSpeech = createProductSpeechService({ settingsProvider, fetchImpl });
+  const productProbe = createProductProbeService({ settingsProvider, fetchImpl });
   const decide = async (raw, settings, deadlineAt = Infinity) => {
     const input = normalizeInput(raw);
     const catalog = await store.load();
@@ -136,7 +138,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
       if (path === '/healthz' && req.method === 'GET') return respond(res, 200, { ok: true, service: 'croupier-openclaw-lab' });
       // Auth follows the actual listener, even when .env changes before a restart.
       const settings = { ...settingsProvider(), host: initial.host };
-      guard(req, settings, path === PRODUCT_SPEECH_PATH
+      guard(req, settings, path === PRODUCT_SPEECH_PATH || path === PRODUCT_PROBE_PATH
         ? { token: settings.speechToken, productSpeech: true } : undefined);
       if (path.startsWith('/api/')) {
         const rateKey = req.socket.remoteAddress;
@@ -152,10 +154,15 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           '/api/studio/social-chat': ['POST'],
           '/api/studio/companion': ['POST'],
           [PRODUCT_SPEECH_PATH]: ['POST'],
+          [PRODUCT_PROBE_PATH]: ['POST'], '/api/studio/probe': ['POST'],
         };
         if (!allowed[path]) throw new GatewayError('not_found', 404);
         if (!allowed[path].includes(req.method)) throw new GatewayError('method_not_allowed', 405);
         let body = ['POST', 'PUT'].includes(req.method) ? await bodyJson(req) : undefined;
+        if (path === PRODUCT_PROBE_PATH || path === '/api/studio/probe') {
+          if (settings.remoteUrl) throw new GatewayError('probe_relay_not_supported',503);
+          return respond(res,200,await productProbe.handle(body));
+        }
         if (path === PRODUCT_SPEECH_PATH) {
           if (settings.remoteUrl) throw new GatewayError('product_speech_relay_not_supported', 503);
           return respond(res, 200, await productSpeech.handle(body));
@@ -177,7 +184,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           if (path === '/api/status') data.remote = { configured: true, status: 'connected' };
           return respond(res, 200, data);
         }
-        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', 'studio-social-chat-v1', ...(settings.companionEnabled !== false ? ['studio-companion-v1'] : []), ...(settings.speechToken && settings.speechToken !== settings.apiToken && settings.speechAgent === PRODUCT_SPEECH_AGENT ? ['product-speech-v1'] : [])] });
+        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', 'studio-social-chat-v1', ...(settings.companionEnabled !== false ? ['studio-companion-v1'] : []), ...(settings.speechToken && settings.speechToken !== settings.apiToken && settings.speechAgent === PRODUCT_SPEECH_AGENT ? ['product-speech-v1','product-probe-v1'] : [])] });
         if (path === '/api/studio/companion') {
           companion ??= createCompanionService({ directory: initial.dataDir, settings: settingsProvider, fetchImpl });
           return respond(res, 200, await companion.handle(body));

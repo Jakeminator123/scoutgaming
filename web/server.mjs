@@ -13,6 +13,7 @@ import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { CHAT_STAGES } from './public/chat-response.mjs';
 import { createPlayerChatMemory } from './player-chat-memory.mjs';
+import { createPlayerProbeStore } from './player-probe-store.mjs';
 import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { installPartnerApi } from './partner-api.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
@@ -40,6 +41,28 @@ const db = new DatabaseSync(join(dataDir, 'croupier.db'));
 const playerChatMemory = createPlayerChatMemory(db);
 let presentationApi;
 const activePlayerChats = new Map();
+const probeStore = createPlayerProbeStore(db, playerChatMemory);
+let activeProbeRuntime;
+async function loadProbeRuntime() {
+  if(!activeProbeRuntime){
+    const [{createProbeRuntime},{createProjectStore},{readSettings}]=await Promise.all([
+      import('./probe-runtime.mjs'),import('../lab/lib/project-store.mjs'),import('../open-claw/lab/src/settings.mjs')]);
+    activeProbeRuntime ??= createProbeRuntime({store:probeStore,memory:playerChatMemory,
+      projectStore:createProjectStore(process.env.CROUPIER_PRESENTATION_STUDIO_DIR || resolve(root,'../../lab/data')),
+      settingsProvider:readSettings,serviceProvider:getGeneratedSpeechService,
+      chatBusy:playerId=>activePlayerChats.has(JSON.stringify([playerId,'astrid']))});
+  }
+  return activeProbeRuntime;
+}
+const probeRuntime={
+  cancel(scope,reason){if(activeProbeRuntime)return activeProbeRuntime.cancel(scope,reason);return probeStore.activity(scope);},
+  forget(scope,factId){if(activeProbeRuntime)activeProbeRuntime.forget(scope,factId);else probeStore.forget(scope,factId);},
+  ...Object.fromEntries(['config','inspect','presence','run','test','receipt','rememberMessage','completedRound'].map(method=>[method,(...args)=>{
+    // Capture before lazy imports / policy I/O so Forget also wins that race.
+    if(['rememberMessage','completedRound'].includes(method))args.push(probeStore.generation(args[0]));
+    return loadProbeRuntime().then(runtime=>runtime[method](...args));
+  }])),
+};
 db.exec(`
   CREATE TABLE IF NOT EXISTS players (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, currency TEXT NOT NULL DEFAULT 'USD',
@@ -101,7 +124,18 @@ const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balanc
 
 // Server-owned demo table; SQLite transaction commits wallet and shoe together.
 API['/api/table'] = createNativeTableCommand({ db, getPlayer, logTx,
-  publish: observation => { if (observation.session?.partnerKeyId) partner().publishNativeRound(observation); },
+  publish: observation => {
+    const scope = {playerId:observation.playerId,dealerId:'astrid'};
+    probeRuntime.cancel(scope);
+    if (observation.command.op === 'collect' && observation.previousView.round?.phase === 'settled') {
+      const hands = observation.command.dealer === 'astrid' ? observation.previousView.round.hands.filter(hand=>hand.stake>0).map((hand,handIndex)=>({
+        handIndex,box:hand.box,cards:hand.cards.map(({r,s})=>({r,s})),split:hand.splitFrom !== null && hand.splitFrom !== undefined,
+        outcome:hand.busted || !(hand.result>0) ? 'lose' : hand.result>hand.stake ? 'win' : 'push',
+      })) : [];
+      void probeRuntime.completedRound(scope,{roundId:`collected-${observation.view.shoe.id}-${observation.view.version}`,sequence:readPlayerResults(db,observation.playerId,{},getPlayer(observation.playerId).currency).currencies.reduce((sum,row)=>sum+row.rounds,0),hands}).catch(()=>{});
+    }
+    if (observation.session?.partnerKeyId) partner().publishNativeRound(observation);
+  },
   onPublishError: () => console.warn('[partner-events] Native command committed; observation could not be published.'),
 });
 
@@ -717,7 +751,7 @@ const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const lissabonProfiles = createLissabonProfiles({ db, createPlayer: apiPlayer,
   enabled: guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
     && process.env.CROUPIER_LISSABON_PROFILES === '1' && process.env.NODE_ENV !== 'production',
-  onSwitch: playerId => { for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
+  onSwitch: playerId => { probeRuntime.cancel({playerId,dealerId:'astrid'}); for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
 });
 const playerSession = req => lissabonProfiles.session(req) ?? auth.session(req);
 db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
@@ -754,7 +788,13 @@ createServer(async (req, res) => {
       u.searchParams.delete('launch');
       const sessionCookie=auth.fromPartner(req,claims);
       res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':sessionCookie});res.end();return; } }
-  try { if(await auth.handle(req,res))return; } catch { res.writeHead(400);res.end('Invalid request');return; }
+  try {
+    const loggingOut=pathname==='/api/auth/logout'?auth.session(req):null;
+    if(await auth.handle(req,res)){
+      if(loggingOut && res.statusCode===200)probeRuntime.cancel({playerId:loggingOut.playerId,dealerId:'astrid'},'logout');
+      return;
+    }
+  } catch { if(!res.headersSent){res.writeHead(400);res.end('Invalid request');}return; }
   if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
   if(pathname.startsWith('/api/v1/generations')&&await generationsApi(req,res,pathname))return;
   if(pathname==='/api/v1/events'&&req.method==='GET'){ partner().handleEvents(req,res,new URL(req.url,'http://local')); return; }
@@ -775,6 +815,32 @@ createServer(async (req, res) => {
     res.writeHead(403);res.end('Invalid origin');return;
   }
   if(!backoffice) res.setHeader('Cache-Control','no-store');
+  if (pathname === '/api/probe' || pathname.startsWith('/api/probe/')) {
+    const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end(JSON.stringify(value));};
+    const scope={playerId:authenticated,dealerId:'astrid'};
+    const controller=new AbortController();
+    const disconnected=()=>{if(!res.writableEnded)controller.abort();};res.once('close',disconnected);
+    try {
+      const owner=chatSessionOwner(req,authenticated);
+      if(pathname==='/api/probe'&&req.method==='GET'){json(200,await probeRuntime.inspect(scope));return;}
+      if(req.method!=='POST')throw Object.assign(new Error('method_not_allowed'),{code:'method_not_allowed',statusCode:405});
+      let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Object.assign(new Error('request_too_large'),{code:'request_too_large',statusCode:413});}
+      const body=JSON.parse(raw||'{}');
+      const context={owner,signal:controller.signal,readOwner:()=>chatSessionOwner(req,authenticated),
+        readState:()=>({playerId:authenticated,...authoritativeChatStatus(authenticated,playerSession(req),{dealerId:'astrid',sessionRevision:body.sessionRevision,roundRevision:body.roundRevision})})};
+      if(pathname==='/api/probe/presence')json(200,await probeRuntime.presence(scope,body,owner));
+      else if(pathname==='/api/probe/forget'){probeRuntime.forget(scope,body.factId);json(200,await probeRuntime.inspect(scope));}
+      else if(pathname==='/api/probe/decide'||pathname==='/api/probe/receipt'||pathname==='/api/probe/test'){
+        if(!CHAT_REVISION.test(body.sessionRevision)||!CHAT_REVISION.test(body.roundRevision))throw Object.assign(new Error('invalid_probe_context'),{code:'invalid_probe_context',statusCode:400});
+        if(pathname.endsWith('/test')){
+          if(!guestPreview || host!=='127.0.0.1' || process.env.NODE_ENV==='production')throw Object.assign(new Error('probe_test_local_only'),{code:'probe_test_local_only',statusCode:403});
+          json(200,await probeRuntime.test(scope,body,context));
+        }else json(200,pathname.endsWith('/decide')?await probeRuntime.run(scope,body,context):await probeRuntime.receipt(scope,body,context));
+      } else throw Object.assign(new Error('not_found'),{code:'not_found',statusCode:404});
+    }catch(error){if(!res.destroyed)json(error.statusCode||400,{error:error.code||'probe_failed'});}
+    finally{res.removeListener('close',disconnected);}
+    return;
+  }
   if (pathname.startsWith('/api/presentation/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db });
@@ -792,6 +858,7 @@ createServer(async (req, res) => {
         if (pathname.endsWith('/forget')) {
           const key = JSON.stringify([authenticated, dealerId]);
           activePlayerChats.get(key)?.abort('chat_memory_changed');
+          probeRuntime.forget(scope);
           respond(200, playerChatMemory.forget(scope));
         } else respond(200, playerChatMemory.profile(scope));
       } catch (error) { respond(error.statusCode || 400, { error: error.code || error.message }); }
@@ -936,6 +1003,7 @@ createServer(async (req, res) => {
         const status = authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         const owner = chatSessionOwner(req, authenticated);
         const scope = { playerId: authenticated, dealerId };
+        await probeRuntime.cancel(scope);
         memoryTurn = playerChatMemory.begin({ ...scope, requestId: incoming.requestId, message: incoming.message });
         memoryKey = JSON.stringify([authenticated, dealerId]);
         activePlayerChats.set(memoryKey, controller);
@@ -952,7 +1020,7 @@ createServer(async (req, res) => {
           readOwner: () => chatSessionOwner(req, authenticated),
           readStatus,
           signal: controller.signal,
-          decide: (value, state) => openClawChat(value, state, { fetchImpl: (url, options = {}) => fetch(url, {
+          decide: async (value, state) => openClawChat(value, state, { model: state.dealerId==='astrid'?(await probeRuntime.config()).policy.model:'gateway-default', fetchImpl: (url, options = {}) => fetch(url, {
             ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
           }) }),
           service: getGeneratedSpeechService(),
@@ -960,6 +1028,7 @@ createServer(async (req, res) => {
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
         memoryTurn.commit({ kind: decision.kind, exactText: decision.exactText });
+        if(dealerId==='astrid')void probeRuntime.rememberMessage(scope,incoming.requestId,incoming.message).catch(()=>{});
         if (stream) { frame({ type: 'result', decision }); res.end(); return; }
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(decision));

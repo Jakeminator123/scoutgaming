@@ -2,6 +2,7 @@ import { installDealerVersionSwitcher, dealerVersionPath, V2_DEALERS } from './d
 import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
+import { createProbeClient, probePresentationQuiet } from './probe-client.mjs';
 import { createSpeechPoseGate } from './speech-pose-gate.mjs';
 import { CHAT_STAGES, readChatResponse, chatFailureMessage } from './chat-response.mjs';
 import { playGeneratedSpeech, loadGeneratedSpeech } from './generated-speech-player.mjs';
@@ -64,6 +65,7 @@ if (localPresentationEnabled) {
 const clientSessionRevision = crypto.randomUUID();
 let tableVersion = 0;
 let speechPoseGate = null;
+let probeClient = null;
 let idlePresentationSequence = 0;
 const dealerV2Route = location.pathname === '/v2' || location.pathname.startsWith('/v2/');
 const nativeObservation = createNativeObservation({ href: location.href, opener: window.opener });
@@ -447,12 +449,14 @@ speechPoseGate = createSpeechPoseGate({
   onDisplay: async (decision, job) => {
     const pending = pendingChatReplies.get(job.jobId);
     if (!pending || decision.kind === 'silence') return;
+    await pending.beforeDisplay?.();
+    if (pending.controller.signal.aborted) return;
     const text = decision.exactText;
     if (pending.previewRow?.isConnected && pending.previewText === text) pending.previewRow.classList.remove('pending');
     else chatLog('vera', text);
     nativeObservation.emit('chat', { role: 'assistant', text, line: decision.lineId ?? null,
-      source: 'openclaw-chat', speechKind: decision.kind }, pending.correlation);
-    chatHistory.push({ role: 'assistant', text });
+      source: pending.probe ? 'probe' : 'openclaw-chat', synthetic: Boolean(pending.synthetic), speechKind: decision.kind }, pending.correlation);
+    if (!pending.synthetic && !pending.probe) chatHistory.push({ role: 'assistant', text });
   },
   onSpeech: async (decision, { signal, job }) => playChatDecision(decision, signal, job.jobId),
   onCancel: (job, reason) => {
@@ -848,11 +852,12 @@ function roundView(data) {
   return data && { ...data, live() { return this.hands; }, legal() { return this.legalActions; } };
 }
 async function tableCommand(op, extra = {}) {
+  if (op !== 'state') probeClient?.activity();
   if (!player) await loadPlayer();
   if (!player) throw new Error('Cannot connect to the game server');
   if (op !== 'state') localPresentation?.state({ action: true });
   if (op !== 'state') updatePoseState({ dealerPose: 'action', actionOwner: `table-${op}`, idlePresented: null }, 'table-command-started');
-  const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), ...extra };
+  const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), dealer: DEALER.key, ...extra };
   let out;
   for (let attempt=0; attempt<2; attempt++) {
     try { out = await api('/api/table', payload); break; }
@@ -2166,12 +2171,16 @@ async function playChatDecision(decision, signal, jobId) {
       try {
         if (decision.visualMode === 'generated-lipsync-preview' && decision.speechPackage) {
           await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
+            beforeStart: pendingChatReplies.get(jobId)?.beforeStart,
             onStart: text => {
               const pending = pendingChatReplies.get(jobId);
               if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));
               setChatStatus(`${DEALER.name} svarar`); showCaption(text, 27000);
             },
-            onReceipt: receipt => nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync', ...receipt }),
+            onReceipt: receipt => {
+              const pending=pendingChatReplies.get(jobId);if(pending)pending.playbackReceipt=receipt;
+              nativeObservation.emit('playback', { event: 'speech', source: pending?.probe ? 'probe' : 'generated-lipsync', synthetic: Boolean(pending?.synthetic), ...receipt });
+            },
           });
         } else await playNeutralTts(decision.exactText, signal);
       }
@@ -2230,7 +2239,7 @@ chatMemory.id = 'chat-memory';
 const memorySummary = document.createElement('summary'); memorySummary.textContent = 'Minne';
 const memoryPanel = document.createElement('div');
 const memoryInfo = document.createElement('p');
-memoryInfo.textContent = 'Upp till 12 chattinlägg per spelare och dealer, högst 30 dagar utan nya meddelanden. Sparade svar kan ha genererats utan att spelas upp.';
+memoryInfo.textContent = 'Upp till 30 chattinlägg, totalt 8 000 tecken per spelare och dealer, högst 30 dagar utan nya meddelanden. Sparade chattsvar kan ha genererats utan att spelas upp. Probes sparas först efter uppspelning. Belagda fakta har en separat livslängd på högst 30 dagar.';
 const memoryStatus = document.createElement('p'); memoryStatus.setAttribute('role', 'status');
 const memoryForget = document.createElement('button'); memoryForget.type = 'button'; memoryForget.textContent = 'Radera mitt minne hos denna dealer';
 const memoryLimit = document.createElement('small'); memoryLimit.textContent = 'Raderar lokalt spelarchattminne, inte leverantörernas loggar. Stoppar ett pågående svar.';
@@ -2246,6 +2255,7 @@ chatMemory.addEventListener('toggle', async () => {
   } catch { memoryStatus.textContent = 'Minnet kunde inte läsas.'; }
 });
 memoryForget.onclick = async () => {
+  probeClient?.cancel('memory_forgotten');
   memoryForget.disabled = true;
   try {
     const response = await fetch('/api/chat/memory/forget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealer: DEALER.key }) });
@@ -2261,6 +2271,7 @@ async function sendChat() {
   const input = $('#chat-input');
   const message = input.value.trim();
   if (!message || chatBusy) return;
+  probeClient?.activity();
   input.value = '';
   chatBusy = true;
   $('#chat-send').disabled = true;
@@ -2270,7 +2281,7 @@ async function sendChat() {
   if (chatStatus) { chatStatus.dataset.stages = '[]'; delete chatStatus.dataset.playbackMs; delete chatStatus.dataset.providerMetrics; chatStatus.title = ''; }
   const waitTimer = localPresentationEnabled ? setInterval(() => { chatElapsed.textContent = ` ${Math.floor((performance.now() - requestedAt) / 1000)} s`; }, 1000) : null;
   const chatCorrelation=nativeObservation.context();
-  const history = chatHistory.slice(-12).map(({ role, text }) => ({ role, text }));
+  const history = chatHistory.slice(-30).map(({ role, text }) => ({ role, text }));
   const requestId = crypto.randomUUID();
   const identity = poseIdentity();
   nativeObservation.emit('chat',{role:'user',text:message,source:'openclaw-chat',contextMessages:history},chatCorrelation);
@@ -2571,3 +2582,40 @@ const labSpeechBridge = createNativeSpeechBridge({ href: location.href, opener: 
 });
 window.addEventListener('message', event => labSpeechBridge.accept(event));
 window.addEventListener('pagehide', () => labSpeechBridge.close(), { once: true });
+
+if (DEALER.key === 'astrid') {
+  await tableReady;
+  probeClient = createProbeClient({
+    identity: poseIdentity,
+    flags: ownJobId => ({ present: !document.hidden, sound: !voice.muted,
+      typing: Boolean($('#chat-input').value.trim()) || document.activeElement === $('#chat-input'),
+      quiet: probePresentationQuiet({busy,round,chatBusy,speaking,pending:speechQueue.pending,gate:speechPoseGate,ownJobId}) }),
+    mount: memoryPanel,
+    report: ({state,...entry}) => nativeObservation.emit('status', { ...entry, state:'probe', stage:state }),
+    cancelDelivery: (id,reason) => speechPoseGate.cancel(id,reason),
+    deliver: async (decision, options) => {
+      const id=decision.requestId;
+      const received=speechPoseGate.receive({jobId:id,...poseIdentity(),requestFingerprint:id});
+      const pending={...options,probe:true,correlation:nativeObservation.context(),requestedAt:performance.now(),playbackReceipt:null};
+      pendingChatReplies.set(id,pending);
+      try {
+        speechPoseGate.responseReady(id,decision);
+        const result=await received.completion;
+        return {...result,playback:pending.playbackReceipt};
+      }finally{pendingChatReplies.delete(id);}
+    },
+  });
+  $('#chat-input').addEventListener('input',()=>probeClient.activity());
+  $('#chat-input').addEventListener('focus',()=>probeClient.activity());
+  $('#chat-input').addEventListener('blur',()=>void probeClient.refresh());
+  window.addEventListener('pagehide',()=>probeClient.close(),{once:true});
+  const params=new URLSearchParams(location.search);
+  if(params.has('probeCase') && ['127.0.0.1','localhost','[::1]'].includes(location.hostname)) {
+    const trial=document.createElement('details');trial.open=true;
+    const title=document.createElement('summary');title.textContent='Probe · syntetiskt talprov';
+    const description=document.createElement('p');description.textContent='Provet använder en påhittad spelare och skapar Victoria-ljud och läppsynkvideo. Inga provminnen sparas hos din profil. Avsluta handen och aktivera ljudet först.';
+    const play=document.createElement('button');play.type='button';play.textContent='Generera och spela ett talprov';
+    play.onclick=async()=>{play.disabled=true;try{await probeClient.test({caseId:params.get('probeCase'),model:params.get('probeModel')??'gateway-default'});}finally{play.disabled=false;}};
+    trial.append(title,description,play);memoryPanel.append(trial);chatMemory.open=true;
+  }
+}

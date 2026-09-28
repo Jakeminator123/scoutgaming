@@ -13,6 +13,14 @@ const presentation = [{ type: 'speak', line: 'goodluck' }, { type: 'idle' }];
 const message = (kind = 'command', payload = { requestId: 'r1', op: 'start', view: { version: 1, round: null }, presentation }) => ({ source, origin: expected.origin,
   data: { type: 'croupier-native-observation', version: 1, channel: expected.channel, sequence: 1, at: '2026-09-22T12:00:00Z', kind, payload } });
 
+test('Probe decisions and played receipts survive the native observer as separate records',()=>{
+  for(const stage of ['decision','played','failed']){
+    const record=acceptNativeObservation(message('status',{state:'probe',stage,requestId:'probe-1',reason:'no_memory'}),expected);
+    assert.equal(record.data.stage,stage);assert.equal(record.data.gap,false);assert.equal(record.kind,'status');
+  }
+  assert.equal(acceptNativeObservation(message('status',{state:'probe',stage:'invented',requestId:'probe-1'}),expected),null);
+});
+
 test('native messages require exact popup, configured origin, channel and monotonic sequence', () => {
   const good = message(); assert.ok(acceptNativeObservation(good, expected));
   for (const bad of [{ ...good, source: {} }, { ...good, origin: 'https://evil.test' }, { ...good, data: { ...good.data, channel: 'wrong' } },

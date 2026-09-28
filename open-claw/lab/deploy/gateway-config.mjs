@@ -252,6 +252,13 @@ export function applySpeechRole(config, env) {
         && paths.some(value => overlaps(value, other) || overlaps(other, value))))) {
     throw new Error('Croupier speech role conflict: speech workspace and agent state must be isolated.');
   }
+  // Add selectable candidates only to the existing official OpenAI provider.
+  // Keep all agent primary models, fallbacks and human model metadata intact.
+  const provider=next.models?.providers?.['lab-provider'];
+  if(provider?.baseUrl==='https://api.openai.com/v1' && ['openai-responses','openai-completions'].includes(provider.api) && Array.isArray(provider.models)){
+    for(const modelId of ['gpt-5.4-mini','gpt-6-luna','gpt-5.6-terra'])
+      if(!provider.models.some(model=>model.id===modelId))provider.models.push({id:modelId,name:modelId,input:['text']});
+  }
   return next;
 }
 

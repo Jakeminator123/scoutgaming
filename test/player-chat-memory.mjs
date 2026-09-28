@@ -221,14 +221,14 @@ test('valid new activity refreshes retention, failed validation does not create 
   assert.equal(memory.profile(subject).history.length, 4);
 });
 
-test('history is bounded to 12 entries and 8,000 characters without orphaned assistant starts', t => {
+test('history is bounded to 30 entries and 8,000 characters without orphaned assistant starts', t => {
   const { memory, advance } = fixture(t);
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 18; i++) {
     memory.begin(request(`short-${i}`, { message: `User ${i}` })).commit(reply(`Answer ${i}`));
     advance(61000);
   }
   let history = memory.profile(subject).history;
-  assert.equal(history.length, 12);
+  assert.equal(history.length, 30);
   assert.equal(history[0].text, 'User 3');
   for (let i = 0; i < 8; i++) {
     memory.begin(request(`long-${i}`, { message: `${i}${'u'.repeat(999)}` })).commit(reply('a'.repeat(1000)));

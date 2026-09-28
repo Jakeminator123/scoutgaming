@@ -7,6 +7,7 @@ import { ReferenceCapture } from './reference-capture';
 import { PartnerReference } from './partner-reference';
 import { createPartnerTrace, appendPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { GameStream, type GameStreamProps } from './game-stream';
+import { PROBE_REASONS } from '../lib/probe-policy.mjs';
 
 export type ActivityDraft = Omit<ActivityEntry, 'id' | 'time'>;
 interface PartnerStatus { configured: boolean; missing: string[]; invalid: string[]; endpoint: string | null }
@@ -121,6 +122,10 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
     recordObservation(record);
     if (focused && !keepNativeLog(record)) return;
     const data = record.data as Record<string, unknown> ?? {};
+    if(record.kind==='status' && data.state==='probe'){
+      onActivity({source:'native',stage:data.stage==='played'?'playback':'decision',status:data.stage==='played'?'completed':data.stage==='failed'?'failed':'observed',runId:String(data.requestId),title:`Probe · ${data.stage==='played'?'spelad':data.stage==='failed'?'avbruten':'beslut'}${data.synthetic?' · syntetiskt prov':''}`,owner:'Astrids talinitiativ',reason:PROBE_REASONS[String(data.reason)]??'Modellbeslut och faktisk uppspelning har separata kvitton.',data});
+      return;
+    }
     if (record.kind === 'status' && ['chat-progress', 'chat-failed'].includes(String(data.state))) {
       onActivity({ source: 'native', stage: 'decision', status: data.state === 'chat-failed' ? 'failed' : 'observed',
         runId: String(data.requestId), title: data.state === 'chat-failed' ? 'Chattsvaret avbröts' : `Chattsvar · ${data.stage} · ${(Number(data.elapsedMs) / 1000).toFixed(1)} s`,

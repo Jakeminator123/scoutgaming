@@ -1,5 +1,7 @@
 node_modules/
 .next/
+.next-probe/
+tsconfig.probe.json
 data/
 .env*
 !.env.example

@@ -14,7 +14,7 @@ export async function installLissabonProfileUi({ canSwitch }) {
     <form id="lissabon-create"><label for="lissabon-name">Nytt profilnamn</label><input id="lissabon-name" maxlength="40" required autocomplete="off" placeholder="Ditt namn"><button type="submit">Skapa profil</button></form>
     <p id="lissabon-profile-error" role="alert"></p>
     <button type="button" id="lissabon-guest">Fortsätt som gäst</button><button type="button" id="lissabon-profile-close">Stäng</button>
-    <small>Profilerna på denna dator har inget lösenord. De senaste 12 chattinläggen sparas i högst 30 dagar utan nya meddelanden. Du kan radera chatthistoriken under Minne.</small>`;
+    <small>Profilerna på denna dator har inget lösenord. De senaste 30 chattinläggen sparas i högst 30 dagar utan nya meddelanden. Du kan radera chatthistoriken under Minne.</small>`;
   document.body.append(dialog);
   const error = dialog.querySelector('#lissabon-profile-error');
   const saved = dialog.querySelector('#lissabon-saved');
