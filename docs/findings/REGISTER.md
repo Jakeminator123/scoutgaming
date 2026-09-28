@@ -135,7 +135,7 @@ triage. Ingen Jira-referens är ännu angiven för posterna nedan.
 - **Kod / källa:** [partner-presentation.mjs](../../web/partner-presentation.mjs),
   `presentationEvents`/`outcome`; [blackjack.mjs](../../web/public/blackjack.mjs),
   `isNatural`, handmodell och `split`;
-  [eventregistrets rådataförklaring](../../random-stuff-jakob/jakob-docs/systemkarta/02-events-triggers-urval/EVENTREGISTER.md).
+  [eventregistrets rådataförklaring](../systemkarta/02-events-triggers-urval/EVENTREGISTER.md).
 - **Arbetsstatus:** Behöver reproduktion och avstämning av presentationskontraktet.
 - **Nästa steg:** Jämför naturlig blackjack med tvåkortshand på 21 efter
   split i ett isolerat motor-/adapterfall. Ta med box 0: `splitFrom: 0`
@@ -185,7 +185,7 @@ triage. Ingen Jira-referens är ännu angiven för posterna nedan.
   Ingen ny BO-/livekontroll gjordes för detta register.
 - **Kod / källa:** [videoinventeringens källor och verifieringsgräns](../animation-events/v3-video-map/README.md),
   särskilt skillnaden mellan generationsregistret och `cfg.clipAssignments`;
-  [eventregistrets statusdimensioner](../../random-stuff-jakob/jakob-docs/systemkarta/02-events-triggers-urval/EVENTREGISTER.md).
+  [eventregistrets statusdimensioner](../systemkarta/02-events-triggers-urval/EVENTREGISTER.md).
 - **Arbetsstatus:** Behöver läsande avstämning av aktuell konfiguration.
 - **Nästa steg:** Med behörig läsande BO-åtkomst fastställ dealer, plats,
   generation/take, konfigurationsrevision och driftsatt revision. Knyt

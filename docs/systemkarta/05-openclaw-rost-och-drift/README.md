@@ -39,7 +39,7 @@ bifoga `context.observedChat` från originalfliken. Kontrakt v2 tillåter högst
 proveniens före instruktionen. En lucka bryter kontextfönstret. Texten är
 data för variantval, inte order till modellen eller ett autentiserat minne.
 Saldo-, identitets- och authfält kopieras inte till denna projektion.
-Se [kontextschemat](../../../../open-claw/lab/schemas/observed-chat.schema.json).
+Se [kontextschemat](../../../open-claw/lab/schemas/observed-chat.schema.json).
 
 Director måste kvittera version 2 och antalet mottagna meddelanden. Det
 aktuella provet mot äldre remote saknade kvittot: labbet behåller då standard
@@ -72,15 +72,15 @@ en fristående preview bevisar inte att grinden passerade i produkten.
 
 ## Vad vet vi om drift?
 
-Den daterade [handoffen](../../../../docs/JOHN-HANDOFF.md) redovisar ett
+Den daterade [handoffen](../../JOHN-HANDOFF.md) redovisar ett
 socialchattprov på Director/Gateway `6797b6a`, upstream `2026.9.5`, med
 riktiga fasta/fria svar och ElevenLabs-tal. Det är historisk evidens,
 ingen ny kontroll av dagens deploy. Råd och social chatt har separata
 tidsbudgetar: 8 respektive 30 sekunder enligt granskad konfiguration/kod.
 
-[Render-blueprinten](../../../../open-claw/lab/render.yaml) beskriver
+[Render-blueprinten](../../../open-claw/lab/render.yaml) beskriver
 Director och privat Gateway; Next-studion är lokal.
-[Gateway-Dockerfilen](../../../../open-claw/lab/deploy/Dockerfile.gateway)
+[Gateway-Dockerfilen](../../../open-claw/lab/deploy/Dockerfile.gateway)
 är versions-/digestlåst. Ingen driftändring görs av systemkartan.
 
 För hela livejämförelsen krävs tre separata versioner: senaste lokala
@@ -96,19 +96,19 @@ spelares saldon eller sessioner ska användas som testdata.
 
 ## Avgränsad kunskap, ingen full indexering
 
-[Runtimepaketet](../../../../open-claw/lab/deploy/runtime-bundle/README.md)
+[Runtimepaketet](../../../open-claw/lab/deploy/runtime-bundle/README.md)
 installerar korta rolltexter och källsammanfattningar i redan konfigurerade
 arbetsytor. Det är inte en crawl, vektordatabas, automatisk läsning av hela
 repot eller indexering av video. Länkar ger inte modellen nytt fil-/nätverktyg.
 
 Börja tekniska OpenClaw-frågor i
-[det lokala dokumentationsindexet](../../../../open-claw/lab/docs/README.md).
+[det lokala dokumentationsindexet](../../../open-claw/lab/docs/README.md).
 Läs bara relevanta källor när frågan kräver det.
 
-Fördjupning: [social labbchatt](../../../../lab/SOCIAL-CHAT.md),
-[socialt runtimekontrakt](../../../../open-claw/lab/docs/SOCIAL-CHAT.md),
-[drift](../../../../open-claw/lab/docs/DEPLOYMENT.md),
-[dashboard](../../../../open-claw/lab/docs/DASHBOARD-SV.md) och
+Fördjupning: [social labbchatt](../../../lab/SOCIAL-CHAT.md),
+[socialt runtimekontrakt](../../../open-claw/lab/docs/SOCIAL-CHAT.md),
+[drift](../../../open-claw/lab/docs/DEPLOYMENT.md),
+[dashboard](../../../open-claw/lab/docs/DASHBOARD-SV.md) och
 [miljö-/API-förklararen med variabelnamn och läsordning](MILJO-OCH-API.md).
 Den exakta kvarvarande driftsordningen finns i
-[produktens speech-plan](../../../../open-claw/lab/docs/PRODUCT-SPEECH-DEPLOYMENT-SV.md).
+[produktens speech-plan](../../../open-claw/lab/docs/PRODUCT-SPEECH-DEPLOYMENT-SV.md).

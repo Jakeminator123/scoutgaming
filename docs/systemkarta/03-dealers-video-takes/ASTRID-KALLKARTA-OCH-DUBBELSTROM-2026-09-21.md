@@ -1,7 +1,7 @@
 # Astrid: källkarta, ägarskap och möjlig dubbelström
 
 [Till dealers, video och takes](README.md) ·
-[Kanonisk brief för talägarskap](../../../../lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md)
+[Kanonisk brief för talägarskap](../../../lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md)
 
 Kontrollerat i arbetskatalogen 21 september 2026. Kartan länkar till de
 ursprungliga registren i stället för att skapa ett nytt manifest. Inga
@@ -78,11 +78,11 @@ ovan beskriver migrationen inom befintligt repo.
 
 | Register | Vad det faktiskt innehåller | Vad det inte bevisar | Status |
 | --- | --- | --- | --- |
-| [`streams/index.json`](../../../../web/public/dealers/astrid/streams/index.json) | Aktuellt lokalt index har 20 H.264-poster: 1 idle, 17 exakta `speak` och 2 actions (`action-deal`, `action-return`). Varje post har frame offsets, frame count, fps och för tal även uppmätt `audioDelayMs`. | Att en post väljs i en viss runda eller är visuellt godkänd. | **Kodkontrollerat.** Det daterade Generations-svaret redovisade 19 motorposter; den lokala indexläsningen har dessutom `action-return`. När skillnaden uppstod är inte belagt här. |
-| [`audio/en/bank.json`](../../../../web/public/dealers/astrid/audio/en/bank.json) | 17 line-ID:n med Astrids exakta inspelade text. MP3 ligger med samma line-ID. | Munprecision eller att repliken triggas. | **Kodkontrollerat.** De 17 lokala ljudfiler som originalkatalogen använder finns. |
-| [`speech-media.json`](../../../../web/public/speech-media.json) | Native MP4-överstyrning för exakt `goodluck` och `win`, med text och review-anteckning. | Tillgänglighet i driftsatt public-träd eller lyckad uppspelning. | **Lokalt:** båda MP4-filerna finns. **Liveobservation:** båda gav 404 den 21 september. |
-| [`dealing-cues.json`](../../../../web/public/dealers/astrid/dealing-cues.json) | Fyra bildcues och timing för den äldre `action-deal`. | Att rörelsen tar ett kort ur skon eller får användas. | **Avvisat.** Status är `rejected`; originalkatalogen filtrerar bort den. |
-| [`performance/manifest.json`](../../../../web/public/dealers/astrid/performance/manifest.json) | Draftmanifest med fyra `review`-takes: vänster, mitten, höger och dealer. Varje take bär mediahash, 24 fps, layout, pickup/release/land/rest, kalibrering och playback rate 2. Dessutom finns två `review`-continuations för mitten och vänster. | Full täckning för sju boxar, splitfan, korrekt handkontakt eller godkänd liveprodukt. | **Kodkontrollerat/lokalt.** Grundmanifest och sex filer gav 200 i den daterade livekontrollen; ingen visuell acceptans gjordes då. |
+| [`streams/index.json`](../../../web/public/dealers/astrid/streams/index.json) | Aktuellt lokalt index har 20 H.264-poster: 1 idle, 17 exakta `speak` och 2 actions (`action-deal`, `action-return`). Varje post har frame offsets, frame count, fps och för tal även uppmätt `audioDelayMs`. | Att en post väljs i en viss runda eller är visuellt godkänd. | **Kodkontrollerat.** Det daterade Generations-svaret redovisade 19 motorposter; den lokala indexläsningen har dessutom `action-return`. När skillnaden uppstod är inte belagt här. |
+| [`audio/en/bank.json`](../../../web/public/dealers/astrid/audio/en/bank.json) | 17 line-ID:n med Astrids exakta inspelade text. MP3 ligger med samma line-ID. | Munprecision eller att repliken triggas. | **Kodkontrollerat.** De 17 lokala ljudfiler som originalkatalogen använder finns. |
+| [`speech-media.json`](../../../web/public/speech-media.json) | Native MP4-överstyrning för exakt `goodluck` och `win`, med text och review-anteckning. | Tillgänglighet i driftsatt public-träd eller lyckad uppspelning. | **Lokalt:** båda MP4-filerna finns. **Liveobservation:** båda gav 404 den 21 september. |
+| [`dealing-cues.json`](../../../web/public/dealers/astrid/dealing-cues.json) | Fyra bildcues och timing för den äldre `action-deal`. | Att rörelsen tar ett kort ur skon eller får användas. | **Avvisat.** Status är `rejected`; originalkatalogen filtrerar bort den. |
+| [`performance/manifest.json`](../../../web/public/dealers/astrid/performance/manifest.json) | Draftmanifest med fyra `review`-takes: vänster, mitten, höger och dealer. Varje take bär mediahash, 24 fps, layout, pickup/release/land/rest, kalibrering och playback rate 2. Dessutom finns två `review`-continuations för mitten och vänster. | Full täckning för sju boxar, splitfan, korrekt handkontakt eller godkänd liveprodukt. | **Kodkontrollerat/lokalt.** Grundmanifest och sex filer gav 200 i den daterade livekontrollen; ingen visuell acceptans gjordes då. |
 | `performance/smooth60/manifest.json` och `performance/rhythm/manifest.json` | Lokala reviewmanifest med fyra riktningar vardera och egna fps/frame cues. | Att motsvarande deployade URL finns. | **Lokalt:** manifesten finns. **Liveobservation:** manifest-URL:erna gav 404 den 21 september. |
 | `performance/joins/manifest.json` | Sex review-joins för entry/exit mellan staged-poser. | Att continuity är aktiverad eller visuellt godkänd. | **Kodkontrollerat, ej liveobserverat i denna kontroll.** |
 | `performance/joins/ready/manifest.json` | Review-status, ready-loop, ready-speech och sex ready-joins. | Att talet är exakt eller att ready-vägen används i den aktuella routen. | **Kodkontrollerat, ej liveobserverat.** |
@@ -202,7 +202,7 @@ engine-idle. Native MP4-tal läggs också till tillfälligt ovanpå dealerbilden
 och tas bort i `onFinish`. Dessa samtidiga resurser behöver mätas med faktiska
 start/slut och synlighet innan de kallas dubbel visning.
 
-**Reproducerat separat men inte dubbel bild:** [F-001](../../../../docs/findings/REGISTER.md#f-001-samtidiga-medieladdningar-lämnar-en-blob-url-utanför-städningen)
+**Reproducerat separat men inte dubbel bild:** [F-001](../../findings/REGISTER.md#f-001-samtidiga-medieladdningar-lämnar-en-blob-url-utanför-städningen)
 visar att samtidiga `PerformancePlayer.source()` för samma hash kan skapa två
 fetch/hash/Blob-resultat där bara en URL hamnar i cachen. Fyndet bevisar en
 resursläcka, inte två synliga takes.

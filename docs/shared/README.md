@@ -9,7 +9,7 @@ Den här pekaren skrevs för den tidigare branchen `jakeminator123/work`.
 
 ## Aktuella ingångar
 
-- [Systemkarta](../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
+- [Systemkarta](../systemkarta/README.md)
 - [V5-källa](../animation-events/README.md)
 - [Findings med evidens](../findings/README.md); Jira CAC äger arbetsstatus.
 - [Daterad teknisk handoff](../JOHN-HANDOFF.md)

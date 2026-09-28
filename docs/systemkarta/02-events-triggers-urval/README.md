@@ -73,11 +73,11 @@ kan gälla samtidigt. Första matchande labbgrupp ersätter inte rundans fakta.
 Takepooler, viktat takeval, generell kö/cooldown för produktreaktioner och
 gemensam produktadapter återstår. Socialchattens lokala cooldown finns
 redan men är ingen generell produktkö. F-005:s `split`/`splitFrom`-fynd
-är fortsatt ett [öppet granskningsbehov](../../../../docs/findings/REGISTER.md).
+är fortsatt ett [öppet granskningsbehov](../../findings/REGISTER.md).
 
 Fördjupning: [situationer](SIGNALER-OCH-TAKES.md),
 [fullt nod-/triggerregister](EVENTREGISTER.md),
-[studio-server](../../../../lab/lib/studio-server.mjs),
-[studio-modell](../../../../lab/lib/studio-model.mjs),
-[Director](../../../../open-claw/lab/src/engine.mjs) och
-[videobankens urvalsregler](../../../../lab/VIDEO-LIBRARY.md).
+[studio-server](../../../lab/lib/studio-server.mjs),
+[studio-modell](../../../lab/lib/studio-model.mjs),
+[Director](../../../open-claw/lab/src/engine.mjs) och
+[videobankens urvalsregler](../../../lab/VIDEO-LIBRARY.md).

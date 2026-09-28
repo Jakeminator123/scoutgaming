@@ -232,18 +232,18 @@ Detta begränsar nästa arbete till en verifierbar kedja i stället för fler kn
 
 ## Kodankare
 
-- [Motorns interna händelser](../../../../web/public/blackjack.mjs),
-  [publik status och kommandon](../../../../web/shoe-game.mjs),
-  [Partner, wallet och SSE](../../../../web/partner-api.mjs),
-  [Partner-projektion och filmanifest](../../../../web/partner-presentation.mjs).
+- [Motorns interna händelser](../../../web/public/blackjack.mjs),
+  [publik status och kommandon](../../../web/shoe-game.mjs),
+  [Partner, wallet och SSE](../../../web/partner-api.mjs),
+  [Partner-projektion och filmanifest](../../../web/partner-presentation.mjs).
 - Kevin `626554d`: [status, val och koreografi](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/app.mjs),
   [exakta takevillkor](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/astrid-green-dealer.mjs),
   [idle-scheduler](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/astrid-idle-scheduler.mjs),
   [uppspelare och cues](https://gitlab.com/scout-gg/croupier/-/blob/626554d/web/public/performance-player.mjs).
-- Labb: [befintligt kontrakt](../../../../lab/policies/studio-contract.json),
-  [test med exempel-event](../../../../lab/lib/studio-server.mjs),
-  [video/2D-preview](../../../../lab/components/stage.tsx),
-  [videobank och valbarhet](../../../../lab/VIDEO-LIBRARY.md),
-  [separat social chatt](../../../../lab/SOCIAL-CHAT.md).
+- Labb: [befintligt kontrakt](../../../lab/policies/studio-contract.json),
+  [test med exempel-event](../../../lab/lib/studio-server.mjs),
+  [video/2D-preview](../../../lab/components/stage.tsx),
+  [videobank och valbarhet](../../../lab/VIDEO-LIBRARY.md),
+  [separat social chatt](../../../lab/SOCIAL-CHAT.md).
 - [Detaljerat daterat eventregister](EVENTREGISTER.md)
   behålls som källunderlag; denna text preciserar begreppen och nästa riktning.

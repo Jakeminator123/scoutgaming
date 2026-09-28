@@ -1,3 +1,14 @@
+## 2026-09-28 — systemkarta och storleksinventering
+
+Aktiva systemkartan är flyttad till `docs/systemkarta/` med oförändrat
+sexdelat ämnesträd. Den tidigare 956-byte vägvisaren under `jakob-docs/`
+är borttagen; privata/ignorerade filer och arkiv har lämnats orörda.
+Inkommande och interna länkar är uppdaterade. `emil/` ligger kvar eftersom
+den aktiva banken har manifest-, kod- och testberoenden; V3 är en komplett,
+inaktiv referens som redan utesluts ur Dockerkontexten. Inga mediebytes,
+hashar eller kalibreringar ändrades. 390 relativa dokumentlänkar passerade.
+Se `docs/REPOSITORY-CLEANUP.md` för storlekar och återställning.
+
 ## 2026-09-28 — referensmappar och Emils två mediauppsättningar
 
 En riktad inventering skilde `emil/dealklipp-v1` (aktivt manifest, kod- och
@@ -2073,10 +2084,10 @@ den ignorerade privata åtkomstfilen ligger orörd. Fyra värdefulla referenser
 (kort start, miljö/API, signaler/takes och eventregister) är flyttade till
 systemkartans ämnen. Fem äldre rapporter/prompter är borttagna ur arbetskopian
 efter att relevant innehåll samlats i aktiva guider och
-[Livejämförelse](../random-stuff-jakob/jakob-docs/systemkarta/06-arbetssatt-och-verifiering/LIVEJAMFORELSE.md).
+[Livejämförelse](systemkarta/06-arbetssatt-och-verifiering/LIVEJAMFORELSE.md).
 
-[Kort start](../random-stuff-jakob/jakob-docs/systemkarta/START-HAR.md) är ingång
-för Jakob och agenter. [Dokumentordningen](../random-stuff-jakob/jakob-docs/systemkarta/06-arbetssatt-och-verifiering/DOKUMENTORDNING.md)
+[Kort start](systemkarta/START-HAR.md) är ingång
+för Jakob och agenter. [Dokumentordningen](systemkarta/06-arbetssatt-och-verifiering/DOKUMENTORDNING.md)
 anger varje flytt/ersättning och återställningsrevision `17afbf1`. Äldre
 leveransnotiser nedan behåller sina dåvarande filnamn som proveniens, inte
 som aktiva läsanvisningar. Det pensionerade personarkivet har inte lästs,

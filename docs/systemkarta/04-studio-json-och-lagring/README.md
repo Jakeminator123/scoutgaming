@@ -66,17 +66,17 @@ bevis på produktens live-scheduler eller en godkänd poseövergång.
 
 ## Vem läser vad?
 
-- [Studio-modellen](../../../../lab/lib/studio-model.mjs) kontrollerar
+- [Studio-modellen](../../../lab/lib/studio-model.mjs) kontrollerar
   referenser och omvandlar projektet till katalog för vald dealer.
-- [Studio-servern](../../../../lab/lib/studio-server.mjs) testar nodens
+- [Studio-servern](../../../lab/lib/studio-server.mjs) testar nodens
   `exampleEvent` med manuella kontextvärden och avgränsat urvalsläge.
-- [Projektlagringen](../../../../lab/lib/project-store.mjs) ansvarar för
-  sparning. [Videoregistret](../../../../lab/lib/video-registry.mjs),
-  [intake](../../../../lab/lib/video-intake.mjs) och
-  [klassificering](../../../../lab/lib/video-classifications.mjs) hanterar
+- [Projektlagringen](../../../lab/lib/project-store.mjs) ansvarar för
+  sparning. [Videoregistret](../../../lab/lib/video-registry.mjs),
+  [intake](../../../lab/lib/video-intake.mjs) och
+  [klassificering](../../../lab/lib/video-classifications.mjs) hanterar
   mediereferenser och deras kategorisering.
 
-Den äldre [Director-katalogen](../../../../open-claw/lab/config/catalog.json)
+Den äldre [Director-katalogen](../../../open-claw/lab/config/catalog.json)
 har separat lagring. Studion skickar en tillfällig katalog per projekt/dealer
 för råd; den skriver inte över Directors sparade katalog.
 
@@ -85,7 +85,7 @@ säker sparmodell. En fil per variant behövs inte. ID-referenser kan redan
 visa samma trigger eller take på flera ställen i en logisk vy.
 
 Använd [Guide i labbet](http://127.0.0.1:4188/guide).
-Teknisk fördjupning finns i [lab/README](../../../../lab/README.md),
-[policyerna](../../../../lab/policies/README.md),
-[videobanken](../../../../lab/VIDEO-LIBRARY.md) och
+Teknisk fördjupning finns i [lab/README](../../../lab/README.md),
+[policyerna](../../../lab/policies/README.md),
+[videobanken](../../../lab/VIDEO-LIBRARY.md) och
 [eventregistret](../02-events-triggers-urval/EVENTREGISTER.md).

@@ -5,6 +5,16 @@ Detta är den korta notisen i repots rot. Detaljer och testkrav finns i
 Skriv datum, ändring och verifiering här när arbetet går vidare; skilj alltid
 förslag från implementerad kod och verkligt godkänd drift.
 
+## 28 september 2026 – systemkartan till docs och lagringskontroll
+
+Den aktiva systemkartans 16 filer flyttades med bibehållet ämnesträd till
+`docs/systemkarta/`; den gamla 956-byte vägvisaren togs bort. Aktiva länkar
+uppdaterades. Två representativa Emil-MP4 gav högst 0,06 % besparing med
+förlustfri gzip, så videorna kodades inte om eller flyttades. Storlekskartan
+och bevarandeskälen finns i [städrapporten](docs/REPOSITORY-CLEANUP.md).
+390 relativa länkar i 33 berörda Markdownfiler kontrollerades utan fel;
+mediefilerna är orörda.
+
 ## 28 september 2026 – referensmappar och Emil-media
 
 Sex historiska Sunny-filer i `reference/` och en daterad observation i

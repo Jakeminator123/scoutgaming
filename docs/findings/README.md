@@ -1,7 +1,7 @@
 # Fynd och förbättringar
 
 [Projektets ingång](../../README.md) ·
-[Systemkartan](../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
+[Systemkartan](../systemkarta/README.md)
 
 Här samlas repoövergripande observationer som behöver triage: buggar,
 förbättringsförslag och frågor som måste granskas. Börja i

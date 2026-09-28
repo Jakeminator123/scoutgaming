@@ -56,14 +56,14 @@ env-värden har lästs. Äldre leveransnotiser nedan är fortfarande historik.
 `6fe7c82d1522db9c9d4f611ad44006648ec355aa`, Jakobs work före integrationen.
 Kevins MR !1 utgår från `b066a43ba18b7da8a405c99789374680c5ed07db`.
 Slutlig merge-/leveransrevision och testkvitton anges i
-[handoffen](../../../docs/JOHN-HANDOFF.md); en tagg återställer inte lokala
+[handoffen](../JOHN-HANDOFF.md); en tagg återställer inte lokala
 o-committade filer eller en driftsatt databas.
 
 Kodunderlaget för livejämförelsen är
-[native-observern](../../../web/public/native-observation.mjs),
-[native-kommandosvaret](../../../web/native-table.mjs),
-[labbets meddelandekontroll](../../../lab/lib/native-observation.mjs) och
-[observerad kontext](../../../lab/lib/observation-context.mjs).
+[native-observern](../../web/public/native-observation.mjs),
+[native-kommandosvaret](../../web/native-table.mjs),
+[labbets meddelandekontroll](../../lab/lib/native-observation.mjs) och
+[observerad kontext](../../lab/lib/observation-context.mjs).
 Kommando, publik status, klientens playback och chatt skiljs från Partner-SSE.
 Endast explicit öppnad popup med rätt origin/kanal godtas. Labbets context
 redovisar observerade fakta och saknade uppgifter. Observerad chatt före eventet
@@ -85,7 +85,7 @@ spelkod vid `d910ddc` och studio vid `b26ff83`. Senare översyn vid
 `bf4e82e` tillförde röstpanel/runtimepaket och loaderfynd. Det är historiska
 källankare, inte en beskrivning av dagens remote- eller driftstatus.
 
-Den senare kodkontrollen i [handoffens systempaketsnotis](../../../docs/JOHN-HANDOFF.md)
+Den senare kodkontrollen i [handoffens systempaketsnotis](../JOHN-HANDOFF.md)
 jämförde work/origin `a15b780` med origin/main `b147659`; de granskade
 server-, shoe-, Partner- och appfilerna saknade diff. Notisen är commit
 `62784f4`, startrevision för denna dokumentationsöversyn.
@@ -101,12 +101,12 @@ driftkontroll, testkörning eller visuell acceptans.
 
 ### System och signaler
 
-- [Server: native table, session och BO](../../../web/server.mjs).
-- [Shoe, commands och publik vy](../../../web/shoe-game.mjs).
-- [Round och blackjackregler](../../../web/public/blackjack.mjs).
-- [Partnertransport, wallet och SSE](../../../web/partner-api.mjs).
-- [Presentation och filbaserat assets-manifest](../../../web/partner-presentation.mjs).
-- [Klientens koreografi](../../../web/public/app.mjs).
+- [Server: native table, session och BO](../../web/server.mjs).
+- [Shoe, commands och publik vy](../../web/shoe-game.mjs).
+- [Round och blackjackregler](../../web/public/blackjack.mjs).
+- [Partnertransport, wallet och SSE](../../web/partner-api.mjs).
+- [Presentation och filbaserat assets-manifest](../../web/partner-presentation.mjs).
+- [Klientens koreografi](../../web/public/app.mjs).
 - [Situationer och takes](02-events-triggers-urval/SIGNALER-OCH-TAKES.md)
   och [eventregister](02-events-triggers-urval/EVENTREGISTER.md).
 
@@ -117,23 +117,23 @@ Det är en riktad kodkontroll, ingen ny fullständig produkt- eller säkerhetsau
 
 ### Labbets redigering, urval och media
 
-- [Labbet](../../../lab/README.md), [kompatibilitet](../../../lab/COMPATIBILITY.md)
-  och [videobanken](../../../lab/VIDEO-LIBRARY.md).
-- [Startprojekt](../../../lab/policies/project.seed.json),
-  [studio-kontrakt](../../../lab/policies/studio-contract.json) och
-  [projektschema](../../../lab/schemas/studio.schema.json).
-- [Studio-server](../../../lab/lib/studio-server.mjs),
-  [studio-modell](../../../lab/lib/studio-model.mjs) och
-  [projektlagring](../../../lab/lib/project-store.mjs).
-- [Videoregister](../../../lab/lib/video-registry.mjs),
-  [intake/urval](../../../lab/lib/video-intake.mjs) och
-  [hashbunden kategorisering](../../../lab/lib/video-classifications.mjs).
-- [Social labbchatt](../../../lab/SOCIAL-CHAT.md).
-- [Daterad medieinventering](../../../docs/animation-events/v3-video-map/README.md),
-  [performance-manifest](../../../web/public/dealers/astrid/performance/manifest.json),
-  [proveniens](../../../web/public/dealers/astrid/performance/provenance.json),
-  [talmedia](../../../web/public/speech-media.json) och
-  [PerformancePlayer](../../../web/public/performance-player.mjs).
+- [Labbet](../../lab/README.md), [kompatibilitet](../../lab/COMPATIBILITY.md)
+  och [videobanken](../../lab/VIDEO-LIBRARY.md).
+- [Startprojekt](../../lab/policies/project.seed.json),
+  [studio-kontrakt](../../lab/policies/studio-contract.json) och
+  [projektschema](../../lab/schemas/studio.schema.json).
+- [Studio-server](../../lab/lib/studio-server.mjs),
+  [studio-modell](../../lab/lib/studio-model.mjs) och
+  [projektlagring](../../lab/lib/project-store.mjs).
+- [Videoregister](../../lab/lib/video-registry.mjs),
+  [intake/urval](../../lab/lib/video-intake.mjs) och
+  [hashbunden kategorisering](../../lab/lib/video-classifications.mjs).
+- [Social labbchatt](../../lab/SOCIAL-CHAT.md).
+- [Daterad medieinventering](../animation-events/v3-video-map/README.md),
+  [performance-manifest](../../web/public/dealers/astrid/performance/manifest.json),
+  [proveniens](../../web/public/dealers/astrid/performance/provenance.json),
+  [talmedia](../../web/public/speech-media.json) och
+  [PerformancePlayer](../../web/public/performance-player.mjs).
 
 Antalen 4 dealers, 16 noder, 9 starttriggers, 64 linjer, 256 varianter och
 64 eventrörelser hör till `studio.2026-09-20.2`. En separat social rörelse
@@ -147,26 +147,26 @@ det senare kontraktet.
 
 ### OpenClaw och drift
 
-- [Lokalt dokumentationsindex](../../../open-claw/lab/docs/README.md)
+- [Lokalt dokumentationsindex](../../open-claw/lab/docs/README.md)
   lästes först för denna del.
-- [Director-motor](../../../open-claw/lab/src/engine.mjs),
-  [socialt kontrakt](../../../open-claw/lab/docs/SOCIAL-CHAT.md) och
-  [runtimepaketets avgränsning](../../../open-claw/lab/deploy/runtime-bundle/README.md).
-- [Render-blueprint](../../../open-claw/lab/render.yaml),
-  [Gateway-Dockerfile](../../../open-claw/lab/deploy/Dockerfile.gateway),
-  [driftguide](../../../open-claw/lab/docs/DEPLOYMENT.md) och
-  [dashboard-guide](../../../open-claw/lab/docs/DASHBOARD-SV.md).
+- [Director-motor](../../open-claw/lab/src/engine.mjs),
+  [socialt kontrakt](../../open-claw/lab/docs/SOCIAL-CHAT.md) och
+  [runtimepaketets avgränsning](../../open-claw/lab/deploy/runtime-bundle/README.md).
+- [Render-blueprint](../../open-claw/lab/render.yaml),
+  [Gateway-Dockerfile](../../open-claw/lab/deploy/Dockerfile.gateway),
+  [driftguide](../../open-claw/lab/docs/DEPLOYMENT.md) och
+  [dashboard-guide](../../open-claw/lab/docs/DASHBOARD-SV.md).
 
 Kartan hämtar inte externa OpenClaw-dokument på nytt för att beskriva redan
 avgränsade lokala kontrakt. Ingen runtimekonfiguration ändras av kartan.
 
 ### Plan, fynd och leverans
 
-- [Aktiv sprint och versionernas status](../../../docs/animation-events/README.md).
-- [Findings och kvarstående beslut](../../../docs/findings/REGISTER.md).
-- [Handoff med daterade verifieringar](../../../docs/JOHN-HANDOFF.md).
-- [Delat arbetsflöde](../../../docs/shared/WORKFLOW.md).
-- [Projektregler](../../../AGENTS.md) och [pre-commit](../../../.githooks/pre-commit).
+- [Aktiv sprint och versionernas status](../animation-events/README.md).
+- [Findings och kvarstående beslut](../findings/REGISTER.md).
+- [Handoff med daterade verifieringar](../JOHN-HANDOFF.md).
+- [Delat arbetsflöde](../shared/WORKFLOW.md).
+- [Projektregler](../../AGENTS.md) och [pre-commit](../../.githooks/pre-commit).
 
 Personarkivet behövs inte för att följa dessa aktiva samband. Historisk
 proveniens anges med datum/commit och aktiva sakuppgifter med direkta källor.

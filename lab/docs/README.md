@@ -205,7 +205,7 @@ om en exakt labbtake saknas; native-eventets inspelade replik påverkas inte.
 **Fristående chattprov** i Eventstudion har egen provkontext och högst 25
 sekunder ljud. Det styr inte det anslutna bordet. Se [socialt prov](../SOCIAL-CHAT.md).
 
-[Signal- och begreppskartan](../../random-stuff-jakob/jakob-docs/systemkarta/02-events-triggers-urval/SIGNALER-OCH-TAKES.md)
+[Signal- och begreppskartan](../../docs/systemkarta/02-events-triggers-urval/SIGNALER-OCH-TAKES.md)
 förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna,
 relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
 nuvarande kod från nästa steg; den aktiverar inte nya funktioner.

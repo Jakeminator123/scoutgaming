@@ -48,5 +48,5 @@ and review of exact line/dealer/action/take are the integration boundary.
 
 Source references (repository paths, not claims of live file access):
 web/partner-presentation.mjs; lab/COMPATIBILITY.md;
-random-stuff-jakob/jakob-docs/systemkarta/02-events-triggers-urval/SIGNALER-OCH-TAKES.md.
+docs/systemkarta/02-events-triggers-urval/SIGNALER-OCH-TAKES.md.
 This is a dated design snapshot; current request data is needed for live state.
