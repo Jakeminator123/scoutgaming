@@ -3,6 +3,8 @@
 > **28 september: GitHub V2-arbete.** Aktiv branch är
 > `jakemanator123-github-work` i `Jakeminator123/github-work`.
 > V1 är sparad som `Jakobs-v1`; GitLab och wiki-synken är pausade.
+> Samlad [lägesbild, testplan och molnplan](../STATUS-OCH-TESTPLAN-V2.md)
+> är avstämd mot `44feeec` och skiljer verifierad kod från återstående driftprov.
 > Nedanstående tidsplan/publiceringsflöde är historiskt underlag.
 > Läs [migreringen](../GITHUB-MIGRATION.md) och
 > [molnförberedelserna](../CLOUD-MIGRATION.md) för aktuellt läge.
