@@ -9,7 +9,9 @@ import {request as httpRequest} from 'node:http';
 import {once} from 'node:events';
 import {DatabaseSync} from 'node:sqlite';
 import {scryptSync,createHmac,randomUUID} from 'node:crypto';
+import {copyOpenClawRuntime} from './fixtures/copy-openclaw-runtime.mjs';
 const dir=await mkdtemp(join(tmpdir(),'bo-game-auth-')),web=new URL('../web/',import.meta.url);
+const webDir=join(dir,'web');
 const socket=createServer();socket.listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));
 const game=`http://game.localhost:${port}`,bo=`http://bo.localhost:${port}`,password='Isolated-Auth-QA-Only';
 let server,db,craig;
@@ -38,12 +40,13 @@ const sign=claims=>{
   return message+'.'+createHmac('sha256',secret).update(message).digest('base64url');
 };
 try {
-  for(const file of await readdir(web))if(file.endsWith('.mjs'))await copyFile(new URL(file,web),join(dir,file));
-  await symlink(new URL('public',web),join(dir,'public'),process.platform==='win32'?'junction':'dir');await mkdir(join(dir,'data'));
+  await mkdir(webDir);await copyOpenClawRuntime(dir);
+  for(const file of await readdir(web))if(file.endsWith('.mjs'))await copyFile(new URL(file,web),join(webDir,file));
+  await symlink(new URL('public',web),join(webDir,'public'),process.platform==='win32'?'junction':'dir');await mkdir(join(dir,'data'));
   craig=new DatabaseSync(join(dir,'data/craig.db'));
   craig.exec('CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,email TEXT,salt TEXT,hash TEXT,role TEXT NOT NULL,created_at TEXT NOT NULL)');
   craig.prepare('INSERT INTO users VALUES (?,?,?,?,?,?,?)').run(1,'demo-reviewer','demo@example.invalid','test-salt',scryptSync(password,'test-salt',64).toString('hex'),'reader',new Date().toISOString());
-  server=spawn(process.execPath,[join(dir,'server.mjs')],{cwd:dir,env:{PATH:process.env.PATH,HOST:'127.0.0.1',PORT:String(port),PUBLIC_URL:game,BO_URL:bo,DEMO_GUEST_ACCESS:'0'},stdio:['ignore','pipe','pipe']});
+  server=spawn(process.execPath,[join(webDir,'server.mjs')],{cwd:webDir,env:{PATH:process.env.PATH,HOST:'127.0.0.1',PORT:String(port),PUBLIC_URL:game,BO_URL:bo,DEMO_GUEST_ACCESS:'0',CROUPIER_DATA_DIR:join(dir,'data')},stdio:['ignore','pipe','pipe']});
   await new Promise((resolve,reject)=>{let startupError='';const timer=setTimeout(()=>reject(Error('Server start timed out'+(startupError?': '+startupError:''))),10000);server.once('error',error=>{clearTimeout(timer);reject(error);});server.once('exit',code=>{clearTimeout(timer);reject(Error(`Server exited ${code}${startupError?': '+startupError:''}`));});server.stdout.on('data',chunk=>{if(String(chunk).includes('croupier demo on')){clearTimeout(timer);resolve();}});server.stderr.on('data',chunk=>{startupError||=String(chunk).match(/(?:Error(?: \[[A-Z_]+\])?|SyntaxError|TypeError|ReferenceError):[^\n]*/)?.[0]??'';});});
   db=new DatabaseSync(join(dir,'data/croupier.db'));
   const denied=await request(game+'/api/auth/access',{headers:{'X-Forwarded-Uri':'/v2/?dealer=astrid'}});assert.equal(denied.status,302);assert.match(location(denied),/^\/api\/auth\/bo\/start/);

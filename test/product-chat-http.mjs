@@ -9,6 +9,10 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { readChatResponse } from '../web/public/chat-response.mjs';
+import { DatabaseSync } from 'node:sqlite';
+import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
+import { createPlayerProbeStore } from '../web/player-probe-store.mjs';
+import { createDefaultProbePolicy } from '../lab/lib/probe-policy.mjs';
 
 const PRIVATE_TRANSPORT_ENV = [
   'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',
@@ -131,6 +135,18 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     const state = await client.post('/api/table', { op: 'state' });
     return { client, player, state };
   }
+  function savedFact(playerId) {
+    // This helper can only open the fresh database owned by this HTTP fixture.
+    const database=new DatabaseSync(join(directory,'croupier.db'));
+    try {
+      const memory=createPlayerChatMemory(database),store=createPlayerProbeStore(database,memory);
+      const scope={playerId,dealerId:'astrid'},policy=createDefaultProbePolicy();
+      for(let i=0;i<8;i++)store.message(scope,`fixture-source-${i}`,i===7?'I am going through a divorce.':`I like fixture topic ${i}.`);
+      const job=store.extraction(scope,policy),source=job.sources.find(row=>row.id==='fixture-source-7');
+      store.saveExtraction(scope,job,[{sourceId:source.id,topicId:'divorce',quote:source.text,content:'A player assertion',notBefore:0,expiresAt:source.createdAt+86400000}],policy);
+      return store.inspect(scope,policy).facts[0];
+    } finally { database.close(); }
+  }
   await post('/api/player', {});
   let state = await post('/api/table', { op: 'state' });
   state = await post('/api/table', { op: 'start', version: state.version, requestId: crypto.randomUUID(),
@@ -238,6 +254,36 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       assert.deepEqual(frames.filter(frame => frame.type === 'preview').map(frame => frame.exactText), ['Exakt neutralt svar.']);
       assert.deepEqual(frames.filter(frame => frame.type === 'progress').map(frame => frame.stage), ['text', 'ready']);
     } finally { release.resolve(); beforeRespond = null; }
+  });
+
+  await t.test('ordinary chat receives saved facts with Probe off; client memory injection and other profiles are ignored',async()=>{
+    const alice=await guest(),bob=await guest(),fact=savedFact(alice.player.id);
+    const message='I had a rough time with my wife. Have I told you about it?';
+    await alice.client.post('/chat',chat(alice.state,{message,conversationMemory:{facts:[{quote:'I won a million.'}]}}));
+    assert.deepEqual(envelope().request.history,[]);
+    assert.equal(envelope().request.message,message);
+    assert.deepEqual(envelope().status.conversationMemory.facts,[{id:fact.id,topicId:'divorce',kind:'player-assertion',quote:fact.source.quote,saidAt:fact.source.at,expiresAt:fact.expiresAt}]);
+    await bob.client.post('/chat',chat(bob.state,{playerId:alice.player.id,conversationMemory:envelope().status.conversationMemory}));
+    assert.deepEqual(envelope().status.conversationMemory.facts,[]);
+    await alice.client.post('/chat',chat(alice.state,{dealer:'vera'}));
+    assert.equal(envelope().status.conversationMemory,undefined);
+  });
+
+  await t.test('forgetting one saved fact aborts pending ordinary recall and the next request cannot reuse it',async()=>{
+    const {client,player,state}=await guest(),fact=savedFact(player.id);
+    const entered=deferred(),release=deferred();
+    beforeRespond=async()=>{entered.resolve();await release.promise;};
+    const active=client.post('/chat',chat(state,{message:'What did I tell you about my wife?'}),409);
+    try {
+      await within(entered.promise);
+      const result=await client.post('/api/probe/forget',{dealer:'astrid',factId:fact.id});
+      assert.deepEqual(result.facts,[]);
+      assert.equal((await within(active)).error,'chat_memory_changed');
+      release.resolve();beforeRespond=null;
+      await client.post('/chat',chat(state));
+      assert.deepEqual(envelope().status.conversationMemory.facts,[]);
+      assert.deepEqual(envelope().request.history,[]);
+    } finally { release.resolve();beforeRespond=null;await active.catch(()=>{}); }
   });
 
   await t.test('forget after streamed progress emits an error and no result or remembered reply', async () => {

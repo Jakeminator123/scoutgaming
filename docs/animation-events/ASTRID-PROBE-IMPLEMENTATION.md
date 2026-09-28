@@ -51,6 +51,27 @@ kort. Dolda kort skickas aldrig. Vanlig chatt får dessutom `playResults.lastRou
 med senaste insamlade rundans insats, retur och netto, separat från totalsummor
 och pågående runda. Resultatet finns kvar när nästa runda startar.
 
+### Vanlig chatt och sparade fakta — ny kod, inväntar Director-deploy
+
+Vanlig Astrid-chatt kompletteras med `status.conversationMemory`: högst
+20 fakta/8 KB, valda på servern för autentiserad spelare och Astrid. Kanalen
+är separat från de verkliga user/assistant-inläggen. Personliga minnen har
+exakt spelarutsaga och tid; avslutade händer har uttryckligt serverunderlag.
+Aktuella rättelser väger före gamla uppgifter. Relevanta känsliga ämnen får
+besvaras naturligt när spelaren själv tar upp dem; detta tvingar inte fram
+ett spontant Probe om ämnet.
+
+Minnesläsning fungerar även i Probe Av/Textprov, så länge minne är på.
+TTL och minnespolicy gäller fortfarande. Glöm, generationsbyte, utgångna
+fakta och ändrad minnespolicy invaliderar väntande svar före röst/video och
+publicering. Normala minnesutdrag börjar fortfarande efter åtta meddelanden
+och utesluter känsliga persondetaljer och påstådda spelresultat; de manuellt
+seedade fiktiva skilsmässominnena ändrar inte den extraktionsregeln.
+
+Driftsätt först uppdaterad Director, som validerar det nya valfria fältet;
+starta därefter om lokal produktserver med bevarade data. En äldre Director
+avvisar det nya kontraktet. Se senaste handoff för faktisk driftstatus.
+
 Glöm stoppar väntande arbete, raderar källmaterial och byter minnesgeneration
 så en sen extraktion inte återställer raderade fakta. Full Glöm raderar även
 handunderlag och text i gamla försök; opaka spärrar behålls mot återförsök.

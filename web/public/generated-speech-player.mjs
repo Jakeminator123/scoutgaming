@@ -47,7 +47,7 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, mount, s
   const controller = new AbortController();
   const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true });
   const timer = setTimeout(() => controller.abort(), 45000);
-  let audio, video, surface, frame, audioUrl, videoUrl;
+  let audio, video, surface, frame, presentedFrame, audioUrl, videoUrl;
   let started = false, completed = false;
   try {
     const loaded = await loadGeneratedSpeech(value, { exactText, dealerId, signal: controller.signal, media });
@@ -56,6 +56,9 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, mount, s
     surface = document.createElement('div'); surface.className = 'generated-speech-surface';
     // Each renderer supplies its film layer; local presentation keeps cards above it.
     surface.style.cssText = 'position:absolute;inset:0;z-index:var(--generated-speech-layer,25);background:#101618;overflow:hidden;pointer-events:none;';
+    // Keep the previous dealer image visible while this opaque film layer
+    // decodes and the caller revalidates its turn. Reveal only a real frame.
+    surface.style.visibility = 'hidden';
     video = document.createElement('video'); video.src = videoUrl; video.muted = true; video.playsInline = true; video.preload = 'auto';
     video.setAttribute('aria-label', 'Astrid · genererad läppsynk, labbprov');
     // Match the local film's scene bounds. An in-flow grid video can retain
@@ -90,6 +93,10 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, mount, s
     // cannot leave an unhandled media-completion promise.
     void finished.catch(() => {});
     audio.currentTime = 0; video.currentTime = 0;
+    if (video.requestVideoFrameCallback) presentedFrame = video.requestVideoFrameCallback(() => {
+      presentedFrame = null;
+      if (!controller.signal.aborted && !completed) surface.style.visibility = '';
+    });
     await new Promise((resolve, reject) => {
       const cancel = () => reject(abortError());
       controller.signal.addEventListener('abort', cancel, { once: true });
@@ -97,6 +104,9 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, mount, s
       if (controller.signal.aborted) cancel();
     });
     if (controller.signal.aborted) throw abortError();
+    // Older browsers lack frame callbacks; their decoded playing image is the
+    // earliest supported boundary, never the initial empty media element.
+    if (!video.requestVideoFrameCallback) surface.style.visibility = '';
     started = true; onStart(exactText); onReceipt({ state: 'start', packageId: loaded.speech.packageId, evidence: 'media-playing', reviewStatus: 'pending' });
     const sync = () => {
       if (controller.signal.aborted || audio.ended) return;
@@ -110,6 +120,7 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, mount, s
   } finally {
     clearTimeout(timer); controller.abort(); signal?.removeEventListener('abort', abort);
     if (frame != null) cancelAnimationFrame(frame);
+    if (presentedFrame != null) video.cancelVideoFrameCallback(presentedFrame);
     audio?.pause(); video?.pause(); surface?.remove();
     if (audioUrl) URL.revokeObjectURL(audioUrl); if (videoUrl) URL.revokeObjectURL(videoUrl);
     onReceipt({ state: completed ? 'end' : 'interrupted', packageId: value?.packageId, evidence: 'media-lifecycle', started, reviewStatus: 'pending' });

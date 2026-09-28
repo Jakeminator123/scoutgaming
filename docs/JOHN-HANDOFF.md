@@ -1,3 +1,72 @@
+## 2026-09-28 — Chattminne och blinkning: färdig kod, drift/visuell QA återstår
+
+Jakob bad uttryckligen om parallella underagenter och godkände meddelanden
+till kameraagentens chatt `01a0e6ea-9411-7f63-86bd-98f9baaff716`.
+Tre underagenter granskade chattminne, videoblinkning och server/strömvägen.
+
+**Bekräftat i faktisk UI:** `localhost:4210/?dealer=astrid&presentation=local`
+har `data-stream-lane=lissabon-stream-lane`, renderer `local`, Klippval
+`active` (OpenClaw) och profilen Jakob · TESTMINNEN. Detta är samma riktiga
+spelare/serverkedja som Lissabon, i separat QA-miljö. Den använder snapshotens
+klippolicy, inte vanliga 4200:s senaste sparade val: resa-sig och kaffe är
+manuella här, men automatiska cirka 25/90 s på 4200. Servern äger spelet;
+browsern sätter ihop MP4-filer. Inget manuellt klippprov eller Render-renderad
+kontinuerlig videoström användes. Manifestet saknar dealer-hole-familjen.
+Varningen om 2D-reserv kan ligga kvar under fungerande idle, eftersom
+`resumeIdle` inte nollställer föregående händelses varning.
+
+**Minnesbugg:** `/chat` fick kort chattlogg men inga `player_probe_facts`.
+Servern skickar nu högst 20 scoped, giltiga fakta/8 KB i valfritt
+`status.conversationMemory`, separat från chattinläggen. Exakta spelarutsagor
+och serververifierade handresultat skiljs åt. Director validerar fältet och
+instruktionen använder relevanta minnen naturligt, inklusive spelarinitierat
+svårt personligt ämne. Minnesläsning beror inte på Probe Av/Textprov.
+Glöm/korrektion/TTL/policyändring stoppar inaktuellt svar; asynkrona kontroller
+körs också före kostsam TTS/GPU-generering. Ingen ny källa fabriceras i
+chatthistoriken och känsliga faktas vanliga extraktionsregler ändras inte.
+
+**Blinkning:** genererat tal skapade ett ogenomskinligt mörkt lager före
+avkodning och startauktorisering. Lagret hålls nu dolt tills första faktiskt
+presenterade videobild. Sena callbacks och avbrott kan inte visa gammalt tal.
+Ingen videofil, ljudfil, kalibrering eller idleloop byggdes om. Alla upplevda
+blinkningar är ännu inte visuellt förklarade; idle använder fortfarande en
+ny dekoder per loop och håller föregående slutbild under bytet.
+
+Verifierat: 69 riktade minnes-/kontraktstester, 31 riktade player-/idleprov,
+samtliga 25 pre-commit-kommandon och `audit-dealer-sync --probe` godkända.
+Två kopierande testfixturer fallerade först på den nya modulsökvägen och
+rättades; berörd BO-gate, generation-media-gate och extra table-http 9/9
+kördes därefter gröna. Fixturer kopierar endast runtimekällkod till egen
+temporär repo-layout, aldrig privata miljöfiler/data. Hela gatekedjan
+kördes i avgränsade delar; testresultaten är inte visuell läppsynkacceptans.
+
+**Kvar att göra, i denna ordning:**
+1. Driftsätt denna minnesfix i Render **Director** `srv-danhlpjtqb8s73bv530g`.
+   Gateway behöver inte bytas för detta fält. Gör ett syntetiskt chattsvar
+   med sparat minne genom den driftsatta kedjan. Äldre Director avvisar fältet.
+2. Starta om lokal produktserver med **bevarad** QA-data och bevarad hand.
+   Nuvarande helperns Ctrl+C raderar dess tempdata: använd inte den för
+   omstart utan att först bevara hela testprofilen och chattminnet.
+   QA ligger på `C:/WINDOWS/TEMP/croupier-probe-qa-zM5LwO/studio`; vid senaste
+   läsning fanns ingen pågående chatt/Probe men en hand i `decisions`.
+3. Kör browserkontroll av minnesdialogen och två på varandra följande tal;
+   fyradealerrehearsal två gånger/dealer återstår för denna playerändring.
+
+**Blockerare i denna session:** CUA-browserverktyget och Codex-appens
+chattverktyg började svara `Transport closed`. Två browserförsök samt reset
+misslyckades; ett samordningsmeddelande till kameraagenten kunde inte skickas.
+Ingen befintlig Render API-nyckel/deploy-hook fanns i de konfigurerade privata
+miljöfilerna. Ingen credential skapades. Jakob ombads återansluta verktyget.
+Nuvarande servrar kör därför fortfarande tidigare backend; inget falskt
+driftgodkännande ges. Jira CAC saknas fortfarande i verktygsanslutningen.
+
+Kameraagenten äger nya `astrid-camera-*`/`astrid-observation`-filer samt
+`web/public/app.mjs`, `lissabon-profile.mjs`, CSS och kameratester; dessa är
+inte del av denna leverans. Agenten bekräftade att den väntar med
+`web/server.mjs`, `web/openclaw-chat.mjs` och `product-speech.mjs` tills vår
+minnesfix är committad. Efter commit är de tre filerna fria för kameraintegration.
+Samordna nästa deploy så ingen ofärdig kamerafunktion följer med.
+
 ## 2026-09-28 — Luna som standard och automatiskt prov med fem fiktiva minnen
 
 Jakob valde GPT-6 Luna för Astrid. `probe-policy.seed.json` använder nu

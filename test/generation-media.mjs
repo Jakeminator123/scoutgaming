@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'node:net';
 import { mkdtemp, mkdir, writeFile, symlink, rm, readdir, copyFile } from 'node:fs/promises';
+import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -79,6 +80,7 @@ test('default media directory cannot bypass BO auth or catalog checks through Wi
   let fixture;
   try {
     await mkdir(directory, { recursive: true });
+    await copyOpenClawRuntime(tmp);
     const source = new URL('../web/', import.meta.url);
     for (const file of await readdir(source)) if (file.endsWith('.mjs')) {
       await copyFile(new URL(file, source), join(web, file === 'server.mjs' ? 'server-under-test.mjs' : file));

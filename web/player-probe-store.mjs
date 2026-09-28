@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { projectConversationMemory } from '../open-claw/lab/src/conversation-memory.mjs';
 
 const DAY = 86400000;
 const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
@@ -108,6 +109,20 @@ export function createPlayerProbeStore(db, memory, { now = Date.now, random = Ma
   prune();
   return {
     generation(input) { const {scope}=scopeFor(input);return ensure(scope).generation; },
+    conversation(input, policy) {
+      const { scope } = scopeFor(input);
+      prune();
+      // Proactive cooldown/notBefore only govern unsolicited initiatives. A
+      // player may discuss a future trip or a recently discussed memory now.
+      return { scope, generation: ensure(scope).generation, policy,
+        context: projectConversationMemory(facts(scope, policy), now()) };
+    },
+    conversationCurrent(input, snapshot) {
+      const { scope } = scopeFor(input);
+      if (scope !== snapshot.scope || ensure(scope).generation !== snapshot.generation) return false;
+      const current = projectConversationMemory(facts(scope, snapshot.policy), now());
+      return snapshot.context.facts.every(fact => current.facts.some(row => row.id === fact.id && hash(row) === hash(fact)));
+    },
     isPresent(input, owner, tab) { return !presence(scopeFor(input).scope, owner, tab); },
     activity(input) {
       const { scope } = scopeFor(input);

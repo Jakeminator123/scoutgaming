@@ -27,6 +27,29 @@ test('session revoked during generation never publishes generated media', async 
   const f = fixture(); f.data.service.generate = async () => { f.changeOwner(); return {}; };
   await assert.rejects(completeChatWithSpeech(f.data), /stale_chat_session/);
 });
+
+test('async memory policy invalidation after model work prevents preview and paid generation', async () => {
+  const f=fixture();let enabled=true,previews=0;
+  f.data.readStatus=async()=>{await Promise.resolve();if(!enabled)throw Error('stale_chat_memory');};
+  f.data.decide=async()=>{enabled=false;return {kind:'generatedText',exactText:'An old memory.'};};
+  f.data.onDecision=()=>previews++;
+  await assert.rejects(completeChatWithSpeech(f.data),/stale_chat_memory/);
+  assert.equal(f.jobs,0);assert.equal(previews,0);
+});
+
+test('paid stages recheck memory after waiting and a later change cannot publish final media', async () => {
+  for(const atStage of ['before-costly','before-publish']){
+    const f=fixture();let current=true,charged=false;
+    f.data.readStatus=async()=>{if(!current)throw Error('stale_chat_memory');};
+    f.data.service.generate=async({beforeCostly})=>{
+      if(atStage==='before-costly')current=false;
+      await beforeCostly();charged=true;
+      current=false;return {};
+    };
+    await assert.rejects(completeChatWithSpeech(f.data),/stale_chat_memory/);
+    assert.equal(charged,atStage==='before-publish');
+  }
+});
 test('recorded lines and other dealers do not enter generated preview', async () => {
   const f = fixture(); f.data.status.dealerId = 'vera';
   assert.equal((await completeChatWithSpeech(f.data)).speechPackage, undefined); assert.equal(f.jobs, 0);
