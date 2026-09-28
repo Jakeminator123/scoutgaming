@@ -8,6 +8,11 @@ import { createSeedProject } from '../lab/lib/studio-model.mjs';
 import { playLocalFilm } from '../web/public/local-film-player.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
+import { selectPresentation } from '../presentation-runtime/selection.mjs';
+import { createProjectStore } from '../lab/lib/project-store.mjs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
 test('a browser can identify a deal but cannot change its card, hand or hidden state', () => {
@@ -49,6 +54,43 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   }) });
   assert.equal(idle.status, 200); const advice = await idle.json();
   assert.equal(advice.videoId, null); assert.equal(advice.provider, 'openclaw_not_configured');
+});
+
+test('native player reads saved deal frequencies, caches retries and picks up an edited percentage without a restart', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-deal-frequency-'));
+  const store = createProjectStore(directory), project = createSeedProject();
+  const registry = await loadVideoRegistry();
+  const family = registry.families.find(row => row.situation === 'box0');
+  const variant = registry.videos.find(row => family.variantIds.includes(row.id) && row.available);
+  assert.ok(variant, 'The current Astrid manifest has a real first-box variant.');
+  project.mediaPolicy = [{ familyId: family.id, variants: [{ videoId: variant.id, priority: 10, triggerIds: [], selection: { model: false, random: false, rules: false }, frequencyPercent: 100 }] }];
+  let saved = await store.save(project, project.revision), calls = 0;
+  const db = new DatabaseSync(':memory:');
+  const committed = { ...source, box: 0, clip: { action: 'deal-left' } };
+  db.exec('CREATE TABLE native_presentations (player_id TEXT, version INTEGER, payload TEXT)');
+  db.prepare('INSERT INTO native_presentations VALUES (?,?,?)').run('frequency-qa', 2, JSON.stringify([committed]));
+  const handler = createPresentationApi({ db, env: {}, store, select: (body, options) => {
+    calls++;
+    return selectPresentation(body, { ...options, random: () => 0.1, fetchImpl: () => assert.fail('Deal frequency must not call a model') });
+  } });
+  const server = createServer(async (req, res) => { await handler(req, res, '/api/presentation/select', 'frequency-qa'); });
+  t.after(async () => { server.closeAllConnections(); server.close(); db.close(); await rm(directory, { recursive: true, force: true }); });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const choose = async () => {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/presentation/select`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ dealerId: 'astrid', version: 2, mode: 'active', event: { ...committed, card: { r: '2', s: '♥' } } }),
+    });
+    assert.equal(response.status, 200); return response.json();
+  };
+  const first = await choose();
+  assert.equal(first.video.id, variant.id); assert.equal(first.decision.reason, 'local_deal_frequency');
+  assert.deepEqual(first.decision.sourceEvent.card, source.card, 'Published server cards remain authoritative.');
+  assert.deepEqual(await choose(), first); assert.equal(calls, 1);
+  saved.mediaPolicy[0].variants[0].frequencyPercent = 0;
+  saved = await store.save(saved, saved.revision);
+  const afterSave = await choose();
+  assert.equal(afterSave.video.id, family.standardIds[0]); assert.equal(afterSave.projectRevision, saved.revision); assert.equal(calls, 2);
 });
 
 class Video extends EventTarget {

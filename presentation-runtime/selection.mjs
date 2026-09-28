@@ -6,7 +6,7 @@ import { buildRuntimeCatalog, validateProject } from '../lab/lib/studio-model.mj
 import { StudioError } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { selectionFor, videoFitsLine, videoFitsEvent } from '../lab/lib/video-intake.mjs';
-import { mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
+import { dealFrequencyPolicies, pickDealFrequency, mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
 
 export async function remoteRequest(path, body, settings, fetchImpl, timeoutMs) {
   let url;
@@ -66,6 +66,7 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   // recorded instruction must never be replaced by the editor's example.
   const input = { requestId: body.requestId ?? randomUUID(), event: observed ? body.sourceEvent : (body.exampleEvent ?? event.exampleEvent), context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
   const media = mediaLineForEvent(savedProject, videoRegistry, body.dealerId, event.id, input.event);
+  const frequency = dealFrequencyPolicies(savedProject, media.family);
   const project = media.managed ? { ...savedProject, lines: savedProject.lines.map(line => line.dealerId === body.dealerId && line.eventId === event.id ? media.line : line) } : savedProject;
   const catalog = decisionCatalog(project, body.dealerId, body.mode);
   let prepared = prepareDecision(catalog, input);
@@ -85,7 +86,10 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   }
   prepared.trace.splice(2, 0, { stage: 'compatibility', status: excluded.size ? 'filtered' : 'checked', detail: `${excluded.size} alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.` });
   let reply = { advice: null, provider: { status: 'off' } };
-  if (body.mode === 'rules' || body.mode === 'random') {
+  if (frequency && body.mode !== 'off') {
+    const variantId = pickDealFrequency(frequency, lineForEvent, prepared.eligible.map(variant => variant.id), random);
+    reply = { advice: { requestId: prepared.requestId, catalogRevision: prepared.catalogRevision, variantId }, provider: { status: 'local_deal_frequency' } };
+  } else if (body.mode === 'rules' || body.mode === 'random') {
     const index = body.mode === 'random' ? Math.min(prepared.eligible.length - 1, Math.max(0, Math.floor(random() * prepared.eligible.length))) : 0;
     reply = { advice: { requestId: prepared.requestId, catalogRevision: prepared.catalogRevision, variantId: prepared.eligible[index].id }, provider: { status: body.mode === 'random' ? 'local_random' : 'deterministic_rules' } };
   } else if (media.managed && prepared.eligible.length === 1 && body.mode !== 'off') {
@@ -104,11 +108,14 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   const result = finalizeDecision(prepared, reply?.advice ?? null, input.mode);
   const line = project.lines.find(item => item.eventId === event.id && item.dealerId === body.dealerId);
   const variant = line.variants.find(item => item.id === result.selected.id);
-  if (body.mode === 'rules') {
+  if (frequency && body.mode !== 'off') {
+    result.trace = result.trace.map(step => step.stage === 'advice' ? { stage: 'frequency', status: 'selected', detail: 'Sparade procentandelar för exakt utdelningsplats. Återstående andel och saknade filmer ger standard. Inget modellanrop.' } : step);
+    if (body.mode !== 'shadow') result.gate.reason = 'local_deal_frequency';
+  } else if (body.mode === 'rules') {
     result.trace = result.trace.map(step => step.stage === 'advice' ? { stage: 'rules', status: 'selected', detail: 'Regelmotorn väljer högst prioriterade tillåtna variant. Inget modellanrop.' } : step);
     result.gate.reason = 'deterministic_rules';
   }
-  if (body.mode === 'random') {
+  if (!frequency && body.mode === 'random') {
     result.trace = result.trace.map(step => step.stage === 'advice' ? { stage: 'random', status: 'selected', detail: 'Lika sannolikhet bland standard och uttryckligen slumpaktiverade alternativ vars triggers matchar. Endast labbpresentation.' } : step);
     result.gate.reason = 'local_random';
   }

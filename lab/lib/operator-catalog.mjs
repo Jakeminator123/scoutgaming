@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { buildRuntimeCatalog, validateProject } from './studio-model.mjs';
-import { mediaExampleEvent, mediaFamilyFolder, mediaLineForEvent, mediaVariantPolicy, usesMediaFamilies } from './media-family-policy.mjs';
+import { dealFrequencyPolicies, mediaExampleEvent, mediaFamilyFolder, mediaLineForEvent, mediaVariantPolicy, usesMediaFamilies } from './media-family-policy.mjs';
 import { selectionFor } from './video-intake.mjs';
 
 const label = text => text.slice(0, 120);
@@ -51,6 +51,7 @@ export function buildOperatorCatalog(project, inventory, dealerId, { scope = 'sa
       const baselineId = `${prefix}.standard`;
       const baseline = media.line.variants.find(variant => variant.id === media.line.baselineVariantId);
       const idle = family.playbackType === 'idle-pool';
+      const frequency = dealFrequencyPolicies(project, family);
       const member = (id, role) => {
         const video = files.get(id);
         return video?.familyId === family.id && video.role === role ? video : null;
@@ -70,7 +71,7 @@ export function buildOperatorCatalog(project, inventory, dealerId, { scope = 'sa
         const video = member(id, isBase ? 'standard' : 'variant');
         if (!video) continue;
         const policy = mediaVariantPolicy(project, family, id);
-        let use = selectionLabel(policy.selection);
+        let use = frequency ? `${policy.frequencyPercent ?? 0} % per utdelning; lokalt frekvensval` : selectionLabel(policy.selection);
         if (idle) {
           const idleVariant = project.idlePolicy?.variants.find(item => item.videoId === id);
           const automatic = idleVariant?.automatic;
@@ -79,7 +80,7 @@ export function buildOperatorCatalog(project, inventory, dealerId, { scope = 'sa
             : ({ openclaw: 'OpenClaw (idlepolicy)', rules: 'regler (idlepolicy)', manual: 'manuell' }[idleVariant?.use] ?? 'ej vald i idlepolicy');
         }
         variants.push({ id: `${prefix}.file-${id}`, label: fileLabel(video.fileName, video.available ? use : 'otillgänglig; ' + use),
-          priority: idle ? 0 : policy.priority, assetId: baseline.assetId, when: { all: idle ? [] : predicates(policy.triggerIds) } });
+          priority: idle || frequency ? 0 : policy.priority, assetId: baseline.assetId, when: { all: idle || frequency ? [] : predicates(policy.triggerIds) } });
       }
       const match = { ...node.match };
       if (node.sourceType === 'speak') match.line = family.situation;

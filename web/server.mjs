@@ -9,6 +9,7 @@ import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
 import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
+import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { readPlayerResults } from './player-results.mjs';
 import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
@@ -661,6 +662,7 @@ const CHAT_DEALERS = Object.freeze({ vera: 'dealer', astrid: 'dealers/astrid', a
 const CHAT_REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const astridCameraEnabled = process.env.CROUPIER_ASTRID_CAMERA === '1'
   && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane';
+const astridTranscription = createAstridTranscriptionApi({ apiKey: process.env.CARTESIA_API_KEY });
 
 function chatSpeechPolicy(dealerId) {
   // The local Astrid renderer cannot verify legacy bank lines against its
@@ -824,8 +826,23 @@ createServer(async (req, res) => {
       const enabled = astridCameraEnabled && config.policy.model === 'gpt-6-luna';
       const profileRevision = enabled ? createHash('sha256').update(chatSessionOwner(req, authenticated)).digest('hex') : null;
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
-      res.end(JSON.stringify({ enabled, profileRevision, model: config.policy.model }));
+      res.end(JSON.stringify({ enabled, profileRevision, model: config.policy.model,
+        transcription: { enabled: enabled && astridTranscription.configured, provider: 'cartesia', model: 'ink-whisper' } }));
     } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"enabled":false}'); }
+    return;
+  }
+  if (pathname === '/api/astrid/transcription') {
+    const ownerRevision = () => createHash('sha256').update(chatSessionOwner(req, authenticated)).digest('hex');
+    let profileRevision;
+    try { profileRevision = ownerRevision(); }
+    catch { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"stale_transcription_context"}'); return; }
+    await astridTranscription.handle(req, res, { enabled: astridCameraEnabled, profileRevision,
+      checkCurrent: async context => {
+        if (ownerRevision() !== profileRevision || (await probeRuntime.config()).policy.model !== 'gpt-6-luna') {
+          throw Object.assign(new Error('stale_transcription_context'), { code: 'stale_transcription_context', statusCode: 409 });
+        }
+        authoritativeChatStatus(authenticated, playerSession(req), context);
+      } });
     return;
   }
   if (pathname === '/api/probe' || pathname.startsWith('/api/probe/')) {

@@ -5,7 +5,7 @@ import { appendActivity, type ActivityEntry } from '../lib/activity-log.mjs';
 import { IdlePolicyEditor } from './idle-policy-editor';
 import { FamilyVideoLibrary } from './family-video-library';
 import { MediaFamilyEditor } from './media-family-editor';
-import { mediaExampleEvent, mediaLineForEvent, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
+import { upsertMediaVariantPolicy, mediaExampleEvent, mediaLineForEvent, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
 import { createDefaultIdlePolicy } from '../lib/idle-policy.mjs';
 import type { MediaVariantPolicy, StudioProject } from '../lib/studio-model.mjs';
 import { requestJson, type VideoInventory } from './studio-types';
@@ -63,13 +63,7 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
     else { setSelection({ eventId, situation }); setView(eventId.startsWith('deal.') ? 'deal' : 'clips'); }
   }
   function updatePolicy(familyId: string, policy: MediaVariantPolicy) {
-    edit(draft => {
-      draft.mediaPolicy ??= [];
-      let family = draft.mediaPolicy.find(row => row.familyId === familyId);
-      if (!family) { family = { familyId, variants: [] }; draft.mediaPolicy.push(family); }
-      const index = family.variants.findIndex(row => row.videoId === policy.videoId);
-      if (index < 0) family.variants.push(policy); else family.variants[index] = policy;
-    });
+    edit(draft => { draft.mediaPolicy = upsertMediaVariantPolicy(draft.mediaPolicy, familyId, policy); });
   }
   const definition = selection && project.events.find(event => event.id === selection.eventId);
   const event = definition && mediaExampleEvent(definition, selection!.situation);

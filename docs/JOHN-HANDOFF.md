@@ -1,3 +1,57 @@
+## 2026-09-28 — Astrids Deal-frekvenser och fungerande servertranskription
+
+Astrids Deal-panel använder samma nya frekvenseditor i Lissabon och stora
+labbet. Varje exakt kortdestination har procent per variant, högst fyra
+aktiva och högst 100 procent totalt; resten använder standard. 0 procent
+behåller filen för manuella prov. Senare importerade klipp kan aktiveras även
+när de kommer efter de fyra första i manifestet. Gamla nollrader frigör plats
+för ersättningsfiler; en nollmarkör bevarar uttryckligt avstängt urval.
+Saknade klipp lämnar sin andel till standard utan att öka andra varianters
+andel. Regler, Slump och OpenClaw använder detta lokala val utan modellanrop;
+Standard och Skuggläge spelar standard. Serverns kortdata ändras inte.
+
+Gamla social-/språkalternativ och tal-/posedemot visas inte i Astrids
+Deal-test. Befintligt äldre urval gäller tills operatören uttryckligen
+ändrar och sparar en frekvens; gränssnittet förklarar övergången. Inga sparade
+Deal-val eller filmer har ändrats av denna leverans. Råfilradering är fortsatt
+inte en del av labbgränssnittet. Repliker och övriga dealers behåller sina val.
+
+Jakobs bild visade nätfel från browserns SpeechRecognition. **Bild och ljud**
+använder nu AudioWorklet och kort PCM/WAV-inspelning i RAM, högst 30 sekunder.
+Kamera och mikrofon stoppas före transkription via produktbackend till
+Cartesia `ink-whisper`, svenska/engelska, med befintlig servernyckel.
+Texten är redigerbar; bilder och text går vidare till Astrid först efter
+manuell Skicka. Appen sparar inte råljud till disk/DB/chatt. Lokal nivådetektor
+styr kandidatbilder och är inte en säker talidentifierare. Profil-/rundbyte,
+avbrott och sena svar kasserar materialet. Nycklar finns bara på servern.
+
+Verifierat: 47 riktade Deal-/katalog-/lagrings-/runtimeprov, fyra renderprov
+för testpanelen, 32 kamera-/ljud-/transkriptionsprov, TypeScript och samtliga
+27 pre-commit-kommandon. Mediaserverns isolerade testkopia behövde inkludera
+den nya ljudmodulen; efter den rättningen passerade även dess fem prov.
+Kodgranskningen av frekvensernas kapacitets- och nollställningsfall är klar.
+Fyradealerasset-audit med `--probe` passerade med tidigare kända luckor;
+ingen ny visuell läppsynkacceptans. Labbet byggdes med webpack och TypeScript.
+Det tidigare QA-parets processer och portar verifierades stoppade, och endast
+4210/4211 startades igen med samma lokala projekt, isolerade spelar-DB,
+testminnen och kameraaktivering. Ladda om befintliga flikar; inga nya öppnades.
+Efter Jakobs specifika tillstånd transkriberades den befintliga inspelningen
+`goodluck.mp3` genom den nya adaptern till Cartesia: HTTP 200, 472 ms,
+exakt "Bets are closed. Good luck at my table." Ingen riktig mikrofon användes.
+
+Kvar: verklig AudioWorklet-inspelning i IAB och bild → Render → Luna med
+kontroll av bildlagringen. Agentens sparade browserbehörighet blockerar
+fortfarande dessa prov; inga alternativa browser/API-vägar används för att
+kringgå den. Inget nytt Render-deploy eller visuellt läppsynkgodkännande görs.
+Se kameradokumentet för genomförda prov och exakta aktiveringssteg. Jira CAC
+är fortsatt inte tillgängligt via anslutna verktyg.
+
+Beständiga diskar är redan deklarerade i Render-blueprinten: 1 GB
+`/data/openclaw` för Gateway och 1 GB `/data/catalog` för Director. Ingen ny
+disk behövs för transkriptionen och ingen extra lagringsresurs skapades.
+Aktuell diskstatus i Render har inte verifierats i denna omgång. Lissabons
+lokala projekt och bevarade isolerade spelar-DB ligger fortfarande lokalt.
+
 ## 2026-09-28 — Omstart med kamera och utökade privata testminnen
 
 På Jakobs uttryckliga begäran stoppades Lissabon-paret 4200/4201 och dess

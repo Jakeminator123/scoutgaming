@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import manifest from '../../emil/dealklipp-v1/lab-video-manifest.json' with { type: 'json' };
 import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
 import { simulateStudio } from '../lib/studio-server.mjs';
-import { mediaLineForEvent, mediaVideoForEvent, validateMediaPolicy, mediaSituationForEvent } from '../lib/media-family-policy.mjs';
+import { mediaLineForEvent, mediaVideoForEvent, validateMediaPolicy, mediaSituationForEvent, upsertMediaVariantPolicy } from '../lib/media-family-policy.mjs';
 import { createPresentationDirector } from '../lib/presentation-director.mjs';
 import { presentationDecisionResponse } from '../lib/presentation-decision-http.mjs';
 
@@ -114,4 +114,102 @@ test('other dealers keep their independent shared original-player path', () => {
     assert.equal(view.managed, false);
     assert.equal(view.line, project.lines.find(row => row.dealerId === dealer && row.eventId === 'speak.goodluck'));
   }
+});
+
+function frequencyFixture() {
+  const registry = inventory(), project = createSeedProject();
+  const family = registry.families.find(row => row.situation === 'box2');
+  const ids = ['11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222'];
+  family.variantIds = ids;
+  for (const id of ids) registry.videos.push({ id, familyId: family.id, role: 'variant', fileName: `variant-${id}.mp4`, available: true });
+  const language = project.triggers.find(trigger => trigger.path.includes('preferredLanguage'));
+  project.mediaPolicy = [{ familyId: family.id, variants: ids.map((videoId, i) => ({ videoId, priority: 100 - i,
+    triggerIds: language ? [language.id] : [], selection: { rules: false, model: false, random: false }, frequencyPercent: i === 0 ? 20 : 30 })) }];
+  return { registry, project, family, ids };
+}
+
+test('saved deal percentages give exact shares including standard, without model calls or legacy language conditions', async () => {
+  const { registry, project, ids } = frequencyFixture(), original = structuredClone(project);
+  const counts = new Map();
+  for (let i = 0; i < 100; i++) {
+    const result = await simulateStudio(body(group(2), deal(2), { project, mode: 'active' }), { ...options(registry), random: () => (i + 0.5) / 100 });
+    counts.set(result.videoGenerationId, (counts.get(result.videoGenerationId) ?? 0) + 1);
+    assert.equal(result.provider, 'local_deal_frequency');
+    assert.equal(result.decision.reason, 'local_deal_frequency');
+    assert.deepEqual(result.decision.sourceEvent, deal(2));
+  }
+  assert.equal(counts.get(ids[0]), 20); assert.equal(counts.get(ids[1]), 30);
+  assert.equal([...counts.values()].reduce((sum, n) => sum + n, 0), 100);
+  assert.equal(counts.get(registry.families.find(family => family.situation === 'box2').standardIds[0]), 50);
+  assert.deepEqual(project, original, 'Sampling must not edit the saved project.');
+});
+
+test('deal percentages have consistent boundaries and respect standard/shadow modes and exact destinations', async () => {
+  const { registry, project, ids } = frequencyFixture();
+  for (const mode of ['active', 'rules', 'random']) {
+    for (const [random, selected] of [[0, ids[0]], [0.1999, ids[0]], [0.2, ids[1]], [0.4999, ids[1]], [0.5, null], [0.9999, null]]) {
+      const result = await simulateStudio(body(group(2), deal(2), { project, mode }), { ...options(registry), random: () => random });
+      assert.equal(result.decision.media.standard, selected === null);
+      if (selected) assert.equal(result.videoGenerationId, selected);
+    }
+  }
+  for (const mode of ['off', 'shadow']) {
+    const result = await simulateStudio(body(group(2), deal(2), { project, mode }), { ...options(registry), random: () => 0 });
+    assert.equal(result.decision.media.standard, true);
+    assert.equal(result.decision.reason, mode === 'off' ? 'ai_disabled' : 'shadow_only');
+  }
+  const otherPlace = await simulateStudio(body(group(3), deal(3), { project, mode: 'off' }), options(registry));
+  assert.equal(otherPlace.decision.media.fileName, 'deal_pos4.mp4');
+});
+
+test('missing and disabled deal variants return their own share to standard without increasing another share', async () => {
+  const { registry, project, ids } = frequencyFixture();
+  registry.videos.find(video => video.id === ids[0]).available = false;
+  const decide = random => simulateStudio(body(group(2), deal(2), { project, mode: 'active' }), { ...options(registry), random: () => random });
+  assert.equal((await decide(0.1)).decision.media.standard, true);
+  assert.equal((await decide(0.2)).videoGenerationId, ids[1]);
+  assert.equal((await decide(0.5)).decision.media.standard, true);
+  registry.families.find(row => row.situation === 'box2').variantIds = [ids[1]];
+  assert.equal((await decide(0.1)).decision.media.standard, true, 'Removed file cannot be sampled via its retained row.');
+  for (const policy of project.mediaPolicy[0].variants) { policy.frequencyPercent = 0; policy.selection = { rules: true, model: true, random: true }; }
+  assert.equal((await decide(0)).decision.media.standard, true, 'Zero must override old selection permissions.');
+});
+
+test('deal frequency validation rejects invalid percentages and scope; old policies still validate unchanged', () => {
+  const { project } = frequencyFixture();
+  const valid = project.mediaPolicy;
+  for (const value of [-1, 101, 1.5, NaN, '20', null]) {
+    const invalid = structuredClone(valid); invalid[0].variants[0].frequencyPercent = value;
+    assert.throws(() => validateMediaPolicy(invalid, project.triggers.map(row => row.id)));
+  }
+  const sum = structuredClone(valid); sum[0].variants[0].frequencyPercent = 80;
+  assert.throws(() => validateMediaPolicy(sum, project.triggers.map(row => row.id)), /100/);
+  for (const familyId of ['vera/deal.player.centre/box2', 'astrid/speak.other/win', 'astrid/idle.ready/ready']) {
+    assert.throws(() => validateMediaPolicy([{ ...valid[0], familyId }], project.triggers.map(row => row.id)));
+  }
+  const legacy = structuredClone(project);
+  for (const row of legacy.mediaPolicy[0].variants) delete row.frequencyPercent;
+  const before = structuredClone(legacy);
+  assert.equal(validateProject(legacy), legacy); assert.deepEqual(legacy, before);
+});
+
+test('a later imported fifth file can replace zeroed old slots and actually play at its configured frequency', async () => {
+  const { registry, project, family, ids } = frequencyFixture();
+  for (const char of ['3', '4', '5']) {
+    const id = `${char.repeat(8)}-${char.repeat(4)}-${char.repeat(4)}-${char.repeat(4)}-${char.repeat(12)}`;
+    family.variantIds.push(id);
+    registry.videos.push({ id, familyId: family.id, role: 'variant', available: true, fileName: `later-${char}.mp4` });
+  }
+  const zero = videoId => ({ videoId, frequencyPercent: 0, selection: { rules: true, model: true, random: true }, triggerIds: [], priority: 10 });
+  project.mediaPolicy = [{ familyId: family.id, variants: family.variantIds.slice(0, 4).map(zero) }];
+  const before = structuredClone(project.mediaPolicy), later = family.variantIds[4];
+  project.mediaPolicy = upsertMediaVariantPolicy(project.mediaPolicy, family.id, { ...zero(later), frequencyPercent: 100 });
+  assert.equal(project.mediaPolicy[0].variants.length, 1); assert.equal(before[0].variants.length, 4);
+  validateProject(project);
+  const picked = await simulateStudio(body(group(2), deal(2), { project, mode: 'active' }), { ...options(registry), random: () => 0.99 });
+  assert.equal(picked.videoGenerationId, later);
+  project.mediaPolicy = upsertMediaVariantPolicy(project.mediaPolicy, family.id, zero(later));
+  assert.equal((await simulateStudio(body(group(2), deal(2), { project, mode: 'active' }), options(registry))).decision.media.standard, true);
+  project.mediaPolicy = upsertMediaVariantPolicy(project.mediaPolicy, family.id, { ...zero(ids[0]), frequencyPercent: 25 });
+  assert.equal(project.mediaPolicy[0].variants.length, 1);
 });
