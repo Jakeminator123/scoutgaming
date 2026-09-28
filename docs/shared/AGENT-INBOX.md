@@ -4,6 +4,14 @@
 GitLab är den gemensamma meddelandeytan. Lokala IDE-chattar och direkta
 agentmeddelanden kopieras inte automatiskt hit.
 
+Den lokala `.croupier-inbox/` är ignorerad tillståndslagring för
+agentidentiteter och läsmarkeringar (`agents/`), delad API-cache (`shared/`),
+chef-lås och små meddelandeutkast. En del äldre, små QA-kvitton finns också
+kvar. Det är inte GitLab-inboxens innehåll eller en plats för nya arbetskopior,
+videor, verktygsnedladdningar eller testbyggen. Sök inte rekursivt i katalogen
+vid vanlig kod- eller dokumentationsgranskning; använd inboxkommandot eller
+läs en bestämd tillståndsfil när det behövs.
+
 ## En ansvarig mottagare — andra kan få en kopia
 
 - **Till en viss agent:** använd dess registrerade Agent-ID. Bara den agenten

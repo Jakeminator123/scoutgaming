@@ -21,6 +21,13 @@ question needs it, not on every turn or runtime event.
 
 If this checkout is branch `jakeminator123/work`: do not push `main`. At each new user turn, run `node tools/croupier-inbox.mjs check` once; initialize via `ping-croupier` if needed. If that check returns `credential_unreadable`, retry the same read-only command once with approved access to the configured token file; this is a local file permission issue, not a reason to create a GitLab token. Shared fetch cache lasts 30 seconds; read cursors stay per chat. Nothing relevant: continue silently. No polling or checks on agent/tool updates. Missing API: report once, no automatic browser fallback on ordinary turns. Only the addressed agent answers; CC/all is informational. Read `ping-croupier` for replies/setup. Wiki: https://gitlab.com/scout-gg/croupier/-/wikis/home
 
+`.croupier-inbox/` is ignored local inbox state, not a media archive or general
+scratch area. New files there should be only small identities, read cursors,
+shared cache, chef state, or message drafts. Do not place Git worktrees,
+downloads, generated media, or test builds inside it. Existing small QA evidence
+may remain. Exclude the directory from broad file searches and indexing; use
+the inbox command or a targeted state-file read when needed.
+
 On `jakeminator123/work`, deliver each approved commit to canonical GitLab and
 the private reference copy `Jakeminator123/github-work` with
 `node tools/push-work-mirrors.mjs`; it pushes GitLab first and verifies matching
