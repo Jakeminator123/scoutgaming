@@ -26,6 +26,7 @@ jobs:
           cache: npm
           cache-dependency-path: lab/package-lock.json
       - run: npm --prefix lab ci
+      - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
       - run: npm --prefix lab test
       - run: npm --prefix lab run build
       - run: npm --prefix open-claw/lab test
@@ -43,6 +44,7 @@ jobs:
           cache-dependency-path: lab/package-lock.json
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg jq
       - run: npm --prefix lab ci
+      - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
       - name: Build the real studio used by launcher regression tests
         run: npm --prefix lab run build
       - name: Shared pre-commit regression suite
@@ -54,3 +56,21 @@ jobs:
       - run: node test/table-http.mjs
       - run: node test/split-rules.mjs
       - run: node --test test/croupier-inbox.mjs test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs
+
+  lipsync-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
+      - run: npm --prefix services/astrid-gpu-worker/gateway test
+      - run: python -m unittest discover -s services/astrid-gpu-worker/tests -v
+      - run: python -m compileall -q services/astrid-gpu-worker/workers services/astrid-gpu-worker/handler.py
+      - run: bash -n services/astrid-gpu-worker/fetch/fetch-musetalk.sh

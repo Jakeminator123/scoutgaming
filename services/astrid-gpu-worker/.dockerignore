@@ -1,0 +1,11 @@
+.git
+README.md
+gateway
+tests
+docs
+.github
+.env
+.env.*
+**/__pycache__
+**/node_modules
+**/*.pyc

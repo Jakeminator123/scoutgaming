@@ -1,0 +1,101 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, basename, join, resolve } from 'node:path';
+import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from '../web/generated-speech-stream.mjs';
+import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
+
+const secret = 'isolated-stream-secret-at-least-32-characters';
+async function fixture(t, options = {}) {
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-stream-test-'));
+  let relayOptions, service, owner = 'owner-one', fresh = true, sourceCalls = 0, aborted = false, written = 0;
+  const config = { directory, workerSecret: secret, ticketSecret: secret, origin: 'http://127.0.0.1:4173', apiKey: 'fixture', voiceId: 'voice', modelId: 'model' };
+  const services = [];
+  const relay = { status: () => ({ available: 1 }), close() {}, openSource: () => ({ writePCM: async b => { written += b.length; }, end() {}, abort() { aborted = true; } }) };
+  const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10,
+    resolveOwner: req => req.owner,
+    attachRelay: (_, value) => { relayOptions = value; return relay; },
+    pcmSource: options.pcmSource ?? (async function*({ beforeCostly }) { await beforeCostly(); sourceCalls++; yield new Uint8Array(48); }),
+  }).then(value => { services.push(value); return value; });
+  service = await construct();
+  const input = (requestId = 'test-request') => ({ requestId, dealerId: 'astrid', text: 'A test reply.', owner, playerId: 'player-one', beforeCostly: async () => { if (!fresh) throw Error('stale'); } });
+  const request = (d, who = owner) => ({ owner: who, headers: { 'sec-websocket-protocol': `astrid-v2, ticket.${d.ticket}` } });
+  t.after(async () => { services.forEach(s => s.close()); assert.equal(dirname(directory), resolve(tmpdir())); assert.match(basename(directory), /^croupier-stream-test-/); await rm(directory, { recursive: true, force: true }); });
+  return { config, directory, service, construct, input, request, get relayOptions() { return relayOptions; },
+    get sourceCalls() { return sourceCalls; }, get aborted() { return aborted; }, get written() { return written; }, stale() { fresh = false; } };
+}
+
+test('prepare is unpaid, exact expiry is signed, cookie owner required; ready begins source', async t => {
+  const f = await fixture(t), descriptor = await f.service.prepare(f.input());
+  assert.equal(f.sourceCalls, 0); assert.match(descriptor.id, /^[a-f0-9]{32}$/);
+  assert.equal(JSON.parse(Buffer.from(descriptor.ticket.split('.')[0], 'base64url')).exp, descriptor.expiresAt);
+  const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
+  assert.equal(identity.sessionId, descriptor.id);
+  await f.relayOptions.onSessionReady({ ...identity, id: 'wire-id', signal: new AbortController().signal });
+  assert.equal(f.sourceCalls, 1); assert.equal(f.written, 48);
+});
+
+test('foreign websocket cookie and stale state never enter paid source', async t => {
+  const f = await fixture(t), descriptor = await f.service.prepare(f.input());
+  assert.equal(await f.relayOptions.authenticateClient(f.request(descriptor, 'foreign-owner')), null);
+  const second = await f.service.prepare(f.input('second'));
+  f.stale(); assert.equal(await f.relayOptions.authenticateClient(f.request(second)), null);
+  assert.equal(f.sourceCalls, 0);
+});
+
+test('durable request is exclusive after restart and across fullfile capability', async t => {
+  const f = await fixture(t); await f.service.prepare(f.input()); f.service.close();
+  const restarted = await f.construct();
+  await assert.rejects(restarted.prepare(f.input()), /already_attempted/);
+  let fullfileCalls = 0;
+  const oldService = createGeneratedSpeechService({ directory: f.directory }, { provider: { generate() { fullfileCalls++; throw Error('must not call'); } } });
+  await assert.rejects(oldService.generate({ ...f.input(), text: 'A test reply.' }), /conflict|attempted/);
+  assert.equal(fullfileCalls, 0); assert.equal((await readdir(f.directory)).filter(v => v.endsWith('.request.json')).length, 1);
+});
+
+test('an earlier fullfile paid attempt blocks same request in streaming mode', async t => {
+  const f = await fixture(t); let fullfileCalls = 0;
+  const oldService = createGeneratedSpeechService({ directory: f.directory }, { provider: { generate() { fullfileCalls++; throw Error('simulated provider failure'); } } });
+  await assert.rejects(oldService.generate(f.input()));
+  await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
+  assert.equal(fullfileCalls, 1); assert.equal(f.sourceCalls, 0);
+});
+
+test('concurrent prepares for same owner preserve only newest reservation', async t => {
+  const f = await fixture(t);
+  const results = await Promise.allSettled([f.service.prepare(f.input('older')), f.service.prepare(f.input('newer'))]);
+  assert.equal(results[0].status, 'rejected'); assert.equal(results[1].status, 'fulfilled'); assert.equal(f.service.status().pending, 1);
+});
+
+test('pending prepares count toward bounded capacity before disk awaits', async t => {
+  const f = await fixture(t); let release;
+  const held = new Promise(resolve => { release = resolve; });
+  const pending = Array.from({ length: 32 }, (_, i) => f.service.prepare({ ...f.input(`request-${i}`), owner: `owner-${i}`, beforeCostly: () => held }));
+  await assert.rejects(f.service.prepare({ ...f.input('excess'), owner: 'owner-excess' }), /stream_busy/);
+  release(); await Promise.all(pending); assert.equal(f.service.status().pending, 32);
+});
+
+test('after TTS EOF later round or memory staleness still cancels rendering', async t => {
+  const f = await fixture(t), descriptor = await f.service.prepare(f.input());
+  const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
+  await f.relayOptions.onSessionReady({ ...identity, id: 'wire-id', signal: new AbortController().signal });
+  assert.equal(f.sourceCalls, 1); f.stale();
+  await new Promise(resolve => setTimeout(resolve, 40));
+  assert.equal(f.aborted, true); assert.equal(f.service.status().pending, 0);
+});
+
+test('disconnect and logout cancel exact prepared request', async t => {
+  const f = await fixture(t); const controller = new AbortController();
+  const descriptor = await f.service.prepare({ ...f.input(), signal: controller.signal });
+  controller.abort(); assert.equal(await f.relayOptions.authenticateClient(f.request(descriptor)), null);
+  const next = await f.service.prepare(f.input('next')); f.service.cancelPlayer('player-one');
+  assert.equal(await f.relayOptions.authenticateClient(f.request(next)), null); assert.equal(f.sourceCalls, 0);
+});
+
+test('opt-in preserves local/cloud guards and never enables cloud guests', () => {
+  const env = { CROUPIER_GENERATED_SPEECH_STREAMING: '1', CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', HOST: '127.0.0.1', CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'stream-fixture'), CARTESIA_API_KEY: 'fixture', CROUPIER_SPEECH_STREAM_WORKER_SECRET: secret, CROUPIER_SPEECH_STREAM_TICKET_SECRET: secret };
+  assert.equal(generatedSpeechStreamConfiguration(env).configured, true);
+  assert.equal(generatedSpeechStreamConfiguration({ ...env, CROUPIER_GENERATED_SPEECH_STREAMING: '' }).enabled, false);
+  assert.equal(generatedSpeechStreamConfiguration({ ...env, HOST: '0.0.0.0', NODE_ENV: 'production', PUBLIC_URL: 'https://example.test', CROUPIER_CLOUD_GENERATED_SPEECH: '1', DEMO_GUEST_ACCESS: '1' }).configured, false);
+});

@@ -5688,3 +5688,34 @@ publicerad. Ingen lokal databas har skickats till molnet. För en ren Vercel-
 drift krävs dessutom transaktionssäker extern SQL-lagring, objektlagring för
 uppladdningar/klipp och en beständig jobbväg för lång renderering. Lokal
 produkt och Lab är fortsatt stoppade.
+
+## 2026-09-28 — opt-in strömmad läppsynk
+
+Emils fristående worker har kopierats med källproveniens till
+`services/astrid-gpu-worker`. Den nya vägen skickar Cartesia-PCM löpande till
+MuseTalk och returnerar H264/AAC i samma fragmenterade MP4. Spelservern lämnar
+en signerad, sessionsbunden biljett före TTS. Delad spelare kontrollerar
+dealerposition före anslutning och uppspelning och använder en hörbar video.
+Beständig deduplicering delas med filläget; logout, glömt minne, ändrad runda,
+profilbyte och avbruten uppspelning stoppar arbetet. Funktionen är avstängd som
+standard. Labbets filbrygga annonserar inte streamingstöd.
+
+Isolerad integration: hela pre-commit-flödet, labbets produktionsbygge och
+`audit-dealer-sync --probe` passerade. Två browserprov med riktig produktservice,
+Python och FFmpeg gav första bild efter 897 respektive 1 031 ms, före ljudslut.
+Källljud och modellrutor var syntetiska: detta är inte uppmätt GPU-latens eller
+visuell läppsynkacceptans. Inga befintliga dealerassets, kalibreringar eller
+baslinjer ändrades. Produkt- och labbservrarna förblir stoppade.
+
+Den aktuella privata RunPod-talkonfigurationen gav HTTP 200 vid läsande
+hälsokontroll. Ingen GPU-image har byggts/publicerats och inga betalda jobb
+startats. Separat test-endpoint, kostnadsram, verklig kvalitet/latens och alla
+fyra dealers tvåspelsrepetition återstår. Molnscaffoldens startspärr är kvar;
+dess proxy saknar ännu WebSocket-stöd. Integrationens pilot kräver samma origin
+för spel och streaming. Se `docs/STREAMING-INTEGRATION.md` för driftkrav.
+
+Sammanförandet med `c3168ed` behåller BO:s nya ursprungs- och sessionskontroller.
+Molnscaffoldens sex tester och medieproben passerade även i den gemensamma
+arbetskopian. HTTP-provets miljöisolering har rättats för checkoutar med privat
+talkonfiguration; dess nätspärr blockerade externa anrop även före rättningen.
+Leveranscommiten kör hela pre-commit-flödet igen.

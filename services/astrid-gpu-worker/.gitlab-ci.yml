@@ -1,0 +1,39 @@
+# Bygger imagen i GitLab CI och pushar till projektets Container Registry.
+# RunPod hämtar den därifrån (RunPod kan bara bygga direkt från GitHub, inte GitLab).
+#
+# Kaniko i stället för docker-in-docker: behöver ingen privilegierad runner och
+# fungerar på gitlab.com:s delade runners. Imagen blir ~10 GB (torch-bas + 4 GB
+# vikter) — därför medium-runnern; den lilla får slut på disk.
+#
+# Taggar: <kort sha> (för att peka endpointen på ett exakt bygge) och latest.
+# Lagercache i registret: ändras bara koden byggs inte vikterna om (~3 min i stället för ~20).
+
+stages: [build]
+
+build-image:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  tags: [saas-linux-medium-amd64]      # självhostad runner: byt till er tagg; disk ≥ 40 GB
+  timeout: 2h                          # första bygget hämtar allt; sedan går det på cache
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+  variables:
+    GIT_DEPTH: "1"
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf '%s:%s' "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+      --destination "${CI_REGISTRY_IMAGE}:latest"
+      --cache=true
+      --cache-repo "${CI_REGISTRY_IMAGE}/cache"
+      --cache-ttl 720h
+      --snapshot-mode=redo
+      --compressed-caching=false
+    - echo "Klar. Peka RunPod-endpointen på ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"

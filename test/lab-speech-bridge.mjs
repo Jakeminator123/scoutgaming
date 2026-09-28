@@ -112,6 +112,23 @@ test('generated media is bound to exact package/request/text and validated on bo
   assert.equal(h.received[0].signal.aborted, false);
 });
 
+test('linked lab refuses live stream credentials instead of downgrading to silent text', async t => {
+  for (const extra of [
+    { visualMode: 'generated-lipsync-stream-preview', speechStream: { kind: 'generated-speech-stream', ticket: 'private-ticket', url: '/speech-stream' } },
+    { visualMode: 'generated-lipsync-stream-preview' },
+    { speechStream: { ticket: 'private-ticket' }, speechPackage: generated().reply.speechPackage },
+  ]) {
+    const h = harness(t); await h.attach(); await h.submit();
+    assert.equal(await h.native.ready(choice('request-1', extra)), false);
+    assert.equal(JSON.stringify(h.wire).includes('private-ticket'), false);
+    await h.pump();
+    assert.equal(h.received.length, 0); assert.equal(h.loads.length, 0);
+    assert.equal(h.submitted[0].signal.aborted, true);
+    assert.equal(h.statuses.at(-1).state, 'failed');
+    assert.equal(h.lab.submit(input()), false, 'unsupported delivery must not retry paid work');
+  }
+});
+
 test('native refuses mismatched package ID/text/profile and arbitrary remote media URLs without loading', async t => {
   for (const mutate of [r => { r.speechPackage.generation.requestId = 'other-request'; }, r => { r.exactText = 'Olika text.'; },
     r => { r.speechPackage.audio.url = 'https://external.example/private'; }, r => { r.speechPackage.reviewStatus = 'approved'; },

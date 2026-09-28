@@ -56,3 +56,19 @@ test('recorded lines and other dealers do not enter generated preview', async ()
   f.data.status.dealerId = 'astrid'; f.data.decide = async () => ({ kind: 'recordedLine' });
   assert.equal((await completeChatWithSpeech(f.data)).speechPackage, undefined); assert.equal(f.jobs, 0);
 });
+
+test('negotiated stream returns descriptor without falling back to fullfile generation', async () => {
+  const f = fixture(); let prepared = 0;
+  f.data.streamService = { prepare: async value => { await value.beforeCostly(); prepared++; return { kind: 'generated-speech-stream' }; } };
+  const result = await completeChatWithSpeech(f.data);
+  assert.equal(result.visualMode, 'generated-lipsync-stream-preview'); assert.ok(result.speechStream);
+  assert.equal(prepared, 1); assert.equal(f.jobs, 0);
+  f.data.streamService.prepare = async () => { throw Error('worker unavailable'); };
+  await assert.rejects(completeChatWithSpeech(f.data), /worker unavailable/); assert.equal(f.jobs, 0);
+});
+
+test('without negotiated stream service existing fullfile API is retained', async () => {
+  const f = fixture();
+  const result = await completeChatWithSpeech(f.data);
+  assert.ok(result.speechPackage); assert.equal(result.speechStream, undefined); assert.equal(f.jobs, 1);
+});

@@ -1,3 +1,5 @@
 # Git Bash reads these files directly; CRLF can disable `set -e` and corrupt paths.
 *.sh text eol=lf
 .githooks/* text eol=lf
+# The deterministic manifest check compares its canonical LF serialization.
+emil/dealklipp-v1/lab-video-manifest.json text eol=lf

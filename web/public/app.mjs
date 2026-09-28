@@ -2165,12 +2165,39 @@ function playNeutralTts(exactText, signal) {
 async function playChatDecision(decision, signal, jobId) {
   if (decision.kind === 'silence') return;
   localPresentation?.state({ speech: true, ready: false });
-  updatePoseState({ dealerPose: decision.kind === 'generatedText' && !decision.speechPackage ? 'standard-idle' : 'speech',
+  updatePoseState({ dealerPose: decision.kind === 'generatedText' && !decision.speechPackage && !decision.speechStream ? 'standard-idle' : 'speech',
     speechOwner: `chat-${jobId}`, idlePresented: null }, 'chat-speech-started');
   try {
     if (decision.kind === 'generatedText') {
       speaking = true;
       try {
+        if (decision.visualMode === 'generated-lipsync-stream-preview' || decision.speechStream) {
+          if (decision.visualMode !== 'generated-lipsync-stream-preview' || !decision.speechStream || decision.speechPackage
+            || decision.requestId !== jobId) throw new Error('invalid_speech_stream_decision');
+          const beforeStreamStart = async () => {
+            const check = () => {
+              const state = speechPoseGate.state, job = speechPoseGate.get(jobId), identity = poseIdentity();
+              if (signal?.aborted || !job || job.status !== 'speaking' || job.dealerId !== identity.dealerId
+                || job.sessionRevision !== identity.sessionRevision || job.roundRevision !== identity.roundRevision
+                || state.speechOwner !== `chat-${jobId}` || state.actionOwner !== 'none' || state.dealerPose !== 'speech'
+                || !state.visible || state.muted) throw new Error('stale_speech_stream_pose');
+            };
+            check(); await pendingChatReplies.get(jobId)?.beforeStart?.(); check();
+          };
+          await playGeneratedSpeech(decision.speechStream, { exactText: decision.exactText, dealerId: DEALER.key,
+            requestId: jobId, mount: $('#scene'), signal, beforeStart: beforeStreamStart,
+            onStart: text => {
+              const pending = pendingChatReplies.get(jobId);
+              if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));
+              setChatStatus(`${DEALER.name} svarar`); showCaption(text, 27000);
+            },
+            onReceipt: receipt => {
+              const pending = pendingChatReplies.get(jobId); if (pending) pending.playbackReceipt = receipt;
+              nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync-stream',
+                synthetic: Boolean(pending?.synthetic), ...receipt });
+            },
+          });
+        } else
         if (decision.visualMode === 'generated-lipsync-preview' && decision.speechPackage) {
           await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
             beforeStart: pendingChatReplies.get(jobId)?.beforeStart,
@@ -2316,7 +2343,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     if (received.record.status === 'cancelled') throw new Error(received.record.reason);
     const r = await fetch('/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: localPresentationEnabled ? 'application/x-ndjson' : 'application/json' }, signal: controller.signal,
-      body: JSON.stringify({ requestId, message, history, dealer: DEALER.key,
+      body: JSON.stringify({ requestId, message, history, dealer: DEALER.key, acceptsSpeechStream: true,
         sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision,
         ...(images.length ? { observation: { version: 1, turnId: requestId, consentTurnId: requestId, profileRevision, images } } : {}) }),
     });
@@ -2354,7 +2381,8 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     if (previewRow?.classList.contains('pending')) previewRow.remove();
     const reason = speechPoseGate.get(requestId)?.reason || error.message || 'chat-failed';
     speechPoseGate.cancel(requestId, reason);
-    setChatStatus(chatFailureMessage(reason));
+    setChatStatus(reason === 'speech_autoplay_blocked'
+      ? 'Webbläsaren blockerade ljudet. Tillåt ljud för sidan och skicka frågan igen.' : chatFailureMessage(reason));
     nativeObservation.emit('status', { state: 'chat-failed', requestId, reason }, chatCorrelation);
     return false;
   } finally {
