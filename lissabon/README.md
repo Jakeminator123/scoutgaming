@@ -24,8 +24,14 @@ generera tal. Produkt-speech-relayn visar `reachable: null` eftersom dess
 smala endpoint kräver ett riktigt modellanrop för att provas; det betyder
 inte anslutningsfel. `--no-open` används från Codex. `--skip-build` är bara för
 utveckling efter ett verifierat `npm --prefix lab run build`.
-En redan körande Lissabon öppnas igen. Andra processer på 4200/4201 stoppas
-aldrig automatiskt; avsluta deras startprocess först.
+En redan körande Lissabon skriver sin befintliga adress utan att öppna ännu
+en flik. En gemensam sessionsspärr tillåter högst ett produkt-/labbpar åt
+gången, även om en QA-start väljer andra portar. Stoppa det aktiva paret
+före miljöbyte. Andra processer stoppas aldrig automatiskt.
+
+Codex använder `--no-open` och återanvänder befintliga spel- och labbflikar.
+Rätt adress laddas om; en äldre adress ersätts i samma flik. Behåll en
+spelflik och en labbflik. Efter begärd avstängning lämnas servrarna avstängda.
 
 Kräver Node 22.16+ med SQLite-stöd, `npm --prefix lab ci`, Emils befintliga
 mediefiler och projektets privata miljöinställningar. Nycklar kopieras inte
@@ -112,6 +118,15 @@ i andra sparade projekt bevaras. Probe aktiveras separat med **Automatiskt**.
 produktfunktion eller inställning i OpenClaw-dashboarden.
 
 ### Fiktiva minnen och automatiskt Probe-prov
+
+Den bevarade testprofilen från 28 september återstartas via uppgifterna i
+ignorerade `lissabon/data/qa-recovery.json`. Den läser samma sparade projekt
+som vanliga Lissabon, men har en separat spelar-DB och använder **localhost**.
+Dess labb finns på `http://localhost:4211/lissabon`. Starta inte den samtidigt
+som 4200/4201. Inställningarna behöver inte kopieras mellan miljöerna.
+
+Kommandot nedan skapar ett **nytt, tillfälligt** prov och ska inte användas för
+att återstarta den bevarade profilen:
 
 `node tools/probe-qa.mjs --speech --demo-memories` startar en separat,
 tillfällig miljö med profilen **Jakob · TESTMINNEN** på

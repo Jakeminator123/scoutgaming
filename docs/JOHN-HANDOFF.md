@@ -1,3 +1,38 @@
+## 2026-09-28 — Ett lokalt serverpar och återanvända flikar
+
+Jakob bad att alla lokala devservrar stoppas och att nya dubbletter spärras.
+4200/4201 och 4210/4211 stoppades genom respektive startprocess. TCP-kontroll
+visade även 4173, 4188, 4192/4194, 4196/4197, 4198/4199, 4212 och 4220 stängda.
+Servrarna ska lämnas avstängda tills en ny start begärs. Profil, minnen och
+projekt är bevarade; den privata QA-återstartspekaren är märkt `stopped`.
+
+Lissabon, ansluten QA, offline-jämförelsen och fristående Start-Labb delar nu
+en atomisk sessionspost i ignorerade `lissabon/data/.local-session.sqlite`.
+Spärren tas före delat bygge/start och gäller också olika portval. Ägare,
+bygg-/serverbarn och ärvda Node-workers registreras. En kraschad ägares post
+återtas först när registrerade processer och gamla portar är fria. Ingen
+levande process dödas för att ge plats åt en ny start. Gamla sena barn nekas
+före sitt program om deras session redan ersatts.
+
+Sex fokuserade sessionsprov kontrollerade samtidiga starter (fyra kandidater,
+exakt en vinnare), olika portar, fristående labb, stale-återtagning, kvarvarande
+port/barn, gamla barn efter övertagande och release vid förberedelsefel.
+Samlad launcherregression gav **29/29 gröna tester**, inklusive ett riktigt
+kortlivat Web+Next-par och isolerad jämförelse. Syntax, PowerShell-parser
+och diffkontroll passerade. Testtjänsterna är stoppade. Sessions-/launcherproven
+ingår nu i pre-commit. Ingen ny Render-deploy gjordes.
+
+AGENTS.md och Cursor-regeln kräver `--no-open` vid Codex-start samt inventering
+och återanvändning av befintlig spel-/labbflik. Rätt URL laddas om; en äldre
+URL ersätts i samma flik efter att pågående inmatning/spel bevarats. Befintlig
+Lissabon eller Start-Labb skriver bara adressen vid upprepad start.
+
+Tidigare arbete är bevarat: Director `e6ea969` är live och vanlig chatt har
+verifierat testminnen. `74542df` låter QA och vanliga Lissabon dela sparade
+inställningar med separat spelar-DB. De två miljöerna körs framöver en i taget.
+Kamerakodens separata commit `d02758a` är fortsatt avstängd i drift; dess
+återstående flaggkoppling/deploy sköts av kameraagenten.
+
 ## 2026-09-28 — Chattminnet driftsatt och verifierat i Astrids spelare
 
 Director kör nu `e6ea969dcb06926e31a0efac8079fb74e86228ce`, Render-deploy

@@ -12,6 +12,22 @@ mentions are provenance, not instructions to retrieve archived material.
 Read source text and relevant metadata selectively; do not scan media binaries
 or generated artifacts for ordinary documentation questions.
 
+## Local servers and browser tabs
+
+Run only one local Croupier product/lab server pair at a time, including QA
+on different ports. Use the coordinated launchers and their session guard;
+do not bypass it with direct server commands, another port or deleted state.
+Stop the current pair before switching environments, preserving saved data.
+Short-lived isolated test fixtures must clean up their own processes.
+
+From Codex, start Lissabon with `--no-open`. Before opening browser tabs,
+inspect the connected browser and reuse the existing Croupier game or lab
+tab for that surface. Reload when its URL is already correct; navigate that
+same tab when replacing an older URL. Preserve drafts and ongoing play.
+Keep one game tab and one lab tab; replace obsolete agent-created duplicates
+after the replacement works. Do not close unrelated user tabs. A request to
+stop servers leaves them stopped until a subsequent start is requested.
+
 Explicit `/chef` or `$chef`: follow `.agents/skills/chef/SKILL.md`. Before shared integration/push, run `node tools/croupier-chef.mjs status`; coordinate with the registered owner if another chat holds the role. No automatic role activation, polling or broad agent wakeups.
 
 For OpenClaw installation, configuration, Gateway, MCP or runtime work, first

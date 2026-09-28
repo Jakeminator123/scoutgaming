@@ -14,6 +14,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspect } from 'node:util';
 import { installPartnerApi } from '../web/partner-api.mjs';
+import { acquireLocalSession } from '../open-claw/lab/deploy/local-session.mjs';
 
 const DEFAULT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
@@ -132,27 +133,32 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
     if (!supplied.isDirectory() || supplied.isSymbolicLink()) throw new Error('Comparison media directory must be an existing regular directory.');
   }
   if (gamePort === labPort) throw new Error('Game and lab need separate ports.');
-  await unusedPort(gamePort, 'localhost');
-  if (startLab) await unusedPort(labPort, '127.0.0.1');
-  const runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-comparison-'));
+  const session = await acquireLocalSession({ repoRoot, productPort: gamePort, labPort });
+  let runDir;
+  try {
+    await unusedPort(gamePort, 'localhost');
+    if (startLab) await unusedPort(labPort, '127.0.0.1');
+    runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-comparison-'));
+  } catch (error) { await session.release(); throw error; }
   const dataDir = join(runDir, 'game');
   const gameUrl = `http://localhost:${gamePort}`, labUrl = `http://127.0.0.1:${labPort}`;
   const urls = Object.freeze({ game: gameUrl, original: `${gameUrl}/?dealer=astrid`, v2: `${gameUrl}/v2/?dealer=astrid`, backoffice: `${gameUrl}/bo/`, lab: labUrl });
   const password = randomBytes(24).toString('base64url'), username = 'comparison-qa', email = 'comparison@example.invalid';
   const readToken = randomBytes(32).toString('base64url');
-  const env = isolatedEnv(runDir, [gamePort, labPort]);
+  const env = session.environment(isolatedEnv(runDir, [gamePort, labPort]));
   if (generationDirectory) env.LAB_VIDEO_ARCHIVE = generationDirectory;
   env.CROUPIER_GENERATIONS_DIR = generationDirectory || env.LAB_VIDEO_ARCHIVE;
-  let gameChild, labChild, stopped = false, labStarting = null;
+  let gameChild, labChild, stopped = false, stopping, labStarting = null;
   let credentials;
-  const stop = async () => {
-    if (stopped) return;
+  const stop = () => stopping ??= (async () => {
     stopped = true;
-    await stopChild(labChild); await stopChild(gameChild);
-    // Delete only the mkdtemp directory created above, never a user-supplied path.
-    if (dirname(resolve(runDir)) !== resolve(tmpdir()) || !basename(runDir).startsWith('croupier-comparison-')) throw new Error('Invalid comparison cleanup path.');
-    await fsPromises.rm(runDir, { recursive: true, force: true });
-  };
+    try {
+      await stopChild(labChild); await stopChild(gameChild);
+      // Delete only the mkdtemp directory created above, never a user-supplied path.
+      if (dirname(resolve(runDir)) !== resolve(tmpdir()) || !basename(runDir).startsWith('croupier-comparison-')) throw new Error('Invalid comparison cleanup path.');
+      await fsPromises.rm(runDir, { recursive: true, force: true });
+    } finally { await session.release(); }
+  })();
   const startBuiltLab = async () => {
     if (stopped) throw new Error('Comparison fixture has stopped.');
     if (labStarting) return labStarting;
@@ -167,7 +173,7 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
           BETTALOTTO_PARTNER_BASE_URL: gameUrl, BETTALOTTO_PARTNER_KEY_ID: credentials.partner.keyId,
           BETTALOTTO_PARTNER_SECRET: credentials.partner.secret, BETTALOTTO_PARTNER_PLAYER_ID: credentials.partner.playerId,
           BETTALOTTO_API: readToken },
-      }, 'Ready in', child => { labChild = child; });
+      }, 'Ready in', child => { labChild = child; session.trackChild(child); });
       return labUrl;
     })();
     try { return await labStarting; } catch (error) { labChild = null; throw error; } finally { labStarting = null; }
@@ -183,7 +189,7 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
     gameChild = await startChild([join(repoRoot, 'web/server.mjs')], {
       cwd: runDir, env: { ...env, NODE_ENV: 'development', CROUPIER_DATA_DIR: dataDir, HOST: 'localhost', PORT: String(gamePort),
         PUBLIC_URL: gameUrl, BO_URL: gameUrl, DEMO_GUEST_ACCESS: '1', GENERATIONS_READ_TOKENS: createHash('sha256').update(readToken).digest('hex') },
-    }, 'croupier demo on', child => { gameChild = child; });
+    }, 'croupier demo on', child => { gameChild = child; session.trackChild(child); });
     const db = new DatabaseSync(join(dataDir, 'croupier.db')), boDb = new DatabaseSync(join(dataDir, 'craig.db'));
     try {
       const secret = Buffer.from(boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get().v, 'hex');

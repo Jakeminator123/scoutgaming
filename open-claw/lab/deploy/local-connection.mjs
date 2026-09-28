@@ -17,6 +17,7 @@ import { parseEnv } from 'node:util';
 import { boundedJson } from '../src/openclaw.mjs';
 import { gatewayEndpoint, isLoopback } from '../src/settings.mjs';
 import { installPartnerApi } from '../../../web/partner-api.mjs';
+import { acquireLocalSession } from './local-session.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const DEFAULT_PRODUCT_PORT = 4196;
@@ -358,11 +359,12 @@ async function stopChild(child) {
   try { await exited; } finally { clearTimeout(force); }
 }
 
-async function startChild(specification) {
+async function startChild(specification, onSpawn) {
   const child = spawn(specification.command, specification.args, {
     cwd: specification.cwd, env: specification.env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
   });
   try {
+    onSpawn?.(child);
     await new Promise((resolveReady, reject) => {
       const timer = setTimeout(() => reject(new Error('An isolated connection process did not become ready.')), 30000);
       child.stdout.on('data', chunk => { if (String(chunk).includes(specification.readyText)) { clearTimeout(timer); resolveReady(); } });
@@ -407,40 +409,49 @@ function configureSyntheticPartner(specs, repoRoot) {
 
 export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env,
   productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, studioDataDir, playerDataDir,
-  streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1' } = {}) {
+  streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1', prepare } = {}) {
   validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
+  if (prepare !== undefined && typeof prepare !== 'function') throw new Error('Invalid connection preparation.');
   if (productPort === labPort) throw new Error('Product and Next Eventstudio need separate ports.');
-  await unusedPort(productPort); await unusedPort(labPort);
-  const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech });
-  requireGeneratedSpeechConfiguration(configuration);
-  if (!report.labDirector.configured) throw new Error('LAB_REMOTE_URL and LAB_REMOTE_TOKEN are required for the connected Next Eventstudio.');
-  if (report.productSpeechRelay.urlPresent !== report.productSpeechRelay.credentialPresent) {
-    throw new Error('OPENCLAW_PRODUCT_SPEECH_URL and OPENCLAW_PRODUCT_SPEECH_TOKEN must be configured together.');
-  }
-  if (!fs.existsSync(join(repoRoot, 'lab', labDistDir, 'BUILD_ID'))) {
-    throw new Error('A verified Next production build is required; run npm --prefix lab run build before starting the isolated connection.');
-  }
-  if ((report.productGateway.configured || report.productSpeechRelay.configured) && report.productGateway.role.status !== 'expected') {
-    throw new Error('Refusing a connected product start because the configured OpenClaw agent has a conflicting runtime contract.');
-  }
-  const runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-openclaw-connection-'));
-  const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
-  let product, lab, stopped = false;
-  const stop = async () => {
-    if (stopped) return;
-    stopped = true;
-    await stopChild(lab); await stopChild(product);
-    const absolute = resolve(runDir);
-    if (dirname(absolute) !== resolve(tmpdir()) || !basename(absolute).startsWith('croupier-openclaw-connection-')) throw new Error('Invalid isolated connection cleanup path.');
-    await fsPromises.rm(absolute, { recursive: true, force: true });
-  };
+  for (const port of [productPort, labPort]) if (RESERVED_SHARED_PORTS.has(port)) throw new Error(`Port ${port} is reserved for the shared comparison and will not be touched.`);
+  const session = await acquireLocalSession({ repoRoot, productPort, labPort });
+  let product, lab, runDir, stopping;
+  const stop = () => stopping ??= (async () => {
+    try {
+      await stopChild(lab); await stopChild(product);
+      if (runDir) {
+        const absolute = resolve(runDir);
+        if (dirname(absolute) !== resolve(tmpdir()) || !basename(absolute).startsWith('croupier-openclaw-connection-')) throw new Error('Invalid isolated connection cleanup path.');
+        await fsPromises.rm(absolute, { recursive: true, force: true });
+      }
+    } finally { await session.release(); }
+  })();
   try {
+    await unusedPort(productPort); await unusedPort(labPort);
+    const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech });
+    requireGeneratedSpeechConfiguration(configuration);
+    if (!report.labDirector.configured) throw new Error('LAB_REMOTE_URL and LAB_REMOTE_TOKEN are required for the connected Next Eventstudio.');
+    if (report.productSpeechRelay.urlPresent !== report.productSpeechRelay.credentialPresent) {
+      throw new Error('OPENCLAW_PRODUCT_SPEECH_URL and OPENCLAW_PRODUCT_SPEECH_TOKEN must be configured together.');
+    }
+    if ((report.productGateway.configured || report.productSpeechRelay.configured) && report.productGateway.role.status !== 'expected') {
+      throw new Error('Refusing a connected product start because the configured OpenClaw agent has a conflicting runtime contract.');
+    }
+    // Lissabon builds only after acquiring the same lease as every QA launcher.
+    await prepare?.(session);
+    if (!fs.existsSync(join(repoRoot, 'lab', labDistDir, 'BUILD_ID'))) {
+      throw new Error('A verified Next production build is required; run npm --prefix lab run build before starting the isolated connection.');
+    }
+    runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-openclaw-connection-'));
+    const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
+    specs.product.env = session.environment(specs.product.env);
+    specs.lab.env = session.environment(specs.lab.env);
     await Promise.all([specs.product.dataDir, specs.lab.dataDir, join(runDir, 'generations'),
       ...(generatedSpeech ? [specs.product.env.CROUPIER_GENERATED_SPEECH_DIR, specs.lab.env.CROUPIER_GENERATED_SPEECH_DIR] : []),
     ].map(directory => fsPromises.mkdir(directory, { recursive: true })));
-    product = await startChild(specs.product);
+    product = await startChild(specs.product, session.trackChild);
     configureSyntheticPartner(specs, repoRoot);
-    lab = await startChild(specs.lab);
+    lab = await startChild(specs.lab, session.trackChild);
     return {
       urls: Object.freeze(specs.urls), runDir, report, stop,
       get pids() { return { product: product?.pid ?? null, lab: lab?.pid ?? null }; },

@@ -8,6 +8,14 @@ i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 ## En aktiv miljö efter städningen 2026-09-25
 
+**Uppdatering 2026-09-28:** Jakob har stoppat de lokala devservrarna. Högst
+ett produkt-/labbpar får köras åt gången. Lissabon-startaren, denna helper
+och offline-jämförelsens startare delar en sessionsspärr även för olika
+portval. Spärren återtas först när ägare, registrerade barn och gamla portar
+är fria; en levande process stoppas aldrig automatiskt. Codex använder
+`--no-open` och återanvänder befintliga spel-/labbflikar vid nästa start.
+Se [aktuell Lissabon-start](../../../lissabon/README.md).
+
 - Spela och chatta: <http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
 - Konfigurera och observera samma spelare: <http://127.0.0.1:4201/activity>.
 - Behåll dessa två flikar. Händelselogg → Anslut öppnar den kopplade spelfliken
@@ -118,9 +126,9 @@ starta den anslutna produkten. En adapterhemlighet vidarebefordras endast till
 produktbarnets taladapter; presentationsadaptern använder Directors befintliga
 behörighet. Detta skapar ingen ny scoped token eller ändrar modellkonfiguration.
 
-Port 4192 och 4194 avvisas uttryckligen. Helpern ändrar inte
-`tools/start-local-comparison.mjs`; offline-jämförelsen behåller sin fulla
-externa nätspärr, blockerade env-filer och tomma providerinställningar.
+Port 4192 och 4194 avvisas uttryckligen. `tools/start-local-comparison.mjs`
+använder samma sessionsspärr; offline-jämförelsen behåller sin fulla externa
+nätspärr, blockerade env-filer och tomma providerinställningar.
 
 ### Valfritt genererat tal och läppsynk i den isolerade körningen
 

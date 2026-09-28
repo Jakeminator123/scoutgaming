@@ -27,3 +27,4 @@ node --test test/native-observation.mjs test/clip-mapping.mjs test/partner-launc
 node --test test/local-comparison-fixture.mjs test/generation-media.mjs
 node --test test/local-presentation.mjs
 node --test test/lissabon-profiles.mjs test/player-results.mjs lissabon/start.test.mjs
+node --test open-claw/lab/deploy/local-session.test.mjs open-claw/lab/deploy/local-connection.test.mjs

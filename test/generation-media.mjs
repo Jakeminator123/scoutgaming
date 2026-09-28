@@ -6,6 +6,7 @@ import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { openGenerationMedia, closeGenerationMedia } from '../web/generation-media.mjs';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
 
@@ -45,7 +46,8 @@ test('explicit media directory serves BO and token API with auth, HEAD and byte 
   await symlink(join(tmp, 'outside.mp4'), join(directory, `${second.id}.mp4`), 'file');
   let fixture;
   try {
-    fixture = await startLocalComparison({ startLab: false, gamePort: await freePort('localhost'), labPort: await freePort('127.0.0.1'), generationDirectory: directory });
+    await symlink(fileURLToPath(new URL('../web/', import.meta.url)), join(tmp, 'web'), process.platform === 'win32' ? 'junction' : 'dir');
+    fixture = await startLocalComparison({ repoRoot: tmp, startLab: false, gamePort: await freePort('localhost'), labPort: await freePort('127.0.0.1'), generationDirectory: directory });
     const boPath = `/bo/gen/${first.id}.mp4`, apiPath = `/api/v1/generations/${first.id}/video`;
     const get = (path, headers = {}, method = 'GET') => fetch(fixture.gameUrl + path, { method, headers, redirect: 'manual' });
     assert.equal((await get(boPath)).status, 302);
