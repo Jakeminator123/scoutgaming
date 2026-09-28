@@ -1,3 +1,22 @@
+## 2026-09-28 — referensmappar och Emils två mediauppsättningar
+
+En riktad inventering skilde `emil/dealklipp-v1` (aktivt manifest, kod- och
+testberoenden; 43 MP4) från `emil/astrid-demo-v3-reference` (fristående,
+inaktiv referens; 217 MP4 och flerspråkiga talbanker). SHA-256 över samtliga
+260 MP4 gav inga byteidentiska videor. Den enda dubbla filen är startbilden
+som V3:s eget manifest använder; den bevaras. `emil/README.md` ger en tydlig
+ingång utan att flytta sökvägar eller ändra spel/worker.
+
+`reference/` innehöll sex gamla Sunny-text/JSON-underlag, inte videor. De och
+en daterad observation under `random-stuff-jakob/` saknade kod-, test- och
+byggberoenden och togs bort (7 spårade filer, 2 056 589 byte). Samtliga finns
+i `Jakobs-v1`. `pipeline/build-index.mjs` har sitt schema beskrivet i kommentaren
+utan länk till det borttagna exempelindexet. Ignorerade personliga loggutdrag,
+aktiv systemkarta, media, manifest och privat arkiv lämnades orörda.
+Se `docs/REPOSITORY-CLEANUP.md` för avgränsning och återställning.
+Verifiering: V3-manifestets 218 mediereferenser finns, aktivt mediemanifest
+43/43, sju riktade manifesttester och hela pre-commit-kedjan passerade.
+
 ## 2026-09-28 — avgränsad dokumentstädning efter GitHub-checkpoint
 
 Utgångspunkt `e03b5d0`. 28 spårade historiska/engångsfiler togs bort ur
