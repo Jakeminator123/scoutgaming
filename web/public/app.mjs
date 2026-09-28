@@ -2597,7 +2597,9 @@ if (DEALER.key === 'astrid') {
   probeClient = createProbeClient({
     identity: poseIdentity,
     flags: ownJobId => ({ present: !document.hidden, sound: !voice.muted,
-      typing: Boolean($('#chat-input').value.trim()) || document.activeElement === $('#chat-input') || Boolean(astridCamera?.busy),
+      // Focus already starts a fresh inactivity period. An empty field must
+      // not veto every later initiative just because focus remained after Send.
+      typing: Boolean($('#chat-input').value.trim()) || Boolean(astridCamera?.busy),
       quiet: probePresentationQuiet({busy,round,chatBusy,speaking,pending:speechQueue.pending,gate:speechPoseGate,ownJobId,idleBackground:localPresentation?.idleBackground}) }),
     mount: memoryPanel,
     report: ({state,...entry}) => nativeObservation.emit('status', { ...entry, state:'probe', stage:state }),

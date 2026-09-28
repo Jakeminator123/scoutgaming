@@ -1,3 +1,36 @@
+## 2026-09-28 — Snabbare Probe och tydlig kameraaktivering
+
+Jakob testar själv i sin browser och vill kunna prova kortare inaktivitet.
+Båda labbytorna har nu **Snabbt inaktivitetsprov** i sin gemensamma
+Probe-editor: Automatiskt, 5 s inaktivitet, 15 s paus, 100 procents chans
+och högst 12 initiativ/timme. Det ändrar ett utkast; Spara krävs. Befintliga
+sparade val, modell och minnesinställningar ändrades inte automatiskt.
+Väntetid ned till 1 s finns sedan tidigare. Browsern kontrollerar ungefär
+var 5:e sekund och generering/posegrind tillkommer. Ett obesvarat initiativ
+väntar fortfarande på ny spelaraktivitet.
+
+Ett faktiskt klientfel hittades: fokus i ett tomt chattfält satte `typing`
+till true för alltid, även efter Skicka. Enbart fokus blockerar inte längre
+Probe. Fokus- och input-events börjar fortfarande en ny inaktivitetsperiod;
+ett utkast eller pågående kameragranskning blockerar fortfarande initiativ.
+Ladda om spelfliken för klientfixen. Ny snabbknapp kräver nästa labbbygge/start.
+
+Kameraimplementationens dokument har fått exakta aktiveringssteg: aktuell
+Gateway/Director på Render, `CROUPIER_SPEECH_VISION=1` på Gateway och lokal
+samordnad start med `--astrid-camera --no-open`. Därefter Luna och
+Kamera → Starta → granska → Skicka. Stillbilder och transkription används,
+inte kontinuerlig kameravideo till OpenClaw. Syntetiskt drift-/lagringsprov
+återstår före verklig kamera. Tidigare krav på ett nytt deploymentgodkännande
+är uppdaterat; Jakob har redan godkänt detta. Agentens browseråtkomst är
+fortfarande blockerad av den sparade webbplatsbehörigheten.
+
+Verifierat: TypeScript, JSON-parsning, JS-syntax, diffkontroll, samtliga
+27 pre-commit-kommandon samt fyradealerasset-audit med `--probe` passerade.
+Inget nytt browserprov, mediegodkännande eller Render-deploy utfördes.
+Jakobs pågående lokala serverpar stoppades eller ersattes inte.
+Hans ändrade manifest, nya box4-video och övriga arbetsfiler är utanför
+denna leverans. Jira-anslutning saknas fortsatt.
+
 ## 2026-09-28 — Generalrepetition: minnesfel rättade, browserprov blockerat
 
 Jakob godkände generalrepetition, bild/ljud och ett faktiskt automatiskt
