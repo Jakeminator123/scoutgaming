@@ -1,6 +1,6 @@
-// Full-frame MP4 support for PerformancePlayer. These portrait films have no
-// calibrated pickup/release/land metadata; completion is an actual media event.
-export function playLocalFilm({ host, src, signal, muted = true, onReceipt = () => {}, hold = () => {} }) {
+// Full-frame MP4 support for PerformancePlayer. Consumers may attach calibration
+// to the verified asset; motion must use presented mediaTime, never wall time.
+export function playLocalFilm({ host, src, signal, muted = true, onReceipt = () => {}, onFrame, hold = () => {} }) {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
@@ -26,9 +26,13 @@ export function playLocalFilm({ host, src, signal, muted = true, onReceipt = () 
     video.addEventListener('ended', () => finish());
     video.addEventListener('error', () => finish(new Error('Film could not be decoded')));
     if (!video.requestVideoFrameCallback) { finish(new Error('Presented frame callbacks unavailable')); return; }
-    frame = video.requestVideoFrameCallback(() => {
-      if (terminal) return; presented = true; video.style.visibility = ''; emit('presented');
-    });
+    const presentedFrame = (_, metadata) => {
+      if (terminal) return;
+      if (!presented) { presented = true; video.style.visibility = ''; emit('presented'); }
+      try { onFrame?.(metadata.mediaTime); } catch (error) { finish(error); return; }
+      if (!terminal && onFrame) frame = video.requestVideoFrameCallback(presentedFrame);
+    };
+    frame = video.requestVideoFrameCallback(presentedFrame);
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) { abort(); return; }
     video.style.visibility = 'hidden'; host.append(video); video.src = src; arm();

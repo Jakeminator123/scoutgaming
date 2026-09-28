@@ -38,14 +38,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch { /* Advice is optional; automatic idle and gameplay continue. */ }
     finally { if (adviceController === controller) adviceController = null; }
   }
-  async function film(video, { signal, kind, details = {}, onFrame, onEvent } = {}) {
+  async function film(video, { signal, kind, details = {}, onFrame, onMediaFrame, onEvent } = {}) {
     const own = new AbortController(); active = own;
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) own.abort();
     host.dataset.presentationMedia = video.id; host.dataset.presentationFile = video.fileName; host.dataset.presentationKind = kind;
     try {
       await player.playLocalClip({ media: { src: video.src || `/api/presentation/videos/${video.id}`, sha256: video.sha256 } }, {
-        signal: own.signal, muted: kind !== 'speech' || muted(), hold,
+        signal: own.signal, muted: kind !== 'speech' || muted(), hold, onFrame: onMediaFrame,
         onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, fileName: video.fileName, renderer: 'performance-local' });
           if (event.state === 'presented') onFrame?.(); onEvent?.(event); },
       });
@@ -79,7 +79,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     idle.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}` });
     if (action || speech) onBusy(); else resumeIdle();
   }
-  async function present(event, { signal, onPresented } = {}) {
+  async function present(event, { signal, onPresented, onSelected, onFrame } = {}) {
     const kind = event.type === 'speak' ? 'speech' : 'deal';
     presentationKind = kind;
     const requestVersion = version();
@@ -94,10 +94,20 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (token !== serial || requestVersion !== version() || signal?.aborted) return false;
       receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider });
       if (!result.video) throw new Error('Exakt film saknas');
-      const play = video => film(video, { kind, signal, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId }, onFrame: onPresented });
+      let attempt = 0;
+      const owns = current => current === attempt && token === serial && requestVersion === version() && !signal?.aborted;
+      const play = async video => {
+        const current = ++attempt;
+        onSelected?.(video, result.decision.sourceEvent);
+        try {
+          await film(video, { kind, signal, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId },
+            onFrame: () => { if (owns(current)) onPresented?.(); },
+            onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined });
+        } finally { if (current === attempt) ++attempt; }
+      };
       try { await play(result.video); }
       catch (error) { if (signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id) throw error; await play(result.standard); }
-      return true;
+      return token === serial && requestVersion === version() && !signal?.aborted;
     } catch (error) {
       if (signal?.aborted || token !== serial) return false;
       status.textContent = `${error.message} · 2D-reserv`;
