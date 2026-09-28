@@ -111,37 +111,57 @@ test('Astrid gets an English default with explicit language requests preserved a
   }
 });
 
-test('Director sends only reviewed Astrid image parts to the private tool-less Gateway turn', async t => {
-  const input = envelope({ model: 'gpt-6-luna' });
+for (const model of ['gpt-6-luna', 'gpt-5.6-terra']) test(`Director sends reviewed Astrid image parts through ${model} to the private tool-less Gateway turn`, async () => {
+  const input = envelope({ model });
   input.request.observation = syntheticObservation();
   let calls = 0;
-  const base = await running(t, async (_url, options) => {
+  const service = createProductSpeechService({ settingsProvider: () => settings(), fetchImpl: async (_url, options) => {
     calls++;
     const body = JSON.parse(options.body);
     assert.equal(body.model, 'openclaw/croupier-speech');
     assert.equal(body.tool_choice, 'none');
     assert.equal(body.user, undefined, 'image turn does not choose a stable Gateway session');
-    assert.equal(options.headers['x-openclaw-model'], 'lab-provider/gpt-6-luna');
+    assert.equal(options.headers['x-openclaw-model'], `lab-provider/${model}`);
     const current = body.messages.at(-1).content;
     assert.equal(Array.isArray(current), true);
     assert.equal(current[0].type, 'text');
     assert.deepEqual(current.slice(1), [{ type: 'image_url', image_url: { url: input.request.observation.images[0] } }]);
     assert.equal(JSON.stringify(body.messages[1]).includes(input.request.observation.images[0]), false);
     return completion(silence(input));
-  });
-  const response = await post(base, speechToken, input);
-  assert.equal(response.status, 200, await response.text());
-  const repeated = await post(base, speechToken, input);
-  assert.equal(repeated.status, 200, await repeated.text());
+  } });
+  assert.deepEqual(await service.handle(input), silence(input));
+  assert.deepEqual(await service.handle(structuredClone(input)), silence(input));
   const changedImage = structuredClone(input);
   changedImage.request.observation.images.push(input.request.observation.images[0]);
-  const conflict = await post(base, speechToken, changedImage);
-  assert.equal(conflict.status, 409, await conflict.text());
+  await assert.rejects(service.handle(changedImage), { code: 'product_speech_request_conflict', statusCode: 409 });
   assert.equal(calls, 1);
-  const badModel = structuredClone(input); badModel.model = 'gpt-5.6-terra'; badModel.request.requestId = 'other-id';
-  badModel.request.observation = syntheticObservation('other-id');
-  assert.equal((await post(base, speechToken, badModel)).status, 400);
-  assert.equal(calls, 1);
+});
+
+test('image models retain Astrid-only consent and image validation before any Gateway call', async () => {
+  let calls = 0;
+  const service = createProductSpeechService({ settingsProvider: () => settings(),
+    completeImpl: async () => { calls++; return JSON.stringify(silence()); } });
+  for (const model of ['gpt-5.4-mini', undefined]) {
+    const input = envelope(model === undefined ? {} : { model });
+    input.request.observation = syntheticObservation();
+    await assert.rejects(service.handle(input), { code: 'observation_model_not_verified', statusCode: 400 });
+  }
+  for (const model of ['gpt-6-luna', 'gpt-5.6-terra']) {
+    for (const [edit, code] of [
+      [input => { input.status.dealerId = 'vera'; }, 'observation_astrid_only'],
+      [input => { input.request.observation.consentTurnId = 'other-turn'; }, 'invalid_observation_consent'],
+      [input => { input.request.observation.images.push(...input.request.observation.images, ...input.request.observation.images); }, 'invalid_observation_consent'],
+      [input => { input.request.observation.images = ['https://example.test/player.jpg']; }, 'invalid_observation_url'],
+    ]) {
+      const input = envelope({ model }); input.request.observation = syntheticObservation(); edit(input);
+      await assert.rejects(service.handle(input), { code, statusCode: 400 });
+    }
+    const wrongRole = createProductSpeechService({ settingsProvider: () => settings({ speechAgent: 'openclaw/croupier-chat' }),
+      completeImpl: async () => { calls++; return JSON.stringify(silence()); } });
+    const input = envelope({ model }); input.request.observation = syntheticObservation();
+    await assert.rejects(wrongRole.handle(input), { code: 'openclaw_speech_role_mismatch' });
+  }
+  assert.equal(calls, 0);
 });
 
 test('wrong role, wrong echoed revision, timeout and conflicting duplicate fail closed', async () => {

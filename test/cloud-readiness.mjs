@@ -27,6 +27,7 @@ test('configuration and present media never bypass known cloud migration blocker
   await mkdir(state);
   const env = {
     LAB_REMOTE_TOKEN: 'private-test-token-never-print', PUBLIC_URL: 'https://user:private-url-password@demo.example.invalid/private',
+    CROUPIER_ASTRID_TRANSLATION_KEY: 'private-translation-key-never-print',
     LAB_REMOTE_URL: 'https://director.example.invalid/private?token=hidden-value',
     LAB_STUDIO_DATA_DIR: state, CROUPIER_PRESENTATION_STUDIO_DIR: state,
     CROUPIER_GENERATED_SPEECH_DIR: state, CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'endpoint_123',
@@ -34,6 +35,7 @@ test('configuration and present media never bypass known cloud migration blocker
   };
   const report = await collectCloudReadiness({ root, env });
   assert.equal(report.ready, false);
+  assert.equal(report.configuration.credentials.find(item => item.name === 'CROUPIER_ASTRID_TRANSLATION_KEY').configured, true);
   assert.equal(report.media.status, 'metadata-present');
   assert.equal(report.configuration.sharedStudioDirectory, true);
   assert.equal(report.configuration.currentSpeechHostGateSatisfied, false);
@@ -42,7 +44,7 @@ test('configuration and present media never bypass known cloud migration blocker
   assert.equal(report.configuration.urls.find(item => item.name === 'LAB_REMOTE_URL').status, 'invalid-cloud-url');
   assert.ok(report.blockers.some(item => item.id === 'studio-access'));
   const serialized = JSON.stringify(report);
-  for (const secret of ['private-test-token-never-print', 'private-url-password', 'hidden-value', 'director.example.invalid']) assert.ok(!serialized.includes(secret), secret);
+  for (const secret of ['private-test-token-never-print', 'private-translation-key-never-print', 'private-url-password', 'hidden-value', 'director.example.invalid']) assert.ok(!serialized.includes(secret), secret);
   assert.ok(!serialized.includes(JSON.stringify(state)));
 });
 

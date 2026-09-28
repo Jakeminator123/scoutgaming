@@ -1,3 +1,27 @@
+## 2026-09-28 — Whisper till engelska och Terra-bilder
+
+Astrids inkommande ljud använder nu OpenAI Whisper `whisper-1` via audio/translations.
+Svenska och engelska identifieras automatiskt; uttexten är engelska. Record/wake,
+1 150 ms tystnad, dold normalvy och fem sekunders loggöppning behålls. Cartesia
+är kvar för utgående röst. Endast produktservern får scoped translation-nyckel.
+Startaren föredrar uttrycklig translation-nyckel, sedan befintlig officiell OpenAI-
+nyckel. Inget automatiskt byte av credential eller retry efter autentiseringsfel.
+
+Riktigt adapterprov med syntetiskt svenskt/engelskt ljud passerade HTTP 200,
+korrekt engelsk text, 3 273/955 ms. Befintlig OPENAI_API_KEY fungerade; äldre
+modellnyckeln gav 401. Inga nycklar ändrades eller loggades, ingen mikrofon användes.
+Privat kvitto: Windows TEMP/croupier-whisper-qa/receipt.json (utanför Git).
+Produkt-HTTP 34/34, Gateway/Director 29/29, kamera/adapter 42/42 och cloud-readiness
+4/4 passerade. Startarens avgränsning har egna credential-/processprov.
+
+Bildstöd tillåts för Luna och Terra i produkt, Director och Gateway när
+CROUPIER_SPEECH_VISION=1. Terra i driften och fysisk Chrome-wake/mikrofon återstår;
+nya Gateway/Director måste driftsättas. Devserverparet lämnas stoppat.
+Cloud-readiness redovisar bara credential-närvaro, aldrig värden. CLOUD-MIGRATION.md
+beskriver beständig data/media, cloud-auth/origins och långlivad spelserver som
+återstående arbete före en fungerande Vercel-front med helt fjärrkörd backend.
+Inga mediafiler eller visuella läppsynksgodkännanden ändrades.
+
 ## 2026-09-28 — GitHub-only och underlag för molndrift
 
 Uppföljning efter första GitHub-CI: både jobb startade från GitHub, men

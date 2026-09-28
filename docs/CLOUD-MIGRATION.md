@@ -52,7 +52,8 @@ publika presentationssvar. `/api/v1/events` är SSE med processlokala
 prenumeranter och utan replaybuffert. Labbet observerar samma spel;
 browsern komponerar och spelar presentationen.
 
-OpenClaw/Director ger beslut och text, Cartesia ljud och RunPod talvideo.
+OpenClaw/Director ger beslut och text, OpenAI Whisper översätter spelarens
+tal till engelska, Cartesia ger Astrids röst och RunPod talvideo.
 Den befintliga Render-installationen ersätter inte produktservern, dess
 databaser eller det lokala labbet.
 
@@ -121,6 +122,15 @@ hostnames eller en uttrycklig, testad uppdelning av rutterna i ingången.
 - `CROUPIER_PRESENTATION_DIRECTOR_URL/TOKEN`: produktens presentationsråd.
 - `OPENCLAW_PRODUCT_SPEECH_URL/TOKEN`: separat produktroll för chatt/tal.
 - `CARTESIA_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`: tal/video.
+- `CROUPIER_ASTRID_TRANSLATION_KEY`: giltig OpenAI API-nyckel endast på
+  produktservern för `whisper-1` och `/v1/audio/translations`. Den får aldrig
+  publiceras som `NEXT_PUBLIC_*`, läggas i klientkod eller ersättas av en
+  Gateway-/Director-token. Lokal start kan aliasa en befintlig officiell
+  OpenAI-nyckel; en molnstart måste föra in nyckeln som skyddad servervariabel.
+- `CROUPIER_SPEECH_VISION=1` på Gateway: ger Luna och Terra bildinput efter
+  deployment av aktuell Gateway-konfiguration och Director. Verifiera båda
+  modellerna genom den driftsatta kedjan; modellens allmänna bildstöd räcker
+  inte som bevis för rätt konfiguration.
 - `CROUPIER_GENERATED_SPEECH_DIR`: privat katalog utanför checkout.
 - `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_GENERATED_SPEECH_PREVIEW=1`: nuvarande
   talflaggor, som fortfarande kräver en loopback-HOST i oförändrad kod.
@@ -147,6 +157,11 @@ Verifiera på avsedd molnadress:
    SSE-avbrott får inte ge dubbel presentation.
 5. Talets fulla kedja, timeout/avbrott, rätt sessionsägare och inga nycklar i klienten.
 6. Kamera/mikrofon med verkligt användarsamtycke, om den funktionen aktiveras.
+7. Record → lokal ”Astrid”-aktivering → svensk/engelsk fråga → engelsk
+   Whisper-text → bildtolkning med vald modell → hörbart Astrid-svar.
+   Ingen transkription eller bild ska visas utanför den avsiktligt öppnade
+   loggen. Lokal röstaktivering beror på webbläsarens installerade talstöd;
+   Vercel eller Render kan inte ersätta ett saknat lokalt språkpaket.
 
 Vid ändring av spelare/media körs `.githooks/pre-commit`,
 `node pipeline/audit-dealer-sync.mjs --probe` och alla fyra dealers i faktisk

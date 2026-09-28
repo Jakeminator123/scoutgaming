@@ -3,8 +3,8 @@
 <title>Astrid voice · synthetic QA</title><link rel="stylesheet" href="/styles.css">
 <style>body{margin:0;padding:24px;background:#101618;color:#eee;font:16px system-ui;overflow:auto}main{max-width:760px}button{padding:10px;margin:8px}pre{white-space:pre-wrap}#fixture{position:relative;min-height:80px;margin-top:20px}#fixture #astrid-camera{width:min(380px,90vw)}h1{font-size:24px}</style>
 <main><h1>Astrid voice · synthetic QA</h1>
-<p>No real camera, microphone, SpeechRecognition, player profile, database or provider is used. The component test injects a fake local wake-word detector, canvas video and an inaudible oscillator stream. AudioWorklet recording, the local pre-roll, silence detection and JPEG capture are real browser code. Configuration, English transcription and Astrid's reply are stubbed; nothing is uploaded.</p>
-<p>This checks Record → consent → simulated “Astrid” → automatic send, without a preview or manual Send button. It does not verify native wake-word availability, provider translation, a real microphone, or lip sync.</p>
+<p>No real camera, microphone, SpeechRecognition, player profile, database or provider is used. The component test injects a fake local wake-word detector, canvas video and an inaudible oscillator stream. AudioWorklet recording, the local pre-roll, silence detection and JPEG capture are real browser code. Configuration, OpenAI translation into English and OpenClaw's reply are stubbed; nothing is uploaded.</p>
+<p>This checks Record → consent → simulated “Astrid” → automatic send, without a preview or manual Send button. It does not verify native wake-word availability, OpenAI translation, Terra/Luna image support, a real microphone, or lip sync.</p>
 <button id="run">Run synthetic voice and camera cases</button>
 <button id="voice">Check AudioWorklet with existing goodluck test audio</button>
 <p id="capability"></p><pre id="results" role="status">Ready</pre><div id="fixture"></div>
@@ -99,6 +99,7 @@ document.querySelector('#run').onclick = async event => {
         assert(playback && permissionCalls === 0 && wakes.length === 0, 'Play must only toggle playback');
         button('Enable voice listening').click();
         assert(!fixture.querySelector('dialog').hidden && permissionCalls === 0, 'devices opened before consent');
+        assert(fixture.querySelector('dialog').textContent.includes('sent to OpenAI for speech translation into English'), 'consent does not identify the speech provider');
         button('Enable voice').click();
         if (blocked) {
           await pause(0);

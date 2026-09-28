@@ -38,9 +38,14 @@ Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 Astrids valbara kamera/mikrofon finns i samma spelflik, Av som standard.
 Starta det enda serverparet med `node lissabon/start.mjs --astrid-camera --no-open`
 för att göra knappen tillgänglig; en redan körande server måste stoppas först.
-Välj Luna i Probe för bildstöd. Med andra modeller fungerar mikrofonen separat.
-Kamera/mikrofon startar först vid spelarens klick. Syntetisk bildtolkning är
-verifierad; fysisk inspelning och bildlagringskontroll återstår.
+Luna och Terra stöder bilder när uppdaterad Gateway/Director körs med
+`CROUPIER_SPEECH_VISION=1`. Record aktiverar lokal lyssning efter ”Astrid”;
+därefter skickas tal och kamerabilder automatiskt efter 1 150 ms tystnad.
+Whisper översätter svenska eller engelska till engelsk text. Play styr ljudet.
+Text/bilder är dolda; håll någon knapp i fem sekunder för att visa loggen.
+Första aktiveringen kräver samtycke. Lokal taligenkänning måste finnas i Chrome.
+Whispers riktiga API-prov passerar; fysisk inspelning, Terra i driften och
+bildlagringskontroll återstår. Starta inte ett extra serverpar.
 Se [implementation och verifieringsläge](../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md)
 och [OpenClaws källindex](../../open-claw/lab/docs/OPENCLAW-DOCS.md).
 

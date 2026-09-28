@@ -101,6 +101,10 @@ test('page loads off with two compact buttons; first Record requires explicit En
     assert.equal(all(h.root).filter(node => node.tag === 'textarea' || node.tag === 'img').length, 0);
     h.click(h.record); assert.equal(h.dialog.hidden, false); assert.equal(h.wakes.length, 0);
     assert.ok(all(h.dialog).some(node => node.textContent?.includes('Nothing is uploaded before the wake word')));
+    const consentText = all(h.dialog).map(node => node.textContent).join(' ');
+    assert.match(consentText, /sent to OpenAI for speech translation into English/);
+    assert.match(consentText, /English text is automatically sent to OpenClaw and its model provider/);
+    assert.equal(consentText.includes('Cartesia'), false);
     h.click(h.find('Keep off')); assert.equal(h.control.active, false); assert.equal(h.requests.length, 0);
     h.click(h.record); h.click(h.find('Enable voice')); await tick();
     assert.equal(h.wakes.length, 1); assert.equal(h.requests.length, 1); assert.equal(h.requests[0].video, false);
@@ -174,7 +178,7 @@ test('audio-only model never requests camera or sends images, legacy vision conf
       await h.start(); await h.wake(); h.pause(); await tick();
       assert.equal(h.sent[0].images.length, vision ? 0 : 1);
       assert.equal(h.requests.filter(request => request.video).length, vision ? 0 : 1);
-      if (vision) assert.match(h.record.title, /GPT-6 Luna/);
+      if (vision) assert.match(h.record.title, /GPT-5\.6 Terra or GPT-6 Luna/);
     } finally { h.restore(); }
   }
 });
@@ -207,7 +211,7 @@ test('STT failure and invalid results send nothing and never automatically retry
     try {
       await h.start(); await h.wake(); h.pause(); await tick();
       assert.equal(h.sent.length, 0); assert.equal(h.wakes.length, 1); assert.equal(h.control.active, false);
-      assert.match(h.status(), /Transcription failed/); assert.equal(h.status().includes('secret'), false);
+      assert.match(h.status(), /Speech translation failed/); assert.equal(h.status().includes('secret'), false);
     } finally { h.restore(); }
   }
 });
@@ -216,6 +220,18 @@ test('empty speech sends no images or text and returns to wake idle', async () =
   const h = harness({ transcribe: async () => ({ ok: true, json: async () => ({ text: ' ' }) }) });
   try { await h.start(); await h.wake(); h.pause(); await tick(); assert.equal(h.sent.length, 0); assert.equal(h.wakes.length, 2); assert.equal(h.control.busy, false); }
   finally { h.restore(); }
+});
+
+test('OpenAI authentication failure shows a server-key action without exposing provider details or retrying', async () => {
+  const h = harness({ transcribe: async () => ({ ok: false, status: 502,
+    json: async () => ({ error: 'transcription_authentication_failed', message: 'private provider secret' }) }) });
+  try {
+    await h.start(); await h.wake(); h.pause(); await tick();
+    assert.match(h.status(), /OpenAI authentication failed.*server translation key/);
+    assert.equal(h.status().includes('secret'), false);
+    assert.equal(h.uploads.length, 1); assert.equal(h.sent.length, 0);
+    assert.equal(h.control.active, false); assert.equal(h.wakes.length, 1);
+  } finally { h.restore(); }
 });
 
 test('wake failure cannot fall back to direct/cloud recording or loop retries', async () => {
@@ -354,7 +370,7 @@ test('English RAM log is bounded, hidden normally, and contains no raw audio or 
 
 test('precise config reasons survive stop and can recover from a later server change', async () => {
   for (const [config, expected] of [[{ enabled: false, reason: 'feature_disabled' }, /disabled on this server/],
-    [{ transcription: { enabled: false }, reason: 'transcription_unavailable' }, /transcription is unavailable/]]) {
+    [{ transcription: { enabled: false }, reason: 'transcription_unavailable' }, /OpenAI speech translation is unavailable/]]) {
     const h = harness({ config });
     try {
       await tick(); assert.match(h.status(), expected); h.control.stop('Fliken dold'); assert.match(h.status(), expected);

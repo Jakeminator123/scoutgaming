@@ -22,7 +22,7 @@ const PRIVATE_TRANSPORT_ENV = [
   'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
   'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL', 'OPENCLAW_MODEL_ID', 'OPENCLAW_MODEL_API',
   'CROUPIER_GENERATED_SPEECH', 'CROUPIER_GENERATED_SPEECH_PREVIEW', 'CROUPIER_GENERATED_SPEECH_DIR',
-  'CROUPIER_ASTRID_CAMERA', 'CARTESIA_API_KEY',
+  'CROUPIER_ASTRID_CAMERA', 'CARTESIA_API_KEY', 'CROUPIER_ASTRID_TRANSLATION_KEY',
   'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID', 'ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API', 'RUNPOD_API_KEY',
 ];
 
@@ -97,7 +97,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       CROUPIER_PRESENTATION_STUDIO_DIR: join(directory,'studio'),
       CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '', CROUPIER_LISSABON_PROFILES: lissabon ? '1' : '',
       CROUPIER_ASTRID_CAMERA: lissabon ? '1' : '',
-      CARTESIA_API_KEY: 'isolated-fixture-not-a-live-key',
+      CROUPIER_ASTRID_TRANSLATION_KEY: 'isolated-fixture-not-a-live-key',
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
       OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat',
       OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' }),
@@ -484,6 +484,10 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     const config = await a.client.get('/api/astrid/observation');
     assert.equal(config.enabled, lissabon);
     assert.equal(config.transcription.enabled, lissabon);
+    assert.equal(config.transcription.provider, 'openai');
+    assert.equal(config.transcription.model, 'whisper-1');
+    assert.equal(config.transcription.outputLanguage, 'en');
+    assert.equal(config.transcription.acceptsAutoLanguage, true);
     assert.equal(config.vision.enabled, lissabon);
     assert.equal(config.reason, lissabon ? null : 'feature_disabled');
     const input = chat(a.state);
@@ -528,28 +532,36 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.equal(captured.length, before + 1);
   });
 
-  await t.test('changing the speech model preserves transcription and keeps unverified images blocked', async () => {
+  for (const [model, visionAllowed] of [['gpt-5.6-terra', true], ['gpt-5.4-mini', false]])
+  await t.test(`changing to ${model} preserves English translation and enforces the image allowlist`, async () => {
     const a = await guest();
     const store = createProjectStore(join(directory, 'studio'));
     const original = await store.load();
     const changed = structuredClone(original);
-    changed.probePolicy = { ...createDefaultProbePolicy(), model: 'gpt-5.6-terra' };
+    changed.probePolicy = { ...createDefaultProbePolicy(), model };
     const saved = await store.save(changed, original.revision);
     try {
       const config = await a.client.get('/api/astrid/observation');
       assert.equal(config.enabled, lissabon);
       assert.equal(config.transcription.enabled, lissabon, 'audio does not depend on vision support');
-      assert.equal(config.vision.enabled, false);
-      assert.equal(config.vision.reason, lissabon ? 'model_not_verified' : 'feature_disabled');
+      assert.equal(config.vision.enabled, lissabon && visionAllowed);
+      assert.equal(config.vision.reason, !lissabon ? 'feature_disabled' : visionAllowed ? null : 'model_not_verified');
       if (lissabon) {
         assert.match(config.profileRevision, /^[a-f0-9]{64}$/);
         const input = chat(a.state);
         const before = captured.length;
         const result = await a.client.post('/chat', { ...input, observation: { version: 1,
           turnId: input.requestId, consentTurnId: input.requestId,
-          profileRevision: config.profileRevision, images: [syntheticJpegUrl()] } }, 409);
-        assert.equal(result.error, 'observation_model_not_verified');
-        assert.equal(captured.length, before);
+          profileRevision: config.profileRevision, images: [syntheticJpegUrl()] } }, visionAllowed ? 200 : 409);
+        if (visionAllowed) {
+          assert.equal(result.kind, 'generatedText');
+          assert.equal(captured.length, before + 1);
+          assert.deepEqual(captured.at(-1).body.messages.at(-1).content.slice(1),
+            [{ type: 'image_url', image_url: { url: syntheticJpegUrl() } }]);
+        } else {
+          assert.equal(result.error, 'observation_model_not_verified');
+          assert.equal(captured.length, before);
+        }
       }
     } finally { await store.save(original, saved.revision); }
   });

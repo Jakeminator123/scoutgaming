@@ -15,13 +15,26 @@ ljudfilen begränsas till 30 sekunder. Kamerabilder börjar tas först efter
 aktivering. Spelarbyte, dold flik och Record av avbryter väntande inspelning.
 Första Record-aktiveringen visar samtycke till automatisk sändning.
 
-**Inte färdigaktiverat:** engelsk talöversättning från svenska/engelska
-inväntar leverantörsval. Det nya klientkontraktet behöver serverstöd för
-automatisk språkidentifiering och engelsk uttext; gamla Cartesia-konfigurationen
-uppfyller inte det kontraktet. Ingen ny ljudleverantör har anropats. Fysisk
-wake/mikrofon i Chrome och hela kedjan med engelsk text återstår att prova.
-Devservrarna är fortfarande stoppade. Följande dokumenterar den tidigare
-granskningsversionens verifieringsläge och aktivering.
+**Uppdaterat 28 september:** Jakob har valt OpenAI Whisper. Servern använder
+`whisper-1` på `/v1/audio/translations`, som automatiskt identifierar talspråket
+och lämnar engelsk text. Det riktiga adapterprovet med syntetiskt svenskt och
+engelskt ljud gav HTTP 200 och korrekt engelsk text (3 273 respektive 955 ms).
+Ingen fysisk mikrofon användes. Privata kvitton ligger utanför Git.
+
+Startaren väljer `CROUPIER_ASTRID_TRANSLATION_KEY`, annars en befintlig
+OpenAI-nyckel med officiell OpenAI-bas. Endast produktservern får den avgränsade
+nyckeln och nätåtkomsten; labb och webbläsare får ingen nyckel. Den äldre
+modellnyckeln gav 401 i provet, medan befintlig `OPENAI_API_KEY` fungerade.
+Autentiseringsfel visas tydligt utan automatisk omkörning eller nyckelbyte.
+Cartesia används fortfarande för Astrids utgående röst.
+
+Bildgrindarna i produkt, Director och Gateway tillåter nu både GPT-6 Luna och
+GPT-5.6 Terra när `CROUPIER_SPEECH_VISION=1`. Nya Gateway-/Director-koden måste
+driftsättas innan Terra kan anses driftverifierad. Lokala kontraktsprov passerar.
+Fysisk wake/mikrofon i Chrome och hela kedjan med engelsk text återstår att prova.
+Devservrarna är fortfarande stoppade. Nedan följer historiska kvitton för den
+tidigare granskningsversionen; dess Cartesia-transkription och Luna-begränsning
+är ersatta av ovanstående implementation.
 
 28 september 2026. **Bild och ljud är Av som standard. Servertranskription är
 implementerad och leverantörsprovet godkänt; syntetiska Chrome-prov passerar.

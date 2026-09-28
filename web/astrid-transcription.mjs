@@ -24,7 +24,7 @@ export function validateTranscriptionHeaders(headers, expectedProfileRevision) {
     fail('transcription_same_origin_required', 403);
   }
   if (headers['content-type'] !== 'audio/wav' || headers['x-astrid-dealer'] !== 'astrid'
-    || !['sv', 'en'].includes(headers['x-astrid-language'])
+    || !['auto', 'sv', 'en'].includes(headers['x-astrid-language'])
     || !REVISION.test(headers['x-astrid-request-id'] ?? '')
     || !REVISION.test(headers['x-astrid-session-revision'] ?? '') || !REVISION.test(headers['x-astrid-round-revision'] ?? '')) {
     fail('invalid_transcription_context');
@@ -64,7 +64,10 @@ function readAudio(req, signal) {
 }
 
 async function readTranscript(response, signal) {
-  if (!response.ok) { await response.body?.cancel(); fail('transcription_provider_failed', 502); }
+  if (!response.ok) {
+    await response.body?.cancel();
+    fail([401, 403].includes(response.status) ? 'transcription_authentication_failed' : 'transcription_provider_failed', 502);
+  }
   if (!response.body?.getReader) fail('invalid_transcription_response', 502);
   const reader = response.body.getReader(); let size = 0; const chunks = [];
   try {
@@ -79,15 +82,16 @@ async function readTranscript(response, signal) {
     let data;
     try { data = JSON.parse(Buffer.concat(chunks, size).toString('utf8')); }
     catch { fail('invalid_transcription_response', 502); }
-    if (data.type !== 'transcript' || typeof data.text !== 'string' || data.text.length > 1000
+    if (!data || Array.isArray(data) || typeof data.text !== 'string' || data.text.length > 1000
       || /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/.test(data.text)) fail('invalid_transcription_response', 502);
     return data.text.trim();
   } finally { try { await reader.cancel(); } catch {} reader.releaseLock(); }
 }
 
-/** No filesystem, conversation storage, audio cache or retries. Cartesia's batch
- * STT supports Swedish and English with ink-whisper (Ink 2 lacks Swedish).
- * https://docs.cartesia.ai/api-reference/stt/transcribe, checked 2026-09-28.
+/** No filesystem, conversation storage, audio cache or retries. Whisper's
+ * translations endpoint detects input language and always returns English.
+ * https://developers.openai.com/api/reference/resources/audio/subresources/translations/methods/create
+ * Checked 2026-09-28. A legacy sv/en header is accepted but never forwarded.
  */
 export function createAstridTranscriptionApi({ apiKey, fetchImpl = fetch, clock = Date.now } = {}) {
   const configured = typeof apiKey === 'string' && apiKey.length > 0 && apiKey.length <= 2048 && !/[\s\x00-\x1f]/.test(apiKey);
@@ -120,14 +124,14 @@ export function createAstridTranscriptionApi({ apiKey, fetchImpl = fetch, clock 
       used.set(key, now); // Only a digest/time tombstone; never retain raw audio.
       const form = new FormData();
       form.append('file', new Blob([audio], { type: 'audio/wav' }), 'utterance.wav');
-      form.append('model', 'ink-whisper'); form.append('language', context.language);
-      const response = await fetchImpl('https://api.cartesia.ai/stt', {
-        method: 'POST', headers: { authorization: `Bearer ${apiKey}`, 'Cartesia-Version': '2026-08-14' },
+      form.append('model', 'whisper-1'); form.append('response_format', 'json');
+      const response = await fetchImpl('https://api.openai.com/v1/audio/translations', {
+        method: 'POST', headers: { authorization: `Bearer ${apiKey}` },
         body: form, signal: controller.signal, redirect: 'error',
       });
       const text = await readTranscript(response, controller.signal);
       await checkCurrent(context); controller.signal.throwIfAborted();
-      json(200, { text, durationMs, provider: 'cartesia', model: 'ink-whisper' });
+      json(200, { text, durationMs, provider: 'openai', model: 'whisper-1', language: 'en', inputLanguage: 'auto' });
     } catch (error) {
       // Never echo upstream bodies, credentials, URLs or raw error messages.
       const safe = typeof error.code === 'string' && /^(?:transcription_|invalid_(?:camera_audio|transcription_)|camera_audio_|stale_transcription_|method_not_allowed)/.test(error.code);
