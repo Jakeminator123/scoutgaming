@@ -12,6 +12,10 @@ const outside = (base, path) => {
   const rel = relative(base, path);
   return rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel);
 };
+const samePath = (left, right) => {
+  const a = resolve(left), b = resolve(right);
+  return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+};
 const fail = name => { throw new Error(`Invalid or missing ${name}.`); };
 
 function httpsOrigin(value, name) {
@@ -55,9 +59,10 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     if (env[name] === '1') fail(name);
   }
   const gameOrigin = httpsOrigin(env.PUBLIC_URL, 'PUBLIC_URL');
+  const boOrigin = httpsOrigin(env.BO_URL, 'BO_URL');
   const labOrigin = httpsOrigin(env.LAB_PUBLIC_URL, 'LAB_PUBLIC_URL');
   if (gameOrigin === labOrigin) fail('LAB_PUBLIC_URL');
-  if (httpsOrigin(env.BO_URL, 'BO_URL') !== gameOrigin) fail('BO_URL');
+  if (boOrigin === gameOrigin || boOrigin === labOrigin) fail('BO_URL');
   if (httpsOrigin(env.CROUPIER_GAME_ORIGIN, 'CROUPIER_GAME_ORIGIN') !== gameOrigin
     || httpsOrigin(env.BETTALOTTO_PARTNER_BASE_URL, 'BETTALOTTO_PARTNER_BASE_URL') !== gameOrigin) {
     fail('CROUPIER_GAME_ORIGIN/BETTALOTTO_PARTNER_BASE_URL');
@@ -91,7 +96,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (partnerPresent.every(Boolean) && (!/^ck_live_[A-Za-z0-9_-]{24}$/.test(env.BETTALOTTO_PARTNER_KEY_ID)
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
-  return Object.freeze({ gameOrigin, labOrigin, publicPort, dataRoot, paths, videoArchive,
+  return Object.freeze({ gameOrigin, boOrigin, labOrigin, publicPort, dataRoot, paths, videoArchive,
     director, productSpeech, labRemote,
     partner: partnerPresent.every(Boolean) ? Object.fromEntries(partnerKeys.map(name => [name, env[name]])) : null });
 }
@@ -99,8 +104,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
 // Read-only check. Filesystem existence cannot prove that a mount is durable.
 export async function inspectCloudDisk(config) {
   const info = await lstat(config.dataRoot).catch(() => null);
+  const canonical = await realpath(config.dataRoot).catch(() => null);
   if (!info?.isDirectory() || info.isSymbolicLink()
-    || await realpath(config.dataRoot).catch(() => null) !== config.dataRoot) fail('CROUPIER_CLOUD_DATA_ROOT');
+    || !canonical || !samePath(canonical, config.dataRoot)) fail('CROUPIER_CLOUD_DATA_ROOT');
   await access(config.dataRoot, constants.R_OK | constants.W_OK | constants.X_OK).catch(() => fail('CROUPIER_CLOUD_DATA_ROOT'));
   if (config.videoArchive) {
     const archive = await lstat(config.videoArchive).catch(() => null);
@@ -108,7 +114,10 @@ export async function inspectCloudDisk(config) {
   }
 }
 
-export function childSpecifications(config, env = process.env) {
+export function childSpecifications(config, env = process.env, { labInternalSecret } = {}) {
+  if (typeof labInternalSecret !== 'string' || Buffer.byteLength(labInternalSecret) < 32) {
+    throw new Error('The cloud Lab child requires an internal secret.');
+  }
   // Never pass the deployment environment wholesale to either child.
   const base = Object.fromEntries(['PATH', 'Path', 'TMPDIR', 'TEMP', 'TMP', 'TZ',
     'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'SSL_CERT_DIR'].filter(name => env[name] !== undefined)
@@ -119,7 +128,8 @@ export function childSpecifications(config, env = process.env) {
   return {
     web: { command: process.execPath, args: [join(REPOSITORY, 'web/server.mjs')], cwd: REPOSITORY,
       env: { ...shared, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
-        BO_URL: config.gameOrigin, DEMO_GUEST_ACCESS: '', CROUPIER_LISSABON_PROFILES: '',
+        BO_URL: config.boOrigin, LAB_PUBLIC_URL: config.labOrigin,
+        DEMO_GUEST_ACCESS: '', CROUPIER_LISSABON_PROFILES: '',
         CROUPIER_DATA_DIR: config.paths.players, CROUPIER_PRESENTATION_STUDIO_DIR: config.paths.studio,
         CROUPIER_GENERATIONS_DIR: config.paths.generations, CROUPIER_GENERATED_SPEECH_DIR: config.paths.speech,
         CROUPIER_GENERATED_SPEECH: '', CROUPIER_CLOUD_GENERATED_SPEECH: '',
@@ -132,6 +142,7 @@ export function childSpecifications(config, env = process.env) {
       args: [join(REPOSITORY, 'lab/node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(LAB_PORT)],
       cwd: join(REPOSITORY, 'lab'),
       env: { ...shared, HOST: '127.0.0.1', PORT: String(LAB_PORT), CROUPIER_LAB_DIST_DIR: '.next',
+        LAB_PUBLIC_URL: config.labOrigin, CROUPIER_LAB_INTERNAL_SECRET: labInternalSecret,
         LAB_STUDIO_DATA_DIR: config.paths.studio, CROUPIER_GAME_ORIGIN: config.gameOrigin,
         BETTALOTTO_PARTNER_BASE_URL: config.gameOrigin,
         ...(config.partner ?? {}), LAB_REMOTE_URL: config.labRemote.url, LAB_REMOTE_TOKEN: config.labRemote.token } },

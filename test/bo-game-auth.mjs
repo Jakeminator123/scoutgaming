@@ -56,7 +56,7 @@ try {
   const loggedOut=await request(initial.authorize);assert.equal(loggedOut.status,303);assert.match(location(loggedOut),/^\/bo\/login.html\?returnTo=/);
   const loginPage=await request(bo+location(loggedOut));assert.equal(loginPage.status,200);assert.match(await loginPage.text(),/game-login/);
   assert.equal((await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password},headers:{Origin:'https://evil.invalid'}})).status,403);
-  const login=await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password}});assert.equal(login.status,200);const boCookie=cookies(login);
+  const login=await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password}});assert.equal(login.status,200);let boCookie=cookies(login);
   const emailLogin=await request(bo+'/api/bo/login',{body:{user:'demo@example.invalid',pass:password}});
   assert.equal(emailLogin.status,200);
   assert.deepEqual(await(await request(bo+'/api/bo/me',{cookie:cookies(emailLogin)})).json(),{user:'demo-reviewer',role:'reader'},'email login uses canonical CRAIG identity');
@@ -96,6 +96,9 @@ try {
   assert.equal(await roomState(),'live','same-origin BO mutation still works');
   assert.equal((await request(bo+'/api/bo/reset-request',{body:{user:'missing'},headers:{Origin:game}})).status,403,'public reset endpoint also rejects sibling origin');
   craig.prepare("UPDATE users SET role='reader' WHERE id=1").run();
+  assert.equal((await request(boPlayers,{cookie:boCookie})).status,401,'old BO cookie cannot revive when role is restored');
+  const renewedReader=await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password}});
+  assert.equal(renewedReader.status,200);boCookie=cookies(renewedReader);
   const continued=await request(initial.authorize,{cookie:boCookie});assert.equal(continued.status,303);
   const callback=location(continued);
   assert.equal((await request(callback)).status,400,'browser state required');
