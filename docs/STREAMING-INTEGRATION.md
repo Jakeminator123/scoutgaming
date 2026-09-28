@@ -89,6 +89,12 @@ Browserprovet kan upprepas med
 äger tillfälliga data och processer, kan stoppas med Ctrl+C och stänger sig
 automatiskt efter fyra minuter. Det använder inga riktiga konton eller API:er.
 
+GitHubs Linux-prov hittade en ordningsskillnad vid WebSocket-stängning:
+klientens `close` kan komma före serverns. Reläprovet väntar nu med en kort,
+begränsad väntan på serverns faktiska frigöring och kontrollerar även felkoden
+1008. Det ersätter antaganden om händelseordning och fasta sovtider; inga
+produktionsspärrar eller kontroller har försvagats.
+
 ## Kvar före aktivering
 
 Bygg och testa GPU-imagen, anslut en uttryckligen vald test-endpoint och mät

@@ -5719,3 +5719,8 @@ Molnscaffoldens sex tester och medieproben passerade även i den gemensamma
 arbetskopian. HTTP-provets miljöisolering har rättats för checkoutar med privat
 talkonfiguration; dess nätspärr blockerade externa anrop även före rättningen.
 Leveranscommiten kör hela pre-commit-flödet igen.
+
+GitHub-prov på Linux hittade därefter en testkapplöpning: klientens WebSocket
+kan stängas före serverns `close`-händelse. Reläproven inväntar nu serverns
+verkliga frigöring med tidsgräns och kontrollerar avvisningens kod 1008.
+Produktionskoden är oförändrad av denna rättning.
