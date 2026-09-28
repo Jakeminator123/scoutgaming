@@ -10,12 +10,12 @@
     {
       "view": "videos",
       "title": "2. Se filerna i mappen",
-      "body": "Astrids videobank läser emil/dealklipp-v1. Varje deal- och replikmapp har en standardfil och en variant-mapp. Idle har grundloopar direkt i idle/ och korta variationer i idle/variant/. Lägg nya klipp där och välj Läs in nya filer. Labbet skannar mapparna och uppdaterar manifestet. Lägg till en ny idlevariant i policyn och spara innan den kan väljas i spelet. Ingen uppladdning till Render behövs."
+      "body": "Astrids videobank läser emil/dealklipp-v1. Varje deal- och replikmapp har en standardfil och en variant-mapp. Idle har grundloopar direkt i idle/ och korta variationer i idle/variant/. Lägg nya MP4-klipp i rätt variant-mapp, behåll originalfilerna och välj Läs in nya filer. Lägg till en ny idlevariant i policyn och spara innan den kan väljas i spelet. Ingen uppladdning till Render behövs."
     },
     {
       "view": "lab",
       "title": "3. Spela och ställ in",
-      "body": "Spela valt klipp förhandsvisar filen direkt. Testa event provar standard, regler, slump eller OpenClaw. Nya varianter är manuella tills du tillåter ett automatiskt val. Spara projekt behåller policyn lokalt. Om variant-mappen är tom används standard. Varje replik och plats har egna val."
+      "body": "Spela valt klipp förhandsvisar filen direkt. Testa event provar standard, regler, slump eller OpenClaw. Nya varianter är manuella tills du tillåter ett automatiskt val. Stäng av en variant med Manuell i Idle eller alla variantval av för det klippet i Deal/Repliker, och spara. Filen finns kvar för prov. Gränssnittet kan inte radera råfiler eller flytta dem till en annan familj. Varje replik och plats har egna val."
     },
     {
       "view": "activity",
@@ -69,6 +69,6 @@
       "purpose": "Gemensam policy, modellval, syntetiska textprov och belagda minnen. Verkliga minnen visas endast i den autentiserade spelflikens Minne."
     }
   ],
-  "storage": "MP4-filerna ligger i emil/dealklipp-v1. Manifest v2 beskriver 26 familjer: deal/repliker med standardfil och valfri variant-mapp samt idle med basloopar och idle/variant. Läs in nya filer uppdaterar det lokala manifestet. Projektets val ligger i lokal JSON: mediaPolicy för deal/repliker och idlePolicy för idle. Äldre projektdata bevaras. Hemligheter stannar på serversidan. Inget sparande i studion deployar automatiskt produkten eller OpenClaw. Probe sparas i samma projekts probePolicy. HTTP 409 erbjuder sammanslagning med explicit konfliktval.",
+  "storage": "MP4-filerna ligger i emil/dealklipp-v1. Läs in nya filer uppdaterar manifestet. Projektets val sparas i lokal JSON: mediaPolicy för deal/repliker, idlePolicy för idle och probePolicy för Probe. Vid Lissabon-start delar Lissabon, avancerade labbet och spelfliken samma sparade projekt. Deal/replikval och Probe läses inför nästa beslut; ladda om spelfliken efter idleändringar när handen är avslutad. En annan öppen editor behöver läsas om för att visa senaste sparade val. Fristående labb behåller sin egen projektlagring. Sparande gör ingen fjärrdeploy eller OpenClaw-omstart. Hemligheter stannar på serversidan. HTTP 409 erbjuder sammanslagning med explicit konfliktval.",
   "authority": "Källans sex eventtyper och 16 grupper finns i lab/policies/studio-contract.json. Videofamiljerna finns i emil/dealklipp-v1/lab-video-manifest.json. Konfiguration av OpenClaw börjar i open-claw/lab/docs/README.md och dess officiella källindex."
 }
