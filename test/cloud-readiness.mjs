@@ -42,10 +42,41 @@ test('configuration and present media never bypass known cloud migration blocker
   assert.equal(report.configuration.directories.find(item => item.name === 'CROUPIER_GENERATED_SPEECH_DIR').outsideCheckout, false);
   assert.equal(report.configuration.urls.find(item => item.name === 'PUBLIC_URL').status, 'invalid-cloud-url');
   assert.equal(report.configuration.urls.find(item => item.name === 'LAB_REMOTE_URL').status, 'invalid-cloud-url');
+  assert.equal(report.configuration.partnerOrigin, 'not-configured-or-mismatch');
   assert.ok(report.blockers.some(item => item.id === 'studio-access'));
   const serialized = JSON.stringify(report);
   for (const secret of ['private-test-token-never-print', 'private-translation-key-never-print', 'private-url-password', 'hidden-value', 'director.example.invalid']) assert.ok(!serialized.includes(secret), secret);
   assert.ok(!serialized.includes(JSON.stringify(state)));
+});
+
+test('one explicit media archive and matching cloud game origin are reported without printing their values', async t => {
+  const { root } = await fixture(t, []);
+  const archive = join(root, 'shared-media');
+  await mkdir(archive);
+  await writeFile(join(archive, 'lab-video-manifest.json'), JSON.stringify({ schemaVersion: 2,
+    items: [{ relativePath: 'idle.mp4', size: 4 }] }));
+  await writeFile(join(archive, 'idle.mp4'), 'test');
+  const env = { LAB_VIDEO_ARCHIVE: archive, BETTALOTTO_PARTNER_BASE_URL: 'https://game.example.com',
+    CROUPIER_GAME_ORIGIN: 'https://game.example.com' };
+  const report = await collectCloudReadiness({ root, env });
+  assert.equal(report.media.status, 'metadata-present');
+  assert.equal(report.media.present, 1);
+  assert.equal(report.configuration.mediaArchive.status, 'directory');
+  assert.equal(report.configuration.mediaArchive.absolute, true);
+  assert.equal(report.configuration.partnerOrigin, 'matched-https-origin');
+  assert.ok(!JSON.stringify(report).includes(archive));
+  assert.ok(!JSON.stringify(report).includes('game.example.com'));
+  const rejected = await collectCloudReadiness({ root, env: { ...env, LAB_VIDEO_ARCHIVE: './relative',
+    CROUPIER_GAME_ORIGIN: 'https://different.example.com' } });
+  assert.equal(rejected.media.status, 'unavailable');
+  assert.equal(rejected.configuration.mediaArchive.status, 'invalid-path');
+  assert.equal(rejected.configuration.partnerOrigin, 'not-configured-or-mismatch');
+  for (const origin of ['https://127.0.0.2', 'https://game.local', 'https://[2001:db8::1]']) {
+    const invalid = await collectCloudReadiness({ root, env: {
+      BETTALOTTO_PARTNER_BASE_URL: origin, CROUPIER_GAME_ORIGIN: origin,
+    } });
+    assert.equal(invalid.configuration.partnerOrigin, 'not-configured-or-mismatch');
+  }
 });
 
 test('media inventory rejects traversal, reports missing and changed sizes without trusting file presence', async t => {

@@ -29,6 +29,22 @@ länge migration återstår. `ready` är uttryckligen `false`: kataloger och
 konfigurerade nycklar bevisar inte beständig lagring, autentisering eller drift.
 Blockerarlistan beskriver dagens arkitektur och behöver omprövas när den ändras.
 
+## Skydda lokal spel- och labbdata
+
+Lissabons `lissabon/data/players/croupier.db` innehåller spel, saldo, chatt och
+Probe-minnen. `craig.db` innehåller kontoidentitet. Projekt och historik finns
+under `lissabon/data/`. Radera inte dessa filer mellan spelomgångar eller
+omstarter. De ingår inte i Git eller i en framtida containerbild.
+
+När det samordnade serverparet är stoppat kan en privat, verifierad kopia skapas
+utanför checkouten med `node tools/backup-lissabon-state.mjs --destination
+<absolut-katalog>`. Kommandot vägrar en aktiv samordnad serversession, SQLite-sidofiler och
+befintlig målkatalog. Det kopierar bara tillåtna databaser, projektfil och
+projektets revisionshistorik samt uppladdade videor med index och
+klassificeringar, verifierar SHA-256 och lämnar originalen kvar.
+Återläsning eller flytt av privata spelarminnen till molnet kräver ett separat
+beslut och ett prov med isolerade testdata först.
+
 ## Vilken motor används?
 
 Lissabon startar produktservern `web/server.mjs` och Next-studion i `lab/` via
@@ -57,6 +73,23 @@ tal till engelska, Cartesia ger Astrids röst och RunPod talvideo.
 Den befintliga Render-installationen ersätter inte produktservern, dess
 databaser eller det lokala labbet.
 
+## Ett källrepo, separata driftsenheter
+
+Behåll ett monorepo på `jakemanator123-github-work` nu. Produktservern,
+Next-labbet, OpenClaw-koden och presentationsmotorn importerar moduler direkt
+från varandras kataloger. En uppdelning i två källrepo skulle först kräva
+versionerade gemensamma paket och ett separat mediekontrakt. Bygg i stället
+avgränsade driftsenheter från samma branch med egna Dockerkontexter och
+byggfilter. [Render stöder detta i monorepo](https://render.com/docs/monorepo-support).
+
+Runtimegränsen styrs av lagringen: Renders beständiga disk kan bara läsas av
+den tjänst den hör till. Labbet på Vercel kan inte heller skriva samma lokala
+`project.json` eller läsa spelarens SQLite-fil. Innan produkt och labb får
+varsin tjänst behövs därför ett autentiserat lagrings-API eller extern
+projekt-/medielagring. En första fjärrdriven instans kan samla processerna på
+en beständig värd med kontrollerad routing, men den lösningen måste provas som
+en egen driftsenhet. Ingen källrepo-uppdelning krävs för det steget.
+
 ## Rekommenderad första molndrift
 
 En långlivad backend med en produktprocess, ett labb och beständig disk
@@ -70,7 +103,7 @@ då bara en webbläsare.
 | Studio | Next-server med autentiserad operatörsåtkomst |
 | Speldata | Beständig `/data/players`: `croupier.db`, `craig.db`, `bo.json` |
 | Projekt | Delad beständig `/data/studio`: projekt, historik, uppladdningar och röstcache |
-| Originalmedia | Exakta filer och manifest i `emil/dealklipp-v1`, samt produktens befintliga dealerassets |
+| Originalmedia | Exakta filer och manifest i `emil/dealklipp-v1` eller samma absoluta `LAB_VIDEO_ARCHIVE` i produkt och labb, samt produktens befintliga dealerassets |
 | Genererat tal | Privat katalog utanför checkout, exempelvis `/data/speech`; ägarbindning och rensning bevaras |
 | AI-tjänster | Befintliga skyddade OpenClaw-, Cartesia- och RunPod-anslutningar |
 
@@ -98,11 +131,11 @@ Den ska inte byggas om som bieffekt av denna migration.
 | Källa | Nuvarande hinder | Förberedelse |
 | --- | --- | --- |
 | `lab/lib/http-guard.mjs` | Sidor och API tillåter endast loopback | Lägg till explicit autentiserat cloudläge med kontrollerade HTTPS-origins |
-| `lab/lib/partner-observer.mjs` | Origin är bettalotto.se eller loopback | Tillåt den valda speladressen genom serverkonfiguration |
+| `lab/lib/partner-observer.mjs` | Molnspel kräver en uttrycklig tillåten origin | Ange samma exakta HTTPS-origin i `CROUPIER_GAME_ORIGIN` och `BETTALOTTO_PARTNER_BASE_URL`; verifiera därefter autentiserad observation |
 | `web/lissabon-profiles.mjs`, `web/server.mjs` | Profiler saknar lösenord och kräver lokal utvecklingsdrift | Använd autentiserad identitet eller skyddad demoåtkomst; behåll lokal profilspärr |
-| `web/generated-speech.mjs` | Tal kräver loopback-HOST och previewflaggor | Inför explicit molnaktivering med samma sessions- och ägarkontroller |
+| `web/generated-speech.mjs` | Molntal kräver uttrycklig aktivering, privat lagring och giltig HTTPS-origin | Ange `CROUPIER_CLOUD_GENERATED_SPEECH=1` i produktion med autentiserad spelare och verifiera hela det betalda ljud-/videoflödet |
 | `lab/lib/project-store.mjs` | JSON, revisionshistorik och fillås | Gemensam beständig volym för Web och Lab, eller en separat lagringsadapter |
-| `web/presentation-api.mjs` | Produktens mediaarkiv är hårdkodat | Behåll exakt katalogstruktur eller inför gemensam konfigurerad mediekälla |
+| `web/presentation-api.mjs`, `lab/lib/video-registry.mjs` | Båda läser nu `LAB_VIDEO_ARCHIVE`, men driften behöver samma media på båda processerna | Ange samma absoluta arkivrot med `lab-video-manifest.json` och exakta filbytes; verifiera att den valda drifttopologin faktiskt delar dem |
 | `web/partner-api.mjs`, `web/server.mjs` | SSE, chattlås och Probe har processminne | Börja med en produktreplika; planera återanslutning och senare delad koordinering |
 
 Driftpaketet behöver en kontrollerad start/stop, healthcheck, sekretesskyddad
@@ -115,8 +148,21 @@ hostnames eller en uttrycklig, testad uppdelning av rutterna i ingången.
 ## Konfiguration att föra över privat
 
 - `PUBLIC_URL`, `BO_URL`: rätt publika HTTPS-adresser.
+- `CROUPIER_GAME_ORIGIN` och `BETTALOTTO_PARTNER_BASE_URL`: samma exakta
+  HTTPS-origin för spelet, utan sökväg eller extra port. Labbet använder den
+  uttryckliga tillåtelsen för sin autentiserade Partner-observatör.
 - `CROUPIER_DATA_DIR`: beständig datakatalog.
 - `LAB_STUDIO_DATA_DIR` och `CROUPIER_PRESENTATION_STUDIO_DIR`: samma absoluta katalog.
+- `LAB_VIDEO_ARCHIVE`: valfri, gemensam absolut rot för Astrids manifest och
+  familjemappar. Ange identiskt värde i produkt och labb. Utan variabeln läser
+  båda `emil/dealklipp-v1` i checkouten. En relativ eller otillgänglig rot
+  stänger medievägen i stället för att falla tillbaka till checkoutens klipp.
+  Den samordnade lokala startaren för variabeln vidare till båda processerna
+  när den anges i miljön eller den privata konfigurationen.
+  En Render-disk kan inte monteras i två separata tjänster; välj därför en
+  mediekälla som faktiskt är åtkomlig för båda, eller samlokalisera dem på en
+  enda instans innan en delad lagringsadapter finns.
+  [Renders diskbegränsningar](https://render.com/docs/disks).
 - `CROUPIER_STREAM_LANE=lissabon-stream-lane`: rätt Astrid-policy.
 - `LAB_REMOTE_URL/TOKEN`: labbets Director.
 - `CROUPIER_PRESENTATION_DIRECTOR_URL/TOKEN`: produktens presentationsråd.
@@ -132,8 +178,12 @@ hostnames eller en uttrycklig, testad uppdelning av rutterna i ingången.
   modellerna genom den driftsatta kedjan; modellens allmänna bildstöd räcker
   inte som bevis för rätt konfiguration.
 - `CROUPIER_GENERATED_SPEECH_DIR`: privat katalog utanför checkout.
-- `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_GENERATED_SPEECH_PREVIEW=1`: nuvarande
-  talflaggor, som fortfarande kräver en loopback-HOST i oförändrad kod.
+- `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_CLOUD_GENERATED_SPEECH=1`: separat
+  molnaktivering. Kräver `NODE_ENV=production`, publik `HOST`, en riktig
+  `PUBLIC_URL` med HTTPS, avstängt gästläge och privat katalog/nycklar ovan.
+  Lokal förhandsvisning använder fortsatt `CROUPIER_GENERATED_SPEECH_PREVIEW=1`
+  och loopback-HOST. Detta är en konfigurationsmöjlighet, inte ett genomfört
+  leverantörsprov i den nya driften.
 - `CROUPIER_ASTRID_CAMERA=1`: valfri kamerafunktion efter explicit aktivering;
   HTTPS och browserns egna enhetsbehörigheter krävs i molnet.
 

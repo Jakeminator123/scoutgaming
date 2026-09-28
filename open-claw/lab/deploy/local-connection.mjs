@@ -11,7 +11,7 @@ import { once } from 'node:events';
 import { syncBuiltinESMExports } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
 import { boundedJson } from '../src/openclaw.mjs';
@@ -28,6 +28,7 @@ const PRIVATE_KEYS = new Set([
   'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
   'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
   'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL',
+  'LAB_VIDEO_ARCHIVE',
 ]);
 const GENERATED_SPEECH_KEYS = ['CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
 const GENERATED_SPEECH_ORIGINS = ['https://api.cartesia.ai', 'https://api.runpod.ai'];
@@ -169,6 +170,8 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
   // Do not fall back to the legacy RUNPOD_ENDPOINT_ID used by other experiments.
   const speechEndpointId = values.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID?.trim() || '';
   if (speechEndpointId && !/^[a-zA-Z0-9_-]{1,128}$/.test(speechEndpointId)) throw new Error('CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID must be an endpoint ID, not a URL.');
+  const videoArchive = values.LAB_VIDEO_ARCHIVE;
+  if (videoArchive !== undefined && !isAbsolute(videoArchive)) throw new Error('LAB_VIDEO_ARCHIVE must be an absolute directory path.');
   const configuration = { repoRoot, baseUrl, speechUrl, remoteUrl, productAgent, directorAgent, timeoutMs: Math.round(timeout), generatedSpeech: Boolean(generatedSpeech) };
   // Keep credentials accessible to the in-memory launcher/probe, but make an
   // accidental JSON/string inspection safe by default.
@@ -180,6 +183,7 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
     runpodKey: { value: runpodKey, enumerable: false },
     speechEndpointId: { value: speechEndpointId, enumerable: false },
     translationKey: { value: translationKey, enumerable: false },
+    videoArchive: { value: videoArchive, enumerable: false },
   });
   const report = {
     astridTranslation: {
@@ -329,6 +333,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
     CROUPIER_ASTRID_CAMERA: '', CROUPIER_ASTRID_TRANSLATION_KEY: '',
     OPENCLAW_DASHBOARD_ENABLED: 'false', OPENCLAW_DASHBOARD_ORIGIN: '', OPENCLAW_HOSTPORT: '',
   };
+  const videoArchiveEnvironment = configuration.videoArchive === undefined ? {} : { LAB_VIDEO_ARCHIVE: configuration.videoArchive };
   const speechOrigins = configuration.generatedSpeech ? GENERATED_SPEECH_ORIGINS : [];
   const translationKey = astridCamera ? configuration.translationKey || '' : '';
   const generatedSpeechEnvironment = role => configuration.generatedSpeech ? {
@@ -344,7 +349,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
     product: {
       command: process.execPath, args: [join(configuration.repoRoot, 'web', 'server.mjs')], cwd: runDir,
       readyText: 'croupier demo on', dataDir: productData,
-      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('product'), NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
+      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('product'), ...videoArchiveEnvironment, NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
         CROUPIER_DATA_DIR: productData, CROUPIER_GENERATIONS_DIR: join(runDir, 'generations'), DEMO_GUEST_ACCESS: '1',
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
         CROUPIER_PRESENTATION_STUDIO_DIR: labData,
@@ -366,7 +371,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
       args: [join(configuration.repoRoot, 'lab', 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)],
       cwd: join(configuration.repoRoot, 'lab'),
       readyText: 'Ready in', dataDir: labData,
-      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
+      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), ...videoArchiveEnvironment, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
         CROUPIER_LAB_DIST_DIR: labDistDir,
         LAB_STUDIO_DATA_DIR: labData, LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
         CROUPIER_STREAM_LANE: streamLane,

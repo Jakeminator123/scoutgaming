@@ -330,6 +330,18 @@ test('generated speech is explicit CLI opt-in and never takes credentials from a
   assert.throws(() => parseCli(['--runpod-api-key', 'fixture-never-on-cli']), /never command-line arguments/);
 });
 
+test('the coordinated local pair receives one explicit absolute Astrid video archive', () => {
+  const archive = join(tmpdir(), 'croupier-shared-video-archive');
+  const { configuration } = loadPrivateConnection({ envFiles: [], env: { LAB_VIDEO_ARCHIVE: archive } });
+  const children = childSpecifications(configuration, join(tmpdir(), 'croupier-local-video-run'), {
+    productPort: 4296, labPort: 4297,
+  });
+  assert.equal(children.product.env.LAB_VIDEO_ARCHIVE, archive);
+  assert.equal(children.lab.env.LAB_VIDEO_ARCHIVE, archive);
+  assert.ok(!JSON.stringify(configuration).includes(archive));
+  assert.throws(() => loadPrivateConnection({ envFiles: [], env: { LAB_VIDEO_ARCHIVE: './relative' } }), /absolute directory/);
+});
+
 test('separate private speech file supplies the scoped endpoint after the base files', async t => {
   const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-speech-config-test-'));
   t.after(() => rm(repoRoot, { recursive: true, force: true }));

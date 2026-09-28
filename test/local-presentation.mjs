@@ -3,16 +3,18 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
+import { createHash } from 'node:crypto';
 import { createPresentationApi, presentationInput } from '../web/presentation-api.mjs';
 import { createSeedProject } from '../lab/lib/studio-model.mjs';
 import { playLocalFilm } from '../web/public/local-film-player.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
+import { videoIdFromSha256 } from '../lab/lib/lab-video-manifest.mjs';
 import { selectPresentation } from '../presentation-runtime/selection.mjs';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
 test('a browser can identify a deal but cannot change its card, hand or hidden state', () => {
@@ -54,6 +56,46 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   }) });
   assert.equal(idle.status, 200); const advice = await idle.json();
   assert.equal(advice.videoId, null); assert.equal(advice.provider, 'openclaw_not_configured');
+});
+
+test('product selection and Lab inventory use the same configured Astrid archive', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-shared-archive-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const archiveDir = join(directory, 'archive'), media = Buffer.from('configured-archive-video-fixture');
+  const manifest = JSON.parse(await readFile(new URL('../emil/dealklipp-v1/lab-video-manifest.json', import.meta.url)));
+  const relativePath = 'deal/deal_pos4/deal_pos4.mp4';
+  const entry = manifest.items.find(item => item.relativePath === relativePath);
+  assert.ok(entry);
+  const oldId = entry.id;
+  entry.sha256 = createHash('sha256').update(media).digest('hex');
+  entry.id = videoIdFromSha256(entry.sha256);
+  entry.size = media.length;
+  const family = manifest.families.find(item => item.id === entry.familyId);
+  family.standardIds = family.standardIds.map(item => item === oldId ? entry.id : item);
+  const target = join(archiveDir, ...relativePath.split('/'));
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, media);
+  await writeFile(join(archiveDir, 'lab-video-manifest.json'), JSON.stringify(manifest));
+  const env = { LAB_VIDEO_ARCHIVE: archiveDir, CROUPIER_PRESENTATION_STUDIO_DIR: join(directory, 'studio') };
+  const inventory = await loadVideoRegistry({ env, repositoryRoot: directory, uploadDir: join(directory, 'studio', 'videos') });
+  assert.equal(inventory.videos.find(video => video.id === entry.id)?.available, true);
+
+  const db = new DatabaseSync(':memory:');
+  db.exec('CREATE TABLE native_presentations (player_id TEXT, version INTEGER, payload TEXT)');
+  db.prepare('INSERT INTO native_presentations VALUES (?,?,?)').run('archive-qa', 2, JSON.stringify([source]));
+  const handler = createPresentationApi({ db, env, store: { load: async () => createSeedProject() } });
+  const server = createServer(async (req, res) => { await handler(req, res, new URL(req.url, 'http://local').pathname, 'archive-qa'); });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  t.after(() => { server.closeAllConnections(); server.close(); db.close(); });
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${origin}/api/presentation/select`, { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ dealerId: 'astrid', version: 2, mode: 'off', event: source }) });
+  assert.equal(response.status, 200);
+  const choice = await response.json();
+  assert.equal(choice.video.id, entry.id);
+  const clip = await fetch(origin + choice.video.src, { headers: { range: 'bytes=0-8' } });
+  assert.equal(clip.status, 206);
+  assert.deepEqual(Buffer.from(await clip.arrayBuffer()), media.subarray(0, 9));
 });
 
 test('native player reads saved deal frequencies, caches retries and picks up an edited percentage without a restart', async t => {

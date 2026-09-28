@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -79,6 +79,29 @@ test('nested Emil paths stay inside the manifest root and remain unclassified', 
   const response = await getVideoResponse(id, request(), options);
   assert.equal(response.status, 200);
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
+});
+
+test('LAB_VIDEO_ARCHIVE selects one absolute manifest and media root', async t => {
+  const { root, archiveDir, snapshotPath } = await fixture(t);
+  await writeFile(join(archiveDir, 'lab-video-manifest.json'), await readFile(snapshotPath));
+  const options = { env: { LAB_VIDEO_ARCHIVE: archiveDir }, repositoryRoot: join(root, 'unused'), uploadDir: join(root, 'uploads') };
+  const inventory = await loadVideoRegistry(options);
+  assert.equal(inventory.summary.archiveSource, 'environment');
+  assert.equal(inventory.summary.snapshotReadable, true);
+  assert.equal(inventory.videos.find(video => video.id === id)?.available, true);
+  const response = await getVideoResponse(id, request(), options);
+  assert.equal(response.status, 200);
+  assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
+});
+
+test('relative LAB_VIDEO_ARCHIVE fails closed without falling back to checked-in media', async t => {
+  const { root } = await fixture(t);
+  const options = { env: { LAB_VIDEO_ARCHIVE: 'relative/archive' }, repositoryRoot: root, uploadDir: join(root, 'uploads') };
+  const inventory = await loadVideoRegistry(options);
+  assert.equal(inventory.summary.archiveSource, 'environment');
+  assert.equal(inventory.summary.snapshotReadable, false);
+  assert.equal(inventory.summary.readable, false);
+  assert.equal((await getVideoResponse(id, request(), options)).status, 503);
 });
 
 test('preview verifies full hash then serves bytes; subsequent metadata marks verified', async t => {
@@ -180,6 +203,7 @@ test('archive symlinks/junctions cannot redirect the media boundary', async t =>
   try { await symlink(options.archiveDir, linkedArchive, process.platform === 'win32' ? 'junction' : 'dir'); }
   catch (error) { if (['EPERM', 'EACCES'].includes(error.code)) { t.skip('Symlink creation is unavailable'); return; } throw error; }
   assert.equal((await getVideoResponse(id, request(), { ...options, archiveDir: linkedArchive })).status, 403);
+  assert.equal((await getVideoResponse(id, request(), { snapshotPath: options.snapshotPath, env: { LAB_VIDEO_ARCHIVE: linkedArchive } })).status, 403);
 });
 
 test('file symlinks are rejected even when pointing to an inventory-identical file', async t => {

@@ -96,6 +96,35 @@ test('URL allowlist rejects redirects, credentials, paths, lookalikes and arbitr
   }
 });
 
+test('a cloud game origin must exactly match the operator configured HTTPS origin', async () => {
+  const gameOrigin = 'https://astrid.example.com';
+  const cloudEnv = { ...env, BETTALOTTO_PARTNER_BASE_URL: gameOrigin, CROUPIER_GAME_ORIGIN: gameOrigin };
+  let fetched;
+  const observer = createPartnerObserver({ env: cloudEnv, fetchImpl: async url => {
+    fetched = url; return upstream(wire());
+  } });
+  assert.equal(observer.status().configured, true);
+  await (await observer.endpoint(request())).text();
+  assert.equal(fetched.origin, gameOrigin);
+  assert.equal(fetched.pathname, '/api/v1/events');
+  assert.equal(fetched.searchParams.get('playerId'), env.BETTALOTTO_PARTNER_PLAYER_ID);
+
+  for (const [base, approved] of [
+    [gameOrigin, undefined], [gameOrigin, 'https://other.example.com'],
+    ['http://astrid.example.com', 'http://astrid.example.com'],
+    ['https://astrid.example.com:444', 'https://astrid.example.com:444'],
+    ['https://127.0.0.2', 'https://127.0.0.2'],
+    ['https://astrid.local', 'https://astrid.local'],
+    ['https://name:secret@astrid.example.com', 'https://name:secret@astrid.example.com'],
+    ['https://astrid.example.com/path', 'https://astrid.example.com/path'],
+  ]) {
+    const status = createPartnerObserver({ env: { ...env, BETTALOTTO_PARTNER_BASE_URL: base,
+      ...(approved === undefined ? {} : { CROUPIER_GAME_ORIGIN: approved }) } }).status();
+    assert.equal(status.configured, false, `${base} / ${approved}`);
+    assert.deepEqual(status.invalid, ['BETTALOTTO_PARTNER_BASE_URL']);
+  }
+});
+
 test('events use the exact Partner HMAC query and read-only transport contract', async () => {
   let observed;
   const timestamp = 1800000000000;

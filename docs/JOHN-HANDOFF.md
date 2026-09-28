@@ -5614,3 +5614,35 @@ anslutna Astrid-vyn och är inte ett visuellt godkännande. OpenClaws hela
 chattbeslutskedja är inte omtestad i denna ändring.
 En annan agents ändring i `emil/dealklipp-v1/lab-video-manifest.json` och äldre
 ospårade filer lämnades orörda.
+
+## 2026-09-28 — förberedelse för fjärrdrivet Astrid-spel och Lissabon
+
+Arbetskopian är nu `jakemanator123-github-work` på privata GitHub-spegeln.
+Whisper-översättning till engelska och Terra som tillåten bildmodell levererades
+i föregående commit `7127830`; lokalt syntetiskt prov passerade. Fysisk
+mikrofon/kamera, Terra genom den driftsatta kedjan och faktisk bildlagring är
+fortfarande inte slutverifierade.
+
+Aktiv spel- och minnesdatabas är `lissabon/data/players/croupier.db`; `craig.db`
+är kontodatabasen. Projekt och revisionshistorik finns under `lissabon/data/`.
+Inget av detta ska raderas vid omstart. En privat, hashverifierad kopia av
+38 tillåtna filer (4 564 123 byte) togs medan det samordnade serverparet var
+stoppat, med `tools/backup-lissabon-state.mjs`, utanför checkouten i Jakobs
+Documents. Originalen och sparade val är orörda. Återställning har inte provats.
+
+Behåll ett källrepo för Web, Lab, OpenClaw och delade medier. De nya
+konfigurationsvägarna ger Web och Lab samma absoluta `LAB_VIDEO_ARCHIVE`,
+Partner-observatören en exakt serverkonfigurerad HTTPS-spelorigin och genererat
+tal ett uttryckligt molnläge med privat lagring och autentiserad drift. En
+root-`.dockerignore` utesluter lokala databaser, hemligheter och stora
+arbets-/stagingfiler från en framtida byggkontext. Ingen root-container har
+byggts; Docker finns inte installerat här. `docs/CLOUD-MIGRATION.md` och den
+redigerade läsande `tools/cloud-readiness.mjs` visar kvarstående hinder.
+
+Verifierat: 60 riktade tester, alla fyra dealers i `audit-dealer-sync --probe`
+och det fulla pre-commit-flödet vid leverans. Mediemanifestets 43 poster har
+kontrollerats mot metadata och filstorlek; det är inte visuell acceptans.
+Produkt- och labbservrarna är fortsatt stoppade enligt Jakobs begäran. Fyra
+dealers fysiska tvåspelsrepetition, fjärr-HTTPS, beständighet efter omstart,
+kamerans verkliga flöde, synkroniserad mediaåtkomst och driftsatt OpenClaw-
+beslutskedja återstår. Inga privata databaser har laddats upp eller ändrats.

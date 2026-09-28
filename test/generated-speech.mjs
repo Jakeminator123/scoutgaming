@@ -39,6 +39,24 @@ test('env gate requires both opt-ins, loopback, private directory and dedicated 
   assert.throws(() => createGeneratedSpeechService({ directory: join(tmpdir(), 'fixture'), voiceId: 'other-dealer' }), { code: 'generated_speech_unknown_profile' });
 });
 
+test('production speech needs an explicit cloud opt-in, HTTPS origin and authenticated mode', () => {
+  const env = { HOST: '0.0.0.0', NODE_ENV: 'production', PUBLIC_URL: 'https://astrid.example.com',
+    CROUPIER_GENERATED_SPEECH: '1', CROUPIER_CLOUD_GENERATED_SPEECH: '1',
+    CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'croupier-cloud-speech-fixture'),
+    CARTESIA_API_KEY: 'fixture-cartesia-secret', RUNPOD_API_KEY: 'fixture-runpod-secret',
+    CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
+  assert.equal(generatedSpeechStatus(env).configured, true);
+  for (const patch of [
+    { CROUPIER_CLOUD_GENERATED_SPEECH: '0' }, { NODE_ENV: 'development' }, { HOST: '127.0.0.1' },
+    { PUBLIC_URL: 'http://astrid.example.com' }, { PUBLIC_URL: 'https://localhost' },
+    { PUBLIC_URL: 'https://169.254.169.254' }, { PUBLIC_URL: 'https://astrid.local' },
+    { PUBLIC_URL: 'https://astrid.example.com:444' },
+    { PUBLIC_URL: 'https://name:secret@astrid.example.com' },
+    { PUBLIC_URL: 'https://astrid.example.com/path' }, { DEMO_GUEST_ACCESS: '1' },
+  ]) assert.equal(generatedSpeechStatus({ ...env, ...patch }).configured, false, JSON.stringify(patch));
+  assert.doesNotMatch(JSON.stringify(generatedSpeechStatus(env)), /secret|endpoint|directory|API/);
+});
+
 test('successful package binds exact text and hashes, stays pending and serves only same-owner media', async t => {
   const { service, directory } = await fixture(t);
   const speechPackage = await service.generate(input());
