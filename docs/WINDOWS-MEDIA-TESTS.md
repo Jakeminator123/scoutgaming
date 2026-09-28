@@ -77,8 +77,11 @@ $testTools = Join-Path $env:LOCALAPPDATA 'Programs/CroupierTestTools'
 $env:PATH = "$testTools/ffmpeg-9.0.1-essentials_build/bin;$testTools/jq-1.8.2;$env:PATH"
 ```
 
-Downloads, signature evidence and full command logs remain ignored under
+Signature evidence and full command logs remain ignored under
 `.croupier-inbox/windows-tests/`; no executable or private log is committed.
+On 2026-09-28, the downloaded FFmpeg archive, its unpacked copy, and the
+downloaded jq executable were removed after their installed executables matched
+by SHA-256. The installed tools and the verification evidence remain available.
 
 ## Final results
 
