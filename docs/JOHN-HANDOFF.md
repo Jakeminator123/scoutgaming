@@ -1,3 +1,58 @@
+## 2026-09-28 — Luna som standard och automatiskt prov med fem fiktiva minnen
+
+Jakob valde GPT-6 Luna för Astrid. `probe-policy.seed.json` använder nu
+`gpt-6-luna`; Av är fortsatt startläge. Liveprojektet i Lissabon sparades via
+UI med Luna, med användarens Textprov/10 s/300 s bevarade. Detta gäller nästa
+vanliga Astrid-chatt, Probe och minnesutdrag utan Render-omstart. Andra roller
+och tidigare uttryckliga modellval i andra sparade projekt ändras inte.
+
+På Jakobs begäran finns fem **fiktiva** provminnen: skilsmässa, påstådd
+miljonvinst, hunden Bosse, gitarr och Lissabonresa. Tre nya märkta fixtures
+gör totalt 23 textkontexter. `tools/probe-qa.mjs --speech --demo-memories`
+skapar egen temporär databas, Lissabon-snapshot och **Jakob · TESTMINNEN**.
+Det tar inga externa databas-/spelar-ID:n och ändrar inget verkligt saldo
+eller handresultat. Direkt testseeding bevisar inte att minnesextraktionen
+skulle acceptera känsliga personuppgifter eller påstådda spelvinster.
+
+Testmiljön på **localhost:4210/4211** kör Automatiskt, Luna, 10 s inaktivitet,
+30 s paus, 100 % urval, högst 12 försök/timme. Hostname skiljer sig från
+vanliga Lissabons **127.0.0.1:4200/4201**, så cookies/profilbyten separeras.
+Egna talinitiativ, ljud, lugnt bord och ett obesvarat initiativ gäller fortsatt.
+Välj testprofilen och öppna Minne. Fokusera/lämna tomt chattfält för ny aktivitet.
+Vanliga Lissabons profiler och policy har inte fyllts med testminnen.
+
+Verifierat mot befintlig drift: Luna gav hundrepliken
+“You mentioned your dog Bosse—hope he’s doing well.” i textprovet. Hon avstod
+från att ta upp skilsmässan spontant; storvinstfallet gav `no_memory`.
+Automatiskt Probe i riktiga lokala spelaren genererade och **spelade**
+“How’s learning guitar going so far?” från testminnet. SQLite-kvittot
+`28913c99-f6d6-4f6e-895a-e03be1871e39` gick till `played`, 67,604 ms från
+reservation till färdig uppspelning. UI visade samma replik. Detta är ett
+funktionellt uppspelningskvitto, inte visuellt läppsynkgodkännande. Ett tidigare
+gästförsök avbröts vid profilbyte. Jakob började därefter skriva i testfliken;
+lämna hans pågående session och QA-servrar igång. Två kontrollerade tal i följd
+har ännu inte slutförts. Vid slutlig nedstängning: notera att helperns Ctrl+C
+raderar den temporära miljön; spara användarens eventuella nya material först.
+
+Separat `.next-probe`-bygge inklusive TypeScript och 15 Probe-tester passerade.
+Autogenererade ändringar av tsconfig/Next-typimporter återställdes till läget
+före bygget, utan att röra befintlig `next-env.d.ts`-arbetskopiestatus.
+
+Arkitekturfrågan utredd: `presentation=local` spelar Emils lokalt serverade
+MP4-filer i browsern; Render ger OpenClaw-beslut/text, Cartesia/RunPod nya
+talpaket. Ingen kontinuerlig färdigrenderad videoström från Render används.
+Originalvägen utan parametern är en annan presentation. Livevyn visade
+`Exakt film saknas · 2D-reserv`, medan aktiv idle var 1080×1920
+`idle_still_f73_s302.mp4`, Klippval=OpenClaw, utan fångade varningar/fel.
+All klipptäckning eller orsaken till upplevt hack är därmed inte godkänd;
+videospelaren/mediabytes ändrades inte under detta arbete.
+
+Kamera/bildgranskning är ännu inte implementerad. Ett komplett överlämnings-
+uppdrag finns i `docs/animation-events/ASTRID-CAMERA-AGENT-PROMPT.md` och
+hänvisar till versionskontroller, kontrakt, samtycke, stoppvillkor och QA i
+kameraplanen. Ingen annan agent har startats eller meddelats. Jira CAC saknas
+i anslutningen; inga ärendestatusar kunde uppdateras.
+
 ## 2026-09-28 09:11 — Ren lokal omstart på Jakobs begäran
 
 Gamla Croupier-flikar och de identifierade servrarna på 4200/4201 samt

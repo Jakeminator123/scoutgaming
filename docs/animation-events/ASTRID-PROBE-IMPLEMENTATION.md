@@ -8,7 +8,7 @@ Användarguiden finns i `lab/docs/guide.json`; detta är den tekniska referensen
 - `/lissabon` har Probe och en länk till OpenClaw. `/probe` i stora labbet
   använder samma editor och sparade `probePolicy` i projektets JSON.
 - Av är standard även för äldre projekt som saknar fältet. Textprov använder
-  en av 20 syntetiska kontexter utan TTS/GPU. Talprov öppnar den konfigurerade
+  en av 23 syntetiska kontexter utan TTS/GPU. Talprov öppnar den konfigurerade
   lokala spelfliken och kräver ett separat knapptryck.
 - Startvärden: 90 s inaktivitet, 300 s paus, 30 % per tillfälle, 3 försök/timme,
   högst ett obesvarat initiativ tills spelaren är aktiv igen. Misslyckade
@@ -16,7 +16,7 @@ Användarguiden finns i `lab/docs/guide.json`; detta är den tekniska referensen
 - Fakta: högst 20, normalt 30 dagar från källan; högst fem kandidater skickas
   till modellen. Samma anekdot spärras i 7 dagar, namnfrågan en gång/session.
 - Modellval gäller Astrids vanliga chatt, Probe och minnesutdrag. Standard är
-  `gateway-default`; andra roller byter inte modell. Kandidater är
+  `gpt-6-luna` enligt Jakobs val den 28 september; andra roller byter inte modell. Alternativ är
   `gpt-5.4-mini`, `gpt-6-luna`, `gpt-5.6-terra`.
 - HTTP 409 erbjuder en sammanslagning mot den ursprungliga versionen.
   Oberoende fält bevaras; samma fält/array kräver ett uttryckligt konfliktval.
@@ -101,8 +101,8 @@ val mellan none/low. Ingen jämförd modell har utsetts till vinnare.
 
 Gateway och Director kör nu `70ef43f` med Probe och de tre modellkandidaterna.
 Åtta autentiserings-/schemaprov och en full 60-fallsjämförelse passerade.
-Luna gav relevanta initiativ och var snabbare än Terra i detta lilla prov;
-standardmodellen är oförändrad. Latens, begränsningar, deploy-ID och
+Luna gav relevanta initiativ och var snabbare än Terra i detta lilla prov.
+Jakob valde därefter Luna som Astrids standard. Latens, begränsningar, deploy-ID och
 kvarvarande uppspelningskontroll finns i
 [driftkvittot](../../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-28.md).
 

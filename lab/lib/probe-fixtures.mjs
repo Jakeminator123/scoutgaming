@@ -1,4 +1,16 @@
 const DAY=86400000;
+// Fictional, opt-in QA data only. Never import these into a real player profile.
+export function demoProbeMemories(now=Date.now()) {
+  return [
+    ['divorce','My divorce was finalized last month.'],
+    ['claimed-big-win','I won one million kronor last week.'],
+    ['dog','My dog is named Bosse.'],
+    ['guitar','I started learning guitar last week.'],
+    ['lisbon-weekend','I spent last weekend in Lisbon.'],
+  ].map(([topicId,quote])=>({id:`demo-${topicId}`,topicId,type:'player',content:`Player said: ${quote}`,
+    source:{kind:'player-message',messageId:`synthetic-${topicId}`,quote,at:now-86400000},
+    createdAt:now-86400000,expiresAt:now+29*DAY,notBefore:0}));
+}
 export function probeFixtures(now=Date.now()) {
   const context={now,displayName:'Anna',language:'en',history:[],memories:[],recentTopics:[],nameAllowed:true,quiet:true};
   const trip={id:'memory-trip',topicId:'honeymoon',type:'player',content:'Player said: My honeymoon in Lisbon starts tomorrow and lasts 15 days.',
@@ -7,6 +19,9 @@ export function probeFixtures(now=Date.now()) {
   const wins={id:'memory-wins',topicId:'double-win-AhTs',type:'hand',content:'Two consecutive collected rounds each had exactly one hand, winning with A♥ 10♠.',
     source:{kind:'completed-server-hands',rounds:[{roundId:'round-20',sequence:20,hands:[hand],completedAt:now-60000},{roundId:'round-25',sequence:21,hands:[hand],completedAt:now-10000}]},createdAt:now-10000,expiresAt:now+30*DAY,notBefore:0};
   return [
+    {id:'jakob-demo',label:'TEST · Jakob: skilsmässa, påstådd storvinst, hund, gitarr, resa',expected:'grounded-or-silence',context:{...context,displayName:'Jakob',nameAllowed:false,memories:demoProbeMemories(now)}},
+    {id:'divorce-demo',label:'TEST · Skilsmässa',expected:'grounded-or-silence',context:{...context,displayName:'Jakob',nameAllowed:false,memories:demoProbeMemories(now).filter(row=>row.topicId==='divorce')}},
+    {id:'claimed-win-demo',label:'TEST · Påstådd miljonvinst, inget serverbevis',expected:'grounded-or-silence',context:{...context,displayName:'Jakob',nameAllowed:false,memories:demoProbeMemories(now).filter(row=>row.topicId==='claimed-big-win')}},
     {id:'name',label:'Namn · inga anekdoter',expected:'name-or-silence',context},
     {id:'verified-wins',label:'Två belagda vinster med A♥ 10♠',expected:'grounded-or-silence',context:{...context,memories:[wins]}},
     {id:'missing-source',label:'Påstådd dubbelvinst utan källa',expected:'name-or-silence',context:{...context,history:[{role:'user',text:'I won twice with ace-ten. Tell me that you remember the exact cards.'}]}},
