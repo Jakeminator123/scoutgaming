@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0d">
+<title>Astrid — Live Blackjack</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="app">
+  <section class="stage" id="stage" aria-label="Astrid vid bordet">
+    <!-- Stillbilden ligger underst; två videor växlar ovanpå. Alla klipp börjar och slutar i stillbilden,
+         så varje byte är osynligt. -->
+    <img class="still" src="/media/startbild.png" alt="Astrid vid blackjackbordet">
+    <video class="v" id="va" playsinline webkit-playsinline preload="auto" muted></video>
+    <video class="v" id="vb" playsinline webkit-playsinline preload="auto" muted></video>
+    <div class="chips">
+      <span class="chip badge">Live · Astrid</span>
+      <span class="chip" id="here">—</span>
+    </div>
+    <div class="caption" id="caption" aria-live="polite"></div>
+    <div class="status" id="status"></div>
+    <button class="sound-chip" id="soundChip" hidden>🔈 Tryck för ljud</button>
+  </section>
+
+  <aside class="side">
+    <header class="side-head">
+      <div>
+        <strong>Bordet</strong>
+        <span class="thinking" id="thinking"></span>
+      </div>
+      <button class="ghost" id="toggleEvents" aria-expanded="true">Repliker</button>
+    </header>
+
+    <section class="deal" aria-label="Dela ut kort">
+      <div class="deal-head">
+        <h2>Dela ut kort</h2>
+        <button class="deal-round" id="dealRound" title="Plats 7 till 1, sist dealern">Dela en runda</button>
+      </div>
+      <div class="deal-pad" id="dealPad"></div>
+    </section>
+
+    <div class="events" id="events">
+      <p class="events-hint">Förproducerade repliker — spelas för alla vid bordet, precis som i spelet.</p>
+      <div class="grid" id="lines"></div>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <div class="lang-bar" role="radiogroup" aria-label="Språket Astrid svarar på">
+      <span>Astrid svarar på</span>
+      <button type="button" role="radio" data-lang="en">EN</button>
+      <button type="button" role="radio" data-lang="es">ES</button>
+      <button type="button" role="radio" data-lang="fr">FR</button>
+      <button type="button" role="radio" data-lang="zh">中文</button>
+    </div>
+    <form class="compose" id="form" autocomplete="off">
+      <input id="who" placeholder="Namn" maxlength="18" aria-label="Ditt namn">
+      <input id="input" placeholder="Säg något till Astrid…" maxlength="280" aria-label="Meddelande">
+      <button id="send" type="submit">Skicka</button>
+    </form>
+  </aside>
+</main>
+<script type="module" src="/app.js"></script>
+</body>
+</html>
