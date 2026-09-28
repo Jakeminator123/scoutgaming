@@ -1,3 +1,53 @@
+## 2026-09-28 — Lissabon idle: modellval, spar-konflikt och kostnadsbild
+
+Lissabons Web-spelare får `idlePolicy` och videoinventering via
+`/api/presentation/config` vid laddning. Nya chattmeddelanden går via
+`/api/presentation/idle-advice`; servern läser det sparade projektet och
+skickar bara tillgängliga, `openclaw`-markerade variantfiler med deras
+beskrivningar som tillfälliga kandidater till Render Director. Filerna behöver
+inte laddas upp till Render. Att finnas i mappen ger inte automatiskt ett
+modellval: ett svar kan också behålla basloopen och tal/spel går före idle.
+
+Vid undersökningen var alla sex idlevarianter lokalt tillgängliga. Det senast
+sparade projektet hade `idle_cheek` som `automatic`, cirka var 6:e sekund;
+den öppna Lissabonfliken visade ett osparat 12-sekundersvärde, medan Jakob
+nämnde 25 sekunder. Jakob bekräftade att automatläget var avsiktligt.
+`idle_cheek` ska därför inte förväntas väljas genom chatt i denna policy.
+Den öppna flikens sparförsök fick HTTP 409 eftersom
+projektets revision hade ändrats av en annan sparning. Detta följer
+`project-store.mjs` och orsakades inte av den föregående handoff-commiten
+eller RunPod-inställningen. Ingen serveromstart behövs. Ladda om labbfliken
+för ny revision först efter att osparade val noterats; spara önskad policy och
+ladda därefter om spelfliken när handen är klar. Ingen projektfil ändrades här.
+
+Render Director svarade på `/healthz` och autentiserat `/api/status` med 200.
+Ett syntetiskt, isolerat skuggprov med `idle_cheek` tillfälligt markerad
+`openclaw` i minnet gav `provider: responded`, kontextkontrakt v2 och valde
+`idle_smile` för ett vänligt skämt. Både smile och cheek beskriver nu vänliga
+skämt. Ytterligare syntetiska skuggprov med den faktiskt sparade policyn
+valde `idle_yawn` för uttalad trötthet, `idle_insulted` för en tydlig
+förolämpning och `idle_glance` för fundering; neutralt lyssnande gav inget
+variantval. Render får alltså kandidaterna och deras beskrivningar, men
+modellvalet är inte ett löfte om uppspelning. `shadow` beräknar bara
+`wouldChooseId` och spelar inte varianten. Skuggproven kördes utanför
+webbläsaren, spelade ingen video, sparade inget projekt och ändrade ingen
+OpenClaw-konfiguration. Lissabon använder en Web-spelare och labbets Ström
+som observationsvy, inte två samtidiga Astrid-renderingar. Labbets
+observationslogg var frånkopplad, så verkligt klippval och uppspelningskvitto
+för Jakobs tidigare meddelanden kunde inte rekonstrueras.
+
+Läppsynkens separata läsgranskning fann att Croupier kastar arbetarmätningen
+`output.t` och använder ett `/run`-jobb per svar. Mät först RunPod-kö,
+arbetarens GPU/kodartid, NVENC mot x264, överföring och tid till bild innan
+sessionsväg eller videokvalitet ändras. RunPods publika RTX 4090-nivå är
+$1,10/h för flex, cirka $0,37 per 20 minuters tomgång; en ständigt aktiv
+arbetare anges till $0,77/h, cirka $18,48/dygn, före lagring och övriga
+tjänster. Den faktiska endpointen kontrollerades åter: `workersMin: 0`,
+`idleTimeout: 1200`, `workersMax: 5`, `QUEUE_DELAY: 4`.
+Under denna läsgranskning uppdaterades `work` separat till commit `102fdcf`;
+en ny ospårad idle-MP4 dök upp i arbetskopian. Den ingick inte i arbetet
+och lämnades orörd.
+
 ## 2026-09-28 — RunPod: 20 minuters varm tomgång, därefter noll arbetare
 
 På Jakobs begäran ändrades den befintliga endpointen `astrid-spel-lipsync`
