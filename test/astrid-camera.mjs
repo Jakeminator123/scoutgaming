@@ -3,6 +3,9 @@ import { syntheticJpeg } from './fixtures/synthetic-jpeg.mjs';
 import assert from 'node:assert/strict';
 import { createAstridCameraSession } from '../web/public/astrid-camera-session.mjs';
 import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
+import { childSpecifications, loadPrivateConnection } from '../open-claw/lab/deploy/local-connection.mjs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 function trace(samples, stopAt = null) {
   let now = 0, captures = 0, ended;
@@ -56,4 +59,18 @@ test('image contract binds one turn, Astrid, consent, MIME, bytes and dimensions
   assert.throws(() => normalizeAstridObservation(valid(), 'turn-2'));
   assert.throws(() => normalizeAstridObservation(valid(), 'turn-1', 'vera'));
   assert.throws(() => normalizeAstridObservation(valid(), 'turn-1', 'astrid', 'b'.repeat(64)));
+});
+
+test('the coordinated launcher passes camera opt-in only to the Lissabon product', () => {
+  const { configuration } = loadPrivateConnection({ envFiles: [], env: { CROUPIER_ASTRID_CAMERA: '1' } });
+  const directory = join(tmpdir(), 'croupier-camera-launcher-contract');
+  const options = { studioDataDir: join(directory, 'studio'), streamLane: 'lissabon-stream-lane' };
+  const off = childSpecifications(configuration, directory, options);
+  assert.equal(off.product.env.CROUPIER_ASTRID_CAMERA, '', 'inherited environment cannot enable the camera');
+  assert.equal(off.lab.env.CROUPIER_ASTRID_CAMERA, '');
+  const on = childSpecifications(configuration, directory, { ...options, astridCamera: true });
+  assert.equal(on.product.env.CROUPIER_ASTRID_CAMERA, '1');
+  assert.equal(on.lab.env.CROUPIER_ASTRID_CAMERA, '');
+  assert.throws(() => childSpecifications(configuration, directory, { astridCamera: true }), /Lissabon/);
+  assert.throws(() => childSpecifications(configuration, directory, { ...options, astridCamera: 'false' }), /boolean/);
 });

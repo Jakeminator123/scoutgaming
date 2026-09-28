@@ -49,7 +49,7 @@ async function buildLab(session) {
   await new Promise((yes, no) => { child.once('error', no); child.once('exit', code => code === 0 ? yes() : no(new Error(`Labbbygget misslyckades (${code}). Kör npm --prefix lab ci om beroenden saknas.`))); });
 }
 export async function main(args = process.argv.slice(2)) {
-  if (args.some(arg => !['--check', '--no-open', '--skip-build'].includes(arg))) throw new Error('Använd --check, --no-open eller --skip-build.');
+  if (args.some(arg => !['--check', '--no-open', '--skip-build', '--astrid-camera'].includes(arg))) throw new Error('Använd --check, --no-open, --skip-build eller --astrid-camera.');
   const url = `http://127.0.0.1:${profile.labPort}/lissabon`;
   if (args.includes('--check')) {
     const { configuration, report } = loadPrivateConnection({ generatedSpeech: true });
@@ -59,11 +59,13 @@ export async function main(args = process.argv.slice(2)) {
   const running = await fetch(`http://127.0.0.1:${profile.labPort}/api/health`, { signal: AbortSignal.timeout(2000) }).then(r => r.json()).catch(() => null);
   if (running?.service === 'croupier-next-studio' && running.streamLane === profile.id) {
     console.log(`Lissabon kör redan: ${url}`);
+    if (args.includes('--astrid-camera')) console.log('Kameraflaggan ändras bara vid en ny start. Den körande sessionen ändrades inte.');
     return;
   }
   if (running) throw new Error(`Port ${profile.labPort} används av ett annat labb. Stoppa dess startprocess först; ingen process stängs automatiskt.`);
   const studioDataDir = join(directory, 'data');
   const fixture = await startIsolatedConnection({ ...profile, studioDataDir, streamLane: profile.id,
+    astridCamera: args.includes('--astrid-camera'),
     prepare: async session => {
       await prepareProject(studioDataDir);
       if (!args.includes('--skip-build')) await buildLab(session);

@@ -260,9 +260,12 @@ function requireGeneratedSpeechConfiguration(configuration) {
   }
 }
 
-function validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname }) {
+function validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname, astridCamera = false }) {
   if (!/^\.[a-z0-9-]+$/.test(labDistDir)) throw new Error('Invalid isolated lab build directory.');
   if (!['127.0.0.1', 'localhost'].includes(browserHostname)) throw new Error('browserHostname must be localhost or 127.0.0.1.');
+  if (typeof astridCamera !== 'boolean' || (astridCamera && streamLane !== 'lissabon-stream-lane')) {
+    throw new Error('astridCamera requires an explicit boolean opt-in on the Lissabon stream lane.');
+  }
   if (playerDataDir !== undefined) {
     if (streamLane !== 'lissabon-stream-lane' || !studioDataDir) throw new Error('playerDataDir requires a Lissabon stream lane with studioDataDir.');
     if (typeof playerDataDir !== 'string' || !playerDataDir.trim()) throw new Error('playerDataDir must be a non-empty directory path.');
@@ -270,8 +273,8 @@ function validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, la
 }
 
 export function childSpecifications(configuration, runDir, { productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT,
-  studioDataDir, playerDataDir, streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1' } = {}) {
-  validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
+  studioDataDir, playerDataDir, streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1', astridCamera = false } = {}) {
+  validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname, astridCamera });
   requireGeneratedSpeechConfiguration(configuration);
   for (const port of [productPort, labPort]) {
     if (RESERVED_SHARED_PORTS.has(port)) throw new Error(`Port ${port} is reserved for the shared comparison and will not be touched.`);
@@ -293,6 +296,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
     GENERATIONS_READ_TOKENS: '', CARTESIA_API_KEY: '', ELEVENLABS_API_KEY: '', ELEVENLABS_OC_API: '',
     RUNPOD_API_KEY: '', RUNPOD_ENDPOINT_ID: '', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: '',
     CROUPIER_GENERATED_SPEECH: '', CROUPIER_GENERATED_SPEECH_DIR: '', CROUPIER_GENERATED_SPEECH_PREVIEW: '',
+    CROUPIER_ASTRID_CAMERA: '',
     OPENCLAW_DASHBOARD_ENABLED: 'false', OPENCLAW_DASHBOARD_ORIGIN: '', OPENCLAW_HOSTPORT: '',
   };
   const speechOrigins = configuration.generatedSpeech ? GENERATED_SPEECH_ORIGINS : [];
@@ -315,6 +319,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         CROUPIER_PRESENTATION_STUDIO_DIR: labData,
         CROUPIER_STREAM_LANE: streamLane,
         CROUPIER_LISSABON_PROFILES: persistentProfiles ? '1' : '',
+        CROUPIER_ASTRID_CAMERA: astridCamera ? '1' : '',
         CROUPIER_PRESENTATION_DIRECTOR_URL: configuration.remoteUrl, CROUPIER_PRESENTATION_DIRECTOR_TOKEN: configuration.remoteToken,
         // The relay is the narrower transport and wins whenever it is present.
         // Never place the full Gateway bearer in that product child.
@@ -409,8 +414,8 @@ function configureSyntheticPartner(specs, repoRoot) {
 
 export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env,
   productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, studioDataDir, playerDataDir,
-  streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1', prepare } = {}) {
-  validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
+  streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1', astridCamera = false, prepare } = {}) {
+  validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname, astridCamera });
   if (prepare !== undefined && typeof prepare !== 'function') throw new Error('Invalid connection preparation.');
   if (productPort === labPort) throw new Error('Product and Next Eventstudio need separate ports.');
   for (const port of [productPort, labPort]) if (RESERVED_SHARED_PORTS.has(port)) throw new Error(`Port ${port} is reserved for the shared comparison and will not be touched.`);
@@ -443,7 +448,7 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
       throw new Error('A verified Next production build is required; run npm --prefix lab run build before starting the isolated connection.');
     }
     runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-openclaw-connection-'));
-    const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
+    const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname, astridCamera });
     specs.product.env = session.environment(specs.product.env);
     specs.lab.env = session.environment(specs.lab.env);
     await Promise.all([specs.product.dataDir, specs.lab.dataDir, join(runDir, 'generations'),

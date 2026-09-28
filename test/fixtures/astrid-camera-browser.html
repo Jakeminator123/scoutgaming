@@ -68,7 +68,11 @@ document.querySelector('#voice').onclick=async event=>{
   const major=Number(navigator.userAgent.match(/(?:Chrome|Chromium)\/(\d+)/)?.[1]??0);
   if(major<135)throw new Error('Det syntetiska ljudspårprovet kräver Chromium 135+');
   context=new AudioContext();await context.resume();
-  const bytes=await fetch('/dealers/astrid/audio/en/greeting.mp3').then(r=>r.arrayBuffer());
+  const response=await fetch('/dealers/astrid/audio/en/greeting.mp3').catch(()=>{
+   throw new Error('Testljudet kunde inte hämtas. Det befintliga QA-serverparet behöver vara igång.');
+  });
+  if(!response.ok)throw new Error(`Testljudet saknas eller är inte tillgängligt (HTTP ${response.status}).`);
+  const bytes=await response.arrayBuffer();
   const buffer=await context.decodeAudioData(bytes);const source=context.createBufferSource();source.buffer=buffer;
   const destination=context.createMediaStreamDestination();source.connect(destination);stream=destination.stream;
   recognition=new NativeRecognition();recognition.lang='en-US';recognition.continuous=false;
