@@ -145,7 +145,7 @@ class Video extends EventTarget {
   removeAttribute() {}
   remove() { this.removed = true; }
   emit(type) { this.dispatchEvent(new Event(type)); }
-  frame() { for (const callback of this.frames.values()) callback(0, { mediaTime: 1 }); this.frames.clear(); }
+  frame(time = 1) { const callbacks = [...this.frames.values()]; this.frames.clear(); for (const callback of callbacks) callback(0, { mediaTime: time }); }
 }
 function filmFixture(t) {
   const original = globalThis.document;
@@ -178,6 +178,16 @@ test('an ended event with no presented picture remains a failure', async t => {
   await assert.rejects(result, /without a presented frame/);
 });
 
+test('card motion receives each presented media frame and stops at cancellation', async t => {
+  const { media, host } = filmFixture(t), controller = new AbortController(), times = [], receipts = [];
+  const result = playLocalFilm({ host, src: '/frames', signal: controller.signal, onFrame: time => times.push(time), onReceipt: r => receipts.push(r.state) });
+  const video = media[0]; video.emit('playing'); video.frame(0); video.frame(31/24); video.frame(32/24);
+  const stale = [...video.frames.values()][0]; controller.abort();
+  await assert.rejects(result, { name: 'AbortError' }); stale(0, { mediaTime: 5 });
+  assert.deepEqual(times, [0, 31/24, 32/24]);
+  assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.equal(video.frames.size, 0);
+});
+
 async function controllerFixture(t) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = await loadVideoRegistry(), jobs = [], receipts = [];
@@ -196,6 +206,17 @@ async function controllerFixture(t) {
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, get proofs() { return proofs; } };
 }
+
+test('selection exposes server event and frames cannot outlive the action owner', async t => {
+  const { controller, jobs } = await controllerFixture(t), selected = [], frames = [];
+  const result = controller.present({ ...source, card: { r: 'K', s: '♦' } }, {
+    onSelected: (video, event) => selected.push({ video, event }), onFrame: time => frames.push(time),
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(selected[0].event, source);
+  jobs[0].options.onFrame(1); controller.state({ action: true }); jobs[0].options.onFrame(2);
+  assert.equal(await result, false); assert.deepEqual(frames, [1]);
+});
 test('deal interrupts idle; neither selection nor a stale idle frame opens the speech gate', async t => {
   const fixture = await controllerFixture(t); const { controller, jobs } = fixture;
   controller.start(); assert.equal(jobs.length, 1); assert.equal(fixture.proofs, 0);

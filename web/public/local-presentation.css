@@ -1,4 +1,4 @@
-/* Local films share the scene: base 1, film 2, generated speech 3, cards 20. */
+/* Shared scene: base 1, film 2, generated speech 3, SVG cards 4, controls 20. */
 html[data-presentation="local"] { --generated-speech-layer: 3; --generated-speech-label-top: auto; --generated-speech-label-bottom: calc(45% + 34px); }
 html[data-presentation="local"] #room,
 html[data-presentation="local"] #room2,
@@ -12,6 +12,11 @@ html[data-presentation="local"] #supervisor { visibility: hidden !important; }
 html[data-presentation="local"] #pitboss { display: none; }
 .local-presentation-film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 2; }
 .local-presentation-still { z-index: 1; background: #101618; }
+.local-card-overlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
+.local-card-overlay .playing-card { filter: drop-shadow(0 2px 2px #0005); }
+/* Retain the existing DOM for game controls/accessibility; draw the cards once. */
+#scene[data-local-card-overlay="true"] .card,
+#scene[data-local-card-overlay="true"] .hand-total { opacity: 0; }
 .local-presentation-status { position: absolute; left: 12px; bottom: 45%; z-index: 30; color: #ffe8ab; background: #101618dd; border-radius: 8px; font: 12px Inter, sans-serif; padding: 6px 10px; max-width: calc(100% - 24px); }
 .local-presentation-status:empty { display: none; }
 .local-presentation-mode { position: absolute; left: 12px; top: 130px; z-index: 40; padding: 7px; background: #101618; color: #eee; border: 1px solid #52605e; border-radius: 8px; }

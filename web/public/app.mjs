@@ -57,6 +57,7 @@ const DEALERS = {
 const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
 const localPresentationEnabled = DEALER.key === 'astrid' && new URLSearchParams(location.search).get('presentation') === 'local';
 let localPresentation = null;
+let localCards = null;
 if (localPresentationEnabled) {
   document.documentElement.dataset.presentation = 'local';
   const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/local-presentation.css'; document.head.append(css);
@@ -471,7 +472,7 @@ speechPoseGate = createSpeechPoseGate({
 });
 if (localPresentationEnabled) {
   try {
-    const [{ PerformancePlayer }, { createLocalPresentation }] = await Promise.all([import('./performance-player.mjs'), import('./local-presentation.mjs')]);
+    const [{ PerformancePlayer }, { createLocalPresentation }, cardOverlay] = await Promise.all([import('./performance-player.mjs'), import('./local-presentation.mjs'), import('./local-card-overlay.mjs')]);
     performancePlayer = new PerformancePlayer({ host: $('#scene') });
     localPresentation = await createLocalPresentation({ player: performancePlayer, host: $('#scene'), dealerId: DEALER.key,
       version: () => tableVersion, muted: () => voice.muted,
@@ -479,8 +480,9 @@ if (localPresentationEnabled) {
       onIdle: () => presentStandardIdle('local-primary-frame'),
       onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
     });
+    localCards = cardOverlay.createLocalCardOverlay($('#scene'));
     localPresentation.start();
-    window.addEventListener('pagehide', () => localPresentation.close(), { once: true });
+    window.addEventListener('pagehide', () => { localCards.close(); localPresentation.close(); }, { once: true });
   } catch (error) {
     console.error('[local presentation]', error.message);
     const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
@@ -905,6 +907,7 @@ async function prepareTable() {
     if(astridGreenTake){layoutGreenDealerCards(dc,astridGreenTake);$('#green-upcard-replay').disabled=false;}
     greenBoxReplays(true);
     updateBadge(dc,round.dealer); renderBets();
+    localCards?.restore(round);
     if (round.phase === 'insurance') { $('#insurance').hidden=false; busy=false; }
     else if (round.phase === 'settled') { busy=true; await finish(); }
     else { busy=false; activeBoxHighlight(); }
@@ -1467,6 +1470,7 @@ function subhandEl(cardsEl, k, count) {
 // first, then the dealer deals each new hand its second card - without this
 // the cards appear instantly and it reads as the game hitting for you.
 async function animateSplit(bHand) {
+  localCards?.sync(round, round.hands.indexOf(bHand));
   const boxIdx = bHand.box;
   const sibs = round.live().filter(h => h.box === boxIdx);
   const nh = sibs[sibs.indexOf(bHand) + 1];
@@ -1536,10 +1540,18 @@ async function deliverCard(container, card, options={}) {
   if (localPresentationEnabled) {
     const event = { type: 'deal', to: container.id === 'dealer-cards' ? 'dealer' : 'box',
       box: seatBox == null ? null : Number(seatBox), shoeDraw: options.shoeDraw ?? card?.shoeDraw };
-    const played = await localPresentation?.present(event);
-    const element = dealCardTo(container, card, { ...options, motion: { localCompleted: played } });
+    localCards?.sync(round);
+    let token;
+    const played = await localPresentation?.present(event, {
+      onSelected: (video, committedEvent) => { token = localCards?.begin(video, committedEvent); },
+      onFrame: time => localCards?.frame(token, time),
+    });
+    const calibratedContact = token == null ? false : localCards?.finish(token, event.shoeDraw, played);
+    if (token == null) localCards?.show(event.shoeDraw);
+    const element = dealCardTo(container, card, { ...options, motion: { localCompleted: played || !!localCards } });
     await element.dealt;
-    nativeObservation.emit('playback', { event: 'deal', state: 'landed', ...event, type: undefined, renderer: '2d', evidence: 'DOM-card-presented', calibratedContact: false }, correlation);
+    nativeObservation.emit('playback', { event: 'deal', state: 'landed', ...event, type: undefined,
+      renderer: localCards ? 'svg-local' : '2d', evidence: calibratedContact ? 'video-frame-track' : 'static-card-presented', calibratedContact: !!calibratedContact }, correlation);
     return;
   }
   const greenTake=selectGreenTake(astridGreenTakes,{dealer:DEALER.key,enabled:!astridDealingPaused,containerId:container.id,box:seatBox==null?null:Number(seatBox),split:container.classList.contains('subhand'),faceDown:options.faceDown===true,existingCards:container.querySelectorAll('.card').length});
@@ -1597,10 +1609,12 @@ async function revealHole(container, card) {
   el.style.setProperty('--ci', back.style.getPropertyValue('--ci') || 1);
   el.classList.add('flip');
   back.replaceWith(el);
+  localCards?.reveal(round);
   nativeObservation.emit('playback',{event:'reveal',state:'presented',card,evidence:'DOM-replacement'});
   if(astridGreenTake&&container.id==='dealer-cards')layoutGreenDealerCards(container,astridGreenTake);
 }
 function clearTable() {
+  localCards?.clear();
   if(astridGreenTake)$('#green-upcard-replay').disabled=true;
   greenBoxReplays(false);
   document.querySelectorAll('.cards').forEach(c => (c.innerHTML = ''));
@@ -1611,6 +1625,7 @@ function clearTable() {
 // ---------- round flow ----------
 function setBanner(text) { const b = $('#banner'); if (!text) b.classList.add('hidden'); else { b.classList.remove('hidden'); b.textContent = text; } }
 function activeBoxHighlight() {
+  localCards?.sync(round);
   tableScene?.setActiveHand?.(null);
   if(compactSeats)layoutSeats();
   seatEls.forEach(s => s.classList.remove('active'));

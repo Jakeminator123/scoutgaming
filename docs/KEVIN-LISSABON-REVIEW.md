@@ -61,9 +61,9 @@ talägarskap och GPU-kostnadsspärrar ska följa vår befintliga väg.
   frigöring och begränsad historik. Lokal status och lås utesluts från Git
   och Docker-kontext. Anvisningar: `agent-talk/README.md`.
 
-Browserns faktiska mobiluppspelning, visuell handkontakt och våra alternativa
-tagningar är ännu inte verifierade i den kombinerade produkten. Ingen
-spelar-/mediekod har importerats som del av denna granskning.
+Vid den första granskningen var den kombinerade produkten ännu oprövad och
+ingen spelarkod importerad. Nästa avsnitt om kortintegration beskriver den
+efterföljande implementationen och dess begränsade browserprov.
 
 ## Webbplats och databas
 
@@ -109,3 +109,61 @@ kortprojektionen med de exakta standardfilmerna.
 Behåll varianter utan kalibrering på den tydligt markerade reservvägen tills
 deras egna spår är mätta. Använd tomma databaser för prov. Molnstartens
 verifieringsspärr och tidigare krav på budgetgodkännande gäller fortfarande.
+
+## Kortintegration — 2026-09-28
+
+Kevins SVG-kort, projicerade framsidor, kontaktstyrda förflyttningar och
+handmasker finns nu under `web/public/kevin-cards/`. Proveniens och anpassningar
+står i dess README. Befintlig PerformancePlayer hämtar/verifierar samma MP4;
+`requestVideoFrameCallback` förser kortlagret med faktiskt presenterad
+`mediaTime`. Ingen separat videospelare eller spelmotor har införts.
+
+`local-card-overlay.mjs` håller visade `shoeDraw` åtskilda från serverns
+redan beslutade kommande kort. Återläsning, split, dolt kort, avbrott och byte
+till reservfilm hanteras utan att avslöja nya kort för tidigt. En kalibrering
+aktiveras endast för rätt plats och exakt SHA-256. Avbrutna/felande tagningar,
+dolda kort och omätta varianter får inget kvitto på kalibrerad handkontakt.
+Övriga dealers behåller sin gemensamma befintliga väg. Inga filmer eller
+tidigare visuella godkännanden har ändrats.
+
+Verifiering hittills:
+
+- 25 riktade tester: faktiskt SVG-träd, handmask över befintliga kort,
+  stabila noder, split/fyra händer, återläsning, dolda kort, avbrutna callbackar,
+  omprov av halvvisat kort samt alla åtta standardfilmers faktiska SHA-256.
+- `audit-dealer-sync --probe` passerar för fyra dealers mot oförändrad
+  baseline. Kända saknade tagningar: Vera 8, Amira 2, Mei 3; Astrid 0.
+  Detta är inte ett nytt läppsynkgodkännande.
+- Isolerad produkt startad med den koordinerade jämförelselaunchern,
+  `--game-only --media-directory <repo>/emil/dealklipp-v1`, tomma databaser,
+  `localhost:4194` och spärrade externa generationstjänster.
+- Browserprov: smal mobilvy (viewport override 390×844; Chrome rapporterade
+  433×937 CSS-pixlar med befintlig zoom), två rundor i följd, extrakort,
+  stand/avslut, återläsning mitt i första given. Kort låg på filmens kortyta,
+  gamla kort fanns kvar, baksidekort var dolt och inga konsolfel noterades.
+  Stillbilder fångades även under handrörelsen. Detta är ett stickprov av
+  box 4/dealer, inte bildruta-för-bildruta-godkännande av alla åtta tagningar.
+- Vera, Astrid, Amira och Mei: `?dealer=<namn>&rehearsal=1`, `greeting`,
+  `Play twice` via riktiga spelaren. Samtliga återgick till aktiverade kontroller
+  utan uppspelningsfel. Detta bekräftar livscykeln; ingen ny läppsynkacceptans.
+- Testfliken stängd och den isolerade testservern stoppad efter kontrollen.
+
+Kvarstående: Lissabon saknar exakt vald film för den dolda utdelningen och
+visar `Exakt film saknas · 2D-reserv`; kortbaksidan visas statiskt. Kevins
+`hole`/`flip`-spår aktiveras inte utan motsvarande filmer och egna
+acceptansresultat. Filmad insamling/upptagning är inte integrerad. Visuell
+split-, ytterbox-, landskaps- och verklig telefonkontroll återstår. Full
+läppsynkbedömning kräver fortfarande mänsklig genomgång med ljud.
+
+## Vercel och Redis/Upstash
+
+Ingen Vercel-deployment eller Redis-tjänst har skapats. Vercel-ingången är
+förberedd, medan spelserver, beständig SQLite och långa anslutningar fortfarande
+kräver den beskrivna backendmiljön. Nästa driftsbeslut är exakt Vercel-projekt
+och HTTPS-origin för spelservern.
+
+Vercel erbjuder Redis via Marketplace, bland annat Upstash:
+https://vercel.com/docs/redis . Det är en möjlig senare lösning för delad
+rate limiting/cache vid flera serverinstanser. Det ersätter inte den
+transaktionella spelardatabasen och förbättrar inte kortens bildrutesynk.
+Ingen sådan integration införs innan ett mätt behov och driftmål finns.
