@@ -1,3 +1,20 @@
+## 2026-09-29 — historiska 3D- och videogranskningspaket
+
+Två fristående QA-/visningspaket har tagits ur arbetskopian:
+`assets/blackjack-3d/review/` (72 filer, 95 683 800 byte) och
+`web/public/review/astrid-a9fa1da6/` (21 filer, 33 820 939 byte).
+Kvitton, filmer och skärmbilder finns oförändrade i Git vid `f31b219e`.
+Inga runtimeimporter, tester eller byggskript läste paketen. Aktiva modeller,
+redigerbara Blenderkällor, dealerfilmer, kalibreringar och releasekopior
+är kvar; särskilt `web/public/review/astrid-seam-repair/` behövs i den
+daterade V2-releaseförteckningen. Se `docs/REPOSITORY-CLEANUP.md`.
+Den avvisade 559 MiB ersättningsstudien i `content/staging/2026-09-11/`
+ligger kvar: automatisk godkännandekontroll avvisade radering av dess unika
+leverantörsoriginal och återbyggnadsunderlag. Ingen delradering gjordes.
+41 relativa dokumentlänkar, `audit-dealer-sync --probe`, tre
+handkontaktprov och blackjack-bordets tillgångstest passerade. Ingen
+ny visuell läppsynk- eller 3D-acceptans gjordes; tidigare öppna fel kvarstår.
+
 ## 2026-09-28 — systemkarta och storleksinventering
 
 Aktiva systemkartan är flyttad till `docs/systemkarta/` med oförändrat
@@ -4609,7 +4626,7 @@ An isolated native control candidate is in `content/staging/2026-09-11/dealer-co
 
 # Latest: calibrated facial candidate and seven-seat collection — 10 September 2026
 
-Read [the integration review](../assets/blackjack-3d/review/final-fit/README.md). The opt-in anatomical game uses the corrected oral/collar geometry with 17 separate model-bound calibrations, unchanged raw source measurements/audio, and actual loaded-model hash verification. It also has a continuous photographic room reference and consistent seated camera angle. The combined editable table project was rebuilt from the corrected native source.
+Read [the preserved integration review](https://github.com/Jakeminator123/github-work/blob/f31b219e4d0f751a81caa2db75c9d824be8e8926/assets/blackjack-3d/review/final-fit/README.md). The opt-in anatomical game uses the corrected oral/collar geometry with 17 separate model-bound calibrations, unchanged raw source measurements/audio, and actual loaded-model hash verification. It also has a continuous photographic room reference and consistent seated camera angle. The combined editable table project was rebuilt from the corrected native source.
 
 All 17 Astrid lines completed twice, all four default dealers completed two greetings, and a fresh seven-seat game passed: 1,000 → 965 stake → 1,035 after settlement; 18 cards gathered into one stack, discard count 19, no live cards. Recording is silent. This remains a technical/visual candidate: hair/skin/clothing, fine hand quality and the too-small 390px phone composition are not accepted. Full phoneme and physical-device QA remain open; CAC-2/CAC-4 stay In Dev. No default promotion or production deployment.
 

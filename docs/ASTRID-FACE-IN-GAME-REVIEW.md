@@ -1,6 +1,6 @@
 # Follow-up: calibrated mouth and continuous collection
 
-The latest evidence is [saved here](../assets/blackjack-3d/review/final-fit/README.md). Model `73c8d985…` replaces the earlier candidate below within the opt-in scene. Seventeen model-bound calibrations preserve all raw measured frames and original audio. The full seven-seat round and 34 Astrid playback completions passed; photographic, phoneme and narrow-phone acceptance remain open. Earlier model hashes and snapshots below are historical.
+The latest evidence is [preserved in Git](https://github.com/Jakeminator123/github-work/blob/f31b219e4d0f751a81caa2db75c9d824be8e8926/assets/blackjack-3d/review/final-fit/README.md). Model `73c8d985…` replaces the earlier candidate below within the opt-in scene. Seventeen model-bound calibrations preserve all raw measured frames and original audio. The full seven-seat round and 34 Astrid playback completions passed; photographic, phoneme and narrow-phone acceptance remain open. Earlier model hashes and snapshots below are historical.
 
 # Anatomical Astrid inside the blackjack game
 
@@ -29,7 +29,7 @@ The editable card helper is a modelling aid. All runtime card identities, legal 
 
 ## Evidence and limits
 
-Evidence lives in `assets/blackjack-3d/review/face/`.
+The dated [face evidence](https://github.com/Jakeminator123/github-work/tree/f31b219e4d0f751a81caa2db75c9d824be8e8926/assets/blackjack-3d/review/face) remains available in Git.
 
 - All 17 lines completed in the actual anatomical game. The DOM audit records each completed line and the sampled media/capture times. Repeated native speech and muting during an active take were checked; mute cancelled the active and queued take, and unmute did not resume it.
 - An actual one-seat round on the preceding mechanically corrected head staked 5 from 990, dealt player 10-diamonds/Q-hearts, completed the dealer turn and returned 10. Final balance was 995, the pile grew from 49 to 54, and all live card elements cleared. The saved recording starts after the initial deal; it is decision/settlement evidence, not a complete initial-deal recording.
@@ -46,4 +46,4 @@ The model still reads as rendered: moulded hair, skin/material differences, a lo
 
 The live renderer now gathers completed cards along one surface path into a single packet, then places that packet in the discard tray. Cards remain at their server-issued positions until contact. The two hands prepare a gradual transfer near the centre; one packet landing updates the persistent discard count. A quiet gathering cue follows newly contacted cards, and existing mute/visibility guards apply.
 
-See `assets/blackjack-3d/review/collection-sweep/` for the actual eight-card round, sampled frames, independent contact tests and numerical native-animation export. The sixteen-card reference sweep takes 8.89 seconds; duration adapts to the actual path, rather than repeating a two-second action for each card. Naturalness still needs visual acceptance at a larger player-camera view. The old individual collection action remains in the earlier editable projects; the new study is additional.
+See the [preserved collection evidence](https://github.com/Jakeminator123/github-work/tree/f31b219e4d0f751a81caa2db75c9d824be8e8926/assets/blackjack-3d/review/collection-sweep) for the actual eight-card round, sampled frames, independent contact tests and numerical native-animation export. The sixteen-card reference sweep takes 8.89 seconds; duration adapts to the actual path, rather than repeating a two-second action for each card. Naturalness still needs visual acceptance at a larger player-camera view. The old individual collection action remains in the earlier editable projects; the new study is additional.

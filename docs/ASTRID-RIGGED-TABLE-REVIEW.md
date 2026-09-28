@@ -1,5 +1,10 @@
 # Astrid: editable 3D table and in-game contact review
 
+The dated browser recordings, screenshots and QA receipts were removed from
+the checkout on 29 September 2026. They remain in the
+[Git snapshot](https://github.com/Jakeminator123/github-work/tree/f31b219e4d0f751a81caa2db75c9d824be8e8926/assets/blackjack-3d/review).
+The editable projects and runtime models remain in the checkout.
+
 This is an experimental rendering path inside the existing blackjack game. It is **not the accepted photographic Astrid milestone**. The default filmed dealers remain available. Use `?dealer=astrid&scene=rigged-review` on a locally running Croupier server to inspect this candidate.
 
 The newer `&face=anatomical` candidate adds a corrected anatomical head, facial controls and measured source-clock speech. Read [ASTRID-FACE-IN-GAME-REVIEW.md](ASTRID-FACE-IN-GAME-REVIEW.md) for the updated editable project, exact evidence and remaining likeness failures. The original baseline limitations below remain historical context for the route without this option.

@@ -5,6 +5,16 @@ Detta är den korta notisen i repots rot. Detaljer och testkrav finns i
 Skriv datum, ändring och verifiering här när arbetet går vidare; skilj alltid
 förslag från implementerad kod och verkligt godkänd drift.
 
+## 29 september 2026 – fristående granskningspaket
+
+93 spårade QA-/visningsfiler, 129 504 739 byte (cirka 123,5 MiB), togs bort
+från `assets/blackjack-3d/review/` och
+`web/public/review/astrid-a9fa1da6/`. De saknade runtime-, test- och
+byggberoenden och finns i commit `f31b219e`. Aktiva källmodeller,
+dealerfilmer och V2-releasekopior behölls. Se [städrapporten](docs/REPOSITORY-CLEANUP.md).
+41 lokala dokumentlänkar, dealerbaslinjen, tre handkontaktprov och
+bordstillgångstestet passerade. Ingen ny visuell dealeracceptans gjordes.
+
 ## 28 september 2026 – systemkartan till docs och lagringskontroll
 
 Den aktiva systemkartans 16 filer flyttades med bibehållet ämnesträd till

@@ -1,5 +1,42 @@
 # Repostädning inför GitHub-arbetet
 
+## Historiska 3D- och videogranskningspaket, 29 september 2026
+
+Två avgränsade, spårade granskningspaket togs bort ur arbetskopian:
+
+| Grupp | Filer | Byte | Varför |
+| --- | ---: | ---: | --- |
+| `assets/blackjack-3d/review/` | 72 | 95 683 800 | Daterade QA-kvitton, tysta browserfilmer och skärmbilder; inga kod-, test- eller byggberoenden. |
+| `web/public/review/astrid-a9fa1da6/` | 21 | 33 820 939 | Fristående äldre visningssida och exportkopior; inga runtime-, test-, release- eller byggreferenser. |
+
+Totalt **93 filer, 129 504 739 byte (cirka 123,5 MiB)**. Alla fanns i
+föregående commit `f31b219e4d0f751a81caa2db75c9d824be8e8926` och kan
+återställas som specifika mappar därifrån. Inga ignorerade eller ospårade
+filer låg i de två målen. Aktiva dokumentationslänkar till 3D-kvittona går
+nu till den bevarade Git-versionen. Äldre handoffreferenser är daterad
+proveniens. Raderingen minskar arbetskopian och kommande rot-Dockerkontext,
+men krymper inte befintlig Git-historik.
+
+`web/public/dealers/` är faktiskt publicerad mediebank och behölls.
+`web/public/review/astrid-seam-repair/` behölls eftersom den versionsatta
+V2-releaseförteckningen refererar dess enskilda filer. Redigerbara Blender-
+källor och exporter under `assets/astrid-3d/` och
+`assets/blackjack-3d/editable-project/` behölls, liksom originalfiler,
+leverantörskvitton och återbyggnadsunderlag i `content/staging/`.
+Deras storlek gör dem inte till återskapningsbar cache. Ingen aktiv media,
+avatar, modellvikt, kalibrering eller manifest ändrades.
+Den avvisade ersättningsstudien
+`content/staging/2026-09-11/astrid-replacement/` är ensam cirka 559 MiB men
+innehåller unika leverantörsoriginal, kvitton och återbyggnadsunderlag.
+Automatisk godkännandekontroll avvisade radering av denna grupp; den är
+orörd och kräver ett separat uttryckligt beslut om originalfilerna.
+
+Verifiering: 41 relativa länkar i de fem berörda Markdownfilerna har inga
+brutna mål. `audit-dealer-sync --probe` matchade alla fyra dealerbaslinjer.
+Tre skinnkontaktprov och `blackjack-asset-state` passerade; `git diff --check`
+passerade. Detta är teknisk regression, inte ny visuell acceptans.
+
+
 ## Systemkarta och lagringsstorlek, 28 september 2026
 
 Den aktiva systemkartans 16 spårade Markdownfiler (cirka 151 KiB) flyttades
