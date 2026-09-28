@@ -87,6 +87,13 @@ den verifierade integrationen. Befintliga lokala labbspärrar är kvar.
   dokumenterade luckor. Inga mediebytes, kalibreringar eller baslinjer ändrades.
 - Labbets produktionsbygge och hela `.githooks/pre-commit` passerade i den
   isolerade integrationen. Kontroll efter sammanförandet noteras i handoff.
+- GitHubs samlade kontroller passerade för `f4e2b8e` i körning
+  [36470135995](https://github.com/Jakeminator123/github-work/actions/runs/36470135995).
+- Hela Docker-imagen byggdes på CPU från `7644c44` i körning
+  [36471104794](https://github.com/Jakeminator123/github-work/actions/runs/36471104794).
+  Byggsteget tog 5 min 36 s. Både `astrid_talk2x` och `astrid_spel2x` gav
+  `AVATAR_KLAR`; en separat containerkontroll bekräftade latenter och import
+  av streamingmodulerna. Imagen publicerades inte och GPU-inferens kördes inte.
 
 Browserprovet kan upprepas med
 `node tools/verify-speech-stream-browser.mjs <ffmpeg-sökväg>` och Python med
@@ -102,7 +109,7 @@ produktionsspärrar eller kontroller har försvagats.
 
 ## Kvar före aktivering
 
-Bygg och testa GPU-imagen, anslut en uttryckligen vald test-endpoint och mät
+Publicera en test-image, anslut en uttryckligen vald test-endpoint och mät
 kall/varm start, första bild, total tid, kostnad och munrörelser för samma repliker.
 Whisper räknas nu på överlappande fönster; dess interna utfyllnad kan öka
 beräkningstiden. Syntetiska prov räcker inte för att lova 2–4 sekunders svarstid.
@@ -111,7 +118,14 @@ Alla fyra dealers behöver dessutom den föreskrivna visuella tvåspelskontrolle
 Den äldre `RUNPOD_ENDPOINT_ID` kunde inte valideras och en endpoint-listning
 gav HTTP 403. Den aktuella laddaren använder i stället den separata
 `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` från privat talkonfiguration. En läsande
-hälsokontroll av den gav HTTP 200 med tillgängliga workers. Det bekräftar åtkomst,
-men inte att den nya streaming-imagen körs där. Inga GPU-jobb startades.
-Test-endpoint, bygg-/driftväg och kostnadsram återstår. Jira-verktyg saknades,
-så inga ärenden eller QA-statusar har ändrats.
+hälsokontroll av den gav HTTP 200 med tillgängliga workers. Även endpoint- och
+template-metadata gick att läsa med den aktuella nyckeln. Spel-endpointen kör
+`registry.gitlab.com/emacodehero/astrid-gpu-worker:d3a2d0a6`, samma källversion
+som importen, med RTX 4090, min/max 0/5 workers och 1 200 s idle timeout.
+Templaten refererar till en registry-behörighet; dess värden lästes inte ut. Flytten av
+källkoden till GitHub byter inte den befintliga imagen eller registret.
+
+Den nya streaming-imagen körs ännu inte där. Inga GPU-jobb startades och inga
+endpoint-inställningar ändrades. Test-endpoint, imagepublicering, relädrift och
+kostnadsram återstår. Jira-verktyg saknades, så inga ärenden eller QA-statusar
+har ändrats.
