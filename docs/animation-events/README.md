@@ -15,7 +15,7 @@ med tydliga bevis på vad som finns, vad labbet provar och vad som återstår.
 - [Läs V5-källan](v5-7-days-mvp/README.md) · [Sjudagarsplanen](v5-7-days-mvp/s06-plan.md)
 - [Portabel handoff för den kvarvarande sjudagarsramen](v5-7-days-mvp/HANDOFF-7-DAGAR.md)
 - [Äldre publik webbversion från 21 september](https://animation-events-v1.vercel.app/) — inväntar beslut om omdirigering eller avveckling
-- [Systemkartan](../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
+- [Systemkartan](../systemkarta/README.md)
 - [Astrids kamera och tal: implementation och verifieringsläge](ASTRID-CAMERA-IMPLEMENTATION.md)
 
 ## Källa och historiskt publiceringsflöde

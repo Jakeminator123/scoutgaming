@@ -70,11 +70,11 @@ ut. Publikt fält betyder heller inte automatiskt tillåtet modellinput.
 
 ## Direkta källor
 
-- [Regler och Round](../../../../web/public/blackjack.mjs),
-  [shoe och gameView](../../../../web/shoe-game.mjs).
-- [Server och native table](../../../../web/server.mjs),
-  [Partner, wallet och SSE](../../../../web/partner-api.mjs),
-  [presentationsprojektion och manifest](../../../../web/partner-presentation.mjs).
+- [Regler och Round](../../../web/public/blackjack.mjs),
+  [shoe och gameView](../../../web/shoe-game.mjs).
+- [Server och native table](../../../web/server.mjs),
+  [Partner, wallet och SSE](../../../web/partner-api.mjs),
+  [presentationsprojektion och manifest](../../../web/partner-presentation.mjs).
 - [Detaljerade payloads](../02-events-triggers-urval/EVENTREGISTER.md).
 
 Kodkontroll 22 september 2026 är inte verifiering av dagens Bettalotto-deploy,

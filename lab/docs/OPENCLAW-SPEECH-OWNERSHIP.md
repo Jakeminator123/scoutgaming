@@ -25,8 +25,8 @@ kalibrering och pågående arbetsändringar. Läs först:
 
 - `docs/JOHN-HANDOFF.md` och `docs/ENVIRONMENT-RESTORATION.md`,
 - `lab/docs/README.md`,
-- `random-stuff-jakob/jakob-docs/systemkarta/README.md`,
-- `random-stuff-jakob/jakob-docs/systemkarta/03-dealers-video-takes/ASTRID-KALLKARTA-OCH-DUBBELSTROM-2026-09-21.md`,
+- `docs/systemkarta/README.md`,
+- `docs/systemkarta/03-dealers-video-takes/ASTRID-KALLKARTA-OCH-DUBBELSTROM-2026-09-21.md`,
 - `open-claw/lab/docs/README.md` och därifrån endast relevanta lokala
   OpenClaw-källor.
 

@@ -13,7 +13,7 @@ Ursprungliga källankare: spelkod `d910ddc`, studio `b26ff83` och startprojekt
 `a15b780` med main `b147659`; granskade server-, shoe-, Partner- och appfiler
 saknade diff. Den kontrollens handoff är `62784f4`. Aktuell serverrevision
 och aktiva BO-bindningar är fortfarande inte verifierade. Se
-[källregistret](../KALLOR.md) och [aktiv sprint](../../../../docs/animation-events/README.md).
+[källregistret](../KALLOR.md) och [aktiv sprint](../../animation-events/README.md).
 
 **Finns** betyder läst i kod/data. **Labb** betyder en implementerad
 illustration eller simulerad kontext. **Förslag** betyder ännu inte infört.
@@ -129,19 +129,19 @@ En gemensam social reaktionskö till produktspelaren återstår.
 
 | Register | Auktoritativ källa i dag | Innehåll/status |
 | --- | --- | --- |
-| Spel | `gameId` i [projektet](../../../../lab/policies/project.seed.json), [valideringen](../../../../lab/lib/studio-model.mjs) | Endast `blackjack`. Roulette är en UI-platshållare. Ingen generell `games[]` finns. |
-| Dealers | `dealers[]`, `DEALER_IDS`; [produktens DEALERS](../../../../web/public/app.mjs) | `astrid`, `vera`, `amira`, `mei`. |
-| Motor och publik spelvy | [shoe-game.mjs](../../../../web/shoe-game.mjs), [blackjack.mjs](../../../../web/public/blackjack.mjs) | Regler, kommandon, interna händelser, publika fakta. |
-| Presentationstyper | [partner-presentation.mjs](../../../../web/partner-presentation.mjs) | Sex typer; rå kontraktskälla till labbets klassificering. |
+| Spel | `gameId` i [projektet](../../../lab/policies/project.seed.json), [valideringen](../../../lab/lib/studio-model.mjs) | Endast `blackjack`. Roulette är en UI-platshållare. Ingen generell `games[]` finns. |
+| Dealers | `dealers[]`, `DEALER_IDS`; [produktens DEALERS](../../../web/public/app.mjs) | `astrid`, `vera`, `amira`, `mei`. |
+| Motor och publik spelvy | [shoe-game.mjs](../../../web/shoe-game.mjs), [blackjack.mjs](../../../web/public/blackjack.mjs) | Regler, kommandon, interna händelser, publika fakta. |
+| Presentationstyper | [partner-presentation.mjs](../../../web/partner-presentation.mjs) | Sex typer; rå kontraktskälla till labbets klassificering. |
 | Labbnoder | `events[]` | 16 ordnade, låsta matchningar. |
 | Triggers | `triggers[]` | 9 namngivna startvillkor, redigerbara inom tillåtna fält. |
 | Dealerlinjer/varianter | `lines[].variants[]` | 64 linjer, 4 startvarianter vardera = 256 variantposter. |
 | Labbassets | `assets[]` | 64 delade animationsreferenser. |
-| Rörelsedata | [animations/index.json](../../../../lab/animations/index.json), 16 eventfiler | 64 tysta 2D-klipp; inte 256 dealerfilmer. |
-| Originalvideor och uppladdningar | [snapshot.json](../../../../docs/animation-events/v3-video-map/snapshot.json), [videoregistret](../../../../lab/lib/video-registry.mjs) | 224 daterat inventerade original, kompletterade med lokal intake och hashbunden kategorisering. Ingen produktaktivering. |
+| Rörelsedata | [animations/index.json](../../../lab/animations/index.json), 16 eventfiler | 64 tysta 2D-klipp; inte 256 dealerfilmer. |
+| Originalvideor och uppladdningar | [snapshot.json](../../animation-events/v3-video-map/snapshot.json), [videoregistret](../../../lab/lib/video-registry.mjs) | 224 daterat inventerade original, kompletterade med lokal intake och hashbunden kategorisering. Ingen produktaktivering. |
 | Vanliga spelklipp | Dealernas `streams/index.json` | 90 indexposter lokalt; tal/idle/actions. |
-| Exakt tal | Dealerljudbanker, [speech-lines.mjs](../../../../web/public/speech-lines.mjs), [speech-media.json](../../../../web/public/speech-media.json) | Text, ljud, matchande klipp och vissa MP4 med inbyggt ljud. |
-| Fysiska takes | [Astrids performance-manifest](../../../../web/public/dealers/astrid/performance/manifest.json) | 4 grundtakes + 2 continuations, samtliga `review`; dessutom särskilda review-manifest för andra bearbetningar. |
+| Exakt tal | Dealerljudbanker, [speech-lines.mjs](../../../web/public/speech-lines.mjs), [speech-media.json](../../../web/public/speech-media.json) | Text, ljud, matchande klipp och vissa MP4 med inbyggt ljud. |
+| Fysiska takes | [Astrids performance-manifest](../../../web/public/dealers/astrid/performance/manifest.json) | 4 grundtakes + 2 continuations, samtliga `review`; dessutom särskilda review-manifest för andra bearbetningar. |
 | Produktens aktiva val | Produktkonfiguration, körläge och aktuell kodrevision | Aktuella BO-bindningar är inte verifierade här. |
 
 Seedräkningen gäller `studio.2026-09-20.2`, inte automatiskt ett tidigare
@@ -274,7 +274,7 @@ publicerar efter commit för verifierad Partner-session. `state` och cachade `re
 ingen ny publicering. Det finns ingen replaybuffert eller `Last-Event-ID`-
 återhämtning i granskad kod. Klienten behöver beslutad återhämtning efter
 avbrott och får inte spela samma händelse från både svar och SSE.
-Källa: [partner-api.mjs](../../../../web/partner-api.mjs).
+Källa: [partner-api.mjs](../../../web/partner-api.mjs).
 
 `/api/v1/assets` läser filbaserade index, banker och performance-manifest;
 det läser inte aktiva BO-bindningar. Takes som inte är `rejected` kan ingå,
@@ -385,7 +385,7 @@ Livekontexten kan dessutom ge modellen högst åtta observerade chattmeddelanden
 före eventet, 600 tecken vardera och 3 200 totalt, via `context.observedChat`.
 Det är avgränsad data med tid/källa, inte ett nytt triggerfält eller order.
 Director måste kvittera kontext v2; annars används synlig standardreserv.
-Källa: [observation-context.mjs](../../../../lab/lib/observation-context.mjs).
+Källa: [observation-context.mjs](../../../lab/lib/observation-context.mjs).
 Den separata sociala labbchatten och produktens talägarskap är andra flöden.
 
 Följande ytterligare triggerposter kan beskrivas med **dagens tillåtna
@@ -405,7 +405,7 @@ villkor; varianten måste fortfarande tillåta valt urvalsläge via `selection`.
 AND/OR-träd finns inte i studioformatet.
 
 Tillåtna fält enligt `allowedPathDescriptors` i
-[studio-model.mjs](../../../../lab/lib/studio-model.mjs):
+[studio-model.mjs](../../../lab/lib/studio-model.mjs):
 
 | Grupp | Samtliga tillåtna triggerfält |
 | --- | --- |
@@ -517,13 +517,13 @@ Ett **schema** beskriver formen. **Projekt-JSON** innehåller instanserna.
 **Rörelse-JSON** beskriver hur figuren rör sig. Samma ord ”JSON” betyder
 alltså inte att de tre filtyperna har samma ansvar.
 
-[studio.schema.json](../../../../lab/schemas/studio.schema.json) använder JSON Schema
+[studio.schema.json](../../../lab/schemas/studio.schema.json) använder JSON Schema
 2020-12. `validateProject` gör dessutom korsreferenskontroller, låser nodernas
 ordning/källa och kräver alla 64 unika dealer/event-kombinationer. Det finns
 ingen generell möjlighet att lägga in ett nytt spel eller en femte dealer
 genom enbart en extra rad. Sådan utbyggnad kräver ändrade kontrakt.
 
-[event.schema.json](../../../../open-claw/lab/schemas/event.schema.json) beskriver
+[event.schema.json](../../../open-claw/lab/schemas/event.schema.json) beskriver
 labbets tillåtna projektion, inte hela den ursprungliga Partner-responsen.
 `normalizeInput` är den körande gränsen som validerar och plockar ut fält.
 Schemafilerna ensamma utgör inte alla kontroller som programmet gör.
@@ -610,10 +610,10 @@ Operatörschatten är ett separat anrop om labbprojektet. Den är inte
 spelarchatt, spelminne eller en källa som får ändra spelresultat.
 
 Den lokala studion kan anropa Render Director som i sin tur anropar privat
-OpenClaw. [Handoffens daterade verifieringar](../../../../docs/JOHN-HANDOFF.md)
+OpenClaw. [Handoffens daterade verifieringar](../../JOHN-HANDOFF.md)
 redovisar tidigare råd/operatörschatt på `7f056f7` och senare socialt
 labbprov på `6797b6a`. Ingen ny driftkontroll eller något modell-/deployanrop
-görs av detta dokument. [Socialchatten](../../../../lab/SOCIAL-CHAT.md) har eget
+görs av detta dokument. [Socialchatten](../../../lab/SOCIAL-CHAT.md) har eget
 kontrakt; produktkoppling och godkända dealerfilmer är separata steg.
 
 ## 10. Media, takes och aktivering i samma logiska register

@@ -2,8 +2,9 @@
 
 [Systemkartan](../README.md) · [Kort start](../START-HAR.md)
 
-Införd 25 september 2026 på Jakobs begäran. Roten `jakob-docs/` har bara en
-aktiv README-vägvisare. Sakuppgifter ligger under systemkartans sex ämnen.
+Införd 25 september 2026 på Jakobs begäran. Sedan 28 september ligger den
+aktiva kartan i `docs/systemkarta/`; den gamla `jakob-docs/`-vägvisaren har
+tagits bort. Sakuppgifter ligger under systemkartans sex ämnen.
 Användarguide, sprint och gemensam handoff behåller sina befintliga källor;
 systemkartan länkar dit i stället för att kopiera deras innehåll.
 
@@ -33,12 +34,12 @@ systemkartan länkar dit i stället för att kopiera deras innehåll.
   `HANDOFF-2026-09-21-LIVE-OCH-2D.md` och
   `PROMPT-2D-MOCKUP-FRAN-SPELFLODE.md`: nuläge och relevanta återstående krav
   finns i [Livejämförelse](LIVEJAMFORELSE.md). Historiska körkvitton finns redan
-  i [gemensam handoff](../../../../docs/JOHN-HANDOFF.md) och
-  [Runtime-evidence](../../../../docs/animation-events/v5-7-days-mvp/RUNTIME-EVIDENCE.md).
-- `ARBETE-2026-09-21-V5.md`: ersatt av den [aktiva sprinten](../../../../docs/animation-events/v5-7-days-mvp/README.md)
-  och det daterade [publiceringskvittot](../../../../docs/animation-events/V5-PUBLICATION.md).
+  i [gemensam handoff](../../JOHN-HANDOFF.md) och
+  [Runtime-evidence](../../animation-events/v5-7-days-mvp/RUNTIME-EVIDENCE.md).
+- `ARBETE-2026-09-21-V5.md`: ersatt av den [aktiva sprinten](../../animation-events/v5-7-days-mvp/README.md)
+  och det daterade [publiceringskvittot](../../animation-events/V5-PUBLICATION.md).
 - `PROMPT-OPENCLAW-SOM-TALAGARE.md`: var redan bara en vägvisare till
-  [den kanoniska talbriefen](../../../../lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md).
+  [den kanoniska talbriefen](../../../lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md).
 
 De fem borttagna rotfilerna finns oförändrade i Git vid **`17afbf1`**, under
 `random-stuff-jakob/jakob-docs/<filnamn ovan>`. De kan läsas/återställas vid

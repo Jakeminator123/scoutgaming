@@ -253,15 +253,15 @@ verktygsstöd och är inte en labbnyckel.
 
 ## Källor och fortsatt felsökning
 
-- [Labbets start- och anslutningsguide](../../../../lab/README.md)
-- [Detaljerade Render-inställningar](../../../../_ENVIROMENT-INFO.md)
-- [Director-inställningarnas faktiska inläsning](../../../../open-claw/lab/src/settings.mjs)
-- [Studions val av miljöfiler](../../../../lab/lib/studio-server.mjs)
-- [Partner-observer och formatkontroll](../../../../lab/lib/partner-observer.mjs)
-- [Partner API-kontrakt och scopes](../../../../web/public/docs/partner-api.md)
-- [Röstnyckelns inläsning](../../../../lab/lib/voice-preview.mjs)
-- [Render-tjänsterna](../../../../open-claw/lab/render.yaml)
-- [Produktservern](../../../../web/server.mjs)
+- [Labbets start- och anslutningsguide](../../../lab/README.md)
+- [Detaljerade Render-inställningar](../../../_ENVIROMENT-INFO.md)
+- [Director-inställningarnas faktiska inläsning](../../../open-claw/lab/src/settings.mjs)
+- [Studions val av miljöfiler](../../../lab/lib/studio-server.mjs)
+- [Partner-observer och formatkontroll](../../../lab/lib/partner-observer.mjs)
+- [Partner API-kontrakt och scopes](../../../web/public/docs/partner-api.md)
+- [Röstnyckelns inläsning](../../../lab/lib/voice-preview.mjs)
+- [Render-tjänsterna](../../../open-claw/lab/render.yaml)
+- [Produktservern](../../../web/server.mjs)
 
 Första kontrollen vid fel är **vilken tjänst och vilken fil som läses**.
 Byt inte fungerande nycklar för att en annan integration saknar sina uppgifter.

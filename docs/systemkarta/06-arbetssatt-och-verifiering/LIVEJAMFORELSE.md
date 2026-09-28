@@ -30,8 +30,8 @@ Den isolerade körningen den 22 september hade 13 mottagna sekvenssteg,
 13 labbval, 13 avslut och 13 deduplicerade instruktioner. Alla fyra dealers
 och två V2-lägen provades med två påföljande plays. BO provades med riktiga
 videostickprov. Exakta revisioner, testantal och begränsningar finns i
-[gemensam handoff](../../../../docs/JOHN-HANDOFF.md) och
-[sprintens körkvitton](../../../../docs/animation-events/v5-7-days-mvp/RUNTIME-EVIDENCE.md).
+[gemensam handoff](../../JOHN-HANDOFF.md) och
+[sprintens körkvitton](../../animation-events/v5-7-days-mvp/RUNTIME-EVIDENCE.md).
 Detta är inte full visuell läppsynk- eller produktacceptans.
 
 Vid läsande kontroll den 25 september visade originalfliken Astrid medan
@@ -60,7 +60,7 @@ chattprojektionen använder då synlig standardreserv. Bettalottos native-versio
 - Kontrollera exakt replik och faktisk take, poseövergång, kortkontakt och
   landning. En materiallista, `want` eller fungerande preview är inte acceptans.
 - Genererat tal kräver egen godkänd presentationsväg. OpenClaw är inte ännu
-  produktens enda talägare; använd [den befintliga implementationsbriefen](../../../../lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md),
+  produktens enda talägare; använd [den befintliga implementationsbriefen](../../../lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md),
   inte en ny parallell agentprompt eller ljudkö.
 
 2D-bibliotekets 64 delade rörelser är schematiska prov, inte bevisad täckning

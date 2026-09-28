@@ -1,5 +1,9 @@
 # Systemkarta — från spelfakta till uppspelning
 
+Den aktiva kartan ligger sedan 28 september 2026 i `docs/systemkarta/`.
+Ämnesträdet och dess sex delar är bevarade. För dagsaktuellt medieläge,
+se [Emils videobanker](../../emil/README.md).
+
 Samlad 25 september 2026. Kartan utgår från Jakobs `jakeminator123/work`,
 efter Kevin-integrationen den 22 september. Den beskriver den granskade koden
 och skiljer den från labbprov och återstående produktintegration.
@@ -8,8 +12,8 @@ och skiljer den från labbprov och återstående produktintegration.
 Kodankaret för kartans översyn är `113dfd8`: exakt manifest-v2-uppspelning
 och idlepolicy var då lokalt verifierade; den separata OpenClaw-produktrollen
 och smala Director-adaptern var kodtestade men inte driftsatta. För aktuellt
-GitHub-/molnläge, läs [V2-statusen](../../../docs/STATUS-OCH-TESTPLAN-V2.md)
-och [GitHub-migreringen](../../../docs/GITHUB-MIGRATION.md). GitLab-wikin är
+GitHub-/molnläge, läs [V2-statusen](../STATUS-OCH-TESTPLAN-V2.md)
+och [GitHub-migreringen](../GITHUB-MIGRATION.md). GitLab-wikin är
 pausad och den fristående Vercel-sidan är en äldre 21-septembersspegel.
 
 Börja i [Kort start för Jakob och agenter](START-HAR.md). Här finns nu även
@@ -87,6 +91,6 @@ aktuella BO-bindningar och produktspelaren väljer.
 
 Fördjupa med [signaler, situationer och takes](02-events-triggers-urval/SIGNALER-OCH-TAKES.md),
 [detaljerat eventregister](02-events-triggers-urval/EVENTREGISTER.md),
-[aktiv sprint](../../../docs/animation-events/README.md) och
-[öppna fynd](../../../docs/findings/REGISTER.md).
+[aktiv sprint](../animation-events/README.md) och
+[öppna fynd](../findings/REGISTER.md).
 Den aktiva kartan behöver inte det personliga arkivet som läskälla.

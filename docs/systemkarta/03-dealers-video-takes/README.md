@@ -56,22 +56,22 @@ Videokartan är fortfarande katalogdata, inte bevis på den faktiskt valda taken
 Green-talsmaterialets exakta text/ljud/video måste jämföras med den relevanta
 vägens talregister; identiska line-ID:n gör inte olika inspelningar utbytbara.
 
-- Produktmedia: Astrid i [dealers/astrid](../../../../web/public/dealers/astrid/),
-  Vera i [dealer](../../../../web/public/dealer/), Amira i
-  [dealers/amira](../../../../web/public/dealers/amira/) och Mei i
-  [dealers/mei](../../../../web/public/dealers/mei/).
+- Produktmedia: Astrid i [dealers/astrid](../../../web/public/dealers/astrid/),
+  Vera i [dealer](../../../web/public/dealer/), Amira i
+  [dealers/amira](../../../web/public/dealers/amira/) och Mei i
+  [dealers/mei](../../../web/public/dealers/mei/).
 - Daterad inventering: 90 stream-indexposter, fördelade 20/39/16/15.
-  [Originalinventeringen](../../../../docs/animation-events/v3-video-map/README.md)
+  [Originalinventeringen](../../animation-events/v3-video-map/README.md)
   har 224 poster. Antalen mäter inte godkänd täckning.
-- [Performance-manifest](../../../../web/public/dealers/astrid/performance/manifest.json)
-  och [proveniens](../../../../web/public/dealers/astrid/performance/provenance.json)
+- [Performance-manifest](../../../web/public/dealers/astrid/performance/manifest.json)
+  och [proveniens](../../../web/public/dealers/astrid/performance/provenance.json)
   beskriver Astrids fyra grundtakes och två continuations, samtliga
   `review` vid den daterade inventeringen.
-- [Exakt talmedia](../../../../web/public/speech-media.json) och
-  [tal-ID:n](../../../../web/public/speech-lines.mjs) håller ihop replik och
+- [Exakt talmedia](../../../web/public/speech-media.json) och
+  [tal-ID:n](../../../web/public/speech-lines.mjs) håller ihop replik och
   mediekoppling. Text, ljud, video, frame-index, kalibrering och acceptans
   måste behandlas som ett paket.
-- [Labbets videobank](../../../../lab/VIDEO-LIBRARY.md) visar original och
+- [Labbets videobank](../../../lab/VIDEO-LIBRARY.md) visar original och
   lokala uppladdningar. Kategorisering är knuten till ID/hash och binder
   ingen film till produkten.
 
@@ -113,15 +113,15 @@ uppspelningen. Pickup/release/land/rest markerar tidpunkter inne i materialet;
 de ändrar inte kort eller resultat. Nytt tal över gammal talvideo är inte
 godkänd läppsynk.
 
-[DealerEngine](../../../../web/public/dealer-engine.mjs),
-[PerformancePlayer](../../../../web/public/performance-player.mjs) och
-[manifestbyggaren](../../../../web/partner-presentation.mjs) är direkta
+[DealerEngine](../../../web/public/dealer-engine.mjs),
+[PerformancePlayer](../../../web/public/performance-player.mjs) och
+[manifestbyggaren](../../../web/partner-presentation.mjs) är direkta
 kodkällor. Ingen produktvideo avkodades eller innehållsindexerades i denna
 dokumentationsgranskning.
 
 ## Öppna fynd består
 
-[Findings F-001–F-007](../../../../docs/findings/REGISTER.md) skiljer loaderns
+[Findings F-001–F-007](../../findings/REGISTER.md) skiljer loaderns
 samtidighetsfel, staged-förladdning, HTTP-cache, QA-paketering, Partner-
 klassificering, taltäckning och okända aktuella BO-bindningar.
 F-001/F-002 har fortfarande sitt särskilda beslutsberoende. Ingen ny

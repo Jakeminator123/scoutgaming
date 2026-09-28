@@ -3,7 +3,7 @@
 Aktiv startpunkt, samlad i systemkartan den 25 september 2026.
 
 **Aktuell källa:** privata [GitHub-repot `Jakeminator123/github-work`](https://github.com/Jakeminator123/github-work),
-branch `jakemanator123-github-work`. Läs [migrationsreglerna](../../../docs/GITHUB-MIGRATION.md)
+branch `jakemanator123-github-work`. Läs [migrationsreglerna](../GITHUB-MIGRATION.md)
 och `AGENTS.md` före ändringar. Leverera med `node tools/push-github-work.mjs`;
 GitLab-inbox, wiki och spegling är pausade. Pusha aldrig `main`.
 
@@ -11,9 +11,9 @@ GitLab-inbox, wiki och spegling är pausade. Pusha aldrig `main`.
 Partner-API. `content/` och `assets/` innehåller dealer-media och 3D; ändra
 inte godkända takes utan hela kalibrerings-/acceptansflödet. `lab/` är den
 lokala studion för prov, observation och dokumentation; `open-claw/` är
-Director/Gateway-kopplingen. [Labbguiden](../../../lab/docs/README.md),
-[aktuell sprint](../../../docs/animation-events/README.md),
-[sjudagarshandoffen](../../../docs/animation-events/v5-7-days-mvp/HANDOFF-7-DAGAR.md)
+Director/Gateway-kopplingen. [Labbguiden](../../lab/docs/README.md),
+[aktuell sprint](../animation-events/README.md),
+[sjudagarshandoffen](../animation-events/v5-7-days-mvp/HANDOFF-7-DAGAR.md)
 och [systemkartan](README.md) ger detaljerna. Jira CAC äger status
 för faktiskt utvecklings- och QA-arbete.
 
@@ -36,8 +36,9 @@ listar samtliga kontrollerade namn, ansvar och läsordning — inga värden.
 Kopiera aldrig hemligheter till Git, chatt eller `NEXT_PUBLIC_*`.
 
 **Video och indexering:** Den aktuella labbkällan för Emils Astrid-material är
-`emil/dealklipp-v1/` i repot. Manifest v2 har 31 oförändrade MP4-filer i 26
-exakta familjer: deal, repliker och idle. Det tidigare externa
+`emil/dealklipp-v1/` i repot. Den aktuella banken har 43 MP4-filer i 26
+exakta familjer: deal, repliker och idle. Se [bankernas aktuella gräns](../../emil/README.md).
+Det tidigare externa
 `C:/Users/jakem/CroupierAssets/bettalotto-generations` användes som daterat
 inventeringsunderlag men dess MP4-filer flyttades till Windows papperskorg den
 25 september; sökvägen är inte längre standardkälla. `LAB_VIDEO_ARCHIVE` är

@@ -53,7 +53,7 @@ Läs i denna ordning och följ länkar bara när uppgiften kräver dem:
 1. [Detta dokument](HANDOFF-7-DAGAR.md) för orientering och överlämning.
 2. [V5-navet](README.md) och [kanonisk sjudagarsplan](s06-plan.md).
 3. [Användarguiden](../../../lab/docs/README.md) för vad labbet faktiskt visar.
-4. [Aktiv systemkarta](../../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
+4. [Aktiv systemkarta](../../systemkarta/README.md)
    för systemområden, status och källhänvisningar.
 5. [OpenClaw som talägare](../../../lab/docs/OPENCLAW-SPEECH-OWNERSHIP.md)
    för integrationskontraktet.
@@ -276,7 +276,7 @@ teamets avtalade lagring och lämna hash/relativ referens i takepaketet.
 ### Dokumentation och samarbete
 
 - Aktiv sprintkälla: `docs/animation-events/v5-7-days-mvp/`.
-- Aktiv systemkarta: `random-stuff-jakob/jakob-docs/systemkarta/`.
+- Aktiv systemkarta: `docs/systemkarta/`.
 - Öppna evidensfynd: `docs/findings/`; detta är triage, inte Jira-status.
 - GitLab-wiki: gemensamma beslut och läsbar handoff.
 - `animation-events-v1`: separat GitHub-repo som bygger den publika

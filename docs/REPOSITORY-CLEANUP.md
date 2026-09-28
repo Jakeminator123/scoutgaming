@@ -1,5 +1,39 @@
 # Repostädning inför GitHub-arbetet
 
+## Systemkarta och lagringsstorlek, 28 september 2026
+
+Den aktiva systemkartans 16 spårade Markdownfiler (cirka 151 KiB) flyttades
+från `random-stuff-jakob/jakob-docs/systemkarta/` till
+[`docs/systemkarta/`](systemkarta/README.md), med samma sex ämnesgrenar.
+Aktiva interna och inkommande länkar uppdaterades. Den gamla 956-byte
+`jakob-docs/README.md`-vägvisaren togs bort; den finns i `Jakobs-v1`.
+Den kan återställas riktat från `Jakobs-v1`. Kartutgåvan finns även i Git före
+flytten (`7fba41d`). Historiska handoffnotiser behåller sina dåvarande
+filnamn. Privata/ignorerade filer i `random-stuff-jakob/` flyttades inte,
+och den lokala mappen kan därför fortfarande finnas kvar. Personarkivet
+undersöktes inte.
+
+Storlek på spårade filer i arbetskopian, avrundad MiB: `content/staging/`
+2 075, `assets/astrid-3d/` 563, `web/public/` 531,
+`assets/blackjack-3d/` 220, `emil/dealklipp-v1/` 126 och
+`emil/astrid-demo-v3-reference/` 63. `content/bake/` är ytterligare 50 MiB.
+Staging innehåller källor, prov och återbyggnadsunderlag; produktmedia och
+manifester i `web/public` och Emils aktiva bank har direkta beroenden.
+Rotens `.dockerignore` utesluter redan staging, bake och V3-referensen från
+den planerade containerkontexten. Att flytta Emils aktiva träd skulle kräva
+ändringar i manifest, schema, labb, tester och molnkontext utan att minska
+antalet byte. Dess undermappar `deal/`, `idle/` och `repliker/` är kvar.
+
+MP4-stickprov med gzip nivå 9 gav −0,01 % respektive +0,06 % minskning
+(aktivt deal-klipp respektive V3-dealklipp). Förlustfri packning sparar alltså
+praktiskt taget inget i dessa exempel. Omkodning skulle ändra hashvärden och
+kräva ny visuell acceptans; ingen video eller bild ändrades. De 260 Emil-MP4
+saknade exakta dubletter enligt föregående SHA-256-kontroll.
+
+Verifiering: 390 relativa länkar i 33 berörda Markdownfiler kontrollerades
+utan brutna mål; `git diff --check` passerade. Ingen server, GPU eller betald
+tjänst startades.
+
 ## Referensmappar och Emil-media, 28 september 2026
 
 En andra avgränsad omgång tog bort 7 spårade filer, 2 056 589 byte:
@@ -21,7 +55,7 @@ Endast V3:s startbild är byteidentisk med den aktiva bankens startbild
 mediesamlingarna ändrades. En delradering av V3:s filmer skulle bryta dess
 manifest och försvåra framtida jämförelse av exakta tal/takes.
 
-`random-stuff-jakob/jakob-docs/systemkarta/` är fortsatt aktiv dokumentation.
+`docs/systemkarta/` är fortsatt aktiv dokumentation.
 De nio små textutdragen i `jakob-log-files/` är Git-ignorerade och har
 historiska dokumentationshänvisningar; de lästes eller raderades inte.
 Det pensionerade privata arkivet inventerades inte. De större MP4-grupperna
@@ -104,7 +138,7 @@ uttryckliga radering ersätter deras beslut att bevara inbox och gamla arkiv.
 Inventering och avgränsad städning den 28 september 2026. Aktuella ingångar
 är [Lissabon](../lissabon/README.md), [guiden](../lab/docs/README.md),
 [presentationsplanen](animation-events/README.md) och
-[systemkartan](../random-stuff-jakob/jakob-docs/systemkarta/README.md).
+[systemkartan](systemkarta/README.md).
 
 ## Borttagna engångsuppdrag och återställning
 
