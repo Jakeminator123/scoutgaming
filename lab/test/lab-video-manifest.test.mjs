@@ -38,11 +38,11 @@ async function fixture(t, { variant = false } = {}) {
   return { root, legacy };
 }
 
-test('checked-in manifest has 26 exact families, 42 hash-stable items and the locked idle roles', async () => {
+test('checked-in manifest has 26 exact families, 43 hash-stable items and the locked idle roles', async () => {
   const manifest = await readLabVideoManifest(repositoryManifest);
   assert.equal(manifest.families.length, 26);
-  assert.equal(manifest.items.length, 42);
-  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 42);
+  assert.equal(manifest.items.length, 43);
+  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 43);
   for (const item of manifest.items) {
     assert.equal(item.id, videoIdFromSha256(item.sha256));
     assert.doesNotMatch(item.relativePath, /\.gitkeep$/);
@@ -68,9 +68,18 @@ test('checked-in manifest has 26 exact families, 42 hash-stable items and the lo
       'idle/variant/idle_yawn.mp4',
     ],
   );
-  for (const situation of ['box0', 'box1']) {
-    const family = manifest.families.find(item => item.situation === situation && item.eventId === 'deal.player.left');
+  for (const [situation, eventId, relativePath] of [
+    ['box0', 'deal.player.left', 'deal/deal_pos1/variant/box_1_variant.mp4'],
+    ['box1', 'deal.player.left', 'deal/deal_pos2/variant/box_2_variant.mp4'],
+    // The checkpoint retains this source filename's spelling and physical box 4.
+    ['box3', 'deal.player.centre', 'deal/deal_pos4/variant/box_4_varaint.mp4'],
+  ]) {
+    const family = manifest.families.find(item => item.situation === situation && item.eventId === eventId);
     assert.equal(family.variantIds.length, 1);
+    const variant = manifest.items.find(item => item.id === family.variantIds[0]);
+    assert.equal(variant.relativePath, relativePath);
+    assert.equal(variant.familyId, family.id);
+    assert.equal(variant.role, 'variant');
   }
 });
 

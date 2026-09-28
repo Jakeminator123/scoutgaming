@@ -38,6 +38,7 @@ function loadComponent(relativeFile) {
       : name === './event-test-panel' ? loadComponent('./event-test-panel.tsx')
       : name === './speech-source' ? loadComponent('./speech-source.tsx')
       : name === './media-family-editor' ? loadComponent('./media-family-editor.tsx')
+      : name === './deal-frequency-editor' ? loadComponent('./deal-frequency-editor.tsx')
       : name === './family-video-library' ? loadComponent('./family-video-library.tsx')
         : mocks[name] ?? require(name),
   }, { filename: relativeFile });

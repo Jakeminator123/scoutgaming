@@ -95,6 +95,15 @@ test('process identity detects reused PIDs and conservatively handles legacy ses
   assert.equal(matchesLocalSessionProcess(original, { name: 'node', startTime: null }), true);
 });
 
+test('Linux executable identity handles renamed threads and unavailable executable inspection', () => {
+  const current = { name: 'MainThread', executableName: 'node', startTime: 'current' };
+  assert.equal(matchesLocalSessionProcess(undefined, current), true, 'A Node executable stays protected after its thread is renamed.');
+  assert.equal(matchesLocalSessionProcess(undefined, { ...current, executableName: 'sleep' }), false, 'An inspected unrelated executable is reclaimable.');
+  assert.equal(matchesLocalSessionProcess(undefined, { ...current, executableName: null }), true, 'An unreadable executable is inconclusive.');
+  assert.equal(matchesLocalSessionProcess({ name: 'node', startTime: 'old' }, current), false, 'Executable identity must not override a reused PID.');
+  assert.equal(matchesLocalSessionProcess({ name: 'node', startTime: 'current' }, { ...current, executableName: null }), true);
+});
+
 test('a live PID with a different birth identity is reclaimed for both stale owners and children', async t => {
   const repoRoot = await testRoot(t), pair = await ports();
   for (const role of ['owner', 'child']) {
@@ -119,6 +128,27 @@ test('a legacy identity-free live Node child still prevents another session', as
   } finally {
     changeSession(repoRoot, state => { state.childPids = []; });
     await session.release();
+  }
+});
+
+test('Linux legacy children remain protected when Node names its main thread MainThread', { skip: process.platform !== 'linux' }, async t => {
+  const repoRoot = await testRoot(t), pair = await ports();
+  const child = spawn(process.execPath, ['-e', 'process.title="MainThread";process.send({ready:true});setInterval(()=>{},1000)'], {
+    windowsHide: true, stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+  });
+  t.after(() => stop(child));
+  const [ready] = await once(child, 'message', { signal: AbortSignal.timeout(10000) });
+  assert.equal(ready.ready, true);
+  const session = await acquireLocalSession({ repoRoot, ...pair });
+  let replacement;
+  try {
+    changeSession(repoRoot, state => { state.ownerPid = 0; state.childPids = [child.pid]; delete state.processIdentities; });
+    await assert.rejects(async () => {
+      replacement = await acquireLocalSession({ repoRoot, ...await ports() });
+    }, { code: 'CROUPIER_SESSION_ACTIVE' });
+  } finally {
+    await stop(child);
+    await (replacement ?? session).release();
   }
 });
 

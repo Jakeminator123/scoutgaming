@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
@@ -35,14 +35,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: lab/package-lock.json
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg jq
       - run: npm --prefix lab ci
+      - name: Build the real studio used by launcher regression tests
+        run: npm --prefix lab run build
       - name: Shared pre-commit regression suite
         run: sh .githooks/pre-commit
       - run: node pipeline/audit-dealer-sync.mjs --probe

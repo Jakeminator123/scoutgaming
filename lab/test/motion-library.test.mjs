@@ -133,7 +133,8 @@ test('Stage keeps exact videos separate and owns cleanup for selection, replay a
   const filePlayer = await readFile(new URL('../components/file-video.tsx', import.meta.url), 'utf8');
   assert.match(source, /getMotionClip\(asset\?\.id\)/);
   assert.match(source, /preference\.removeEventListener\('change', reduce\); playback\.cancel\(\)/);
-  assert.match(source, /\[clip, durationMs, event\.id, dealer, shouldAnimate, playId, showVideo\]/);
+  assert.match(source, /\[clip, durationMs, event\.id, dealer, shouldAnimate, playId, showVideo, allow2dFallback\]/);
+  assert.match(source, /if \(!scene \|\| showVideo \|\| !shouldAnimate \|\| playId === 0 \|\| !allow2dFallback\) return;/);
   assert.match(source, /const shouldAnimate = playing && \(hasResult \|\| previewing\)/);
   assert.match(source, /Spela valt klipp/);
   assert.match(source, /setFailedVideos\(\[\]\); onPreview\(\)/);
