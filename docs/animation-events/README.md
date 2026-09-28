@@ -12,19 +12,18 @@
 **Sju återstående arbetsdagar efter startgrinden D0.** Från verklig signal till rätt presentation,
 med tydliga bevis på vad som finns, vad labbet provar och vad som återstår.
 
-- [Läs V5 i GitLab-wikin](https://gitlab.com/scout-gg/croupier/-/wikis/animation-events) · [Läs källan](v5-7-days-mvp/README.md) · [Sjudagarsplanen](v5-7-days-mvp/s06-plan.md)
+- [Läs V5-källan](v5-7-days-mvp/README.md) · [Sjudagarsplanen](v5-7-days-mvp/s06-plan.md)
 - [Portabel handoff för den kvarvarande sjudagarsramen](v5-7-days-mvp/HANDOFF-7-DAGAR.md)
 - [Äldre publik webbversion från 21 september](https://animation-events-v1.vercel.app/) — inväntar beslut om omdirigering eller avveckling
 - [Systemkartan](../../random-stuff-jakob/jakob-docs/systemkarta/README.md)
 - [Astrids kamera och tal: implementation och verifieringsläge](ASTRID-CAMERA-IMPLEMENTATION.md)
 
-## En källa, en primär publiceringsyta
+## Källa och historiskt publiceringsflöde
 
 Croupier-koden är källa för motor, spelstatus och uppspelning. V5-filerna här
-är sakunderlaget. GitLab-wikin är den primära läsytan och synkas direkt från
-Croupier med `node tools/sync-animation-events-wiki.mjs --wiki WIKI_PATH --write`.
-Synken bygger eller ändrar inte webbversionen. Ingen dokumentationsyta är en
-spelmotor eller ett bevis på färdig produktintegration.
+är sakunderlaget. Den tidigare GitLab-wikin är pausad; den gamla synkvägen
+ska inte köras i GitHub-arbetet. Ingen dokumentationsyta är en spelmotor eller
+ett bevis på färdig produktintegration.
 
 Webbversionen är en separat historisk publicering från 21 september. Den har
 fliknavigation, sök, hash-länkar, mobil/utskrifts-CSS och gamla V2–V4-snapshots,
@@ -38,11 +37,12 @@ Se V5:s konkreta instruktioner för uppladdning, triggers och testkvitton.
 
 ## Versionsgräns
 
-V5 är aktuell. Sju dagar är Jakobs nuvarande planeringsram, inte ett löfte
-om godkänd lansering. V4, V3 och V2 är historiska dokumentversioner och ska inte
-användas som aktuell plan. Äldre adresser behålls för hänvisningar.
+V5 är aktuell. Sju dagar är Jakobs dåvarande planeringsram, inte ett löfte
+om godkänd lansering. V4, V3 och V2 är historiska dokumentversioner i
+[Git-checkpointen `Jakobs-v1`](https://github.com/Jakeminator123/github-work/tree/Jakobs-v1/docs/animation-events)
+och ska inte användas som aktuell plan.
 
-Ändra källan här, kontrollera den och publicera sedan wikin i en egen leverans.
+Ändra källan här och kontrollera den. Eventuell ny publicering kräver en egen leverans.
 Ett separat beslut krävs för att omdirigera eller avveckla webbplatsen. Visa källa,
 testmiljö och kvarstående luckor intill påståendet.
 Spelarkod, media, runtimekontrakt och Jira-status ändras inte av ett dokumentbygge.

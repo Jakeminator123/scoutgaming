@@ -5,6 +5,16 @@ Detta är den korta notisen i repots rot. Detaljer och testkrav finns i
 Skriv datum, ändring och verifiering här när arbetet går vidare; skilj alltid
 förslag från implementerad kod och verkligt godkänd drift.
 
+## 28 september 2026 – avgränsad repostädning
+
+Efter checkpointen `e03b5d0` togs 28 oanvända spårade filer bort (151 085 byte):
+V3/V4-planerna, två inaktiva Cursor-regler, tre engångsdokument och Astrids
+historiska motorinventering. Aktiva ingångar och länkar pekar nu på V5,
+GitHub-migrationen eller bevarad `Jakobs-v1`-version. Se
+[städrapporten](docs/REPOSITORY-CLEANUP.md) för filgrupper, beroendekontroll,
+verifiering och återställning. Worker, media och privata data ändrades inte.
+Länkkontroll, `git diff --check` och hela pre-commit-kedjan passerade.
+
 ## 28 september 2026 – GPU-policy och kontroll av städning
 
 ### Checkpoint före större ändringar
