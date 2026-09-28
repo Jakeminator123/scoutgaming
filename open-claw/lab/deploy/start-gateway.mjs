@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile, rename, lstat, link, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { dashboardOrigin, planGatewayConfig, requireGatewaySecrets } from './gateway-config.mjs';
@@ -69,6 +69,13 @@ async function readExistingConfig(configPath) {
 }
 
 async function preserveConfigBackup(backupPath, original) {
+  const existing = await readExistingConfig(backupPath);
+  if (existing !== null && existing !== original) {
+    // Later reconciliations need their own backup. Retain the first migration
+    // backup and use the exact source bytes to make retries idempotent.
+    const revision = createHash('sha256').update(original).digest('hex');
+    backupPath = `${backupPath.slice(0, -4)}.${revision}.bak`;
+  }
   const candidate = `${backupPath}.${randomUUID()}.tmp`;
   try {
     // Publish only a fully written backup; an interrupted write must not leave
@@ -80,6 +87,7 @@ async function preserveConfigBackup(backupPath, original) {
   } finally {
     await unlink(candidate).catch((error) => { if (error.code !== 'ENOENT') throw error; });
   }
+  return backupPath;
 }
 
 export async function prepareGatewayConfig(env, {
@@ -129,7 +137,7 @@ export async function prepareGatewayConfig(env, {
         const suffix = { 'migrate-legacy': 'pre-dashboard-migration', 'reconcile-ownership': 'pre-ownership-migration',
           'reconcile-social': 'pre-social-migration', 'reconcile-speech': 'pre-speech-migration', 'reconcile-roles': 'pre-role-migration' }[plan.action];
         backupPath = `${configPath}.${suffix}.bak`;
-        try { await preserveConfigBackup(backupPath, original); } catch {
+        try { backupPath = await preserveConfigBackup(backupPath, original); } catch {
           throw new Error('Could not safely preserve the Gateway configuration backup. No configuration was replaced.');
         }
       }

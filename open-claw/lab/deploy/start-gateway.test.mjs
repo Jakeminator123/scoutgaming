@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, readdir, rm, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { gatewayConfig } from './gateway-config.mjs';
 import { gatewayEnvironment, parseGatewayConfig, prepareGatewayConfig } from './start-gateway.mjs';
 
@@ -131,6 +132,44 @@ test('social role conflicts leave saved config byte-for-byte unchanged', async (
   await writeFile(env.OPENCLAW_CONFIG_PATH, original);
   await assert.rejects(prepareGatewayConfig(env, { validateConfig: validateFixture }), /social role conflict/);
   assert.equal(await readFile(env.OPENCLAW_CONFIG_PATH, 'utf8'), original);
+});
+
+test('adding model candidates preserves older role backups and retries the same source safely', async (t) => {
+  const env = await fixture(t);
+  const existing = gatewayConfig(env);
+  existing.models.providers['lab-provider'].models = existing.models.providers['lab-provider'].models.slice(0, 1);
+  existing.agents.entries['croupier-chat'].name = 'Hand-edited lab chat';
+  const original = JSON.stringify(existing);
+  const legacyBackup = `${env.OPENCLAW_CONFIG_PATH}.pre-speech-migration.bak`;
+  await writeFile(legacyBackup, 'earlier private configuration');
+  await writeFile(env.OPENCLAW_CONFIG_PATH, original);
+  const result = await prepareGatewayConfig(env, { validateConfig: validateFixture });
+  assert.equal(result.action, 'reconcile-speech');
+  assert.notEqual(result.backupPath, legacyBackup);
+  assert.equal(await readFile(legacyBackup, 'utf8'), 'earlier private configuration');
+  assert.equal(await readFile(result.backupPath, 'utf8'), original);
+  assert.deepEqual(result.config.agents, existing.agents);
+  assert.ok(result.config.models.providers['lab-provider'].models.some(model => model.id === 'gpt-6-luna'));
+  await writeFile(env.OPENCLAW_CONFIG_PATH, original);
+  const retry = await prepareGatewayConfig(env, { validateConfig: validateFixture });
+  assert.equal(retry.backupPath, result.backupPath);
+  assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
+  assert.equal((await readdir(env.OPENCLAW_STATE_DIR)).some(name => name.endsWith('.tmp')), false);
+});
+
+test('a conflicting revision backup still prevents replacement of the current configuration', async (t) => {
+  const env = await fixture(t);
+  const existing = gatewayConfig(env);
+  existing.models.providers['lab-provider'].models = existing.models.providers['lab-provider'].models.slice(0, 1);
+  const original = JSON.stringify(existing);
+  const prefix = `${env.OPENCLAW_CONFIG_PATH}.pre-speech-migration`;
+  const revision = createHash('sha256').update(original).digest('hex');
+  await writeFile(`${prefix}.bak`, 'earlier backup');
+  await writeFile(`${prefix}.${revision}.bak`, 'conflicting revision backup');
+  await writeFile(env.OPENCLAW_CONFIG_PATH, original);
+  await assert.rejects(prepareGatewayConfig(env, { validateConfig: validateFixture }), /No configuration was replaced/);
+  assert.equal(await readFile(env.OPENCLAW_CONFIG_PATH, 'utf8'), original);
+  assert.equal(await readFile(`${prefix}.${revision}.bak`, 'utf8'), 'conflicting revision backup');
 });
 
 test('enabling and disabling the explicit dashboard origin changes only ingress policy', async (t) => {

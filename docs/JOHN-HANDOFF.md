@@ -1,3 +1,19 @@
+## 2026-09-28 — Probe rollout: preserve repeated Gateway migration backups
+
+The first Gateway deployment of `d5bcc8d`, `dep-dat0mb17lnhs73b6fjkg`,
+failed before replacing configuration: a previous speech migration backup
+already occupied the fixed backup filename. Render's previous live source
+was `f2f24d305cac2415a533796401ef89f2125fa7ac` (newer than the Sep 25 receipt).
+`preserveConfigBackup` now retains that original backup and writes a separate
+SHA-256-addressed backup when the source bytes differ. Matching retries reuse
+the same backup; a conflicting revision backup still stops replacement.
+No persisted backup, session or configuration has been deleted.
+
+Verified: 45/45 Gateway config/startup/runtime-bundle tests, including repeated
+model reconciliation, preserving human agent settings, and conflicting backup
+protection. Isolated Next `.next-probe` build also passed. Rollout retry and
+live model/Probe checks are pending; see the subsequent deployment receipt.
+
 ## 2026-09-28 — Astrid Probe, modellval och senaste insamlade runda
 
 Implementation på `jakeminator123/work`, ovanpå `1a3160a`. Jakob avgränsade
