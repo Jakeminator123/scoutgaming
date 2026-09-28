@@ -5724,3 +5724,8 @@ GitHub-prov på Linux hittade därefter en testkapplöpning: klientens WebSocket
 kan stängas före serverns `close`-händelse. Reläproven inväntar nu serverns
 verkliga frigöring med tidsgräns och kontrollerar avvisningens kod 1008.
 Produktionskoden är oförändrad av denna rättning.
+
+GitHubs tre kontroller passerade för `f4e2b8e` (körning `36470135995`). Ett
+separat manuellt jobb, `astrid-gpu-build.yml`, förbereder CPU-provbygge av hela
+GPU-imagen med båda avatarerna. Det publicerar ingen image och startar ingen
+GPU-handler. Byggresultat måste kontrolleras separat från kodtesterna.

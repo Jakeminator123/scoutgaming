@@ -54,6 +54,11 @@ spelserverns `wss://<spelorigin>/lipsync-worker` med `ws_token` och ett unikt
 varm automatiskt. Sessionslivslängd, återanslutning och kostnad måste hanteras i
 driften. Börja med en reläinstans; för flera behövs gemensam sessionsruttning.
 
+`.github/workflows/astrid-gpu-build.yml` kan köras manuellt för ett CPU-provbygge
+på GitHub. Det bygger modeller och båda avatarerna och kontrollerar import av
+streamingmodulerna. Jobbet startar ingen GPU-handler, publicerar ingen image och
+behöver inga privata API-nycklar. Det ersätter inte ett verkligt GPU-prov.
+
 Nuvarande integration kräver att spelet och WebSocket-adressen har samma
 origin. Labbets äldre brygga för över färdiga mediefiler och annonserar därför
 inte strömningsstöd. Den avvisar oväntade strömbiljetter i stället för att tappa

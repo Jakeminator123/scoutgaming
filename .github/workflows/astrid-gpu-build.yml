@@ -1,0 +1,29 @@
+name: Astrid GPU image build check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astrid-gpu-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: services/astrid-gpu-worker
+      - name: Build models and both prepared avatars on CPU
+        run: docker build --progress=plain --tag astrid-gpu-worker:check services/astrid-gpu-worker
+      - name: Verify packaged service and prepared avatars without starting the GPU handler
+        run: |
+          docker run --rm --entrypoint /bin/sh astrid-gpu-worker:check -ec '
+            test -s /workspace/MuseTalk/results/v15/avatars/astrid_talk2x/latents.pt
+            test -s /workspace/MuseTalk/results/v15/avatars/astrid_spel2x/latents.pt
+            /workspace/mt-venv/bin/python -c "import sys; sys.path.insert(0, \"/workspace/workers\"); import streaming, stream_session"
+          '
