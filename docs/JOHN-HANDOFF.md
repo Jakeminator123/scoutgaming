@@ -62,6 +62,10 @@ Vera 8, Amira 2 och Mei 3 saknade taltagningar; visuell lipsynkacceptans
 återstår. Ingen ny betald end-to-end-latensmätning har gjorts efter
 kapacitetsändringen.
 
+## 2026-09-28 — Lissabon GitLab branch retired
+
+At Jakob's request, deleted only `refs/heads/jakeminator123/lissabon` in the canonical `scout-gg/croupier` GitLab project. Immediately before deletion it pointed to `d321e3f`, which is an ancestor of `jakeminator123/work` at `cec5a15`; there were zero open merge requests with the Lissabon branch as source, and the branch was not protected. Verified afterwards that the GitLab Lissabon ref is absent while the work ref remains. Also deleted the one-shot Codex automation that was to repeat this check on 2026-09-29 at 22:00 Stockholm time. The separate `Jakeminator123/lissabon` project, local `lissabon/` directory, GitHub work mirror, `main`, and active media were not touched. No gameplay tests were needed for this branch-only cleanup.
+
 ## 2026-09-28 — Cleanup handoff for the next agent
 
 Current shared checkout: `jakeminator123/work`. The last completed cleanup commit is `81ac615`, already mirrored to canonical GitLab and private `Jakeminator123/github-work`. The ignored `.croupier-inbox/` is now 13.7 MiB after removal of a clean historical worktree and duplicate tool downloads; its identities, read cursors, cache, QA evidence, and verification logs remain. It is already excluded by `.gitignore` and must not be used for worktrees, media, or broad searches. No further safe bulk deletion was identified.
