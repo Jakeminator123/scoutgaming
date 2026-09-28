@@ -104,9 +104,10 @@ Det är lokala demoprofiler utan lösenord: den som använder denna dator kan
 välja dem. API:t är bara aktiverat i Lissabons isolerade loopback-körning.
 Vanliga Scout-konton och den riktiga användardatabasen används inte.
 
-Astrids minne består av de senaste 12 chattinläggen, högst 8 000 tecken och
+Astrids samtalshistorik består av de senaste 30 chattinläggen, högst 8 000 tecken och
 30 dagar utan nya meddelanden. Det är sparad samtalshistorik, inte obegränsat
-långtidsminne. **Minne → Radera mitt minne hos denna dealer** rensar den.
+långtidsminne. Probe har dessutom ett separat litet minne med belagda fakta
+och egen livslängd. **Minne → Radera mitt minne hos denna dealer** rensar båda.
 Avsluta handen och invänta svaret före profilbyte. Profilbyte laddar om öppna
 Lissabon-spelflikar på samma origin; gamla svar får inte följa med.
 
