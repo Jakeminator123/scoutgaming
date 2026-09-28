@@ -92,7 +92,7 @@ const logReasons: Record<string, string> = {
 };
 const readableLogReason = (reason: string | undefined) => reason ? logReasons[reason] ?? `Rapporterad orsak: ${reason}` : 'Ingen särskild orsak angavs. Se serverns beslutsspår.';
 
-export function Studio({ initialProject, initialVideos, initialStatus, initialView = 'lab' }: { initialProject: StudioProject; initialVideos: VideoInventory; initialStatus: ConnectionStatus; initialView?: StudioView }) {
+export function Studio({ initialProject, initialVideos, initialStatus, initialView = 'lab', connectedLane = false }: { initialProject: StudioProject; initialVideos: VideoInventory; initialStatus: ConnectionStatus; initialView?: StudioView; connectedLane?: boolean }) {
   const [project, setProject] = useState(initialProject);
   const [conflict, setConflict] = useState(false);
   const [videos, setVideos] = useState(initialVideos);
@@ -328,8 +328,12 @@ export function Studio({ initialProject, initialVideos, initialStatus, initialVi
       if (!response.project) throw new Error('Servern returnerade inte det sparade projektet.');
       setSavedJson(JSON.stringify(response.project));
       setProject(current => current === submitted ? response.project : { ...current, revision: response.project.revision });
-      setNotice('Projektet är sparat lokalt. Probe läser policyn inför nästa beslut. Övriga ändringar följer sina vanliga publiceringssteg.');
-      recordActivity({ source: 'config', stage: 'configuration', status: 'completed', title: 'Projekt sparat lokalt', owner: 'Du / projektlagringen', reason: 'Regler och kopplingar sparades. Ingen produktpublicering.', data: { revision: response.project.revision } });
+      setNotice(connectedLane
+        ? 'Sparat för Lissabon. Spelet läser nya deal- och replikval vid nästa händelse och Probe inför nästa beslut. Ladda om spelfliken efter ändrad idlepolicy, när handen är avslutad.'
+        : 'Projektet är sparat lokalt. Probe läser policyn inför nästa beslut. Övriga ändringar följer sina vanliga publiceringssteg.');
+      recordActivity({ source: 'config', stage: 'configuration', status: 'completed', title: 'Projekt sparat lokalt', owner: 'Du / projektlagringen',
+        reason: connectedLane ? 'Lissabon, det avancerade labbet och spelfliken använder samma sparade projekt.' : 'Regler och kopplingar sparades. Ingen produktpublicering.',
+        data: { revision: response.project.revision } });
     } catch (cause) { if ((cause as {statusCode?:number})?.statusCode===409) setConflict(true); setError(cause instanceof Error ? cause.message : 'Projektet kunde inte sparas.'); }
     finally { setSaving(false); }
   }

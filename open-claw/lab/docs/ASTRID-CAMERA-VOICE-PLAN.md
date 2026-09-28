@@ -1,6 +1,7 @@
 # Astrid: valbar kamera och mikrofon
 
-28 september 2026. Detta dokument är designunderlaget. Lokal implementation,
+28 september 2026. Detta dokument är designunderlaget. Funktionen är nu
+implementerad bakom uttryckliga flaggor, Av som standard. Lokal implementation,
 utförda tester och kvarvarande driftprov finns i
 [implementationsrapporten](../../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md).
 Ingen verklig kamera har aktiverats. Beskrivningen nedan visar utgångsläget.
@@ -20,11 +21,12 @@ beskriver även RPC-integration. Den befintliga produktvägen via Director
 behålls för denna funktion. [MCP](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/cli/mcp.md)
 är inte en förutsättning för att skicka en bild med ett chattmeddelande.
 
-I Croupier är produktkontraktet fortfarande textbaserat:
-`src/product-speech.mjs` godtar exakt request-ID, message och history.
-Gateway-modellernas seed har `input: ['text']`. Befintligt kontrakt bevisar
-alltså inte en fungerande bild- eller ljudväg. Inga modellmetadata har ändrats
-för att antyda bildstöd. Ett bildprov mot den driftsatta kedjan återstår.
+I Croupier stöder `src/product-speech.mjs` nu en valfri, validerad observation
+med högst två JPEG-bilder. Lokal kamera kräver `astridCamera: true` i den
+samordnade starten (eller `--astrid-camera` med Lissabon). Gateway behöver
+separat `CROUPIER_SPEECH_VISION=1` för Lunas bildmetadata. Flaggorna är Av
+som standard. Transkriberad text går via samma chatt; rått mikrofonljud skickas
+inte till OpenClaw. Ett bildprov mot den driftsatta kedjan återstår.
 
 ## Minsta produktflöde
 
@@ -42,7 +44,7 @@ för att antyda bildstöd. Ett bildprov mot den driftsatta kedjan återstår.
    navigation, profilbyte och utloggning. Sena callbacks får inte återstarta
    enheten eller skicka material från en tidigare profil.
 
-## Föreslaget kontrakt, ännu inte implementerat
+## Implementerat kontrakt — driftverifiering återstår
 
 - Utöka endast produkttal med ett valfritt `observation`-fält: version,
   turn-ID, uttryckligt samtycke för turn-ID och två ordnade JPEG-bilder.

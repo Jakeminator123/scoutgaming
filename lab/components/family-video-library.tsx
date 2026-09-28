@@ -37,6 +37,11 @@ export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, ref
     && `${mediaFamilyFolder(family)} ${family.situation}`.toLowerCase().includes(filter.trim().toLowerCase()));
   const preview = inventory.videos.find(video => video.id === previewId && video.available);
   return <section aria-label="Videomappar"><div className="event-heading"><div><span className="eyebrow">VIDEOBANKEN</span><h1>{familyType === 'deal' ? 'Utdelning till sju platser och croupiern' : familyType === 'speak' ? 'Repliker och varianter' : 'Dina videomappar'}</h1><p>Samma standardfiler och varianter som används i Eventstudion och native-följningen.</p></div><button className="text-button" onClick={onRefresh} disabled={refreshing}>Läs in nya filer</button></div>
+    <details className={styles.situation}><summary>Lägg till eller stäng av klipp</summary>
+      <p>Lägg en ny MP4 i rätt <code>variant/</code>-mapp nedan och välj <strong>Läs in nya filer</strong>. Behåll befintliga originalfiler. Öppna sedan familjen och välj hur den nya varianten får användas. En ny idlefilm behöver också läggas till i Idle-policyn.</p>
+      <p>Stäng av en variant genom att välja <strong>Manuell</strong> i Idle eller stänga av alla variantval för det klippet i Deal/Repliker. Spara inställningarna. Klippet finns kvar för förhandsvisning.</p>
+      <p>Gränssnittet kan inte radera råfiler eller flytta dem mellan familjer. Mappen avgör vilken plats eller replik filmen hör till.</p>
+    </details>
     <label className="field">Hitta klipp eller mapp<input value={filter} onChange={event => setFilter(event.target.value)} placeholder="deal_pos3, goodluck, idle…" /></label>
     {preview ? <div className={styles.situation}><strong>{preview.fileName}</strong><video key={preview.id} src={preview.previewUrl} controls autoPlay muted playsInline style={{ width: '100%', maxHeight: 420 }} aria-label={`Förhandsvisa ${preview.fileName}`} /><button className="text-button" onClick={() => setPreviewId('')}>Stäng klippet</button></div> : null}
     <div className={familyType ? styles.libraryGrid : undefined}>{families.map(family => <article key={family.id} className={styles.situation}><strong>{mediaSituationLabel(family.situation)}</strong><code>emil/dealklipp-v1/{mediaFamilyFolder(family)}/</code>

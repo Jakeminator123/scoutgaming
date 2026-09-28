@@ -8,5 +8,5 @@ export async function StudioPage({ view = 'lab' }: { view?: StudioView }) {
   const h = await headers();
   assertLocalPageRequest(new Request(`http://${h.get('host') || 'invalid'}/`, { method: 'GET', headers: h }));
   const data = await studioInitialData();
-  return <Studio initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} initialView={view} />;
+  return <Studio initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} initialView={view} connectedLane={process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'} />;
 }

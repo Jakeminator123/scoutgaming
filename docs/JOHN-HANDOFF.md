@@ -1,3 +1,56 @@
+## 2026-09-28 — Generalrepetition: minnesfel rättade, browserprov blockerat
+
+Jakob godkände generalrepetition, bild/ljud och ett faktiskt automatiskt
+Probe-initiativ efter inaktivitet. Kameraagentens `635b364` ingår redan i
+arbetsgrenen. Ingen ny Render-deploy har utförts i denna omgång.
+
+Granskningen hittade två minnesfel. Samma källcitat kunde sparas under olika
+ämnes-ID och därmed kringgå repetitionsskyddet. Citat får nu ett gemensamt
+fingeravtryck, äldre dubbletter döljs och enskild Glöm tar bort alla deras
+alias. En additiv `evidence`-kolumn på Probe-kvitton bevarar repetitionsskyddet
+även om ett minnes-ID senare ersätts. Befintlig QA-databas har inte ändrats
+manuellt; migreringen sker vid nästa produktstart.
+
+En vanlig formulering med `not` eller `inte` kunde dessutom radera alla
+personminnen. Rättelsehanteringen begränsas nu till tydlig rättelse/negation
+med matchande ämnesord. Osäkerhet, frågor och `actually` ensamt lämnar minnena
+kvar. Berörda gamla källor pensioneras och sena extraktionsjobb ogiltigförklaras.
+Detta är begränsad regelhantering, inte allmän semantisk förståelse av varje
+tänkbar rättelse. **42 riktade tester** och samtliga **27 pre-commit-kommandon**
+passerade. Asset-audit med `--probe` passerade för fyra dealers; ingen ny
+visuell läppsynkacceptans görs.
+
+Avancerade labbet får nu veta när det kör inom Lissabon och beskriver sparandet
+korrekt: samma projekt som Lissabon och produkten, nya Deal/Replik/Probe-val
+vid nästa beslut och omladdning efter idleändringar när handen är avslutad.
+Videovyerna och den gemensamma guiden beskriver import via `variant/`,
+inläsning och avstängning. Astrids UI har fortfarande ingen råfilradering
+eller flytt mellan familjer. Inga filmer eller sparade policyval ändrades.
+Typecheck, JSON-parsning och diffkontroll passerade.
+
+Ett enda bevakat QA-par 4210/4211 byggdes och startades med bevarad separat
+testprofil och gemensam Lissabon-konfiguration. Kameraflaggan var uttryckligen
+på för detta test, men inga enheter eller bilder användes. Paret stoppades
+igen och de kända portarna samt start-/barnprocesserna verifierades avslutade.
+Återstartsfilen bygger under sessionsspärren och återställer samma profil.
+
+Browserverktyget nekade Render och sedan localhost. Efter Jakobs förnyade
+godkännande rapporterade det uttryckligen en sparad webbplatsblockering.
+Ingen alternativ browser/API-väg användes för att kringgå spärren. Jakob har
+fått instruktion att hantera blockerade webbplatser i appens Browser-inställning
+(Chrome: Computer Use → Manage). Samordningsmeddelandet till kameraagenten
+nekades också av verktygets godkännandeinställning; det skickades inte.
+
+Kvar när åtkomsten fungerar: bygg/starta ett par med senaste ändringarna,
+reversibelt spara/läsa om i båda labbytorna, verkligt inaktivitetsprov med
+tillfälligt 100 procents chans och återställda ursprungsvärden, därefter
+Gateway/Director-deploy för kamera. Syntetisk bild (två färgrutor) ska först
+nå rätt modell och just den syntetiska sessionens lagring kontrolleras före
+riktig kamera/mikrofon. Nuvarande sparade Probe har 30 procents chans och
+timtak tre; det bevisar inte att varje inaktivitet ger en replik. De levande
+browserproven och generalrepetitionens slutacceptans är **inte utförda**.
+Jira CAC är fortfarande inte tillgängligt via anslutna verktyg.
+
 ## 2026-09-28 — Labbets felsida: kontrollerad start och bättre återhämtning
 
 Jakob visade `Labbet kunde inte läsas` på 127.0.0.1:4188. Det exakta felet

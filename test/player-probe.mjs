@@ -94,6 +94,83 @@ function addPersonal(f){
   const source=job.sources.at(-1);f.store.saveExtraction(scope,job,[{sourceId:source.id,topicId:'honeymoon',quote:source.text,content:'Honeymoon',expiresAt:f.now()+30*DAY,notBefore:0}],f.policy);
   return job;
 }
+function addPersonalSet(f, values, prefix='set-source') {
+  for(let i=0;i<8;i++){f.store.message(scope,`${prefix}-${i}`,values[i]?.quote??`I enjoy fixture ${i}.`);f.advance(1);}
+  const job=f.store.extraction(scope,f.policy);assert.ok(job);
+  const proposals=values.map((value,i)=>({sourceId:`${prefix}-${i}`,topicId:value.topicId,quote:value.quote,content:value.quote,expiresAt:f.now()+30*DAY,notBefore:0}));
+  f.store.saveExtraction(scope,job,proposals,f.policy);
+  return {job,proposals};
+}
+function addLegacyAlias(f, fact) {
+  const row=f.db.prepare('SELECT * FROM player_probe_facts WHERE id=?').get(fact.id);
+  f.db.prepare('INSERT INTO player_probe_facts VALUES(?,?,?,?,?,?,?,?,?)')
+    .run(row.scope,'zz-legacy-alias','renamed-topic',row.type,row.content,row.source,row.created,row.expires,row.not_before);
+}
+
+test('re-extracting the same source with another topic keeps one fact and its fixed expiry',t=>{
+  const f=fixture(t),{job,proposals}=addPersonalSet(f,[{topicId:'guitar',quote:'I am learning guitar.'}]);
+  const first=f.store.inspect(scope,f.policy).facts[0];f.advance(1000);
+  f.store.saveExtraction(scope,job,[{...proposals[0],topicId:'learning-guitar',expiresAt:f.now()+30*DAY}],f.policy);
+  assert.deepEqual(f.store.inspect(scope,f.policy).facts,[first]);
+  assert.equal(f.db.prepare('SELECT count(*) AS n FROM player_probe_facts').get().n,1);
+});
+
+for(const legacy of [false,true])test(`the same source cannot probe again through a renamed topic (legacy receipt: ${legacy})`,t=>{
+  const f=fixture(t);addPersonalSet(f,[{topicId:'guitar',quote:'I am learning guitar.'}]);
+  const fact=f.store.inspect(scope,f.policy).facts[0];addLegacyAlias(f,fact);
+  assert.equal(f.store.inspect(scope,f.policy).facts.length,1);
+  f.observe({activity:true});f.advance(1100);const first=f.reserve();
+  assert.equal(first.memories.length,1);
+  f.store.generated(scope,first.ticket,{speak:true,text:'How is guitar going?',memoryIds:[fact.id],topicId:fact.topicId});
+  f.store.finish(scope,first.ticket,'playing');f.store.finish(scope,first.ticket,'played');
+  if(legacy){f.db.exec('ALTER TABLE player_probe_attempts DROP COLUMN evidence');f.restart();}
+  else f.db.prepare('DELETE FROM player_probe_facts WHERE id=?').run(fact.id);
+  f.observe({activity:true});f.advance(1100);
+  assert.deepEqual(f.reserve().memories,[],'a changed topic cannot bypass the played anecdote cooldown');
+});
+
+test('forgetting a visible fact also forgets its hidden legacy aliases',t=>{
+  const f=fixture(t);addPersonalSet(f,[{topicId:'dog',quote:'My dog is called Bosse.'}]);
+  const fact=f.store.inspect(scope,f.policy).facts[0];addLegacyAlias(f,fact);
+  const before=f.store.conversation(scope,f.policy);assert.equal(before.context.facts.length,1);
+  f.store.forget(scope,fact.id);
+  assert.deepEqual(f.store.inspect(scope,f.policy).facts,[]);
+  assert.equal(f.db.prepare('SELECT count(*) AS n FROM player_probe_facts').get().n,0);
+  assert.equal(f.store.conversationCurrent(scope,before),false);
+});
+
+test('ordinary uncertainty, positive actually and memory questions preserve unrelated personal facts',t=>{
+  const f=fixture(t);addPersonalSet(f,[{topicId:'dog',quote:'My dog is called Bosse.'},{topicId:'guitar',quote:'I am learning guitar.'}]);
+  const before=f.store.conversation(scope,f.policy);
+  for(const [i,message] of ['I actually like guitar.','Actually I like guitar.','I am not sure what to play.','Jag vet inte vad jag ska spela.',"Why don't you remember my dog?"].entries()) {
+    f.store.message(scope,`ordinary-${i}`,message);
+    assert.equal(f.store.conversationCurrent(scope,before),true,message);
+  }
+  assert.deepEqual(f.store.conversation(scope,f.policy).context.facts,before.context.facts);
+});
+
+test('an explicit dog-name correction retires only dog evidence and cannot be resurrected by old extraction',t=>{
+  const f=fixture(t),{job,proposals}=addPersonalSet(f,[{topicId:'dog',quote:'My dog is called Bosse.'},{topicId:'guitar',quote:'I am learning guitar.'}]);
+  const before=f.store.conversation(scope,f.policy);
+  f.store.message(scope,'dog-correction','Actually my dog is called Luna, not Bosse.');
+  assert.deepEqual(f.store.inspect(scope,f.policy).facts.map(fact=>fact.topicId),['guitar']);
+  assert.equal(f.store.conversationCurrent(scope,before),false);
+  assert.equal(f.store.saveExtraction(scope,job,proposals,f.policy),false);
+  for(let i=0;i<7;i++)f.store.message(scope,`after-correction-${i}`,`I enjoy test topic ${i}.`);
+  f.advance(61000);const next=f.store.extraction(scope,f.policy);assert.ok(next);
+  assert.equal(next.sources.some(source=>source.text.includes('Bosse')&&source.id!=='dog-correction'),false);
+  f.store.saveExtraction(scope,next,[{sourceId:'dog-correction',topicId:'dog-name',quote:'my dog is called Luna',content:'Corrected dog name',notBefore:0,expiresAt:f.now()+30*DAY}],f.policy);
+  assert.deepEqual(new Set(f.store.inspect(scope,f.policy).facts.map(fact=>fact.source.quote)),new Set(['I am learning guitar.','my dog is called Luna']));
+});
+
+test('a new assertion can be saved after the older source expires',t=>{
+  const f=fixture(t);addPersonalSet(f,[{topicId:'guitar',quote:'I am learning guitar.'}]);
+  const old=f.store.inspect(scope,f.policy).facts[0];f.advance(31*DAY);
+  const {job}=addPersonalSet(f,[{topicId:'learning-guitar',quote:'I am learning guitar.'}],'new-source');
+  const fresh=f.store.inspect(scope,f.policy).facts[0];assert.ok(fresh);
+  assert.ok(fresh.createdAt>old.expiresAt);assert.ok(fresh.expiresAt>old.expiresAt);
+  assert.equal(fresh.source.messageId,job.sources.find(source=>source.text==='I am learning guitar.').id);
+});
 test('evidence memory is isolated, anchored, fixed TTL and correction/Forget stops resurrection',t=>{
   const f=fixture(t),job=addPersonal(f);let fact=f.store.inspect(scope,f.policy).facts[0];assert.ok(fact);assert.equal(fact.notBefore,fact.createdAt+15*DAY);
   assert.equal(f.store.inspect({...scope,playerId:'synthetic-bob'},f.policy).facts.length,0);
