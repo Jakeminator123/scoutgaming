@@ -1,3 +1,25 @@
+## 2026-09-28 — Uppdrag för Astrid Probe förberett
+
+Jakob vill ha en separat Probe-kategori för sporadiska, personliga
+talinitiativ vid inaktivitet, cirka 30 meddelandens närminne och ett litet
+anekdotminne med cirka 30 dagars livslängd. Implementationsuppdraget finns
+i [ASTRID-PROBE-AGENT-PROMPT.md](animation-events/ASTRID-PROBE-AGENT-PROMPT.md).
+Det beskriver gemensam editor i Lissabon och stora labbet, belagda minnen,
+serverstyrda tillfällen, skydd mot upprepningar, Victoria, modelljämförelse
+och konkret verifiering. Tidsgränserna är föreslagna redigerbara startvärden.
+
+**Probe är inte implementerat av denna dokumentationsleverans.** Ingen
+agent har startats och ingen modell, policy, databas eller tjänst har ändrats.
+Tidigare Lissabon- och Victoriaarbete var redan sparat till och med
+`57a3f00` på båda work-remotes. Aktuell kod har 12 historikmeddelanden;
+senast driftverifierad produktmodell är GPT-5.4-mini den 25 september,
+inte en ny livekontroll av Gateway i denna tur. Nuvarande manifeständring
+och äldre ospårade filer tillhör inte denna leverans och lämnas orörda.
+
+Verifiering: dokumentationsdiff samt 16 källsökvägar och handoff-länken kontrollerade.
+Inga runtime- eller medieändringar har gjorts; tidigare kvarvarande
+uppspelningsgranskning och GPU-tidsmätning gäller fortsatt.
+
 ## 2026-09-28 — Astrid: Idleimport, Deal-vy och Lissabon-omstart
 
 Lissabon har nu en separat, kompakt **Deal**-flik med Astrids sju
