@@ -56,9 +56,11 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   const [playSerial, setPlaySerial] = useState(0);
   const [playRequested, setPlayRequested] = useState(false);
   const [actualLog, setActualLog] = useState<string[]>([]);
+  const [importError, setImportError] = useState('');
   const playback = useRef<{ serial: number; started: boolean } | null>(null);
   const segmentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preview = byId.get(previewId);
+  const unconfigured = family?.variantIds.filter(id => !policy.variants.some(item => item.videoId === id)) ?? [];
   const plan = useMemo(() => createIdlePreviewPlan(policy, { seed, durationMs: 60000 }), [policy, seed]);
   const primary = policy.base[0];
   const primaryActualShare = primary ? estimate.shares[primary.videoId] ?? 0 : 0;
@@ -123,6 +125,24 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     stop(); setActualLog([]); startClip(videoId, null);
   }
 
+  async function addVariant(videoId: string) {
+    const video = byId.get(videoId);
+    if (!video?.available || policy.variants.length >= 12) return;
+    setImportError('');
+    const probe = document.createElement('video');
+    probe.preload = 'metadata';
+    try {
+      const durationMs = await new Promise<number>((resolve, reject) => {
+        probe.onloadedmetadata = () => resolve(Math.round(probe.duration * 1000));
+        probe.onerror = () => reject(new Error('Videons längd kunde inte läsas.'));
+        probe.src = video.previewUrl;
+      });
+      if (!Number.isInteger(durationMs) || durationMs < 200 || durationMs > 60000) throw new Error('Idleklippet måste vara mellan 0,2 och 60 sekunder.');
+      onChange({ ...policy, variants: [...policy.variants, { videoId, durationMs, use: 'manual', automatic: null, description: '' }] });
+    } catch (error) { setImportError(error instanceof Error ? error.message : 'Kunde inte läsa videon.'); }
+    finally { probe.removeAttribute('src'); probe.load(); }
+  }
+
   const events = plan.flatMap((segment, index) => segment.kind === 'variant' ? [
     { at: segment.startMs, label: 'scheduled', videoId: segment.videoId },
     { at: segment.startMs, label: 'started', videoId: segment.videoId },
@@ -143,6 +163,8 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     <section className={styles.section}>
       <div className={styles.sectionHeading}><span>2</span><div><h3>Korta variationer</h3><p>{policy.variants.length} klipp från <code>idle/variant/</code>. Välj hur varje klipp får användas.</p></div></div>
       <p className="helper">OpenClaw läser beskrivningarna vid ett nytt chattmeddelande och kan välja en reaktion eller fortsätta neutralt. Högst en sådan reaktion per minut. Färdigt tal och spelhandlingar går före.</p>
+      {unconfigured.length ? <div className={styles.variantList}><p>Nya filer i mappen. Lägg till dem i policyn och spara projektet.</p>{unconfigured.map(id => <button type="button" className="text-button" key={id} disabled={blocked || policy.variants.length >= 12 || !byId.get(id)?.available} onClick={() => void addVariant(id)}>Lägg till {fileLabel(byId.get(id), id)} som manuell variant</button>)}</div> : null}
+      {importError ? <p role="alert" className={styles.warning}>{importError}</p> : null}
       <div className={styles.variantList}>{policy.variants.map(item => <div className={styles.variant} key={item.videoId}>
         <div><strong>{fileLabel(byId.get(item.videoId), item.videoId)}</strong><small>{usageDescription(item)}</small></div>
         <button type="button" className="text-button" onClick={() => play(item.videoId)} disabled={blocked}>Spela</button>

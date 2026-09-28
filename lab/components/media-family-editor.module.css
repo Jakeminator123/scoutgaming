@@ -16,3 +16,5 @@
 .familyButton:hover { border-color: #c8da57; }
 .familyButton code { color: #bbceca; font-size: 12px; overflow-wrap: anywhere; }
 .familyButton small { color: #9aacad; }
+.libraryGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.libraryGrid .situation { margin: 0; padding: 16px; align-content: start; }

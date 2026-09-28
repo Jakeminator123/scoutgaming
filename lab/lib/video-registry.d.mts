@@ -45,4 +45,5 @@ export interface VideoRegistry {
   };
 }
 export function loadVideoRegistry(options?: VideoRegistryOptions): Promise<VideoRegistry>;
+export function rescanVideoRegistry(): Promise<VideoRegistry>;
 export function getVideoResponse(id: string, request: Request, options?: VideoRegistryOptions): Promise<Response>;

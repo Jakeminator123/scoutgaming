@@ -43,11 +43,11 @@ Astrids Eventstudio och native-följning använder nu samma exakta mediefamilj:
 events behåller kort, box, handindex och replik. Standardfil och varianter
 kommer från manifestet, inte från projektets gamla 2D-demovarianter.
 
-Manifest v2 har 26 familjer och 33 filer: åtta dealfamiljer, sjutton
+Manifest v2 har 26 familjer: åtta dealfamiljer, sjutton
 replikfamiljer och en idlefamilj. Deal/replik använder
 `deal/<familj>/<standard>.mp4` respektive
 `repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då
-standard. Idle har två basloopar direkt i `idle/` och sex
+standard. Idle har två basloopar direkt i `idle/` och korta
 engångsvariationer i `idle/variant/` (policyn stöder högst 12).
 Deal-/replikfamiljer tillåter högst fyra filvarianter. Filnärvaro, hash och playbackkvitto är fortfarande inte
 ett mänskligt godkännande av läppsynk eller kortkontakt.
@@ -58,8 +58,11 @@ tillfällig vy den aktuella linjens kandidater med exakt familjs standard och
 högst fyra tillgängliga mappvarianter. Saknad policy innebär manuell variant.
 Regler, slump och OpenClaw kräver uttrycklig tillåtelse. Okända eller saknade
 varianter lånar aldrig en annan familjs media. Övriga dealers behåller sin
-befintliga originalväg. Uppdatera manifestet efter filändringar och använd
-**Läs om videomapparna**; knappen skriver inte om eller flyttar mediefiler.
+befintliga originalväg. Lägg nya MP4-filer i rätt `variant/`-mapp och välj
+**Läs in nya filer**. Knappen skannar mapparna, uppdaterar manifestet och läser
+om katalogen utan att flytta videofiler. En ny idlevariant läggs sedan till i
+policyn som manuell; välj Automatisk eller OpenClaw uttryckligen och spara.
+Ingen uppladdning till Render behövs för de lokala filmerna.
 
 Översikten och Videobanken visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
@@ -69,7 +72,8 @@ OpenClaw. Parallell anslutningsuppgift: [agentprompt](PARALLEL-OPENCLAW-STARTUP.
 Välj **Astrid → Vänteläge** för den förenklade idleeditorn. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
 består av `idle_still` och `idle_breath`. `idle_blink`, `idle_cheek`,
-`idle_glance`, `idle_insulted`, `idle_smile` och `idle_yawn` är engångsvarianter.
+`idle_glance`, `idle_insulted`, `idle_smile`, `idle_yawn` och
+`croupier_coffie` är engångsvarianter.
 Beskriv **När passar klippet?** med högst 80 tecken. Texten följer kandidaten
 till OpenClaw som konfigurationsdata, inte som en systeminstruktion.
 
@@ -86,7 +90,8 @@ tid blir `idle_still` i praktiken ungefär 79 %, vilket editorn visar. Ett
 spel-, deal- eller talprov äger spelaren och blockerar idleprovet tills det är
 klart. Policyn sparas lokalt med projektet. Den lokala Web-spelaren läser samma
 projekt; ladda om spelfliken efter ändringar i idlepolicyn. Lissabons snapshot
-erbjuder i stället alla sex variationer till OpenClaw. Ingen fjärrdrift deployas
+erbjuder i stället de ursprungliga sex variationerna till OpenClaw; kaffeklippet
+börjar som manuellt. Ingen fjärrdrift deployas
 och OpenClaw behöver inte startas om när beskrivningar eller val ändras.
 
 Grundvikt är alltså inte faktisk tidsandel. Automatisk idlevariant följer
