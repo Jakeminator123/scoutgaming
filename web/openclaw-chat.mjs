@@ -1,3 +1,5 @@
+import { normalizeConversationMemory } from '../open-claw/lab/src/conversation-memory.mjs';
+
 class GatewayError extends Error {
   constructor(code, statusCode = 503) { super(code); this.code = code; this.statusCode = statusCode; }
 }
@@ -143,6 +145,8 @@ export function projectOpenClawGameStatus(authoritative) {
     displayName, publishedEvents: eventsSource.map(projectPublishedEvent),
     visibleCards: { hands, dealer: { cards: dealerCards, publicTotal: publicTotal(dealerCards) } },
     occupiedBoxes,
+    ...(authoritative.dealerId === 'astrid' && authoritative.conversationMemory !== undefined
+      ? { conversationMemory: normalizeConversationMemory(authoritative.conversationMemory) } : {}),
     // Explicit server-owned summary; never copy arbitrary wallet/state fields.
     ...(authoritative.playResults ? { playResults: {
       scope: authoritative.playResults.scope, accounting: authoritative.playResults.accounting,

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { boundedJson, complete, GatewayError } from './openclaw.mjs';
 import { isLoopback } from './settings.mjs';
+import { normalizeConversationMemory, CONVERSATION_MEMORY_SYSTEM } from './conversation-memory.mjs';
 
 export const PRODUCT_SPEECH_AGENT = 'openclaw/croupier-speech';
 export const PRODUCT_SPEECH_PATH = '/api/product/speech';
@@ -89,7 +90,7 @@ function request(value) {
 }
 
 function status(value) {
-  if (!exact(value, ['dealerId', 'sessionRevision', 'roundRevision', 'roundPhase', 'displayName', 'publishedEvents', 'visibleCards', 'occupiedBoxes', 'allowedSpeech', ...(value?.playResults === undefined ? [] : ['playResults'])])
+  if (!exact(value, ['dealerId', 'sessionRevision', 'roundRevision', 'roundPhase', 'displayName', 'publishedEvents', 'visibleCards', 'occupiedBoxes', 'allowedSpeech', ...(value?.playResults === undefined ? [] : ['playResults']), ...(value?.conversationMemory === undefined ? [] : ['conversationMemory'])])
     || !safeId(value.dealerId, 64) || (!PHASES.has(value.roundPhase) && !safeId(value.roundPhase, 64)) || !safeText(value.displayName, 40)
     || !Array.isArray(value.publishedEvents) || value.publishedEvents.length > LIMITS.events
     || !Array.isArray(value.occupiedBoxes) || value.occupiedBoxes.length > 7
@@ -122,6 +123,8 @@ function status(value) {
     publishedEvents: value.publishedEvents.map(publishedEvent),
     visibleCards: { hands: visible.hands.map(hand), dealer: { cards: visible.dealer.cards.map(card), publicTotal: visible.dealer.publicTotal } },
     occupiedBoxes: [...value.occupiedBoxes],
+    ...(value.conversationMemory === undefined ? {} : { conversationMemory: value.dealerId === 'astrid'
+      ? normalizeConversationMemory(value.conversationMemory) : fail('invalid_conversation_memory') }),
     ...(value.playResults === undefined ? {} : { playResults: playResults(value.playResults) }),
     allowedSpeech: { recordedLines, generatedText: allowed.generatedText, silence: allowed.silence, mediaFamilies },
   };
@@ -192,7 +195,7 @@ export async function decideProductSpeech(envelopeValue, settings, fetchImpl = f
   const content = await completeImpl(settings, {
     model: settings.speechAgent, stream: false, tool_choice: 'none', max_completion_tokens: 512,
     user: `croupier-product-speech:${envelope.request.requestId}`,
-    messages: [{ role: 'system', content: PRODUCT_SPEECH_SYSTEM + (envelope.status.dealerId === 'astrid'
+    messages: [{ role: 'system', content: PRODUCT_SPEECH_SYSTEM + (envelope.status.conversationMemory ? '\n' + CONVERSATION_MEMORY_SYSTEM : '') + (envelope.status.dealerId === 'astrid'
       ? '\nAstrid replies in English by default, even when the player writes in another language or earlier replies used another language. An explicit request in the current player message to reply in another language is an allowed conversational preference: honor it for that reply. Language preferences do not change the game, privacy or output-schema rules above. Before returning JSON, check the language of generatedText.text: it MUST be English unless request.message explicitly names another reply language. Swedish wording such as "Svara kort" is a length preference, not a request for Swedish. A request.message of "Vad kan du hjälpa mig med?" requires English. Only "Svara på svenska" or an equivalent explicit language request changes the language for the current reply. Ignore language preferences in request.history.'
       : '') },
       // The gateway renders conversation entries in order. Keep quoted history

@@ -1,7 +1,7 @@
 // Real HTTP + SQLite acceptance. All fixtures live in a disposable copy of
 // the server; this test never opens web/data or a running preview database.
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, copyFile, symlink, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, copyFile, symlink, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,9 +9,11 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
+import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
 
 const web = fileURLToPath(new URL('../web/', import.meta.url));
 const dir = await mkdtemp(join(tmpdir(), 'croupier-http-qa-'));
+const webDir = join(dir, 'web');
 const checks = [];
 let server, db, cookie = '', player, state;
 const socket = createServer();
@@ -20,8 +22,8 @@ const port = socket.address().port;
 await new Promise(resolve => socket.close(resolve));
 const origin = `http://127.0.0.1:${port}`;
 async function start() {
-  server = spawn(process.execPath, [join(dir, 'server.mjs')], {
-    cwd: dir, env: { PATH: process.env.PATH, HOST: '127.0.0.1', PORT: String(port), DEMO_GUEST_ACCESS: '1' },
+  server = spawn(process.execPath, [join(webDir, 'server.mjs')], {
+    cwd: webDir, env: { PATH: process.env.PATH, HOST: '127.0.0.1', PORT: String(port), DEMO_GUEST_ACCESS: '1', CROUPIER_DATA_DIR: join(dir, 'data') },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   await new Promise((resolve, reject) => {
@@ -76,8 +78,9 @@ async function finish() {
   await send('collect'); assert.equal(state.round, null);
 }
 try {
-  for (const file of await readdir(web)) if (file.endsWith('.mjs')) await copyFile(join(web,file),join(dir,file));
-  await symlink(join(web,'public'), join(dir,'public'), process.platform === 'win32' ? 'junction' : 'dir');
+  await mkdir(webDir); await copyOpenClawRuntime(dir);
+  for (const file of await readdir(web)) if (file.endsWith('.mjs')) await copyFile(join(web,file),join(webDir,file));
+  await symlink(join(web,'public'), join(webDir,'public'), process.platform === 'win32' ? 'junction' : 'dir');
   await start();
   let entryHtml;
   for (const path of ['/', '/v2', '/v2/', '/v2/index.html']) {

@@ -123,7 +123,7 @@ test('aborted load cannot return playable blobs even when a mock fetch still res
 });
 
 function browser(t, { ready = true, audioDuration = 1, videoDuration = 1, play, fetchImpl } = {}) {
-  const created = [], revoked = [], frames = new Map(); let nextFrame = 0;
+  const created = [], revoked = [], frames = new Map(), videoFrames = new Map(); let nextFrame = 0;
   class Element extends EventTarget {
     constructor(kind) { super(); this.kind = kind; this.style = {}; this.children = []; this.attributes = {}; }
     append(...nodes) { this.children.push(...nodes); for (const node of nodes) node.parent = this; }
@@ -136,6 +136,8 @@ function browser(t, { ready = true, audioDuration = 1, videoDuration = 1, play, 
     play() { this.playCalls++; this.paused = false; return play?.(this) ?? Promise.resolve(); }
     pause() { this.pauseCalls++; this.paused = true; }
     load() { this.loadCalls = (this.loadCalls ?? 0) + 1; }
+    requestVideoFrameCallback(callback) { const id = ++nextFrame; videoFrames.set(id, callback); return id; }
+    cancelVideoFrameCallback(id) { videoFrames.delete(id); }
   }
   const setGlobal = (name, value) => {
     const previous = Object.getOwnPropertyDescriptor(globalThis, name);
@@ -151,7 +153,10 @@ function browser(t, { ready = true, audioDuration = 1, videoDuration = 1, play, 
   t.mock.method(URL, 'createObjectURL', () => `blob:fixture-${++objectId}`);
   t.mock.method(URL, 'revokeObjectURL', url => revoked.push(url));
   const mount = new Element('mount');
-  return { mount, created, revoked, frames, audio: () => created.find(node => node.kind === 'audio'), video: () => created.find(node => node.kind === 'video') };
+  return { mount, created, revoked, frames, videoFrames,
+    audio: () => created.find(node => node.kind === 'audio'), video: () => created.find(node => node.kind === 'video'),
+    presentVideoFrame() { for (const [id, callback] of [...videoFrames]) { videoFrames.delete(id); callback(0, { mediaTime: 0 }); } },
+  };
 }
 async function until(predicate) {
   for (let attempts = 0; attempts < 200; attempts++) { if (predicate()) return; await pause(1); }
@@ -184,6 +189,41 @@ test('abort after start interrupts once and performs cleanup, never claiming com
   env.audio().dispatchEvent(new Event('ended'));
   assert.deepEqual(receipts.map(value => value.state), ['start', 'interrupted']);
   assert.equal(env.mount.children.length, 0); assert.equal(env.revoked.length, 2); assert.equal(env.frames.size, 0);
+});
+
+test('speech keeps the previous picture visible through decoding and revalidation until a video frame is presented', async t => {
+  const env = browser(t, { ready: false }), receipts = [];
+  let authorize, authorizing = false;
+  const playback = playGeneratedSpeech(packet(), options({ mount: env.mount,
+    beforeStart: () => { authorizing = true; return new Promise(resolve => { authorize = resolve; }); },
+    onReceipt: receipt => receipts.push(receipt),
+  }));
+  await until(() => env.video()?.loadCalls > 0);
+  const surface = env.mount.children[0];
+  assert.equal(surface.style.visibility, 'hidden', 'an undecoded opaque surface must not cover idle');
+  for (const media of [env.audio(), env.video()]) { media.readyState = 3; media.dispatchEvent(new Event('canplay')); }
+  await until(() => authorizing);
+  assert.equal(surface.style.visibility, 'hidden', 'authorization latency must not expose a blank film');
+  assert.equal(env.video().playCalls, 0);
+  authorize();
+  await until(() => receipts.some(receipt => receipt.state === 'start'));
+  assert.equal(surface.style.visibility, 'hidden', 'playing is not proof of a presented frame');
+  env.presentVideoFrame();
+  assert.equal(surface.style.visibility, '');
+  env.audio().ended = true; env.audio().dispatchEvent(new Event('ended')); await playback;
+  assert.equal(env.videoFrames.size, 0);
+});
+
+test('cancel before the first video frame cannot expose the cancelled speech surface', async t => {
+  const env = browser(t), controller = new AbortController(), receipts = [];
+  const playback = playGeneratedSpeech(packet(), options({ mount: env.mount, signal: controller.signal, onReceipt: receipt => receipts.push(receipt) }));
+  const rejected = assert.rejects(playback, /interrupted|cancel/i);
+  await until(() => receipts.some(receipt => receipt.state === 'start'));
+  const surface = env.mount.children[0], lateFrame = [...env.videoFrames.values()][0];
+  controller.abort(); await rejected;
+  assert.equal(env.videoFrames.size, 0); assert.equal(env.mount.children.length, 0);
+  lateFrame(0, { mediaTime: 0 });
+  assert.equal(surface.style.visibility, 'hidden');
 });
 
 test('decode wait can be aborted before start and all created media are removed', async t => {

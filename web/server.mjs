@@ -829,7 +829,10 @@ createServer(async (req, res) => {
       const context={owner,signal:controller.signal,readOwner:()=>chatSessionOwner(req,authenticated),
         readState:()=>({playerId:authenticated,...authoritativeChatStatus(authenticated,playerSession(req),{dealerId:'astrid',sessionRevision:body.sessionRevision,roundRevision:body.roundRevision})})};
       if(pathname==='/api/probe/presence')json(200,await probeRuntime.presence(scope,body,owner));
-      else if(pathname==='/api/probe/forget'){probeRuntime.forget(scope,body.factId);json(200,await probeRuntime.inspect(scope));}
+      else if(pathname==='/api/probe/forget'){
+        activePlayerChats.get(JSON.stringify([authenticated,'astrid']))?.abort('chat_memory_changed');
+        probeRuntime.forget(scope,body.factId);json(200,await probeRuntime.inspect(scope));
+      }
       else if(pathname==='/api/probe/decide'||pathname==='/api/probe/receipt'||pathname==='/api/probe/test'){
         if(!CHAT_REVISION.test(body.sessionRevision)||!CHAT_REVISION.test(body.roundRevision))throw Object.assign(new Error('invalid_probe_context'),{code:'invalid_probe_context',statusCode:400});
         if(pathname.endsWith('/test')){
@@ -1007,11 +1010,21 @@ createServer(async (req, res) => {
         memoryTurn = playerChatMemory.begin({ ...scope, requestId: incoming.requestId, message: incoming.message });
         memoryKey = JSON.stringify([authenticated, dealerId]);
         activePlayerChats.set(memoryKey, controller);
+        const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
+        const conversation = probeConfig ? probeStore.conversation(scope, probeConfig.policy) : null;
+        if (conversation) status.conversationMemory = conversation.context;
         // Neither a browser-supplied player ID nor fabricated assistant history
         // may enter the model. Stable identity and bounded recall are server-owned.
         const request = { requestId: incoming.requestId, message: incoming.message, history: memoryTurn.history };
-        const readStatus = () => {
+        const readStatus = async () => {
+          if (conversation) {
+            const currentPolicy = (await probeRuntime.config()).policy;
+            if (['memoryEnabled','memoryDays','maxFacts'].some(key => currentPolicy[key] !== probeConfig.policy[key])) {
+              throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
+            }
+          }
           if (playerChatMemory.profile(scope).revision !== memoryTurn.revision) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
+          if (conversation && !probeStore.conversationCurrent(scope, conversation)) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
           return authoritativeChatStatus(authenticated, playerSession(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         };
         const decision = await completeChatWithSpeech({ request, status, owner,
@@ -1020,7 +1033,7 @@ createServer(async (req, res) => {
           readOwner: () => chatSessionOwner(req, authenticated),
           readStatus,
           signal: controller.signal,
-          decide: async (value, state) => openClawChat(value, state, { model: state.dealerId==='astrid'?(await probeRuntime.config()).policy.model:'gateway-default', fetchImpl: (url, options = {}) => fetch(url, {
+          decide: async (value, state) => openClawChat(value, state, { model: probeConfig?.policy.model ?? 'gateway-default', fetchImpl: (url, options = {}) => fetch(url, {
             ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
           }) }),
           service: getGeneratedSpeechService(),

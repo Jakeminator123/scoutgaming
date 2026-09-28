@@ -10,6 +10,7 @@ import { probeFixtures } from '../lab/lib/probe-fixtures.mjs';
 import { createSeedProject, validateProject } from '../lab/lib/studio-model.mjs';
 import { rebaseProjectDraft } from '../lab/lib/project-rebase.mjs';
 import { probePresentationQuiet } from '../web/public/probe-client.mjs';
+import { projectConversationMemory, normalizeConversationMemory, CONVERSATION_MEMORY_LIMITS } from '../open-claw/lab/src/conversation-memory.mjs';
 
 test('background idle does not cancel preparation, but cannot authorize a new probe or mask gameplay',()=>{
   const input={busy:false,round:null,chatBusy:false,speaking:false,pending:0,ownJobId:'preparing',idleBackground:true,
@@ -106,6 +107,54 @@ test('TTL does not extend on reads and expires on restart',t=>{
   const f=fixture(t);addPersonal(f);const expires=f.store.inspect(scope,f.policy).facts[0].expiresAt;
   f.advance(20*DAY);assert.equal(f.store.inspect(scope,f.policy).facts[0].expiresAt,expires);
   f.advance(11*DAY);f.restart();assert.equal(f.store.inspect(scope,f.policy).facts.length,0);
+});
+
+test('ordinary conversation recalls same-player facts even with Probe off and future proactive timing',t=>{
+  const f=fixture(t);addPersonal(f);f.policy.mode='off';
+  const saved=f.store.conversation(scope,f.policy);
+  assert.equal(saved.context.facts.length,1);
+  assert.deepEqual(saved.context.facts[0],{id:f.store.inspect(scope,f.policy).facts[0].id,topicId:'honeymoon',kind:'player-assertion',
+    quote:'My honeymoon in Lisbon lasts for 15 days.',saidAt:f.now()-1,expiresAt:f.now()-1+30*DAY});
+  assert.equal(f.store.conversationCurrent(scope,saved),true);
+  assert.equal(f.store.conversation({...scope,playerId:'another-player'},f.policy).context.facts.length,0);
+  assert.equal(f.store.conversation({...scope,dealerId:'vera'},f.policy).context.facts.length,0);
+  assert.equal(f.store.conversationCurrent({...scope,playerId:'another-player'},saved),false);
+  assert.equal(f.store.conversation(scope,{...f.policy,memoryEnabled:false}).context.facts.length,0);
+  assert.deepEqual(f.memory.profile(scope).history,[],'recall never manufactures a chat turn');
+  f.advance(31*DAY);assert.equal(f.store.conversationCurrent(scope,saved),false);
+  assert.equal(f.store.conversation(scope,f.policy).context.facts.length,0);
+});
+
+test('ordinary conversation snapshots are invalidated by corrections and individual Forget',t=>{
+  const f=fixture(t);addPersonal(f);const saved=f.store.conversation(scope,f.policy);
+  f.store.forget({...scope,playerId:'another-player'});assert.equal(f.store.conversationCurrent(scope,saved),true);
+  f.store.forget(scope,saved.context.facts[0].id);assert.equal(f.store.conversationCurrent(scope,saved),false);
+  assert.equal(f.store.conversation(scope,f.policy).context.facts.length,0);
+  f.advance(61000);addPersonal(f);const replaced=f.store.conversation(scope,f.policy);
+  f.store.message(scope,'correction-now','Actually, my trip was cancelled.');
+  assert.equal(f.store.conversationCurrent(scope,replaced),false);
+  assert.equal(f.store.conversation(scope,f.policy).context.facts.length,0);
+});
+
+test('conversation memory projects only exact evidence and rejects expired, hidden and oversized data',t=>{
+  const f=fixture(t);addPersonal(f);const fact=f.store.inspect(scope,f.policy).facts[0];
+  const projected=projectConversationMemory([{...fact,content:'Invented summary',source:{...fact.source,playerId:'never-forward',cookie:'private'}}],f.now());
+  assert.equal(JSON.stringify(projected).includes('Invented summary'),false);
+  assert.equal(JSON.stringify(projected).includes('never-forward'),false);
+  assert.equal(JSON.stringify(projected).includes('private'),false);
+  assert.throws(()=>normalizeConversationMemory({...projected,playerId:'untrusted'}),/invalid_conversation_memory/);
+  assert.throws(()=>normalizeConversationMemory({asOf:fact.expiresAt,facts:projected.facts}),/invalid_conversation_memory/);
+  assert.throws(()=>normalizeConversationMemory({asOf:f.now(),facts:[...projected.facts,...projected.facts]}),/invalid_conversation_memory/);
+  const long={...fact,source:{...fact.source,quote:'I'.repeat(550)}};
+  const bounded=projectConversationMemory(Array.from({length:40},(_,i)=>({...long,id:`fact-${i}`})),f.now());
+  assert.ok(bounded.facts.length<=20);
+  assert.ok(Buffer.byteLength(JSON.stringify(bounded))<=CONVERSATION_MEMORY_LIMITS.bytes);
+  const hand={handIndex:0,box:0,split:false,cards:[{r:'A',s:'♥'},{r:'10',s:'♠'}],outcome:'win'};
+  for(let i=1;i<=2;i++)f.store.completedRound(scope,{roundId:`round-${i}`,sequence:i,hands:[hand]},f.policy);
+  const source=f.store.inspect(scope,f.policy).facts.find(row=>row.type==='hand');
+  assert.equal(projectConversationMemory([source],f.now()).facts[0].kind,'completed-server-hands');
+  source.source.rounds[0].hands[0].cards[0].faceDown=true;
+  assert.equal(projectConversationMemory([source],f.now()).facts.length,0);
 });
 
 test('Forget also rejects sources waiting for policy I/O before extraction or hand storage begins',async t=>{
