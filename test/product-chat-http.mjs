@@ -234,6 +234,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       const frames = output.trim().split('\n').map(JSON.parse);
       assert.equal(frames.at(-1).type, 'result');
       assert.equal(frames.at(-1).decision.exactText, 'Exakt neutralt svar.');
+      assert.deepEqual(frames.filter(frame => frame.type === 'preview').map(frame => frame.exactText), ['Exakt neutralt svar.']);
       assert.deepEqual(frames.filter(frame => frame.type === 'progress').map(frame => frame.stage), ['text', 'ready']);
     } finally { release.resolve(); beforeRespond = null; }
   });

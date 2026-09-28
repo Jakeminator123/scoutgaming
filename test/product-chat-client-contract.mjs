@@ -13,13 +13,16 @@ test('product chat is wired to one existing speech queue through the pose gate',
   assert.doesNotMatch(source, /<i>thinking/);
 });
 
-test('chat sends concurrency revisions and only displays inside the gated callback', () => {
+test('chat previews model text provisionally and commits it only inside the gated callback', () => {
   assert.match(source, /sessionRevision:\s*identity\.sessionRevision/);
   assert.match(source, /roundRevision:\s*identity\.roundRevision/);
   const displayBlock = source.slice(source.indexOf('onDisplay: async'), source.indexOf('onSpeech: async'));
   assert.match(displayBlock, /chatLog\('vera', text\)/);
+  assert.match(displayBlock, /previewRow\.classList\.remove\('pending'\)/);
   const sendBlock = source.slice(source.indexOf('async function sendChat'), source.indexOf("$('#gate-enter')"));
-  assert.doesNotMatch(sendBlock, /chatLog\('vera'/);
+  assert.match(sendBlock, /chatLog\('vera', exactText, true\)/);
+  assert.match(sendBlock, /previewRow\.remove\(\)/);
+  assert.doesNotMatch(sendBlock, /chatHistory\.push\(\{ role: 'assistant'/);
 });
 
 test('generated text keeps neutral idle and exact TTS instead of a recorded mouth clip', () => {

@@ -1,5 +1,5 @@
-// Progress contains stage names and elapsed time only. Text/media arrive once,
-// after the server has rechecked ownership and the current round.
+// A generated-text preview is provisional until the final decision arrives.
+// Media and the authoritative result arrive after the ownership/round recheck.
 export const CHAT_STAGES = Object.freeze({
   text: 'Astrid tänker…', voice: 'Skapar rösten…',
   'video-submit': 'Skickar rösten till läppsynk…',
@@ -7,14 +7,14 @@ export const CHAT_STAGES = Object.freeze({
   media: 'Förbereder uppspelning…', ready: 'Svar klart · väntar på ledigt bord',
 });
 
-export async function readChatResponse(response, onProgress = () => {}) {
+export async function readChatResponse(response, onProgress = () => {}, onPreview = () => {}) {
   if (!response.ok || !response.headers.get('content-type')?.includes('application/x-ndjson')) {
     const value = await response.json();
     if (!response.ok) throw new Error(value.error || 'chat_unavailable');
     return value;
   }
   const reader = response.body.getReader(), decoder = new TextDecoder();
-  let buffer = '', size = 0, decision;
+  let buffer = '', size = 0, decision, previewText;
   try {
     for (;;) {
       const { done, value } = await reader.read();
@@ -27,9 +27,20 @@ export async function readChatResponse(response, onProgress = () => {}) {
         const frame = JSON.parse(buffer.slice(0, newline)); buffer = buffer.slice(newline + 1);
         if (decision) throw new Error('invalid_chat_response');
         if (frame.type === 'error') throw new Error(frame.error || 'chat_unavailable');
-        if (frame.type === 'result') decision = frame.decision;
+        if (frame.type === 'result') {
+          if (previewText !== undefined && (frame.decision?.kind !== 'generatedText' || frame.decision.exactText !== previewText)) throw new Error('invalid_chat_response');
+          decision = frame.decision;
+        }
+        else if (frame.type === 'preview' && previewText === undefined && typeof frame.exactText === 'string'
+          && frame.exactText.length > 0 && frame.exactText.length <= 500 && frame.exactText === frame.exactText.trim()
+          && !/[\u0000-\u001f\u007f-\u009f]/.test(frame.exactText)) {
+          previewText = frame.exactText; onPreview(previewText);
+        }
         else if (frame.type === 'progress' && Object.hasOwn(CHAT_STAGES, frame.stage)
-          && Number.isSafeInteger(frame.elapsedMs) && frame.elapsedMs >= 0) onProgress(frame);
+          && Number.isSafeInteger(frame.elapsedMs) && frame.elapsedMs >= 0
+          && (frame.metrics === undefined || (frame.stage === 'media' && frame.metrics && typeof frame.metrics === 'object'
+            && !Array.isArray(frame.metrics) && Object.keys(frame.metrics).every(key => ['videoBytes', 'runpodDelayMs', 'runpodExecutionMs'].includes(key)
+              && Number.isSafeInteger(frame.metrics[key]) && frame.metrics[key] >= 0)))) onProgress(frame);
         else throw new Error('invalid_chat_response');
       }
     }

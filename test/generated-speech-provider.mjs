@@ -77,12 +77,13 @@ test('pending and completed duplicates use one paid pipeline; another ID is reje
   assert.equal(provider.status().busy, false);
 });
 
-test('progress distinguishes voice, queue, rendering and download without provider data', async () => {
+test('progress distinguishes voice, queue, rendering and bounded provider timing', async () => {
   let polls = 0;
-  const { provider } = fixture({ statusResponse: () => ++polls === 1 ? json({ id: 'job-1', status: 'IN_PROGRESS' }) : json(complete()) });
-  const stages = [];
-  await provider.generate({ ...input(), onProgress: stage => stages.push(stage) });
+  const { provider } = fixture({ statusResponse: () => ++polls === 1 ? json({ id: 'job-1', status: 'IN_PROGRESS' }) : json({ ...complete(), delayTime: 420, executionTime: 810 }) });
+  const stages = [], metrics = [];
+  await provider.generate({ ...input(), onProgress: (stage, detail) => { stages.push(stage); if (detail) metrics.push(detail); } });
   assert.deepEqual(stages, ['voice', 'video-submit', 'video-queue', 'video-render', 'media']);
+  assert.deepEqual(metrics, [{ videoBytes: mp4().length, runpodDelayMs: 420, runpodExecutionMs: 810 }]);
 });
 
 test('failed and uncertain requests retain tombstones and do not retry either paid POST', async () => {
