@@ -1,3 +1,31 @@
+## 2026-09-28 — RunPod: 20 minuters varm tomgång, därefter noll arbetare
+
+På Jakobs begäran ändrades den befintliga endpointen `astrid-spel-lipsync`
+från `workersMin: 1`, `idleTimeout: 60` till `workersMin: 0`,
+`idleTimeout: 1200` sekunder. `workersMax: 5` och `QUEUE_DELAY: 4` behölls.
+En read-only GraphQL-kontroll efteråt bekräftade dessa fyra värden. Den
+tidigare lokala tvåtimmarsvakten (PID 27252 och 34760, terminalsession 4371)
+stoppades och processerna finns inte kvar; den ska inte återställa den nya
+konfigurationen. Beskrivningen av min 1 och vakten i avsnittet nedan är
+historik och ersätts av denna inställning. Ingen kod eller lokalt media ändrades.
+
+En färdig request håller en flex-arbetare varm i upp till 20 minuter medan
+GPU-tid faktureras, sedan kan endpointen skala ned till noll. En öppen
+webbdemo utan nya requests räknas inte som aktivitet. Nästa request efter
+nedskalning kan få kallstart. Offentlig RunPod-listpris för Serverless RTX
+4090 är $1,10/h, så en full 20-minuters tomgång kostar ungefär $0,37 per
+arbetare, utöver själva körningen och eventuell lagring. Kontrollera faktisk
+faktura för kontospecifik taxa.
+
+Emils separata `astrid-gpu-worker` lästes på GitLab: MuseTalk genererar
+ansiktsrutor på 256×256 och kompositionen använder en munmask mot en
+oförändrad bakgrund. FFmpeg kodar ändå hela 1080×1920-bilden som H.264 för
+varje bildruta. Därför kan render, kodning och överföring fortfarande vara
+flaskhalsar trots att bara munområdet får nytt bildinnehåll. Detta är en
+kodgranskning, inte en uppmätt tidsprofil. Emils V3-repo är bara en inaktiv
+kopia under `emil/astrid-demo-v3-reference/`; den aktiva ändringen här gäller
+RunPods delade endpoint, inte Emils repo.
+
 ## 2026-09-28 — Lissabon: kortare upplevd väntan och mätbar RunPod-tid
 
 Jakob bekräftade att läppsynken fungerar, men att ett kort chattsvar kan dröja.
@@ -8,13 +36,9 @@ RunPod-endpointen `astrid-spel-lipsync` hade `workersMin: 0`,
 `workersMax: 5`, `idleTimeout: 60` s och `QUEUE_DELAY: 4`. En öppen demo
 garanterade alltså inte en varm worker.
 
-För detta tidsbegränsade lokala demoprov ändrades endpointens `workersMin`
-till 1, med övriga fält bevarade. En lokal vaktprocess återställer
-`workersMin: 0` när Lissabonservern på 4201 är nere vid två kontroller eller
-senast efter 120 minuter. Den körs i terminalsession 4371 och ska lämnas igång.
-Verifiera efteråt att återställningen verkligen skedde; min 1 ger löpande
-GPU-kostnad medan den gäller. Ändringen är en fjärrinställning, inte en
-versionshanterad produktinställning.
+För ett tidsbegränsat lokalt demoprov ändrades endpointens `workersMin`
+till 1, med övriga fält bevarade, och en lokal återställningsvakt startades.
+Detta prov avslutades genom den nya fjärrinställningen i avsnittet ovan.
 
 Genererad svarstext strömmas nu som en provisorisk chattrad direkt efter
 OpenClaw-beslutet, innan röst och video är färdiga. Texten blir permanent först
