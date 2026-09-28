@@ -35,6 +35,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), 'public');
+const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
 const generationDirectory = process.env.CROUPIER_GENERATIONS_DIR ? resolve(process.env.CROUPIER_GENERATIONS_DIR) : join(root, 'bo/gen');
 
 // ---------- player database (demo money only) ----------
@@ -277,13 +278,27 @@ function boCreateUser(username, pw, role = 'admin') {
   boDb.prepare('INSERT INTO users (username, salt, hash, role, created_at) VALUES (?,?,?,?,?)')
     .run(username, salt, hash, role, new Date().toISOString());
 }
-// kevin is ALWAYS superadmin - covers craig.db files minted before roles existed
-try { boDb.exec("UPDATE users SET role='superadmin' WHERE username='kevin'"); } catch {}
-if (!boDb.prepare('SELECT COUNT(*) n FROM users').get().n) {
-  const pw = randomBytes(9).toString('base64url');
-  boCreateUser('kevin', pw, 'superadmin');
-  console.log(`[bo] backoffice login created - user: kevin  password: ${pw}`);
+// Preserve the legacy local account behavior without changing roles in a cloud DB.
+if (!cloudRuntime) {
+  try { boDb.exec("UPDATE users SET role='superadmin' WHERE username='kevin'"); } catch {}
 }
+if (!boDb.prepare('SELECT COUNT(*) n FROM users').get().n) {
+  if (cloudRuntime) {
+    const username = process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER;
+    const password = process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
+    if (typeof username !== 'string' || !/^[a-z][a-z0-9._-]{2,63}$/.test(username)
+      || username === 'kevin' || typeof password !== 'string'
+      || password.length < 16 || password.length > 256 || /[\u0000-\u001f\u007f-\u009f]/u.test(password)) {
+      throw new Error('Cloud operator bootstrap credentials are required for an empty CRAIG database.');
+    }
+    boCreateUser(username, password, 'superadmin');
+  } else {
+    const pw = randomBytes(9).toString('base64url');
+    boCreateUser('kevin', pw, 'superadmin');
+    console.log(`[bo] backoffice login created - user: kevin  password: ${pw}`);
+  }
+}
+if (cloudRuntime) delete process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
 function boCheckLogin(user, pass) {
   const account = scoutIdentity.authenticate(user, pass);
   if (!account) return null;
@@ -960,6 +975,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (req.method === 'POST' && req.url === '/calibration') {
+    if (cloudRuntime) {
+      res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end('{"error":"calibration_unavailable"}');
+      return;
+    }
     let body = '';
     req.on('data', c => { body += c; if (body.length > 60000) req.destroy(); });
     req.on('end', () => {

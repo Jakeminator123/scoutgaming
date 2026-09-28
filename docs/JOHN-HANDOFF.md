@@ -5764,3 +5764,31 @@ cookiebeteende, beständighet efter processomstart, medier och hela Astrids
 tal-/bildkedja måste fortfarande verifieras på den avsedda värden innan
 startspärren kan tas bort. Detta paket inaktiverar ännu genererat tal och
 kamera i molnläget; se `docs/CLOUD-MIGRATION.md`.
+
+## 2026-09-28 — säkrare första molnstart och valbar Astrid-media
+
+Molnkonfigurationen kräver nu den separata produktens OpenClaw-talrelä och
+vidarebefordrar en begränsad svarstidsgräns. En ny tom CRAIG-databas kräver
+en engångsuppsättning av administratörsnamn och starkt lösenord via privata
+värdvariabler. Molnservern skriver inte ut lösenordet, återskapar inte
+kontot vid omstart och upphöjer inte längre det äldre lokala `kevin`-kontot.
+Den läsande startkontrollen avvisar en tom eller saknad CRAIG-databas om
+uppstartsuppgifterna saknas. Operatören tar bort dem från värdplattformen
+efter första inloggningen.
+Den lokala startens befintliga beteende är bevarat. `POST /calibration` är
+uttryckligen stängd i molnläget.
+
+Kamera/Whisper och genererat tal/video kan nu konfigureras separat för
+molnservern. De är avstängda som standard, och respektive leverantörsnyckel
+går endast till produktprocessen, inte Lab. Talet översätts till engelska.
+Produktprocessen kan ligga på loopback bakom den kontrollerade HTTPS-ingången.
+Strömmad WebSocket-läppsynk är fortsatt avstängd i denna väg.
+
+Isolerade tester för molnkonfiguration, första inloggning, BO/Lab-behörighet,
+kamerakontrakt, transkription och genererat tal passerade (43 delprov).
+`audit-dealer-sync --probe` matchade alla fyra dealers baslinjer, men mänsklig
+läppsynkacceptans återstår. Hela repots pre-commit-kontroll passerade.
+Inga leverantörsanrop, permanenta devservrar eller betalningar
+gjordes. Molnstartens kodspärr är kvar tills verkliga HTTPS-, disk-, tal-,
+bild- och browserprov har godkänts. De stoppade lokala servrarna förblir
+stoppade.
