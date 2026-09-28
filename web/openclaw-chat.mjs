@@ -1,5 +1,7 @@
 import { normalizeConversationMemory } from '../open-claw/lab/src/conversation-memory.mjs';
 
+import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
+
 class GatewayError extends Error {
   constructor(code, statusCode = 503) { super(code); this.code = code; this.statusCode = statusCode; }
 }
@@ -166,8 +168,8 @@ export function projectOpenClawGameStatus(authoritative) {
   };
 }
 
-function normalizeRequest(value) {
-  if (!exact(value, ['requestId', 'message', 'history']) || !safeId(value.requestId) || !safeText(value.message, OPENCLAW_CHAT_LIMITS.message)
+function normalizeRequest(value, dealerId) {
+  if (!exact(value, ['requestId', 'message', 'history', ...(value?.observation === undefined ? [] : ['observation'])]) || !safeId(value.requestId) || !safeText(value.message, OPENCLAW_CHAT_LIMITS.message)
     || !Array.isArray(value.history) || value.history.length > OPENCLAW_CHAT_LIMITS.history) fail('invalid_chat_request');
   let total = 0;
   const history = value.history.map(entry => {
@@ -176,7 +178,8 @@ function normalizeRequest(value) {
     return { role: entry.role, text: entry.text };
   });
   if (total > OPENCLAW_CHAT_LIMITS.historyChars) fail('invalid_chat_history');
-  return { requestId: value.requestId, message: value.message, history };
+  return { requestId: value.requestId, message: value.message, history,
+    ...(value.observation === undefined ? {} : { observation: normalizeAstridObservation(value.observation, value.requestId, dealerId) }) };
 }
 
 function validateChoice(value, request, status) {
@@ -211,8 +214,8 @@ function validateChoice(value, request, status) {
 export async function openClawChat(requestValue, authoritativeStatus, {
   settingsProvider = null, completeImpl = null, fetchImpl = fetch, model = 'gateway-default',
 } = {}) {
-  const request = normalizeRequest(requestValue);
   const status = projectOpenClawGameStatus(authoritativeStatus);
+  const request = normalizeRequest(requestValue, status.dealerId);
   if (!settingsProvider) {
     const { readSettings } = await import('../open-claw/lab/src/settings.mjs');
     settingsProvider ??= readSettings;

@@ -1,3 +1,4 @@
+import { syntheticJpeg } from '../../../test/fixtures/synthetic-jpeg.mjs';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -47,6 +48,12 @@ function completion(value) {
   return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(value) } }] }), {
     status: 200, headers: { 'Content-Type': 'application/json' },
   });
+}
+
+function syntheticObservation(requestId = 'speech-request-001') {
+  const jpeg = syntheticJpeg();
+  return { version: 1, turnId: requestId, consentTurnId: requestId, profileRevision: 'a'.repeat(64),
+    images: [`data:image/jpeg;base64,${jpeg.toString('base64')}`] };
 }
 
 test('deduplicated product decisions target only the tool-less speech role and keep injected text as data', async () => {
@@ -102,6 +109,39 @@ test('Astrid gets an English default with explicit language requests preserved a
     } });
     await service.handle(input);
   }
+});
+
+test('Director sends only reviewed Astrid image parts to the private tool-less Gateway turn', async t => {
+  const input = envelope({ model: 'gpt-6-luna' });
+  input.request.observation = syntheticObservation();
+  let calls = 0;
+  const base = await running(t, async (_url, options) => {
+    calls++;
+    const body = JSON.parse(options.body);
+    assert.equal(body.model, 'openclaw/croupier-speech');
+    assert.equal(body.tool_choice, 'none');
+    assert.equal(body.user, undefined, 'image turn does not choose a stable Gateway session');
+    assert.equal(options.headers['x-openclaw-model'], 'lab-provider/gpt-6-luna');
+    const current = body.messages.at(-1).content;
+    assert.equal(Array.isArray(current), true);
+    assert.equal(current[0].type, 'text');
+    assert.deepEqual(current.slice(1), [{ type: 'image_url', image_url: { url: input.request.observation.images[0] } }]);
+    assert.equal(JSON.stringify(body.messages[1]).includes(input.request.observation.images[0]), false);
+    return completion(silence(input));
+  });
+  const response = await post(base, speechToken, input);
+  assert.equal(response.status, 200, await response.text());
+  const repeated = await post(base, speechToken, input);
+  assert.equal(repeated.status, 200, await repeated.text());
+  const changedImage = structuredClone(input);
+  changedImage.request.observation.images.push(input.request.observation.images[0]);
+  const conflict = await post(base, speechToken, changedImage);
+  assert.equal(conflict.status, 409, await conflict.text());
+  assert.equal(calls, 1);
+  const badModel = structuredClone(input); badModel.model = 'gpt-5.6-terra'; badModel.request.requestId = 'other-id';
+  badModel.request.observation = syntheticObservation('other-id');
+  assert.equal((await post(base, speechToken, badModel)).status, 400);
+  assert.equal(calls, 1);
 });
 
 test('wrong role, wrong echoed revision, timeout and conflicting duplicate fail closed', async () => {

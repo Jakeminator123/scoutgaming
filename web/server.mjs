@@ -8,6 +8,7 @@ import { backofficeGameAuth } from './bo-game-auth.mjs';
 import { createServer } from 'node:http';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
+import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
 import { readPlayerResults } from './player-results.mjs';
 import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
@@ -658,6 +659,8 @@ const MIME = {
 // freshly projected public state and a closed speech/media allowlist.
 const CHAT_DEALERS = Object.freeze({ vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' });
 const CHAT_REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
+const astridCameraEnabled = process.env.CROUPIER_ASTRID_CAMERA === '1'
+  && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane';
 
 function chatSpeechPolicy(dealerId) {
   // The local Astrid renderer cannot verify legacy bank lines against its
@@ -815,6 +818,16 @@ createServer(async (req, res) => {
     res.writeHead(403);res.end('Invalid origin');return;
   }
   if(!backoffice) res.setHeader('Cache-Control','no-store');
+  if (pathname === '/api/astrid/observation' && req.method === 'GET') {
+    try {
+      const config = await probeRuntime.config();
+      const enabled = astridCameraEnabled && config.policy.model === 'gpt-6-luna';
+      const profileRevision = enabled ? createHash('sha256').update(chatSessionOwner(req, authenticated)).digest('hex') : null;
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+      res.end(JSON.stringify({ enabled, profileRevision, model: config.policy.model }));
+    } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"enabled":false}'); }
+    return;
+  }
   if (pathname === '/api/probe' || pathname.startsWith('/api/probe/')) {
     const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end(JSON.stringify(value));};
     const scope={playerId:authenticated,dealerId:'astrid'};
@@ -992,9 +1005,18 @@ createServer(async (req, res) => {
     };
     const disconnected = () => { if (!res.writableEnded) controller.abort(); };
     res.once('close', disconnected);
-    let body = '';
-    req.on('data', c => { body += c; if (body.length > 20000) req.destroy(); });
+    let body = '', bytes = 0, tooLarge = false;
+    req.on('data', c => {
+      if (tooLarge) return;
+      bytes += c.length;
+      if (bytes > 224 * 1024) {
+        tooLarge = true; body = '';
+        res.writeHead(413, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end('{"error":"request_too_large"}');
+      } else body += c;
+    });
     req.on('end', async () => {
+      if (tooLarge) return;
       let memoryTurn, memoryKey;
       try {
         const incoming = JSON.parse(body || '{}');
@@ -1005,17 +1027,31 @@ createServer(async (req, res) => {
         const session = playerSession(req);
         const status = authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         const owner = chatSessionOwner(req, authenticated);
+        const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
+        let observation;
+        if (incoming.observation !== undefined) {
+          if (!astridCameraEnabled || dealerId !== 'astrid') throw Object.assign(new Error('observation_disabled'), { statusCode: 403 });
+          if (!req.headers.origin || !URL.canParse(req.headers.origin)
+            || !['http:', 'https:'].includes(new URL(req.headers.origin).protocol)
+            || new URL(req.headers.origin).origin !== req.headers.origin
+            || new URL(req.headers.origin).host !== req.headers.host || req.headers['sec-fetch-site'] === 'cross-site') {
+            throw Object.assign(new Error('observation_same_origin_required'), { statusCode: 403 });
+          }
+          if (probeConfig.policy.model !== 'gpt-6-luna') throw Object.assign(new Error('observation_model_not_verified'), { statusCode: 409 });
+          observation = normalizeAstridObservation(incoming.observation, incoming.requestId, dealerId,
+            createHash('sha256').update(owner).digest('hex'));
+        }
         const scope = { playerId: authenticated, dealerId };
         await probeRuntime.cancel(scope);
         memoryTurn = playerChatMemory.begin({ ...scope, requestId: incoming.requestId, message: incoming.message });
         memoryKey = JSON.stringify([authenticated, dealerId]);
         activePlayerChats.set(memoryKey, controller);
-        const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
         const conversation = probeConfig ? probeStore.conversation(scope, probeConfig.policy) : null;
         if (conversation) status.conversationMemory = conversation.context;
         // Neither a browser-supplied player ID nor fabricated assistant history
         // may enter the model. Stable identity and bounded recall are server-owned.
-        const request = { requestId: incoming.requestId, message: incoming.message, history: memoryTurn.history };
+        const request = { requestId: incoming.requestId, message: incoming.message, history: memoryTurn.history,
+          ...(observation ? { observation } : {}) };
         const readStatus = async () => {
           if (conversation) {
             const currentPolicy = (await probeRuntime.config()).policy;

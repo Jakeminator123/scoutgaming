@@ -36,6 +36,17 @@ test('the seeded provider keeps the approved OpenAI base URL, model and API tupl
   }
 });
 
+test('Astrid vision metadata requires an explicit gate and only changes Luna', () => {
+  const config = gatewayConfig(example);
+  const provider = config.models.providers['lab-provider'];
+  assert.deepEqual(provider.models.find(model => model.id === 'gpt-6-luna').input, ['text']);
+  const planned = planGatewayConfig(config, { ...example, CROUPIER_SPEECH_VISION: '1' });
+  assert.deepEqual(planned.config.models.providers['lab-provider'].models.map(model => model.input),
+    [['text'], ['text', 'image'], ['text']]);
+  assert.deepEqual(config.models.providers['lab-provider'].models.map(model => model.input),
+    [['text'], ['text'], ['text']], 'planning does not mutate saved configuration');
+});
+
 test('chat cannot gain tools or share the presentation agent workspace', () => {
   const config = gatewayConfig(example);
   const director = config.agents.entries['croupier-director'];

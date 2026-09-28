@@ -35,6 +35,10 @@ Grundläget **Standard** gör inga AI-klippval; välj OpenClaw eller Skuggläge
 i spelets klippväljare om du vill prova modellval.
 Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 
+Astrids valbara kamera/mikrofon finns i samma spelflik, Av som standard.
+Aktivering väntar på driftprov. Se [implementation och verifieringsläge](../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md)
+och [OpenClaws källindex](../../open-claw/lab/docs/OPENCLAW-DOCS.md).
+
 ## Idle i Eventstudion
 
 Astrids Eventstudio och native-följning använder nu samma exakta mediefamilj:

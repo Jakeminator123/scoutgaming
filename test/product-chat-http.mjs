@@ -1,3 +1,4 @@
+import { syntheticJpeg } from './fixtures/synthetic-jpeg.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer as createHttpServer } from 'node:http';
@@ -20,6 +21,7 @@ const PRIVATE_TRANSPORT_ENV = [
   'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
   'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL', 'OPENCLAW_MODEL_ID', 'OPENCLAW_MODEL_API',
   'CROUPIER_GENERATED_SPEECH', 'CROUPIER_GENERATED_SPEECH_PREVIEW', 'CROUPIER_GENERATED_SPEECH_DIR',
+  'CROUPIER_ASTRID_CAMERA',
   'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID', 'ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API', 'RUNPOD_API_KEY',
 ];
 
@@ -31,7 +33,8 @@ function suppliedEnvelope(body) {
   const context = JSON.parse(body.messages[1].content);
   if (body.messages.length === 2) return context;
   assert.equal(body.messages.length, 3);
-  const current = JSON.parse(body.messages[2].content.split('\n')[0]);
+  const currentContent = body.messages[2].content;
+  const current = JSON.parse((Array.isArray(currentContent) ? currentContent[0].text : currentContent).split('\n')[0]);
   assert.equal(current.replyLanguagePolicy.default, 'English');
   return { status: context.status, request: { ...current.request, history: context.history } };
 }
@@ -46,6 +49,8 @@ function deferred() {
   const promise = new Promise(done => { resolve = done; });
   return { promise, resolve };
 }
+
+function syntheticJpegUrl() { return `data:image/jpeg;base64,${syntheticJpeg().toString('base64')}`; }
 
 async function within(promise, milliseconds = 5000) {
   let timer;
@@ -90,6 +95,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     }, { HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory, NODE_ENV: 'development',
       CROUPIER_PRESENTATION_STUDIO_DIR: join(directory,'studio'),
       CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '', CROUPIER_LISSABON_PROFILES: lissabon ? '1' : '',
+      CROUPIER_ASTRID_CAMERA: lissabon ? '1' : '',
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
       OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat',
       OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' }),
@@ -470,6 +476,51 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     await client.post('/chat',chat(view,{message:'What happened last round?'}));
     assert.deepEqual(envelope().status.playResults.lastRound,last);
     assert.equal(envelope().status.playResults.currentRound.wagered,10);
+  });
+  await t.test('optional Astrid images require the flag, same turn, profile, consent and a data JPEG', async () => {
+    const a = await guest(), b = await guest();
+    const config = await a.client.get('/api/astrid/observation');
+    assert.equal(config.enabled, lissabon);
+    const input = chat(a.state);
+    const image = syntheticJpegUrl();
+    const observation = { version: 1, turnId: input.requestId, consentTurnId: input.requestId,
+      profileRevision: config.profileRevision, images: [image] };
+    const before = captured.length;
+    if (!lissabon) {
+      assert.equal((await a.client.post('/chat', { ...input, observation }, 403)).error, 'observation_disabled');
+      assert.equal(captured.length, before);
+      return;
+    }
+    const invalid = [
+      value => ({ ...value, consentTurnId: 'other-turn' }),
+      value => ({ ...value, images: ['https://attacker.invalid/photo.jpg'] }),
+      value => ({ ...value, images: [image.replace('image/jpeg', 'image/png')] }),
+      value => ({ ...value, images: [image, image, image] }),
+      value => ({ ...value, profileRevision: 'b'.repeat(64) }),
+    ];
+    for (const mutate of invalid) {
+      const attempt = chat(a.state);
+      const value = mutate({ ...observation, turnId: attempt.requestId, consentTurnId: attempt.requestId });
+      const result = await a.client.post('/chat', { ...attempt, observation: value }, 400);
+      assert.match(result.error, /^invalid_observation_/);
+    }
+    // Each rejected request must leave the model and player memory untouched.
+    assert.equal(captured.length, before);
+    const bInput = chat(b.state);
+    const wrongProfile = await b.client.post('/chat', { ...bInput, observation: {
+      ...observation, turnId: bInput.requestId, consentTurnId: bInput.requestId,
+    } }, 400);
+    assert.equal(wrongProfile.error, 'invalid_observation_consent');
+    const missingOrigin = await fetch(origin + '/chat', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: a.client.cookie() },
+      body: JSON.stringify({ ...input, observation }), signal: AbortSignal.timeout(5000) });
+    assert.equal(missingOrigin.status, 403); await missingOrigin.text();
+    await a.client.post('/chat', { ...input, observation });
+    const sent = captured.at(-1).body.messages.at(-1).content;
+    assert.equal(Array.isArray(sent), true);
+    assert.deepEqual(sent.slice(1), [{ type: 'image_url', image_url: { url: image } }]);
+    assert.equal(JSON.stringify(await a.client.get('/api/chat/memory?dealer=astrid')).includes(image), false);
+    assert.equal(captured.length, before + 1);
   });
   assert.equal(poisonRequests, 0, 'parent relay, Gateway and provider settings never reach the child fixture');
 

@@ -3,6 +3,7 @@ import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
 import { createProbeClient, probePresentationQuiet } from './probe-client.mjs';
+import { createAstridCameraControl } from './astrid-camera-control.mjs';
 import { createSpeechPoseGate } from './speech-pose-gate.mjs';
 import { CHAT_STAGES, readChatResponse, chatFailureMessage } from './chat-response.mjs';
 import { playGeneratedSpeech, loadGeneratedSpeech } from './generated-speech-player.mjs';
@@ -2230,8 +2231,13 @@ function sayLine(id) {
   return true;
 }
 
-$('#chat-send').onclick = sendChat;
-$('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+$('#chat-send').onclick = () => void sendChat();
+$('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') void sendChat(); });
+const astridCamera = DEALER.key === 'astrid' && localPresentationEnabled
+  ? createAstridCameraControl({ container: $('#chat'), identity: () => ({ ...poseIdentity(), playerId: player?.id }),
+    canStart: () => !chatBusy && !speaking && !busy,
+    onActivity: () => probeClient?.activity(),
+    send: ({ message, images, profileRevision }) => sendChat({ message, images, profileRevision }) }) : null;
 
 // Memory belongs to the authenticated server player, not this tab's display log.
 const chatMemory = document.createElement('details');
@@ -2267,12 +2273,12 @@ memoryForget.onclick = async () => {
   finally { memoryForget.disabled = false; }
 };
 
-async function sendChat() {
+async function sendChat({ message: reviewedMessage, images = [], profileRevision = null } = {}) {
   const input = $('#chat-input');
-  const message = input.value.trim();
-  if (!message || chatBusy) return;
+  const message = (reviewedMessage ?? input.value).trim();
+  if (!message || chatBusy) return false;
   probeClient?.activity();
-  input.value = '';
+  if (reviewedMessage === undefined) input.value = '';
   chatBusy = true;
   $('#chat-send').disabled = true;
   if (compactChat()) input.blur();
@@ -2298,7 +2304,8 @@ async function sendChat() {
     const r = await fetch('/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: localPresentationEnabled ? 'application/x-ndjson' : 'application/json' }, signal: controller.signal,
       body: JSON.stringify({ requestId, message, history, dealer: DEALER.key,
-        sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
+        sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision,
+        ...(images.length ? { observation: { version: 1, turnId: requestId, consentTurnId: requestId, profileRevision, images } } : {}) }),
     });
     const decision = await readChatResponse(r, progress => {
       stages.push({ stage: progress.stage, elapsedMs: progress.elapsedMs, ...(progress.metrics ? { metrics: progress.metrics } : {}) });
@@ -2329,12 +2336,14 @@ async function sendChat() {
     if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
     if (receipt.status === 'cancelled') setChatStatus(chatFailureMessage(receipt.reason));
     else setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.' : '');
+    return true;
   } catch (error) {
     if (previewRow?.classList.contains('pending')) previewRow.remove();
     const reason = speechPoseGate.get(requestId)?.reason || error.message || 'chat-failed';
     speechPoseGate.cancel(requestId, reason);
     setChatStatus(chatFailureMessage(reason));
     nativeObservation.emit('status', { state: 'chat-failed', requestId, reason }, chatCorrelation);
+    return false;
   } finally {
     pendingChatReplies.delete(requestId);
     chatBusy = false;
@@ -2539,7 +2548,7 @@ const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
 if (localPresentationEnabled) tableReady.then(async () => {
   const { installLissabonProfileUi } = await import('./lissabon-profile.mjs');
-  await installLissabonProfileUi({ canSwitch: () => !round && !busy && !chatBusy });
+  await installLissabonProfileUi({ canSwitch: () => !round && !busy && !chatBusy, beforeSwitch: () => astridCamera?.stop('Profilbyte · Av') });
 }).catch(error => console.warn('[Lissabon profile]', error.message));
 // The guest table has no entry gate. Astrid greets once her table is ready;
 // when the browser refuses autoplay, the greeting waits for the first gesture.
@@ -2552,7 +2561,7 @@ if(astridSpeak)tableReady.then(()=>{
   });
 }).catch(()=>{});
 
-document.querySelector('#sign-out').onclick=async()=>{await api('/api/auth/logout',{});location.reload();};
+document.querySelector('#sign-out').onclick=async()=>{astridCamera?.stop('Utloggad · Av');await api('/api/auth/logout',{});location.reload();};
 
 // Separate explicit chat capability for the bound local lab. It cannot issue
 // table commands or supply cards/identity. Only this authenticated native server
@@ -2588,7 +2597,7 @@ if (DEALER.key === 'astrid') {
   probeClient = createProbeClient({
     identity: poseIdentity,
     flags: ownJobId => ({ present: !document.hidden, sound: !voice.muted,
-      typing: Boolean($('#chat-input').value.trim()) || document.activeElement === $('#chat-input'),
+      typing: Boolean($('#chat-input').value.trim()) || document.activeElement === $('#chat-input') || Boolean(astridCamera?.busy),
       quiet: probePresentationQuiet({busy,round,chatBusy,speaking,pending:speechQueue.pending,gate:speechPoseGate,ownJobId,idleBackground:localPresentation?.idleBackground}) }),
     mount: memoryPanel,
     report: ({state,...entry}) => nativeObservation.emit('status', { ...entry, state:'probe', stage:state }),
