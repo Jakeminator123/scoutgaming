@@ -288,6 +288,7 @@
         "4a459446-ba3c-0075-04ab-ff6ed0b501a4"
       ],
       "variantIds": [
+        "093c2544-ca82-fc1f-3de1-e51e3b9786ea",
         "f5a983d8-877e-317d-7b1c-2f4848c88488",
         "090751f3-fab4-327b-c5a2-0294f0de8bfe",
         "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
@@ -387,6 +388,15 @@
       "extension": "mp4",
       "size": 2766598,
       "sha256": "4a459446ba3c007504abff6ed0b501a4c6e9355897cad3090f44a606186ef5ad"
+    },
+    {
+      "id": "093c2544-ca82-fc1f-3de1-e51e3b9786ea",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/croupier_coffie.mp4",
+      "extension": "mp4",
+      "size": 9025942,
+      "sha256": "093c2544ca82fc1f3de1e51e3b9786ea778038cc1049ef028d5ff4e8365fdc11"
     },
     {
       "id": "f5a983d8-877e-317d-7b1c-2f4848c88488",

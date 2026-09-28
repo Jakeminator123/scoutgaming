@@ -53,7 +53,7 @@ export function mediaLineForEvent(project, inventory, dealerId, eventId, event) 
       videoGenerationId: video.id, priority: policy.priority, triggerIds: [...policy.triggerIds], selection: { ...policy.selection } };
   });
   return { managed: true, family, line: { ...saved, label: family?.situation ?? saved.label,
-    variants: [{ ...baseline, label: standard?.fileName ?? 'Ingen video för situationen · 2D-reserv', videoGenerationId: standard?.id ?? null }, ...variants] } };
+    variants: [{ ...baseline, label: standard?.fileName ?? 'Ingen video för situationen', videoGenerationId: standard?.id ?? null }, ...variants] } };
 }
 
 // The server result owns its chosen ID (including null). Never substitute the

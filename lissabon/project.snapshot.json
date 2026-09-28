@@ -4070,6 +4070,13 @@
         "use": "openclaw",
         "automatic": null,
         "description": "Diskret gäspning när spelaren själv nämner trötthet. Inte vid vanliga frågor."
+      },
+      {
+        "videoId": "093c2544-ca82-fc1f-3de1-e51e3b9786ea",
+        "durationMs": 6042,
+        "use": "manual",
+        "automatic": null,
+        "description": "Kaffepaus. Välj själv när klippet ska spelas."
       }
     ]
   }

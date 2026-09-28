@@ -11,7 +11,7 @@ import type { MediaVariantPolicy, StudioProject } from '../lib/studio-model.mjs'
 import { requestJson, type VideoInventory } from './studio-types';
 import styles from './lissabon-studio.module.css';
 
-type View = 'stream' | 'idle' | 'clips';
+type View = 'stream' | 'idle' | 'deal' | 'clips';
 export function LissabonStudio({ initialProject, initialVideos, connectedLane }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean }) {
   const [project, setProject] = useState(initialProject);
   const [saved, setSaved] = useState(JSON.stringify(initialProject));
@@ -49,14 +49,14 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
   }
   async function refresh() {
     setRefreshing(true); setError('');
-    try { setVideos(await requestJson<VideoInventory>('/api/videos')); }
+    try { setVideos(await requestJson<VideoInventory>('/api/videos/rescan', { method: 'POST' })); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Kunde inte läsa klippen.'); }
     finally { setRefreshing(false); }
   }
   function open(eventId: string, situation: string) {
     setVariantId('');
     if (eventId === 'idle.ready') setView('idle');
-    else { setSelection({ eventId, situation }); setView('clips'); }
+    else { setSelection({ eventId, situation }); setView(eventId.startsWith('deal.') ? 'deal' : 'clips'); }
   }
   function updatePolicy(familyId: string, policy: MediaVariantPolicy) {
     edit(draft => {
@@ -74,7 +74,7 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
   const video = definition && event && variant && mediaVideoForEvent(videos, 'astrid', definition.id, event, variant.videoGenerationId);
   return <div className={styles.shell}>
     <header className={styles.header}><div><span className="eyebrow">ASTRID · LOKAL DEMO</span><h1>Lissabon<span>stream lane</span></h1></div>
-      <nav aria-label="Lissabon">{([['stream', 'Ström'], ['idle', 'Idle'], ['clips', 'Klipp & varianter']] as const).map(([id, label]) => <button className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => setView(id)}>{label}</button>)}</nav>
+      <nav aria-label="Lissabon">{([['stream', 'Ström'], ['idle', 'Idle'], ['deal', 'Deal'], ['clips', 'Repliker']] as const).map(([id, label]) => <button className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => { setSelection(null); setView(id); }}>{label}</button>)}</nav>
       <div className={styles.save}><span>{dirty ? 'Osparade ändringar' : 'Sparat lokalt'}</span><button className="primary-button" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button></div>
     </header>
     <main className={styles.main}>
@@ -85,9 +85,9 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
         <p className={styles.intro}>Astrid med Emils klipp, OpenClaw och genererade röstsvar med läppsynk. Anslut öppnar spelfliken och följer dess uppspelning här.</p>
         {connectedLane ? <ActivityLog focused entries={entries} onActivity={record} onClear={() => setEntries([])} full onOpen={() => setView('stream')} streamView={{ project, videos, originals: null, dealerId: 'astrid', onOpenEvent: eventId => open(eventId, '') }} /> : null}
       </div>
-      {view === 'idle' ? <section><h2>Vänteläge och reaktioner</h2><p className={styles.intro}>Spara och ladda om spelfliken när handen är avslutad. OpenClaw behöver inte startas om. Spelets Klippval ska stå på OpenClaw för chattreaktioner.</p><fieldset disabled={saving || !connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy ?? createDefaultIdlePolicy()} inventory={videos} blocked={saving} onChange={policy => edit(draft => { draft.idlePolicy = policy; })} onBusyChange={() => {}} /></fieldset></section> : null}
-      {view === 'clips' ? <section><h2>Emils klipp och varianter</h2><p className={styles.intro}>Välj en situation för att se dess exakta filer och tillåtna varianter. Chattsvar genereras separat i spelfliken.</p>
-        {media && variant ? <><button className="text-button" onClick={() => setSelection(null)}>← Alla klipp</button><fieldset disabled={saving || !connectedLane} className={styles.editor}><div>{video ? <video key={video.id} className={styles.preview} src={video.previewUrl} controls playsInline preload="metadata" /> : <p>Ingen tillgänglig film för denna situation.</p>}<p>{selection?.situation} · Manuell klippgranskning</p></div><MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={media.line.variants} selectedId={variant.id} onSelect={setVariantId} onPolicy={updatePolicy} onRefresh={() => void refresh()} refreshing={refreshing} /></fieldset></> : <FamilyVideoLibrary inventory={videos} dealerId="astrid" onOpen={open} onRefresh={() => void refresh()} refreshing={refreshing} />}
+      {view === 'idle' ? <section><h2>Vänteläge och reaktioner</h2><button className="text-button" disabled={refreshing} onClick={() => void refresh()}>{refreshing ? 'Läser…' : 'Läs in nya filer från idle/variant'}</button><p className={styles.intro}>Spara och ladda om spelfliken när handen är avslutad. OpenClaw behöver inte startas om. Spelets Klippval ska stå på OpenClaw för chattreaktioner. Klippbeskrivningar och tillåtelse ändras här; agentens anslutning och dashboard finns under <a href="/openclaw">Chatt &amp; OpenClaw</a>.</p><fieldset disabled={saving || !connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy ?? createDefaultIdlePolicy()} inventory={videos} blocked={saving} onChange={policy => edit(draft => { draft.idlePolicy = policy; })} onBusyChange={() => {}} /></fieldset></section> : null}
+      {view === 'deal' || view === 'clips' ? <section>{selection ? <h2>{view === 'deal' ? 'Utdelning' : 'Repliker'} · {selection.situation}</h2> : null}<p className={styles.intro}>Välj en situation för att se dess exakta standardfil och tillåtna varianter. De här lokala proven styr inte spelet.</p>
+        {media && variant ? <><button className="text-button" onClick={() => setSelection(null)}>← Alla klipp</button><fieldset disabled={saving || !connectedLane} className={styles.editor}><div>{video ? <video key={video.id} className={styles.preview} src={video.previewUrl} controls playsInline preload="metadata" /> : <p>Ingen tillgänglig film för denna situation.</p>}<p>{selection?.situation} · Manuell klippgranskning</p></div><MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={media.line.variants} selectedId={variant.id} onSelect={setVariantId} onPolicy={updatePolicy} onRefresh={() => void refresh()} refreshing={refreshing} /></fieldset></> : <FamilyVideoLibrary inventory={videos} dealerId="astrid" familyType={view === 'deal' ? 'deal' : 'speak'} onOpen={open} onRefresh={() => void refresh()} refreshing={refreshing} />}
       </section> : null}
       <details className={styles.help}><summary>Start, sparande och kvarvarande arbete</summary><p>Starta med <code>Start-Lissabon.cmd</code>. Inställningar sparas i <code>lissabon/data/project.json</code> med versionshistorik. Lokala demoprofiler och Astrids chatthistorik sparas i <code>lissabon/data/players</code> och finns kvar efter omstart. Välj profil i spelfliken. Profilerna saknar lösenord; gästläget finns kvar. Genererade ljud och filmer är tillfälliga per serverstart.</p><p>Genereringen har tagit 15–81 sekunder i våra prover. Talet inväntar ledigt vänteläge. På mobil öppnar du själv loggen med Chatt; kort och insatser ligger ovanpå talfilmen. Kvar före demoacceptans: kortplacering, kortkontakt och saknade exakta filmer. Röst och läppsynk behöver fortsatt bedömas med ögon och öron.</p><p>Den tidigare studion finns under <a href="/tree">Avancerat labb</a>. Lissabon använder samma lagring och spelare.</p></details>
     </main>

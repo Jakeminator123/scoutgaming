@@ -46,10 +46,11 @@ interface Props {
   dealer: string; eventLabel: string; sourceType: string;
   result: SimulationResult | null; previewKind: 'selected' | 'social' | null;
   originalLabel?: string;
+  manifestOwned?: boolean;
   busy: boolean; blocked?: boolean; onRun: () => void;
 }
 
-export function EventTestPanel({ open, onOpen, mode, onMode, configured, context, onContext, dealer, eventLabel, sourceType, result, previewKind, originalLabel, busy, blocked = false, onRun }: Props) {
+export function EventTestPanel({ open, onOpen, mode, onMode, configured, context, onContext, dealer, eventLabel, sourceType, result, previewKind, originalLabel, manifestOwned = false, busy, blocked = false, onRun }: Props) {
   const usesModel = mode === 'active' || mode === 'shadow';
   const [poseStep, setPoseStep] = useState(-1);
   useEffect(() => {
@@ -68,7 +69,7 @@ export function EventTestPanel({ open, onOpen, mode, onMode, configured, context
       {!configured && usesModel ? <p className="connection-warning">OpenClaw är inte konfigurerat. Testet använder standardvarianten.</p> : null}
       <details className={styles.testContext}><summary>Testsituation <span>{mode === 'off' ? 'påverkar inte Standard' : 'simulerad indata'}</span></summary><TestContextPanel value={context} onChange={onContext} /></details>
       <div className={styles.run}><p>{usesModel ? 'Testa event kan göra ett modellanrop. Spelresultatet ändras inte.' : 'Lokalt test. Inget modellanrop och inget ändrat spelresultat.'}</p><button type="button" className="primary-button" disabled={busy || blocked} onClick={onRun}>{blocked ? 'Socialt svar pågår' : busy ? 'Testar…' : 'Testa event'}</button></div>
-      {result ? <section className={styles.result} aria-label="Resultat från eventtest" role="status"><span>VALD VARIANT</span><h3>{result.variant?.label ?? 'Beslut klart'}</h3><p>{reasonDescriptions[result.decision?.reason ?? ''] ?? 'Se beslutsspåret för exakt orsak.'}</p><small>{result.videoGenerationId ? 'Kopplad video · 2D-reserv om filen inte kan spelas' : originalLabel ? `Originalförval · ${originalLabel}` : '2D-reserv · ingen video vald'} · {providerDescriptions[result.provider ?? ''] ?? 'Se tekniskt beslutsspår'}</small></section> : <p className={styles.note}>{previewKind === 'selected' ? 'Du förhandsvisar en vald variant. Det är inget godkänt regelbeslut. Kör Testa event för att prova urvalet.' : previewKind === 'social' ? 'Scenen visar ett chattsvar, inte ett eventtest. Kör Testa event för att prova variantvalet.' : 'Inget test kört för dessa inställningar. Spela vald variant är en separat förhandsvisning utan regelval.'}</p>}
+      {result ? <section className={styles.result} aria-label="Resultat från eventtest" role="status"><span>VALD VARIANT</span><h3>{result.variant?.label ?? 'Beslut klart'}</h3><p>{reasonDescriptions[result.decision?.reason ?? ''] ?? 'Se beslutsspåret för exakt orsak.'}</p><small>{manifestOwned ? result.videoGenerationId ? 'Kopplad video · saknas filen visas ett fel' : 'Ingen video vald' : result.videoGenerationId ? 'Kopplad video · 2D-reserv om filen inte kan spelas' : originalLabel ? `Originalförval · ${originalLabel}` : '2D-reserv · ingen video vald'} · {providerDescriptions[result.provider ?? ''] ?? 'Se tekniskt beslutsspår'}</small></section> : <p className={styles.note}>{previewKind === 'selected' ? 'Du förhandsvisar en vald variant. Det är inget godkänt regelbeslut. Kör Testa event för att prova urvalet.' : previewKind === 'social' ? 'Scenen visar ett chattsvar, inte ett eventtest. Kör Testa event för att prova variantvalet.' : 'Inget test kört för dessa inställningar. Spela vald variant är en separat förhandsvisning utan regelval.'}</p>}
       {result ? <details className={styles.technical}><summary>Tekniskt beslutsspår</summary><p className={styles.note}>Källtyp: {sourceType}. Tillåtna varianter i svaret: {result.eligible?.length ?? '–'}.</p><pre>{JSON.stringify(result, null, 2)}</pre></details> : null}
       <details className={styles.advanced}><summary>Visa principen: tal först i startposition</summary><section className={styles.poseSimulation} aria-label="Simulera chattens startpositionsgrind">
         <div><strong>Pedagogisk demo, inte ett livetest</strong><p>Illustrerar avsedd ordning: svar väntar tills standard-idlen visas. Timern nedan läser inga spel- eller uppspelningskvitton.</p></div>

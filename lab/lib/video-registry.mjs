@@ -1,11 +1,13 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import { access, lstat, open, realpath } from 'node:fs/promises';
+import { access, lstat, open, realpath, writeFile, rename, unlink } from 'node:fs/promises';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { readUploads, uploadDirectory } from './video-uploads.mjs';
 import { readClassifications } from './video-classifications.mjs';
 import { mediaDefinitionForPath, readLabVideoManifest } from './lab-video-manifest.mjs';
+import { buildLabVideoManifest, manifestJson } from '../../pipeline/build-lab-video-manifest.mjs';
+import { StudioError } from './project-store.mjs';
 
 // Server-only: the browser receives logical IDs, never archive paths or credentials.
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
@@ -24,6 +26,28 @@ function repositoryRoot() {
 function snapshotPath(options) {
   if (options.snapshotPath) return resolve(options.snapshotPath);
   return join(repositoryRoot(), ...EMIL_SOURCE, 'lab-video-manifest.json');
+}
+
+let pendingRescan;
+/** Explicit local operator action: hash new files, then publish a complete manifest atomically. */
+export async function rescanVideoRegistry() {
+  if (pendingRescan) return pendingRescan;
+  pendingRescan = (async () => {
+    const selection = selectArchive({});
+    if (selection.source !== 'emil-default') throw new StudioError('Mappimport stöds bara för den lokala Astrid-banken.', 403);
+    let manifest;
+    try { manifest = await buildLabVideoManifest({ root: selection.path }); }
+    catch { throw new StudioError('Videoimporten misslyckades. Kontrollera att nya MP4-filer ligger i en tillåten mapp och är läsbara.', 422); }
+    const target = join(selection.path, 'lab-video-manifest.json');
+    const temporary = join(selection.path, `.lab-video-manifest-${randomUUID()}.tmp`);
+    try {
+      await writeFile(temporary, manifestJson(manifest), { flag: 'wx' });
+      await rename(temporary, target);
+    } finally { await unlink(temporary).catch(() => {}); }
+    return loadVideoRegistry();
+  })();
+  try { return await pendingRescan; }
+  finally { pendingRescan = null; }
 }
 
 function safeRelativeMediaPath(value, extension) {

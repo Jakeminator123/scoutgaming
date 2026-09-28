@@ -32,10 +32,10 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
   await store.save(old, saved.revision);
   await prepareProject(data);
   const upgraded = await store.load();
-  assert.equal(upgraded.idlePolicy.variants.length, 6);
+  assert.equal(upgraded.idlePolicy.variants.length, 7);
   assert.deepEqual(upgraded.idlePolicy.variants.slice(0, 4), old.idlePolicy.variants);
   assert.deepEqual(upgraded.idlePolicy.base, old.idlePolicy.base);
-  assert.ok(upgraded.idlePolicy.variants.slice(4).every(item => item.use === 'openclaw'));
+  assert.deepEqual(upgraded.idlePolicy.variants.slice(4).map(item => item.use), ['openclaw', 'openclaw', 'manual']);
   // Continue the HTTP assertions with the current stored revision.
   const restored = await store.save(saved, upgraded.revision);
 

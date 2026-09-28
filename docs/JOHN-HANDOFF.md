@@ -1,3 +1,39 @@
+## 2026-09-28 — Astrid: Idleimport, Deal-vy och Lissabon-omstart
+
+Lissabon har nu en separat, kompakt **Deal**-flik med Astrids sju
+spelarpositioner och `deal_posdealer`. Den visar exakt standardfilm, lokalt
+videoprov och vägen till samma variantpolicy i Eventstudion. Idle har fått
+`croupier_coffie.mp4` som manuell engångsvariant (6 042 ms); Jakobs sparade
+`idle_cheek` och övriga befintliga val skrevs inte över. Den lokala
+projektmigreringen lägger bara till den nya varianten i äldre sparade projekt.
+
+**Läs in nya filer** skannar Astrids lokala videomappar och publicerar ett nytt
+manifest atomiskt. En ny fil i `idle/variant/` blir därefter synlig i
+Idleeditorn och behöver läggas till i policyn, väljas som Manuell, Automatisk
+eller OpenClaw och sparas innan spelet kan använda den. Spelfliken laddas om
+efter avslutad hand; OpenClaw behöver inte startas om. Ingen filuppladdning
+till Render behövs. För manifeststyrda Astrid-klipp visar labbet ett tydligt
+fel vid saknad video i stället för att ge sken av att en 2D-reserv bevisar
+uppspelning. Den fristående sociala provytan behåller sitt separata provläge.
+
+`npm run build` i `lab/` och 11 riktade tester passerade. Tidigare i arbetet
+passerade `pipeline/audit-dealer-sync.mjs --probe` och varje övrigt kommando i
+`.githooks/pre-commit` kördes manuellt i PowerShell eftersom Bash-körningen
+nekades av Windows (`E_ACCESSDENIED`). Det enda lokala undantaget är
+`build-lab-video-manifest.mjs --check`: en annan agent lade samtidigt en
+ospårad `idle_resa_sig.mp4` i samma mapp, efter att kaffemanifestet byggdes.
+Den filen är orörd och ingår inte i denna leverans. Lissabon byggdes om och
+startades om; 4200 och 4201 svarar, Deal-vyn visar alla åtta klipp och Idle
+visar kaffeklippet som manuellt samt bevarad automatisk `idle_cheek` på 55 s.
+Kaffeklippet spelades lokalt till avslut och basloopen återupptogs. Det är ett
+uppspelningsprov, inte ett visuellt godkännande av läppsynk. Jira CAC kunde
+inte uppdateras: ingen Jira-anslutning finns i denna miljö.
+
+Återstår: tidsmätning av RunPod-kö, GPU, kodning och överföring innan
+läppsynkoptimering; verklig spelchatt/idle-val i ansluten spelflik; mänsklig
+granskning av exakta filmer och kortkontakt. Inga GPU-worker- eller
+OpenClaw-agentinstruktioner ändrades här.
+
 ## 2026-09-28 — Lissabon idle: modellval, spar-konflikt och kostnadsbild
 
 Lissabons Web-spelare får `idlePolicy` och videoinventering via

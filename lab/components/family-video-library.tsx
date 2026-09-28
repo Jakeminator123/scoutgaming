@@ -27,20 +27,22 @@ export function FamilyOverview({ inventory, project, dealerId, onOpen }: { inven
   </section>;
 }
 
-export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, refreshing }: {
-  inventory: VideoInventory; dealerId: string; onOpen: (eventId: string, situation: string) => void; onRefresh: () => void; refreshing: boolean;
+export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, refreshing, familyType }: {
+  inventory: VideoInventory; dealerId: string; onOpen: (eventId: string, situation: string) => void; onRefresh: () => void; refreshing: boolean; familyType?: 'deal' | 'speak';
 }) {
   const [filter, setFilter] = useState('');
   const [previewId, setPreviewId] = useState('');
-  const families = (inventory.families ?? []).filter(family => family.dealerId === dealerId && `${mediaFamilyFolder(family)} ${family.situation}`.includes(filter.trim().toLowerCase()));
+  const families = (inventory.families ?? []).filter(family => family.dealerId === dealerId
+    && (!familyType || family.eventId.startsWith(`${familyType}.`))
+    && `${mediaFamilyFolder(family)} ${family.situation}`.toLowerCase().includes(filter.trim().toLowerCase()));
   const preview = inventory.videos.find(video => video.id === previewId && video.available);
-  return <section aria-label="Videomappar"><div className="event-heading"><div><span className="eyebrow">VIDEOBANKEN</span><h1>Dina videomappar</h1><p>Samma standardfiler och varianter som används i Eventstudion och native-följningen.</p></div><button className="text-button" onClick={onRefresh} disabled={refreshing}>Läs om mapparna</button></div>
+  return <section aria-label="Videomappar"><div className="event-heading"><div><span className="eyebrow">VIDEOBANKEN</span><h1>{familyType === 'deal' ? 'Utdelning till sju platser och croupiern' : familyType === 'speak' ? 'Repliker och varianter' : 'Dina videomappar'}</h1><p>Samma standardfiler och varianter som används i Eventstudion och native-följningen.</p></div><button className="text-button" onClick={onRefresh} disabled={refreshing}>Läs in nya filer</button></div>
     <label className="field">Hitta klipp eller mapp<input value={filter} onChange={event => setFilter(event.target.value)} placeholder="deal_pos3, goodluck, idle…" /></label>
     {preview ? <div className={styles.situation}><strong>{preview.fileName}</strong><video key={preview.id} src={preview.previewUrl} controls autoPlay muted playsInline style={{ width: '100%', maxHeight: 420 }} aria-label={`Förhandsvisa ${preview.fileName}`} /><button className="text-button" onClick={() => setPreviewId('')}>Stäng klippet</button></div> : null}
-    {families.map(family => <article key={family.id} className={styles.situation}><strong>{mediaSituationLabel(family.situation)}</strong><code>emil/dealklipp-v1/{mediaFamilyFolder(family)}/</code>
+    <div className={familyType ? styles.libraryGrid : undefined}>{families.map(family => <article key={family.id} className={styles.situation}><strong>{mediaSituationLabel(family.situation)}</strong><code>emil/dealklipp-v1/{mediaFamilyFolder(family)}/</code>
       {[...family.standardIds, ...family.variantIds].map(id => { const video = inventory.videos.find(row => row.id === id); return <button key={id} type="button" className="text-button" disabled={!video?.available} onClick={() => setPreviewId(id)}>{video?.fileName ?? id} · {family.standardIds.includes(id) ? 'standard' : 'variant/'}{video?.available ? ' · Spela' : ' · saknas'}</button>; })}
       <small>{family.variantIds.length ? `${family.variantIds.length} varianter i variant/` : '0 varianter — standard används'}</small><button className="primary-button" onClick={() => onOpen(family.eventId, family.situation)}>Öppna i Eventstudion →</button>
-    </article>)}
+    </article>)}</div>
     {!families.length ? <p>Inga mappar matchar sökningen.</p> : null}
   </section>;
 }
