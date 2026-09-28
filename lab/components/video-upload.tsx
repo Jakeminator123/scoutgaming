@@ -1,4 +1,5 @@
 'use client';
+import { labUrl } from "../lib/lab-url.mjs";
 import { useRef, useState, type FormEvent } from 'react';
 import { kindForEvent, situationsForEvent, MAX_VIDEO_BYTES, MANUAL_SELECTION } from '../lib/video-intake.mjs';
 import type { VideoMetadata } from '../lib/video-intake.mjs';
@@ -39,7 +40,7 @@ export function VideoUpload({ project, dealerId, eventId, onUploaded }: {
     setBusy(true); setError(''); setNotice('');
     let saved = false;
     try {
-      const response = await fetch('/api/videos', { method: 'POST', headers: { 'Content-Type': type, 'X-Video-Metadata': encodeURIComponent(JSON.stringify(metadata)) }, body: file });
+      const response = await fetch(labUrl('/api/videos'), { method: 'POST', headers: { 'Content-Type': type, 'X-Video-Metadata': encodeURIComponent(JSON.stringify(metadata)) }, body: file });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? 'Videon kunde inte sparas.');
       saved = true;

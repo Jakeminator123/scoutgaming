@@ -1,2 +1,3 @@
 import { redirect } from 'next/navigation';
-export default function Page() { redirect('/'); }
+import { labUrl } from "../../lib/lab-url.mjs";
+export default function Page() { redirect(labUrl('/')); }

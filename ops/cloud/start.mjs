@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { randomBytes } from 'node:crypto';
-import { mkdir, stat } from 'node:fs/promises';
+import { mkdir, stat, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { REPOSITORY, childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from './config.mjs';
@@ -45,6 +45,8 @@ async function preflight(env) {
   await inspectCloudBootstrap(config);
   const build = await stat(join(REPOSITORY, 'lab/.next/BUILD_ID')).catch(() => null);
   if (!build?.isFile()) throw new Error('A production Lab build is required.');
+  const built = JSON.parse(await readFile(join(REPOSITORY, 'lab/.next/required-server-files.json'), 'utf8'));
+  if ((built.config?.basePath || '') !== config.labBasePath) throw new Error('Lab build basePath does not match CROUPIER_CLOUD_LAYOUT. Rebuild the image.');
   return config;
 }
 

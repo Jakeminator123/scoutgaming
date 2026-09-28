@@ -27,9 +27,9 @@ export async function verifyCloudAccess(config, { gatewayPort, labPort = LAB_POR
     ['unknown host', 'cloud-access-probe.invalid', '/__cloud/health', 421],
     ['player authentication', game, '/api/table', 401],
     ['BO authentication', bo, '/api/bo/users', 401],
-    ['BO host isolation', game, '/api/bo/users', 421],
-    ['Lab anonymous access', lab, '/api/project', 401],
-    ['Lab forged session', lab, '/api/project', 401, { Cookie: 'lab_session=invalid-cloud-start-probe' }],
+    ['BO host boundary', game, '/api/bo/users', config.singleOrigin ? 401 : 421],
+    ['Lab anonymous access', lab, `${config.labBasePath || ''}/api/project`, 401],
+    ['Lab forged session', lab, `${config.labBasePath || ''}/api/project`, 401, { Cookie: 'lab_session=invalid-cloud-start-probe' }],
     ['Lab internal route', lab, '/api/auth/lab/check', 421],
   ];
   for (const [label, host, path, expected, headers] of probes) {
@@ -37,7 +37,7 @@ export async function verifyCloudAccess(config, { gatewayPort, labPort = LAB_POR
     if (status !== expected) throw new Error(`Cloud access check failed: ${label}.`);
   }
   // Check the actual Lab guard, not just the gateway's cookie rejection.
-  const status = await probeStatus({ port: labPort, host: lab, path: '/api/project',
+  const status = await probeStatus({ port: labPort, host: lab, path: `${config.labBasePath || ''}/api/project`,
     headers: { 'X-Forwarded-Host': lab, 'X-Forwarded-Proto': 'https',
       'X-Croupier-Lab-Authorized': 'invalid-cloud-start-probe' } });
   if (status !== 403) throw new Error('Cloud access check failed: Lab direct access.');

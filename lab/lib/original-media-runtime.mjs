@@ -1,6 +1,6 @@
 // Runs inside the same-origin preview iframe. Product rendering modules are
 // served byte-for-byte; this adapter only owns preview lifecycle and receipts.
-const ROOT = '/api/original-media';
+const ROOT = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
 const query = new URLSearchParams(location.search);
 const mediaId = query.get('id'), channel = query.get('channel');
 const host = document.getElementById('host'), canvas = document.getElementById('stream');

@@ -1,5 +1,32 @@
 # Molnstart och ansvar — 2026-09-29
 
+## Senast: en Render-adress utan egen domän
+
+`CROUPIER_CLOUD_LAYOUT=single-origin` använder Render-tjänstens riktiga
+`RENDER_EXTERNAL_URL`: spel `/`, BO `/bo` och Lab `/studio`. Nexts byggda
+sökväg kontrolleras mot startkonfigurationen. Lab-länkar, API/SSE och
+förhandsvisningsadresser följer prefixet; lokal utveckling är oförändrad.
+Ingen film, kalibrering eller spelsregel ändrades. Gemensam origin innebär
+mindre browserisolering än tre separata värdar, men spelar-/BO-/Lab-sessioner,
+adminroll, origin-kontroller och intern åtkomstspärr är kvar.
+
+Dockerstarten rättar vid behov ägare för exakt `/var/data`, utan rekursion,
+och släpper root innan apparna laddas. Ingen privat spelar- eller Lab-databas
+kopieras. GPU, kamera och genererat tal är fortfarande avstängda.
+
+Verifierat: 494 Lab-tester, 40 moln-/auth-testposter samt separat Next-
+produktionsbygge med `/studio` (inklusive TypeScript). Den tillfälliga
+byggmappen rensades; befintliga lokala servrar och `.next` bevarades.
+Detta är inte ett verifierat Linux-containerbygge eller en publicerad produkt.
+
+Render-formuläret för `croupier-v2` är förberett med GitHub-arbetsbranchen,
+Frankfurt, 1 CPU/2 GB, 5 GB disk, hälsoadress `/__cloud/health` och
+autodeploy efter CI. Godkänd grundkostnad är 26,25 USD/månad; trafik och andra
+tjänster ingår inte i den uppgiften. Ingen betald tjänst är skapad ännu.
+Icke-hemlig konfiguration är ifylld. Bootstrap-adminlösenord samt befintliga
+OpenClaw-/Director-nycklar måste överföras säkert innan Deploy.
+Lösenord skrivs av Jakob direkt i Render, aldrig i chatten eller Git.
+
 ## Ändring i denna leverans
 
 `ops/cloud/start.mjs` hade ett ovillkorligt `throw`: korrekt konfiguration
@@ -20,9 +47,9 @@ leverantörer. Avbruten/misslyckad start städar sina egna processer.
 - GitHub: källkod och leveranser på `jakemanator123-github-work`.
 - Vercel: befintlig statisk ingång i `ops/vercel-entry/`, just nu EN
   Blackjack-knapp, inte fem. Den länkar till backendens `/blackjack`.
-- Render (föreslagen värd): spelserver, browserns spelfiler, skyddad BO och Lab
-  med gemensam beständig disk. Aktuell konfiguration kräver tre skilda
-  HTTPS-värdnamn för spel, BO och Lab. De kan peka på samma tjänst.
+- Render: spelserver, browserns spelfiler, skyddad BO och Lab med gemensam
+  beständig disk. Det nya uttryckliga single-origin-läget behöver ingen egen
+  domän. Ursprungligt läge med tre skilda HTTPS-värdnamn finns kvar.
 - OpenClaw: den separata AI-/presentationskopplingen. Spelservern förblir
   auktoritativ för kort, spelrunda och demobalans; dessa bestäms inte av AI.
 - RunPod: Emils importerade GPU-worker för valbart genererat tal/video,
@@ -36,8 +63,8 @@ pågående Lab/Lissabon-samling lämnas orörd.
 
 ## Nästa steg och kvarvarande verifiering
 
-1. Välj Render-konto, kostnadstak och tre HTTPS-värdnamn. Behörighet till rätt
-   GitHub-repo krävs. Inga hemligheter i Git eller chatt.
+1. Render-konto, GitHub-repo, region och grundkostnad är valda. Fyll de
+   återstående hemligheterna säkert i Render och starta tjänsten där.
 2. Bygg och kontrollera produktens Docker-image (inte bara GPU-imagen).
    Konfigurera beständig disk, tomma spelardata, bootstrap-admin och befintlig
    OpenClaw-anslutning som värdhemligheter. Verifiera rätt mediebank/projekt.

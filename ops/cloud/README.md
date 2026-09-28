@@ -1,5 +1,29 @@
 # Single-host cloud pilot runtime
 
+## Render without a custom domain
+
+Set `CROUPIER_CLOUD_LAYOUT=single-origin`. The exact game origin is taken from
+`PUBLIC_URL` or Render's `RENDER_EXTERNAL_URL`; BO and Lab default to that same
+origin. The game stays at `/`, BO at `/bo`, and authenticated Lab at `/studio`.
+Do not invent extra onrender.com subdomains. All Lab requests still require a
+live admin session, checked by Web, and the private gateway header. The internal
+identity endpoint remains inaccessible publicly. This mode shares a browser
+origin and therefore does **not** provide three-host browser isolation.
+
+The Dockerfile builds Lab with `CROUPIER_LAB_BASE_PATH=/studio` by default.
+Next embeds this public path at build time; changing it requires a rebuild.
+Startup rejects a build with a mismatched path. For the original three-host
+mode, build with `--build-arg CROUPIER_LAB_BASE_PATH=` and select
+`CROUPIER_CLOUD_LAYOUT=separate-hosts` (the config's compatibility default).
+Local development still uses an empty base path.
+
+For this Docker image mount the disk at `/var/data` and set
+`CROUPIER_CLOUD_DATA_ROOT=/var/data`. The entrypoint can adjust ownership of
+only that exact directory, then drops root and supplementary groups before
+loading the application. It never recursively changes ownership or seeds
+private databases. Already non-root launches must be the image's node user.
+Actual Render disk persistence and container startup still require verification.
+
 ## 2026-09-29: explicit pilot launch
 
 The former unconditional stop has been replaced by an explicit
@@ -34,7 +58,7 @@ on that disk. Web and Lab use the same `studio` path. Do not seed the disk from
 private local databases by default. A directory check cannot prove persistence;
 backup and restore, restart survival, and mount ownership need deployment tests.
 
-Required configuration: `NODE_ENV=production`, public `PORT`, exact HTTPS
+For **separate-hosts**, required configuration: `NODE_ENV=production`, public `PORT`, exact HTTPS
 origins in `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`, `CROUPIER_GAME_ORIGIN`, and
 `BETTALOTTO_PARTNER_BASE_URL`. Game, BO, and Lab must have three distinct
 hostnames; the partner base and game origin must equal `PUBLIC_URL`.
@@ -62,7 +86,7 @@ the two exact game-host WebSocket speech routes to Web's authenticated relay
 when streaming is explicitly configured. Cloud launch requires pilot opt-in;
 real HTTPS, cookies, provider calls and GPU playback have not passed QA.
 
-The gateway would listen on one public `PORT`: exact game and BO Host headers
+In **separate-hosts** mode the gateway listens on one public `PORT`: exact game and BO Host headers
 route to loopback Web, and the exact Lab Host routes to loopback Next. On the
 game Host, only the exact `GET /api/bo/config` BO route remains available for
 the game UI; other `/bo` and `/api/bo` routes are rejected. The BO Host serves

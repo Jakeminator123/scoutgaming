@@ -22,7 +22,7 @@ const cookie = (req, name) => {
 
 // Separate BO and Lab hosts share only a short-lived code. The Lab bearer is
 // opaque, host-only and revalidated against CRAIG on every internal check.
-export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUrl, boUrl, labPublicUrl }) {
+export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUrl, boUrl, labPublicUrl, singleOrigin = false }) {
   if (!labPublicUrl) return (req, res) => {
     const path = new URL(req.url, 'http://local').pathname;
     if (!PATHS.has(path)) return false;
@@ -31,14 +31,17 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
   const game = exactHttpsOrigin(publicUrl, 'PUBLIC_URL');
   const bo = exactHttpsOrigin(boUrl, 'BO_URL');
   const lab = exactHttpsOrigin(labPublicUrl, 'LAB_PUBLIC_URL');
-  if (new Set([game.host, bo.host, lab.host]).size !== 3) throw Error('Game, BO and Lab require distinct HTTPS hosts');
+  if (new Set([game.host, bo.host, lab.host]).size !== (singleOrigin ? 1 : 3)) throw Error('Game, BO and Lab require distinct HTTPS hosts unless explicitly using one origin');
   if (typeof authEpoch !== 'function') throw Error('BO auth epoch is required for Lab access');
 
   const nextPath = value => {
+    const home = singleOrigin ? '/studio' : '/';
     if (typeof value !== 'string' || value.length > 2048 || !value.startsWith('/') ||
-      value.startsWith('//') || /[\\#\x00-\x1f]/.test(value) || /%2f|%5c/i.test(value)) return '/';
+      value.startsWith('//') || /[\\#\x00-\x1f]/.test(value) || /%2f|%5c/i.test(value)) return home;
     const target = new URL(value, lab);
-    if (target.origin !== lab.origin || /^\/(?:api|_next)(?:\/|$)/i.test(target.pathname)) return '/';
+    if (singleOrigin && target.pathname !== '/studio' && !target.pathname.startsWith('/studio/')) return home;
+    const inner = singleOrigin ? target.pathname.slice('/studio'.length) : target.pathname;
+    if (target.origin !== lab.origin || /^\/(?:api|_next)(?:\/|$)/i.test(inner)) return home;
     // Do not persist query parameters: they may carry a token or private draft.
     return target.pathname;
   };

@@ -1,4 +1,5 @@
 'use client';
+import { labUrl } from "../lib/lab-url.mjs";
 
 import { useEffect, useRef, useState } from 'react';
 import { eventSummary, createIdleLogFilter, type ActivityEntry } from '../lib/activity-log.mjs';
@@ -45,7 +46,7 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
   async function readConfiguration() {
     setStatusError('');
     try {
-      const response = await fetch('/api/inputs', { cache: 'no-store' });
+      const response = await fetch(labUrl('/api/inputs'), { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error('Anslutningsstatus kunde inte läsas.');
       setConfiguration(data);
@@ -80,7 +81,7 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
     const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
     const timer = setTimeout(() => { stream.current?.close(); stream.current = null; setConnected(false); setConnection('Transporten svarade inte'); finishConnection(new Error('Partner-anslutningen svarade inte inom 12 sekunder.')); }, 12000);
     connectionWait.current = { promise, resolve, reject, timer };
-    const next = new EventSource('/api/inputs/events'); stream.current = next;
+    const next = new EventSource(labUrl('/api/inputs/events')); stream.current = next;
     setConnected(true); setConnection('Ansluter…');
     next.addEventListener('status', message => {
       if (stream.current !== next) return;

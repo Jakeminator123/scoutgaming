@@ -1,11 +1,12 @@
 'use client';
+import { labUrl } from "../lib/lab-url.mjs";
 import { useEffect, useRef, useState } from 'react';
 
 type Health = 'checking' | 'ready' | 'unready' | 'unreachable';
 
 async function readHealth(): Promise<Health> {
   try {
-    const response = await fetch('/api/health', { cache: 'no-store', credentials: 'same-origin', redirect: 'error', signal: AbortSignal.timeout(4000) });
+    const response = await fetch(labUrl('/api/health'), { cache: 'no-store', credentials: 'same-origin', redirect: 'error', signal: AbortSignal.timeout(4000) });
     if (!response.ok) return 'unready';
     const result = await response.json().catch(() => null);
     return result?.ok === true && result?.service === 'croupier-next-studio' ? 'ready' : 'unready';

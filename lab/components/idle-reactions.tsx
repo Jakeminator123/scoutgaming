@@ -1,4 +1,5 @@
 'use client';
+import { labUrl } from "../lib/lab-url.mjs";
 
 import { useContext, useEffect, useRef } from 'react';
 import { NativeSpeechContext } from './native-speech-context';
@@ -38,7 +39,7 @@ export function IdleReactions(props: Props) {
     const timer = setTimeout(() => controller.abort(), 12000);
     void (async () => {
       try {
-        const response = await fetch('/api/presentation/idle', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const response = await fetch(labUrl('/api/presentation/idle'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(input), signal: controller.signal });
         if (!response.ok) throw new Error('idle-advice-unavailable');
         const result = await response.json();

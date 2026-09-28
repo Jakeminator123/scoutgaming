@@ -21,7 +21,7 @@ async function close(server) {
   await closed;
 }
 
-async function fixture(change = {}) {
+async function fixture(change = {}, layout = config) {
   // Fake child APIs only: no game/Lab product processes or real databases.
   const web = createServer((request, response) => {
     response.writeHead(change[request.url] ?? 401);
@@ -32,7 +32,7 @@ async function fixture(change = {}) {
     response.end();
   });
   const webPort = await listening(web), labPort = await listening(lab);
-  const gateway = createCloudGateway(config, { labInternalSecret: secret, webPort, labPort });
+  const gateway = createCloudGateway(layout, { labInternalSecret: secret, webPort, labPort });
   const gatewayPort = await listening(gateway);
   return { labPort, gatewayPort, gateway,
     close: () => Promise.all([gateway, web, lab].map(close)) };
@@ -41,6 +41,14 @@ async function fixture(change = {}) {
 test('access probes pass with the real gateway and rejecting fixture children', async () => {
   const services = await fixture();
   try { await verifyCloudAccess(config, services); }
+  finally { await services.close(); }
+});
+
+test('access probes also enforce BO and mounted Lab authentication on one origin', async () => {
+  const layout = { ...config, singleOrigin: true, boOrigin: config.gameOrigin,
+    labOrigin: config.gameOrigin, labBasePath: '/studio' };
+  const services = await fixture({}, layout);
+  try { await verifyCloudAccess(layout, services); }
   finally { await services.close(); }
 });
 
