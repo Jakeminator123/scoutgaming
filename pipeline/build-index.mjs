@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Build streams/index.json from a directory of raw Annex-B .h264 files.
-// Output schema matches the audited demo (reference/sunny-streams-index.json):
+// Output schema for the stream index:
 //   { version, codec, width, height,
 //     clips: { "<group>/<cat>/<name>": { file, fps, frameCount, frames: [[offset,size],...] } } }
 //

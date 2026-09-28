@@ -1,5 +1,39 @@
 # Repostädning inför GitHub-arbetet
 
+## Referensmappar och Emil-media, 28 september 2026
+
+En andra avgränsad omgång tog bort 7 spårade filer, 2 056 589 byte:
+alla sex `reference/sunny-*` (2 055 354 byte) och den daterade
+`random-stuff-jakob/croupier-observation-2026-09-21T00-07-56-650Z.json`
+(1 235 byte). `reference/` innehöll inga videor. Enda kodhänvisningen var
+en schemakommentar i `pipeline/build-index.mjs`; schemat står nu direkt där.
+Inga tester, byggskript eller aktiva dokument läste filerna. Alla sju
+kontrollerades i taggen `Jakobs-v1` före radering. Läs en tidigare fil med
+`git show Jakobs-v1:<sökväg>` eller återställ just den filen från taggen.
+
+[Emils vägvisare](../emil/README.md) beskriver två skilda samlingar:
+`dealklipp-v1` är aktiv med 43 MP4 och manifestberoenden i kod och tester;
+`astrid-demo-v3-reference` är ett inaktivt men sammanhängande referenspaket
+med 217 MP4, flerspråkiga talbanker, eget manifest och demoexempel.
+SHA-256-jämförelse av de 260 MP4-filerna hittade **inga identiska videor**.
+Endast V3:s startbild är byteidentisk med den aktiva bankens startbild
+(1 628 428 byte); V3-manifestet refererar den lokala kopian. Ingen av de två
+mediesamlingarna ändrades. En delradering av V3:s filmer skulle bryta dess
+manifest och försvåra framtida jämförelse av exakta tal/takes.
+
+`random-stuff-jakob/jakob-docs/systemkarta/` är fortsatt aktiv dokumentation.
+De nio små textutdragen i `jakob-log-files/` är Git-ignorerade och har
+historiska dokumentationshänvisningar; de lästes eller raderades inte.
+Det pensionerade privata arkivet inventerades inte. De större MP4-grupperna
+`content/staging/` och `web/public/` har medie-/testberoenden och ingick inte
+i denna raderingsomgång.
+
+Verifiering: V3-manifestets 218 lokala mediereferenser finns kvar; fyra
+ändrade Markdown-filer har inga brutna relativa länkar. Aktivt labbmanifest
+verifierade 43 objekt i 26 familjer, dess sju riktade tester passerade,
+`git diff --check` passerade och hela `.githooks/pre-commit` avslutades med
+status 0. Detta är fil-/regressionskontroll, inte ny visuell mediaacceptans.
+
 ## Avgränsad omgång efter `e03b5d0`, 28 september 2026
 
 28 spårade filer, sammanlagt 151 085 byte (cirka 147,5 KiB), togs bort:

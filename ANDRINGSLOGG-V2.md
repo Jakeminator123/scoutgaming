@@ -5,6 +5,18 @@ Detta är den korta notisen i repots rot. Detaljer och testkrav finns i
 Skriv datum, ändring och verifiering här när arbetet går vidare; skilj alltid
 förslag från implementerad kod och verkligt godkänd drift.
 
+## 28 september 2026 – referensmappar och Emil-media
+
+Sex historiska Sunny-filer i `reference/` och en daterad observation i
+`random-stuff-jakob/` togs bort ur arbetskopian: 7 spårade filer,
+2 056 589 byte. Alla finns i `Jakobs-v1`; inga körberoenden hittades.
+[Emils nya vägvisare](emil/README.md) skiljer aktiv `dealklipp-v1` från den
+inaktiva V3-referensen. SHA-256-jämförelse av 260 MP4-filer hittade inga
+identiska videor; V3:s enda exakta dublett är en manifestrefererad startbild
+som bevaras för referenspaketets helhet. Privata loggutdrag och media är orörda.
+Se [städrapporten](docs/REPOSITORY-CLEANUP.md).
+Länkar, manifestets 218 referenser, aktivt mediemanifest och pre-commit passerade.
+
 ## 28 september 2026 – avgränsad repostädning
 
 Efter checkpointen `e03b5d0` togs 28 oanvända spårade filer bort (151 085 byte):
