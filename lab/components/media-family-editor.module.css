@@ -9,6 +9,11 @@
 .empty { padding: 16px; border-radius: 8px; background: #273932; color: #d0e7da; line-height: 1.6; }
 .policy { display: grid; gap: 16px; margin: 24px 0; }
 .policy h3 { font-size: 16px; }
+.frequencyRow { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid #343c3e; }
+.frequencyRow label { overflow-wrap: anywhere; }
+.frequencyRow small { color: #b1bdbd; line-height: 1.5; }
+.percentInput { display: flex; align-items: center; gap: 8px; }
+.percentInput input { max-width: 110px; }
 .instructions { margin: 24px 0; line-height: 1.6; }
 .inspector { align-self: start; }
 .overviewGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }

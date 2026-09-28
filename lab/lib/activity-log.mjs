@@ -43,6 +43,8 @@ export function createIdleLogFilter() {
 
 export function decisionAttribution(mode, reason, provider) {
   if (mode === 'off') return 'Labbets standardval';
+  if (reason === 'local_deal_frequency') return 'Valda utdelningsfrekvenser';
+  if (mode === 'shadow' && provider === 'local_deal_frequency') return 'Standardklipp · frekvensprov i skuggläge';
   if (mode === 'rules') return 'Lokal regelmotor';
   if (mode === 'random') return 'Lokal presentationsslump';
   if (reason === 'accepted') return 'OpenClaws förslag + serverns kontroll';

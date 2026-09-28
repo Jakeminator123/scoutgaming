@@ -53,7 +53,8 @@ replikfamiljer och en idlefamilj. Deal/replik använder
 `repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då
 standard. Idle har två basloopar direkt i `idle/` och korta
 engångsvariationer i `idle/variant/` (policyn stöder högst 30).
-Deal-/replikfamiljer tillåter högst fyra filvarianter. Filnärvaro, hash och playbackkvitto är fortfarande inte
+Deal-familjer kan ha högst fyra aktiva frekvensvarianter samtidigt; även ett
+senare importerat klipp kan väljas. Replikfamiljer visar högst fyra alternativ. Filnärvaro, hash och playbackkvitto är fortfarande inte
 ett mänskligt godkännande av läppsynk eller kortkontakt.
 
 `mediaPolicy` är ett frivilligt tillägg till projektets schema v1. Äldre projekt
@@ -67,6 +68,22 @@ befintliga originalväg. Lägg nya MP4-filer i rätt `variant/`-mapp och välj
 om katalogen utan att flytta videofiler. En ny idlevariant läggs sedan till i
 policyn som manuell; välj Automatisk eller OpenClaw uttryckligen och spara.
 Ingen uppladdning till Render behövs för de lokala filmerna.
+
+### Astrids Deal-frekvenser
+
+I Lissabon → Deal och samma familj i avancerade labbet anger du procent för
+varje variant. Andelen gäller varje kort till just den platsen; återstoden
+använder standardfilen. 0 % behåller klippet för manuellt prov. Summan får
+vara högst 100 %. Ett saknat klipps andel går till standard. Högst fyra
+varianter kan vara aktiva; nollade inställningar frigör plats för nya klipp.
+
+Frekvenserna sparas som ett valfritt `frequencyPercent` på mediepolicyns
+variant. Första uttryckliga ändringen ersätter äldre urval för hela den
+familjen; andra varianter utan procent blir manuella. Äldre projekt ändras
+inte vid läsning. Regler, Slump och OpenClaw använder samma lokala
+frekvensurval utan modellanrop. Standard spelar standard, och Skuggläge
+provar urvalet men spelar standard. Språk- och sociala testvillkor visas
+inte för Astrids Deal. Repliker och övriga dealers behåller sina val.
 
 Importen från `croupier_kaffe` lägger boxvarianterna i `deal_pos1` och
 `deal_pos2` samt `idle_andas`, `idle_handrorelse`, `idle_huvud_i_handerna`,

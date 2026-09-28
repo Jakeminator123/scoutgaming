@@ -1,6 +1,7 @@
 # Astrid: kamera, tal och granskning
 
-28 september 2026. **Implementerat lokalt, kamera Av. Ingen kameradeploy ännu.**
+28 september 2026. **Bild och ljud är Av som standard. Servertranskription är
+implementerad och leverantörsprovet godkänt; det nya IAB-flödet återstår att prova.**
 Aktuell källa för uppdraget är [agentprompten](ASTRID-CAMERA-AGENT-PROMPT.md).
 Designunderlaget finns i [kameraplanen](../../open-claw/lab/docs/ASTRID-CAMERA-VOICE-PLAN.md).
 
@@ -21,8 +22,8 @@ närvarande agentens kontroll av Render.
    Använd QA-launcherns `astridCamera: true` när det isolerade provparet ska
    köras. Ett andra startkommando ändrar inte flaggan i en redan körande server.
 3. Lissabon → Probe: välj **GPT-6 Luna** och spara. Öppna Astrid via **Ström →
-   Anslut**, med `presentation=local`, i Chrome. Ladda om befintlig spelflik.
-4. I spelfliken: **Kamera · Av → Starta kamera och mikrofon**, godkänn enheterna,
+   Anslut**, med `presentation=local`. Ladda om befintlig spelflik.
+4. I spelfliken: **Bild och ljud · Av → Starta kamera och mikrofon**, godkänn enheterna,
    tala och granska text/bilder. **Skicka till Astrid** skickar just den turen.
    Funktionen delar stillbilder och transkriberat tal, inte kontinuerlig video
    eller rått mikrofonljud till OpenClaw. Bilder kan finnas i OpenClaws historik.
@@ -34,15 +35,32 @@ själva produktfunktionen.
 ## Produktflöde
 
 I Astrids riktiga Lissabon-spelare (`?dealer=astrid&presentation=local`) finns
-**Kamera · Av**. Starta begär kamera och mikrofon. Välj Svenska eller English
+**Bild och ljud · Av**. Starta begär kamera och mikrofon. Välj Svenska eller English
 för det egna talet. Förhandsbild, mikrofonnivå och Stoppa visas under upptagning.
 Ingen behörighet begärs när sidan öppnas, och Probe kan inte starta enheterna.
 
-Web Speech API transkriberar samma ljudspår som nivåmätaren använder.
-`speechstart`/`speechend` är VAD-källan; RMS används bara som nivåmätare.
-Efter cirka tre sekunders ackumulerat tal tas en mellanbild. Talslut efter
-650 ms tystnad, Stoppa eller 30-sekunderstimeout avslutar upptagningen.
-Kort tal ger bara slutbild, inget tal ger inga bilder, högst två bilder tas.
+AudioWorklet spelar in samma mikrofonspår som nivåmätaren använder, i minnet
+som mono PCM16/WAV. Web Speech/SpeechRecognition används inte längre.
+En lokal nivådetektor med brusgolv och 180 ms in-/utträdeskrav avgör
+ljudaktivitet; den kan inte säkert skilja tal från exempelvis bakgrundsmusik.
+Efter cirka tre sekunders ackumulerad aktivitet tas en mellanbild. 650 ms
+tystnad efter detektorns utslag, Stoppa eller 30-sekunderstimeout avslutar
+upptagningen. Kort tal ger bara slutbild, tystnad inga bilder, högst två tas.
+
+Enheterna stängs **före** transkriptionen. Inspelningen skickas till den
+autentiserade `/api/astrid/transcription`, som validerar faktiskt WAV-format,
+längd, bytegräns, origin, Astrid, profil samt sessions-/rundrevisioner. Gränsen
+är 30 sekunder, mono PCM16, högst 48 kHz (2 880 044 byte); browsern begär 16 kHz.
+Servern använder befintlig `CARTESIA_API_KEY` för
+[Cartesia batch STT](https://docs.cartesia.ai/api-reference/stt/transcribe),
+`ink-whisper`, API-version `2026-08-14`, med `sv` eller `en`. Den nyare
+[Ink 2](https://docs.cartesia.ai/build-with-cartesia/stt/latest) anger inte
+svenskt stöd och används därför inte här. Inga automatiska återförsök sker.
+
+Appen skriver inte råljudet till filer, databas, chatt eller loggar. PCM-buffrar
+nollställs vid avslut; leverantören behandlar ljudet. Ett tomt transkript tar
+bort kandidatbilderna. Vid nätfel går det att skriva egen text till bilderna
+eller kassera och spela in igen. Ingen ny inspelning sker automatiskt.
 
 Texten är redigerbar och bilderna visas före **Skicka till Astrid**.
 Kassera tar bort oskickat material ur fliken. Byte av profil/bord, utloggning,
@@ -54,7 +72,9 @@ svar gäller fortfarande; talets språk styr bara transkriptionen.
 ## Befintlig kedja och gränser
 
 Web → autentiserad backend → Director → privat Gateway → `croupier-speech`.
-Ingen andra spelare, minnesmotor, råljudsendpoint eller ny verktygsbehörighet.
+Ingen andra spelare, minnesmotor eller ny verktygsbehörighet. Den separata
+transkriptionsvägen är Web → autentiserad produktbackend → Cartesia; råljudet
+går inte till Director eller OpenClaw.
 
 - Endast Astrid via Lissabon. Modellvalet är fortfarande redigerbart; bilder
   kräver GPT-6 Luna. Övriga modeller fortsätter fungera för vanlig textchatt.
@@ -78,13 +98,19 @@ och `lissabon/start.mjs` erbjuder `--astrid-camera`. Flaggan går endast till
 Lissabons produktprocess och använder samma sessionsspärr som övriga starter.
 Ärvda miljövariabler aktiverar inte kameran; labbprocessen får ingen kameraflagga.
 En redan körande session ändras inte av ett nytt startkommando.
+Transkriptionen behöver den redan konfigurerade Cartesia-nyckeln i
+produktprocessen. Den samordnade launchern vidarebefordrar den vid
+`generatedSpeech: true`; inga nya miljövariabler eller Renderändringar
+behövs för transkriptionsfixen. Utan nyckeln begär panelen inga enheter.
 
 Kod: [kamerakontroll](../../web/public/astrid-camera-control.mjs),
+[ljudinspelare](../../web/public/astrid-camera-audio.mjs),
+[transkriptionsbackend](../../web/astrid-transcription.mjs),
 [VAD/bildsession](../../web/public/astrid-camera-session.mjs),
 [gemensamt bildkontrakt](../../open-claw/lab/src/astrid-observation.mjs),
 [Director](../../open-claw/lab/src/product-speech.mjs).
 
-## Faktisk drift och lagring
+## Historisk drift- och lagringskontroll före bilddeploy
 
 Läsande kontroll i Gateway-containern bekräftade **OpenClaw 2026.9.5**.
 Gateway kör fortfarande `70ef43f`; Director kör minnesfixen `e6ea969`.
@@ -102,7 +128,8 @@ radering. Ingen särskild session-/logging-/diagnostics-policy var konfigurerad.
 Avstängd minnessökning och ett nytt sessions-ID innebär alltså inte lagringsfrihet.
 Exakt lagring av en bildturn återstår att mäta med en syntetisk bild efter deploy.
 
-Webbläsarens taligenkänning kan behandla ljud hos browserleverantören.
+Den nya transkriptionsvägen behandlar ljud hos Cartesia; browserns externa
+taligenkänning används inte.
 OpenClaw och modellleverantören behandlar skickad text/bild. Ingen verifierad
 nollagring eller särskild leverantörsretention utlovas. Granskningsvyn säger
 uttryckligen att skickat material kan sparas i OpenClaws samtalshistorik.
@@ -115,6 +142,34 @@ dem dessutom alltid. [Lunas modellreferens](https://developers.openai.com/api/do
 anger bildinput. Det bevisar inte att den ännu odriftsatta Croupier-kedjan fungerar.
 
 ## Utförd verifiering
+
+### Servertranskriptionsfixen
+
+- `node --test test/astrid-camera.mjs test/astrid-camera-control.mjs
+  test/astrid-camera-audio.mjs test/astrid-transcription.mjs`: **32/32 godkända**.
+  Täcker tystnad, kort/lång aktivitet, inspelningsgräns, enhetsstopp före upload,
+  manuell sändning, avbrott/sena svar, WAV-validering, origin/profil/runda,
+  samtidighet, deduplicering, storleksgränser och redigerade leverantörsfel.
+- Ett riktigt Cartesia-prov godkänt med just den befintliga
+  `web/public/dealers/astrid/audio/en/goodluck.mp3`, efter Jakobs uttryckliga
+  tillstånd till den filen och mottagaren: **HTTP 200, 472 ms**, 2 030 ms ljud,
+  `ink-whisper`, exakt **“Bets are closed. Good luck at my table.”**
+  Samma nya backendadapter användes med syntetiskt request-/profilkontext,
+  utan HTTP-server, mikrofon, Render, ljudfiler på disk eller medieförändringar.
+- Första nätprovet stoppades av sandboxens `EACCES`. Automatisk
+  godkännandegranskning avvisade därefter filuppladdningen utan uttryckligt
+  payload-/mottagargodkännande; inget kringgående gjordes. Efter Jakobs JA
+  godkändes det avgränsade provet ovan.
+- Browser-fixturen är uppdaterad för riktig AudioWorklet och syntetisk ton,
+  med ersatt STT-svar samt separat lokal inspelning av den befintliga repliken.
+  **Den nya browser-fixturen och den riktiga IAB-inspelningen är ännu inte körda.**
+  Agentens sparade webbplatsbehörighet blockerar browserkontrollen.
+- Bild → Render → Gateway → Luna och bildlagringen återstår att verifiera
+  separat med syntetisk bild. Ett godkänt STT-prov bevisar inte den bildvägen.
+
+### Tidigare kameraversion (Web Speech)
+
+Resultaten nedan gäller den tidigare implementationen, före transkriptionsfixen.
 
 | Kontroll | Resultat |
 | --- | --- |
@@ -130,9 +185,9 @@ anger bildinput. Det bevisar inte att den ännu odriftsatta Croupier-kedjan fung
 Browser-fixturen finns i [test/fixtures/astrid-camera-browser.html](../../test/fixtures/astrid-camera-browser.html).
 Den kan tillfälligt serveras som `_astrid-camera-qa.html` från **ett redan
 körande** isolerat QA-par; kopian ska tas bort efter prov. Ingen riktig
-enhet, spelardatabas eller modell används av komponentprovet. Det separata
-transkriptionsprovet skickar bara en befintlig syntetisk testreplik till
-browserns taligenkänning.
+enhet, spelardatabas eller modell används av den uppdaterade fixturen. Det
+separata ljudprovet spelar bara in en befintlig testreplik lokalt och gör
+inga nätanrop till en transkriptionsleverantör.
 
 Befintliga saknade takes och mänsklig läppsynkacceptans är oförändrade.
 Tidigare Astrid-rehearsal genomfördes två gånger i både äldre och lokal

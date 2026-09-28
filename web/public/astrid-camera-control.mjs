@@ -1,4 +1,5 @@
 import { createAstridCameraSession } from './astrid-camera-session.mjs';
+import { createAstridAudioRecorder } from './astrid-camera-audio.mjs';
 
 const MAX_IMAGE_BYTES = 64 * 1024;
 
@@ -22,14 +23,15 @@ function captureJpeg(video) {
 }
 
 export function createAstridCameraControl({ container, identity, send, fetchImpl = fetch,
-  mediaDevices = navigator.mediaDevices, Recognition = window.SpeechRecognition || window.webkitSpeechRecognition,
+  mediaDevices = navigator.mediaDevices, AudioWorkletNodeClass = window.AudioWorkletNode,
   AudioContextClass = window.AudioContext || window.webkitAudioContext,
+  createRecorder = createAstridAudioRecorder,
   canStart = () => true, onActivity = () => {} } = {}) {
   const root = document.createElement('details'); root.id = 'astrid-camera';
-  const title = document.createElement('summary'); title.textContent = 'Kamera · Av';
+  const title = document.createElement('summary'); title.textContent = 'Bild och ljud · Av';
   title.setAttribute('aria-label', 'Kamera och mikrofon · Av');
   const panel = document.createElement('div'); panel.className = 'astrid-camera-panel';
-  const note = document.createElement('p'); note.textContent = 'Valfritt. Webbläsarens taligenkänning kan behandla ljud hos dess leverantör. Bilder och text skickas till Astrid först när du granskat och valt Skicka.';
+  const note = document.createElement('p'); note.textContent = 'Starta spelar in högst 30 sekunder. Vid tystnad eller Stoppa skickas ljudet till Cartesia för transkription. Appen sparar inte råljudet. Granska sedan text och bilder innan Skicka till Astrid.';
   const privacy = document.createElement('p'); privacy.textContent = 'När du skickar behandlas bilder och text av OpenClaw och modellleverantören. De kan sparas i OpenClaws samtalshistorik. Kassera tar bort oskickat material från den här fliken.';
   const start = document.createElement('button'); start.type = 'button'; start.textContent = 'Starta kamera och mikrofon';
   const languageLabel = document.createElement('label'); languageLabel.textContent = 'Talets språk ';
@@ -49,44 +51,80 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   const discard = document.createElement('button'); discard.type = 'button'; discard.textContent = 'Kassera';
   review.append(transcript, pictures, submit, discard); panel.append(note, privacy, languageLabel, start, stop, video, meter, status, review); root.append(title, panel); container.append(root);
 
-  let enabled = false, pending = false, sending = false, profileRevision = null, epoch = 0, stream = null, audio = null, recognition = null;
-  let frameTimer = null, timeout = null, session = null, owner = null, images = [], finalText = '', interimText = '';
+  let enabled = false, pending = false, sending = false, transcribing = false, profileRevision = null, epoch = 0, stream = null, recorder = null;
+  let timeout = null, session = null, owner = null, images = [], heardAudio = false, recordingAbort = null, transcriptionAbort = null;
   function release() {
     pending = false;
-    clearInterval(frameTimer); clearTimeout(timeout); frameTimer = null; timeout = null;
-    if (recognition) { recognition.onresult = recognition.onerror = recognition.onend = recognition.onspeechstart = recognition.onspeechend = null; try { recognition.abort(); } catch {} recognition = null; }
+    clearTimeout(timeout); timeout = null;
+    recorder?.stop(true); recorder = null; recordingAbort?.abort(); recordingAbort = null;
     for (const track of stream?.getTracks() ?? []) track.stop(); stream = null;
-    void audio?.close().catch(() => {}); audio = null;
     video.pause(); video.srcObject = null; video.hidden = true; meter.hidden = true; meter.value = 0;
-    stop.hidden = true; start.hidden = false; title.textContent = 'Kamera · Av';
+    stop.hidden = true; start.hidden = false; title.textContent = 'Bild och ljud · Av';
     title.setAttribute('aria-label', 'Kamera och mikrofon · Av');
     language.disabled = false;
   }
   function reset(reason = 'Av') {
-    epoch++; session = null; owner = null; images = []; finalText = ''; interimText = '';
+    epoch++; session = null; owner = null; images = []; heardAudio = false;
+    transcriptionAbort?.abort(); transcriptionAbort = null; transcribing = false;
     review.hidden = true; pictures.replaceChildren(); transcript.value = ''; release(); status.textContent = reason;
+    submit.disabled = false; start.disabled = !enabled || sending;
   }
-  function finish(reason) {
+  async function finish(reason) {
     if (!session) { reset(reason); return; }
     let result;
     try { result = session.stop(reason); }
     catch { reset('Bilden kunde inte tas. Materialet kasserades.'); return; }
-    session = null; epoch++;
+    session = null; const token = ++epoch;
+    const bytes = recorder?.stop(); recorder = null;
     images = result.images;
     release();
     if (!sameIdentity(owner, identity())) { reset('Profilen eller bordet ändrades. Inspelningen kasserades.'); return; }
-    transcript.value = (finalText + interimText).trim();
+    transcript.value = '';
     pictures.replaceChildren(...images.map((url, index) => {
       const img = document.createElement('img'); img.src = url; img.alt = `Granskningsbild ${index + 1}`; return img;
     }));
     review.hidden = false;
-    status.textContent = images.length ? `${reason} · ${images.length} bild${images.length === 1 ? '' : 'er'} · granska text och bilder` : `${reason} · inget tal upptäcktes, inga bilder togs`;
+    if (!bytes || !heardAudio) {
+      bytes?.fill(0); status.textContent = `${reason} · inget tal upptäcktes. Skriv text eller prova igen.`; return;
+    }
+    transcribing = true; submit.disabled = true; start.disabled = true;
+    title.textContent = 'Bild och ljud · Bearbetar';
+    status.textContent = 'Mikrofonen är av · transkriberar ljudet…';
+    const controller = new AbortController(); transcriptionAbort = controller;
+    const deadline = setTimeout(() => controller.abort(), 35000);
+    try {
+      const response = await fetchImpl('/api/astrid/transcription', { method: 'POST', signal: controller.signal,
+        headers: { 'Content-Type': 'audio/wav', 'X-Astrid-Dealer': 'astrid', 'X-Astrid-Language': language.value === 'sv-SE' ? 'sv' : 'en',
+          'X-Astrid-Request-Id': crypto.randomUUID(), 'X-Astrid-Profile-Revision': profileRevision,
+          'X-Astrid-Session-Revision': owner.sessionRevision, 'X-Astrid-Round-Revision': owner.roundRevision }, body: bytes });
+      if (token !== epoch) return;
+      if (document.hidden || !sameIdentity(owner, identity())) { reset('Profilen eller bordet ändrades. Materialet kasserades.'); return; }
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 409) { reset('Profilen eller bordet ändrades. Spela in igen.'); return; }
+        throw new Error('transcription_failed');
+      }
+      const data = await response.json();
+      if (token !== epoch) return;
+      if (document.hidden || !sameIdentity(owner, identity())) { reset('Profilen eller bordet ändrades. Materialet kasserades.'); return; }
+      if (typeof data.text !== 'string' || data.text.length > 1000) throw new Error('transcription_failed');
+      transcript.value = data.text.trim();
+      if (!transcript.value) { images = []; pictures.replaceChildren(); }
+      status.textContent = transcript.value ? `${images.length} bild${images.length === 1 ? '' : 'er'} · granska text och bilder och välj Skicka till Astrid`
+        : 'Inga ord kunde urskiljas. Skriv text eller prova igen.';
+    } catch {
+      if (token === epoch) status.textContent = 'Ljudet kunde inte transkriberas. Skriv text till bilderna eller kassera och spela in igen.';
+    } finally {
+      clearTimeout(deadline); bytes.fill(0);
+      if (token === epoch) {
+        transcribing = false; transcriptionAbort = null; submit.disabled = false; start.disabled = !enabled;
+        title.textContent = 'Bild och ljud · Granska';
+      }
+    }
   }
   async function begin() {
-    if (!enabled || pending || sending || stream || session) return;
+    if (!enabled || pending || sending || transcribing || stream || session) return;
     if (!canStart()) { status.textContent = 'Vänta tills Astrid talat klart och bordet är lugnt.'; return; }
     if (!mediaDevices?.getUserMedia || !AudioContextClass) { status.textContent = 'Kamera eller mikrofon saknas i denna enhet.'; return; }
-    if (!Recognition) { status.textContent = 'Transkription saknas i denna webbläsare. Använd vanlig textchatt.'; return; }
     reset('Kontrollerar aktuell profil…'); const token = ++epoch; owner = identity();
     pending = true; start.hidden = true; stop.hidden = false;
     language.disabled = true; onActivity();
@@ -95,7 +133,8 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       const config = await readConfig();
       if (token !== epoch) return;
       if (document.hidden || !sameIdentity(owner, identity())) { reset('Fliken eller profilen ändrades.'); return; }
-      if (!config.enabled) { enabled = false; start.disabled = true; reset('Av · bildfunktionen är inte tillgänglig'); return; }
+      if (!config.enabled || !config.transcription?.enabled) { enabled = false; start.disabled = true; reset('Av · serverns transkription är inte tillgänglig'); return; }
+      if (owner?.dealerId !== 'astrid') { reset('Bild och ljud är endast tillgängligt för Astrid.'); return; }
       profileRevision = config.profileRevision;
       status.textContent = 'Begär tillstånd…';
       const acquired = await mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: { echoCancellation: true, noiseSuppression: true } });
@@ -108,42 +147,25 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       if (token !== epoch) return;
       if (document.hidden || !sameIdentity(owner, identity())) { reset('Fliken eller profilen ändrades.'); return; }
       for (const track of stream.getTracks()) track.addEventListener('ended', () => { if (token === epoch) reset('Enheten kopplades bort · Av'); }, { once: true });
-      audio = new AudioContextClass();
-      const analyser = audio.createAnalyser(); analyser.fftSize = 1024;
-      audio.createMediaStreamSource(stream).connect(analyser);
-      const samples = new Float32Array(analyser.fftSize);
-      recognition = new Recognition(); recognition.lang = language.value; recognition.continuous = true; recognition.interimResults = true;
-      let vadSpeaking = false;
-      recognition.onspeechstart = () => { if (token === epoch) vadSpeaking = true; };
-      recognition.onspeechend = () => { if (token === epoch) vadSpeaking = false; };
-      recognition.onresult = event => {
-        if (token !== epoch || !sameIdentity(owner, identity())) return;
-        finalText = ''; interimText = '';
-        for (const item of event.results) {
-          if (item.isFinal) finalText += `${item[0].transcript} `;
-          else interimText += `${item[0].transcript} `;
-        }
-        status.textContent = `Talaktivitet · ${Math.round(session?.speechMs ?? 0)} ms · ${finalText}${interimText}`;
-      };
-      recognition.onerror = event => { if (token === epoch) finish(event?.error === 'network'
-        ? 'Taligenkänningens nätanslutning misslyckades' : 'Transkription misslyckades'); };
-      recognition.onend = () => { if (token === epoch && session) finish('Transkription avslutades'); };
-      recognition.start(stream.getAudioTracks()[0]);
-      session = createAstridCameraSession({ capture: () => captureJpeg(video), onEnd: result => { if (result.reason === 'speech_end') finish('Talet avslutades'); } });
-      frameTimer = setInterval(() => {
-        if (token !== epoch) return;
-        if (document.hidden || !sameIdentity(owner, identity())) { reset('Fliken eller profilen ändrades.'); return; }
-        analyser.getFloatTimeDomainData(samples);
-        let power = 0; for (const sample of samples) power += sample * sample;
-        const rms = Math.sqrt(power / samples.length);
-        meter.value = Math.min(1, rms * 8);
-        try { session?.sample(vadSpeaking); }
-        catch { reset('Bilden kunde inte tas. Materialet kasserades.'); }
-      }, 100);
+      session = createAstridCameraSession({ capture: () => captureJpeg(video), onEnd: result => { if (result.reason === 'speech_end') void finish('Talet avslutades'); } });
+      recordingAbort = new AbortController();
+      const acquiredRecorder = await createRecorder({ stream, AudioContextClass, AudioWorkletNodeClass, signal: recordingAbort.signal,
+        onSample: ({ rms, speaking, at }) => {
+          if (token !== epoch) return;
+          if (document.hidden || !sameIdentity(owner, identity())) { reset('Fliken eller profilen ändrades.'); return; }
+          meter.value = Math.min(1, rms * 8);
+          if (speaking) heardAudio = true;
+          try { session?.sample(speaking, at); }
+          catch { reset('Bilden kunde inte tas. Materialet kasserades.'); }
+        },
+        onLimit: () => { if (token === epoch) void finish('Tidsgräns 30 sekunder'); },
+        onError: () => { if (token === epoch) reset('Ljudinspelningen avbröts. Prova igen.'); } });
+      if (token !== epoch) { acquiredRecorder.stop(true); return; }
+      recorder = acquiredRecorder;
       clearTimeout(timeout); timeout = setTimeout(() => finish('Tidsgräns 30 sekunder'), 30000);
       pending = false;
       start.hidden = true; stop.hidden = false; meter.hidden = false;
-      title.textContent = 'Kamera · På'; title.setAttribute('aria-label', 'Kamera och mikrofon · På');
+      title.textContent = 'Bild och ljud · På'; title.setAttribute('aria-label', 'Kamera och mikrofon · På');
       status.textContent = 'På · lyssnar efter tal'; review.hidden = true;
     } catch (error) {
       if (token !== epoch) return;
@@ -153,7 +175,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   start.onclick = () => void begin(); stop.onclick = () => finish('Stoppad');
   discard.onclick = () => reset('Kasserat · Av');
   submit.onclick = async () => {
-    if (sending) return;
+    if (sending || transcribing) return;
     if (!sameIdentity(owner, identity())) { reset('Profilen eller bordet ändrades. Materialet kasserades.'); return; }
     const message = transcript.value.trim();
     if (!message) { status.textContent = 'Transkription saknas. Skriv text eller kassera.'; return; }
@@ -178,11 +200,11 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   }
   start.disabled = true;
   void readConfig().then(config => {
-    enabled = config.enabled === true;
+    enabled = config.enabled === true && config.transcription?.enabled === true;
     profileRevision = config.profileRevision ?? null;
     start.disabled = !enabled;
-    status.textContent = enabled ? 'Av · inget tillstånd begärt' : 'Av · bildfunktionen väntar på driftverifiering';
+    status.textContent = enabled ? 'Av · inget tillstånd begärt' : 'Av · bild och ljud väntar på serverns transkription och bildstöd';
   }).catch(() => { start.disabled = true; status.textContent = 'Av · bildfunktionen är inte tillgänglig'; });
   return { stop: reset, get active() { return Boolean(pending || stream || session); },
-    get busy() { return Boolean(pending || stream || session || sending || !review.hidden); } };
+    get busy() { return Boolean(pending || stream || session || transcribing || sending || !review.hidden); } };
 }

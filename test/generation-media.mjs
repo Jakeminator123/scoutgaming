@@ -90,6 +90,7 @@ test('default media directory cannot bypass BO auth or catalog checks through Wi
     await copyFile(new URL('public/blackjack.mjs', source), join(web, 'public/blackjack.mjs'));
     await copyFile(new URL('public/speech-package.mjs', source), join(web, 'public/speech-package.mjs'));
     await copyFile(new URL('public/astrid-voice-profile.mjs', source), join(web, 'public/astrid-voice-profile.mjs'));
+    await copyFile(new URL('public/astrid-camera-audio.mjs', source), join(web, 'public/astrid-camera-audio.mjs'));
     await copyFile(new URL('public/chat-response.mjs', source), join(web, 'public/chat-response.mjs'));
     // Exercise the real server's default directory, not the comparison fixture's
     // intentional empty-media override. Only this disposable child loses it.

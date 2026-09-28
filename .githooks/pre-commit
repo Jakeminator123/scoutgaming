@@ -10,7 +10,7 @@ node pipeline/audit-performance.mjs
 node pipeline/audit-astrid-actor.mjs
 node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
 node --test test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
-node --test test/astrid-camera.mjs test/astrid-camera-control.mjs
+node --test test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-transcription.mjs
 node --test test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs
 node --test test/player-probe.mjs
 node --test test/performance-contact.mjs test/pack-contact-media.mjs test/table-audio.mjs test/shoe-contact-occlusion.mjs
@@ -25,6 +25,6 @@ node --test test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-face-
 node --test test/native-partner-events.mjs test/bo-media-preview.mjs
 node --test test/native-observation.mjs test/clip-mapping.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 node --test test/local-comparison-fixture.mjs test/generation-media.mjs
-node --test test/local-presentation.mjs
+node --test test/local-presentation.mjs lab/test/media-family-playback.test.mjs
 node --test test/lissabon-profiles.mjs test/player-results.mjs lissabon/start.test.mjs
 node --test open-claw/lab/deploy/local-session.test.mjs open-claw/lab/deploy/local-connection.test.mjs

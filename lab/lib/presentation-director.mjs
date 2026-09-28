@@ -57,7 +57,7 @@ export function createPresentationDirector({ decide = simulateStudio, now = Date
     }
     const result = structuredClone(await job.promise);
     const reason = result.decision?.reason;
-    const owner = input.mode === 'rules' ? 'rules' : input.mode === 'random' ? 'random' : reason === 'accepted' ? 'openclaw' : 'baseline';
+    const owner = reason === 'local_deal_frequency' ? 'frequency' : input.mode === 'rules' ? 'rules' : input.mode === 'random' ? 'random' : reason === 'accepted' ? 'openclaw' : 'baseline';
     const director = { contractVersion: 1, scope: 'lab-presentation', owner, reused, sourceRef,
       playbackConfirmed: false, candidateCount: result.eligible?.length ?? 0 };
     return { ...result, decision: { ...result.decision, requestId, director },

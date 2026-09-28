@@ -45,16 +45,31 @@ test('operator catalog describes every exact real family, not the saved seed dem
   assert.deepEqual(project, before, 'chat projection never migrates or saves the operator project');
 });
 
-test('idle inventory preserves two weighted bases and the real six one-shot uses', () => {
-  const catalog = buildOperatorCatalog(createSeedProject(), inventory(), 'astrid');
+test('idle inventory preserves both weighted bases and every current one-shot use', () => {
+  const project = createSeedProject(), registry = inventory();
+  const catalog = buildOperatorCatalog(project, registry, 'astrid');
   const node = familyNode(catalog, 'astrid/idle.ready/ready');
-  assert.equal(node.variants.length, 8);
+  const family = registry.families.find(row => row.id === 'astrid/idle.ready/ready');
+  assert.equal(node.variants.length, family.standardIds.length + family.variantIds.length);
   const labels = node.variants.map(variant => variant.label).join('\n');
   assert.match(labels, /90 % grundvikt/);
   assert.match(labels, /10 % grundvikt/);
   assert.match(labels, /automatisk 25±5 s; paus 15 s; max 3\/min/);
   assert.match(labels, /OpenClaw \(idlepolicy\)/);
-  assert.equal(node.variants.filter(variant => variant.label.endsWith(' · manuell')).length, 4);
+  assert.equal(node.variants.filter(variant => variant.label.endsWith(' · manuell')).length, project.idlePolicy.variants.filter(variant => variant.use === 'manual').length);
+});
+
+test('operator sees saved deal frequency instead of inactive legacy language conditions', () => {
+  const project = createSeedProject(), registry = inventory();
+  const family = registry.families.find(row => row.situation === 'box0');
+  const id = family.variantIds[0];
+  assert.ok(id);
+  project.mediaPolicy = [{ familyId: family.id, variants: [{ videoId: id, frequencyPercent: 25, priority: 80,
+    selection: { rules: true, model: true, random: true }, triggerIds: [project.triggers.find(row => row.path.includes('preferredLanguage')).id] }] }];
+  const catalog = buildOperatorCatalog(project, registry, 'astrid');
+  const row = familyNode(catalog, family.id).variants.find(variant => variant.id.endsWith(id));
+  assert.match(row.label, /25 % per utdelning/); assert.deepEqual(row.when.all, []);
+  assert.deepEqual(validateCatalog(catalog), { valid: true, errors: [] });
 });
 
 test('real alternatives remain visible with explicit selection flags and matching triggers', () => {
