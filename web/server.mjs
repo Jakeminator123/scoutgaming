@@ -279,15 +279,24 @@ if (!boDb.prepare('SELECT COUNT(*) n FROM users').get().n) {
   console.log(`[bo] backoffice login created - user: kevin  password: ${pw}`);
 }
 function boCheckLogin(user, pass) {
-  const u = boDb.prepare('SELECT salt, hash, role FROM users WHERE username = ? OR email = ?').get(user, user);
-  if (!u || !u.hash) return null;
-  const h = scryptSync(String(pass), u.salt, 64);
-  return timingSafeEqual(h, Buffer.from(u.hash, 'hex')) ? { role: u.role } : null;
+  const account = scoutIdentity.authenticate(user, pass);
+  if (!account) return null;
+  const role = boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id)?.role;
+  return Object.hasOwn(ROLE_RANK, role) ? { ...account, role } : null;
 }
 function boSessionOk(req) {
   const c = req.headers.cookie ?? '';
   const m = /(?:^|;\s*)bo_jwt=([A-Za-z0-9_.-]+)/.exec(c);
-  return m ? jwtVerify(m[1]) : null;
+  const claims = m ? jwtVerify(m[1]) : null;
+  // Partner launch tokens use the same signer. Only a current, role-bearing
+  // CRAIG login may authorize backoffice routes or the BO-to-game handoff.
+  if (!claims || claims.aud !== 'backoffice' || claims.partner ||
+      typeof claims.sub !== 'string' || !Object.hasOwn(ROLE_RANK, claims.role) ||
+      typeof claims.source_stamp !== 'string') return null;
+  const account = scoutIdentity.find(claims.sub);
+  if (!account || account.stamp !== claims.source_stamp ||
+      boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id)?.role !== claims.role) return null;
+  return { ...claims, sub: account.name };
 }
 
 // ---------- brand emails (per design-kit/ScoutBrand.dc.html) ----------
@@ -342,6 +351,23 @@ async function sendMail(to, subject, html) {
   } catch (e) { return { sent: false, reason: e.message }; }
 }
 const BO_URL = process.env.BO_URL ?? 'https://backoffice.bettalotto.se';
+const BO_ORIGIN = new URL(BO_URL);
+function boPostOriginOk(req) {
+  const origin = req.headers.origin;
+  if (typeof origin !== 'string' || !URL.canParse(origin)) return false;
+  const parsed = new URL(origin);
+  if (parsed.origin !== origin) return false;
+  let expected = req.headers.host === BO_ORIGIN.host ? BO_ORIGIN.origin : null;
+  if (!expected && process.env.NODE_ENV !== 'production') {
+    // The local Lissabon launcher does not configure a public BO_URL.
+    try {
+      const local = new URL(`http://${req.headers.host}`);
+      if (['localhost', '127.0.0.1', '[::1]'].includes(local.hostname)) expected = local.origin;
+    } catch { /* Invalid Host cannot authorize a BO POST. */ }
+  }
+  const fetchSite = req.headers['sec-fetch-site'];
+  return origin === expected && (!fetchSite || fetchSite === 'same-origin');
+}
 function mintToken(username, kind, hours) {
   const t = randomBytes(24).toString('base64url');
   boDb.prepare('INSERT INTO tokens (token, username, kind, exp) VALUES (?,?,?,?)')
@@ -947,8 +973,11 @@ createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && pathname.startsWith('/api/bo/') && !boPostOriginOk(req)) {
+    res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end('{"error":"Invalid origin"}'); return;
+  }
   if (req.method === 'POST' && req.url === '/api/bo/login') {
-    if(req.headers.origin && (!URL.canParse(req.headers.origin)||new URL(req.headers.origin).host!==req.headers.host)){res.writeHead(403);res.end('Invalid origin');return;}
     let body = '';
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
     req.on('end', () => {
@@ -958,7 +987,7 @@ createServer(async (req, res) => {
       try { const { user, pass } = JSON.parse(body || '{}'); who = boCheckLogin(user, pass); } catch {}
       if (!who) { boLogins.fail(req, uname); console.warn('[bo] failed login', uname, boLogins.ipOf(req)); res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
       boLogins.ok(req, uname);
-      const tok = jwtSign({ sub: uname, role: who.role, aud:'backoffice', source_stamp:scoutIdentity.find(uname)?.stamp, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
+      const tok = jwtSign({ sub: who.name, role: who.role, aud:'backoffice', source_stamp:who.stamp, exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
       const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control':'no-store', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}` });
       res.end('{"ok":true}');

@@ -5667,3 +5667,24 @@ Produkt- och labbservrarna är fortsatt stoppade enligt Jakobs begäran. Fyra
 dealers fysiska tvåspelsrepetition, fjärr-HTTPS, beständighet efter omstart,
 kamerans verkliga flöde, synkroniserad mediaåtkomst och driftsatt OpenClaw-
 beslutskedja återstår. Inga privata databaser har laddats upp eller ändrats.
+
+## 2026-09-28 — säker BO-session och spärrad molnstart
+
+BO-sessionen kräver nu ett giltigt `backoffice`-audience, aktuell CRAIG-identitet,
+oförändrat lösenordsavtryck och samma BO-roll som när sessionen skapades.
+Partnerns lanseringstoken kan inte längre läsas som BO-cookie. Gamla BO-cookies
+utan audience kräver ny inloggning. Isolerade tester täcker BO-data,
+e-postinloggning, roll- och lösenordsbyte, raderat konto och fortsatt
+BO-till-spel-överlämning. Lokal kod är verifierad; driftsatt BO är inte omtestad.
+BO:s skrivande API kräver dessutom ett exakt BO-Origin; syskonorigin och
+saknat Origin nekas. Isolerat test bekräftar att nekade anrop inte ändrar
+BO-konfigurationen.
+
+`ops/cloud/` innehåller ett första bygge för Web och Lissabon på en långlivad
+värd med en port, exakta värdnamn och gemensam beständig disk. Start är
+avsiktligt spärrad i kod tills publik autentisering, Lab-åtkomst, routing
+och kakornas värdgränser är lösta och provade. Ingen container är byggd eller
+publicerad. Ingen lokal databas har skickats till molnet. För en ren Vercel-
+drift krävs dessutom transaktionssäker extern SQL-lagring, objektlagring för
+uppladdningar/klipp och en beständig jobbväg för lång renderering. Lokal
+produkt och Lab är fortsatt stoppade.
