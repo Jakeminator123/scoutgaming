@@ -258,11 +258,13 @@ export function applySpeechRole(config, env) {
   if(provider?.baseUrl==='https://api.openai.com/v1' && ['openai-responses','openai-completions'].includes(provider.api) && Array.isArray(provider.models)){
     for(const modelId of ['gpt-5.4-mini','gpt-6-luna','gpt-5.6-terra'])
       if(!provider.models.some(model=>model.id===modelId))provider.models.push({id:modelId,name:modelId,input:['text']});
-    // An explicit, separately deployed vision gate updates only Luna. The
+    // An explicit, separately deployed vision gate updates Luna and Terra. The
     // camera UI remains off until an image turn and retention are checked.
     if(env.CROUPIER_SPEECH_VISION==='1'){
-      const luna=provider.models.find(model=>model.id==='gpt-6-luna');
-      if(luna)luna.input=[...new Set([...(Array.isArray(luna.input)?luna.input:[]),'text','image'])];
+      for(const modelId of ['gpt-6-luna','gpt-5.6-terra']){
+        const model=provider.models.find(candidate=>candidate.id===modelId);
+        if(model)model.input=[...new Set([...(Array.isArray(model.input)?model.input:[]),'text','image'])];
+      }
     }
   }
   return next;

@@ -433,6 +433,150 @@ test('generated speech never substitutes the legacy endpoint and refuses incompl
   assert.throws(() => loadPrivateConnection({ envFiles: [], env: { CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'https://untrusted.example/' }, generatedSpeech: true }), /endpoint ID, not a URL/);
 });
 
+test('Astrid translation aliases the verified OpenAI credential only into an opted-in product child', async t => {
+  const providerKey = 'fixture-official-openai-provider';
+  const file = await privateFixture(t, {
+    OPENCLAW_MODEL_API_KEY: providerKey, OPENCLAW_MODEL_BASE_URL: 'https://api.openai.com/v1',
+    OPENCLAWAPI_KEY: 'fixture-private-gateway', OPENCLAW_BASE_URL: 'https://gateway.example.test',
+    OPENCLAW_PRODUCT_SPEECH_URL: 'https://director.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-private-speech',
+  });
+  const { configuration, report } = loadPrivateConnection({ envFiles: [file], env: {}, astridCamera: true });
+  assert.equal(report.astridTranslation.configured, true);
+  assert.equal(report.astridTranslation.credentialSource, 'OPENCLAW_MODEL_API_KEY');
+  assert.equal(report.astridTranslation.authenticationVerified, false);
+  assert.equal(report.credentials.modelProviderForwardedToLocalChildren, true);
+  assert.equal(configuration.translationKey, providerKey);
+  assert.ok(!JSON.stringify({ configuration, report }).includes(providerKey));
+  const directory = join(tmpdir(), 'croupier-translation-spec-fixture');
+  const options = { streamLane: 'lissabon-stream-lane', astridCamera: true };
+  const specs = childSpecifications(configuration, directory, options);
+  assert.equal(specs.product.env.CROUPIER_ASTRID_TRANSLATION_KEY, providerKey);
+  assert.equal(specs.lab.env.CROUPIER_ASTRID_TRANSLATION_KEY, '');
+  assert.deepEqual(JSON.parse(specs.product.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), ['https://director.example.test', 'https://api.openai.com']);
+  assert.deepEqual(JSON.parse(specs.lab.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), []);
+  for (const spec of [specs.product, specs.lab]) {
+    assert.equal(spec.env.OPENCLAW_MODEL_API_KEY, '');
+    assert.equal(spec.env.OPENCLAWAPI_KEY, '');
+    assert.equal(spec.env.OPENAI_API_KEY, undefined);
+    assert.ok(!Object.keys(spec.env).some(key => key.startsWith('NEXT_PUBLIC_')));
+    assert.ok(!JSON.stringify([spec.command, ...spec.args]).includes(providerKey));
+  }
+  const off = childSpecifications(configuration, directory);
+  assert.equal(off.product.env.CROUPIER_ASTRID_TRANSLATION_KEY, '');
+  assert.ok(!JSON.parse(off.product.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS).includes('https://api.openai.com'));
+});
+
+test('Astrid translation is not enabled by inherited credentials and never borrows third-party or Gateway keys', () => {
+  const directory = join(tmpdir(), 'croupier-translation-off-fixture');
+  const env = { OPENCLAW_MODEL_API_KEY: 'fixture-model', CROUPIER_ASTRID_TRANSLATION_KEY: 'fixture-scoped', OPENAI_API_KEY: 'fixture-ambient-openai' };
+  const off = loadPrivateConnection({ envFiles: [], env });
+  assert.equal(off.configuration.translationKey, ''); assert.equal(off.report.astridTranslation.enabled, false);
+  for (const spec of Object.values(childSpecifications(off.configuration, directory)).filter(value => value.env)) {
+    assert.equal(spec.env.CROUPIER_ASTRID_TRANSLATION_KEY, '');
+    assert.equal(spec.env.OPENAI_API_KEY, undefined);
+    assert.deepEqual(JSON.parse(spec.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), []);
+  }
+  for (const base of ['https://models.example.test/v1', 'https://api.openai.com.evil.invalid/v1', 'http://api.openai.com/v1', 'https://api.openai.com/v1?redirect=1', 'https://account:secret@api.openai.com/v1']) {
+    const custom = { OPENCLAW_MODEL_API_KEY: 'fixture-third-party', OPENCLAW_MODEL_BASE_URL: base };
+    const disabled = loadPrivateConnection({ envFiles: [], env: custom, astridCamera: true });
+    assert.equal(disabled.configuration.translationKey, ''); assert.equal(disabled.report.astridTranslation.configured, false);
+    const specs = childSpecifications(disabled.configuration, directory, { astridCamera: true, streamLane: 'lissabon-stream-lane' });
+    assert.ok(!JSON.parse(specs.product.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS).includes('https://api.openai.com'));
+    assert.throws(() => loadPrivateConnection({ envFiles: [], env: { ...custom, CROUPIER_ASTRID_TRANSLATION_KEY: custom.OPENCLAW_MODEL_API_KEY }, astridCamera: true }), /third-party provider credential/);
+    const explicit = loadPrivateConnection({ envFiles: [], env: { ...custom, CROUPIER_ASTRID_TRANSLATION_KEY: 'fixture-separate-openai-key' }, astridCamera: true });
+    assert.equal(explicit.configuration.translationKey, 'fixture-separate-openai-key');
+    assert.equal(explicit.report.credentials.modelProviderForwardedToLocalChildren, false);
+  }
+  for (const forbidden of ['OPENCLAWAPI_KEY', 'OPENCLAW_PRODUCT_SPEECH_TOKEN', 'LAB_REMOTE_TOKEN']) {
+    assert.throws(() => loadPrivateConnection({ envFiles: [], env: { [forbidden]: 'fixture-wrong-credential', CROUPIER_ASTRID_TRANSLATION_KEY: 'fixture-wrong-credential' }, astridCamera: true }), /never a Gateway/);
+  }
+  assert.throws(() => loadPrivateConnection({ envFiles: [], env: { OPENCLAWAPI_KEY: 'fixture-shared', OPENCLAW_MODEL_API_KEY: 'fixture-shared' }, astridCamera: true }), /never a Gateway/);
+  const openai = loadPrivateConnection({ envFiles: [], env: { OPENAI_API_KEY: 'fixture-approved-openai' }, astridCamera: true });
+  assert.equal(openai.configuration.translationKey, 'fixture-approved-openai');
+  assert.equal(openai.report.astridTranslation.credentialSource, 'OPENAI_API_KEY');
+  assert.throws(() => loadPrivateConnection({ envFiles: [], env: {}, astridCamera: 'true' }), /boolean/);
+});
+
+test('Astrid translation accepts an explicit private override without serializing it', async t => {
+  const file = await privateFixture(t, { CROUPIER_ASTRID_TRANSLATION_KEY: 'fixture-private-scoped-key', OPENAI_API_KEY: 'fixture-dedicated-openai', OPENCLAW_MODEL_API_KEY: 'fixture-provider' });
+  const fromFile = loadPrivateConnection({ envFiles: [file], env: {}, astridCamera: true });
+  assert.equal(fromFile.configuration.translationKey, 'fixture-private-scoped-key');
+  assert.equal(fromFile.report.astridTranslation.credentialSource, 'CROUPIER_ASTRID_TRANSLATION_KEY');
+  const explicit = loadPrivateConnection({ envFiles: [file], env: { CROUPIER_ASTRID_TRANSLATION_KEY: 'fixture-process-scoped-key' }, astridCamera: true });
+  assert.equal(explicit.configuration.translationKey, 'fixture-process-scoped-key');
+  assert.ok(!JSON.stringify(explicit).includes('fixture-'));
+  const officialDefault = loadPrivateConnection({ envFiles: [], env: { OPENCLAW_MODEL_API_KEY: 'fixture-default-openai' }, astridCamera: true });
+  assert.equal(officialDefault.configuration.translationKey, 'fixture-default-openai');
+});
+
+test('Astrid translation prefers the dedicated OpenAI credential to the old model credential without exposing either', async t => {
+  const env = { OPENAI_API_KEY: 'fixture-new-openai', OPENCLAW_MODEL_API_KEY: 'fixture-old-model' };
+  const file = await privateFixture(t, { ...env, OPENAI_BASE_URL: 'https://api.openai.com/v1/' });
+  const { configuration, report } = loadPrivateConnection({ envFiles: [file], env: {}, astridCamera: true });
+  assert.equal(configuration.translationKey, env.OPENAI_API_KEY);
+  assert.equal(report.astridTranslation.credentialSource, 'OPENAI_API_KEY');
+  assert.equal(report.astridTranslation.authenticationVerified, false);
+  assert.equal(report.credentials.modelProviderForwardedToLocalChildren, false);
+  const specs = childSpecifications(configuration, join(tmpdir(), 'croupier-openai-selection-fixture'), { astridCamera: true, streamLane: 'lissabon-stream-lane' });
+  assert.equal(specs.product.env.CROUPIER_ASTRID_TRANSLATION_KEY, env.OPENAI_API_KEY);
+  assert.equal(specs.lab.env.CROUPIER_ASTRID_TRANSLATION_KEY, '');
+  for (const spec of [specs.product, specs.lab]) {
+    assert.equal(spec.env.OPENAI_API_KEY, undefined); assert.equal(spec.env.OPENCLAW_MODEL_API_KEY, '');
+    assert.ok(!JSON.stringify([spec.command, ...spec.args]).includes('fixture-new-openai'));
+  }
+  assert.ok(!JSON.stringify({ configuration, report }).includes('fixture-'));
+  const off = loadPrivateConnection({ envFiles: [file], env, astridCamera: false });
+  assert.equal(off.configuration.translationKey, ''); assert.equal(off.report.astridTranslation.credentialSource, null);
+  const independent = loadPrivateConnection({ envFiles: [], env: { ...env, OPENCLAW_MODEL_BASE_URL: 'https://models.example.test/v1' }, astridCamera: true });
+  assert.equal(independent.configuration.translationKey, env.OPENAI_API_KEY);
+});
+
+test('Astrid translation pairs the OpenAI credential with its endpoint metadata and rejects known credential collisions', () => {
+  for (const name of ['OPENAI_BASE_URL', 'OPENAI_API_BASE', 'OPENAI_API_HOST']) {
+    for (const base of ['https://models.example.test/v1', 'http://api.openai.com/v1', 'https://api.openai.com.evil.invalid/v1', 'https://api.openai.com/v1?redirect=1']) {
+      const env = { OPENAI_API_KEY: 'fixture-third-party-openai-compatible', [name]: base };
+      const unavailable = loadPrivateConnection({ envFiles: [], env, astridCamera: true });
+      assert.equal(unavailable.configuration.translationKey, ''); assert.equal(unavailable.report.astridTranslation.credentialSource, null);
+      const model = loadPrivateConnection({ envFiles: [], env: { ...env, OPENCLAW_MODEL_API_KEY: 'fixture-official-model' }, astridCamera: true });
+      assert.equal(model.configuration.translationKey, 'fixture-official-model');
+      assert.equal(model.report.astridTranslation.credentialSource, 'OPENCLAW_MODEL_API_KEY');
+      for (const alias of ['CROUPIER_ASTRID_TRANSLATION_KEY', 'OPENCLAW_MODEL_API_KEY']) {
+        assert.throws(() => loadPrivateConnection({ envFiles: [], env: { ...env, [alias]: env.OPENAI_API_KEY }, astridCamera: true }), /third-party provider credential/);
+      }
+    }
+  }
+  for (const forbidden of ['OPENCLAWAPI_KEY', 'OPENCLAW_PRODUCT_SPEECH_TOKEN', 'LAB_REMOTE_TOKEN', 'CARTESIA_API_KEY', 'RUNPOD_API_KEY']) {
+    assert.throws(() => loadPrivateConnection({ envFiles: [], env: { [forbidden]: 'fixture-wrong-provider', OPENAI_API_KEY: 'fixture-wrong-provider' }, astridCamera: true }), /provider credential/);
+  }
+});
+
+test('Astrid translation network is open only in the enabled product, including the actual process guard', () => {
+  const { configuration } = loadPrivateConnection({ envFiles: [], env: { CROUPIER_ASTRID_TRANSLATION_KEY: 'fixture-network-key' }, astridCamera: true });
+  const directory = join(tmpdir(), 'croupier-translation-guard-fixture');
+  const specs = childSpecifications(configuration, directory, { astridCamera: true, streamLane: 'lissabon-stream-lane' });
+  const module = new URL('./local-connection.mjs', import.meta.url).href;
+  for (const [role, specification] of [['product', specs.product], ['lab', specs.lab]]) {
+    const program = `
+      import assert from 'node:assert/strict';
+      import {installConnectionProcessGuard} from ${JSON.stringify(module)};
+      const received=[];
+      globalThis.fetch=async input=>{received.push(input);return new Response('{}');};
+      installConnectionProcessGuard();
+      const translation='https://api.openai.com/v1/audio/translations';
+      if(${role === 'product'}) {await fetch(translation);assert.deepEqual(received,[translation]);}
+      else await assert.rejects(fetch(translation),error=>error.code==='OPENCLAW_CONNECTION_NETWORK_BLOCKED');
+      for(const url of ['http://api.openai.com/v1/audio/translations','https://api.openai.com.evil.invalid/','https://other.api.openai.com/']) {
+        await assert.rejects(fetch(url),error=>error.code==='OPENCLAW_CONNECTION_NETWORK_BLOCKED');
+      }
+    `;
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', program], {
+      windowsHide: true, encoding: 'utf8', timeout: 15000,
+      env: { CROUPIER_CONNECTION_ALLOWED_ORIGINS: specification.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS, CROUPIER_CONNECTION_LOCAL_PORTS: specification.env.CROUPIER_CONNECTION_LOCAL_PORTS },
+    });
+    assert.equal(result.status, 0, result.stderr);
+  }
+});
+
 test('opt-in provider origins do not open unrelated network or env-file access in child guard', () => {
   const module = new URL('./local-connection.mjs', import.meta.url).href;
   const program = `

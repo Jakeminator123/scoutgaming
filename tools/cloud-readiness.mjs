@@ -97,7 +97,7 @@ export async function collectCloudReadiness({ root = repository, env = process.e
   const urls = ['PUBLIC_URL', 'BO_URL', 'LAB_REMOTE_URL', 'OPENCLAW_PRODUCT_SPEECH_URL', 'CROUPIER_PRESENTATION_DIRECTOR_URL']
     .map(name => ({ name, status: secureUrl(env[name]) }));
   const credentials = ['LAB_REMOTE_TOKEN', 'OPENCLAW_PRODUCT_SPEECH_TOKEN', 'CROUPIER_PRESENTATION_DIRECTOR_TOKEN',
-    'CARTESIA_API_KEY', 'RUNPOD_API_KEY'].map(name => ({ name, configured: present(env[name]) }));
+    'CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_ASTRID_TRANSLATION_KEY'].map(name => ({ name, configured: present(env[name]) }));
   return {
     schemaVersion: 1, ready: false, status: 'migration-required',
     scope: 'Read-only local evidence and supplied process environment; no .env values, database contents, media bytes or network requests.',

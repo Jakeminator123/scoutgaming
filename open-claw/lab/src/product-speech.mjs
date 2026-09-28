@@ -7,6 +7,7 @@ import { normalizeConversationMemory, CONVERSATION_MEMORY_SYSTEM } from './conve
 export const PRODUCT_SPEECH_AGENT = 'openclaw/croupier-speech';
 export const PRODUCT_SPEECH_PATH = '/api/product/speech';
 export const PRODUCT_SPEECH_MODELS = Object.freeze(['gpt-5.4-mini','gpt-6-luna','gpt-5.6-terra']);
+export const PRODUCT_SPEECH_VISION_MODELS = Object.freeze(['gpt-6-luna','gpt-5.6-terra']);
 export const PRODUCT_SPEECH_KINDS = Object.freeze(['recordedLine', 'generatedText', 'silence']);
 const LIMITS = Object.freeze({ message: 1000, history: 30, historyChars: 8000, generatedText: 500, events: 128, hands: 32, cards: 32 });
 const PHASES = new Set(['bets', 'dealing', 'insurance', 'decisions', 'dealer', 'settled', 'collecting', 'idle']);
@@ -158,7 +159,7 @@ export function normalizeProductSpeechEnvelope(value) {
   if (!exact(value, ['request', 'status', ...(value?.model === undefined ? [] : ['model'])]) || (value.model !== undefined && !PRODUCT_SPEECH_MODELS.includes(value.model))) fail('invalid_product_speech_envelope');
   const normalizedStatus = status(value.status);
   const normalizedRequest = request(value.request, normalizedStatus.dealerId);
-  if (normalizedRequest.observation && value.model !== 'gpt-6-luna') fail('observation_model_not_verified');
+  if (normalizedRequest.observation && !PRODUCT_SPEECH_VISION_MODELS.includes(value.model)) fail('observation_model_not_verified');
   return { request: normalizedRequest, status: normalizedStatus, ...(value.model === undefined ? {} : {model:value.model}) };
 }
 

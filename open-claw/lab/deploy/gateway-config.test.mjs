@@ -36,15 +36,49 @@ test('the seeded provider keeps the approved OpenAI base URL, model and API tupl
   }
 });
 
-test('Astrid vision metadata requires an explicit gate and only changes Luna', () => {
+test('Astrid vision metadata requires an explicit gate and changes only Luna and Terra', () => {
   const config = gatewayConfig(example);
-  const provider = config.models.providers['lab-provider'];
-  assert.deepEqual(provider.models.find(model => model.id === 'gpt-6-luna').input, ['text']);
+  for (const gate of [undefined, '', '0', 'true']) {
+    assert.deepEqual(planGatewayConfig(config, { ...example, CROUPIER_SPEECH_VISION: gate }), { action: 'reuse', config });
+  }
   const planned = planGatewayConfig(config, { ...example, CROUPIER_SPEECH_VISION: '1' });
-  assert.deepEqual(planned.config.models.providers['lab-provider'].models.map(model => model.input),
-    [['text'], ['text', 'image'], ['text']]);
+  const expected = structuredClone(config);
+  expected.models.providers['lab-provider'].models[1].input = ['text', 'image'];
+  expected.models.providers['lab-provider'].models[2].input = ['text', 'image'];
+  assert.deepEqual(planned, { action: 'reconcile-speech', config: expected });
   assert.deepEqual(config.models.providers['lab-provider'].models.map(model => model.input),
     [['text'], ['text'], ['text']], 'planning does not mutate saved configuration');
+  assert.deepEqual(planGatewayConfig(planned.config, { ...example, CROUPIER_SPEECH_VISION: '1' }),
+    { action: 'reuse', config: expected }, 'reconciliation is idempotent');
+});
+
+test('vision opt-in preserves human model metadata, other providers and role configuration', () => {
+  const env = { ...example, CROUPIER_SPEECH_VISION: '1', OPENCLAW_MODEL_API: 'openai-completions',
+    OPENCLAW_DASHBOARD_ORIGIN: 'https://director.example.test' };
+  const config = gatewayConfig({ ...env, CROUPIER_SPEECH_VISION: '0' });
+  const provider = config.models.providers['lab-provider'];
+  provider.models[1] = { ...provider.models[1], name: 'Custom Luna label', input: ['image', 'text'], contextWindow: 100000 };
+  provider.models[2].name = 'Custom Terra label';
+  provider.models.push({ id: 'custom-model', name: 'Other model', input: ['text'] });
+  config.models.providers['human-provider'] = { ...structuredClone(provider), baseUrl: 'https://models.example.test/v1' };
+  const before = structuredClone(config);
+  const expected = structuredClone(config);
+  expected.models.providers['lab-provider'].models[2].input = ['text', 'image'];
+  assert.deepEqual(planGatewayConfig(config, env), { action: 'reconcile-speech', config: expected });
+  assert.deepEqual(config, before);
+});
+
+test('vision opt-in never changes a custom provider origin or non-OpenAI API', () => {
+  for (const change of [
+    { baseUrl: 'https://models.example.test/v1' },
+    { baseUrl: 'https://api.openai.com/v1/proxy' },
+    { api: 'anthropic-messages' },
+    { api: 'google-generative-ai' },
+  ]) {
+    const config = gatewayConfig(example);
+    Object.assign(config.models.providers['lab-provider'], change);
+    assert.deepEqual(planGatewayConfig(config, { ...example, CROUPIER_SPEECH_VISION: '1' }), { action: 'reuse', config });
+  }
 });
 
 test('chat cannot gain tools or share the presentation agent workspace', () => {

@@ -27,10 +27,14 @@ const GUARD_INSTALLED = Symbol.for('croupier.openclaw-local-connection.guard');
 const PRIVATE_KEYS = new Set([
   'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
   'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
-  'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY',
+  'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL',
 ]);
 const GENERATED_SPEECH_KEYS = ['CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
 const GENERATED_SPEECH_ORIGINS = ['https://api.cartesia.ai', 'https://api.runpod.ai'];
+const TRANSLATION_ORIGIN = 'https://api.openai.com';
+const OPENAI_BASE_KEYS = ['OPENAI_BASE_URL', 'OPENAI_API_BASE', 'OPENAI_API_HOST'];
+const TRANSLATION_KEYS = ['CROUPIER_ASTRID_TRANSLATION_KEY', 'OPENAI_API_KEY', ...OPENAI_BASE_KEYS, 'CARTESIA_API_KEY', 'RUNPOD_API_KEY'];
+const officialOpenAiBase = value => !value?.trim() || ['https://api.openai.com/v1', 'https://api.openai.com/v1/'].includes(value.trim());
 
 function blockedError() {
   return Object.assign(new Error('Only the isolated local services and configured OpenClaw origins are reachable.'), { code: 'OPENCLAW_CONNECTION_NETWORK_BLOCKED' });
@@ -112,11 +116,12 @@ function readEnvFile(file) {
   catch (error) { if (error.code === 'ENOENT') return {}; throw new Error('Could not parse private OpenClaw environment configuration.'); }
 }
 
-export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env, generatedSpeech = false } = {}) {
+export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env, generatedSpeech = false, astridCamera = false } = {}) {
+  if (typeof astridCamera !== 'boolean') throw new Error('astridCamera requires an explicit boolean opt-in.');
   repoRoot = resolve(repoRoot);
   envFiles ??= [join(repoRoot, '.env'), join(repoRoot, 'lab', '.env.local'), join(repoRoot, 'lab', '.env.generated-speech.local')];
   const values = {};
-  const allowedKeys = generatedSpeech ? [...PRIVATE_KEYS, ...GENERATED_SPEECH_KEYS] : PRIVATE_KEYS;
+  const allowedKeys = [...PRIVATE_KEYS, ...(generatedSpeech ? GENERATED_SPEECH_KEYS : []), ...(astridCamera ? TRANSLATION_KEYS : [])];
   for (const file of envFiles) {
     const parsed = readEnvFile(file);
     for (const key of allowedKeys) if (parsed[key] !== undefined) values[key] = parsed[key];
@@ -140,8 +145,27 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
       : { status: 'unverified', detail: 'The target is not defined by this helper; verify its deployed AGENTS contract before a model probe.' };
   const remoteToken = values.LAB_REMOTE_TOKEN?.trim() || '';
   const speechToken = values.OPENCLAW_PRODUCT_SPEECH_TOKEN?.trim() || '';
-  const cartesiaKey = values.CARTESIA_API_KEY?.trim() || '';
-  const runpodKey = values.RUNPOD_API_KEY?.trim() || '';
+  const officialModelProvider = officialOpenAiBase(values.OPENCLAW_MODEL_BASE_URL);
+  const officialOpenAiProvider = OPENAI_BASE_KEYS.every(key => officialOpenAiBase(values[key]));
+  const openaiKey = values.OPENAI_API_KEY?.trim() || '';
+  // Alias a provider credential only for the explicitly enabled audio route.
+  // A custom OpenAI-compatible host does not make its credential an OpenAI key.
+  // Selection happens once before any request, never as a retry after rejection.
+  const [translationCredentialSource, translationKey] = (astridCamera ? [
+    ['CROUPIER_ASTRID_TRANSLATION_KEY', values.CROUPIER_ASTRID_TRANSLATION_KEY?.trim() || ''],
+    ['OPENAI_API_KEY', officialOpenAiProvider ? openaiKey : ''],
+    ['OPENCLAW_MODEL_API_KEY', officialModelProvider ? modelKey : ''],
+  ].find(([, key]) => key) : null) ?? [null, ''];
+  if (translationKey && (translationKey === gatewayKey || translationKey === speechToken || translationKey === remoteToken
+    || (!officialModelProvider && translationKey === modelKey) || (!officialOpenAiProvider && translationKey === openaiKey)
+    || ['CARTESIA_API_KEY', 'RUNPOD_API_KEY'].some(key => translationKey === values[key]?.trim()))) {
+    throw new Error('Astrid translation requires an OpenAI provider credential, never a Gateway, Director or third-party provider credential.');
+  }
+  if (translationKey && (translationKey.length > 2048 || /[\s\x00-\x1f]/.test(translationKey))) {
+    throw new Error('CROUPIER_ASTRID_TRANSLATION_KEY must be a single provider credential.');
+  }
+  const cartesiaKey = generatedSpeech ? values.CARTESIA_API_KEY?.trim() || '' : '';
+  const runpodKey = generatedSpeech ? values.RUNPOD_API_KEY?.trim() || '' : '';
   // Do not fall back to the legacy RUNPOD_ENDPOINT_ID used by other experiments.
   const speechEndpointId = values.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID?.trim() || '';
   if (speechEndpointId && !/^[a-zA-Z0-9_-]{1,128}$/.test(speechEndpointId)) throw new Error('CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID must be an endpoint ID, not a URL.');
@@ -155,8 +179,14 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
     cartesiaKey: { value: cartesiaKey, enumerable: false },
     runpodKey: { value: runpodKey, enumerable: false },
     speechEndpointId: { value: speechEndpointId, enumerable: false },
+    translationKey: { value: translationKey, enumerable: false },
   });
   const report = {
+    astridTranslation: {
+      enabled: astridCamera, configured: Boolean(translationKey), credentialPresent: Boolean(translationKey),
+      credentialSource: translationCredentialSource, authenticationVerified: false,
+      provider: 'openai', model: 'whisper-1', inputLanguage: 'auto', outputLanguage: 'en',
+    },
     generatedSpeech: {
       enabled: Boolean(generatedSpeech), configured: Boolean(generatedSpeech && cartesiaKey && runpodKey && speechEndpointId),
       cartesiaCredentialPresent: Boolean(cartesiaKey), runpodCredentialPresent: Boolean(runpodKey), scopedEndpointPresent: Boolean(speechEndpointId),
@@ -178,11 +208,11 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
       gatewayPresent: Boolean(gatewayKey), modelProviderPresent: Boolean(modelKey),
       productSpeechPresent: Boolean(speechToken),
       gatewayAndModelDistinct: gatewayKey && modelKey ? gatewayKey !== modelKey : null,
-      modelProviderForwardedToLocalChildren: false,
+      modelProviderForwardedToLocalChildren: Boolean(translationKey && translationKey === modelKey),
     },
   };
-  // The model credential is needed only by the already deployed private Gateway.
-  // Do not retain it in the returned configuration or pass it to either child.
+  // The general model credential is not retained or forwarded. The opt-in audio
+  // alias is non-enumerable and may be passed only to the product's narrow route.
   return { configuration, report };
 }
 
@@ -296,10 +326,11 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
     GENERATIONS_READ_TOKENS: '', CARTESIA_API_KEY: '', ELEVENLABS_API_KEY: '', ELEVENLABS_OC_API: '',
     RUNPOD_API_KEY: '', RUNPOD_ENDPOINT_ID: '', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: '',
     CROUPIER_GENERATED_SPEECH: '', CROUPIER_GENERATED_SPEECH_DIR: '', CROUPIER_GENERATED_SPEECH_PREVIEW: '',
-    CROUPIER_ASTRID_CAMERA: '',
+    CROUPIER_ASTRID_CAMERA: '', CROUPIER_ASTRID_TRANSLATION_KEY: '',
     OPENCLAW_DASHBOARD_ENABLED: 'false', OPENCLAW_DASHBOARD_ORIGIN: '', OPENCLAW_HOSTPORT: '',
   };
   const speechOrigins = configuration.generatedSpeech ? GENERATED_SPEECH_ORIGINS : [];
+  const translationKey = astridCamera ? configuration.translationKey || '' : '';
   const generatedSpeechEnvironment = role => configuration.generatedSpeech ? {
     CARTESIA_API_KEY: configuration.cartesiaKey,
     RUNPOD_API_KEY: configuration.runpodKey,
@@ -320,6 +351,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         CROUPIER_STREAM_LANE: streamLane,
         CROUPIER_LISSABON_PROFILES: persistentProfiles ? '1' : '',
         CROUPIER_ASTRID_CAMERA: astridCamera ? '1' : '',
+        CROUPIER_ASTRID_TRANSLATION_KEY: translationKey,
         CROUPIER_PRESENTATION_DIRECTOR_URL: configuration.remoteUrl, CROUPIER_PRESENTATION_DIRECTOR_TOKEN: configuration.remoteToken,
         // The relay is the narrower transport and wins whenever it is present.
         // Never place the full Gateway bearer in that product child.
@@ -327,7 +359,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         OPENCLAW_AGENT: configuration.directorAgent, OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: configuration.productAgent,
         OPENCLAW_PRODUCT_SPEECH_URL: configuration.speechUrl, OPENCLAW_PRODUCT_SPEECH_TOKEN: configuration.speechToken,
         OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs), LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
-      }, [productOrigin, speechOrigin, directorOrigin, ...speechOrigins], ports),
+      }, [productOrigin, speechOrigin, directorOrigin, ...speechOrigins, ...(translationKey ? [TRANSLATION_ORIGIN] : [])], ports),
     },
     lab: {
       command: process.execPath,
@@ -433,7 +465,7 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
   })();
   try {
     await unusedPort(productPort); await unusedPort(labPort);
-    const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech });
+    const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech, astridCamera });
     requireGeneratedSpeechConfiguration(configuration);
     if (!report.labDirector.configured) throw new Error('LAB_REMOTE_URL and LAB_REMOTE_TOKEN are required for the connected Next Eventstudio.');
     if (report.productSpeechRelay.urlPresent !== report.productSpeechRelay.credentialPresent) {

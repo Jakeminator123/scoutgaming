@@ -662,7 +662,8 @@ const CHAT_DEALERS = Object.freeze({ vera: 'dealer', astrid: 'dealers/astrid', a
 const CHAT_REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const astridCameraEnabled = process.env.CROUPIER_ASTRID_CAMERA === '1'
   && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane';
-const astridTranscription = createAstridTranscriptionApi({ apiKey: process.env.CARTESIA_API_KEY });
+const astridTranscription = createAstridTranscriptionApi({ apiKey: process.env.CROUPIER_ASTRID_TRANSLATION_KEY });
+const astridVisionModels = new Set(['gpt-6-luna', 'gpt-5.6-terra']);
 
 function chatSpeechPolicy(dealerId) {
   // The local Astrid renderer cannot verify legacy bank lines against its
@@ -828,9 +829,10 @@ createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
       res.end(JSON.stringify({ enabled, profileRevision, model: config.policy.model,
         reason: !enabled ? 'feature_disabled' : !astridTranscription.configured ? 'transcription_unavailable' : null,
-        vision: { enabled: enabled && config.policy.model === 'gpt-6-luna',
-          reason: !enabled ? 'feature_disabled' : config.policy.model !== 'gpt-6-luna' ? 'model_not_verified' : null },
-        transcription: { enabled: enabled && astridTranscription.configured, provider: 'cartesia', model: 'ink-whisper' } }));
+        vision: { enabled: enabled && astridVisionModels.has(config.policy.model),
+          reason: !enabled ? 'feature_disabled' : !astridVisionModels.has(config.policy.model) ? 'model_not_verified' : null },
+        transcription: { enabled: enabled && astridTranscription.configured, provider: 'openai', model: 'whisper-1',
+          outputLanguage: 'en', acceptsAutoLanguage: true } }));
     } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"enabled":false}'); }
     return;
   }
@@ -1057,7 +1059,7 @@ createServer(async (req, res) => {
             || new URL(req.headers.origin).host !== req.headers.host || req.headers['sec-fetch-site'] === 'cross-site') {
             throw Object.assign(new Error('observation_same_origin_required'), { statusCode: 403 });
           }
-          if (probeConfig.policy.model !== 'gpt-6-luna') throw Object.assign(new Error('observation_model_not_verified'), { statusCode: 409 });
+          if (!astridVisionModels.has(probeConfig.policy.model)) throw Object.assign(new Error('observation_model_not_verified'), { statusCode: 409 });
           observation = normalizeAstridObservation(incoming.observation, incoming.requestId, dealerId,
             createHash('sha256').update(owner).digest('hex'));
         }
