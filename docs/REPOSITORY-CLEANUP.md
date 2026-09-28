@@ -1,5 +1,38 @@
 # Repostädning inför GitHub-arbetet
 
+## Uppföljning: uttryckligen godkänd radering 28 september
+
+Jakob godkände att hela `.croupier-inbox/` raderades, även privata utkast,
+QA-underlag och checkpoints. 153 filer, 14 380 284 byte, togs bort permanent.
+Mappen var Git-ignorerad: dessa filer återställs INTE med `Jakobs-v1`.
+Ingen kopia av innehållet har lagts i Git eller flyttats till ett nytt arkiv.
+Chef-registret var inaktivt före radering; pausad inboxkontroll behöver inte
+mappen och ska inte återskapa den automatiskt.
+
+Ytterligare borttaget lokalt, återskapningsbart eller pensionerat material:
+
+- `lab/.next-probe/`: 280 genererade filer, 160 079 054 byte.
+- `lab/tsconfig.probe.json`: genererad testkonfiguration, 762 byte.
+- `lab/tsconfig.tsbuildinfo`: TypeScript-cache, 226 199 byte.
+- `.cursor/ping-croupier-seen.json`: pensionerad läsmarkering, 91 byte.
+
+Totalt cirka 166,6 MiB ignorerade lokalfiler. Node-processkontrollen visade
+ingen aktiv Next-server eller Next-build före radering. `lab/.next` och
+`lab/node_modules` lämnas kvar för de pågående agenternas bygg- och
+regressionskontroller. Spardata, miljöfiler, credentials och aktiv media
+är orörda. Det privata personarkivet har inte inventerats.
+
+39 spårade filer har också tagits bort: den gamla GitLab-MR-mallen,
+`docs/PROJECT-PROMPT.md`, de 12 filerna i
+`docs/animation-events/archive/v2-long-term-goal-best-rng/` och de 25 filerna
+i `open-claw/archive/`. De saknade kod-/test-/byggberoenden och finns kvar
+i `Jakobs-v1`. Aktiva dokumentationslänkar pekar nu på checkpointens GitHub-
+kopior; historiska handoffposter är oförändrade. Inga aktiva spel-, kamera-
+eller probe-instruktioner har tagits bort.
+
+Avsnitten nedan beskriver den tidigare, försiktigare inventeringen; denna
+uttryckliga radering ersätter deras beslut att bevara inbox och gamla arkiv.
+
 Inventering och avgränsad städning den 28 september 2026. Aktuella ingångar
 är [Lissabon](../lissabon/README.md), [guiden](../lab/docs/README.md),
 [presentationsplanen](animation-events/README.md) och

@@ -13,9 +13,8 @@ Läs i denna ordning:
 4. Senaste relevanta del av `docs/JOHN-HANDOFF.md` och
    `docs/ENVIRONMENT-RESTORATION.md` för verifierad runtime och mediahistorik.
 
-V2 finns oförändrad i
-`docs/animation-events/archive/v2-long-term-goal-best-rng/`. Använd den som
-historik, inte som aktiv arkitektur.
+V2 finns bevarad i [Jakobs-v1](https://github.com/Jakeminator123/github-work/tree/Jakobs-v1/docs/animation-events/archive/v2-long-term-goal-best-rng),
+inte längre i arbetskopian. Den är historik, inte aktiv arkitektur.
 
 ## Roller och källor
 

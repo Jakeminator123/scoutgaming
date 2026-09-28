@@ -47,9 +47,11 @@ read `open-claw/lab/docs/README.md`. It routes to the official-source and
 deployed-version index. Fetch external documentation only when the current
 question needs it, not on every turn or runtime event.
 
-The GitLab inbox is paused. Existing local identities, read cursors, drafts
-and checkpoints are preserved for a possible later reconnection. No ordinary
-turn-start inbox check is required in the GitHub workflow.
+The GitLab inbox is paused. Jakob explicitly requested deletion of the entire
+local `.croupier-inbox/` on 2026-09-28, including identities, read cursors,
+drafts and checkpoints. Do not restore these or initialize the old inbox
+automatically. No ordinary turn-start inbox check is required in the GitHub
+workflow. Explicit future chef activation may create fresh local role state.
 
 `.croupier-inbox/` is ignored local inbox state, not a media archive or general
 scratch area. New files there should be only small identities, read cursors,
