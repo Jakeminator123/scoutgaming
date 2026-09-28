@@ -1,3 +1,20 @@
+## 2026-09-28 09:11 — Ren lokal omstart på Jakobs begäran
+
+Gamla Croupier-flikar och de identifierade servrarna på 4200/4201 samt
+QA-servrarna på 4210/4211 stängdes. QA-data lämnades på disk; inga profiler,
+minnen eller sparade medieval raderades. `node lissabon/start.mjs --no-open`
+byggde senaste `de07f83` med godkänd nätåtkomst och startade bara 4200/4201.
+Next/TypeScript passerade, båda sidorna svarade och labbets health visade
+`lissabon-stream-lane`. Lissabon → Anslut öppnade en länkad Astrid-flik med
+`presentation=local`; två nya flikar lämnades öppna i Codex. Profilväljaren
+visar den bevarade Jakob-profilen och väntar på användarens val.
+
+Loggens 5 SEK/timme gäller den privata kompanjonens webbsökhjälp, högst tio
+försök à 0,50 SEK reserverad kostnad per rullande timme. Det är ingen total
+budget för produktchatt/Probe/röst/GPU. Jakob frågade om 15 SEK vore bättre;
+gränsen lämnades på 5 eftersom höjningen bara ger fler sökförsök. Loggens
+`shutdown budget` avser avstängningstid i millisekunder, inte pengar.
+
 ## 2026-09-28 — Probe i drift och rätt Lissabon-presentation
 
 Gateway/Director är live på `70ef43f`; de gamla driftblockerarna nedan är
