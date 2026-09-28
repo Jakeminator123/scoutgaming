@@ -402,8 +402,16 @@ export async function main(argv = process.argv.slice(2), { root = ROOT, env = pr
       await saveJson(file, state); console.log(JSON.stringify({ status: 'send_unblocked', messageId: args.version })); return;
     }
     if (!['check', 'send'].includes(command)) throw new Error(`Unknown command: ${command}`);
-    const token = env.GITLAB_TOKEN || (env.GITLAB_TOKEN_FILE
-      ? (await readFile(env.GITLAB_TOKEN_FILE, 'utf8')).trim() : null);
+    let token = env.GITLAB_TOKEN;
+    if (!token && env.GITLAB_TOKEN_FILE) {
+      try { token = (await readFile(env.GITLAB_TOKEN_FILE, 'utf8')).trim(); }
+      catch (error) {
+        if (!['EACCES', 'EPERM'].includes(error.code)) throw error;
+        console.log(JSON.stringify({ ...pendingResult(state, 'credential_unreadable'),
+          reason: 'The configured token file is blocked by local file permissions. Grant access to this file and retry; do not create a new GitLab token.' }));
+        process.exitCode = 2; return;
+      }
+    }
     if (!token) {
       console.log(JSON.stringify({ ...pendingResult(state, 'transport_unavailable'),
         reason: 'Configure GITLAB_TOKEN_FILE locally. No fresh check; browser fallback only for explicit inbox work or a blocked task.' }));
