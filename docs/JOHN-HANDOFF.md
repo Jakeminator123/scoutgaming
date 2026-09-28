@@ -44,6 +44,33 @@ Kamerafunktionen är separat ocommittad WIP och Av. Inga enhetsbehörigheter
 eller kamerabilder användes här. Director är fri för kameraagentens senare,
 separat godkända deploy. Jira CAC saknas fortfarande i verktygsanslutningen.
 
+## 2026-09-28 — Kamera och tal: lokal implementation, driftprov återstår
+
+Astrids Lissabon-spelare har valfri kamera/mikrofon med VAD, högst två små
+JPEG-bilder, redigerbar transkription och explicit granskning före sändning.
+Samma ljudspår driver Web Speech och nivåmätaren. Probe väntar under
+upptagning/granskning. Tillstånd, tracks och sena callbacks hanteras vid
+stopp, profilbyte, bakgrund, navigation och fel. Modellval/minne och den
+gemensamma uppspelningsvägen är bevarade; serverns spelstatus är auktoritativ.
+
+Alla 26 pre-commit-kommandon och fyradealerasset-audit med --probe passerade.
+Syntetiskt browserprov gav 0/1/2 JPEG efter rätt talfall, stoppade tracks och
+ingen sändning före granskning. Riktig Chrome 154 transkriberade en syntetisk
+Astrid-testreplik; Codex-browserns taligenkänning gav nätverksfel. Mobilvyn
+390×844 granskades och Av/På-text samt panelens överlapp rättades.
+
+Gatewayns faktiska version är 2026.9.5, med beständig SQLite-samtalslagring.
+Luna är ännu text-only i driftmetadata. Kamerakedjan är inte driftsatt och
+verklig kamera har inte använts. Featureflaggan är Av. Slutligt deploy-
+godkännande, syntetiskt bildprov genom livekedjan, bildlagringskontroll och
+full fyradealerrehearsal återstår. Jira CAC saknas i anslutna verktyg.
+Detaljer, källor och nästa steg finns i
+[implementationsrapporten](animation-events/ASTRID-CAMERA-IMPLEMENTATION.md).
+
+Ingen ny devserver startades i detta fortsättningsarbete. Egen 4212 var redan
+stoppad; NY1 stoppade senare även 4200/4201 och 4210/4211. Kameraagenten
+respekterar samordningsstoppet och lämnar deras bevarade QA-data orörda.
+
 ## 2026-09-28 — Chattminne och blinkning: färdig kod, drift/visuell QA återstår
 
 Jakob bad uttryckligen om parallella underagenter och godkände meddelanden

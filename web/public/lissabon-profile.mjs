@@ -1,4 +1,4 @@
-export async function installLissabonProfileUi({ canSwitch }) {
+export async function installLissabonProfileUi({ canSwitch, beforeSwitch = () => {} }) {
   const session = await fetch('/api/auth/session', { cache: 'no-store' }).then(r => r.json());
   if (!session.localDemoProfiles) return;
   document.documentElement.dataset.streamLane = 'lissabon-stream-lane';
@@ -37,6 +37,7 @@ export async function installLissabonProfileUi({ canSwitch }) {
   async function change(value) {
     if (submitting) return;
     if (!canSwitch()) { error.textContent = 'Avsluta handen och vänta tills Astrid svarat innan du byter profil.'; return; }
+    beforeSwitch();
     submitting = true; error.textContent = '';
     dialog.querySelectorAll('button').forEach(button => { button.disabled = true; });
     try {

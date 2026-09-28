@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="sv"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Astrid kamera · syntetisk QA</title><link rel="stylesheet" href="/styles.css">
+<style>body{margin:0;padding:24px;background:#101618;color:#eee;font:16px system-ui;overflow:auto}main{max-width:760px}button{padding:10px;margin:8px}pre{white-space:pre-wrap}#fixture{min-height:80px}.astrid-camera-panel{position:relative;top:auto;right:auto;margin-top:12px}#astrid-camera{width:min(380px,90vw)}#astrid-camera summary{display:inline-block}h1{font-size:24px}</style>
+<main><h1>Astrid kamera · syntetisk QA</h1>
+<p>Ingen riktig kamera, mikrofon, spelprofil, databas eller modell används i komponentprovet. Befintlig server levererar samma kontroll som spelet.</p>
+<button id="run">Kör syntetiska kamerafall</button>
+<button id="voice">Verifiera browsertranskription med testljud</button>
+<p id="capability"></p><pre id="results" role="status">Redo</pre><div id="fixture"></div>
+</main>
+<script type="module">
+import {createAstridCameraControl} from '/astrid-camera-control.mjs';
+const results=document.querySelector('#results'), fixture=document.querySelector('#fixture');
+const write=s=>{results.textContent+='\n'+s;};
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+const until=async check=>{for(let n=0;n<120;n++){if(check())return;await pause(100);}throw new Error('timeout');};
+const assert=(ok,message)=>{if(!ok)throw new Error(message);};
+const NativeRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+document.querySelector('#capability').textContent=`SpeechRecognition: ${Boolean(NativeRecognition)} · ${navigator.userAgent}`;
+let lastControl;
+document.querySelector('#run').onclick=async event=>{
+ event.target.disabled=true;results.textContent='Kör…';
+ try{
+  for(const [name,speech,expected] of [['tystnad',0,0],['kort tal',900,1],['långt tal',3800,2],['tal med kort paus',3800,2]]){
+   lastControl?.stop();fixture.replaceChildren();
+   let tracks=[],recognition,sourceAudio,drawTimer,permissionCalls=0,sent=0;
+   const mediaDevices={getUserMedia:async()=>{
+    permissionCalls++;const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;
+    const ctx=canvas.getContext('2d');let frame=0;
+    const draw=()=>{ctx.fillStyle=frame++%2?'#1266af':'#21aa65';ctx.fillRect(0,0,640,480);ctx.fillStyle='white';ctx.font='40px sans-serif';ctx.fillText('SYNTHETIC QA',120,240);};draw();drawTimer=setInterval(draw,100);
+    const video=canvas.captureStream(12);sourceAudio=new AudioContext();const destination=sourceAudio.createMediaStreamDestination();
+    const stream=new MediaStream([...video.getVideoTracks(),...destination.stream.getAudioTracks()]);tracks=stream.getTracks();return stream;
+   }};
+   class Recognition{constructor(){recognition=this;this.timers=[];}start(){
+    if(!speech)return;
+    this.timers.push(setTimeout(()=>this.onspeechstart?.(),100));
+    const item=[{transcript:'Synthetic camera test'}];item.isFinal=true;
+    this.timers.push(setTimeout(()=>this.onresult?.({results:[item]}),400));
+    if(name.includes('paus')){this.timers.push(setTimeout(()=>this.onspeechend?.(),1500));this.timers.push(setTimeout(()=>this.onspeechstart?.(),1800));}
+    this.timers.push(setTimeout(()=>this.onspeechend?.(),speech+100));
+   }abort(){this.timers.forEach(clearTimeout);}}
+   const control=createAstridCameraControl({container:fixture,identity:()=>({playerId:'synthetic',dealerId:'astrid',sessionRevision:'qa',roundRevision:'0'}),mediaDevices,Recognition,AudioContextClass:AudioContext,
+    fetchImpl:async()=>({ok:true,json:async()=>({enabled:true,profileRevision:'a'.repeat(64)})}),
+    send:async({message,images})=>{assert(message==='Synthetic camera test','wrong transcript');assert(images.length===expected,'send count');sent++;return true;}});
+   lastControl=control;await pause(0);
+   assert(permissionCalls===0,'off requested devices');fixture.querySelector('details').open=true;await pause(0);
+   [...fixture.querySelectorAll('button')].find(b=>b.textContent==='Starta kamera och mikrofon').click();
+   await until(()=>recognition);
+   if(!speech){await pause(600);[...fixture.querySelectorAll('button')].find(b=>b.textContent==='Stoppa').click();}
+   await until(()=>!fixture.querySelector('.astrid-camera-review').hidden);
+   const images=[...fixture.querySelectorAll('.astrid-camera-pictures img')];
+   assert(images.length===expected,`${name}: expected ${expected}, got ${images.length}`);
+   for(const img of images){await img.decode();assert(Math.max(img.naturalWidth,img.naturalHeight)<=384,'dimensions');assert(atob(img.src.split(',')[1]).length<=65536,'bytes');}
+   assert(tracks.length===2&&tracks.every(t=>t.readyState==='ended'),'tracks still live');assert(sent===0,'sent before review');
+   if(expected){[...fixture.querySelectorAll('button')].find(b=>b.textContent==='Skicka till Astrid').click();await until(()=>sent===1);}
+   clearInterval(drawTimer);await sourceAudio?.close();
+   write(`PASS ${name}: ${images.length} JPEG, tracks stoppade, explicit granskning.`);
+  }
+  write('PASS komponentprov klart. Ingen riktig enhet användes.');
+ }catch(error){lastControl?.stop();write('FAIL '+error.message);}finally{event.target.disabled=false;}
+};
+document.querySelector('#voice').onclick=async event=>{
+ event.target.disabled=true;
+ let context,recognition,stream,timer;
+ try{
+  if(!NativeRecognition)throw new Error('SpeechRecognition saknas');
+  // Current Chromium supports start(audioTrack); reject older engines before calling.
+  const major=Number(navigator.userAgent.match(/(?:Chrome|Chromium)\/(\d+)/)?.[1]??0);
+  if(major<135)throw new Error('Det syntetiska ljudspårprovet kräver Chromium 135+');
+  context=new AudioContext();await context.resume();
+  const bytes=await fetch('/dealers/astrid/audio/en/greeting.mp3').then(r=>r.arrayBuffer());
+  const buffer=await context.decodeAudioData(bytes);const source=context.createBufferSource();source.buffer=buffer;
+  const destination=context.createMediaStreamDestination();source.connect(destination);stream=destination.stream;
+  recognition=new NativeRecognition();recognition.lang='en-US';recognition.continuous=false;
+  let said='',vad=0;
+  const finished=new Promise((resolve,reject)=>{
+   recognition.onspeechstart=()=>vad++;
+   recognition.onresult=e=>{said=e.results[0][0].transcript;};
+   recognition.onerror=e=>reject(new Error(e.error));
+   recognition.onend=()=>said?resolve():reject(new Error('ingen transkription'));
+   timer=setTimeout(()=>reject(new Error('transkriptions-timeout')),20000);
+  });
+  recognition.start(stream.getAudioTracks()[0]);source.start();
+  await finished;assert(/Astrid|dark hall|seat|ready/i.test(said),'oväntad transkription');
+  write(`PASS verklig browsertranskription, syntetiskt ljudspår: ${said} · VAD=${vad}`);
+ }catch(error){write('TRANSKRIPTION: '+error.message);}finally{clearTimeout(timer);recognition?.abort();stream?.getTracks().forEach(t=>t.stop());await context?.close();event.target.disabled=false;}
+};
+</script></html>

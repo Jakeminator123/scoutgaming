@@ -1,6 +1,9 @@
 # Astrid: valbar kamera och mikrofon
 
-28 september 2026. Status: undersökt förslag, ingen aktiverad inspelning.
+28 september 2026. Detta dokument är designunderlaget. Lokal implementation,
+utförda tester och kvarvarande driftprov finns i
+[implementationsrapporten](../../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md).
+Ingen verklig kamera har aktiverats. Beskrivningen nedan visar utgångsläget.
 Utgångspunkt är Lissabon och `presentation=local`, enbart Astrid.
 
 ## Verifierad integrationsgräns
