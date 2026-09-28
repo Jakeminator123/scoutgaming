@@ -88,7 +88,7 @@ upptagning/granskning. Tillstånd, tracks och sena callbacks hanteras vid
 stopp, profilbyte, bakgrund, navigation och fel. Modellval/minne och den
 gemensamma uppspelningsvägen är bevarade; serverns spelstatus är auktoritativ.
 
-Alla 26 pre-commit-kommandon och fyradealerasset-audit med --probe passerade.
+Alla 27 pre-commit-kommandon och fyradealerasset-audit med --probe passerade.
 Syntetiskt browserprov gav 0/1/2 JPEG efter rätt talfall, stoppade tracks och
 ingen sändning före granskning. Riktig Chrome 154 transkriberade en syntetisk
 Astrid-testreplik; Codex-browserns taligenkänning gav nätverksfel. Mobilvyn
@@ -101,6 +101,13 @@ godkännande, syntetiskt bildprov genom livekedjan, bildlagringskontroll och
 full fyradealerrehearsal återstår. Jira CAC saknas i anslutna verktyg.
 Detaljer, källor och nästa steg finns i
 [implementationsrapporten](animation-events/ASTRID-CAMERA-IMPLEMENTATION.md).
+
+Grundimplementationen `d02758a` är pushad till båda work-mirrorerna. Efter
+serverspärren `52bd7c8` kopplades även `astridCamera: true`/`--astrid-camera`
+genom den samordnade launchern, enbart till produktprocessen och Av som
+standard. 37/37 riktade kamera-/launchertester passerade efter kopplingen.
+Ingen start eller deploy gjordes. Mina testflikar och den tillfälliga publika
+QA-fixturkopian är stängda/borttagna.
 
 Ingen ny devserver startades i detta fortsättningsarbete. Egen 4212 var redan
 stoppad; NY1 stoppade senare även 4200/4201 och 4210/4211. Kameraagenten

@@ -46,6 +46,12 @@ Ingen andra spelare, minnesmotor, råljudsendpoint eller ny verktygsbehörighet.
   Gatewayns separata `CROUPIER_SPEECH_VISION=1` lägger till bildmetadata för
   Luna utan att ändra agenternas primärmodell, fallbacks eller verktygsgräns.
 
+Den samordnade launchern har `astridCamera: true` som uttryckligt opt-in,
+och `lissabon/start.mjs` erbjuder `--astrid-camera`. Flaggan går endast till
+Lissabons produktprocess och använder samma sessionsspärr som övriga starter.
+Ärvda miljövariabler aktiverar inte kameran; labbprocessen får ingen kameraflagga.
+En redan körande session ändras inte av ett nytt startkommando.
+
 Kod: [kamerakontroll](../../web/public/astrid-camera-control.mjs),
 [VAD/bildsession](../../web/public/astrid-camera-session.mjs),
 [gemensamt bildkontrakt](../../open-claw/lab/src/astrid-observation.mjs),
@@ -85,10 +91,10 @@ anger bildinput. Det bevisar inte att den ännu odriftsatta Croupier-kedjan fung
 
 | Kontroll | Resultat |
 | --- | --- |
-| Samtliga 26 kommandon i `.githooks/pre-commit` | Godkända efter slutlig kodändring |
+| Samtliga 27 kommandon i `.githooks/pre-commit`, inklusive nya serverspärren | Godkända; därefter 37/37 riktade kamera-/launchertester efter flaggkopplingen |
 | `audit-dealer-sync.mjs --probe` | Alla fyra dealers matchar assetbaseline |
 | Gatewaykonfiguration + Director | 25/25 godkända; inkluderar bilddelar, modellval och deduplicering |
-| Kamera/VAD/livscykel | 12/12 godkända; även sen behörighet, fel, profilbyte, timeout och sen preview |
+| Kamera/VAD/livscykel/startflagga | 13/13 godkända; även sen behörighet, fel, profilbyte, timeout och sen preview |
 | Browser med syntetisk canvas/video + injicerad VAD | Tystnad 0 JPEG; kort tal 1; långt tal 2; kort paus 2; samtliga tracks avslutade; sändning först efter granskning |
 | Riktig Chrome 154-transkription från befintlig Astrid-testreplik via ljudspår | Godkänd: “welcome to the dark Hall”, VAD=1; ingen riktig mikrofon |
 | Samma transkriptionsprov i Codex in-app browser | Nätverksfel; API-närvaro är inte fungerande transkription |
@@ -113,6 +119,9 @@ av under slutkontrollen; inga ersättningsservrar startades.
    Gateway från kameracommit, med Lunas bildmetadata opt-in.
 2. Starta högst ett isolerat Lissabon-par, på annan hostname än vanliga spelet,
    med separat bevarad QA-spelardatabas. Återanvänd browserflikarna.
+   Använd `startIsolatedConnection` med `astridCamera: true`, aldrig en direkt
+   serverstart som går förbi sessionsspärren. En ny start kräver Jakobs besked
+   eftersom han uttryckligen har bett att servrarna lämnas avstängda.
 3. Prova syntetisk JPEG genom hela Web → Director → Gateway → Luna-vägen.
    Bekräfta faktisk modell och var bilddata finns i session/transkript/loggar.
 4. Slutför fyradealerrehearsal och registrera per-line-resultat. Tekniska
@@ -120,5 +129,8 @@ av under slutkontrollen; inga ersättningsservrar startades.
    standard och stoppa QA-paret när provet är klart.
 
 Jira CAC saknas bland anslutna verktyg; ingen ärendestatus har ändrats.
+Grundimplementationen är sparad som `d02758a` och verifierad på båda
+work-mirrorerna. Ingen automatisk deployment följer av pushen. Mina
+tillfälliga testflikar och den publika QA-fixturkopian är borttagna.
 Källindex för fortsatt OpenClaw-arbete:
 [OPENCLAW-DOCS.md](../../open-claw/lab/docs/OPENCLAW-DOCS.md).
