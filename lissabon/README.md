@@ -67,8 +67,12 @@ följa med till nästa vanliga fråga. Spara inställningar medan den lokala
 servern kör. Vid anslutningsfel finns utkastet kvar i fliken; försök spara
 igen innan du laddar om den.
 
-I **Idle → Korta variationer** finns sex klipp: blink, cheek, glance,
-insulted, smile och yawn. Lissabon erbjuder alla sex till OpenClaw.
+I **Idle → Korta variationer** finns 13 klipp i den förvalda policyn:
+blink, cheek, glance, insulted, smile, yawn, kaffe samt sex importerade
+1080p-varianter från `croupier_kaffe`. De sex nya är manuella prov och
+spelas inte automatiskt av den förvalda policyn. Befintliga lokalt sparade
+användningssätt och tider bevaras. Idlepolicyn rymmer högst 30 varianter.
+Endast varianter som uttryckligen får användas av OpenClaw erbjuds till modellen.
 **När passar klippet?** är en kort beskrivning (80 tecken) som skickas
 tillsammans med klippets identitet vid nästa beslut. Exempel: leende vid
 beröm/tack, gäspning när spelaren nämner trötthet, insulted enbart vid en

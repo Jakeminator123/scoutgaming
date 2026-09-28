@@ -11,7 +11,9 @@
       "standardIds": [
         "5c23fe9a-d68c-b3e5-05b3-86a215d9eeb3"
       ],
-      "variantIds": []
+      "variantIds": [
+        "1ee28b41-f9f1-0879-ff42-8ecd604540f5"
+      ]
     },
     {
       "id": "astrid/deal.player.left/box1",
@@ -22,7 +24,9 @@
       "standardIds": [
         "3f9a555f-0893-f080-6900-ec32e78e2733"
       ],
-      "variantIds": []
+      "variantIds": [
+        "9512c0af-c38e-46d3-a4d0-04428d0388db"
+      ]
     },
     {
       "id": "astrid/deal.player.centre/box2",
@@ -289,10 +293,16 @@
       ],
       "variantIds": [
         "093c2544-ca82-fc1f-3de1-e51e3b9786ea",
+        "914f8c03-7d47-a57e-3cb1-418ed46b6887",
         "f5a983d8-877e-317d-7b1c-2f4848c88488",
         "090751f3-fab4-327b-c5a2-0294f0de8bfe",
         "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
+        "3430694a-02f4-ba84-1a60-6d3afd14d802",
+        "620166c3-7ca5-909c-d39d-ce12f5a96952",
         "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
+        "0b76ac59-cbb8-657b-cf2e-675aa9db71a4",
+        "8a04914a-41a1-32f7-b5cb-586eda417aac",
+        "66153427-8ca1-0bed-c4b3-eafac66872b4",
         "c9b09866-50f7-2e05-0301-7e02499f50a2",
         "15748c18-f7b6-912a-639f-55e632db34d3"
       ]
@@ -309,6 +319,15 @@
       "sha256": "5c23fe9ad68cb3e505b386a215d9eeb3075ede7fdd3d155f429ef6fc81ba05ff"
     },
     {
+      "id": "1ee28b41-f9f1-0879-ff42-8ecd604540f5",
+      "familyId": "astrid/deal.player.left/box0",
+      "role": "variant",
+      "relativePath": "deal/deal_pos1/variant/box_1_variant.mp4",
+      "extension": "mp4",
+      "size": 599221,
+      "sha256": "1ee28b41f9f10879ff428ecd604540f537ad2c359fcf4849d7308966c7aaff53"
+    },
+    {
       "id": "3f9a555f-0893-f080-6900-ec32e78e2733",
       "familyId": "astrid/deal.player.left/box1",
       "role": "standard",
@@ -316,6 +335,15 @@
       "extension": "mp4",
       "size": 4173515,
       "sha256": "3f9a555f0893f0806900ec32e78e2733dcdc61a399d69cb0e1dfea3ac8fc64fb"
+    },
+    {
+      "id": "9512c0af-c38e-46d3-a4d0-04428d0388db",
+      "familyId": "astrid/deal.player.left/box1",
+      "role": "variant",
+      "relativePath": "deal/deal_pos2/variant/box_2_variant.mp4",
+      "extension": "mp4",
+      "size": 568868,
+      "sha256": "9512c0afc38e46d3a4d004428d0388dbe9113ba84298df8fa1634074049d8061"
     },
     {
       "id": "fcc47560-694c-0e8f-20fd-55cb1e280252",
@@ -399,6 +427,15 @@
       "sha256": "093c2544ca82fc1f3de1e51e3b9786ea778038cc1049ef028d5ff4e8365fdc11"
     },
     {
+      "id": "914f8c03-7d47-a57e-3cb1-418ed46b6887",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_andas.mp4",
+      "extension": "mp4",
+      "size": 11268525,
+      "sha256": "914f8c037d47a57e3cb1418ed46b68876243f7290e73f8041d679228c07993aa"
+    },
+    {
       "id": "f5a983d8-877e-317d-7b1c-2f4848c88488",
       "familyId": "astrid/idle.ready/ready",
       "role": "variant",
@@ -426,6 +463,24 @@
       "sha256": "4b60e48bcdf4cd776ef087af6d6b5b9e03dc54e2d0a1e6dc104490090ed31ddd"
     },
     {
+      "id": "3430694a-02f4-ba84-1a60-6d3afd14d802",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_handrorelse.mp4",
+      "extension": "mp4",
+      "size": 10548348,
+      "sha256": "3430694a02f4ba841a606d3afd14d802e109823b48b86c8081dd79af3324a128"
+    },
+    {
+      "id": "620166c3-7ca5-909c-d39d-ce12f5a96952",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_huvud_i_handerna.mp4",
+      "extension": "mp4",
+      "size": 10090857,
+      "sha256": "620166c37ca5909cd39dce12f5a96952456e50d7e3711ddc3806385dd80ef6ea"
+    },
+    {
       "id": "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
       "familyId": "astrid/idle.ready/ready",
       "role": "variant",
@@ -433,6 +488,33 @@
       "extension": "mp4",
       "size": 2665281,
       "sha256": "921ae71d11fa01ecf78ab9ef7d8d768906f930eeb6d7832e05a0bea488628beb"
+    },
+    {
+      "id": "0b76ac59-cbb8-657b-cf2e-675aa9db71a4",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_resa_sig.mp4",
+      "extension": "mp4",
+      "size": 4589527,
+      "sha256": "0b76ac59cbb8657bcf2e675aa9db71a4cac9753f134562e5b3bd3ddbc02a2ac6"
+    },
+    {
+      "id": "8a04914a-41a1-32f7-b5cb-586eda417aac",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_resa_sig_fargmatchad.mp4",
+      "extension": "mp4",
+      "size": 5715454,
+      "sha256": "8a04914a41a132f7b5cb586eda417aac97427aa866b9d7e9cfae1fc10af02b72"
+    },
+    {
+      "id": "66153427-8ca1-0bed-c4b3-eafac66872b4",
+      "familyId": "astrid/idle.ready/ready",
+      "role": "variant",
+      "relativePath": "idle/variant/idle_resa_sig_kling.mp4",
+      "extension": "mp4",
+      "size": 9567938,
+      "sha256": "661534278ca10bedc4b3eafac66872b4fb8c9b86e94323e44d0c9e060b34a015"
     },
     {
       "id": "c9b09866-50f7-2e05-0301-7e02499f50a2",

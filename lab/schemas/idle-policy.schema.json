@@ -16,7 +16,7 @@
     },
     "variants": {
       "type": "array",
-      "maxItems": 12,
+      "maxItems": 30,
       "items": { "$ref": "#/$defs/variant" }
     }
   },

@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import schema from '../schemas/idle-policy.schema.json' with { type: 'json' };
-import { createDefaultIdlePolicy, validateIdlePolicy, idleShareEstimate, createIdlePreviewPlan } from '../lib/idle-policy.mjs';
+import { createDefaultIdlePolicy, validateIdlePolicy, idleShareEstimate, createIdlePreviewPlan, MAX_IDLE_VARIANTS } from '../lib/idle-policy.mjs';
 
-test('the simple idle policy has two base loops and six one-shot variants', () => {
+test('the simple idle policy has two base loops and seven one-shot variants', () => {
   const policy = createDefaultIdlePolicy();
   assert.equal(validateIdlePolicy(policy), policy);
   assert.equal(policy.base.length, 2);
   assert.equal(policy.base.reduce((sum, item) => sum + item.weight, 0), 100);
-  assert.equal(policy.variants.length, 6);
-  assert.deepEqual(policy.variants.map(item => item.use), ['automatic', 'manual', 'manual', 'openclaw', 'manual', 'manual']);
-  assert.equal(schema.properties.variants.maxItems, 12);
+  assert.equal(policy.variants.length, 7);
+  assert.deepEqual(policy.variants.map(item => item.use), ['automatic', 'manual', 'manual', 'openclaw', 'manual', 'manual', 'manual']);
+  assert.equal(schema.properties.variants.maxItems, MAX_IDLE_VARIANTS);
 });
 
-test('idle policy roles exactly mirror the physical manifest folders', async () => {
+test('idle policy entries use the correct physical manifest folders', async () => {
   const policy = createDefaultIdlePolicy();
   const manifest = JSON.parse(await readFile(new URL('../../emil/dealklipp-v1/lab-video-manifest.json', import.meta.url), 'utf8'));
   const family = manifest.families.find(item => item.id === policy.familyId);
   assert.deepEqual(new Set(policy.base.map(item => item.videoId)), new Set(family.standardIds));
-  assert.deepEqual(new Set(policy.variants.map(item => item.videoId)), new Set(family.variantIds));
+  assert.ok(policy.variants.every(item => family.variantIds.includes(item.videoId)));
   const items = new Map(manifest.items.map(item => [item.id, item]));
   assert.ok(policy.base.every(item => items.get(item.videoId).relativePath.match(/^idle\/[^/]+\.mp4$/)));
   assert.ok(policy.variants.every(item => items.get(item.videoId).relativePath.match(/^idle\/variant\/[^/]+\.mp4$/)));
@@ -58,20 +58,20 @@ test('preview plans are deterministic, bounded and return to a base clip after a
   assert.ok(first.filter(item => item.kind === 'variant').length <= 3);
 });
 
-test('invalid weights, duplicate media and more than twelve variants are rejected', () => {
+test('invalid weights, duplicate media and more than thirty variants are rejected', () => {
   const weights = createDefaultIdlePolicy(); weights.base[0].weight = 80;
   assert.throws(() => validateIdlePolicy(weights), /summera till 100/);
   const duplicate = createDefaultIdlePolicy(); duplicate.variants[0].videoId = duplicate.base[0].videoId;
   assert.throws(() => validateIdlePolicy(duplicate), /dubblerat/);
-  const twelve = createDefaultIdlePolicy();
-  twelve.variants = Array.from({ length: 12 }, (_, index) => ({
+  const thirty = createDefaultIdlePolicy();
+  thirty.variants = Array.from({ length: MAX_IDLE_VARIANTS }, (_, index) => ({
     videoId: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
     durationMs: 3040, use: 'manual', automatic: null,
   }));
-  assert.equal(validateIdlePolicy(twelve).variants.length, 12);
-  const tooMany = structuredClone(twelve);
-  tooMany.variants.push({ videoId: '00000000-0000-4000-8000-00000000000c', durationMs: 3040, use: 'manual', automatic: null });
-  assert.throws(() => validateIdlePolicy(tooMany), /högst 12/);
+  assert.equal(validateIdlePolicy(thirty).variants.length, MAX_IDLE_VARIANTS);
+  const tooMany = structuredClone(thirty);
+  tooMany.variants.push({ videoId: '00000000-0000-4000-8000-000000000030', durationMs: 3040, use: 'manual', automatic: null });
+  assert.throws(() => validateIdlePolicy(tooMany), /högst 30/);
 });
 
 test('multi-minute previews enforce maxPerMinute in each rolling minute, not as an upfront total budget', () => {

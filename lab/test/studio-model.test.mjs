@@ -19,9 +19,9 @@ test('seed contains blackjack, four dealers, sixteen locked nodes and 64 editabl
   assert.ok(p.lines.every(line => line.variants.length === 4));
   assert.equal(p.assets.length, 64);
   assert.equal(p.idlePolicy.base.length, 2);
-  assert.equal(p.idlePolicy.variants.length, 6);
+  assert.equal(p.idlePolicy.variants.length, 7);
   assert.equal(schema.properties.events.minItems, p.events.length);
-  assert.equal(schema.$defs.idlePolicy.properties.variants.maxItems, 12);
+  assert.equal(schema.$defs.idlePolicy.properties.variants.maxItems, 30);
   assert.equal(schema.$defs.variant.properties.videoGenerationId.oneOf[0].type, 'null');
 });
 
