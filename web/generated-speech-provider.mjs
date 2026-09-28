@@ -171,7 +171,10 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
       }
       if (job.status !== 'COMPLETED' || job.output?.error) fail('generated_speech_runpod_failed');
       const video = decodeVideo(job.output, durationMs);
-      input.onProgress('media');
+      const metrics = { videoBytes: video.bytes.length };
+      if (Number.isSafeInteger(job.delayTime) && job.delayTime >= 0) metrics.runpodDelayMs = job.delayTime;
+      if (Number.isSafeInteger(job.executionTime) && job.executionTime >= 0) metrics.runpodExecutionMs = job.executionTime;
+      input.onProgress('media', metrics);
       return {
         exactText: input.text, voiceId: config.voiceId, modelId: config.modelId,
         audio: { bytes: wav, sha256: digest(wav), durationMs: Math.round(durationMs), contentType: 'audio/wav' },

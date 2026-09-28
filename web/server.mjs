@@ -947,7 +947,8 @@ createServer(async (req, res) => {
           return authoritativeChatStatus(authenticated, playerSession(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
         };
         const decision = await completeChatWithSpeech({ request, status, owner,
-          onProgress: stage => { if (stream && Object.hasOwn(CHAT_STAGES, stage)) frame({ type: 'progress', stage, elapsedMs: Math.round(performance.now() - startedAt) }); },
+          onProgress: (stage, metrics) => { if (stream && Object.hasOwn(CHAT_STAGES, stage)) frame({ type: 'progress', stage, elapsedMs: Math.round(performance.now() - startedAt), ...(metrics ? { metrics } : {}) }); },
+          onDecision: exactText => { if (stream) frame({ type: 'preview', exactText }); },
           readOwner: () => chatSessionOwner(req, authenticated),
           readStatus,
           signal: controller.signal,

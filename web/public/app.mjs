@@ -448,14 +448,17 @@ speechPoseGate = createSpeechPoseGate({
     const pending = pendingChatReplies.get(job.jobId);
     if (!pending || decision.kind === 'silence') return;
     const text = decision.exactText;
-    chatLog('vera', text);
+    if (pending.previewRow?.isConnected && pending.previewText === text) pending.previewRow.classList.remove('pending');
+    else chatLog('vera', text);
     nativeObservation.emit('chat', { role: 'assistant', text, line: decision.lineId ?? null,
       source: 'openclaw-chat', speechKind: decision.kind }, pending.correlation);
     chatHistory.push({ role: 'assistant', text });
   },
   onSpeech: async (decision, { signal, job }) => playChatDecision(decision, signal, job.jobId),
   onCancel: (job, reason) => {
-    pendingChatReplies.get(job.jobId)?.controller?.abort(reason);
+    const pending = pendingChatReplies.get(job.jobId);
+    if (pending?.previewRow?.classList.contains('pending')) pending.previewRow.remove();
+    pending?.controller?.abort(reason);
     nativeObservation.emit('chat', { role: 'assistant', state: 'cancelled', reason,
       requestId: job.jobId, source: 'openclaw-chat' });
   },
@@ -2264,7 +2267,7 @@ async function sendChat() {
   if (compactChat()) input.blur();
   const requestedAt = performance.now();
   setChatStatus('Förbereder svar…');
-  if (chatStatus) { chatStatus.dataset.stages = '[]'; delete chatStatus.dataset.playbackMs; chatStatus.title = ''; }
+  if (chatStatus) { chatStatus.dataset.stages = '[]'; delete chatStatus.dataset.playbackMs; delete chatStatus.dataset.providerMetrics; chatStatus.title = ''; }
   const waitTimer = localPresentationEnabled ? setInterval(() => { chatElapsed.textContent = ` ${Math.floor((performance.now() - requestedAt) / 1000)} s`; }, 1000) : null;
   const chatCorrelation=nativeObservation.context();
   const history = chatHistory.slice(-12).map(({ role, text }) => ({ role, text }));
@@ -2278,6 +2281,7 @@ async function sendChat() {
   const controller = new AbortController();
   pendingChatReplies.set(requestId, { correlation: chatCorrelation, message, controller, requestedAt });
   const stages = [];
+  let previewRow = null;
   try {
     if (received.record.status === 'cancelled') throw new Error(received.record.reason);
     const r = await fetch('/chat', {
@@ -2286,13 +2290,25 @@ async function sendChat() {
         sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
     });
     const decision = await readChatResponse(r, progress => {
-      stages.push({ stage: progress.stage, elapsedMs: progress.elapsedMs });
+      stages.push({ stage: progress.stage, elapsedMs: progress.elapsedMs, ...(progress.metrics ? { metrics: progress.metrics } : {}) });
       if (chatStatus) {
         chatStatus.dataset.stages = JSON.stringify(stages);
+        if (progress.metrics) chatStatus.dataset.providerMetrics = JSON.stringify(progress.metrics);
         chatStatus.title = stages.map(item => `${CHAT_STAGES[item.stage]} ${(item.elapsedMs / 1000).toFixed(1)} s`).join('\n');
+        if (chatStatus.dataset.providerMetrics) {
+          const { runpodDelayMs, runpodExecutionMs } = JSON.parse(chatStatus.dataset.providerMetrics);
+          if (runpodDelayMs !== undefined) chatStatus.title += `\nRunPod-kö ${(runpodDelayMs / 1000).toFixed(1)} s`;
+          if (runpodExecutionMs !== undefined) chatStatus.title += `\nRunPod-körning ${(runpodExecutionMs / 1000).toFixed(1)} s`;
+        }
       }
       setChatStatus(CHAT_STAGES[progress.stage]);
-      nativeObservation.emit('status', { state: 'chat-progress', requestId, stage: progress.stage, elapsedMs: progress.elapsedMs }, chatCorrelation);
+      nativeObservation.emit('status', { state: 'chat-progress', requestId, stage: progress.stage, elapsedMs: progress.elapsedMs,
+        ...(progress.metrics ? { metrics: progress.metrics } : {}) }, chatCorrelation);
+    }, exactText => {
+      previewRow = chatLog('vera', exactText, true);
+      previewRow.title = 'Svarstext klar · förbereder röst och läppsynk';
+      const pending = pendingChatReplies.get(requestId);
+      if (pending) { pending.previewRow = previewRow; pending.previewText = exactText; }
     });
     clearInterval(waitTimer);
     setChatStatus(decision.kind === 'silence' ? '' : 'Svar klart · väntar på ledigt bord');
@@ -2303,6 +2319,7 @@ async function sendChat() {
     if (receipt.status === 'cancelled') setChatStatus(chatFailureMessage(receipt.reason));
     else setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.' : '');
   } catch (error) {
+    if (previewRow?.classList.contains('pending')) previewRow.remove();
     const reason = speechPoseGate.get(requestId)?.reason || error.message || 'chat-failed';
     speechPoseGate.cancel(requestId, reason);
     setChatStatus(chatFailureMessage(reason));

@@ -10,18 +10,25 @@ function stream(frames, fragment = 7) {
   } }), { headers: { 'Content-Type': 'application/x-ndjson' } });
 }
 test('split UTF-8 progress frames precede one complete decision', async () => {
-  const decision = { kind: 'generatedText', exactText: 'Välkommen, så roligt!' }, events = [];
+  const decision = { kind: 'generatedText', exactText: 'Välkommen, så roligt!' }, events = [], previews = [];
   assert.deepEqual(await readChatResponse(stream([
     { type: 'progress', stage: 'text', elapsedMs: 0 }, { type: 'progress', stage: 'voice', elapsedMs: 2345 },
+    { type: 'preview', exactText: decision.exactText },
+    { type: 'progress', stage: 'media', elapsedMs: 4000, metrics: { runpodDelayMs: 300, runpodExecutionMs: 900, videoBytes: 1024 } },
     { type: 'result', decision },
-  ], 1), frame => events.push(frame.stage)), decision);
-  assert.deepEqual(events, ['text', 'voice']);
+  ], 1), frame => events.push(frame.stage), text => previews.push(text)), decision);
+  assert.deepEqual(events, ['text', 'voice', 'media']);
+  assert.deepEqual(previews, [decision.exactText]);
 });
 test('transport and mid-stream failures are errors, never empty successful replies', async () => {
   await assert.rejects(readChatResponse(stream([{ type: 'progress', stage: 'voice', elapsedMs: 2 }])), /incomplete_chat_response/);
   await assert.rejects(readChatResponse(stream([{ type: 'error', error: 'generated_speech_timeout' }])), /generated_speech_timeout/);
   await assert.rejects(readChatResponse(new Response('{"error":"stale_round_revision"}', { status: 409 })), /stale_round_revision/);
   await assert.rejects(readChatResponse(stream([{ type: 'progress', stage: 'private-data', elapsedMs: 0 }])), /invalid_chat_response/);
+  await assert.rejects(readChatResponse(stream([{ type: 'preview', exactText: 'Hello!' },
+    { type: 'result', decision: { kind: 'generatedText', exactText: 'Goodbye!' } }])), /invalid_chat_response/);
+  await assert.rejects(readChatResponse(stream([{ type: 'progress', stage: 'media', elapsedMs: 1,
+    metrics: { privateKey: 1 } }])), /invalid_chat_response/);
 });
 test('legacy JSON clients work and failures get distinct explanations', async () => {
   const decision = { kind: 'silence' };

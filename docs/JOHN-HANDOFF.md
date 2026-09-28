@@ -1,3 +1,43 @@
+## 2026-09-28 — Lissabon: kortare upplevd väntan och mätbar RunPod-tid
+
+Jakob bekräftade att läppsynken fungerar, men att ett kort chattsvar kan dröja.
+Ett uppmätt svar tog 58,7 s till talstart: cirka 35,6 s från RunPods
+`IN_QUEUE` till `IN_PROGRESS` och 16,9 s därifrån till färdiga medier.
+Tre senare svar tog cirka 8,1, 11,7 och 12,5 s med ungefär 0,5 s i kön.
+RunPod-endpointen `astrid-spel-lipsync` hade `workersMin: 0`,
+`workersMax: 5`, `idleTimeout: 60` s och `QUEUE_DELAY: 4`. En öppen demo
+garanterade alltså inte en varm worker.
+
+För detta tidsbegränsade lokala demoprov ändrades endpointens `workersMin`
+till 1, med övriga fält bevarade. En lokal vaktprocess återställer
+`workersMin: 0` när Lissabonservern på 4201 är nere vid två kontroller eller
+senast efter 120 minuter. Den körs i terminalsession 4371 och ska lämnas igång.
+Verifiera efteråt att återställningen verkligen skedde; min 1 ger löpande
+GPU-kostnad medan den gäller. Ändringen är en fjärrinställning, inte en
+versionshanterad produktinställning.
+
+Genererad svarstext strömmas nu som en provisorisk chattrad direkt efter
+OpenClaw-beslutet, innan röst och video är färdiga. Texten blir permanent först
+vid spelarens godkända visning; fel och avbrott tar bort den. Svaret kontrolleras
+mot den slutliga exakta texten. RunPods rapporterade kö- och körningstid samt
+videostorlek följer med `media`-steget till lokal observation och statusdata;
+kö och körning syns även i statusens tooltip. Detta ändrar inte ljud/video,
+spelarkod, befintliga talpaket eller serverägt spel.
+
+Det finns ingen redan godkänd exakt `Hello!`-tagning i Astrids aktiva bank,
+så ingen inspelad snabbväg för det svaret aktiverades. En sådan kräver exakt
+text, ljud, video, bildruteindex, kalibrering och visuell acceptans per tagning.
+Även med varm worker återstår full videorendering och nedladdning före talstart.
+
+Verifiering: 52 riktade tester, hela `.githooks/pre-commit`, Next-bygge/
+TypeScript samt `node pipeline/audit-dealer-sync.mjs --probe` passerade.
+Lissabon är igång på 4201 och spelet på 4200. Inga aktiva mediefiler eller
+spelarmappningar ändrades, så fyrdealers visuell repetitionsgranskning behövs
+först när en inspelad tagning integreras. Kända auditluckor kvarstår:
+Vera 8, Amira 2 och Mei 3 saknade taltagningar; visuell lipsynkacceptans
+återstår. Ingen ny betald end-to-end-latensmätning har gjorts efter
+kapacitetsändringen.
+
 ## 2026-09-28 — Cleanup handoff for the next agent
 
 Current shared checkout: `jakeminator123/work`. The last completed cleanup commit is `81ac615`, already mirrored to canonical GitLab and private `Jakeminator123/github-work`. The ignored `.croupier-inbox/` is now 13.7 MiB after removal of a clean historical worktree and duplicate tool downloads; its identities, read cursors, cache, QA evidence, and verification logs remain. It is already excluded by `.gitignore` and must not be used for worktrees, media, or broad searches. No further safe bulk deletion was identified.
