@@ -51,7 +51,7 @@ kort. Dolda kort skickas aldrig. Vanlig chatt får dessutom `playResults.lastRou
 med senaste insamlade rundans insats, retur och netto, separat från totalsummor
 och pågående runda. Resultatet finns kvar när nästa runda startar.
 
-### Vanlig chatt och sparade fakta — ny kod, inväntar Director-deploy
+### Vanlig chatt och sparade fakta — driftsatt och provad med Luna
 
 Vanlig Astrid-chatt kompletteras med `status.conversationMemory`: högst
 20 fakta/8 KB, valda på servern för autentiserad spelare och Astrid. Kanalen
@@ -67,6 +67,12 @@ fakta och ändrad minnespolicy invaliderar väntande svar före röst/video och
 publicering. Normala minnesutdrag börjar fortfarande efter åtta meddelanden
 och utesluter känsliga persondetaljer och påstådda spelresultat; de manuellt
 seedade fiktiva skilsmässominnena ändrar inte den extraktionsregeln.
+
+Director kör minnesfixen `e6ea969` sedan 09:54:52 Stockholm den 28 september.
+Tre syntetiska liveprov kontrollerade återkallande, aktuell rättelse och
+frånvaro av belägg. Två vanliga chatter i den återställda QA-profilen använde
+skilsmässo- och hundminnet genom hela röst-/videovägen. 4200/4201 och
+4210/4211 har startats med ny backend och bevarade respektive data.
 
 Driftsätt först uppdaterad Director, som validerar det nya valfria fältet;
 starta därefter om lokal produktserver med bevarade data. En äldre Director
@@ -120,7 +126,8 @@ val mellan none/low. Ingen jämförd modell har utsetts till vinnare.
 
 ## Drift och uppmätta prov
 
-Gateway och Director kör nu `70ef43f` med Probe och de tre modellkandidaterna.
+Gateway kör `70ef43f`; Director kör `e6ea969` med vanlig chatts minneskanal.
+Probe och de tre modellkandidaterna är fortsatt tillgängliga.
 Åtta autentiserings-/schemaprov och en full 60-fallsjämförelse passerade.
 Luna gav relevanta initiativ och var snabbare än Terra i detta lilla prov.
 Jakob valde därefter Luna som Astrids standard. Latens, begränsningar, deploy-ID och
@@ -130,7 +137,15 @@ kvarvarande uppspelningskontroll finns i
 Rätt ingång är Lissabon på 4201 och **Anslut** till
 `?dealer=astrid&presentation=local` på 4200. Porträttklippen används även på
 dator. Repetitionsläget utan `presentation=local` är den äldre vägen.
-Isolerade QA-prov körs på localhost:4210/4211 med separat projekt/databas.
+Astrids aktiva QA körs på localhost:4210/4211 med samma sparade projekt som
+vanliga Lissabon: `lissabon/data/project.json`. Labbet på
+http://localhost:4211/lissabon öppnar sin 4210-spelare med **Anslut**.
+Launcherns `playerDataDir` håller testprofilens databas separat, medan
+`browserHostname: 'localhost'` behåller dess sessionscookies och länkar på
+rätt värdnamn. API-kontroll verifierade samma revision, idlepolicy och
+klippfamiljer på 4200 och 4210. Modellvalet är GPT-6 Luna, Probe Automatiskt.
+Spara och ladda om spelet efter ändrad idlepolicy, när handen är avslutad.
+Deal/Repliker/Probe använder senaste sparade inställningar vid nästa beslut.
 
 Talprovets senaste resultat ligger kvar även när närvarostatus uppdateras.
 En vanlig idlevariation avbryter inte ett pågående förberedelsearbete.

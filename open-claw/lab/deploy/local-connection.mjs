@@ -259,19 +259,30 @@ function requireGeneratedSpeechConfiguration(configuration) {
   }
 }
 
-export function childSpecifications(configuration, runDir, { productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, studioDataDir, streamLane = '', labDistDir = '.next' } = {}) {
-  if(!/^\.[a-z0-9-]+$/.test(labDistDir))throw new Error('Invalid isolated lab build directory.');
+function validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname }) {
+  if (!/^\.[a-z0-9-]+$/.test(labDistDir)) throw new Error('Invalid isolated lab build directory.');
+  if (!['127.0.0.1', 'localhost'].includes(browserHostname)) throw new Error('browserHostname must be localhost or 127.0.0.1.');
+  if (playerDataDir !== undefined) {
+    if (streamLane !== 'lissabon-stream-lane' || !studioDataDir) throw new Error('playerDataDir requires a Lissabon stream lane with studioDataDir.');
+    if (typeof playerDataDir !== 'string' || !playerDataDir.trim()) throw new Error('playerDataDir must be a non-empty directory path.');
+  }
+}
+
+export function childSpecifications(configuration, runDir, { productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT,
+  studioDataDir, playerDataDir, streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1' } = {}) {
+  validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
   requireGeneratedSpeechConfiguration(configuration);
   for (const port of [productPort, labPort]) {
     if (RESERVED_SHARED_PORTS.has(port)) throw new Error(`Port ${port} is reserved for the shared comparison and will not be touched.`);
   }
   runDir = resolve(runDir);
-  const productUrl = `http://127.0.0.1:${productPort}`;
-  const labUrl = `http://127.0.0.1:${labPort}`;
+  const productUrl = `http://${browserHostname}:${productPort}`;
+  const labUrl = `http://${browserHostname}:${labPort}`;
   const ports = [String(productPort), String(labPort)];
   const labData = studioDataDir ? resolve(studioDataDir) : join(runDir, 'next-studio');
   const persistentProfiles = streamLane === 'lissabon-stream-lane' && Boolean(studioDataDir);
-  const productData = persistentProfiles ? join(labData, 'players') : join(runDir, 'product');
+  // QA can share the live editor's project without sharing its player memories.
+  const productData = persistentProfiles ? playerDataDir === undefined ? join(labData, 'players') : resolve(playerDataDir) : join(runDir, 'product');
   const useSpeechRelay = Boolean(configuration.speechUrl || configuration.speechToken);
   const productOrigin = !useSpeechRelay && configuration.baseUrl ? normalizedOrigin(configuration.baseUrl) : null;
   const speechOrigin = normalizedSpeechOrigin(configuration.speechUrl);
@@ -395,8 +406,9 @@ function configureSyntheticPartner(specs, repoRoot) {
 }
 
 export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env,
-  productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, studioDataDir, streamLane = '', labDistDir = '.next' } = {}) {
-  if(!/^\.[a-z0-9-]+$/.test(labDistDir))throw new Error('Invalid isolated lab build directory.');
+  productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, studioDataDir, playerDataDir,
+  streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1' } = {}) {
+  validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
   if (productPort === labPort) throw new Error('Product and Next Eventstudio need separate ports.');
   await unusedPort(productPort); await unusedPort(labPort);
   const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech });
@@ -412,7 +424,7 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
     throw new Error('Refusing a connected product start because the configured OpenClaw agent has a conflicting runtime contract.');
   }
   const runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-openclaw-connection-'));
-  const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, streamLane, labDistDir });
+  const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname });
   let product, lab, stopped = false;
   const stop = async () => {
     if (stopped) return;

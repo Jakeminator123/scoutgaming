@@ -82,6 +82,9 @@ test('child environments separate credentials, empty provider settings and use d
   t.after(() => rm(directory, { recursive: true, force: true }));
   const specs = childSpecifications(configuration, directory, { productPort: 4196, labPort: 4197 });
   assert.equal(specs.product.env.HOST, '127.0.0.1'); assert.equal(specs.lab.env.HOST, '127.0.0.1');
+  assert.deepEqual(specs.urls, { product: 'http://127.0.0.1:4196', lab: 'http://127.0.0.1:4197' });
+  assert.equal(specs.product.env.PUBLIC_URL, specs.urls.product);
+  assert.equal(specs.product.env.BO_URL, specs.urls.product);
   assert.equal(specs.product.env.CROUPIER_DATA_DIR, join(directory, 'product'));
   assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, join(directory, 'next-studio'));
   assert.equal(specs.lab.cwd, join(configuration.repoRoot, 'lab'));
@@ -97,6 +100,61 @@ test('child environments separate credentials, empty provider settings and use d
     assert.equal(spec.env.OPENCLAW_MODEL_BASE_URL, '');
     const commandLine = JSON.stringify([spec.command, ...spec.args]);
     for (const secret of ['fixture-gateway-only', 'fixture-provider-only', 'fixture-director-only']) assert.ok(!commandLine.includes(secret));
+  }
+});
+
+test('Lissabon can share its saved project while keeping QA players and browser cookies separate', () => {
+  const { configuration } = loadPrivateConnection({ envFiles: [], env: {} });
+  const studioDataDir = join(tmpdir(), 'croupier-shared-studio-fixture');
+  const playerDataDir = join(tmpdir(), 'croupier-qa-players-fixture');
+  const normal = childSpecifications(configuration, join(tmpdir(), 'croupier-normal-run-fixture'), {
+    studioDataDir, streamLane: 'lissabon-stream-lane', productPort: 4200, labPort: 4201,
+  });
+  const qa = childSpecifications(configuration, join(tmpdir(), 'croupier-qa-run-fixture'), {
+    studioDataDir, playerDataDir, streamLane: 'lissabon-stream-lane', productPort: 4210, labPort: 4211,
+    browserHostname: 'localhost', labDistDir: '.next-probe',
+  });
+  for (const specs of [normal, qa]) {
+    assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, studioDataDir);
+    assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, studioDataDir);
+    assert.equal(specs.lab.dataDir, studioDataDir);
+    assert.equal(specs.product.env.CROUPIER_LISSABON_PROFILES, '1');
+    assert.equal(specs.product.env.HOST, '127.0.0.1');
+    assert.equal(specs.lab.env.HOST, '127.0.0.1');
+    assert.equal(specs.lab.args[specs.lab.args.indexOf('--hostname') + 1], '127.0.0.1');
+    assert.equal(specs.product.env.PUBLIC_URL, specs.urls.product);
+    assert.equal(specs.product.env.BO_URL, specs.urls.product);
+  }
+  assert.equal(normal.product.dataDir, join(studioDataDir, 'players'));
+  assert.equal(normal.product.env.CROUPIER_DATA_DIR, join(studioDataDir, 'players'));
+  assert.equal(qa.product.dataDir, playerDataDir);
+  assert.equal(qa.product.env.CROUPIER_DATA_DIR, playerDataDir);
+  assert.deepEqual(normal.urls, { product: 'http://127.0.0.1:4200', lab: 'http://127.0.0.1:4201' });
+  assert.deepEqual(qa.urls, { product: 'http://localhost:4210', lab: 'http://localhost:4211' });
+  assert.equal(qa.lab.env.CROUPIER_LAB_DIST_DIR, '.next-probe');
+});
+
+test('launcher validates browser hostname and separate player storage before starting anything', async () => {
+  const { configuration } = loadPrivateConnection({ envFiles: [], env: {} });
+  const runDir = join(tmpdir(), 'croupier-layout-validation-fixture');
+  const studioDataDir = join(runDir, 'studio'), playerDataDir = join(runDir, 'players');
+  const invalid = [
+    ...['', null, '0.0.0.0', '192.168.1.2', 'http://localhost', 'localhost:4210', 'localhost.evil.invalid'].map(browserHostname => ({
+      options: { browserHostname }, error: /browserHostname must be localhost or 127\.0\.0\.1/,
+    })),
+    ...[
+      { playerDataDir },
+      { playerDataDir, studioDataDir },
+      { playerDataDir, streamLane: 'lissabon-stream-lane' },
+      { playerDataDir, studioDataDir, streamLane: 'another-lane' },
+    ].map(options => ({ options, error: /playerDataDir requires a Lissabon stream lane with studioDataDir/ })),
+    ...['', ' ', null, 123].map(playerDataDir => ({
+      options: { playerDataDir, studioDataDir, streamLane: 'lissabon-stream-lane' }, error: /non-empty directory path/,
+    })),
+  ];
+  for (const { options, error } of invalid) {
+    assert.throws(() => childSpecifications(configuration, runDir, options), error);
+    await assert.rejects(startIsolatedConnection({ ...options, envFiles: [], env: {} }), error);
   }
 });
 

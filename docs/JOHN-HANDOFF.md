@@ -1,3 +1,49 @@
+## 2026-09-28 — Chattminnet driftsatt och verifierat i Astrids spelare
+
+Director kör nu `e6ea969dcb06926e31a0efac8079fb74e86228ce`, Render-deploy
+`dep-dat1pqd9fdbs73fj0nn0`, Live **09:54:52 Stockholm**. Gateway är kvar på
+`70ef43f`; minnesfixen behövde ingen Gateway- eller miljöändring.
+Codex verktygsanslutning återkom efter appomstarten.
+
+Tre syntetiska Luna-textprov genom driftsatt Director passerade: återkalla
+sparat skilsmässominne trots kort historik, acceptera aktuell rättelse och
+avstå från påhittat minne när fakta saknas. Textsvar tog 1,5–2,2 sekunder.
+Den riktiga spelchatten på **localhost:4210** gav därefter två genererade
+svar om skilsmässan respektive hunden Bosse, med röst/video och återgång till
+idle utan konsolfel. Hundsvarets paket var klart efter 15,5 s, varav RunPod
+rapporterade 0,137 s kö och 11,016 s rendering. Detta är ingen full visuell
+läppsynkacceptans eller garanti att alla typer av blinkningar är borta.
+
+Testprofil, chattminnen och pågående hand bevarades vid återstarten.
+QA **4210/4211** och vanliga Lissabon **4200/4201** svarar HTTP 200 och har
+startats efter minnesfixen. Efter Jakobs fråga om skilda inställningar läser
+nu båda miljöerna samma **`lissabon/data/project.json`**. API-kontrollen visar
+samma revision, idlepolicy (13 varianter) och klippfamiljer. Ingen kopiering
+av policy krävs längre. Sparat modellval är GPT-6 Luna och Probe Automatiskt.
+
+`startIsolatedConnection` har valfria `playerDataDir` och `browserHostname`.
+QA använder `localhost` för både labb och spel, med en separat bevarad
+spelardatabas; inga fejkade minnen lades i vanliga Lissabon. Labbet finns på
+**http://localhost:4211/lissabon** och öppnar rätt 4210-spelare via Anslut.
+Idleändringar kräver Spara och omladdning av spelet efter avslutad hand;
+Deal/Repliker/Probe läser de senaste sparade valen vid nästa beslut.
+Åtta launchertester och tre tester för beständigt projekt/profiler passerade.
+Privat återstartspekare finns i
+ignorerade `lissabon/data/qa-recovery.json`, med separat spelar-DB och
+återstartsfil utanför Git. Den gamla QA-helperns tempstädning används inte där.
+
+Browserregression: Astrids äldre spelare körde greeting två gånger; den lokala
+Lissabon-spelaren körde goodluck två gånger och återgick till synlig idle.
+Den lokala repetitionspanelens felaktiga text om saknat matchande klipp
+finns kvar trots att rätt MP4 visas. Automatisk godkännandegranskning avvisade
+byte till andra dealers med hänvisning till Jakobs Astrid-avgränsning;
+inga omvägar gjordes. Tidigare 25 pre-commit-kommandon och fyradealerasset-
+audit är gröna, men övriga dealers har inte browsergranskats för denna fix.
+
+Kamerafunktionen är separat ocommittad WIP och Av. Inga enhetsbehörigheter
+eller kamerabilder användes här. Director är fri för kameraagentens senare,
+separat godkända deploy. Jira CAC saknas fortfarande i verktygsanslutningen.
+
 ## 2026-09-28 — Chattminne och blinkning: färdig kod, drift/visuell QA återstår
 
 Jakob bad uttryckligen om parallella underagenter och godkände meddelanden
