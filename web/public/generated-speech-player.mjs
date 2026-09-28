@@ -36,7 +36,7 @@ export async function validateGeneratedSpeechStream(value, { exactText, dealerId
 }
 
 async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal,
-  beforeStart = async () => {}, onStart = () => {}, onReceipt = () => {} } = {}) {
+  beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {} } = {}) {
   if (!mount || signal?.aborted) throw abortError();
   const controller = new AbortController();
   const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true });
@@ -59,10 +59,11 @@ async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId
     label.style.cssText = 'position:absolute;top:var(--generated-speech-label-top,8px);left:8px;padding:5px 8px;background:#101618dd;color:#eee;font:11px sans-serif;';
     surface.append(video, label); mount.append(surface);
     player = new SpeechStreamPlayer(video, { signal: controller.signal, beforePlay: beforeStart,
-      onFirstFrame: () => { if (!controller.signal.aborted) surface.style.visibility = ''; },
+      onFirstFrame: () => { if (!controller.signal.aborted) { surface.style.visibility = ''; onFirstFrame(); } },
       onStart: () => {
         started = true; onStart(exactText);
-        onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId, evidence: 'media-playing', reviewStatus: 'pending' });
+        onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId, evidence: 'media-playing', reviewStatus: 'pending',
+          timings: { ...player.timings } });
       },
     });
     await player.connect(speech.url, speech.ticket);
@@ -72,7 +73,7 @@ async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId
     clearTimeout(timer); controller.abort(); signal?.removeEventListener('abort', abort);
     player?.abort(); surface?.remove();
     onReceipt({ state: completed ? 'end' : 'interrupted', streamId: value?.id, requestId: value?.requestId,
-      evidence: 'media-lifecycle', started, reviewStatus: 'pending' });
+      evidence: 'media-lifecycle', started, reviewStatus: 'pending', timings: { ...player?.timings } });
   }
 }
 
@@ -114,10 +115,10 @@ export async function loadGeneratedSpeech(value, { exactText, dealerId, signal, 
 
 /** The caller owns the pose gate and single speech queue. This owns one exact,
  * hash-checked audio/video pair, never a substitute recorded sentence. */
-export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, onStart = () => {}, onReceipt = () => {} } = {}) {
+export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {} } = {}) {
   if (value?.kind === 'generated-speech-stream') {
     if (media) throw new Error('Stream playback cannot substitute transferred media');
-    return playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal, beforeStart, onStart, onReceipt });
+    return playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal, beforeStart, onStart, onFirstFrame, onReceipt });
   }
   if (!mount || signal?.aborted) throw abortError();
   const controller = new AbortController();

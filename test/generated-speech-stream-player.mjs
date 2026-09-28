@@ -93,20 +93,22 @@ test('stream descriptor binds exact text, dealer, request, ticket and relative a
 });
 
 test('single audible video, gates before admission and play, frame reveal, end waits for playback', async t => {
-  const env = browser(t), receipts = []; let gates = 0, settled = false;
+  const env = browser(t), receipts = []; let gates = 0, settled = false, firstFrames = 0;
   const playback = playGeneratedSpeech(descriptor(), options({ mount: env.mount,
     beforeStart: () => { if (++gates === 1) assert.equal(env.sockets.length, 0); else assert.equal(env.media[0].playCalls, 0); },
-    onReceipt: value => receipts.push(value) })).then(() => { settled = true; });
+    onFirstFrame: () => { firstFrames++; }, onReceipt: value => receipts.push(value) })).then(() => { settled = true; });
   await until(() => env.sockets.length); env.feed();
   await until(() => receipts.some(value => value.state === 'start'));
   assert.equal(gates, 2); assert.equal(env.media.length, 1); assert.equal(env.media[0].muted, false);
   assert.equal(env.sockets[0].url, 'wss://game.example/speech-stream');
   const surface = env.mount.children[0]; assert.equal(surface.style.visibility, 'hidden');
-  env.present(); assert.equal(surface.style.visibility, '');
+  env.present(); assert.equal(surface.style.visibility, ''); assert.equal(firstFrames, 1);
   env.done(); await pause(5);
   assert.equal(env.sources[0].readyState, 'ended'); assert.equal(settled, false, 'input done must not remove playing video');
   env.media[0].ended = true; env.media[0].dispatchEvent(new Event('ended')); await playback;
   assert.deepEqual(receipts.map(v => v.state), ['start', 'end']);
+  assert.ok(Number.isSafeInteger(receipts[0].timings.first_playing_ms));
+  assert.ok(Number.isSafeInteger(receipts[1].timings.first_visible_frame_ms));
   assert.ok(receipts.every(v => v.reviewStatus === 'pending' && v.streamId && !v.packageId));
   assert.equal(env.mount.children.length, 0); assert.deepEqual(env.revoked, ['blob:stream']); assert.equal(env.frames.size, 0);
 });

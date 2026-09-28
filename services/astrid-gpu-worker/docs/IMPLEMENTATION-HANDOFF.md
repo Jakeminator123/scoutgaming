@@ -1,5 +1,43 @@
 # Streaming implementation — 2026-09-28
 
+## Current Croupier handoff — 2026-09-28 follow-up
+
+The worker remains in `services/astrid-gpu-worker` on
+`jakemanator123-github-work` in `Jakeminator123/github-work`. The earlier
+standalone-clone ownership notes below are historical. This follow-up adds
+exact game-host WebSocket forwarding in the cloud gateway and passes two
+distinct stream secrets only to the Web child. The starter's independent
+`assertCloudAccessReady()` gate remains closed. The server keeps complete-text
+decisions, signed one-use admission, owner/round/memory rechecks, durable paid
+request reservation, cancellation and one-job-per-worker behavior.
+
+Timing hooks now cover text wait, TTS first PCM and end, first worker media,
+server send queue, client playing/first frame, worker analysis/inference/crop
+composition, FFmpeg overlay/encode wall time and first bytes. The handler
+reports cold-start time. GPU queue and actual billed cost require RunPod job
+metadata; no values have been measured. Worker completion reports the selected
+encoder and whether the real FFmpeg process exited successfully. There is no
+verified NVENC session yet. No private conversation, token or key is logged by
+these metrics.
+
+A manual, SHA-tagged GHCR publish workflow is prepared for the proposed
+`ghcr.io/jakemanator123/astrid-gpu-worker` package; it has **not** been run.
+The existing RunPod endpoint and Emil's GitLab repository remain untouched.
+The [cloud GPU plan](../../../docs/ASTRID-GPU-CLOUD-TEST.md) gives blank config,
+private digest pull/rollback and the fixed-phrase cold/warm two-play test.
+
+Local verification for this follow-up: cloud/WebSocket and generated-speech
+tests, 13 relay/TTS tests, nine Python worker tests with real local FFmpeg,
+Python compilation and `git diff --check` passed. The broader pre-commit/media
+audit and four-dealer visual rehearsal are recorded in the delivery handoff
+after they run. No GPU, Cartesia, GHCR publish or paid service was started.
+
+Still unverified: real public HTTPS/WebSocket/cookie routing, authenticated
+cloud startup, private GHCR pull, RunPod queue/cold/warm latency, actual
+NVENC usage, image quality, A/V lip sync and billed cost. A separate staging
+environment, exact package approval and GPU budget/stopping decision are the
+next external steps. Do not infer a 2–4 s first response from synthetic tests.
+
 ## Source and scope
 
 This separate working copy was cloned from

@@ -23,8 +23,10 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
   const local = env.CROUPIER_GENERATED_SPEECH_PREVIEW === '1' && ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(env.HOST);
   if (local) origin = `http://${env.HOST === '::1' ? '[::1]' : env.HOST}:${Number(env.PORT || 4173)}`;
   let cloud = false;
+  const cloudHost = ['0.0.0.0', '::', '[::]'].includes(env.HOST)
+    || (env.CROUPIER_CLOUD_RUNTIME === '1' && env.HOST === '127.0.0.1');
   if (env.CROUPIER_CLOUD_GENERATED_SPEECH === '1' && env.NODE_ENV === 'production' && env.DEMO_GUEST_ACCESS !== '1'
-    && ['0.0.0.0', '::', '[::]'].includes(env.HOST)) {
+    && cloudHost) {
     try {
       const url = new URL(env.PUBLIC_URL);
       cloud = url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/' && !url.port
@@ -38,6 +40,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
     apiKey: env.CARTESIA_API_KEY, voiceId: ASTRID_VOICE_PROFILE.voiceId, modelId: ASTRID_VOICE_PROFILE.modelId };
   const secret = v => typeof v === 'string' && v.length >= 32 && v.length <= 2048 && !/\s/.test(v);
   const configured = enabled && privateDirectory(configuration.directory) && secret(configuration.workerSecret) && secret(configuration.ticketSecret)
+    && configuration.workerSecret !== configuration.ticketSecret
     && typeof configuration.apiKey === 'string' && configuration.apiKey.length > 0 && !/\s/.test(configuration.apiKey);
   return { enabled, configured, configuration };
 }
@@ -60,6 +63,9 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   const source = pcmSource ?? createCartesiaSource(configuration);
   const attach = attachRelay ?? (await import('../services/astrid-gpu-worker/gateway/relay.mjs')).attachSpeechRelay;
   const records = new Map(), owners = new Map(), preparations = new Map();
+  const mark = (record, stage, ms) => {
+    try { record.input.onTiming?.(stage, ms); } catch { /* Telemetry cannot affect paid work. */ }
+  };
   let relay;
   const forget = record => {
     clearTimeout(record.deadline); clearInterval(record.monitor);
@@ -79,6 +85,14 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   };
   relay = attach(server, {
     workerSecret, allowedOrigins: [origin], maxAudioSeconds: 25, allowClientPCM: false,
+    onFirstMedia(identity) {
+      const record = records.get(identity.sessionId);
+      if (record?.streamStartedAt) mark(record, 'worker_first_media_ms', Math.round(performance.now() - record.streamStartedAt));
+    },
+    onTransport(identity, ms) {
+      const record = records.get(identity.sessionId);
+      if (record) mark(record, 'server_transport_enqueue_ms', ms);
+    },
     async authenticateClient(req) {
       const claims = authenticateTicket(req);
       if (!claims) return null;
@@ -94,6 +108,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       const record = records.get(identity.sessionId);
       if (!record || record.state !== 'prepared' || identity.userId !== digest(record.input.owner)) throw Error('Stale speech request');
       record.state = 'streaming';
+      record.streamStartedAt = performance.now();
       clearTimeout(record.deadline);
       record.deadline = setTimeout(() => cancel(record), streamLifetimeMs); record.deadline.unref?.();
       record.wireSignal = identity.signal;
@@ -110,10 +125,17 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
           fresh(record).catch(() => cancel(record)).finally(() => { record.checking = false; });
         }, freshnessIntervalMs); record.monitor.unref?.();
         const signal = AbortSignal.any([identity.signal, record.controller.signal]);
+        const ttsStartedAt = performance.now();
+        let firstAudio = true;
         for await (const pcm of source({ text: record.input.text, signal, beforeCostly: () => fresh(record) })) {
           await fresh(record);
+          if (firstAudio) {
+            firstAudio = false;
+            mark(record, 'tts_first_audio_ms', Math.round(performance.now() - ttsStartedAt));
+          }
           await record.handle.writePCM(pcm);
         }
+        mark(record, 'tts_complete_ms', Math.round(performance.now() - ttsStartedAt));
         await fresh(record); record.handle.end();
         // Keep freshness monitoring through the final encoded fragment, even
         // after the HTTP TTS response has ended. Wire terminal ack owns cleanup.

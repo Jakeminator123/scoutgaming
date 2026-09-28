@@ -1,3 +1,31 @@
+## 2026-09-28 — Gemensam checkpoint före större ändringar
+
+Jakob begärde uttryckligen commit/push av aktuellt läge. Städchatten och
+workerchatten pausade skrivningar. Snapshoten samlar rotnotisen samt pågående
+moln-WebSocket, streamingkonfiguration, tidsmätning, worker-/spelartester och
+en enbart manuell GHCR-publiceringsworkflow. Ingen deployment eller betald
+körning ingår. 40 riktade moln-/streamingtester passerade; det tidigare
+HTTP-fixturefelet är inte kvar i detta prov.
+Känd kvarstående konfigurationsfråga: föreslaget paket anger `jakemanator123`
+men repoägaren är `Jakeminator123`. Bekräfta/korrigera innan publicering.
+Privata data/hemligheter och andra worktrees ingår inte i denna Git-checkpoint.
+
+## 2026-09-28 — Rotnotis om GPU-livscykel och användarens städning
+
+`ANDRINGSLOGG-V2.md` är Jakobs begärda korta rotnotis för fortsatta ändringar.
+Den föreslår aktivitetsstyrd GPU-reservation (5 minuter), separat från konto-
+utloggning, med begränsade jobb, budgetstopp och kontroll av verklig avstängning.
+Ingen driftkonfiguration eller spelarkod ändrades. Inga nya spårade raderingar
+hittades mot `22976fc`; ignorerade/ospårade raderingar går inte att fastställa
+med Git. `astrid_motorklipp.txt` finns kvar oförändrad och är historiskt underlag,
+inte ett runtimeberoende. Ingen fil återställdes eller raderades i denna kontroll.
+Manifestkontrollen verifierade 43 objekt i 26 familjer. Andra agentens dirty
+moln-/streamingfiler bevaras; deras nya funktion verifieras inte av denna notis.
+Dokumentcommitten stoppades av pre-commit: HTTP-streamingfixturen ger
+`generated_speech_stream_not_configured` i samtidigt ändrad serverkod
+(20/21 tester passerade i gruppen). Riktat återprov gav samma fel. Ingen
+hook kringgicks och ingen kod som tillhör annan agent ändrades.
+
 ## 2026-09-28 — Samlad V2-lägesbild och testplan
 
 På Jakobs begäran sammanställdes `docs/STATUS-OCH-TESTPLAN-V2.md` från

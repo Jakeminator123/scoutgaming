@@ -8,6 +8,7 @@ export class SpeechStreamPlayer {
     onAutoplayBlocked = () => {}, maxQueueBytes = 16 * 1024 * 1024 } = {}) {
     Object.assign(this, { video, signal, beforePlay, onStart, onFirstFrame, onAutoplayBlocked, maxQueueBytes });
     this.queue = []; this.queuedBytes = 0; this.totalBytes = 0; this.listeners = [];
+    this.timings = {};
   }
 
   listen(target, name, callback, options) {
@@ -22,6 +23,7 @@ export class SpeechStreamPlayer {
     // Product sessions are admitted by their own authenticated application
     // server. Never forward a ticket to a URL supplied by model output.
     if (path !== '/speech-stream') throw new Error('invalid_speech_stream_url');
+    this.connectedAt = performance.now();
     const url = new URL(path, location.origin);
     if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) {
       throw new Error('speech_stream_requires_secure_transport');
@@ -46,6 +48,8 @@ export class SpeechStreamPlayer {
       this.video.muted = false; this.video.playsInline = true;
       this.ws = new WebSocket(url.href, ['astrid-v2', `ticket.${ticket}`]);
       this.ws.binaryType = 'arraybuffer';
+      this.listen(this.ws, 'open', () => { this.socketOpenedAt = performance.now();
+        this.timings.socket_open_ms = Math.round(this.socketOpenedAt - this.connectedAt); });
       this.listen(this.ws, 'message', event => this.message(event.data));
       this.listen(this.ws, 'error', () => this.fail(new Error('speech_stream_connection_failed')));
       this.listen(this.ws, 'close', () => {
@@ -61,6 +65,11 @@ export class SpeechStreamPlayer {
     try {
       if (typeof data !== 'string') {
         if (!(data instanceof ArrayBuffer) || !data.byteLength || !this.mime || this.receivedDone) throw new Error('speech_stream_unexpected_media');
+        if (this.timings.first_media_ms === undefined) {
+          const now = performance.now();
+          this.timings.first_media_ms = Math.round(now - this.connectedAt);
+          if (this.socketOpenedAt) this.timings.socket_to_media_ms = Math.round(now - this.socketOpenedAt);
+        }
         this.queuedBytes += data.byteLength; this.totalBytes += data.byteLength;
         if (this.queuedBytes > this.maxQueueBytes || this.totalBytes > 128 * 1024 * 1024) throw new Error('speech_stream_too_large');
         this.queue.push(data); this.pump(); return;
@@ -104,7 +113,10 @@ export class SpeechStreamPlayer {
     if (this.stopped || this.signal?.aborted) throw aborted();
     if (this.video.requestVideoFrameCallback) this.frame = this.video.requestVideoFrameCallback((_, info) => {
       this.frame = null;
-      if (!this.stopped) this.onFirstFrame(info);
+      if (!this.stopped) {
+        this.timings.first_visible_frame_ms = Math.round(performance.now() - this.connectedAt);
+        this.onFirstFrame(info);
+      }
     });
     try { await this.video.play(); }
     catch (cause) {
@@ -115,7 +127,11 @@ export class SpeechStreamPlayer {
     }
     if (this.stopped || this.signal?.aborted) throw aborted();
     this.started = true;
-    if (!this.video.requestVideoFrameCallback) this.onFirstFrame({ evidence: 'media-playing' });
+    this.timings.first_playing_ms = Math.round(performance.now() - this.connectedAt);
+    if (!this.video.requestVideoFrameCallback) {
+      this.timings.first_visible_frame_ms = this.timings.first_playing_ms;
+      this.onFirstFrame({ evidence: 'media-playing' });
+    }
     this.onStart();
     // Very short streams can already have ended when the play promise settles.
     if ((this.video.ended || this.playbackEnded) && this.receivedDone && this.inputComplete) {

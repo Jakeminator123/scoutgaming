@@ -11,7 +11,7 @@ export function attachSpeechRelay(server, {
   maxWorkers = 4, maxSessions = 4, maxAudioSeconds = 25,
   maxBufferedBytes = 8 * 1024 * 1024, sessionTimeoutMs = 120000,
   idleTimeoutMs = 15000, cancelTimeoutMs = 5000,
-  allowClientPCM = false, onSessionReady = () => {},
+  allowClientPCM = false, onSessionReady = () => {}, onFirstMedia = () => {}, onTransport = () => {},
 } = {}) {
   if (!workerSecret || workerSecret.length < 32 || !allowedOrigins?.length || typeof authenticateClient !== 'function') throw new Error('Worker secret, origin allowlist and authenticated sessions are required');
   const origins = new Set(allowedOrigins);
@@ -19,9 +19,9 @@ export function attachSpeechRelay(server, {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024, perMessageDeflate: false, handleProtocols: p => p.has('astrid-v2') ? 'astrid-v2' : false });
   const workerWss = new WebSocketServer({ noServer: true, maxPayload: 4 * 1024 * 1024, perMessageDeflate: false });
   const reject = (socket, status = 403) => { socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`); };
-  const send = (ws, data, binary = false) => {
+  const send = (ws, data, binary = false, callback) => {
     if (ws.readyState !== WebSocket.OPEN || ws.bufferedAmount + Buffer.byteLength(data) > maxBufferedBytes) return false;
-    ws.send(data, { binary }); return true;
+    ws.send(data, { binary }, callback); return true;
   };
   const json = (ws, value) => send(ws, JSON.stringify(value));
   const release = s => {
@@ -50,7 +50,15 @@ export function attachSpeechRelay(server, {
       const s = w.session;
       if (binary) {
         if (!s || !s.streaming) { ws.close(1008, 'Unexpected media'); return; }
-        if (!s.cancelled && !send(s.client, data, true)) abort(s, 'Client is too slow');
+        const first = !s.firstMedia && !s.cancelled;
+        const receivedAt = first ? performance.now() : 0;
+        if (!s.firstMedia && !s.cancelled) {
+          s.firstMedia = true;
+          try { onFirstMedia(s.identity); } catch { /* Timing must not affect delivery. */ }
+        }
+        if (!s.cancelled && !send(s.client, data, true, first ? error => {
+          if (!error) { try { onTransport(s.identity, Math.round(performance.now() - receivedAt)); } catch {} }
+        } : undefined)) abort(s, 'Client is too slow');
         return;
       }
       let m;
@@ -71,7 +79,7 @@ export function attachSpeechRelay(server, {
   });
   wss.on('connection', (client, req, identity, w) => {
     const owner = JSON.stringify([identity.userId, identity.sessionId]);
-    const s = { id: randomUUID(), owner, client, worker: w, controller: new AbortController(), bytes: 0, started: false, ended: false, streaming: false, cancelled: false, lastInput: Date.now() };
+    const s = { id: randomUUID(), owner, identity, client, worker: w, controller: new AbortController(), bytes: 0, started: false, ended: false, streaming: false, cancelled: false, lastInput: Date.now() };
     w.session = s; sessions.set(s.id, s); owners.add(owner);
     s.timer = setTimeout(() => abort(s, 'Session deadline exceeded'), sessionTimeoutMs);
     client.on('error', () => {});

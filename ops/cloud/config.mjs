@@ -55,7 +55,7 @@ function optionalPair(env, urlName, tokenName) {
 export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (env.NODE_ENV !== 'production') fail('NODE_ENV');
   for (const name of ['DEMO_GUEST_ACCESS', 'CROUPIER_GENERATED_SPEECH_PREVIEW',
-    'CROUPIER_GENERATED_SPEECH_STREAMING', 'CROUPIER_LISSABON_PROFILES']) {
+    'CROUPIER_LISSABON_PROFILES']) {
     if (env[name] === '1') fail(name);
   }
   const bootstrapUser = env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER || '';
@@ -74,6 +74,15 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || (env.CROUPIER_GENERATED_SPEECH && !['0', '1'].includes(env.CROUPIER_GENERATED_SPEECH))
     || (env.CROUPIER_CLOUD_GENERATED_SPEECH && !['0', '1'].includes(env.CROUPIER_CLOUD_GENERATED_SPEECH))) {
     fail('CROUPIER_GENERATED_SPEECH/CROUPIER_CLOUD_GENERATED_SPEECH');
+  }
+  const streaming = env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
+  if (env.CROUPIER_GENERATED_SPEECH_STREAMING && !['0', '1'].includes(env.CROUPIER_GENERATED_SPEECH_STREAMING)) fail('CROUPIER_GENERATED_SPEECH_STREAMING');
+  if (streaming && !generatedSpeech) fail('CROUPIER_GENERATED_SPEECH_STREAMING');
+  const workerSecret = env.CROUPIER_SPEECH_STREAM_WORKER_SECRET || '';
+  const ticketSecret = env.CROUPIER_SPEECH_STREAM_TICKET_SECRET || '';
+  const validSecret = value => value.length >= 32 && value.length <= 2048 && !/\s/.test(value);
+  if (streaming && (!validSecret(workerSecret) || !validSecret(ticketSecret) || workerSecret === ticketSecret)) {
+    fail('CROUPIER_SPEECH_STREAM_WORKER_SECRET/TICKET_SECRET');
   }
   const cartesiaKey = env.CARTESIA_API_KEY || '';
   const runpodKey = env.RUNPOD_API_KEY || '';
@@ -122,7 +131,8 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, publicPort, dataRoot, paths, videoArchive,
-    director, productSpeech, labRemote, timeoutMs, camera, generatedSpeech,
+    director, productSpeech, labRemote, timeoutMs, camera, generatedSpeech, streaming,
+    streamSecrets: streaming ? { workerSecret, ticketSecret } : null,
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
     translationKey: camera ? translationKey : '',
     speechProvider: generatedSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null,
@@ -185,7 +195,11 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         CROUPIER_GENERATIONS_DIR: config.paths.generations, CROUPIER_GENERATED_SPEECH_DIR: config.paths.speech,
         CROUPIER_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
         CROUPIER_CLOUD_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
-        CROUPIER_GENERATED_SPEECH_STREAMING: '',
+        CROUPIER_GENERATED_SPEECH_STREAMING: config.streaming ? '1' : '',
+        ...(config.streamSecrets ? {
+          CROUPIER_SPEECH_STREAM_WORKER_SECRET: config.streamSecrets.workerSecret,
+          CROUPIER_SPEECH_STREAM_TICKET_SECRET: config.streamSecrets.ticketSecret,
+        } : {}),
         ...(config.speechProvider ? {
           CARTESIA_API_KEY: config.speechProvider.cartesiaKey,
           RUNPOD_API_KEY: config.speechProvider.runpodKey,

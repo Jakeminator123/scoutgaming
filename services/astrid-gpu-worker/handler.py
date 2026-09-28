@@ -13,7 +13,8 @@ Jobb (input):
       prova efterbehandling lokalt
 Valfritt för lipsync: "crf" (standard 18), "preset" (standard veryfast).
 """
-import base64, json, os, subprocess, tempfile, threading, time, uuid
+import base64, ipaddress, json, os, re, subprocess, tempfile, threading, time, uuid
+from urllib.parse import urlsplit
 
 import runpod
 
@@ -22,6 +23,7 @@ CMD = ["/workspace/mt-venv/bin/python", "-u", "/workspace/workers/lipsync_worker
 
 class Engine:
     def __init__(self):
+        started = time.monotonic()
         self.lock = threading.Lock()
         # stderr in i samma rör: kraschar motorn vill vi ha tracebacken i felmeddelandet, inte bara "dog"
         self.proc = subprocess.Popen(CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -31,7 +33,7 @@ class Engine:
         while True:
             msg = self._read("motorn dog under start")
             if msg.get("ready"):
-                self.ready = msg
+                self.ready = {**msg, "cold_start_ms": round((time.monotonic() - started) * 1000)}
                 break
             if msg.get("ok") is False:
                 raise RuntimeError(msg.get("error"))
@@ -87,13 +89,34 @@ def handler(job):
     if ENGINE is None:
         return {"error": f"läppsynkmotorn startade inte: {ERROR}"}
     if op == "session":
-        if not str(inp.get("ws_url", "")).startswith(("ws://", "wss://")):
+        try:
+            target = urlsplit(inp.get("ws_url", ""))
+        except (ValueError, TypeError):
+            target = urlsplit("")
+        try:
+            local = target.hostname is not None and ipaddress.ip_address(target.hostname).is_loopback
+        except ValueError:
+            local = False
+        if (target.scheme != "wss" and not (target.scheme == "ws" and local)) or not target.hostname \
+                or target.path != "/lipsync-worker" or target.query or target.fragment or target.username or target.password:
             return {"error": "session kräver ws_url"}
-        session = {"url": inp["ws_url"], "ttl": min(900, max(1, int(inp.get("ttl", 540))))}
-        for field, target in (("ws_token", "token"), ("worker_id", "worker_id")):
-            if inp.get(field):
-                session[target] = str(inp[field])
-        res = ENGINE.run({"session": session})
+        token, worker_id = inp.get("ws_token"), inp.get("worker_id")
+        if not isinstance(token, str) or not 32 <= len(token) <= 2048 or any(c.isspace() for c in token) \
+                or not isinstance(worker_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", worker_id):
+            return {"error": "session kräver privat token och worker_id"}
+        try:
+            ttl = int(inp.get("ttl", 540))
+        except (TypeError, ValueError):
+            return {"error": "session kräver giltig ttl"}
+        session = {"url": inp["ws_url"], "ttl": min(900, max(1, ttl))}
+        session["token"] = token
+        session["worker_id"] = worker_id
+        try:
+            res = ENGINE.run({"session": session})
+        except Exception:
+            # Provider and socket exceptions may contain internal addresses.
+            # Never return or log their raw text for a credential-bearing job.
+            return {"error": "session failed"}
         return {"session": True, "reason": res.get("reason")}
     if op == "faces":
         # verktyg: råa MuseTalk-ansikten + avatarens mask/geometri för att prova efterbehandling lokalt

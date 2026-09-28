@@ -127,8 +127,54 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
     outgoing.on('close', () => upstream.destroy());
     incoming.pipe(upstream);
   });
-  server.on('upgrade', (_request, socket) => {
-    socket.end('HTTP/1.1 426 Upgrade Required\r\nConnection: close\r\n\r\n');
+  server.on('upgrade', (incoming, socket, head) => {
+    const reject = status => {
+      if (!socket.destroyed) socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+    };
+    // Only Web's two authenticated speech endpoints may cross this boundary.
+    // The relay still verifies the worker bearer token or the client's signed
+    // ticket, session cookie and current owner before any paid work begins.
+    if (!config.streaming || incoming.method !== 'GET'
+      || incoming.headers.host !== new URL(config.gameOrigin).host
+      || !['/speech-stream', '/lipsync-worker'].includes(incoming.url)
+      || incoming.headers.upgrade?.toLowerCase() !== 'websocket'
+      || (incoming.url === '/speech-stream' && incoming.headers.origin !== config.gameOrigin)
+      || (incoming.url === '/lipsync-worker' && incoming.headers.origin
+        && incoming.headers.origin !== config.gameOrigin)) {
+      reject(421); return;
+    }
+    const headers = { ...proxyHeaders(incoming.headers, incoming.headers.host),
+      connection: 'Upgrade', upgrade: 'websocket' };
+    const upstream = httpRequest({ hostname: '127.0.0.1', port: webPort,
+      method: 'GET', path: incoming.url, headers });
+    const admission = setTimeout(() => upstream.destroy(), 10000);
+    admission.unref?.();
+    upstream.on('upgrade', (response, peer, peerHead) => {
+      clearTimeout(admission);
+      if (socket.destroyed) { peer.destroy(); return; }
+      const lines = [`HTTP/${response.httpVersion} ${response.statusCode} ${response.statusMessage}`];
+      for (let i = 0; i < response.rawHeaders.length; i += 2) {
+        lines.push(`${response.rawHeaders[i]}: ${response.rawHeaders[i + 1]}`);
+      }
+      socket.write(`${lines.join('\r\n')}\r\n\r\n`);
+      if (peerHead.length) socket.write(peerHead);
+      if (head.length) peer.write(head);
+      socket.on('error', () => peer.destroy());
+      peer.on('error', () => socket.destroy());
+      socket.on('close', () => peer.destroy());
+      peer.on('close', () => socket.destroy());
+      peer.pipe(socket); socket.pipe(peer);
+    });
+    upstream.on('response', response => {
+      clearTimeout(admission);
+      // Preserve the relay's 401/403/409/503 admission decision without
+      // exposing any upstream body or credential in the gateway response.
+      reject(response.statusCode >= 400 && response.statusCode <= 599 ? response.statusCode : 502);
+      response.resume();
+    });
+    upstream.on('error', () => { clearTimeout(admission); reject(502); });
+    socket.on('close', () => upstream.destroy());
+    upstream.end();
   });
   server.on('connect', (_request, socket) => {
     socket.end('HTTP/1.1 405 Method Not Allowed\r\nConnection: close\r\n\r\n');

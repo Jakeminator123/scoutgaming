@@ -41,8 +41,10 @@ on the deployed external OpenClaw Gateway. Nonstream generated speech/video
 is also off by default; opt in with both `CROUPIER_GENERATED_SPEECH=1` and
 `CROUPIER_CLOUD_GENERATED_SPEECH=1`, plus Web-only Cartesia and RunPod
 credentials and `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. The Web child listens
-on loopback behind the guarded HTTPS gateway. WebSocket speech streaming is
-disabled until the gateway supports upgrades and a real worker passes QA.
+on loopback behind the guarded HTTPS gateway. The gateway now forwards only
+the two exact game-host WebSocket speech routes to Web's authenticated relay
+when streaming is explicitly configured. Cloud launch remains code-blocked;
+real HTTPS, cookies, provider calls and GPU playback have not passed QA.
 
 The gateway would listen on one public `PORT`: exact game and BO Host headers
 route to loopback Web, and the exact Lab Host routes to loopback Next. On the
@@ -63,11 +65,17 @@ cookie through a one-use handoff code; Lab gets a host-only HttpOnly cookie.
 BO and Lab sessions carry a monotonic CRAIG auth epoch so an old session stays
 revoked after a role or password is changed back. Public Lab handoff starts are
 rate limited and capped in persistent state.
-Local identity, route, and guard tests pass, but actual public-host routing and
-cookie behavior remain unverified. The proxy does not support WebSocket
-upgrades. Camera and paid media now have explicit opt-in configuration, but
+Local identity, route, guard and loopback WebSocket upgrade tests pass, but
+actual public-host routing, cookies and WebSocket behavior remain unverified.
+Camera and paid media have explicit opt-in configuration, but
 their provider and browser paths have not passed a staged deployment test;
 this is not yet a complete remote Astrid experience.
+
+The variable placement, blank-value example, manual GHCR image workflow and
+reproducible GPU acceptance protocol are in
+[Astrid's cloud test plan](../../docs/ASTRID-GPU-CLOUD-TEST.md). The two stream
+secrets must differ and reach only Web; RunPod receives the worker token as a
+private sessionsjobb input. No paid worker is started by this package.
 
 `node ops/cloud/start.mjs --check` performs read-only layout validation after a
 production Lab build exists. It also rejects an empty or missing CRAIG database

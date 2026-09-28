@@ -6,6 +6,8 @@
 #
 # GPU på endpointen: RTX 4090 eller L40S (sm_89). torch är cu121 — RTX 5090 (sm_120) stöds INTE.
 FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
+LABEL org.opencontainers.image.source="https://github.com/Jakeminator123/github-work" \
+      org.opencontainers.image.title="Croupier Astrid GPU worker"
 
 ENV DEBIAN_FRONTEND=noninteractive PIP_NO_CACHE_DIR=1 PYTHONUNBUFFERED=1
 RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \

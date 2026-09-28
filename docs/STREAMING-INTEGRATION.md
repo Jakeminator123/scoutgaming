@@ -4,6 +4,8 @@ Implementationen utgår från GitHub-work `0503a88` och har sammanförts med
 moln- och BO-ändringarna i `c3168ed`. Emils worker finns under
 `services/astrid-gpu-worker`; ursprung och commits står i dess `SOURCE.md`.
 Ingen GPU-image har publicerats och strömning är avstängd som standard.
+Senare molngateway-, mät- och publiceringsförberedelser samt aktuell
+konfigurationsmatris finns i [GPU-protokollet](ASTRID-GPU-CLOUD-TEST.md).
 
 ## Flöde
 
@@ -108,6 +110,11 @@ begränsad väntan på serverns faktiska frigöring och kontrollerar även felko
 produktionsspärrar eller kontroller har försvagats.
 
 ## Kvar före aktivering
+
+Molngatewayen kan nu vidarebefordra exakt två autentiserade spelvärds-
+WebSockets i ett isolerat loopbackprov. Molnstartens kodspärr kvarstår, så
+detta är ännu inte ett driftprov med riktig HTTPS eller GPU. AI-texten inväntas
+fortfarande komplett innan TTS får börja.
 
 Publicera en test-image, anslut en uttryckligen vald test-endpoint och mät
 kall/varm start, första bild, total tid, kostnad och munrörelser för samma repliker.

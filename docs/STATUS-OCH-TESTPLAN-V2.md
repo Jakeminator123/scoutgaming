@@ -4,6 +4,9 @@
 arbetet från migrations-/städchatten, molnchatten och läppsynkchatten.
 Det är en statusbild och genomförandeplan, inte ett godkännande av driftsättning.
 Senare ändringar måste verifieras för sin egen commit.
+Senare transport- och GPU-testförberedelser dokumenteras i
+[Astrids aktuella provplan](ASTRID-GPU-CLOUD-TEST.md); statusraderna nedan
+återger fortfarande kontrollen av `44feeec`.
 
 ## Kort sagt
 

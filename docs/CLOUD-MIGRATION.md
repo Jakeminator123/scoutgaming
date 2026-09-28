@@ -90,6 +90,9 @@ Startspärren i `ops/cloud/start.mjs` står kvar. Ingen container är byggd elle
 publicerad, och verklig HTTPS-inloggning, cookies, omstart och hela
 Astrid-flödet är inte verifierade. Det första driftpaketet stänger också av
 genererat tal och kamera tills en separat skyddad aktivering och prov finns.
+En senare ändring förbereder autentiserad WebSocket-vidarebefordran och
+serverstyrd strömning utan att lyfta startspärren. Se
+[Astrids GPU-provplan](ASTRID-GPU-CLOUD-TEST.md) för aktuella begränsningar.
 
 ## Ett källrepo, separata driftsenheter
 

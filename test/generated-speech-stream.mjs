@@ -27,13 +27,19 @@ async function fixture(t, options = {}) {
 }
 
 test('prepare is unpaid, exact expiry is signed, cookie owner required; ready begins source', async t => {
-  const f = await fixture(t), descriptor = await f.service.prepare(f.input());
+  const f = await fixture(t), timings = [];
+  const descriptor = await f.service.prepare({ ...f.input(), onTiming: (stage, ms) => timings.push([stage, ms]) });
   assert.equal(f.sourceCalls, 0); assert.match(descriptor.id, /^[a-f0-9]{32}$/);
   assert.equal(JSON.parse(Buffer.from(descriptor.ticket.split('.')[0], 'base64url')).exp, descriptor.expiresAt);
   const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
   assert.equal(identity.sessionId, descriptor.id);
   await f.relayOptions.onSessionReady({ ...identity, id: 'wire-id', signal: new AbortController().signal });
   assert.equal(f.sourceCalls, 1); assert.equal(f.written, 48);
+  f.relayOptions.onFirstMedia(identity);
+  f.relayOptions.onTransport(identity, 3);
+  assert.deepEqual(timings.map(([stage]) => stage), ['tts_first_audio_ms', 'tts_complete_ms',
+    'worker_first_media_ms', 'server_transport_enqueue_ms']);
+  assert.ok(timings.every(([, ms]) => Number.isSafeInteger(ms) && ms >= 0));
 });
 
 test('foreign websocket cookie and stale state never enter paid source', async t => {
@@ -94,8 +100,9 @@ test('disconnect and logout cancel exact prepared request', async t => {
 });
 
 test('opt-in preserves local/cloud guards and never enables cloud guests', () => {
-  const env = { CROUPIER_GENERATED_SPEECH_STREAMING: '1', CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', HOST: '127.0.0.1', CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'stream-fixture'), CARTESIA_API_KEY: 'fixture', CROUPIER_SPEECH_STREAM_WORKER_SECRET: secret, CROUPIER_SPEECH_STREAM_TICKET_SECRET: secret };
+  const env = { CROUPIER_GENERATED_SPEECH_STREAMING: '1', CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', HOST: '127.0.0.1', CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'stream-fixture'), CARTESIA_API_KEY: 'fixture', CROUPIER_SPEECH_STREAM_WORKER_SECRET: secret, CROUPIER_SPEECH_STREAM_TICKET_SECRET: `ticket-${secret}` };
   assert.equal(generatedSpeechStreamConfiguration(env).configured, true);
   assert.equal(generatedSpeechStreamConfiguration({ ...env, CROUPIER_GENERATED_SPEECH_STREAMING: '' }).enabled, false);
   assert.equal(generatedSpeechStreamConfiguration({ ...env, HOST: '0.0.0.0', NODE_ENV: 'production', PUBLIC_URL: 'https://example.test', CROUPIER_CLOUD_GENERATED_SPEECH: '1', DEMO_GUEST_ACCESS: '1' }).configured, false);
+  assert.equal(generatedSpeechStreamConfiguration({ ...env, CROUPIER_CLOUD_RUNTIME: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '', CROUPIER_CLOUD_GENERATED_SPEECH: '1', NODE_ENV: 'production', PUBLIC_URL: 'https://game.example.test' }).configured, true);
 });

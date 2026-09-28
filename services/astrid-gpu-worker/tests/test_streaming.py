@@ -120,6 +120,10 @@ class EncoderTests(unittest.TestCase):
             self.assertEqual([s['codec_name'] for s in streams], ['h264', 'aac'])
             self.assertEqual(streams[0]['r_frame_rate'], '24/1')
             self.assertEqual(results[0]['frames'], 66)
+            self.assertEqual(results[0]['encoder'], 'libx264')
+            self.assertTrue(results[0]['encoder_verified'])
+            self.assertIn('first_fragment', results[0]['ms'])
+            self.assertIn('overlay_encode_wall', results[0]['ms'])
             self.assertEqual(streams[0]['profile'], 'High')
             self.assertEqual(streams[0]['level'], 42)
             ends = []

@@ -118,6 +118,26 @@ test('cloud bootstrap, camera, and paid speech credentials are opt-in and Web-on
   assert.equal(inactive.web.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD, undefined);
 });
 
+test('streaming secrets and switch reach Web only after explicit paid speech opt-in', () => {
+  const env = { ...fixture(), CROUPIER_GENERATED_SPEECH: '1', CROUPIER_CLOUD_GENERATED_SPEECH: '1',
+    CROUPIER_GENERATED_SPEECH_STREAMING: '1', CARTESIA_API_KEY: 'fixture-cartesia',
+    RUNPOD_API_KEY: 'fixture-runpod', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint',
+    CROUPIER_SPEECH_STREAM_WORKER_SECRET: 'fixture-worker-secret-longer-than-32-characters',
+    CROUPIER_SPEECH_STREAM_TICKET_SECRET: 'fixture-ticket-secret-longer-than-32-characters' };
+  const config = validateCloudConfig(env);
+  const specs = childSpecifications(config, env, { labInternalSecret: LAB_SECRET });
+  assert.equal(config.streaming, true);
+  assert.equal(specs.web.env.CROUPIER_GENERATED_SPEECH_STREAMING, '1');
+  assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_WORKER_SECRET, env.CROUPIER_SPEECH_STREAM_WORKER_SECRET);
+  assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_TICKET_SECRET, env.CROUPIER_SPEECH_STREAM_TICKET_SECRET);
+  for (const name of ['CROUPIER_GENERATED_SPEECH_STREAMING', 'CROUPIER_SPEECH_STREAM_WORKER_SECRET',
+    'CROUPIER_SPEECH_STREAM_TICKET_SECRET']) assert.equal(specs.lab.env[name], undefined);
+  for (const change of [
+    { CROUPIER_GENERATED_SPEECH: '0' }, { CROUPIER_SPEECH_STREAM_WORKER_SECRET: '' },
+    { CROUPIER_SPEECH_STREAM_TICKET_SECRET: env.CROUPIER_SPEECH_STREAM_WORKER_SECRET },
+  ]) assert.throws(() => validateCloudConfig({ ...env, ...change }));
+});
+
 test('disk preflight accepts its actual directory despite Windows path casing', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-cloud-disk-'));
   try { await inspectCloudDisk(validateCloudConfig({ ...fixture(), CROUPIER_CLOUD_DATA_ROOT: directory })); }
