@@ -1,5 +1,17 @@
 # Croupier continuity and dealer regression rules
 
+## GitHub-only work — 2026-09-28
+
+Work only on `jakemanator123-github-work`, in `Jakeminator123/github-work`.
+GitLab integration is paused: no inbox fetch/send, wiki publication or mirror
+push. Deliver with `node tools/push-github-work.mjs`; never push `main` or
+force-push. `tools/repository-policy.json` and the pre-push hook enforce this
+destination. This section supersedes historical GitLab workflow instructions
+elsewhere in this checkout. `Jakobs-v1` at
+`600093e4522efc57bd82979cff65492a528ffeb7` is verified on both GitHub and GitLab.
+It preserves committed v1; local ignored profiles/settings require separate
+private backup. See `docs/GITHUB-MIGRATION.md` and `docs/CLOUD-MIGRATION.md`.
+
 ## Active documentation and private archive
 
 Use `lab/docs/README.md` for the user guide, `docs/animation-events/README.md`
@@ -35,7 +47,9 @@ read `open-claw/lab/docs/README.md`. It routes to the official-source and
 deployed-version index. Fetch external documentation only when the current
 question needs it, not on every turn or runtime event.
 
-If this checkout is branch `jakeminator123/work`: do not push `main`. At each new user turn, run `node tools/croupier-inbox.mjs check` once; initialize via `ping-croupier` if needed. If that check returns `credential_unreadable`, retry the same read-only command once with approved access to the configured token file; this is a local file permission issue, not a reason to create a GitLab token. Shared fetch cache lasts 30 seconds; read cursors stay per chat. Nothing relevant: continue silently. No polling or checks on agent/tool updates. Missing API: report once, no automatic browser fallback on ordinary turns. Only the addressed agent answers; CC/all is informational. Read `ping-croupier` for replies/setup. Wiki: https://gitlab.com/scout-gg/croupier/-/wikis/home
+The GitLab inbox is paused. Existing local identities, read cursors, drafts
+and checkpoints are preserved for a possible later reconnection. No ordinary
+turn-start inbox check is required in the GitHub workflow.
 
 `.croupier-inbox/` is ignored local inbox state, not a media archive or general
 scratch area. New files there should be only small identities, read cursors,
@@ -44,11 +58,9 @@ downloads, generated media, or test builds inside it. Existing small QA evidence
 may remain. Exclude the directory from broad file searches and indexing; use
 the inbox command or a targeted state-file read when needed.
 
-On `jakeminator123/work`, deliver each approved commit to canonical GitLab and
-the private reference copy `Jakeminator123/github-work` with
-`node tools/push-work-mirrors.mjs`; it pushes GitLab first and verifies matching
-commit IDs on both services. Do not use the retired `gitlab-work` GitHub repo,
-push `main`, or force-push. This is an agent workflow, not an unattended mirror.
+`tools/push-work-mirrors.mjs` is a compatibility entry point for GitHub-only
+delivery. It no longer contacts GitLab. The retired `gitlab-work` GitHub repo
+must not be used.
 
 Read `docs/JOHN-HANDOFF.md` and `docs/ENVIRONMENT-RESTORATION.md` before changing gameplay or media. This repository is the working product; the older checkout nested inside Scout-Gaming is not the current source.
 

@@ -1,3 +1,42 @@
+## 2026-09-28 — GitHub-only och underlag för molndrift
+
+På Jakobs begäran används nu endast `jakemanator123-github-work` i privata
+`Jakeminator123/github-work`. `origin` har bytts till GitHub. `Jakobs-v1`
+är verifierad på både GitLab och GitHub vid `600093e`, samma SHA som sista
+GitLab-work vid övergången. GitLab lämnas där som återgångspunkt. Senare
+Astrid-arbete från NY1 finns i `e3eec8f` på nya branchen och följer med pushen.
+
+GitLab-inboxens check/send stannar före credential- och nätåtkomst. Den gamla
+mirror-helpern leder till nya GitHub-helpern; pre-push spärrar annat repo,
+annan branch, borttagning och omskrivning av historik. Lokal hooksPath är
+`.githooks`. GitHub Actions ersätter GitLab-CI. Timvis GitLab/CI-uppföljning
+är pausad. Aktuella arbetsinstruktioner och dokumentingångar är uppdaterade.
+
+Fyra gamla engångsprompter och fyra helt införlivade lokala sidobrancher är
+borttagna. Historiken finns i v1-taggen. Inboxens checkpoints/QA-underlag,
+sparade data och all media bevaras. Extra inbox-publish-worktree lämnas kvar
+eftersom inaktivitet inte är bevisad. Inga devservrar har startats här.
+
+Tre underagenter granskade städning, motorn och Vercel. Lissabon använder
+befintlig servermotor och sex presentationstyper; ingen separat BO-events-
+motor saknas. `tools/cloud-readiness.mjs` verifierade närvaro av 17 källankare
+och metadata/storlek för 43 filmer. Den rapporterar åtta konkreta cloudhinder
+och aldrig ready=true. Beständig SQLite/projektlagring, skyddad studio,
+profil-/talaktivering och riktig driftsverifiering återstår.
+
+Verifiering för migrationen: 37 riktade policy-/inbox-/chef-/cloudtester
+passerade samt diffkontroll. NY1 har separat verifierat sin pre-commit och
+fyradealerasset-audit; detta är inget nytt visuellt godkännande. GitHub-CI:s
+första fjärrkörning måste kontrolleras efter push. Ingen Jira CAC-anslutning
+fanns bland tillgängliga verktyg och ingen issue har markerats klar.
+
+Vercel-deploy avvisades av automatisk godkännandegranskning med hänvisning
+till payloadexport/auktorisering och olösta cloud-/authhinder. Inget V2-projekt
+eller ny driftsättning har skapats. Befintlig Vercel-dokumentationssajt är
+orörd. Konkreta nästa steg, lagring/env och driftacceptans finns i
+`docs/CLOUD-MIGRATION.md`; leverans/återgång i `docs/GITHUB-MIGRATION.md` och
+städningen i `docs/REPOSITORY-CLEANUP.md`.
+
 ## 2026-09-28 — Pågående förenkling av Astrids röstläge efter Jakobs-v1
 
 Jakob har ändrat uppdraget: Record slår på lokal lyssning efter ”Astrid”.

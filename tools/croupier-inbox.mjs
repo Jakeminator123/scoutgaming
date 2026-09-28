@@ -339,6 +339,13 @@ export async function main(argv = process.argv.slice(2), { root = ROOT, env = pr
       'kind', 'reply-to', 'body-file', 'confirm-owner'].map(key => [key, { type: 'string' }])), fresh: { type: 'boolean' } } });
   const command = positionals[0];
   if (!command || command === 'help') { process.stdout.write(help); return; }
+  // Stop before credentials, local state or network access while GitLab is paused.
+  const policy = await readJson(path.join(root, 'tools', 'repository-policy.json'), null);
+  if (policy?.gitlabPaused && ['check', 'send'].includes(command)) {
+    console.log(JSON.stringify({ status: 'disabled', reason: 'GitLab integration is paused; use the GitHub workflow.' }));
+    if (command === 'send') process.exitCode = 2;
+    return;
+  }
   const session = args.session || env.CODEX_THREAD_ID || env.CROUPIER_AGENT_SESSION;
   if (!session) throw new Error('Missing session. Pass --session once per command in IDEs without CODEX_THREAD_ID.');
   const key = digest(session).slice(0, 16);
