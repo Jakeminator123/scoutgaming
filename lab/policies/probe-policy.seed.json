@@ -9,6 +9,6 @@
   "memoryEnabled": true,
   "memoryDays": 30,
   "maxFacts": 20,
-  "model": "gateway-default",
+  "model": "gpt-6-luna",
   "reasoning": "gateway-default"
 }

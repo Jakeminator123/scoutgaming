@@ -60,6 +60,14 @@ Web är ensam spelare. Chattsvar genereras i spelet. Manuella klipp- och
 idleförhandsvisningar är granskning, inte en andra spelström. Den äldre
 studion finns kvar under `/tree` för avancerat arbete.
 
+**Vad kommer från servern?** Web hämtar Emils MP4-filer från den lokala
+produktservern och spelar dem i browsern. Spelservern äger kort/resultat;
+Render/OpenClaw ger beslut och text, Cartesia/RunPod skapar nya talpaket.
+Render skickar alltså ingen färdigsammansatt kontinuerlig videoström.
+`presentation=local` använder råa porträttfilmer, medan länken utan denna
+parameter använder den äldre presentationen. Klippstarter, övergångar och
+saknade filmer kan därför upplevas olika trots samma samtalsbackend.
+
 Läget **OpenClaw** gör en idlevariation till ett tillåtet alternativ. Vanliga
 frågor ska normalt behålla grundloopen. `idle_insulted` är avsedd för en tydlig
 förolämpning riktad mot Astrid i det senaste meddelandet; reaktionen ska inte
@@ -94,6 +102,41 @@ som kandidater. Fler filer i mappen kräver uppdaterat manifest och en
 idlepolicy-post med uppmätt längd; en fil på disk aktiveras inte av sig själv.
 
 ## Spelarprofil och minne
+
+**Probe → Modell för Astrids chatt och Probe** väljer modellen för vanliga
+chattsvar, egna talinitiativ och minnesutdrag. GPT-6 Luna är standard för nya
+inställningar. Spara för att ändra nästa anrop; tidigare uttryckliga modellval
+i andra sparade projekt bevaras. Probe aktiveras separat med **Automatiskt**.
+**Textprov** ger bara prov via knappen. Kamera/mikrofon och bildgranskning är
+ännu ett [förslag](../open-claw/lab/docs/ASTRID-CAMERA-VOICE-PLAN.md), ingen aktiv
+produktfunktion eller inställning i OpenClaw-dashboarden.
+
+### Fiktiva minnen och automatiskt Probe-prov
+
+`node tools/probe-qa.mjs --speech --demo-memories` startar en separat,
+tillfällig miljö med profilen **Jakob · TESTMINNEN** på
+`http://localhost:4210/?dealer=astrid&presentation=local` och labb på
+`http://localhost:4211/probe`. Bygg först labbet med
+`CROUPIER_LAB_DIST_DIR=.next-probe` (PowerShell: sätt `$env:CROUPIER_LAB_DIST_DIR`
+före `npm --prefix lab run build`). Använd hostname **localhost** här så att
+profilcookies hålls skilda från den riktiga Lissabon-fliken på **127.0.0.1**.
+
+Fem minnen är uttryckligen påhittade: skilsmässa, påstådd miljonvinst, hunden
+Bosse, gitarr och en Lissabonresa. De är bara testprofilens spelaruppgifter;
+inget saldo eller serverresultat ändras. Detta är direkt testdata, inte bevis
+för att den automatiska minnesutvinningen skulle spara känsliga uppgifter.
+Modellen får välja tystnad, särskilt för skilsmässan och den obelagda vinsten.
+
+Testmiljön använder Luna, Automatiskt, 10 s inaktivitet, 30 s paus,
+100 % urval och högst 12 försök/timme. Ljud och egna talinitiativ ska vara på,
+fliken aktiv och bordet lugnt. Ett obesvarat initiativ tillåts per aktivitet:
+fokusera och lämna chattfältet för ett nytt tillfälle. Det utlöser ingen
+chattbeställning. Startprocessens Ctrl+C tar bort den tillfälliga miljön.
+Den vanliga Lissabon-miljöns profiler och inställningar påverkas inte.
+
+I den nybyggda Probe-panelens **Spelarkontext** finns även de märkta
+TEST-fallen för rena textprov och separata talprov. Kamerafunktionen har ett
+[eget agentuppdrag](../docs/animation-events/ASTRID-CAMERA-AGENT-PROMPT.md).
 
 **Byt profil** i Astrids spelflik väljer en sparad profil eller skapar en ny.
 Varje profil har ett eget server-ID. Visningsnamnet skickas till OpenClaw,
