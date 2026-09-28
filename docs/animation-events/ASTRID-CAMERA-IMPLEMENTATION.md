@@ -1,7 +1,8 @@
 # Astrid: kamera, tal och granskning
 
 28 september 2026. **Bild och ljud är Av som standard. Servertranskription är
-implementerad och leverantörsprovet godkänt; det nya IAB-flödet återstår att prova.**
+implementerad och leverantörsprovet godkänt; syntetiska Chrome-prov passerar.
+Fysisk inspelning och bildvägen genom OpenClaw återstår att prova.**
 Aktuell källa för uppdraget är [agentprompten](ASTRID-CAMERA-AGENT-PROMPT.md).
 Designunderlaget finns i [kameraplanen](../../open-claw/lab/docs/ASTRID-CAMERA-VOICE-PLAN.md).
 
@@ -162,8 +163,18 @@ anger bildinput. Det bevisar inte att den ännu odriftsatta Croupier-kedjan fung
   godkändes det avgränsade provet ovan.
 - Browser-fixturen är uppdaterad för riktig AudioWorklet och syntetisk ton,
   med ersatt STT-svar samt separat lokal inspelning av den befintliga repliken.
-  **Den nya browser-fixturen och den riktiga IAB-inspelningen är ännu inte körda.**
-  Agentens sparade webbplatsbehörighet blockerar browserkontrollen.
+  **Fixturen har nu körts i Chrome 154:** tystnad 0 JPEG, kort tal 1, långt
+  tal 2 och tal med kort paus 2. Alla fall passerade inklusive enhetsstopp
+  före simulerat transkriptionsanrop och manuell granskning. Den befintliga
+  repliken gav 71 468 WAV-byte och 18 aktivitetsprov via riktig AudioWorklet.
+  Den riktiga mikrofonen och IAB-inspelningen är ännu inte provade.
+- Ett vanligt chattprov genom den omstartade produkten skapade och spelade
+  röst/läppsynkvideo utan rapporterat browserfel, 16 124 ms till talstart
+  (RunPod-kö 132 ms, rendering 10 877 ms). Mänsklig läppsynkacceptans återstår.
+- Den sparade modellen var Terra vid browserprovet. Den fungerar för vanlig
+  textchatt, men nuvarande bild/ljudkoppling tillåter endast Luna. Jakob har
+  fått instruktionen att välja Luna i Lissabon → Probe. Browserverktyget
+  når nu produkten 4210 men nekas fortfarande labbet 4211 av sparad behörighet.
 - Bild → Render → Gateway → Luna och bildlagringen återstår att verifiera
   separat med syntetisk bild. Ett godkänt STT-prov bevisar inte den bildvägen.
 
