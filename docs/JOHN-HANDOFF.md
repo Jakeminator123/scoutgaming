@@ -1,3 +1,30 @@
+## 2026-09-28 — Labbets felsida: kontrollerad start och bättre återhämtning
+
+Jakob visade `Labbet kunde inte läsas` på 127.0.0.1:4188. Det exakta felet
+är ännu inte återproducerat. Ingen korrupt projektfil hittades: vanliga
+labbet saknar sparfil och får giltig seed; Lissabons sparade projekt validerar
+strikt med 13 idlevarianter. `studioInitialData` lyckades för båda katalogerna,
+med 42 tillgängliga filmer. Ingen sparad data ersattes.
+
+En kort kontrollerad start av endast Start-Labb på 4188 gav HTTP 200,
+fungerande Chrome-vy, lyckad omladdning och Probe-navigering utan browserfel.
+Den tillfälliga kontrollfliken och testservern stängdes igen. Alla kända
+Croupier-portar var därefter stängda. Sessionsspärren återtog och släppte
+den avslutade testsessionen korrekt utan att starta någon server.
+
+`lab/app/error.tsx` har nu full omladdning i stället för enbart React-reset.
+En enda lokal hälsokontroll skiljer svarande, inte redo och onåbar server;
+ingen pollning eller rå feltext visas. Sparade inställningar ändras inte,
+och osparade ändringar får en kort varning. Typecheck och diffkontroll är
+gröna. Detta förbättrar återhämtningen; det är inte bevis för orsaken till
+Jakobs ursprungliga fel. Frågan om vilket steg som utlöser felet är ställd.
+
+4188 är det fristående äldre labbet. Lissabons `/lissabon` där saknar
+`connectedLane` och tillåter därför inte sparning. För redigerbar Astrid-lane,
+starta med `Start-Lissabon.cmd` och använd 4201/lissabon, eller återstarta den
+bevarade QA-miljön enligt den privata återstartspekaren. Kör ett par i taget.
+Alla devservrar lämnas avstängda enligt Jakobs önskemål.
+
 ## 2026-09-28 — Ett lokalt serverpar och återanvända flikar
 
 Jakob bad att alla lokala devservrar stoppas och att nya dubbletter spärras.
