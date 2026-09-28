@@ -48,7 +48,7 @@ replikfamiljer och en idlefamilj. Deal/replik använder
 `deal/<familj>/<standard>.mp4` respektive
 `repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då
 standard. Idle har två basloopar direkt i `idle/` och korta
-engångsvariationer i `idle/variant/` (policyn stöder högst 12).
+engångsvariationer i `idle/variant/` (policyn stöder högst 30).
 Deal-/replikfamiljer tillåter högst fyra filvarianter. Filnärvaro, hash och playbackkvitto är fortfarande inte
 ett mänskligt godkännande av läppsynk eller kortkontakt.
 
@@ -63,6 +63,14 @@ befintliga originalväg. Lägg nya MP4-filer i rätt `variant/`-mapp och välj
 om katalogen utan att flytta videofiler. En ny idlevariant läggs sedan till i
 policyn som manuell; välj Automatisk eller OpenClaw uttryckligen och spara.
 Ingen uppladdning till Render behövs för de lokala filmerna.
+
+Importen från `croupier_kaffe` lägger boxvarianterna i `deal_pos1` och
+`deal_pos2` samt `idle_andas`, `idle_handrorelse`, `idle_huvud_i_handerna`,
+`idle_resa_sig_fargmatchad` och `idle_resa_sig_kling` i idlefamiljen.
+Kaffe och den ofärgmatchade resa-sig-tagningen fanns redan med samma byteinnehåll.
+De nya varianterna är bara tillgängliga för manuellt val tills de uttryckligen
+läggs till och aktiveras i den sparade policyn. 480p-originalet är kvar i
+källmappen som referens och ingår inte i manifestet.
 
 Översikten och Videobanken visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto

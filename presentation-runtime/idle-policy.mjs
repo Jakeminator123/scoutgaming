@@ -3,6 +3,7 @@ import seedPolicy from '../lab/policies/idle-policy.seed.json' with { type: 'jso
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const USES = new Set(['manual', 'automatic', 'rules', 'openclaw']);
 const FAMILY = 'astrid/idle.ready/ready';
+export const MAX_IDLE_VARIANTS = 30;
 const clone = value => structuredClone(value);
 
 export class IdlePolicyError extends Error {
@@ -22,7 +23,7 @@ export function validateIdlePolicy(value) {
   exact(value, ['schemaVersion', 'familyId', 'base', 'variants'], 'idlePolicy');
   if (value.schemaVersion !== 1 || value.familyId !== FAMILY) fail('version eller mediefamilj stöds inte');
   if (!Array.isArray(value.base) || value.base.length < 1 || value.base.length > 4) fail('base ska innehålla 1–4 grundloopar');
-  if (!Array.isArray(value.variants) || value.variants.length > 12) fail('variants får innehålla högst 12 engångsklipp');
+  if (!Array.isArray(value.variants) || value.variants.length > MAX_IDLE_VARIANTS) fail(`variants får innehålla högst ${MAX_IDLE_VARIANTS} engångsklipp`);
   const ids = new Set();
   let weight = 0;
   for (const [index, item] of value.base.entries()) {

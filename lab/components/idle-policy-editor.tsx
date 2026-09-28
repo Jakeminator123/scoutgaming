@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createIdlePreviewPlan, idleShareEstimate, type IdlePolicy, type IdleVariantPolicy, type IdleVariantUse } from '../lib/idle-policy.mjs';
+import { createIdlePreviewPlan, idleShareEstimate, MAX_IDLE_VARIANTS, type IdlePolicy, type IdleVariantPolicy, type IdleVariantUse } from '../lib/idle-policy.mjs';
 import type { VideoEntry, VideoInventory } from './studio-types';
 import styles from './idle-policy-editor.module.css';
 
@@ -127,7 +127,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
 
   async function addVariant(videoId: string) {
     const video = byId.get(videoId);
-    if (!video?.available || policy.variants.length >= 12) return;
+    if (!video?.available || policy.variants.length >= MAX_IDLE_VARIANTS) return;
     setImportError('');
     const probe = document.createElement('video');
     probe.preload = 'metadata';
@@ -163,7 +163,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     <section className={styles.section}>
       <div className={styles.sectionHeading}><span>2</span><div><h3>Korta variationer</h3><p>{policy.variants.length} klipp från <code>idle/variant/</code>. Välj hur varje klipp får användas.</p></div></div>
       <p className="helper">OpenClaw läser beskrivningarna vid ett nytt chattmeddelande och kan välja en reaktion eller fortsätta neutralt. Högst en sådan reaktion per minut. Färdigt tal och spelhandlingar går före.</p>
-      {unconfigured.length ? <div className={styles.variantList}><p>Nya filer i mappen. Lägg till dem i policyn och spara projektet.</p>{unconfigured.map(id => <button type="button" className="text-button" key={id} disabled={blocked || policy.variants.length >= 12 || !byId.get(id)?.available} onClick={() => void addVariant(id)}>Lägg till {fileLabel(byId.get(id), id)} som manuell variant</button>)}</div> : null}
+      {unconfigured.length ? <div className={styles.variantList}><p>Nya filer i mappen. Lägg till dem i policyn och spara projektet. Högst {MAX_IDLE_VARIANTS} varianter.</p>{unconfigured.map(id => <button type="button" className="text-button" key={id} disabled={blocked || policy.variants.length >= MAX_IDLE_VARIANTS || !byId.get(id)?.available} onClick={() => void addVariant(id)}>Lägg till {fileLabel(byId.get(id), id)} som manuell variant</button>)}</div> : null}
       {importError ? <p role="alert" className={styles.warning}>{importError}</p> : null}
       <div className={styles.variantList}>{policy.variants.map(item => <div className={styles.variant} key={item.videoId}>
         <div><strong>{fileLabel(byId.get(item.videoId), item.videoId)}</strong><small>{usageDescription(item)}</small></div>

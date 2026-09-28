@@ -38,29 +38,40 @@ async function fixture(t, { variant = false } = {}) {
   return { root, legacy };
 }
 
-test('checked-in manifest has 26 exact families, 33 hash-stable items and the locked idle roles', async () => {
+test('checked-in manifest has 26 exact families, 42 hash-stable items and the locked idle roles', async () => {
   const manifest = await readLabVideoManifest(repositoryManifest);
   assert.equal(manifest.families.length, 26);
-  assert.equal(manifest.items.length, 33);
-  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 33);
+  assert.equal(manifest.items.length, 42);
+  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 42);
   for (const item of manifest.items) {
     assert.equal(item.id, videoIdFromSha256(item.sha256));
     assert.doesNotMatch(item.relativePath, /\.gitkeep$/);
   }
   const idle = manifest.families.find(family => family.id === 'astrid/idle.ready/ready');
   assert.equal(idle.standardIds.length, 2);
-  assert.equal(idle.variantIds.length, 6);
+  assert.equal(idle.variantIds.length, 13);
   assert.deepEqual(
     idle.variantIds.map(id => manifest.items.find(item => item.id === id).relativePath).sort(),
     [
+      'idle/variant/croupier_coffie.mp4',
+      'idle/variant/idle_andas.mp4',
       'idle/variant/idle_blink_f73_s303.mp4',
       'idle/variant/idle_cheek_f73_s301.mp4',
       'idle/variant/idle_glance_f73_s301.mp4',
+      'idle/variant/idle_handrorelse.mp4',
+      'idle/variant/idle_huvud_i_handerna.mp4',
       'idle/variant/idle_insulted_f73_s301.mp4',
+      'idle/variant/idle_resa_sig.mp4',
+      'idle/variant/idle_resa_sig_fargmatchad.mp4',
+      'idle/variant/idle_resa_sig_kling.mp4',
       'idle/variant/idle_smile.mp4',
       'idle/variant/idle_yawn.mp4',
     ],
   );
+  for (const situation of ['box0', 'box1']) {
+    const family = manifest.families.find(item => item.situation === situation && item.eventId === 'deal.player.left');
+    assert.equal(family.variantIds.length, 1);
+  }
 });
 
 test('generator preserves legacy IDs by SHA, accepts empty variant folders and ignores gitkeep', async t => {

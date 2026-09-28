@@ -1,3 +1,43 @@
+## 2026-09-28 — Astrid: 30 idlevarianter och klipp från croupier_kaffe
+
+Jakob bad om högst 30 idlevarianter, import av klipp från
+`C:\Users\jakem\Desktop\croupier_kaffe`, 1080p framför 480p samt en ren
+omstart av lokala webbläsare och devservrar. Arbetet är avgränsat till Astrid;
+parallell agent äger OpenClaw/Render.
+
+- Gränsen är 30 i runtime, schema, editor och tester. Befintliga sparade
+  inställningar bevaras. Lissabons versionsmärkta snapshot har nu 13
+  idlevarianter: sju äldre och sex importerade 1080p-varianter som manuella
+  prov. Vid start läggs saknade rader till utan att skriva över lokala val.
+- Två boxvarianter ligger under `deal_pos1/variant` och `deal_pos2/variant`.
+  Fem nya idlefiler kopierades; den redan lokalt förekommande
+  `idle_resa_sig.mp4` matchade 1080p-källan byte för byte och registrerades.
+  Kaffeklippet fanns redan och matchade källan byte för byte. 480p-originalet
+  användes inte. Manifestet omfattar 42 klipp i 26 familjer.
+- Lissabons lokala projekt har sparats med de fem nytillagda idleklippen som
+  manuella prov. Den äldre lokala inställningen för `idle_resa_sig` är fortsatt
+  automatisk; snapshoten för nya installationer sätter den manuellt. Lokala
+  val skrivs inte över vid uppgradering.
+- De identifierade lokala Croupier-servrarna och Chrome-fönstren stängdes.
+  `node lissabon/start.mjs --no-open` byggde om och startade 4200/4201 med
+  godkänd nätverksåtkomst. Båda startsidorna gav HTTP 200; produktens
+  `/api/presentation/config` visade 13 idlevarianter. Lissabons UI visade
+  båda boxvarianterna och 13 idlevarianter; boxklippen och en 1080p-idlevariant
+  kunde spelas i lokalt prov.
+- Rehearsal i den riktiga spelaren körde `greeting` två gånger i följd för
+  Astrid, Vera, Amira och Mei. Spelaren återgick till redo läge för varje
+  dealer. Detta var en snabb regressionskontroll, inte nytt godkännande av
+  läppsynk.
+- `node pipeline/build-lab-video-manifest.mjs --check`,
+  `node pipeline/audit-dealer-sync.mjs --probe` och 35 riktade tester passerade.
+  Audit: Astrid har 17 repliker, 0 saknade talpar; visuellt synkgodkännande
+  återstår. Pre-commit-sviten kördes för media-/playerändringen.
+
+Förslaget om valbar kamera/mikrofon och bildprov under tal skickades till den
+separata OpenClaw-chatten. Det är en designuppgift, inte en aktiv funktion.
+Render-återdeploy och driftskontroll tillhör den agenten. Jira CAC var inte
+tillgängligt via denna verktygsanslutning; inga ärendestatusar ändrades.
+
 ## 2026-09-28 — Probe rollout: preserve repeated Gateway migration backups
 
 The first Gateway deployment of `d5bcc8d`, `dep-dat0mb17lnhs73b6fjkg`,
