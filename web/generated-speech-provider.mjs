@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
+import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
 
 // Provider-only adapter. No env, filesystem, browser, room broadcast or game state.
 // Wire-contract provenance (not vendored implementation):
@@ -10,7 +11,7 @@ import { setTimeout as pause } from 'node:timers/promises';
 // The caller must ffprobe actual dimensions/fps/frame count/audio tracks and
 // review entry/exit pose before admitting a take; no compositor mask is supplied.
 export const GENERATED_SPEECH_DEFAULTS = Object.freeze({
-  voiceId: 'EXAVITQu4vr4xnSDxMaL', modelId: 'eleven_multilingual_v2', timeoutMs: 180000, pollMs: 500,
+  voiceId: ASTRID_VOICE_PROFILE.voiceId, modelId: ASTRID_VOICE_PROFILE.modelId, timeoutMs: 180000, pollMs: 500,
 });
 export const GENERATED_SPEECH_LIMITS = Object.freeze({
   textChars: 500, durationMs: 25000, sampleRate: 24000, fps: 24,
@@ -31,14 +32,14 @@ const fail = (code, statusCode) => { throw new GeneratedSpeechError(code, status
 
 function settings(value = {}) {
   const config = {
-    elevenLabsApiKey: value.elevenLabsApiKey, runpodApiKey: value.runpodApiKey,
+    cartesiaApiKey: value.cartesiaApiKey, runpodApiKey: value.runpodApiKey,
     runpodEndpointId: value.runpodEndpointId,
     voiceId: value.voiceId || GENERATED_SPEECH_DEFAULTS.voiceId,
     modelId: value.modelId || GENERATED_SPEECH_DEFAULTS.modelId,
     timeoutMs: value.timeoutMs ?? GENERATED_SPEECH_DEFAULTS.timeoutMs,
     pollMs: value.pollMs ?? GENERATED_SPEECH_DEFAULTS.pollMs,
   };
-  if (!token(config.elevenLabsApiKey) || !token(config.runpodApiKey)
+  if (!token(config.cartesiaApiKey) || !token(config.runpodApiKey)
     || typeof config.runpodEndpointId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(config.runpodEndpointId)
     || !identifier(config.voiceId) || !identifier(config.modelId)
     || !Number.isInteger(config.timeoutMs) || config.timeoutMs < 1000 || config.timeoutMs > GENERATED_SPEECH_LIMITS.maxTimeoutMs
@@ -144,9 +145,10 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
     }
     try {
       input.onProgress('voice');
-      const pcm = await call(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(config.voiceId)}?output_format=pcm_24000`, {
-        method: 'POST', headers: { 'content-type': 'application/json', 'xi-api-key': config.elevenLabsApiKey },
-        body: JSON.stringify({ text: input.text, model_id: config.modelId }),
+      const pcm = await call('https://api.cartesia.ai/tts/bytes', {
+        method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${config.cartesiaApiKey}`, 'Cartesia-Version': '2026-08-14' },
+        body: JSON.stringify({ transcript: input.text, voice: config.voiceId, model_id: config.modelId,
+          output_format: { container: 'raw', encoding: 'pcm_s16le', sample_rate: ASTRID_VOICE_PROFILE.sampleRate } }),
       }, 'generated_speech_tts_failed', PCM_BYTES);
       const wav = wavFromPcm(pcm);
       const durationMs = pcm.length / (GENERATED_SPEECH_LIMITS.sampleRate * 2) * 1000;
@@ -178,7 +180,7 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
       return {
         exactText: input.text, voiceId: config.voiceId, modelId: config.modelId,
         audio: { bytes: wav, sha256: digest(wav), durationMs: Math.round(durationMs), contentType: 'audio/wav' },
-        video, provider: { kind: 'elevenlabs-runpod' },
+        video, provider: { kind: ASTRID_VOICE_PROFILE.provider },
       };
     } catch (error) {
       if (jobId && !terminal) {

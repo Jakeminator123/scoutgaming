@@ -28,8 +28,8 @@ const PRIVATE_KEYS = new Set([
   'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
   'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY',
 ]);
-const GENERATED_SPEECH_KEYS = ['ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
-const GENERATED_SPEECH_ORIGINS = ['https://api.elevenlabs.io', 'https://api.runpod.ai'];
+const GENERATED_SPEECH_KEYS = ['CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
+const GENERATED_SPEECH_ORIGINS = ['https://api.cartesia.ai', 'https://api.runpod.ai'];
 
 function blockedError() {
   return Object.assign(new Error('Only the isolated local services and configured OpenClaw origins are reachable.'), { code: 'OPENCLAW_CONNECTION_NETWORK_BLOCKED' });
@@ -139,7 +139,7 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
       : { status: 'unverified', detail: 'The target is not defined by this helper; verify its deployed AGENTS contract before a model probe.' };
   const remoteToken = values.LAB_REMOTE_TOKEN?.trim() || '';
   const speechToken = values.OPENCLAW_PRODUCT_SPEECH_TOKEN?.trim() || '';
-  const elevenLabsKey = values.ELEVENLABS_API_KEY?.trim() || values.ELEVENLABS_OC_API?.trim() || '';
+  const cartesiaKey = values.CARTESIA_API_KEY?.trim() || '';
   const runpodKey = values.RUNPOD_API_KEY?.trim() || '';
   // Do not fall back to the legacy RUNPOD_ENDPOINT_ID used by other experiments.
   const speechEndpointId = values.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID?.trim() || '';
@@ -151,14 +151,14 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
     gatewayKey: { value: gatewayKey, enumerable: false },
     speechToken: { value: speechToken, enumerable: false },
     remoteToken: { value: remoteToken, enumerable: false },
-    elevenLabsKey: { value: elevenLabsKey, enumerable: false },
+    cartesiaKey: { value: cartesiaKey, enumerable: false },
     runpodKey: { value: runpodKey, enumerable: false },
     speechEndpointId: { value: speechEndpointId, enumerable: false },
   });
   const report = {
     generatedSpeech: {
-      enabled: Boolean(generatedSpeech), configured: Boolean(generatedSpeech && elevenLabsKey && runpodKey && speechEndpointId),
-      elevenLabsCredentialPresent: Boolean(elevenLabsKey), runpodCredentialPresent: Boolean(runpodKey), scopedEndpointPresent: Boolean(speechEndpointId),
+      enabled: Boolean(generatedSpeech), configured: Boolean(generatedSpeech && cartesiaKey && runpodKey && speechEndpointId),
+      cartesiaCredentialPresent: Boolean(cartesiaKey), runpodCredentialPresent: Boolean(runpodKey), scopedEndpointPresent: Boolean(speechEndpointId),
       previewOnly: Boolean(generatedSpeech), visualApproval: 'not_verified', functionalProbe: 'not_run',
     },
     productGateway: {
@@ -254,8 +254,8 @@ function guardedEnvironment(extra, origins, ports) {
 }
 
 function requireGeneratedSpeechConfiguration(configuration) {
-  if (configuration.generatedSpeech && !(configuration.elevenLabsKey && configuration.runpodKey && configuration.speechEndpointId)) {
-    throw new Error('--generated-speech requires existing ELEVENLABS_API_KEY (or ELEVENLABS_OC_API), RUNPOD_API_KEY and the separate CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID.');
+  if (configuration.generatedSpeech && !(configuration.cartesiaKey && configuration.runpodKey && configuration.speechEndpointId)) {
+    throw new Error('--generated-speech requires existing CARTESIA_API_KEY, RUNPOD_API_KEY and the separate CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID.');
   }
 }
 
@@ -277,14 +277,14 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
   const directorOrigin = configuration.remoteUrl ? normalizedOrigin(configuration.remoteUrl, { remote: true }) : null;
   const commonEmpty = {
     CROUPIER_ENV_FILE: join(runDir, 'disabled.env'), RESEND_API_KEY: '', AXEL_AGENT_TOKEN: '', AXEL_AGENT_URL: '',
-    GENERATIONS_READ_TOKENS: '', ELEVENLABS_API_KEY: '', ELEVENLABS_OC_API: '',
+    GENERATIONS_READ_TOKENS: '', CARTESIA_API_KEY: '', ELEVENLABS_API_KEY: '', ELEVENLABS_OC_API: '',
     RUNPOD_API_KEY: '', RUNPOD_ENDPOINT_ID: '', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: '',
     CROUPIER_GENERATED_SPEECH: '', CROUPIER_GENERATED_SPEECH_DIR: '', CROUPIER_GENERATED_SPEECH_PREVIEW: '',
     OPENCLAW_DASHBOARD_ENABLED: 'false', OPENCLAW_DASHBOARD_ORIGIN: '', OPENCLAW_HOSTPORT: '',
   };
   const speechOrigins = configuration.generatedSpeech ? GENERATED_SPEECH_ORIGINS : [];
   const generatedSpeechEnvironment = role => configuration.generatedSpeech ? {
-    ELEVENLABS_API_KEY: configuration.elevenLabsKey,
+    CARTESIA_API_KEY: configuration.cartesiaKey,
     RUNPOD_API_KEY: configuration.runpodKey,
     CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: configuration.speechEndpointId,
     CROUPIER_GENERATED_SPEECH: '1',

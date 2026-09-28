@@ -14,7 +14,7 @@ const result = text => {
   const audio = Buffer.from('fixture WAV exact text:' + text), video = Buffer.from('fixture MP4 lip sync:' + text);
   return { exactText: text, ...GENERATED_SPEECH_DEFAULTS,
     audio: { bytes: audio, sha256: digest(audio), durationMs: 2000, contentType: 'audio/wav' },
-    video: { bytes: video, sha256: digest(video), frameCount: 48, fps: 24, contentType: 'video/mp4' }, provider: { kind: 'elevenlabs-runpod' } };
+    video: { bytes: video, sha256: digest(video), frameCount: 48, fps: 24, contentType: 'video/mp4' }, provider: { kind: 'cartesia-runpod' } };
 };
 async function fixture(t, generate = async ({ text }) => result(text)) {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-generated-speech-'));
@@ -26,14 +26,14 @@ async function fixture(t, generate = async ({ text }) => result(text)) {
 
 test('env gate requires both opt-ins, loopback, private directory and dedicated speech endpoint', () => {
   const env = { HOST: '127.0.0.1', CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1',
-    CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'croupier-preview-fixture'), ELEVENLABS_OC_API: 'fixture-elevenlabs-secret', RUNPOD_API_KEY: 'fixture-runpod-secret', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
+    CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'croupier-preview-fixture'), CARTESIA_API_KEY: 'fixture-cartesia-secret', RUNPOD_API_KEY: 'fixture-runpod-secret', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
   assert.deepEqual(generatedSpeechStatus(env), { enabled: true, configured: true, preview: true, dealerId: 'astrid', reviewStatus: 'pending' });
   for (const patch of [{ HOST: '0.0.0.0' }, { HOST: undefined }, { CROUPIER_GENERATED_SPEECH: '0' }, { CROUPIER_GENERATED_SPEECH_PREVIEW: '0' },
-    { CROUPIER_GENERATED_SPEECH_DIR: undefined }, { CROUPIER_GENERATED_SPEECH_DIR: resolve('web/public/generated') }, { ELEVENLABS_OC_API: '' },
+    { CROUPIER_GENERATED_SPEECH_DIR: undefined }, { CROUPIER_GENERATED_SPEECH_DIR: resolve('web/public/generated') }, { CARTESIA_API_KEY: '' },
     { CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: undefined, RUNPOD_ENDPOINT_ID: 'old-shared-endpoint' }]) {
     assert.equal(generatedSpeechStatus({ ...env, ...patch }).configured, false);
   }
-  assert.equal(generatedSpeechStatus({ ...env, ELEVENLABS_OC_API: undefined, ELEVENLABS_API_KEY: 'fixture-primary' }).configured, true);
+  assert.equal(generatedSpeechStatus({ ...env, CARTESIA_API_KEY: undefined, ELEVENLABS_API_KEY: 'fixture-primary' }).configured, false);
   assert.doesNotMatch(JSON.stringify(generatedSpeechStatus(env)), /secret|endpoint|directory|API/);
   assert.throws(() => createGeneratedSpeechService({ directory: process.cwd() }), { code: 'generated_speech_invalid_directory' });
   assert.throws(() => createGeneratedSpeechService({ directory: join(tmpdir(), 'fixture'), voiceId: 'other-dealer' }), { code: 'generated_speech_unknown_profile' });

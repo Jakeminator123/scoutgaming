@@ -1,3 +1,5 @@
+import { ASTRID_VOICE_PROFILE, LEGACY_ASTRID_VOICE_PROFILE } from './astrid-voice-profile.mjs';
+
 export const SPEECH_PACKAGE_SCHEMA_VERSION = 1;
 export const GENERATED_SPEECH_PACKAGE_SCHEMA_VERSION = 2;
 export const SPEECH_PACKAGE_SOURCES = Object.freeze(['recordedLine', 'generatedText']);
@@ -72,13 +74,15 @@ export function normalizeSpeechPackage(value) {
   if (generatedLipsync) {
     const metadata = value.generation;
     const artifactId = /^generated-([a-f0-9]{32})$/.exec(value.packageId)?.[1];
-    if (source.kind !== 'generatedText' || source.voiceId !== 'EXAVITQu4vr4xnSDxMaL' || video.presentation !== 'lipsync' || value.dealerId !== 'astrid'
+    const knownProfile = [ASTRID_VOICE_PROFILE, LEGACY_ASTRID_VOICE_PROFILE].some(profile =>
+      source.voiceId === profile.voiceId && metadata?.provider === profile.provider
+      && metadata?.modelId === profile.modelId && metadata?.profileRevision === profile.profileRevision);
+    if (source.kind !== 'generatedText' || !knownProfile || video.presentation !== 'lipsync' || value.dealerId !== 'astrid'
       || !artifactId || audio.url !== `/api/generated-speech/${artifactId}/audio` || video.url !== `/api/generated-speech/${artifactId}/video`
       || value.entryPose !== 'standard-idle' || value.exitPose !== 'standard-idle' || value.audioDelayMs !== 0
       || value.reviewStatus !== 'pending' || value.calibrationRevision !== 'unreviewed-fixed-24fps'
       || !exact(metadata, ['requestId', 'provider', 'modelId', 'avatarId', 'profileRevision', 'textSha256', 'audioSha256'])
-      || !id(metadata.requestId) || metadata.provider !== 'elevenlabs-runpod' || metadata.modelId !== 'eleven_multilingual_v2'
-      || metadata.avatarId !== 'astrid_spel2x' || metadata.profileRevision !== 'astrid-spel2x-preview-v1' || !hash(metadata.textSha256)
+      || !id(metadata.requestId) || metadata.avatarId !== 'astrid_spel2x' || !hash(metadata.textSha256)
       || metadata.audioSha256 !== audio.sha256 || audio.durationMs > 25000
       || video.fps !== 24 || Math.abs(video.frameCount / video.fps * 1000 - audio.durationMs) > 1000) fail('invalid_generated_lipsync_package');
     generation = { requestId: metadata.requestId, provider: metadata.provider, modelId: metadata.modelId, avatarId: metadata.avatarId,

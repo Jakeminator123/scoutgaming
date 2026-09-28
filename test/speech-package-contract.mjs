@@ -62,11 +62,11 @@ test('registry rejects unknown and duplicate package IDs and validates registere
 const generatedLipsync = () => {
   const value = generated(), artifactId = 'a'.repeat(32);
   return { ...value, schemaVersion: 2, packageId: `generated-${artifactId}`, dealerId: 'astrid', reviewStatus: 'pending',
-    source: { kind: 'generatedText', voiceId: 'EXAVITQu4vr4xnSDxMaL' },
+    source: { kind: 'generatedText', voiceId: 'dc30854e-e398-4579-9dc8-16f6cb2c19b9' },
     audio: { ...value.audio, url: `/api/generated-speech/${artifactId}/audio`, durationMs: 2000 },
     video: { ...value.video, url: `/api/generated-speech/${artifactId}/video`, presentation: 'lipsync', fps: 24, frameCount: 48 },
     calibrationRevision: 'unreviewed-fixed-24fps',
-    generation: { requestId: 'test-request', provider: 'elevenlabs-runpod', modelId: 'eleven_multilingual_v2', avatarId: 'astrid_spel2x', profileRevision: 'astrid-spel2x-preview-v1', textSha256: sha('e'), audioSha256: value.audio.sha256 } };
+    generation: { requestId: 'test-request', provider: 'cartesia-runpod', modelId: 'sonic-3.5', avatarId: 'astrid_spel2x', profileRevision: 'astrid-spel2x-victoria-v1', textSha256: sha('e'), audioSha256: value.audio.sha256 } };
 };
 
 test('v2 generated lipsync is an explicit pending-only preview; v1 remains neutral-only', () => {
@@ -77,6 +77,15 @@ test('v2 generated lipsync is an explicit pending-only preview; v1 remains neutr
   assert.throws(() => normalizeSpeechPackage(v1), { code: 'generated_text_requires_neutral_video' });
   const approved = generatedLipsync(); approved.reviewStatus = 'approved';
   assert.throws(() => normalizeSpeechPackage(approved), { code: 'invalid_generated_lipsync_package' });
+});
+
+test('older generated Sarah packages remain readable without changing their voice or hashes', () => {
+  const old = generatedLipsync();
+  old.source.voiceId = 'EXAVITQu4vr4xnSDxMaL';
+  old.generation.provider = 'elevenlabs-runpod';
+  old.generation.modelId = 'eleven_multilingual_v2';
+  old.generation.profileRevision = 'astrid-spel2x-preview-v1';
+  assert.deepEqual(normalizeSpeechPackage(old), old);
 });
 
 test('v2 rejects cross-origin/cross-artifact media, wrong profile, dealer, hashes and timing', () => {

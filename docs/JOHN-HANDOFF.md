@@ -4715,3 +4715,28 @@ See `docs/releases/dealer-v2-2026-09-20.md` and its SHA-256 manifest for exact r
 Fixed and deployed the separate HTTP Basic gate and missing BO-to-player session connection. An existing BO login in the same browser now authorizes the original/V2 game via a browser-bound single-use code; logged-out users sign in to BO and return to their selected dealer. The BO cookie stays on its own host. The ordinary CRAIG player link preserves wallet/table state and grants no backoffice privileges. Partner launch handling now also covers `/v2/`. Game APIs remain authenticated; no production guest mode or media/player presentation changes.
 
 See `docs/releases/bo-game-auth-2026-09-20.md` for protocol, release/rollback paths and verification limits. New actual-server authentication tests, existing password/CRAIG tests, eight table HTTP scenarios, full pre-commit and Caddy validation pass. Isolated browser completed BO login → Astrid V2 → $5 round/push/collection → original Amira → Amira V2 with the same session and $1,000 balance. Public browser now reaches BO sign-in instead of HTTP Basic/blocked-site errors. No production BO cookie existed in the test browser, so no real user's wallet was used to test live authenticated gameplay. Five scoped app files plus Caddy game routing deployed at 11:21 UTC; live databases were not copied or replaced.
+## 2026-09-28 — Victoria som Astrids röst för genererat tal
+
+Astrids genererade chatsvar och labbets fristående röstprov använder nu Cartesia
+Victoria (`sonic-3.5`, röst-ID `dc30854e-e398-4579-9dc8-16f6cb2c19b9`).
+Den icke-hemliga profilen finns i `web/public/astrid-voice-profile.mjs`;
+`CARTESIA_API_KEY` läses fortsatt enbart på serversidan. Produktens talväg
+begär rå 24 kHz PCM, paketerar samma ljud som WAV till RunPod och binder ljud,
+video, exakt text och profilrevision i talpaketet. Äldre redan skapade
+ElevenLabs-paket är fortfarande läsbara; inspelade repliker regenereras inte.
+Labbets separata MP3-röstprov använder samma Victoria-ID och modell. Cartesias
+röstmetadata anger engelska med brittisk accent; kvalitet på svenska svar behöver
+lyssnas igenom av Jakob.
+
+Ett autentiserat, kort Cartesia-prov gav HTTP 200 med 24 kHz PCM för
+produktvägen och HTTP 200 med MP3 för labbprovet. Riktade tester, hela
+`.githooks/pre-commit` och `pipeline/audit-dealer-sync.mjs --probe` passerade.
+Lissabon byggdes om och servrarna på 4200/4201 startades om; `/api/voice`
+rapporterar Victoria och `/api/social` rapporterar genererat tal konfigurerat.
+Ett separat funktionstest av Cartesia→RunPod gav 720 ms Victoria-ljud och
+35 videorutor på 52,9 s totalt (videokö till renderstart cirka 31,7 s).
+Detta prov passerade paketets tekniska kontroller, men spelades inte i den
+anslutna Astrid-vyn och är inte ett visuellt godkännande. OpenClaws hela
+chattbeslutskedja är inte omtestad i denna ändring.
+En annan agents ändring i `emil/dealklipp-v1/lab-video-manifest.json` och äldre
+ospårade filer lämnades orörda.
