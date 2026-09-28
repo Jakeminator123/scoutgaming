@@ -5,6 +5,17 @@ Detta är den korta notisen i repots rot. Detaljer och testkrav finns i
 Skriv datum, ändring och verifiering här när arbetet går vidare; skilj alltid
 förslag från implementerad kod och verkligt godkänd drift.
 
+## 29 september 2026 – gemensamt Lab och filmad kortvändning
+
+Lissabons kod/start är samlad i Lab. Gamla duplicerade standarder och
+oförändrade demoexempel rensas med versionshistorik; privata data och egna
+ändringar bevaras. Kevins exakta hole/flip-filmer och deras kortspår används
+nu på serverns händelser. Hashverifierad förladdning för nästa film är införd.
+492 Lab-tester, typecheck, bygge, full pre-commit och dealerprobe godkända;
+två hela rundor verifierade i browser. Förladdat klippbyte: 27–42 ms till
+första bild lokalt, ej AI-svarslatens. Jakob avslutade manuella prov med
+dagens omfattning begränsad till Astrid; ingen ny fyra-dealer-rehearsal. [Detaljer och återgång](docs/KEVIN-LISSABON-REVIEW.md).
+
 ## 29 september 2026 – fristående granskningspaket
 
 93 spårade QA-/visningsfiler, 129 504 739 byte (cirka 123,5 MiB), togs bort

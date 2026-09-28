@@ -1,3 +1,33 @@
+## 2026-09-29 — Lab/Lissabon samlat, Kevin hole/flip och förladdning
+
+Astrids fokuserade studio finns nu i gemensamma Lab på `/`, avancerade
+verktyg på `/tree`. Start: `node lab/start.mjs --offline --no-open` för ett
+isolerat lokalt par med tom testdatabas och blockerade externa tjänster.
+Befintliga privata Lissabon-data återanvänds utan flytt i anslutet läge.
+Gammal duplicerad start/snapshot tas bort. Oförändrade demotriggers och
+exempelvarianter rensas med full före-revision; egna redigeringar bevaras.
+
+Exakta Kevin-filmer för dolt kort/vändning plus uppmätta spår är integrerade.
+Kort och reveal förblir serverägda. Nästa standardfilm förbereds med verifierad
+hash, begränsad cache och separat avbrottsägarskap. Gemensamt familjeregister:
+`presentation-runtime/media-families.mjs`, genererat manifest: 28 familjer/45 MP4.
+
+492 Lab-tester, typecheck, Next-bygge, full pre-commit och dealerprobe godkända.
+Lokalt browserprov: två avslutade rundor, dolt kort/flip och varm förladdning.
+Förladdade dealfilmer: 27–42 ms till första visade bild från spelarstart,
+exklusive selector-HTTP. Inget mått på AI/TTS/GPU eller hörbar svarstid.
+Normal browserstorlek återställd efter mobilprovet. Jakob avslutade manuella
+prov och avgränsade dagens arbete till Astrid; ingen ny fyra-dealer-rehearsal
+kördes. Pågående spelarhand bevarades. Kända läppsynkgap och verklig mobil/iOS
+kvarstår.
+
+Full proveniens, verifiering, rensning och återgång:
+[Kevin/Lissabon-granskningen](KEVIN-LISSABON-REVIEW.md). Ingen deployment,
+betaltjänst eller GPU-körning. 3D-original/staging och andra agenters arbete
+(t.ex. `f2dce6fc`) bevaras.
+Den parallella molnstartens ändringar och återstående driftsbeslut beskrivs i
+[molnstartens handoff](CLOUD-LAUNCH-HANDOFF.md).
+
 ## 2026-09-29 — historiska 3D- och videogranskningspaket
 
 Två fristående QA-/visningspaket har tagits ur arbetskopian:

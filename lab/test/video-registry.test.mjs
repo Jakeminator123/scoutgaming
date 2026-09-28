@@ -42,7 +42,7 @@ function request(method = 'GET', headers = {}) {
 test('inventory has safe bounded family metadata without upgrading media to approval', async t => {
   const options = await fixture(t);
   const result = await loadVideoRegistry(options);
-  assert.equal(result.videos.length, 27);
+  assert.equal(result.videos.length, 29);
   const video = result.videos.find(item => item.id === id);
   assert.equal(video.verdict, 'unrated');
   assert.equal(video.reviewStatus, 'unreviewed');
@@ -51,7 +51,7 @@ test('inventory has safe bounded family metadata without upgrading media to appr
   assert.equal(video.bindingScope, 'shared-local');
   assert.equal(video.familyId, 'astrid/deal.player.left/box0');
   assert.equal(result.summary.readable, true);
-  assert.equal(result.summary.intakeCounts.unrated, 27);
+  assert.equal(result.summary.intakeCounts.unrated, 29);
   const json = JSON.stringify(result);
   assert.ok(!json.includes(options.root));
   assert.ok(!json.includes('archiveDir'));

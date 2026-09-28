@@ -1,4 +1,5 @@
 import { mediaSituationForEvent, resolveMediaFamily, resolveMediaFamilySelection } from './media-family-resolver.mjs';
+import { MEDIA_FAMILY_DEFINITIONS } from './media-families.mjs';
 
 export const manualMediaSelection = Object.freeze({ rules: false, model: false, random: false });
 const familyId = /^[a-z][a-z0-9_-]*\/[a-z][a-z0-9._-]*\/[a-z][a-z0-9_-]*$/;
@@ -112,11 +113,7 @@ export function mediaVideoForEvent(inventory, dealerId, eventId, event, id) {
 }
 
 export function mediaFamilyFolder(family) {
-  if (!family) return null;
-  if (family.playbackType === 'idle-pool') return 'idle';
-  if (family.eventId.startsWith('speak.')) return `repliker/${family.situation}`;
-  if (/^box[0-6]$/.test(family.situation)) return `deal/deal_pos${Number(family.situation.slice(3)) + 1}`;
-  return family.situation === 'dealer-up' ? 'deal/deal_posdealer' : null;
+  return MEDIA_FAMILY_DEFINITIONS.find(row => row.id === family?.id)?.variantDirectory.replace(/\/variant$/, '') ?? null;
 }
 
 export function mediaSituationLabel(situation) {
@@ -133,7 +130,7 @@ export function mediaExampleEvent(definition, situation) {
   else if (definition.sourceType === 'deal' && /^box[0-6]$/.test(situation)) event.box = Number(situation.slice(3));
   else if (definition.id === 'deal.dealer' && ['dealer-up', 'dealer-hole'].includes(situation)) {
     event.faceDown = situation === 'dealer-hole';
-    if (event.faceDown) delete event.card;
+    if (event.faceDown) event.card = null;
   }
   return event;
 }

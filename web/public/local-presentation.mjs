@@ -4,6 +4,17 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const response = await fetch('/api/presentation/config', { cache: 'no-store' });
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
+  let upcoming = [], queueVersion;
+  const prepare = event => {
+    if (!event || queueVersion !== version() || closed) return;
+    const family = config.inventory.families?.find(row => row.dealerId === dealerId && (
+      event.type === 'speak' ? row.eventId.startsWith('speak.') && row.situation === event.line :
+      event.type === 'reveal' ? row.eventId === 'reveal.dealer' :
+      event.to === 'dealer' ? row.eventId === 'deal.dealer' && row.situation === (event.faceDown ? 'dealer-hole' : 'dealer-up') :
+      row.eventId.startsWith('deal.player.') && row.situation === `box${event.box}`));
+    const video = config.inventory.videos.find(row => family?.standardIds.includes(row.id) && row.available);
+    if (video) player.prepareLocalClip?.({ media: { src: `/api/presentation/videos/${video.id}`, sha256: video.sha256 } });
+  };
   let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null;
   const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status'); host.append(status);
   const control = document.createElement('select'); control.setAttribute('aria-label', 'Klippval');
@@ -73,14 +84,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     control.disabled = action || speech;
     // Chat can finish generating, or finish cancelling, during a deal. Neither
     // may revoke the current card's owner. Apply those flags on action release.
-    if (action && presentationKind === 'deal' && !Object.hasOwn(patch, 'action') && !document.hidden) return;
+    if (action && ['deal', 'reveal'].includes(presentationKind) && !Object.hasOwn(patch, 'action') && !document.hidden) return;
     if (action || speech || document.hidden) adviceController?.abort();
+    if (document.hidden) { upcoming = []; player.cancelLocalPreparation?.(); }
     ++serial; stop(); idleRun = 0;
     idle.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}` });
     if (action || speech) onBusy(); else resumeIdle();
   }
   async function present(event, { signal, onPresented, onSelected, onFrame } = {}) {
-    const kind = event.type === 'speak' ? 'speech' : 'deal';
+    const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
     const requestVersion = version();
     ++serial; stop(); onBusy();
@@ -94,6 +106,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (token !== serial || requestVersion !== version() || signal?.aborted) return false;
       receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider });
       if (!result.video) throw new Error('Exakt film saknas');
+      if (queueVersion === requestVersion && upcoming[0]?.type === event.type
+        && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
+      else upcoming = [];
       let attempt = 0;
       const owns = current => current === attempt && token === serial && requestVersion === version() && !signal?.aborted;
       const play = async video => {
@@ -102,7 +117,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         try {
           await film(video, { kind, signal, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId },
             onFrame: () => { if (owns(current)) onPresented?.(); },
-            onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined });
+            onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined,
+            onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
         } finally { if (current === attempt) ++attempt; }
       };
       try { await play(result.video); }
@@ -117,6 +133,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   control.onchange = () => { adviceController?.abort(); mode = control.value; state({}); receipt({ event: 'configuration', state: 'selected', mode }); };
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, start: resumeIdle,
+    prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
-    close() { closed = true; adviceController?.abort(); ++serial; stop(); idle.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };
+    close() { closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };
 }

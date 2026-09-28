@@ -1,14 +1,15 @@
+import { createLegacyProject as createSeedProject } from './fixtures/legacy-project.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import schema from '../schemas/studio.schema.json' with { type: 'json' };
 import {
-  createSeedProject, validateProject, buildRuntimeCatalog, addVariant, removeVariant,
+  validateProject, buildRuntimeCatalog, addVariant, removeVariant,
   removeTrigger, renameEvent, renameLine, DEALER_IDS, SOURCE_TYPES, allowedPathDescriptors,
   StudioValidationError, isAssetCompatible
 } from '../lib/studio-model.mjs';
 import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
 
-test('seed contains blackjack, four dealers, sixteen locked nodes and 64 editable lines', () => {
+test('legacy projects retain blackjack, four dealers, sixteen locked nodes and 64 editable lines', () => {
   const p = createSeedProject();
   assert.equal(validateProject(p), p);
   assert.equal(p.gameId, 'blackjack');
@@ -19,7 +20,7 @@ test('seed contains blackjack, four dealers, sixteen locked nodes and 64 editabl
   assert.ok(p.lines.every(line => line.variants.length === 4));
   assert.equal(p.assets.length, 64);
   assert.equal(p.idlePolicy.base.length, 2);
-  assert.equal(p.idlePolicy.variants.length, 7);
+  assert.equal(p.idlePolicy.variants.length, 13);
   assert.equal(schema.properties.events.minItems, p.events.length);
   assert.equal(schema.$defs.idlePolicy.properties.variants.maxItems, 30);
   assert.equal(schema.$defs.variant.properties.videoGenerationId.oneOf[0].type, 'null');

@@ -85,7 +85,7 @@ export function buildOperatorCatalog(project, inventory, dealerId, { scope = 'sa
       const match = { ...node.match };
       if (node.sourceType === 'speak') match.line = family.situation;
       else if (/^box[0-6]$/.test(family.situation)) match.box = Number(family.situation.slice(3));
-      else if (family.situation === 'dealer-up' || family.situation === 'dealer-hole') match.faceDown = family.situation === 'dealer-hole';
+      else if (node.sourceType === 'deal' && (family.situation === 'dealer-up' || family.situation === 'dealer-hole')) match.faceDown = family.situation === 'dealer-hole';
       return { ...node, id: prefix, label: label(`${family.id} · ${mediaFamilyFolder(family) ?? family.situation}`),
         description: `Inventering för ${node.id}, exakt situation ${family.situation}. ${idle ? 'Grundloopar och engångsvarianter styrs separat av idlepolicyn.' : 'Standard används när inga tillåtna och matchande filvarianter finns.'} Detta är inte bevis på uppspelning eller visuell granskning.`,
         exampleEvent: event, match, baselineVariantId: baselineId, variants };

@@ -67,6 +67,48 @@
       "use": "manual",
       "automatic": null,
       "description": "Kaffepaus. Välj själv när klippet ska spelas."
+    },
+    {
+      "videoId": "0b76ac59-cbb8-657b-cf2e-675aa9db71a4",
+      "durationMs": 9042,
+      "use": "manual",
+      "automatic": null,
+      "description": ""
+    },
+    {
+      "videoId": "914f8c03-7d47-a57e-3cb1-418ed46b6887",
+      "durationMs": 6042,
+      "use": "manual",
+      "automatic": null,
+      "description": ""
+    },
+    {
+      "videoId": "66153427-8ca1-0bed-c4b3-eafac66872b4",
+      "durationMs": 6042,
+      "use": "manual",
+      "automatic": null,
+      "description": ""
+    },
+    {
+      "videoId": "3430694a-02f4-ba84-1a60-6d3afd14d802",
+      "durationMs": 6042,
+      "use": "manual",
+      "automatic": null,
+      "description": ""
+    },
+    {
+      "videoId": "620166c3-7ca5-909c-d39d-ce12f5a96952",
+      "durationMs": 6042,
+      "use": "manual",
+      "automatic": null,
+      "description": ""
+    },
+    {
+      "videoId": "8a04914a-41a1-32f7-b5cb-586eda417aac",
+      "durationMs": 9042,
+      "use": "manual",
+      "automatic": null,
+      "description": ""
     }
   ]
 }

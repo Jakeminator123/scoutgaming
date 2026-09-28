@@ -4,13 +4,13 @@ import { readFile } from 'node:fs/promises';
 import schema from '../schemas/idle-policy.schema.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy, idleShareEstimate, createIdlePreviewPlan, MAX_IDLE_VARIANTS } from '../lib/idle-policy.mjs';
 
-test('the simple idle policy has two base loops and seven one-shot variants', () => {
+test('the simple idle policy has two base loops and thirteen one-shot variants', () => {
   const policy = createDefaultIdlePolicy();
   assert.equal(validateIdlePolicy(policy), policy);
   assert.equal(policy.base.length, 2);
   assert.equal(policy.base.reduce((sum, item) => sum + item.weight, 0), 100);
-  assert.equal(policy.variants.length, 7);
-  assert.deepEqual(policy.variants.map(item => item.use), ['automatic', 'manual', 'manual', 'openclaw', 'manual', 'manual', 'manual']);
+  assert.equal(policy.variants.length, 13);
+  assert.deepEqual(policy.variants.map(item => item.use), ['automatic', 'manual', 'manual', 'openclaw', ...Array(9).fill('manual')]);
   assert.equal(schema.properties.variants.maxItems, MAX_IDLE_VARIANTS);
 });
 

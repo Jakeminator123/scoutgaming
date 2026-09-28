@@ -1,7 +1,8 @@
+import { createLegacyProject as createSeedProject } from './fixtures/legacy-project.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { } from '../lib/studio-model.mjs';
 import * as implementation from '../lib/studio-server.mjs';
 
 // These are the legacy classification/2D tests. Manifest playback has its own

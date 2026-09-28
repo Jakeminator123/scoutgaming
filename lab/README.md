@@ -27,27 +27,49 @@ Buggar, förbättringar och öppna kontroller för labbet och övriga repot finn
 
 ## Starta
 
-**Windows: dubbelklicka [Start-Labb.cmd](../Start-Labb.cmd) i repots rot.**
-Den använder [Start-Labb.ps1](../Start-Labb.ps1), öppnar webbläsaren och startar
-studion om den inte redan körs. Ingen befintlig process stoppas, ingen nyckel
-roteras och ingenting ändras på Render. Behåll serverfönstret öppet; Ctrl+C
-stoppar servern i det. Efter en `.env`-ändring: stoppa den gamla servern först.
-
-Node 22.16+ behövs; saknade beroenden installeras från låsfilen vid första start.
-Variabler och placeringar utan hemliga värden: [_ENVIROMENT-INFO](../_ENVIROMENT-INFO.md).
-Tekniska alternativ: `Start-Labb.ps1 -NoBrowser` öppnar inte webbläsaren;
-`-CheckOnly` kontrollerar starten utan installation/serverstart; `-Port` väljer
-en annan lokal testport. Kommandon för utvecklare, från repots rot:
+Astrids fokuserade studio finns på `/`. `/lissabon` är en omdirigering.
+Startkod, standardprojekt och lokala profilval finns nu här i Lab.
 
 ```powershell
-npm --prefix lab ci
-npm --prefix lab run dev
+# Reproducerbart prov: tom temporär databas, befintliga filmer, inga externa tjänster.
+node lab/start.mjs --offline --no-open
+# Befintlig privat OpenClaw-anslutning (endast när externa anrop är godkända).
+node lab/start.mjs --no-open
 ```
 
-Öppna <http://127.0.0.1:4188>. Stoppa med Ctrl+C. Den gamla lokala servern
-ska inte köras samtidigt på samma port. För byggd version: `npm --prefix lab
-run build`, därefter `npm --prefix lab start`. Studion är avsiktligt endast
-för localhost; öppna den inte mot internet eller ett publikt nätverk.
+Offlineparet finns på `http://localhost:4194` (spel) och
+`http://127.0.0.1:4192` (Lab). Bygger Next före start; `--skip-build` får endast
+användas med ett aktuellt bygge. Ctrl+C stoppar paret och tar bort dess testdata.
+Ett koordinerat sessionslås hindrar ett andra produkt/labbpar.
+Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
+
+[Start-Lab.cmd](../Start-Lab.cmd) startar den befintliga anslutna profilen på
+4200/4201. [Start-Lissabon.cmd](../Start-Lissabon.cmd) fungerar som alias.
+Om `lissabon/data/project.json` redan finns används dess datakatalog; annars
+används `lab/data`. En ensam gammal sessionslåsfil påverkar inte valet.
+Inga privata filer kopieras eller flyttas. Standardprojektet skapas från
+`policies/project.seed.json` och profilens få idleval. En separat projektsnapshot
+behövs inte. Exakt oförändrade gamla demoexempel tas bort vid uppgradering;
+egna ändringar/bindningar bevaras och hela föregående revision sparas i historik.
+
+Det äldre `Start-Labb.ps1` finns kvar för den generella fristående editorn;
+öppna `/tree` där. Kör den inte samtidigt med det anslutna paret.
+Node 22.16+ och installerade beroenden krävs. Studion är avsiktligt lokal.
+
+### Ett register per ansvar
+
+| Ansvar | Källa | Kontroll |
+| --- | --- | --- |
+| Event-ID, källtyper och begrepp | `policies/studio-contract.json` | `test/studio-contract.test.mjs` |
+| Filmfamiljer, standardfiler, variantmappar | `../presentation-runtime/media-families.mjs` | Byggare och validator importerar samma register |
+| Faktiska filer, storlek och SHA-256 | `../emil/dealklipp-v1/lab-video-manifest.json` | `node pipeline/build-lab-video-manifest.mjs --check` från reporoten |
+| Format/validering | `schemas/`, `lib/lab-video-manifest.mjs` | Manifest- och kontraktstester |
+| Sparade operatörsval | vald datakatalogs `project.json` | Revisionslås + historik |
+| Uppmätta kortspår och filhashar | `../web/public/kevin-cards/` | `test/local-card-overlay.mjs` + faktisk browsergranskning |
+
+Efter nya mediefiler: kör `node pipeline/build-lab-video-manifest.mjs`,
+granska diffen och kör `--check`. Lab:s **Läs in nya filer** använder samma byggare.
+En ny hash är inte ett visuellt godkännande.
 
 ## Arbetsytor och gemensam Guide
 

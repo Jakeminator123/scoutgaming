@@ -1604,6 +1604,18 @@ async function endDealingTake({ deferIdle = false } = {}) {
 async function revealHole(container, card) {
   const back = container.querySelector('.card.back');
   if (!back) return;
+  if (localPresentationEnabled) {
+    localCards?.sync(round);
+    let token;
+    const played = await localPresentation?.present({ type: 'reveal', to: 'dealer', shoeDraw: card.shoeDraw }, {
+      onSelected: (video, event) => { token = localCards?.begin(video, event); },
+      onFrame: time => localCards?.frame(token, time),
+    });
+    const calibrated = token != null && localCards?.finish(token, card.shoeDraw, played);
+    if (token == null) localCards?.reveal(round);
+    nativeObservation.emit('playback', { event: 'reveal', state: 'landed', shoeDraw: card.shoeDraw,
+      renderer: 'svg-local', evidence: calibrated ? 'video-frame-track' : 'static-card-presented', calibratedContact: !!calibrated });
+  }
   if(tableScene?.revealCard)await tableScene.revealCard({element:back,card,onCue:phase=>sfx.play(phase)});
   const el = cardEl(card);
   el.style.setProperty('--ci', back.style.getPropertyValue('--ci') || 1);
@@ -1731,6 +1743,14 @@ async function dealSequence() {
   }
   round = roundView(out.round);
   renderBets(); setBanner(null); clearTable();
+  const dealOrder = [...round.live()].reverse();
+  localPresentation?.prepareSequence([
+    { type: 'speak', line: 'goodluck' },
+    ...dealOrder.map(hand => ({ type: 'deal', to: 'box', box: hand.box, shoeDraw: hand.cards[0].shoeDraw })),
+    { type: 'deal', to: 'dealer', faceDown: false, shoeDraw: round.dealer[0].shoeDraw },
+    ...dealOrder.map(hand => ({ type: 'deal', to: 'box', box: hand.box, shoeDraw: hand.cards[1].shoeDraw })),
+    { type: 'deal', to: 'dealer', faceDown: true, shoeDraw: round.holeDraw },
+  ]);
   // Speech and action share a filmed body: wait for the actual sentence,
   // then begin the dealing take before releasing any server-issued cards.
   await voice.say('goodluck', { force: true });

@@ -4,11 +4,18 @@ Croupier is the working blackjack demo with server-owned game state and a
 shared playback path for four AI dealers. It is a development product, not a
 certified RNG/RGS or a real-money system.
 
-For the current Astrid demo, double-click [Start-Lissabon.cmd](Start-Lissabon.cmd)
-and follow [Lissabon stream lane](lissabon/README.md). It starts the connected
-game and focused lab with persistent local presentation settings.
-The earlier editor remains in [Croupier Studio](lab/README.md), via
-[Start-Labb.cmd](Start-Labb.cmd). Key names and locations
+The focused Astrid studio and the advanced editor now share **Lab**.
+See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
+For a disposable local preview with existing films and no external providers:
+
+```powershell
+node lab/start.mjs --offline --no-open
+```
+
+[Start-Lab.cmd](Start-Lab.cmd) starts the existing connected profile.
+[Start-Lissabon.cmd](Start-Lissabon.cmd) is a compatibility shortcut.
+Private existing Lissabon data stay at their current location; no database is moved.
+The general editor remains at `/tree`. Key names and locations
 (no secret values) are listed in [_ENVIROMENT-INFO.md](_ENVIROMENT-INFO.md).
 OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
 
@@ -31,9 +38,8 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
   Seven remaining working days after the D0 start gate are Jakob's planning horizon, not a verified
   launch date or a new historical meeting decision.
 
-Jakob works on `jakeminator123/work`. Kevin owns integration decisions and the
-current Croupier engine; do not push documentation work to `main` or Kevin's
-branch without an agreed integration step.
+Work on `jakemanator123-github-work`; deliver with `node tools/push-github-work.mjs`.
+Kevin’s reviewed source is imported selectively; no push to his branch is authorized.
 
 ## Documentation navigation
 

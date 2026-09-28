@@ -19,9 +19,9 @@ const fail = (message, statusCode = 400) => { throw Object.assign(new Error(mess
 // The request identifies a public instruction. Cards come exclusively from the
 // server's committed native presentation, never from a browser-supplied card.
 export function presentationInput(event, published) {
-  if (event?.type === 'deal') {
-    const source = published.find(item => item.type === 'deal' && item.shoeDraw === event.shoeDraw
-      && item.to === event.to && item.box === event.box);
+  if (['deal', 'reveal'].includes(event?.type)) {
+    const source = published.find(item => item.type === event.type && item.shoeDraw === event.shoeDraw
+      && item.to === event.to && (event.type === 'reveal' || item.box === event.box));
     if (!source) fail('No committed instruction for this card', 409);
     return { ...source, card: source.faceDown ? null : source.card };
   }
@@ -76,7 +76,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       }
       if (body.dealerId !== 'astrid' || !modes.has(body.mode) || !Number.isInteger(body.version)) fail('Invalid presentation request');
       const receipt = db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
-      if (body.event?.type === 'deal' && receipt?.version !== body.version) fail('Stale presentation', 409);
+      if (['deal', 'reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
       const [project, inventory] = await Promise.all([store.load(), loadVideoRegistry(registryOptions)]);
       const eventId = prepareDecision(buildRuntimeCatalog(project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;

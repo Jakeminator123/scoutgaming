@@ -2,6 +2,7 @@ export function mediaSituationForEvent(eventId, event) {
   if (!event || typeof event !== 'object') return null;
   if (eventId?.startsWith('speak.') && event.type === 'speak' && typeof event.line === 'string') return event.line;
   if (eventId === 'deal.dealer' && event.type === 'deal' && event.to === 'dealer') return event.faceDown === false ? 'dealer-up' : event.faceDown === true ? 'dealer-hole' : null;
+  if (eventId === 'reveal.dealer' && event.type === 'reveal' && event.to === 'dealer') return 'dealer-hole';
   if (eventId?.startsWith('deal.player.') && event.type === 'deal' && event.to === 'box' && Number.isInteger(event.box) && event.box >= 0 && event.box <= 6) return `box${event.box}`;
   if (eventId === 'idle.ready' && event.type === 'idle') return 'ready';
   return null;

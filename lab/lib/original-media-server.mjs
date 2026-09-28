@@ -14,7 +14,7 @@ const PUBLIC = path.resolve(LAB, '../web/public');
 const RUNTIME = path.resolve(LAB, 'lib/original-media-runtime.mjs');
 const ROOT = '/api/original-media';
 const DEALERS = { astrid: 'dealers/astrid', vera: 'dealer', amira: 'dealers/amira', mei: 'dealers/mei' };
-const MODULES = ['dealer-engine.mjs', 'actor-compositor.mjs', 'actor-edge-blend.mjs', 'actor-grade.mjs', 'speech-playback.mjs', 'performance-player.mjs', 'local-film-player.mjs', 'performance-contact.mjs', 'card-art.mjs', 'dealer-reach.mjs', 'scene-join.mjs', 'vendor/three/three.module.js', 'vendor/three/three.core.min.js'];
+const MODULES = ['dealer-engine.mjs', 'actor-compositor.mjs', 'actor-edge-blend.mjs', 'actor-grade.mjs', 'speech-playback.mjs', 'performance-player.mjs', 'local-film-player.mjs', 'verified-video-buffer.mjs', 'performance-contact.mjs', 'card-art.mjs', 'dealer-reach.mjs', 'scene-join.mjs', 'vendor/three/three.module.js', 'vendor/three/three.core.min.js'];
 const readJson = async relative => JSON.parse(await readFile(path.join(PUBLIC, relative), 'utf8'));
 async function exists(relative) { try { return (await stat(path.join(PUBLIC, relative))).isFile(); } catch { return false; } }
 function sourceEvent(line) { return ['goodluck', 'insurance', 'double'].includes(line) ? `speak.${line}` : 'speak.other'; }

@@ -1,8 +1,8 @@
 // Full-frame MP4 support for PerformancePlayer. Consumers may attach calibration
 // to the verified asset; motion must use presented mediaTime, never wall time.
-export function playLocalFilm({ host, src, signal, muted = true, onReceipt = () => {}, onFrame, hold = () => {} }) {
+export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onFrame, hold = () => {} }) {
   return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
+    const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
     let frame, started = false, presented = false, terminal = false, watchdog;
     const deadline = setTimeout(() => finish(new Error('Film exceeded playback limit')), 60000);
@@ -35,7 +35,7 @@ export function playLocalFilm({ host, src, signal, muted = true, onReceipt = () 
     frame = video.requestVideoFrameCallback(presentedFrame);
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) { abort(); return; }
-    video.style.visibility = 'hidden'; host.append(video); video.src = src; arm();
+    video.style.visibility = 'hidden'; host.append(video); if (video.src !== src) video.src = src; arm();
     video.play().catch(finish);
   });
 }

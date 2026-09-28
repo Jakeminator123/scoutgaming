@@ -1,5 +1,69 @@
 # Kevin/Lissabon: granskning och nästa integration
 
+## 2026-09-29 — gemensamt Lab och selektiv Kevin-integration
+
+**Aktuellt läge; äldre avsnitt nedan är daterad historik.**
+
+| Del | Ingår nu | Bevarat/återstår |
+| --- | --- | --- |
+| Kortprojektion och handmasker | Kevins bildrutestyrda renderer från `0d12b7a5`; nu även exakt dolt kort och vändning | Ouppmätta varianter får statisk reserv; ingen filmad full insamling |
+| Filmbyte | Verifierad cache med 96 MiB mål, en förberedd decoder och en films framförhållning i öppningssekvensen | Pinnade aktiva klipp får inte kastas; iOS/native-URL-undantaget importerades inte |
+| Spel och identitet | Vår serverägda shoe, kort, saldo, sessionsägarskap, konton och turordning | Kevins delade bord/deadlines och spelmotor importerades inte |
+| Lab/Lissabon | En startare i `lab/start.mjs`, fokuserad studio på `/`, avancerad på `/tree`, `/lissabon` omdirigerar | Privata `lissabon/data` återanvänds utan flytt; historiskt namn behålls i kompatibilitetsflaggor |
+| Inställningar | En produktionsseed, utan nio gamla demotriggers, 192 demovarianter eller 48 överflödiga exempelassets | Egen redigering och beroenden skyddas av exakta fingerprint-jämförelser; före-revision sparas |
+| Filmregister | `presentation-runtime/media-families.mjs` äger familjer/sökvägar; byggare/validator/UI delar det | Genererat manifest har 28 familjer/45 MP4. Schema kvar under `lab/schemas` |
+
+### Verifierat lokalt
+
+- `npm --prefix lab test`: **492/492**, inklusive migration och faktisk katalogprojektion.
+- `npm --prefix lab run typecheck` och koordinerat Next-produktionsbygge: godkända.
+- 33 riktade tester för kort, auktoriserad reveal, delade hämtningar, avbrott, cachegräns och migrering.
+- Full `.githooks/pre-commit` passerar; dess valfria systemberoende hoppade över ett prov.
+- `node pipeline/audit-dealer-sync.mjs --probe`: oförändrade fyra dealerbaslinjer godkända. Kända saknade tal: Vera 8, Amira 2, Mei 3, Astrid 0. Ingen ny läppsynkacceptans.
+- Koordinerat **enda** produkt/labbpar, tom temporär testdatabas, endast lokala tillåtna nätverksportar. Inga GPU-/röst-/modellkörningar.
+- Browser: öppna Lab → Anslut → faktisk Astridspelare, minst två kompletta rundor med standardfilm, dolt kort, reveal och dealerextrakort. Inga konsolfel/varningar i stickprovet. Både `deal_hole` och `deal_flip` gav `video-frame-track` vid avslut. Kortet förblev dolt före reveal.
+- Mobilprov med 390×844 viewport utfört; tillfälligt testläge återställt på Jakobs begäran och normal fönsterstorlek verifierad. Inga permanenta zoom-/layoutinställningar ändrade.
+- Skärmbilder sparades som lokala Codex-artefakter för spel och den samlade kortkatalogen; inga privata konversationer exporterades.
+
+### Uppmätt, med begränsning
+
+Två observerade öppningssekvenser gav **27–42 ms** från PerformancePlayers
+startanrop till första presenterade bild för de fyra förladdade utdelningsklippen.
+`goodluck`: 71 respektive 54 ms. Flip: 46 ms vid första hämtningen, 17 ms med
+varm cache. Kvittot innehåller `elapsedMs`, `mediaReadyMs`, `preloadHit`,
+`cacheHit` och faktisk `video-frame`. Klippvalets HTTP-anrop sker före denna
+mätpunkt. Detta är lokala stickprov, **inte** A/B-förbättring, komplett
+svarslatens, första hörbara ljud, mobilnätsmätning eller GPU-kostnad.
+
+### Fortfarande oprövat / nästa steg
+
+- Jakob avslutade dagens manuella prov och avgränsade arbetet till Astrid.
+  Därför kördes ingen ny fyra-dealer-rehearsal i denna leverans. De andra
+  dealerbaslinjerna är automatiskt kontrollerade, men det är inte ett nytt
+  visuellt prov. En pågående spelarhand bevarades när automatisk granskning
+  nekade navigering innan avgränsningen kom.
+- Visuell granskning av alla ytterplatser, split, verklig telefon/iOS,
+  kortinsamling och mänsklig A/V-acceptans. Varianter kräver egna mätningar.
+- Ingen Vercel-/Render-deployment, GPU-körning, Redis/Upstash eller ny
+  betaltjänst har startats. AI-text/TTS/GPU-latens är inte mätt i detta prov.
+- Nästa åtgärd: Jakobs granskning av Astrids lokala spel-/Lab-vy före vidare
+  molnintegration. Fortsätt därefter med återstående Astrid-acceptans;
+  övriga dealers ligger utanför dagens avgränsning.
+
+### Rensning och återgång
+
+Fem gamla `lissabon`-start-/snapshotfiler är ersatta av gemensam Lab-kod och
+flyttade tester. Den stora snapshoten var en kopia av seed med några idleval;
+nu finns dessa val i `lab/policies/local-profile.json`. Gamla demo-seed ligger
+enbart i `lab/test/fixtures` för tester av bakåtkompatibilitet. `lissabon/data`,
+aktiva filmer, modellunderlag, 3D-källor och privata env-filer är orörda.
+
+Kod/ny standard kan återtas från föräldern `f2dce6fc`; återför endast
+uppgiftens filer, aldrig andras commit eller hela arbetskopian. Sparade
+projekt kan återställas från sin egen före-revision i `history` via ordinarie
+revisionskontroll. Gamla mediebytes/baslinjer har inte skrivits över.
+
+
 Granskat 2026-09-28. Vår bas: `e61261be` på `jakemanator123-github-work`.
 Källa: [codex/astrid-languages](https://gitlab.com/scout-gg/croupier/-/tree/codex/astrid-languages),
 verifierad fjärr-HEAD `0d12b7a559d328a333598b7e583b980e88d7925c`.

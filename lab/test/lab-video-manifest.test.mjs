@@ -38,11 +38,11 @@ async function fixture(t, { variant = false } = {}) {
   return { root, legacy };
 }
 
-test('checked-in manifest has 26 exact families, 43 hash-stable items and the locked idle roles', async () => {
+test('checked-in manifest has 28 exact families, 45 hash-stable items and the locked idle roles', async () => {
   const manifest = await readLabVideoManifest(repositoryManifest);
-  assert.equal(manifest.families.length, 26);
-  assert.equal(manifest.items.length, 43);
-  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 43);
+  assert.equal(manifest.families.length, 28);
+  assert.equal(manifest.items.length, 45);
+  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 45);
   for (const item of manifest.items) {
     assert.equal(item.id, videoIdFromSha256(item.sha256));
     assert.doesNotMatch(item.relativePath, /\.gitkeep$/);
@@ -86,7 +86,7 @@ test('checked-in manifest has 26 exact families, 43 hash-stable items and the lo
 test('generator preserves legacy IDs by SHA, accepts empty variant folders and ignores gitkeep', async t => {
   const { root, legacy } = await fixture(t);
   const manifest = await buildLabVideoManifest({ root });
-  assert.equal(manifest.items.length, 27);
+  assert.equal(manifest.items.length, 29);
   assert.ok(manifest.families.every(family => family.variantIds.length === 0));
   assert.deepEqual(new Set(manifest.items.map(item => item.id)), new Set(legacy.map(item => item.id)));
   assert.doesNotMatch(manifestJson(manifest), /gitkeep/);
