@@ -1,7 +1,7 @@
 import type { StudioAsset, StudioVariant } from '../lib/studio-model.mjs';
 import type { VideoMetadata } from '../lib/video-intake.mjs';
 
-export type StudioView = 'tree' | 'lab' | 'videos' | 'activity' | 'openclaw' | 'guide';
+export type StudioView = 'tree' | 'lab' | 'videos' | 'activity' | 'openclaw' | 'guide' | 'probe';
 export type DirectorMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 
 export interface VideoEntry {
@@ -90,11 +90,11 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
   return social ? undefined : result ? result.videoGenerationId : variant.videoGenerationId;
 }
 
-export const viewPaths: Record<StudioView, string> = { tree: '/tree', lab: '/', videos: '/videos', activity: '/activity', openclaw: '/openclaw', guide: '/guide' };
+export const viewPaths: Record<StudioView, string> = { tree: '/tree', lab: '/', videos: '/videos', activity: '/activity', openclaw: '/openclaw', guide: '/guide', probe: '/probe' };
 
 export function studioViewForPath(path: string): StudioView {
   const segment = path.split('/').filter(Boolean)[0];
-  return segment === 'tree' || segment === 'videos' || segment === 'activity' || segment === 'openclaw' || segment === 'guide' ? segment : 'lab';
+  return segment === 'tree' || segment === 'videos' || segment === 'activity' || segment === 'openclaw' || segment === 'guide' || segment === 'probe' ? segment : 'lab';
 }
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -102,7 +102,7 @@ export async function requestJson<T>(url: string, init?: RequestInit): Promise<T
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const detail = typeof data.error === 'string' ? data.error : typeof data.message === 'string' ? data.message : 'Begäran misslyckades.';
-    throw new Error(`${detail}${Array.isArray(data.errors) ? ` ${data.errors.join(' ')}` : ''}`);
+    throw Object.assign(new Error(`${detail}${Array.isArray(data.errors) ? ` ${data.errors.join(' ')}` : ''}`),{statusCode:response.status});
   }
   return data as T;
 }

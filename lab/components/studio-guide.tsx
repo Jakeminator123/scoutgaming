@@ -4,7 +4,7 @@ import type { StudioView } from './studio-types';
 import styles from './studio-guide.module.css';
 import { OpenClawSources } from './openclaw-sources';
 
-const viewLabels: Record<StudioView, string> = { tree: 'Nodträdet', lab: 'Eventstudion', videos: 'Videobanken', activity: 'Händelselogg', openclaw: 'Chatt & OpenClaw', guide: 'Guide' };
+const viewLabels: Record<StudioView, string> = { tree: 'Nodträdet', lab: 'Eventstudion', videos: 'Videobanken', activity: 'Händelselogg', openclaw: 'Chatt & OpenClaw', probe: 'Probe', guide: 'Guide' };
 
 export function StudioGuide({ onNavigate }: { onNavigate: (view: StudioView) => void }) {
   return <article className={styles.guide}>

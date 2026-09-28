@@ -4,7 +4,7 @@ const DAY = 86400000;
 const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
 const HISTORY_STATUS = 'generated-not-playback-confirmed';
 export const PLAYER_CHAT_MEMORY_LIMITS = Object.freeze({
-  history: 12, historyChars: 8000, message: 1000, retentionDays: 30,
+  history: 30, historyChars: 8000, message: 1000, retentionDays: 30,
   requestRetentionMs: DAY, pendingMs: 360000, requestsPerMinute: 10,
 });
 
@@ -84,8 +84,8 @@ export function createPlayerChatMemory(db, { now = Date.now } = {}) {
     if (!Array.isArray(entries) || entries.length > PLAYER_CHAT_MEMORY_LIMITS.history
       || entries.some(entry => !object(entry) || !safeText(entry.text)
         || (entry.role === 'user' ? Object.keys(entry).sort().join(',') !== 'role,text'
-          : entry.role !== 'assistant' || entry.delivery !== 'generated'
-            || Object.keys(entry).sort().join(',') !== 'delivery,role,text'))
+          : entry.role !== 'assistant' || !(entry.delivery === 'generated' && Object.keys(entry).sort().join(',') === 'delivery,role,text'
+            || entry.delivery === 'played' && entry.origin === 'probe' && Object.keys(entry).sort().join(',') === 'delivery,origin,role,text')))
       || entries.reduce((sum, entry) => sum + entry.text.length, 0) > PLAYER_CHAT_MEMORY_LIMITS.historyChars) {
       reject('player_memory_corrupt', 500);
     }
@@ -103,6 +103,25 @@ export function createPlayerChatMemory(db, { now = Date.now } = {}) {
   transaction(() => prune(now()));
 
   return {
+    // Only a current, completed playback receipt may add an autonomous line.
+    // No fabricated player message is needed to initiate or commit a probe.
+    playedInitiative(input, commitReceipt = () => {}) {
+      const scope = identity(input);
+      if (!safeText(input.text)) reject('player_memory_invalid_result', 400);
+      return transaction(() => {
+        const at = now(); prune(at);
+        const row = ensureProfile(scope, at);
+        if (row.revision !== input.expectedRevision) reject('player_memory_stale');
+        const history = [...storedHistory(row), { role: 'assistant', text: input.text, origin: 'probe', delivery: 'played' }];
+        while (history.length > PLAYER_CHAT_MEMORY_LIMITS.history || history.reduce((sum, entry) => sum + entry.text.length, 0) > PLAYER_CHAT_MEMORY_LIMITS.historyChars) history.shift();
+        const revision = randomUUID();
+        db.prepare('UPDATE player_chat_memory_profiles SET history=?, revision=? WHERE player_ref=? AND dealer_id=?')
+          .run(JSON.stringify(history), revision, scope.playerRef, scope.dealerId);
+        // The caller's durable playback ledger commits in this same transaction.
+        commitReceipt();
+        return receipt(scope, revision);
+      });
+    },
     profile(input) {
       const scope = identity(input);
       return transaction(() => { const at = now(); prune(at); return snapshot(scope, ensureProfile(scope, at)); });

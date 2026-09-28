@@ -53,6 +53,7 @@ function request(value) {
     || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(value.text)
     || (value.signal !== undefined && !(value.signal instanceof AbortSignal))) fail('invalid_generated_speech_request', 400);
   return { requestId: value.requestId, text: value.text, signal: value.signal,
+    beforeCostly: typeof value.beforeCostly === 'function' ? value.beforeCostly : async () => {},
     onProgress: typeof value.onProgress === 'function' ? value.onProgress : () => {} };
 }
 
@@ -144,6 +145,8 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
       try { return JSON.parse(data.toString('utf8')); } catch { fail('invalid_generated_speech_response'); }
     }
     try {
+      await input.beforeCostly();
+      signal.throwIfAborted();
       input.onProgress('voice');
       const pcm = await call('https://api.cartesia.ai/tts/bytes', {
         method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${config.cartesiaApiKey}`, 'Cartesia-Version': '2026-08-14' },
@@ -154,6 +157,8 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
       const durationMs = pcm.length / (GENERATED_SPEECH_LIMITS.sampleRate * 2) * 1000;
       signal.throwIfAborted();
       // Never retry either paid POST. An uncertain start remains a failed ID.
+      await input.beforeCostly();
+      signal.throwIfAborted();
       input.onProgress('video-submit');
       let job = await runpod('run', { method: 'POST', body: JSON.stringify({
         input: { op: 'lipsync', wav_b64: wav.toString('base64'), crf: 13, preset: 'ultrafast' },

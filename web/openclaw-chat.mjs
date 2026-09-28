@@ -3,7 +3,7 @@ class GatewayError extends Error {
 }
 
 export const OPENCLAW_SPEECH_KINDS = Object.freeze(['recordedLine', 'generatedText', 'silence']);
-export const OPENCLAW_CHAT_LIMITS = Object.freeze({ message: 1000, history: 12, historyChars: 8000, generatedText: 500, events: 128, hands: 32, cards: 32 });
+export const OPENCLAW_CHAT_LIMITS = Object.freeze({ message: 1000, history: 30, historyChars: 8000, generatedText: 500, events: 128, hands: 32, cards: 32 });
 
 const RANKS = new Set(['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']);
 const SUITS = new Set(['♠', '♥', '♦', '♣']);
@@ -148,6 +148,8 @@ export function projectOpenClawGameStatus(authoritative) {
       scope: authoritative.playResults.scope, accounting: authoritative.playResults.accounting,
       currencies: authoritative.playResults.currencies.map(({ currency, rounds, won, lost, net, wagered, returned }) =>
         ({ currency, rounds, won, lost, net, wagered, returned })),
+      ...(authoritative.playResults.lastRound === undefined ? {} : { lastRound: authoritative.playResults.lastRound ?
+        (({roundId,currency,wagered,returned,net,outcome})=>({roundId,currency,wagered,returned,net,outcome}))(authoritative.playResults.lastRound) : null }),
       currentRound: authoritative.playResults.currentRound ? {
         currency: authoritative.playResults.currentRound.currency, wagered: authoritative.playResults.currentRound.wagered,
         phase: authoritative.playResults.currentRound.phase,
@@ -203,7 +205,7 @@ function validateChoice(value, request, status) {
 // The caller must pass a status obtained from the authoritative server-side
 // game object. Browser-supplied state is not an acceptable argument here.
 export async function openClawChat(requestValue, authoritativeStatus, {
-  settingsProvider = null, completeImpl = null, fetchImpl = fetch,
+  settingsProvider = null, completeImpl = null, fetchImpl = fetch, model = 'gateway-default',
 } = {}) {
   const request = normalizeRequest(requestValue);
   const status = projectOpenClawGameStatus(authoritativeStatus);
@@ -215,7 +217,7 @@ export async function openClawChat(requestValue, authoritativeStatus, {
   // Keep the ordinary game server module portable for isolated fixtures that
   // never enable product chat; load the OpenClaw transport only on a chat call.
   const { decideProductSpeech, normalizeProductSpeechEnvelope, relayProductSpeech } = await import('../open-claw/lab/src/product-speech.mjs');
-  const envelope = normalizeProductSpeechEnvelope({ request, status });
+  const envelope = normalizeProductSpeechEnvelope({ request, status, ...(model==='gateway-default'?{}:{model}) });
   const choice = settings.speechUrl || settings.speechToken
     ? await relayProductSpeech(envelope, settings, fetchImpl)
     : await decideProductSpeech(envelope, settings, fetchImpl, completeImpl ?? undefined);

@@ -42,7 +42,7 @@ export async function loadGeneratedSpeech(value, { exactText, dealerId, signal, 
 
 /** The caller owns the pose gate and single speech queue. This owns one exact,
  * hash-checked audio/video pair, never a substitute recorded sentence. */
-export async function playGeneratedSpeech(value, { exactText, dealerId, mount, signal, media, onStart = () => {}, onReceipt = () => {} } = {}) {
+export async function playGeneratedSpeech(value, { exactText, dealerId, mount, signal, media, beforeStart = async () => {}, onStart = () => {}, onReceipt = () => {} } = {}) {
   if (!mount || signal?.aborted) throw abortError();
   const controller = new AbortController();
   const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true });
@@ -77,6 +77,10 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, mount, s
     if (controller.signal.aborted) throw abortError();
     if (!Number.isFinite(audio.duration) || audio.duration > 25.05 || Math.abs(audio.duration * 1000 - loaded.speech.audio.durationMs) > 150
       || !Number.isFinite(video.duration) || Math.abs(video.duration - audio.duration) > 1) throw new Error('Generated speech duration mismatch');
+    // Proactive speech revalidates its reservation after media transfer/decoding.
+    // This callback is optional for the existing shared playback callers.
+    await beforeStart();
+    if (controller.signal.aborted) throw abortError();
     const finished = new Promise((resolve, reject) => {
       const clean = () => { audio.removeEventListener('ended', end); audio.removeEventListener('error', fail); video.removeEventListener('error', fail); controller.signal.removeEventListener('abort', fail); };
       const end = () => { clean(); completed = true; resolve(); }, fail = () => { clean(); reject(new Error('Generated speech interrupted')); };

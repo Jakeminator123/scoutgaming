@@ -84,6 +84,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       OPENCLAW_BASE_URL: poisonOrigin, OPENCLAWAPI_KEY: 'poison-gateway-key',
       OPENCLAW_MODEL_API_KEY: 'poison-provider-key', OPENCLAW_MODEL_BASE_URL: poisonOrigin,
     }, { HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory, NODE_ENV: 'development',
+      CROUPIER_PRESENTATION_STUDIO_DIR: join(directory,'studio'),
       CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '', CROUPIER_LISSABON_PROFILES: lissabon ? '1' : '',
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
       OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat',
@@ -417,6 +418,26 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.deepEqual(envelope().status.playResults.currencies, [{ currency:'USD', rounds:1,
       won:Math.max(0, returned-5), lost:Math.max(0, 5-returned), net:returned-5, wagered:5, returned }]);
     assert.equal(envelope().status.playResults.currentRound, null);
+    const last=envelope().status.playResults.lastRound;
+    assert.equal(last.net,returned-5);assert.equal(last.wagered,5);assert.equal(last.returned,returned);
+    view=await command(view,'start',{bets:[{main:10,pp:0,tp:0},...Array.from({length:6},()=>({main:0,pp:0,tp:0}))]});
+    await client.post('/chat',chat(view,{message:'What happened last round?'}));
+    assert.deepEqual(envelope().status.playResults.lastRound,last);
+    assert.equal(envelope().status.playResults.currentRound.wagered,10);
   });
   assert.equal(poisonRequests, 0, 'parent relay, Gateway and provider settings never reach the child fixture');
+
+  await t.test('Probe uses authenticated scope, rejects cross-origin writes and stays idle when off', async () => {
+    const a=await guest(), b=await guest();
+    const before=captured.length, tab=crypto.randomUUID();
+    const view=await a.client.get('/api/probe');
+    assert.equal(view.policy.mode,'off');assert.deepEqual(view.facts,[]);
+    await a.client.post('/api/probe/presence',{tab,flags:{present:true,quiet:true,typing:false,enabled:true,sound:true},playerId:b.player.id});
+    const result=await a.client.post('/api/probe/decide',{tab,requestId:crypto.randomUUID(),sessionRevision:'test-session',roundRevision:String(a.state.version),playerId:b.player.id});
+    assert.equal(result.reason,'off');assert.equal(captured.length,before);
+    assert.equal((await b.client.get('/api/probe')).latest,null);
+    const otherOrigin=await fetch(origin+'/api/probe/forget',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://attacker.invalid',Cookie:a.client.cookie()},body:'{}'});
+    assert.equal(otherOrigin.status,403);await otherOrigin.text();
+    assert.equal((await a.client.get('/api/probe/forget',405)).error,'method_not_allowed');
+  });
 });

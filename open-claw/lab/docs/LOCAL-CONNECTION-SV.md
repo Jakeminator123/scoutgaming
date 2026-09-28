@@ -165,7 +165,7 @@ spelas fortfarande från exakt replikfamilj. **Fristående chattprov** och
 operatörschatten är inte kopplade till den autentiserade spelaren.
 
 Produktservern behåller kort och spelaridentitet som auktoritet. Konversations-
-minnet binds till autentiserad spelare och dealer, högst 12 meddelanden och
+minnet binds till autentiserad spelare och dealer, högst 30 meddelanden och
 8 000 tecken, med 30 dagars inaktivitetsgräns. **Minne** i originalchatten kan
 glömma den historiken; pågående svar avbryts. Den temporära QA-databasen raderas
 vid Ctrl+C, så dess spelarminne överlever inte en ny helperkörning.

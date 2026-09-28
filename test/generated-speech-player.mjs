@@ -204,6 +204,18 @@ test('decoded duration mismatch cannot start either track and still cleans up bo
   assert.equal(env.mount.children.length, 0); assert.equal(env.revoked.length, 2);
 });
 
+test('server rejection after decode prevents both tracks from playing and releases the take', async t => {
+  const env = browser(t), receipts = [];
+  await assert.rejects(playGeneratedSpeech(packet(), options({ mount: env.mount,
+    beforeStart: async () => { assert.ok(env.audio()); assert.ok(env.video()); throw new Error('stale_probe'); },
+    onStart: () => assert.fail('stale initiative must not play'), onReceipt: value => receipts.push(value),
+  })), /stale_probe/);
+  assert.equal(env.audio().playCalls, 0); assert.equal(env.video().playCalls, 0);
+  assert.deepEqual(receipts.map(value => value.state), ['interrupted']);
+  assert.equal(receipts[0].started, false);
+  assert.equal(env.mount.children.length, 0); assert.equal(env.revoked.length, 2);
+});
+
 test('rejected autoplay does not emit started and releases the pending completion listener', async t => {
   const env = browser(t, { play: media => media.kind === 'audio' ? Promise.reject(new Error('autoplay denied')) : Promise.resolve() }), receipts = [];
   await assert.rejects(playGeneratedSpeech(packet(), options({ mount: env.mount, onStart: () => assert.fail(), onReceipt: value => receipts.push(value) })), /autoplay denied/);

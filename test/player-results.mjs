@@ -24,10 +24,14 @@ test('profile results separate profits, losses, returned stakes, currencies and 
     { currency:'EUR', rounds:1, won:14, lost:0, net:14, wagered:7, returned:21 },
   ]);
   assert.deepEqual(result.currentRound, { currency:'USD', wagered:40, phase:'decisions' });
+  assert.deepEqual(result.lastRound, {roundId:'native-ledger-10',currency:'EUR',wagered:7,returned:21,net:14,outcome:'win'});
   const collected = readPlayerResults(db, 'one', { round: { phase:'settled' }, paid:true }, 'USD');
   assert.equal(collected.currencies[0].lost, 50);
   assert.equal(collected.currencies[0].net, -45);
   assert.equal(collected.currentRound, null);
+  assert.equal(collected.lastRound.net,-40);
+  assert.equal(collected.lastRound.outcome,'loss');
+  assert.equal(readPlayerResults(db,'new',{},'SEK').lastRound,null);
   assert.deepEqual(readPlayerResults(db, 'new', {}, 'SEK').currencies,
     [{ currency:'SEK', rounds:0, won:0, lost:0, net:0, wagered:0, returned:0 }]);
 });

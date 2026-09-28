@@ -1,3 +1,65 @@
+## 2026-09-28 — Astrid Probe, modellval och senaste insamlade runda
+
+Implementation på `jakeminator123/work`, ovanpå `1a3160a`. Jakob avgränsade
+fortsatt arbete till Astrid. Detaljer, lagring och rollback:
+[ASTRID-PROBE-IMPLEMENTATION.md](animation-events/ASTRID-PROBE-IMPLEMENTATION.md).
+
+- Probe finns i Lissabon och `/probe`, samma sparade policy, Av/Textprov/
+  Automatiskt, syntetiska textfall, källminnen/Glöm och separat knappstyrt
+  talprov i verkliga spelaren. 409 bevarar utkast och kan slå ihop ändringar.
+- Servern reserverar initiativ per autentiserad spelare. Närvaro, aktivitet,
+  policyversion, cooldown och minnesgeneration kontrolleras före modell,
+  TTS/GPU och faktisk talstart. Efterfrågad chatt kan avbryta en probe och
+  inväntar dess resursstädning. Uppspelad probe har ett separat atomiskt kvitto.
+- Chattens gräns är 30 meddelanden/8 000 tecken. Ett litet separat SQLite-minne
+  håller belagda user-citat och exakta avslutade handsekvenser i högst 30 dagar.
+  Korrigering pensionerar konservativt personliga fakta; Glöm stoppar sena svar.
+- Vanlig Astrid-chatt får `playResults.lastRound`, serverns senaste insamlade
+  rundas insats/retur/netto även efter nästa start. Prompten skiljer denna från
+  totalresultat och ber om naturliga svar utan interna spelsystembegrepp.
+- Modellen kan väljas för Astrids chatt och Probe. Standard är fortsatt
+  Gatewayns nuvarande modell; senast driftverifierad var 5.4-mini den 25/9.
+  Luna/Terra är kandidater, inte uppmätta vinnare. Ingen annan roll byts.
+  Officiella OpenClaw-integrations- och MCP-länkar finns i källindex och UI.
+
+Verifierat lokalt, isolerade testdatabaser:
+
+- Samtliga kommandon i `.githooks/pre-commit` passerade. Nya Probe-testfilen
+  har dessutom lagts till i hooken och passerar 14/14.
+- 197/197 riktade Probe/minne/tal/OpenClaw/deploytester passerade. Därefter
+  tillagda token-/observerkontroller passerade med berörda filer, 17/17.
+  Produktens HTTP-svit passerar 24/24, inklusive senaste runda, scope,
+  cross-origin-spärr och Av utan modellcall.
+- Next webpack-build i separat `.next-probe` passerade inklusive TypeScript;
+  TypeScript kontrollerades igen efter sista UI-ändringarna. Inga befintliga
+  `.next`-byggfiler eller gemensamma 4200/4201-processer ersattes.
+- Browser på localhost:4211: samma policy i `/probe` och `/lissabon`, sparning
+  och verklig HTTP 409. Oberoende ändringar 100 s/310 s slogs ihop och sparades.
+  Endast temporära QA-inställningar ändrades. Astrids faktiska spelare på 4210
+  öppnades med Minne och separat talprov; inspelad `goodluck` kördes med Play twice.
+  Rehearsal-panelens äldre text säger fortfarande "matching clip missing"
+  för denna Astrid-väg trots den synliga lokala filmen; inget nytt synkgodkännande.
+- `audit-dealer-sync --probe` passerade: Astrid 17 repliker, 0 saknade takes.
+  En hash-/assetkontroll är fortsatt inget visuellt läppsynkgodkännande.
+- Bred labbsvit före andra agentens pågående idleuppdatering: 467/474 gröna.
+  Sju fel gällde befintliga antalsantaganden om idle/manifest och Stage-källtext.
+  Dessa filer/medier ägs av annat arbete och har inte reparerats eller stageats
+  här. Den egna komponenttest-laddaren uppdaterades för de två nya editorerna.
+
+**Drift återstår:** Director-status är autentiserat nåbar (200), men listan
+saknar `product-probe-v1`. Första syntetiska modelljämförelseanropet fick 401
+på den nya produktvägen; jämförelsen avbröts utan röst/GPU. Det finns ingen
+ny `PROBE_API`-nyckel att skapa: de nya endpointarna använder befintliga
+speech- respektive labbtoken. Ingen Render-deploy har gjorts här.
+
+Driftsätt granskad kod på befintlig Gateway/Director före en lokal omstart
+med nya kontrakt: äldre Director känner inte `lastRound`, 30 meddelanden
+eller modelloverride. Behåll tjänsteplaner, hemligheter och GPU-budget.
+Kontrollera den faktiskt laddade modellen och kör därefter textjämförelsen
+samt två genererade Astrid-paket i riktiga spelaren. Genererad Probe och dess
+visuella synk har alltså ännu inte verifierats mot Render. Jira saknas i
+verktygsanslutningen; inga CAC-statusar har ändrats.
+
 ## 2026-09-28 — Devchatt återställd efter nätverksnekad serverstart
 
 Den öppna Astrid-fliken visade "Svaret kunde inte slutföras". Båda

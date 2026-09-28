@@ -23,6 +23,8 @@ const mocks = {
   './variant-selection': { VariantSelectionEditor: empty },
   './gateway-panel': { GatewayPanel: empty, modeLabels, modeExplanations },
   './idle-policy-editor': { IdlePolicyEditor: empty },
+  './probe-editor': { ProbeEditor: empty },
+  './project-conflict': { ProjectConflict: empty },
   './test-context': { TestContextPanel: empty, neutralContext: {} },
 };
 function loadComponent(relativeFile) {

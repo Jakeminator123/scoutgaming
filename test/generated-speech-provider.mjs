@@ -24,6 +24,22 @@ function fixture({ ttsResponse, startResponse, statusResponse, options = {} } = 
 }
 const starts = calls => calls.filter(call => call.method === 'POST' && !call.url.includes('/cancel/'));
 
+test('a stale initiative is checked before TTS and again before the paid GPU submission', async () => {
+  for (const stopAt of [1, 2]) {
+    const { provider, calls } = fixture();
+    let checks = 0;
+    const request = { ...input(), beforeCostly: async () => {
+      if (++checks === stopAt) throw Object.assign(new Error('stale_probe'), { code: 'stale_probe' });
+    } };
+    await assert.rejects(provider.generate(request));
+    assert.equal(calls.filter(call => call.url.includes('api.cartesia.ai')).length, stopAt - 1);
+    assert.equal(calls.some(call => call.url.endsWith('/run')), false);
+    await assert.rejects(provider.generate(request));
+    assert.equal(checks, stopAt, 'failed request IDs cannot repurchase work');
+    assert.equal(provider.status().busy, false);
+  }
+});
+
 test('construction/import does not read configuration from env or start providers; defaults are explicit', () => {
   let calls = 0;
   const provider = createGeneratedSpeechProvider(config(), { fetchImpl: () => { calls++; assert.fail(); } });

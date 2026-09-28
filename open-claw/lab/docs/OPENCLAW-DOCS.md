@@ -1,7 +1,8 @@
 # OpenClaw: officiella källor och konfigurationsindex
 
 Startpunkt för projektets IDE-agenter och människor. Länkarna och
-kommandonas roller kontrollerades mot officiell dokumentation **2026-09-20**.
+kommandonas roller kontrollerades mot officiell dokumentation **2026-09-20**;
+externa integrationer, MCP-index och dokumentsökning kompletterades **2026-09-28**.
 Detta är ett källindex, inte en installerad MCP-server eller en komplett kopia
 av dokumentationen. Nätåtkomst behövs för att läsa de länkade sidorna.
 
@@ -27,6 +28,10 @@ installera, driftsätta, ändra behörigheter eller lämna ut hemligheter.
 | Konfigurationsfält | [Configuration reference](https://docs.openclaw.ai/gateway/configuration-reference) |
 | Schema, validering och skrivskyddad konfiguration | [Config CLI](https://docs.openclaw.ai/cli/config) |
 | HTTP-anrop, autentisering och agentval | [OpenAI-compatible HTTP API](https://docs.openclaw.ai/gateway/openai-http-api) |
+| Egen backend eller extern app | [External apps](https://docs.openclaw.ai/gateway/external-apps) |
+| WebSocket och Gateway-protokoll | [Gateway protocol](https://docs.openclaw.ai/gateway/protocol) |
+| Externa händelser | [Inbound webhooks](https://docs.openclaw.ai/automation/cron-jobs/webhooks) |
+| Sök dokumentation vid behov | [Docs CLI](https://docs.openclaw.ai/cli/docs) |
 | OpenClaws egen dashboard | [Control UI](https://docs.openclaw.ai/web/control-ui) |
 | Flera agenter och separata arbetsytor | [Agent entries](https://docs.openclaw.ai/gateway/config-agents/entries-and-multi-agent) |
 | Tillåtna/nekade verktyg | [Tool policy](https://docs.openclaw.ai/gateway/config-tools/tool-policy) |
@@ -44,6 +49,13 @@ sidorna. Se [den korta läsregeln](README.md).
 Indexet dokumenterar Markdown-export med `.md` efter sidans URL eller
 `Accept: text/markdown`. Exempel: `https://docs.openclaw.ai/cli/mcp.md`.
 Ingen Gateway- eller modellnyckel ska skickas till dokumentationssidorna.
+
+`openclaw docs <sökord>` beskrivs i den aktuella officiella CLI-guiden som
+anrop till `https://docs.openclaw.ai/api/search`. `--json` ger strukturerat
+svar. Vi har ingen verifierad publik dokumentations-MCP. Kontrollera CLI/MCP-
+exempel mot vår låsta 2026.9.5 innan användning. Produktens väg är fortsatt
+backend → Director → privat Gateway → `croupier-speech` via HTTP.
+Probe behöver ingen webhook eller operatörsverktyg.
 
 ## Vad MCP betyder här
 
@@ -118,7 +130,9 @@ garanti för framtida svarstid. Se [systemkartans daterade driftgränser](../../
 | HTTP-adapter för råd och separat operatörssamtal | [openclaw.mjs](../src/openclaw.mjs) |
 | Redigerbara linjer, varianter och triggers | [catalog.json](../config/catalog.json) |
 
-IDE-inboxen ska aldrig kopplas in som spelarchatt. Produktspelarens adapter, moderering och beständiga minne återstår.
+IDE-inboxen ska aldrig kopplas in som spelarchatt. Produktspelarens HTTP-adapter och serverbundna chattminne finns; se
+[speech-integrationen](PRODUCT-SPEECH-DEPLOYMENT-SV.md) och [driftkvittot](DEPLOYMENT-RECEIPT-2026-09-25.md).
+Nya lokala kontrakt kräver separat driftsättning.
 Labbets egna namnval och begränsade beständiga minne finns nu separat i
 [companion-adaptern](COMPANION.md); det identifierar inte Partner-spelare.
 Eventtestet använder simulerad kontext; det separata sociala Astrid-provet
