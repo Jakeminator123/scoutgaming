@@ -1,13 +1,29 @@
-# Single-host cloud runtime scaffold
+# Single-host cloud pilot runtime
+
+## 2026-09-29: explicit pilot launch
+
+The former unconditional stop has been replaced by an explicit
+`CROUPIER_CLOUD_LAUNCH=pilot` selection. This is not production acceptance.
+`--check` now returns 0 for valid configuration, disk access, bootstrap and Lab
+build checks; it starts nothing and does not prove public access or durability.
+`--start` starts the two loopback children, temporarily binds the gateway to
+loopback, and checks anonymous player/BO/Lab rejection, a forged Lab session,
+host isolation and the actual Lab guard. Only after these pass does it bind
+the public port. A failed check stops startup and its children.
+
+Keep the first deployment limited to demo users and empty player data. Real
+HTTPS login, cookies, a complete game round, media, restart survival and
+database backup/restore must still be accepted on the chosen host. GPU and
+camera retain their separate opt-in flags; selecting pilot does not enable
+either. No service, image publication or paid job was created by this change.
+See [current launch handoff](../../docs/CLOUD-LAUNCH-HANDOFF.md).
 
 This package prepares one long-lived Node host for Web and Next Lab on one
 durable filesystem. A BO-to-Lab admin sign-in handoff, per-request Lab session
 check, route partition, and private Lab authorization header are implemented in
-this checkout. It is **blocked from starting** until public HTTPS access,
-cookie behavior, persistence, and the full game/media/speech flow have been
-verified on the intended host. `ops/cloud/start.mjs --start` always stops at a
-code-level gate, regardless of environment variables. No image has been built
-or deployed from this package.
+this checkout. The explicit pilot launch enables host verification without
+claiming the public HTTPS, persistence or full media flow already works.
+No image has been built or deployed from this package as part of this change.
 
 Build context is the repository root (`docker build -f ops/cloud/Dockerfile .`).
 The existing `.dockerignore` excludes local secrets and mutable data. Mount one
@@ -43,7 +59,7 @@ is also off by default; opt in with both `CROUPIER_GENERATED_SPEECH=1` and
 credentials and `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. The Web child listens
 on loopback behind the guarded HTTPS gateway. The gateway now forwards only
 the two exact game-host WebSocket speech routes to Web's authenticated relay
-when streaming is explicitly configured. Cloud launch remains code-blocked;
+when streaming is explicitly configured. Cloud launch requires pilot opt-in;
 real HTTPS, cookies, provider calls and GPU playback have not passed QA.
 
 The gateway would listen on one public `PORT`: exact game and BO Host headers
@@ -79,7 +95,7 @@ private sessionsjobb input. No paid worker is started by this package.
 
 `node ops/cloud/start.mjs --check` performs read-only layout validation after a
 production Lab build exists. It also rejects an empty or missing CRAIG database
-without bootstrap credentials. It returns 2 while launch is blocked. The launcher
+without bootstrap credentials. It returns 0 only for these local checks. The launcher
 would stop accepting requests, let in-flight requests drain briefly, terminate
 Lab then Web, and force-stop unresponsive children. Child stdout/stderr is not
 forwarded because initial startup may contain credentials. The current Web

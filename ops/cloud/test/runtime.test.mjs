@@ -358,10 +358,12 @@ test('only paired credentials reach the intended child and errors do not echo se
     error => !error.message.includes('private-director-token'));
 });
 
-test('deployment environment cannot enable the access gate', () => {
-  process.env.CROUPIER_CLOUD_AUTH_READY = '1';
-  try { assert.throws(() => assertCloudAccessReady(), /Cloud start blocked/); }
-  finally { delete process.env.CROUPIER_CLOUD_AUTH_READY; }
+test('cloud launch requires an explicit pilot selection, not an auth-ready assertion', () => {
+  for (const env of [{}, { CROUPIER_CLOUD_AUTH_READY: '1' },
+    { CROUPIER_CLOUD_LAUNCH: 'production' }, { CROUPIER_CLOUD_LAUNCH: '1' }]) {
+    assert.throws(() => assertCloudAccessReady(env), /CROUPIER_CLOUD_LAUNCH=pilot/);
+  }
+  assert.doesNotThrow(() => assertCloudAccessReady({ CROUPIER_CLOUD_LAUNCH: 'pilot' }));
 });
 
 test('child shutdown sends TERM once and waits for close', async () => {
