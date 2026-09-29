@@ -1,5 +1,5 @@
 'use client';
-import { labUrl } from "../lib/lab-url.mjs";
+import { labBasePath, labUrl } from "../lib/lab-url.mjs";
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { exportPartnerTrace, type PartnerTrace } from '../lib/partner-trace.mjs';
@@ -14,6 +14,9 @@ interface Access { verifiedAt: string; playerId: string; scopes: string[] }
 interface Mapping { fetchedAt: string; source: string; actualPlayback: false; mapping: { revision?: string | null; dealers: Record<string, Record<string, unknown>>; backofficePicks?: unknown; notes?: string[] } }
 
 export function PartnerReference({ trace, connected, connection, dealerId = 'astrid', onConnect, onDisconnect, onNative, onActivity, onImport, onNewObservation, children, diagnostics, focused = false }: { focused?: boolean; trace: PartnerTrace; connected: boolean; connection: string; dealerId?: string; onConnect: () => Promise<void>; onDisconnect: () => void; onNative: (record: Record<string, unknown>) => void; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; onNewObservation?: () => void; children?: ReactNode; diagnostics?: ReactNode }) {
+  // The cloud build mounts Studio on the game origin. Its ordinary player
+  // entry is usable even when the optional Partner observer is unconfigured.
+  const directGameUrl = focused && labBasePath() === '/studio' ? '/blackjack' : null;
   const [configuration, setConfiguration] = useState<Configuration | null>(null);
   const [access, setAccess] = useState<Access | null>(null);
   const [mapping, setMapping] = useState<Mapping | null>(null);
@@ -64,8 +67,12 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   async function connectGame() {
     if (busy) return;
     if (gameWindow.current && !gameWindow.current.closed) {
-      observing.current = true;
       gameWindow.current.focus();
+      if (!observer.current) {
+        setError('Spelet är öppet utan studiokoppling. Spela klart och stäng spelfliken före Anslut & följ spelet. Dina sparade klippval gäller även utan observation.');
+        return;
+      }
+      observing.current = true;
       try { await onConnect(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Strömmen kunde inte anslutas.'); }
       return;
     }
@@ -95,6 +102,19 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
       onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Originalspel och labbföljning startade', owner: 'Partner-launch + native-observation', reason: 'Spela i originalfliken. Bilddelningen väljs i webbläsaren; data följs automatiskt.', data: { dealerId, presentationMode: data.presentationMode } });
     } catch (cause) { game.close(); gameWindow.current = null; observer.current = null; onDisconnect(); setError(cause instanceof Error ? cause.message : 'Spelet kunde inte anslutas.'); }
     finally { setBusy(''); }
+  }
+  function openGame() {
+    if (!directGameUrl || busy) return;
+    if (gameWindow.current && !gameWindow.current.closed) { gameWindow.current.focus(); return; }
+    const game = window.open(directGameUrl, '_blank');
+    if (!game) { setError('Tillåt en ny flik för att öppna spelet.'); return; }
+    game.opener = null;
+    gameWindow.current = game;
+    observer.current = null;
+    observing.current = false;
+    setSpeechBinding(null);
+    onDisconnect();
+    setError('');
   }
   function disconnect() { observing.current = false; onDisconnect(); }
   async function run(action: 'verify' | 'launch' | 'launch-staged-base' | 'mapping') {
@@ -149,18 +169,18 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   const canLaunch = access?.scopes.includes('launch');
   return <section className={styles.reference} aria-label="Referensspel och observationsprotokoll">
     <span className="eyebrow">{dealerId === 'astrid' ? 'ETT SPEL · EN PRESENTATION' : 'ETT SPEL · TVÅ PRESENTATIONER'}</span>
-    <h3>{dealerId === 'astrid' ? 'Spela i Web. Konfigurera och följ i Lab.' : 'Originalet och labbet, sida vid sida'}</h3>
-    <p>{dealerId === 'astrid' ? 'Anslut öppnar Astrid med Emils lokala filmer. Spela och chatta i spelfliken; här ser du samma spelares klippval och faktiska uppspelning.' : 'Anslut öppnar rätt spelarsession och följer dess speldata. Spela i originalfliken; här ser du samma instruktioner, labbets variantval och faktisk uppspelning.'}</p>
-    <div className={styles.tools}><button className="primary-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
-    {!configuration?.configured ? <p className={styles.note}>{configuration ? 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
+    <h3>{dealerId === 'astrid' ? 'Spela i spelfliken. Konfigurera och följ i Studio.' : 'Originalet och labbet, sida vid sida'}</h3>
+    <p>{dealerId === 'astrid' ? 'Astrid använder studions gemensamma klippfamiljer. Spela och chatta i spelfliken. Anslut & följ spelet öppnar dessutom observation så att klippval och uppspelningskvitton visas här.' : 'Anslut öppnar rätt spelarsession och följer dess speldata. Spela i originalfliken; här ser du samma instruktioner, labbets variantval och faktisk uppspelning.'}</p>
+    <div className={styles.tools}>{directGameUrl ? <a className="primary-button" href={directGameUrl} target="_blank" rel="noopener" onClick={event => { event.preventDefault(); openGame(); }}>Öppna spelet ↗</a> : null}<button className={directGameUrl ? 'text-button' : 'primary-button'} disabled={Boolean(busy) || !configuration?.configured} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : focused ? 'Anslut & följ spelet' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
+    {!configuration?.configured ? <p className={styles.note}>{configuration ? directGameUrl ? 'Studions observation är inte konfigurerad. Öppna spelet fungerar ändå med vanlig spelarinloggning och sparade klippval.' : 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
     {error ? <p role="alert">{error}</p> : null}
     <NativeSpeechContext.Provider value={{ binding: speechBinding, connected }}>{children}</NativeSpeechContext.Provider>
-    <details className={styles.mapping}><summary>Diagnostik · videokarta, anslutning och observationsfiler</summary>
+    <details className={styles.mapping}><summary>{focused ? 'Diagnostik · anslutning och observationsfiler' : 'Diagnostik · videokarta, anslutning och observationsfiler'}</summary>
     <p><strong>{focused ? "Teknisk launch-identitet:" : "Spelare:"}</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
     <div className={styles.tools}>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => void run('verify')}>{busy === 'verify' ? 'Verifierar…' : 'Verifiera Partner-åtkomst'}</button>
-      <button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
-      <button className="text-button" disabled={Boolean(busy) || !configuration?.mappingConfigured} onClick={() => void run('mapping')}>{busy === 'mapping' ? 'Hämtar…' : 'Hämta videokarta'}</button>
+      {!focused ? <><button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
+      <button className="text-button" disabled={Boolean(busy) || !configuration?.mappingConfigured} onClick={() => void run('mapping')}>{busy === 'mapping' ? 'Hämtar…' : 'Hämta videokarta'}</button></> : null}
     </div>
     {diagnostics}
     {!focused ? <details className={styles.mapping}>

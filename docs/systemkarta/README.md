@@ -4,6 +4,15 @@ Den aktiva kartan ligger sedan 28 september 2026 i `docs/systemkarta/`.
 Ämnesträdet och dess sex delar är bevarade. För dagsaktuellt medieläge,
 se [Emils videobanker](../../emil/README.md).
 
+**Arbeta här nu:** [Astrid Studio](https://croupier-v2.onrender.com/studio)
+är samma arbetsyta som det lokala Labbet, tidigare kallat Lissabon.
+[Vägar och strömmar](04-studio-json-och-lagring/STUDIO-ROUTING.md) visar
+den kanoniska ingången, BO:s administrativa ansvar och vilket bevis varje
+ström ger. [Molnstatusen](../CLOUD-CURRENT-STATE-2026-09-29.md) samlar
+Vercel, Render och lagring; daterade kvitton längre in i kartan är historisk
+evidens. Använd [dokumentordningen](06-arbetssatt-och-verifiering/DOKUMENTORDNING.md)
+för att hitta och uppdatera rätt källa.
+
 Samlad 25 september 2026. Kartan utgår från Jakobs `jakeminator123/work`,
 efter Kevin-integrationen den 22 september. Den beskriver den granskade koden
 och skiljer den från labbprov och återstående produktintegration.

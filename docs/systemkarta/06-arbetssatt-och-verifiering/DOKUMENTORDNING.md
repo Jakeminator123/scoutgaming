@@ -8,6 +8,22 @@ tagits bort. Sakuppgifter ligger under systemkartans sex ämnen.
 Användarguide, sprint och gemensam handoff behåller sina befintliga källor;
 systemkartan länkar dit i stället för att kopiera deras innehåll.
 
+## Läs i den här ordningen
+
+| Fråga | Aktiv källa | Vad övriga dokument betyder |
+| --- | --- | --- |
+| Hur använder jag Studio? | [Labbguiden](../../../lab/docs/README.md) och `lab/docs/guide.json` | README är ingång; Guide är texten i produkten. |
+| Vilken väg och ström ska jag använda? | [Vägar och strömmar](../04-studio-json-och-lagring/STUDIO-ROUTING.md) | Lissabon är ett äldre namn för samma Studio. BO är administration. |
+| Vad körs på Vercel/Render och var sparas data? | [Samlad molnstatus](../../CLOUD-CURRENT-STATE-2026-09-29.md) | Daterade driftkvitton är bevis vid angiven tid, inte nya startinstruktioner. |
+| Hur levererar jag koden? | [GitHub-migreringen](../../GITHUB-MIGRATION.md) och `AGENTS.md` | Gamla GitLab-, inbox- och wikikommandon ska inte köras. |
+| Vad återstår och vad verifierades sist? | Översta aktuella avsnittet i [gemensam handoff](../../JOHN-HANDOFF.md), sedan Jira CAC | Äldre handoffavsnitt kan beskriva ersatt drift. Nyast daterade kvitto gäller vid motsägelse. |
+| Hur fungerar implementationen? | Systemkartans sex ämnen och länkad källkod | Äldre testantal och snapshots behåller sina datum. |
+
+Nya leveranser uppdaterar dessa ingångar. Lägg bestående förklaringar under
+rätt ämne och korta testutfall i handoffen. Molnstatus får länka till ett
+detaljerat driftkvitto när det behövs, men kopiera inte hela dagsloggen till
+fler användarguider.
+
 ## Så hålls det rent
 
 - Uppdatera en befintlig ämnessida när fakta ändras. En lång referens får en

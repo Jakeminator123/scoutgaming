@@ -5,7 +5,7 @@ import { gameUrl } from "@/lib/game-url"
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+      <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-3">
         <Link href="/" className="flex items-baseline gap-3" aria-label="Scout Gaming Group, startsida">
           <span className="font-sans text-xl font-semibold tracking-tight text-foreground">
             scout<span className="text-lime">/</span>gaming
@@ -23,7 +23,7 @@ export function SiteHeader() {
             </li>
             <li><Link href="/about" className="transition-colors hover:text-foreground">Om oss</Link></li>
           </ul>
-          <Button asChild size="sm" className="bg-lime font-mono text-xs tracking-widest text-ink uppercase hover:bg-lime2">
+          <Button asChild size="sm" className="min-h-11 bg-lime font-mono text-xs tracking-widest text-ink uppercase hover:bg-lime2">
             <a href={gameUrl()}>Öppna bordet</a>
           </Button>
         </nav>

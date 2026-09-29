@@ -2466,10 +2466,8 @@ function setTable(id) {
   if (!next || next === table || round || busy) return;
   // a different table can mean a different dealer in a different room
   if ((next.dealer ?? 'vera') !== DEALER.key) {
-    const q = new URLSearchParams({ dealer: next.dealer ?? 'vera', table: id });
-    for (const key of ['labObserverOrigin','labObserverChannel']) {
-      const value=new URLSearchParams(location.search).get(key);if(value)q.set(key,value);
-    }
+    const q = new URLSearchParams(dealerVersionPath(next.dealer ?? 'vera', 'original', location.search).split('?')[1]);
+    q.set('table', id);
     location.search = q.toString();
     return;
   }
@@ -2501,9 +2499,7 @@ for (const dealer of Object.values(DEALERS)) {
       $('#dealer-switch-status').textContent = 'Finish this round to change tables.';
       return;
     }
-    const query = new URLSearchParams(location.search);
-    query.set('dealer', dealer.key); query.delete('table');
-    location.search = query.toString();
+    location.href = dealerVersionPath(dealer.key, 'original', location.search);
   };
   $('#dealer-options').appendChild(button);
 }
@@ -2592,7 +2588,7 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
   const dealerSelect = panel.querySelector('#rehearsal-dealer');
   for (const d of Object.values(DEALERS)) dealerSelect.add(new Option(d.name, d.key));
   dealerSelect.value = DEALER.key;
-  dealerSelect.onchange = () => { location.href = `?dealer=${dealerSelect.value}&rehearsal=1`; };
+  dealerSelect.onchange = () => { location.href = dealerVersionPath(dealerSelect.value, dealerV2Route ? 'v2' : 'original', location.search); };
   const lineSelect = panel.querySelector('#rehearsal-line');
   const bank = await fetch(`${DEALER.base}/audio/en/bank.json`).then(r => r.json());
   for (const id of new Set([...VOICE_LINES, ...Object.keys(bank)])) {
@@ -2603,6 +2599,10 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
   const status = panel.querySelector('#rehearsal-status');
   const update = () => {
     const id = lineSelect.value;
+    if (localPresentationEnabled) {
+      status.textContent = (bank[id]?.text ?? LINES[id] ?? id) + ' — shared Studio presentation; exact clip selected at playback.';
+      return;
+    }
     const matched = !!engine.index?.clips?.[`idle-1/speak/${id}`];
     const native=speechMedia[DEALER.key]?.[id];
     status.textContent = (astridSpeak?.text(id) ?? native?.text ?? bank[id]?.text ?? LINES[id] ?? id) + (astridSpeak?.has(id) ? ' — green-screen take used in gameplay.' : native ? ' — video with embedded audio.' : matched ? ' — matching clip available.' : ' — voice only; matching clip missing.');
@@ -2612,16 +2612,22 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
     const id = lineSelect.value;
     setMuted(false);
     if (astridSpeak?.has(id)) return voice.say(id,{force:true});
-    return speechTurn(signal => playRecorded(id, new Audio(`${DEALER.base}/audio/en/${id}.mp3`), bank[id]?.text ?? LINES[id] ?? id, signal));
+    let completed;
+    await speechTurn(async signal => { completed = await playRecorded(id, new Audio(`${DEALER.base}/audio/en/${id}.mp3`), bank[id]?.text ?? LINES[id] ?? id, signal); });
+    if (localPresentationEnabled && completed !== true) throw new Error('Shared Studio clip did not complete; check playback status.');
+    return completed;
   };
   const review = async count => {
     const controls=[...panel.querySelectorAll('button,select')];
     controls.forEach(control=>control.disabled=true);
+    update();
+    if (localPresentationEnabled) status.textContent = `0/${count} completed — reviewing ${lineSelect.value} with the shared Studio presentation.`;
     try { for(let i=0;i<count;i++){
       // The first gesture can unlock the automatic greeting. Queue the
       // requested review behind it instead of silently dropping both plays.
       while(speaking)await new Promise(resolve=>setTimeout(resolve,50));
-      await play();
+      const completed = await play();
+      if (localPresentationEnabled && completed === true) status.textContent = `${i + 1}/${count} completed — ${lineSelect.value}, shared Studio clip.`;
     } }
     catch(error){status.textContent=`Playback failed: ${error.message}`;}
     finally{controls.forEach(control=>control.disabled=false);}

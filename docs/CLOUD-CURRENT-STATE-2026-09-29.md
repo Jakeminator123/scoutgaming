@@ -1,184 +1,138 @@
-# Croupier: gemensamt molnläge 2026-09-29
+# Croupier: aktuell molnkarta
 
-Detta är en daterad driftkarta för agentarbete. Kontrollera leverantörernas
-aktuella tillstånd innan en deploy eller radering; en äldre rubrik i ett
-handoffdokument ändrar inte det som faktiskt körs. Arbetsbranchen är
-`jakemanator123-github-work` i `Jakeminator123/github-work`. GitLab-flödet är
-pausat enligt `AGENTS.md`. Inga hemlighetsvärden hör hemma i denna fil.
+Kontrollerad 2026-09-29 cirka 15:35 UTC. Den här filen är den korta
+**aktuella driftkartan**. Daterade QA-rapporter och äldre avsnitt i
+[handoffen](JOHN-HANDOFF.md) är historiska bevis, inte startinstruktioner.
+Kontrollera leverantörens status igen före nästa deploy eller resursändring.
 
-## Körande och förberedda ytor
+## En ingång, en spelpresentation, ett Studio
 
-Uppföljning cirka 09:32 CEST: `16f1f53d` är Live i automatiska
-`dep-datmfmnf3r2c73dtdvu0`. Astrids chattfält och logg är synliga utan
-långtryck i desktop och 390 px mobilbredd. Ingen insats eller rundåtgärd
-gjordes i kontrollen. Lab-bibliotekets omläsning fungerar sedan `d94346dd`
-autentiserat; Nexts interna URL och dess localhost-normalisering är hanterade.
-En utgången handoff gav verifierad HTTP 410 med ordinarie omstartslänk;
-utan session ger Lab-API fortfarande HTTP 401. Jakob startade därefter
-`dep-datmccflot8c738514fg` genom Save and rebuild för Whisper-nyckeln.
+| Yta | Adress och ansvar |
+| --- | --- |
+| Publik frontend | [croupier-frontend.vercel.app](https://croupier-frontend.vercel.app/), Next-appen i `apps/croupier-frontend`. `/demo` länkar till spelet på Render. |
+| Spel | [Render /blackjack?dealer=astrid](https://croupier-v2.onrender.com/blackjack?dealer=astrid). Render äger inloggning, kort, sko, rundor, saldo och uppspelning. |
+| Astrid Studio / Lab | [Render /studio](https://croupier-v2.onrender.com/studio). Samma Lab-app för bibliotek, policy, Probe och zoner. Vercels `/labb` är en genväg hit. |
+| BO | Render `/bo`, administration och administratörsinloggning. BO är inte en alternativ dealerström. |
+| Isolerat speltest | Vercel `croupier-player-preview-qa` och Render `croupier-vercel-preview-qa`. Testbackenden har tidigare stoppats och återstartas bara på begäran. |
 
-### Enkel projektkarta och Lab-ingångar — 2026-09-29
+`presentation=local` är det historiska **kodnamnet för den gemensamma
+Lab/Lissabon-presentationen**. Det betyder inte lokal dator. På Render
+används samma `presentation-runtime`, familjer, policy och videoregister.
+`CROUPIER_STREAM_LANE=lissabon-stream-lane` är ett internt kompatibilitets-ID.
+Det är inte ytterligare en tjänst eller ett val mellan BO och Studio.
 
-- `croupier-frontend` är den gemensamma publika ingången. Använd detta projekt
-  för nya frontendleveranser. `/labb`, `/labb/filmer`, `/labb/zoner` och
-  `/labb/guide` gav verifierad HTTP 307 som genvägar till det autentiserade Labbet på
-  Render `/studio/`; en slug flyttar inte servern eller lagringen till Vercel.
-- `github-work-vercel-entry` är den äldre manuella ingången och
-  `croupier-landing-preview-qa` är det äldre landningssidetestet. Båda är
-  avvecklade. Vercels projekt-API och de publika adresserna gav 404 den
-  29 september cirka 08:37 CEST. Samla framtida designpreview i
-  huvudprojektets Preview-flöde med uttryckligt konfigurerade testadresser.
-- `croupier-player-preview-qa` har en annan roll: isolerat speltest samt
-  nuvarande kopplingar till privata Blob och två separata Neon-resurser.
-  Render-testbackend är pausad. Flytta/verifiera dessa kopplingar före
-  avveckling; radera inte projektet som om det vore en tom startsideskopia.
-- Familjeuppladdning från `codex-media-upload` är deployad i `adae8772`. Den sparar via
-  Labbet på Render-disk. Lokala original och browserns zonklipp flyttas inte
-  genom en Git-push eller genom att Blob finns. Den återstående Blob-synken
-  måste omfatta uppladdning, metadata och autentiserad Range-uppspelning.
+Tre olika saker har tidigare kallats ström:
 
-QA betyder kvalitetstest. Målet är en begriplig huvudingång och en isolerad
-testmiljö; antalet kvarvarande projekt speglar migreringssteg, inte ett behov
-av tre konkurrerande startsidor. De två gamla projekten försvann mellan
-förkontroll och raderingsförsök: CLI-försöket för `github-work-vercel-entry`
-svarade att projektet redan saknades. Efterkontrollen bekräftar slutläget,
-men fastställer inte vem som utförde raderingen. Ingen databas eller media
-raderades av denna agent. Privat Blob har fortsatt ett objekt och samma QA-koppling.
+- **Speluppspelning:** den gemensamma spelaren väljer exakt inspelat klipp
+  via `/api/presentation/select` och `/api/presentation/videos/:id`.
+- **Observation:** Studios läsande händelseflöde följer det riktiga spelet.
+  Det kräver Partner-konfiguration men behövs inte för att öppna själva spelet.
+- **Genererat tal/video:** autentiserad WebSocket via Render, Cartesia och
+  RunPod. Det är ett valbart, separat talflöde med egen budget och acceptans.
 
-| Resurs | Källa och nuvarande roll | Verifierat / kvar |
+Lokala Lissabon-startaren är en utvecklingsmiljö. GitHub är kodleveransen;
+GitLab-inbox, wiki och spegelpush är pausade. Inga GitLab-instruktioner i
+äldre rapporter återaktiverar dem.
+
+## Leverans och verifierat utgångsläge
+
+Enda leveransmål: `Jakeminator123/github-work`, branch
+`jakemanator123-github-work`, genom `node tools/push-github-work.mjs`.
+Den 29 september 15:32–15:35 UTC verifierades:
+
+- GitHub HEAD `365f283b4005f0ca2f52312f745af9bfe05fa5e3` och gröna
+  [GitHub checks](https://github.com/Jakeminator123/github-work/actions/runs/36548386444).
+- Vercel `croupier-frontend`: samma commit, READY,
+  `dpl_xEm5acbNA4NX8ctufwpqcmXXX8E4`. Projekt-API bekräftar rätt repo,
+  produktionsbranch och rot `apps/croupier-frontend`.
+- Render `croupier-v2`: samma commit, Live, automatiskt deployad på 2m46s.
+  Tjänst `srv-datg3j6gekts73amgli0` i Frankfurt.
+- En befintlig administratörssession öppnade `/studio`. Det bevisar aktuell
+  åtkomst, inte en ny lösenordsinloggning eller full spelrunda.
+- Befintlig spelarsession gick från `/blackjack?dealer=astrid` till
+  `/?dealer=astrid&presentation=local`; Astrids video hade `readyState=4`,
+  1080 × 1920 och spelade. Inga insatser eller rundåtgärder gjordes.
+- Render-dashboarden visar 5 GB beständig disk på `/var/data`.
+- Studio → Bakgrundszoner → Läs från molnet gav **Molnzonerna är inlästa**,
+  0 zoner och version 0. Det verifierar den riktiga dedikerade
+  Neon-anslutningens läsväg; ingen sparning eller migration gjordes.
+
+Senaste leverans och efterkontroll förs överst i [JOHN-HANDOFF](JOHN-HANDOFF.md).
+Vercel-landningen och Render bygger automatiskt från arbetsbranchen; ingen
+manuell publicering till ett gammalt frontendprojekt behövs.
+
+De tidigare Vercelprojekten `github-work-vercel-entry`,
+`croupier-landing-preview-qa` och `modern-landing-page` är avvecklade enligt
+föregående verifierade kvitton. Deras gamla adresser ska inte användas som
+startpunkter. Det kvarvarande `croupier-player-preview-qa` bär däremot
+lagringskopplingar och ska inte raderas som en dubblett.
+
+## Var informationen faktiskt lagras
+
+| Data | Nuvarande lagring | Kvarvarande arbete |
 | --- | --- | --- |
-| Render `croupier-v2` | GitHub `Jakeminator123/github-work`, `jakemanator123-github-work`; `16f1f53d`, deploy `dep-datmfmnf3r2c73dtdvu0`, verifierad Live 09:31 CEST. Äger ännu spel, BO, Lab, kort, sko, saldo och två SQLite-filer på `/var/data`. | Synlig chatt verifierad i desktop/mobil. Lab-bibliotekets autentiserade omläsning fungerar; obehörig API ger 401 och utgången handoff 410. MP4-import, produktionsbackup utanför Render och Neon-cutover återstår. |
-| Render `croupier-lab-director` och privat `croupier-lab-openclaw` | Samma GitHub-branch, deploy `15bd1541`; Director är produkt-/Lab-gräns, Gateway har modellen och sin beständiga `/data/openclaw`. | Live. Interna status-/tokenprov lyckades; full giltig spel→modell→tal-kedja återstår. |
-| Vercel `croupier-frontend` | Git-kopplat till `Jakeminator123/github-work`, produktionsbranch `jakemanator123-github-work`, rot `apps/croupier-frontend`; första deploy från `d78eb4cb`. | [Ny Git-kopplad startsida](https://croupier-frontend.vercel.app/) READY. Automatisk deploy efter push av `d8d4b707` blev READY: `dpl_9GcmrpbHQ91oTJwnBYUuvV5DzxDZ`. Startsida och `/demo` verifierade; `CROUPIER_GAME_URL` sparad för Production och Preview och pekar på Render-spelet. |
-| Tidigare Vercel `github-work-vercel-entry` | Ersatt landning; tidigare deployment `dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T`. | **Borttaget.** Projekt `prj_hRrGtpAgb0HBEt1sssqOPZVlROh4` och dess gamla publika adress ger 404. Vid förkontroll fanns bara två speladressvariabler, ingen Blob-koppling och ingen egen domän. API:t visade då en sourceless Git-länk, vilket rättar äldre uppgiften om helt saknad Git-länk. |
-| Tidigare Vercel `croupier-landing-preview-qa` | Ersatt manuell landningspreview. | **Borttaget.** Projekt `prj_iWnezDxPevS1Bd4hMVbA26NWfKGf` och dess gamla publika adress ger 404. Vid förkontroll fanns bara `CROUPIER_GAME_URL`, ingen Blob-koppling eller egen domän. |
-| Vercel `croupier-player-preview-qa` + Render `croupier-vercel-preview-qa` | Separat spelklient och tom Render-testdata. | [QA-spel](https://croupier-player-preview-3esw2v3fl-jakeminator123s-projects.vercel.app/frontend-preview/blackjack/) provades med Astridvideo, serverrundor, saldo efter omladdning och utbetalning. Vercel-projektet saknar Git-koppling. Render-testtjänsten är **manuellt pausad** efter provet. |
-| Tidigare Vercel `modern-landing-page` | Var kopplat till separata `Jakeminator123/croupier-frontend/main`; hade adress `modern-landing-page-kohl-xi.vercel.app`. | **Raderat 2026-09-29 på Jakobs uttryckliga bekräftelse.** CLI rapporterade success för projekt `prj_3zsY4c8kKQMp9CeHuwHVgy1tFLAs`; efterkontrollen rapporterade att projektet inte finns. GitHub-källrepot raderades inte. |
+| Spelarkonton, sessioner, saldo, sko och rundor | Render `/var/data/players/croupier.db` (SQLite) | Separat game-Neon, full adapter, extern återläsbar backup och isolerad provmigrering före byte. |
+| CRAIG/BO-konton, roller, Lab-sessioner | Render `/var/data/players/craig.db` (SQLite) | Ska migreras samordnat med spelaridentiteter och återkallning av sessioner. |
+| Studio-projekt, familjeindex och uppladdningsmetadata | Render `/var/data/studio` | Ingår fortfarande i diskbackup även när själva MP4 ligger i Blob. |
+| Ursprungliga/bundlade MP4 | Git/deploy och befintliga Render-diskposter | En Git-push och en Blob-upload är olika leveranser. |
+| Nya privata familjeklipp | Vercel Blob genom skyddade Lab-/spelar-API:er | Exakt hash, familj och Range måste matcha. Visuell acceptans är separat. |
+| Zonmetadata | Dedikerad Neon `croupier-astrid-background-zones-db`, schema `croupier_zones` | Browserkopian flyttas bara genom uttrycklig molnsparning. Zoner är ännu Lab-preview. |
+| Lokala zonutkast och egna zonklipp | Webbläsarens localStorage/IndexedDB | Bevaras separat från molnläge och molnutkast. |
+| Modellminne och rollkonfiguration | Director/Gateways egna beständiga diskar | Är inte Neon-speldata eller Vercel-frontenden. |
 
-Importen till `apps/croupier-frontend` är levererad i `da7f8807`, och den
-första publika adressen byttes kontrollerat i `d78eb4cb`. Den nya
-`croupier-frontend` är den Git-kopplade produktionsytan; den tidigare
-`github-work-vercel-entry` och landningssidans separata QA-projekt är
-avvecklade. Innan spel-QA körs genom huvudprojektets designpreview måste dess
-Preview-miljö få den isolerade speladressen i `CROUPIER_GAME_URL`;
-nuvarande Production och Preview pekar båda på produktionsspelet.
-Referenser till den raderade
-separata sidan är historiska importkvitton. Se
-[frontendkontraktet](VERCEL-FRONTEND-MIGRATION.md).
+### Blob och Neon: resurser finns, rollerna är skilda
 
-## Data och media
+Båda Neon-resurserna återlästes som **Available** via Vercel den 29 september
+15:34 UTC och är kopplade till `croupier-player-preview-qa`:
 
-### Inloggning, spelaradress och minne
+- `croupier-astrid-background-zones-db`: enbart zoner, med
+  `CROUPIER_ZONES_DATABASE_URL`; inga generiska `DATABASE_URL`-fallbacks.
+- `croupier-preview-neon`: separat Preview-resurs, används inte av spelets
+  nuvarande SQLite-runtime. Ingen produktionsflytt sker genom dess existens.
 
-`/blackjack?dealer=astrid` är inloggningsingången. Efter en giltig session
-väljer `web/public/blackjack-entry.mjs` adressen
-`/?dealer=astrid&presentation=local`. `local` är namnet på Astrids
-Web/Render-ägda presentationsväg: klipp väljs via serverns
-`/api/presentation/select` och serveras via `/api/presentation/videos/:id`.
-Det betyder inte att spelet körs på Jakobs dator eller att Neon är aktivt.
-`croupier-v2` är Render-tjänstens namn.
+Det privata Blob-lagret heter `croupier-astrid-zone-media-private`,
+`store_AqwvebTbBHarOjvG`, `arn1`. Namnet är historiskt: den avsedda aktiva
+adaptern använder separata namnrymder `croupier/videos/` för familjeklipp
+och `croupier/zones/` för zonklipp. En tidigare manuellt uppladdad zonfilm
+ligger också i lagret. Privat läsning sker med serverhemlighet och skyddad
+medierutt, inte en publik direktlänk. En ny token eller ett nytt lager
+behövs inte för denna struktur.
 
-Labbet använder CRAIG-/BO-administratören. Root verifierade inloggning med
-den befintliga bootstrap-identiteten `jakob` och kom in i Astrid Studio samt
-**Ladda upp & bibliotek**. Inget lösenord skrivs i dokumentationen. Den
-separata spelarregistreringen finns med `CROUPIER_PLAYER_ACCOUNTS=1` och
-lagrar ännu konton/sessioner i SQLite. Spelarminne är serverbundet till
-kanonisk spelaridentitet och dealer; OpenClaw får servervald namn- och
-minneskontext. Den kontrollerade Neon-flytten återstår enligt
-[migrationsplanen](NEON-GAME-MIGRATION.md). Cashier är fortsatt demoinsättning
-till testbalans, utan betalningsleverantör eller riktiga uttag.
+Render-aktiveringen av Blob och zonanslutningen verifierades i föregående
+liveimport; Vercels projektkoppling ensam överför inga nycklar till Render.
+[Importkvittot](qa/cloud-media-import-2026-09-29.json) avser **22 tillgängliga
+kandidater: 12 i privat Blob och 10 befintliga diskposter**, inte 22 Blob-objekt.
+Det aktuella [mediekvittot](MEDIA-BEST-TAKES-2026-09-29.md) jämför dagens
+projektfiler med dessa exakta hashvärden. Ingen hashkontroll godkänner
+läppsynk, kortkontakt eller den sparade användningspolicyn.
 
-Lab-inloggning och bibliotekets rendering bevisar inte full media-QA.
-**Spel & uppspelning** visade tidigare ett generiskt konfigurationsfel.
-Orsaken var Nexts interna Request-URL, följt av NextURL:s normalisering till
-`localhost:4188`. Efter `d94346dd` läses konfigurationen och sidan visar nu
-det separata hindret **Partner-konfiguration saknas eller är ogiltig**;
-Anslut är därför fortfarande inaktiv. Bibliotekets **Läs in nya filer**
-fungerar utan auth-alert. Ingen lokal MP4 laddades upp under kontrollen.
+Vercel-frontenden behöver bara `CROUPIER_GAME_URL` (och valfri explicit
+Studio-adress enligt frontendkontraktet). Den har dessutom 16 äldre
+modell-/Partner-/OpenClaw-variabelnamn utan konsument i frontendkoden.
+Namn och målmiljöer är kontrollerade utan att värden skrivits ut. De är inte
+aktiva Render-inställningar och ska inte användas för att felsöka spelet.
+De har inte raderats i denna granskning.
 
-| Resurs | Syfte | Faktiskt läge |
-| --- | --- | --- |
-| Render `/var/data/players/croupier.db` och `craig.db` | Konton, sessioner, saldo, sko/rundor, CRAIG och BO | Produktion. Backupverktyg och syntetiska tester finns, men ingen verifierad extern kopia. Båda filerna behöver ett samordnat skrivstopp före export. |
-| Neon `croupier-preview-neon` | Isolerad spel-Preview | Ansluten till QA-projektet, används ännu inte av spelet. |
-| Neon `croupier-astrid-background-zones-db` | Astrids zonmetadata | Separat Free-resurs; Lab-zoner finns ännu i browserlagring och synkas inte till Neon. |
-| Vercel Blob `croupier-astrid-zone-media-private` | Astrids privata zonmedia | Bara ansluten till spel-QA; en godkänd man-MP4 finns. Anonym HEAD gav 403. Det tidigare tomma publika `croupier-zone-videos` är raderat. Privat Blob behöver en behörighetskontrollerad serverväg för klientuppspelning. |
-| Planerad separat game-Neon | Framtida produktionskonton, saldo och rundor efter Jakobs beslut | Ännu inte skapad eller inkopplad. [Schema och async kommandokärna](NEON-GAME-MIGRATION.md) är bara isolerad förberedelse. Gör först extern Render-backup, full adapter och provmigrering. |
+## Kvar innan större driftbyte
 
-`croupier-player-preview-qa` har en privat `BLOB_READ_WRITE_TOKEN` för Production/Preview/Development och 17
-providerhanterade `CROUPIER_ZONES_*`-namn för Preview/Development. Inget av
-zonernas env-namn läses ännu av spårad runtimekod. Använd
-`CROUPIER_ZONES_DATABASE_URL` som kanoniskt servernamn när synken byggs;
-skicka aldrig dessa nycklar som `NEXT_PUBLIC_*`. Se
-[miljöregistret](ENVIRONMENT-VARIABLES.md) och
-[zonlagringen](ZONE-CLOUD-STORAGE.md).
+- Separat game-Neon och produktionsbyte är **inte genomförda**.
+  Följ [Neon-planen](NEON-GAME-MIGRATION.md) och
+  [backup/restore](RENDER-BACKUP-RESTORE.md); byt inte bara `DATABASE_URL`.
+- Spelklienten ligger ännu på Render. Vercels publika frontend länkar dit;
+  [same-origin-migrationen](VERCEL-FRONTEND-MIGRATION.md) är separat.
+  Nuvarande frontend-Preview pekar också mot produktion: prova inga
+  syntetiska konton/rundor där utan isolerad backend.
+- Sessionsfixen är Live, men två riktiga talrepliker i följd, svarstid och
+  audiovisuell läppsynk kräver fortfarande eget driftprov. Tidigare
+  första bildrutor tog cirka 42 och 86 sekunder.
+- Terra är standard i kod och Astrids sparade val. Gatewayns globala
+  beständiga modellval blockerades tidigare av `EPERM fchmod`; det har
+  inte ändrats eller verifierats på nytt här.
+- Fysisk mikrofon/kamera, verkligt Terra-bildsvar, extern återläsbar
+  Render-backup och full zon-upload/spara/återläs-acceptans återstår.
+- Jira CAC saknar verktygsanslutning och den öppnade Jira-sidan kräver
+  inloggning. Inga ärenden har markerats klara utan verifierat Expected Result.
 
-## AI och OpenClaw
-
-RunPods separata testendpoint `croupier-astrid-gpu-test` (`zsudl8tmzcmiv1`)
-kör privat GHCR-image från `12ce6d47`, release 3, högst en worker och noll
-alltid aktiva. Två syntetiska 1,5-sekunders filjobb skapade 54-rutors MP4.
-Senaste jobbet tog 21,3 sekunder i RunPod-kö och 1,45 sekunders exekvering.
-FFmpeg rapporterade `OpenEncodeSessionEx: unsupported device (2)` trots att
-RTX 4090 identifierades; `libx264` användes. Detta är inte ett prov av riktigt
-tal, Cartesia, fragmentström eller synlig läppsynk. Befintlig
-produktionsendpoint och Render-spelets GPU-flaggor är orörda. En efterkontroll
-efter frontendpubliceringen visade 0 körande workers, 0 pågående/köade jobb
-och aktuell workerdebitering $0/s i RunPod. Se
-[GPU-kvittot](ASTRID-GPU-CLOUD-TEST.md).
-
-Efter detta sparade Jakob en egen `RUNPOD_API_KEY` på Render. Endpointnamnet
-rättades till `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` med värdet `zsudl8tmzcmiv1`
-via Save only. Den klarade därefter `/health` från Render. Jakob sparade även
-`CARTESIA_API_KEY`; det första riktiga separata talprovet den 29 september
-09:13 CEST skapade en MP4 av "Hej! Välkommen till bordet." på 52,5 sekunder
-(35,6 sekunder RunPod-kö, 14,6 sekunder jobb). Se GPU-kvittot för exakta
-hashar och tider. Audiovisuell acceptans och strömprov återstår.
-Produktionsflaggorna för genererat tal är fortfarande avstängda.
-
-På Jakobs begäran valdes **GPT-5.6 Terra** i Studio → Probe → Modell för
-Astrids chatt och Probe. Sparandet och värdet efter omladdning verifierades
-i drift. Probe-läget är fortsatt Av; chattminne och nya långsiktiga
-minnesutdrag är skilda funktioner. Whisper-koden använder `whisper-1`
-och `/v1/audio/translations`, alltså engelsk text. Jakob har lagt in
-`CROUPIER_ASTRID_TRANSLATION_KEY` och startat rebuild. Root aktiverade därefter
-`CROUPIER_ASTRID_CAMERA=1`; båda finns i aktuell runtime, och ett läsande
-OpenAI-modellprov gav HTTP 200 för `whisper-1`. Själva kamerabilden och
-mikrofoninspelningen är ännu inte provade i browsern.
-
-`CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` och motsvarande bootstrap-user
-hör till Render `croupier-v2` Environment. De skapar första administratören
-bara när CRAIG:s användartabell är tom. En ny env ändrar inte lösenordet
-för ett befintligt konto. Vercels landning behöver ingen av dessa hemligheter.
-
-Director använder `OPENCLAW_PRODUCT_SPEECH_TOKEN` skild från
-`LAB_API_TOKEN`, medan privat Gateway har `OPENCLAWAPI_KEY` och separat
-modellnyckel. Live-panelerna verifierades den 29 september: Gateway-token, Lab-token och separat speech-token matchar mellan tjänsterna. Lokal hälsa och autentiserad status gav HTTP 200; tom speech-envelope gav förväntad HTTP 400 före modellkörning. Inga Render-env behövde ändras. Listan med `OPENCLAW_MODEL_API=openai-responses`,
-`OPENCLAW_MODEL_BASE_URL=https://api.openai.com/v1` och
-`OPENCLAW_MODEL_ID=gpt-5.4-mini` är en giltig konfiguration enligt
-[OpenClaw](https://docs.openclaw.ai/gateway/config-tools/custom-providers) och
-[OpenAI](https://developers.openai.com/api/docs/models/gpt-5.4-mini). Den
-beständiga Gateway-konfigurationen kan dock vara effektivt annorlunda än
-nuvarande env efter en operatörsändring. Ett daterat driftprov såg
-`gpt-5.4-mini` som primär speech-modell; ingen ny modellkörning ingår här.
-`CROUPIER_SPEECH_VISION=1` gäller projektets Luna/Terra-bildgren och bevisar
-inte ett fungerande kameraflöde. Se
-[OpenClaws aktiveringskvitto](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
-
-## Arbetskopior och nästa kontrollerade byte
-
-Den primära arbetskopian innehåller pågående, ocommittade MP4,
-mediemanifest, Lab-policyer och delbildsarbete. De är inte rensningsskräp.
-`codex/skapa-del-bilder` hör sannolikt till den vilande men relevanta chatten
-**Python-bilder** och behålls. Ett rent `inbox-publish`-worktree på
-`codex/inbox-routing-cache` tillhör inte denna chatt; ägare okänd och det
-arkiveras inte här. Den övergivna lokala `main`-branchen vid `b1476597`
-togs bort med `git branch -d` efter verifierad anor till arbetsbranchen och
-kontroll att inget worktree använde den. Inga remote-brancher raderades.
-GitHub-leverans görs bara till `jakemanator123-github-work`
-med `node tools/push-github-work.mjs`.
-
-Ordningen är: behåll Git-publiceringen för nya landningen och den sparade
-korrekt QA-länk, behåll Render som serverägd spelbackend, prova publik spelväg från Vercel,
-skapa en verifierad extern SQLite-backup och isolerad game-Neon-import, och
-planera först därefter produktionsdatabyte. Zon-Neon och Blob får inte
-återanvändas för spelets konton eller plånbok.
+Läs vidare efter behov: [användarguide](../lab/docs/README.md),
+[systemkarta](systemkarta/README.md), [miljöregister](ENVIRONMENT-VARIABLES.md),
+[zonlagring](ZONE-CLOUD-STORAGE.md), [talflöde](LIVE-SPEECH-ACTIVATION-2026-09-29.md).

@@ -18,7 +18,7 @@ export function SiteNav() {
 
   return (
     <header className="relative z-10 px-6 py-6 md:px-16 md:py-8">
-      <nav aria-label="Huvudmeny" className="flex items-center justify-between gap-6">
+      <nav aria-label="Huvudmeny" className="flex flex-wrap items-center justify-between gap-3 lg:flex-nowrap lg:gap-6">
         <LogoLaser />
 
         <div className="hidden items-center gap-8 lg:flex lg:gap-10">
@@ -52,7 +52,7 @@ export function SiteNav() {
         <Button
           asChild
           size="sm"
-          className="rounded-md bg-lime px-4 font-semibold text-ink transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_var(--scout-lime)]"
+          className="min-h-11 shrink-0 rounded-md bg-lime px-4 font-semibold text-ink transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_var(--scout-lime)]"
         >
           <Link href="/demo">
             Öppna bordet <ArrowRight className="h-4 w-4" aria-hidden="true" />

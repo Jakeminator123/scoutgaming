@@ -12,7 +12,7 @@
         "5c23fe9a-d68c-b3e5-05b3-86a215d9eeb3"
       ],
       "variantIds": [
-        "1ee28b41-f9f1-0879-ff42-8ecd604540f5"
+        "cbddff82-8a84-956e-9525-4187d78e0481"
       ]
     },
     {
@@ -25,7 +25,7 @@
         "3f9a555f-0893-f080-6900-ec32e78e2733"
       ],
       "variantIds": [
-        "9512c0af-c38e-46d3-a4d0-04428d0388db"
+        "99540c21-74bc-235b-dc46-bcc454f50edf"
       ]
     },
     {
@@ -37,7 +37,9 @@
       "standardIds": [
         "fcc47560-694c-0e8f-20fd-55cb1e280252"
       ],
-      "variantIds": []
+      "variantIds": [
+        "fdb15c20-addf-dcfb-706c-dd05f660e3fb"
+      ]
     },
     {
       "id": "astrid/deal.player.centre/box3",
@@ -49,7 +51,7 @@
         "2afa062b-4674-ff72-b2cb-c958a359ebf3"
       ],
       "variantIds": [
-        "d3dd14f4-3940-5249-b65d-4f6678a54822"
+        "04e46e08-82c8-2674-4a31-e174e81a14ee"
       ]
     },
     {
@@ -61,7 +63,10 @@
       "standardIds": [
         "7c704054-deb8-d8ee-2e48-5418553e65b8"
       ],
-      "variantIds": []
+      "variantIds": [
+        "639f0750-afba-8c6c-6357-004c546e839e",
+        "a856f2e7-c998-14e7-ff75-b777ddf32ca5"
+      ]
     },
     {
       "id": "astrid/deal.player.right/box5",
@@ -72,7 +77,9 @@
       "standardIds": [
         "69b1402e-17ae-4539-2b0f-5a77beb99e38"
       ],
-      "variantIds": []
+      "variantIds": [
+        "0cf03b9c-f66a-2b47-c5ee-d59f6a6e8fb5"
+      ]
     },
     {
       "id": "astrid/deal.player.right/box6",
@@ -83,7 +90,9 @@
       "standardIds": [
         "041df107-fe70-fe85-0e94-c7b08726d04c"
       ],
-      "variantIds": []
+      "variantIds": [
+        "ec0f0b1b-0db7-4984-149a-4a8d0bbe701e"
+      ]
     },
     {
       "id": "astrid/deal.dealer/dealer-up",
@@ -94,7 +103,9 @@
       "standardIds": [
         "83dc9b09-a09d-337d-298a-3e70eadf3767"
       ],
-      "variantIds": []
+      "variantIds": [
+        "4b003b0e-8a5b-27d0-7b9d-3dc22faf6b1d"
+      ]
     },
     {
       "id": "astrid/deal.dealer/dealer-hole",
@@ -324,11 +335,11 @@
         "3430694a-02f4-ba84-1a60-6d3afd14d802",
         "620166c3-7ca5-909c-d39d-ce12f5a96952",
         "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
-        "0b76ac59-cbb8-657b-cf2e-675aa9db71a4",
+        "98cbdd29-cbee-46cd-2b88-4c398e015607",
         "8a04914a-41a1-32f7-b5cb-586eda417aac",
         "66153427-8ca1-0bed-c4b3-eafac66872b4",
-        "c9b09866-50f7-2e05-0301-7e02499f50a2",
-        "15748c18-f7b6-912a-639f-55e632db34d3"
+        "57be6d81-6fdd-760b-dde8-b600d1e67c25",
+        "f87bace8-0c7d-0576-93fd-2279e900bb1a"
       ]
     }
   ],
@@ -361,13 +372,13 @@
       "sha256": "5c23fe9ad68cb3e505b386a215d9eeb3075ede7fdd3d155f429ef6fc81ba05ff"
     },
     {
-      "id": "1ee28b41-f9f1-0879-ff42-8ecd604540f5",
+      "id": "cbddff82-8a84-956e-9525-4187d78e0481",
       "familyId": "astrid/deal.player.left/box0",
       "role": "variant",
       "relativePath": "deal/deal_pos1/variant/box_1_variant.mp4",
       "extension": "mp4",
-      "size": 599221,
-      "sha256": "1ee28b41f9f10879ff428ecd604540f537ad2c359fcf4849d7308966c7aaff53"
+      "size": 4032961,
+      "sha256": "cbddff828a84956e95254187d78e0481189495f9475bdb669ee44601b7819db4"
     },
     {
       "id": "3f9a555f-0893-f080-6900-ec32e78e2733",
@@ -379,13 +390,13 @@
       "sha256": "3f9a555f0893f0806900ec32e78e2733dcdc61a399d69cb0e1dfea3ac8fc64fb"
     },
     {
-      "id": "9512c0af-c38e-46d3-a4d0-04428d0388db",
+      "id": "99540c21-74bc-235b-dc46-bcc454f50edf",
       "familyId": "astrid/deal.player.left/box1",
       "role": "variant",
       "relativePath": "deal/deal_pos2/variant/box_2_variant.mp4",
       "extension": "mp4",
-      "size": 568868,
-      "sha256": "9512c0afc38e46d3a4d004428d0388dbe9113ba84298df8fa1634074049d8061"
+      "size": 4403838,
+      "sha256": "99540c2174bc235bdc46bcc454f50edfc17bf68571fd0ed193e6ffd60f5e1033"
     },
     {
       "id": "fcc47560-694c-0e8f-20fd-55cb1e280252",
@@ -397,6 +408,15 @@
       "sha256": "fcc47560694c0e8f20fd55cb1e2802529686dc0ed374b62e1371732927cb134d"
     },
     {
+      "id": "fdb15c20-addf-dcfb-706c-dd05f660e3fb",
+      "familyId": "astrid/deal.player.centre/box2",
+      "role": "variant",
+      "relativePath": "deal/deal_pos3/variant/box_3_variant_shoefix.mp4",
+      "extension": "mp4",
+      "size": 3750658,
+      "sha256": "fdb15c20addfdcfb706cdd05f660e3fb405ee3c83f2d1459e023ae6842907f9b"
+    },
+    {
       "id": "2afa062b-4674-ff72-b2cb-c958a359ebf3",
       "familyId": "astrid/deal.player.centre/box3",
       "role": "standard",
@@ -406,13 +426,13 @@
       "sha256": "2afa062b4674ff72b2cbc958a359ebf39cec0a48bbe328d95fff65642f7c1ba3"
     },
     {
-      "id": "d3dd14f4-3940-5249-b65d-4f6678a54822",
+      "id": "04e46e08-82c8-2674-4a31-e174e81a14ee",
       "familyId": "astrid/deal.player.centre/box3",
       "role": "variant",
       "relativePath": "deal/deal_pos4/variant/box_4_varaint.mp4",
       "extension": "mp4",
-      "size": 1879487,
-      "sha256": "d3dd14f439405249b65d4f6678a5482295817a36e115a3fc26055609b5356f61"
+      "size": 3987934,
+      "sha256": "04e46e0882c826744a31e174e81a14ee7b871b28ccf3939e0cf4105741185a8f"
     },
     {
       "id": "7c704054-deb8-d8ee-2e48-5418553e65b8",
@@ -424,6 +444,24 @@
       "sha256": "7c704054deb8d8ee2e485418553e65b87235ba8edee90b4cb5986d26f8d4226e"
     },
     {
+      "id": "639f0750-afba-8c6c-6357-004c546e839e",
+      "familyId": "astrid/deal.player.centre/box4",
+      "role": "variant",
+      "relativePath": "deal/deal_pos5/variant/box_5_variant.mp4",
+      "extension": "mp4",
+      "size": 3803730,
+      "sha256": "639f0750afba8c6c6357004c546e839e15b3640738a3b0fbe30b5cf8a99bf9b7"
+    },
+    {
+      "id": "a856f2e7-c998-14e7-ff75-b777ddf32ca5",
+      "familyId": "astrid/deal.player.centre/box4",
+      "role": "variant",
+      "relativePath": "deal/deal_pos5/variant/box_5_variant_shoefix.mp4",
+      "extension": "mp4",
+      "size": 3852010,
+      "sha256": "a856f2e7c99814e7ff75b777ddf32ca586505d673e3accca8a73f3e076956b17"
+    },
+    {
       "id": "69b1402e-17ae-4539-2b0f-5a77beb99e38",
       "familyId": "astrid/deal.player.right/box5",
       "role": "standard",
@@ -431,6 +469,15 @@
       "extension": "mp4",
       "size": 3836766,
       "sha256": "69b1402e17ae45392b0f5a77beb99e38e54fb1a17578695bac0f95b116ea21a4"
+    },
+    {
+      "id": "0cf03b9c-f66a-2b47-c5ee-d59f6a6e8fb5",
+      "familyId": "astrid/deal.player.right/box5",
+      "role": "variant",
+      "relativePath": "deal/deal_pos6/variant/box_6_variant_shoefix.mp4",
+      "extension": "mp4",
+      "size": 4283623,
+      "sha256": "0cf03b9cf66a2b47c5eed59f6a6e8fb5ebc8f3c11ac908ed76edcf974b19efcd"
     },
     {
       "id": "041df107-fe70-fe85-0e94-c7b08726d04c",
@@ -442,6 +489,15 @@
       "sha256": "041df107fe70fe850e94c7b08726d04ca4ca8a77bc4d722dee4bb636587d5f55"
     },
     {
+      "id": "ec0f0b1b-0db7-4984-149a-4a8d0bbe701e",
+      "familyId": "astrid/deal.player.right/box6",
+      "role": "variant",
+      "relativePath": "deal/deal_pos7/variant/box_7_variant.mp4",
+      "extension": "mp4",
+      "size": 3910212,
+      "sha256": "ec0f0b1b0db74984149a4a8d0bbe701ea6c01b6e215c02c9d302872a147b2609"
+    },
+    {
       "id": "83dc9b09-a09d-337d-298a-3e70eadf3767",
       "familyId": "astrid/deal.dealer/dealer-up",
       "role": "standard",
@@ -449,6 +505,15 @@
       "extension": "mp4",
       "size": 3053175,
       "sha256": "83dc9b09a09d337d298a3e70eadf376761df260ec0fb425559ee67830fba5e87"
+    },
+    {
+      "id": "4b003b0e-8a5b-27d0-7b9d-3dc22faf6b1d",
+      "familyId": "astrid/deal.dealer/dealer-up",
+      "role": "variant",
+      "relativePath": "deal/deal_posdealer/variant/box_dealer_variant.mp4",
+      "extension": "mp4",
+      "size": 3309197,
+      "sha256": "4b003b0e8a5b27d07b9d3dc22faf6b1d05d0a593200e11f29c3daf65d948fa76"
     },
     {
       "id": "9c8a4ed6-af99-b022-351a-58df8db6ddf8",
@@ -541,13 +606,13 @@
       "sha256": "921ae71d11fa01ecf78ab9ef7d8d768906f930eeb6d7832e05a0bea488628beb"
     },
     {
-      "id": "0b76ac59-cbb8-657b-cf2e-675aa9db71a4",
+      "id": "98cbdd29-cbee-46cd-2b88-4c398e015607",
       "familyId": "astrid/idle.ready/ready",
       "role": "variant",
       "relativePath": "idle/variant/idle_resa_sig.mp4",
       "extension": "mp4",
-      "size": 4589527,
-      "sha256": "0b76ac59cbb8657bcf2e675aa9db71a4cac9753f134562e5b3bd3ddbc02a2ac6"
+      "size": 6103011,
+      "sha256": "98cbdd29cbee46cd2b884c398e015607ba92b80e81ad03cf6368dc18c0bf231f"
     },
     {
       "id": "8a04914a-41a1-32f7-b5cb-586eda417aac",
@@ -568,22 +633,22 @@
       "sha256": "661534278ca10bedc4b3eafac66872b4fb8c9b86e94323e44d0c9e060b34a015"
     },
     {
-      "id": "c9b09866-50f7-2e05-0301-7e02499f50a2",
+      "id": "57be6d81-6fdd-760b-dde8-b600d1e67c25",
       "familyId": "astrid/idle.ready/ready",
       "role": "variant",
       "relativePath": "idle/variant/idle_smile.mp4",
       "extension": "mp4",
-      "size": 315478,
-      "sha256": "c9b0986650f72e0503017e02499f50a2ff36881999ff5f57c5d0998e05aeda51"
+      "size": 1334330,
+      "sha256": "57be6d816fdd760bdde8b600d1e67c259bc2d80aa0fc5dad6ed4fcb0c9cbafcc"
     },
     {
-      "id": "15748c18-f7b6-912a-639f-55e632db34d3",
+      "id": "f87bace8-0c7d-0576-93fd-2279e900bb1a",
       "familyId": "astrid/idle.ready/ready",
       "role": "variant",
       "relativePath": "idle/variant/idle_yawn.mp4",
       "extension": "mp4",
-      "size": 309588,
-      "sha256": "15748c18f7b6912a639f55e632db34d3102a63677a45ec192a591469261c8abd"
+      "size": 1802520,
+      "sha256": "f87bace80c7d057693fd2279e900bb1afec5fd123a183e36a7d564bb24b0f30a"
     },
     {
       "id": "91ed722c-d43c-1171-1c63-506d6363def7",

@@ -38,11 +38,11 @@ async function fixture(t, { variant = false } = {}) {
   return { root, legacy };
 }
 
-test('checked-in manifest has 28 exact families, 45 hash-stable items and the locked idle roles', async () => {
+test('checked-in manifest has 28 exact families, 51 hash-stable items and the locked idle roles', async () => {
   const manifest = await readLabVideoManifest(repositoryManifest);
   assert.equal(manifest.families.length, 28);
-  assert.equal(manifest.items.length, 45);
-  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 45);
+  assert.equal(manifest.items.length, 51);
+  assert.equal(new Set(manifest.items.map(item => item.relativePath)).size, 51);
   for (const item of manifest.items) {
     assert.equal(item.id, videoIdFromSha256(item.sha256));
     assert.doesNotMatch(item.relativePath, /\.gitkeep$/);
@@ -73,10 +73,18 @@ test('checked-in manifest has 28 exact families, 45 hash-stable items and the lo
     ['box1', 'deal.player.left', 'deal/deal_pos2/variant/box_2_variant.mp4'],
     // The checkpoint retains this source filename's spelling and physical box 4.
     ['box3', 'deal.player.centre', 'deal/deal_pos4/variant/box_4_varaint.mp4'],
+    ['box2', 'deal.player.centre', 'deal/deal_pos3/variant/box_3_variant_shoefix.mp4'],
+    ['box4', 'deal.player.centre', 'deal/deal_pos5/variant/box_5_variant_shoefix.mp4'],
+    ['box5', 'deal.player.right', 'deal/deal_pos6/variant/box_6_variant_shoefix.mp4'],
+    ['box6', 'deal.player.right', 'deal/deal_pos7/variant/box_7_variant.mp4'],
+    ['box4', 'deal.player.centre', 'deal/deal_pos5/variant/box_5_variant.mp4'],
+    ['dealer-up', 'deal.dealer', 'deal/deal_posdealer/variant/box_dealer_variant.mp4'],
   ]) {
     const family = manifest.families.find(item => item.situation === situation && item.eventId === eventId);
-    assert.equal(family.variantIds.length, 1);
-    const variant = manifest.items.find(item => item.id === family.variantIds[0]);
+    // Box 4 (deal_pos5) carries both the shoefix variant and the H3 variant.
+    assert.equal(family.variantIds.length, situation === 'box4' ? 2 : 1);
+    const variant = family.variantIds.map(id => manifest.items.find(item => item.id === id)).find(item => item.relativePath === relativePath);
+    assert.ok(variant, relativePath);
     assert.equal(variant.relativePath, relativePath);
     assert.equal(variant.familyId, family.id);
     assert.equal(variant.role, 'variant');
@@ -91,6 +99,20 @@ test('generator preserves legacy IDs by SHA, accepts empty variant folders and i
   assert.deepEqual(new Set(manifest.items.map(item => item.id)), new Set(legacy.map(item => item.id)));
   assert.doesNotMatch(manifestJson(manifest), /gitkeep/);
   assert.equal(manifestJson(manifest), manifestJson(await buildLabVideoManifest({ root })), 'generation must be deterministic');
+});
+
+test('saved idle policy and local profile still resolve exact bank identities after take replacement', async () => {
+  const manifest = await readLabVideoManifest(repositoryManifest);
+  const policy = JSON.parse(await readFile(new URL('../policies/idle-policy.seed.json', import.meta.url), 'utf8'));
+  const profile = JSON.parse(await readFile(new URL('../policies/local-profile.json', import.meta.url), 'utf8'));
+  const family = manifest.families.find(row => row.id === policy.familyId);
+  assert.ok(family);
+  for (const item of policy.base) assert.ok(family.standardIds.includes(item.videoId), `stale idle base: ${item.videoId}`);
+  for (const item of policy.variants) assert.ok(family.variantIds.includes(item.videoId), `stale idle variant: ${item.videoId}`);
+  for (const id of profile.openClawIdleIds) {
+    assert.ok(family.variantIds.includes(id), `stale profile variant: ${id}`);
+    assert.ok(policy.variants.some(item => item.videoId === id), `profile variant lacks idle policy: ${id}`);
+  }
 });
 
 test('generator registers an allowed deep variant as inactive structural media only', async t => {

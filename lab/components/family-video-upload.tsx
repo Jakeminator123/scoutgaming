@@ -79,7 +79,7 @@ export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
   }
   return <section className={styles.upload} aria-label="Ladda upp en variant">
     <h2>Ladda upp en variant</h2>
-    <p>Välj fil och exakt användning. Se klippet här och välj sedan frekvens eller villkor. Filen sparas på Lab-serverns disk.</p>
+    <p>Välj fil och exakt användning. Se klippet här och välj sedan frekvens eller villkor. Filen sparas i studions videobank.</p>
     <form onSubmit={submit}><fieldset disabled={busy} className={styles.form}>
       <label className="field">MP4 eller WebM · högst 128 MB<input ref={input} type="file" accept="video/mp4,video/webm,.mp4,.webm" required onChange={event => {
         const chosen = event.target.files?.[0] ?? null; setFile(chosen); setSaved(null); setNotice(''); setError('');

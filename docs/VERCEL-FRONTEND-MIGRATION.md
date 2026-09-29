@@ -2,6 +2,11 @@
 
 ## Aktuell driftkarta 2026-09-29
 
+Läs [den korta aktuella molnkartan](CLOUD-CURRENT-STATE-2026-09-29.md)
+för senaste livekontroller och resursroller. Texten nedan är kontraktet för
+en framtida flytt av själva spelklienten, inte en instruktion att byta den
+nu fungerande Studio- eller spelvägen.
+
 Den Git-kopplade startsidan är nu
 [`croupier-frontend.vercel.app`](https://croupier-frontend.vercel.app/).
 Vercel-projektet `croupier-frontend` bygger `apps/croupier-frontend` från
@@ -50,8 +55,10 @@ spel-QA i Preview. Se [miljöregistret](ENVIRONMENT-VARIABLES.md).
 Render `croupier-v2` är Live. `croupier-frontend` levererar den importerade
 Next-landningssidan med en extern länk till Render `/blackjack`. Den planerade
 Vercelbyggda spelklienten med Render som API-backend återstår.
-Lyckad inloggning, hel spelrunda, BO/Lab, omstart och backup/restore är
-inte verifierade i den publika driften. Tidigare stycken i
+Den 29 september fungerade befintliga sessionscookies i både Studio och
+spelarens `/blackjack`-ingång; spelaren gick vidare till rätt Astrid-väg och
+video spelade i 1080 × 1920. Detta var läsande kontroll, ingen ny
+lösenordsinloggning, spelrunda, omstart eller backup/restore. Tidigare stycken i
 `CLOUD-LAUNCH-HANDOFF.md` som säger att ingen tjänst skapats beskriver ett
 äldre läge.
 
@@ -109,8 +116,9 @@ Den första spelklientmigrationen flyttar fortfarande inte speldata från
 Render/SQLite. Neon Free `croupier-preview-neon` är kopplad endast till
 spel-Previewn men används ännu inte av spelet. En separat Neon Free-resurs
 och Vercel Blob skapades för **Astrids bakgrundszoner**, inte för spel eller
-plånbok; se [zonlagringen](ZONE-CLOUD-STORAGE.md). Zonernas Lab- och
-spelkoppling återstår. Inga Redis- eller OAuth-tjänster behövs för denna
+plånbok; se [zonlagringen](ZONE-CLOUD-STORAGE.md). Lab kan nu läsa zoner
+från separat Neon och spara privat media. Full liveacceptans av zonupload
+och zonernas koppling till speluppspelningen återstår. Inga Redis- eller OAuth-tjänster behövs för denna
 första migration. Backup/restore av befintlig SQLite och disk måste bevisas
 innan viktiga data anförtros den. Utgifter för GPU-prov kräver separat
 kostnadstak och stoppvillkor.

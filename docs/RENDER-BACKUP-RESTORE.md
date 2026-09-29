@@ -2,8 +2,10 @@
 
 Status 2026-09-29: rutinen och återställningen är provade med **enbart syntetiska
 testfiler**. Ingen verklig spelar-, CRAIG-, Director- eller Gateway-databas har
-öppnats, kopierats eller ändrats. Renders aktuella diskinfästning, en riktig
-omstart, export utanför Render och återläsning i drift är ännu inte verifierade.
+öppnats, kopierats eller ändrats av backupgranskningen. Render-dashboarden
+verifierades den 29 september cirka 15:38 UTC: `croupier-v2` har en 5 GB-disk
+monterad på `/var/data`. En riktig omstart med datakontroll, export utanför
+Render och återläsning i drift är fortfarande inte verifierade.
 
 ## Vad måste överleva en omstart?
 

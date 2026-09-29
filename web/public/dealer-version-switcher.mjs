@@ -7,10 +7,16 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
   for(const name of ['labObserverOrigin','labObserverChannel']){
     const value=previous.get(name);if(value)query.set(name,value);
   }
+  // Keep the explicitly selected shared Astrid presentation when visiting
+  // another dealer and returning. Other dealers ignore this preference.
+  // An explicit V2 comparison remains a separate opt-in presentation.
+  if(version !== 'v2' && previous.get('presentation') === 'local')query.set('presentation','local');
+  if(previous.has('rehearsal'))query.set('rehearsal','1');
   return `${version === 'v2' && V2_DEALERS.includes(key) ? '/v2/' : '/'}?${query}`;
 }
 
 export function installDealerVersionSwitcher({ dealer, version, isBusy }) {
+  if(version === 'original' && new URLSearchParams(location.search).get('presentation') === 'local')return;
   const picker = document.querySelector('#dealer-picker');
   if (!picker || picker.dataset.versions) return;
   picker.dataset.versions = version;

@@ -16,6 +16,13 @@
 }
 .intro-root[data-leaving] {
   opacity: 0;
+  pointer-events: none;
+}
+/* Also release the screen immediately if the viewport/input preference changes mid-intro. */
+@media (max-width: 1023px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .intro-root {
+    display: none;
+  }
 }
 
 .intro-static,
@@ -153,51 +160,45 @@
   will-change: left, top, width, height, transform;
 }
 
-.intro-skip {
+.intro-actions {
   position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
   z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+}
+.intro-skip,
+.intro-demo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  border: 1px solid rgba(242, 241, 237, 0.6);
+  background: #0a0b0d;
+  color: #f2f1ed;
+  font: 600 14px/1.2 var(--font-inter, Arial, sans-serif);
   pointer-events: auto;
   cursor: pointer;
 }
-.intro-skip:focus-visible {
+.intro-demo {
+  background: var(--scout-lime);
+  color: var(--scout-ink);
+  border-color: var(--scout-lime);
+}
+.intro-root[data-leaving] .intro-actions {
+  visibility: hidden;
+}
+.intro-skip:focus-visible,
+.intro-demo:focus-visible {
   outline: 2px solid var(--scout-lime);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
-/* Sits in the Windows 95 tray while the desktop is up. */
-.intro-skip[data-look="retro"] {
-  right: calc(2vw + 6px);
-  bottom: 5px;
-  height: 22px;
-  padding: 0 10px;
-  font: 12px Tahoma, "MS Sans Serif", Arial, sans-serif;
-  color: #000;
-  background: #c0c0c0;
-  border: 1px solid;
-  border-color: #fff #000 #000 #fff;
-  box-shadow: inset -1px -1px #808080;
-}
-.intro-skip[data-look="retro"]:active {
-  border-color: #000 #fff #fff #000;
-  box-shadow: inset 1px 1px #808080;
-}
-/* Once the sheet is gone it matches the real site. */
-.intro-skip[data-look="modern"] {
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  padding: 8px 16px;
-  border-radius: 9999px;
-  border: 1px solid rgba(242, 241, 237, 0.3);
-  background: rgba(10, 11, 13, 0.55);
-  color: var(--scout-off);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  backdrop-filter: blur(8px);
-  transition: border-color 300ms ease, color 300ms ease;
-}
-.intro-skip[data-look="modern"]:hover {
+.intro-skip:hover {
   border-color: var(--scout-lime);
   color: var(--scout-lime);
 }

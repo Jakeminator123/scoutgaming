@@ -48,7 +48,7 @@ export function VideoUpload({ project, dealerId, eventId, onUploaded }: {
       const video = inventory.videos.find(v => v.id === result.id);
       if (!video) throw new Error('Filen sparades men syns inte i registret. Läs om videobanken.');
       onUploaded(inventory, video, bind ? { role: metadata.role, selection, triggerIds } : null);
-      setNotice(`${result.duplicate ? 'Filen fanns redan' : 'Videon är sparad'} i den lokala banken.${bind ? ' Kopplingen ligger i projektutkastet: välj Spara projekt.' : ' Du kan koppla den till en variant när du vill.'}`);
+      setNotice(`${result.duplicate ? 'Filen fanns redan' : 'Videon är sparad'} i videobanken.${bind ? ' Kopplingen ligger i projektutkastet: välj Spara projekt.' : ' Du kan koppla den till en variant när du vill.'}`);
       if (fileInput.current) fileInput.current.value = '';
     } catch (cause) { setError(`${saved ? 'Filen är sparad. ' : ''}${cause instanceof Error ? cause.message : 'Uppladdningen misslyckades.'}`); }
     finally { setBusy(false); }
@@ -60,7 +60,7 @@ export function VideoUpload({ project, dealerId, eventId, onUploaded }: {
       <label className="check-field"><input type="checkbox" checked={bind} onChange={e => setBind(e.target.checked)} /><span>Koppla till projektutkastet direkt<small>{metadata.role === 'standard' ? 'Ersätter linjens nuvarande standardkoppling i utkastet.' : 'Skapar ett nytt alternativ. Befintliga varianter behålls.'}</small></span></label>
       {metadata.role === 'alternative' && bind ? <><VariantSelectionFields value={selection} onChange={setSelection} /><details><summary>Villkor / triggers (valfritt)</summary><p className="helper">Inga valda = inget extra villkor. Alla valda måste matcha. Själva eventet krävs alltid.</p>{project.triggers.map(t => <label className="check-field" key={t.id}><input type="checkbox" checked={triggerIds.includes(t.id)} onChange={e => setTriggerIds(ids => e.target.checked ? [...ids, t.id] : ids.filter(id => id !== t.id))} /><span>{t.label}</span></label>)}</details></> : null}
       {bind && full ? <p role="alert">Linjen har redan fyra alternativ. Spara filmen i banken och koppla till ett befintligt alternativ i editorn.</p> : null}
-      <p className="helper">Filen sparas direkt lokalt. Regler och kopplingar sparas separat med Spara projekt. Kategorisering är inte ett visuellt godkännande.</p>
+      <p className="helper">Filen sparas i studions videobank. Regler och kopplingar sparas separat med Spara projekt. Kategorisering är inte ett visuellt godkännande.</p>
       <button className="primary-button" type="submit" disabled={busy || bind && full}>{busy ? 'Sparar video…' : 'Spara video i banken'}</button>
     </fieldset>{error ? <p role="alert" className={styles.error}>{error}</p> : null}{notice ? <p role="status">{notice}</p> : null}</form>
   </details>;

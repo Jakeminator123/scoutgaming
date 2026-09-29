@@ -10,18 +10,21 @@ GitLab-inbox, wiki och spegling är pausade. Pusha aldrig `main`.
 **Vad är vad?** `web/` är spelet och dess serverägda kort, shoe, wallet och
 Partner-API. `content/` och `assets/` innehåller dealer-media och 3D; ändra
 inte godkända takes utan hela kalibrerings-/acceptansflödet. `lab/` är den
-lokala studion för prov, observation och dokumentation; `open-claw/` är
+gemensamma studion för molndrift, lokala prov och dokumentation; `open-claw/` är
 Director/Gateway-kopplingen. [Labbguiden](../../lab/docs/README.md),
 [aktuell sprint](../animation-events/README.md),
 [sjudagarshandoffen](../animation-events/v5-7-days-mvp/HANDOFF-7-DAGAR.md)
 och [systemkartan](README.md) ger detaljerna. Jira CAC äger status
 för faktiskt utvecklings- och QA-arbete.
 
-**Labbflödet:** På Händelseloggen väljer du **Anslut** och spelar i fliken
-som öppnas. Labbet följer publika instruktioner och visar sin presentation
-bredvid originalbilden; webbläsaren kräver eget flikval för bilden.
-**Diagnostik** samlar videokarta och import/export. `/` är originalspelet;
-`/v2/` är Kevins alternativa rendering med samma motor. BO är materialverktyget.
+**Studioflödet:** Öppna [Astrid Studio](https://croupier-v2.onrender.com/studio)
+och välj **Öppna spelet**, eller **Anslut & följ spelet** om du också vill
+följa händelserna i Studio. Spela och chatta i spelfliken. Studio sparar
+klippval; observation kräver konfigurerad Partner-anslutning. Astrid använder en
+spelare. För avancerade jämförelser och övriga dealers finns **Avancerat labb**.
+**Diagnostik** samlar anslutning och observationsfiler. BO är administration
+och inloggning. [Väg- och strömkartan](04-studio-json-och-lagring/STUDIO-ROUTING.md)
+förklarar kanoniska adresser och äldre kompatibilitetsvägar.
 Backup före Kevin är taggen `backup/jakob-work-pre-kevin-20260922` (`6fe7c82`);
 den skyddar committad kod, inte lokala data. Lokal integration är inte deploy.
 [Livejämförelsens status och kvarstående prov](06-arbetssatt-och-verifiering/LIVEJAMFORELSE.md)
@@ -36,8 +39,8 @@ listar samtliga kontrollerade namn, ansvar och läsordning — inga värden.
 Kopiera aldrig hemligheter till Git, chatt eller `NEXT_PUBLIC_*`.
 
 **Video och indexering:** Den aktuella labbkällan för Emils Astrid-material är
-`emil/dealklipp-v1/` i repot. Den aktuella banken har 43 MP4-filer i 26
-exakta familjer: deal, repliker och idle. Se [bankernas aktuella gräns](../../emil/README.md).
+`emil/dealklipp-v1/` i repot. Manifestet anger aktuella MP4-filer och exakta
+familjer: deal, repliker och idle. Se [bankernas aktuella gräns](../../emil/README.md).
 Det tidigare externa
 `C:/Users/jakem/CroupierAssets/bettalotto-generations` användes som daterat
 inventeringsunderlag men dess MP4-filer flyttades till Windows papperskorg den
@@ -54,5 +57,5 @@ index, starta en omindexering där efter att undantagen har laddats.
 **Vid överlämning:** Kontrollera branch och aktuell Jira-issue, läs
 `AGENTS.md`, ändra endast uppgiftsägda filer, kör relevanta tester, notera
 utfall/luckor i `docs/JOHN-HANDOFF.md`, och verifiera GitHub-commiten.
-Uppdatera rätt ämnessida enligt [dokumentordningen](06-arbetssatt-och-verifiering/DOKUMENTORDNING.md)
-i stället för att lägga nya fristående rapporter i `jakob-docs/`.
+Uppdatera rätt ämnessida enligt [dokumentordningen](06-arbetssatt-och-verifiering/DOKUMENTORDNING.md).
+Det pensionerade personarkivet ska inte användas som källa eller få nya rapporter.

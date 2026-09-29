@@ -33,7 +33,18 @@ skickas till webbläsaren. Det tidigare, tomma och publika
 `croupier-zone-videos` (`store_zPcBQklQ3j9eWwOb`) raderades innan något
 klipp lades upp.
 
-## Implementerat 2026-09-29, Render-aktivering och liveprov återstår
+## Aktuellt driftläge 2026-09-29
+
+Render-anslutningen är aktiverad. Den 29 september cirka 15:42 UTC öppnades
+Studio med befintlig administratörssession. Zonvyn visade **Molnet har 0 zoner,
+version 0**. **Läs från molnet** gav **Molnzonerna är inlästa** och samma
+version i separat molnvy. Det verifierar autentiserad återläsning genom
+Render till det dedikerade Neonschemat. Ingen zon sparades eller ändrades.
+Full upload → spara → återläs → spela upp och zonernas inkoppling i spelet
+återstår. Resursnamnet på Blob är historiskt; samma privata lager används
+också för familjeklipp under separat `croupier/videos/`-namnrymd.
+
+## Implementerat flöde
 
 Labbet har nu ett riktigt, skyddat molnflöde för zoner. **Spara till molnet**
 laddar upp lokala MP4-/WebM-klipp genom `/api/zones/clips`, kontrollerar den
@@ -91,9 +102,9 @@ Efter QA installerades schemat på huvudgrenen `br-flat-fog-b161a6r8`.
 Tabellerna `croupier_zones.clips` och `croupier_zones.documents` verifierades
 som **tomma** efter installationen. Inga användarzoner importerades och ingen
 spel- eller Preview-databas användes för dessa schemaändringar.
-Render-miljöns aktivering och autentiserat upload → spara → återläs → spela
-upp i den faktiska Lab-sessionen återstår. Schemakvittot ersätter inte det
-fullständiga driftprovet.
+Render-miljön är därefter aktiverad och återläsning verifierad enligt
+driftläget ovan. Autentiserat upload → spara → återläs → spela upp i den
+faktiska Lab-sessionen återstår. Schemakvittot ersätter inte detta driftprov.
 
 ## Föregående sparläge och redan befintliga filer
 
@@ -117,8 +128,8 @@ Det identifierade kodsteget var ett skyddat Lab-API som tar emot zonkonfiguratio
 klipp, validerar pixelmått och klipptyp, laddar upp klipp till Blob och
 lagrar en liten JSON-konfiguration med Blob-sökväg i den dedikerade databasen.
 Labbet ligger nu på Render/lokalt, så en Vercel-projektkoppling ger inte
-Render dessa nycklar automatiskt. Överföring av serverhemligheter och
-speluppspelning behöver göras och provas separat. En privat video måste
+Render dessa nycklar automatiskt. Serverhemligheterna har aktiverats separat;
+speluppspelning av zoner behöver fortfarande provas separat. En privat video måste
 hämtas av en behörighetskontrollerad serverväg; den direkta Blob-länken kan
-inte användas som ett vanligt `<video src>`. Den vägen behöver också
-hantera HTTP Range för videouppspelning.
+inte användas som ett vanligt `<video src>`. Den implementerade medievägen
+hanterar HTTP Range; zonflödets fullständiga liveacceptans återstår.

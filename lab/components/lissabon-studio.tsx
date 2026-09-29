@@ -1,5 +1,5 @@
 'use client';
-import { labUrl } from "../lib/lab-url.mjs";
+import { labBasePath, labUrl } from "../lib/lab-url.mjs";
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityLog, type ActivityDraft } from './activity-log';
 import { appendActivity, type ActivityEntry } from '../lib/activity-log.mjs';
@@ -18,6 +18,7 @@ import {createDefaultProbePolicy} from '../lib/probe-policy.mjs';
 
 type View = 'stream' | 'idle' | 'deal' | 'clips' | 'probe' | 'upload';
 export function LissabonStudio({ initialProject, initialVideos, connectedLane }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean }) {
+  const cloudStudio = labBasePath() === '/studio';
   const [project, setProject] = useState(initialProject);
   const [saved, setSaved] = useState(JSON.stringify(initialProject));
   const [videos, setVideos] = useState(initialVideos);
@@ -83,21 +84,21 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
       <div className={styles.save}><span>{dirty ? 'Osparade ändringar' : 'Sparat i Lab'}</span><button className="primary-button" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button></div>
     </header>
     <main className={styles.main}>
-      {!connectedLane ? <p role="alert" className="feedback error">Starta med Start-Lab.cmd för gemensam lagring och spelanslutning. Det kostnadsfria lokala provet körs med node lab/start.mjs --offline --no-open.</p> : null}
+      {!connectedLane ? <p role="alert" className="feedback error">{cloudStudio ? 'Studions gemensamma spelanslutning är inte konfigurerad. Inställningarna är skrivskyddade tills anslutningen har återställts.' : 'Starta med Start-Lab.cmd för gemensam lagring och spelanslutning. Det kostnadsfria lokala provet körs med node lab/start.mjs --offline --no-open.'}</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {notice ? <p role="status" className="feedback success">{notice}</p> : null}
       {conflict?<ProjectConflict base={JSON.parse(saved)} draft={project} onResolve={(remote,merged)=>{setSaved(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Utkastet är sammanslaget. Granska dina val och spara.');}}/>:null}
       {view === 'upload' ? <><FamilyVideoUpload project={project} inventory={videos} onUploaded={setVideos} onOpen={open} /><FamilyVideoLibrary inventory={videos} dealerId="astrid" onOpen={open} onRefresh={() => void refresh()} refreshing={refreshing} /></> : null}
       {view==='probe'?<fieldset className={styles.fields} disabled={saving||!connectedLane}><ProbeEditor policy={project.probePolicy??createDefaultProbePolicy()} onChange={policy=>edit(draft=>{draft.probePolicy=policy;})} onActivity={record}/></fieldset>:null}
       <div hidden={view !== 'stream' || !connectedLane}>
-        <p className={styles.intro}>Astrid med de mobilanpassade filmerna och kort som följer handrörelserna. Anslut öppnar spelfliken och följer dess uppspelning här.</p>
+        <p className={styles.intro}>Spela och chatta i Astrids spelflik. Studion sparar klippval; Anslut &amp; följ spelet visar också uppspelningen här. Backoffice används för administration och inloggning.</p>
         {connectedLane ? <ActivityLog focused entries={entries} onActivity={record} onClear={() => setEntries([])} full onOpen={() => setView('stream')} streamView={{ project, videos, originals: null, dealerId: 'astrid', onOpenEvent: eventId => open(eventId, '') }} /> : null}
       </div>
       {view === 'idle' ? <section><h2>Vänteläge och reaktioner</h2><button className="text-button" disabled={refreshing} onClick={() => void refresh()}>{refreshing ? 'Läser…' : 'Läs in nya filer från idle/variant'}</button><p className={styles.intro}>Spara och ladda om spelfliken när handen är avslutad. OpenClaw behöver inte startas om. Spelets Klippval ska stå på OpenClaw för chattreaktioner. Klippbeskrivningar och tillåtelse ändras här; agentens anslutning och dashboard finns under <a href={labUrl("/openclaw")}>Chatt &amp; OpenClaw</a>.</p><fieldset disabled={saving || !connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy ?? createDefaultIdlePolicy()} inventory={videos} blocked={saving} onChange={policy => edit(draft => { draft.idlePolicy = policy; })} onBusyChange={() => {}} /></fieldset></section> : null}
       {view === 'deal' || view === 'clips' ? <section>{selection ? <h2>{view === 'deal' ? 'Utdelning' : 'Repliker'} · {selection.situation}</h2> : null}<p className={styles.intro}>Välj en situation för att se dess exakta standardfil och tillåtna varianter. De här lokala proven styr inte spelet.</p>
         {media && variant ? <><button className="text-button" onClick={() => setSelection(null)}>← Alla klipp</button><fieldset disabled={saving || !connectedLane} className={styles.editor}><div>{video ? <video key={video.id} className={styles.preview} src={video.previewUrl} controls playsInline preload="metadata" /> : <p>Ingen tillgänglig film för denna situation.</p>}<p>{selection?.situation} · Manuell klippgranskning</p></div><MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={media.line.variants} selectedId={variant.id} onSelect={setVariantId} onPolicy={updatePolicy} onRefresh={() => void refresh()} refreshing={refreshing} /></fieldset></> : <FamilyVideoLibrary inventory={videos} dealerId="astrid" familyType={view === 'deal' ? 'deal' : 'speak'} onOpen={open} onRefresh={() => void refresh()} refreshing={refreshing} />}
       </section> : null}
-      <details className={styles.help}><summary>Start och sparande</summary><p>Starta med <code>Start-Lab.cmd</code>. Inställningar har versionshistorik i Lab. Om tidigare Lissabon-data finns används de vidare på samma plats. Ingen privat databas flyttas.</p><p>För ett isolerat prov: <code>node lab/start.mjs --offline --no-open</code>. Då används tom testdatabas, befintliga filmer och inga externa tjänster. Testdata rensas när paret stoppas med Ctrl+C.</p><p>Fler dealers, regler och tekniska testverktyg finns i <a href={labUrl("/tree")}>Avancerat labb</a>. Läs <a href={labUrl("/guide")}>Guiden</a> för arbetsgången. Molndrift och genererad läppsynk kräver separat verifiering.</p></details>
+      <details className={styles.help}><summary>Start och sparande</summary>{cloudStudio ? <p>Det här är den gemensamma molnstudion. Använd samma Studio-länk nästa gång och logga in när du blir ombedd. Inställningarna sparas med versionshistorik på servern. Ladda upp filmer under Ladda upp &amp; bibliotek och spara bakgrundszoner med Spara till molnet.</p> : <><p>Starta med <code>Start-Lab.cmd</code>. Inställningar har versionshistorik i Lab. Om tidigare Lissabon-data finns används de vidare på samma plats.</p><p>För ett isolerat prov: <code>node lab/start.mjs --offline --no-open</code>. Då används tom testdatabas, befintliga filmer och inga externa tjänster. Testdata rensas när paret stoppas med Ctrl+C.</p></>}<p>Fler dealers, regler och tekniska testverktyg finns i <a href={labUrl("/tree")}>Avancerat labb</a>. Läs <a href={labUrl("/guide")}>Guiden</a> för arbetsgången. Klippens kvalitet och läppsynk behöver granskas i spelet.</p></details>
     </main>
   </div>;
 }

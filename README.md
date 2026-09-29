@@ -6,6 +6,11 @@ certified RNG/RGS or a real-money system.
 
 The focused Astrid studio and the advanced editor now share **Lab**.
 See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
+The cloud entry is [Croupier on Vercel](https://croupier-frontend.vercel.app/).
+Its demo opens the Render game; [Astrid Studio](https://croupier-v2.onrender.com/studio)
+configures that same presentation. BO is administration, not a separate stream.
+See the [current cloud and storage map](docs/CLOUD-CURRENT-STATE-2026-09-29.md)
+and [route guide](docs/systemkarta/04-studio-json-och-lagring/STUDIO-ROUTING.md).
 For a disposable local preview with existing films and no external providers:
 
 ```powershell
@@ -25,10 +30,11 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
   is the active source on `jakemanator123-github-work`. Keep it private.
   GitLab integration is paused; `Jakobs-v1` preserves commit `600093e` on both
   services. See [migration and delivery](docs/GITHUB-MIGRATION.md).
-- [Cloud preparation](docs/CLOUD-MIGRATION.md) describes the game, animation
-  engine, durable storage and access changes needed to replace local hosting.
-- Historical GitLab code and wiki remain as the v1 reference. New V2 work and
-  documentation are delivered to GitHub only.
+- [Current cloud state](docs/CLOUD-CURRENT-STATE-2026-09-29.md) describes the
+  running Vercel/Render services, private media and separate databases.
+  [Cloud migration](docs/CLOUD-MIGRATION.md) retains the architectural contract.
+- Historical GitLab references do not authorize inbox, wiki or mirror work.
+  New code and documentation are delivered to GitHub only.
 - [Croupier documentation · V5](https://github.com/Jakeminator123/animation-events-v1)
   is the source repository for the interactive documentation canvas. It does
   not own game outcomes or runtime contracts.
@@ -44,7 +50,7 @@ Kevin’s reviewed source is imported selectively; no push to his branch is auth
 ## Documentation navigation
 
 - [Jakob's short start guide](docs/systemkarta/START-HAR.md):
-  repo map, private mirror, local environment files and indexing boundary.
+  repo map, current environments, local configuration and indexing boundary.
 - [System map](docs/systemkarta/README.md): explanations by system area.
 - [Findings](docs/findings/README.md): evidenced bugs, improvement proposals and open checks across this repository; implementation and QA remain in Jira CAC.
 - Personal historical reports are outside the active checkout and agent reading paths.
@@ -66,28 +72,24 @@ The code has two public client paths:
 - Partner: server command → `/api/v1/table` public state and `presentation[]`;
   the same presentation list can be delivered as `round.events` over SSE.
 
-The Partner stream is not a monitor of native table calls. The local lab tests
-saved examples and separate social chat; a live product-player connection remains
-work to verify and implement for the selected client path.
+The Partner transport and the native player's observation feed have different
+contracts. Astrid Studio follows the native player's real playback receipts
+when observation is configured. The ordinary game can be opened independently;
+Studio does not run a competing Astrid video. See the route guide above for
+recorded media, observation and generated speech streams.
 
 Internal round events are implementation details unless a public contract
 explicitly exposes them.
 
 ## Run locally
 
-Normal authenticated server:
-
-```sh
-node web/server.mjs
-```
-
-Temporary guest access for local product development:
-
-```sh
-sh web/preview.sh
-```
-
-The default local URL is `http://127.0.0.1:4173/`.
+Use the coordinated `node lab/start.mjs --offline --no-open` launcher shown
+above for an isolated, temporary preview. Use `Start-Lab.cmd` for the saved
+connected profile. Both go through the shared session guard. Stop the current
+product/Lab pair before changing environments; never bypass the guard with
+a direct server command or another port. A stopped environment stays stopped
+until a new start is requested. Follow [the user guide](lab/docs/README.md)
+for current commands and the actual addresses printed by the launcher.
 
 ## Validation
 
