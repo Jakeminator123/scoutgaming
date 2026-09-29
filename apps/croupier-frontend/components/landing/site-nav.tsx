@@ -21,7 +21,7 @@ export function SiteNav() {
       <nav aria-label="Huvudmeny" className="flex items-center justify-between gap-6">
         <LogoLaser />
 
-        <div className="hidden items-center gap-8 md:flex lg:gap-10">
+        <div className="hidden items-center gap-8 lg:flex lg:gap-10">
           <ul className="flex items-center gap-8 lg:gap-10">
             {PRIMARY.map((item) => (
               <li key={item.label} className="relative">
@@ -44,6 +44,7 @@ export function SiteNav() {
                 )}
               </li>
             ))}
+            <li><Link href="/about" className={`text-base font-bold tracking-[0.15em] text-off uppercase ${glow}`}>Om oss</Link></li>
           </ul>
 
         </div>
@@ -58,6 +59,7 @@ export function SiteNav() {
           </Link>
         </Button>
       </nav>
+      <div className="mt-4 text-right lg:hidden"><Link href="/about" className="inline-flex min-h-11 items-center text-sm text-off/80 hover:text-lime">Om Scout <ArrowRight className="ml-2 h-3 w-3" aria-hidden="true" /></Link></div>
     </header>
   )
 }

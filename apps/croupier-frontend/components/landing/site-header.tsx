@@ -21,6 +21,7 @@ export function SiteHeader() {
                 Start
               </Link>
             </li>
+            <li><Link href="/about" className="transition-colors hover:text-foreground">Om oss</Link></li>
           </ul>
           <Button asChild size="sm" className="bg-lime font-mono text-xs tracking-widest text-ink uppercase hover:bg-lime2">
             <a href={gameUrl()}>Öppna bordet</a>
