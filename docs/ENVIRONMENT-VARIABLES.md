@@ -94,7 +94,10 @@ Render-spelets villkorliga grupper:
   `LAB_REMOTE_TOKEN`. Varje par sätts tillsammans. `OPENCLAW_TIMEOUT_MS`
   är valfri tidsgräns.
 - Kamera: `CROUPIER_ASTRID_CAMERA=1` kräver
-  `CROUPIER_ASTRID_TRANSLATION_KEY`.
+  `CROUPIER_ASTRID_TRANSLATION_KEY`. Båda är verifierade i Render-runtime
+  2026-09-29 cirka 09:26 CEST. En läsande modellkontroll med nyckeln gav
+  HTTP 200 för `whisper-1`; det bevisar inte en genomförd mikrofoninspelning.
+  Webbspelaren kräver fortfarande spelarens val och enhetsbehörighet.
 - Genererat tal/video: `CROUPIER_GENERATED_SPEECH=1` och
   `CROUPIER_CLOUD_GENERATED_SPEECH=1` kräver `CARTESIA_API_KEY`,
   `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Streaming

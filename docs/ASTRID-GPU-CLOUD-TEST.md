@@ -1,10 +1,39 @@
 # Astrid: molnströmning, konfiguration och GPU-prov
 
 **Uppdaterat 2026-09-29. Imagen är publicerad privat i GHCR, en separat
-RunPod-testendpoint är Ready, ett GPU-hälsoprov och ett syntetiskt medie-rökprov
-har lyckats; läppsynk och molnflöde är ännu inte godkända.** Källan ligger kvar i `services/astrid-gpu-worker` i
+RunPod-testendpoint är Ready. Ett riktigt kort Cartesia-talprov har nu
+skapat GPU-video; läppsynk och molnströmning är ännu inte godkända.** Källan ligger kvar i `services/astrid-gpu-worker` i
 `Jakeminator123/github-work`, branch `jakemanator123-github-work`. MuseTalk 1.5
 och den nuvarande avataren är utgångspunkt.
+
+## 2026-09-29 09:13 CEST — Första riktiga talprovet
+
+Render-containerns egen `RUNPOD_API_KEY` klarade ett läsande `/health`-anrop.
+Ett separat lokalt providerprov använde därefter samma befintliga Cartesia-
+och RunPod-inställningar, endpoint `zsudl8tmzcmiv1` och exakta repliken
+**"Hej! Välkommen till bordet."**. Inga speldata, liveklipp eller talflaggor
+ändrades. Den privata tillfälliga nyckelfilen raderades före nätanropen.
+
+- Cartesia `sonic-3.5`, röst `dc30854e-e398-4579-9dc8-16f6cb2c19b9`,
+  gav 2 720 ms PCM/WAV; videoinlämning började efter 519 ms.
+- RunPod-jobb `7c8d6603-f6a2-482a-b0ac-f71ee1961ddc-e2`: 35 634 ms kö,
+  14 627 ms exekvering, 52 457 ms totalt inklusive resultatöverföring.
+- MP4: 1 897 296 byte, H.264 1080×1920, 24 fps, 83 bildrutor,
+  3,458 sekunder; muxat AAC 24 kHz, 3,413 sekunder. Den längre
+  video-/ljudsvansen jämfört med TTS-WAV måste ingå i synkgranskningen.
+- WAV SHA-256: `688f9271d166223023b2708b96a49900d9b67cf3810b1a7fb2254decf4a6756e`.
+- MP4 SHA-256: `65050946da741cb55d4c32cd528d9b130ca3e0eaa2842d8feac462914862fc03`.
+
+En kontaktkarta visar genererade munrörelser, men ingen fullständig
+audiovisuell acceptans är gjord. Provfilen och kvittot ligger privat utanför
+Git. Detta bevisar TTS→filjobb→muxad video, inte mikrofon, kamerabild,
+OpenClaw-svar, varm latens eller strömuppspelning i spelet. Kö/kallstart
+dominerar detta prov; ett snabbt samtalsflöde är ännu inte uppnått.
+
+Efterkontroll cirka 09:30 CEST: endpointpanelen visar 0 körande workers,
+0 pågående/köade jobb, 0 USD/s, min 0/max 1 och idle timeout 5 sekunder.
+Kontosaldo 29,94 USD (före detta prov 29,96 USD); detta är inte ett separat
+slutligt fakturakvitto. Inga ytterligare jobb skickades.
 
 ## 2026-09-29 08:15 CEST — Egen RunPod-konfiguration sparad på Render
 
