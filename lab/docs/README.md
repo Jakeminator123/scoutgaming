@@ -7,9 +7,17 @@ MP4/WebM med exakt rutans storlek. Välj **Automatisk · högst 2/minut** i zone
 Uppspelning om klippet ska starta själv: första start inom 10 sekunder,
 sedan minst 30 sekunder plus 0–10 sekunders slump mellan starter. Klippet
 spelas klart före nästa start. Välj **Hela tiden** för oavbruten loop eller
-**Av** för att dölja det. Byt underliggande Astrid-film för att granska zonen
-mot olika tagningar; zonens timer är oberoende av dealerklippet. Rutan är
-masken; ljusläget blandar bort
+**Av** för att dölja det. Finjustera X, Y, bredd och höjd i zonens panel och
+välj **Spara pixelruta**. Om storleken ändras behålls det gamla klippet för
+nedladdning, men visas inte förrän du skapar eller lägger in ett klipp med de
+nya måtten. Blinkklippet är en enkel ljuseffekt för prov, inte en mask som
+automatiskt känner igen lampans pixlar. Välj en snäv ruta runt själva lampan
+så att glöden inte spiller över väggen. Byt underliggande Astrid-film för att granska zonen
+mot olika tagningar; zonens timer är oberoende av dealerklippet. Alla
+provfilmer visas i samma 1080×1920-ruta, så en 612×1088-film skalas
+proportionellt och zonen behåller samma relativa läge. Kamerans faktiska
+registrering behöver ändå kontrolleras i varje tagning. Rutan är masken;
+ljusläget blandar bort
 svarta pixlar, medan normalläget visar filmens egen alfakanal om den finns.
 Koordinater och klipp sparas i den lokala webbläsarprofilen. Exportera JSON
 och ladda ned zonklippen för att ge en annan agent en exakt specifikation.

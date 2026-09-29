@@ -1,3 +1,20 @@
+## 2026-09-29 — Snävare blinkzon och redigerbar pixelruta
+
+Efter Jakobs prov av `light-2` syntes den generiska glöden över för mycket
+vägg. Zonpanelen har nu X, Y, bredd och höjd med validerad Spara pixelruta.
+Storleksändring bevarar föregående zonklipp i browserns IndexedDB för
+nedladdning, men döljer det tills ett nytt klipp med rätt pixelmått skapas
+eller importeras. Blinkgeneratorns radialljus skalas elliptiskt efter zonens
+bredd och höjd. För vänstra bakgrundslampan rekommenderas en snäv provruta
+kring ungefär x 130–288 och y 304–325 på 1080×1920-bilden; hela effekten
+behöver granskas mot faktiska dealfilmer. I Jakobs öppna Labprofil justerades
+`light-2` till x 130, y 304, 158×22 px, ett nytt smalt blinkklipp skapades,
+och Automatisk valdes. Prov med Astrid box0 standard gav 1080×1920-underlag;
+den justerade lampplaceringen behöver fortfarande godkännas visuellt av Jakob.
+Ingen spelarkod eller originalmedia ändrades. Den lägre box0-varianten kunde
+inte visas under provet eftersom dess lokala fil och manifest ändrades av
+parallellt mediaarbete; den användes inte som visuellt godkännande.
+
 ## 2026-09-29 — Automatisk zonuppspelning i Labbet
 
 Zonvideons Uppspelning har nu Hela tiden, Automatisk och Av. Automatisk
