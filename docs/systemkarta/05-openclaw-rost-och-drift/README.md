@@ -26,7 +26,9 @@ Lokal studio → lokal server → Render Director → privat OpenClaw Gateway
 - **Produktens strukturerade talbeslut:** `/chat` projicerar allowlistade
   publika spelfakta och accepterar endast `recordedLine`, `generatedText`
   eller `silence`. Den nya rollen `openclaw/croupier-speech` är skild från
-  operatörschatten. Koden är lokal och testad; rollen/adaptern är inte driftsatt.
+  operatörschatten. Den separata rollen och adaptern har daterade driftkvitton,
+  men aktuell molnspel→tal-kedja är inte verifierad. Se
+  [aktiveringshandoffen](../../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
 Eventtestets `chat.signal`, språk, återkomst och historikräknare är manuella
 testvärden. De är inte ett bestående spelarminne eller automatiskt lästa
@@ -47,12 +49,16 @@ med `remote_context_not_supported_baseline`. Director-redeploy och ett nytt
 kompatibilitetsprov behövs innan chattstödet får kallas aktivt där. Detta
 är separat från produktens framtida gemensamma talägarskap.
 
-Commit `1219d98` är den daterade utgångspunkten: fungerande lokal
+Historiskt var commit `1219d98` utgångspunkten: fungerande lokal
 operatörsrelay men saknad privat produkt-Gateway-URL och fel standardroll för
 produktkontraktet. Commit `113dfd8` löser rollkonflikten i kod med en separat,
 verktygslös speech-roll och en smal Director-adapter. Den saknade privata
 transporten, ny separat token, Gateway-/Director-redeploy och isolerad runtime-QA
-återstår. OpenAI-provider/modell behålls; Gemini ska inte ersätta den.
+var nästa steg då. OpenAI-provider/modell behölls; Gemini ersatte den inte.
+En läsande kontroll 2026-09-29 visade att de befintliga Director-/Gateway-
+tjänsterna ännu hämtar från GitLab `jakeminator123/work` på `8e10017d`.
+GitHub-arbetsbranchens nya Blueprint kan därför inte aktivera dem utan ett
+separat Render-källbyte och en uttrycklig driftsättning.
 
 ## Ljudets roll
 
