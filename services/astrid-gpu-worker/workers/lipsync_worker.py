@@ -197,10 +197,14 @@ def _probe_nvenc():
     exakt de flaggor som används; saknas NVENC (H100, ffmpeg utan stöd, drivrutin utan video) → x264."""
     if os.environ.get("NVENC", "1") == "0":
         return False
-    r = subprocess.run([FFMPEG, "-v", "error", "-f", "lavfi", "-i", "color=black:s=1080x1920:r=24:d=0.3",
+    r = subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "verbose", "-f", "lavfi", "-i", "color=black:s=1080x1920:r=24:d=0.3",
                         "-pix_fmt", "yuv420p", *_venc(19, "ultrafast", "h264_nvenc"), "-f", "null", "-"], capture_output=True, text=True)
     if r.returncode != 0:
-        say(status="NVENC saknas — x264: " + r.stderr.strip()[-160:])
+        stderr = r.stderr.strip()
+        if len(stderr) > 8192:
+            stderr = stderr[:4096] + "\n[FFmpeg stderr truncated]\n" + stderr[-4096:]
+        say(status="NVENC-prob misslyckades — x264-fallback", nvenc_probe_exit=r.returncode,
+            nvenc_probe_stderr=stderr)
     return r.returncode == 0
 
 

@@ -1,7 +1,8 @@
 # Astrid: molnströmning, konfiguration och GPU-prov
 
-**Uppdaterat 2026-09-29. Ingen image publicerad, ingen GPU startad och inget
-molnflöde godkänt.** Källan ligger kvar i `services/astrid-gpu-worker` i
+**Uppdaterat 2026-09-29. Imagen är publicerad privat i GHCR, en separat
+RunPod-testendpoint är Ready, ett GPU-hälsoprov och ett syntetiskt medie-rökprov
+har lyckats; läppsynk och molnflöde är ännu inte godkända.** Källan ligger kvar i `services/astrid-gpu-worker` i
 `Jakeminator123/github-work`, branch `jakemanator123-github-work`. MuseTalk 1.5
 och den nuvarande avataren är utgångspunkt.
 
@@ -47,9 +48,9 @@ Startaren passerar fortfarande inte `assertCloudAccessReady()`.
 | Render, molnstartare | `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`, `CROUPIER_GAME_ORIGIN`, `BETTALOTTO_PARTNER_BASE_URL`, `CROUPIER_CLOUD_DATA_ROOT`, `OPENCLAW_PRODUCT_SPEECH_URL/TOKEN`, `CROUPIER_STREAM_LANE`, `PORT`, `NODE_ENV` | Stöds. Exakta tre HTTPS-värdar, en replika och beständig disk krävs; HTTPS/cookies och startspärren måste verifieras före drift. |
 | Render → endast Web-child | `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_CLOUD_GENERATED_SPEECH=1`, `CROUPIER_GENERATED_SPEECH_STREAMING=1`, `CARTESIA_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, två **olika** `CROUPIER_SPEECH_STREAM_WORKER_SECRET`/`CROUPIER_SPEECH_STREAM_TICKET_SECRET` på minst 32 tecken | Stöds i denna ändring och passerar bara till Web-processen. File-jobbets RunPod-nyckel/endpoint krävs fortfarande av befintlig genererad-tal-konfiguration. Ange separat test-endpoint först efter beslut. Lab-child får inga dessa hemligheter. |
 | Render → gateway | Ingen separat workerhemlighet; `config.streaming` från validerad flagga | Stöds i denna ändring. Endast exakta spelvärdens `/speech-stream` och `/lipsync-worker` uppgraderas; Web-reläet gör cookie-/biljett- eller bearer-kontroll. |
-| RunPod separat test-endpoint | Image **digest**, privat GHCR-läsbehörighet, `AVATAR_ID=astrid_spel2x`, `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`, eventuellt `NVENC=0` för kontrollerad fallback | Avatar och encoderflaggor stöds. Ny endpoint, privat imagehämtning och kostnadstak är **inte** skapade eller verifierade. |
+| RunPod separat test-endpoint | GHCR-image från verifierad SHA, privat GHCR-läsbehörighet, `AVATAR_ID=astrid_spel2x`, `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`, eventuellt `NVENC=0` för kontrollerad fallback | Endpoint `zsudl8tmzcmiv1`, release 2, är Ready. Ett hälsoprov verifierade privat imagehämtning och motorstart; ett syntetiskt filjobb skapade MP4 med `libx264`. Release 2 använder SHA-taggen från samma publiceringsbygge som digesten nedan. |
 | RunPod sessionsjobb | `op=session`, exakt `wss://<spelvärd>/lipsync-worker`, `ws_token`, unik `worker_id`, avgränsad `ttl` | Stöds. Token skickas som Authorization-header, aldrig i URL. Jobbets start/stop och kötid måste mätas av testorkestreringen; automatisk betald workerstart finns inte. |
-| GitHub Actions | Manuell `astrid-gpu-publish.yml`, `approved_target`, repository `GITHUB_TOKEN` | CPU-bygget passerade i Actions. Ett publiceringsförsök byggde men stoppades av felstavat ägarnamn före push. Workflowen rättar nu ägaren och kontrollerar den mot repot; ingen digest finns. Det korrigerade paketmålet kräver nytt exakt godkännande före körning. |
+| GitHub Actions | Manuell `astrid-gpu-publish.yml`, `approved_target`, repository `GITHUB_TOKEN` | Publiceringskörning 36514600929 lyckades från `b0bac08f` och gav den digest som anges nedan. Paketet är Private. |
 | Eventuell Vercel-ingång | Länk till Render-spelets HTTPS-origin | Ingen hemlighet eller WebSocket-funktion behövs för en ren länk. Separat spelklient på Vercel med sessionsöverlämning och WS-adress är **inte implementerad**. |
 
 Lokalt ligger `CARTESIA_API_KEY` i rotens privata env-fil och RunPod-nyckeln i
@@ -62,20 +63,16 @@ ingår inte i den här Cartesia/RunPod-kedjan.
 
 ## Versionsbunden privat image och återgång
 
-**Korrigerat paketmål, ännu ej godkänt:**
+**Korrigerat paketmål, publicerat:**
 `ghcr.io/jakeminator123/astrid-gpu-worker`. Det tidigare målet med `jakemanator123`
 saknade en bokstav i GitHub-ägaren. [Första publiceringsförsöket](https://github.com/Jakeminator123/github-work/actions/runs/36510734449)
-byggde imagen men GHCR avvisade pushen med `owner not found`. Ingen paketdigest
-eller privat pull är verifierad. Vid godkännande körs den manuella
-workflowen från exakt commit på `jakemanator123-github-work` med samma
-`approved_target`. Publiceringen använder endast `sha-<hela commit-SHA>`;
-ingen `latest`-tagg, automatisk branchpush eller ändring av endpoint ingår.
-Kopiera `ghcr.io/jakeminator123/astrid-gpu-worker@sha256:<digest>` ur
-jobbsammanfattningen till testprotokollet. Bekräfta paketets **Private**-läge
-innan någon RunPod-konfiguration ändras. GitHubs dokumentation anger privat
-standardläge för nya GHCR-paket, men det verkliga paketets behörigheter måste
-kontrolleras. Testa privat pull med en separat läsbehörighet i den nya
-test-endpointen; lägg inte token i jobbinput, Git eller chatt.
+byggde imagen men GHCR avvisade pushen med `owner not found`. Den nya
+[publiceringskörningen](https://github.com/Jakeminator123/github-work/actions/runs/36514600929)
+lyckades från `b0bac08f417bfc8a3a136c940e8aba2d41b59bab` och gav
+`ghcr.io/jakeminator123/astrid-gpu-worker@sha256:76236958401daca8d78100c40b310f21e8837c9bd2830cbb756808bd20f2487b`.
+GitHubs inloggade paketvy visar **Private** och länken till `Jakeminator123/github-work`.
+Privat pull från RunPod är verifierad i test-endpointens release 2 med en
+separat `read:packages`-behörighet. Lägg inte token i jobbinput, Git eller chatt.
 
 Behåll nuvarande RunPod-produktionsendpoint och dess tidigare image orörda.
 Återgång på test-endpointen: stoppa sessionsjobbet, återställ föregående
@@ -83,7 +80,7 @@ registrerade image-digest/template, verifiera privat pull och kontrollera att
 inga workers fortsätter debiteras. Radera inte föregående image/digest förrän
 återgången är provad. Emils GitLab-repo ändras inte.
 
-## Separat GPU-prov inom Jakobs tak på 10 USD/dag — förberett, ej startat
+## Separat GPU-prov inom Jakobs tak på 10 USD/dag — hälsoprov och syntetiskt mediejobb
 
 Jakob godkände 2026-09-29 högst 10 USD per dag för ett separat prov med två
 ofarliga repliker och kall/varm start. Han bekräftade först Emils tillstånd,
@@ -91,8 +88,46 @@ men valde därefter ett eget RunPod-konto (`Jakeminator123`) för provet. Emils
 nycklar används inte vidare. Det är inget godkännande att ändra befintlig
 produktionsendpoint. En tidigare, enbart läsande kontroll med Emils nyckel gav
 HTTP 403 på endpointlistan; inget jobb skickades. Det egna kontot är inloggat
-i RunPod-konsolen men visade 0 USD saldo vid första kontrollen. Separat
-endpoint, workergräns, pris och stopp måste verifieras där före betald start.
+i RunPod-konsolen med 30 USD förbetalt saldo och Auto-Pay avstängt.
+Testendpoint `croupier-astrid-gpu-test` (`zsudl8tmzcmiv1`) skapades
+2026-09-29. Den visar Queue, image-digest ovan, en sparad `read:packages`-
+registeruppgift, RTX 4090 (24 GB Pro, 1,10 USD/timme), högst en worker,
+noll alltid aktiva workers, en GPU per worker, 600 sekunders exekveringsgräns,
+5 sekunders idle timeout, FlashBoot av och ingen nätverksvolym. Vid skapandet
+gick en worker till `initializing` trots noll aktiva workers; inga jobb hade
+skickats och kontrollpanelen visade då 0 USD debiterat. RunPod markerade den
+sedan `unhealthy` med `IMAGE_AUTH_ERROR` och `denied` vid hämtning av den
+privata GHCR-digesten. RunPods notis säger att den stoppade workern för att
+undvika kostnad; kontrollpanelen visade fortsatt 0 running workers och 0 USD.
+Ingen applikationslogg eller GPU-läppsynk kom från detta första försök.
+Jakob uppdaterade därefter GHCR-registeruppgiften i sitt RunPod-konto. Release 2
+pekar på `sha-b0bac08f417bfc8a3a136c940e8aba2d41b59bab` från samma
+publiceringsbygge som digesten. Endpointen blev Ready; Workers visade en
+idle RTX 4090-worker, inga unhealthy workers och noll jobb innan provet.
+Ett `{"input":{"op":"health"}}`-jobb gick till `COMPLETED` på release 2.
+RunPod rapporterade `delayTime=33993` ms och `executionTime=79` ms. Svaret
+bekräftade `ready=true`, `avatar=astrid_spel2x`, `gpu=NVIDIA GeForce RTX 4090`,
+`cold_start_ms=21070`, `size=1080x1920` och `encoder=libx264`.
+Detta styrker privat GHCR-pull och modellstart, men ingen läppsynk eller
+verifierad NVENC-kodning.
+
+Ett efterföljande `op=lipsync`-rökprov använde 1,5 sekunder syntetiskt
+16 kHz mono PCM. Det innehöll inga ord och kan därför inte användas för
+fonem-/läppsynksgodkännande. RunPod-jobbet gick till `COMPLETED` med 54
+bildrutor och en MP4-preview på 324 KB med spelavataren. Jobbmetadata:
+`delayTime=49909` ms, `executionTime=20283` ms. Worker-resultatets tider
+var `whisper=0,03` s, `gpu=0,73` s, `gen_enc=15,99` s och `mux=3,85` s.
+NVENC-proben loggade att FFmpeg inte kunde initiera videokodaren och valde
+`libx264`; den nuvarande felraden innehåller endast sista delen av FFmpegs
+stderr och ger ännu inte säker orsak. Inget riktigt Cartesia-tal,
+fragmentström, klientuppspelning eller manuell läppsynksgranskning är provat.
+Efter jobbet visade RunPod `0 running workers`, `$0.00000/s` och saldo
+`$29.96` från ursprungliga `$30.00`. Detta är en saldodifferens på ungefär
+fyra cent, inte en verifierad fakturarad; Overview visade ännu `$0.00`
+avrundat för total debitering.
+Källan har därefter fått mer utförlig, avgränsad FFmpeg-diagnostik för
+NVENC-proben. Den ändringen finns ännu inte i release 2 eller någon ny image;
+orsaken till fallback är därför fortfarande okänd.
 Den tidigare GHCR-körningen från
 `15bd1541` misslyckades. [Ny workflowkörning 36514600929](https://github.com/Jakeminator123/github-work/actions/runs/36514600929)
 startades från verifierad SHA `b0bac08f417bfc8a3a136c940e8aba2d41b59bab`
@@ -102,9 +137,10 @@ med `success`. Den oföränderliga taggen är
 faktisk manifest-digest
 `ghcr.io/jakeminator123/astrid-gpu-worker@sha256:76236958401daca8d78100c40b310f21e8837c9bd2830cbb756808bd20f2487b`.
 Git-SHA och image-digest är olika värden. Senaste workercommit med korrekt
-fragmentmätning är `68356b69`. Paketets **Private-synlighet och privat pull**
-är ännu inte verifierade: nuvarande `gh`-token saknar `read:packages` och
-paket-API:t svarar 403. Bekräfta detta före RunPod-konfiguration.
+fragmentmätning är `68356b69`. Paketets **Private-synlighet** är verifierad i
+GitHubs inloggade paketvy. Privat pull från RunPod fungerar med den uppdaterade
+registeruppgiften. Den lokala `gh`-inloggningen är separat och kan fortfarande
+sakna paketläsning.
 
 [RunPods aktuella serverless-priser](https://www.runpod.io/pricing) anger
 RTX 4090 (24 GB) till 1,10 USD/timme och L40/L40S (48 GB) till 1,75
