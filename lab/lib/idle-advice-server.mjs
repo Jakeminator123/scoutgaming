@@ -127,7 +127,7 @@ const publicProvider = status => typeof status === 'string'
 // Process-local and bounded: one provider attempt per request/message while the
 // observation is fresh. Failures are retained, never retried. Restarts are not a
 // distributed exactly-once guarantee; the client also consumes each native ID.
-export function createIdleAdviceServer({ settings, videoRegistry, fetchImpl = fetch, now = Date.now } = {}) {
+export function createIdleAdviceServer({ settings, videoRegistry, registryLoader = loadVideoRegistry, fetchImpl = fetch, now = Date.now } = {}) {
   const jobs = new Map();
   let active = 0;
   return async function advise(body, { signal } = {}) {
@@ -153,7 +153,7 @@ export function createIdleAdviceServer({ settings, videoRegistry, fetchImpl = fe
     job.promise = Promise.resolve().then(async () => {
       if (signal?.aborted) return result('idle_advice_cancelled_baseline');
       let selection;
-      try { selection = idleCatalog(inputBody.project, inputBody.dealerId, videoRegistry ?? await loadVideoRegistry()); }
+      try { selection = idleCatalog(inputBody.project, inputBody.dealerId, videoRegistry ?? await registryLoader()); }
       catch { return result('idle_catalog_unavailable_baseline'); }
       if (signal?.aborted) return result('idle_advice_cancelled_baseline');
       if (selection.reason) return result(selection.reason);

@@ -72,7 +72,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       const body = JSON.parse(raw);
       if (pathname === '/api/presentation/idle-advice') {
         const project = await store.load();
-        adviceService ??= loadVideoRegistry(registryOptions).then(videoRegistry => createIdleAdviceServer({ settings, videoRegistry }));
+        adviceService ??= createIdleAdviceServer({ settings, registryLoader: () => loadVideoRegistry(registryOptions) });
         const advise = await adviceService;
         const controller = new AbortController();
         const disconnected = () => { if (!res.writableEnded) controller.abort(); };
