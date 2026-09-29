@@ -225,6 +225,20 @@ personliga spelarminnen eller databaser till en publik demo som standard.
 En Git-tagg skyddar versionerad kod och media, inte ignorerade databaser,
 projektinställningar, hemligheter eller externa tjänster.
 
+## Render-diskarnas backup och inloggningsbeslut (29 september)
+
+Tre separata datarötter behöver bevaras: produktens `/var/data`, Directors
+`/data/catalog` och Gateways `/data/openclaw`. En profilbunden export,
+SHA-256-/SQLite-verifiering och återställning till tom datarot finns nu i
+[`RENDER-BACKUP-RESTORE.md`](RENDER-BACKUP-RESTORE.md). Alla lokala prov använde
+syntetiska filer. Ingen skarp Render-backup, extern kopia, omstart eller
+återställning är utförd; diskarnas aktuella montering återstår att kontrollera.
+
+Befintlig spelarlogin använder CRAIG-identitet, BO använder CRAIG-roller och
+skyddade sessioner, och BO→Lab/spel har engångsöverlämning. **OAuth behövs inte
+för nuvarande pilotkrav.** Ingen leverantör eller nyckel har skapats. Verklig
+HTTPS-inloggning och sessioners återkallning måste fortfarande provas i Render.
+
 ## Godkännande av faktisk drift
 
 Verifiera på avsedd molnadress:
