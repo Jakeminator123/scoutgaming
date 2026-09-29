@@ -38,7 +38,11 @@ function requestBoundary(request) {
   const provided = request.headers.get('x-croupier-lab-authorized');
   const actual = typeof provided === 'string' ? Buffer.from(provided) : Buffer.alloc(0);
   const key = Buffer.from(secret);
-  if (host !== expected.host || url.host !== expected.host || !['http:', 'https:'].includes(url.protocol)
+  // Next's route Request.url uses its bind address (even with forwarded Host).
+  // Only the fixed cloud Lab listener is an internal URL alias. Authorization
+  // still requires the exact public headers and gateway's private secret below.
+  const routedHost = url.host === expected.host || url.host === '127.0.0.1:4188';
+  if (host !== expected.host || !routedHost || url.username || url.password || !['http:', 'https:'].includes(url.protocol)
     || request.headers.get('x-forwarded-host') !== expected.host
     || request.headers.get('x-forwarded-proto') !== 'https'
     || actual.length !== key.length || !timingSafeEqual(actual, key)) {

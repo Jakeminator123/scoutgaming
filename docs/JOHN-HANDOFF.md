@@ -1,5 +1,17 @@
 # Aktuellt molnläge
 
+## 2026-09-29 — Lab-inloggning och API bakom Render
+
+Jakob rapporterade dels HTTP 400 efter inloggningen, dels autentiseringsfel
+i ett redan öppet Studio. Två avgränsade rättningar är integrerade:
+utgången/återanvänd Lab-handoff visar nu HTTP 410 med en länk till en ny
+ordinarie inloggning; Nexts interna Request-URL `127.0.0.1:4188` accepteras
+av Lab-guard endast med rätt publik Host, betrodda proxyheaders och gateway-
+hemlighet. Origin, roll, engångskod och sessionskontroller behålls.
+20 auth-/molntester samt 52 guard-/reference-/molntester passerade hos
+respektive agent. Live-verifiering av dessa rättningar sker efter deploy;
+detta är ännu inget kvitto på MP4-import eller visuell acceptans.
+
 ## 2026-09-29 — Familjeuppladdning i Astrid Studio
 
 Astrid Studio har nu **Ladda upp & bibliotek** med lokal förhandsvisning,
@@ -21,11 +33,15 @@ passerade alla fyra dealeruppsättningar med tidigare dokumenterade saknade
 tal-takes kvar. Lokal inventering: 51/51 tillgängliga klipp, 22 varianter.
 Ingen visuell acceptans, import av dirty media till Render eller betald
 modellkörning ingår i dessa testresultat. Browseranslutningen i denna chatt
-gav `User unavailable`; inloggning, riktig uppladdning, två uppspelningar och
-fyra-dealer-rehearsal måste kvitteras i webbläsare före slutlig QA.
+gav `User unavailable`. Samordnaren har verifierat BO→Lab-inloggning och
+den nya uppladdningsytan med familjer. Riktig uppladdning, två uppspelningar
+och fyra-dealer-rehearsal återstår före slutlig QA. Vid Spel & uppspelning
+sågs ett separat fel: referensspelets konfiguration kunde inte läsas;
+HTTP-svar från `/studio/api/inputs/reference` behöver kontrolleras.
 
 Vercel har publicerat `adae8772`; `/labb-lissabon` ger verifierad HTTP 307
-till Render `/studio`. `root-orchestrator` samordnar Render och browserprov.
+till Render `/studio`. `root-orchestrator` verifierade `225433fe` Live på
+Render 08:46:15 CEST, deploy `dep-datlrou0tbcc7383arg0`.
 Följdfix: varje ny idle-förfrågan läser aktuella uppladdningar, medan
 återförsök och frekvensgränser behåller samma beslutsjournal. Uppladdningens
 verkliga filändelse bevaras även när visningsnamnet saknar `.mp4`.
@@ -40,8 +56,9 @@ jobb. API-nyckelns giltighet och riktigt tal är ännu inte provade. Se
 Se [gemensam driftkarta](CLOUD-CURRENT-STATE-2026-09-29.md) för verifierad
 Vercel-, Render-, Neon-, Blob-, RunPod- och OpenClaw-status den 29 september.
 Den nya [Git-kopplade Vercel-ingången](https://croupier-frontend.vercel.app/)
-visar importerade Next-sidan från huvudrepot. Den tidigare
-`github-work-vercel-entry` ligger kvar som separat manuellt publicerad adress.
+visar importerade Next-sidan från huvudrepot. `github-work-vercel-entry`
+och `croupier-landing-preview-qa` är nu borttagna enligt samordnarens
+Vercel-efterkontroll (Project not found). Spelpreviewn med Blob/Neon behålls.
 Vercel-projektet `modern-landing-page` är raderat efter Jakobs uttryckliga
 bekräftelse; Vercels efterkontroll fann inget projekt. Den nya startsidan
 klarade även automatisk Git-deploy från `d8d4b707` (READY).

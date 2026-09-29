@@ -49,7 +49,7 @@ test('same-origin BO/Lab handoff still checks admin role, browser state, one-use
   const call = (url, cookie = '') => {
     const result = {};
     handle({ url, method: 'GET', headers: { host: new URL(origin).host, cookie }, socket: { remoteAddress: '127.0.0.1' } },
-      { writeHead(status, headers) { result.status = status; result.headers = headers; }, end() {} });
+      { writeHead(status, headers) { result.status = status; result.headers = headers; }, end(body) { result.body = body; } });
     return result;
   };
   try {
@@ -61,13 +61,22 @@ test('same-origin BO/Lab handoff still checks admin role, browser state, one-use
     claims = { sub: '1', role: 'admin', aud: 'backoffice', source_stamp: 'fixture-stamp', auth_epoch: 1, exp: Date.now() / 1000 + 600 };
     const grant = call(auth);
     assert.equal(grant.status, 303);
-    assert.equal(call(grant.headers.Location).status, 400);
+    const missingCookie = call(grant.headers.Location);
+    assert.equal(missingCookie.status, 410);
+    assert.match(missingCookie.body, /Starta en ny labbinloggning/);
+    assert.match(missingCookie.body, /api\/auth\/lab\/start\?next=%2Fstudio/);
+    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM lab_sessions').get().n, 0);
     const callback = call(grant.headers.Location, stateCookie);
     assert.equal(callback.status, 303);
     assert.equal(callback.headers.Location, '/studio/openclaw');
     const session = callback.headers['Set-Cookie'].find(value => value.startsWith('lab_session=')).split(';')[0];
     assert.equal(call('/api/auth/lab/check', session).status, 200);
-    assert.equal(call(grant.headers.Location, stateCookie).status, 400);
+    assert.equal(call(grant.headers.Location, stateCookie).status, 410);
+    assert.equal(call(auth).status, 410);
+    const expired = call('/api/auth/lab/start?next=/studio');
+    db.exec('UPDATE bo_lab_handoffs SET expires=0');
+    assert.equal(call(expired.headers.Location).status, 410);
+    assert.equal(call('/api/bo/lab-login?state=invalid').status, 400);
     db.exec("UPDATE users SET role='reader'");
     assert.equal(call('/api/auth/lab/check', session).status, 401);
     const fallback = call('/api/auth/lab/start?next=/api/bo/users');
