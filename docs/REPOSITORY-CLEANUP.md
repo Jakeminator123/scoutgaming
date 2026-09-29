@@ -1,6 +1,6 @@
 # Repostädning inför GitHub-arbetet
 
-## V3 arkiverad och 3D-källor uteslutna ur Docker, 29 september 2026
+## V3 och avvisade 3D-studier arkiverade, 29 september 2026
 
 Den fristående `emil/astrid-demo-v3-reference/` togs bort ur arbetskopian:
 240 spårade filer, 66 160 426 byte (63,1 MiB), varav 217 MP4. Hela mappträdet,
@@ -18,11 +18,16 @@ Samma externa backup innehåller dessutom fyra sammanhängande avvisade
 3D-studier: `content/staging/2026-09-11/astrid-replacement/` och
 `content/staging/2026-09-12/{astrid-closeup,astrid-rest-study,upright-controller}/`.
 Det är 240 spårade filer och 987 631 568 byte (cirka 941,9 MiB), inklusive
-åtta symboliska länkar vars mål står i `backup-manifest.json`. September-12-skript refererar
-till september-11-originalen; inga produkt-, Lab-, test- eller molnreferenser
-hittades. **Dessa fyra grupper är inte raderade.** Automatisk granskning
-avvisade radering eftersom unika original och återbyggnadsunderlag kräver
-ett separat uttryckligt beslut även med backup. Ingen kringväg användes.
+åtta symboliska länkar vars mål står i `backup-manifest.json`. September-12-
+skript refererar till september-11-originalen; inga produkt-, Lab-, test-
+eller molnreferenser hittades. **Alla fyra grupper är nu borttagna ur
+arbetsbranchen efter Jakobs uttryckliga godkännande.** De bevarades först
+byteverifierat i Desktop-arkivet och finns även i commit `a055b5c2`. Den
+tidigare automatiska granskningen avvisade en bredare instruktion; det nya
+uttryckliga beslutet gäller exakt dessa grupper. Återställ hela paketet innan
+dess studieskript körs igen:
+
+`git restore --source=a055b5c2 --staged --worktree -- content/staging/2026-09-11/astrid-replacement content/staging/2026-09-12/astrid-closeup content/staging/2026-09-12/astrid-rest-study content/staging/2026-09-12/upright-controller`
 
 Rotens `.dockerignore` utesluter nu även `assets/astrid-3d/` (cirka 563 MiB)
 och `assets/blackjack-3d/` (cirka 220 MiB). Deras kända läsare är offline-
@@ -31,6 +36,15 @@ byggskript i `pipeline/`; spelets webbkod laddar de publicerade kopiorna i
 rot-Dockerkontexten med cirka 783 MiB, men en faktisk image har inte byggts
 eller mätts här. Aktiva dealerfilmer, manifest, databaser, projekt och det
 pensionerade privata personarkivet är orörda.
+
+Tillsammans med de två tidigare granskningspaketen samma dag är 573 spårade
+filer och 1 183 296 733 byte (cirka 1 128,5 MiB) borttagna ur arbetskopian.
+Git-historiken krymper inte. Daterade handoffhänvisningar till de fyra
+3D-studierna beskriver tidigare arbete och pekar inte längre på filer i
+arbetskopian; använd arkivindexet eller återställningskommandot ovan.
+
+Äldre avsnitt nedan dokumenterar tidigare kontrolltidpunkter. Besluten om
+V3 och de fyra 3D-studierna har ersatts av den aktuella statusen ovan.
 
 ## Historiska 3D- och videogranskningspaket, 29 september 2026
 
@@ -60,8 +74,9 @@ avatar, modellvikt, kalibrering eller manifest ändrades.
 Den avvisade ersättningsstudien
 `content/staging/2026-09-11/astrid-replacement/` är ensam cirka 559 MiB men
 innehåller unika leverantörsoriginal, kvitton och återbyggnadsunderlag.
-Automatisk godkännandekontroll avvisade radering av denna grupp; den är
-orörd och kräver ett separat uttryckligt beslut om originalfilerna.
+Vid denna tidigare kontroll avvisade automatisk godkännandekontroll
+raderingen. Jakob godkände senare de fyra namngivna grupperna uttryckligen;
+se aktuellt avsnitt ovan.
 
 Verifiering: 41 relativa länkar i de fem berörda Markdownfilerna har inga
 brutna mål. `audit-dealer-sync --probe` matchade alla fyra dealerbaslinjer.
