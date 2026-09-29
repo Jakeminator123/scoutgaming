@@ -6174,3 +6174,36 @@ Lab `/zones` sparar ännu zoner i `localStorage` och klipp i IndexedDB;
 `light-2`-blinkklippet finns bara i den webbläsarprofilen. Ett skyddat
 Lab-API och en behörig medieväg med HTTP Range behövs innan privat Blob
 kan användas i speluppspelningen. Se `docs/ZONE-CLOUD-STORAGE.md`.
+
+### Importerad landningssida och sista isolerade Preview-prov, 2026-09-29
+
+Jakob beslutade att `Jakeminator123/croupier-frontend` ska in i detta repo och
+ersätta den enklare länksidan till blackjack. `main` vid `2ec2b3f2` är nu
+importerad under `apps/croupier-frontend/` som en egen Next.js-app. Både
+spelknapparna på `/demo` använder byggvariabeln `CROUPIER_GAME_URL`;
+standardvärdet behåller den tidigare Render-pilotlänken. Källa och v0-projekt
+synkas inte automatiskt. `pnpm build` och `pnpm exec tsc --noEmit` passerade.
+Den senaste isolerade landnings-Previewn är
+`https://croupier-landing-preview-eokix0slk-jakeminator123s-projects.vercel.app`.
+Browsern visade startsida/introscenen och `/demo`, och båda spelknapparna
+pekade på den senaste isolerade spel-Previewn.
+
+Spel-Previewn är
+`https://croupier-player-preview-3esw2v3fl-jakeminator123s-projects.vercel.app`.
+En exakt rewrite för `/kevin-cards/back-scout.png` lades till; både den och
+`/assets/cardback.png` visades som bilder via Vercel. Test-Render svarade 200
+på `/__cloud/health`. Samma syntetiska konto loggade in genom nya Previewn.
+Astrid syntes och native video spelade med `readyState=4`, 1080×1920; en
+inspelad utdelning syntes vid bordet. Med Standard-klippval, utan nytt
+modellanrop, gav en serverägd $5-runda saldo $1000→$995 och efter dealerbust
+$1005 med $10 återbetalt. Omladdning mitt i rundan behöll 8♥ mot 3♠/7♠
+och $995. Detta är browserkvitto för spelvägen, inte visuell acceptans av
+de ocommittade Astrid-takens läppsynk. Vercels HTTP 206 för Range och
+Partner-SSE är fortfarande oprövade. `streams/kf.json` finns inte i källan;
+den frivilliga keyframe-debuggen ger 404 men användes inte i spelprovet.
+
+Render-testtjänsten återupptogs enbart för detta prov och är åter
+**Suspended**; Render bekräftar att pausad tjänst inte faktureras. Slutlig
+debitering är inte avläst. `croupier-v2`, dess databas och befintlig
+produktionsingång är orörda. Innan produktionsbyte återstår bland annat
+Range/206 genom Vercel, backup/restore, mobilprov och separat SSE/WebSocket.

@@ -61,6 +61,7 @@
     { "source": "/assets/table.png", "destination": "__ISOLATED_BACKEND_ORIGIN__/assets/table.png" },
     { "source": "/assets/shoe.png", "destination": "__ISOLATED_BACKEND_ORIGIN__/assets/shoe.png" },
     { "source": "/assets/cardback.png", "destination": "__ISOLATED_BACKEND_ORIGIN__/assets/cardback.png" },
+    { "source": "/kevin-cards/back-scout.png", "destination": "__ISOLATED_BACKEND_ORIGIN__/kevin-cards/back-scout.png" },
     { "source": "/assets/room-extended.png", "destination": "__ISOLATED_BACKEND_ORIGIN__/assets/room-extended.png" },
     { "source": "/scene.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/scene.jpg" },
     { "source": "/dealer-fallback.png", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealer-fallback.png" },
