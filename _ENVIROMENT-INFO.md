@@ -30,9 +30,12 @@ Kontrollerat lokalt 2026-09-29 utan att skriva ut värden:
 Ett namn som finns lokalt bevisar inte att värdet är aktuellt på Render eller
 att leverantörsnyckeln fortfarande fungerar. Den lokala kontrollen ändrade
 inga värden, roterade inga nycklar och gjorde inget debiterbart anrop.
-Efter kontobytet har jag inte läst de två Render-tjänsternas hemliga
-Environment-värden på nytt; deras aktuella namn/värden måste därför jämföras
-mot denna karta i Render innan något ändras där.
+Efter kontobytet har de riktiga Environment-värdena på Render nu kontrollerats.
+Gateway-nycklarna matchar mellan Director och Gateway. Spelets speech-token,
+Lab-token och presentations-token matchar rätt Director-värde. Inga Render-
+värden behövde ändras. Lokal health/status gav 200 och speech-token med tomt
+schema gav förväntat 400 före modellkörning. Se
+[livekvittot](open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
 ### Rotens `.env`: de 17 namnen och avsedd roll
 
@@ -118,8 +121,10 @@ innehåller nycklar för flera olika roller.
 
 - **Behåll/verifiera hemligheter:** `LAB_API_TOKEN` (Directors eget API),
   `OPENCLAW_PRODUCT_SPEECH_TOKEN` (endast betrodd spelservers speech-anrop)
-  samt `OPENCLAWAPI_KEY` som Blueprint-referens till privata Gatewayens
-  Gateway-nyckel. Speech-token måste vara samma som i spelservern, och skild
+  samt `OPENCLAWAPI_KEY` med samma värde som privata Gatewayens
+  Gateway-nyckel. Blueprintmallen har en tjänstreferens, men den tidigare
+  Blueprinten är frånkopplad; nuvarande värden är verifierade direkt på tjänsterna.
+  Speech-token måste vara samma som i spelservern, och skild
   från `LAB_API_TOKEN`. Skriv inte någon av dem i Blueprintens `value:`.
 - **Behåll/verifiera intern väg:** `OPENCLAW_HOSTPORT` ska komma från
   Gateway-tjänstens privata `hostport`. Startkoden härleder
@@ -156,7 +161,8 @@ innehåller nycklar för flera olika roller.
 Gatewayens `openclaw.json` och agentarbetsytor ligger på beständig disk. En
 ändrad Blueprint-standard byter därför inte säkert en redan sparad
 modellkonfiguration. Kontrollera den effektiva konfigurationen innan ett
-modellbyte. Ingen hemlighet ska skickas via den publika `/openclaw/`-proxyn.
+modellbyte. Den publika `/openclaw/`-proxyn skickar inte automatiskt serverns
+Gateway-nyckel; operatören autentiserar sin egen dashboardsession.
 
 ### Betrodd spelserver: `croupier-v2` är en tredje tjänst
 
@@ -190,8 +196,15 @@ serverautentiserat uppladdnings-/läs-API och stöd för HTTP Range/206 innan
 spelets MP4 kan spelas säkert därifrån. Labbs nuvarande zoner sparas lokalt i
 webbläsaren, och `emil/dealklipp-v1` är fortfarande källan för inspelade takes.
 Praktiska steg finns i [medie- och zonguiden](docs/MEDIA-UPLOAD-AND-ZONES.md).
-Vilka Vercel-miljöer som just nu får token behöver kontrolleras i projektets
-Dashboard före ny deploy; den kontrollen gick inte att göra efter kontobytet.
+Vercel API har nu verifierat Blob-token för Production, Preview och Development
+i QA-projektet. Zon-Neons nycklar finns för Preview/Development.
+
+Vercels nya `croupier-frontend` har redan `CROUPIER_GAME_URL` för
+Production/Preview. Den saknade variabeln lades också till i äldre
+`github-work-vercel-entry` med produktionsspelets URL och i
+`croupier-landing-preview-qa` med QA-spelpreviewns URL. Båda nya värdena
+återlästes och matchar exakt. De används vid nästa bygge; ingen OpenClaw-
+hemlighet har kopierats till Vercel eftersom startsidorna inte läser dem.
 
 Spelets produktionskonto, session, saldo, spelrundor och chattminne ligger
 fortfarande i serverns SQLite. En separat game-Neon och en fullständig
@@ -206,13 +219,12 @@ OpenClaw får se. OpenClaw äger aldrig saldo eller utbetalning. Se
 1. Behåll de lokala filerna där de ligger. Radera inga gamla Partner-värden
    förrän deras användning och giltighet har verifierats. Ta bort gamla
    hänvisningar till andra checkout-sökvägar ur nya instruktioner.
-2. Jämför namn och roll, inte utskrivna hemligheter, i de två Render-
-   tjänsternas Environment mot listan ovan. Bekräfta särskilt att Director
-   och spelserver har samma produkt-speech-token och att Gatewayens modell-
-   och Gateway-nycklar är två olika värden.
-3. Kontrollera `OPENCLAW_DASHBOARD_ORIGIN` manuellt på Gateway. Kontrollera
-   effektiv `openclaw.json` före modelländring. En lokal `.env`-rad uppdaterar
-   ingen Render-tjänst.
+2. Render-tokenparen och den separata modellnyckeln är verifierade den
+   29 september. Vid framtida rotation: uppdatera båda ändar av respektive
+   koppling och kör det autentiserade statusprovet igen.
+3. `OPENCLAW_DASHBOARD_ORIGIN` är verifierad på Gateway. Kontrollera
+   effektiv `openclaw.json` före en framtida modelländring. En lokal
+   `.env`-rad uppdaterar ingen Render-tjänst.
 4. För framtida genererat tal: använd den specifika
    `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`; tolka inte `RUNPOD_ENDPOINT_ID` som
    samma endpoint. För kamera: lägg en dedikerad översättningsnyckel på

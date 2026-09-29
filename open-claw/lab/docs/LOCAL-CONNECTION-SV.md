@@ -1,64 +1,42 @@
-# Verifierad lokal OpenClaw-anslutning
+# Lokal OpenClaw-anslutning
 
-Den här guiden gäller den isolerade lokala produkt- och labbvägen. Helpern ändrar
-inte Gateway, modellleverantör, roller, Control UI eller offline-jämförelsens
-konfiguration. Arbetet fortsätter på `jakeminator123/work` i
-`C:\Users\jakem\Projects\croupier`. Den gemensamma lokala uppspelningen beskrivs
-i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+Guiden gäller `Jakeminator123/github-work`, branch
+`jakemanator123-github-work`, i den aktuella Croupier-arbetskopian.
+Helpern läser privata lokala miljöfiler och ansluter via Render Director.
+Se [miljökartan](../../../_ENVIROMENT-INFO.md) för filernas placering och
+[runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) för spelaren.
 
-## En aktiv miljö efter städningen 2026-09-25
+## Aktuell anslutningskontroll — 2026-09-29
 
-**Uppdatering 2026-09-28:** Jakob har stoppat de lokala devservrarna. Högst
-ett produkt-/labbpar får köras åt gången. Lissabon-startaren, denna helper
-och offline-jämförelsens startare delar en sessionsspärr även för olika
-portval. Spärren återtas först när ägare, registrerade barn och gamla portar
-är fria; en levande process stoppas aldrig automatiskt. Codex använder
-`--no-open` och återanvänder befintliga spel-/labbflikar vid nästa start.
-Se [aktuell Lissabon-start](../../../lissabon/README.md).
+Gateway och Director kör GitHub-revision `15bd1541`. Lokal hälsa och
+autentiserad Lab-status gav HTTP 200. En tom speech-envelope med lokal
+produkt-token gav förväntad HTTP 400 innan modellkörning. Tokenkopplingarna
+mellan Render-spelet, Director och Gateway matchar. Se
+[live-kvittot](CLOUD-ACTIVATION-2026-09-29.md).
 
-- Spela och chatta: <http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
-- Konfigurera och observera samma spelare: <http://127.0.0.1:4201/activity>.
-- Behåll dessa två flikar. Händelselogg → Anslut öppnar den kopplade spelfliken
-  om ingen sådan redan är ansluten; den befintliga fliken behöver inte laddas om.
+Produkten använder `OPENCLAW_PRODUCT_SPEECH_URL` och separat speech-token.
+Lokalt Lab använder `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN`. En direkt publik
+Gateway-URL behövs inte för denna väg. `OPENCLAWAPI_KEY` hör till privat
+Gateway-autentisering; `OPENCLAW_MODEL_API_KEY` används av Gateway mot modellen.
 
-De gamla serverparen 4192/4194, 4196/4197 och 4198/4199 stoppades på användarens
-begäran. Endast 4200/4201 lyssnade inom intervallet 4192–4201 vid kontrollen,
-och båda sidorna svarade HTTP 200. Render-tjänsterna lämnades igång.
-Startkommandona nedan behövs först när den befintliga lokala körningen har
-stoppats. En ny start skapar en ny isolerad testdatabas och spelsession.
+## Ett lokalt serverpar
 
-## Aktuell status och tidigare kontroll
+Högst ett produkt-/labbpar får köras åt gången. Lissabon-startaren, denna
+helper och offline-jämförelsens startare delar sessionsspärr även för olika
+portval. Kontrollera befintlig körning före start och respektera användarens
+stoppbeslut. Codex använder `--no-open` där startaren stöder det och
+återanvänder befintliga spel-/labbflikar. Se
+[aktuell Lissabon-start](../../../lissabon/README.md).
 
-Uppföljning 2026-09-25: exakt `113dfd8` är nu driftsatt på Gateway och Director,
-och produktens smala `/api/product/speech` är konfigurerad och liveverifierad.
-Direkt laptop → privat Gateway saknar fortfarande URL, men behövs inte när
-speech-reläet används. OpenAI-provider och modell är oförändrade. Se
-[driftkvittot](DEPLOYMENT-RECEIPT-2026-09-25.md).
+Standardadresser för den isolerade helpern efter uttrycklig start:
 
-Den isolerade körningen med `--generated-speech` har dessutom verifierats hela
-vägen: länkad labbchatt → autentiserad produktchatt → OpenClaw → ElevenLabs →
-RunPod → hashkontrollerat talpaket → labbuppspelning i standardposition.
-Ett faktiskt lokalt bord gav svaret 5♦ + K♠ = 15 och dealer 10♠; hålkortet
-förblev dolt. Detta bevisar funktion, inte mänskligt godkänd läppsynk.
-Idle-rådgivaren har separat verifierat Director-svar med kontextkontrakt v2;
-det innebär inte att varje modellförslag leder till ett spelat klipp.
+- Spel: <http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
+- Lab: <http://127.0.0.1:4201/activity>.
 
-### Historiskt första prov, före speech-driftsättningen
-
-| Väg | Konfigurerad | Nåbar | Funktionellt prov |
-| --- | --- | --- | --- |
-| Lokal produktserver → OpenClaw Gateway | **Nej.** Privat `.env` har gatewaynyckeln, men saknar `OPENCLAW_BASE_URL`. Nyckeln ensam anger ingen säker nätväg. | Inte provbar utan mål-URL. Den publika `/openclaw/`-proxyn spärrar avsiktligt `/v1` och ska inte användas som genväg. | Inte kört. Koden kräver nu det separata agentmålet `openclaw/croupier-speech`; rollen och den smala Director-adaptern är lokalt implementerade men inte driftsatta. |
-| Lokalt labb → Render Director | **Ja.** `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN` finns i privat rotkonfiguration. | **Ja.** `GET /healthz` gav HTTP 200. Autentiserat `GET /api/status` gav HTTP 200. | **Ja.** Ett enda manuellt `/api/studio/chat`-prov gav HTTP 200, `provider.status=responded` och samma syntetiska conversation-id. Modellen svarade att detta var operatörslabbet och att kortexemplen var syntetiska, inte verifierad drift. |
-
-Modellprovet använde bara katalogens syntetiska kortexempel och visningsnamnet
-`OpenClaw Lokalprov`. Ingen riktig spelare, plånbok, databas eller dold kortdata
-användes. Provet gick laptop → Director → privat Gateway → befintlig OpenAI-provider.
-Det bevisar den vägen vid provtillfället, inte produktens separata talbeslut.
-
-Gatewaylösenord och modellnyckel är skilda uppgifter. Den privata
-konfigurationen innehöll båda, de var olika, och inga värden skrevs ut.
-`OPENCLAWAPI_KEY` autentiserar Director/produktklienten mot Gateway;
-`OPENCLAW_MODEL_API_KEY` används bara av den privata Gatewayen mot OpenAI.
+En ny isolerad start skapar testdatabas och spelsession. Den använder inte
+produktionsdatabasen. Ett fullt modell-/tal-/GPU-prov kräver egen
+kostnadsram och uppspelningsgranskning; statuskontrollen ovan gör inga
+sådana anrop.
 
 ## Version och officiellt kontrakt
 

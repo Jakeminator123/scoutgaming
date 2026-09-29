@@ -1,12 +1,10 @@
 # Produktchatten: separat OpenClaw-roll och privat transport
 
-Status 2026-09-25: **Gateway och Director kör `113dfd8`; modellprov och faktisk
-native-spelarchatt är verifierade efter inläsning av användarens nya token**.
-Den extra alias-startspärren från `269a797` togs bort på användarens begäran i
-`d570770`. Autentisering och den befintliga gränsen mellan labb- och
-produktendpoint är kvar. Genererad läppsynk är inte inkopplad.
-Se [aktuellt driftkvitto och kvarvarande verifiering](DEPLOYMENT-RECEIPT-2026-09-25.md).
-Nedan bevaras kontraktet och driftplanen; alla steg är inte färdigverifierade.
+Status 2026-09-29: Gateway och Director kör GitHub-revision `15bd1541`.
+De verkliga env-värdena och tokenkopplingarna mellan spel, Director och
+Gateway är kontrollerade. Se [aktuellt driftkvitto](CLOUD-ACTIVATION-2026-09-29.md).
+Nedan beskrivs kodens kontrakt och avgränsade provväg. Konfigurationen är
+inte ensam bevis för ett färdigt tal-/bild-/GPU-flöde eller godkänd läppsynk.
 
 ## Låst kontrakt
 

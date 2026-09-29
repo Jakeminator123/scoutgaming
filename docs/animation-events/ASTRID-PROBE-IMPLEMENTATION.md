@@ -130,9 +130,9 @@ Gateway kör `70ef43f`; Director kör `e6ea969` med vanlig chatts minneskanal.
 Probe och de tre modellkandidaterna är fortsatt tillgängliga.
 Åtta autentiserings-/schemaprov och en full 60-fallsjämförelse passerade.
 Luna gav relevanta initiativ och var snabbare än Terra i detta lilla prov.
-Jakob valde därefter Luna som Astrids standard. Latens, begränsningar, deploy-ID och
-kvarvarande uppspelningskontroll finns i
-[driftkvittot](../../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-28.md).
+Jakob valde därefter Luna som Astrids standard. Provbeskrivningen ovan är
+historisk. Aktuella env och kvarvarande verifiering finns i
+[live-kvittot](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
 Rätt ingång är Lissabon på 4201 och **Anslut** till
 `?dealer=astrid&presentation=local` på 4200. Porträttklippen används även på

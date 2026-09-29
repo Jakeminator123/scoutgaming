@@ -42,6 +42,12 @@ Dess tidigare Vercel-publicering är nu borttagen enligt driftkvittot ovan.
 Den importerade `/demo` har två spelknappar som kan byggas mot en exakt
 `CROUPIER_GAME_URL`. Klientsidans äldre låtsasspel har ingen publik rutt.
 
+Live-env kontrollerades 2026-09-29. Den saknade `CROUPIER_GAME_URL` sparades
+på `github-work-vercel-entry` för Production/Preview med Render-spelets URL,
+och på `croupier-landing-preview-qa` för Production/Preview/Development med
+den isolerade spel-Previewns URL. Båda värdena återlästes och matchar exakt;
+de gäller nästa bygge. Se [live-kvittot](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+
 Render `croupier-v2` är Live. Både `croupier-frontend` och den tidigare
 adressen `github-work-vercel-entry` levererar den importerade
 Next-landningssidan med en extern länk till Render `/blackjack`. Den planerade

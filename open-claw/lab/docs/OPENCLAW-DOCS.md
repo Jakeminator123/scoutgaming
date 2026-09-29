@@ -74,8 +74,8 @@ behöver granskas utifrån sin faktiska källa, funktion och behörighet.
 
 Labbets runtime använder det dokumenterade **HTTP-API:t**, inte MCP.
 En IDE-agents dokumentationsläsning ska inte ge den åtkomst till spelar- eller
-operatörssamtal. Projektets gemensamma GitLab-inbox för IDE-agenter är ytterligare
-ett separat system, utan koppling till OpenClaw-runtime.
+operatörssamtal. Den tidigare GitLab-inboxen är pausad. Lokal agentsamordning
+sker via `agent-talk`, utan koppling till OpenClaw-runtime.
 
 ## Installation är inte samma sak som vår Render-konfiguration
 
@@ -119,7 +119,7 @@ garanti för framtida svarstid. Se [systemkartans daterade driftgränser](../../
 
 | Uppgift | Lokal fil |
 | --- | --- |
-| Steg för steg: GitLab → Render | [RENDER-START-SV.md](RENDER-START-SV.md) |
+| Drift av befintliga GitHub-kopplade Render-tjänster | [RENDER-START-SV.md](RENDER-START-SV.md) |
 | Native dashboard, inloggning och pairing | [DASHBOARD-SV.md](DASHBOARD-SV.md) |
 | Nätväg och nycklarnas separata roller | [DEPLOYMENT.md](DEPLOYMENT.md) |
 | Render-tjänster, diskar och miljöreferenser | [render.yaml](../render.yaml) |
@@ -131,7 +131,7 @@ garanti för framtida svarstid. Se [systemkartans daterade driftgränser](../../
 | Redigerbara linjer, varianter och triggers | [catalog.json](../config/catalog.json) |
 
 IDE-inboxen ska aldrig kopplas in som spelarchatt. Produktspelarens HTTP-adapter och serverbundna chattminne finns; se
-[speech-integrationen](PRODUCT-SPEECH-DEPLOYMENT-SV.md) och [driftkvittot](DEPLOYMENT-RECEIPT-2026-09-25.md).
+[speech-integrationen](PRODUCT-SPEECH-DEPLOYMENT-SV.md) och [driftkvittot](CLOUD-ACTIVATION-2026-09-29.md).
 Nya lokala kontrakt kräver separat driftsättning.
 Labbets egna namnval och begränsade beständiga minne finns nu separat i
 [companion-adaptern](COMPANION.md); det identifierar inte Partner-spelare.
