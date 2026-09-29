@@ -1,5 +1,16 @@
 # V2 – kort ändringslogg och nästa beslut
 
+## 2026-09-29 – Vercel ska vara den synliga spel-fronten
+
+Jakob har förtydligat målet: besökaren ska stanna på Vercels `.vercel.app`-
+adress; HTML/JS/CSS för blackjack ska levereras där. Render behåller
+spel-API, serverägd kortlek/plånbok, SQLite, skyddat BO/Lab, OpenClaw-koppling
+och långlivade strömmar. Dagens Vercel-sida länkar fortfarande vidare till
+Render, så målet är **inte genomfört**. Inga tillfälliga Render-omdirigeringar
+har pushats. [Migrationskontrakt och prov](docs/VERCEL-FRONTEND-MIGRATION.md)
+anger den stegvisa övergången utan att störa nuvarande publika ingång.
+GitHub-arbetsbranchen är `jakemanator123-github-work`; GitLab är pausat.
+
 ## 2026-09-29 – Render utan egen domän
 
 - Uttryckligt single-origin-läge: spel `/`, BO `/bo`, Lab `/studio`.

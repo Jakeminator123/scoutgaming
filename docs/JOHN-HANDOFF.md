@@ -1,3 +1,22 @@
+## 2026-09-29 — Vercel-frontend: förhandsbygge, inte driftsatt spel
+
+Jakobs mål är att spelaren stannar på Vercels befintliga `.vercel.app`-adress
+medan Render behåller API, spelmotor, SQLite och skyddat BO/Lab. Nuvarande
+Production på Vercel är fortfarande bara en landningssida som länkar till
+Render. Ett uttryckligt `--frontend-preview`-bygge kopierar spelarens
+HTML/JS/CSS och textbaserade modulberoenden till Vercel-strukturen utan media
+eller BO/Lab. Det är ännu inte ett fungerande spel: API-/mediaproxy, exakt
+Origin-/cookie-kontrakt, WebSocket/SSE och browseracceptans återstår.
+Migrationskontraktet finns i [VERCEL-FRONTEND-MIGRATION.md](VERCEL-FRONTEND-MIGRATION.md).
+
+Render-gatewayens delade loopback-IP kunde låsa ute alla spelare efter felaktiga
+inloggningsförsök från en användare. Spelarautentisering begränsar nu i stället
+misslyckade försök per konto (CRAIG:s namn/e-post delar nyckel); lyckad
+inloggning nollställer kontots räknare. Den separata BO-begränsaren är inte
+ändrad och behöver granskas före bred drift. Riktade frontend-/auth-tester
+och hela pre-commit passerade lokalt. Ingen Vercel-cutover, ny tjänst, betald
+GPU-körning eller publik end-to-end-verifiering gjordes i denna ändring.
+
 ## 2026-09-29 — Astrids bakgrundszoner i Lab
 
 `/zones` i Astrid Studio använder den befintliga 1080×1920-startbilden som

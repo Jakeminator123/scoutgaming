@@ -29,6 +29,12 @@ beständig data är ännu inte verifierade i drift.
 | RunPod: GPU-worker (ännu ej aktiverad) | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
 | Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `lab/.env.example`; nyckelnamnen speglas i JSON-listan | – |
 
+Vercels opt-in `node build.mjs --frontend-preview` använder samma
+`CROUPIER_GAME_ORIGIN` som standardbygget och inför **ingen ny env-nyckel**.
+Det är ännu bara ett statiskt förhandsbygge; se
+[`VERCEL-FRONTEND-MIGRATION.md`](VERCEL-FRONTEND-MIGRATION.md) innan
+Production-ingången ändras.
+
 Render-spelets villkorliga grupper:
 
 - Konto/data: `CROUPIER_PLAYER_ACCOUNTS`, `LAB_VIDEO_ARCHIVE`. Spelar- och

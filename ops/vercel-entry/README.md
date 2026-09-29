@@ -51,3 +51,37 @@ Ingen riktig databas eller privat `.env` ska kopieras till Vercel eller tester.
   `docs/KEVIN-LISSABON-REVIEW.md`.
 
 Ingen tjänst eller deployment har skapats av dessa filer.
+
+## Opt-in förhandsbygge: frontend på Vercel
+
+Standardkommandot `node build.mjs` och Vercels `buildCommand` ovan är oförändrade:
+`dist/` innehåller bara landningssidan och dess CSS, och knappen leder fortsatt
+till spelserverns `/blackjack`. Detta är **inte** en produktions-cutover.
+
+För ett separat lokalt eller Vercel Preview-bygge kan buildkommandot
+uttryckligen sättas till `node build.mjs --frontend-preview` (med samma
+`CROUPIER_GAME_ORIGIN`); lokalt mot loopback:
+`node build.mjs --local --frontend-preview`. Använd en ren `dist/` före ett
+sådant separat bygge, eftersom skriptet inte rensar gamla filer. Kontrollera
+med `node --test test/build-preview.mjs` från denna katalog. Flaggan lägger
+till `/frontend-preview/blackjack/` och `/frontend-preview/game/` i `dist`,
+med interna Vercel-URL:er för inloggning→spel. Endast dessa två HTML-sidor,
+deras textbaserade JS/CSS-modulberoenden och små JSON-beroenden kopieras;
+inga spelvideor, bilder, BO- eller Lab-sidor kopieras. Förhandslägets CSP gäller
+bara `/frontend-preview/`; övriga vägar behåller tidigare CSP. Denna
+uppdelning använder Vercels [dokumenterade negativa lookahead för
+`source`](https://vercel.com/docs/project-configuration/vercel-json#negative-lookahead).
+
+Sidorna kan alltså **levereras statiskt från Vercel**, men är ännu inte ett
+fungerande spel. Mediefilerna saknas avsiktligt och `/api/*` har inga
+Vercel→Render-rewrites. För nästa, separat fas behövs en exakt ruttkarta och
+verifierad proxy för auth, spel, presentation, medieförfrågningar inklusive
+Range/206, BO/Lab, SSE och WebSocket. Backenden avvisar idag POST om
+webbläsarens `Origin` inte matchar Render-värdens `Host`; en enkel extern
+rewrite från Vercel ger därför 403 utan en avgränsad serverändring. Direkt
+cross-origin-anrop löser inte det, eftersom player-sessionen använder
+`SameSite=Strict` och CORS saknas. Talströmmen använder också WebSocket på
+`location.origin`, och långlivad SSE/WebSocket via Vercel är ännu inte
+verifierad. Lägg inte till bred `/api/*`-proxy, publicera inte BO/Lab som
+statiska filer och flytta inte DNS/Production-länken förrän detta har testats
+med isolerad backend och riktiga browserflöden.
