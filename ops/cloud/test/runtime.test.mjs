@@ -34,6 +34,25 @@ test('player registration is opt-in and reaches only the Web child', () => {
   assert.throws(() => validateCloudConfig({ ...fixture(), CROUPIER_PLAYER_ACCOUNTS: 'yes' }));
 });
 
+test('one exact Vercel frontend origin is opt-in and reaches only Web', () => {
+  const name = 'CROUPIER_VERCEL_FRONTEND_ORIGIN';
+  const disabled = childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET });
+  assert.equal(disabled.web.env[name], '');
+  const origin = 'https://preview.example.vercel.app';
+  const env = { ...fixture(), [name]: origin };
+  const config = validateCloudConfig(env);
+  const specs = childSpecifications(config, env, { labInternalSecret: LAB_SECRET });
+  assert.equal(config.frontendOrigin, origin);
+  assert.equal(specs.web.env[name], origin);
+  assert.equal(specs.lab.env[name], undefined);
+  for (const bad of ['https://*.vercel.app', 'http://preview.example.vercel.app',
+    'https://preview.example.vercel.app/', 'https://preview.example.vercel.app/path',
+    'https://preview.example.vercel.app:443', 'https://user@preview.example.vercel.app',
+    env.PUBLIC_URL, env.BO_URL, env.LAB_PUBLIC_URL]) {
+    assert.throws(() => validateCloudConfig({ ...env, [name]: bad }), name);
+  }
+});
+
 test('three exact public origins share one port and two loopback children', () => {
   const env = fixture();
   const config = validateCloudConfig(env);

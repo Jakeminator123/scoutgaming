@@ -1,0 +1,2 @@
+/* Preview only supports Astrid's local presentation; other dealer routes are not proxied. */
+#dealer-picker { display: none !important; }

@@ -13,11 +13,14 @@ Status 2026-09-29: Render visar `croupier-v2` som **Live** på
 `https://croupier-v2.onrender.com` (build `a055b5c`). Vercels
 `github-work-vercel-entry` har `CROUPIER_GAME_ORIGIN` satt till denna exakta
 offentliga origin för Production och Preview. Värdet är en publik adress,
-ingen hemlighet. En ny Production-deploy från `d4ab37d` blev **READY**.
-`https://github-work-vercel-entry.vercel.app/` svarade 200 med en Blackjack-
-länk till Render, och länken öppnade den publika inloggningssidan i browsern.
-Hälsosidan blockerades av browserklienten; inloggning, spelrunda, omstart och
-beständig data är ännu inte verifierade i drift.
+ingen hemlighet. En ny Production-deploy från `0507cf5c` blev **READY**;
+Production är fortfarande endast landningssidan med Render-länk.
+Vid föregående browserkontroll svarade
+`https://github-work-vercel-entry.vercel.app/` 200 med en Blackjack-länk
+till Render, och länken öppnade den publika inloggningssidan. En separat
+läsande HTTPS-kontroll gav 200 för Vercels `/` och 200/`ok` för Renders
+`/__cloud/health`. Inloggning, spelrunda, omstart och beständig data är ännu
+inte verifierade i drift.
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
@@ -42,6 +45,13 @@ Render-spelets villkorliga grupper:
   `CROUPIER_DATA_DIR`, `LAB_STUDIO_DATA_DIR`,
   `CROUPIER_PRESENTATION_STUDIO_DIR`, `CROUPIER_GENERATIONS_DIR` och
   `CROUPIER_GENERATED_SPEECH_DIR` får bara ange exakt samma härledda sökvägar.
+- Vercel-spelarproxy: `CROUPIER_VERCEL_FRONTEND_ORIGIN` är valfri och av som
+  standard. Ange endast den förhandsversionens exakta HTTPS-origin utan path,
+  wildcard eller avslutande snedstreck. Den tillåter spelarens POST-anrop med
+  detta Origin när Render fortfarande får sitt eget publika Host; BO och Lab
+  får ingen ny tillåtelse. Konfigurationen aktiverar ingen Vercel-rewrite eller
+  Production-frontend. Kontrollera Host, cookies och omdirigeringar i Preview
+  innan variabeln används i drift.
 - En origin: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
   `CROUPIER_GAME_ORIGIN`, `BETTALOTTO_PARTNER_BASE_URL` kan utelämnas när
   Render levererar `RENDER_EXTERNAL_URL`. I separat-värdläge måste dessa

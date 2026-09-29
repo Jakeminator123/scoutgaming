@@ -1,3 +1,20 @@
+## 2026-09-29 — isolerad Vercel-preview och exakt Render-origin
+
+En separat, ännu inte driftsatt Vercel-projektrot finns i
+[`ops/vercel-entry/preview/`](../ops/vercel-entry/preview/README.md). Den
+incheckade mallen saknar giltig backendadress och har bara en snäv lista över
+spelar-API:er och Astrids medier; skyddade BO/Lab-vägar proxyas inte. En
+genererad, Git-ignorerad konfiguration kräver en Render-testbackend med egen
+databas och annat hostname. Den riktiga `croupier-v2` avvisas uttryckligen.
+
+Render-koden har nu ett avstängt-standardläge för en enda exakt
+`CROUPIER_VERCEL_FRONTEND_ORIGIN`. Det ändrar endast spelar-POST och
+presentationens video-GET/HEAD; BO-spärren är orörd. Isolerade tester täcker
+Host/Origin, cookies, 206/Range, avvisade okända origins och fortsatt lokal
+uppspelning. Full pre-commit passerade lokalt. Ingen Preview-deploy eller
+produktionsovergång gjordes. Vercels verkliga proxyheaders, inloggning,
+spelrunda, media, omstart och backup/restore är fortfarande oprövade.
+
 ## 2026-09-29 — Vercel-frontend: förhandsbygge, inte driftsatt spel
 
 Jakobs mål är att spelaren stannar på Vercels befintliga `.vercel.app`-adress

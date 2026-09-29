@@ -85,3 +85,7 @@ cross-origin-anrop löser inte det, eftersom player-sessionen använder
 verifierad. Lägg inte till bred `/api/*`-proxy, publicera inte BO/Lab som
 statiska filer och flytta inte DNS/Production-länken förrän detta har testats
 med isolerad backend och riktiga browserflöden.
+
+En separat [Preview-projektrot](preview/README.md) innehåller den snäva
+rewrite-kartan för ett framtida isolerat CLI-prov. Den påverkar inte detta
+projekts `vercel.json` eller standardbygge.

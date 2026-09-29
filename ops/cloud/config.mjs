@@ -23,7 +23,7 @@ function httpsOrigin(value, name) {
   let url;
   try { url = new URL(value); } catch { fail(name); }
   if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash
-    || url.pathname !== '/' || url.port || isIP(url.hostname)
+    || url.pathname !== '/' || url.port || isIP(url.hostname) || url.hostname.includes('*')
     || !url.hostname.includes('.') || url.hostname.endsWith('.local')
     || value !== url.origin) fail(name);
   return url.origin;
@@ -102,6 +102,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     if (gameOrigin === labOrigin) fail('LAB_PUBLIC_URL');
     if (boOrigin === gameOrigin || boOrigin === labOrigin) fail('BO_URL');
   }
+  const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN
+    ? httpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN, 'CROUPIER_VERCEL_FRONTEND_ORIGIN') : '';
+  if (frontendOrigin && [gameOrigin, boOrigin, labOrigin].includes(frontendOrigin)) fail('CROUPIER_VERCEL_FRONTEND_ORIGIN');
   const labBasePath = singleOrigin ? '/studio' : '';
   if (env.CROUPIER_LAB_BASE_PATH !== undefined && env.CROUPIER_LAB_BASE_PATH !== labBasePath) fail('CROUPIER_LAB_BASE_PATH');
   if (httpsOrigin(env.CROUPIER_GAME_ORIGIN || (singleOrigin ? gameOrigin : ''), 'CROUPIER_GAME_ORIGIN') !== gameOrigin
@@ -140,7 +143,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (partnerPresent.every(Boolean) && (!/^ck_live_[A-Za-z0-9_-]{24}$/.test(env.BETTALOTTO_PARTNER_KEY_ID)
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
-  return Object.freeze({ gameOrigin, boOrigin, labOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
+  return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
     director, productSpeech, labRemote, timeoutMs, camera, generatedSpeech, streaming,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret } : null,
@@ -196,6 +199,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
     web: { command: process.execPath, args: [join(REPOSITORY, 'web/server.mjs')], cwd: REPOSITORY,
       env: { ...shared, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
         BO_URL: config.boOrigin, LAB_PUBLIC_URL: config.labOrigin,
+        CROUPIER_VERCEL_FRONTEND_ORIGIN: config.frontendOrigin,
         CROUPIER_CLOUD_RUNTIME: '1',
         CROUPIER_CLOUD_LAYOUT: config.singleOrigin ? 'single-origin' : 'separate-hosts',
         CROUPIER_PLAYER_ACCOUNTS: config.playerAccounts ? '1' : '',

@@ -6,6 +6,7 @@ node --test test/check-environment-variables.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node test/player-auth.mjs
 node --test test/agent-talk.mjs test/player-signup.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs ops/vercel-entry/test/build-preview.mjs
+node --test ops/cloud/test/runtime.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs ops/vercel-entry/test/preview-routes.mjs
 node test/craig-login.mjs
 node test/bo-game-auth.mjs
 node pipeline/audit-dealer-sync.mjs

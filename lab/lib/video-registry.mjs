@@ -16,6 +16,15 @@ const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
 const EMIL_SOURCE = ['emil', 'dealklipp-v1'];
 const verified = new Map();
 
+export function exactHttpsOrigin(value) {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.origin === value && /^[a-z0-9.-]+$/i.test(url.hostname)
+      && !url.username && !url.password;
+  } catch { return false; }
+}
+
 class RegistryError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
@@ -260,8 +269,12 @@ function parseRange(header, size) {
 /** Only allowlisted UUIDs resolve to media; no URLs, arbitrary paths, or symlinks. */
 export async function getVideoResponse(id, request, options = {}) {
   if (!['GET', 'HEAD'].includes(request.method)) return errorResponse(request, 405, 'GET or HEAD only.', { Allow: 'GET, HEAD' });
-  if (request.headers.get('sec-fetch-site') === 'cross-site'
-    || (request.headers.get('origin') && request.headers.get('origin') !== new URL(request.url).origin)) {
+  const origin = request.headers.get('origin');
+  const fetchSite = request.headers.get('sec-fetch-site');
+  const proxyOriginAllowed = origin && exactHttpsOrigin(options.trustedProxyOrigin)
+    && origin === options.trustedProxyOrigin && (!fetchSite || fetchSite === 'same-origin');
+  if (fetchSite === 'cross-site'
+    || (origin && origin !== new URL(request.url).origin && !proxyOriginAllowed)) {
     return errorResponse(request, 403, 'Same-origin preview required.');
   }
   if (typeof id !== 'string' || !UUID.test(id)) return errorResponse(request, 404, 'Unknown video.');
