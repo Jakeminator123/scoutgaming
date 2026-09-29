@@ -72,17 +72,20 @@ async function fixture(t) {
   return {start,stop,request};
 }
 
-test('opt-in Vercel Origin permits player POSTs only with Render Host and keeps cookies host-only',async t=>{
+test('opt-in Vercel Origin permits player POSTs with the observed Preview Host and keeps cookies host-only',async t=>{
   const f=await fixture(t);
   const login={email:'pilot-reader',password};
   const post=(path,body,options={})=>f.request(path,{method:'POST',body,origin:frontend,site:'same-origin',...options});
   await f.start({CROUPIER_VERCEL_FRONTEND_ORIGIN:frontend});
   assert.equal((await post('/api/auth/login',login,{origin:'https://evil.example.test'})).status,403);
   assert.equal((await post('/api/auth/login',login,{origin:`${frontend}/path`})).status,403);
-  assert.equal((await post('/api/auth/login',login,{host:new URL(frontend).host})).status,403);
+  assert.equal((await post('/api/auth/login',login,{host:'attacker.invalid'})).status,403);
   assert.equal((await post('/api/auth/login',login,{site:'cross-site'})).status,403);
   const signedIn=await post('/api/auth/login',login);
   assert.equal(signedIn.status,200);
+  assert.equal((await post('/api/auth/login',login,{host:new URL(frontend).host})).status,200,
+    'Vercel external rewrite forwards its Preview Host');
+  assert.equal((await post('/api/auth/login',login,{host:new URL(frontend).host,site:'cross-site'})).status,403);
   const setCookie=signedIn.headers['set-cookie']?.[0]??'';
   assert.match(setCookie,/^player_session=[a-f0-9]{64}/);
   assert.match(setCookie,/; HttpOnly; SameSite=Strict;/);
@@ -93,7 +96,8 @@ test('opt-in Vercel Origin permits player POSTs only with Render Host and keeps 
   const state=await post('/api/table',{op:'state'},{cookie});
   assert.equal(state.status,200,'authenticated game POST accepts the trusted preview origin');
   assert.equal((await post('/api/table',{op:'state'},{cookie,origin:'https://evil.example.test'})).status,403);
-  assert.equal((await post('/api/table',{op:'state'},{cookie,host:new URL(frontend).host})).status,403);
+  assert.equal((await post('/api/table',{op:'state'},{cookie,host:new URL(frontend).host})).status,200);
+  assert.equal((await post('/api/table',{op:'state'},{cookie,host:'attacker.invalid'})).status,403);
   assert.equal((await post('/api/bo/login',{user:'pilot-reader',pass:password})).status,403,
     'Vercel player trust never reaches BO login');
   const boStart=await f.request('/api/auth/bo/start?next=%2F',{host:new URL(game).host});

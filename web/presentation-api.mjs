@@ -50,8 +50,10 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         if (!['GET', 'HEAD'].includes(req.method)) fail('GET or HEAD required', 405);
         const id = pathname.slice('/api/presentation/videos/'.length);
         const publicOrigin = env.CROUPIER_CLOUD_RUNTIME === '1' && exactHttpsOrigin(env.PUBLIC_URL) ? env.PUBLIC_URL : null;
-        const trustedProxyOrigin = publicOrigin && req.headers.host === new URL(publicOrigin).host
-          && exactHttpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN) ? env.CROUPIER_VERCEL_FRONTEND_ORIGIN : null;
+        const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN;
+        const trustedProxyOrigin = publicOrigin && exactHttpsOrigin(frontendOrigin)
+          && [new URL(publicOrigin).host, new URL(frontendOrigin).host].includes(req.headers.host)
+          ? frontendOrigin : null;
         const response = await getVideoResponse(id,
           new Request(`${publicOrigin || 'http://localhost'}${pathname}`, { method: req.method, headers: req.headers }),
           { ...registryOptions, trustedProxyOrigin });

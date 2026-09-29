@@ -54,6 +54,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
     for (const required of [
       'frontend-preview/blackjack/index.html', 'frontend-preview/game/index.html',
       'blackjack-entry.mjs', 'app.mjs', 'styles.css', 'vendor/three/three.module.js',
+      'vendor/three/three.core.min.js',
       'vendor/three/GLTFLoader.js', 'vendor/three/BufferGeometryUtils.js',
       'presentation-runtime/live-idle.mjs', 'lab/policies/idle-policy.seed.json',
       'astrid-camera-audio-worklet.mjs',
@@ -67,6 +68,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
       const body = await readFile(join(directory, name), 'utf8');
       const imports = [
         ...body.matchAll(/^\s*(?:import|export)\s+(?:[\w\s{},*$]+?\s+from\s*)?['"]([^'"]+)['"]/gm),
+        ...body.matchAll(/^\s*(?:import|export)[^'"\n]*?\bfrom\s*['"]([^'"]+)['"]/gm),
         ...body.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g),
       ];
       for (const match of imports) {
