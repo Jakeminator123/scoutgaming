@@ -85,22 +85,26 @@ inga workers fortsätter debiteras. Radera inte föregående image/digest förr�
 
 ## Separat GPU-prov inom Jakobs tak på 10 USD/dag — förberett, ej startat
 
-Jakob bekräftade 2026-09-29 att Emil, kontoägaren, godkänt högst 10 USD per dag för ett
-separat prov med två ofarliga repliker och kall/varm start. Det är inget
-godkännande att ändra befintlig produktionsendpoint. Nycklar i Emils env-filer
-hör till hans konto och används bara inom detta avgränsade prov. Vid en
-tidigare, enbart läsande kontroll gav den lokalt tillgängliga nyckeln HTTP 403
-på endpointlistan; inget jobb skickades. En separat endpoint, workergräns, pris
-och stopp kan därför inte verifieras med den nyckeln. Ägarkontots fungerande
-managementväg behövs före betald start. Den tidigare GHCR-körningen från
+Jakob godkände 2026-09-29 högst 10 USD per dag för ett separat prov med två
+ofarliga repliker och kall/varm start. Han bekräftade först Emils tillstånd,
+men valde därefter ett eget RunPod-konto (`Jakeminator123`) för provet. Emils
+nycklar används inte vidare. Det är inget godkännande att ändra befintlig
+produktionsendpoint. En tidigare, enbart läsande kontroll med Emils nyckel gav
+HTTP 403 på endpointlistan; inget jobb skickades. Det egna kontot är inloggat
+i RunPod-konsolen men visade 0 USD saldo vid första kontrollen. Separat
+endpoint, workergräns, pris och stopp måste verifieras där före betald start.
+Den tidigare GHCR-körningen från
 `15bd1541` misslyckades. [Ny workflowkörning 36514600929](https://github.com/Jakeminator123/github-work/actions/runs/36514600929)
 startades från verifierad SHA `b0bac08f417bfc8a3a136c940e8aba2d41b59bab`
-med korrigerat mål `ghcr.io/jakeminator123/astrid-gpu-worker`; vid överlämningen
-var den fortfarande igång och image-digest okänd. Senaste workercommit med
-korrekt fragmentmätning är `68356b69`. Först efter lyckad publicering kan
-`sha-<workflowens fulla github.sha>` och
-`ghcr.io/jakeminator123/astrid-gpu-worker@sha256:<verklig digest>` fyllas i.
-Ingen digest får gissas från Git-SHA.
+med korrigerat mål `ghcr.io/jakeminator123/astrid-gpu-worker` och slutade
+med `success`. Den oföränderliga taggen är
+`sha-b0bac08f417bfc8a3a136c940e8aba2d41b59bab`; workflowloggen gav
+faktisk manifest-digest
+`ghcr.io/jakeminator123/astrid-gpu-worker@sha256:76236958401daca8d78100c40b310f21e8837c9bd2830cbb756808bd20f2487b`.
+Git-SHA och image-digest är olika värden. Senaste workercommit med korrekt
+fragmentmätning är `68356b69`. Paketets **Private-synlighet och privat pull**
+är ännu inte verifierade: nuvarande `gh`-token saknar `read:packages` och
+paket-API:t svarar 403. Bekräfta detta före RunPod-konfiguration.
 
 [RunPods aktuella serverless-priser](https://www.runpod.io/pricing) anger
 RTX 4090 (24 GB) till 1,10 USD/timme och L40/L40S (48 GB) till 1,75
@@ -121,8 +125,8 @@ deadline samtidigt med första GPU-starten. Stoppa vid 10 minuter utan `ready`,
 15 minuter utan ett fullständigt mediefragment, direkt vid andra worker eller
 oväntad endpoint/image, och senast vid 30 minuter totalt. Kontrollera att
 aktiva workers går till noll och läs faktisk debitering innan ett nytt försök.
-Om stopp eller kostnad inte kan observeras, kör inget jobb. Den nuvarande
-403-nyckeln uppfyller inte detta krav; en ägarstyrd managementväg behövs.
+Om stopp eller kostnad inte kan observeras, kör inget jobb. Emils 403-nyckel
+används inte; stopp och debitering ska kontrolleras i Jakobs eget konto.
 
 Använd tom spel-/BO-/Lab-databas, separata testkonton och
 inga privata samtal. Behåll MuseTalk. Kör från en namngiven commit/digest och
