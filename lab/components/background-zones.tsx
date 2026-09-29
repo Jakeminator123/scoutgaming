@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { labUrl } from '../lib/lab-url.mjs';
+import { firstAutomaticDelayMs, nextAutomaticDelayMs } from '../lib/background-zone-schedule.mjs';
 import styles from './background-zones.module.css';
 
 const WIDTH = 1080, HEIGHT = 1920;
 const STORAGE = 'croupier.astrid.background-zones.v1';
-type Zone = { id: string; name: string; x: number; y: number; width: number; height: number; blend: 'screen' | 'normal'; clipName?: string };
+type Playback = 'continuous' | 'automatic' | 'off';
+type Zone = { id: string; name: string; x: number; y: number; width: number; height: number; blend: 'screen' | 'normal'; playback?: Playback; clipName?: string };
 type Clip = { id: string; label: string; url: string };
 type Point = { x: number; y: number };
 
@@ -17,7 +19,41 @@ function validZone(value: unknown): value is Zone {
     && [zone.x, zone.y, zone.width, zone.height].every(Number.isInteger)
     && zone.x >= 0 && zone.y >= 0 && zone.width > 0 && zone.height > 0
     && zone.x + zone.width <= WIDTH && zone.y + zone.height <= HEIGHT
-    && (zone.blend === 'screen' || zone.blend === 'normal');
+    && (zone.blend === 'screen' || zone.blend === 'normal')
+    && (zone.playback === undefined || zone.playback === 'continuous' || zone.playback === 'automatic' || zone.playback === 'off');
+}
+
+function ZoneClip({ src, blend, playback }: { src: string; blend: Zone['blend']; playback: Playback }) {
+  const video = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    if (playback !== 'automatic') return;
+    const element = video.current;
+    if (!element) return;
+    let timer: number;
+    let stopped = false;
+    let lastStart = 0;
+    function schedule(delay: number) {
+      timer = window.setTimeout(() => {
+        if (stopped || !element) return;
+        element.currentTime = 0;
+        lastStart = performance.now();
+        void element.play().then(() => setPlaying(true)).catch(() => {
+          setPlaying(false);
+          if (!stopped) schedule(5000);
+        });
+      }, delay);
+    }
+    function ended() {
+      setPlaying(false);
+      schedule(nextAutomaticDelayMs(lastStart, performance.now()));
+    }
+    element.addEventListener('ended', ended);
+    schedule(firstAutomaticDelayMs());
+    return () => { stopped = true; clearTimeout(timer); element.removeEventListener('ended', ended); element.pause(); };
+  }, [src, playback]);
+  if (playback === 'off') return null;
+  return <video ref={video} src={src} autoPlay={playback === 'continuous'} muted loop={playback === 'continuous'} playsInline preload="auto" style={{ mixBlendMode: blend, visibility: playback === 'automatic' && !playing ? 'hidden' : 'visible' }} />;
 }
 
 function clipStore(): Promise<IDBDatabase> {
@@ -134,7 +170,7 @@ export function BackgroundZones({ videos }: { videos: Clip[] }) {
     if (!drag.current || !frame.current) return;
     const bounds = box(drag.current, pointInFrame(event, frame.current)); drag.current = null; setDrawing(null);
     if (bounds.width < 4 || bounds.height < 4) { setMessage('Dra en ruta på minst 4 × 4 pixlar.'); return; }
-    const zone: Zone = { id: crypto.randomUUID(), name: `Zon ${zones.length + 1}`, ...bounds, blend: 'screen' };
+    const zone: Zone = { id: crypto.randomUUID(), name: `Zon ${zones.length + 1}`, ...bounds, blend: 'screen', playback: 'continuous' };
     setZones(current => [...current, zone]); setSelected(zone.id);
   }
   async function saveClip(blob: Blob, name: string) {
@@ -194,7 +230,7 @@ export function BackgroundZones({ videos }: { videos: Clip[] }) {
     setZones(current => current.filter(zone => zone.id !== active.id)); setSelected('');
   }
   function exportJson() {
-    const output = { schemaVersion: 1, dealer: 'astrid', reference: 'emil/dealklipp-v1/astrid_startbild_spel_1080x1920.png', frame: { width: WIDTH, height: HEIGHT }, zones: zones.map(({ id, name, x, y, width, height, blend, clipName }) => ({ id, name, x, y, width, height, blend, clipName: clipName || null })) };
+    const output = { schemaVersion: 1, dealer: 'astrid', reference: 'emil/dealklipp-v1/astrid_startbild_spel_1080x1920.png', frame: { width: WIDTH, height: HEIGHT }, zones: zones.map(({ id, name, x, y, width, height, blend, playback, clipName }) => ({ id, name, x, y, width, height, blend, playback: playback || 'continuous', clipName: clipName || null })) };
     const url = URL.createObjectURL(new Blob([JSON.stringify(output, null, 2) + '\n'], { type: 'application/json' }));
     const link = document.createElement('a'); link.href = url; link.download = 'astrid-bakgrundszoner.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -202,7 +238,7 @@ export function BackgroundZones({ videos }: { videos: Clip[] }) {
   return <div className={styles.shell}>
     <header className={styles.header}><a href={labUrl('/')}>← Astrid Studio</a><div><span className="eyebrow">ASTRID · LOKALT LABB</span><h1>Bakgrundszoner</h1></div><button onClick={exportJson} disabled={!zones.length}>Exportera koordinater</button></header>
     <main className={styles.main}>
-      <p className={styles.intro}>Dra en ruta på startbilden. Rutan blir en exakt pixelzon för ett eget litet klipp. Zonklippet ligger kvar ovanpå förhandsvisningen när du byter dealerklipp. Ingenting skrivs in i originalfilmerna eller spelets uppspelning.</p>
+      <p className={styles.intro}>Dra en ruta på startbilden. Rutan blir en exakt pixelzon för ett eget litet klipp. Välj sedan om klippet ska visas hela tiden eller starta automatiskt. Zonklippet styrs oberoende av dealerklippet i förhandsvisningen. Ingenting skrivs in i originalfilmerna eller spelets uppspelning.</p>
       {message ? <p role="status" className={styles.message}>{message}</p> : null}
       <div className={styles.layout}>
         <section><div className={styles.toolbar}><label>Underlag för prov<select value={base} onChange={event => { setBase(event.target.value); setBaseSize(''); }}><option value="">Startbild</option>{videos.map(video => <option value={video.id} key={video.id}>{video.label}</option>)}</select></label><span>Referens: {WIDTH} × {HEIGHT} px</span></div>
@@ -210,7 +246,7 @@ export function BackgroundZones({ videos }: { videos: Clip[] }) {
             <img src={labUrl('/api/zones/reference')} alt="Astrids startbild för bakgrundszoner" draggable={false} />
             {displayed ? <video key={displayed.id} className={styles.baseVideo} src={displayed.url} autoPlay muted loop playsInline onLoadedMetadata={event => { const video = event.currentTarget; setBaseSize(`${video.videoWidth} × ${video.videoHeight}`); }} /> : null}
             {zones.map(zone => <div key={zone.id} className={`${styles.zone} ${zone.id === selected ? styles.selected : ''}`} style={{ left: `${zone.x / WIDTH * 100}%`, top: `${zone.y / HEIGHT * 100}%`, width: `${zone.width / WIDTH * 100}%`, height: `${zone.height / HEIGHT * 100}%` }} onClick={() => setSelected(zone.id)}>
-              {clipUrls[zone.id] ? <video src={clipUrls[zone.id]} autoPlay muted loop playsInline style={{ mixBlendMode: zone.blend }} /> : null}<span>{zone.name}</span></div>)}
+              {clipUrls[zone.id] ? <ZoneClip key={`${zone.id}:${zone.playback || 'continuous'}`} src={clipUrls[zone.id]} blend={zone.blend} playback={zone.playback || 'continuous'} /> : null}<span>{zone.name}</span></div>)}
             {drawing ? <div className={styles.drawing} style={{ left: `${drawing.x / WIDTH * 100}%`, top: `${drawing.y / HEIGHT * 100}%`, width: `${drawing.width / WIDTH * 100}%`, height: `${drawing.height / HEIGHT * 100}%` }} /> : null}
           </div>
           {displayed && baseSize ? <p className={styles.note}>Provklippets bildyta: {baseSize}. {baseSize !== `${WIDTH} × ${HEIGHT}` ? 'Avvikande upplösning: kontrollera att motivet verkligen ligger på samma relativa plats innan zonen används.' : 'Kontrollera fortfarande kameraregistrering och eventuell rörelse i zonen.'}</p> : null}
@@ -219,6 +255,9 @@ export function BackgroundZones({ videos }: { videos: Clip[] }) {
           <div className={styles.list}>{zones.map(zone => <button key={zone.id} className={zone.id === selected ? styles.current : ''} onClick={() => setSelected(zone.id)}>{zone.name}<small>{zone.x}, {zone.y} · {zone.width} × {zone.height} px{zone.clipName ? ' · klipp' : ''}</small></button>)}</div>
           {active ? <div className={styles.editor}><label>Namn<input value={active.name} maxLength={50} onChange={event => change(active.id, { name: event.target.value })} /></label><p><strong>Pixelruta:</strong> x {active.x}–{active.x + active.width - 1}, y {active.y}–{active.y + active.height - 1}<br /><strong>Klippstorlek:</strong> {active.width} × {active.height} px</p>
             <label>Blandning<select value={active.blend} onChange={event => change(active.id, { blend: event.target.value as Zone['blend'] })}><option value="screen">Ljus (svart blir osynligt)</option><option value="normal">Vanlig video / alfakanal</option></select></label>
+            <label>Uppspelning<select value={active.playback || 'continuous'} onChange={event => change(active.id, { playback: event.target.value as Playback })}><option value="continuous">Hela tiden</option><option value="automatic">Automatisk · högst 2/minut</option><option value="off">Av</option></select></label>
+            {active.playback === 'automatic' ? <p>Första start inom 10 sekunder. Därefter minst 30 sekunder mellan starterna, plus 0–10 sekunder slump. Klippet spelas klart innan nästa start. Timern fortsätter när du byter dealerklipp i Labbet.</p> : null}
+            <p><strong>Zonklipp:</strong> {active.clipName ? active.clipName : `Inget sparat klipp. Lägg in en video som är exakt ${active.width} × ${active.height} px eller välj Skapa blinkklipp.`}</p>
             <div className={styles.actions}><button onClick={() => void downloadCrop()}>Ladda ned zonens startbild</button><button disabled={busy} onClick={() => void pulse()}>{busy ? 'Arbetar…' : 'Skapa blinkklipp'}</button><label className={styles.upload}>Lägg in eget zonklipp<input type="file" accept="video/mp4,video/webm" disabled={busy} onChange={event => { const file = event.target.files?.[0]; if (file) void upload(file); event.target.value = ''; }} /></label></div>
             {active.clipName ? <button onClick={() => void downloadClip()}>Ladda ned {active.clipName}</button> : null}<button className={styles.danger} onClick={() => void remove()}>Ta bort zon</button>
           </div> : <p>Rita din första zon på bilden.</p>}
