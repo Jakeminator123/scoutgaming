@@ -1,5 +1,11 @@
 # Aktuellt molnläge
 
+RunPod/Render 2026-09-29 08:15 CEST: egen API-nyckel finns nu som variabel
+på `croupier-v2`; endpointnamnet rättat med Save only. Deploy `799b359f`
+är Live och hälsa/spelingång ger HTTP 200. RunPod visar inga pågående/köade
+jobb. API-nyckelns giltighet och riktigt tal är ännu inte provade. Se
+[GPU-driftkvittot](ASTRID-GPU-CLOUD-TEST.md) för återstående steg.
+
 Se [gemensam driftkarta](CLOUD-CURRENT-STATE-2026-09-29.md) för verifierad
 Vercel-, Render-, Neon-, Blob-, RunPod- och OpenClaw-status den 29 september.
 Den nya [Git-kopplade Vercel-ingången](https://croupier-frontend.vercel.app/)
