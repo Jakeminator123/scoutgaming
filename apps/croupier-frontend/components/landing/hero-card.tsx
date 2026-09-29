@@ -170,6 +170,12 @@ export function HeroCard() {
   // While the intro plays the card is invisible and waits at its first frame; when the intro's
   // playing card lands on it, it takes over showing the same logo, then opens on Astrid's face.
   useEffect(() => {
+    if (handoff === "idle") {
+      wasHolding.current = false
+      setIntroLogo(false)
+      setIntroZoom(false)
+      return
+    }
     if (holding) {
       wasHolding.current = true
       const video = casinoRef.current
@@ -279,7 +285,7 @@ export function HeroCard() {
           >
             <div
               data-intro-target
-              className={`relative h-[520px] w-[330px] transition-transform duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] [transform-style:preserve-3d] md:h-[720px] md:w-[440px] ${
+              className={`relative aspect-[33/52] w-[min(330px,calc(100vw-3rem))] transition-transform duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] [transform-style:preserve-3d] md:h-[720px] md:w-[440px] ${
                 fantasy ? "[transform:rotateY(180deg)]" : "[transform:rotateY(0deg)]"
               }`}
             >

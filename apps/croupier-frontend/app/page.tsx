@@ -44,7 +44,7 @@ export default function Home() {
             <p className="mb-5 font-mono text-xs tracking-[0.25em] text-lime uppercase">
               {"// Blackjackpilot · Scout Gaming Group"}
             </p>
-            <h1 className="mb-6 text-5xl leading-[1.02] font-semibold tracking-tight text-off md:text-6xl lg:text-7xl">
+            <h1 className="mb-6 text-[clamp(2.25rem,9vw,3rem)] leading-[1.02] font-semibold tracking-tight text-off md:text-6xl lg:text-7xl">
               Möt Astrid.
               <br />
               <span className="text-lime">Live blackjack</span>
@@ -90,7 +90,7 @@ export default function Home() {
           <HeroCard />
         </main>
 
-        <p className="absolute right-6 bottom-8 z-10 font-mono text-[10px] tracking-[0.2em] text-steel uppercase md:right-16 md:bottom-12">
+        <p className="absolute right-6 bottom-8 left-6 z-10 font-mono text-[10px] tracking-[0.2em] text-steel uppercase md:right-16 md:bottom-12 md:left-auto">
           {"// 18+ · Demo utan riktiga pengar · © Scout Gaming Group"}
         </p>
       </div>

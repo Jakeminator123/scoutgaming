@@ -1,8 +1,14 @@
-# Croupier Studio — lokalt presentationslabb
+# Croupier Studio — gemensam arbetsyta för presentation
 
 **Användarguide: [Guide i dashboarden](http://127.0.0.1:4188/guide).**
 Det är den gemensamma dokumentationsytan. Denna README är utvecklarreferens.
 Källa och begreppsägarskap: [lab/docs](docs/README.md).
+
+**Moln:** [Astrid Studio](https://croupier-v2.onrender.com/studio) är den
+kanoniska arbetsytan bakom ordinarie Lab-inloggning. Vercel är ingången;
+Render kör Studio och spelet. **Lokalt:** samma Studio körs på det enda
+koordinerade serverparet. [Väg- och strömkartan](../docs/systemkarta/04-studio-json-och-lagring/STUDIO-ROUTING.md)
+skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
 
 Eventeditor och sekvensspelare går genom `POST /api/presentation/decision`.
 Den gamla `/api/simulate` är ett alias. Servern delar samma pågående/sparade
@@ -27,7 +33,8 @@ Buggar, förbättringar och öppna kontroller för labbet och övriga repot finn
 
 ## Starta
 
-Astrids fokuserade studio finns på `/`. `/lissabon` är en omdirigering.
+Astrids fokuserade studio finns på `/` lokalt och `/studio` i molnet.
+`/lissabon` inne i Lab är en omdirigering till samma startsida.
 Startkod, standardprojekt och lokala profilval finns nu här i Lab.
 
 ```powershell
@@ -54,7 +61,8 @@ egna ändringar/bindningar bevaras och hela föregående revision sparas i histo
 
 Det äldre `Start-Labb.ps1` finns kvar för den generella fristående editorn;
 öppna `/tree` där. Kör den inte samtidigt med det anslutna paret.
-Node 22.16+ och installerade beroenden krävs. Studion är avsiktligt lokal.
+Node 22.16+ och installerade beroenden krävs för lokal start. För molndrift
+används den befintliga [koordinerade molnstartaren](../ops/cloud/README.md).
 
 ### Ett register per ansvar
 

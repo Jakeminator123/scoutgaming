@@ -1,6 +1,7 @@
 "use client"
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import Link from "next/link"
 import { createMatteRenderer } from "@/lib/matte-renderer"
 import { setIntroHandoff } from "@/lib/intro-handoff"
 import { RetroSite } from "./retro-site"
@@ -28,6 +29,9 @@ const SRC: Record<Clip, string> = {
 /** If a clip has not finished by then it is stuck loading; the site must not stay covered. */
 const CLIP_TIMEOUT_MS: Record<Clip, number> = { intro: 10000, curtain: 10000, outro: 12000 }
 const LEAVE_MS = 700
+const INTRO_TIMEOUT_MS = 30000
+// Keep the page usable before hydration, on touch devices, and when motion is reduced.
+const INTRO_MEDIA = "(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)"
 const FRAME = { w: 960, h: 1280 }
 /** She has walked in and turned to face us by this point in the walk clip (seconds). */
 const WALK_END = 6
@@ -118,6 +122,27 @@ type Seat = { card: Box; seat: Box }
  * Skippable with the button or Escape.
  */
 export function CurtainIntro() {
+  const [enabled, setEnabled] = useState(false)
+  const activated = useRef(false)
+
+  useLayoutEffect(() => {
+    const media = window.matchMedia(INTRO_MEDIA)
+    if (!media.matches || (introPlayed && !activated.current)) return
+    activated.current = true
+    introPlayed = true
+    setEnabled(true)
+    const dismissOnChange = () => {
+      if (!media.matches) setEnabled(false)
+    }
+    media.addEventListener("change", dismissOnChange)
+    return () => media.removeEventListener("change", dismissOnChange)
+  }, [])
+
+  // No overlay or intro video requests in the initial HTML. Browsing never needs this animation.
+  return enabled ? <DesktopCurtainIntro /> : null
+}
+
+function DesktopCurtainIntro() {
   const [phase, setPhase] = useState<Phase>("intro")
   const [metrics, setMetrics] = useState<StageMetrics | null>(null)
   const [curtainGone, setCurtainGone] = useState(false)
@@ -144,16 +169,11 @@ export function CurtainIntro() {
 
   const active = phase !== "done"
 
-  // Play once per page load, and never for people who asked for less motion.
   useLayoutEffect(() => {
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (introPlayed || reduceMotion) {
-      setPhase("done")
-      return
-    }
-    introPlayed = true
     startedAt.current = performance.now()
     setIntroHandoff("holding")
+    // Navigating away or changing to touch/reduced motion must not leave the hero hidden.
+    return () => setIntroHandoff("idle")
   }, [])
 
   useLayoutEffect(() => {
@@ -240,11 +260,21 @@ export function CurtainIntro() {
 
   useEffect(() => {
     if (!active) return
+    // Covers every phase, including interrupted Web Animations in the card handoff.
+    const guard = setTimeout(skip, INTRO_TIMEOUT_MS)
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") skip()
     }
     window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
+    // A visitor trying to browse can leave immediately; never hijack their scroll gesture.
+    window.addEventListener("wheel", skip, { passive: true })
+    window.addEventListener("touchstart", skip, { passive: true })
+    return () => {
+      clearTimeout(guard)
+      window.removeEventListener("keydown", onKey)
+      window.removeEventListener("wheel", skip)
+      window.removeEventListener("touchstart", skip)
+    }
   }, [active, skip])
 
   // Draws the current clip through the matte and, during the curtain clip, moves the strips.
@@ -462,9 +492,12 @@ export function CurtainIntro() {
         <IntroPlayingCard face={cardPlan.face} target={cardPlan.target} onDone={finishCard} />
       )}
 
-      <button type="button" className="intro-skip" data-look={curtainGone ? "modern" : "retro"} onClick={skip} autoFocus>
-        {curtainGone ? "Hoppa över intro" : "Hoppa över intro »"}
-      </button>
+      <div className="intro-actions">
+        <button type="button" className="intro-skip" onClick={skip} autoFocus>
+          Hoppa över intro
+        </button>
+        <Link href="/demo" className="intro-demo">Öppna blackjack →</Link>
+      </div>
     </div>
   )
 }

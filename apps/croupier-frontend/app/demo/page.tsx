@@ -29,9 +29,9 @@ export default function DemoPage() {
         </p>
         <a
           href={gameUrl()}
-          className="inline-flex w-fit items-center gap-2 rounded-full bg-lime px-7 py-4 font-semibold text-ink transition-colors hover:bg-lime2"
+          className="inline-flex w-fit max-w-full items-center gap-2 rounded-full bg-lime px-7 py-4 font-semibold text-ink transition-colors hover:bg-lime2"
         >
-          Öppna det riktiga blackjackbordet <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
+          <span>Öppna blackjackbordet</span> <ArrowUpRight className="h-5 w-5 shrink-0" aria-hidden="true" />
         </a>
       </main>
       <SiteFooter />

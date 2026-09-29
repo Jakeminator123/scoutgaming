@@ -1,6 +1,6 @@
 {
   "title": "Välj händelse. Spela rätt klipp.",
-  "intro": "Astrid Studio samlar speluppspelning, kort, repliker och idle. Spelmotorn äger kort och resultat. Samma manifest och policy används i spelet och Lab.",
+  "intro": "Astrid Studio är den gemensamma arbetsytan för klippval och uppföljning, på /studio i molnet och Lab-serverns startsida lokalt. Vercels Studio-länk leder hit. Spela och chatta i spelfliken; spelmotorn äger kort och resultat. BO används för administration och inloggning.",
   "steps": [
     {
       "view": "tree",
@@ -9,8 +9,8 @@
     },
     {
       "view": "videos",
-      "title": "2. Se filerna i mappen",
-      "body": "Astrids videobank läser emil/dealklipp-v1. Varje deal- och replikmapp har en standardfil och en variant-mapp. Idle har grundloopar direkt i idle/ och korta variationer i idle/variant/. Lägg nya MP4-klipp i rätt variant-mapp, behåll originalfilerna och välj Läs in nya filer. Lägg till en ny idlevariant i policyn och spara innan den kan väljas i spelet. Ingen uppladdning till Render behövs."
+      "title": "2. Se och lägg in klipp",
+      "body": "Ladda upp & bibliotek visar exakta familjer för deal, repliker och idle. Välj rätt familj vid uppladdning. Molnstudion sparar filmer i privat Blob när lagringen är konfigurerad. Lokalt kan MP4-filer också läggas i rätt variant-mapp i emil/dealklipp-v1 och läsas in med Läs in nya filer. En lokal filändring laddar inte upp nya bytes till molnet. Lägg till nya varianter i policyn och spara innan de kan väljas automatiskt."
     },
     {
       "view": "lab",
@@ -19,8 +19,8 @@
     },
     {
       "view": "activity",
-      "title": "4. Följ nativeströmmen",
-      "body": "Tryck Anslut för Astrid och spela och chatta i spelfliken. Web spelar Emils filmer med Eventstudions sparade policy. Lab visar En spelare · Web och observerar samma klippval, verkliga start och avslut. Klippväljaren i spelet erbjuder Standard, Regler, Slump och OpenClaw; chattsvar är separat. Spara idleändringar och ladda om spelet för att läsa dem. Exportera observationen före omladdning."
+      "title": "4. Spela och följ upp",
+      "body": "Öppna spelet i molnstudion använder vanlig spelarinloggning och fungerar även utan Partner-observation. Anslut & följ spelet öppnar samma Astrid-presentation och kopplar dessutom spelflikens händelser till Studio. Observation kräver konfigurerad Partner-anslutning. Spela och chatta i spelfliken. Spelet använder studions sparade klippfamiljer och policy. Standard, Regler, Slump och OpenClaw väljer klipp inom samma presentationsväg; chattsvar är separat. Ladda om spelet efter sparade idleändringar när handen är avslutad. Exportera observationen före omladdning."
     },
     {
       "view": "probe",
@@ -29,7 +29,7 @@
     }
   ],
   "boundaries": [
-    "Bakgrundszoner i Astrid Studio är ett lokalt prov: markera en pixelruta på 1080×1920-startbilden, skapa ett enkelt blinkklipp eller lägg in ett eget klipp med exakt rutans storlek och byt underliggande Astrid-film för att granska placeringen. Koordinater sparas i webbläsaren och kan exporteras som JSON; zonklipp sparas i samma webbläsarprofil och kan laddas ned var för sig. Rutan är en rektangulär mask. Inget spel-event styr zonen och ingen produktfilm ändras. Kontrollera varje klipps kameraregistrering och att dealern aldrig täcker zonen innan den används i spelet.",
+    "Bakgrundszoner är ett separat prov: markera en pixelruta på 1080×1920-startbilden och skapa eller lägg in ett klipp med exakt rutans storlek. Webbläsarkopian sparas lokalt. Spara till molnet sparar koordinater i zonernas Neon-databas och klipp i privat Blob när molnlagringen är konfigurerad. Läs från molnet öppnar molnvyn och behåller webbläsarkopian. Exportera JSON och klipp för separat backup. Zonerna styr ännu inte spelet; kontrollera varje tagning och att dealern aldrig täcker zonen innan spelintegration.",
     "Sidomenyn grupperar sex källtyper i 16 eventgrupper. En grupp kan innehålla flera exakta situationer: box 0–6 väljer deal_pos1–7, medan kortvärde och handIndex behålls som eventdata. Box anger plats och tillåten serveridentitet hålls separat; vänster/mitten/höger är inte ett filmval.",
     "Mottagna event behåller sin destination och replik. Ett manuellt exempel kan ändras med situationsväljaren. En saknad exakt Astrid-film ger ett synligt fel i labbet; spelaren lånar inte en annan plats eller replik.",
     "Standard och varianter kommer från manifestet. Oförändrade gamla demoexempel rensas vid start med en historikrevision som återgång. Egna ändringar och deras beroenden bevaras. Vera, Amira och Mei behåller sin befintliga gemensamma originalspelare.",
@@ -42,13 +42,13 @@
     "Spelmotorn äger kort, regler, saldo och utbetalningar. OpenClaw väljer tillåten presentation. En godkänd filhash eller ett uppspelningskvitto är inte ett mänskligt godkännande av läppsynk.",
     "Anslutningens serveradress avgör om originalet är lokalt eller externt. tools/start-local-comparison.mjs startar ett isolerat lokalt spel och stänger av externa modellanslutningar. Att OpenClaw-koden finns betyder inte att en körande gateway är ansluten.",
     "Händelseloggen håller 150 poster i flikens minne; observationsprotokollet högst 300 meddelanden eller 4 MiB. Samma instruktion via native och SSE slås ihop. Luckor och konflikter stoppar följningen. Exportera och välj Ny observation för att börja om med kommande data.",
-    "Astrids aktuella standardfilmer är 1080×1920 (9:16). Äldre varianter för plats 1 och 2 samt idle_smile och idle_yawn är 612×1088. Web visar hela filmen utan beskärning, även på dator. Korten är serverstyrda 2D-överlägg; materialet har ännu ingen kalibrerad kontakt med handen. Saknat exakt Astrid-klipp visas som fel i labbprovet. Produktens ?rehearsal=1 är den befintliga QA-panelen i den riktiga spelaren, inte en Eventstudio-flik.",
+    "Astrids aktuella standardfilmer är 1080×1920 (9:16). Varianterna för plats 1 och 2 samt idle_smile och idle_yawn är också 1080×1920. Web visar hela filmen utan beskärning, även på dator. Korten är serverstyrda 2D-överlägg; materialet har ännu ingen kalibrerad kontakt med handen. Saknat exakt Astrid-klipp visas som fel i labbprovet. Produktens ?rehearsal=1 är den befintliga QA-panelen i den riktiga spelaren, inte en Eventstudio-flik.",
     "Probe: normalt 90 sekunders inaktivitet, minst 5 minuters paus, 3 per timme och 30 procent per tillfälle. Ett obesvarat initiativ tills spelaren åter blir aktiv. Belagda fakta lever högst 30 dagar; samma anekdot spärras 7 dagar. Glöm stoppar även väntande arbete. Senaste avslutade rundans netto skickas separat till vanlig chatt; totalresultat är inte resultatet för förra rundan."
   ],
   "surfaces": [
     {
       "name": "Bakgrundszoner",
-      "purpose": "Rita exakta pixelrutor på Astrids startbild och prova separata små ljusklipp ovanpå olika dealerfilmer. Lokal förhandsvisning och export, ännu ingen spelarintegration."
+      "purpose": "Prova exakta pixelzoner ovanpå dealerfilmer. Separat webbläsarkopia, molnsparning och export; ännu ingen spelarintegration."
     },
     {
       "name": "Nodträdet",
@@ -60,7 +60,7 @@
     },
     {
       "name": "Videobanken",
-      "purpose": "Bläddra och spela filer från samma fysiska mappar som Eventstudion använder."
+      "purpose": "Bläddra, ladda upp och granska klipp i samma exakta familjer som Studio och spelet använder."
     },
     {
       "name": "Händelselogg",
@@ -75,6 +75,6 @@
       "purpose": "Gemensam policy, modellval, syntetiska textprov och belagda minnen. Verkliga minnen visas endast i den autentiserade spelflikens Minne."
     }
   ],
-  "storage": "MP4-filerna ligger i emil/dealklipp-v1. Läs in nya filer uppdaterar manifestet. Projektets val sparas i lokal JSON: mediaPolicy för deal/repliker, idlePolicy för idle och probePolicy för Probe. Vid Lissabon-start delar Lissabon, avancerade labbet och spelfliken samma sparade projekt. Deal/replikval och Probe läses inför nästa beslut; ladda om spelfliken efter idleändringar när handen är avslutad. En annan öppen editor behöver läsas om för att visa senaste sparade val. Fristående labb behåller sin egen projektlagring. Sparande gör ingen fjärrdeploy eller OpenClaw-omstart. Hemligheter stannar på serversidan. HTTP 409 erbjuder sammanslagning med explicit konfliktval.",
+  "storage": "Studio, avancerat labb och spelfliken delar sparat projekt i det samordnade serverparet: mediaPolicy för deal/repliker, idlePolicy för idle och probePolicy för Probe. Molnuppladdningar ligger i privat Blob; projekt, historik och familjeindex har fortfarande serverdisk som behöver backup. Zoners molnkoordinater ligger separat i Neon. Lokal filinläsning använder emil/dealklipp-v1 och dess manifest. Deal/replikval och Probe läses inför nästa beslut; ladda om spelfliken efter idleändringar när handen är avslutad. Andra öppna editorer behöver läsas om. Äldre privata Lissabon-data bevaras på sin plats. HTTP 409 erbjuder sammanslagning med explicit konfliktval. Hemligheter stannar på serversidan.",
   "authority": "Källans sex eventtyper och 16 grupper finns i lab/policies/studio-contract.json. Videofamiljerna finns i emil/dealklipp-v1/lab-video-manifest.json. Konfiguration av OpenClaw börjar i open-claw/lab/docs/README.md och dess officiella källindex."
 }

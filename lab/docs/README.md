@@ -1,7 +1,18 @@
 # Guide — en gemensam ingång
 
-**Aktuell Astrid-demo:** gemensamma [Lab](../README.md) på `/`.
-**Bakgrundszoner:** öppna `/zones` från Astrid Studio. Rita en pixelruta på
+**Gemensam arbetsyta: Astrid Studio.** I molnet öppnar du
+[`/studio`](https://croupier-v2.onrender.com/studio); Vercels Studio-länk leder
+dit. Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
+**Öppna spelet** i molnstudion fungerar med vanlig spelarinloggning även om
+Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
+presentationsväg och kopplar dessutom spelflikens händelser till Studio.
+Spela och chatta i spelfliken. BO är administration och inloggning,
+ingen separat spelström.
+Se [vägar och strömmar](../../docs/systemkarta/04-studio-json-och-lagring/STUDIO-ROUTING.md)
+för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
+
+**Bakgrundszoner:** öppna **Bakgrundszoner** från Astrid Studio
+(`/studio/zones` i molnet, `/zones` lokalt). Rita en pixelruta på
 1080×1920-startbilden, skapa ett tvåsekunders blinkklipp eller lägg in en
 MP4/WebM med exakt rutans storlek. Välj **Automatisk · högst 2/minut** i zonens
 Uppspelning om klippet ska starta själv: första start inom 10 sekunder,
@@ -19,15 +30,19 @@ proportionellt och zonen behåller samma relativa läge. Kamerans faktiska
 registrering behöver ändå kontrolleras i varje tagning. Rutan är masken;
 ljusläget blandar bort
 svarta pixlar, medan normalläget visar filmens egen alfakanal om den finns.
-Koordinater och klipp sparas i den lokala webbläsarprofilen. Exportera JSON
-och ladda ned zonklippen för att ge en annan agent en exakt specifikation.
-Automatisk gäller i Labbets förhandsvisning och sparas i denna browserprofil;
+**Webbläsarkopia** sparar koordinater och klipp i din lokala webbläsarprofil.
+**Spara till molnet** sparar koordinater i zonernas separata Neon-databas och
+klipp i privat Blob när Studio visar att molnlagringen är konfigurerad.
+**Läs från molnet** öppnar molnvyn och behåller webbläsarkopian. Exportera JSON
+och ladda ned klippen om du behöver en separat specifikation eller backup.
+Automatisk gäller i Labbets förhandsvisning;
 zonerna styr ännu inte spelets spelare. Kontrollera kameraregistrering och
 ocklusion för varje tilltänkt klipp innan användning.
 
 Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `Start-Lab.cmd` behåller den befintliga privata anslutna profilen.
-Avancerade verktyg finns på `/tree`; `/lissabon` omdirigerar till `/`.
+Avancerade verktyg nås genom **Avancerat labb** (`/studio/tree` i molnet,
+`/tree` lokalt). Det äldre `/lissabon` inne i Lab omdirigerar till startsidan.
 
 Jakobs arbetsdokumentation visas i [Guide i labbet](http://127.0.0.1:4188/guide).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
@@ -46,8 +61,8 @@ tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
 beslut, kontrakt/schemaändring, tester och migrationsbeskrivning. Visningsnamn
 kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 
-Historiska analyser och permanenta källankare ligger kvar i jakob-docs.
-De är fördjupning, inte ytterligare en startyta. Privata anteckningar lämnas orörda.
+Tekniska fördjupningar finns i den [aktiva systemkartan](../../docs/systemkarta/README.md).
+Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
 **Händelseloggen** på `/activity` skiljer källa, eventdata, kontext, beslut och
 uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
@@ -60,18 +75,12 @@ i spelets klippväljare om du vill prova modellval.
 Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 
 Astrids valbara kamera/mikrofon finns i samma spelflik, Av som standard.
-Starta det enda serverparet med `node lab/start.mjs --astrid-camera --no-open`
-för att göra knappen tillgänglig; en redan körande server måste stoppas först.
-Luna och Terra stöder bilder när uppdaterad Gateway/Director körs med
-`CROUPIER_SPEECH_VISION=1`. Record aktiverar lokal lyssning efter ”Astrid”;
-därefter skickas tal och kamerabilder automatiskt efter 1 150 ms tystnad.
-Whisper översätter svenska eller engelska till engelsk text. Play styr ljudet.
-Text/bilder är dolda; håll någon knapp i fem sekunder för att visa loggen.
-Första aktiveringen kräver samtycke. Lokal taligenkänning måste finnas i Chrome.
-Whispers riktiga API-prov passerar; fysisk inspelning, Terra i driften och
-bildlagringskontroll återstår. Starta inte ett extra serverpar.
-Se [implementation och verifieringsläge](../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md)
-och [OpenClaws källindex](../../open-claw/lab/docs/OPENCLAW-DOCS.md).
+Aktuella kontroller och provgränser beskrivs i
+[kamera- och talguiden](../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md).
+Driftens aktiverade funktioner och återstående liveprov följs i
+[molnstatusen](../../docs/CLOUD-CURRENT-STATE-2026-09-29.md).
+För lokalt kameratest används den koordinerade startarens `--astrid-camera`;
+stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
 
 ## Idle i Eventstudion
 
@@ -81,8 +90,9 @@ Astrids Eventstudio och native-följning använder nu samma exakta mediefamilj:
 events behåller kort, box, handindex och replik. Standardfil och varianter
 kommer från manifestet, inte från projektets gamla 2D-demovarianter.
 
-Manifest v2 har 28 familjer: nio dealfamiljer, en kortvändningsfamilj, sjutton
-replikfamiljer och en idlefamilj. Deal/replik använder
+Manifest v2 grupperar deal, kortvändning, exakta repliker och idle.
+Aktuellt filantal och innehåll hör till manifestet och [mediebanken](../../emil/README.md).
+Deal/replik använder
 `deal/<familj>/<standard>.mp4` respektive
 `repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då
 standard. Idle har två basloopar direkt i `idle/` och korta
@@ -101,7 +111,9 @@ befintliga originalväg. Lägg nya MP4-filer i rätt `variant/`-mapp och välj
 **Läs in nya filer**. Knappen skannar mapparna, uppdaterar manifestet och läser
 om katalogen utan att flytta videofiler. En ny idlevariant läggs sedan till i
 policyn som manuell; välj Automatisk eller OpenClaw uttryckligen och spara.
-Ingen uppladdning till Render behövs för de lokala filmerna.
+Detta läser lokala filer. I molnstudion används **Ladda upp & bibliotek** och
+**Läs in nya filer** läser serverbiblioteket; en lokal filändring publicerar
+inte filmens nya byteinnehåll till molnet.
 
 ### Astrids Deal-frekvenser
 
@@ -119,13 +131,10 @@ frekvensurval utan modellanrop. Standard spelar standard, och Skuggläge
 provar urvalet men spelar standard. Språk- och sociala testvillkor visas
 inte för Astrids Deal. Repliker och övriga dealers behåller sina val.
 
-Importen från `croupier_kaffe` lägger boxvarianterna i `deal_pos1` och
-`deal_pos2` samt `idle_andas`, `idle_handrorelse`, `idle_huvud_i_handerna`,
-`idle_resa_sig_fargmatchad` och `idle_resa_sig_kling` i idlefamiljen.
-Kaffe och den ofärgmatchade resa-sig-tagningen fanns redan med samma byteinnehåll.
-De nya varianterna är bara tillgängliga för manuellt val tills de uttryckligen
-läggs till och aktiveras i den sparade policyn. 480p-originalet är kvar i
-källmappen som referens och ingår inte i manifestet.
+De aktuella projektfilerna i `emil/dealklipp-v1` är källan för Astrids
+manifeststyrda familjer. Arbetskopior och backuper på skrivbordet är inte
+automatiskt spelbara eller molnpublicerade. Nya varianter är manuella tills
+de uttryckligen läggs till och aktiveras i den sparade policyn.
 
 Översikten och Videobanken visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto

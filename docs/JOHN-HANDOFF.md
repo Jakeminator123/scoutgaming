@@ -1,5 +1,52 @@
 # Aktuellt molnläge
 
+## 2026-09-29 16:00 UTC — Mobil ingång, ett Studio och verifierade bästa klipp
+
+Denna leverans samlar Jakobs överlämnade media med tre granskade rättningar:
+mobilen får startsidan direkt utan det blockerande filmintrot; `/studio` är
+den tydliga molningången även från gamla Lab/Lissabon-bokmärken; Astrids
+gemensamma presentation bevaras vid dealer-, bord- och rehearsalbyte.
+Desktopintrot kan lämnas med scroll, Escape, knapp eller direkt demolänk.
+Studio kan öppna det vanliga spelet även när observationens separata
+Partner-konfiguration saknas. Alternativa BO-/videokartvägar döljs i det
+fokuserade Astrid-flödet, med oförändrad autentisering.
+
+Aktiva guider pekar nu till [molnkartan](CLOUD-CURRENT-STATE-2026-09-29.md)
+och [Studio-routing](systemkarta/04-studio-json-och-lagring/STUDIO-ROUTING.md).
+Äldre daterade kvitton bevaras som historik. Privata arkivet och Desktop-
+backupen har inte lästs eller raderats. De tolv bästa nya/ersatta MP4:erna,
+manifestet med 51 klipp och överlämnade policy-ID:n ingår i leveransen.
+Samtliga 22 kandidaters hash matchar morgonimporten. Tolv privata Blob-filer
+är fullständigt återlästa med rätt SHA-256; övriga tio är diskposter i
+mediebanken. [Media- och lagringskvitto](MEDIA-BEST-TAKES-2026-09-29.md).
+Ingen ny token, resurs, råmediegenerering eller baselineändring behövdes.
+
+Före push: full `.githooks/pre-commit` PASS, 613 tester (en plattformsspecifik Linux-
+kontroll hoppas avsiktligt över på Windows), 525 Lab-tester, separat
+`/studio`-produktionsbuild och TypeScript PASS. Alias/auth, lagring och
+dealer-navigering har riktade regressioner och oberoende review.
+`audit-dealer-sync.mjs --probe` PASS med tidigare redovisade saknade takes.
+Rehearsal för den gemensamma spelaren räknar nu verkliga avslut och visar
+fel vid avbrott, i stället för att felaktigt säga att Studio-klippet saknas.
+Frontendens TypeScript och produktionsbuild PASS efter slutlig introfix.
+Browser-fixture: 390 × 844 utan intro/introvideo, skroll och länk till demo
+fungerar; 320 × 568 demo ryms utan sidledsspill och spelknapparna är åtkomliga.
+Den tillfälliga frontend-fixturen är stoppad. 39 molngateway-tester PASS.
+Efterdeploy-QA redovisas i följande slutkvitto.
+
+Live utgångsläge verifierat: GitHub/Vercel/Render på `365f283b`, befintliga
+spel- och Studio-sessioner fungerar, Astrids video spelar i 1080 × 1920,
+Neons zonläsning ger 0 zoner/version 0 och Render har 5 GB disk på `/var/data`.
+Speldata och inloggning ligger fortfarande i SQLite; ingen DB-migrering
+gjordes. Inga spelinsatser, nya användare eller GPU-jobb startades.
+Lokala produkt-/Lab-serverparet förblir stoppat.
+
+Kvar som separata acceptanspunkter: två verkliga genererade röstsvar i
+följd, deras svarstid/läppsynk, visuell acceptans av nya takes, extern
+återläsbar diskbackup och full zon-upload/spara/återläsning. Globalt
+OpenClaw-modellval har inte ändrats här. Jira CAC kräver inloggning i den
+tillgängliga browsern; inga ärendestatusar har påståtts verifierade.
+
 ## 2026-09-29 09:13 UTC — Sessionsfix publicerad, rundan avslutad
 
 `3e9842bd` är pushad till rätt GitHub-branch och verifierad **Live** på
@@ -275,8 +322,9 @@ Linux-test hoppades över på Windows. Nytt offlinepar byggdes via
 Lab och startbild, zonlista och klippval verifierades i browsern. Fliken
 lämnades öppen för Jakob; ingen användarzon skapades eller togs bort.
 
-Samtliga 16 aktiva manifestvarianter har H.264/yuv420p/24 fps. Tolv är
-1080×1920, fyra är 612×1088 (två boxvarianter samt smile/yawn). En 1 s
+Vid detta historiska prov hade de 16 manifestvarianterna H.264/yuv420p/24 fps.
+Fyra var då 612×1088; de ersattes senare den 29 september så att samtliga
+är 1080×1920. Följande mätning avser filerna före bytet: en 1 s
 kontaktkarta och mätning av en fast väggpatch över alla frames visar att
 `idle_resa_sig.mp4` har tydligt ljusare vägg än neutral idle (Y-medel 56,1
 mot 50,6); `idle_resa_sig_fargmatchad.mp4` ligger närmare (49,8).
@@ -335,9 +383,11 @@ acceptans av att en zon ligger bakom dealern eller registrerar på varje take
 är gjord. Exakt pixelplacering kan inte antas bara för att bakgrunden verkar
 stilla: beskärning, skala, kamera, flimmer och ocklusion måste granskas per take.
 
-Manifestets 45 MP4 har samma H.264/yuv420p/24 fps-profil. 41 är
-1080×1920; fyra är 612×1088: `box_1_variant`, `box_2_variant`,
-`idle_smile` och `idle_yawn`. Bildrutor vid 1 och 2,5 sekunder bekräftade
+Det dåvarande manifestets 45 MP4 hade samma H.264/yuv420p/24 fps-profil.
+Fyra var då 612×1088: `box_1_variant`, `box_2_variant`, `idle_smile` och
+`idle_yawn`. Dessa ersattes senare den 29 september med 1080×1920-versioner;
+dagens manifest har 51 poster. Följande observationer avser det äldre provet.
+Bildrutor vid 1 och 2,5 sekunder bekräftade
 att plats-1-varianten visar ett mönstrat kort där standardfilen visar ett
 vitt. Ingen fil har skalats upp, stabiliserats eller fått nytt hashvärde.
 Längre idle-, kaffe- och flipklipp är formatmässigt 1080×1920 men kräver

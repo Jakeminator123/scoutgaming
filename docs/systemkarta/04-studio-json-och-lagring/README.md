@@ -2,6 +2,11 @@
 
 [Till systemkartan](../README.md) · [Nästa: OpenClaw och drift](../05-openclaw-rost-och-drift/README.md)
 
+[Vägar och strömmar](STUDIO-ROUTING.md) är den aktuella kartan för
+Studio/Lab/Lissabon och BO. [Molnstatusen](../../CLOUD-CURRENT-STATE-2026-09-29.md)
+äger verifierat driftläge; filträdet nedan beskriver lokala data och de
+diskbaserade delarna av Studio, inte all molnlagring.
+
 **Projektet sparar val och referenser. Schemat beskriver deras tillåtna form.
 Medierna ligger separat.** Ett begripligt träd behöver inte bli nya diskmappar.
 
@@ -33,15 +38,17 @@ video-ID; fältet heter fortfarande `videoGenerationId` även för uppladdningar
 ett alternativ. Triggers ger ytterligare villkor.
 
 För Astrids manifestägda familjer skapar studion i stället en tillfällig vy av
-exakt mottagen box/replik. Manifest v2 i `emil/dealklipp-v1` har 31 filer och
-26 familjer. `mediaPolicy` tillåter högst fyra varianter per deal-/replikfamilj;
+exakt mottagen box/replik. Manifest v2 i `emil/dealklipp-v1` är källan för
+aktuella filer och familjer. `mediaPolicy` tillåter högst fyra aktiva varianter per deal-/replikfamilj;
 tom `variant/` ger standard. `idlePolicy` äger två basloopars vikter och de
-fyra idlevarianternas användning: manuell, automatisk, regelstyrd eller
+registrerade idlevarianternas användning: manuell, automatisk, regelstyrd eller
 OpenClaw-valbar. De två policyerna ska inte konkurrera om idle.
 
 ## Vad sparas när?
 
-Videointake sparar MP4/WebM och metadata i den lokala banken. Att koppla en
+Videointake sparar MP4/WebM på disk lokalt, eller i privat Blob när
+molnlagring är konfigurerad. Familjeindex och klassificering har fortfarande
+diskbaserad metadata och behöver backup. Att koppla en
 film ändrar projektutkastet; **Spara projekt** gör kopplingen beständig.
 Befintliga original kategoriseras via en separat hashbunden metadatafil;
 originalbytes flyttas eller ändras inte. Den nuvarande previewpolicyn är
@@ -50,6 +57,11 @@ originalbytes flyttas eller ändras inte. Den nuvarande previewpolicyn är
 Projektlagringen använder revision, historik och atomiskt skrivande.
 Social policy och ljudcache är separata från `project.json`. Inga av dessa
 lokala filer innebär automatiskt en driftsättning eller produktbindning.
+
+Bakgrundszoner har en separat webbläsarkopia och en uttrycklig molnvy.
+Molnkoordinater använder zon-Neon och klipp använder privat Blob; **Spara till
+molnet** och **Läs från molnet** sköter överföringen. Det är inte spelets
+konton, saldo eller kort. Se [zonlagringens kontrakt](../../ZONE-CLOUD-STORAGE.md).
 
 Den aktuella standardkällan för Astrids nya familjer är den versionshanterade
 `emil/dealklipp-v1/`; inga MP4 kopieras till `lab/data/`. `LAB_VIDEO_ARCHIVE`
