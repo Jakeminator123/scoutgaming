@@ -1,5 +1,14 @@
 # Streaming implementation — 2026-09-28
 
+## Worker review — 2026-09-29
+
+[Upstream inventory and latency review](UPSTREAM-AND-LATENCY.md) records the
+documented Emil import, the unavailable live GitHub comparison, the private
+repository recommendation and the remaining GPU-dependent acceptance work.
+The first valid PCM now starts FFmpeg while the first inference context fills.
+Ten local Python tests pass, including early encoder start, cancellation and
+real FFmpeg A/V probing. No GPU, paid job or deployment was started.
+
 ## Current Croupier handoff — 2026-09-28 follow-up
 
 The worker remains in `services/astrid-gpu-worker` on
