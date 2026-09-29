@@ -1,5 +1,0 @@
-# Editable replacement body controls
-
-Open astrid-controls.blend, run embedded `Dealer movement controls.py` in the Text Editor, then use N → Dealer in the 3D View. Match the current FK pose before enabling each wrist/foot control. Move and rotate the target; move its elbow/knee pole to direct bending. Key target transforms and IK blend to save authored movement. CTRL_BODY moves the whole dealer. Body/head bones remain available in Pose Mode. This body-only project has no finger or face controls.
-
-The imported provider bone tails were 100 times longer than the anatomical limb segments. Only eight limb bone lengths were corrected for native IK, retaining head/orientation up to Blender edit-mode precision. Measured world-space rest skin change is 0.000282 mm. Four rest-pose IK switches have maximum all-joint residual 0.002516 mm. These checks approve rest matching only, not posed deformation or a complete animation. Original source native/export remain separate and unchanged. add_native_controls.py can create a separate project from later accepted finger candidates.

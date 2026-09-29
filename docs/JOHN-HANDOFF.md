@@ -7,11 +7,13 @@ ur arbetskopian efter SHA-256-verifierad kopia till
 trädet. `emil/dealklipp-v1/` är fortsatt aktiv och orörd.
 
 Fyra avvisade 3D-studier under `content/staging/2026-09-11/` och `2026-09-12/`
-kopierades som ett sammanhängande paket (240 filer, cirka 941,9 MiB). De
-ligger kvar i repot: automatisk granskning stoppade borttagning av unika
-original och återbyggnadsunderlag. Tidigare handofflänkar till dem fungerar
-alltså fortsatt. Produktkod och molnbygge refererar inte till dem; senare
-staging-skript gör det. Ingen produktmedia, kalibrering eller avatar ändrades.
+togs ur arbetsbranchen efter Jakobs uttryckliga godkännande: 240 filer,
+987 631 568 byte. Hela det sammanhängande paketet med original, beroende
+studieskript och åtta symboliska länkar finns i det SHA-256-verifierade
+Desktop-arkivet och i Git-commit `a055b5c2`. Äldre handoffavsnitts sökvägar
+är historisk proveniens; återställ dessa fyra grupper innan studieskripten
+körs igen. Produktkod, Lab och molnbygge refererar inte till dem. Ingen
+aktiv produktmedia, kalibrering eller avatar ändrades.
 
 Rotens `.dockerignore` utesluter nu också `assets/astrid-3d/` och
 `assets/blackjack-3d/` från det planerade produktbygget. Offlinekällorna

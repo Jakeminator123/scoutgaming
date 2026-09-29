@@ -26,9 +26,11 @@ till `C:\Users\jakem\Desktop\croupier\BACKUP-LAB-to-HUB` med SHA-256-index.
 Git-commit `9e2048a6` bevarar en andra återställningsväg. Rotens
 `.dockerignore` utesluter nu också redigerbara 3D-källor under
 `assets/astrid-3d/` och `assets/blackjack-3d/`; publicerade exportfiler
-i `web/public/` behålls. Fyra avvisade 3D-studier (240 filer, cirka 941,9 MiB)
-kopierades till arkivet men ligger kvar i repot: automatisk granskning
-stoppade borttagning av unika original. Se [städrapporten](docs/REPOSITORY-CLEANUP.md).
+i `web/public/` behålls. Efter Jakobs uttryckliga godkännande togs även fyra
+avvisade 3D-studier (240 filer, 987 631 568 byte) bort ur arbetsbranchen.
+Deras original, beroende studieskript och åtta symboliska länkar är bevarade
+i det verifierade arkivet och i commit `a055b5c2`. Aktiva filmer, manifest
+och kalibrering är orörda. Se [städrapporten](docs/REPOSITORY-CLEANUP.md).
 
 ## 29 september 2026 – gemensamt Lab och filmad kortvändning
 
