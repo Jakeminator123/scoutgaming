@@ -73,7 +73,7 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
   const video = definition && event && variant && mediaVideoForEvent(videos, 'astrid', definition.id, event, variant.videoGenerationId);
   return <div className={styles.shell}>
     <header className={styles.header}><div><span className="eyebrow">ASTRID · LOKAL DEMO</span><h1>Astrid<span>Studio</span></h1></div>
-      <nav aria-label="Astrid Studio">{([['stream', 'Spel & uppspelning'], ['idle', 'Idle'], ['deal', 'Kort'], ['clips', 'Repliker'], ['probe','Probe']] as const).map(([id, label]) => <button className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => { setSelection(null); setView(id); }}>{label}</button>)}<a href={labUrl("/openclaw")}>OpenClaw ↗</a></nav>
+      <nav aria-label="Astrid Studio">{([['stream', 'Spel & uppspelning'], ['idle', 'Idle'], ['deal', 'Kort'], ['clips', 'Repliker'], ['probe','Probe']] as const).map(([id, label]) => <button className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => { setSelection(null); setView(id); }}>{label}</button>)}<a href={labUrl('/zones')}>Bakgrundszoner</a><a href={labUrl("/openclaw")}>OpenClaw ↗</a></nav>
       <div className={styles.save}><span>{dirty ? 'Osparade ändringar' : 'Sparat lokalt'}</span><button className="primary-button" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button></div>
     </header>
     <main className={styles.main}>
