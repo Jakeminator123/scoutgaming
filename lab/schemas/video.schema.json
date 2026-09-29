@@ -14,6 +14,11 @@
     "notes"
   ],
   "properties": {
+    "familyId": {
+      "type": "string",
+      "pattern": "^astrid/[a-z.]+/[a-z0-9_-]+$",
+      "description": "Optional explicit shared-family intake; only alternative uploads may use this field."
+    },
     "label": {
       "type": "string",
       "minLength": 1,

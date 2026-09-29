@@ -5,6 +5,7 @@ import { ActivityLog, type ActivityDraft } from './activity-log';
 import { appendActivity, type ActivityEntry } from '../lib/activity-log.mjs';
 import { IdlePolicyEditor } from './idle-policy-editor';
 import { FamilyVideoLibrary } from './family-video-library';
+import { FamilyVideoUpload } from './family-video-upload';
 import { MediaFamilyEditor } from './media-family-editor';
 import { upsertMediaVariantPolicy, mediaExampleEvent, mediaLineForEvent, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
 import { createDefaultIdlePolicy } from '../lib/idle-policy.mjs';
@@ -15,7 +16,7 @@ import {ProbeEditor} from './probe-editor';
 import {ProjectConflict} from './project-conflict';
 import {createDefaultProbePolicy} from '../lib/probe-policy.mjs';
 
-type View = 'stream' | 'idle' | 'deal' | 'clips' | 'probe';
+type View = 'stream' | 'idle' | 'deal' | 'clips' | 'probe' | 'upload';
 export function LissabonStudio({ initialProject, initialVideos, connectedLane }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean }) {
   const [project, setProject] = useState(initialProject);
   const [saved, setSaved] = useState(JSON.stringify(initialProject));
@@ -54,7 +55,7 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
   }
   async function refresh() {
     setRefreshing(true); setError('');
-    try { setVideos(await requestJson<VideoInventory>('/api/videos/rescan', { method: 'POST' })); }
+    try { setVideos(await requestJson<VideoInventory>(videos.summary?.archiveSource === 'emil-default' ? '/api/videos/rescan' : '/api/videos', videos.summary?.archiveSource === 'emil-default' ? { method: 'POST' } : undefined)); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Kunde inte läsa klippen.'); }
     finally { setRefreshing(false); }
   }
@@ -64,23 +65,29 @@ export function LissabonStudio({ initialProject, initialVideos, connectedLane }:
     else { setSelection({ eventId, situation }); setView(/^(deal|reveal)\./.test(eventId) ? 'deal' : 'clips'); }
   }
   function updatePolicy(familyId: string, policy: MediaVariantPolicy) {
-    edit(draft => { draft.mediaPolicy = upsertMediaVariantPolicy(draft.mediaPolicy, familyId, policy); });
+    edit(draft => {
+      if (policy.frequencyPercent === undefined && !Object.values(policy.selection).some(Boolean)) {
+        draft.mediaPolicy = (draft.mediaPolicy ?? []).map(row => row.familyId === familyId
+          ? { ...row, variants: row.variants.filter(item => item.videoId !== policy.videoId) } : row);
+      } else draft.mediaPolicy = upsertMediaVariantPolicy(draft.mediaPolicy, familyId, policy);
+    });
   }
   const definition = selection && project.events.find(event => event.id === selection.eventId);
   const event = definition && mediaExampleEvent(definition, selection!.situation);
-  const media = definition && event && mediaLineForEvent(project, videos, 'astrid', definition.id, event);
+  const media = definition && event && mediaLineForEvent(project, videos, 'astrid', definition.id, event, { includeManualVariants: true });
   const variant = media && (media.line.variants.find(item => item.id === variantId) ?? media.line.variants[0]);
   const video = definition && event && variant && mediaVideoForEvent(videos, 'astrid', definition.id, event, variant.videoGenerationId);
   return <div className={styles.shell}>
-    <header className={styles.header}><div><span className="eyebrow">ASTRID · LOKAL DEMO</span><h1>Astrid<span>Studio</span></h1></div>
-      <nav aria-label="Astrid Studio">{([['stream', 'Spel & uppspelning'], ['idle', 'Idle'], ['deal', 'Kort'], ['clips', 'Repliker'], ['probe','Probe']] as const).map(([id, label]) => <button className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => { setSelection(null); setView(id); }}>{label}</button>)}<a href={labUrl('/zones')}>Bakgrundszoner</a><a href={labUrl("/openclaw")}>OpenClaw ↗</a></nav>
-      <div className={styles.save}><span>{dirty ? 'Osparade ändringar' : 'Sparat lokalt'}</span><button className="primary-button" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button></div>
+    <header className={styles.header}><div><span className="eyebrow">ASTRID · STUDIO</span><h1>Astrid<span>Studio</span></h1></div>
+      <nav aria-label="Astrid Studio">{([['stream', 'Spel & uppspelning'], ['upload', 'Ladda upp & bibliotek'], ['idle', 'Idle'], ['deal', 'Kort'], ['clips', 'Repliker'], ['probe','Probe']] as const).map(([id, label]) => <button className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => { setSelection(null); setView(id); }}>{label}</button>)}<a href={labUrl('/zones')}>Bakgrundszoner</a><a href={labUrl("/openclaw")}>OpenClaw ↗</a></nav>
+      <div className={styles.save}><span>{dirty ? 'Osparade ändringar' : 'Sparat i Lab'}</span><button className="primary-button" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button></div>
     </header>
     <main className={styles.main}>
       {!connectedLane ? <p role="alert" className="feedback error">Starta med Start-Lab.cmd för gemensam lagring och spelanslutning. Det kostnadsfria lokala provet körs med node lab/start.mjs --offline --no-open.</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {notice ? <p role="status" className="feedback success">{notice}</p> : null}
       {conflict?<ProjectConflict base={JSON.parse(saved)} draft={project} onResolve={(remote,merged)=>{setSaved(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Utkastet är sammanslaget. Granska dina val och spara.');}}/>:null}
+      {view === 'upload' ? <><FamilyVideoUpload project={project} inventory={videos} onUploaded={setVideos} onOpen={open} /><FamilyVideoLibrary inventory={videos} dealerId="astrid" onOpen={open} onRefresh={() => void refresh()} refreshing={refreshing} /></> : null}
       {view==='probe'?<fieldset className={styles.fields} disabled={saving||!connectedLane}><ProbeEditor policy={project.probePolicy??createDefaultProbePolicy()} onChange={policy=>edit(draft=>{draft.probePolicy=policy;})} onActivity={record}/></fieldset>:null}
       <div hidden={view !== 'stream' || !connectedLane}>
         <p className={styles.intro}>Astrid med de mobilanpassade filmerna och kort som följer handrörelserna. Anslut öppnar spelfliken och följer dess uppspelning här.</p>

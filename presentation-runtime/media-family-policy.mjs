@@ -76,7 +76,7 @@ export function pickDealFrequency(policies, line, eligibleIds, random = Math.ran
 
 // A disposable view of one concrete instruction. Saved legacy lines remain
 // intact, but cannot contribute demo variants to a manifest-owned dealer.
-export function mediaLineForEvent(project, inventory, dealerId, eventId, event) {
+export function mediaLineForEvent(project, inventory, dealerId, eventId, event, { includeManualVariants = false } = {}) {
   const saved = project.lines.find(line => line.dealerId === dealerId && line.eventId === eventId);
   if (!saved || !usesMediaFamilies(inventory, dealerId)) return { managed: false, family: null, line: saved };
   const family = resolveMediaFamily(inventory, { dealerId, eventId, event });
@@ -88,11 +88,12 @@ export function mediaLineForEvent(project, inventory, dealerId, eventId, event) 
     ? media.standardPool.find(video => video.id === project.idlePolicy?.base[0]?.videoId) : null;
   const standard = idleBase ?? media.standard;
   const frequency = dealFrequencyPolicies(project, family);
-  const configured = new Set(frequency?.filter(row => (row.frequencyPercent ?? 0) > 0).map(row => row.videoId));
+  const configured = new Set((frequency ?? project.mediaPolicy?.find(row => row.familyId === family?.id)?.variants ?? [])
+    .filter(row => frequency ? (row.frequencyPercent ?? 0) > 0 : Object.values(row.selection).some(Boolean)).map(row => row.videoId));
   // Any four folder variants may be configured, including files imported later.
   // Do not let the first four filenames displace a configured fifth file.
-  const candidates = frequency ? [...media.variants].sort((a, b) => Number(configured.has(b.id)) - Number(configured.has(a.id))) : media.variants;
-  const variants = family?.playbackType === 'idle-pool' ? [] : candidates.slice(0, 4).map(video => {
+  const candidates = [...media.variants].sort((a, b) => Number(configured.has(b.id)) - Number(configured.has(a.id)));
+  const variants = family?.playbackType === 'idle-pool' ? [] : (includeManualVariants ? candidates : candidates.slice(0, 4)).map(video => {
     const policy = mediaVariantPolicy(project, family, video.id);
     const enabled = (policy.frequencyPercent ?? 0) > 0;
     return { id: `${dealerId}.${eventId}.file-${video.id}`, label: video.fileName, assetId: baseline.assetId,
