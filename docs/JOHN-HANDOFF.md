@@ -1,3 +1,26 @@
+## 2026-09-29 — Bakgrundszoner öppnade och sessionsvakt rättad
+
+Det tidigare koordinerade offlineparet på 4192/4194 hade inga öppna lokala
+browserflikar och stoppades före omstart. Sessionsvakten blockerade först
+korrekt återtagande: en gammal Node-PID hade återanvänts av Chrome, vars
+starttid Windows inte lämnade ut. `matchesLocalSessionProcess` behandlar nu
+ett verifierat icke-runtime-processnamn som en återanvänd PID även när
+starttiden är oläsbar; okända namn och möjliga Node-/launcherprocesser
+blockerar fortfarande. Av 11 riktade sessionstester passerade 10 och ett
+Linux-test hoppades över på Windows. Nytt offlinepar byggdes via
+`node lab/start.mjs --offline --no-open`. `/zones` öppnades i synligt lokalt
+Lab och startbild, zonlista och klippval verifierades i browsern. Fliken
+lämnades öppen för Jakob; ingen användarzon skapades eller togs bort.
+
+Samtliga 16 aktiva manifestvarianter har H.264/yuv420p/24 fps. Tolv är
+1080×1920, fyra är 612×1088 (två boxvarianter samt smile/yawn). En 1 s
+kontaktkarta och mätning av en fast väggpatch över alla frames visar att
+`idle_resa_sig.mp4` har tydligt ljusare vägg än neutral idle (Y-medel 56,1
+mot 50,6); `idle_resa_sig_fargmatchad.mp4` ligger närmare (49,8).
+Box-4-varianten har ett stavfel i filnamnet (`varaint`) men normal
+videoprofil. Dessa still-/patchkontroller är ingen visuell godkänning av
+hela rörelsen, klippskarvar, kortkontakt eller läppsynk. Media är orörd.
+
 ## 2026-09-29 — isolerad Vercel-preview och exakt Render-origin
 
 En separat, ännu inte driftsatt Vercel-projektrot finns i
