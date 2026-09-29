@@ -1,3 +1,33 @@
+## 2026-09-29 — Astrids bakgrundszoner i Lab
+
+`/zones` i Astrid Studio använder den befintliga 1080×1920-startbilden som
+referens. Operatören drar rektanglar, namnger dem, ser exakta pixelkoordinater,
+exporterar JSON och laddar ned zonens beskurna startbild. Ett tvåsekunders
+blinkande WebM-klipp kan skapas i zonens exakta mått, eller ett eget MP4/WebM
+med samma mått läggas in. Zonernas rektanglar är masken; skärmljusblandning
+respektive normal blandning finns. Provyta kan byta mellan manifestets
+Astridfilmer medan zonklippen fortsätter separat. Koordinater sparas i
+webbläsarens localStorage och klipp i IndexedDB; de kan exporteras/laddas ned.
+Produktspelaren, dess event och originalmedia är inte ändrade. Ingen visuell
+acceptans av att en zon ligger bakom dealern eller registrerar på varje take
+är gjord. Exakt pixelplacering kan inte antas bara för att bakgrunden verkar
+stilla: beskärning, skala, kamera, flimmer och ocklusion måste granskas per take.
+
+Manifestets 45 MP4 har samma H.264/yuv420p/24 fps-profil. 41 är
+1080×1920; fyra är 612×1088: `box_1_variant`, `box_2_variant`,
+`idle_smile` och `idle_yawn`. Bildrutor vid 1 och 2,5 sekunder bekräftade
+att plats-1-varianten visar ett mönstrat kort där standardfilen visar ett
+vitt. Ingen fil har skalats upp, stabiliserats eller fått nytt hashvärde.
+Längre idle-, kaffe- och flipklipp är formatmässigt 1080×1920 men kräver
+separat visuell granskning innan flimmer/skarv får en åtgärd eller godkännande.
+
+`npm run build`, TypeScript, 494 Lab-tester och `audit-dealer-sync --probe`
+passerade. Ett redan körande koordinerat spel/Lab-par på 4192 använder sitt
+äldre bygge; `/zones` ger 404 där tills paret kan startas om utan att störa
+pågående spel eller utkast. Ingen ny server startades och inget browserprov
+eller fyra-dealer-rehearsal gjordes. Jira-issue saknades för denna nya
+labbyta; inga CAC-statusar ändrades.
+
 ## 2026-09-29 — städarkiv, V3 och containerkontext
 
 Emils fristående V3-demo (240 filer, 63,1 MiB, inklusive manifest) är borttagen

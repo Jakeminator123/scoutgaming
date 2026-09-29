@@ -29,6 +29,7 @@
     }
   ],
   "boundaries": [
+    "Bakgrundszoner i Astrid Studio är ett lokalt prov: markera en pixelruta på 1080×1920-startbilden, skapa ett enkelt blinkklipp eller lägg in ett eget klipp med exakt rutans storlek och byt underliggande Astrid-film för att granska placeringen. Koordinater sparas i webbläsaren och kan exporteras som JSON; zonklipp sparas i samma webbläsarprofil och kan laddas ned var för sig. Rutan är en rektangulär mask. Inget spel-event styr zonen och ingen produktfilm ändras. Kontrollera varje klipps kameraregistrering och att dealern aldrig täcker zonen innan den används i spelet.",
     "Sidomenyn grupperar sex källtyper i 16 eventgrupper. En grupp kan innehålla flera exakta situationer: box 0–6 väljer deal_pos1–7, medan kortvärde och handIndex behålls som eventdata. Box anger plats och tillåten serveridentitet hålls separat; vänster/mitten/höger är inte ett filmval.",
     "Mottagna event behåller sin destination och replik. Ett manuellt exempel kan ändras med situationsväljaren. En saknad exakt Astrid-film ger ett synligt fel i labbet; spelaren lånar inte en annan plats eller replik.",
     "Standard och varianter kommer från manifestet. Oförändrade gamla demoexempel rensas vid start med en historikrevision som återgång. Egna ändringar och deras beroenden bevaras. Vera, Amira och Mei behåller sin befintliga gemensamma originalspelare.",
@@ -41,10 +42,14 @@
     "Spelmotorn äger kort, regler, saldo och utbetalningar. OpenClaw väljer tillåten presentation. En godkänd filhash eller ett uppspelningskvitto är inte ett mänskligt godkännande av läppsynk.",
     "Anslutningens serveradress avgör om originalet är lokalt eller externt. tools/start-local-comparison.mjs startar ett isolerat lokalt spel och stänger av externa modellanslutningar. Att OpenClaw-koden finns betyder inte att en körande gateway är ansluten.",
     "Händelseloggen håller 150 poster i flikens minne; observationsprotokollet högst 300 meddelanden eller 4 MiB. Samma instruktion via native och SSE slås ihop. Luckor och konflikter stoppar följningen. Exportera och välj Ny observation för att börja om med kommande data.",
-    "Emils originalfiler är 1080×1920 (9:16). Web visar hela filmen utan beskärning, även på dator. Korten är serverstyrda 2D-överlägg; materialet har ännu ingen kalibrerad kontakt med handen. Saknat exakt Astrid-klipp visas som fel i labbprovet. Produktens ?rehearsal=1 är den befintliga QA-panelen i den riktiga spelaren, inte en Eventstudio-flik.",
+    "Astrids aktuella standardfilmer är 1080×1920 (9:16). Äldre varianter för plats 1 och 2 samt idle_smile och idle_yawn är 612×1088. Web visar hela filmen utan beskärning, även på dator. Korten är serverstyrda 2D-överlägg; materialet har ännu ingen kalibrerad kontakt med handen. Saknat exakt Astrid-klipp visas som fel i labbprovet. Produktens ?rehearsal=1 är den befintliga QA-panelen i den riktiga spelaren, inte en Eventstudio-flik.",
     "Probe: normalt 90 sekunders inaktivitet, minst 5 minuters paus, 3 per timme och 30 procent per tillfälle. Ett obesvarat initiativ tills spelaren åter blir aktiv. Belagda fakta lever högst 30 dagar; samma anekdot spärras 7 dagar. Glöm stoppar även väntande arbete. Senaste avslutade rundans netto skickas separat till vanlig chatt; totalresultat är inte resultatet för förra rundan."
   ],
   "surfaces": [
+    {
+      "name": "Bakgrundszoner",
+      "purpose": "Rita exakta pixelrutor på Astrids startbild och prova separata små ljusklipp ovanpå olika dealerfilmer. Lokal förhandsvisning och export, ännu ingen spelarintegration."
+    },
     {
       "name": "Nodträdet",
       "purpose": "En översikt över de verkliga videofamiljerna. Öppna exakt plats eller replik."

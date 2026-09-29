@@ -1,6 +1,16 @@
 # Guide — en gemensam ingång
 
 **Aktuell Astrid-demo:** gemensamma [Lab](../README.md) på `/`.
+**Bakgrundszoner:** öppna `/zones` från Astrid Studio. Rita en pixelruta på
+1080×1920-startbilden, skapa ett tvåsekunders blinkklipp eller lägg in en
+MP4/WebM med exakt rutans storlek. Byt underliggande Astrid-film för att
+granska zonen mot olika tagningar. Rutan är masken; ljusläget blandar bort
+svarta pixlar, medan normalläget visar filmens egen alfakanal om den finns.
+Koordinater och klipp sparas i den lokala webbläsarprofilen. Exportera JSON
+och ladda ned zonklippen för att ge en annan agent en exakt specifikation.
+Zonerna styr ännu inte spelets spelare. Kontrollera kameraregistrering och
+ocklusion för varje tilltänkt klipp innan användning.
+
 Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `Start-Lab.cmd` behåller den befintliga privata anslutna profilen.
 Avancerade verktyg finns på `/tree`; `/lissabon` omdirigerar till `/`.
