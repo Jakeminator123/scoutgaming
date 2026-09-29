@@ -9,6 +9,16 @@ Den kontrollerar **inte** värden eller leverantörspaneler. Vid ändring direkt
 i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
+Status 2026-09-29: Render visar `croupier-v2` som **Live** på
+`https://croupier-v2.onrender.com` (build `a055b5c`). Vercels
+`github-work-vercel-entry` har `CROUPIER_GAME_ORIGIN` satt till denna exakta
+offentliga origin för Production och Preview. Värdet är en publik adress,
+ingen hemlighet. En ny Production-deploy från `d4ab37d` blev **READY**.
+`https://github-work-vercel-entry.vercel.app/` svarade 200 med en Blackjack-
+länk till Render, och länken öppnade den publika inloggningssidan i browsern.
+Hälsosidan blockerades av browserklienten; inloggning, spelrunda, omstart och
+beständig data är ännu inte verifierade i drift.
+
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
 | Render: spel + BO + Lab (`/studio`) | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_CLOUD_DATA_ROOT`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER` + `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` på tom databas | Se grupper nedan | Render sätter `PORT`, `RENDER_EXTERNAL_URL` |
