@@ -13,6 +13,41 @@ from streaming import Cancelled, FragmentMuxer, Timeline, model_sample_count, re
 
 
 class TimelineTests(unittest.TestCase):
+    def test_encoder_starts_on_pcm_before_first_model_window(self):
+        timeline = Timeline(24000)
+        started = threading.Event()
+        closed = threading.Event()
+        errors = []
+
+        class IdleMuxer:
+            error = None
+            def check(self): pass
+            def close(self): closed.set()
+
+        def factory(emit, cancelled):
+            started.set()
+            return IdleMuxer()
+
+        def run():
+            try:
+                render(timeline, None, factory, lambda data: None)
+            except Cancelled:
+                pass
+            except Exception as exc:
+                errors.append(exc)
+
+        thread = threading.Thread(target=run)
+        thread.start()
+        self.assertFalse(started.wait(.05), 'an empty utterance should not start FFmpeg')
+        timeline.append(b'\x00\x00')
+        self.assertTrue(started.wait(2), 'FFmpeg should start before the first model window')
+        self.assertEqual(timeline.next_frame, 0)
+        timeline.cancel()
+        thread.join(2)
+        self.assertFalse(thread.is_alive())
+        self.assertTrue(closed.is_set())
+        self.assertFalse(errors, str(errors))
+
     def test_inference_last_frame_does_not_round_down_twice(self):
         for frames in range(1, 100):
             samples = model_sample_count(frames)

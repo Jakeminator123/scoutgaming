@@ -70,6 +70,16 @@ class Timeline:
     def sample(self, frame):
         return frame * self.rate // FPS
 
+    def wait_for_audio(self):
+        """Wait for valid PCM before starting the encoder ahead of inference."""
+        with self.condition:
+            while True:
+                if self.cancelled.is_set():
+                    raise Cancelled()
+                if self.received:
+                    return
+                self.condition.wait(.2)
+
     def segment(self, check=None):
         with self.condition:
             while True:
@@ -288,6 +298,11 @@ def render(timeline, infer, muxer_factory, emit):
         emit(data)
 
     try:
+        # FFmpeg can connect its inputs while the first audio window is still
+        # filling. Do not start it for an empty or rejected utterance.
+        timeline.wait_for_audio()
+        encoder_started = time.monotonic()
+        muxer = muxer_factory(measured_emit, timeline.cancelled)
         while True:
             wait_started = time.monotonic()
             segment = timeline.segment(muxer.check if muxer else None)
@@ -295,9 +310,6 @@ def render(timeline, infer, muxer_factory, emit):
             if segment is None:
                 break
             start, end, left, window, audio, total = segment
-            if muxer is None:
-                encoder_started = time.monotonic()
-                muxer = muxer_factory(measured_emit, timeline.cancelled)
             muxer.audio.put(audio)
             count = 0
             for crop in infer(window, timeline.rate, left, start, end, total):
