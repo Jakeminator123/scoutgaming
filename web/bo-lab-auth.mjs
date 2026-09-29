@@ -76,6 +76,14 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
     res.writeHead(status, { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer', ...headers });
     res.end(); return true;
   };
+  const restartUrl = `${lab.origin}/api/auth/lab/start?next=${encodeURIComponent(singleOrigin ? '/studio' : '/')}`;
+  const staleHandoff = res => {
+    res.writeHead(410, { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer',
+      'Content-Type': 'text/html; charset=utf-8', 'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'" });
+    res.end(`<!doctype html><html lang="sv"><meta charset="utf-8"><title>Labbinloggningen avbröts</title><h1>Labbinloggningen avbröts</h1><p>Länken har gått ut eller redan använts.</p><a href="${restartUrl}">Starta en ny labbinloggning</a></html>`);
+    return true;
+  };
 
   return function handle(req, res) {
     const url = new URL(req.url, lab), path = url.pathname;
@@ -119,7 +127,7 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
     if (!validToken(state)) return reply(res, 400);
     if (path === '/api/bo/lab-login') {
       const flow = db.prepare('SELECT 1 FROM bo_lab_handoffs WHERE state_digest=? AND expires>? AND code_digest IS NULL').get(digest(state), Date.now());
-      if (!flow) return reply(res, 400);
+      if (!flow) return staleHandoff(res);
       const claims = boSession(req);
       if (!claims) return reply(res, 303, { Location: `/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/lab-login?state=${state}`)}` });
       if (!ADMIN_ROLES.has(claims.role)) return reply(res, 403);
@@ -133,14 +141,14 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
         WHERE state_digest=? AND expires>? AND code_digest IS NULL RETURNING state_digest`).get(
         digest(code), account.id, claims.role, account.stamp, authEpoch(account.id), until,
         Math.min(Date.now() + 60000, until), digest(state), Date.now());
-      if (!updated) return reply(res, 400);
+      if (!updated) return staleHandoff(res);
       return reply(res, 303, { Location: `${lab.origin}/api/auth/lab/callback?state=${state}&code=${code}` });
     }
 
     const code = url.searchParams.get('code');
-    if (cookie(req, 'bo_lab_state') !== state || !validToken(code)) return reply(res, 400);
+    if (cookie(req, 'bo_lab_state') !== state || !validToken(code)) return staleHandoff(res);
     const flow = db.prepare('DELETE FROM bo_lab_handoffs WHERE state_digest=? AND code_digest=? AND expires>? RETURNING *').get(digest(state), digest(code), Date.now());
-    if (!flow) return reply(res, 400);
+    if (!flow) return staleHandoff(res);
     const account = current(flow.craig_user_id);
     const age = Math.floor((flow.session_until - Date.now()) / 1000);
     if (!account || account.role !== flow.role || account.stamp !== flow.source_stamp ||

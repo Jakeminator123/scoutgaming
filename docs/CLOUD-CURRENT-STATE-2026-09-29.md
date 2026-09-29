@@ -8,11 +8,10 @@ pausat enligt `AGENTS.md`. Inga hemlighetsvärden hör hemma i denna fil.
 
 ## Körande och förberedda ytor
 
-Senaste uppföljning 08:44 CEST: följdfixen `225433fe` för färsk idle-katalog
-är pushad. Render byggde den i `dep-datlqlugekts73bbj7rg`, men ersatte
-bygget med automatiska `dep-datlrou0tbcc7383arg0` på samma SHA. Det senare
-bygget pågår vid denna notering; `adae8772` är senast verifierad Live nedan.
-Ingen ytterligare manuell deploy behövs medan det automatiska bygget kör.
+Uppföljning 08:46 CEST: följdfixen `225433fe` för färsk idle-katalog är Live
+i automatiska `dep-datlrou0tbcc7383arg0` (08:46:15). Render ersatte först
+det manuella `dep-datlqlugekts73bbj7rg` med samma SHA. API-åtkomsten i Lab
+hade därefter ett separat reproducerat proxyfel; se nedan och JOHN-HANDOFF.
 
 ### Enkel projektkarta och Lab-ingångar — 2026-09-29
 
@@ -88,7 +87,11 @@ till testbalans, utan betalningsleverantör eller riktiga uttag.
 Lab-inloggning och bibliotekets rendering bevisar inte full media-QA.
 **Spel & uppspelning** visade `Referensspelets konfiguration kunde inte läsas`
 och inaktiv Anslut-knapp på `adae8772`; detta har återrapporterats till
-filmagenten. Ingen lokal MP4 laddades upp under denna kontroll.
+filmagenten. Orsaken är Nexts interna Request-URL för API-anrop, trots
+korrekta autentiserade proxyheaders. En avgränsad guardfix och regressionstest
+är integrerade; liveprovet görs efter nästa deploy. Utgången/återanvänd
+inloggningslänk får samtidigt en begriplig 410-sida med ordinarie nystart.
+Ingen lokal MP4 laddades upp under denna kontroll.
 
 | Resurs | Syfte | Faktiskt läge |
 | --- | --- | --- |

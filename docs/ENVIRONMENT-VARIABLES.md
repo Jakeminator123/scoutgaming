@@ -10,7 +10,7 @@ i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
 Status 2026-09-29: Render visar `croupier-v2` som **Live** på
-`https://croupier-v2.onrender.com`, senast verifierad Live-deploy `adae8772` från
+`https://croupier-v2.onrender.com`, senast verifierad Live-deploy `225433fe` från
 GitHub `Jakeminator123/github-work`/`jakemanator123-github-work`.
 Vercels nya `croupier-frontend` är Git-kopplat till `Jakeminator123/github-work`,
 branch `jakemanator123-github-work`, rot `apps/croupier-frontend`. Dess första
