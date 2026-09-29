@@ -2002,6 +2002,8 @@ const pendingChatReplies = new Map();
 const compactChat = () => localPresentationEnabled && matchMedia('(max-width: 860px)').matches;
 let chatToggle, chatStatus, chatElapsed;
 function setChatOpen(open) {
+  // Astrid's conversation stays visible independently of the private voice log.
+  open = (DEALER.key === 'astrid' && localPresentationEnabled) || open;
   $('#chat-log').classList.toggle('open', open);
   chatToggle?.setAttribute('aria-expanded', String(open));
   if (open && chatToggle) delete chatToggle.dataset.unread;
@@ -2306,7 +2308,6 @@ const astridCamera = DEALER.key === 'astrid' && localPresentationEnabled
     onActivity: () => probeClient?.activity(),
     onPlaybackToggle: () => setMuted(!voice.muted),
     getPlaybackEnabled: () => !voice.muted,
-    onLogToggle: open => { setChatOpen(open); document.body.classList.toggle('astrid-voice-log-open', open); },
     send: ({ message, images, profileRevision }) => sendChat({ message, images, profileRevision }) }) : null;
 if (astridCamera) {
   document.body.classList.add('astrid-voice-ui');
@@ -2324,10 +2325,9 @@ const memoryStatus = document.createElement('p'); memoryStatus.setAttribute('rol
 const memoryForget = document.createElement('button'); memoryForget.type = 'button'; memoryForget.textContent = 'Radera mitt minne hos denna dealer';
 const memoryLimit = document.createElement('small'); memoryLimit.textContent = 'Raderar lokalt spelarchattminne, inte leverantörernas loggar. Stoppar ett pågående svar.';
 memoryPanel.append(memoryInfo, memoryStatus, memoryForget, memoryLimit); chatMemory.append(memorySummary, memoryPanel); $('#chat').append(chatMemory);
-if (astridCamera?.debugContainer) {
-  astridCamera.debugContainer.append($('#chat-input'), $('#chat-send'), $('#chat-log'), chatStatus, chatMemory);
+if (astridCamera) {
   chatToggle.hidden = true;
-  setChatOpen(false);
+  setChatOpen(true);
 }
 chatMemory.addEventListener('toggle', async () => {
   if (!chatMemory.open) return;

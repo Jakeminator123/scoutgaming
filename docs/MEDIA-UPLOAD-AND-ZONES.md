@@ -8,6 +8,14 @@ ska bevaras tills ägare och avsikt har kvitterats via `agent-talk`.
 
 ## 1. Färdiga Astridfilmer och varianter
 
+### Chatt och privat röstpanel
+
+Astrids chattfält och konversation ska alltid synas i spelet, även på mobil.
+De ska inte stängas av en timer eller följa den privata röstpanelens synlighet.
+Panelen med egen rösttranskription och kamerainformation är dold från början;
+ett långt tryck på röstknappen öppnar den. Vanlig textchatt kräver inte att
+mikrofon eller kamera aktiveras.
+
 ### Direkt i Astrid Studio
 
 Vercel-ingången `/labb-lissabon` öppnar det befintliga, skyddade Labbet på
