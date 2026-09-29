@@ -1,3 +1,25 @@
+## 2026-09-29 — Separat Vercel-startsida i produktion
+
+Det privata GitHub-repot `Jakeminator123/modern-landing-page` heter nu
+[`Jakeminator123/croupier-frontend`](https://github.com/Jakeminator123/croupier-frontend).
+Dess `main` har squash-commit `2ec2b3f2f7ea11c57f703f58a8fecdb540e5649c`
+från [PR #3](https://github.com/Jakeminator123/croupier-frontend/pull/3).
+Vercel-projektet behåller sitt nuvarande namn och sin befintliga adress
+[`modern-landing-page-kohl-xi.vercel.app`](https://modern-landing-page-kohl-xi.vercel.app/);
+Production-deployen `dpl_FEejL6HEG51SwSiNVsdkYntLstKW` var READY och
+`/demo` kontrollerades i browser. Sidan länkar till riktiga
+`https://croupier-v2.onrender.com/blackjack?dealer=astrid`; den tidigare
+klientsidiga låtsasrundan har tagits bort. Obekräftade licens-, KYC- och
+walletpåståenden samt döda `#`-länkar har rensats. TypeScript och
+produktionsbygget passerade.
+
+Detta är en publicerad startsida med övergång till Render-spelet, inte en
+Vercel-hostad spelklient. Croupiers äldre `github-work-vercel-entry` är kvar.
+Serverns kort, sko, saldo och utbetalningar ligger fortsatt på Render. Före
+spelklientens Vercel-byte krävs en isolerad Render-testbackend och proven i
+[`VERCEL-FRONTEND-MIGRATION.md`](VERCEL-FRONTEND-MIGRATION.md). Pågående lokala
+medieändringar i `emil/dealklipp-v1` är inte del av frontendleveransen.
+
 ## 2026-09-29 — Snävare blinkzon och redigerbar pixelruta
 
 Efter Jakobs prov av `light-2` syntes den generiska glöden över för mycket

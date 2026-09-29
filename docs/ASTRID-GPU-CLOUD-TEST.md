@@ -83,10 +83,48 @@ registrerade image-digest/template, verifiera privat pull och kontrollera att
 inga workers fortsätter debiteras. Radera inte föregående image/digest förrän
 återgången är provad. Emils GitLab-repo ändras inte.
 
-## Reproducerbart betalt GPU-prov — väntar på beslut
+## Separat GPU-prov inom Jakobs tak på 10 USD/dag — förberett, ej startat
 
-Ingen körning förrän Jakob godkänt **kostnadstak, separat test-endpoint och
-stoppvillkor**. Använd tom spel-/BO-/Lab-databas, separata testkonton och
+Jakob bekräftade 2026-09-29 att Emil, kontoägaren, godkänt högst 10 USD per dag för ett
+separat prov med två ofarliga repliker och kall/varm start. Det är inget
+godkännande att ändra befintlig produktionsendpoint. Nycklar i Emils env-filer
+hör till hans konto och används bara inom detta avgränsade prov. Vid en
+tidigare, enbart läsande kontroll gav den lokalt tillgängliga nyckeln HTTP 403
+på endpointlistan; inget jobb skickades. En separat endpoint, workergräns, pris
+och stopp kan därför inte verifieras med den nyckeln. Ägarkontots fungerande
+managementväg behövs före betald start. Den tidigare GHCR-körningen från
+`15bd1541` misslyckades. [Ny workflowkörning 36514600929](https://github.com/Jakeminator123/github-work/actions/runs/36514600929)
+startades från verifierad SHA `b0bac08f417bfc8a3a136c940e8aba2d41b59bab`
+med korrigerat mål `ghcr.io/jakeminator123/astrid-gpu-worker`; vid överlämningen
+var den fortfarande igång och image-digest okänd. Senaste workercommit med
+korrekt fragmentmätning är `68356b69`. Först efter lyckad publicering kan
+`sha-<workflowens fulla github.sha>` och
+`ghcr.io/jakeminator123/astrid-gpu-worker@sha256:<verklig digest>` fyllas i.
+Ingen digest får gissas från Git-SHA.
+
+[RunPods aktuella serverless-priser](https://www.runpod.io/pricing) anger
+RTX 4090 (24 GB) till 1,10 USD/timme och L40/L40S (48 GB) till 1,75
+USD/timme. [RunPods faktureringsregler](https://docs.runpod.io/serverless/pricing)
+räknar från workerstart tills den stannar, även modellinitiering och idle,
+avrundat per sekund; containerlagring tillkommer. Planen är **en** flex-worker,
+`workersMin=0`, `workersMax=1`, `idleTimeout=5` sekunder, RTX 4090 i första
+hand och L40S endast om dess faktiska endpointpris har bekräftats. Ingen
+beständig volym. Som övre beräkning kostar 30 minuter kontinuerlig L40S-körning
+0,875 USD i GPU-tid, plus lagring. Det är en kalkyl, inte RunPods faktura
+eller en automatisk budgetspärr. RunPods dokumenterade kontospendgräns är
+80 USD/timme och skyddar **inte** Jakobs tak på 10 USD/dag.
+
+Stoppvillkor före ett betalt jobb: rätt ägarkonto ska kunna **läsa, skapa och stoppa**
+den nya endpointen; dess pris, GPU, image-digest, privata pull och
+`workersMin/Max` ska visas i kontrollpanelen/API:t. Starta en lokal 30-minuters
+deadline samtidigt med första GPU-starten. Stoppa vid 10 minuter utan `ready`,
+15 minuter utan ett fullständigt mediefragment, direkt vid andra worker eller
+oväntad endpoint/image, och senast vid 30 minuter totalt. Kontrollera att
+aktiva workers går till noll och läs faktisk debitering innan ett nytt försök.
+Om stopp eller kostnad inte kan observeras, kör inget jobb. Den nuvarande
+403-nyckeln uppfyller inte detta krav; en ägarstyrd managementväg behövs.
+
+Använd tom spel-/BO-/Lab-databas, separata testkonton och
 inga privata samtal. Behåll MuseTalk. Kör från en namngiven commit/digest och
 anteckna GPU-typ, RunPod-pris per debiterad tidsenhet, worker min/max/idle,
 tidpunkt, browser, Render-release och testvärd. Koden för testmiljön får inte
