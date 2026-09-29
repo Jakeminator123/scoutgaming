@@ -1,5 +1,44 @@
 # Aktuellt molnläge
 
+## 2026-09-29 16:32 UTC — Slutkvitto: mobil och Studio Live
+
+Kod/media `891c432aab1191eeb8b2c7a476c04b35e6f28a89` är pushad till
+`jakemanator123-github-work`. Alla tre jobb i
+[GitHub checks 36594600889](https://github.com/Jakeminator123/github-work/actions/runs/36594600889)
+PASS. Vercel production `dpl_FDK4kZxuTUAowEqxEwf8NzPkEru8` är READY med
+alias `croupier-frontend.vercel.app` och `scoutgaming.tech`. Render
+`dep-datu3gqvcj2c73e6ivng` är Live med samma commit. Render väntar på
+**After CI Checks Pass** innan auto-deploy; väntan var inte ett driftfel.
+
+Efterdeploy-kontroll på den publicerade Vercelsidan: 390 × 844 har inget
+intro och inga introfilmer, sidan skrollar till `scrollY=546`. Länken till
+`/demo` fungerar; vid 320 × 568 ryms båda spelknapparna inom vyn och leder
+till rätt Render `/blackjack?dealer=astrid`. Desktop med reduced-motion
+1280 px har inget intro. Fysisk touch/Safari och desktopintrots fulla
+animationsförlopp är inte browserverifierade. Två browserverktygsanrop
+fastnade länge; de temporära vyinställningarna och testflikarna är städade.
+
+Studio visar **Öppna spelet** trots saknad observationskonfiguration.
+Knappen öppnade inloggad Astrid på `/?dealer=astrid&presentation=local`;
+ett andra klick återanvände samma spelflik. Videon spelade i 1080 × 1920,
+`readyState=4`, utan videofel. Vercel `/lab` och `/studio-astrid` gav 307
+till Render Studio; Render `/lab?check=goal` och `/studio-lissabon` gav
+korrekta 307. Obehöriga `/studio/api/videos` och `/studio/api/zones` gav
+401/no-store; hälsokontrollen gav 200.
+
+Alla fyra dealers har nu två `goodluck`-uppspelningar i följd i den riktiga
+spelarrehearsalen: Astrid visade **2/2 completed** med gemensamma Studio-
+spelaren; Vera, Amira och Mei gav två matchade start/slut-par och återaktiverade
+kontroller. Bilderna inspekterades och dealerbytena behöll `presentation=local`.
+Detta är ett uppspelnings-/navigeringskvitto, inte ny läppsynkacceptans eller
+två genererade GPU-röstsvar. Saldo 990 och total insats 0 förblev oförändrade.
+Astrids ursprungliga OpenClaw-val och mutat läge återställdes. Inga riktiga
+spelåtgärder, DB-skrivtester, GPU-jobb eller nya lokala produktservrar kördes.
+
+Kvarvarande acceptanspunkter anges nedan och i molnkartan. De överlämnade
+mediefilerna är nu versionshanterade. Slutkvittots följdcommit ändrar enbart
+dokumentation; driftbevisen ovan avser den testade kodcommitten `891c432a`.
+
 ## 2026-09-29 16:00 UTC — Mobil ingång, ett Studio och verifierade bästa klipp
 
 Denna leverans samlar Jakobs överlämnade media med tre granskade rättningar:

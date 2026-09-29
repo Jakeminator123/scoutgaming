@@ -71,8 +71,11 @@ Verifierat: manifestkontroll, TypeScript, **525 Lab-tester**, 34 riktade
 media-/privatlagringstester och `audit-dealer-sync.mjs --probe` passerade.
 Fyra-dealer-proben har de tidigare dokumenterade luckorna kvar: Vera åtta,
 Amira två och Mei tre saknade tal-takes. Proben ger ingen mänsklig
-läppsynkacceptans. Två verkliga uppspelningar i följd och audiovisuell
-acceptans återstår; inga nya spelrundor eller GPU-jobb startades här.
+läppsynkacceptans. Vid denna första mediekontroll återstod uppspelningsprovet.
+Efter deploy av `891c432a` verifierades två inspelade `goodluck`-uppspelningar
+per dealer i den riktiga spelaren; se [slutkvittot](JOHN-HANDOFF.md).
+Audiovisuell acceptans och två genererade GPU-svar återstår. Inga nya
+spelrundor eller GPU-jobb startades här.
 
 Studio-inventeringen observerades av samordnaren i den befintliga
 autentiserade browser-sessionen. Direktnavigering till Studio-API:t
