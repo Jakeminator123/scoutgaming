@@ -4,6 +4,7 @@ import { access, mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { buildPreview } from '../preview/build.mjs';
 import { prepareConfig } from '../preview/prepare.mjs';
 
@@ -33,7 +34,8 @@ test('Preview routes are isolated and forward only exact player/API and Astrid m
     '/api/auth/session', '/api/auth/player/login', '/api/auth/player/register',
     '/api/table', '/api/player', '/api/presentation/config', '/api/presentation/select',
     '/api/presentation/idle-advice', '/api/presentation/videos/:id', '/chat',
-    '/dealers/astrid/scene.png', '/assets/table.png', '/sfx/ambience.mp3',
+    '/dealers/astrid/scene.png', '/dealers/astrid/audio/en/bank.json',
+    '/assets/table.png', '/sfx/ambience.mp3',
   ]) assert.ok(sources.includes(source), `missing ${source}`);
   for (const forbidden of [
     '/bo', '/bo/login.html', '/studio', '/lab', '/__cloud/health', '/api/bo/login',
@@ -69,7 +71,20 @@ test('Preview builder requires the one isolated backend origin and hides unsuppo
     const game = await readFile(join(directory, 'dist/frontend-preview/game/index.html'), 'utf8');
     const css = await readFile(join(directory, 'dist/frontend-preview/preview-only.css'), 'utf8');
     const login = await readFile(join(directory, 'dist/blackjack-entry.mjs'), 'utf8');
+    const guard = await readFile(join(directory, 'dist/frontend-preview/route-guard.js'), 'utf8');
     assert.match(game, /href="\/frontend-preview\/preview-only\.css"/);
+    assert.match(game, /src="\/frontend-preview\/route-guard\.js"/);
+    for (const [search, redirects] of [
+      ['?dealer=astrid&presentation=local', 0],
+      ['', 1],
+      ['?dealer=vera&presentation=local', 1],
+      ['?dealer=astrid&presentation=local&scene=review', 1],
+    ]) {
+      const calls = [];
+      runInNewContext(guard, { URLSearchParams, location: { search, replace: path => calls.push(path) } });
+      assert.equal(calls.length, redirects, `redirects for ${search}`);
+      if (redirects) assert.equal(calls[0], '/frontend-preview/game/?dealer=astrid&presentation=local');
+    }
     assert.match(css, /#dealer-picker \{ display: none !important; \}/);
     assert.match(login, /\/frontend-preview\/game\/\?dealer=astrid&presentation=local/);
     const bytes = async path => (await stat(path)).size;

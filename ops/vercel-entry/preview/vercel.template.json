@@ -70,6 +70,7 @@
     { "source": "/dealers/astrid/table.png", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/astrid/table.png" },
     { "source": "/dealers/astrid/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/astrid/poster.jpg" },
     { "source": "/dealers/astrid/dealing-cues.json", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/astrid/dealing-cues.json" },
+    { "source": "/dealers/astrid/audio/en/bank.json", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/astrid/audio/en/bank.json" },
     { "source": "/dealers/astrid/actor/room.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/astrid/actor/room.jpg" },
     { "source": "/dealer/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealer/poster.jpg" },
     { "source": "/dealers/amira/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/amira/poster.jpg" },

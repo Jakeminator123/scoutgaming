@@ -18,8 +18,11 @@ export async function buildPreview({ origin = process.env.CROUPIER_GAME_ORIGIN,
   const html = await readFile(game, 'utf8');
   const marker = '</head>';
   if (!html.includes(marker)) throw Error('Förhandsfilen saknar HTML-head.');
-  await writeFile(game, html.replace(marker, '<link rel="stylesheet" href="/frontend-preview/preview-only.css">\n' + marker));
+  await writeFile(game, html.replace(marker,
+    '<link rel="stylesheet" href="/frontend-preview/preview-only.css">\n'
+    + '<script src="/frontend-preview/route-guard.js"></script>\n' + marker));
   await copyFile(new URL('./preview-only.css', import.meta.url), new URL('frontend-preview/preview-only.css', output));
+  await copyFile(new URL('./route-guard.js', import.meta.url), new URL('frontend-preview/route-guard.js', output));
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try { await buildPreview(); }

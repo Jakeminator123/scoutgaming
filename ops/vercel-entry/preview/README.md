@@ -31,8 +31,8 @@ Git-branch för provet. Öppna sedan
 driftsatts eller verifierats på Vercel ännu. Lokalt:
 `node --test ops/vercel-entry/test/build-preview.mjs ops/vercel-entry/test/preview-routes.mjs`
 från reporoten. `preview-only.css` döljer dealerväljaren, vars andra
-dealer-/V2-/casino-rutter inte ingår; manuellt ändrade URL:er kan fortfarande
-gå utanför pilotens stöd.
+dealer-/V2-/casino-rutter inte ingår. Spelets ingångsvakt styr även direkta
+besök och ändrade frågeparametrar till `?dealer=astrid&presentation=local`.
 
 ## Exakta proxyvägar
 
@@ -46,7 +46,7 @@ använder inga generella `/api/*`, `/bo/*`, `/studio/*` eller `/lab/*`-rewrites.
 | Astrid lokal presentation | `/api/presentation/config`, `/api/presentation/select`, `/api/presentation/idle-advice`, `/api/presentation/videos/:id` |
 | Chatt/probe/kamera | `/chat`, två exakta `/api/chat/memory`-vägar, fem exakta `/api/probe`-vägar och två `/api/astrid`-vägar |
 | Läsbar spelkonfiguration | Endast `/api/bo/config`: Web tillåter denna anonyma GET för spelets tier/clip-val; inga skyddade BO-vägar proxyas |
-| Pilotmedia | Fyra exakta `/assets/*.png`, Astrids scen/bord/poster/cues/room, tre ytterligare dealerporträtt som UI laddar, samt `scene.jpg`, `dealer-fallback.png`, `sfx/ambience.mp3`, `dealer/supervisor.webm` |
+| Pilotmedia | Fyra exakta `/assets/*.png`, Astrids scen/bord/poster/cues/room och `audio/en/bank.json` för inspelad repliktext, tre ytterligare dealerporträtt som UI laddar, samt `scene.jpg`, `dealer-fallback.png`, `sfx/ambience.mp3`, `dealer/supervisor.webm` |
 
 Denna lista är avsiktligt för `?dealer=astrid&presentation=local`. Den
 kopierade klienten kan ännu innehålla andra dealer-/QA-funktioner; `/review/*`,
