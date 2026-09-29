@@ -199,12 +199,19 @@ Praktiska steg finns i [medie- och zonguiden](docs/MEDIA-UPLOAD-AND-ZONES.md).
 Vercel API har nu verifierat Blob-token för Production, Preview och Development
 i QA-projektet. Zon-Neons nycklar finns för Preview/Development.
 
-Vercels nya `croupier-frontend` har redan `CROUPIER_GAME_URL` för
-Production/Preview. Den saknade variabeln lades också till i äldre
-`github-work-vercel-entry` med produktionsspelets URL och i
-`croupier-landing-preview-qa` med QA-spelpreviewns URL. Båda nya värdena
-återlästes och matchar exakt. De används vid nästa bygge; ingen OpenClaw-
-hemlighet har kopierats till Vercel eftersom startsidorna inte läser dem.
+Vercels `croupier-frontend` har `CROUPIER_GAME_URL` för Production/Preview,
+båda riktade mot produktionsspelet på Render. De äldre projekten
+`github-work-vercel-entry` och `croupier-landing-preview-qa` är nu borttagna;
+Vercels API bekräftade 404 den 29 september. Deras tidigare env-kvitton är
+historiska. Ingen OpenClaw-hemlighet behövs i startsidan.
+
+`CARTESIA_API_KEY` och `RUNPOD_API_KEY` finns som sparade namn på Render
+`croupier-v2`. En deploy krävs efter Save only. Talflaggorna är ännu av och
+nycklarnas giltighet har inte provats genom riktigt genererat tal.
+`CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` hör också till Render `croupier-v2`,
+ihop med `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER`. Servern använder dem bara
+när CRAIG:s användartabell är tom; en ändrad env återställer inte ett redan
+skapat adminkontos lösenord. De ska inte kopieras till Vercels frontend.
 
 Spelets produktionskonto, session, saldo, spelrundor och chattminne ligger
 fortfarande i serverns SQLite. En separat game-Neon och en fullständig

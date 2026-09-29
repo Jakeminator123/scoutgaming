@@ -10,19 +10,16 @@ i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
 Status 2026-09-29: Render visar `croupier-v2` som **Live** på
-`https://croupier-v2.onrender.com`, senast observerad deploy `05906bd8` från
+`https://croupier-v2.onrender.com`, senast verifierad Live-deploy `adae8772` från
 GitHub `Jakeminator123/github-work`/`jakemanator123-github-work`.
 Vercels nya `croupier-frontend` är Git-kopplat till `Jakeminator123/github-work`,
 branch `jakemanator123-github-work`, rot `apps/croupier-frontend`. Dess första
 Production-deploy från `d78eb4cb` är READY, och `CROUPIER_GAME_URL` är sparad
-för Production och Preview med Render-spelets riktiga URL. Den äldre
-`github-work-vercel-entry` visar samma importerade Next-landning, men är
-manuellt publicerad och saknar nu Git-koppling. `CROUPIER_GAME_ORIGIN` var den
-äldre statiska ingångens env och ska inte antas styra Next-sidan. Kodens
-fallback går också till Render-spelet. Den 29 september sparades även
-`CROUPIER_GAME_URL` i det äldre projektet för Production/Preview och
-återlästes med exakt matchning. Den separata QA-landningens och
-spelklientens projekt är manuellt driftsatta utan Git-koppling. Deras browserprov
+för Production och Preview med Render-spelets riktiga URL.
+`github-work-vercel-entry` och `croupier-landing-preview-qa` är borttagna;
+Vercels API bekräftade 404 för båda den 29 september. `CROUPIER_GAME_ORIGIN`
+hör till den äldre statiska byggkoden och den kvarvarande spelpreviewn;
+variabeln styr inte Next-sidan. Spelpreviewn är manuellt driftsatt utan Git-koppling. Dess browserprov
 med ett syntetiskt konto styrker spelrunda, saldo efter omladdning och synlig
 Astridvideo mot en isolerad Render-testbackend. Det bevisar inte produktions-
 omstart, backup eller läppsynk. Se [aktuell resurskarta](CLOUD-CURRENT-STATE-2026-09-29.md).
@@ -48,10 +45,10 @@ Vercels opt-in `node build.mjs --frontend-preview` använder samma
 `CROUPIER_GAME_ORIGIN` som standardbygget och inför **ingen ny env-nyckel**.
 Den importerade Next-landningen har däremot `CROUPIER_GAME_URL`: i QA måste
 den sättas till den isolerade spel-Previewns exakta publika URL, annars faller
-knapparna tillbaka till `croupier-v2` i produktion. `croupier-landing-preview-qa`
-har nu variabeln sparad för Production/Preview/Development med den isolerade
-spel-Previewns URL; värdet återlästes och matchar exakt. Ändringen används
-vid nästa bygge. Spelarprojektet `croupier-player-preview-qa` har egen Preview-
+knapparna tillbaka till `croupier-v2` i produktion. Det tidigare separata
+QA-landningsprojektet är avvecklat. Konfigurera en isolerad speladress i
+huvudprojektets Preview-miljö före spel-QA; dess nuvarande värde pekar på
+produktion. Spelarprojektet `croupier-player-preview-qa` har egen Preview-
 `CROUPIER_GAME_ORIGIN`, separata Neon-integrationer och Blob-token. Där finns
 17 `CROUPIER_ZONES_*`-nycklar för Preview/Development från zon-Neon, men ingen
 spårad runtimekod läser dem ännu. Den framtida serverkodens kanoniska zonnyckel
@@ -60,6 +57,19 @@ spårad runtimekod läser dem ännu. Den framtida serverkodens kanoniska zonnyck
 serverhemlighet. Render-tjänsternas Gateway-, Lab- och speech-tokenpar
 verifierades samtidigt; de behöver inte kopieras till Vercels startsidor.
 Se [live-kvittot](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+
+### Sparade talnycklar och första adminkontot
+
+På Render `croupier-v2` finns nu `CARTESIA_API_KEY`, `RUNPOD_API_KEY` och
+`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=zsudl8tmzcmiv1`. Namn/närvaro är
+kontrollerade; riktigt tal har inte API-testats. `CROUPIER_GENERATED_SPEECH`
+och `CROUPIER_CLOUD_GENERATED_SPEECH` är inte aktiverade. Nycklarna ensamma
+startar inte talflödet. Sparande med Save only kräver en efterföljande deploy.
+
+`CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` ska sparas som serverhemlighet i
+Render → `croupier-v2` → Environment, tillsammans med bootstrap-användaren.
+Den används bara för att skapa första administratören i en tom CRAIG-databas.
+En ändring av variabeln ändrar inte lösenordet för ett befintligt konto.
 
 Render-spelets villkorliga grupper:
 

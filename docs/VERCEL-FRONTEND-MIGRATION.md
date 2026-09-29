@@ -13,10 +13,10 @@ deploymenten från `d78eb4cb` blev READY; `/` och `/demo` har kontrollerats.
 `dpl_9GcmrpbHQ91oTJwnBYUuvV5DzxDZ`. Spellänken går fortfarande till Render;
 spelklienten, spel-API:erna och data har inte flyttats till Vercel eller Neon.
 
-[`github-work-vercel-entry.vercel.app`](https://github-work-vercel-entry.vercel.app/)
-är en andra, manuellt driftsatt adress för samma importerade landning.
-Projektet `github-work-vercel-entry` saknar nu Git-koppling; en Git-push
-uppdaterar inte den adressen. Det äldre Vercel-projektet
+De ersatta projekten `github-work-vercel-entry` och
+`croupier-landing-preview-qa` är borttagna. Vercels API gav 404 för båda vid
+kontroll den 29 september. Använd huvudprojektet för nya frontendleveranser.
+Det äldre Vercel-projektet
 `modern-landing-page`, med adress `modern-landing-page-kohl-xi.vercel.app`,
 raderades 2026-09-29 efter Jakobs uttryckliga bekräftelse. Vercels CLI
 bekräftade raderingen och en efterkontroll fann inget projekt med det namnet.
@@ -42,14 +42,12 @@ Dess tidigare Vercel-publicering är nu borttagen enligt driftkvittot ovan.
 Den importerade `/demo` har två spelknappar som kan byggas mot en exakt
 `CROUPIER_GAME_URL`. Klientsidans äldre låtsasspel har ingen publik rutt.
 
-Live-env kontrollerades 2026-09-29. Den saknade `CROUPIER_GAME_URL` sparades
-på `github-work-vercel-entry` för Production/Preview med Render-spelets URL,
-och på `croupier-landing-preview-qa` för Production/Preview/Development med
-den isolerade spel-Previewns URL. Båda värdena återlästes och matchar exakt;
-de gäller nästa bygge. Se [live-kvittot](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+Tidigare env-kvitton för de två avvecklade landningsprojekten är historiska.
+Nu används `CROUPIER_GAME_URL` i `croupier-frontend`. Både Production och
+Preview pekar på Render-produktion; konfigurera isolerad speladress före
+spel-QA i Preview. Se [miljöregistret](ENVIRONMENT-VARIABLES.md).
 
-Render `croupier-v2` är Live. Både `croupier-frontend` och den tidigare
-adressen `github-work-vercel-entry` levererar den importerade
+Render `croupier-v2` är Live. `croupier-frontend` levererar den importerade
 Next-landningssidan med en extern länk till Render `/blackjack`. Den planerade
 Vercelbyggda spelklienten med Render som API-backend återstår.
 Lyckad inloggning, hel spelrunda, BO/Lab, omstart och backup/restore är
@@ -57,24 +55,18 @@ inte verifierade i den publika driften. Tidigare stycken i
 `CLOUD-LAUNCH-HANDOFF.md` som säger att ingen tjänst skapats beskriver ett
 äldre läge.
 
-`apps/croupier-frontend/` har ett eget isolerat Vercel-testprojekt,
-`croupier-landing-preview-qa`. Den separata spel-Previewn i
+Den separata landnings-QA:n är avvecklad. Den kvarvarande spel-Previewn i
 `ops/vercel-entry/preview/` använder test-Render
 `croupier-vercel-preview-qa` med egen tom SQLite och disk. Ett syntetiskt konto
 har verifierat Vercels inloggningscookie, Origin, två serverägda rundor och
 omladdning mitt i en runda. Direkt mot test-Render gav video-Range HTTP 206;
-206 genom Vercels rewrite och visuell läppsynk återstår. Den senaste
-landnings-Previewn är
-`https://croupier-landing-preview-eokix0slk-jakeminator123s-projects.vercel.app`
-och länkar till den senaste spel-Previewn
+206 genom Vercels rewrite och visuell läppsynk återstår. Spel-Previewns adress är
 `https://croupier-player-preview-3esw2v3fl-jakeminator123s-projects.vercel.app`.
-Den tidigare landningsdomänen `github-work-vercel-entry.vercel.app` flyttades
-2026-09-29 till verifierad deployment `dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T`.
-Startsidan och `/demo` kontrollerades i browsern; båda spelknapparna på
-`/demo` går till oförändrade `croupier-v2` på Render. Det projektet är
-CLI-deployerat utan Git-koppling. Den nya `croupier-frontend.vercel.app` är
-däremot Git-kopplad enligt driftkartan ovan. Spelklientens produktionsbyte
-återstår.
+Dess Render-testbackend är pausad. Projektets Blob- och Neon-kopplingar
+behålls tills en kontrollerad flytt är genomförd. Spelklientens produktionsbyte
+återstår. Den Git-kopplade startsidans `/labb`, `/labb/filmer`, `/labb/zoner`
+och `/labb/guide` gav verifierad HTTP 307 till motsvarande skyddade Render-
+`/studio`-vägar den 29 september.
 
 ## Målrutter
 
