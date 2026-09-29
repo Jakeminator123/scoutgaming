@@ -39,9 +39,10 @@ function requestBoundary(request) {
   const actual = typeof provided === 'string' ? Buffer.from(provided) : Buffer.alloc(0);
   const key = Buffer.from(secret);
   // Next's route Request.url uses its bind address (even with forwarded Host).
+  // NextURL normalizes 127.0.0.1 to localhost before route handlers receive it.
   // Only the fixed cloud Lab listener is an internal URL alias. Authorization
   // still requires the exact public headers and gateway's private secret below.
-  const routedHost = url.host === expected.host || url.host === '127.0.0.1:4188';
+  const routedHost = url.host === expected.host || url.host === '127.0.0.1:4188' || url.host === 'localhost:4188';
   if (host !== expected.host || !routedHost || url.username || url.password || !['http:', 'https:'].includes(url.protocol)
     || request.headers.get('x-forwarded-host') !== expected.host
     || request.headers.get('x-forwarded-proto') !== 'https'
