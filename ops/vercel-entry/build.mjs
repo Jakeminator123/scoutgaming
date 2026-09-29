@@ -23,6 +23,7 @@ function moduleImports(source) {
   const imports = [];
   for (const pattern of [
     /^\s*(?:import|export)\s+(?:[\w\s{},*$]+?\s+from\s*)?['"]([^'"]+)['"]/gm,
+    /^\s*(?:import|export)[^'"\n]*?\bfrom\s*['"]([^'"]+)['"]/gm,
     /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
   ]) for (const match of source.matchAll(pattern)) imports.push(match[1]);
   return imports;

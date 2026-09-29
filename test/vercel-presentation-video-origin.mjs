@@ -89,6 +89,11 @@ test('opted-in exact Vercel origin preserves Range 206 and HEAD metadata without
   assert.equal(ranged.header('access-control-allow-origin'), undefined);
   assert.deepEqual(ranged.body(), bytes.subarray(3, 10));
 
+  const previewHostRange = await videoRequest(api, { host: new URL(frontendOrigin).host,
+    origin: frontendOrigin, range: 'bytes=3-9' });
+  assert.equal(previewHostRange.status, 206, 'Vercel forwards its own Host through the external rewrite');
+  assert.deepEqual(previewHostRange.body(), bytes.subarray(3, 10));
+
   const head = await videoRequest(api, { origin: frontendOrigin, method: 'HEAD' });
   assert.equal(head.status, 200);
   assert.equal(head.header('content-length'), String(bytes.length));

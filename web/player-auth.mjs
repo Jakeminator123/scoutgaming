@@ -4,17 +4,18 @@ import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypt
 // one exact origin. Web still expects its own public Host behind the proxy.
 export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' } = {}) {
   const host = req.headers.host;
-  if (frontendOrigin && host !== new URL(gameOrigin).host) return false;
+  const gameHost = frontendOrigin ? new URL(gameOrigin).host : host;
   const origin = req.headers.origin;
-  if (origin === undefined) return true;
+  if (origin === undefined) return host === gameHost;
   if (typeof origin !== 'string' || !URL.canParse(origin)) return false;
   const parsed = new URL(origin);
   if (parsed.origin !== origin) return false;
   if (frontendOrigin && origin === frontendOrigin) {
     const site = req.headers['sec-fetch-site'];
-    return site === undefined || site === 'same-origin';
+    return (host === gameHost || host === new URL(frontendOrigin).host)
+      && (site === undefined || site === 'same-origin');
   }
-  return parsed.host === host && (!frontendOrigin || origin === gameOrigin);
+  return host === gameHost && parsed.host === host && (!frontendOrigin || origin === gameOrigin);
 }
 
 export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '' } = {}) {
