@@ -8,7 +8,20 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
   if(!db.prepare('PRAGMA table_info(player_sessions)').all().some(c=>c.name==='display_name'))db.exec('ALTER TABLE player_sessions ADD COLUMN display_name TEXT');
   const digest=t=>createHash('sha256').update(t).digest('hex');
   const accountStamp = account => account ? `local:${digest(`${account.salt}:${account.hash}`)}` : null;
+  // The cloud gateway connects to Web over loopback and does not forward a
+  // trusted client IP. Limit failed password guesses for each account instead
+  // of sharing one loopback bucket across every player.
   const attempts=new Map();
+  const failureWindowMs=600000, maxFailures=12;
+  function loginBlocked(key) {
+    const now=Date.now();
+    for(const [account,entry] of attempts)if(now-entry.at>=failureWindowMs)attempts.delete(account);
+    return (attempts.get(key)?.n??0)>=maxFailures;
+  }
+  function loginFailed(key) {
+    const previous=attempts.get(key);
+    attempts.set(key,{at:Date.now(),n:(previous?.n??0)+1});
+  }
   function session(req) {
     const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
     if (!token) return null;
@@ -60,11 +73,6 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
       reply(200,{ok:true},{'Set-Cookie':cookie(req,'',0)});return true;
     }
     if(identity && req.url==='/api/auth/register'){reply(403,{error:'Use your existing Scout account. New accounts are managed in the backoffice.'});return true;}
-    // behind Caddy the socket is always 127.0.0.1: key on the forwarded client IP instead
-    const ip=localAccount ? req.socket.remoteAddress : (req.headers['x-forwarded-for']??'').split(',')[0].trim()||req.socket.remoteAddress, now=Date.now();
-    for(const [key,v] of attempts) if(now-v.at>600000)attempts.delete(key);
-    const limit=attempts.get(ip)??{at:now,n:0};limit.n++;limit.at=now;attempts.set(ip,limit);
-    if(limit.n>12){reply(429,{error:'Too many attempts. Try again in 10 minutes.'});return true;}
     try {
       let raw='';for await(const part of req){raw+=part;if(raw.length>4096)throw Error('Request too large');}
       const body=JSON.parse(raw);
@@ -74,6 +82,8 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
         if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username) || typeof password!=='string' || password.length<(registering?12:1) || password.length>128)throw Error('Use a username of 3–32 letters/numbers and a password of 12–128 characters when creating an account.');
         // A separate namespace cannot shadow a Scout/CRAIG operator identity.
         const key=`username:${username}`;
+        const loginKey=`player:${key}`;
+        if(!registering && loginBlocked(loginKey)){reply(429,{error:'Too many attempts. Try again in 10 minutes.'});return true;}
         let account=db.prepare('SELECT * FROM player_accounts WHERE email=?').get(key);
         if(registering) {
           if(account)throw Error('Account unavailable. Try signing in.');
@@ -85,22 +95,29 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
             account={player_id:player.id,salt,hash};
             const header=issue(req,{...account,source_stamp:accountStamp(account)});
             db.exec('COMMIT');
+            attempts.delete(loginKey);
             reply(200,{ok:true},{'Set-Cookie':header});
           }catch(error){db.exec('ROLLBACK');throw error;}
         } else {
           const computed=scryptSync(password,account?.salt??'invalid-account',64);
-          if(!account||!timingSafeEqual(computed,Buffer.from(account.hash,'hex')))throw Error('Username or password is incorrect.');
-          reply(200,{ok:true},{'Set-Cookie':issue(req,{...account,source_stamp:accountStamp(account)})});
+          if(!account||!timingSafeEqual(computed,Buffer.from(account.hash,'hex'))){loginFailed(loginKey);throw Error('Username or password is incorrect.');}
+          const header=issue(req,{...account,source_stamp:accountStamp(account)});
+          attempts.delete(loginKey);
+          reply(200,{ok:true},{'Set-Cookie':header});
         }
         return true;
       }
       const {email:input,password}=body;
       const email=String(input??'').trim().toLowerCase();
       if(!email || email.length>254 || typeof password!=='string' || password.length<(identity?1:12) || password.length>128 || (!identity && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))throw Error(identity?'Enter your email or username and existing password.':'Enter an email and a password of 12–128 characters.');
+      // CRAIG accepts both username and email. Resolve aliases to the same
+      // account so changing the spelling cannot reset its failure budget.
+      const loginKey=identity ? `craig:${identity.find(email)?.id??`unknown:${email}`}` : `email:${email}`;
+      if(req.url==='/api/auth/login' && loginBlocked(loginKey)){reply(429,{error:'Too many attempts. Try again in 10 minutes.'});return true;}
       let account=db.prepare('SELECT * FROM player_accounts WHERE email=?').get(email);
       if(identity){
         const existing=identity.authenticate(email,password);
-        if(!existing)throw Error('Email, username or password is incorrect.');
+        if(!existing){loginFailed(loginKey);throw Error('Email, username or password is incorrect.');}
         db.exec('BEGIN IMMEDIATE');
         try {
           account=linkIdentity(existing);db.exec('COMMIT');
@@ -116,9 +133,11 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
         }catch(e){db.exec('ROLLBACK');throw e;}
       }else {
         const computed=scryptSync(password,account?.salt??'invalid-account',64);
-        if(!account||!timingSafeEqual(computed,Buffer.from(account.hash,'hex')))throw Error('Email or password is incorrect.');
+        if(!account||!timingSafeEqual(computed,Buffer.from(account.hash,'hex'))){loginFailed(loginKey);throw Error('Email or password is incorrect.');}
       }
-      reply(200,{ok:true},{'Set-Cookie':issue(req,account)});
+      const header=issue(req,account);
+      attempts.delete(loginKey);
+      reply(200,{ok:true},{'Set-Cookie':header});
     }catch(e){reply(400,{error:e.message});}
     return true;
   }

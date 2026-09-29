@@ -13,6 +13,7 @@
       "sources": ["ops/vercel-entry/build.mjs"],
       "templates": ["ops/vercel-entry/.env.example"],
       "required": ["CROUPIER_GAME_ORIGIN"],
+      "frontendPreviewBuildCommand": "node build.mjs --frontend-preview (same required env; no new keys)",
       "publicOriginConfigured": "https://croupier-v2.onrender.com",
       "configurationCheckedOn": "2026-09-29",
       "firstBoot": [], "conditional": [], "managed": [], "blocked": []
