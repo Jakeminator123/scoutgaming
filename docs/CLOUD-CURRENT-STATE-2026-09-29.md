@@ -60,6 +60,8 @@ Den 29 september 15:32–15:35 UTC verifierades:
 Senaste leverans och efterkontroll förs överst i [JOHN-HANDOFF](JOHN-HANDOFF.md).
 Vercel-landningen och Render bygger automatiskt från arbetsbranchen; ingen
 manuell publicering till ett gammalt frontendprojekt behövs.
+Render är inställt på **After CI Checks Pass** (återläst 16:04 UTC), så
+dess deploy börjar först efter gröna GitHub-kontroller.
 
 De tidigare Vercelprojekten `github-work-vercel-entry`,
 `croupier-landing-preview-qa` och `modern-landing-page` är avvecklade enligt
