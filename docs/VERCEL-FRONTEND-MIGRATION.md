@@ -17,6 +17,14 @@ inte verifierade i den publika driften. Tidigare stycken i
 `CLOUD-LAUNCH-HANDOFF.md` som säger att ingen tjänst skapats beskriver ett
 äldre läge.
 
+Kodläget har avancerat utan publik cutover: `ops/vercel-entry/preview/` är en
+separat, fail-closed Vercel-projektrot med en explicit spelar-/Astrid-proxylista
+och en mall som inte kan användas förrän en isolerad testbackend med annan
+hostname och databas anges. Render kan opt-in acceptera en enda exakt
+`CROUPIER_VERCEL_FRONTEND_ORIGIN` för spelar-POST och videons Range-anrop.
+Detta är lokalt testad kod, **inte** ett påstående om att Vercel faktiskt
+vidarebefordrar rätt Host/Origin/cookies eller att spelet fungerar där.
+
 ## Målrutter
 
 | Synlig väg på Vercel | Ägare efter migration |
@@ -35,8 +43,9 @@ gör inte BO/Lab till Vercelbyggda appar; redovisa detta tydligt.
 
 ## Ordning och stoppvillkor
 
-1. Bygg en isolerad opt-in-förhandsversion som serverar verklig statisk
-   blackjack-front från Vercel utan att ändra dagens Production-länk.
+1. Skaffa en isolerad Render-testbackend med tom databas, separat disk och
+   annan hostname. Bygg därefter den opt-in-förhandsversion som serverar
+   verklig statisk blackjack-front från Vercel utan att ändra Production-länken.
    Mät vad Vercel faktiskt skickar som Host/Origin och hur Set-Cookie,
    Location, Cache-Control och Range/206 beter sig genom en read-only
    rewrite till Render.

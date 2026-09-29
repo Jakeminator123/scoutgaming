@@ -4,7 +4,7 @@
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
 import { craigIdentity } from './craig-identity.mjs';
 import { installBoAuthEpoch } from './bo-auth-epoch.mjs';
-import { playerAuth } from './player-auth.mjs';
+import { playerAuth, playerPostOriginOk } from './player-auth.mjs';
 import { backofficeGameAuth } from './bo-game-auth.mjs';
 import { backofficeLabAuth } from './bo-lab-auth.mjs';
 import { createServer } from 'node:http';
@@ -799,7 +799,9 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
 
 const scoutIdentity=craigIdentity(boDb);
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
-const auth=playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts});
+const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
+const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
+const auth=playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin});
 const validLaunch=token=>{const claims=jwtVerify(token);return !!(claims?.sub&&claims.partner&&getPlayer(claims.sub));};
 const boGameAuth=backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL});
 const boLabAuth=backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
@@ -870,7 +872,7 @@ const server = createServer(async (req, res) => {
     else {res.writeHead(303,{Location:'/login.html'});res.end();}
     return;
   }
-  if(authenticated && !backoffice && req.method==='POST' && req.headers.origin && (!URL.canParse(req.headers.origin)||new URL(req.headers.origin).host!==req.headers.host)) {
+  if(authenticated && !backoffice && req.method==='POST' && !playerPostOriginOk(req,{gameOrigin,frontendOrigin})) {
     res.writeHead(403);res.end('Invalid origin');return;
   }
   if(!backoffice) res.setHeader('Cache-Control','no-store');

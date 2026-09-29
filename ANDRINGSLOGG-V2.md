@@ -10,6 +10,10 @@ Render, så målet är **inte genomfört**. Inga tillfälliga Render-omdirigerin
 har pushats. [Migrationskontrakt och prov](docs/VERCEL-FRONTEND-MIGRATION.md)
 anger den stegvisa övergången utan att störa nuvarande publika ingång.
 GitHub-arbetsbranchen är `jakemanator123-github-work`; GitLab är pausat.
+En separat, ännu inte driftsatt Vercel-preview med snäva API-/mediarewrites är
+förberedd. Render stöder opt-in en exakt Vercel-origin för spelar-POST och
+video-Range; nästa konkreta steg är en isolerad Render-testbackend med tom
+databas, därefter verkligt browserprov på Vercel före Production-byte.
 
 ## 2026-09-29 – Render utan egen domän
 

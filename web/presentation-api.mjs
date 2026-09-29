@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
-import { loadVideoRegistry, getVideoResponse } from '../lab/lib/video-registry.mjs';
+import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
 import { buildRuntimeCatalog } from '../lab/lib/studio-model.mjs';
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
 import { selectPresentation } from '../presentation-runtime/selection.mjs';
@@ -49,7 +49,12 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       if (pathname.startsWith('/api/presentation/videos/')) {
         if (!['GET', 'HEAD'].includes(req.method)) fail('GET or HEAD required', 405);
         const id = pathname.slice('/api/presentation/videos/'.length);
-        const response = await getVideoResponse(id, new Request(`http://localhost${pathname}`, { method: req.method, headers: req.headers }), registryOptions);
+        const publicOrigin = env.CROUPIER_CLOUD_RUNTIME === '1' && exactHttpsOrigin(env.PUBLIC_URL) ? env.PUBLIC_URL : null;
+        const trustedProxyOrigin = publicOrigin && req.headers.host === new URL(publicOrigin).host
+          && exactHttpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN) ? env.CROUPIER_VERCEL_FRONTEND_ORIGIN : null;
+        const response = await getVideoResponse(id,
+          new Request(`${publicOrigin || 'http://localhost'}${pathname}`, { method: req.method, headers: req.headers }),
+          { ...registryOptions, trustedProxyOrigin });
         res.writeHead(response.status, Object.fromEntries(response.headers));
         if (response.body) Readable.fromWeb(response.body).on('error', () => res.destroy()).pipe(res); else res.end();
         return true;

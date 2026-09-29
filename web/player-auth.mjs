@@ -1,6 +1,23 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 
-export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false } = {}) {
+// Vercel's preview proxy is trusted only when the cloud launcher has supplied
+// one exact origin. Web still expects its own public Host behind the proxy.
+export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' } = {}) {
+  const host = req.headers.host;
+  if (frontendOrigin && host !== new URL(gameOrigin).host) return false;
+  const origin = req.headers.origin;
+  if (origin === undefined) return true;
+  if (typeof origin !== 'string' || !URL.canParse(origin)) return false;
+  const parsed = new URL(origin);
+  if (parsed.origin !== origin) return false;
+  if (frontendOrigin && origin === frontendOrigin) {
+    const site = req.headers['sec-fetch-site'];
+    return site === undefined || site === 'same-origin';
+  }
+  return parsed.host === host && (!frontendOrigin || origin === gameOrigin);
+}
+
+export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '' } = {}) {
   db.exec(`CREATE TABLE IF NOT EXISTS player_accounts (email TEXT PRIMARY KEY, player_id TEXT UNIQUE NOT NULL, salt TEXT NOT NULL, hash TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS player_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL);`);
   db.exec('CREATE TABLE IF NOT EXISTS craig_player_links (craig_user_id TEXT PRIMARY KEY, player_id TEXT UNIQUE NOT NULL)');
@@ -65,7 +82,7 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     if (!localAccount && !['/api/auth/login','/api/auth/register','/api/auth/logout'].includes(req.url)) return false;
     const reply=(status,data,headers={})=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store',...headers});res.end(JSON.stringify(data));};
     if(req.method!=='POST'){reply(405,{error:'POST required'});return true;}
-    if(req.headers.origin && (!URL.canParse(req.headers.origin)||new URL(req.headers.origin).host!==req.headers.host)){reply(403,{error:'Invalid origin'});return true;}
+    if(!playerPostOriginOk(req,{gameOrigin,frontendOrigin})){reply(403,{error:'Invalid origin'});return true;}
     if(localAccount && !playerAccounts){reply(403,{error:'Player accounts are not enabled.'});return true;}
     if(req.url==='/api/auth/logout') {
       const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
