@@ -6,6 +6,26 @@ har lyckats; läppsynk och molnflöde är ännu inte godkända.** Källan ligger
 `Jakeminator123/github-work`, branch `jakemanator123-github-work`. MuseTalk 1.5
 och den nuvarande avataren är utgångspunkt.
 
+## 2026-09-29 08:15 CEST — Egen RunPod-konfiguration sparad på Render
+
+Jakob lade in `RUNPOD_API_KEY` på Render `croupier-v2`. Nyckelns
+närvaro är verifierad i panelen; dess värde har inte lästs eller API-testats.
+Endpoint-ID råkade först hamna i Key-fältet tillsammans med variabelnamnet.
+Det rättades till `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=zsudl8tmzcmiv1`
+och sparades med **Save only**, utan ytterligare deploy.
+
+Jakobs tidigare sparning startade en ny byggning från `799b359f`,
+deploy `dep-datlc17lot8c7381fg50`. Render loggade Live 08:12:56 CEST.
+Efteråt gav både `/__cloud/health` och `/blackjack?dealer=astrid` HTTP 200.
+Det är en driftkontroll, inte ett fullständigt inloggnings-/rundprov.
+Den senare Save only-rättelsen är sparad för nästa deploy; vilken env-snapshot
+den redan pågående byggningen använde är inte verifierat.
+
+RunPods endpointpanel visade 0 pågående jobb, 0 köade jobb och 0 USD/s.
+Inga nya tal-/streamingflaggor sattes. Riktigt tal, Cartesia-nyckel,
+RunPod-API-autentisering och hela lipsync-kedjan återstår att verifiera.
+`GEMINI_API_KEY` ingår inte i denna kedja.
+
 ## Faktisk kedja och mätpunkter
 
 `/chat` inväntar fortfarande **hela** OpenClaw-beslutet och dess exakta text.
