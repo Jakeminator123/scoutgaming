@@ -158,6 +158,72 @@ test('real ffprobe validates MP4 and WebM dimensions and rejects corrupt video',
   await assert.rejects(probeZoneVideo(mediaBytes, 'mp4'), error => error.statusCode === 415);
 });
 
+test('real video completes zone upload, private readback, revision save and repeated playback without adapter shortcuts', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'croupier-zone-roundtrip-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const file = join(dir, 'synthetic.mp4');
+  await promisify(execFile)('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=black:s=16x24:r=2:d=1', '-c:v', 'libx264', file], { windowsHide: true, timeout: 15000 });
+  const bytes = await readFile(file), f = fixture(), objects = new Map(), deleted = [];
+  let downloads = 0;
+  const blobClient = {
+    put: async (pathname, body, options) => {
+      assert.equal(options.access, 'private');
+      assert.equal(options.allowOverwrite, false);
+      assert.equal(options.addRandomSuffix, false);
+      assert.equal(objects.has(pathname), false);
+      const blob = { pathname, url: `https://fixture.private.blob.vercel-storage.com/${pathname}`, contentType: options.contentType, size: body.byteLength };
+      objects.set(pathname, { blob, bytes: Buffer.from(body) });
+      return blob;
+    },
+    get: async (pathname, options) => {
+      assert.equal(options.access, 'private');
+      assert.equal(options.useCache, false);
+      downloads++;
+      const object = objects.get(pathname);
+      return object ? { statusCode: 200, blob: object.blob, stream: new Response(object.bytes).body } : null;
+    },
+    del: async pathname => { deleted.push(pathname); objects.delete(pathname); },
+  };
+  // Only the external services are doubles. Use the production ffprobe, upload,
+  // checksum/cache adapter, document validation and authenticated streaming code.
+  const options = { query: f.options.query, blobClient, cacheDir: join(dir, 'upload-cache'), env: { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-only' } };
+  const intake = () => request('/clips', { method: 'POST', headers: { 'content-type': 'video/mp4', 'x-zone-width': '16', 'x-zone-height': '24' }, body: bytes });
+  const uploaded = await uploadZoneClip(intake(), options);
+  assert.equal(downloads, 1, 'private upload is fully read back before its DB reference is stored');
+  assert.equal(objects.size, 1);
+  const linked = { ...zone, clipName: 'synthetic.mp4', clipWidth: 16, clipHeight: 24, cloudClipId: uploaded.id };
+  const initial = await saveCloudZones(save([linked], 0), options);
+  assert.equal(initial.revision, 1);
+  const updated = { ...linked, x: 250 };
+  assert.equal((await saveCloudZones(save([updated], initial.revision), options)).revision, 2);
+  await assert.rejects(saveCloudZones(save([{ ...linked, x: 500 }], initial.revision), options), error => error.statusCode === 409);
+  const reread = await loadCloudZones(request(), options);
+  assert.deepEqual(reread.zones, [updated]);
+  assert.equal(reread.revision, 2);
+  assert.doesNotMatch(JSON.stringify(reread), /private\.blob|fixture-only|croupier\/zones\//);
+
+  // A new cache stands in for a new server process: playback must fetch the
+  // persisted private object, not reuse upload bytes held in the first cache.
+  const playback = { ...options, cacheDir: join(dir, 'playback-cache') };
+  for (let play = 0; play < 2; play++) {
+    const response = await streamZoneClip(request(`/clips/${uploaded.id}`, { headers: { range: 'bytes=0-31' } }), uploaded.id, playback);
+    assert.equal(response.status, 206);
+    assert.equal(response.headers.get('cache-control'), 'private, no-store');
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes.subarray(0, 32));
+  }
+  assert.equal(downloads, 2);
+  const head = await streamZoneClip(request(`/clips/${uploaded.id}`, { method: 'HEAD' }), uploaded.id, playback);
+  assert.equal(head.status, 200);
+  assert.equal(head.headers.get('content-length'), String(bytes.length));
+  assert.equal(await head.text(), '');
+
+  await assert.rejects(uploadZoneClip(intake(), { ...options, query: async () => { throw new Error('synthetic DB failure'); } }), /synthetic DB failure/);
+  assert.equal(deleted.length, 1);
+  assert.equal(objects.size, 1, 'rollback deletes only the failed new upload');
+  assert.equal(f.clips.size, 1);
+  assert.deepEqual((await loadCloudZones(request(), options)).zones, [updated]);
+});
+
 test('cloud edits and reread preserve independent browser geometry and old clip bytes', () => {
   const entries = new Map(), storage = { setItem: (key, value) => entries.set(key, value) };
   persistBrowserZones(storage, 'local', [zone]);

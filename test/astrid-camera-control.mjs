@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createAstridCameraControl } from '../web/public/astrid-camera-control.mjs';
 import { createAstridWakeWord } from '../web/public/astrid-wake-word.mjs';
+import { createSpeechPoseGate } from '../web/public/speech-pose-gate.mjs';
 
 class Element {
   constructor(tag) { this.tag = tag; this.children = []; this.hidden = false; this.textContent = ''; this.attributes = {}; this.listeners = new Map(); this.style = {}; }
@@ -14,7 +15,7 @@ const all = root => [root, ...root.children.flatMap(all)];
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const event = values => ({ preventDefault() {}, ...values });
 function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, permission = 'allow', cameraPermission = 'allow',
-  wakeStart = () => true, canStart = () => true, deferredPlayback = false, useRealWake = false,
+  wakeStart = () => true, canStart = () => true, deferredPlayback = false, useRealWake = false, enablePlayback,
   transcribe = async () => ({ ok: true, json: async () => ({ text: 'Hello Astrid' }) }), send = async () => true } = {}) {
   const globals = Object.fromEntries(['document', 'window', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'].map(name => [name, globalThis[name]]));
   const timers = new Map(), intervals = new Map(), listeners = new Map(); let timerId = 0;
@@ -38,7 +39,7 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
     start() { this.started = true; queueMicrotask(() => this.onstart?.()); }
     abort() { this.aborted = true; }
   }
-  const permissionResolvers = []; let profile = 'one', configReads = 0, configFetch = initialConfigFetch, activity = 0, playbackEnabled = false, playbackToggles = 0;
+  const permissionResolvers = []; let profile = 'one', configReads = 0, configFetch = initialConfigFetch, activity = 0, playbackEnabled = false, playbackToggles = 0, playbackEnables = 0;
   const base = { enabled: true, profileRevision: 'a'.repeat(64), transcription: { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }, vision: { enabled: true } };
   let config = { ...base, ...initialConfig };
   const mediaDevices = { getUserMedia: constraints => {
@@ -69,7 +70,9 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
       configReads++; return configFetch ? configFetch(init) : { ok: true, json: async () => config };
     },
     send: async input => { sent.push(input); return send(input); },
-    onPlaybackToggle: () => { playbackEnabled = !playbackEnabled; playbackToggles++; }, getPlaybackEnabled: () => playbackEnabled,
+    onPlaybackToggle: () => { playbackEnabled = !playbackEnabled; playbackToggles++; control.refreshPlayback(); },
+    onPlaybackEnable: () => { playbackEnables++; if (enablePlayback) enablePlayback(); playbackEnabled = true; control.refreshPlayback(); },
+    getPlaybackEnabled: () => playbackEnabled,
     onLogToggle: value => logToggles.push(value),
   });
   const buttons = all(root).filter(node => node.tag === 'button'), [play, record] = buttons;
@@ -86,6 +89,7 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
     status: () => all(root).find(node => node.attributes.role === 'status').textContent,
     log: () => all(root).find(node => node.tag === 'pre').textContent,
     activity: () => activity, configReads: () => configReads, playbackToggles: () => playbackToggles,
+    playbackEnabled: () => playbackEnabled, playbackEnables: () => playbackEnables,
     resolvePermission: () => permissionResolvers.shift()(), changeOwner: () => { profile = 'two'; },
     setConfig: value => { config = { ...base, ...value }; }, setConfigFetch: value => { configFetch = value; },
     identityCheck: () => [...intervals.values()].forEach(fn => fn()),
@@ -118,6 +122,65 @@ test('Play only toggles Astrid playback and never requests recording consent or 
   const h = harness();
   try { await tick(); h.click(h.play); await tick(); assert.equal(h.playbackToggles(), 1); assert.equal(h.play.attributes['aria-pressed'], 'true'); assert.equal(h.dialog.hidden, true); assert.equal(h.requests.length, 0); }
   finally { h.restore(); }
+});
+
+test('explicit wake and manual voice activation clear saved mute before autosend reaches the real pose gate', async () => {
+  for (const manual of [false, true]) {
+    const identity = { dealerId: 'astrid', sessionRevision: 's1', roundRevision: '0' };
+    let replies = 0;
+    const gate = createSpeechPoseGate({ initialState: { ...identity, dealerPose: 'standard-idle', actionOwner: 'none',
+      speechOwner: 'none', visible: true, muted: true, idlePresented: null },
+      enqueue: work => Promise.resolve().then(() => work(new AbortController().signal)), onSpeech: async () => { replies++; } });
+    const muted = gate.receive({ ...identity, jobId: 'before-activation', requestFingerprint: 'before' });
+    assert.equal(muted.record.reason, 'muted', 'reproduces the original autosend rejection');
+    const h = harness({ enablePlayback: () => gate.updateRendererState({ muted: false }, 'voice-enabled'),
+      send: async input => {
+        const jobId = `voice-${replies + 1}`;
+        const received = gate.receive({ ...identity, jobId, requestFingerprint: jobId });
+        if (received.record.status === 'cancelled') return false;
+        gate.presentStandardIdle({ ...identity, presentationId: `idle-${jobId}` });
+        gate.responseReady(jobId, { kind: 'generatedText', exactText: input.message });
+        return (await received.completion).status === 'completed';
+      } });
+    try {
+      await tick(); assert.equal(h.playbackEnabled(), false); assert.equal(h.playbackEnables(), 0);
+      assert.equal(h.requests.length, 0);
+      if (manual) await h.startManual(); else { await h.start(); await h.wake(); }
+      assert.equal(h.playbackEnabled(), true); assert.equal(h.playbackEnables(), 1);
+      h.pause(); await tick(); await tick();
+      assert.equal(h.uploads.length, 1); assert.equal(h.sent.length, 1); assert.equal(replies, 1);
+      assert.equal(h.playbackEnables(), 1, 'automatic rearming must not enable playback again');
+      assert.equal(h.control.active, !manual);
+    } finally { h.restore(); }
+  }
+});
+
+test('muting after voice activation stops capture or translation and never autosends late audio', async () => {
+  for (const stage of ['idle', 'capture', 'transcription']) {
+    let translated;
+    const h = harness({ transcribe: () => new Promise(resolve => { translated = resolve; }) });
+    try {
+      await h.start();
+      if (stage !== 'idle') await h.wake();
+      if (stage === 'transcription') { h.pause(); await tick(); }
+      h.click(h.play); await tick();
+      assert.equal(h.playbackEnabled(), false); assert.equal(h.control.active, false);
+      assert.match(h.status(), /playback muted.*Voice off/);
+      if (translated) translated({ ok: true, json: async () => ({ text: 'late transcript' }) });
+      await tick();
+      assert.equal(h.sent.length, 0); assert.equal(h.playbackEnables(), 1); assert.equal(h.wakes.length, 1);
+      assert.ok(h.streams.every(stream => stream.getTracks().every(track => track.stopped)));
+    } finally { h.restore(); }
+  }
+});
+
+test('failed playback activation stops before microphone acquisition without exposing details', async () => {
+  const h = harness({ enablePlayback: () => { throw Error('private exception'); } });
+  try {
+    await h.start(); assert.equal(h.control.active, false); assert.equal(h.requests.length, 0);
+    assert.equal(h.uploads.length, 0); assert.equal(h.sent.length, 0);
+    assert.match(h.status(), /playback could not be enabled/); assert.doesNotMatch(h.status(), /private/);
+  } finally { h.restore(); }
 });
 
 test('wake idle does not block Probe; wake synchronously activates the same microphone buffer', async () => {

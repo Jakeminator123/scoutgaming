@@ -44,6 +44,42 @@ Full upload → spara → återläs → spela upp och zonernas inkoppling i spel
 återstår. Resursnamnet på Blob är historiskt; samma privata lager används
 också för familjeklipp under separat `croupier/videos/`-namnrymd.
 
+### Sammanhängande isolerat rundprov 2026-09-29 16:55 UTC
+
+`node --test lab/test/zone-cloud-store.test.mjs` passerar **14/14** tester.
+Det nya rundprovet skapar en syntetisk svart MP4 på 16 × 24 pixlar med riktig
+`ffmpeg` och använder produktionskodens `ffprobe`, privata uppladdningsadapter,
+hashkontroll, zonvalidering, sparning och skyddade videoläsning. Endast de
+externa DB- och Blob-tjänsterna ersätts av isolerade testdubblar; provet går
+inte via testets tidigare `probe`-/`putMedia`-genvägar.
+
+Provet verifierar privat och oföränderlig uppladdning, full byteåterläsning
+före klippraden, revision **1 → 2**, avvisad gammal revision med **409** och
+oförändrad senast sparad geometri. En separat tom cache simulerar nästa
+serverprocess: klippet hämtas igen från Blob-testtjänsten och ger två
+korrekta **206 Range**-svar samt **200 HEAD** med rätt storlek och tom kropp.
+Zonsvaret innehåller varken Blob-sökväg, direktlänk eller serverhemlighet.
+En efterföljande misslyckad DB-insert städar endast sitt nya Blob-objekt;
+det tidigare sparade klippet och zonerna finns kvar. Temporära klipp och
+cachemappar städas av testet. Ingen produkt-/Lab-server startas.
+
+Vercels riktade resursmetadata bekräftade zonresursen
+`store_f0uLTbYiQKqQjLCY`, Neon-projektet `wandering-hill-60561912`, rätt
+Vercelprojektkoppling och separata `CROUPIER_ZONES_*`-nycklar. Ett försök att
+nå den befintliga QA-grenen via Vercels Neon-SSO stannade på krav att verifiera
+kontots e-post innan identiteterna kan kopplas. Ingen QA-värd kunde därmed
+bekräftas och inga Neon-skrivningar utfördes.
+
+Ett försök att begära dekrypterad Vercel-miljö enbart för feldiagnostik
+avvisades av den automatiska godkännandegranskningen som onödig exponering
+av hemligheter. Fortsatt credentialhämtning och planerat live-Blob-skrivprov
+stoppades. Inget nytt molnobjekt skapades. Detta rundprov är därför ett
+**sammanhängande kodkvitto med isolerade tjänster**, inte en genomförd
+liveuppladdning. Produktionszonernas lista och användardatabasen lämnades
+orörda. Tidigare verifierad autentiserad produktionsläsning av 0 zoner/version
+0 gäller fortfarande; full liveuppladdning/sparning kräver ett separat prov
+efter återautentisering mot den bekräftade syntetiska QA-grenen.
+
 ## Implementerat flöde
 
 Labbet har nu ett riktigt, skyddat molnflöde för zoner. **Spara till molnet**
