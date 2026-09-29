@@ -9,6 +9,14 @@ kort/skor/plånbok, autentisering, SQLite på `/var/data`, BO, Lab och
 OpenClaw-/mediaanslutningar. RunPod/GPU är ett separat, valbart steg för
 genererat tal och läppsynk, inte ett villkor för förinspelad Astrid.
 
+Den separata startsidan finns nu i privata
+[`Jakeminator123/croupier-frontend`](https://github.com/Jakeminator123/croupier-frontend)
+och är publicerad på
+[`modern-landing-page-kohl-xi.vercel.app`](https://modern-landing-page-kohl-xi.vercel.app/).
+Dess `/demo` är en tydlig väg till det riktiga Render-spelet, inte längre ett
+klientsidigt låtsasspel. Den separata repoindelningen bevaras under fortsatt
+spelklientmigration. Vercel-projektets nuvarande namn och domän är oförändrade.
+
 I dag är Render `croupier-v2` Live och Vercel `github-work-vercel-entry`
 publicerad, men Vercel levererar **bara en landningssida med en extern länk**
 till Render `/blackjack`. Detta är inte den önskade front/back-delningen.
