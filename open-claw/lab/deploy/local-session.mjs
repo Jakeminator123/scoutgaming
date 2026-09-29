@@ -42,7 +42,12 @@ function alive(pid) {
 // cannot be one of those processes merely because Windows reused its PID.
 export function matchesLocalSessionProcess(identity, current) {
   if (!current) return true;
-  if (identity) return current.startTime ? identity.startTime === current.startTime : true;
+  // Windows can expose a reused PID's process name while denying its start
+  // time (for example a Chrome child). A verified non-runtime name still
+  // proves that the old Node child is gone; an unknown/runtime name stays
+  // protected when its birth time cannot be inspected.
+  if (identity) return current.startTime ? identity.startTime === current.startTime
+    : matchesLocalSessionProcess(null, current);
   // Linux comm is a mutable thread name (Node 24 uses MainThread). Inspect
   // the executable instead; an unreadable executable must fail closed.
   const name = Object.hasOwn(current, 'executableName') ? current.executableName : current.name;

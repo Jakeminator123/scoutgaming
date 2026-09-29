@@ -93,6 +93,8 @@ test('process identity detects reused PIDs and conservatively handles legacy ses
   }
   assert.equal(matchesLocalSessionProcess(undefined, null), true, 'Inspection failures remain conservative.');
   assert.equal(matchesLocalSessionProcess(original, { name: 'node', startTime: null }), true);
+  assert.equal(matchesLocalSessionProcess(original, { name: 'chrome', startTime: null }), false, 'A verified browser PID cannot be the old Node child even when its start time is unreadable.');
+  assert.equal(matchesLocalSessionProcess(original, { name: null, startTime: null }), true, 'Unknown process names still block a restart.');
 });
 
 test('Linux executable identity handles renamed threads and unavailable executable inspection', () => {
