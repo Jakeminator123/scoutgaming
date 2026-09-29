@@ -1,5 +1,23 @@
 # Aktuellt molnläge
 
+## 2026-09-29 — Granskning av Lissabon-väg, env och Blob
+
+Jakobs bekräftade `/?dealer=astrid&presentation=local` väljer gemensam
+Lab/Lissabon-presentation även på tjänsten `croupier-v2`. Publicerade
+chattfiler matchade kodens synlighetsfix; Director hälsa och autentiserad
+status svarade 200. Blob-token finns i spel-QA:s tre Vercel-miljöer, men
+inte på startsidan. Blob och båda Neon-resurserna finns; Lab-uppladdning
+skriver fortfarande till Render-disk och zoner till browserlagring.
+Lokalt skuggar genererat-tal-env den nyare RunPod-endpointen och effektiv
+RunPod-nyckel är tom trots `generatedSpeech:true` i sparad profil.
+Se [granskningskvittot](CLOUD-FLOW-ENV-AUDIT-2026-09-29.md) för tjänstmatris,
+57 chatt-/kameratester, 27 lagringstester och återstående driftprov.
+Inga runtime/env/media ändrades. Ny browser-QA stoppades av verktygets
+URL-kontroll; Terra-bildsvar, fysisk Whisper-inspelning och liveupload
+är inte verifierade av denna granskning. `root-orchestrator` hanterar
+[robotröstfallbacken](ASTRID-VOICE-ROUTING-2026-09-29.md), committad i
+`bddf534c` med full hook och probe PASS; Live-/visuellt kvitto återstår.
+
 ## 2026-09-29 — Lab-inloggning och API bakom Render
 
 Jakob rapporterade dels HTTP 400 efter inloggningen, dels autentiseringsfel
