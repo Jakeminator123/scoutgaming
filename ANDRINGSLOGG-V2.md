@@ -1,5 +1,15 @@
 # V2 – kort ändringslogg och nästa beslut
 
+## 29 september 2026 – Astrids GHCR-mål och RunPod-åtkomst
+
+Actions byggde GPU-imagen utan GPU, men GHCR avvisade publiceringen eftersom
+paketmålet stavade GitHub-ägaren fel. Workflowen och provplanen pekar nu på
+`ghcr.io/jakeminator123/astrid-gpu-worker`; nytt godkännande av exakt mål
+krävs före nästa publiceringsförsök. Ingen image-digest eller privat pull finns.
+Lokal RunPod-nyckel läste endpointens hälsa men fick 403 på administration;
+Emils endpoint är inte ändrad och ingen betald generering startades. Faktisk
+workerdebitering och GPU-latens är fortfarande omätta.
+
 ## 2026-09-29 – Vercel ska vara den synliga spel-fronten
 
 Jakob har förtydligat målet: besökaren ska stanna på Vercels `.vercel.app`-

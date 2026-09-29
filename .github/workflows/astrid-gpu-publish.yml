@@ -24,11 +24,13 @@ jobs:
       contents: read
       packages: write
     env:
-      IMAGE: ghcr.io/jakemanator123/astrid-gpu-worker
+      IMAGE: ghcr.io/jakeminator123/astrid-gpu-worker
       APPROVED_TARGET: ${{ inputs.approved_target }}
     steps:
       - name: Require the exact approved destination
         run: |
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          test "$IMAGE" = "ghcr.io/$owner/astrid-gpu-worker"
           test "$APPROVED_TARGET" = "$IMAGE"
           echo "Publishing only $IMAGE from $GITHUB_SHA"
       - uses: actions/checkout@v7
@@ -46,7 +48,7 @@ jobs:
         with:
           context: services/astrid-gpu-worker
           push: true
-          tags: ghcr.io/jakemanator123/astrid-gpu-worker:sha-${{ github.sha }}
+          tags: ${{ env.IMAGE }}:sha-${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/Jakeminator123/github-work
             org.opencontainers.image.revision=${{ github.sha }}
