@@ -162,6 +162,10 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
       input.onProgress('video-submit');
       let job = await runpod('run', { method: 'POST', body: JSON.stringify({
         input: { op: 'lipsync', wav_b64: wav.toString('base64'), crf: 13, preset: 'ultrafast' },
+        // RunPod's per-job policy remains effective if this process disconnects
+        // before it receives a job ID and cannot send its usual cancellation.
+        // https://docs.runpod.io/serverless/endpoints/send-requests#execution-policies
+        policy: { executionTimeout: 120000, ttl: 180000 },
       }) });
       if (typeof job?.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(job.id)) fail('invalid_generated_speech_job');
       jobId = job.id;

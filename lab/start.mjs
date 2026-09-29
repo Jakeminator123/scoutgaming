@@ -62,9 +62,9 @@ async function buildLab(session) {
   await new Promise((yes, no) => { child.once('error', no); child.once('exit', code => code === 0 ? yes() : no(new Error(`Labbbygget misslyckades (${code}). Kör npm --prefix lab ci om beroenden saknas.`))); });
 }
 export async function main(args = process.argv.slice(2)) {
-  if (args.some(arg => !['--check', '--no-open', '--skip-build', '--astrid-camera', '--offline'].includes(arg))) throw new Error('Använd --check, --no-open, --skip-build, --astrid-camera eller --offline.');
+  if (args.some(arg => !['--check', '--no-open', '--skip-build', '--astrid-camera', '--cloud-storage', '--offline'].includes(arg))) throw new Error('Använd --check, --no-open, --skip-build, --astrid-camera, --cloud-storage eller --offline.');
   if (args.includes('--offline')) {
-    if (args.includes('--check') || args.includes('--astrid-camera')) throw new Error('--offline kan inte kombineras med --check eller --astrid-camera.');
+    if (args.includes('--check') || args.includes('--astrid-camera') || args.includes('--cloud-storage')) throw new Error('--offline kan inte kombineras med --check, --astrid-camera eller --cloud-storage.');
     const fixture = await startLocalComparison({ generationDirectory: join(root, 'emil/dealklipp-v1'), streamLane: profile.id,
       prepare: args.includes('--skip-build') ? undefined : buildLab, prepareStudio: prepareProject });
     console.log(`Lab: ${fixture.labUrl}\nSpel: ${fixture.gameUrl}/?dealer=astrid&presentation=local\nIsolerat prov med tom testdatabas och externa tjänster avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
@@ -75,7 +75,7 @@ export async function main(args = process.argv.slice(2)) {
   }
   const url = `http://127.0.0.1:${profile.labPort}/`;
   if (args.includes('--check')) {
-    const { configuration, report } = loadPrivateConnection({ generatedSpeech: true });
+    const { configuration, report } = loadPrivateConnection({ generatedSpeech: true, astridCamera: args.includes('--astrid-camera'), cloudStorage: args.includes('--cloud-storage') });
     console.log(JSON.stringify({ lane: profile.id, report, probe: await probeConnections(configuration) }, null, 2));
     return;
   }
@@ -83,12 +83,14 @@ export async function main(args = process.argv.slice(2)) {
   if (running?.service === 'croupier-next-studio' && running.streamLane === profile.id) {
     console.log(`Lissabon kör redan: ${url}`);
     if (args.includes('--astrid-camera')) console.log('Kameraflaggan ändras bara vid en ny start. Den körande sessionen ändrades inte.');
+    if (args.includes('--cloud-storage')) console.log('Molnlagring väljs bara vid en ny start. Den körande sessionen ändrades inte.');
     return;
   }
   if (running) throw new Error(`Port ${profile.labPort} används av ett annat labb. Stoppa dess startprocess först; ingen process stängs automatiskt.`);
   const studioDataDir = defaultDataDir;
   const fixture = await startIsolatedConnection({ ...profile, studioDataDir, streamLane: profile.id,
     astridCamera: args.includes('--astrid-camera'),
+    cloudStorage: args.includes('--cloud-storage'),
     prepare: async session => {
       await prepareProject(studioDataDir);
       if (!args.includes('--skip-build')) await buildLab(session);

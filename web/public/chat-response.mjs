@@ -50,6 +50,7 @@ export async function readChatResponse(response, onProgress = () => {}, onPrevie
 }
 
 export function chatFailureMessage(reason = '') {
+  if (reason === 'generated_speech_daily_budget_exhausted') return 'Dagens budget för läppsynk är nådd. Nya röstsvar blir tillgängliga nästa dag.';
   if (reason === 'hidden') return 'Uppspelningen avbröts när du bytte flik.';
   if (reason === 'muted') return 'Slå på ljudet för att höra Astrids svar.';
   if (/stale|^stale:/.test(reason)) return 'Bordet eller profilen ändrades. Skicka frågan igen.';

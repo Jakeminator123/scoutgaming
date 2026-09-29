@@ -24,6 +24,8 @@ const configuration = () => validateCloudConfig({
   CROUPIER_CLOUD_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1',
   CARTESIA_API_KEY: 'fixture-key', RUNPOD_API_KEY: 'fixture-key',
   CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint',
+  CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '0.50',
+  CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '9.94',
   CROUPIER_SPEECH_STREAM_WORKER_SECRET: workerSecret,
   CROUPIER_SPEECH_STREAM_TICKET_SECRET: ticketSecret,
 });
@@ -44,16 +46,17 @@ test('cloud gateway admits only owned game WebSockets and preserves relay cancel
   const relay = attachSpeechRelay(web, { workerSecret, allowedOrigins: [origin],
     authenticateClient: req => req.headers.cookie === 'player=owner'
       ? authenticate(req) : null, allowClientPCM: true });
+  const sockets = [];
+  let gateway;
+  t.after(async () => {
+    sockets.forEach(ws => ws.terminate()); relay.close();
+    await Promise.all([gateway, web].filter(Boolean).map(server => new Promise(resolve => server.close(resolve))));
+  });
   web.listen(0, '127.0.0.1'); await once(web, 'listening');
-  const gateway = createCloudGateway(configuration(), { labInternalSecret: ticketSecret,
+  gateway = createCloudGateway(configuration(), { labInternalSecret: ticketSecret,
     webPort: web.address().port });
   gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
   const url = `ws://127.0.0.1:${gateway.address().port}`;
-  const sockets = [];
-  t.after(async () => {
-    sockets.forEach(ws => ws.terminate()); relay.close();
-    await Promise.all([gateway, web].map(server => new Promise(resolve => server.close(resolve))));
-  });
   const open = (path, options) => { const ws = connect(url, path, options); sockets.push(ws); return ws; };
   assert.match(await rejected(open('/lipsync-worker', { workerId: 'bad' })), /403/);
   assert.match(await rejected(open('/lipsync-worker', { host: 'bo.example.test',

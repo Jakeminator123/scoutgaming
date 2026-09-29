@@ -62,6 +62,7 @@ test('exact Cartesia PCM becomes the same WAV sent to RunPod and returned with h
   assert.equal(calls[0].headers.authorization, `Bearer ${config().cartesiaApiKey}`);
   assert.equal(calls[0].headers['Cartesia-Version'], '2026-08-14');
   const sent = JSON.parse(calls[1].body);
+  assert.deepEqual(sent.policy, { executionTimeout: 120000, ttl: 180000 }, 'provider-side bounds survive losing the submit response');
   assert.deepEqual(Object.keys(sent.input).sort(), ['crf', 'op', 'preset', 'wav_b64']);
   assert.equal(sent.input.op, 'lipsync');
   const wav = Buffer.from(sent.input.wav_b64, 'base64');

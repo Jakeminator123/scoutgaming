@@ -1,5 +1,29 @@
 # Aktuellt molnläge
 
+## 2026-09-29 — Blob, zon-Neon, kamera och streaming implementerade
+
+Tre underagenter har byggt privat Blob-upload för familjeklipp, separat
+zon-Neon med återställbara molnutkast samt manuell inspelning och rättat
+Terra-val i kamerakontrollen. Molnstart begränsar respektive hemlighet till
+rätt process; lokal molnlagring väljs med `--cloud-storage`. Äldre diskmedia
+och sparad browserkopia bevaras. Familjeindex kräver fortsatt diskbackup.
+60 lagrings-/cloudtester passerar; Chrome-fixture verifierar nio ljud/bildfall
+och mobilchatt. Ett riktigt privat Blob-rundprov passerade och städades.
+Zonschemat är installerat efter separat QA; produkttabellerna är tomma.
+De 22 kandidaternas aktuella hash är kontrollerade: autentiserad förkontroll
+visar 10 redan tillgängliga och 12 saknade. Import och Render-env väntar
+på gemensam koddeploy. Lab-bygge, 524 Lab-tester, full pre-commit och
+fyra-dealer-audit med probe passerar. Alla fyra dealers har spelat två
+rehearsallinjer i följd med inspekterade bilder och komplett slut-event.
+Fysisk mikrofon, verkligt Terra-bildsvar och
+visuell mediaacceptans är inte styrkta av fixturetesterna. Detaljer och
+återstående driftkrav finns i [granskningskvittots rättningsdel](CLOUD-FLOW-ENV-AUDIT-2026-09-29.md).
+`root-orchestrator` har lämnat över parallell Victoria-/streamingkod med
+återanvänd GPU-session, beständig budgetreservation och tydlig köstatus.
+Se [streamingkvittot](LIVE-SPEECH-ACTIVATION-2026-09-29.md). Gemensam push
+samordnas så att kod, env och import följs i samma leverans; aktivering och
+betalt liveprov ägs fortsatt av samordnaren.
+
 ## 2026-09-29 — Granskning av Lissabon-väg, env och Blob
 
 Jakobs bekräftade `/?dealer=astrid&presentation=local` väljer gemensam

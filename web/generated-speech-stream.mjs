@@ -5,6 +5,7 @@ import { isIP } from 'node:net';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
+import { createSpeechSessionManager, sessionReserveMicroUsd } from './generated-speech-session.mjs';
 
 const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -38,10 +39,19 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
   const configuration = { directory: env.CROUPIER_GENERATED_SPEECH_DIR, origin,
     workerSecret: env.CROUPIER_SPEECH_STREAM_WORKER_SECRET, ticketSecret: env.CROUPIER_SPEECH_STREAM_TICKET_SECRET,
     apiKey: env.CARTESIA_API_KEY, voiceId: ASTRID_VOICE_PROFILE.voiceId, modelId: ASTRID_VOICE_PROFILE.modelId };
+  if (cloud) configuration.session = {
+    apiKey: env.RUNPOD_API_KEY, endpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
+    reserveUsd: env.CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD,
+    dailyBudgetUsd: env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD,
+  };
   const secret = v => typeof v === 'string' && v.length >= 32 && v.length <= 2048 && !/\s/.test(v);
+  const sessionConfigured = !cloud || (typeof configuration.session.apiKey === 'string' && configuration.session.apiKey.length > 0
+    && !/\s/.test(configuration.session.apiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(configuration.session.endpointId ?? '')
+    && sessionReserveMicroUsd(configuration.session.reserveUsd) !== null && sessionReserveMicroUsd(configuration.session.dailyBudgetUsd) !== null
+    && sessionReserveMicroUsd(configuration.session.reserveUsd) <= sessionReserveMicroUsd(configuration.session.dailyBudgetUsd));
   const configured = enabled && privateDirectory(configuration.directory) && secret(configuration.workerSecret) && secret(configuration.ticketSecret)
     && configuration.workerSecret !== configuration.ticketSecret
-    && typeof configuration.apiKey === 'string' && configuration.apiKey.length > 0 && !/\s/.test(configuration.apiKey);
+    && typeof configuration.apiKey === 'string' && configuration.apiKey.length > 0 && !/\s/.test(configuration.apiKey) && sessionConfigured;
   return { enabled, configured, configuration };
 }
 
@@ -50,7 +60,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
  * browser attachment. Normal HTTP result completion does not own this lifetime.
  */
 export async function createGeneratedSpeechStreamService(server, configuration, {
-  resolveOwner, attachRelay, pcmSource,
+  resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager,
   freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000,
 } = {}) {
   if (!privateDirectory(configuration?.directory) || typeof resolveOwner !== 'function') fail('generated_speech_stream_not_configured');
@@ -66,7 +76,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   const mark = (record, stage, ms) => {
     try { record.input.onTiming?.(stage, ms); } catch { /* Telemetry cannot affect paid work. */ }
   };
-  let relay;
+  let relay, sessionManager;
   const forget = record => {
     clearTimeout(record.deadline); clearInterval(record.monitor);
     record.input.signal?.removeEventListener('abort', record.externalAbort);
@@ -85,6 +95,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   };
   relay = attach(server, {
     workerSecret, allowedOrigins: [origin], maxAudioSeconds: 25, allowClientPCM: false,
+    ...(configuration.session ? { maxWorkers: 1, maxSessions: 1 } : {}),
     onFirstMedia(identity) {
       const record = records.get(identity.sessionId);
       if (record?.streamStartedAt) mark(record, 'worker_first_media_ms', Math.round(performance.now() - record.streamStartedAt));
@@ -142,6 +153,9 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       } catch { cancel(record); throw Error('Speech source unavailable'); }
     },
   });
+  sessionManager = suppliedSessionManager ?? (configuration.session ? createSpeechSessionManager({
+    ...configuration.session, directory, workerSecret, origin,
+  }, { workerState: id => id ? relay.workerStatus(id) : relay.status() }) : null);
   async function reserve(input, key, fingerprint) {
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const info = await lstat(directory);
@@ -172,11 +186,16 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       current(); await input.beforeCostly(); current();
       const key = digest(`${digest(input.owner)}\0${input.requestId}`), fingerprint = digest(JSON.stringify([input.text, configuration.voiceId, configuration.modelId]));
       // Never silently fall back to a paid full-file job on unavailable capacity.
-      if (!relay.status().available) fail('generated_speech_stream_worker_unavailable', 503);
+      if (!sessionManager && !relay.status().available) fail('generated_speech_stream_worker_unavailable', 503);
       if (records.size >= 32) fail('generated_speech_stream_busy', 429);
       if (owners.has(input.owner)) cancel(owners.get(input.owner));
       await reserve(input, key, fingerprint);
       current(); await input.beforeCostly(); current();
+      if (sessionManager) {
+        await sessionManager.ensure({ signal: input.signal, beforeCostly: async () => { current(); await input.beforeCostly(); current(); } });
+        current(); await input.beforeCostly(); current();
+        if (!relay.status().available) fail('generated_speech_stream_worker_unavailable', 503);
+      }
       const id = randomBytes(16).toString('hex'), controller = new AbortController(), issuedAt = Date.now(), expiresAt = issuedAt + ticketLifetimeMs;
       const descriptor = { schemaVersion: 1, kind: 'generated-speech-stream', id, requestId: input.requestId, dealerId: 'astrid', exactText: input.text,
         textSha256: digest(input.text), reviewStatus: 'pending', url: '/speech-stream',
@@ -195,6 +214,6 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     },
     cancelOwner(owner) { preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); },
     cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) preparations.delete(owner); for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
-    close() { preparations.clear(); for (const record of [...records.values()]) cancel(record); relay.close(); },
+    close() { preparations.clear(); for (const record of [...records.values()]) cancel(record); relay.close(); return sessionManager?.close(); },
   };
 }

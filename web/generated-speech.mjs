@@ -51,7 +51,10 @@ function configuration(env) {
         && !url.hostname.endsWith('.local') && url.hostname !== 'localhost';
     } catch { /* Invalid cloud origins cannot enable paid generation. */ }
   }
-  const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview);
+  // Managed cloud conversations must use the session cost ledger. A legacy
+  // client or Probe may not bypass it by asking for an unbudgeted file job.
+  const managedStreaming = cloudPreview && env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
+  const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview) && !managedStreaming;
   const value = { directory: env.CROUPIER_GENERATED_SPEECH_DIR,
     cartesiaApiKey: env.CARTESIA_API_KEY,
     runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,

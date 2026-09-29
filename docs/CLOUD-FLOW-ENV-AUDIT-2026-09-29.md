@@ -7,7 +7,74 @@ Utgångspunkt: `e0dc37fb` och Jakobs bekräftade speladress
 Detta är ett granskningskvitto, inte ett godkännande av hela tal-/bildkedjan.
 Inga hemlighetsvärden har skrivits i rapporten.
 
-## Slutsats
+## Rättning efter granskningen, 29 september cirka 10:10 CEST
+
+Tre underagenter har implementerat och korsgranskat följande. Kodens
+driftaktivering och den riktiga variantimporten är ännu separata steg.
+
+- Privat Blob-adapter för Lab-familjeupload och samma registerläsare i
+  produktspelaren. Upload följs av hashkontrollerad återläsning innan
+  metadata publiceras; GET/HEAD/Range kräver ordinarie behörighet. Gamla
+  diskfiler fungerar parallellt. Familjeindex ligger fortsatt på Render-disk.
+- Zon-API med exakt klippmåttskontroll, privat Blob och enbart separat
+  `CROUPIER_ZONES_DATABASE_URL`. Molnutkast, originalets browserkopia och
+  lyckade deluppladdningars ID:n bevaras. Versionskontroll stoppar överskrivning
+  från en gammal flik. Se [zonlagringen](ZONE-CLOUD-STORAGE.md).
+- Manuell enstaka mikrofoninspelning när lokalt väckord saknas, samt rättad
+  kamerakontroll som använder det aktuella Terra-valet. Inga ändringar av
+  spelarens samtycke eller automatiskt molnväckord. Tidig Lissabon-CSS håller
+  chatten synlig. Se [browser- och testkvittot](ASTRID-INPUT-FIX-2026-09-29.md).
+- Molnstartens env-kontrakt vidarebefordrar Blob till Web och Lab, men zon-DB
+  bara till Lab. Lokal `--cloud-storage` är explicit opt-in. Den gamla lokala
+  RunPod-endpointöverskuggningen är rättad; den lokala RunPod-nyckeln är ännu tom.
+
+Verifierat: 60 lagrings-/cloudintegrationstester, Lab-produktionsbygge och
+hela Lab-svitens 524 tester passerar. Full pre-commit och dealer-audit med
+probe passerar också (ett plattformsbundet hooktest hoppas över på Windows).
+Browserprovet
+använde riktig Chrome-DOM, AudioWorklet/WAV och JPEG med syntetiska enheter
+och providerstubbar: nio fall passerade, inklusive Terra-byte efter laddning,
+två manuella meddelanden och synlig mobilchatt i 390 px. Det är inte ett
+fysiskt mikrofonprov eller ett riktigt Terra-svar.
+
+Alla fyra dealers provades därefter via riktiga `?dealer=<namn>&rehearsal=1`:
+två kompletta `goodluck`-uppspelningar var gav playing → ended. Astrid använde
+MP4 med inbäddat ljud; övriga matchade indexklipp. Åtta bilder från de två
+uppspelningarna har inspekterats utan tom eller bortfallen dealerbild.
+Testet använde sessionsvakten, egen tillfällig databas och inga providers;
+processer och tillfällig data städades. Detta är regressionskontroll,
+inte en ny läppsynkacceptans av inspelningarna.
+
+Samordnarens parallella [streamingimplementation](LIVE-SPEECH-ACTIVATION-2026-09-29.md)
+ingår i samma leverans: återanvänd GPU-session, beständig kostnadsreservation,
+WebSocket-beroende i Docker, tydlig köstatus och budgetbesked. Molnkonfigurationen
+kräver separat sessionsreserv/dagbudget och skickar dessa enbart till Web.
+Websocketfixture har uppdaterats och städar servern även om configvalidering
+misslyckas; båda testerna passerar. Ingen streamingflagga eller betald
+GPU-session har aktiverats av denna granskare.
+
+Riktigt privat Blob-prov 10:08 CEST: syntetisk MP4 om 1 587 byte gav identisk
+SHA efter upload, GET och hämtning till ny cache; HEAD och Range 206 fungerade.
+Anonym direktåtkomst gav 403. Endast det nya testobjektet togs bort och
+borttagningen återlästes. Inga riktiga familjeposter skapades av provet.
+
+Dedikerade zon-Neon `wandering-hill-60561912`: schemat provades först på
+`codex-zone-storage-qa` (`br-soft-base-b1z5814s`), inklusive revision 1 → 2
+och avvisat gammalt revisionsnummer. Därefter installerades samma schema i
+main `br-flat-fog-b161a6r8`; både `clips` och `documents` är tomma.
+QA-compute suspenderades. Inga spelkonton eller saldon berördes.
+
+De 22 kandidaterna har hashkontrollerats igen: 111 508 277 byte,
+inga ändringar sedan inventeringen. Autentiserad läsande importförkontroll
+visade att 10 redan finns med rätt familj/hash och är tillgängliga, medan
+12 saknas. Ingen av de 22 är i Blob ännu. Inga uploads gjordes av förkontrollen.
+Adminåtkomsten fungerar efter uttryckligen godkänd privat engångskopia.
+Gemensam koddeploy och Render-env krävs före import till nya Blob-vägen.
+Nyckelvärden finns endast i privata Git-ignorerade filer och leverantörernas
+hemlighetshantering. Texten nedan beskriver den ursprungliga granskningen
+före dessa rättningar och ska läsas som historiskt utgångsläge.
+
+## Slutsats vid initial granskning
 
 Alla miljöer är inte likvärdigt eller fullständigt inkopplade. Den bekräftade
 speladressen väljer den gemensamma Lab/Lissabon-presentationen på Render.

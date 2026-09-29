@@ -42,7 +42,10 @@ async function fixture(t, options = {}) {
 test('forwards first media before input end; server owns ids; releases worker after done', { timeout: 5000 }, async t => {
   const f = await fixture(t);
   const w = f.worker(), fromWorker = messages(w); await once(w, 'open');
+  assert.deepEqual(f.relay.workerStatus('worker-0'), { workers: 1, busy: 0, available: 1 });
+  assert.deepEqual(f.relay.workerStatus('another-worker'), { workers: 0, busy: 0, available: 0 });
   const c = f.client(), fromClient = messages(c); const ready = await fromClient();
+  assert.deepEqual(f.relay.workerStatus('worker-0'), { workers: 1, busy: 1, available: 0 });
   c.send(JSON.stringify({ t: 'start', id: 'attacker-id', rate: 24000, protocol: 2 }));
   assert.deepEqual(await fromWorker(), { t: 'start', id: ready.id, rate: 24000, protocol: 2 });
   const pcm = Buffer.alloc(4800, 4); c.send(pcm); assert.deepEqual(await fromWorker(), pcm);

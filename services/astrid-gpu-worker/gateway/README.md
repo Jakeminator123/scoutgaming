@@ -1,8 +1,11 @@
 # Streaming relay and browser reference
 
-This is an isolated implementation for the new GPU worker protocol. **Current
-Croupier does not use this service or player yet.** No Render service or paid
-GPU worker is created by these files.
+The relay and shared player are integrated into Croupier behind explicit
+streaming flags. Production activation and real GPU streaming verification are
+still pending as of 2026-09-29. The standalone server below does not create a
+Render service or launch a paid GPU worker. See
+[`docs/STREAMING-INTEGRATION.md`](../../../docs/STREAMING-INTEGRATION.md)
+and the application's activation receipt for current deployment status.
 
 ## Run
 
@@ -136,7 +139,12 @@ ownership/round check belongs in `beforeCostly`. Keep voice/model values tied
 to the existing server voice profile. This removes full-audio buffering but
 does not itself stream incomplete LLM text.
 
-## Current Croupier integration touchpoints (read-only inspection)
+## Historical Croupier integration touchpoints (initial read-only inspection)
+
+The list below records the original pre-integration audit. Application-side
+stream descriptors, authenticated relay attachment and shared-player handling
+have since been implemented. Consult the current integration document linked
+above before using this list as remaining work.
 
 - `web/generated-speech-provider.mjs`: `createGeneratedSpeechProvider` currently
   buffers `/tts/bytes`, makes a WAV, submits RunPod `/run`, polls `/status` and

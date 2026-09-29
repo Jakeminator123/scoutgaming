@@ -24,6 +24,33 @@ const fixture = () => ({
 });
 const LAB_SECRET = '0123456789abcdef'.repeat(4);
 
+test('private media credentials reach both servers; scoped zones database reaches only Lab', () => {
+  const env = { ...fixture(), CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-private-blob-token',
+    CROUPIER_ZONES_DATABASE_URL: 'postgresql://zones:fixture-password@zones.neon.tech/neondb?sslmode=require',
+    DATABASE_URL: 'postgresql://game:never-forward@game.example/game', NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN: 'never-forward' };
+  const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+  for (const server of [specs.web, specs.lab]) {
+    assert.equal(server.env.CROUPIER_MEDIA_STORAGE, 'blob');
+    assert.equal(server.env.BLOB_READ_WRITE_TOKEN, env.BLOB_READ_WRITE_TOKEN);
+    assert.equal(server.env.DATABASE_URL, undefined);
+    assert.equal(server.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN, undefined);
+  }
+  assert.equal(specs.web.env.CROUPIER_ZONES_DATABASE_URL, undefined);
+  assert.equal(specs.lab.env.CROUPIER_ZONES_DATABASE_URL, env.CROUPIER_ZONES_DATABASE_URL);
+  const inactive = childSpecifications(validateCloudConfig({ ...fixture(), BLOB_READ_WRITE_TOKEN: 'staged-not-active' }), {}, { labInternalSecret: LAB_SECRET });
+  assert.equal(inactive.web.env.CROUPIER_MEDIA_STORAGE, 'disk');
+  assert.equal(inactive.web.env.BLOB_READ_WRITE_TOKEN, undefined);
+  assert.equal(inactive.lab.env.CROUPIER_ZONES_DATABASE_URL, undefined);
+  for (const change of [
+    { BLOB_READ_WRITE_TOKEN: '' }, { CROUPIER_MEDIA_STORAGE: 'public' },
+    { CROUPIER_MEDIA_STORAGE: 'disk' },
+    { CROUPIER_ZONES_DATABASE_URL: 'https://zones.example.test/database' },
+    { CROUPIER_ZONES_DATABASE_URL: 'postgresql://zones:secret@zones.neon.tech/neondb' },
+  ]) {
+    assert.throws(() => validateCloudConfig({ ...env, ...change }), /Invalid or missing/);
+  }
+});
+
 test('player registration is opt-in and reaches only the Web child', () => {
   for (const value of ['', '0', '1']) {
     const env = { ...fixture(), CROUPIER_PLAYER_ACCOUNTS: value };
@@ -152,19 +179,29 @@ test('streaming secrets and switch reach Web only after explicit paid speech opt
     CROUPIER_GENERATED_SPEECH_STREAMING: '1', CARTESIA_API_KEY: 'fixture-cartesia',
     RUNPOD_API_KEY: 'fixture-runpod', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint',
     CROUPIER_SPEECH_STREAM_WORKER_SECRET: 'fixture-worker-secret-longer-than-32-characters',
-    CROUPIER_SPEECH_STREAM_TICKET_SECRET: 'fixture-ticket-secret-longer-than-32-characters' };
+    CROUPIER_SPEECH_STREAM_TICKET_SECRET: 'fixture-ticket-secret-longer-than-32-characters',
+    CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '0.25', CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '9.94' };
   const config = validateCloudConfig(env);
   const specs = childSpecifications(config, env, { labInternalSecret: LAB_SECRET });
   assert.equal(config.streaming, true);
   assert.equal(specs.web.env.CROUPIER_GENERATED_SPEECH_STREAMING, '1');
   assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_WORKER_SECRET, env.CROUPIER_SPEECH_STREAM_WORKER_SECRET);
   assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_TICKET_SECRET, env.CROUPIER_SPEECH_STREAM_TICKET_SECRET);
+  assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD, '0.25');
+  assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD, '9.94');
   for (const name of ['CROUPIER_GENERATED_SPEECH_STREAMING', 'CROUPIER_SPEECH_STREAM_WORKER_SECRET',
-    'CROUPIER_SPEECH_STREAM_TICKET_SECRET']) assert.equal(specs.lab.env[name], undefined);
+    'CROUPIER_SPEECH_STREAM_TICKET_SECRET', 'CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD', 'CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD']) assert.equal(specs.lab.env[name], undefined);
   for (const change of [
     { CROUPIER_GENERATED_SPEECH: '0' }, { CROUPIER_SPEECH_STREAM_WORKER_SECRET: '' },
     { CROUPIER_SPEECH_STREAM_TICKET_SECRET: env.CROUPIER_SPEECH_STREAM_WORKER_SECRET },
   ]) assert.throws(() => validateCloudConfig({ ...env, ...change }));
+  for (const value of ['', '0', '-1', '10.01', 'Infinity', '1e-2', ' 0.25', '0.0000001']) {
+    assert.throws(() => validateCloudConfig({ ...env, CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: value }), /CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD/);
+  }
+  for (const value of ['0.000001', '10']) assert.equal(validateCloudConfig({ ...env, CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: value, CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '10' }).streamSecrets.sessionReserveUsd, value);
+  for (const value of ['', '0', '-1', '10.01', 'NaN', '0.20']) {
+    assert.throws(() => validateCloudConfig({ ...env, CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: value }), /CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD/);
+  }
 });
 
 test('disk preflight accepts its actual directory despite Windows path casing', async () => {

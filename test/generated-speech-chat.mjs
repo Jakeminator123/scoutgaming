@@ -58,11 +58,13 @@ test('recorded lines and other dealers do not enter generated preview', async ()
 });
 
 test('negotiated stream returns descriptor without falling back to fullfile generation', async () => {
-  const f = fixture(); let prepared = 0;
+  const f = fixture(); let prepared = 0; const progress = [];
+  f.data.onProgress = stage => progress.push(stage);
   f.data.streamService = { prepare: async value => { await value.beforeCostly(); prepared++; return { kind: 'generated-speech-stream' }; } };
   const result = await completeChatWithSpeech(f.data);
   assert.equal(result.visualMode, 'generated-lipsync-stream-preview'); assert.ok(result.speechStream);
   assert.equal(prepared, 1); assert.equal(f.jobs, 0);
+  assert.deepEqual(progress, ['text', 'video-queue', 'ready']);
   f.data.streamService.prepare = async () => { throw Error('worker unavailable'); };
   await assert.rejects(completeChatWithSpeech(f.data), /worker unavailable/); assert.equal(f.jobs, 0);
 });

@@ -359,6 +359,61 @@ test('separate private speech file supplies the scoped endpoint after the base f
   assert.equal(overridden.configuration.speechEndpointId, 'explicit-process-override');
 });
 
+test('cloud storage needs explicit opt-in and forwards each credential only to its consuming server', async t => {
+  const blob = 'vercel_blob_rw_FixtureStore_fixtureSecret';
+  const database = 'postgresql://fixture:private-password@ep-fixture.eu-central-1.aws.neon.tech/zones?sslmode=require';
+  const values = { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: blob, CROUPIER_ZONES_DATABASE_URL: database,
+    VERCEL_BLOB_API_URL: 'https://untrusted.example', BLOB_API_URL: 'https://untrusted.example', NEXT_PUBLIC_VERCEL_BLOB_API_URL: 'https://untrusted.example' };
+  const file = await privateFixture(t, values);
+  const disabled = loadPrivateConnection({ envFiles: [file], env: values });
+  const disabledChildren = childSpecifications(disabled.configuration, join(tmpdir(), 'croupier-storage-disabled'));
+  for (const child of [disabledChildren.product, disabledChildren.lab]) {
+    assert.equal(child.env.CROUPIER_MEDIA_STORAGE, 'disk');
+    assert.equal(child.env.BLOB_READ_WRITE_TOKEN, ''); assert.equal(child.env.CROUPIER_ZONES_DATABASE_URL, '');
+    assert.deepEqual(JSON.parse(child.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), []);
+  }
+  const active = loadPrivateConnection({ envFiles: [file], env: values, cloudStorage: true });
+  const children = childSpecifications(active.configuration, join(tmpdir(), 'croupier-storage-enabled'));
+  for (const child of [children.product, children.lab]) {
+    assert.equal(child.env.CROUPIER_MEDIA_STORAGE, 'blob'); assert.equal(child.env.BLOB_READ_WRITE_TOKEN, blob);
+    assert.equal(child.env.VERCEL_BLOB_API_URL, undefined);
+    assert.equal(child.env.BLOB_API_URL, undefined); assert.equal(child.env.NEXT_PUBLIC_VERCEL_BLOB_API_URL, undefined);
+    const origins = JSON.parse(child.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS);
+    assert.ok(origins.includes('https://vercel.com')); assert.ok(origins.includes('https://fixturestore.private.blob.vercel-storage.com'));
+    assert.ok(!origins.some(origin => origin.includes('*') || origin.includes('untrusted')));
+  }
+  assert.equal(children.product.env.CROUPIER_ZONES_DATABASE_URL, '');
+  assert.equal(children.lab.env.CROUPIER_ZONES_DATABASE_URL, database);
+  assert.ok(!JSON.parse(children.product.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS).includes('https://api.eu-central-1.aws.neon.tech'));
+  assert.ok(JSON.parse(children.lab.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS).includes('https://api.eu-central-1.aws.neon.tech'));
+  const serialized = JSON.stringify(active);
+  assert.ok(!serialized.includes(blob)); assert.ok(!serialized.includes(database)); assert.ok(!serialized.includes('private-password'));
+  assert.deepEqual(active.report.cloudStorage, { enabled: true, mode: 'blob', blobCredentialPresent: true, zonesDatabasePresent: true });
+  assert.equal(parseCli(['--check', '--cloud-storage']).cloudStorage, true);
+});
+
+test('dedicated private cloud storage file is loaded last only after explicit opt-in; process environment wins', async t => {
+  const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-storage-order-'));
+  t.after(() => rm(repoRoot, { recursive: true, force: true })); await mkdir(join(repoRoot, 'lab'));
+  await writeFile(join(repoRoot, '.env'), 'CROUPIER_MEDIA_STORAGE=blob\nBLOB_READ_WRITE_TOKEN=vercel_blob_rw_OldStore_fixture\n');
+  await writeFile(join(repoRoot, 'lab', '.env.cloud-storage.local'), 'CROUPIER_MEDIA_STORAGE=blob\nBLOB_READ_WRITE_TOKEN=vercel_blob_rw_CurrentStore_fixture\n');
+  assert.equal(loadPrivateConnection({ repoRoot, env: {} }).configuration.blobToken, '');
+  const selected = loadPrivateConnection({ repoRoot, env: {}, cloudStorage: true });
+  assert.equal(selected.configuration.blobToken, 'vercel_blob_rw_CurrentStore_fixture');
+  assert.equal(loadPrivateConnection({ repoRoot, env: { BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_Explicit_fixture' }, cloudStorage: true }).configuration.blobToken, 'vercel_blob_rw_Explicit_fixture');
+});
+
+test('cloud storage rejects non-Neon database hosts, unsafe credentials and implicit boolean opt-in', () => {
+  const valid = { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_Fixture_fixture' };
+  assert.throws(() => loadPrivateConnection({ envFiles: [], env: valid, cloudStorage: 'true' }), /boolean opt-in/);
+  for (const extra of [{ CROUPIER_MEDIA_STORAGE: 'disk' }, { BLOB_READ_WRITE_TOKEN: 'arbitrary-token' },
+    { BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_untrusted.example_secret' },
+    { CROUPIER_ZONES_DATABASE_URL: 'postgresql://u:p@localhost/zones?sslmode=require' },
+    { CROUPIER_ZONES_DATABASE_URL: 'postgresql://u:p@ep-fixture.neon.tech/zones' }]) {
+    assert.throws(() => loadPrivateConnection({ envFiles: [], env: { ...valid, ...extra }, cloudStorage: true }), /cloud-storage|CROUPIER_ZONES_DATABASE_URL/);
+  }
+});
+
 test('default launcher ignores inherited and file speech credentials and leaves provider origins blocked', async t => {
   const values = {
     CARTESIA_API_KEY: 'fixture-cartesia-disabled', ELEVENLABS_API_KEY: 'fixture-elevenlabs-disabled', ELEVENLABS_OC_API: 'fixture-elevenlabs-alias-disabled',

@@ -33,9 +33,71 @@ skickas till webbläsaren. Det tidigare, tomma och publika
 `croupier-zone-videos` (`store_zPcBQklQ3j9eWwOb`) raderades innan något
 klipp lades upp.
 
-## Aktuellt sparläge
+## Implementerat 2026-09-29, Render-aktivering och liveprov återstår
 
-Labbet på `/zones` sparar fortfarande zonernas JSON i webbläsarens
+Labbet har nu ett riktigt, skyddat molnflöde för zoner. **Spara till molnet**
+laddar upp lokala MP4-/WebM-klipp genom `/api/zones/clips`, kontrollerar den
+verkliga pixelstorleken med `ffprobe`, sparar privat Blob-media och skriver
+zonkonfigurationen till det separata Neon-schemat `croupier_zones`.
+**Läs från molnet** hämtar sparad konfiguration och öppnar en separat molnvy.
+**Till webbläsarkopian** återgår till tidigare lokal geometri och klipp.
+Ingen automatisk migration eller ersättning av browserlagringen sker.
+Osparade molnändringar och ursprungsrevision sparas som ett separat lokalt
+molnutkast och återställs med **Återställ molnutkast**, även utan molnanslutning.
+Geometri, export och lokalt bevarade utkastklipp kan användas frånkopplat;
+en ny molnsparning kräver anslutning. Varje lyckad
+klippuppladdnings ID sparas direkt, så ett senare uppladdningsfel eller
+versionsfel inte tvingar om samma klipp till nya Blob-objekt vid nästa försök.
+Ändringar i molnvyn kräver en uttrycklig sparning. Sparningen ersätter de
+tidigare molnkoordinaterna och stoppar med HTTP 409 vid versionskonflikt.
+
+Servern behöver `CROUPIER_MEDIA_STORAGE=blob`, `BLOB_READ_WRITE_TOKEN` och
+**endast** `CROUPIER_ZONES_DATABASE_URL` för zonernas databas. Om de saknas
+fortsätter browserläget och molnsparning visar ett tydligt fel. Det finns ingen
+fallback till generiska `DATABASE_URL`/`POSTGRES_URL` eller speldata.
+Schemat finns i [`lab/lib/zone-cloud-schema.sql`](../lab/lib/zone-cloud-schema.sql)
+och installeras uttryckligen i den separata zondatabasen; appstart eller
+uppladdning utför inga automatiska schemaändringar. Använd direktanslutning
+för schemaaktivering och poolad anslutning för applikationens HTTP-driver.
+
+Alla zon-API använder samma Lab-behörighets- och origin-kontroll som övriga
+skyddade Lab-routes. Videoläsning sker genom `/api/zones/clips/:id` med
+GET/HEAD/Range och privat cachekontroll. Inga Blob-direktlänkar eller
+hemligheter lämnas till klienten. Uppladdning begränsas till 64 MiB per klipp,
+MP4/WebM och exakt zonstorlek inom Astrids 1080 × 1920-bildyta. Fel vid den nya
+klippradens DB-skrivning rullar tillbaka just det nya Blob-objektet. Tidigare
+molnklipp raderas inte när zoner ändras eller tas bort.
+
+Verifierat i lokala isolerade tester: autentiserings-/originskydd, korrekt
+DB-val, schema, två Range-läsningar och HEAD genom den gemensamma privata
+Blob-adaptern, sparning/återläsning med versionskonflikt, saknade klipp,
+fel mått, rollback, Render-proxyns origin och bevarad browserkopia. Faktisk `ffmpeg`/`ffprobe`
+skapade och kontrollerade små MP4-/WebM-fixtures. 13 tester och TypeScript
+passerade. DB- och Blob-tjänsterna var testdubblar: dessa resultat är **inte**
+ett kvitto på driftaktivering eller autentiserad liveuppladdning. Inga
+befintliga klipp, live-resurser, env eller speluppspelning ändrades i detta steg.
+Zonerna är fortfarande en Lab-förhandsvisning; inkoppling i spelet är separat.
+
+### Verifierad schemaaktivering i dedikerad Neon
+
+Samordnaren verifierade därefter den 29 september det dedikerade zonprojektet
+`wandering-hill-60561912`. Schemat provades först på QA-grenen
+`br-soft-base-b1z5814s`: sparning och uppdatering gav revision **1 → 2**,
+och en uppdatering med en gammal revision ändrade **0 rader**. Detta
+bekräftar databasens versionsskydd med riktiga SQL-anrop. QA-endpointen
+är suspenderad efter kontrollen.
+
+Efter QA installerades schemat på huvudgrenen `br-flat-fog-b161a6r8`.
+Tabellerna `croupier_zones.clips` och `croupier_zones.documents` verifierades
+som **tomma** efter installationen. Inga användarzoner importerades och ingen
+spel- eller Preview-databas användes för dessa schemaändringar.
+Render-miljöns aktivering och autentiserat upload → spara → återläs → spela
+upp i den faktiska Lab-sessionen återstår. Schemakvittot ersätter inte det
+fullständiga driftprovet.
+
+## Föregående sparläge och redan befintliga filer
+
+Före molnimplementationen sparade Labbet på `/zones` zonernas JSON i webbläsarens
 `localStorage` och själva klippen i IndexedDB. Skapade molnresurser ger
 **inte** automatisk synkronisering. Efter Jakobs uttryckliga godkännande
 laddades den anpassade manvideon från
@@ -51,7 +113,7 @@ stoppades av automatisk godkännandegranskning. Den senare uppladdningen skedde
 först efter Jakobs uttryckliga godkännande och efter att ett privat lager
 skapats. Inga filer publicerades öppet.
 
-Nästa kodsteg är ett skyddat Lab-API som tar emot zonkonfiguration och
+Det identifierade kodsteget var ett skyddat Lab-API som tar emot zonkonfiguration och
 klipp, validerar pixelmått och klipptyp, laddar upp klipp till Blob och
 lagrar en liten JSON-konfiguration med Blob-sökväg i den dedikerade databasen.
 Labbet ligger nu på Render/lokalt, så en Vercel-projektkoppling ger inte

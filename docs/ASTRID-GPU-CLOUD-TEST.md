@@ -1,5 +1,28 @@
 # Astrid: molnströmning, konfiguration och GPU-prov
 
+## Samtalsaktivering — 2026-09-29
+
+Jakob vill kunna föra löpande samtal med Victoria och strömmad läppsynk.
+Ett föreslaget tak på fem genereringar per dag avvisades innan leverans.
+Den befintliga privata imagen och egna endpointen återanvänds; automatisk
+sessionsstart och en beständig reservation av GPU-budget implementeras nu.
+Ingen ny betald körning gjordes under denna förberedelse.
+
+RunPods inloggade endpointvy bekräftade kl. 10:09 CEST: RTX 4090/24 GB Pro
+1,10 USD/timme, en GPU, max en worker, noll alltid aktiva, idle 5 s,
+execution timeout 600 s, FlashBoot av, noll pågående/köade jobb och saldo
+29,94 USD. [Prislistan](https://www.runpod.io/pricing) anger samma GPU-pris.
+[Faktureringsreglerna](https://docs.runpod.io/serverless/pricing) inkluderar
+modellstart, exekvering, idle och containerlagring. En applikationsreservation
+är inte en kontoomfattande spärr för andra jobb eller ändrade priser.
+
+Den planerade reservationen är 0,50 USD per avgränsad session, som kan
+återanvändas för flera svar. Tillgänglig dagsbudget sätts konservativt till
+9,94 USD efter dagens tidigare cirka 0,06 USD. Flaggor och runtimeprov
+redovisas i [aktiveringskvittot](LIVE-SPEECH-ACTIVATION-2026-09-29.md).
+Kallstart och verklig första bild måste fortfarande mätas; det tidigare
+filbaserade talprovet på cirka 52 sekunder bevisar inte realtimeprestanda.
+
 **Uppdaterat 2026-09-29. Imagen är publicerad privat i GHCR, en separat
 RunPod-testendpoint är Ready. Ett riktigt kort Cartesia-talprov har nu
 skapat GPU-video; läppsynk och molnströmning är ännu inte godkända.** Källan ligger kvar i `services/astrid-gpu-worker` i

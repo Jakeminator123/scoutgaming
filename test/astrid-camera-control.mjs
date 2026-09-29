@@ -78,10 +78,11 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
   const click = node => node.onclick(event());
   const fire = delay => { const entry = [...timers].find(([, timer]) => timer.delay === delay); assert.ok(entry, `missing ${delay} ms timer`); timers.delete(entry[0]); entry[1].fn(); };
   const start = async () => { await tick(); click(record); click(find('Enable voice')); await tick(); await tick(); };
+  const startManual = async () => { await tick(); click(record); click(find('Record one message')); await tick(); await tick(); };
   const wake = async () => { const instance = wakes.at(-1); assert.equal(instance.options.canWake(), true); instance.stop(); instance.options.onWake(); await tick(); };
   const sample = (speaking, at) => recorders.at(-1).options.onSample({ speaking, at, rms: speaking ? 0.1 : 0 });
   const pause = () => { sample(true, 100); sample(true, 200); sample(false, 300); sample(false, 1450); };
-  return { root, control, play, record, dialog, debug, find, click, start, wake, sample, pause, fire, wakes, recorders, requests, streams, uploads, sent, listeners, logToggles, playbackPromises, recognitions,
+  return { root, control, play, record, dialog, debug, find, click, start, startManual, wake, sample, pause, fire, wakes, recorders, requests, streams, uploads, sent, listeners, logToggles, playbackPromises, recognitions,
     status: () => all(root).find(node => node.attributes.role === 'status').textContent,
     log: () => all(root).find(node => node.tag === 'pre').textContent,
     activity: () => activity, configReads: () => configReads, playbackToggles: () => playbackToggles,
@@ -238,6 +239,127 @@ test('wake failure cannot fall back to direct/cloud recording or loop retries', 
   const h = harness({ wakeStart: instance => { instance.options.onError(Object.assign(new Error('private'), { code: 'network' })); return false; } });
   try { await h.start(); assert.equal(h.requests.length, 0); assert.equal(h.control.active, false); assert.equal(h.wakes.length, 1); assert.match(h.status(), /Local wake-word recognition failed/); }
   finally { h.restore(); }
+});
+
+test('wake failure offers manual recording but waits for a separate informed click', async () => {
+  const h = harness({ wakeStart: () => false });
+  try {
+    await h.start();
+    assert.equal(h.control.active, false); assert.equal(h.requests.length, 0); assert.equal(h.uploads.length, 0);
+    assert.equal(h.dialog.hidden, false);
+    assert.ok(all(h.dialog).some(node => node.textContent.includes('without a wake word')));
+    h.click(h.find('Record one message')); await tick(); await tick();
+    assert.equal(h.wakes.length, 1, 'manual recording must not construct another recognizer');
+    assert.equal(h.recorders.at(-1).options.preRollMs, 0);
+    assert.equal(h.recorders.at(-1).activated, true);
+    h.pause(); await tick();
+    assert.equal(h.uploads.length, 1); assert.equal(h.sent.length, 1);
+    assert.equal(h.control.active, false); assert.equal(h.control.busy, false);
+    assert.ok(h.streams.every(stream => stream.getTracks().every(track => track.stopped)));
+  } finally { h.restore(); }
+});
+
+test('two explicit manual messages use Whisper and camera once each without wake or automatic rearming', async () => {
+  const h = harness();
+  try {
+    await h.startManual();
+    for (let turn = 1; turn <= 2; turn++) {
+      assert.equal(h.wakes.length, 0); assert.equal(h.control.busy, true);
+      h.pause(); await tick();
+      assert.equal(h.uploads.length, turn); assert.equal(h.sent.length, turn);
+      assert.equal(h.sent.at(-1).images.length, 1); assert.equal(h.sent.at(-1).message, 'Hello Astrid');
+      assert.equal(h.uploads.at(-1).headers['X-Astrid-Language'], 'auto');
+      assert.ok(h.uploads.at(-1).body.every(value => value === 0));
+      assert.equal(h.control.active, false); assert.equal(h.control.busy, false);
+      assert.ok(h.streams.every(stream => stream.getTracks().every(track => track.stopped)));
+      if (turn === 1) { h.click(h.record); await tick(); await tick(); }
+    }
+  } finally { h.restore(); }
+});
+
+test('an early explicit manual recording continues after configuration arrives; wake still needs a fresh gesture', async () => {
+  for (const manual of [true, false]) {
+    let resolve;
+    const configuration = new Promise(done => { resolve = done; });
+    const h = harness({ configFetch: () => configuration });
+    try {
+      h.click(h.record); h.click(h.find(manual ? 'Record one message' : 'Enable voice'));
+      assert.equal(h.requests.length, 0); assert.equal(h.control.active, true);
+      h.setConfigFetch(null);
+      resolve({ ok: true, json: async () => ({ enabled: true, profileRevision: 'a'.repeat(64),
+        transcription: { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }, vision: { enabled: true } }) });
+      await tick(); await tick();
+      if (manual) {
+        assert.equal(h.control.active, true); assert.equal(h.control.busy, true);
+        assert.equal(h.requests.length, 2); assert.equal(h.wakes.length, 0); assert.equal(h.recorders[0].activated, true);
+        h.pause(); await tick();
+        assert.equal(h.uploads.length, 1); assert.equal(h.sent.length, 1); assert.equal(h.control.active, false);
+      } else {
+        assert.equal(h.control.active, false); assert.equal(h.requests.length, 0); assert.equal(h.wakes.length, 0);
+        assert.match(h.status(), /Press Record again to enable local listening/);
+        h.click(h.record); assert.equal(h.wakes.length, 1); await tick();
+      }
+    } finally { h.restore(); }
+  }
+});
+
+test('early manual consent cannot outlive cancellation, visibility, identity, turn availability or server disablement', async () => {
+  for (const reason of ['cancel', 'hidden', 'identity', 'occupied', 'disabled']) {
+    let resolve, available = true;
+    const configuration = new Promise(done => { resolve = done; });
+    const h = harness({ configFetch: () => configuration, canStart: () => available });
+    try {
+      h.click(h.record); h.click(h.find('Record one message'));
+      if (reason === 'cancel') h.click(h.record);
+      if (reason === 'hidden') globalThis.document.hidden = true;
+      if (reason === 'identity') h.changeOwner();
+      if (reason === 'occupied') available = false;
+      h.setConfigFetch(null);
+      resolve({ ok: true, json: async () => ({ enabled: reason !== 'disabled', profileRevision: 'a'.repeat(64),
+        transcription: { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }, vision: { enabled: true } }) });
+      await tick(); await tick();
+      assert.equal(h.control.active, false, reason); assert.equal(h.requests.length, 0, reason);
+      assert.equal(h.wakes.length, 0); assert.equal(h.uploads.length, 0); assert.equal(h.sent.length, 0);
+    } finally { h.restore(); }
+  }
+});
+
+test('manual silence, cancellation and late permission never upload or start wake listening', async () => {
+  for (const outcome of ['silence', 'cancel', 'late-permission', 'profile-change']) {
+    const h = harness({ permission: outcome === 'late-permission' ? 'pending' : 'allow' });
+    try {
+      await h.startManual();
+      assert.equal(h.control.busy, true, 'manual permission/capture reserves the voice turn');
+      if (outcome === 'silence') { h.fire(30000); await tick(); }
+      else if (outcome === 'profile-change') { h.changeOwner(); h.identityCheck(); }
+      else h.click(h.record);
+      if (outcome === 'late-permission') { h.resolvePermission(); await tick(); }
+      assert.equal(h.control.active, false); assert.equal(h.uploads.length, 0); assert.equal(h.sent.length, 0);
+      assert.equal(h.wakes.length, 0);
+      assert.ok(h.streams.every(stream => stream.getTracks().every(track => track.stopped)));
+    } finally { h.restore(); }
+  }
+});
+
+test('manual recording respects unavailable translation and an occupied speech turn', async () => {
+  for (const options of [{ config: { enabled: false, reason: 'feature_disabled' } }, { canStart: () => false }]) {
+    const h = harness(options);
+    try {
+      await h.startManual(); assert.equal(h.requests.length, 0); assert.equal(h.uploads.length, 0);
+      assert.equal(h.control.active, false); assert.equal(h.wakes.length, 0);
+    } finally { h.restore(); }
+  }
+});
+
+test('selecting Terra after the tab opened enables images on the next fresh voice turn without reloading', async () => {
+  const h = harness({ config: { model: 'gateway-default', vision: { enabled: false, reason: 'model_not_verified' } } });
+  try {
+    await h.start();
+    h.setConfig({ model: 'gpt-5.6-terra', vision: { enabled: true } });
+    await h.wake(); h.pause(); await tick();
+    assert.equal(h.requests.filter(request => request.video).length, 1);
+    assert.equal(h.sent[0].images.length, 1);
+  } finally { h.restore(); }
 });
 
 test('canWake stays false until local PCM buffer is ready and while Astrid is speaking', async () => {

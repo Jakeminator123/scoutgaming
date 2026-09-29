@@ -22,6 +22,12 @@ html[data-presentation="local"] #pitboss { display: none; }
 .local-presentation-mode { position: absolute; left: 12px; top: 130px; z-index: 40; padding: 7px; background: #101618; color: #eee; border: 1px solid #52605e; border-radius: 8px; }
 #chat #chat-log-toggle { width: auto; flex-shrink: 0; padding: 0 10px; font-size: 11px; }
 #chat-log-toggle[data-unread="true"]::after { content: ' •'; }
+/* The conversation is visible before media or optional voice controls finish loading. */
+html[data-presentation="local"] #chat-log {
+  display: flex; opacity: 1; visibility: visible; pointer-events: auto; transform: none;
+  width: min(360px, calc(100vw - 24px)); box-sizing: border-box;
+  max-height: min(280px, 30dvh);
+}
 #chat-status { position: absolute; top: calc(100% + 5px); right: 0; max-width: 175px; color: #e6ede5; background: #101618e6; border-radius: 5px; padding: 3px 6px; font: 11px/1.4 Inter, sans-serif; text-align: right; }
 #chat-status:empty { display: none; }
 html[data-stream-lane="lissabon-stream-lane"] #dealer-picker > :not(.lissabon-profile-bar),

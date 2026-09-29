@@ -1,5 +1,28 @@
 # Strömmad läppsynk
 
+## Aktuell driftstatus — 2026-09-29
+
+Victoria är fortsatt Cartesia-profilen `astrid-spel2x-victoria-v1`.
+Jakob har uttryckligen valt löpande samtal med strömmad läppsynk på sin egen
+RunPod-endpoint `zsudl8tmzcmiv1`, inom högst 10 USD per dag. Det föreslagna
+taket på fem genereringar per dag avvisades och ska inte införas.
+
+Den privata imagen `sha-12ce6d472a32495704dd557bfc4e420ba4a90b20` är
+publicerad och endpointen är Ready. Ett verkligt Victoria-prov som väntade
+på en komplett MP4 tog cirka 52 sekunder; detta är inte ett realtimekvitto.
+Den 29 september verifierades fortfarande noll aktiva jobb, max en worker,
+min noll, RTX 4090 till 1,10 USD/timme, idle 5 s och execution timeout 600 s.
+
+Streaming är ännu inte aktiverad i produktion. Före aktivering kompletteras
+automatisk start och återanvändning av ett avgränsat RunPod-sessionsjobb,
+beständig kostnadsreservation och installation av reläets `ws`-beroende i
+Render-imagen. Två separata streaminghemligheter är förberedda privat för
+Render. Se [aktiveringskvittot](LIVE-SPEECH-ACTIVATION-2026-09-29.md) och
+[GPU-protokollet](ASTRID-GPU-CLOUD-TEST.md) för aktuellt resultat.
+
+Avsnitten nedan är den tidigare implementationens historik. Formuleringar
+om opublicerad image och Emils endpoint beskriver det dåvarande läget.
+
 Implementationen utgår från GitHub-work `0503a88` och har sammanförts med
 moln- och BO-ändringarna i `c3168ed`. Emils worker finns under
 `services/astrid-gpu-worker`; ursprung och commits står i dess `SOURCE.md`.

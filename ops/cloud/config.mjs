@@ -85,11 +85,31 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (streaming && (!validSecret(workerSecret) || !validSecret(ticketSecret) || workerSecret === ticketSecret)) {
     fail('CROUPIER_SPEECH_STREAM_WORKER_SECRET/TICKET_SECRET');
   }
+  const sessionReserveUsd = env.CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD || '';
+  if (streaming && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(sessionReserveUsd)
+    || Number(sessionReserveUsd) <= 0 || Number(sessionReserveUsd) > 10)) fail('CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD');
+  const dailyBudgetUsd = env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD || '';
+  if (streaming && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(dailyBudgetUsd)
+    || Number(dailyBudgetUsd) <= 0 || Number(dailyBudgetUsd) > 10
+    || Number(sessionReserveUsd) > Number(dailyBudgetUsd))) fail('CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD');
   const cartesiaKey = env.CARTESIA_API_KEY || '';
   const runpodKey = env.RUNPOD_API_KEY || '';
   const runpodEndpointId = env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID || '';
   if (generatedSpeech && (![cartesiaKey, runpodKey].every(value => value.length > 0 && value.length <= 2048 && !/\s/.test(value))
     || !/^[A-Za-z0-9_-]{1,100}$/.test(runpodEndpointId))) fail('CARTESIA_API_KEY/RUNPOD_API_KEY/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID');
+  const mediaStorage = env.CROUPIER_MEDIA_STORAGE || 'disk';
+  if (!['disk', 'blob'].includes(mediaStorage)) fail('CROUPIER_MEDIA_STORAGE');
+  const blobToken = env.BLOB_READ_WRITE_TOKEN || '';
+  if (mediaStorage === 'blob' && (!blobToken || blobToken.length > 4096 || /\s/.test(blobToken))) fail('BLOB_READ_WRITE_TOKEN');
+  const zonesDatabaseUrl = env.CROUPIER_ZONES_DATABASE_URL || '';
+  if (zonesDatabaseUrl) {
+    let database;
+    try { database = new URL(zonesDatabaseUrl); } catch { fail('CROUPIER_ZONES_DATABASE_URL'); }
+    if (mediaStorage !== 'blob' || !['postgres:', 'postgresql:'].includes(database.protocol)
+      || !database.username || !database.password || !database.hostname || database.hash
+      || !['require', 'verify-ca', 'verify-full'].includes(database.searchParams.get('sslmode'))
+      || zonesDatabaseUrl.length > 8192 || /[\r\n\t]/.test(zonesDatabaseUrl)) fail('CROUPIER_ZONES_DATABASE_URL');
+  }
   const layout = env.CROUPIER_CLOUD_LAYOUT || 'separate-hosts';
   if (!['separate-hosts', 'single-origin'].includes(layout)) fail('CROUPIER_CLOUD_LAYOUT');
   const singleOrigin = layout === 'single-origin';
@@ -145,8 +165,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
     director, productSpeech, labRemote, timeoutMs, camera, generatedSpeech, streaming,
+    mediaStorage, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
-    streamSecrets: streaming ? { workerSecret, ticketSecret } : null,
+    streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
     translationKey: camera ? translationKey : '',
     speechProvider: generatedSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null,
@@ -194,6 +215,8 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
     .map(name => [name, env[name]]));
   const shared = { ...base, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1',
     CROUPIER_STREAM_LANE: 'lissabon-stream-lane',
+    CROUPIER_MEDIA_STORAGE: config.mediaStorage,
+    ...(config.blobToken ? { BLOB_READ_WRITE_TOKEN: config.blobToken } : {}),
     ...(config.videoArchive ? { LAB_VIDEO_ARCHIVE: config.videoArchive } : {}) };
   return {
     web: { command: process.execPath, args: [join(REPOSITORY, 'web/server.mjs')], cwd: REPOSITORY,
@@ -216,6 +239,8 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         ...(config.streamSecrets ? {
           CROUPIER_SPEECH_STREAM_WORKER_SECRET: config.streamSecrets.workerSecret,
           CROUPIER_SPEECH_STREAM_TICKET_SECRET: config.streamSecrets.ticketSecret,
+          CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: config.streamSecrets.sessionReserveUsd,
+          CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: config.streamSecrets.dailyBudgetUsd,
         } : {}),
         ...(config.speechProvider ? {
           CARTESIA_API_KEY: config.speechProvider.cartesiaKey,
@@ -236,6 +261,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         LAB_PUBLIC_URL: config.labOrigin, CROUPIER_LAB_INTERNAL_SECRET: labInternalSecret,
         CROUPIER_LAB_BASE_PATH: config.labBasePath,
         LAB_STUDIO_DATA_DIR: config.paths.studio, CROUPIER_GAME_ORIGIN: config.gameOrigin,
+        ...(config.zonesDatabaseUrl ? { CROUPIER_ZONES_DATABASE_URL: config.zonesDatabaseUrl } : {}),
         BETTALOTTO_PARTNER_BASE_URL: config.gameOrigin,
         ...(config.partner ?? {}), LAB_REMOTE_URL: config.labRemote.url, LAB_REMOTE_TOKEN: config.labRemote.token } },
   };
