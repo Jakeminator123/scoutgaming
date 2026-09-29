@@ -19,7 +19,9 @@ för Production och Preview med Render-spelets riktiga URL. Den äldre
 `github-work-vercel-entry` visar samma importerade Next-landning, men är
 manuellt publicerad och saknar nu Git-koppling. `CROUPIER_GAME_ORIGIN` var den
 äldre statiska ingångens env och ska inte antas styra Next-sidan. Kodens
-fallback går också till Render-spelet. Den separata QA-landningens och
+fallback går också till Render-spelet. Den 29 september sparades även
+`CROUPIER_GAME_URL` i det äldre projektet för Production/Preview och
+återlästes med exakt matchning. Den separata QA-landningens och
 spelklientens projekt är manuellt driftsatta utan Git-koppling. Deras browserprov
 med ett syntetiskt konto styrker spelrunda, saldo efter omladdning och synlig
 Astridvideo mot en isolerad Render-testbackend. Det bevisar inte produktions-
@@ -47,14 +49,17 @@ Vercels opt-in `node build.mjs --frontend-preview` använder samma
 Den importerade Next-landningen har däremot `CROUPIER_GAME_URL`: i QA måste
 den sättas till den isolerade spel-Previewns exakta publika URL, annars faller
 knapparna tillbaka till `croupier-v2` i produktion. `croupier-landing-preview-qa`
-har ännu **ingen lagrad projektvariabel**; den fungerande manuella Previewn
-fick URL:en för just det bygget. Ett kommande Git-bygge får inte antas ärva
-den. Spelarprojektet `croupier-player-preview-qa` har egen Preview-
+har nu variabeln sparad för Production/Preview/Development med den isolerade
+spel-Previewns URL; värdet återlästes och matchar exakt. Ändringen används
+vid nästa bygge. Spelarprojektet `croupier-player-preview-qa` har egen Preview-
 `CROUPIER_GAME_ORIGIN`, separata Neon-integrationer och Blob-token. Där finns
 17 `CROUPIER_ZONES_*`-nycklar för Preview/Development från zon-Neon, men ingen
 spårad runtimekod läser dem ännu. Den framtida serverkodens kanoniska zonnyckel
 är `CROUPIER_ZONES_DATABASE_URL`; de andra är alternativa leverantörsformat.
-`BLOB_READ_WRITE_TOKEN` är en serverhemlighet, inte en klientvariabel.
+`BLOB_READ_WRITE_TOKEN` finns för Production/Preview/Development och är en
+serverhemlighet. Render-tjänsternas Gateway-, Lab- och speech-tokenpar
+verifierades samtidigt; de behöver inte kopieras till Vercels startsidor.
+Se [live-kvittot](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
 Render-spelets villkorliga grupper:
 

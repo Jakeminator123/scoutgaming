@@ -1,6 +1,6 @@
 # Astrids labbprofil, minne, webbsökning och skämtläge
 
-Bygger på V5-källan `94a2688`. Funktionen finns i den befintliga socialchatten
+Funktionen finns i den befintliga socialchatten
 i den lokala studion (`lab/`), för Astrid / idle.ready. Den ändrar inte spelets
 `/chat`, Partner-produktionen, spelregler, medier eller Kevins gemensamma talkö.
 Labbet kan öppna originalspelet via Partner-launch och observera händelser;
@@ -128,48 +128,15 @@ Talgränsen är `SOCIAL_SPEECH_LIMIT_MS` i `lab/lib/social-playback.mjs` och des
 typdeklaration. En kodrevert av denna leverans återställer även den tidigare
 sexsekundersgränsen. Det finns fortsatt bara en talägare och ett ljud åt gången.
 
-Default är på i denna beställda labbfunktion. Ingen miljöhemlighet ändras.
-För full kodåterställning: reverta funktionscommittarna i denna ordning och
-driftsätt den nya branchspetsen på båda Render-tjänsterna:
+## Aktuell drift och ändringar
 
-```text
-git revert cbb856e75f5499ad882f56dfa093046210e70665
-git revert 6ac2d73751863b4845c093f224b3fd2e8430075a
-git revert 221223ff7e87a5870c330832c282f1e75e7d9dd0
-git revert 08ddf1aae875e919e2d559c62d5e9d498ce338d9
-git revert e07dd86fa3c39229e7ab994fe8034fd81eb3a12c
-git push origin jakeminator123/work
-```
+Funktionskontraktet ovan gäller den separata labbprofilen. Det är inte
+spelets inloggning, saldo eller en färdig Neon-migrering. Äldre
+funktionscommittar och driftprov finns i Git-historiken; deras manuella
+revert- och pushinstruktioner hör inte till dagens arbetsflöde.
 
-Gör ingen reset till `94a2688` över senare gemensamt arbete. Den nya separata
-SQLite-filen kan ligga kvar avstängd; ta en privat backup före eventuell
-filradering. Inga befintliga kataloger eller medier ska återställas eller
-raderas. Gamla runtime-snapshots och AGENTS-backuper finns kvar på Gateway-
-disken enligt den vanliga runtimepaket-rutinen.
-
-## Leverans och verifiering
-
-Leveransen består av `e07dd86` (grundfunktion), `08ddf1a` (naturliga namnfrågor
-och budgeterad OpenAI-sökning), `221223f` (källspärr och skarpare fyraradiga
-poem), `6ac2d73` (kompatibel officiell sökfråga och garanterad poemreserv) samt
-`cbb856e` (samma formatgaranti i operatörschatten).
-Den bygger direkt på V5-spetsen `94a2688` och är pushad till
-`jakeminator123/work`. Återställ i omvänd ordning med kommandona ovan, bygg om
-lokala labbet och driftsätt båda Render-tjänsterna. Budgetdatabasen får ligga
-kvar avstängd; inga speldata eller medier behöver återställas.
-
-Lokalt: 111 OpenClaw/deployment-tester, 302 labbtester, TypeScript och Next-bygge.
-Riktigt OpenAI-sökprov gav docs.openclaw.ai som citerad källa. Minne/återkomst/
-Glöm mig verifierades genom labbets API mot Render med en separat provprofil.
-Slutprovet mot publicerad revision gav ett fyraradigt Jakob-poem i spelarchatten,
-ett fyraradigt John-poem i operatörschatten och endast
-`https://docs.openclaw.ai/install` som accepterad installationskälla. Provprofilen
-glömdes i testets `finally`-steg.
-Alla fyra dealers genomförde två greeting-uppspelningar i följd på isolerad
-rehearsal.localhost med separat databas. Det är livscykelbevis, inte ny läppsynk-
-eller tillgångsacceptans. Kevins riktiga ElevenLabs-prov slutfördes i webbläsaren
-på 12 770,975 ms med maxDurationMs 25 000 (request 8b3ee664-e6b3-4fa2-b91d-a3ca02ba02cf).
-
-Slutlig kodrevision: `cbb856e75f5499ad882f56dfa093046210e70665`.
-Render-kvitton: [Director `dep-daoals0473hc739jad00`](https://dashboard.render.com/web/srv-danhlpjtqb8s73bv530g/deploys/dep-daoals0473hc739jad00)
-och [Gateway `dep-daoalujtqb8s73ej1520`](https://dashboard.render.com/pserv/srv-danhiv3tqb8s73burkq0/deploys/dep-daoalujtqb8s73ej1520).
+Leverera granskade ändringar till `Jakeminator123/github-work`, branch
+`jakemanator123-github-work`, med `node tools/push-github-work.mjs`.
+Förvalta befintliga Render-tjänster enligt [driftguiden](RENDER-START-SV.md).
+Aktuella kontroller och kvarvarande verifiering finns i
+[live-kvittot](CLOUD-ACTIVATION-2026-09-29.md).

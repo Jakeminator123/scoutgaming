@@ -235,9 +235,8 @@ testresultat. Ändra inte GPU-workers eller driftbudget som bieffekt.
 
 ## 7. Kontrollera modell och jämför innan ett byte
 
-Senast dokumenterat driftverifierad produktmodell är
-**`lab-provider/gpt-5.4-mini` den 25 september 2026**, se
-`open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-25.md`.
+Gatewayens env anger **`gpt-5.4-mini` vid kontrollen den 29 september 2026**, se
+`open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md`.
 Samma modell är lokal seed i `open-claw/lab/deploy/gateway-config.mjs`.
 Persistenta Gateway-inställningar kan ha ändrats därefter. Kontrollera
 den faktiskt laddade konfigurationen; ett miljöstandardvärde är inte bevis.

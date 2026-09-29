@@ -13,6 +13,33 @@ Render/SQLite. [Game-Neon-förberedelsen](NEON-GAME-MIGRATION.md) är isolerad
 kod och schema, inte ett produktionsbyte. Nyare avsnitt längre ned i denna
 fil ersätter äldre dagsnoteringar där driftläget har ändrats.
 
+## 2026-09-29 — Verifierade live-env och rensade Lab-instruktioner
+
+Vercels saknade `CROUPIER_GAME_URL` sparades i `github-work-vercel-entry`
+(Production/Preview, Render-spelet) och `croupier-landing-preview-qa`
+(Production/Preview/Development, isolerad spel-Preview). Båda värdena
+återlästes och matchar exakt. `croupier-frontend` hade redan variabeln.
+De nya värdena används vid nästa bygge; ingen deploy gjordes av env-arbetet.
+
+Render-panelerna kontrollerades för spel, Director och privat Gateway.
+Gateway-token, Lab-token och separat speech-token matchar mellan sina
+respektive tjänster. Modellnyckeln är separat och Dashboard-origin/config-
+sökväg är rätt. Ingen Render-ändring behövdes. Lokal hälsa och autentiserad
+status gav HTTP 200; tom speech-envelope gav förväntad HTTP 400 före
+modellkörning. Inga betalda modell-/GPU-anrop eller databasändringar gjordes.
+
+Två ersatta Lab-driftkvitton från 25/28 september och den gamla startup-
+agentprompten togs bort. Aktiva guider pekar på
+[nuvarande live-kvitto](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md),
+och gamla instruktioner om separat Lab-repo/ny Blueprint ersattes.
+Full giltig tal-/bild-/uppspelningskedja och game-Neon-migration återstår;
+korrekta env är inte bevis för dessa funktioner.
+
+Miljöregistret, dokumentlänkar och diff-kontroll passerade. Ordinarie
+pre-commit passerade efter ett första fel i agent-talks samtidighetstest;
+det testet passerade också separat. Companion-guidens gamla revert-/push-
+instruktioner ersattes med dagens GitHub-arbetsflöde.
+
 ## 2026-09-29 — Separat Vercel-startsida i produktion
 
 Det privata GitHub-repot `Jakeminator123/modern-landing-page` heter nu
@@ -1014,7 +1041,7 @@ gränsen lämnades på 5 eftersom höjningen bara ger fler sökförsök. Loggens
 ## 2026-09-28 — Probe i drift och rätt Lissabon-presentation
 
 Gateway/Director är live på `70ef43f`; de gamla driftblockerarna nedan är
-ersatta av [driftkvittot](../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-28.md).
+ersatta av [driftkvittot](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 Åtta auth-/schemaprov passerade. Alla tre modellkandidater finns i beständig
 Gateway-konfiguration med oförändrad primärmodell och nekade verktyg.
 60 syntetiska textfall passerade; varm p50: 5.4-mini 977 ms, Luna 1342 ms,
@@ -1979,8 +2006,8 @@ Användaren vill inte ha vår extra startspärr mot tokenalias. Den är borttage
 och pushad i `d570770`; befintlig autentisering och endpointgräns behålls.
 129/129 OpenClaw-tester passerade. Produkt-/posesviten hade ett första
 engångsfel men gav därefter 25/25 i sex samlade omkörningar; felets orsak är
-inte fastställd. Se [driftkvittots uppföljning](../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-25.md)
-för konkret runtimebevis och avgränsningar.
+inte fastställd. Se [aktuellt live-kvitto](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md)
+för nuvarande env och kvarvarande verifiering.
 
 4196/4197 lämnades igång för användarens fortsatta prov med syntetisk
 tempdatabas. 4192/4194 är fortfarande offline och orörda. Neutral bild och
@@ -2010,8 +2037,8 @@ Read-only granskning av `EmaCodeHero/astrid-lipsync-demo-2` på `1e271e1` visar
 en relevant exakt-text → Cartesia → RunPod-väg utan Gemini via `/api/speak`.
 Ingen kod kopierades: återanvändningsrätt, separat GPU-worker och kostnadsram
 behöver klarläggas. Vår posegrind/talkö och hashbundna talpaket måste behållas.
-Se [fullt driftkvitto](../open-claw/lab/docs/DEPLOYMENT-RECEIPT-2026-09-25.md)
-för avgränsningar, testbevis och återstartssteg. Tidigare anteckningar nedan om
+Se [aktuellt live-kvitto](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md)
+för nuvarande anslutningskontroll och avgränsningar. Tidigare anteckningar nedan om
 att ingen remote-driftsättning skett är historiska, inte aktuell status.
 
 ## 2026-09-25 — Aktuell systemkarta, direkt wiki-synk och verifierad publicering
@@ -2183,7 +2210,7 @@ Se open-claw/lab/docs/LOCAL-CONNECTION-SV.md. OpenAI/provider och hemligheter ä
 oförändrade. Ingen extern redeploy eller Gatewayomstart gjordes.
 
 Nästa avgränsade agentprompt: lab/docs/PARALLEL-OPENCLAW-SPEECH.md. Första
-anslutningsprompten finns kvar som spårbarhet i PARALLEL-OPENCLAW-STARTUP.md.
+anslutningsprompten har ersatts av det aktuella live-kvittot ovan.
 Jira/CAC saknades i denna verktygsmiljö; ingen issuestatus ändrades. De tre
 tidigare privata/untracked användarfilerna lämnades orörda och utanför commit.
 
