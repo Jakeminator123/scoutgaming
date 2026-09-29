@@ -1,0 +1,13 @@
+---
+description: Håll tjänsternas miljövariabler synkade utan att publicera hemligheter
+alwaysApply: true
+---
+
+Vid varje tillägg, borttagning eller ändring av en miljövariabel i kod,
+`.env*`, Render, Vercel, RunPod eller annan tjänst: uppdatera
+`docs/ENVIRONMENT-VARIABLES.md` och `docs/environment-variables.json` i samma
+arbetsleverans. Beskriv tjänst, krav/valfrihet, beroenden och var värdet sätts.
+Lägg aldrig värden, hemligheter eller tokenfragment i Git eller chatt.
+Kör `node tools/check-environment-variables.mjs` före commit. Vid ändring
+direkt i en leverantörspanel: jämför nyckelnamnen där mot förteckningen och
+anteckna granskningen; repo-kontrollen kan inte själv se paneländringar.

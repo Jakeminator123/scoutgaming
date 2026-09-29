@@ -1,6 +1,8 @@
 #!/bin/sh
 # Keep this hook LF-only; .gitattributes enforces it on Windows checkouts.
 set -eu
+node tools/check-environment-variables.mjs
+node --test test/check-environment-variables.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node test/player-auth.mjs
 node --test test/agent-talk.mjs test/player-signup.mjs test/blackjack-entry-http.mjs
