@@ -1,3 +1,18 @@
+## 2026-09-29 — Render-diskarnas säkerhetskopia och OAuth-beslut
+
+Produktens `/var/data`, Directors `/data/catalog` och Gateways
+`/data/openclaw` är kartlagda. `tools/backup-render-state.mjs` exporterar
+SQLite med backup-API, kontrollerar integritet/SHA-256 och återläser bara till
+en tom datarot. `test/backup-render-state.mjs` passerar med nio syntetiska
+prov, inklusive WAL och nekad överskrivning. Se
+`docs/RENDER-BACKUP-RESTORE.md` för kör- och återställningsordning.
+Regressionsprovet ingår nu i `.githooks/pre-commit`.
+
+Ingen skarp databas, Render-tjänst eller leverantörsnyckel ändrades. Faktisk
+diskmontering, samordnad skrivpaus, extern backup, omstart och skarp
+återställning är öppna driftprov. Befintlig CRAIG-baserad spelar-/BO-login
+räcker för piloten; OAuth införs inte utan nytt behov och beslut.
+
 ## 2026-09-29 — Bakgrundszoner öppnade och sessionsvakt rättad
 
 Det tidigare koordinerade offlineparet på 4192/4194 hade inga öppna lokala
