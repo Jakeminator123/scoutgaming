@@ -8,48 +8,55 @@ pausat enligt `AGENTS.md`. Inga hemlighetsvärden hör hemma i denna fil.
 
 ## Körande och förberedda ytor
 
+Senaste uppföljning 08:44 CEST: följdfixen `225433fe` för färsk idle-katalog
+är pushad. Render byggde den i `dep-datlqlugekts73bbj7rg`, men ersatte
+bygget med automatiska `dep-datlrou0tbcc7383arg0` på samma SHA. Det senare
+bygget pågår vid denna notering; `adae8772` är senast verifierad Live nedan.
+Ingen ytterligare manuell deploy behövs medan det automatiska bygget kör.
+
 ### Enkel projektkarta och Lab-ingångar — 2026-09-29
 
 - `croupier-frontend` är den gemensamma publika ingången. Använd detta projekt
   för nya frontendleveranser. `/labb`, `/labb/filmer`, `/labb/zoner` och
-  `/labb/guide` är nu kodade som genvägar till det autentiserade Labbet på
+  `/labb/guide` gav verifierad HTTP 307 som genvägar till det autentiserade Labbet på
   Render `/studio/`; en slug flyttar inte servern eller lagringen till Vercel.
 - `github-work-vercel-entry` är den äldre manuella ingången och
   `croupier-landing-preview-qa` är det äldre landningssidetestet. Båda är
-  övergångsresurser, inte ytterligare huvudfrontends. De finns fortfarande.
-  Samla framtida designpreview i huvudprojektets Preview-flöde när dess
-  testadresser är konfigurerade, och avveckla sedan de överflödiga projekten.
+  avvecklade. Vercels projekt-API och de publika adresserna gav 404 den
+  29 september cirka 08:37 CEST. Samla framtida designpreview i
+  huvudprojektets Preview-flöde med uttryckligt konfigurerade testadresser.
 - `croupier-player-preview-qa` har en annan roll: isolerat speltest samt
   nuvarande kopplingar till privata Blob och två separata Neon-resurser.
   Render-testbackend är pausad. Flytta/verifiera dessa kopplingar före
   avveckling; radera inte projektet som om det vore en tom startsideskopia.
-- Aktuell familjeuppladdning byggs av `codex-media-upload`. Den sparar via
+- Familjeuppladdning från `codex-media-upload` är deployad i `adae8772`. Den sparar via
   Labbet på Render-disk. Lokala original och browserns zonklipp flyttas inte
   genom en Git-push eller genom att Blob finns. Den återstående Blob-synken
   måste omfatta uppladdning, metadata och autentiserad Range-uppspelning.
 
 QA betyder kvalitetstest. Målet är en begriplig huvudingång och en isolerad
 testmiljö; antalet kvarvarande projekt speglar migreringssteg, inte ett behov
-av tre konkurrerande startsidor. Endast sluggar, dokumentation och
-samordning ändras i denna leverans; ingen media eller molnresurs tas bort.
+av tre konkurrerande startsidor. De två gamla projekten försvann mellan
+förkontroll och raderingsförsök: CLI-försöket för `github-work-vercel-entry`
+svarade att projektet redan saknades. Efterkontrollen bekräftar slutläget,
+men fastställer inte vem som utförde raderingen. Ingen databas eller media
+raderades av denna agent. Privat Blob har fortsatt ett objekt och samma QA-koppling.
 
 | Resurs | Källa och nuvarande roll | Verifierat / kvar |
 | --- | --- | --- |
-| Render `croupier-v2` | GitHub `Jakeminator123/github-work`, `jakemanator123-github-work`; senaste observerade deploy `799b359f` (`dep-datlc17lot8c7381fg50`), Live 08:12:56 CEST. Äger ännu spel, BO, Lab, kort, sko, saldo och två SQLite-filer på `/var/data`. | Hälsa och spelingång HTTP 200 efter deploy. Ingen verifierad samordnad produktionsbackup utanför Render eller Neon-cutover. |
+| Render `croupier-v2` | GitHub `Jakeminator123/github-work`, `jakemanator123-github-work`; deploy `adae8772` (`dep-datlnp2d0e5s73ckjt30`), start 08:34:12, Live 08:37:38 CEST. Äger ännu spel, BO, Lab, kort, sko, saldo och två SQLite-filer på `/var/data`. | Hälsa och spelingång HTTP 200 efter deploy, `/studio/` 401 utan inloggning. Ingen verifierad samordnad produktionsbackup utanför Render eller Neon-cutover. Familjeuppladdningens autentiserade live-QA återstår. |
 | Render `croupier-lab-director` och privat `croupier-lab-openclaw` | Samma GitHub-branch, deploy `15bd1541`; Director är produkt-/Lab-gräns, Gateway har modellen och sin beständiga `/data/openclaw`. | Live. Interna status-/tokenprov lyckades; full giltig spel→modell→tal-kedja återstår. |
 | Vercel `croupier-frontend` | Git-kopplat till `Jakeminator123/github-work`, produktionsbranch `jakemanator123-github-work`, rot `apps/croupier-frontend`; första deploy från `d78eb4cb`. | [Ny Git-kopplad startsida](https://croupier-frontend.vercel.app/) READY. Automatisk deploy efter push av `d8d4b707` blev READY: `dpl_9GcmrpbHQ91oTJwnBYUuvV5DzxDZ`. Startsida och `/demo` verifierade; `CROUPIER_GAME_URL` sparad för Production och Preview och pekar på Render-spelet. |
-| Vercel `github-work-vercel-entry` | Publik Next-landning från `apps/croupier-frontend`, manuellt driftsatt efter import `da7f8807` och driftkvitto `d78eb4cb`. | [Publik startsida](https://github-work-vercel-entry.vercel.app/) och `/demo` verifierade i browsern; spelknapparna går till oförändrad Render-backend. Deployment `dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T`. Projektet saknar nu Git-koppling, så en vanlig push publicerar inte nästa version. `CROUPIER_GAME_URL` är nu sparad och återläst för Production/Preview med samma Render-speladress. |
-| Vercel `croupier-landing-preview-qa` | Manuell Next-preview från `apps/croupier-frontend`, importerad från `Jakeminator123/croupier-frontend/main` på `2ec2b3f2`. | [QA-landning](https://croupier-landing-preview-eokix0slk-jakeminator123s-projects.vercel.app/) är READY; ingen Git-koppling. `CROUPIER_GAME_URL` är nu sparad för Production/Preview/Development med den isolerade spel-Previewns URL och återläst med exakt matchning. Nuvarande deploy fick redan spellänken vid bygget; nya env gäller nästa bygge. |
+| Tidigare Vercel `github-work-vercel-entry` | Ersatt landning; tidigare deployment `dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T`. | **Borttaget.** Projekt `prj_hRrGtpAgb0HBEt1sssqOPZVlROh4` och dess gamla publika adress ger 404. Vid förkontroll fanns bara två speladressvariabler, ingen Blob-koppling och ingen egen domän. API:t visade då en sourceless Git-länk, vilket rättar äldre uppgiften om helt saknad Git-länk. |
+| Tidigare Vercel `croupier-landing-preview-qa` | Ersatt manuell landningspreview. | **Borttaget.** Projekt `prj_iWnezDxPevS1Bd4hMVbA26NWfKGf` och dess gamla publika adress ger 404. Vid förkontroll fanns bara `CROUPIER_GAME_URL`, ingen Blob-koppling eller egen domän. |
 | Vercel `croupier-player-preview-qa` + Render `croupier-vercel-preview-qa` | Separat spelklient och tom Render-testdata. | [QA-spel](https://croupier-player-preview-3esw2v3fl-jakeminator123s-projects.vercel.app/frontend-preview/blackjack/) provades med Astridvideo, serverrundor, saldo efter omladdning och utbetalning. Vercel-projektet saknar Git-koppling. Render-testtjänsten är **manuellt pausad** efter provet. |
 | Tidigare Vercel `modern-landing-page` | Var kopplat till separata `Jakeminator123/croupier-frontend/main`; hade adress `modern-landing-page-kohl-xi.vercel.app`. | **Raderat 2026-09-29 på Jakobs uttryckliga bekräftelse.** CLI rapporterade success för projekt `prj_3zsY4c8kKQMp9CeHuwHVgy1tFLAs`; efterkontrollen rapporterade att projektet inte finns. GitHub-källrepot raderades inte. |
 
 Importen till `apps/croupier-frontend` är levererad i `da7f8807`, och den
 första publika adressen byttes kontrollerat i `d78eb4cb`. Den nya
 `croupier-frontend` är den Git-kopplade produktionsytan; den tidigare
-`github-work-vercel-entry` ligger kvar som separat, manuellt driftsatt adress
-och får inte förväxlas med den nya. Den separata landningssidans QA-projekt
-har ingen Git-koppling och behöver inte utvecklas till ännu en permanent
-huvudingång. Innan designpreview samlas i huvudprojektet måste dess
+`github-work-vercel-entry` och landningssidans separata QA-projekt är
+avvecklade. Innan spel-QA körs genom huvudprojektets designpreview måste dess
 Preview-miljö få den isolerade speladressen i `CROUPIER_GAME_URL`;
 nuvarande Production och Preview pekar båda på produktionsspelet.
 Referenser till den raderade
@@ -57,6 +64,31 @@ separata sidan är historiska importkvitton. Se
 [frontendkontraktet](VERCEL-FRONTEND-MIGRATION.md).
 
 ## Data och media
+
+### Inloggning, spelaradress och minne
+
+`/blackjack?dealer=astrid` är inloggningsingången. Efter en giltig session
+väljer `web/public/blackjack-entry.mjs` adressen
+`/?dealer=astrid&presentation=local`. `local` är namnet på Astrids
+Web/Render-ägda presentationsväg: klipp väljs via serverns
+`/api/presentation/select` och serveras via `/api/presentation/videos/:id`.
+Det betyder inte att spelet körs på Jakobs dator eller att Neon är aktivt.
+`croupier-v2` är Render-tjänstens namn.
+
+Labbet använder CRAIG-/BO-administratören. Root verifierade inloggning med
+den befintliga bootstrap-identiteten `jakob` och kom in i Astrid Studio samt
+**Ladda upp & bibliotek**. Inget lösenord skrivs i dokumentationen. Den
+separata spelarregistreringen finns med `CROUPIER_PLAYER_ACCOUNTS=1` och
+lagrar ännu konton/sessioner i SQLite. Spelarminne är serverbundet till
+kanonisk spelaridentitet och dealer; OpenClaw får servervald namn- och
+minneskontext. Den kontrollerade Neon-flytten återstår enligt
+[migrationsplanen](NEON-GAME-MIGRATION.md). Cashier är fortsatt demoinsättning
+till testbalans, utan betalningsleverantör eller riktiga uttag.
+
+Lab-inloggning och bibliotekets rendering bevisar inte full media-QA.
+**Spel & uppspelning** visade `Referensspelets konfiguration kunde inte läsas`
+och inaktiv Anslut-knapp på `adae8772`; detta har återrapporterats till
+filmagenten. Ingen lokal MP4 laddades upp under denna kontroll.
 
 | Resurs | Syfte | Faktiskt läge |
 | --- | --- | --- |
@@ -91,7 +123,15 @@ och aktuell workerdebitering $0/s i RunPod. Se
 Efter detta sparade Jakob en egen `RUNPOD_API_KEY` på Render. Endpointnamnet
 rättades till `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` med värdet `zsudl8tmzcmiv1`
 via Save only. Nyckelns närvaro är verifierad, men dess giltighet och det
-genererade talflödet är ännu inte API-testade. Aktiveringsflaggorna är orörda.
+genererade talflödet är ännu inte API-testade. Jakob sparade därefter även
+`CARTESIA_API_KEY` på samma Render-tjänst; namnets närvaro verifierades före
+deploy `adae8772`. Aktiveringsflaggorna är orörda och saknas fortfarande;
+detta bygge aktiverar därför inte genererat tal.
+
+`CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` och motsvarande bootstrap-user
+hör till Render `croupier-v2` Environment. De skapar första administratören
+bara när CRAIG:s användartabell är tom. En ny env ändrar inte lösenordet
+för ett befintligt konto. Vercels landning behöver ingen av dessa hemligheter.
 
 Director använder `OPENCLAW_PRODUCT_SPEECH_TOKEN` skild från
 `LAB_API_TOKEN`, medan privat Gateway har `OPENCLAWAPI_KEY` och separat

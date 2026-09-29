@@ -16,6 +16,7 @@
       "frontendPreviewBuildCommand": "node build.mjs --frontend-preview (same required env; no new keys)",
       "publicOriginConfigured": "https://croupier-v2.onrender.com",
       "configurationCheckedOn": "2026-09-29",
+      "deploymentStatus": "Legacy landing retired; build source retained for isolated player preview",
       "firstBoot": [], "conditional": [], "managed": [], "blocked": []
     },
     "vercel-frontend-production": {
@@ -24,13 +25,6 @@
       "gitBranch": "jakemanator123-github-work",
       "rootDirectory": "apps/croupier-frontend",
       "configuredTargets": ["production", "preview"],
-      "required": [], "firstBoot": [],
-      "conditional": ["CROUPIER_GAME_URL"],
-      "managed": [], "blocked": []
-    },
-    "vercel-landing-qa": {
-      "sources": ["apps/croupier-frontend/lib/game-url.ts"],
-      "project": "croupier-landing-preview-qa",
       "required": [], "firstBoot": [],
       "conditional": ["CROUPIER_GAME_URL"],
       "managed": [], "blocked": []
