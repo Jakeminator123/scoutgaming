@@ -1,3 +1,14 @@
+## 2026-09-29 — Automatisk zonuppspelning i Labbet
+
+Zonvideons Uppspelning har nu Hela tiden, Automatisk och Av. Automatisk
+startar inom 10 sekunder, väntar sedan minst 30 sekunder plus 0–10 sekunders
+slump från senaste start och låter klippet sluta innan nästa start. Det ger
+högst två starter i varje rullande minut utan att binda timern till underliggande
+Astridklipp. Inställningen sparas med zonen i browsern och följer JSON-export;
+äldre sparade zoner fortsätter som Hela tiden. Inga importerade klipp eller
+zoner migreras bort. Detta är Labförhandsvisning; spelets spelare läser ännu
+inte de browserlokala zonerna. Schematest och Labbygge verifierar ändringen.
+
 ## 2026-09-29 — Render-diskarnas säkerhetskopia och OAuth-beslut
 
 Produktens `/var/data`, Directors `/data/catalog` och Gateways
