@@ -24,7 +24,7 @@ AI-text eller full text-till-video-strömning från första token.
 | Ljudanalys | Worker-resultat `ms.audio_analysis` | Resampling och Whisper per överlappande fönster, summerad arbetstid. |
 | Inferens | Worker-resultat `ms.inference` | MuseTalk-modellens generering/avkodning, summerad arbetstid. |
 | Sammanfogning | Worker-resultat `ms.composition` | Python-skapad mask/munruta. FFmpegs overlay ingår i `overlay_encode_wall`; den kan inte isoleras från kodningen i nuvarande pipeline. |
-| Kodning | Worker-resultat `ms.overlay_encode_wall`, `ms.first_fragment` | FFmpeg från start till tömning respektive första byte. Överlappar inferens och får inte summeras med den. |
+| Kodning | Worker-resultat `ms.overlay_encode_wall`, `ms.first_output_byte`, `ms.first_fragment` | FFmpeg från start till tömning, första utsända byte respektive första hela `moof`/`mdat`-fragment. Överlappar inferens och får inte summeras med den. `first_fragment` i äldre loggar betydde första byte; versionerna får inte jämföras rakt av. |
 | Transport | Web-logg `server_transport_enqueue_ms`; klientkvitto `socket_open_ms`, `socket_to_media_ms` | Första värdet slutar när WebSockets sändning är köad. Klientvärdet omfattar även TTS/GPU-väntan. En ren nätverkstid kräver synkroniserad fjärrmätning. |
 | Första uppspelning | Klientkvitto `first_playing_ms`, `first_visible_frame_ms`; chattstatusens `data-playback-ms`, `data-first-frame-ms` | Kvittona börjar vid biljettanslutning; data-attributen börjar vid användarens chattbegäran. `playing` är hörbarhetsproxy; faktisk högtalarutgång måste observeras vid GPU-provet. |
 

@@ -27,6 +27,57 @@ class Cancelled(Exception):
     pass
 
 
+class _FirstMediaFragment:
+    """Recognize a complete top-level moof/mdat pair across output chunks.
+
+    MP4 initialization boxes can leave FFmpeg long before decodable media.
+    Only box headers are buffered; media payload is skipped by byte count.
+    """
+    def __init__(self):
+        self.header = bytearray()
+        self.remaining = 0
+        self.box_type = None
+        self.saw_moof = False
+        self.complete = False
+
+    def feed(self, data):
+        offset = 0
+        while offset < len(data) and not self.complete:
+            if self.remaining:
+                used = min(self.remaining, len(data) - offset)
+                self.remaining -= used
+                offset += used
+                if not self.remaining:
+                    if self.box_type == b'moof':
+                        self.saw_moof = True
+                    elif self.box_type == b'mdat' and self.saw_moof:
+                        self.complete = True
+                    self.box_type = None
+                continue
+
+            required = 16 if len(self.header) >= 8 and self.header[:4] == b'\x00\x00\x00\x01' else 8
+            used = min(required - len(self.header), len(data) - offset)
+            self.header.extend(data[offset:offset + used])
+            offset += used
+            if len(self.header) < required:
+                continue
+            size = int.from_bytes(self.header[:4], 'big')
+            if size == 1:
+                size = int.from_bytes(self.header[8:16], 'big')
+            if size < required:
+                raise ValueError('invalid MP4 box size')
+            self.box_type = bytes(self.header[4:8])
+            self.remaining = size - required
+            self.header.clear()
+            if not self.remaining:
+                if self.box_type == b'moof':
+                    self.saw_moof = True
+                elif self.box_type == b'mdat' and self.saw_moof:
+                    self.complete = True
+                self.box_type = None
+        return self.complete
+
+
 class Timeline:
     def __init__(self, rate, before=.22, after=.53, block=12, context=12):
         if type(rate) is not int or rate not in (16000, 22050, 24000, 44100, 48000):
@@ -284,6 +335,8 @@ def render(timeline, infer, muxer_factory, emit):
     frames = 0
     started = time.monotonic()
     first_fragment_ms = None
+    first_output_byte_ms = None
+    fragment = _FirstMediaFragment()
     analysis_wait_ms = 0
     mux_input_ms = 0
     encoder_started = None
@@ -292,10 +345,13 @@ def render(timeline, infer, muxer_factory, emit):
         timing.clear()
 
     def measured_emit(data):
-        nonlocal first_fragment_ms
-        if first_fragment_ms is None:
-            first_fragment_ms = round((time.monotonic() - started) * 1000)
+        nonlocal first_fragment_ms, first_output_byte_ms
         emit(data)
+        elapsed = round((time.monotonic() - started) * 1000)
+        if first_output_byte_ms is None:
+            first_output_byte_ms = elapsed
+        if first_fragment_ms is None and fragment.feed(data):
+            first_fragment_ms = elapsed
 
     try:
         # FFmpeg can connect its inputs while the first audio window is still
@@ -329,6 +385,8 @@ def render(timeline, infer, muxer_factory, emit):
               'overlay_encode_wall': round((time.monotonic()-encoder_started)*1000) if muxer else 0}
         if first_fragment_ms is not None:
             ms['first_fragment'] = first_fragment_ms
+        if first_output_byte_ms is not None:
+            ms['first_output_byte'] = first_output_byte_ms
         if timing is not None:
             ms.update({name: round(value) for name, value in timing.items()})
         # An explicit encoder was selected and FFmpeg exited 0 after draining.

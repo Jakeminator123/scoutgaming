@@ -56,6 +56,32 @@ NVENC är en möjlig CPU-avlastning; `encoder_verified` måste visa att just
 provet verkligen använde den. RunPod-kö/kallstart och debitering kräver
 separata RunPod-kvitton.
 
+### CPU-kvitto för första mediefragmentet
+
+Den tidigare `first_fragment`-mätningen togs på FFmpegs första utbyte, som kan
+vara MP4-initboxar utan spelbara samples. Workern skiljer nu
+`first_output_byte` från `first_fragment`: den senare sätts först när en hel
+top-level `moof` följd av `mdat` har sänts. Boxräknaren fungerar även när
+headers och payload är delade mellan socketchunkar och buffrar inte videon.
+Detta är ett kodnings-/transportkvitto, inte bevis för att browsern avkodat en
+synkad bild och ljud; klientens första bildruta och hörbart ljud måste också
+mätas. Existerande `first_fragment`-loggar före denna ändring är inte direkt
+jämförbara med nya loggar.
+
+Reproducerbart lokalt prov:
+
+```sh
+python services/astrid-gpu-worker/tests/bench_first_fragment.py --runs 5
+python -m unittest discover -s services/astrid-gpu-worker/tests -v
+```
+
+På Windows med FFmpeg 9.0.1 och 64×64 syntetisk video, förinläst två sekunders
+tystnad, libx264 och en bortkastad uppvärmningskörning gav fem körningar
+median 35 ms till första hela fragment och 52 ms för hela kodningen. Skillnaden
+mellan första utbyte och fragment var median 1 ms. Detta är en lokal
+FFmpeg-baslinje utan MuseTalk, TTS, nätverk, browser eller GPU. Den kan upptäcka
+regressioner i muxern, men kan inte användas som prognos för spelarens väntan.
+
 ## Eget privat GitHub-repo?
 
 Ett privat repo som Jakob äger kan på sikt ge workern en egen gransknings-
