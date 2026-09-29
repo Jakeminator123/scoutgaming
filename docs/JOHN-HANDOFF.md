@@ -6102,3 +6102,52 @@ Inga leverantörsanrop, permanenta devservrar eller betalningar
 gjordes. Molnstartens kodspärr är kvar tills verkliga HTTPS-, disk-, tal-,
 bild- och browserprov har godkänts. De stoppade lokala servrarna förblir
 stoppade.
+
+## 2026-09-29 — isolerat Vercel-, Render- och OpenClaw-prov
+
+Testbackenden `croupier-vercel-preview-qa` skapades på egen Render-hostname,
+egen tom SQLite-databas och 1 GB disk under `/var/data`. Den befintliga
+`croupier-v2` och dess databas rördes inte. Render-planen var 1c-2g
+($25/månad) plus disk ($0,25/GB/månad), båda tidsproportionerade. Tjänsten
+var aktiv omkring 40 minuter, under gränsen två timmar/$1, och är nu
+**Suspended**; Render visar att suspenderade tjänster inte faktureras.
+Slutlig fakturerad summa är ännu inte tillgänglig. Testhost:
+`https://croupier-vercel-preview-qa.onrender.com` (otillgänglig medan pausad).
+
+Den separata Vercel Preview-deploymenten
+`https://croupier-player-preview-aupuistes-jakeminator123s-projects.vercel.app`
+serverade den riktiga spelklienten. Efter proxy-origin- och Three.js-byggfixen
+i `01e9aea9` loggade ett syntetiskt konto in: HTTP 200 med hostbunden
+`HttpOnly; Secure; SameSite=Strict`-cookie, `Cache-Control: private, no-store`
+och ingen extern `Location`. En omladdning mitt i runda behöll korten,
+aktiv hand och saldo $995. Första $5-rundan återbetalade $10 (saldo $1005);
+andra $5-rundan återbetalade $0 (saldo $1000). Två efterföljande rundor
+hämtade Astrid-filmer via Vercel med HTTP 200. Ett autentiserat
+`Range: bytes=0-1023` direkt mot **testbackenden** gav HTTP 206,
+`Content-Range: bytes 0-1023/1072958` och 1024 byte. 206 genom Vercels
+rewrite är ännu inte verifierat; direkt navigation till API-filen blockerades
+av webbläsaren. Ingen mänsklig visuell läppsynkacceptans gjordes.
+
+En Neon Free-resurs, `croupier-preview-neon`, skapades och kopplades
+**endast** till `croupier-player-preview-qa` för Vercel Preview. Resursen
+är tillgänglig; hemligheter hämtades inte lokalt. Spelet använder fortfarande
+den isolerade SQLite-databasen. Postgres-schema, migrering, Render-anslutning
+och backup/restore krävs innan Neon kan ersätta spelets databas.
+
+OpenClaws smala produkt-talrelä provades med en helt syntetisk Astrid-begäran
+och ett enda `gpt-5.4-mini`-anrop (budget högst $0,10 och 30 sekunder):
+Director svarade HTTP 200 efter 4,36 sekunder med ett kontraktsgiltigt
+`recordedLine`-beslut för `goodluck` och
+`speak.goodluck.standard`. Kostnad uppskattas under $0,01; faktisk
+leverantörsfakturering är inte avläst. Det redan upptagna lokala
+serversessionslåset hindrade ett separat browserprov som binder just detta
+modellsvar till uppspelning; de två Preview-rundorna ovan är ett fristående
+uppspelningsprov. Inga produktionsinställningar ändrades.
+
+Medie-QA var läsande: manifestet anger 28 familjer/51 poster, men ägare för
+de ocommittade Astrid-filerna och avsikten med dubbla box-5-varianter är inte
+verifierade i agent-talk. Manifesttest och `audit-dealer-sync --probe`
+passerade, vilket bara visar struktur och baslinjehash. För varje ändrad take
+återstår exakt händelse/text och ljudstatus, video och frame index,
+kalibrering/kortkontakt samt två uppspelningar i den verkliga spelaren.
+Ingen mediefil, policy, kalibrering eller baslinje stageades eller godkändes.
