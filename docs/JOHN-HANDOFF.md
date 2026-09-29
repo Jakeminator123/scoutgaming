@@ -13,8 +13,26 @@ respektive agent. `08343c17` blev Live i `dep-datm3hk9v7es73ajirn0`, men
 liveprovet hittade ett ytterligare Next-led: `NextURL` normaliserar intern
 loopback till `localhost:4188`. Följdfixen godtar även exakt detta alias med
 samma åtkomstkrav. Regressionen använder nu installerade Next 16.3.5:s
-verkliga `NextRequest`; 26 riktade tester passerar. Ny liveverifiering krävs;
-detta är ännu inget kvitto på MP4-import eller visuell acceptans.
+verkliga `NextRequest`; 26 riktade tester och full pre-commit passerar.
+Följdfixen `d94346dd` blev Live i `dep-datmadrbc2fs73bkmktg`: autentiserad
+biblioteksomläsning fungerar. Referensspelet visar nu sitt separata problem
+med saknad/ogiltig Partner-konfiguration. Utgången handoff ger 410 med
+omstartslänk och unauthentiserat Lab-API 401. MP4-import återstår.
+
+Terra sparades därefter som Astrids chatt-/Probe-modell och verifierades
+efter omladdning. Probe är fortsatt Av. Ett isolerat riktigt Cartesia→RunPod-
+prov skapade svensk talvideo på 52,5 sekunder, varav 35,6 sekunder kö och
+14,6 sekunder jobb. Visuell/ljudmässig acceptans och strömning återstår;
+se `docs/ASTRID-GPU-CLOUD-TEST.md`. Jakob har därefter lagt in Whisper-
+nyckeln och startat rebuild. `CROUPIER_ASTRID_CAMERA=1` aktiverades därefter;
+aktuell Render-runtime har både flagga och nyckel. Modellmetadata för
+`whisper-1` gav HTTP 200. Browserns kamera/mikrofon är ännu inte provade.
+Inga genererade-tal-flaggor är aktiverade. Filmagentens synliga chattfix
+`16f1f53d` är Live i `dep-datmfmnf3r2c73dtdvu0`. Chattfält och logg syns
+direkt i desktop och 390 px mobilbredd; ingen insats/rundåtgärd gjordes.
+RunPod visar efter talprovet 0 körande workers/jobb och 0 USD/s; saldo 29,94 USD.
+Nästa samlade granskningsuppdrag finns i
+`docs/CLOUD-BUG-AUDIT-HANDOFF-2026-09-29.md`.
 
 ## 2026-09-29 — Familjeuppladdning i Astrid Studio
 

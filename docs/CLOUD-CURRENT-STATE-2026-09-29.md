@@ -8,10 +8,14 @@ pausat enligt `AGENTS.md`. Inga hemlighetsvärden hör hemma i denna fil.
 
 ## Körande och förberedda ytor
 
-Uppföljning 08:46 CEST: följdfixen `225433fe` för färsk idle-katalog är Live
-i automatiska `dep-datlrou0tbcc7383arg0` (08:46:15). Render ersatte först
-det manuella `dep-datlqlugekts73bbj7rg` med samma SHA. API-åtkomsten i Lab
-hade därefter ett separat reproducerat proxyfel; se nedan och JOHN-HANDOFF.
+Uppföljning cirka 09:32 CEST: `16f1f53d` är Live i automatiska
+`dep-datmfmnf3r2c73dtdvu0`. Astrids chattfält och logg är synliga utan
+långtryck i desktop och 390 px mobilbredd. Ingen insats eller rundåtgärd
+gjordes i kontrollen. Lab-bibliotekets omläsning fungerar sedan `d94346dd`
+autentiserat; Nexts interna URL och dess localhost-normalisering är hanterade.
+En utgången handoff gav verifierad HTTP 410 med ordinarie omstartslänk;
+utan session ger Lab-API fortfarande HTTP 401. Jakob startade därefter
+`dep-datmccflot8c738514fg` genom Save and rebuild för Whisper-nyckeln.
 
 ### Enkel projektkarta och Lab-ingångar — 2026-09-29
 
@@ -43,7 +47,7 @@ raderades av denna agent. Privat Blob har fortsatt ett objekt och samma QA-koppl
 
 | Resurs | Källa och nuvarande roll | Verifierat / kvar |
 | --- | --- | --- |
-| Render `croupier-v2` | GitHub `Jakeminator123/github-work`, `jakemanator123-github-work`; deploy `adae8772` (`dep-datlnp2d0e5s73ckjt30`), start 08:34:12, Live 08:37:38 CEST. Äger ännu spel, BO, Lab, kort, sko, saldo och två SQLite-filer på `/var/data`. | Hälsa och spelingång HTTP 200 efter deploy, `/studio/` 401 utan inloggning. Ingen verifierad samordnad produktionsbackup utanför Render eller Neon-cutover. Familjeuppladdningens autentiserade live-QA återstår. |
+| Render `croupier-v2` | GitHub `Jakeminator123/github-work`, `jakemanator123-github-work`; `16f1f53d`, deploy `dep-datmfmnf3r2c73dtdvu0`, verifierad Live 09:31 CEST. Äger ännu spel, BO, Lab, kort, sko, saldo och två SQLite-filer på `/var/data`. | Synlig chatt verifierad i desktop/mobil. Lab-bibliotekets autentiserade omläsning fungerar; obehörig API ger 401 och utgången handoff 410. MP4-import, produktionsbackup utanför Render och Neon-cutover återstår. |
 | Render `croupier-lab-director` och privat `croupier-lab-openclaw` | Samma GitHub-branch, deploy `15bd1541`; Director är produkt-/Lab-gräns, Gateway har modellen och sin beständiga `/data/openclaw`. | Live. Interna status-/tokenprov lyckades; full giltig spel→modell→tal-kedja återstår. |
 | Vercel `croupier-frontend` | Git-kopplat till `Jakeminator123/github-work`, produktionsbranch `jakemanator123-github-work`, rot `apps/croupier-frontend`; första deploy från `d78eb4cb`. | [Ny Git-kopplad startsida](https://croupier-frontend.vercel.app/) READY. Automatisk deploy efter push av `d8d4b707` blev READY: `dpl_9GcmrpbHQ91oTJwnBYUuvV5DzxDZ`. Startsida och `/demo` verifierade; `CROUPIER_GAME_URL` sparad för Production och Preview och pekar på Render-spelet. |
 | Tidigare Vercel `github-work-vercel-entry` | Ersatt landning; tidigare deployment `dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T`. | **Borttaget.** Projekt `prj_hRrGtpAgb0HBEt1sssqOPZVlROh4` och dess gamla publika adress ger 404. Vid förkontroll fanns bara två speladressvariabler, ingen Blob-koppling och ingen egen domän. API:t visade då en sourceless Git-länk, vilket rättar äldre uppgiften om helt saknad Git-länk. |
@@ -85,13 +89,12 @@ minneskontext. Den kontrollerade Neon-flytten återstår enligt
 till testbalans, utan betalningsleverantör eller riktiga uttag.
 
 Lab-inloggning och bibliotekets rendering bevisar inte full media-QA.
-**Spel & uppspelning** visade `Referensspelets konfiguration kunde inte läsas`
-och inaktiv Anslut-knapp på `adae8772`; detta har återrapporterats till
-filmagenten. Orsaken är Nexts interna Request-URL för API-anrop, trots
-korrekta autentiserade proxyheaders. En avgränsad guardfix och regressionstest
-är integrerade; liveprovet görs efter nästa deploy. Utgången/återanvänd
-inloggningslänk får samtidigt en begriplig 410-sida med ordinarie nystart.
-Ingen lokal MP4 laddades upp under denna kontroll.
+**Spel & uppspelning** visade tidigare ett generiskt konfigurationsfel.
+Orsaken var Nexts interna Request-URL, följt av NextURL:s normalisering till
+`localhost:4188`. Efter `d94346dd` läses konfigurationen och sidan visar nu
+det separata hindret **Partner-konfiguration saknas eller är ogiltig**;
+Anslut är därför fortfarande inaktiv. Bibliotekets **Läs in nya filer**
+fungerar utan auth-alert. Ingen lokal MP4 laddades upp under kontrollen.
 
 | Resurs | Syfte | Faktiskt läge |
 | --- | --- | --- |
@@ -125,11 +128,22 @@ och aktuell workerdebitering $0/s i RunPod. Se
 
 Efter detta sparade Jakob en egen `RUNPOD_API_KEY` på Render. Endpointnamnet
 rättades till `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` med värdet `zsudl8tmzcmiv1`
-via Save only. Nyckelns närvaro är verifierad, men dess giltighet och det
-genererade talflödet är ännu inte API-testade. Jakob sparade därefter även
-`CARTESIA_API_KEY` på samma Render-tjänst; namnets närvaro verifierades före
-deploy `adae8772`. Aktiveringsflaggorna är orörda och saknas fortfarande;
-detta bygge aktiverar därför inte genererat tal.
+via Save only. Den klarade därefter `/health` från Render. Jakob sparade även
+`CARTESIA_API_KEY`; det första riktiga separata talprovet den 29 september
+09:13 CEST skapade en MP4 av "Hej! Välkommen till bordet." på 52,5 sekunder
+(35,6 sekunder RunPod-kö, 14,6 sekunder jobb). Se GPU-kvittot för exakta
+hashar och tider. Audiovisuell acceptans och strömprov återstår.
+Produktionsflaggorna för genererat tal är fortfarande avstängda.
+
+På Jakobs begäran valdes **GPT-5.6 Terra** i Studio → Probe → Modell för
+Astrids chatt och Probe. Sparandet och värdet efter omladdning verifierades
+i drift. Probe-läget är fortsatt Av; chattminne och nya långsiktiga
+minnesutdrag är skilda funktioner. Whisper-koden använder `whisper-1`
+och `/v1/audio/translations`, alltså engelsk text. Jakob har lagt in
+`CROUPIER_ASTRID_TRANSLATION_KEY` och startat rebuild. Root aktiverade därefter
+`CROUPIER_ASTRID_CAMERA=1`; båda finns i aktuell runtime, och ett läsande
+OpenAI-modellprov gav HTTP 200 för `whisper-1`. Själva kamerabilden och
+mikrofoninspelningen är ännu inte provade i browsern.
 
 `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` och motsvarande bootstrap-user
 hör till Render `croupier-v2` Environment. De skapar första administratören
