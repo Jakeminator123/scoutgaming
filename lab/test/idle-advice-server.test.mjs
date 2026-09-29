@@ -33,7 +33,7 @@ function next(value, number, at = EPOCH) {
   return copy;
 }
 const noFetch = () => assert.fail('No provider may be contacted');
-function fixture({ configured = direct(), registry = inventory(), answer, fetchImpl } = {}) {
+function fixture({ configured = direct(), registry = inventory(), registryLoader, answer, fetchImpl } = {}) {
   const calls = [];
   let at = EPOCH;
   const fetcher = fetchImpl ?? (async (url, options) => {
@@ -45,9 +45,23 @@ function fixture({ configured = direct(), registry = inventory(), answer, fetchI
     return opportunity ? Response.json({ choices: [{ message: { content: JSON.stringify(advice) } }] })
       : Response.json({ advice, provider: { status: 'responded', contextContractVersion: 2, observedChatMessages: payload.input.context.observedChat.messages.length } });
   });
-  return { calls, setNow(value) { at = value; }, advise: createIdleAdviceServer({ settings: configured, videoRegistry: registry, fetchImpl: fetcher, now: () => at }) };
+  return { calls, setNow(value) { at = value; }, advise: createIdleAdviceServer({ settings: configured, videoRegistry: registryLoader ? undefined : registry, registryLoader, fetchImpl: fetcher, now: () => at }) };
 }
 const errorCode = expected => error => error.message === expected;
+
+test('fresh opportunities reload uploaded candidates while retries and rate limits retain their ledger', async () => {
+  let current = inventory(), loads = 0;
+  current.videos.find(video => video.id === variant).available = false;
+  const f = fixture({ registryLoader: async () => { loads++; return structuredClone(current); } });
+  const first = body();
+  assert.equal((await f.advise(first)).provider, 'only_standard_no_model');
+  current = inventory();
+  assert.equal((await f.advise(first)).provider, 'only_standard_no_model');
+  assert.equal(loads, 1, 'retry reuses its settled decision');
+  assert.equal((await f.advise(next(first, 2))).videoId, variant);
+  assert.equal((await f.advise(next(first, 3))).provider, 'idle_advice_rate_limited_baseline');
+  assert.equal(loads, 3); assert.equal(f.calls.length, 1);
+});
 
 test('active advice uses the existing Director role and only exact eligible idle file labels', async () => {
   const f = fixture();

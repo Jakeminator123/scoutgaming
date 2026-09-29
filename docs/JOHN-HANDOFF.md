@@ -24,8 +24,12 @@ modellkörning ingår i dessa testresultat. Browseranslutningen i denna chatt
 gav `User unavailable`; inloggning, riktig uppladdning, två uppspelningar och
 fyra-dealer-rehearsal måste kvitteras i webbläsare före slutlig QA.
 
-Den samordnande agenten `root-orchestrator` har fungerande Render-browser
-och inväntar commit-SHA för driftsättning och webbläsarprov.
+Vercel har publicerat `adae8772`; `/labb-lissabon` ger verifierad HTTP 307
+till Render `/studio`. `root-orchestrator` samordnar Render och browserprov.
+Följdfix: varje ny idle-förfrågan läser aktuella uppladdningar, medan
+återförsök och frekvensgränser behåller samma beslutsjournal. Uppladdningens
+verkliga filändelse bevaras även när visningsnamnet saknar `.mp4`.
+38 riktade tester för intake, idle-råd och gemensam uppspelning passerade.
 
 RunPod/Render 2026-09-29 08:15 CEST: egen API-nyckel finns nu som variabel
 på `croupier-v2`; endpointnamnet rättat med Save only. Deploy `799b359f`

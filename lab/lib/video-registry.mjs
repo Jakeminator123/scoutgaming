@@ -234,7 +234,7 @@ export async function loadVideoRegistry(options = {}) {
       Object.assign(video, {
         familyId: uploadFamily.id, role: 'variant', eventId: uploadFamily.eventId,
         situation: uploadFamily.situation, playbackType: uploadFamily.playbackType,
-        bindingScope: 'shared-local', fileName: entry.classification.label,
+        bindingScope: 'shared-local',
       });
     }
     const recorded = classified.get(video.id);

@@ -33,7 +33,8 @@ test('explicit family upload survives reload, joins exact shared selection manua
   const video = inventory.videos.find(row => row.id === result.id);
   assert.equal(video.familyId, metadata.familyId); assert.equal(video.role, 'variant');
   assert.equal(video.bindingScope, 'shared-local'); assert.equal(video.source, 'upload');
-  assert.equal(video.reviewStatus, 'unreviewed'); assert.equal(video.fileName, metadata.label);
+  assert.equal(video.reviewStatus, 'unreviewed'); assert.equal(video.fileName, `${result.id}.mp4`);
+  assert.equal(video.label, metadata.label);
   const family = inventory.families.find(row => row.id === metadata.familyId);
   assert.deepEqual(family.variantIds, [result.id]); assert.equal(family.standardIds.length, 1);
   const project = createSeedProject();
