@@ -2252,6 +2252,13 @@ async function playChatDecision(decision, signal, jobId) {
               nativeObservation.emit('playback', { event: 'speech', source: pending?.probe ? 'probe' : 'generated-lipsync', synthetic: Boolean(pending?.synthetic), ...receipt });
             },
           });
+        } else if (DEALER.key === 'astrid') {
+          // Victoria is part of Astrid's identity. Missing generated media must
+          // not silently replace her voice with the browser's default voice.
+          const pending = pendingChatReplies.get(jobId);
+          if (pending) pending.voiceUnavailable = true;
+          nativeObservation.emit('playback', { event: 'speech', state: 'fallback',
+            reason: 'astrid-generated-media-unavailable', renderer: 'text-only' });
         } else await playNeutralTts(decision.exactText, signal);
       }
       finally { speaking = false; }
@@ -2414,7 +2421,8 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     const receipt = await received.completion;
     if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
     if (receipt.status === 'cancelled') setChatStatus(chatFailureMessage(receipt.reason));
-    else setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.' : '');
+    else setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.'
+      : pendingChatReplies.get(requestId)?.voiceUnavailable ? 'Astrids röstvideo saknas. Svaret visas som text.' : '');
     return true;
   } catch (error) {
     if (previewRow?.classList.contains('pending')) previewRow.remove();

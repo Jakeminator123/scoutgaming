@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
 
 const source = await readFile(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
 
@@ -25,12 +26,63 @@ test('chat previews model text provisionally and commits it only inside the gate
   assert.doesNotMatch(sendBlock, /chatHistory\.push\(\{ role: 'assistant'/);
 });
 
-test('generated text keeps neutral idle and exact TTS instead of a recorded mouth clip', () => {
+test('generated text keeps neutral idle instead of a recorded mouth clip', () => {
   const playback = source.slice(source.indexOf('async function playChatDecision'), source.indexOf('function sayLine'));
   assert.match(playback, /decision\.kind === 'generatedText'/);
   assert.match(playback, /playNeutralTts\(decision\.exactText, signal\)/);
   assert.doesNotMatch(playback, /playRecorded\([^\n]*generatedText/);
   assert.doesNotMatch(source, /function speakFor\(/);
+});
+
+function playbackFixture(dealerId) {
+  const events = [], tts = [], videos = [], poses = [], pending = {};
+  const context = {
+    DEALER: { key: dealerId }, pendingChatReplies: new Map([['reply-1', pending]]),
+    localPresentation: { state() {} }, updatePoseState: value => poses.push(value), speaking: false,
+    playNeutralTts: async text => tts.push(text),
+    playGeneratedSpeech: async media => videos.push(media),
+    nativeObservation: { emit: (type, data) => events.push({ type, ...data }) },
+    $: () => ({ classList: { remove() {} } }), greenActor: false,
+    engine: { presentedClip: 'other' }, CLIP: { idle: 'idle' },
+  };
+  const playback = source.slice(source.indexOf('async function playChatDecision'), source.indexOf('function sayLine'));
+  const play = runInNewContext(`${playback}\nplayChatDecision`, context);
+  return { play, events, tts, videos, poses, pending, context };
+}
+
+test('Astrid without generated media stays text-only and never calls a substitute voice', async () => {
+  const f = playbackFixture('astrid');
+  await f.play({ kind: 'generatedText', exactText: 'Good evening.' }, new AbortController().signal, 'reply-1');
+  assert.equal(f.tts.length, 0);
+  assert.equal(f.videos.length, 0);
+  assert.equal(f.pending.voiceUnavailable, true);
+  assert.equal(f.events.at(-1).reason, 'astrid-generated-media-unavailable');
+  assert.equal(f.events.at(-1).renderer, 'text-only');
+  assert.equal(f.context.speaking, false);
+  assert.equal(f.poses.at(-1).speechOwner, 'none');
+});
+
+test('Astrid still plays a generated package or stream through the shared video player', async () => {
+  for (const [visualMode, key] of [
+    ['generated-lipsync-preview', 'speechPackage'],
+    ['generated-lipsync-stream-preview', 'speechStream'],
+  ]) {
+    const f = playbackFixture('astrid'), media = { fixture: key };
+    await f.play({ kind: 'generatedText', exactText: 'Good evening.', requestId: 'reply-1', visualMode, [key]: media },
+      new AbortController().signal, 'reply-1');
+    assert.equal(f.videos[0], media);
+    assert.equal(f.tts.length, 0);
+    assert.equal(f.pending.voiceUnavailable, undefined);
+  }
+});
+
+test('the other three dealers retain their existing exact-text voice path', async () => {
+  for (const dealerId of ['vera', 'amira', 'mei']) {
+    const f = playbackFixture(dealerId);
+    await f.play({ kind: 'generatedText', exactText: 'Good evening.' }, new AbortController().signal, 'reply-1');
+    assert.deepEqual(f.tts, ['Good evening.']);
+    assert.equal(f.pending.voiceUnavailable, undefined);
+  }
 });
 
 test('renderer evidence, not busy or phase, supplies standard-idle proof', () => {
