@@ -9,21 +9,22 @@ import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
 const secret = 'isolated-stream-secret-at-least-32-characters';
 async function fixture(t, options = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-stream-test-'));
-  let relayOptions, service, owner = 'owner-one', fresh = true, sourceCalls = 0, aborted = false, written = 0;
+  let relayOptions, service, owner = 'owner-one', fresh = true, sourceCalls = 0, aborted = false, written = 0, available = options.initialAvailable ?? 1;
   const config = { directory, workerSecret: secret, ticketSecret: secret, origin: 'http://127.0.0.1:4173', apiKey: 'fixture', voiceId: 'voice', modelId: 'model' };
   const services = [];
-  const relay = { status: () => ({ available: 1 }), close() {}, openSource: () => ({ writePCM: async b => { written += b.length; }, end() {}, abort() { aborted = true; } }) };
+  const relay = { status: () => ({ available }), close() {}, openSource: () => ({ writePCM: async b => { written += b.length; }, end() {}, abort() { aborted = true; } }) };
   const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10,
     resolveOwner: req => req.owner,
     attachRelay: (_, value) => { relayOptions = value; return relay; },
     pcmSource: options.pcmSource ?? (async function*({ beforeCostly }) { await beforeCostly(); sourceCalls++; yield new Uint8Array(48); }),
+    sessionManager: options.sessionManager,
   }).then(value => { services.push(value); return value; });
   service = await construct();
   const input = (requestId = 'test-request') => ({ requestId, dealerId: 'astrid', text: 'A test reply.', owner, playerId: 'player-one', beforeCostly: async () => { if (!fresh) throw Error('stale'); } });
   const request = (d, who = owner) => ({ owner: who, headers: { 'sec-websocket-protocol': `astrid-v2, ticket.${d.ticket}` } });
   t.after(async () => { services.forEach(s => s.close()); assert.equal(dirname(directory), resolve(tmpdir())); assert.match(basename(directory), /^croupier-stream-test-/); await rm(directory, { recursive: true, force: true }); });
   return { config, directory, service, construct, input, request, get relayOptions() { return relayOptions; },
-    get sourceCalls() { return sourceCalls; }, get aborted() { return aborted; }, get written() { return written; }, stale() { fresh = false; } };
+    get sourceCalls() { return sourceCalls; }, get aborted() { return aborted; }, get written() { return written; }, stale() { fresh = false; }, setAvailable(value) { available = value; } };
 }
 
 test('prepare is unpaid, exact expiry is signed, cookie owner required; ready begins source', async t => {
@@ -104,5 +105,36 @@ test('opt-in preserves local/cloud guards and never enables cloud guests', () =>
   assert.equal(generatedSpeechStreamConfiguration(env).configured, true);
   assert.equal(generatedSpeechStreamConfiguration({ ...env, CROUPIER_GENERATED_SPEECH_STREAMING: '' }).enabled, false);
   assert.equal(generatedSpeechStreamConfiguration({ ...env, HOST: '0.0.0.0', NODE_ENV: 'production', PUBLIC_URL: 'https://example.test', CROUPIER_CLOUD_GENERATED_SPEECH: '1', DEMO_GUEST_ACCESS: '1' }).configured, false);
-  assert.equal(generatedSpeechStreamConfiguration({ ...env, CROUPIER_CLOUD_RUNTIME: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '', CROUPIER_CLOUD_GENERATED_SPEECH: '1', NODE_ENV: 'production', PUBLIC_URL: 'https://game.example.test' }).configured, true);
+  const cloud = { ...env, CROUPIER_CLOUD_RUNTIME: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '', CROUPIER_CLOUD_GENERATED_SPEECH: '1', NODE_ENV: 'production', PUBLIC_URL: 'https://game.example.test',
+    RUNPOD_API_KEY: 'fixture', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint',
+    CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '0.50', CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '9.94' };
+  assert.equal(generatedSpeechStreamConfiguration(cloud).configured, true);
+  for (const patch of [{ CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '10.01' }, { RUNPOD_API_KEY: '' }]) {
+    assert.equal(generatedSpeechStreamConfiguration({ ...cloud, ...patch }).configured, false);
+  }
+});
+
+test('verified request reserves identity before starting/reusing worker; TTS waits for socket admission', async t => {
+  let starts = 0, f;
+  f = await fixture(t, { initialAvailable: 0, sessionManager: {
+    async ensure({ beforeCostly }) {
+      await beforeCostly();
+      assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.request.json')).length, 1);
+      starts++; f.setAvailable(1);
+    }, close() {},
+  } });
+  const descriptor = await f.service.prepare(f.input());
+  assert.equal(starts, 1); assert.equal(f.sourceCalls, 0); assert.equal(descriptor.kind, 'generated-speech-stream');
+  await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
+  assert.equal(starts, 1, 'duplicate request cannot restart a paid worker');
+});
+
+test('failed worker startup cannot issue a stream ticket or pay again for the same request', async t => {
+  let starts = 0;
+  const f = await fixture(t, { initialAvailable: 0, sessionManager: {
+    async ensure() { starts++; throw Object.assign(Error('blocked'), { code: 'generated_speech_daily_budget_exhausted' }); }, close() {},
+  } });
+  await assert.rejects(f.service.prepare(f.input()), { code: 'generated_speech_daily_budget_exhausted' });
+  await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
+  assert.equal(starts, 1); assert.equal(f.service.status().pending, 0); assert.equal(f.sourceCalls, 0);
 });

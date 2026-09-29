@@ -37,4 +37,6 @@ test('legacy JSON clients work and failures get distinct explanations', async ()
   assert.match(chatFailureMessage('muted'), /ljudet/);
   assert.match(chatFailureMessage('stale_round_revision'), /Bordet/);
   assert.match(chatFailureMessage('generated_speech_timeout'), /lång tid/);
+  assert.match(chatFailureMessage('generated_speech_daily_budget_exhausted'), /Dagens budget/);
+  assert.doesNotMatch(chatFailureMessage('generated_speech_daily_budget_exhausted'), /Försök igen\./);
 });

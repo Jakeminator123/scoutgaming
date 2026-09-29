@@ -3,6 +3,7 @@ export interface VideoRegistryOptions { archiveDir?: string | null; snapshotPath
 export interface RegistryVideo {
   classification?: VideoMetadata;
   source?: 'emil' | 'archive' | 'upload';
+  storage?: 'disk' | 'private-blob';
   familyId?: string;
   role?: 'standard' | 'variant';
   eventId?: string;
@@ -47,3 +48,4 @@ export interface VideoRegistry {
 export function loadVideoRegistry(options?: VideoRegistryOptions): Promise<VideoRegistry>;
 export function rescanVideoRegistry(): Promise<VideoRegistry>;
 export function getVideoResponse(id: string, request: Request, options?: VideoRegistryOptions): Promise<Response>;
+export function getLabVideoResponse(id: string, request: Request, options?: VideoRegistryOptions): Promise<Response>;

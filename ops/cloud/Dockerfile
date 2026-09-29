@@ -6,7 +6,8 @@ WORKDIR /app
 COPY . .
 ARG CROUPIER_LAB_BASE_PATH=/studio
 ENV CROUPIER_LAB_BASE_PATH=$CROUPIER_LAB_BASE_PATH
-RUN npm --prefix lab ci && npm --prefix lab run build \
+RUN npm --prefix services/astrid-gpu-worker/gateway ci --omit=dev --ignore-scripts \
+    && npm --prefix lab ci && npm --prefix lab run build \
     && chown -R node:node /app/lab/.next
 ENV NODE_ENV=production
 # The entrypoint adjusts only the mounted volume root, then irrevocably drops

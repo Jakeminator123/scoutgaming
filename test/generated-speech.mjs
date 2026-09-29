@@ -48,6 +48,12 @@ test('production speech needs an explicit cloud opt-in, HTTPS origin and authent
   assert.equal(generatedSpeechStatus(env).configured, true);
   assert.equal(generatedSpeechStatus({ ...env, HOST: '127.0.0.1', CROUPIER_CLOUD_RUNTIME: '1' }).configured, true,
     'a guarded cloud Web child can use loopback behind the HTTPS gateway');
+  assert.equal(generatedSpeechStatus({ ...env, CROUPIER_GENERATED_SPEECH_STREAMING: '1' }).enabled, false,
+    'managed streaming disables unbudgeted fullfile for legacy clients and Probe');
+  assert.equal(generatedSpeechStatus({ ...env, HOST: '127.0.0.1', CROUPIER_CLOUD_RUNTIME: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1' }).enabled, false,
+    'local-preview flag cannot reopen cloud file generation');
+  assert.equal(generatedSpeechStatus({ ...env, HOST: '127.0.0.1', CROUPIER_CLOUD_GENERATED_SPEECH: '', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1' }).configured, true,
+    'explicit isolated local fullfile tests keep their existing path');
   for (const patch of [
     { CROUPIER_CLOUD_GENERATED_SPEECH: '0' }, { NODE_ENV: 'development' }, { HOST: '127.0.0.1' },
     { PUBLIC_URL: 'http://astrid.example.com' }, { PUBLIC_URL: 'https://localhost' },

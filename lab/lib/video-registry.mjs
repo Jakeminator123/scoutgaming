@@ -9,6 +9,8 @@ import { readClassifications } from './video-classifications.mjs';
 import { mediaDefinitionForPath, readLabVideoManifest } from './lab-video-manifest.mjs';
 import { buildLabVideoManifest, manifestJson } from '../../pipeline/build-lab-video-manifest.mjs';
 import { StudioError } from './project-store.mjs';
+import { getPrivateMedia, isCloudMediaConfigured } from './cloud-media-store.mjs';
+import { assertLocalRequest } from './http-guard.mjs';
 
 // Server-only: the browser receives logical IDs, never archive paths or credentials.
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
@@ -135,6 +137,7 @@ function publicEntry(entry, available, integrity, family) {
     sha256: entry.sha256, available, previewUrl: labUrl(`/api/videos/${entry.id}`),
     reviewStatus: 'unreviewed', integrity, suggestedEventId: entry.classification.eventId,
     bindingScope: 'lab-only', source: 'upload', classification: entry.classification, addedAt: entry.addedAt,
+    storage: entry.storage ? 'private-blob' : 'disk',
   };
   if (family) return {
     id: entry.id,
@@ -216,7 +219,12 @@ export async function loadVideoRegistry(options = {}) {
   for (const entry of entries.values()) {
     let available = false, integrity = 'unavailable';
     const location = entry.classification ? uploadDirectory(options) : archive;
-    if (location) {
+    if (entry.storage) {
+      // Immutable Blob references were hashed on upload. Availability here means
+      // configured retrieval; playback still verifies all bytes before serving.
+      available = isCloudMediaConfigured(options.env ?? process.env);
+      integrity = available ? 'unchecked' : 'unavailable';
+    } else if (location) {
       try {
         const { file, info } = await inspectFile(location, entry);
         available = true;
@@ -278,6 +286,14 @@ function parseRange(header, size) {
 }
 
 /** Only allowlisted UUIDs resolve to media; no URLs, arbitrary paths, or symlinks. */
+export async function getLabVideoResponse(id, request, options = {}) {
+  assertLocalRequest(request);
+  // The authenticated gateway has already checked Host, Origin and its private
+  // header. Next still supplies a loopback Request.url to the internal handler.
+  return getVideoResponse(id, request, { ...options, trustedProxyOrigin: process.env.LAB_PUBLIC_URL });
+}
+
+/** Product callers authenticate before resolving a video ID through this reader. */
 export async function getVideoResponse(id, request, options = {}) {
   if (!['GET', 'HEAD'].includes(request.method)) return errorResponse(request, 405, 'GET or HEAD only.', { Allow: 'GET, HEAD' });
   const origin = request.headers.get('origin');
@@ -300,6 +316,7 @@ export async function getVideoResponse(id, request, options = {}) {
     }
     if (!entry && snapshotFailed) throw new RegistryError(503, 'Video inventory unavailable.');
     if (!entry) return errorResponse(request, 404, 'Unknown video.');
+    if (uploaded?.storage) return getPrivateMedia(uploaded.storage, request, options);
     const archive = await archiveLocation(uploaded ? { path: uploadDirectory(options) } : selectArchive(options));
     const { file, info } = await inspectFile(archive, entry);
     // Validate and stream the same open file descriptor, not a second path lookup.

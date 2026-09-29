@@ -32,6 +32,7 @@ const PRIVATE_KEYS = new Set([
 ]);
 const GENERATED_SPEECH_KEYS = ['CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
 const GENERATED_SPEECH_ORIGINS = ['https://api.cartesia.ai', 'https://api.runpod.ai'];
+const CLOUD_STORAGE_KEYS = ['CROUPIER_MEDIA_STORAGE', 'BLOB_READ_WRITE_TOKEN', 'CROUPIER_ZONES_DATABASE_URL'];
 const TRANSLATION_ORIGIN = 'https://api.openai.com';
 const OPENAI_BASE_KEYS = ['OPENAI_BASE_URL', 'OPENAI_API_BASE', 'OPENAI_API_HOST'];
 const TRANSLATION_KEYS = ['CROUPIER_ASTRID_TRANSLATION_KEY', 'OPENAI_API_KEY', ...OPENAI_BASE_KEYS, 'CARTESIA_API_KEY', 'RUNPOD_API_KEY'];
@@ -117,12 +118,15 @@ function readEnvFile(file) {
   catch (error) { if (error.code === 'ENOENT') return {}; throw new Error('Could not parse private OpenClaw environment configuration.'); }
 }
 
-export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env, generatedSpeech = false, astridCamera = false } = {}) {
+export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env, generatedSpeech = false, astridCamera = false, cloudStorage = false } = {}) {
   if (typeof astridCamera !== 'boolean') throw new Error('astridCamera requires an explicit boolean opt-in.');
+  if (typeof cloudStorage !== 'boolean') throw new Error('cloudStorage requires an explicit boolean opt-in.');
   repoRoot = resolve(repoRoot);
-  envFiles ??= [join(repoRoot, '.env'), join(repoRoot, 'lab', '.env.local'), join(repoRoot, 'lab', '.env.generated-speech.local')];
+  envFiles ??= [join(repoRoot, '.env'), join(repoRoot, 'lab', '.env.local'), join(repoRoot, 'lab', '.env.generated-speech.local'),
+    ...(cloudStorage ? [join(repoRoot, 'lab', '.env.cloud-storage.local')] : [])];
   const values = {};
-  const allowedKeys = [...PRIVATE_KEYS, ...(generatedSpeech ? GENERATED_SPEECH_KEYS : []), ...(astridCamera ? TRANSLATION_KEYS : [])];
+  const allowedKeys = [...PRIVATE_KEYS, ...(generatedSpeech ? GENERATED_SPEECH_KEYS : []), ...(astridCamera ? TRANSLATION_KEYS : []),
+    ...(cloudStorage ? CLOUD_STORAGE_KEYS : [])];
   for (const file of envFiles) {
     const parsed = readEnvFile(file);
     for (const key of allowedKeys) if (parsed[key] !== undefined) values[key] = parsed[key];
@@ -172,7 +176,29 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
   if (speechEndpointId && !/^[a-zA-Z0-9_-]{1,128}$/.test(speechEndpointId)) throw new Error('CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID must be an endpoint ID, not a URL.');
   const videoArchive = values.LAB_VIDEO_ARCHIVE;
   if (videoArchive !== undefined && !isAbsolute(videoArchive)) throw new Error('LAB_VIDEO_ARCHIVE must be an absolute directory path.');
-  const configuration = { repoRoot, baseUrl, speechUrl, remoteUrl, productAgent, directorAgent, timeoutMs: Math.round(timeout), generatedSpeech: Boolean(generatedSpeech) };
+  const blobToken = cloudStorage ? values.BLOB_READ_WRITE_TOKEN?.trim() || '' : '';
+  const zonesDatabaseUrl = cloudStorage ? values.CROUPIER_ZONES_DATABASE_URL?.trim() || '' : '';
+  const storageOrigins = [];
+  let zonesOrigin = null;
+  if (cloudStorage) {
+    const tokenParts = blobToken.split('_');
+    if (values.CROUPIER_MEDIA_STORAGE !== 'blob' || !blobToken.startsWith('vercel_blob_rw_')
+      || !/^[A-Za-z0-9]+$/.test(tokenParts[3] || '') || tokenParts.length < 5 || !tokenParts[4]
+      || blobToken.length > 4096 || /\s/.test(blobToken)) throw new Error('--cloud-storage requires CROUPIER_MEDIA_STORAGE=blob and a private BLOB_READ_WRITE_TOKEN.');
+    storageOrigins.push('https://vercel.com', new URL(`https://${tokenParts[3]}.private.blob.vercel-storage.com`).origin);
+    if (zonesDatabaseUrl) {
+      let database;
+      try { database = new URL(zonesDatabaseUrl); } catch { throw new Error('Invalid CROUPIER_ZONES_DATABASE_URL.'); }
+      if (!['postgres:', 'postgresql:'].includes(database.protocol) || !database.username || !database.password
+        || !/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.neon\.tech$/.test(database.hostname)
+        || database.port && database.port !== '5432' || database.hash || !database.pathname.slice(1)
+        || !['require', 'verify-ca', 'verify-full'].includes(database.searchParams.get('sslmode'))
+        || zonesDatabaseUrl.length > 8192 || /[\r\n\t]/.test(zonesDatabaseUrl)) throw new Error('Invalid CROUPIER_ZONES_DATABASE_URL.');
+      // @neondatabase/serverless HTTP transport replaces only the first DNS label.
+      zonesOrigin = `https://${database.hostname.replace(/^[^.]+/, 'api')}`;
+    }
+  }
+  const configuration = { repoRoot, baseUrl, speechUrl, remoteUrl, productAgent, directorAgent, timeoutMs: Math.round(timeout), generatedSpeech: Boolean(generatedSpeech), cloudStorage };
   // Keep credentials accessible to the in-memory launcher/probe, but make an
   // accidental JSON/string inspection safe by default.
   Object.defineProperties(configuration, {
@@ -184,8 +210,13 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
     speechEndpointId: { value: speechEndpointId, enumerable: false },
     translationKey: { value: translationKey, enumerable: false },
     videoArchive: { value: videoArchive, enumerable: false },
+    blobToken: { value: blobToken, enumerable: false },
+    zonesDatabaseUrl: { value: zonesDatabaseUrl, enumerable: false },
+    storageOrigins: { value: storageOrigins, enumerable: false },
+    zonesOrigin: { value: zonesOrigin, enumerable: false },
   });
   const report = {
+    cloudStorage: { enabled: cloudStorage, mode: cloudStorage ? 'blob' : 'disk', blobCredentialPresent: Boolean(blobToken), zonesDatabasePresent: Boolean(zonesDatabaseUrl) },
     astridTranslation: {
       enabled: astridCamera, configured: Boolean(translationKey), credentialPresent: Boolean(translationKey),
       credentialSource: translationCredentialSource, authenticationVerified: false,
@@ -331,11 +362,14 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
     RUNPOD_API_KEY: '', RUNPOD_ENDPOINT_ID: '', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: '',
     CROUPIER_GENERATED_SPEECH: '', CROUPIER_GENERATED_SPEECH_DIR: '', CROUPIER_GENERATED_SPEECH_PREVIEW: '',
     CROUPIER_ASTRID_CAMERA: '', CROUPIER_ASTRID_TRANSLATION_KEY: '',
+    CROUPIER_MEDIA_STORAGE: 'disk', BLOB_READ_WRITE_TOKEN: '', CROUPIER_ZONES_DATABASE_URL: '',
     OPENCLAW_DASHBOARD_ENABLED: 'false', OPENCLAW_DASHBOARD_ORIGIN: '', OPENCLAW_HOSTPORT: '',
   };
   const videoArchiveEnvironment = configuration.videoArchive === undefined ? {} : { LAB_VIDEO_ARCHIVE: configuration.videoArchive };
   const speechOrigins = configuration.generatedSpeech ? GENERATED_SPEECH_ORIGINS : [];
   const translationKey = astridCamera ? configuration.translationKey || '' : '';
+  const storageEnvironment = configuration.cloudStorage ? { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: configuration.blobToken } : {};
+  const storageOrigins = configuration.cloudStorage ? configuration.storageOrigins : [];
   const generatedSpeechEnvironment = role => configuration.generatedSpeech ? {
     CARTESIA_API_KEY: configuration.cartesiaKey,
     RUNPOD_API_KEY: configuration.runpodKey,
@@ -349,7 +383,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
     product: {
       command: process.execPath, args: [join(configuration.repoRoot, 'web', 'server.mjs')], cwd: runDir,
       readyText: 'croupier demo on', dataDir: productData,
-      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('product'), ...videoArchiveEnvironment, NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
+      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('product'), ...storageEnvironment, ...videoArchiveEnvironment, NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
         CROUPIER_DATA_DIR: productData, CROUPIER_GENERATIONS_DIR: join(runDir, 'generations'), DEMO_GUEST_ACCESS: '1',
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
         CROUPIER_PRESENTATION_STUDIO_DIR: labData,
@@ -364,14 +398,15 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         OPENCLAW_AGENT: configuration.directorAgent, OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: configuration.productAgent,
         OPENCLAW_PRODUCT_SPEECH_URL: configuration.speechUrl, OPENCLAW_PRODUCT_SPEECH_TOKEN: configuration.speechToken,
         OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs), LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
-      }, [productOrigin, speechOrigin, directorOrigin, ...speechOrigins, ...(translationKey ? [TRANSLATION_ORIGIN] : [])], ports),
+      }, [productOrigin, speechOrigin, directorOrigin, ...speechOrigins, ...storageOrigins, ...(translationKey ? [TRANSLATION_ORIGIN] : [])], ports),
     },
     lab: {
       command: process.execPath,
       args: [join(configuration.repoRoot, 'lab', 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)],
       cwd: join(configuration.repoRoot, 'lab'),
       readyText: 'Ready in', dataDir: labData,
-      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), ...videoArchiveEnvironment, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
+      env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), ...storageEnvironment, ...videoArchiveEnvironment, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
+        CROUPIER_ZONES_DATABASE_URL: configuration.zonesDatabaseUrl || '',
         CROUPIER_LAB_DIST_DIR: labDistDir,
         LAB_STUDIO_DATA_DIR: labData, LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
         CROUPIER_STREAM_LANE: streamLane,
@@ -379,7 +414,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs),
         OPENCLAW_PRODUCT_SPEECH_URL: '', OPENCLAW_PRODUCT_SPEECH_TOKEN: '',
         LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
-      }, [directorOrigin, ...speechOrigins], ports),
+      }, [directorOrigin, ...speechOrigins, ...storageOrigins, configuration.zonesOrigin], ports),
     },
     urls: { product: productUrl, lab: labUrl },
   };
@@ -449,7 +484,7 @@ function configureSyntheticPartner(specs, repoRoot) {
   } finally { db.close(); boDb.close(); }
 }
 
-export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env,
+export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, env = process.env, cloudStorage = false,
   productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, studioDataDir, playerDataDir,
   streamLane = '', labDistDir = '.next', browserHostname = '127.0.0.1', astridCamera = false, prepare } = {}) {
   validateConnectionLayout({ studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname, astridCamera });
@@ -470,7 +505,7 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
   })();
   try {
     await unusedPort(productPort); await unusedPort(labPort);
-    const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech, astridCamera });
+    const { configuration, report } = loadPrivateConnection({ repoRoot, envFiles, env, generatedSpeech, astridCamera, cloudStorage });
     requireGeneratedSpeechConfiguration(configuration);
     if (!report.labDirector.configured) throw new Error('LAB_REMOTE_URL and LAB_REMOTE_TOKEN are required for the connected Next Eventstudio.');
     if (report.productSpeechRelay.urlPresent !== report.productSpeechRelay.credentialPresent) {
@@ -504,23 +539,24 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
 
 export function parseCli(argv) {
   if (argv.some(value => /^--.*(?:key|token|secret|password)/i.test(value))) throw new Error('Credentials must be read from existing private configuration, never command-line arguments.');
-  let mode = 'check', productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false;
+  let mode = 'check', productPort = DEFAULT_PRODUCT_PORT, labPort = DEFAULT_LAB_PORT, generatedSpeech = false, cloudStorage = false;
   for (let index = 0; index < argv.length; index++) {
     const value = argv[index];
     if (value === '--check') mode = 'check';
     else if (value === '--start') mode = 'start';
     else if (value === '--generated-speech') generatedSpeech = true;
+    else if (value === '--cloud-storage') cloudStorage = true;
     else if (value === '--product-port') productPort = Number(argv[++index]);
     else if (value === '--lab-port') labPort = Number(argv[++index]);
     else throw new Error(`Unknown option: ${value}`);
   }
-  return { mode, productPort, labPort, generatedSpeech };
+  return { mode, productPort, labPort, generatedSpeech, ...(cloudStorage ? { cloudStorage } : {}) };
 }
 
 async function main() {
   const cli = parseCli(process.argv.slice(2));
   if (cli.mode === 'check') {
-    const { configuration, report } = loadPrivateConnection({ generatedSpeech: cli.generatedSpeech });
+    const { configuration, report } = loadPrivateConnection({ generatedSpeech: cli.generatedSpeech, cloudStorage: cli.cloudStorage });
     const probe = await probeConnections(configuration);
     console.log(JSON.stringify({ report, probe }, null, 2));
     return;

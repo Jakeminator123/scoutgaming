@@ -50,9 +50,9 @@ QA-landningsprojektet är avvecklat. Konfigurera en isolerad speladress i
 huvudprojektets Preview-miljö före spel-QA; dess nuvarande värde pekar på
 produktion. Spelarprojektet `croupier-player-preview-qa` har egen Preview-
 `CROUPIER_GAME_ORIGIN`, separata Neon-integrationer och Blob-token. Där finns
-17 `CROUPIER_ZONES_*`-nycklar för Preview/Development från zon-Neon, men ingen
-spårad runtimekod läser dem ännu. Den framtida serverkodens kanoniska zonnyckel
-är `CROUPIER_ZONES_DATABASE_URL`; de andra är alternativa leverantörsformat.
+17 `CROUPIER_ZONES_*`-nycklar för Preview/Development från zon-Neon.
+Lab-serverns zonlagring läser nu enbart `CROUPIER_ZONES_DATABASE_URL`;
+de andra är alternativa leverantörsformat och styr inte zonflödet.
 `BLOB_READ_WRITE_TOKEN` finns för Production/Preview/Development och är en
 serverhemlighet. Render-tjänsternas Gateway-, Lab- och speech-tokenpar
 verifierades samtidigt; de behöver inte kopieras till Vercels startsidor.
@@ -73,6 +73,23 @@ En ändring av variabeln ändrar inte lösenordet för ett befintligt konto.
 
 Render-spelets villkorliga grupper:
 
+- Privat media: `CROUPIER_MEDIA_STORAGE=blob` kräver
+  `BLOB_READ_WRITE_TOKEN`. Båda skickas till Web och Lab eftersom Lab laddar
+  upp och spelservern levererar valda familjeklipp. Filerna är privata;
+  behöriga API-routes hanterar GET, HEAD och Range utan publik Blob-URL.
+  Standard utan flagga är disk. Familjeregistrets `videos/index.json`
+  ligger fortsatt på den beständiga Render-disken och måste säkerhetskopieras.
+- Bakgrundszoner: `CROUPIER_ZONES_DATABASE_URL` kräver aktiv privat media
+  och en separat TLS-skyddad Postgres-anslutning. Den skickas endast till
+  Lab. Schemat i `lab/lib/zone-cloud-schema.sql` installeras uttryckligen;
+  det är installerat i zonprojektet efter separat QA den 29 september.
+  Generella `DATABASE_URL`/`POSTGRES_URL` används aldrig som reserv.
+  Befintliga spelkonton och saldon ligger kvar i sin tidigare databas.
+- Lokal molnlagring: koordinerad `node lab/start.mjs --cloud-storage --no-open`
+  läser den Git-ignorerade `lab/.env.cloud-storage.local` med samma tre namn.
+  Flaggan är opt-in. Nycklarna begränsas till avsedda serverprocesser och
+  nätåtkomst till lagringens exakta ursprung. Render kräver motsvarande
+  server-env och en deploy; Vercel-projektets värden kopieras inte automatiskt.
 - Konto/data: `CROUPIER_PLAYER_ACCOUNTS`, `LAB_VIDEO_ARCHIVE`. Spelar- och
   Lab-datakataloger härleds från `CROUPIER_CLOUD_DATA_ROOT`; manuella
   `CROUPIER_DATA_DIR`, `LAB_STUDIO_DATA_DIR`,
@@ -103,7 +120,16 @@ Render-spelets villkorliga grupper:
   `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Streaming
   `CROUPIER_GENERATED_SPEECH_STREAMING=1` kräver dessutom olika
   `CROUPIER_SPEECH_STREAM_WORKER_SECRET` och
-  `CROUPIER_SPEECH_STREAM_TICKET_SECRET`. Ingen av dessa funktioner är
+  `CROUPIER_SPEECH_STREAM_TICKET_SECRET` samt
+  `CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD` (positivt decimaltal, högst
+  10 USD, högst sex decimaler). Sessionsreserven skickas enbart till Web
+  och måste beräknas från den avsedda RunPod-sessionens pris före aktivering.
+  `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD` krävs samtidigt, med samma
+  decimalformat och högst 10 USD, minst sessionsreserven. Även den går
+  endast till Web. Redan förbrukade GPU-medel ska räknas av från dagens
+  tillgängliga budget före aktivering; den beständiga sessionsliggaren
+  behåller reserver genom omstart. Se den separata streaminghandoffen.
+  Ingen av dessa funktioner är
   nödvändig för de förinspelade Lissabon-klippen.
 - Partner: `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_SECRET` och
   `BETTALOTTO_PARTNER_PLAYER_ID` är en grupp om partnerkopplingen används.

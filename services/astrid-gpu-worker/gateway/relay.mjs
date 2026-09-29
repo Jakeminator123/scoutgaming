@@ -144,6 +144,11 @@ export function attachSpeechRelay(server, {
   tick.unref();
   return {
     status: () => ({ workers: workers.size, busy: sessions.size, available: [...workers.values()].filter(w => !w.session).length }),
+    workerStatus(id) {
+      const worker = workers.get(id);
+      const connected = worker?.ws.readyState === WebSocket.OPEN;
+      return { workers: connected ? 1 : 0, busy: connected && worker.session ? 1 : 0, available: connected && !worker.session ? 1 : 0 };
+    },
     /** Trusted application-only API: call after verifying request/session ownership.
      * TTS PCM stays on Render -> GPU; the browser receives only media. */
     openSource({ userId, sessionId, id, rate }) {
