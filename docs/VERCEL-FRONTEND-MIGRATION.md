@@ -70,12 +70,14 @@ gör inte BO/Lab till Vercelbyggda appar; redovisa detta tydligt.
    `/blackjack` och behåll Render som backend. Testa WebSocket och lång
    SSE separat innan genererat tal/kamera/GPU aktiveras.
 
-Inga nya Blob-, Redis-, Postgres- eller OAuth-tjänster beställs för denna
-första migration. Befintlig SQLite och disk räcker för en enda pilotinstans,
-men backup/restore måste bevisas innan viktiga data anförtros den. Blob är
-objektlagring för filer, inte ersättning för speldatabasen; ta beslutet först
-när dynamiska uppladdningar eller mediabandbredd kräver det. Utgifter för
-GPU-prov kräver separat kostnadstak och stoppvillkor.
+Den första spelklientmigrationen flyttar fortfarande inte speldata från
+Render/SQLite. Ett separat beslut 2026-09-29 skapade Vercel Blob och en
+dedikerad Neon-databas för **Astrids bakgrundszoner**, inte för spel eller
+plånbok; se [zonlagringen](ZONE-CLOUD-STORAGE.md). Zonernas Lab- och
+spelkoppling återstår. Inga Redis- eller OAuth-tjänster behövs för denna
+första migration. Backup/restore av befintlig SQLite och disk måste bevisas
+innan viktiga data anförtros den. Utgifter för GPU-prov kräver separat
+kostnadstak och stoppvillkor.
 
 Källor i repot: `ops/vercel-entry/build.mjs`, `web/public/blackjack-entry.*`,
 `web/public/index.html`, `web/player-auth.mjs`, `ops/cloud/gateway.mjs`,
