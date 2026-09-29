@@ -2,21 +2,16 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useRef } from "react"
-import { useIntroHandoff } from "@/lib/intro-handoff"
 
 const WORM = 160
 const FLIGHT_MS = 1150
-/** Lets the intro's playing card finish handing over to the hero card before the laser flies. */
-const AFTER_INTRO_MS = 1100
-/** When no intro plays, the curtain decides that within a frame or two; wait a little longer than that. */
-const NO_INTRO_MS = 700
+const ON_LOAD_MS = 700
 
 /**
  * The logo with a lime "laser worm" that shoots up from the hero's lower left and lands in the
  * slash, once when the page is revealed and again whenever the logo is hovered or focused.
  */
 export function LogoLaser() {
-  const handoff = useIntroHandoff()
   const slashRef = useRef<HTMLSpanElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const glowRef = useRef<SVGPathElement>(null)
@@ -67,16 +62,16 @@ export function LogoLaser() {
   }, [])
 
   useEffect(() => {
-    if (firedOnLoadRef.current || handoff === "holding") return
+    if (firedOnLoadRef.current) return
     const timer = setTimeout(
       () => {
         firedOnLoadRef.current = true
         fire()
       },
-      handoff === "revealed" ? AFTER_INTRO_MS : NO_INTRO_MS,
+      ON_LOAD_MS,
     )
     return () => clearTimeout(timer)
-  }, [handoff, fire])
+  }, [fire])
 
   return (
     <>

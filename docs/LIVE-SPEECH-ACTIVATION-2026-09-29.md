@@ -22,8 +22,11 @@ och föregående `firstFrameMs` rensas när nästa fråga skickas.
 Verifiering: 92 riktade tester, oberoende slutgranskning, samordnarens fulla
 pre-commit och fyra-dealer-audit med `--probe` passerade. En separat lokal
 Python/FFmpeg/relay-fixture spelade två yttranden på samma workerkanal.
-Rättningen väntar här på samordnarens publicering och nytt liveprov;
-fixture- och regressionstesterna utgör inte visuell medieacceptans.
+Rättningen är publicerad. Senaste verifierade kodleverans `5c87edf3` är
+Live på Render enligt [handoffens publiceringskvitto](JOHN-HANDOFF.md),
+med godkända GitHub-kontroller och återlästa publika röstmoduler.
+Två riktiga AI/GPU-svar i följd och visuell läppsynkacceptans återstår;
+fixture- och regressionstesterna ovan ersätter inte dessa prov.
 
 ## Jakobs beslut
 

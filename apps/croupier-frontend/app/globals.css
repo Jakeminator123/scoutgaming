@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "./intro.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -386,20 +385,6 @@
 
 .animate-hero-jolt {
   animation: hero-jolt 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-/* After the intro hands over: the card video opens on Astrid's face and pulls back to the table. */
-@keyframes intro-face-zoom {
-  from {
-    transform: translateY(31%) scale(2.4);
-  }
-  to {
-    transform: none;
-  }
-}
-.animate-intro-face-zoom {
-  transform-origin: 50% 19%;
-  animation: intro-face-zoom 3.2s cubic-bezier(0.3, 0, 0.15, 1) both;
 }
 
 @keyframes trail {

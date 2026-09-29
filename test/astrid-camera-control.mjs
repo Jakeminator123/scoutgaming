@@ -507,7 +507,7 @@ test('voice sending stays busy and only a successful send can resume wake', asyn
   let resolve; const h = harness({ send: () => new Promise(done => { resolve = done; }) });
   try {
     await h.start(); await h.wake(); h.pause(); await tick(); assert.equal(h.control.busy, true); assert.equal(h.wakes.length, 1);
-    resolve(false); await tick(); assert.equal(h.control.active, false); assert.equal(h.wakes.length, 1); assert.match(h.status(), /could not be sent/);
+    resolve(false); await tick(); assert.equal(h.control.active, false); assert.equal(h.wakes.length, 1); assert.match(h.status(), /could not be completed/);
   } finally { h.restore(); }
 });
 

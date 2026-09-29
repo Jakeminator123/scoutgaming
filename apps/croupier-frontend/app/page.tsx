@@ -10,7 +10,6 @@ import { HeroCard } from "@/components/landing/hero-card"
 import { Parallax } from "@/components/landing/parallax"
 import { PerspectiveFloor } from "@/components/landing/perspective-floor"
 import { parallaxStyle } from "@/components/landing/parallax-style"
-import { CurtainIntro } from "@/components/intro/curtain-intro"
 
 export default function Home() {
   return (
@@ -94,7 +93,6 @@ export default function Home() {
           {"// 18+ · Demo utan riktiga pengar · © Scout Gaming Group"}
         </p>
       </div>
-      <CurtainIntro />
     </FantasyModeProvider>
   )
 }

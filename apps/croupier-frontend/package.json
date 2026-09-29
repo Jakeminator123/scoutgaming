@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "npm test && next build",
+    "test": "node --test test/*.mjs",
     "dev": "next dev",
     "lint": "eslint .",
     "start": "next start"

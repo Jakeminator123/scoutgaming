@@ -44,6 +44,21 @@ async function fixture(t, options = {}) {
 }
 const starts = calls => calls.filter(call => call.url.endsWith('/run'));
 
+async function missingStatusFixture(t, { ageMs = SPEECH_SESSION_POLICY.reservationWindowMs, status = 404, dailyBudgetUsd, workerState } = {}) {
+  const f = await fixture(t, { dailyBudgetUsd });
+  await f.create().ensure(f.input);
+  f.finish();
+  f.setTime(new Date(Date.parse('2026-09-29T08:00:00Z') + ageMs).toISOString());
+  const dependencies = { fetchImpl: async (url, init) => {
+    if (url.endsWith('/status/job-1')) {
+      f.calls.push({ url, ...init });
+      return new Response('private provider response must not escape', { status });
+    }
+    return f.fetchImpl(url, init);
+  }, ...(workerState ? { workerState } : {}) };
+  return { ...f, manager: f.create({}, dependencies), dependencies };
+}
+
 test('cost amounts are exact micro-USD and missing/unconfirmed configuration fails closed', async t => {
   assert.equal(sessionReserveMicroUsd('0.50'), 500000);
   assert.equal(sessionReserveMicroUsd('9.94'), 9940000);
@@ -132,6 +147,60 @@ test('failed cold startup cancels only its known job and never retries /run', as
   assert.equal(f.jobs.get('job-1'), 'CANCELLED');
 });
 
+test('expired missing status retires only the old session; a later explicit request uses the unchanged budget', async t => {
+  const f = await missingStatusFixture(t);
+  const reservation = (await readdir(f.directory)).find(name => name.endsWith('.reservation.json'));
+  const original = await readFile(join(f.directory, reservation), 'utf8');
+  const policy = await readFile(join(f.directory, 'gpu-budget-policy.json'), 'utf8');
+  await assert.rejects(f.manager.ensure(f.input), { code: 'generated_speech_session_provider_not_found' });
+  assert.equal(starts(f.calls).length, 1, 'the failing turn never starts a replacement');
+  const receipt = JSON.parse(await readFile(join(f.directory, reservation.replace('.reservation.json', '.terminal.json')), 'utf8'));
+  assert.equal(receipt.status, 'TIMED_OUT');
+  assert.equal(receipt.reason, 'provider_status_not_found_after_expiry');
+  assert.equal(await readFile(join(f.directory, reservation), 'utf8'), original);
+  assert.equal(await readFile(join(f.directory, 'gpu-budget-policy.json'), 'utf8'), policy);
+  assert.deepEqual(await f.create({}, f.dependencies).ensure(f.input), { ready: true });
+  assert.equal(starts(f.calls).length, 2, 'only a later explicit request starts one replacement after restart');
+  assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.reservation.json')).length, 2);
+  assert.equal(await readFile(join(f.directory, reservation), 'utf8'), original, 'old cost is never refunded');
+});
+
+test('missing status before expiry or while a worker remains cannot authorize retirement or retry', async t => {
+  for (const options of [
+    { ageMs: 0 },
+    { ageMs: SPEECH_SESSION_POLICY.reservationWindowMs - 1 },
+    { workerState: () => ({ workers: 1, available: 1, busy: 0 }) },
+    { workerState: () => ({ workers: 1, available: 0, busy: 1 }) },
+  ]) {
+    const f = await missingStatusFixture(t, options);
+    for (let attempt = 0; attempt < 2; attempt++) await assert.rejects(f.manager.ensure(f.input), { code: 'generated_speech_session_provider_not_found' });
+    assert.equal(starts(f.calls).length, 1);
+    assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.terminal.json')).length, 0);
+  }
+});
+
+test('provider authorization/server errors and submit 404 remain fail-closed without a terminal receipt', async t => {
+  for (const [status, reason] of [[401, 'unauthorized'], [403, 'forbidden'], [500, 'http_failed']]) {
+    const f = await missingStatusFixture(t, { status });
+    await assert.rejects(f.manager.ensure(f.input), { code: `generated_speech_session_provider_${reason}` });
+    assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.terminal.json')).length, 0);
+    assert.equal(starts(f.calls).length, 1);
+  }
+  const f = await fixture(t, { submit: async () => new Response('missing endpoint', { status: 404 }) });
+  await assert.rejects(f.create().ensure(f.input), { code: 'generated_speech_session_provider_not_found' });
+  await assert.rejects(f.create().ensure(f.input), { code: 'generated_speech_session_submission_uncertain' });
+  assert.equal(starts(f.calls).length, 1);
+  assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.terminal.json')).length, 0);
+});
+
+test('retiring an expired provider record cannot refund its reservation or bypass the daily budget', async t => {
+  const f = await missingStatusFixture(t, { dailyBudgetUsd: '0.50' });
+  await assert.rejects(f.manager.ensure(f.input), { code: 'generated_speech_session_provider_not_found' });
+  await assert.rejects(f.create({}, f.dependencies).ensure(f.input), { code: 'generated_speech_daily_budget_exhausted' });
+  assert.equal(starts(f.calls).length, 1);
+  assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.reservation.json')).length, 1);
+});
+
 test('disconnect cancels a known startup; stale requester cannot keep paying', async t => {
   const controller = new AbortController();
   const f = await fixture(t, { status: id => { controller.abort(); return response({ id, status: 'IN_QUEUE' }); } });
@@ -143,8 +212,8 @@ test('disconnect cancels a known startup; stale requester cannot keep paying', a
 test('idle session stops without automatically replenishing a worker', async t => {
   const f = await fixture(t, { idleTimeoutMs: 10 });
   await f.create().ensure(f.input);
-  await new Promise(resolve => setTimeout(resolve, 35));
-  assert.equal(f.jobs.get('job-1'), 'CANCELLED');
+  // The idle timer starts async ledger I/O before provider cancellation.
+  await t.waitFor(() => assert.equal(f.jobs.get('job-1'), 'CANCELLED'), { interval: 5, timeout: 1000 });
   assert.equal(starts(f.calls).length, 1);
 });
 
