@@ -1,5 +1,28 @@
 # Aktuellt molnläge
 
+## 2026-09-29 09:13 UTC — Sessionsfix publicerad, rundan avslutad
+
+`3e9842bd` är pushad till rätt GitHub-branch och verifierad **Live** på
+`croupier-v2` (Render-bygge 3m55s). GitHub checks run `36546427238` och
+full pre-commit passerade. Fixen hanterar exakt avslutad RunPod-worker,
+återställer tomgångstimern efter replik och visar säkra providerfelkoder.
+92 riktade tester, oberoende review och syntetisk worker med två repliker
+passerade. Det nya bygget har ännu inte fått ett komplett liveprov med två
+svar i följd; tidigare första bildrutor tog 42 respektive 86 sekunder.
+Läppsynk är därför inte godkänd som snabb eller audiovisuellt verifierad.
+
+Alla 22 mediekandidater är molnverifierade enligt importkvittot nedan,
+men deras visuella acceptans/policy återstår. Fyra-dealer-probe passerade;
+denna sessionsfix fick komplett tvågångsrepetition för Vera/Astrid, medan
+Amira/Mei inte fick ett komplett nytt slutkvitto före avslut.
+
+Terra är standard i källkod/templates och Astrids sparade per-anrop-val.
+Gatewayns fem sparade roller visade fortfarande mini vid sista säkra
+avläsningen. Modellens API-metadata svarade 200, men skrivning via
+OpenClaws CLI stoppades av `EPERM fchmod`; Gateway-RPC misslyckades också.
+Ingen filbehörighet ändrades. Global Terra-aktivering är alltså kvar.
+Slack aktiverades inte. Inga nya GPU-prov startades under avslutningen.
+
 ## 2026-09-29 — Lagring Live och samtliga 22 kandidater tillgängliga
 
 `6c85cfff` är pushad till rätt GitHub-branch, CI:s tre jobb är gröna och
