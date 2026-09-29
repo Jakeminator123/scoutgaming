@@ -79,8 +79,11 @@ Riktade kontroller av gateway, auth, URL:er och observation gav **58/58 PASS**;
 hela Lab-sviten gav **525/525 PASS**. TypeScript och produktionsbygge med
 molnets `/studio`-mount passerade. Länkkontrollen för sju ändrade aktiva
 dokumentsidor hittade inga saknade mål bland 116 lokala länkar.
-Detta är kod-, bygg- och fixturebevis. Publicerade alias och Studio-vyn behöver
-kontrolleras efter leverans; det är inte ett nytt live- eller mediegodkännande.
+Detta är kod-, bygg- och fixturebevis. Publicerade alias och Studio-vyn
+kontrollerades därefter enligt [handoffens kvitto 16:32 UTC](../../JOHN-HANDOFF.md):
+korrekta 307-omdirigeringar, 401/no-store för obehöriga Studio-API:er och
+spelöppning med återanvänd spelflik. Det är navigerings- och åtkomstbevis;
+visuell medieacceptans kräver fortfarande egen granskning.
 Inga media, policies, privata data eller serverprocesser har bytts av denna
 förenkling. Äldre daterade driftkvitton bevaras som evidens; den aktiva
 [dokumentordningen](../06-arbetssatt-och-verifiering/DOKUMENTORDNING.md)

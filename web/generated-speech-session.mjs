@@ -101,7 +101,26 @@ export function createSpeechSessionManager(configuration, {
     } finally { reader.releaseLock(); }
   }
   async function inspect(job, signal) {
-    const value = await call(`status/${job.jobId}`, { signal });
+    let value;
+    try { value = await call(`status/${job.jobId}`, { signal }); }
+    catch (error) {
+      // RunPod removes expired job records. Retire only a known job beyond
+      // our entire reserved lifetime, with no remaining relay worker. Keep
+      // its spent reservation and fail this turn: replacement requires a
+      // later explicit request and the normal budget/freshness checks.
+      if (error?.code === 'generated_speech_session_provider_not_found'
+        && Number.isSafeInteger(job.createdAt)
+        && now() - job.createdAt >= SPEECH_SESSION_POLICY.reservationWindowMs) {
+        const state = workerState(job.workerId);
+        if (state.workers === 0 && state.busy === 0 && state.available === 0
+          && !(await optional(`${prefix(job.id)}.terminal.json`))) {
+          await record(`${prefix(job.id)}.terminal.json`, {
+            status: 'TIMED_OUT', reason: 'provider_status_not_found_after_expiry', observedAt: now(),
+          });
+        }
+      }
+      throw error;
+    }
     if (value?.id !== job.jobId) fail('generated_speech_session_provider_job_mismatch');
     if (!['IN_QUEUE', 'IN_PROGRESS', ...terminal].includes(value.status)) fail('generated_speech_session_provider_invalid_status');
     if (terminal.has(value.status) && !(await optional(`${prefix(job.id)}.terminal.json`))) {
@@ -190,7 +209,7 @@ export function createSpeechSessionManager(configuration, {
       if (active.length) {
         const entry = active[0];
         if (!jobIdPattern.test(entry.job?.jobId ?? '')) fail('generated_speech_session_submission_uncertain');
-        job = { id: entry.id, jobId: entry.job.jobId, workerId: entry.workerId };
+        job = { id: entry.id, jobId: entry.job.jobId, workerId: entry.workerId, createdAt: entry.createdAt };
         const status = await inspect(job, signal);
         if (terminal.has(status)) {
           // Provider cancellation can finish before the reverse socket closes.
@@ -211,7 +230,7 @@ export function createSpeechSessionManager(configuration, {
         for (const entry of entries.filter(entry => entry.done && workerState(entry.workerId).workers > 0)) {
           if (!jobIdPattern.test(entry.job?.jobId ?? '')) fail('generated_speech_session_ledger_invalid');
           stopWorker(entry.workerId);
-          await waitUntilStopped({ id: entry.id, jobId: entry.job.jobId, workerId: entry.workerId }, signal, fresh);
+          await waitUntilStopped({ id: entry.id, jobId: entry.job.jobId, workerId: entry.workerId, createdAt: entry.createdAt }, signal, fresh);
         }
         if (workerState().workers > 0) fail('generated_speech_session_untracked_worker');
         const started = now(), days = [...new Set([utcDay(started), utcDay(started + SPEECH_SESSION_POLICY.reservationWindowMs)])];
@@ -229,7 +248,7 @@ export function createSpeechSessionManager(configuration, {
           policy: { executionTimeout: SPEECH_SESSION_POLICY.executionTimeout, ttl: SPEECH_SESSION_POLICY.ttl },
         } });
         if (!jobIdPattern.test(value?.id ?? '')) fail('generated_speech_session_submission_uncertain');
-        job = { id, jobId: value.id, workerId };
+        job = { id, jobId: value.id, workerId, createdAt: started };
         await record(`${prefix(id)}.job.json`, { jobId: value.id });
       }
       const waitStarted = now();

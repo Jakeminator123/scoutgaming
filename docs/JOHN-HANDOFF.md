@@ -1,5 +1,70 @@
 # Aktuellt molnläge
 
+## 2026-09-29 21:15 UTC — Startsidan utan blockerande intro
+
+Jakob rapporterade en ny låsning efter väntan eller scroll på telefon och bad
+uttryckligen att hela introfilmen med avataren och HTML-scenen skulle bort
+på mobil. Den automatiska `CurtainIntro` tas nu bort från startsidan på alla
+enheter, tillsammans med dess oanvända scen, CSS och hero-handoff. Den vanliga
+Astrid-presentationen och direktlänken till `/demo` finns kvar. Inga MP4:er,
+råmedia, spelarklipp, kalibreringar eller baselines har ändrats.
+
+Det gamla introt kunde aktiveras efter att den riktiga sidan redan hade
+visats; detta reproducerades på desktop. Exakt fel på Jakobs fysiska telefon
+är inte reproducerat. Alla tre publika domäner levererade samma aktuella
+HTML/chunkar för desktop-, iPhone- och Android-UA, med korrekt viewport och
+utan registrerad serviceworker. Ingen felaktig alias- eller cacheversion
+hittades i dessa kontroller.
+
+Den separata dekorativa `CroupierRide` monteras nu bara på synlig desktop
+med fin pekare, utan touch och utan reduced-motion. Mobil och dold dekor
+skapar ingen mattevideo eller WebGL-loop. Scroll ur bild, dold flik,
+history/pagehide och vybyte stänger ned video, RAF och renderer. Startsidan
+är synlig redan i serverns HTML och har ingen introväntan att återställa.
+
+Slutligt produktionsbygge, TypeScript och fem frontendregressioner PASS.
+Regressionssviten ingår nu i frontendens vanliga `npm run build`.
+Browserprov av samma bygge i en iframe med riktiga CSS-bredder 320, 390,
+844 och 1280 px: inget intro, fungerande `/demo`-navigering och tillbaka,
+omladdning samt scroll (320 px: `scrollY=521`). Fem sekunders fördröjning av
+Next-chunkarna och längre väntan gav ingen sen overlay. Smala vyer hade
+noll canvas, inga intro-/matteförfrågningar och inga fångade JS-fel.
+Desktopdekoren monterades vid 1280 px och försvann vid byte till 390 px.
+Fyra vanliga hero-/kortvideor finns fortfarande på mobil; detta är inte
+borttagning av all video. Provet emulerar inte fysisk touch eller Safari.
+`audit-dealer-sync.mjs --probe` PASS med oförändrade tidigare kända luckor.
+
+Sessionsprovets tidigare fasta 35 ms har ersatts med väntan på faktisk
+`CANCELLED`, högst en sekund. Gruppen passerade 43/43; utebliven cancellation
+ger verifierad timeout medan en 100 ms fördröjning passerar. Två inaktuella
+publiceringsstycken i aktiva guider har rättats mot tidigare driftkvitton.
+De historiska kvittona nedan behålls; denna förändring ersätter deras
+tidigare beskrivning av ett fortsatt desktopintro.
+
+### Samma kväll: separat 404 från röstvideotjänsten
+
+Jakobs nya skärmbild kontrollerades genom befintlig spelflik, utan att
+skicka en ny fråga eller ändra spelet. DOM-kvittot visade
+`generated_speech_session_provider_not_found`: textsteget hade nåtts vid
+38 ms och video-kön vid 2293 ms, därefter misslyckades svaret. Detta är
+provider-HTTP-404, inte den tidigare Mute-spärren. Loggen skiljer inte
+`/run` från `/status`; den exakta orsaken till liveförsöket är inte bevisad.
+Den generiska Voice-texten ändras från "could not be sent" till
+"could not be completed", eftersom även fel efter sändningen hamnar här.
+
+Ett separat, reproducerat kodfel kunde lämna ett gammalt känt GPU-jobb
+permanent aktivt i sessionsregistret när providern redan tagit bort det.
+Rättningen sparar ett terminalkvitto enbart för status-404 efter hela
+reservationsfönstret (720000 ms), med noll anslutna/lediga/upptagna workers.
+Den felande frågan misslyckas fortfarande och gör inget automatiskt nytt
+GPU-anrop. Först en senare uttrycklig fråga kan starta en vanlig budgetprövad
+session. Ursprunglig reservation och budgetpolicy bevaras utan återbetalning.
+Färska jobb, anslutna workers, auth-/serverfel och `/run`-404 är fortsatt
+stängda felvägar. 47 riktade tester och oberoende review PASS; samma
+reproduktion misslyckades före fixen. Inga riktiga GPU-jobb, hemlighetsbyten
+eller produktionsdatabasprov användes. Två riktiga AI-röstsvar och visuell
+läppsynkacceptans återstår som tidigare.
+
 ## 2026-09-29 — Verifieringskvitto för röstfixen
 
 Kod `5c87edf38f44f3aeb1e8c907c649867bf199f416` är pushad till rätt

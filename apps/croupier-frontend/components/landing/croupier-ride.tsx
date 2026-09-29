@@ -1,7 +1,9 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createMatteRenderer } from "@/lib/matte-renderer"
+import { observeDecorativeMotion } from "@/lib/decorative-motion"
+import { useFantasyMode } from "./fantasy-mode"
 
 /** Draws a stacked-matte video onto a transparent canvas, so it composites over anything. */
 function useMatteCanvas(videoRef: React.RefObject<HTMLVideoElement | null>, canvasRef: React.RefObject<HTMLCanvasElement | null>) {
@@ -11,10 +13,15 @@ function useMatteCanvas(videoRef: React.RefObject<HTMLVideoElement | null>, canv
     if (!video || !canvas) return
 
     const renderer = createMatteRenderer(canvas)
-    if (!renderer) return
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (reduceMotion) video.addEventListener("loadeddata", () => video.pause(), { once: true })
+    const stopVideo = () => {
+      video.pause()
+      video.removeAttribute("src")
+      video.load()
+    }
+    if (!renderer) {
+      stopVideo()
+      return
+    }
 
     let frame = 0
     const draw = () => {
@@ -25,6 +32,7 @@ function useMatteCanvas(videoRef: React.RefObject<HTMLVideoElement | null>, canv
 
     return () => {
       cancelAnimationFrame(frame)
+      stopVideo()
       renderer.dispose()
     }
   }, [videoRef, canvasRef])
@@ -57,6 +65,22 @@ const STREAK_PATH = "M 1720 350 C 1460 344, 1200 300, 928 266"
  * away while the page is in fantasy mode.
  */
 export function CroupierRide() {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+  const { fantasy } = useFantasyMode()
+  useEffect(() => {
+    const root = rootRef.current
+    if (root) return observeDecorativeMotion(root, setVisible)
+  }, [])
+
+  return (
+    <div ref={rootRef} aria-hidden="true" className="croupier-stage pointer-events-none absolute inset-x-0 bottom-0 z-[5] hidden h-[420px] lg:block">
+      {visible && !fantasy ? <CroupierRideAnimation /> : null}
+    </div>
+  )
+}
+
+function CroupierRideAnimation() {
   const rideRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -64,7 +88,7 @@ export function CroupierRide() {
   useRideSync(rideRef, videoRef)
 
   return (
-    <div aria-hidden="true" className="croupier-stage pointer-events-none absolute inset-x-0 bottom-0 z-[5] hidden h-[420px] md:block">
+    <>
       <svg className="croupier-streak absolute inset-0 h-full w-full" viewBox="0 0 1600 420" preserveAspectRatio="none">
         <defs>
           <linearGradient id="croupier-streak-grad" x1="0" y1="0" x2="1" y2="0">
@@ -123,6 +147,6 @@ export function CroupierRide() {
           />
         </div>
       </div>
-    </div>
+    </>
   )
 }

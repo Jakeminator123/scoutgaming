@@ -354,7 +354,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       if (token === epoch) {
         if (error.configurationReason) { enabled = false; blockedReason = error.configurationReason; }
         stop(error?.message === 'voice_send_failed'
-          ? 'The voice turn could not be sent. Voice off; no automatic retry.'
+          ? 'The voice turn could not be completed. Voice off; no automatic retry.'
           : error?.message === 'transcription_authentication_failed'
             ? 'OpenAI authentication failed. Check the server translation key. Voice off; no automatic retry.'
             : 'Speech translation failed. Nothing sent. Voice off; no automatic retry.', true);
