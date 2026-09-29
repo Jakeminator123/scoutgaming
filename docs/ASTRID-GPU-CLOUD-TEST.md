@@ -1,6 +1,6 @@
 # Astrid: molnströmning, konfiguration och GPU-prov
 
-**Förberett 2026-09-28. Ingen image publicerad, ingen GPU startad och inget
+**Uppdaterat 2026-09-29. Ingen image publicerad, ingen GPU startad och inget
 molnflöde godkänt.** Källan ligger kvar i `services/astrid-gpu-worker` i
 `Jakeminator123/github-work`, branch `jakemanator123-github-work`. MuseTalk 1.5
 och den nuvarande avataren är utgångspunkt.
@@ -49,17 +49,28 @@ Startaren passerar fortfarande inte `assertCloudAccessReady()`.
 | Render → gateway | Ingen separat workerhemlighet; `config.streaming` från validerad flagga | Stöds i denna ändring. Endast exakta spelvärdens `/speech-stream` och `/lipsync-worker` uppgraderas; Web-reläet gör cookie-/biljett- eller bearer-kontroll. |
 | RunPod separat test-endpoint | Image **digest**, privat GHCR-läsbehörighet, `AVATAR_ID=astrid_spel2x`, `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`, eventuellt `NVENC=0` för kontrollerad fallback | Avatar och encoderflaggor stöds. Ny endpoint, privat imagehämtning och kostnadstak är **inte** skapade eller verifierade. |
 | RunPod sessionsjobb | `op=session`, exakt `wss://<spelvärd>/lipsync-worker`, `ws_token`, unik `worker_id`, avgränsad `ttl` | Stöds. Token skickas som Authorization-header, aldrig i URL. Jobbets start/stop och kötid måste mätas av testorkestreringen; automatisk betald workerstart finns inte. |
-| GitHub Actions | Manuell `astrid-gpu-publish.yml`, `approved_target`, repository `GITHUB_TOKEN` | Förberett men inte kört. Bygger endast från godkänd branch, taggar med full commit-SHA och skriver digest i jobbsammanfattningen. Paketmål måste godkännas före manuell körning. |
+| GitHub Actions | Manuell `astrid-gpu-publish.yml`, `approved_target`, repository `GITHUB_TOKEN` | CPU-bygget passerade i Actions. Ett publiceringsförsök byggde men stoppades av felstavat ägarnamn före push. Workflowen rättar nu ägaren och kontrollerar den mot repot; ingen digest finns. Det korrigerade paketmålet kräver nytt exakt godkännande före körning. |
 | Eventuell Vercel-ingång | Länk till Render-spelets HTTPS-origin | Ingen hemlighet eller WebSocket-funktion behövs för en ren länk. Separat spelklient på Vercel med sessionsöverlämning och WS-adress är **inte implementerad**. |
+
+Lokalt ligger `CARTESIA_API_KEY` i rotens privata env-fil och RunPod-nyckeln i
+Labbets privata env-fil. De behöver inte dupliceras eller flyttas i Git.
+Render måste få sina egna privata värden för **Web-processen**. Nuvarande
+streamingkod använder `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`;
+`RUNPOD_ENDPOINT_ID` i Labbets env-fil är ett äldre värde i annat format och
+ska inte kopieras som om det vore ett verifierat endpoint-ID. `GEMINI_API_KEY`
+ingår inte i den här Cartesia/RunPod-kedjan.
 
 ## Versionsbunden privat image och återgång
 
-**Föreslaget, ännu ej godkänt paket:**
-`ghcr.io/jakemanator123/astrid-gpu-worker`. Vid godkännande körs den manuella
+**Korrigerat paketmål, ännu ej godkänt:**
+`ghcr.io/jakeminator123/astrid-gpu-worker`. Det tidigare målet med `jakemanator123`
+saknade en bokstav i GitHub-ägaren. [Första publiceringsförsöket](https://github.com/Jakeminator123/github-work/actions/runs/36510734449)
+byggde imagen men GHCR avvisade pushen med `owner not found`. Ingen paketdigest
+eller privat pull är verifierad. Vid godkännande körs den manuella
 workflowen från exakt commit på `jakemanator123-github-work` med samma
 `approved_target`. Publiceringen använder endast `sha-<hela commit-SHA>`;
 ingen `latest`-tagg, automatisk branchpush eller ändring av endpoint ingår.
-Kopiera `ghcr.io/jakemanator123/astrid-gpu-worker@sha256:<digest>` ur
+Kopiera `ghcr.io/jakeminator123/astrid-gpu-worker@sha256:<digest>` ur
 jobbsammanfattningen till testprotokollet. Bekräfta paketets **Private**-läge
 innan någon RunPod-konfiguration ändras. GitHubs dokumentation anger privat
 standardläge för nya GHCR-paket, men det verkliga paketets behörigheter måste

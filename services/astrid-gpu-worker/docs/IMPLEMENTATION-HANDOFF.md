@@ -1,5 +1,23 @@
 # Streaming implementation — 2026-09-28
 
+## GHCR and RunPod access — 2026-09-29
+
+The [CPU-only Docker build](https://github.com/Jakeminator123/github-work/actions/runs/36509057844)
+passed. The [first GHCR publish run](https://github.com/Jakeminator123/github-work/actions/runs/36510734449)
+built the image but failed at registry push with `owner not found`: the workflow
+used `jakemanator123` instead of the actual GitHub owner `Jakeminator123`.
+The prepared target is now `ghcr.io/jakeminator123/astrid-gpu-worker`, guarded
+against repository-owner mismatch. It has not been approved or rerun. There is
+no published digest and no verified private pull.
+
+The local RunPod key returned HTTP 200 for read-only health on the configured
+speech endpoint, but HTTP 403 for management endpoint listing/detail. Health
+showed idle/ready workers at the time of observation; this does not establish
+ownership, configuration or actual billed cost. No job or GPU test was started.
+Management access to Emil's endpoint is not verified. Keep its settings
+and image untouched until the owning account grants explicit management access
+and current cost, worker and rollback settings are inspected.
+
 ## Worker review — 2026-09-29
 
 [Upstream inventory and latency review](UPSTREAM-AND-LATENCY.md) records the
@@ -29,8 +47,9 @@ encoder and whether the real FFmpeg process exited successfully. There is no
 verified NVENC session yet. No private conversation, token or key is logged by
 these metrics.
 
-A manual, SHA-tagged GHCR publish workflow is prepared for the proposed
-`ghcr.io/jakemanator123/astrid-gpu-worker` package; it has **not** been run.
+A manual, SHA-tagged GHCR publish workflow is prepared for the corrected
+`ghcr.io/jakeminator123/astrid-gpu-worker` package. Its first run failed at
+push as recorded above; the corrected target has **not** been run.
 The existing RunPod endpoint and Emil's GitLab repository remain untouched.
 The [cloud GPU plan](../../../docs/ASTRID-GPU-CLOUD-TEST.md) gives blank config,
 private digest pull/rollback and the fixed-phrase cold/warm two-play test.
