@@ -6,6 +6,15 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  async redirects() {
+    // Operator shortcuts to the existing authenticated Lab on Render.
+    return [
+      { source: "/labb", destination: "https://croupier-v2.onrender.com/studio/", permanent: false },
+      { source: "/labb/filmer", destination: "https://croupier-v2.onrender.com/studio/videos", permanent: false },
+      { source: "/labb/zoner", destination: "https://croupier-v2.onrender.com/studio/zones", permanent: false },
+      { source: "/labb/guide", destination: "https://croupier-v2.onrender.com/studio/guide", permanent: false },
+    ]
+  },
   async headers() {
     return [
       {

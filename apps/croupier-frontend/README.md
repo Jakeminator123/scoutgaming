@@ -1,5 +1,15 @@
 # Croupier landing page
 
+## Lab entry points
+
+The main site exposes operator shortcuts: `/labb` opens the existing Render
+Lab at `/studio/`, `/labb/filmer` opens its video bank, `/labb/zoner` opens
+background zones, and `/labb/guide` opens the guide. These temporary HTTP 307
+redirects keep Render's existing login and upload handling. They do not host
+the Lab on Vercel or migrate its files to Blob. These links target the live
+Lab, including if this directory is manually deployed as a design preview;
+they are not links to an isolated Lab test environment.
+
 ## Current deployment — 2026-09-29
 
 The Git-connected landing page is [croupier-frontend.vercel.app](https://croupier-frontend.vercel.app/). Vercel project `croupier-frontend` builds this directory from `Jakeminator123/github-work`, branch `jakemanator123-github-work`. The first deployment from `d78eb4cb` was READY, and `/` and `/demo` were checked. `CROUPIER_GAME_URL` is stored for Production and Preview as `https://croupier-v2.onrender.com/blackjack?dealer=astrid`; a later push (`d8d4b707`) automatically produced READY deployment `dpl_9GcmrpbHQ91oTJwnBYUuvV5DzxDZ`. Both game links still open the Render-hosted game.
