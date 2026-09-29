@@ -4,6 +4,7 @@ import { labUrl } from "../lib/lab-url.mjs";
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { exportPartnerTrace, type PartnerTrace } from '../lib/partner-trace.mjs';
 import { acceptNativeObservation } from '../lib/native-observation.mjs';
+import { scopeNativeSession } from '../lib/native-session-channel.mjs';
 import { NativeSpeechContext, type NativeSpeechBinding } from './native-speech-context';
 import type { ActivityDraft } from './activity-log';
 import styles from './activity-log.module.css';
@@ -22,6 +23,7 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   const [speechBinding, setSpeechBinding] = useState<NativeSpeechBinding | null>(null);
   const gameWindow = useRef<Window | null>(null);
   const observer = useRef<{ source: Window; origin: string; channel: string; lastSequence: number } | null>(null);
+  const nativeSessionEpoch = useRef(0);
   const observing = useRef(false);
   const nativeCallback = useRef(onNative); nativeCallback.current = onNative;
   const importInput = useRef<HTMLInputElement>(null);
@@ -31,13 +33,16 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
       if (!expected || !observing.current) return;
       const record = acceptNativeObservation(message, expected);
       if (!record) return;
+      const scoped = focused ? scopeNativeSession(record, nativeSessionEpoch.current) : { epoch: nativeSessionEpoch.current, record };
+      nativeSessionEpoch.current = scoped.epoch;
+      const observed = scoped.record;
       if (record.kind === 'status' && record.data?.state === 'attached') setSpeechBinding(previous => ({
         source: expected.source, origin: expected.origin, channel: expected.channel, revision: (previous?.revision ?? 0) + 1,
       }));
-      if (record.kind === 'status' && record.data?.state === 'attached' && expected.lastSequence > 0) nativeCallback.current({ source: 'native', kind: 'status', time: record.time, data: { state: 'reconnected', gap: true, reason: 'original-page-reloaded' } });
-      else if (expected.lastSequence > 0 && Number(record.nativeSequence) > expected.lastSequence + 1) nativeCallback.current({ source: 'native', kind: 'status', time: record.time, data: { state: 'gap', gap: true, reason: 'native-sequence-gap' } });
+      if (record.kind === 'status' && record.data?.state === 'attached' && expected.lastSequence > 0) nativeCallback.current({ source: 'native', channel: observed.channel, kind: 'status', time: record.time, data: { state: 'reconnected', gap: true, reason: 'original-page-reloaded' } });
+      else if (expected.lastSequence > 0 && Number(record.nativeSequence) > expected.lastSequence + 1) nativeCallback.current({ source: 'native', channel: observed.channel, kind: 'status', time: record.time, data: { state: 'gap', gap: true, reason: 'native-sequence-gap' } });
       expected.lastSequence = record.nativeSequence;
-      nativeCallback.current(record);
+      nativeCallback.current(observed);
     };
     window.addEventListener('message', receive);
     return () => { window.removeEventListener('message', receive); observer.current = null; };
