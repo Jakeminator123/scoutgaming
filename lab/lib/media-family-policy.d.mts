@@ -7,7 +7,7 @@ export function mediaVariantPolicy(project: StudioProject, family: MediaFamily, 
 export function isAstridDealFamily(family: MediaFamily | null): boolean;
 export function dealFrequencyPolicies(project: StudioProject, family: MediaFamily | null): MediaVariantPolicy[] | null;
 export function upsertMediaVariantPolicy(rows: MediaFamilyPolicy[] | undefined, familyId: string, policy: MediaVariantPolicy): MediaFamilyPolicy[];
-export function mediaLineForEvent(project: StudioProject, inventory: VideoInventory, dealerId: string, eventId: string, event: Record<string, unknown>): { managed: boolean; family: MediaFamily | null; line: StudioLine };
+export function mediaLineForEvent(project: StudioProject, inventory: VideoInventory, dealerId: string, eventId: string, event: Record<string, unknown>, options?: { includeManualVariants?: boolean }): { managed: boolean; family: MediaFamily | null; line: StudioLine };
 export function mediaVideoForEvent(inventory: VideoInventory, dealerId: string, eventId: string, event: Record<string, unknown>, id?: string | null): VideoEntry | null;
 export function mediaFamilyFolder(family: MediaFamily | null): string | null;
 export function mediaSituationLabel(situation: string): string;

@@ -1,6 +1,7 @@
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import schema from '../schemas/video.schema.json' with { type: 'json' };
+import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-families.mjs';
 
 export const MAX_VIDEO_BYTES = contract.limits.videoBytes;
 export const VIDEO_KINDS = Object.freeze(contract.videoKinds);
@@ -21,6 +22,12 @@ export function validateVideoMetadata(input, { allowLegacySituation = false } = 
   if (!schema.properties.role.enum.includes(input.role)) throw new Error('Välj standard eller alternativ.');
   if (input.playback !== undefined && !contract.playback.supported.includes(input.playback)) throw new Error('Labbet stöder endast en gång (once). Loop är ännu ett förslag.');
   if (input.kind !== kindForEvent(event)) throw new Error('Videotypen passar inte eventet.');
+  if (input.familyId !== undefined) {
+    const family = MEDIA_FAMILY_DEFINITIONS.find(row => row.id === input.familyId);
+    if (!family || family.dealerId !== input.dealerId || family.eventId !== input.eventId
+      || (family.playbackType === 'idle-pool' ? input.situation !== '' : family.situation !== input.situation)
+      || input.role !== 'alternative') throw new Error('Välj en exakt familj och lägg in klippet som en ny variant.');
+  }
   for (const key of ['label', 'notes', 'situation']) {
     if (typeof input[key] !== 'string' || input[key].length > schema.properties[key].maxLength || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(input[key])) throw new Error(`Ogiltigt fält: ${key}.`);
   }

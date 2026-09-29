@@ -226,6 +226,17 @@ export async function loadVideoRegistry(options = {}) {
       }
     }
     const video = publicEntry(entry, available, integrity, familyById.get(entry.familyId));
+    // Only an explicit upload to an exact family joins shared playback. Legacy
+    // bank uploads remain lab-only, and standards are never replaced by intake.
+    const uploadFamily = entry.classification?.familyId && familyById.get(entry.classification.familyId);
+    if (uploadFamily) {
+      uploadFamily.variantIds.push(entry.id);
+      Object.assign(video, {
+        familyId: uploadFamily.id, role: 'variant', eventId: uploadFamily.eventId,
+        situation: uploadFamily.situation, playbackType: uploadFamily.playbackType,
+        bindingScope: 'shared-local', fileName: entry.classification.label,
+      });
+    }
     const recorded = classified.get(video.id);
     if (!video.familyId && recorded && recorded.sha256 === video.sha256) {
       video.classification = recorded.metadata;

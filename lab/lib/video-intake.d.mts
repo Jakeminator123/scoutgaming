@@ -1,5 +1,5 @@
 import type { StudioEvent, StudioVariant, VariantSelection } from './studio-model.mjs';
-export interface VideoMetadata { label: string; dealerId: 'astrid' | 'vera' | 'amira' | 'mei'; eventId: string; kind: 'idle' | 'action' | 'speech' | 'reaction'; role: 'standard' | 'alternative'; situation: string; notes: string; playback?: 'once' }
+export interface VideoMetadata { label: string; dealerId: 'astrid' | 'vera' | 'amira' | 'mei'; eventId: string; kind: 'idle' | 'action' | 'speech' | 'reaction'; role: 'standard' | 'alternative'; situation: string; notes: string; playback?: 'once'; familyId?: string }
 export const MAX_VIDEO_BYTES: number;
 export const VIDEO_KINDS: Record<VideoMetadata['kind'], string>;
 export const DEFAULT_SELECTION: Readonly<VariantSelection>;

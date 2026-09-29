@@ -42,7 +42,7 @@ export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, ref
   const preview = inventory.videos.find(video => video.id === previewId && video.available);
   return <section aria-label="Videomappar"><div className="event-heading"><div><span className="eyebrow">VIDEOBANKEN</span><h1>{familyType === 'deal' ? 'Utdelning till sju platser och croupiern' : familyType === 'speak' ? 'Repliker och varianter' : 'Dina videomappar'}</h1><p>Samma standardfiler och varianter som används i Eventstudion och native-följningen.</p></div><button className="text-button" onClick={onRefresh} disabled={refreshing}>Läs in nya filer</button></div>
     <details className={styles.situation}><summary>Lägg till eller stäng av klipp</summary>
-      <p>Lägg en ny MP4 i rätt <code>variant/</code>-mapp nedan och välj <strong>Läs in nya filer</strong>. Behåll befintliga originalfiler. Öppna sedan familjen och välj hur den nya varianten får användas. En ny idlefilm behöver också läggas till i Idle-policyn.</p>
+      <p>Välj <strong>Ladda upp &amp; bibliotek</strong> för att skicka en MP4 direkt till rätt familj. Lokala mappfiler kan också läsas in från <code>variant/</code>. Öppna sedan familjen och välj hur den nya varianten får användas. En ny idlefilm behöver också läggas till i Idle-policyn.</p>
       <p>I Deal anger du frekvens per variant i procent. Resten använder standardklippet. Sätt <strong>0 %</strong> för att stänga av varianten. I Idle väljer du <strong>Manuell</strong>; i Repliker stänger du av alla variantval. Spara inställningarna. Klippet finns kvar för förhandsvisning.</p>
       <p>Gränssnittet kan inte radera råfiler eller flytta dem mellan familjer. Mappen avgör vilken plats eller replik filmen hör till.</p>
     </details>

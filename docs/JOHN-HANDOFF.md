@@ -1,5 +1,32 @@
 # Aktuellt molnläge
 
+## 2026-09-29 — Familjeuppladdning i Astrid Studio
+
+Astrid Studio har nu **Ladda upp & bibliotek** med lokal förhandsvisning,
+uppladdningsprogress, sparat/återläst serverklipp och exakt familjeval.
+Valfri `familyId` i videokategoriseringen valideras mot dealer, event,
+situation och rollen alternativ. Sådana nya bankfiler visas i den gemensamma
+familjen och kan användas av samma Web-/Lab-urval efter explicit policy.
+Gamla bankfiler förblir separata. Originalmanifest och MP4 ändras inte.
+
+Alla kandidater kan granskas i editorn; runtime behåller högst fyra
+urvalsvarianter och prioriterar uttryckligt konfigurerade filer, även en
+senare femte replikvariant. Nya klipp är manuella som standard. Render-
+bibliotekets omläsning använder GET; lokal mappskanning behåller POST.
+Vercels `/labb-lissabon` öppnar befintliga Render `/studio` med ordinarie
+BO-/Lab-inloggning. Filbytes sparas på Render-disk; Blob-synk är inte byggd.
+
+Verifierat: 498 Lab-tester, TypeScript och Lab-produktionsbygget passerade. `audit-dealer-sync --probe`
+passerade alla fyra dealeruppsättningar med tidigare dokumenterade saknade
+tal-takes kvar. Lokal inventering: 51/51 tillgängliga klipp, 22 varianter.
+Ingen visuell acceptans, import av dirty media till Render eller betald
+modellkörning ingår i dessa testresultat. Browseranslutningen i denna chatt
+gav `User unavailable`; inloggning, riktig uppladdning, två uppspelningar och
+fyra-dealer-rehearsal måste kvitteras i webbläsare före slutlig QA.
+
+Den samordnande agenten `root-orchestrator` har fungerande Render-browser
+och inväntar commit-SHA för driftsättning och webbläsarprov.
+
 RunPod/Render 2026-09-29 08:15 CEST: egen API-nyckel finns nu som variabel
 på `croupier-v2`; endpointnamnet rättat med Save only. Deploy `799b359f`
 är Live och hälsa/spelingång ger HTTP 200. RunPod visar inga pågående/köade

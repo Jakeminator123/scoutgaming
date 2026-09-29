@@ -8,6 +8,32 @@ ska bevaras tills ägare och avsikt har kvitterats via `agent-talk`.
 
 ## 1. Färdiga Astridfilmer och varianter
 
+### Direkt i Astrid Studio
+
+Vercel-ingången `/labb-lissabon` öppnar det befintliga, skyddade Labbet på
+Render `/studio`, från samma GitHub-repo. Inloggningen ägs av Render/BO.
+Efter att den nya Lab-versionen driftsatts:
+
+1. Välj **Ladda upp & bibliotek**, en MP4/WebM (högst 128 MB) och ett namn.
+2. Välj exakt kortplats, replik eller Idle. Förhandsvisa den valda filen.
+3. Välj **Ladda upp och spara klipp**. Vänta tills sparandet har kvitterats
+   och klippet återlästs. Den andra spelaren visar den sparade serverfilen.
+4. Välj **Välj hur klippet ska användas**. Kort får frekvens, repliker får
+   urvalstillåtelse/villkor och Idle får sin egen policy. Spara inställningarna.
+
+Filen lagras på Lab-serverns beständiga Render-disk (`/var/data/studio/videos`)
+och blir en manuell kandidat i samma exakta familj som uppspelningsmodulen
+läser. Standardfilen ersätts inte. Gamla vanliga bankuppladdningar flyttas
+inte automatiskt till gemensam uppspelning. Detta är inte Blob-synk; den
+separata Blob-/zonkopplingen nedan återstår. Visuell granskning enligt
+checklistan nedan krävs innan ett nytt klipp godkänns.
+
+Det lokala biblioteket kontrollerades till 51 tillgängliga klipp, varav
+22 varianter. Pågående ocommittade mediefiler måste importeras separat som
+kandidater till Render; Git-publicering av enbart denna kod skickar inte dem.
+
+### Mappimport och granskning
+
 1. Välj först exakt familj: `deal/deal_pos1`–`deal_pos7` eller `deal_posdealer`
    för en kortplats, `repliker/<exakt-replik-id>` för tal, och `idle` för
    vänteläge. En film för ett visst ord eller kort får inte återanvändas som
