@@ -3,7 +3,10 @@
 Beslut 2026-09-29: zonvideor ska ligga i Vercel Blob och zonernas koordinater,
 uppspelning och klippkopplingar ska ligga i en **egen** Neon Postgres-databas.
 Detta gäller bara Astrids bakgrundszoner. Spel, saldo, kort och befintliga
-produktdata fortsätter att ägas av Render och dess nuvarande databas.
+produktdata ägs i dag av Render och dess SQLite-databas. Jakob har därefter
+beslutat att även produktionsspelet ska migreras till Neon Postgres. Den
+migreringen behöver en **separat spelresurs**, schema- och dataverifiering samt
+kontrollerat byte; zon- och Preview-databaserna får inte återanvändas.
 
 ## Resurser som finns
 

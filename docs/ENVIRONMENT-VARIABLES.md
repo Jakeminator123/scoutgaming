@@ -10,39 +10,51 @@ i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
 Status 2026-09-29: Render visar `croupier-v2` som **Live** på
-`https://croupier-v2.onrender.com` (build `a055b5c`). Vercels
-`github-work-vercel-entry` har `CROUPIER_GAME_ORIGIN` satt till denna exakta
-offentliga origin för Production och Preview. Värdet är en publik adress,
-ingen hemlighet. En ny Production-deploy från `0507cf5c` blev **READY**;
-Production är fortfarande endast landningssidan med Render-länk.
-Vid föregående browserkontroll svarade
-`https://github-work-vercel-entry.vercel.app/` 200 med en Blackjack-länk
-till Render, och länken öppnade den publika inloggningssidan. En separat
-läsande HTTPS-kontroll gav 200 för Vercels `/` och 200/`ok` för Renders
-`/__cloud/health`. Inloggning, spelrunda, omstart och beständig data är ännu
-inte verifierade i drift.
+`https://croupier-v2.onrender.com`, senast observerad deploy `05906bd8` från
+GitHub `Jakeminator123/github-work`/`jakemanator123-github-work`.
+Vercels nya `croupier-frontend` är Git-kopplat till `Jakeminator123/github-work`,
+branch `jakemanator123-github-work`, rot `apps/croupier-frontend`. Dess första
+Production-deploy från `d78eb4cb` är READY, och `CROUPIER_GAME_URL` är sparad
+för Production och Preview med Render-spelets riktiga URL. Den äldre
+`github-work-vercel-entry` visar samma importerade Next-landning, men är
+manuellt publicerad och saknar nu Git-koppling. `CROUPIER_GAME_ORIGIN` var den
+äldre statiska ingångens env och ska inte antas styra Next-sidan. Kodens
+fallback går också till Render-spelet. Den separata QA-landningens och
+spelklientens projekt är manuellt driftsatta utan Git-koppling. Deras browserprov
+med ett syntetiskt konto styrker spelrunda, saldo efter omladdning och synlig
+Astridvideo mot en isolerad Render-testbackend. Det bevisar inte produktions-
+omstart, backup eller läppsynk. Se [aktuell resurskarta](CLOUD-CURRENT-STATE-2026-09-29.md).
 
-En separat läsande Render-kontroll 2026-09-29 visade att OpenClaw Director och
-Gateway fortfarande är Live från GitLab `jakeminator123/work` på `8e10017d`.
-De använder alltså ännu inte GitHub-branchens Blueprint. Det ändras först med
-ett separat, granskat källbyte i Render; inga hemlighetsvärden behövs i denna
-förteckning. Se [OpenClaw-kedjan och checklistan](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+OpenClaw Director och Gateway är båda **Live från GitHub** på `15bd1541`.
+Ett internt Render-prov bekräftade att spelets produkt-token accepteras av
+Director utan att värdet lästes ut; Directors `/healthz`, tokenavgränsning och
+privat Gateway-modellista provades separat. Ett giltigt produktbeslut genom
+hela spelkedjan återstår. Se [OpenClaw-kedjan](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
 | Render: spel + BO + Lab (`/studio`) | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_CLOUD_DATA_ROOT`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER` + `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` på tom databas | Se grupper nedan | Render sätter `PORT`, `RENDER_EXTERNAL_URL` |
-| Vercel: statisk ingång (`ops/vercel-entry`) | `CROUPIER_GAME_ORIGIN` = Render-tjänstens exakta HTTPS-origin utan snedstreck på slutet | – | – | – |
+| Vercel: publik Next-landning (`apps/croupier-frontend`) | `CROUPIER_GAME_URL` = avsedd speladress för aktuell miljö | – | Kodfallback går till produktions-Render; lås värdet i projektet före automatisk Git-publicering | – |
+| Vercel: äldre statisk ingång (`ops/vercel-entry`, inte längre publicerad) | `CROUPIER_GAME_ORIGIN` = Render-tjänstens exakta HTTPS-origin utan snedstreck på slutet | – | Historiskt byggkontrakt | – |
 | Render: separat GPU-relä (ännu ej driftsatt) | `WORKER_SECRET`, annat `TICKET_SECRET` (båda minst 32 tecken), `ALLOWED_ORIGINS` = exakta spel-origins | – | – | Render sätter `PORT` |
 | Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAWAPI_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |
 | Render: privat OpenClaw Gateway | Separata `OPENCLAWAPI_KEY` och `OPENCLAW_MODEL_API_KEY` | – | `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_MODEL_API`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, lokalt endast `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK`; `CROUPIER_SPEECH_VISION` är opt-in | Blueprint anger icke-hemliga standardvärden; två nycklar anges privat |
-| RunPod: GPU-worker (ännu ej aktiverad) | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
+| RunPod: separat GPU-testworker (ej produktkopplad) | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
 | Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `lab/.env.example`; nyckelnamnen speglas i JSON-listan | – |
 
 Vercels opt-in `node build.mjs --frontend-preview` använder samma
 `CROUPIER_GAME_ORIGIN` som standardbygget och inför **ingen ny env-nyckel**.
-Det är ännu bara ett statiskt förhandsbygge; se
-[`VERCEL-FRONTEND-MIGRATION.md`](VERCEL-FRONTEND-MIGRATION.md) innan
-Production-ingången ändras.
+Den importerade Next-landningen har däremot `CROUPIER_GAME_URL`: i QA måste
+den sättas till den isolerade spel-Previewns exakta publika URL, annars faller
+knapparna tillbaka till `croupier-v2` i produktion. `croupier-landing-preview-qa`
+har ännu **ingen lagrad projektvariabel**; den fungerande manuella Previewn
+fick URL:en för just det bygget. Ett kommande Git-bygge får inte antas ärva
+den. Spelarprojektet `croupier-player-preview-qa` har egen Preview-
+`CROUPIER_GAME_ORIGIN`, separata Neon-integrationer och Blob-token. Där finns
+17 `CROUPIER_ZONES_*`-nycklar för Preview/Development från zon-Neon, men ingen
+spårad runtimekod läser dem ännu. Den framtida serverkodens kanoniska zonnyckel
+är `CROUPIER_ZONES_DATABASE_URL`; de andra är alternativa leverantörsformat.
+`BLOB_READ_WRITE_TOKEN` är en serverhemlighet, inte en klientvariabel.
 
 Render-spelets villkorliga grupper:
 
@@ -83,7 +95,8 @@ eller `CROUPIER_LISSABON_PROFILES=1` i molndrift; startvalideringen avvisar
 dem. Lösenord och token är endast i leverantörens hemlighetslager eller
 ignorerad lokal `.env`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemligheter.
 
-Aktuell driftsättningsföljd: låt Render-tjänsten starta och få sin `onrender.com`-
-adress; kontrollera `/__cloud/health`, inloggning och en spelrunda. Sätt sedan
-den exakta adressen som Vercels `CROUPIER_GAME_ORIGIN` och gör ett nytt bygge.
-GPU-relä och RunPod aktiveras separat efter kostnadsbeslut och verkligt prov.
+Aktuell driftsättningsföljd: behåll Render-spelet och dess SQLite tills en
+extern verifierad backup, separat game-Neon och återgångsprov finns. Den nya
+Git-kopplade landningen har rätt rot/branch och lagrad `CROUPIER_GAME_URL`;
+kontrollera varje automatisk deploy där. RunPods separata testendpoint
+har producerat syntetisk MP4; Render-spelet använder ännu inget GPU-relä.

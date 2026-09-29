@@ -58,8 +58,8 @@ validated API performs explicit catalog edits.
 This operator endpoint is not a player-chat integration. Actual Croupier player
 chat still needs a separate authenticated, moderated adapter to the bounded
 `context.chat.signal` contract; the current lab sets those signals manually.
-The development team's GitLab IDE-agent inbox is an entirely separate system
-and must never be routed through this OpenClaw deployment.
+The former GitLab IDE-agent inbox is paused in this checkout. It was always a
+separate system and must never be routed through this OpenClaw deployment.
 
 OpenClaw's HTTP API is normally disabled. The managed configuration enables only
 the Chat Completions route used by this adapter. The Gateway remains a **private
