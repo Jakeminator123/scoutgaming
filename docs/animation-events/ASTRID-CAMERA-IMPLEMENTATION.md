@@ -53,8 +53,11 @@ spelardatabas, röstgenerering eller privat bild användes. Den faktiska
 modellidentifieraren i Gateway och bildens lagring kunde inte läsas eftersom
 Codex fortfarande nekas Render av en sparad webbplatsbehörighet.
 
-1. Vid en ny installation på Render: driftsätt aktuell `jakeminator123/work` för både
-   `croupier-lab-openclaw` (Gateway) och `croupier-lab-director`. Gateway ska
+1. Vid en ny installation på Render: använd `Jakeminator123/github-work`,
+   branch `jakemanator123-github-work`, för både `croupier-lab-openclaw`
+   (Gateway) och `croupier-lab-director`. De befintliga tjänsterna är redan
+   Live därifrån enligt [källbyteskvittot](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+   Gateway ska
    ha `CROUPIER_SPEECH_VISION=1`. Behåll befintlig version, modellnycklar och
    verktygsgränser. Verifiera först en syntetisk bild och dess lagring enligt
    checklistan nedan. Den befintliga bildvägen har redan klarat bildprovet

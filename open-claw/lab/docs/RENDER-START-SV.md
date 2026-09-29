@@ -1,13 +1,12 @@
 # GitHub → Render → OpenClaw-labb
 
 GitHub-repot `Jakeminator123/github-work` på
-`jakemanator123-github-work` är enda mål för nytt arbete. En läsande Render-
-kontroll 2026-09-29 visade att de två befintliga OpenClaw-tjänsterna ännu
-hämtar från gamla GitLab-branchen `jakeminator123/work` på `8e10017d`.
-GitHub-källbytet kräver en separat granskad Render-åtgärd.
-Skapa inte en dubblett av Blueprinten för att tillämpa denna guide. Granska
-aktuell tjänstkonfiguration och använd endast en avsiktlig Manual Sync eller
-Manual Deploy vid en separat driftåtgärd. Se den
+`jakemanator123-github-work` är enda mål för nytt arbete. De två befintliga
+OpenClaw-tjänsterna byttes till denna GitHub-källa 2026-09-29 och var Live på
+`15bd1541`. Den gamla GitLab-Blueprinten kopplades loss utan att tjänster,
+diskar eller hemligheter togs bort. Skapa inte en dubblett av Blueprinten.
+Granska aktuell tjänstkonfiguration och använd endast en avsiktlig Manual
+Deploy vid en ny driftåtgärd. Se den
 [aktuella aktiveringschecklistan](CLOUD-ACTIVATION-2026-09-29.md).
 
 Den här Blueprinten publicerar Director och privat Gateway, inte själva

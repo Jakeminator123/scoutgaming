@@ -1,5 +1,12 @@
 # Spel → Render → OpenClaw: aktiveringshandoff 2026-09-29
 
+**Aktuellt efter källbytet:** Director och privat Gateway är Live från
+`Jakeminator123/github-work`/`jakemanator123-github-work` på `15bd1541`.
+De tidiga observationerna nedan om GitLab beskriver läget **före**
+källbytet; de är bevarade som tidsstämplad historik. Det interna tokenprovet
+längre ned bekräftade också spel→Director-autentisering utan att läsa ut
+hemlighetsvärden. Ett giltigt modellbeslut och fullt GPU-/medieflöde återstår.
+
 ## Faktisk kedja
 
 1. Browsern skickar `POST /chat` till den serverägda spelprocessen i

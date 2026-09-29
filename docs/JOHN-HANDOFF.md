@@ -1,3 +1,15 @@
+# Aktuellt molnläge
+
+Se [gemensam driftkarta](CLOUD-CURRENT-STATE-2026-09-29.md) för verifierad
+Vercel-, Render-, Neon-, Blob-, RunPod- och OpenClaw-status den 29 september.
+Den nya [Git-kopplade Vercel-ingången](https://croupier-frontend.vercel.app/)
+visar importerade Next-sidan från huvudrepot. Den tidigare
+`github-work-vercel-entry` ligger kvar som separat manuellt publicerad adress.
+Spelets produktion använder fortfarande
+Render/SQLite. [Game-Neon-förberedelsen](NEON-GAME-MIGRATION.md) är isolerad
+kod och schema, inte ett produktionsbyte. Nyare avsnitt längre ned i denna
+fil ersätter äldre dagsnoteringar där driftläget har ändrats.
+
 ## 2026-09-29 — Separat Vercel-startsida i produktion
 
 Det privata GitHub-repot `Jakeminator123/modern-landing-page` heter nu

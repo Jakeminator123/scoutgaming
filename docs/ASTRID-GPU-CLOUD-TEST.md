@@ -48,10 +48,10 @@ Startaren passerar fortfarande inte `assertCloudAccessReady()`.
 | Render, molnstartare | `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`, `CROUPIER_GAME_ORIGIN`, `BETTALOTTO_PARTNER_BASE_URL`, `CROUPIER_CLOUD_DATA_ROOT`, `OPENCLAW_PRODUCT_SPEECH_URL/TOKEN`, `CROUPIER_STREAM_LANE`, `PORT`, `NODE_ENV` | Stöds. Exakta tre HTTPS-värdar, en replika och beständig disk krävs; HTTPS/cookies och startspärren måste verifieras före drift. |
 | Render → endast Web-child | `CROUPIER_GENERATED_SPEECH=1`, `CROUPIER_CLOUD_GENERATED_SPEECH=1`, `CROUPIER_GENERATED_SPEECH_STREAMING=1`, `CARTESIA_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, två **olika** `CROUPIER_SPEECH_STREAM_WORKER_SECRET`/`CROUPIER_SPEECH_STREAM_TICKET_SECRET` på minst 32 tecken | Stöds i denna ändring och passerar bara till Web-processen. File-jobbets RunPod-nyckel/endpoint krävs fortfarande av befintlig genererad-tal-konfiguration. Ange separat test-endpoint först efter beslut. Lab-child får inga dessa hemligheter. |
 | Render → gateway | Ingen separat workerhemlighet; `config.streaming` från validerad flagga | Stöds i denna ändring. Endast exakta spelvärdens `/speech-stream` och `/lipsync-worker` uppgraderas; Web-reläet gör cookie-/biljett- eller bearer-kontroll. |
-| RunPod separat test-endpoint | GHCR-image från verifierad SHA, privat GHCR-läsbehörighet, `AVATAR_ID=astrid_spel2x`, `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`, eventuellt `NVENC=0` för kontrollerad fallback | Endpoint `zsudl8tmzcmiv1`, release 2, är Ready. Ett hälsoprov verifierade privat imagehämtning och motorstart; ett syntetiskt filjobb skapade MP4 med `libx264`. Release 2 använder SHA-taggen från samma publiceringsbygge som digesten nedan. |
+| RunPod separat test-endpoint | GHCR-image från verifierad SHA, privat GHCR-läsbehörighet, `AVATAR_ID=astrid_spel2x`, `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`, eventuellt `NVENC=0` för kontrollerad fallback | Endpoint `zsudl8tmzcmiv1`, release 3, är Ready med den nya diagnostikimagen. Två syntetiska filjobb skapade MP4 med `libx264`; inget verkligt tal eller strömprov är godkänt. |
 | RunPod sessionsjobb | `op=session`, exakt `wss://<spelvärd>/lipsync-worker`, `ws_token`, unik `worker_id`, avgränsad `ttl` | Stöds. Token skickas som Authorization-header, aldrig i URL. Jobbets start/stop och kötid måste mätas av testorkestreringen; automatisk betald workerstart finns inte. |
-| GitHub Actions | Manuell `astrid-gpu-publish.yml`, `approved_target`, repository `GITHUB_TOKEN` | Publiceringskörning 36514600929 lyckades från `b0bac08f` och gav den digest som anges nedan. Paketet är Private. |
-| Eventuell Vercel-ingång | Länk till Render-spelets HTTPS-origin | Ingen hemlighet eller WebSocket-funktion behövs för en ren länk. Separat spelklient på Vercel med sessionsöverlämning och WS-adress är **inte implementerad**. |
+| GitHub Actions | Manuell `astrid-gpu-publish.yml`, `approved_target`, repository `GITHUB_TOKEN` | Publiceringskörning 36523063587 lyckades från `12ce6d47`; imagen är Private och release 3 på testendpointen. |
+| Vercel-ingång | Landnings- och spel-Preview med Render-testbackend | Den isolerade spel-Previewn har provat native spel och Astridvideo. Ett fullständigt AI-text → TTS → GPU-sessionjobb → fragment → synlig bild-kvitto är ännu inte gjort. |
 
 Lokalt ligger `CARTESIA_API_KEY` i rotens privata env-fil och RunPod-nyckeln i
 Labbets privata env-fil. De behöver inte dupliceras eller flyttas i Git.
@@ -125,9 +125,28 @@ Efter jobbet visade RunPod `0 running workers`, `$0.00000/s` och saldo
 `$29.96` från ursprungliga `$30.00`. Detta är en saldodifferens på ungefär
 fyra cent, inte en verifierad fakturarad; Overview visade ännu `$0.00`
 avrundat för total debitering.
-Källan har därefter fått mer utförlig, avgränsad FFmpeg-diagnostik för
-NVENC-proben. Den ändringen finns ännu inte i release 2 eller någon ny image;
-orsaken till fallback är därför fortfarande okänd.
+Källan fick därefter mer utförlig, avgränsad FFmpeg-diagnostik för NVENC-proben.
+[GHCR-körning 36523063587](https://github.com/Jakeminator123/github-work/actions/runs/36523063587)
+publicerade commit `12ce6d472a32495704dd557bfc4e420ba4a90b20` som
+`sha-12ce6d472a32495704dd557bfc4e420ba4a90b20`, med image-digest
+`sha256:23245ce416178a977478685d4147374f658f6405a410c1d15e02237a686fac3f`.
+Testendpointens release 3 kör nu denna tagg. RunPod visar en worker med release
+3, privat pull fungerar och noll alltid aktiva workers är fortfarande satt.
+Samma syntetiska 1,5-sekunders WAV gav åter 54 bildrutor och en 324 KB MP4.
+Jobb `b56ac33d-2b2f-48f8-b503-118e74849ad7-e1` rapporterade
+`delayTime=21,3` s och `executionTime=1,45` s. Workerfasernas tider var
+`whisper=0,02`, `gpu=0,73`, `gen_enc=0,74` och `mux=0,22` sekunder. Det är en
+kortare exekvering än release 2:s 20,28 s för samma syntetiska input, men
+workerhost och kallstart skiljer sig; jämförelsen är inte ett mått på verklig
+tal-/videolatens eller en garanterad optimering.
+
+Den nya loggen visar den faktiska NVENC-orsaken i denna worker: FFmpeg laddade
+NVENC 13.0 och identifierade RTX 4090, men `OpenEncodeSessionEx` svarade
+`unsupported device (2)`. Workern valde därför `libx264`. Ingen NVENC-kodad
+session har verifierats. GPU-beräkning och mediejobb fungerade ändå. Nästa
+tekniska val är att undersöka GPU-värdens encoderåtkomst eller låsa fast en
+uppmätt x264-fallback; byt inte codec enbart utifrån detta syntetiska jobb.
+
 Den tidigare GHCR-körningen från
 `15bd1541` misslyckades. [Ny workflowkörning 36514600929](https://github.com/Jakeminator123/github-work/actions/runs/36514600929)
 startades från verifierad SHA `b0bac08f417bfc8a3a136c940e8aba2d41b59bab`

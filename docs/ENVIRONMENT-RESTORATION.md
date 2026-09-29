@@ -1,5 +1,13 @@
 # Local environment restoration — 2026-09-08
 
+> **Historiskt kvitto, inte aktuell startinstruktion.** Sökvägen, branchen och
+> direktkommandot nedan beskriver miljön den 8 september. Nuvarande checkout
+> är `C:\Users\jakem\Projects\croupier` på
+> `jakemanator123-github-work`. Följ `AGENTS.md`, den koordinerade startaren i
+> `lab/docs/README.md`, [miljövariabelregistret](ENVIRONMENT-VARIABLES.md)
+> och [aktuell molnstatus](CLOUD-CURRENT-STATE-2026-09-29.md) för nya arbeten.
+> Starta inte ett andra direkt Web/Lab-par utifrån kommandot i detta kvitto.
+
 Working directory: `/Users/solvifyab/Desktop/croupier`.
 Branch: `codex/restore-casino-environment`.
 Run: `HOST=127.0.0.1 node web/server.mjs`.

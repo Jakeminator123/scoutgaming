@@ -18,6 +18,31 @@
       "configurationCheckedOn": "2026-09-29",
       "firstBoot": [], "conditional": [], "managed": [], "blocked": []
     },
+    "vercel-frontend-production": {
+      "sources": ["apps/croupier-frontend/lib/game-url.ts"],
+      "project": "croupier-frontend",
+      "gitBranch": "jakemanator123-github-work",
+      "rootDirectory": "apps/croupier-frontend",
+      "configuredTargets": ["production", "preview"],
+      "required": [], "firstBoot": [],
+      "conditional": ["CROUPIER_GAME_URL"],
+      "managed": [], "blocked": []
+    },
+    "vercel-landing-qa": {
+      "sources": ["apps/croupier-frontend/lib/game-url.ts"],
+      "project": "croupier-landing-preview-qa",
+      "required": [], "firstBoot": [],
+      "conditional": ["CROUPIER_GAME_URL"],
+      "managed": [], "blocked": []
+    },
+    "vercel-zones-qa": {
+      "sources": [],
+      "project": "croupier-player-preview-qa",
+      "required": [], "firstBoot": [],
+      "conditional": ["CROUPIER_ZONES_DATABASE_URL"],
+      "managed": ["BLOB_READ_WRITE_TOKEN", "CROUPIER_ZONES_NEON_PROJECT_ID", "CROUPIER_ZONES_POSTGRES_URL_NO_SSL", "CROUPIER_ZONES_POSTGRES_USER", "CROUPIER_ZONES_DATABASE_URL_UNPOOLED", "CROUPIER_ZONES_POSTGRES_PRISMA_URL", "CROUPIER_ZONES_POSTGRES_URL_NON_POOLING", "CROUPIER_ZONES_POSTGRES_HOST", "CROUPIER_ZONES_PGHOST", "CROUPIER_ZONES_PGPASSWORD", "CROUPIER_ZONES_PGUSER", "CROUPIER_ZONES_POSTGRES_DATABASE", "CROUPIER_ZONES_PGDATABASE", "CROUPIER_ZONES_PGHOST_UNPOOLED", "CROUPIER_ZONES_POSTGRES_PASSWORD", "CROUPIER_ZONES_POSTGRES_URL"],
+      "blocked": []
+    },
     "render-gpu-relay": {
       "sources": ["services/astrid-gpu-worker/gateway/server.mjs"],
       "required": ["WORKER_SECRET", "TICKET_SECRET", "ALLOWED_ORIGINS"],
