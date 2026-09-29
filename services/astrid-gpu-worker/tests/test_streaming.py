@@ -9,10 +9,19 @@ import time
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'workers'))
-from streaming import Cancelled, FragmentMuxer, Timeline, model_sample_count, render
+from streaming import Cancelled, FragmentMuxer, Timeline, _FirstMediaFragment, model_sample_count, render
 
 
 class TimelineTests(unittest.TestCase):
+    def test_first_media_fragment_ignores_init_and_split_box_headers(self):
+        def box(kind, payload=b''):
+            return (8 + len(payload)).to_bytes(4, 'big') + kind + payload
+        data = box(b'ftyp', b'init') + box(b'moov', b'header') + box(b'moof', b'track') + box(b'mdat', b'frames')
+        tracker = _FirstMediaFragment()
+        for byte in data[:-1]:
+            self.assertFalse(tracker.feed(bytes([byte])))
+        self.assertTrue(tracker.feed(data[-1:]))
+
     def test_encoder_starts_on_pcm_before_first_model_window(self):
         timeline = Timeline(24000)
         started = threading.Event()
@@ -158,6 +167,8 @@ class EncoderTests(unittest.TestCase):
             self.assertEqual(results[0]['encoder'], 'libx264')
             self.assertTrue(results[0]['encoder_verified'])
             self.assertIn('first_fragment', results[0]['ms'])
+            self.assertIn('first_output_byte', results[0]['ms'])
+            self.assertLessEqual(results[0]['ms']['first_output_byte'], results[0]['ms']['first_fragment'])
             self.assertIn('overlay_encode_wall', results[0]['ms'])
             self.assertEqual(streams[0]['profile'], 'High')
             self.assertEqual(streams[0]['level'], 42)
