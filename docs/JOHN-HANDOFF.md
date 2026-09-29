@@ -1,5 +1,39 @@
 # Aktuellt molnläge
 
+## 2026-09-29 — Verifieringskvitto för röstfixen
+
+Kod `5c87edf38f44f3aeb1e8c907c649867bf199f416` är pushad till rätt
+GitHub-branch. Full pre-commit: **622 PASS, 0 FAIL, 1 plattformsundantag**.
+Oberoende review av Voice/Mute hittade inga blockerande fel.
+[GitHub checks 36601820710](https://github.com/Jakeminator123/github-work/actions/runs/36601820710)
+slutfördes 17:04:46 UTC med alla tre jobb godkända. Vercel production
+`dpl_FmoVUbQHike5zsivRrN2FJFhhzX3` är READY för exakt samma SHA och har
+alias `croupier-frontend.vercel.app`, `scoutgaming.tech` och `www.scoutgaming.tech`.
+Render `dep-datuvcbbc2fs73c08ii0` är **Live** för samma kodcommit efter
+GitHub-kontrollerna. Båda publika röstmodulerna gav 200 med rätt handskakning
+och medielivscykelkvitto. Den publicerade Voice-dialogen visar den nya
+förklaringen om svarsljud och Mute; dialogen stängdes med **Keep off**.
+Slutkvittots första hookomkörning träffade ett befintligt tidskänsligt
+sessionsprov: fasta 35 ms räckte inte för asynkron cancel-filskrivning.
+Både exakt test och hela dess hookgrupp passerade direkt vid omkörning;
+ingen kontroll kringgicks och ingen sessionskod ändrades för detta.
+Efter publicering spelades `goodluck` två gånger för samtliga fyra dealers
+i riktig rehearsal: Astrid visade **2/2 completed**, Vera/Amira/Mei gav
+två matchande `[speech] start/end`-par och återaktiverade kontroller.
+Alla fyra renderingar inspekterades och `presentation=local` bestod.
+Saldo 995 och insats 0 förblev oförändrade under dessa repetitioner.
+Detta är uppspelningsregression, inte ny visuell läppsynkacceptans.
+
+Ett extra browserprov använde riktig Voice-kontroll, DOM och pose-grind,
+med uttryckligen syntetiska enheter/transkription/svar. Från sparad Mute
+aktiverade **Enable voice** svarsljudet en gång. Ett yttrande gav exakt en
+transkription, automatisk sändning, svarscallback och fullbordad grind.
+Normal lyssning återupptogs. Efter **Mute** var Voice av, alla tracks stoppade
+och antalet sändningar fortfarande ett. Inga browserbehörigheter eller
+riktiga mikrofon-/kameraspår användes. Båda kortlivade fixtureprocesserna
+avslutades med kod 0, portarna 52930/51964 är stängda och egna tempfiler
+bortstädade. Tillfälliga Render-QA är åter **Suspended**.
+
 ## 2026-09-29 16:57 UTC — Voice/Mute, strömkvittot och återställningsprov
 
 Jakobs röstbild felsöktes mot den öppna produktfliken. STT hade lyckats,
