@@ -6155,18 +6155,22 @@ Ingen mediefil, policy, kalibrering eller baslinje stageades eller godkändes.
 ### Astrids zonlagring på Vercel, 2026-09-29
 
 Jakob beslöt att zonvideor ska få Vercel Blob och zonmetadata en **ny, egen**
-Neon Postgres-databas. Blob `croupier-zone-videos` (`store_zPcBQklQ3j9eWwOb`)
-skapades publikt i `arn1` och kopplades till `croupier-player-preview-qa`.
+Neon Postgres-databas. Det först skapade, tomma publika lagret raderades när
+Jakob begärde projektlåst media. Blob `croupier-astrid-zone-media-private`
+(`store_AqwvebTbBHarOjvG`) skapades privat i `arn1` och kopplades till
+`croupier-player-preview-qa`.
 Neon Free `croupier-astrid-background-zones-db` skapades i `fra1` med
 Neon Auth av och `CROUPIER_ZONES_*` endast i Preview och Development.
 CLI-listning verifierade båda resurserna och variabelnamnen utan att visa
 hemligheter. Den tidigare `croupier-preview-neon` och dess oprefixade
 `DATABASE_URL` är **en annan databas** och får inte användas för zoner.
 
-Blob hade 0 filer vid kontrollen och Neon har inte fått zondata. Lab `/zones`
-sparar alltjämt i webbläsarens `localStorage` och IndexedDB; det finns ännu
-inget server-API eller speluppspelning för zonerna. Ett försök att ladda upp
-den lokala `background-man-aligned-206x284.mp4` till det publika Blob-lagret
-avvisades av automatisk godkännandegranskning som otillräckligt uttryckligt
-godkänd extern publicering av just filen. Ingen fil överfördes. Se
-`docs/ZONE-CLOUD-STORAGE.md` för resursgränser och nästa kodsteg.
+Efter uttryckligt godkännande laddades
+`background-man-aligned-206x284.mp4` till det privata lagret. CLI visade ett
+objekt på 65,76 KB; en oinloggad HEAD mot dess direktlänk gav HTTP 403.
+Det tidigare försöket till publik uppladdning hade stoppats av automatisk
+godkännandegranskning och överförde ingen fil. Neon har inte fått zondata.
+Lab `/zones` sparar ännu zoner i `localStorage` och klipp i IndexedDB;
+`light-2`-blinkklippet finns bara i den webbläsarprofilen. Ett skyddat
+Lab-API och en behörig medieväg med HTTP Range behövs innan privat Blob
+kan användas i speluppspelningen. Se `docs/ZONE-CLOUD-STORAGE.md`.
