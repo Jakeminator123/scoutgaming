@@ -62,9 +62,17 @@ Se [live-kvittot](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
 På Render `croupier-v2` finns nu `CARTESIA_API_KEY`, `RUNPOD_API_KEY` och
 `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=zsudl8tmzcmiv1`. Namn/närvaro är
-kontrollerade; riktigt tal har inte API-testats. `CROUPIER_GENERATED_SPEECH`
-och `CROUPIER_CLOUD_GENERATED_SPEECH` är inte aktiverade. Nycklarna ensamma
-startar inte talflödet. Sparande med Save only kräver en efterföljande deploy.
+kontrollerade. Den 29 september aktiverades `CROUPIER_GENERATED_SPEECH=1`,
+`CROUPIER_CLOUD_GENERATED_SPEECH=1` och `CROUPIER_GENERATED_SPEECH_STREAMING=1`
+genom env-deploy `dep-datnfph7lnhs73e2c670`. Två riktiga strömmar gav första
+videobild; följdsvar och visuell läppsynk är ännu inte godkända. Sessionens
+reservation är 0,50 USD och dagens konservativa budget 9,94 USD. Se
+[talets driftskvitto](LIVE-SPEECH-ACTIVATION-2026-09-29.md).
+
+Gatewayns nya kod-, Compose- och Blueprint-standard för `OPENCLAW_MODEL_ID`
+är `gpt-5.6-terra`. En befintlig `/data/openclaw/openclaw.json` bevaras vid
+omstart och kräver ett uttryckligt byte av sparade rollmodeller; ett env-byte
+ensamt bevisar inte att Gatewayns primärmodell har ändrats.
 
 `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` ska sparas som serverhemlighet i
 Render → `croupier-v2` → Environment, tillsammans med bootstrap-användaren.

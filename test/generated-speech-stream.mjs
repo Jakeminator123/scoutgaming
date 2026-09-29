@@ -116,17 +116,21 @@ test('opt-in preserves local/cloud guards and never enables cloud guests', () =>
 
 test('verified request reserves identity before starting/reusing worker; TTS waits for socket admission', async t => {
   let starts = 0, f;
+  const activity = [];
   f = await fixture(t, { initialAvailable: 0, sessionManager: {
     async ensure({ beforeCostly }) {
       await beforeCostly();
       assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.request.json')).length, 1);
       starts++; f.setAvailable(1);
-    }, close() {},
+    }, activity(workerId) { activity.push(workerId); }, close() {},
   } });
   const descriptor = await f.service.prepare(f.input());
   assert.equal(starts, 1); assert.equal(f.sourceCalls, 0); assert.equal(descriptor.kind, 'generated-speech-stream');
   await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
   assert.equal(starts, 1, 'duplicate request cannot restart a paid worker');
+  f.relayOptions.onWorkerIdle('owned-worker');
+  assert.deepEqual(activity, ['owned-worker'], 'completed relay utterance resets its manager idle clock');
+  assert.equal(starts, 1, 'completion notification does not submit another job');
 });
 
 test('failed worker startup cannot issue a stream ticket or pay again for the same request', async t => {

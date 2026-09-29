@@ -1,0 +1,230 @@
+{
+  "at": "2026-09-29T08:37:13.742Z",
+  "origin": "https://croupier-v2.onrender.com",
+  "commit": "6c85cfff3fd3c5e3d0d3462c75dc2d1a78173178",
+  "uploadedCount": 12,
+  "existingCount": 10,
+  "uploadedBytes": 44574024,
+  "candidates": [
+    {
+      "label": "box_1_variant.mp4",
+      "familyId": "astrid/deal.player.left/box0",
+      "id": "e76dd040-c0a0-43e7-9063-9e7e097be2a7",
+      "sha256": "cbddff828a84956e95254187d78e0481189495f9475bdb669ee44601b7819db4",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "box_2_variant.mp4",
+      "familyId": "astrid/deal.player.left/box1",
+      "id": "fee5dd76-79f6-492b-9ab9-5e53be14c62c",
+      "sha256": "99540c2174bc235bdc46bcc454f50edfc17bf68571fd0ed193e6ffd60f5e1033",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "box_3_variant_shoefix.mp4",
+      "familyId": "astrid/deal.player.centre/box2",
+      "id": "c400e4f8-03e8-425d-bd56-3f1ad839d24c",
+      "sha256": "fdb15c20addfdcfb706cdd05f660e3fb405ee3c83f2d1459e023ae6842907f9b",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "box_4_varaint.mp4",
+      "familyId": "astrid/deal.player.centre/box3",
+      "id": "49dac64a-4e5f-4e80-a7ed-810a35cf4cbc",
+      "sha256": "04e46e0882c826744a31e174e81a14ee7b871b28ccf3939e0cf4105741185a8f",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "box_5_variant.mp4",
+      "familyId": "astrid/deal.player.centre/box4",
+      "id": "60bcd858-0c0f-4754-9472-545009725b4f",
+      "sha256": "639f0750afba8c6c6357004c546e839e15b3640738a3b0fbe30b5cf8a99bf9b7",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "box_5_variant_shoefix.mp4",
+      "familyId": "astrid/deal.player.centre/box4",
+      "id": "b389de5a-2b53-4307-bc59-4bc7dff46883",
+      "sha256": "a856f2e7c99814e7ff75b777ddf32ca586505d673e3accca8a73f3e076956b17",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "box_6_variant_shoefix.mp4",
+      "familyId": "astrid/deal.player.right/box5",
+      "id": "5d6aa14f-c301-406c-88ac-cddb8ebbb660",
+      "sha256": "0cf03b9cf66a2b47c5eed59f6a6e8fb5ebc8f3c11ac908ed76edcf974b19efcd",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "box_7_variant.mp4",
+      "familyId": "astrid/deal.player.right/box6",
+      "id": "6dac2071-eaa1-4e4b-8036-bec9593a6cce",
+      "sha256": "ec0f0b1b0db74984149a4a8d0bbe701ea6c01b6e215c02c9d302872a147b2609",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "box_dealer_variant.mp4",
+      "familyId": "astrid/deal.dealer/dealer-up",
+      "id": "b0f1bd2b-9837-44db-81a7-708e5f07697c",
+      "sha256": "4b003b0e8a5b27d07b9d3dc22faf6b1d05d0a593200e11f29c3daf65d948fa76",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "croupier_coffie.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "093c2544-ca82-fc1f-3de1-e51e3b9786ea",
+      "sha256": "093c2544ca82fc1f3de1e51e3b9786ea778038cc1049ef028d5ff4e8365fdc11",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_andas.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "914f8c03-7d47-a57e-3cb1-418ed46b6887",
+      "sha256": "914f8c037d47a57e3cb1418ed46b68876243f7290e73f8041d679228c07993aa",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_blink_f73_s303.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "f5a983d8-877e-317d-7b1c-2f4848c88488",
+      "sha256": "f5a983d8877e317d7b1c2f4848c884888517e8aa9e1cb301eb89fefad0032a78",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_cheek_f73_s301.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "090751f3-fab4-327b-c5a2-0294f0de8bfe",
+      "sha256": "090751f3fab4327bc5a20294f0de8bfed26f851451baaceffa0bec4a8226dd37",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_glance_f73_s301.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "4b60e48b-cdf4-cd77-6ef0-87af6d6b5b9e",
+      "sha256": "4b60e48bcdf4cd776ef087af6d6b5b9e03dc54e2d0a1e6dc104490090ed31ddd",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_handrorelse.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "3430694a-02f4-ba84-1a60-6d3afd14d802",
+      "sha256": "3430694a02f4ba841a606d3afd14d802e109823b48b86c8081dd79af3324a128",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_huvud_i_handerna.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "620166c3-7ca5-909c-d39d-ce12f5a96952",
+      "sha256": "620166c37ca5909cd39dce12f5a96952456e50d7e3711ddc3806385dd80ef6ea",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_insulted_f73_s301.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "921ae71d-11fa-01ec-f78a-b9ef7d8d7689",
+      "sha256": "921ae71d11fa01ecf78ab9ef7d8d768906f930eeb6d7832e05a0bea488628beb",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_resa_sig.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "b1f74294-2470-478b-bc1a-ec14705c0d5e",
+      "sha256": "98cbdd29cbee46cd2b884c398e015607ba92b80e81ad03cf6368dc18c0bf231f",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_resa_sig_fargmatchad.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "8a04914a-41a1-32f7-b5cb-586eda417aac",
+      "sha256": "8a04914a41a132f7b5cb586eda417aac97427aa866b9d7e9cfae1fc10af02b72",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_resa_sig_kling.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "66153427-8ca1-0bed-c4b3-eafac66872b4",
+      "sha256": "661534278ca10bedc4b3eafac66872b4fb8c9b86e94323e44d0c9e060b34a015",
+      "action": "already-present",
+      "storage": "disk",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_smile.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "67f9b1e4-a253-4f68-bae4-20850a0e4ce0",
+      "sha256": "57be6d816fdd760bdde8b600d1e67c259bc2d80aa0fc5dad6ed4fcb0c9cbafcc",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    },
+    {
+      "label": "idle_yawn.mp4",
+      "familyId": "astrid/idle.ready/ready",
+      "id": "44770004-911d-474a-82be-5c5681e61a39",
+      "sha256": "f87bace80c7d057693fd2279e900bb1afec5fd123a183e36a7d564bb24b0f30a",
+      "action": "uploaded",
+      "storage": "private-blob",
+      "rangeReads": 2,
+      "visualReview": "pending"
+    }
+  ]
+}

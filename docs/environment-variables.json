@@ -52,6 +52,8 @@
     },
     "render-openclaw-gateway": {
       "sources": ["open-claw/lab/deploy/gateway-config.mjs"],
+      "defaultModel": "gpt-5.6-terra",
+      "defaultModelScope": "New configurations; existing persistent role models require an explicit operator update",
       "blueprint": { "path": "open-claw/lab/render.yaml", "service": "croupier-lab-openclaw" },
       "required": ["OPENCLAWAPI_KEY", "OPENCLAW_MODEL_API_KEY"],
       "firstBoot": [],

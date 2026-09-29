@@ -14,6 +14,8 @@
 
 ## Local environment correction and explicit cloud storage
 
+Jakob's explicit Terra-default request is reflected in new Gateway configurations (`lab-provider/gpt-5.6-terra`, empty fallbacks), the example `OPENCLAW_MODEL_ID`, and new Astrid policies (`gpt-5.6-terra`, Probe still off). Reconciliation preserves an existing saved Gateway model and Studio project; the live owner must update those persisted selections separately. Local `lissabon/data/project.json` still contained the older saved Luna choice at inspection. The separate companion web-search specialist uses `gpt-4.1-mini-2025-04-14`; it is not Astrid's conversation model and was left unchanged.
+
 The private `.env.generated-speech.local` no longer overrides the scoped RunPod endpoint with the older endpoint. It now agrees with `lab/.env.local` and the documented cloud test endpoint. No provider key was changed or printed. `RUNPOD_API_KEY` remains empty locally; a new normal Lab start with its existing generated-speech profile remains blocked until the intended key is supplied privately. The profile was not disabled to hide that failure.
 
 Local cloud storage is explicit:

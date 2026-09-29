@@ -16,6 +16,12 @@ execution timeout 600 s, FlashBoot av, noll pågående/köade jobb och saldo
 modellstart, exekvering, idle och containerlagring. En applikationsreservation
 är inte en kontoomfattande spärr för andra jobb eller ändrade priser.
 
+Efter denna förkontroll aktiverade samordnaren FlashBoot och återläste
+`true` i en nyöppnad endpointdialog. Min 0/max 1, en GPU, idle 5 s och
+execution timeout 600 s var oförändrade; endpointen visade Ready och noll
+jobb. Inget GPU-jobb startades av inställningsändringen. Detta ger ingen
+garanti om kallstart eller första-bild-latens; de mäts separat vid liveprovet.
+
 Den planerade reservationen är 0,50 USD per avgränsad session, som kan
 återanvändas för flera svar. Tillgänglig dagsbudget sätts konservativt till
 9,94 USD efter dagens tidigare cirka 0,06 USD. Flaggor och runtimeprov

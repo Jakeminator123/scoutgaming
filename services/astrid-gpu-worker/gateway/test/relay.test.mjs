@@ -40,7 +40,8 @@ async function fixture(t, options = {}) {
 }
 
 test('forwards first media before input end; server owns ids; releases worker after done', { timeout: 5000 }, async t => {
-  const f = await fixture(t);
+  const idleWorkers = [];
+  const f = await fixture(t, { onWorkerIdle: id => idleWorkers.push(id) });
   const w = f.worker(), fromWorker = messages(w); await once(w, 'open');
   assert.deepEqual(f.relay.workerStatus('worker-0'), { workers: 1, busy: 0, available: 1 });
   assert.deepEqual(f.relay.workerStatus('another-worker'), { workers: 0, busy: 0, available: 0 });
@@ -57,6 +58,23 @@ test('forwards first media before input end; server owns ids; releases worker af
   w.send(JSON.stringify({ t: 'done', id: ready.id, frames: 24, ms: 1000 }));
   assert.equal((await fromClient()).t, 'done');
   assert.equal(f.relay.status().available, 1);
+  assert.deepEqual(idleWorkers, ['worker-0']);
+});
+
+test('lifecycle stop closes only the named idle worker with a graceful bye', { timeout: 5000 }, async t => {
+  const f = await fixture(t);
+  const w = f.worker(), fromWorker = messages(w); await once(w, 'open');
+  assert.equal(f.relay.stopWorker('unknown-worker'), false);
+  const c = f.client(), fromClient = messages(c); const ready = await fromClient();
+  c.send(JSON.stringify({ t: 'start', rate: 24000, protocol: 2 })); await fromWorker();
+  assert.equal(f.relay.stopWorker('worker-0'), false, 'an active utterance owns the worker');
+  w.send(JSON.stringify({ t: 'done', id: ready.id, frames: 1 })); await fromClient();
+  const closed = once(w, 'close');
+  assert.equal(f.relay.stopWorker('worker-0'), true);
+  assert.equal(f.relay.status().available, 0, 'closing sockets cannot admit another speaker');
+  assert.deepEqual(await fromWorker(), { t: 'bye' });
+  assert.equal((await closed)[0], 1000);
+  await eventually(() => f.relay.workerStatus('worker-0').workers === 0, 'terminal worker leaves relay before replacement');
 });
 
 test('disconnect holds worker until cancellation acknowledgement', { timeout: 5000 }, async t => {

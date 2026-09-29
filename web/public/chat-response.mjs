@@ -59,3 +59,22 @@ export function chatFailureMessage(reason = '') {
   if (/generated_speech/.test(reason)) return 'Rösten eller läppsynken kunde inte skapas. Försök igen.';
   return 'Svaret kunde inte slutföras. Försök igen.';
 }
+
+// Expose only stable application codes for DOM diagnostics, never an upstream
+// exception, URL, utterance, ticket or arbitrary server response.
+const diagnosticCodes = new Set([
+  'chat_failed', 'chat_cancelled', 'stale_chat_session', 'stale_chat_memory',
+  'stale_round_revision', 'hidden', 'muted', 'speech_autoplay_blocked',
+  ...['busy', 'cancelled', 'failed', 'daily_budget_exhausted', 'not_configured',
+    'request_already_attempted', 'request_conflict', 'timeout',
+    ...['busy', 'cancelled', 'invalid_directory', 'ledger_invalid', 'not_configured',
+      'start_timeout', 'stop_timeout', 'stopping', 'submission_uncertain', 'unavailable',
+      'untracked_worker', 'worker_failed',
+      ...['empty', 'invalid_json', 'invalid_status', 'job_mismatch', 'response_too_large',
+        'unauthorized', 'forbidden', 'not_found', 'rate_limited', 'http_failed'].map(code => `provider_${code}`),
+    ].map(code => `session_${code}`),
+    ...['busy', 'cancelled', 'failed', 'invalid_directory', 'ledger_full', 'not_configured',
+      'worker_unavailable'].map(code => `stream_${code}`),
+  ].map(code => `generated_speech_${code}`),
+]);
+export const chatFailureCode = reason => diagnosticCodes.has(reason) ? reason : 'chat_failed';
