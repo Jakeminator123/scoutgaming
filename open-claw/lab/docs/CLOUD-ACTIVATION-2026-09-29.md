@@ -104,3 +104,34 @@ Directors produkt-token skiljer sig från `LAB_API_TOKEN`. Ingen hemlighet
 En enda läsande GET mot Directors `/healthz` gav HTTP 200 med
 `{"ok":true,"service":"croupier-openclaw-lab"}`. Det verifierar processens
 hälsa, inte tokenlikhet, Gateway-svar eller faktisk talfunktion.
+
+## Läsande driftprov 2026-09-29 02:47 UTC
+
+Render visade fortsatt Director och privat Gateway som **Live** från GitHub
+`15bd1541`; spelet `croupier-v2` var **Live** på `fcc2a08c`. Spelets miljö har
+`OPENCLAW_PRODUCT_SPEECH_URL` och
+`OPENCLAW_PRODUCT_SPEECH_TOKEN`; Director har produkt-token, separat
+`LAB_API_TOKEN`, `OPENCLAW_SPEECH_AGENT` och privat Gateway-nyckel. Inga
+maskerade värden öppnades eller kopierades.
+
+Från Directors container gav intern `GET /api/status` med dess befintliga
+labbtoken HTTP 200, `provider: configured` och kapaciteterna
+`product-speech-v1` och `product-probe-v1`. Labbtoken till produktens
+`POST /api/product/speech` gav HTTP 401; produkt-token till
+`GET /api/status` gav också HTTP 401. Från **spelets** container gav
+`POST {}` med dess befintliga produkt-token till Directors speech-endpoint
+HTTP 400 `invalid_product_speech_envelope`. Detta bekräftar att spelets
+token accepteras av Director och att kontraktvalideringen stoppar anropet
+före modellkörning. Det tidigare öppna frågetecknet om tokenlikhet är
+därmed löst utan att hemligheten exponerades.
+
+Director nådde privat Gateway `GET /v1/models` med HTTP 200 och modellen
+`openclaw/croupier-speech` fanns i listan. Lokalt passerade 25
+Director-/speech-kontraktstest och 47 produktchattkontraktstest för båda
+Lissabonlägena. `local-connection.mjs --check` bekräftade
+lokal reläkonfiguration men kunde inte nå Render från den begränsade lokala
+miljön; de interna proven i Render-containrarna ovan är driftbeviset.
+
+Ingen livevariabel, databas, mediafil eller tjänst ändrades. Ett giltigt
+produktbeslut genom Gateway, syntetisk spelrunda, TTS/GPU, uppspelning och
+visuell läppsynk är fortfarande oprövade och kräver separat kostnadsram.
