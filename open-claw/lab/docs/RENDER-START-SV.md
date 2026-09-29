@@ -1,8 +1,20 @@
-# GitLab → Render → lokalt OpenClaw-labb
+# GitHub → Render → OpenClaw-labb
 
-Den här guiden publicerar ett **operatörslabb**, inte Croupiers produktionsspel
-eller ett färdigt chattsystem för spelare. IDE-agenternas GitLab-inbox är ett
-helt separat system och ska inte kopplas till OpenClaw.
+GitHub-repot `Jakeminator123/github-work` på
+`jakemanator123-github-work` är enda mål för nytt arbete. En läsande Render-
+kontroll 2026-09-29 visade att de två befintliga OpenClaw-tjänsterna ännu
+hämtar från gamla GitLab-branchen `jakeminator123/work` på `8e10017d`.
+GitHub-källbytet kräver en separat granskad Render-åtgärd.
+Skapa inte en dubblett av Blueprinten för att tillämpa denna guide. Granska
+aktuell tjänstkonfiguration och använd endast en avsiktlig Manual Sync eller
+Manual Deploy vid en separat driftåtgärd. Se den
+[aktuella aktiveringschecklistan](CLOUD-ACTIVATION-2026-09-29.md).
+
+Den här Blueprinten publicerar Director och privat Gateway, inte själva
+Croupier-spelet. Director har både operatörs-API och en separat skyddad
+produkt-speech-endpoint. Spelets aktivering kräver dessutom Web-processens
+egna env och verifiering enligt checklistan ovan. Den pausade IDE-inboxen är
+ett helt separat system och ska inte kopplas till OpenClaw.
 
 **Vilken editor?** Den nya Next-studion ligger i rotens `lab/` och sparar
 projektet lokalt. Den skickar bara en tillfällig katalog till Directors
@@ -10,21 +22,22 @@ projektet lokalt. Den skickar bara en tillfällig katalog till Directors
 Director sparar en separat katalog på Render. Blanda inte ihop dem.
 [Aktuell studioguide](../../../lab/README.md).
 
-## 1. Koden i GitLab
+## 1. Koden i GitHub
 
-Använd repot `scout-gg/croupier`, branchen `jakeminator123/work` och filen
-`open-claw/lab/render.yaml`. Pusha bara granskade, uppgiftsägda ändringar.
+Använd repot `Jakeminator123/github-work`, branchen
+`jakemanator123-github-work` och filen `open-claw/lab/render.yaml`. Leverera
+bara granskade, uppgiftsägda ändringar med `node tools/push-github-work.mjs`.
 Varken `main`, lokala `.env`-filer, videofiler eller någon annan agents
 ofärdiga filer ska ingå i publiceringen.
 
 En Git-push publicerar koden. Den skapar inte i sig några Render-tjänster.
-Ett separat GitHub-repo behövs inte för detta upplägg.
+GitLab-integrationen är pausad och ska inte användas för denna drift.
 
-## 2. Skapa en Blueprint i ditt Render-konto
+## 2. Blueprint vid en ny, avsiktlig installation
 
 Öppna [Render Dashboard](https://dashboard.render.com/) och välj **New → Blueprint**.
-Anslut ditt GitLab-konto om det inte redan är anslutet, och välj
-`scout-gg/croupier`. Om repot saknas: kontrollera rätt GitLab-konto och att Render
+Anslut ditt GitHub-konto om det inte redan är anslutet, och välj
+`Jakeminator123/github-work`. Om repot saknas: kontrollera rätt GitHub-konto och att Render
 har åtkomst till just det repot; gör inte repot offentligt som genväg.
 
 Fyll i:
@@ -32,7 +45,7 @@ Fyll i:
 | Fält | Värde |
 | --- | --- |
 | Blueprint Name | `croupier-openclaw-lab` (ett beskrivande namn) |
-| Branch | `jakeminator123/work` |
+| Branch | `jakemanator123-github-work` |
 | Blueprint Path | `open-claw/lab/render.yaml` |
 
 Skapa inte en separat tom Web Service först. Blueprinten beskriver redan båda
@@ -69,6 +82,9 @@ När Render frågar efter variabler med `sync: false`:
   värde anges säkert i Render. Detta är inte modellleverantörens API-nyckel.
 - `OPENCLAW_MODEL_API_KEY`: nyckeln från den modellleverantör som ska användas.
   Den stannar i den privata Gateway-tjänsten.
+- `OPENCLAW_PRODUCT_SPEECH_TOKEN`: separat hemlighet på Director. Samma värde
+  ges till den betrodda produktservern, som anropar Directors bara HTTPS-origin.
+  Den ska skilja sig från `LAB_API_TOKEN` och får aldrig läggas i browsern.
 
 Blueprintens exempel väljer `gpt-5.4-mini` hos OpenAI. En annan leverantör kräver
 också ändrade `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID` och
@@ -76,7 +92,7 @@ också ändrade `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID` och
 
 Render skapar `LAB_API_TOKEN` automatiskt för Director. Gateway-nyckeln
 refereras automatiskt från Director; lägg inte modellnyckeln där. Klistra aldrig
-in nycklar i GitLab, chatt, skärmbilder eller webbläsarens JavaScript.
+in nycklar i GitHub, chatt, skärmbilder eller webbläsarens JavaScript.
 
 När du accepterat resurserna och kostnaden: **Deploy Blueprint**. Render hämtar
 koden och bygger de två Dockerbilderna. Första bygget och live-modellanropen är
