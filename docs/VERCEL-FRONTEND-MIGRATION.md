@@ -19,8 +19,8 @@ finns kvar för v0-designarbete; ändringar där synkas inte automatiskt.
 Den importerade `/demo` har två spelknappar som kan byggas mot en exakt
 `CROUPIER_GAME_URL`. Klientsidans äldre låtsasspel har ingen publik rutt.
 
-I dag är Render `croupier-v2` Live och Vercel `github-work-vercel-entry`
-publicerad, men Vercel levererar **bara en landningssida med en extern länk**
+I dag är Render `croupier-v2` Live. Vercel `github-work-vercel-entry`
+levererar den importerade Next-landningssidan med en extern länk
 till Render `/blackjack`. Detta är inte den önskade front/back-delningen.
 Lyckad inloggning, hel spelrunda, BO/Lab, omstart och backup/restore är
 inte verifierade i den publika driften. Tidigare stycken i
@@ -38,7 +38,11 @@ landnings-Previewn är
 `https://croupier-landing-preview-eokix0slk-jakeminator123s-projects.vercel.app`
 och länkar till den senaste spel-Previewn
 `https://croupier-player-preview-3esw2v3fl-jakeminator123s-projects.vercel.app`.
-Ingen befintlig produktionsadress har flyttats.
+Den befintliga landningsdomänen `github-work-vercel-entry.vercel.app` flyttades
+2026-09-29 till verifierad deployment `dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T`.
+Startsidan och `/demo` kontrollerades i browsern; båda spelknapparna på
+`/demo` går till oförändrade `croupier-v2` på Render. Projektet är ännu
+CLI-deployerat utan Git-koppling. Spelklientens produktionsbyte återstår.
 
 ## Målrutter
 

@@ -6,7 +6,7 @@ This is a [Next.js](https://nextjs.org) landing page. `/` shows the imported des
 
 ## Isolated Preview
 
-The separate Vercel project `croupier-landing-preview-qa` uses this directory as its root and the Next.js framework preset. Its Preview deployment is linked at build time to the separate `croupier-player-preview-qa` game Preview through `CROUPIER_GAME_URL`; the game Preview proxies only selected player paths to `croupier-vercel-preview-qa` on Render. The Render test service has its own hostname, disk and empty SQLite database. The Neon Preview resource is connected to the game Preview project but is not yet the game's database. Neither test project replaces the current Production entry.
+The separate Vercel project `croupier-landing-preview-qa` uses this directory as its root and the Next.js framework preset. Its Preview deployment is linked at build time to the separate `croupier-player-preview-qa` game Preview through `CROUPIER_GAME_URL`; the game Preview proxies only selected player paths to `croupier-vercel-preview-qa` on Render. The Render test service has its own hostname, disk and empty SQLite database. The Neon Preview resource is connected to the game Preview project but is not yet the game's database. Both test projects remain isolated from Production. The imported app also serves the existing `github-work-vercel-entry.vercel.app` Production landing; its `/demo` links to the unchanged `croupier-v2` Render pilot. That Vercel project is currently deployed manually from this directory and has no Git integration.
 
 For a reviewable local build, use `pnpm install --frozen-lockfile`, `pnpm exec tsc --noEmit`, and `pnpm build` from this directory. The local Croupier server session guard still applies to any interactive product run.
 

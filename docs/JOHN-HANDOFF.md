@@ -6205,5 +6205,21 @@ den frivilliga keyframe-debuggen ger 404 men användes inte i spelprovet.
 Render-testtjänsten återupptogs enbart för detta prov och är åter
 **Suspended**; Render bekräftar att pausad tjänst inte faktureras. Slutlig
 debitering är inte avläst. `croupier-v2`, dess databas och befintlig
-produktionsingång är orörda. Innan produktionsbyte återstår bland annat
-Range/206 genom Vercel, backup/restore, mobilprov och separat SSE/WebSocket.
+produktionsingång var orörda vid detta spelprov. Innan spelklientens
+produktionsbyte återstår bland annat Range/206 genom Vercel, backup/restore,
+mobilprov och separat SSE/WebSocket.
+
+### Publik landningssida ersatt, 2026-09-29
+
+Efter ovanstående isolerade prov byggdes samma importerade Next-app i det
+befintliga projektet `github-work-vercel-entry`. Den färdiga deploymenten
+`dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T` granskades på en separat URL innan
+Vercel-domänen `https://github-work-vercel-entry.vercel.app/` flyttades dit.
+Den publika startsidan och `/demo` verifierades därefter i browsern; båda
+spelknapparna leder till `https://croupier-v2.onrender.com/blackjack?dealer=astrid`.
+Detta ersätter enbart den gamla enkla landningssidan. Spelets egen Render-tjänst,
+databas, plånbok och alla Preview-resurser är orörda av detta byte. Den äldre
+`modern-landing-page-kohl-xi.vercel.app` finns kvar som designkälla/publicering.
+Produktionsprojektet saknar ännu Git-koppling och driftsattes manuellt från
+`apps/croupier-frontend/`; nästa deployment behöver samma explicita mål
+eller en kontrollerad Git-koppling till arbetsbranchen och appens rotkatalog.
