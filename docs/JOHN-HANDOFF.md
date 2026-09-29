@@ -9,7 +9,11 @@ ordinarie inloggning; Nexts interna Request-URL `127.0.0.1:4188` accepteras
 av Lab-guard endast med rätt publik Host, betrodda proxyheaders och gateway-
 hemlighet. Origin, roll, engångskod och sessionskontroller behålls.
 20 auth-/molntester samt 52 guard-/reference-/molntester passerade hos
-respektive agent. Live-verifiering av dessa rättningar sker efter deploy;
+respektive agent. `08343c17` blev Live i `dep-datm3hk9v7es73ajirn0`, men
+liveprovet hittade ett ytterligare Next-led: `NextURL` normaliserar intern
+loopback till `localhost:4188`. Följdfixen godtar även exakt detta alias med
+samma åtkomstkrav. Regressionen använder nu installerade Next 16.3.5:s
+verkliga `NextRequest`; 26 riktade tester passerar. Ny liveverifiering krävs;
 detta är ännu inget kvitto på MP4-import eller visuell acceptans.
 
 ## 2026-09-29 — Familjeuppladdning i Astrid Studio
