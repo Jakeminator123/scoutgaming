@@ -79,3 +79,28 @@ sju registertest. Mediemanifestets kontroll verifierade 45 filer i 28 familjer
 utan ändring av mediefilerna. Inga hemliga värden, live-env, betalda AI-anrop
 eller spelardatabaser ändrades här.
 Kvarvarande driftprov är därför inte markerade som godkända av denna leverans.
+
+## Render-källbyte 2026-09-29
+
+Den befintliga GitLab-Blueprinten `croupier-openclaw-lab`
+(`exs-danhg6egekts7390c360`) kopplades loss i Render-webbvyn före
+källbytet. Render bekräftade att frånkopplingen stoppar framtida synk utan
+att ta bort tjänsterna, och Blueprinten försvann från listan. Ingen ny
+Blueprint skapades.
+
+| Befintlig tjänst | Källa och revision | Deploy och resultat |
+| --- | --- | --- |
+| Privat Gateway `srv-danhiv3tqb8s73burkq0` | `Jakeminator123/github-work`, `jakemanator123-github-work`, `15bd15419fc05d88635fedcde3e73f952386c6c5` | `dep-dathq9navr4c73djjkgg`: **Live** efter manuell deploy. Byggloggen visar GitHub-clone och exakt revision. Privat adress `croupier-lab-openclaw:18789`/`:18790` och befintlig disk `/data/openclaw`, 1 GB, kvarstår. |
+| Director `srv-danhlpjtqb8s73bv530g` | Samma GitHub-repo, branch och revision | `dep-dathsp2d0e5s73c61dlg`: **Live** efter manuell deploy. Byggloggen visar GitHub-clone och exakt revision. Befintlig origin `https://croupier-lab-director.onrender.com` och disk `/data/catalog`, 1 GB, kvarstår. |
+
+Director saknade livevariabeln `OPENCLAW_SPEECH_AGENT`. Den lades till med
+värdet `openclaw/croupier-speech` och sparades före Director-deployen.
+Render-spelet `croupier-v2` har `OPENCLAW_PRODUCT_SPEECH_URL` satt till
+Directors exakta rena HTTPS-origin. Både spelet och Director har variabeln
+`OPENCLAW_PRODUCT_SPEECH_TOKEN`; deras maskerade värden har inte lästs ut
+eller jämförts. Jakob behöver själv bekräfta att de är lika och att
+Directors produkt-token skiljer sig från `LAB_API_TOKEN`. Ingen hemlighet
+ändrades, och inga modell-, GPU- eller spelprov kördes vid källbytet.
+En enda läsande GET mot Directors `/healthz` gav HTTP 200 med
+`{"ok":true,"service":"croupier-openclaw-lab"}`. Det verifierar processens
+hälsa, inte tokenlikhet, Gateway-svar eller faktisk talfunktion.
