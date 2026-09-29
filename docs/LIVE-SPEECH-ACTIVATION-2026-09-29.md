@@ -87,6 +87,38 @@ session plus 45 s avslut behöver jobbets exekveringsgräns vara minst dessa
 585 s; 600 s exekvering och 660 s TTL ger avgränsat utrymme för kö/avslut.
 Förlorat svar från `/run` får inte automatiskt skapa ett till betalt jobb.
 
+## Fortsatt verifiering 2026-09-29
+
+Röstloggen kan säga att automatisk sändning misslyckades fast transkriptionen
+lyckades. Den 29 september återlästes det konkreta felet i den öppna
+produktfliken: `#chat-status` hade `failureCode=muted`, `stages=[]` och
+texten "Slå på ljudet för att höra Astrids svar." Sparad Mute stoppade
+pose-grinden före `/chat`. Det var alltså inte belägg för trasig STT eller
+ett providerfel. Voice-aktivering måste handskaka svarsljudet; en senare
+avsiktlig mute ska fortsatt stoppa lyssningen.
+
+`#chat-status.dataset.playbackReceipt` är nu ett flyktigt kvitto för aktuell
+begäran. `state=ended, completed=true` kräver matchande request/stream-ID
+och verklig start/slut från mediespelaren. Serverns `done` räcker inte.
+Nästa begäran ersätter kvittot; avbrott, fel och textreserv får inte bli
+godkänd uppspelning. Kvittot innehåller inga taltexter, biljetter eller
+användardata. `reviewStatus=pending` kvarstår även efter normal uppspelning.
+
+Ett nytt isolerat browserprov körde två syntetiska repliker genom verklig
+streamservice, Python-session, FFmpeg och gemensam browserplayer. Båda gav
+start/slut, två grindkontroller, synlig och hörbar media samt full cleanup.
+Första bildruta: 829 respektive 792 ms; avslut: 5482 respektive 5495 ms.
+Ingen extern modell, Cartesia eller RunPod användes, och inget spelarkonto
+eller speldata skrevs. Detta bevisar kedjans syntetiska uppspelning, inte
+GPU-latens, Astrids ansikte eller läppsynkens kvalitet.
+
+Den separata Render-tjänsten `croupier-vercel-preview-qa` fick uttryckligt
+tillstånd till tillfällig start. Den saknar generated-speech-konfigurationen.
+Produktionsbudget får inte kopieras till dess separata disk: varje
+sessionshanterare har en egen budgetledger, så det skulle ge ett extra
+kostnadsutrymme. Två riktiga AI-röstsvar kräver fortsatt en avgränsad
+QA-konfiguration med samordnad totalbudget och isolerad spelarhistorik.
+
 ## Kostnadsstyrning inom 10 USD/dag
 
 Kostnaden styrs av avgränsad GPU-tid och verifierad taxa, inte antal repliker.

@@ -1,7 +1,10 @@
 # Render: beständig data, backup och återställning
 
-Status 2026-09-29: rutinen och återställningen är provade med **enbart syntetiska
-testfiler**. Ingen verklig spelar-, CRAIG-, Director- eller Gateway-databas har
+Status 2026-09-29: backup → kopiering till separat lokal tempdestination →
+verifiering → återställning → två återöppningar är provat via det verkliga
+CLI-verktyget med **enbart syntetiska testfiler**, för alla tre profiler.
+Originalkälla och första snapshot togs bort före återställningen i provet.
+Ingen verklig spelar-, CRAIG-, Director- eller Gateway-databas har
 öppnats, kopierats eller ändrats av backupgranskningen. Render-dashboarden
 verifierades den 29 september cirka 15:38 UTC: `croupier-v2` har en 5 GB-disk
 monterad på `/var/data`. En riktig omstart med datakontroll, export utanför
@@ -35,7 +38,10 @@ att kontrollera att de tre diskarna faktiskt är monterade.
 filer. Det vägrar symboliska länkar och specialfiler. SQLite-filer (`.db`,
 `.sqlite`, `.sqlite3`) exporteras med Node/SQLite backup-API, som tar med
 committade WAL-sidor. Den fristående kopian växlas till ett enda SQLite-filformat
-och får `PRAGMA integrity_check`. Andra filer kopieras med kontroll mot
+och får både `PRAGMA integrity_check` och `PRAGMA foreign_key_check`.
+Den senare avvisar brutna deklarerade tabellreferenser som SQLite-sidkontrollen
+ensam inte upptäcker. Kontrollerna ersätter inte tjänstens egen acceptans av
+data eller relationer mellan olika databasfiler. Andra filer kopieras med kontroll mot
 källhash före och efter. Snapshoten skrivs först i en privat tillfällig katalog,
 verifieras med SHA-256 och publiceras därefter med namnbyte. Målet måste vara
 nytt och ligga utanför dataroten och Git-checkouten.
@@ -122,7 +128,26 @@ klient-ID:n eller nycklar har skapats.
 ## Lokalt prov
 
 `node --test test/backup-render-state.mjs` använder enbart temporära SQLite-
-och JSON-fixtures. Nio prov täcker alla tre profiler, committad WAL,
+och JSON-fixtures. Tretton prov täcker alla tre profiler, committad WAL,
 hashmanipulation, extra snapshotfil, korrupt SQLite, sökvägstraversering,
-fel profil, upptaget mål och symbolisk länk. De öppnar aldrig
+fel profil, upptaget mål, symbolisk länk och brutna deklarerade främmande nycklar.
+Det sista felet reproducerades före rättningen: `integrity_check` gav `ok`
+och filens hash stämde, men en rad pekade på en förälder som saknades.
+Backup, verifiering och återställning avvisar nu det felet utan publicerad
+snapshot eller filer i återställningsmålet.
+
+De tre CLI-proven exporterar produkt (5 filer), Director (2 filer) och Gateway
+(3 filer), kopierar hela snapshoten till en annan tempkatalog utanför checkouten
+och tar därefter bort den syntetiska källan och ursprungliga snapshoten.
+Mottagarkopian verifieras och återställs till en tom rot. Samtliga filbytes
+jämförs och databaserna stängs och öppnas två gånger. Produkten använder de
+riktiga modulerna för CRAIG-identitet, spelarsession och sko: syntetiskt lösenord,
+reader-roll, samma spelar-id/session, saldo 995 och oavslutad hand med exakt
+skoordning består. Director-minne, Gateway-kvitto och JSON-/historikfiler består
+också. Ett nytt restore mot det fyllda målet avvisas. Tempkataloger städas via
+testets avslutshantering; inga servrar eller molnresurser startas.
+
+Detta verifierar lokal filöverföring och återöppning, inte krypterad transport,
+lagrets retention, en riktig Render-omstart eller HTTPS-inloggning efter skarp
+återställning. De driftkraven ovan kvarstår. Proven öppnar aldrig
 `lissabon/data/players` eller Render-data.

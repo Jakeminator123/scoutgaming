@@ -12,6 +12,7 @@ test('product chat is wired to one existing speech queue through the pose gate',
   assert.match(source, /speechPoseGate\.receive\(/);
   assert.match(source, /speechPoseGate\.responseReady\(/);
   assert.doesNotMatch(source, /<i>thinking/);
+  assert.match(source, /onPlaybackEnable:\s*\(\) => setMuted\(false\)/);
 });
 
 test('chat previews model text provisionally and commits it only inside the gated callback', () => {
@@ -38,6 +39,7 @@ function playbackFixture(dealerId) {
   const events = [], tts = [], videos = [], poses = [], pending = {};
   const context = {
     DEALER: { key: dealerId }, pendingChatReplies: new Map([['reply-1', pending]]),
+    chatPlaybackDiagnostic: { finish: (requestId, state) => { pending.diagnostic = { requestId, state }; } },
     localPresentation: { state() {} }, updatePoseState: value => poses.push(value), speaking: false,
     playNeutralTts: async text => tts.push(text),
     playGeneratedSpeech: async media => videos.push(media),
@@ -56,6 +58,7 @@ test('Astrid without generated media stays text-only and never calls a substitut
   assert.equal(f.tts.length, 0);
   assert.equal(f.videos.length, 0);
   assert.equal(f.pending.voiceUnavailable, true);
+  assert.deepEqual(f.pending.diagnostic, { requestId: 'reply-1', state: 'text-only' });
   assert.equal(f.events.at(-1).reason, 'astrid-generated-media-unavailable');
   assert.equal(f.events.at(-1).renderer, 'text-only');
   assert.equal(f.context.speaking, false);

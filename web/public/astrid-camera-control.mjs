@@ -23,7 +23,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   AudioContextClass = window.AudioContext || window.webkitAudioContext,
   RecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition,
   createRecorder = createAstridAudioRecorder, createWakeWord = createAstridWakeWord,
-  canStart = () => true, onActivity = () => {}, onPlaybackToggle = () => {}, getPlaybackEnabled = () => false,
+  canStart = () => true, onActivity = () => {}, onPlaybackToggle = () => {}, onPlaybackEnable = () => {}, getPlaybackEnabled = () => false,
   onLogToggle = () => {} } = {}) {
   const element = (tag, text, className) => {
     const node = document.createElement(tag); if (text) node.textContent = text; if (className) node.className = className; return node;
@@ -37,7 +37,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   const consent = element('dialog', '', 'astrid-voice-dialog'); consent.hidden = true; consent.setAttribute('aria-label', 'Enable voice and optional camera');
   const consentHeading = element('h2', 'Enable voice and optional camera?');
   const consentText = element('p', 'In wake-word mode, this browser listens locally for “Astrid” and keeps a short audio buffer in memory. Nothing is uploaded before the wake word. After detection, that buffer, including the moments just before the word, and the following speech (up to 30 seconds total) are automatically sent to OpenAI for speech translation into English. The English text is automatically sent to OpenClaw and its model provider after you pause. If image support is enabled, up to two camera snapshots are included. There is no preview or Send step.');
-  const consentPrivacy = element('p', 'Providers process the audio, text and images. Text and images may be retained in conversation history. Croupier does not save raw audio. Press Record again to stop. Voice is always off when this page loads.');
+  const consentPrivacy = element('p', 'Enabling voice also turns on Astrid playback so you can hear her replies. Muting playback stops voice listening. Providers process the audio, text and images. Text and images may be retained in conversation history. Croupier does not save raw audio. Press Record again to stop. Voice is always off when this page loads.');
   const manualText = element('p', 'Record one message starts the microphone immediately after your click, without a wake word. After you pause, up to 30 seconds of audio are sent to OpenAI for English translation; that text and up to two optional camera snapshots are sent to Astrid. Recording then switches off. Press Record again during capture to cancel without sending.');
   const accept = element('button', 'Enable voice'); accept.type = 'button';
   const manual = element('button', 'Record one message'); manual.type = 'button';
@@ -239,6 +239,18 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       if (document.hidden || !sameIdentity(requestedOwner, identity())) { stop('Context changed. Voice off.'); return; }
       if (requestedOwner?.dealerId !== 'astrid') { stop('Voice is only available for Astrid.', true); return; }
       if (recordingMode === 'manual' && !canStart()) { stop('Wait until Astrid and the table are ready, then press Record again.'); return; }
+      // Only an explicit Record/Enable voice action opts into audible replies.
+      // Automatic wake rearming and autosend must never undo a later mute.
+      if (!getPlaybackEnabled()) {
+        // Keep this synchronous so local wake recognition retains the click's
+        // browser gesture; the host sets its mute state synchronously.
+        try { onPlaybackEnable(); }
+        catch { if (token === epoch) stop('Astrid playback could not be enabled. Voice off.', true); return; }
+        if (token !== epoch) return;
+        if (document.hidden || !sameIdentity(requestedOwner, identity())) { stop('Context changed. Voice off.'); return; }
+        if (!getPlaybackEnabled()) { stop('Enable Astrid playback before recording. Voice off.', true); return; }
+        report('Astrid playback enabled for voice replies.');
+      }
       mode = true; modeStarting = false; modeOwner = requestedOwner;
       identityTimer = setInterval(() => { if (mode && !current(token)) stop('Context changed. Voice off.'); }, 250);
       if (recordingMode === 'manual') await prepareAudio(token);
@@ -404,6 +416,9 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   window.addEventListener('pagehide', () => stop());
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && !debug.hidden) { event.preventDefault(); showLog(false); } });
   report('Voice off.'); void refreshConfig();
-  return { stop, debugContainer, refreshPlayback: render,
+  return { stop, debugContainer, refreshPlayback() {
+    if ((mode || modeStarting || busy()) && !getPlaybackEnabled()) stop('Astrid playback muted. Voice off.');
+    else render();
+  },
     get active() { return Boolean(mode || modeStarting || busy()); }, get busy() { return busy(); } };
 }

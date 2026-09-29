@@ -116,6 +116,9 @@ function checkSqlite(path) {
   try {
     db = new DatabaseSync(path, { readOnly: true });
     if (db.prepare('PRAGMA integrity_check').get()?.integrity_check !== 'ok') fail('sqlite_integrity_failed');
+    // integrity_check validates SQLite pages, but deliberately omits declared
+    // foreign-key relationships. A hash-correct orphan is not a valid restore.
+    if (db.prepare('PRAGMA foreign_key_check').get()) fail('sqlite_integrity_failed');
   } catch { fail('sqlite_integrity_failed'); }
   finally { db?.close(); }
 }
@@ -218,7 +221,7 @@ export async function backupRenderState({ profile, source, destination, quiesced
     await verifyRenderBackup(stage);
     if (!(await missing(target))) fail('destination_exists');
     await rename(stage, target); stage = undefined;
-    return { files: files.length, bytes: files.reduce((sum, item) => sum + item.bytes, 0) };
+    return { profile, files: files.length, bytes: files.reduce((sum, item) => sum + item.bytes, 0) };
   } finally { await removeOwnStage(stage, parent, prefix); }
 }
 

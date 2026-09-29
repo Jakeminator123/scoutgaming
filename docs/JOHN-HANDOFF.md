@@ -1,5 +1,44 @@
 # Aktuellt molnläge
 
+## 2026-09-29 16:57 UTC — Voice/Mute, strömkvittot och återställningsprov
+
+Jakobs röstbild felsöktes mot den öppna produktfliken. STT hade lyckats,
+men `failureCode=muted` och `stages=[]` visade att sparad Mute avvisade
+automatisk sändning före `/chat`. Uttrycklig **Enable voice** eller
+**Record one message** slår nu på svarsljudet en gång. Automatisk lyssning
+slår inte av en senare användarmute; mute stoppar då inspelning/STT och
+förhindrar sen automatisk sändning. Samtyckestexten beskriver beteendet.
+Ingen användarmikrofon, kamera eller riktig chatthistorik användes i QA.
+58 riktade röst-/pose-/klienttester passerade, inklusive gammalt muted-fel,
+lyckad automatisk sändning samt mute under väntan/inspelning/transkription.
+
+Aktuell chatts flyktiga DOM-kvitto skiljer nu verkligt medieslut från
+serverns `done`, textreserv och avbrott. Det lagrar inga taltexter eller
+hemligheter och är aldrig ett visuellt godkännande. Två syntetiska
+browserströmmar genom riktig service/Python/FFmpeg/player gav båda
+start/slut, hörbar/synlig media och cleanup; första bildruta 829/792 ms,
+avslut 5482/5495 ms. Fixturen och dess tillfälliga filer är bortstädade.
+Den separat godkända Render-QA-tjänsten startades, visade spelet och
+återställdes till **Suspended**. Den saknar konfiguration för genererad
+röst; ingen produktionsbudget eller hemlighet kopierades dit. Två riktiga
+AI/GPU-svar och audiovisuell läppsynkacceptans återstår.
+
+Backupverktyget kontrollerar nu även deklarerade främmande nycklar. Ett
+hashkorrekt SQLite-exemplar med föräldralös rad reproducerade felet före
+rättningen. Alla 13 tester passerar: faktiska CLI-exporter för produkt,
+Director och Gateway överförs till annan tempdestination, originalen tas
+bort, kopiorna återställs och öppnas två gånger. Syntetisk identitet,
+session, saldo och oavslutad sko består. Riktig extern krypterad backup,
+samordnat skrivstopp och Render-återställning återstår; inga riktiga
+databaser öppnades av backupgranskningen. Äldre snapshots med befintliga
+FK-fel avvisas nu utan att deras data ändras.
+
+Zonernas sammanhängande fixture använder riktig MP4-probe och adapterväg,
+inklusive upload, checksumma, spara/läsa, range/HEAD, versionskonflikt och
+rollback. Det är inte ett skarpt Neon-skrivkvitto. SSO till zonprojektet
+kräver e-postverifiering av kontokopplingen; ingen sådan koppling ändrades.
+Fullhook, publicering och efterdeploy-QA redovisas i nästa slutkvitto.
+
 ## 2026-09-29 16:32 UTC — Slutkvitto: mobil och Studio Live
 
 Kod/media `891c432aab1191eeb8b2c7a476c04b35e6f28a89` är pushad till
