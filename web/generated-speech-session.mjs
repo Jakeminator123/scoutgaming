@@ -28,7 +28,7 @@ const utcDay = milliseconds => new Date(milliseconds).toISOString().slice(0, 10)
  * reserveUsd must include actual GPU rate, startup/idle/storage and margin.
  */
 export function createSpeechSessionManager(configuration, {
-  workerState, fetchImpl = fetch, now = Date.now,
+  workerState, stopWorker = () => {}, fetchImpl = fetch, now = Date.now,
   sleep = (ms, signal) => pause(ms, undefined, { signal }),
   readyTimeoutMs = 90000, pollMs = 500, idleTimeoutMs = 60000,
 } = {}) {
@@ -77,26 +77,33 @@ export function createSpeechSessionManager(configuration, {
       ...(body ? { body: JSON.stringify(body) } : {}),
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000),
     });
-    if (!response.ok || Number(response.headers.get('content-length') || 0) > 8192) {
-      await response.body?.cancel(); fail('generated_speech_session_provider_failed');
+    if (!response.ok) {
+      await response.body?.cancel();
+      const reason = ({ 401: 'unauthorized', 403: 'forbidden', 404: 'not_found', 429: 'rate_limited' })[response.status] || 'http_failed';
+      fail(`generated_speech_session_provider_${reason}`);
+    }
+    if (Number(response.headers.get('content-length') || 0) > 8192) {
+      await response.body?.cancel(); fail('generated_speech_session_provider_response_too_large');
     }
     const reader = response.body?.getReader();
-    if (!reader) fail('generated_speech_session_provider_failed');
+    if (!reader) fail('generated_speech_session_provider_empty');
     const chunks = []; let bytes = 0;
     try {
       for (;;) {
         const next = await reader.read();
         if (next.done) break;
         bytes += next.value.byteLength;
-        if (bytes > 8192) { await reader.cancel(); fail('generated_speech_session_provider_failed'); }
+        if (bytes > 8192) { await reader.cancel(); fail('generated_speech_session_provider_response_too_large'); }
         chunks.push(Buffer.from(next.value));
       }
-      return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+      catch { fail('generated_speech_session_provider_invalid_json'); }
     } finally { reader.releaseLock(); }
   }
   async function inspect(job, signal) {
     const value = await call(`status/${job.jobId}`, { signal });
-    if (value.id !== job.jobId || !['IN_QUEUE', 'IN_PROGRESS', ...terminal].includes(value.status)) fail('generated_speech_session_provider_failed');
+    if (value?.id !== job.jobId) fail('generated_speech_session_provider_job_mismatch');
+    if (!['IN_QUEUE', 'IN_PROGRESS', ...terminal].includes(value.status)) fail('generated_speech_session_provider_invalid_status');
     if (terminal.has(value.status) && !(await optional(`${prefix(job.id)}.terminal.json`))) {
       await record(`${prefix(job.id)}.terminal.json`, { status: value.status });
     }
@@ -107,6 +114,9 @@ export function createSpeechSessionManager(configuration, {
     if (activeJob?.jobId === job.jobId) { activeJob = null; clearTimeout(idleTimer); }
     try {
       if (!(await optional(`${prefix(job.id)}.cancel.json`))) await record(`${prefix(job.id)}.cancel.json`, { requestedAt: now() });
+      // Close our idle reverse channel as well. Provider cancellation may mark
+      // a job terminal before the handler observes shutdown.
+      stopWorker(job.workerId);
       // Cancellation is limited to our known job, never a shared queue purge.
       await call(`cancel/${job.jobId}`, { body: {} });
     } catch { /* Reservation remains spent and known ID stays recoverable. */ }
@@ -182,7 +192,12 @@ export function createSpeechSessionManager(configuration, {
         if (!jobIdPattern.test(entry.job?.jobId ?? '')) fail('generated_speech_session_submission_uncertain');
         job = { id: entry.id, jobId: entry.job.jobId, workerId: entry.workerId };
         const status = await inspect(job, signal);
-        if (terminal.has(status)) job = null;
+        if (terminal.has(status)) {
+          // Provider cancellation can finish before the reverse socket closes.
+          // That socket is still ours; wait for its release before replacement.
+          stopWorker(job.workerId);
+          await waitUntilStopped(job, signal, fresh); job = null;
+        }
         else if (entry.cancelling || now() + SPEECH_SESSION_POLICY.admissionWindowMs >= entry.createdAt + SPEECH_SESSION_POLICY.seconds * 1000) {
           // Ticket admission + maximum utterance must fit. Do not hand a new
           // speaker a worker that is about to expire under an ongoing stream.
@@ -191,6 +206,13 @@ export function createSpeechSessionManager(configuration, {
         }
       }
       if (!job) {
+        // A previous attempt may already have persisted the terminal receipt
+        // while its socket was draining. Preserve that ownership on retry.
+        for (const entry of entries.filter(entry => entry.done && workerState(entry.workerId).workers > 0)) {
+          if (!jobIdPattern.test(entry.job?.jobId ?? '')) fail('generated_speech_session_ledger_invalid');
+          stopWorker(entry.workerId);
+          await waitUntilStopped({ id: entry.id, jobId: entry.job.jobId, workerId: entry.workerId }, signal, fresh);
+        }
         if (workerState().workers > 0) fail('generated_speech_session_untracked_worker');
         const started = now(), days = [...new Set([utcDay(started), utcDay(started + SPEECH_SESSION_POLICY.reservationWindowMs)])];
         for (const day of days) {
@@ -229,6 +251,9 @@ export function createSpeechSessionManager(configuration, {
     } finally { await lock.close(); await unlink(lockPath); }
   }
   return {
+    activity(workerId) {
+      if (activeJob?.workerId === workerId && !pending && !closing) touch();
+    },
     ensure(input) {
       if (closing || typeof input?.beforeCostly !== 'function') return Promise.reject(Object.assign(new Error('generated_speech_session_cancelled'), { code: 'generated_speech_session_cancelled', statusCode: 499 }));
       if (pending) return pending.then(async value => { input.signal?.throwIfAborted(); await input.beforeCostly(); touch(); return value; });

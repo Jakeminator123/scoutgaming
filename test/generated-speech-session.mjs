@@ -197,3 +197,80 @@ test('new verified demand suspends the previous idle timer while its status read
   release(); await second;
   assert.equal(starts(f.calls).length, 1);
 });
+
+test('terminal provider state waits for the known relay worker to disconnect before replacing it', async t => {
+  const f = await fixture(t);
+  let connected = false, stopping = false, waited = 0;
+  const manager = f.create({}, {
+    workerState: () => ({ workers: connected ? 1 : 0, busy: 0, available: connected ? 1 : 0 }),
+    fetchImpl: async (url, init) => {
+      const result = await f.fetchImpl(url, init);
+      if (url.includes('/status/') && f.jobs.get(url.split('/').at(-1)) === 'IN_PROGRESS') connected = true;
+      if (url.endsWith('/run') && starts(f.calls).length === 2) assert.equal(connected, false, 'replacement never overlaps the previous worker');
+      return result;
+    },
+    sleep: async () => { if (stopping) { waited++; connected = false; stopping = false; } },
+  });
+  await manager.ensure(f.input);
+  f.jobs.set('job-1', 'CANCELLED'); stopping = true;
+  await manager.ensure(f.input);
+  assert.equal(waited, 1);
+  assert.equal(starts(f.calls).length, 2);
+});
+
+test('a persisted terminal receipt still identifies its lingering reverse worker after restart', async t => {
+  const f = await fixture(t), retired = [];
+  let connected = true;
+  const id = 'a'.repeat(32), workerId = `croupier-${id}`;
+  await writeFile(join(f.directory, 'gpu-budget-policy.json'), JSON.stringify({ version: 1, dailyBudgetMicroUsd: 9940000 }));
+  await writeFile(join(f.directory, `gpu-session-${id}.reservation.json`), JSON.stringify({
+    id, workerId, endpointId: f.configuration.endpointId, createdAt: Date.parse('2026-09-29T07:59:00Z'),
+    days: ['2026-09-29'], reservedMicroUsd: 500000,
+  }));
+  await writeFile(join(f.directory, `gpu-session-${id}.job.json`), JSON.stringify({ jobId: 'retired-job' }));
+  await writeFile(join(f.directory, `gpu-session-${id}.terminal.json`), JSON.stringify({ status: 'CANCELLED' }));
+  f.jobs.set('retired-job', 'CANCELLED');
+  const manager = f.create({}, {
+    workerState: requested => requested === workerId || !requested && connected
+      ? { workers: connected ? 1 : 0, busy: 0, available: connected ? 1 : 0 }
+      : { workers: starts(f.calls).length ? 1 : 0, busy: 0, available: starts(f.calls).length ? 1 : 0 },
+    stopWorker: requested => { retired.push(requested); assert.equal(requested, workerId); connected = false; },
+  });
+  await manager.ensure(f.input);
+  assert.deepEqual(retired, [workerId]);
+  assert.equal(starts(f.calls).length, 1, 'one replacement only after known old worker is retired');
+});
+
+test('idle time restarts after an owned utterance completes; unrelated activity cannot extend it', async t => {
+  const f = await fixture(t, { idleTimeoutMs: 100 });
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let stopped;
+  const cancelled = new Promise(resolve => { stopped = resolve; });
+  const manager = f.create({}, { stopWorker: stopped });
+  await manager.ensure(f.input);
+  const workerId = JSON.parse(starts(f.calls)[0].body).input.worker_id;
+  t.mock.timers.tick(90);
+  manager.activity(workerId);
+  t.mock.timers.tick(20);
+  assert.equal(f.calls.filter(call => call.url.includes('/cancel/')).length, 0);
+  manager.activity('unrelated-worker');
+  t.mock.timers.tick(79);
+  assert.equal(f.calls.filter(call => call.url.includes('/cancel/')).length, 0);
+  t.mock.timers.tick(1);
+  assert.equal(await cancelled, workerId);
+  assert.equal(starts(f.calls).length, 1, 'activity never renews a paid job or its TTL');
+  assert.equal(JSON.parse(starts(f.calls)[0].body).input.ttl, 540);
+});
+
+test('provider failures yield fixed diagnostic codes without exposing input or response data', async t => {
+  for (const [reply, code] of [
+    [() => new Response('private key in body', { status: 403 }), 'forbidden'],
+    [() => new Response('private invalid JSON'), 'invalid_json'],
+    [() => response({ id: 'wrong-id-private', status: 'IN_PROGRESS' }), 'job_mismatch'],
+    [id => response({ id, status: 'PRIVATE_STATUS' }), 'invalid_status'],
+    [() => new Response('x'.repeat(9000)), 'response_too_large'],
+  ]) {
+    const f = await fixture(t, { status: reply });
+    await assert.rejects(f.create().ensure(f.input), { code: `generated_speech_session_provider_${code}` });
+  }
+});

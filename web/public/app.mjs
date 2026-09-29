@@ -5,7 +5,7 @@ import { createSpeechQueue } from './speech-queue.mjs';
 import { createProbeClient, probePresentationQuiet } from './probe-client.mjs';
 import { createAstridCameraControl } from './astrid-camera-control.mjs';
 import { createSpeechPoseGate } from './speech-pose-gate.mjs';
-import { CHAT_STAGES, readChatResponse, chatFailureMessage } from './chat-response.mjs';
+import { CHAT_STAGES, readChatResponse, chatFailureMessage, chatFailureCode } from './chat-response.mjs';
 import { playGeneratedSpeech, loadGeneratedSpeech } from './generated-speech-player.mjs';
 import { createNativeSpeechBridge } from './lab-speech-bridge.mjs';
 import { createTableAudio } from './table-audio.mjs';
@@ -2370,7 +2370,8 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
   if (compactChat()) input.blur();
   const requestedAt = performance.now();
   setChatStatus('Förbereder svar…');
-  if (chatStatus) { chatStatus.dataset.stages = '[]'; delete chatStatus.dataset.playbackMs; delete chatStatus.dataset.providerMetrics; chatStatus.title = ''; }
+  if (chatStatus) { chatStatus.dataset.stages = '[]'; delete chatStatus.dataset.playbackMs; delete chatStatus.dataset.firstFrameMs;
+    delete chatStatus.dataset.failureCode; delete chatStatus.dataset.providerMetrics; chatStatus.title = ''; }
   const waitTimer = localPresentationEnabled ? setInterval(() => { chatElapsed.textContent = ` ${Math.floor((performance.now() - requestedAt) / 1000)} s`; }, 1000) : null;
   const chatCorrelation=nativeObservation.context();
   const history = chatHistory.slice(-30).map(({ role, text }) => ({ role, text }));
@@ -2420,13 +2421,17 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     speechPoseGate.responseReady(requestId, decision);
     const receipt = await received.completion;
     if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
-    if (receipt.status === 'cancelled') setChatStatus(chatFailureMessage(receipt.reason));
+    if (receipt.status === 'cancelled') {
+      if (chatStatus) chatStatus.dataset.failureCode = chatFailureCode(receipt.reason);
+      setChatStatus(chatFailureMessage(receipt.reason));
+    }
     else setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.'
       : pendingChatReplies.get(requestId)?.voiceUnavailable ? 'Astrids röstvideo saknas. Svaret visas som text.' : '');
     return true;
   } catch (error) {
     if (previewRow?.classList.contains('pending')) previewRow.remove();
     const reason = speechPoseGate.get(requestId)?.reason || error.message || 'chat-failed';
+    if (chatStatus) chatStatus.dataset.failureCode = chatFailureCode(reason);
     speechPoseGate.cancel(requestId, reason);
     setChatStatus(reason === 'speech_autoplay_blocked'
       ? 'Webbläsaren blockerade ljudet. Tillåt ljud för sidan och skicka frågan igen.' : chatFailureMessage(reason));

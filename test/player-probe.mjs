@@ -12,6 +12,13 @@ import { rebaseProjectDraft } from '../lab/lib/project-rebase.mjs';
 import { probePresentationQuiet } from '../web/public/probe-client.mjs';
 import { projectConversationMemory, normalizeConversationMemory, CONVERSATION_MEMORY_LIMITS } from '../open-claw/lab/src/conversation-memory.mjs';
 
+test('new Astrid policies explicitly select Terra without enabling proactive speech',()=>{
+  const policy=createDefaultProbePolicy();
+  assert.equal(policy.model,'gpt-5.6-terra');
+  assert.equal(policy.mode,'off');
+  assert.equal(createSeedProject().probePolicy.model,'gpt-5.6-terra');
+});
+
 test('background idle does not cancel preparation, but cannot authorize a new probe or mask gameplay',()=>{
   const input={busy:false,round:null,chatBusy:false,speaking:false,pending:0,ownJobId:'preparing',idleBackground:true,
     gate:{state:{actionOwner:'none',dealerPose:'action'},get:()=>null}};

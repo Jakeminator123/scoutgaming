@@ -7,10 +7,51 @@ Utgångspunkt: `e0dc37fb` och Jakobs bekräftade speladress
 Detta är ett granskningskvitto, inte ett godkännande av hela tal-/bildkedjan.
 Inga hemlighetsvärden har skrivits i rapporten.
 
+## Leveransstatus efter kodgranskningen
+
+Gemensam kodcommit `6c85cfff3fd3c5e3d0d3462c75dc2d1a78173178` är pushad och
+återverifierad på `Jakeminator123/github-work`/`jakemanator123-github-work`.
+54 uppgiftsfiler ingår, med ordinarie full hook godkänd vid committen.
+Råmedia, manifest, lokala policyer och tidigare orelaterade handoffändringar
+är bevarade utanför committen. Kontrollen av staged diff mot nio relevanta
+privata värden hittade ingen hemlighetsläcka.
+[CI-körningen](https://github.com/Jakeminator123/github-work/actions/runs/36542628681)
+är godkänd i alla tre jobb. Jakob har bekräftat att de fem lagrings-/
+streaminghemlighetsraderna sparats på Render. `6c85cfff` är nu Live, även
+efter env-deploy `dep-datnfph7lnhs73e2c670`. Publicerad kamerakontroll och
+Lissabon-CSS matchar committen. Autentiserad zonstatus ger HTTP 200 och
+`cloudConfigured: true`.
+
+Importen slutfördes 10:37 CEST: **12 nya MP4, 44 574 024 byte**, lagrade i
+privat Blob. De övriga tio fanns redan med exakt familj/hash. Alla **22/22**
+har återverifierats mot registret och med två korrekta Range 206 per klipp.
+En ny, oberoende inloggning fann noll saknade kandidater; direkt Blob HEAD
+bekräftade de tolv nya objektens storlek, MP4-typ och privata sökväg.
+Se [det sekretessfria importkvittot](qa/cloud-media-import-2026-09-29.json).
+Den uttryckligen godkända engångsfilen med BO-inloggning raderades efteråt.
+Kandidaterna är manuella och väntar på visuell granskning/användningspolicy;
+import är inte ett godkännande av läppsynk eller automatisk spelanvändning.
+
+Samordnarens riktiga talprov har fått streamad bildstart efter 42,051 och
+86,226 sekunder. Efterföljande svar hittade ett fel nära GPU-sessionens
+60-sekunders tomgångsavslut. Rättning och nytt driftprov ägs av
+`root-orchestrator`; talflödet är ännu inte godkänt. GitLab-läsningen på
+Jakobs nya uttryckliga begäran fann att Emils worker-main fortfarande är
+vår `SOURCE`-bas `d3a2d0a6`. Fem RunPod-workers är inte fem fungerande
+parallella sessioner i nuvarande kod; pool och budget måste verifieras först.
+
+GitLab `emil/dealklipp-v1` vid `8e5b47e7`: samtliga 17 ursprungliga repliker
+finns redan byteexakt i vår aktiva Lissabon-bank. `codex/astrid-languages`
+vid `0d12b7a5` har alternativa språk-/replikpaket, ingen exakt saknad film
+för ett dynamiskt chattsvar. Dess `server/serverless.mjs` har encoderbaserat
+NVENC-urval, men arbetar med hela MP4-filer. En eventuell smal port behöver
+validerad workerstatus och kostnadsreserverat byte; gamla image/auth och
+automatiska betalningsretry ska inte ersätta vår strömningskedja direkt.
+
 ## Rättning efter granskningen, 29 september cirka 10:10 CEST
 
-Tre underagenter har implementerat och korsgranskat följande. Kodens
-driftaktivering och den riktiga variantimporten är ännu separata steg.
+Tre underagenter har implementerat och korsgranskat följande. Daterade
+förkontroller nedan föregår den slutförda driftsättningen och importen ovan.
 
 - Privat Blob-adapter för Lab-familjeupload och samma registerläsare i
   produktspelaren. Upload följs av hashkontrollerad återläsning innan

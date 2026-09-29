@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readChatResponse, chatFailureMessage } from '../web/public/chat-response.mjs';
+import { readChatResponse, chatFailureMessage, chatFailureCode } from '../web/public/chat-response.mjs';
 
 function stream(frames, fragment = 7) {
   const bytes = new TextEncoder().encode(frames.map(frame => JSON.stringify(frame) + '\n').join(''));
@@ -39,4 +39,13 @@ test('legacy JSON clients work and failures get distinct explanations', async ()
   assert.match(chatFailureMessage('generated_speech_timeout'), /lång tid/);
   assert.match(chatFailureMessage('generated_speech_daily_budget_exhausted'), /Dagens budget/);
   assert.doesNotMatch(chatFailureMessage('generated_speech_daily_budget_exhausted'), /Försök igen\./);
+});
+
+test('DOM failure diagnostics keep application codes and redact arbitrary upstream data', () => {
+  for (const code of ['generated_speech_session_untracked_worker', 'generated_speech_session_provider_job_mismatch',
+    'generated_speech_session_provider_forbidden', 'generated_speech_session_stop_timeout', 'stale_chat_memory']) {
+    assert.equal(chatFailureCode(code), code);
+  }
+  for (const error of [undefined, 'https://provider.test/?key=private', 'generated_speech_private_token_value',
+    'Authorization: Bearer private', 'The spoken private reply']) assert.equal(chatFailureCode(error), 'chat_failed');
 });

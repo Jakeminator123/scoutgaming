@@ -1,11 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { gatewayConfig, dashboardOrigin, planGatewayConfig } from './gateway-config.mjs';
 
 const example = {
   OPENCLAWAPI_KEY: 'test-only-gateway-secret',
   OPENCLAW_MODEL_API_KEY: 'test-only-provider-secret',
 };
+
+test('Render blueprint and local env example explicitly seed Terra', async () => {
+  const blueprint = await readFile(new URL('../render.yaml', import.meta.url), 'utf8');
+  const template = await readFile(new URL('../.env.example', import.meta.url), 'utf8');
+  assert.match(blueprint, /key: OPENCLAW_MODEL_ID\s+value: gpt-5\.6-terra\b/);
+  assert.match(template, /^OPENCLAW_MODEL_ID=gpt-5\.6-terra\r?$/m);
+});
 
 test('an unrelated inherited model key cannot configure the Gateway', () => {
   assert.throws(() => gatewayConfig({ OPENAI_API_KEY: 'inherited-test-only-key' }), /OPENCLAWAPI_KEY/);
@@ -29,9 +37,9 @@ test('the seeded provider keeps the approved OpenAI base URL, model and API tupl
   const provider = config.models.providers['lab-provider'];
   assert.equal(provider.baseUrl, 'https://api.openai.com/v1');
   assert.equal(provider.api, 'openai-responses');
-  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.4-mini','gpt-6-luna','gpt-5.6-terra']);
+  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.6-terra','gpt-5.4-mini','gpt-6-luna']);
   for (const agent of Object.values(config.agents.entries)) {
-    assert.equal(agent.model.primary, 'lab-provider/gpt-5.4-mini');
+    assert.equal(agent.model.primary, 'lab-provider/gpt-5.6-terra');
     assert.deepEqual(agent.model.fallbacks, []);
   }
 });
@@ -43,8 +51,7 @@ test('Astrid vision metadata requires an explicit gate and changes only Luna and
   }
   const planned = planGatewayConfig(config, { ...example, CROUPIER_SPEECH_VISION: '1' });
   const expected = structuredClone(config);
-  expected.models.providers['lab-provider'].models[1].input = ['text', 'image'];
-  expected.models.providers['lab-provider'].models[2].input = ['text', 'image'];
+  for (const id of ['gpt-6-luna', 'gpt-5.6-terra']) expected.models.providers['lab-provider'].models.find(model => model.id === id).input = ['text', 'image'];
   assert.deepEqual(planned, { action: 'reconcile-speech', config: expected });
   assert.deepEqual(config.models.providers['lab-provider'].models.map(model => model.input),
     [['text'], ['text'], ['text']], 'planning does not mutate saved configuration');
@@ -57,13 +64,13 @@ test('vision opt-in preserves human model metadata, other providers and role con
     OPENCLAW_DASHBOARD_ORIGIN: 'https://director.example.test' };
   const config = gatewayConfig({ ...env, CROUPIER_SPEECH_VISION: '0' });
   const provider = config.models.providers['lab-provider'];
-  provider.models[1] = { ...provider.models[1], name: 'Custom Luna label', input: ['image', 'text'], contextWindow: 100000 };
-  provider.models[2].name = 'Custom Terra label';
+  Object.assign(provider.models.find(model => model.id === 'gpt-6-luna'), { name: 'Custom Luna label', input: ['image', 'text'], contextWindow: 100000 });
+  provider.models.find(model => model.id === 'gpt-5.6-terra').name = 'Custom Terra label';
   provider.models.push({ id: 'custom-model', name: 'Other model', input: ['text'] });
   config.models.providers['human-provider'] = { ...structuredClone(provider), baseUrl: 'https://models.example.test/v1' };
   const before = structuredClone(config);
   const expected = structuredClone(config);
-  expected.models.providers['lab-provider'].models[2].input = ['text', 'image'];
+  expected.models.providers['lab-provider'].models.find(model => model.id === 'gpt-5.6-terra').input = ['text', 'image'];
   assert.deepEqual(planGatewayConfig(config, env), { action: 'reconcile-speech', config: expected });
   assert.deepEqual(config, before);
 });

@@ -48,7 +48,7 @@ function baseConfig(env) {
   if (baseUrl.protocol !== 'https:' || baseUrl.username || baseUrl.password || baseUrl.search || baseUrl.hash) {
     throw new Error('OPENCLAW_MODEL_BASE_URL must be an HTTPS API base URL without credentials, query, or fragment.');
   }
-  const modelId = env.OPENCLAW_MODEL_ID || 'gpt-5.4-mini';
+  const modelId = env.OPENCLAW_MODEL_ID || 'gpt-5.6-terra';
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$/.test(modelId)) throw new Error('Invalid OPENCLAW_MODEL_ID.');
   const api = env.OPENCLAW_MODEL_API || 'openai-responses';
   if (!PROVIDER_APIS.has(api)) throw new Error('Unsupported OPENCLAW_MODEL_API.');

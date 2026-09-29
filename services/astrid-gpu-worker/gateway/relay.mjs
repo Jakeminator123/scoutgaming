@@ -12,6 +12,7 @@ export function attachSpeechRelay(server, {
   maxBufferedBytes = 8 * 1024 * 1024, sessionTimeoutMs = 120000,
   idleTimeoutMs = 15000, cancelTimeoutMs = 5000,
   allowClientPCM = false, onSessionReady = () => {}, onFirstMedia = () => {}, onTransport = () => {},
+  onWorkerIdle = () => {},
 } = {}) {
   if (!workerSecret || workerSecret.length < 32 || !allowedOrigins?.length || typeof authenticateClient !== 'function') throw new Error('Worker secret, origin allowlist and authenticated sessions are required');
   const origins = new Set(allowedOrigins);
@@ -25,11 +26,15 @@ export function attachSpeechRelay(server, {
   };
   const json = (ws, value) => send(ws, JSON.stringify(value));
   const release = s => {
+    if (!sessions.has(s.id)) return;
     clearTimeout(s.timer); clearTimeout(s.cancelTimer);
     sessions.delete(s.id); owners.delete(s.owner);
     if (s.worker.session === s) s.worker.session = null;
     s.controller.abort();
     s.client.close(1000, 'Complete');
+    if (s.started && s.worker.ws.readyState === WebSocket.OPEN) {
+      try { onWorkerIdle(s.worker.id); } catch { /* Lifecycle notification must not prevent release. */ }
+    }
   };
   const abort = (s, reason) => {
     if (!sessions.has(s.id) || s.cancelled) return;
@@ -143,11 +148,18 @@ export function attachSpeechRelay(server, {
   }, Math.min(idleTimeoutMs, 10000));
   tick.unref();
   return {
-    status: () => ({ workers: workers.size, busy: sessions.size, available: [...workers.values()].filter(w => !w.session).length }),
+    status: () => ({ workers: workers.size, busy: sessions.size, available: [...workers.values()].filter(w => !w.session && w.ws.readyState === WebSocket.OPEN).length }),
     workerStatus(id) {
       const worker = workers.get(id);
       const connected = worker?.ws.readyState === WebSocket.OPEN;
-      return { workers: connected ? 1 : 0, busy: connected && worker.session ? 1 : 0, available: connected && !worker.session ? 1 : 0 };
+      return { workers: worker ? 1 : 0, busy: worker?.session ? 1 : 0, available: connected && !worker.session ? 1 : 0 };
+    },
+    stopWorker(id) {
+      const worker = workers.get(id);
+      if (!worker || worker.session) return false;
+      json(worker.ws, { t: 'bye' });
+      worker.ws.close(1000, 'Session complete');
+      return true;
     },
     /** Trusted application-only API: call after verifying request/session ownership.
      * TTS PCM stays on Render -> GPU; the browser receives only media. */

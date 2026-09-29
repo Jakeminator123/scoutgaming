@@ -1,5 +1,30 @@
 # Astrid: Victoria och löpande läppsynk
 
+## 2026-09-29 — liveaktivering och rättning av sessionsåteranvändning
+
+`6c85cfff` blev Live på Render med strömning aktiverad. Två separata
+kallstarter gav observerad första videobild efter **42,051 s** respektive
+**86,226 s**. Härledd driftskonfiguration bekräftade Victoria/`sonic-3.5`,
+strömning aktiv och fullfilsgenerering avstängd. Efterföljande liveförsök
+misslyckades före `ready`; RunPods avbrottstider motsvarade cirka 60 s efter
+workerberedskap. Någon godkänd följd med två livesvar på samma worker finns
+ännu inte, och varken röstmatchning eller visuell läppsynk är AV-godkänd.
+
+Den lokalt reproducerade terminal/socket-racen är nu rättad: en känd,
+avslutad sessions kvarvarande idlekanal får `bye` och stängs före ersättning.
+Även en sparad terminalpost efter omstart behåller rätt workeridentitet.
+Pågående yttranden och okända workers stängs inte av denna operation.
+Inaktivitetstimern börjar om när reläet avslutat det senaste yttrandet;
+540 s sessions-TTL och budgetreservationen är oförändrade. Spelarens
+`#chat-status` har nu `data-failure-code` med en fast lista ofarliga felkoder,
+och föregående `firstFrameMs` rensas när nästa fråga skickas.
+
+Verifiering: 92 riktade tester, oberoende slutgranskning, samordnarens fulla
+pre-commit och fyra-dealer-audit med `--probe` passerade. En separat lokal
+Python/FFmpeg/relay-fixture spelade två yttranden på samma workerkanal.
+Rättningen väntar här på samordnarens publicering och nytt liveprov;
+fixture- och regressionstesterna utgör inte visuell medieacceptans.
+
 ## Jakobs beslut
 
 Jakob vill ha löpande samtal med Victoria och genererad läppsynk. Han avvisade
@@ -69,6 +94,11 @@ Samordnaren återläste 2026-09-29: 4090, 1,10 USD/timme, min workers 0,
 max workers 1, en GPU och idle 5 sekunder. Ett dygn med ständigt aktiv
 worker överskrider då 10 USD.
 
+Efter pris- och kapacitetskontrollen aktiverade samordnaren FlashBoot,
+sparade och återläste inställningen som `true` i en ny dialog. Övriga
+workergränser var oförändrade och noll jobb körde. Inställningen är ingen
+verifiering av låg svarslatens eller fungerande strömuppspelning.
+
 Sessionshanteraren reserverar 0,50 USD på beständig disk innan start;
 600 s GPU-tid med denna taxa är cirka 0,184 USD. Resten är en konservativ
 marginal för uppstart, tomgång, lagring och avstängning. Reservationen
@@ -83,8 +113,9 @@ utan giltig policy, eller en trunkerad policy, stoppar genereringen.
 Bevara policy och reservationsfiler vid omstart och felsökning.
 
 Workern återanvänds mellan repliker, utan automatisk uppstarts- eller
-förnyelseloop. 60 sekunders inaktivitet avbryter det egna jobbet; en aktiv
-replik får först avslutas. Inför nya repliker behålls minst 180 sekunders
+förnyelseloop. 60 sekunders inaktivitet avbryter det egna jobbet; timern
+börjar om efter ett avslutat reläyttrande och en aktiv replik får först
+avslutas. Inför nya repliker behålls minst 180 sekunders
 marginal för biljett och uppspelning före sessionsslut. En verifierad ny
 begäran pausar inaktivitetstimern medan status läses. Ingen ny session
 betalas förrän föregående är avslutad och den exakta workern frånkopplad.

@@ -1,5 +1,20 @@
 # Aktuellt molnläge
 
+## 2026-09-29 — Lagring Live och samtliga 22 kandidater tillgängliga
+
+`6c85cfff` är pushad till rätt GitHub-branch, CI:s tre jobb är gröna och
+Render env-deploy `dep-datnfph7lnhs73e2c670` är Live. Tolv saknade MP4
+importerades till privat Blob; tio fanns redan. Alla 22 har rätt familj/hash
+och två verifierade Range-läsningar. Ny inloggning bekräftade noll saknade
+kandidater och konfigurerad zonlagring. Engångsfilen med BO-inloggning är
+raderad. [Importkvitto](qa/cloud-media-import-2026-09-29.json).
+Mediaacceptans/policy kvarstår; inga kandidater har automatiskt godkänts.
+Två riktiga GPU-strömmar gav bildstart, men efterföljande svar brister nära
+sessionens tomgångsavslut. Samordnaren äger fix och nytt liveprov.
+Jakob vill ha Terra som standard, ingen dold mini-reserv, och önskar
+Slack-Astrid med spelet först. [Slack-guiden](../open-claw/lab/docs/SLACK-ASTRID-SETUP-SV.md)
+beskriver förberedelser; ingen Slack-app eller automatisk publicering är aktiverad.
+
 ## 2026-09-29 — Blob, zon-Neon, kamera och streaming implementerade
 
 Tre underagenter har byggt privat Blob-upload för familjeklipp, separat

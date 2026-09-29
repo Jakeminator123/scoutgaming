@@ -104,6 +104,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       const record = records.get(identity.sessionId);
       if (record) mark(record, 'server_transport_enqueue_ms', ms);
     },
+    onWorkerIdle(workerId) { sessionManager?.activity?.(workerId); },
     async authenticateClient(req) {
       const claims = authenticateTicket(req);
       if (!claims) return null;
@@ -155,7 +156,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   });
   sessionManager = suppliedSessionManager ?? (configuration.session ? createSpeechSessionManager({
     ...configuration.session, directory, workerSecret, origin,
-  }, { workerState: id => id ? relay.workerStatus(id) : relay.status() }) : null);
+  }, { workerState: id => id ? relay.workerStatus(id) : relay.status(), stopWorker: id => relay.stopWorker(id) }) : null);
   async function reserve(input, key, fingerprint) {
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const info = await lstat(directory);
