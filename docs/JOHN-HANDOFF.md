@@ -5,6 +5,9 @@ Vercel-, Render-, Neon-, Blob-, RunPod- och OpenClaw-status den 29 september.
 Den nya [Git-kopplade Vercel-ingången](https://croupier-frontend.vercel.app/)
 visar importerade Next-sidan från huvudrepot. Den tidigare
 `github-work-vercel-entry` ligger kvar som separat manuellt publicerad adress.
+Vercel-projektet `modern-landing-page` är raderat efter Jakobs uttryckliga
+bekräftelse; Vercels efterkontroll fann inget projekt. Den nya startsidan
+klarade även automatisk Git-deploy från `d8d4b707` (READY).
 Spelets produktion använder fortfarande
 Render/SQLite. [Game-Neon-förberedelsen](NEON-GAME-MIGRATION.md) är isolerad
 kod och schema, inte ett produktionsbyte. Nyare avsnitt längre ned i denna

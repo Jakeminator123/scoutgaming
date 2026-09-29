@@ -1,5 +1,29 @@
 # Vercel som spel-frontend – migrationskontrakt 2026-09-29
 
+## Aktuell driftkarta 2026-09-29
+
+Den Git-kopplade startsidan är nu
+[`croupier-frontend.vercel.app`](https://croupier-frontend.vercel.app/).
+Vercel-projektet `croupier-frontend` bygger `apps/croupier-frontend` från
+`Jakeminator123/github-work`, branch `jakemanator123-github-work`. Första
+deploymenten från `d78eb4cb` blev READY; `/` och `/demo` har kontrollerats.
+`CROUPIER_GAME_URL` är sparad för Production och Preview och pekar på
+`https://croupier-v2.onrender.com/blackjack?dealer=astrid`. En senare push
+(`d8d4b707`) gav automatiskt READY-deployment
+`dpl_9GcmrpbHQ91oTJwnBYUuvV5DzxDZ`. Spellänken går fortfarande till Render;
+spelklienten, spel-API:erna och data har inte flyttats till Vercel eller Neon.
+
+[`github-work-vercel-entry.vercel.app`](https://github-work-vercel-entry.vercel.app/)
+är en andra, manuellt driftsatt adress för samma importerade landning.
+Projektet `github-work-vercel-entry` saknar nu Git-koppling; en Git-push
+uppdaterar inte den adressen. Det äldre Vercel-projektet
+`modern-landing-page`, med adress `modern-landing-page-kohl-xi.vercel.app`,
+raderades 2026-09-29 efter Jakobs uttryckliga bekräftelse. Vercels CLI
+bekräftade raderingen och en efterkontroll fann inget projekt med det namnet.
+Det separata GitHub-källrepot `Jakeminator123/croupier-frontend` raderades
+inte. För alla övriga aktuella resurser, se
+[gemensam molnkarta](CLOUD-CURRENT-STATE-2026-09-29.md).
+
 ## Beslut och nuvarande läge
 
 Målet är **en synlig Vercel-adress** (den befintliga `.vercel.app`-adressen
@@ -10,18 +34,18 @@ OpenClaw-/mediaanslutningar. RunPod/GPU är ett separat, valbart steg för
 genererat tal och läppsynk, inte ett villkor för förinspelad Astrid.
 
 Jakob beslutade 2026-09-29 att ta in den separata startsidan i detta repo och
-låta den ersätta den enklare sidan som länkar till blackjack. Källan
-[`Jakeminator123/croupier-frontend`](https://github.com/Jakeminator123/croupier-frontend)
-`main` vid `2ec2b3f2` är nu importerad till `apps/croupier-frontend/`.
-Källprojektet och dess publicerade
-[`modern-landing-page-kohl-xi.vercel.app`](https://modern-landing-page-kohl-xi.vercel.app/)
-finns kvar för v0-designarbete; ändringar där synkas inte automatiskt.
+låta den ersätta den enklare sidan som länkar till blackjack. Källan var det
+dåvarande GitHub-repot `Jakeminator123/croupier-frontend`, `main` vid
+`2ec2b3f2`, och importerades till `apps/croupier-frontend/`.
+Det separata källrepot uppdaterar inte den importerade koden automatiskt.
+Dess tidigare Vercel-publicering är nu borttagen enligt driftkvittot ovan.
 Den importerade `/demo` har två spelknappar som kan byggas mot en exakt
 `CROUPIER_GAME_URL`. Klientsidans äldre låtsasspel har ingen publik rutt.
 
-I dag är Render `croupier-v2` Live. Vercel `github-work-vercel-entry`
-levererar den importerade Next-landningssidan med en extern länk
-till Render `/blackjack`. Detta är inte den önskade front/back-delningen.
+Render `croupier-v2` är Live. Både `croupier-frontend` och den tidigare
+adressen `github-work-vercel-entry` levererar den importerade
+Next-landningssidan med en extern länk till Render `/blackjack`. Den planerade
+Vercelbyggda spelklienten med Render som API-backend återstår.
 Lyckad inloggning, hel spelrunda, BO/Lab, omstart och backup/restore är
 inte verifierade i den publika driften. Tidigare stycken i
 `CLOUD-LAUNCH-HANDOFF.md` som säger att ingen tjänst skapats beskriver ett
@@ -38,11 +62,13 @@ landnings-Previewn är
 `https://croupier-landing-preview-eokix0slk-jakeminator123s-projects.vercel.app`
 och länkar till den senaste spel-Previewn
 `https://croupier-player-preview-3esw2v3fl-jakeminator123s-projects.vercel.app`.
-Den befintliga landningsdomänen `github-work-vercel-entry.vercel.app` flyttades
+Den tidigare landningsdomänen `github-work-vercel-entry.vercel.app` flyttades
 2026-09-29 till verifierad deployment `dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T`.
 Startsidan och `/demo` kontrollerades i browsern; båda spelknapparna på
-`/demo` går till oförändrade `croupier-v2` på Render. Projektet är ännu
-CLI-deployerat utan Git-koppling. Spelklientens produktionsbyte återstår.
+`/demo` går till oförändrade `croupier-v2` på Render. Det projektet är
+CLI-deployerat utan Git-koppling. Den nya `croupier-frontend.vercel.app` är
+däremot Git-kopplad enligt driftkartan ovan. Spelklientens produktionsbyte
+återstår.
 
 ## Målrutter
 

@@ -12,11 +12,11 @@ pausat enligt `AGENTS.md`. Inga hemlighetsvärden hör hemma i denna fil.
 | --- | --- | --- |
 | Render `croupier-v2` | GitHub `Jakeminator123/github-work`, `jakemanator123-github-work`; senaste observerade deploy `05906bd8`. Äger ännu spel, BO, Lab, kort, sko, saldo och två SQLite-filer på `/var/data`. | Live. Ingen verifierad samordnad produktionsbackup utanför Render eller Neon-cutover. |
 | Render `croupier-lab-director` och privat `croupier-lab-openclaw` | Samma GitHub-branch, deploy `15bd1541`; Director är produkt-/Lab-gräns, Gateway har modellen och sin beständiga `/data/openclaw`. | Live. Interna status-/tokenprov lyckades; full giltig spel→modell→tal-kedja återstår. |
-| Vercel `croupier-frontend` | Git-kopplat till `Jakeminator123/github-work`, produktionsbranch `jakemanator123-github-work`, rot `apps/croupier-frontend`; första deploy från `d78eb4cb`. | [Ny Git-kopplad startsida](https://croupier-frontend.vercel.app/) READY, deployment `dpl_AzS7f3pEVKLF8gm1Muj2CcSibtHw`. Startsida och `/demo` verifierade; `CROUPIER_GAME_URL` sparad för Production och Preview och pekar på Render-spelet. Nästa push till arbetsbranchen kan deploya denna yta. |
+| Vercel `croupier-frontend` | Git-kopplat till `Jakeminator123/github-work`, produktionsbranch `jakemanator123-github-work`, rot `apps/croupier-frontend`; första deploy från `d78eb4cb`. | [Ny Git-kopplad startsida](https://croupier-frontend.vercel.app/) READY. Automatisk deploy efter push av `d8d4b707` blev READY: `dpl_9GcmrpbHQ91oTJwnBYUuvV5DzxDZ`. Startsida och `/demo` verifierade; `CROUPIER_GAME_URL` sparad för Production och Preview och pekar på Render-spelet. |
 | Vercel `github-work-vercel-entry` | Publik Next-landning från `apps/croupier-frontend`, manuellt driftsatt efter import `da7f8807` och driftkvitto `d78eb4cb`. | [Publik startsida](https://github-work-vercel-entry.vercel.app/) och `/demo` verifierade i browsern; spelknapparna går till oförändrad Render-backend. Deployment `dpl_J4izEynK4vczr1N9XKUsd5L5Jv2T`. Projektet saknar nu Git-koppling, så en vanlig push publicerar inte nästa version. |
 | Vercel `croupier-landing-preview-qa` | Manuell Next-preview från `apps/croupier-frontend`, importerad från `Jakeminator123/croupier-frontend/main` på `2ec2b3f2`. | [QA-landning](https://croupier-landing-preview-eokix0slk-jakeminator123s-projects.vercel.app/) är READY; ingen Git-koppling eller sparad `CROUPIER_GAME_URL` i projektet. Nuvarande deploy fick spellänken vid bygget. |
 | Vercel `croupier-player-preview-qa` + Render `croupier-vercel-preview-qa` | Separat spelklient och tom Render-testdata. | [QA-spel](https://croupier-player-preview-3esw2v3fl-jakeminator123s-projects.vercel.app/frontend-preview/blackjack/) provades med Astridvideo, serverrundor, saldo efter omladdning och utbetalning. Vercel-projektet saknar Git-koppling. Render-testtjänsten är **manuellt pausad** efter provet. |
-| Vercel `modern-landing-page` | Git-kopplat till separata `Jakeminator123/croupier-frontend/main`; adress [modern-landing-page-kohl-xi.vercel.app](https://modern-landing-page-kohl-xi.vercel.app/). | Äldre separat publicering. Den nya Git-kopplade Croupier-frontenden är verifierad. Jakob har bett att projektet tas bort; permanent radering inväntar sista bekräftelse i Vercels UI-flöde. GitHub-repot är redan omdöpt och påverkas inte av Vercel-radering. |
+| Tidigare Vercel `modern-landing-page` | Var kopplat till separata `Jakeminator123/croupier-frontend/main`; hade adress `modern-landing-page-kohl-xi.vercel.app`. | **Raderat 2026-09-29 på Jakobs uttryckliga bekräftelse.** CLI rapporterade success för projekt `prj_3zsY4c8kKQMp9CeHuwHVgy1tFLAs`; efterkontrollen rapporterade att projektet inte finns. GitHub-källrepot raderades inte. |
 
 Importen till `apps/croupier-frontend` är levererad i `da7f8807`, och den
 första publika adressen byttes kontrollerat i `d78eb4cb`. Den nya
@@ -27,8 +27,8 @@ och får inte förväxlas med den nya. Innan
 till `apps/croupier-frontend`, sätt `CROUPIER_GAME_URL` för QA till den
 isolerade spel-Previewn och välj uttryckligen
 `jakemanator123-github-work` som produktionsbranch. Annars går nya QA-knappar
-till produktions-Render som kodens fallback. Den äldre separata sidan får
-behållas tills återstående referenser har granskats. Se
+till produktions-Render som kodens fallback. Referenser till den raderade
+separata sidan är historiska importkvitton. Se
 [frontendkontraktet](VERCEL-FRONTEND-MIGRATION.md).
 
 ## Data och media
@@ -58,7 +58,9 @@ Senaste jobbet tog 21,3 sekunder i RunPod-kö och 1,45 sekunders exekvering.
 FFmpeg rapporterade `OpenEncodeSessionEx: unsupported device (2)` trots att
 RTX 4090 identifierades; `libx264` användes. Detta är inte ett prov av riktigt
 tal, Cartesia, fragmentström eller synlig läppsynk. Befintlig
-produktionsendpoint och Render-spelets GPU-flaggor är orörda. Se
+produktionsendpoint och Render-spelets GPU-flaggor är orörda. En efterkontroll
+efter frontendpubliceringen visade 0 körande workers, 0 pågående/köade jobb
+och aktuell workerdebitering $0/s i RunPod. Se
 [GPU-kvittot](ASTRID-GPU-CLOUD-TEST.md).
 
 Director använder `OPENCLAW_PRODUCT_SPEECH_TOKEN` skild från
@@ -82,8 +84,10 @@ mediemanifest, Lab-policyer och delbildsarbete. De är inte rensningsskräp.
 `codex/skapa-del-bilder` hör sannolikt till den vilande men relevanta chatten
 **Python-bilder** och behålls. Ett rent `inbox-publish`-worktree på
 `codex/inbox-routing-cache` tillhör inte denna chatt; ägare okänd och det
-arkiveras inte här. Den lokala `main`-branchen är sammanslagen men ingen
-produktionsbranch. GitHub-leverans görs bara till `jakemanator123-github-work`
+arkiveras inte här. Den övergivna lokala `main`-branchen vid `b1476597`
+togs bort med `git branch -d` efter verifierad anor till arbetsbranchen och
+kontroll att inget worktree använde den. Inga remote-brancher raderades.
+GitHub-leverans görs bara till `jakemanator123-github-work`
 med `node tools/push-github-work.mjs`.
 
 Ordningen är: behåll Git-publiceringen för nya landningen och lagra
