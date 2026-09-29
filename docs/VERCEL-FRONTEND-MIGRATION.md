@@ -9,13 +9,15 @@ kort/skor/plånbok, autentisering, SQLite på `/var/data`, BO, Lab och
 OpenClaw-/mediaanslutningar. RunPod/GPU är ett separat, valbart steg för
 genererat tal och läppsynk, inte ett villkor för förinspelad Astrid.
 
-Den separata startsidan finns nu i privata
+Jakob beslutade 2026-09-29 att ta in den separata startsidan i detta repo och
+låta den ersätta den enklare sidan som länkar till blackjack. Källan
 [`Jakeminator123/croupier-frontend`](https://github.com/Jakeminator123/croupier-frontend)
-och är publicerad på
-[`modern-landing-page-kohl-xi.vercel.app`](https://modern-landing-page-kohl-xi.vercel.app/).
-Dess `/demo` är en tydlig väg till det riktiga Render-spelet, inte längre ett
-klientsidigt låtsasspel. Den separata repoindelningen bevaras under fortsatt
-spelklientmigration. Vercel-projektets nuvarande namn och domän är oförändrade.
+`main` vid `2ec2b3f2` är nu importerad till `apps/croupier-frontend/`.
+Källprojektet och dess publicerade
+[`modern-landing-page-kohl-xi.vercel.app`](https://modern-landing-page-kohl-xi.vercel.app/)
+finns kvar för v0-designarbete; ändringar där synkas inte automatiskt.
+Den importerade `/demo` har två spelknappar som kan byggas mot en exakt
+`CROUPIER_GAME_URL`. Klientsidans äldre låtsasspel har ingen publik rutt.
 
 I dag är Render `croupier-v2` Live och Vercel `github-work-vercel-entry`
 publicerad, men Vercel levererar **bara en landningssida med en extern länk**
@@ -25,19 +27,24 @@ inte verifierade i den publika driften. Tidigare stycken i
 `CLOUD-LAUNCH-HANDOFF.md` som säger att ingen tjänst skapats beskriver ett
 äldre läge.
 
-Kodläget har avancerat utan publik cutover: `ops/vercel-entry/preview/` är en
-separat, fail-closed Vercel-projektrot med en explicit spelar-/Astrid-proxylista
-och en mall som inte kan användas förrän en isolerad testbackend med annan
-hostname och databas anges. Render kan opt-in acceptera en enda exakt
-`CROUPIER_VERCEL_FRONTEND_ORIGIN` för spelar-POST och videons Range-anrop.
-Detta är lokalt testad kod, **inte** ett påstående om att Vercel faktiskt
-vidarebefordrar rätt Host/Origin/cookies eller att spelet fungerar där.
+`apps/croupier-frontend/` har ett eget isolerat Vercel-testprojekt,
+`croupier-landing-preview-qa`. Den separata spel-Previewn i
+`ops/vercel-entry/preview/` använder test-Render
+`croupier-vercel-preview-qa` med egen tom SQLite och disk. Ett syntetiskt konto
+har verifierat Vercels inloggningscookie, Origin, två serverägda rundor och
+omladdning mitt i en runda. Direkt mot test-Render gav video-Range HTTP 206;
+206 genom Vercels rewrite och visuell läppsynk återstår. Den senaste
+landnings-Previewn är
+`https://croupier-landing-preview-eokix0slk-jakeminator123s-projects.vercel.app`
+och länkar till den senaste spel-Previewn
+`https://croupier-player-preview-3esw2v3fl-jakeminator123s-projects.vercel.app`.
+Ingen befintlig produktionsadress har flyttats.
 
 ## Målrutter
 
 | Synlig väg på Vercel | Ägare efter migration |
 | --- | --- |
-| `/` | Vercels landningssida |
+| `/` | Importerade Next-landningssidan från `apps/croupier-frontend/` |
 | `/blackjack` och `/table` | Vercelbyggd inloggnings- respektive spelklient |
 | `/api/auth/*`, `/api/table`, övriga spel-/presentation-API:er, `/chat` | Render via uttryckligt same-origin-proxykontrakt; aldrig direkt browser-CORS |
 | Dealerfilm, index, ljud och andra stora spelmedier | Render bakom verifierad Vercel-rewrite eller senare separat media-CDN; version och HTTP Range måste stämma |
@@ -71,14 +78,15 @@ gör inte BO/Lab till Vercelbyggda appar; redovisa detta tydligt.
    SSE separat innan genererat tal/kamera/GPU aktiveras.
 
 Den första spelklientmigrationen flyttar fortfarande inte speldata från
-Render/SQLite. Ett separat beslut 2026-09-29 skapade Vercel Blob och en
-dedikerad Neon-databas för **Astrids bakgrundszoner**, inte för spel eller
+Render/SQLite. Neon Free `croupier-preview-neon` är kopplad endast till
+spel-Previewn men används ännu inte av spelet. En separat Neon Free-resurs
+och Vercel Blob skapades för **Astrids bakgrundszoner**, inte för spel eller
 plånbok; se [zonlagringen](ZONE-CLOUD-STORAGE.md). Zonernas Lab- och
 spelkoppling återstår. Inga Redis- eller OAuth-tjänster behövs för denna
 första migration. Backup/restore av befintlig SQLite och disk måste bevisas
 innan viktiga data anförtros den. Utgifter för GPU-prov kräver separat
 kostnadstak och stoppvillkor.
 
-Källor i repot: `ops/vercel-entry/build.mjs`, `web/public/blackjack-entry.*`,
+Källor i repot: `apps/croupier-frontend/`, `ops/vercel-entry/build.mjs`, `web/public/blackjack-entry.*`,
 `web/public/index.html`, `web/player-auth.mjs`, `ops/cloud/gateway.mjs`,
 `ops/cloud/config.mjs`, `docs/ENVIRONMENT-VARIABLES.md`.

@@ -35,7 +35,7 @@ test('Preview routes are isolated and forward only exact player/API and Astrid m
     '/api/table', '/api/player', '/api/presentation/config', '/api/presentation/select',
     '/api/presentation/idle-advice', '/api/presentation/videos/:id', '/chat',
     '/dealers/astrid/scene.png', '/dealers/astrid/audio/en/bank.json',
-    '/assets/table.png', '/sfx/ambience.mp3',
+    '/assets/table.png', '/kevin-cards/back-scout.png', '/sfx/ambience.mp3',
   ]) assert.ok(sources.includes(source), `missing ${source}`);
   for (const forbidden of [
     '/bo', '/bo/login.html', '/studio', '/lab', '/__cloud/health', '/api/bo/login',
