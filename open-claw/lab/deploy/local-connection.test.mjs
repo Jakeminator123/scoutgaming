@@ -13,6 +13,8 @@ import {
   parseCli, probeConnections, startIsolatedConnection,
 } from './local-connection.mjs';
 import { acquireLocalSession } from './local-session.mjs';
+import { readSettings } from '../src/settings.mjs';
+import { speechRoutingConfiguration } from '../src/speech-routing.mjs';
 
 async function freePort() {
   const server = createNetServer();
@@ -80,6 +82,48 @@ test('private connection permits a Gateway-alias speech token while relay mode s
   assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, aliased);
   assert.equal(specs.product.env.OPENCLAWAPI_KEY, '');
   assert.equal(specs.product.env.OPENCLAW_BASE_URL, '');
+});
+
+test('explicit speech timeout reaches only the product contract through the private env whitelist', async t => {
+  const file = await privateFixture(t, { OPENCLAW_TIMEOUT_MS: '8000', OPENCLAW_SPEECH_TIMEOUT_MS: '20000',
+    OPENCLAW_SPEECH_ROUTING: 'adaptive', OPENCLAW_SPEECH_DEEP_MODEL: 'gpt-6-sol' });
+  for (const relay of [true, false]) {
+    const env = relay
+      ? { OPENCLAW_PRODUCT_SPEECH_URL: 'https://director.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-speech-only' }
+      : { OPENCLAW_BASE_URL: 'http://127.0.0.1:18789', OPENCLAWAPI_KEY: 'fixture-gateway-only' };
+    const { configuration } = loadPrivateConnection({ envFiles: [file], env });
+    assert.equal(configuration.timeoutMs, 8000); assert.equal(configuration.speechTimeoutMs, 20000);
+    const specs = childSpecifications(configuration, join(tmpdir(), 'croupier-speech-timeout-fixture'));
+    assert.equal(specs.product.env.OPENCLAW_SPEECH_TIMEOUT_MS, '20000');
+    assert.equal(specs.lab.env.OPENCLAW_SPEECH_TIMEOUT_MS, undefined);
+    for (const child of [specs.product, specs.lab]) {
+      assert.equal(child.env.OPENCLAW_TIMEOUT_MS, '8000');
+      assert.equal(child.env.OPENCLAW_SPEECH_ROUTING, undefined);
+      assert.equal(child.env.OPENCLAW_SPEECH_DEEP_MODEL, undefined);
+      assert.equal(readSettings({ env: child.env, envFiles: [] }).speechRouting, 'fixed');
+    }
+    const settings = readSettings({ env: specs.product.env, envFiles: [] });
+    assert.equal(speechRoutingConfiguration(settings, 'astrid').timeoutMs, 20000);
+    assert.equal(settings.adviceTimeoutMs, 8000);
+  }
+  assert.equal(loadPrivateConnection({ envFiles: [file], env: { OPENCLAW_SPEECH_TIMEOUT_MS: '1000' } }).configuration.speechTimeoutMs, 1000);
+});
+
+test('speech timeout is optional and rejects invalid explicit values before any child starts', () => {
+  for (const value of ['', ' ', 'NaN', 'Infinity', '-1', '999', '30001', '1000.5']) {
+    assert.throws(() => loadPrivateConnection({ envFiles: [], env: { OPENCLAW_SPEECH_TIMEOUT_MS: value } }), /OPENCLAW_SPEECH_TIMEOUT_MS must be an integer between 1000 and 30000/);
+  }
+  for (const value of ['1000', '30000']) {
+    assert.equal(loadPrivateConnection({ envFiles: [], env: { OPENCLAW_SPEECH_TIMEOUT_MS: value } }).configuration.speechTimeoutMs, Number(value));
+  }
+  for (const generic of [undefined, '50', '9000']) {
+    const { configuration } = loadPrivateConnection({ envFiles: [], env: generic ? { OPENCLAW_TIMEOUT_MS: generic } : {} });
+    assert.equal(configuration.speechTimeoutMs, undefined);
+    const specs = childSpecifications(configuration, join(tmpdir(), 'croupier-speech-timeout-default-fixture'));
+    assert.equal(specs.product.env.OPENCLAW_SPEECH_TIMEOUT_MS, undefined);
+    const settings = readSettings({ env: specs.product.env, envFiles: [] });
+    assert.equal(speechRoutingConfiguration(settings, 'astrid').timeoutMs, Number(generic ?? 8000));
+  }
 });
 
 test('child environments separate credentials, empty provider settings and use disposable data paths', async t => {

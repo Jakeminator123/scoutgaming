@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createProductSpeechService, relayProductSpeech } from '../src/product-speech.mjs';
-import { SPEECH_PASS_TOKENS, speechRoutingConfiguration } from '../src/speech-routing.mjs';
+import { SPEECH_PASS_TOKENS, SPEECH_DEEP_PASS_TOKENS, speechRoutingConfiguration } from '../src/speech-routing.mjs';
 import { syntheticJpeg } from '../../../test/fixtures/synthetic-jpeg.mjs';
 
 const settings = patch => ({ baseUrl: 'https://gateway.example.test', gatewayKey: 'fixture',
@@ -41,12 +41,14 @@ test('ordinary answer uses one Terra call; fixed and other dealers never enable 
   assert.equal(f.calls[0].body.model, 'openclaw/croupier-speech');
   assert.equal(f.calls[0].body.tool_choice, 'none');
   assert.equal(f.calls[0].body.max_completion_tokens, SPEECH_PASS_TOKENS);
+  assert.deepEqual(f.calls[0].body.response_format, { type: 'json_object' });
   for (const [config, dealer] of [[{ speechRouting: 'fixed' }, 'astrid'], [{}, 'vera']]) {
     const data = envelope(); data.status.dealerId = dealer;
     const fixed = fixture({ config, reply: () => response(escalation(data)) });
     await assert.rejects(fixed.service.handle(data), { code: 'invalid_openclaw_speech_choice' });
     assert.equal(fixed.calls.length, 1);
     assert.equal(fixed.calls[0].body.messages[0].content.includes('escalation control object'), false);
+    assert.equal(fixed.calls[0].body.response_format, undefined);
   }
 });
 
@@ -66,7 +68,10 @@ test('one valid escalation preserves explicit pins, original context and separat
     assert.equal(second.body.messages[0].content.includes('escalation control object'), false);
     assert.match(first.body.messages[0].content, /Do not escalate.*missing facts/s);
     assert.equal(first.body.messages[0].content.includes(input.request.message), false);
-    assert.equal(first.body.max_completion_tokens + second.body.max_completion_tokens, 1024);
+    assert.equal(first.body.max_completion_tokens, SPEECH_PASS_TOKENS);
+    assert.equal(second.body.max_completion_tokens, SPEECH_DEEP_PASS_TOKENS);
+    assert.deepEqual(first.body.response_format, { type: 'json_object' });
+    assert.deepEqual(second.body.response_format, { type: 'json_object' });
   }
 });
 
@@ -79,7 +84,26 @@ test('an explicit legacy mini pin remains a single fixed-model call', async () =
     assert.equal(f.calls.length, 1);
     assert.equal(f.calls[0].headers['x-openclaw-model'], 'lab-provider/gpt-5.4-mini');
     assert.equal(f.calls[0].body.messages[0].content.includes('escalation control object'), false);
+    assert.equal(f.calls[0].body.response_format, undefined);
   }
+});
+
+test('JSON-mode length termination fails even for valid-looking JSON and never retries the Gateway request', async () => {
+  const input = envelope();
+  for (const truncateAt of [1, 2]) {
+    for (const content of ['{"kind":', JSON.stringify(choice(input))]) {
+      const f = fixture({ reply: (_call, number) => number < truncateAt ? response(escalation(input))
+        : new Response(JSON.stringify({ choices: [{ finish_reason: 'length', message: { content } }] })) });
+      await assert.rejects(f.service.handle(input), { code: 'openclaw_output_truncated', statusCode: 502 });
+      await assert.rejects(f.service.handle(structuredClone(input)), { code: 'openclaw_output_truncated' });
+      assert.equal(f.calls.length, truncateAt);
+    }
+  }
+  const fixed = fixture({ config: { speechRouting: 'fixed' }, reply: () => new Response(JSON.stringify({
+    choices: [{ finish_reason: 'length', message: { content: JSON.stringify(choice(input)) } }],
+  })) });
+  assert.deepEqual(await fixed.service.handle(input), choice(input), 'existing non-JSON-mode behavior stays unchanged');
+  assert.equal(fixed.calls.length, 1);
 });
 
 test('invalid escalation shape, reason and identity never call a second model', async () => {
