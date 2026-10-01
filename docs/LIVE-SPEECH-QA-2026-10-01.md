@@ -1,5 +1,59 @@
 # Isolated speech rehearsal in the live relay
 
+## Final live verification — 1 October, 11:48–11:53 UTC
+
+Render `6c24b4a5e752da4e37bb2e20957c4f8d939df341` was live on deployment
+`dep-dav4et1srm7s73bn0h6g`; all three GitHub CI checks passed. RunPod release 4
+retained the repaired `66b07a7c` image and digest recorded below. Campaign
+`522d3b4a-7dc5-47c9-8287-3b7234d740d1` used two of its three allowed attempts.
+Both completed with distinct text, shared-player start/end receipts, an
+audible element and return to idle. Neither attempt returned 404 or Voice off.
+
+| Turn | UTC start | Model wait | Prepared | First visible frame | Completed |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 11:48:14.048 | 3133 ms | 83633 ms | 99917 ms | 104803 ms |
+| 2 | 11:51:52.179 | 2786 ms | 5791 ms | 7723 ms | 14187 ms |
+
+All columns after model wait are measured from the explicit button click.
+The exact returned texts were:
+
+1. Mom bakes warm cinnamon buns while Dad brews the morning coffee at home.
+2. Blueberries, paper, and soft cushions make the balcony feel quietly inviting.
+
+These were consecutive successful requests, but the interval allowed the
+first GPU session to idle-cancel before the second request. The ledger shows
+two distinct new reservations, both with genuine `CANCELLED` terminal receipts.
+This exercises the deployed receipt fix across the session boundary; it is
+not evidence that both answers reused one GPU job. The first cold preparation
+remains slow. The unchanged 90 s worker-readiness timeout does not cover all
+model/preparation/playback time; total first-frame latency was about 100 s.
+
+Private browser recordings are 1080x1920 VP9 with Opus audio, outside Git:
+
+| File in `C:\Users\jakem\Downloads` | Bytes | SHA-256 |
+| --- | --- | --- |
+| `astrid-qa-turn-1 (2).webm` | 1032324 | `2c12ff37bdc4491e1944e000e00de498cab6f3a8e29250ea6b96d2b2d7bd5987` |
+| `astrid-qa-turn-2 (1).webm` | 1490162 | `b091dff159deab06e17e89548840077043473f890e77e6dc0de1882e7e7a69f1` |
+
+Frames at one and three seconds in both recordings show clean face colors
+without the magenta rectangle or green mouth. Mouth positions vary. This
+confirms the visible color repair and two successful streamed answers; exact
+phoneme alignment and an end-to-end microphone/camera turn remain unapproved.
+No original media or acceptance baseline was changed.
+
+The matching gate was removed after recording. Final UI status: disabled,
+zero identities, pending work and relay workers/busy/available. Normal idle
+cleanup saved `CANCELLED` for both new sessions without manual ledger changes.
+All campaign/attempt receipts remain. The daily journal reserved USD 3.00 in
+total, including earlier activity; this is a conservative reservation, not
+measured RunPod billing. The durable USD 9.94 cap, USD 0.50 session reservation,
+worker min 0/max 1, timeouts and no-automatic-paid-retry policy are unchanged.
+
+Remaining acceptance is physical mobile/Safari performance, exact audiovisual
+sync and real microphone-to-answer behavior. Long cold starts remain a known
+service limitation. Further tests must use a new explicitly scoped campaign,
+retain all spent reservations and avoid production player-data writes.
+
 ## Follow-up live result — 1 October, 11:31–11:36 UTC
 
 The color defect is absent in the successful repaired-image recording.
