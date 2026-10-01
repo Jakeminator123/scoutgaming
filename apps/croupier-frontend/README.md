@@ -24,10 +24,14 @@ The landing content and game links render directly. The automatic fullscreen
 retro HTML scene, avatar intro and hero handoff have been removed; delayed
 hydration, scrolling and history restoration must never cover the page with
 them. Their original media files remain preserved but are not requested by
-the page. The separate floor decoration mounts its video/WebGL renderer only
-when visible on a non-touch desktop with motion allowed. Leaving that area,
-hiding the page, changing the layout or selecting fantasy releases it. The
-hero videos and the small queen-card decorations remain part of the design.
+the page. The server renders a still Astrid poster and working links. Mobile,
+touch devices and reduced-motion clients never import the desktop effects:
+no autoplay videos, card stream, parallax, floor, laser or WebGL renderer.
+The optional desktop bundle loads only while the page is visible at >=1024px
+with a fine hovering pointer, no touch points and motion allowed. Hiding the
+page or losing those capabilities unmounts all effects; an in-flight import
+cannot reactivate them after a resize or navigation. The floor renderer also
+retains its own visibility gate. Original media remain untouched.
 
 ## Isolated Preview
 

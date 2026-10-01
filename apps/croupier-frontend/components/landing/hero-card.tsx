@@ -15,6 +15,10 @@ const EARLIEST_HIT_MS = 2200
 const LATEST_HIT_MS = END_CARD_MS - 300
 
 const OTHER: Record<Face, Face> = { casino: "fantasy", fantasy: "casino" }
+const VIDEO_SRC: Record<Face, string> = {
+  casino: "/videos/astrid-card.mp4",
+  fantasy: "/videos/fantasy-card.mp4",
+}
 
 /**
  * One way a projectile can arrive and leave. Offsets are from the hero card's centre: it enters
@@ -154,6 +158,23 @@ export function HeroCard() {
 
   const videoFor = (face: Face) => (face === "casino" ? casinoRef.current : fantasyRef.current)
 
+  useEffect(() => {
+    const videos = { casino: casinoRef.current, fantasy: fantasyRef.current }
+    // Restore after React's development effect replay; normal mounts already have src.
+    for (const face of ["casino", "fantasy"] as const) {
+      const video = videos[face]
+      if (video && !video.hasAttribute("src")) video.src = VIDEO_SRC[face]
+    }
+    return () => {
+      for (const video of Object.values(videos)) {
+        if (!video) continue
+        video.pause()
+        video.removeAttribute("src")
+        video.load()
+      }
+    }
+  }, [])
+
   // Only the face turned toward the viewer plays, so audio never overlaps across the flip.
   useEffect(() => {
     videoFor(active === "casino" ? "fantasy" : "casino")?.pause()
@@ -244,7 +265,7 @@ export function HeroCard() {
               <div className={FACE}>
                 <video
                   ref={casinoRef}
-                  src="/videos/astrid-card.mp4"
+                  src={VIDEO_SRC.casino}
                   poster="/images/astrid-card-poster.jpg"
                   muted
                   playsInline
@@ -286,7 +307,7 @@ export function HeroCard() {
               <div className={`${FACE} [transform:rotateY(180deg)]`}>
                 <video
                   ref={fantasyRef}
-                  src="/videos/fantasy-card.mp4"
+                  src={VIDEO_SRC.fantasy}
                   poster="/images/fantasy-card-poster.jpg"
                   muted
                   playsInline

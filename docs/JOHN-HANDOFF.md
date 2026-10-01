@@ -1,5 +1,46 @@
 # Aktuellt molnläge
 
+## 2026-10-01 — Helt stilla startsida på mobil
+
+Jakob rapporterade fortsatt frysning på mobilen. Vercels produktionsalias
+pekade fortfarande på den avsedda föregående leveransen `d0fd6c3d`; ingen
+utebliven publicering hittades. Att bara ta bort introt räckte inte som
+mobilskydd: fyra hero-/kortvideor, tolv dekorativa kort som mättes/flyttades
+varje bildruta, parallax, lasereffekt och stora 3D-lager fanns kvar.
+Detta är konstaterad belastning, inte bevis för den exakta låsningen på
+Jakobs fysiska telefon eller ett bevisat Safari-fel.
+
+Startsidan serverrenderar nu en vanlig Astrid-bild (17 KB) och fungerande
+länkar. Hela desktopdekoren, inklusive hero, logoeffekt och deras video,
+laddas med dynamisk import först när sidan syns på >=1024 px, fin pekare
+med hover, noll touchpunkter och tillåten rörelse. Mobil, touchdatorer och
+reduced-motion får inga dekorativa videor, RAF-loopar eller 3D-komponenter.
+En sen import ignoreras efter resize/pagehide/unmount. Befintlig separat
+synlighetskontroll för golvdekoren finns kvar. Alla hero-/drottningvideor
+pausas och deras src frigörs vid avmontering. Originalmedia, spelare,
+kalibreringar och baselines är oförändrade.
+
+SSR- och livscykelregressionerna (5/5), TypeScript och produktionsbygget
+passerar. Browserprovet använder byggda HTML/RSC/chunkar i en kortlivad
+isolerad statisk fixture, utan produktserver eller databas. Vid 320, 390
+och 844 px: noll video/canvas/animationer/RAF/mediaförfrågningar, ingen
+horisontell overflow eller fångade JS-fel. Scroll och `/demo`/tillbaka
+fungerar. Vid 1280 px aktiveras desktop och vid byte till 390 px återgår
+sidan till stillbild. Slutbygget släpper också tidigare monterade videors
+källor: noll detached videor med src eller pågående uppspelning. Samtliga
+fyra dealers matchar oförändrad baseline i `audit-dealer-sync --probe`,
+med tidigare dokumenterade saknade takes och ej godkänd läppsynk kvar.
+Detta är Chromium med riktiga CSS-bredder; fysisk
+Safari/iPhone är fortfarande inte verifierad.
+
+Separat röstkontroll: 35/35 säkra session-/ström-/konfigtester PASS.
+Read-only health den 1 oktober: produktion 200/ok, isolerad QA 503/Suspended.
+Två riktiga AI-röstsvar och visuell läppsynk återstår. QA-konfigurationen
+och en gemensamt avräknad totalbudget måste verifieras innan betalda prov;
+QA:s egna disk har en separat budgetbok. Samordnat med `audit-runtime`,
+som granskar driften i en annan chatt. Inga GPU-jobb eller
+produktionsdatabasprov har gjorts i denna mobilrättning.
+
 ## 2026-09-29 21:15 UTC — Startsidan utan blockerande intro
 
 Jakob rapporterade en ny låsning efter väntan eller scroll på telefon och bad
