@@ -1,5 +1,32 @@
 # Aktuellt molnläge
 
+## 2026-10-01 — Slutkontroll före lokal avstängning
+
+Render `6c24b4a5` och RunPod release 4 gav två på varandra följande lyckade
+röstsvar med olika texter, ljudspår, start/slut och återgång till vila.
+Färgfelet är borta i båda inspelningarna vid 1 och 3 sekunder. Första svaret
+tog 104,803 s inklusive kallstart; det andra 14,187 s. Båda hade egna
+GPU-sessioner och båda fick automatiskt sparade `CANCELLED`-kvitton. Därmed
+är den nya kvittohanteringen verifierad live över en sessionsgräns, utan 404
+eller Voice off i dessa två prov. Alla tre kod-CI-jobb passerade.
+
+Provgrinden är borttagen, QA-identiteter och relay-arbetare är noll. Försöks-
+och budgetjournaler är bevarade: totalt USD 3,00 reserverat under dagen,
+oförändrat dygnstak USD 9,94 och min 0/max 1 worker. Detta är reserverad
+budget, inte uppmätt fakturering. Lokala produkt-/labservrar förblev stoppade.
+Inga nycklar kopierades till env-filer, inga originalmedia eller verkliga
+spelardata ändrades. Den avbrutna molnchatten gjorde inga ändringar och är
+avslutad; fortsatt arbete och leverans gjordes från denna lokala checkout.
+
+Exakta tider, privata inspelningsfiler och hashvärden finns i
+[slutprovets kvitto](LIVE-SPEECH-QA-2026-10-01.md#final-live-verification--1-october-11481153-utc).
+Kvar: lång kallstart, exakt fonemsynk, mikrofon-till-svar och fysisk Safari-
+prestanda är inte slutgodkända. Mobilintro är avstängt i publicerad kod och
+statisk/touch-granskning passerar, men fysisk mobil återstår. Konton ligger
+fortfarande i SQLite; Neon används för zonmetadata. OpenClaw får begränsad
+spelar-/samtalskontext, inte direkt saldoåtkomst. Publik lösenordsåterställning
+och eventuell kontomigrering till Neon är separata, ännu ej införda arbeten.
+
 ## 2026-10-01 — Färgfelet borta live, avslutskvitto rättat
 
 RunPod release 4 och Render `66b07a7c` gav ett färdigt röstsvar utan
