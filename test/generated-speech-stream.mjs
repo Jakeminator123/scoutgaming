@@ -142,3 +142,75 @@ test('failed worker startup cannot issue a stream ticket or pay again for the sa
   await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
   assert.equal(starts, 1); assert.equal(f.service.status().pending, 0); assert.equal(f.sourceCalls, 0);
 });
+
+test('exclusive QA lease rejects product admission before reservation or costly work', async t => {
+  const f = await fixture(t); let costly = 0;
+  const release = f.service.acquireExclusive('operator-qa-one');
+  assert.throws(() => f.service.acquireExclusive('operator-qa-two'), /stream_busy/);
+  await assert.rejects(f.service.prepare({ ...f.input(), beforeCostly: async () => { costly++; } }), /stream_busy/);
+  assert.equal(costly, 0); assert.deepEqual(await readdir(f.directory), []);
+  release();
+  await f.service.prepare(f.input());
+  assert.equal(f.service.status().pending, 1);
+});
+
+test('in-flight product preparation and prepared records both block a QA lease', async t => {
+  const f = await fixture(t); let release, entered;
+  const held = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { entered = resolve; });
+  const preparing = f.service.prepare({ ...f.input(), beforeCostly: async () => { entered(); await held; } });
+  await started;
+  assert.equal(f.service.status().pending, 1);
+  assert.throws(() => f.service.acquireExclusive('operator-qa-one'), /stream_busy/);
+  release(); await preparing;
+  assert.throws(() => f.service.acquireExclusive('operator-qa-one'), /stream_busy/);
+  f.service.cancelOwner('owner-one');
+  const releaseQa = f.service.acquireExclusive('operator-qa-one'); releaseQa();
+});
+
+test('exclusive lease persists through TTS EOF and releases on stream terminal', async t => {
+  const f = await fixture(t);
+  f.service.acquireExclusive('owner-one');
+  const descriptor = await f.service.prepare(f.input());
+  const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
+  const wire = new AbortController();
+  await f.relayOptions.onSessionReady({ ...identity, id: 'qa-wire', signal: wire.signal });
+  await assert.rejects(f.service.prepare({ ...f.input('product'), owner: 'product' }), /stream_busy/);
+  wire.abort();
+  await f.service.prepare({ ...f.input('product'), owner: 'product' });
+  assert.equal(f.sourceCalls, 1);
+});
+
+test('exclusive lease automatically releases on preparation error and explicit owner cancellation', async t => {
+  const f = await fixture(t);
+  f.service.acquireExclusive('owner-one');
+  await assert.rejects(f.service.prepare({ ...f.input(), beforeCostly: async () => { throw Error('stale'); } }));
+  const release = f.service.acquireExclusive('owner-one');
+  await f.service.prepare(f.input('qa-next'));
+  f.service.cancelOwner('owner-one'); release();
+  await f.service.prepare({ ...f.input('product'), owner: 'product' });
+});
+
+test('QA abort retains exclusion until shared manager cancellation settles; product cannot join it', async t => {
+  let starts = 0, entered, drain, f;
+  const started = new Promise(resolve => { entered = resolve; });
+  const cleanup = new Promise(resolve => { drain = resolve; });
+  f = await fixture(t, { sessionManager: {
+    async ensure({ signal }) {
+      starts++;
+      if (starts === 1) { entered(); await cleanup; signal.throwIfAborted(); }
+    }, close() {},
+  } });
+  const abort = new AbortController(), release = f.service.acquireExclusive('owner-one');
+  const qa = f.service.prepare({ ...f.input('qa'), signal: abort.signal });
+  await started;
+  abort.abort(); f.service.cancelOwner('owner-one'); release();
+  assert.equal(f.service.status().pending, 1, 'cancelled work stays visible until cleanup ends');
+  assert.throws(() => f.service.acquireExclusive('another-qa'), /stream_busy/);
+  await assert.rejects(f.service.prepare({ ...f.input('product'), owner: 'product' }), /stream_busy/);
+  assert.equal(starts, 1, 'product never enters the old ensure promise');
+  drain(); await assert.rejects(qa);
+  assert.equal(f.service.status().pending, 0);
+  await f.service.prepare({ ...f.input('product'), owner: 'product' });
+  assert.equal(starts, 2);
+});

@@ -16,6 +16,7 @@ import { readPlayerResults } from './player-results.mjs';
 import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
+import { createOperatorSpeechQa } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from './public/chat-response.mjs';
 import { createPlayerChatMemory } from './player-chat-memory.mjs';
 import { createPlayerProbeStore } from './player-probe-store.mjs';
@@ -839,6 +840,18 @@ function chatSessionOwner(req, playerId) {
   }
   throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
 }
+// Opt-in operator rehearsal shares the real relay and its budget, but never
+// calls player APIs or persists synthetic conversations in either database.
+const operatorSpeechQa = createOperatorSpeechQa({
+  directory: process.env.CROUPIER_GENERATED_SPEECH_DIR,
+  origin: process.env.PUBLIC_URL ?? gameOrigin,
+  authenticate: boSessionOk,
+  service: () => speechStreamService,
+  decide: (request, status, signal) => openClawChat(request, status, {
+    fetchImpl: (url, options = {}) => fetch(url, { ...options,
+      signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal }),
+  }),
+});
 const server = createServer(async (req, res) => {
   const pathname=new URL(req.url,'http://local').pathname;
   if(boGameAuth(req,res))return;
@@ -1042,6 +1055,7 @@ const server = createServer(async (req, res) => {
     else { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); }
     return;
   }
+  if (await operatorSpeechQa.handle(req, res, pathname)) return;
   if (req.method === 'GET' && req.url.startsWith('/api/bo/')) {
     const who = boSessionOk(req);
     if (req.url === '/api/bo/me') {
@@ -1274,7 +1288,8 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
-    resolveOwner: (req, playerId) => chatSessionOwner(req, playerId),
+    resolveOwner: (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)
+      ? operatorSpeechQa.resolveOwner(req, playerId) : chatSessionOwner(req, playerId),
   });
   server.once('close', () => speechStreamService.close());
 }
