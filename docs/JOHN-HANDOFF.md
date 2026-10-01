@@ -1,5 +1,27 @@
 # Aktuellt molnläge
 
+## 2026-10-01 — Avgränsat läppsynkprov i produktens egen relay
+
+`/bo/speech-qa.html` förbereder två manuella syntetiska röstsvar utan att
+skriva spelarprofiler, saldo, rundor eller chatthistorik. Befintlig BO-admin,
+en privat gatefil med högst 30 minuters giltighet och högst tre beständigt
+räknade försök krävs. QA använder samma OpenClaw, Cartesia, RunPod-manager,
+budgetjournal och browser-spelare som produkten. En tillfällig exklusiv
+röstreservation hindrar att QA-avbrott påverkar en samtidig produktstart;
+normal rösttrafik är tillfälligt upptagen medan provet har reservationen.
+
+Riktade auth-, origin-, TTL-, återstarts-, avbrotts- och streamtester passerar.
+Frontendreview hittade och rättade sen DELETE som kunde avbryta nästa prov,
+samt ofrigjorda capture-tracks efter MediaRecorder-fel. Inga originalmedia
+eller kalibreringar ändras. Liveprovet är ännu inte genomfört i detta kvitto;
+följ [provets separat dokumenterade resultat](LIVE-SPEECH-QA-2026-10-01.md).
+
+Den samordnade [env- och lagringsgranskningen](CLOUD-ENV-STORAGE-AUDIT-2026-10-01.md)
+verifierar Render, privat Blob och tomma Neonzontabeller. Konton ligger kvar
+i SQLite. Aktuell root-`.env` väljer ingen RunPod-endpoint; aktiv `emil/`
+saknar env-filer. Lokal effektiv RunPod-nyckel saknas och har inte kopierats
+från produktionen. PowerShell-startaren pekar nu på koordinerade `lab/start.mjs`.
+
 ## 2026-10-01 — Terra som standard och begränsad fördjupning genom OpenClaw
 
 OpenClaws körande Render-process och alla fem sparade roller är nu verifierade

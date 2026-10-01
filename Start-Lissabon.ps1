@@ -24,7 +24,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $nodeExecutable)) {
     throw 'Node.js kunde inte hittas bakom versionshanteraren.'
 }
 
-$startArgs = @((Join-Path $PSScriptRoot 'lissabon\start.mjs'))
+$startArgs = @((Join-Path $PSScriptRoot 'lab\start.mjs'))
 if ($NoBrowser) { $startArgs += '--no-open' }
 if ($CheckOnly) { $startArgs += '--check' }
 if ($SkipBuild) { $startArgs += '--skip-build' }

@@ -16,7 +16,7 @@ node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback
 node --test test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
 node --test test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs
 node --test test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs
-node --test test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/generated-speech-stream-http.mjs
+node --test test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs
 node --test test/player-probe.mjs
 node --test test/performance-contact.mjs test/pack-contact-media.mjs test/table-audio.mjs test/shoe-contact-occlusion.mjs
 node --test test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs

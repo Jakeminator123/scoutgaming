@@ -72,7 +72,19 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   const authenticateTicket = ticketAuthenticator(ticketSecret);
   const source = pcmSource ?? createCartesiaSource(configuration);
   const attach = attachRelay ?? (await import('../services/astrid-gpu-worker/gateway/relay.mjs')).attachSpeechRelay;
-  const records = new Map(), owners = new Map(), preparations = new Map();
+  const records = new Map(), owners = new Map(), preparations = new Map(), inFlight = new Set();
+  let exclusive = null;
+  const settleExclusive = () => {
+    if (exclusive?.releasing && ![...inFlight].some(item => item.owner === exclusive.owner)
+      && !owners.has(exclusive.owner)) exclusive = null;
+  };
+  const releaseOwner = owner => {
+    if (exclusive?.owner !== owner) return;
+    exclusive.releasing = true;
+    // Cancellation removes the public preparation entry immediately. Retain
+    // admission until its manager promise has finished cancelling its own job.
+    settleExclusive();
+  };
   const mark = (record, stage, ms) => {
     try { record.input.onTiming?.(stage, ms); } catch { /* Telemetry cannot affect paid work. */ }
   };
@@ -83,6 +95,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     record.wireSignal?.removeEventListener('abort', record.wireAbort);
     if (records.get(record.id) === record) records.delete(record.id);
     if (owners.get(record.input.owner) === record) owners.delete(record.input.owner);
+    releaseOwner(record.input.owner);
   };
   const cancel = record => {
     if (!records.has(record.id)) return;
@@ -174,14 +187,23 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     finally { await file.close(); }
   }
   return {
-    status: () => ({ enabled: true, pending: records.size, ...relay.status() }),
+    status: () => ({ enabled: true, ...relay.status(), pending: records.size + inFlight.size }),
+    acquireExclusive(owner) {
+      if (typeof owner !== 'string' || !owner || owner.length > 512) fail('invalid_generated_speech_stream_request', 400);
+      if (exclusive || records.size || preparations.size || inFlight.size || relay.status().busy > 0) fail('generated_speech_stream_busy', 429);
+      const lease = { owner, releasing: false };
+      exclusive = lease;
+      return () => { if (exclusive === lease) releaseOwner(owner); };
+    },
     async prepare(input) {
       if (!input || !identifier(input.requestId) || input.dealerId !== 'astrid' || typeof input.owner !== 'string' || !input.owner || input.owner.length > 512
         || typeof input.text !== 'string' || !input.text.trim() || input.text !== input.text.trim() || input.text.length > 500
         || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(input.text) || typeof input.beforeCostly !== 'function') fail('invalid_generated_speech_stream_request', 400);
+      if (exclusive && (exclusive.owner !== input.owner || exclusive.releasing)) fail('generated_speech_stream_busy', 429);
       if (!preparations.has(input.owner) && !owners.has(input.owner) && records.size + preparations.size >= 32) fail('generated_speech_stream_busy', 429);
-      const preparation = { playerId: input.playerId };
+      const preparation = { playerId: input.playerId, owner: input.owner };
       preparations.set(input.owner, preparation);
+      inFlight.add(preparation);
       const current = () => { input.signal?.throwIfAborted(); if (preparations.get(input.owner) !== preparation) fail('generated_speech_stream_cancelled', 499); };
       try {
       current(); await input.beforeCostly(); current();
@@ -208,13 +230,17 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       record.deadline = setTimeout(() => cancel(record), ticketLifetimeMs); record.deadline.unref?.();
       return descriptor;
       } catch (error) {
+        releaseOwner(input.owner);
         if (/^(?:generated_speech_|invalid_generated_speech_)/.test(error?.code || '') || /^(?:stale_chat_|chat_cancelled)/.test(error?.message || '')) throw error;
         if (input.signal?.aborted) fail('generated_speech_stream_cancelled', 499);
         fail('generated_speech_stream_failed');
-      } finally { if (preparations.get(input.owner) === preparation) preparations.delete(input.owner); }
+      } finally {
+        if (preparations.get(input.owner) === preparation) preparations.delete(input.owner);
+        inFlight.delete(preparation); settleExclusive();
+      }
     },
-    cancelOwner(owner) { preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); },
-    cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) preparations.delete(owner); for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
+    cancelOwner(owner) { preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); releaseOwner(owner); },
+    cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) { preparations.delete(owner); releaseOwner(owner); } for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
     close() { preparations.clear(); for (const record of [...records.values()]) cancel(record); relay.close(); return sessionManager?.close(); },
   };
 }
