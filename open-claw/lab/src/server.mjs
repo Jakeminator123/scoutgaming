@@ -71,7 +71,9 @@ async function relay(path, method, body, settings, fetchImpl) {
   }
 }
 
-export async function createLabServer({ settings: settingsProvider = readSettings, fetchImpl = fetch, root = LAB_ROOT, batchBudgetMs = 25000 } = {}) {
+export async function createLabServer({ settings: settingsProvider = readSettings, fetchImpl = fetch, root = LAB_ROOT, batchBudgetMs = 25000,
+  onSpeechRouting = entry => console.info(JSON.stringify({ event: 'product_speech_route', ...entry })),
+} = {}) {
   const initial = { ...settingsProvider() };
   if (!isLoopback(initial.host) && !initial.apiToken) throw new Error('LAB_API_TOKEN is required when HOST is not loopback.');
   // This is a native-auth transport, never a relay authenticated with our keys.
@@ -87,7 +89,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   let activeChat = 0;
   let activeSocialChat = 0;
   let companion;
-  const productSpeech = createProductSpeechService({ settingsProvider, fetchImpl });
+  const productSpeech = createProductSpeechService({ settingsProvider, fetchImpl, onRouting: onSpeechRouting });
   const productProbe = createProductProbeService({ settingsProvider, fetchImpl });
   const decide = async (raw, settings, deadlineAt = Infinity) => {
     const input = normalizeInput(raw);
@@ -165,7 +167,15 @@ export async function createLabServer({ settings: settingsProvider = readSetting
         }
         if (path === PRODUCT_SPEECH_PATH) {
           if (settings.remoteUrl) throw new GatewayError('product_speech_relay_not_supported', 503);
-          return respond(res, 200, await productSpeech.handle(body));
+          const controller = new AbortController();
+          const disconnected = () => { if (!res.writableEnded) controller.abort(); };
+          res.once('close', disconnected);
+          try {
+            if (res.destroyed || req.aborted) controller.abort();
+            const choice = await productSpeech.handle(body, { signal: controller.signal });
+            if (!res.destroyed) return respond(res, 200, choice);
+            return;
+          } finally { res.removeListener('close', disconnected); }
         }
         if (settings.remoteUrl && path !== '/api/scenarios') {
           if (path === '/api/studio/companion') body = normalizeCompanionRequest(body);
@@ -236,6 +246,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
       res.writeHead(200, { 'Content-Type': MIME[extname(files[path])], 'Cache-Control': 'no-cache' });
       res.end(req.method === 'HEAD' ? undefined : contents);
     } catch (error) {
+      if (res.destroyed) return;
       // Never return upstream bodies, exception messages, request headers, or environment values.
       const status = error.statusCode || 500;
       respond(res, status, { error: error.code || 'internal_error', ...(Array.isArray(error.errors) && { errors: error.errors }) });

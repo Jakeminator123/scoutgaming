@@ -37,24 +37,24 @@ test('the seeded provider keeps the approved OpenAI base URL, model and API tupl
   const provider = config.models.providers['lab-provider'];
   assert.equal(provider.baseUrl, 'https://api.openai.com/v1');
   assert.equal(provider.api, 'openai-responses');
-  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.6-terra','gpt-5.4-mini','gpt-6-luna']);
+  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.6-terra','gpt-5.4-mini','gpt-6-luna','gpt-6-sol']);
   for (const agent of Object.values(config.agents.entries)) {
     assert.equal(agent.model.primary, 'lab-provider/gpt-5.6-terra');
     assert.deepEqual(agent.model.fallbacks, []);
   }
 });
 
-test('Astrid vision metadata requires an explicit gate and changes only Luna and Terra', () => {
+test('Astrid vision metadata requires an explicit gate and changes only Luna, Terra and Sol', () => {
   const config = gatewayConfig(example);
   for (const gate of [undefined, '', '0', 'true']) {
     assert.deepEqual(planGatewayConfig(config, { ...example, CROUPIER_SPEECH_VISION: gate }), { action: 'reuse', config });
   }
   const planned = planGatewayConfig(config, { ...example, CROUPIER_SPEECH_VISION: '1' });
   const expected = structuredClone(config);
-  for (const id of ['gpt-6-luna', 'gpt-5.6-terra']) expected.models.providers['lab-provider'].models.find(model => model.id === id).input = ['text', 'image'];
+  for (const id of ['gpt-6-luna', 'gpt-5.6-terra', 'gpt-6-sol']) expected.models.providers['lab-provider'].models.find(model => model.id === id).input = ['text', 'image'];
   assert.deepEqual(planned, { action: 'reconcile-speech', config: expected });
   assert.deepEqual(config.models.providers['lab-provider'].models.map(model => model.input),
-    [['text'], ['text'], ['text']], 'planning does not mutate saved configuration');
+    [['text'], ['text'], ['text'], ['text']], 'planning does not mutate saved configuration');
   assert.deepEqual(planGatewayConfig(planned.config, { ...example, CROUPIER_SPEECH_VISION: '1' }),
     { action: 'reuse', config: expected }, 'reconciliation is idempotent');
 });
@@ -71,6 +71,7 @@ test('vision opt-in preserves human model metadata, other providers and role con
   const before = structuredClone(config);
   const expected = structuredClone(config);
   expected.models.providers['lab-provider'].models.find(model => model.id === 'gpt-5.6-terra').input = ['text', 'image'];
+  expected.models.providers['lab-provider'].models.find(model => model.id === 'gpt-6-sol').input = ['text', 'image'];
   assert.deepEqual(planGatewayConfig(config, env), { action: 'reconcile-speech', config: expected });
   assert.deepEqual(config, before);
 });

@@ -192,10 +192,10 @@ test('wrong role, wrong echoed revision, timeout and conflicting duplicate fail 
   await assert.rejects(service.handle(changed), { code: 'product_speech_request_conflict' });
 });
 
-async function running(t, fetchImpl) {
+async function running(t, fetchImpl, patch = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-product-speech-test-'));
-  const provider = () => settings({ dataDir: directory });
-  const { server } = await createLabServer({ settings: provider, fetchImpl });
+  const provider = () => settings({ dataDir: directory, ...patch });
+  const { server } = await createLabServer({ settings: provider, fetchImpl, onSpeechRouting: () => {} });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(async () => {
     server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
@@ -267,4 +267,26 @@ test('adapter rejects stale output, malformed input and duplicate conflicts befo
   const changed = envelope(); changed.request.message = 'Konflikt';
   assert.equal((await post(dedupeBase, speechToken, changed)).status, 409);
   assert.equal(dedupeCalls, 1);
+});
+
+test('closing the private speech HTTP request aborts the Gateway and replay cannot pay again', { timeout: 5000 }, async t => {
+  let started, aborted; let calls = 0;
+  const began = new Promise(resolve => { started = resolve; });
+  const stopped = new Promise(resolve => { aborted = resolve; });
+  const base = await running(t, async (_url, options) => {
+    calls++; started();
+    return new Promise((_resolve, reject) => {
+      options.signal.addEventListener('abort', () => { aborted(); reject(options.signal.reason); }, { once: true });
+    });
+  }, { speechRouting: 'adaptive', speechTimeoutMs: 20000 });
+  const controller = new AbortController();
+  const pending = fetch(base + '/api/product/speech', { method: 'POST', signal: controller.signal,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${speechToken}` }, body: JSON.stringify(envelope()) });
+  await began; controller.abort();
+  await assert.rejects(pending, { name: 'AbortError' });
+  await stopped;
+  const replay = await post(base, speechToken);
+  assert.equal(replay.status, 499);
+  assert.deepEqual(await replay.json(), { error: 'product_speech_cancelled' });
+  assert.equal(calls, 1);
 });

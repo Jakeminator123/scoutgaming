@@ -157,6 +157,8 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   const labRemote = optionalPair(env, 'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN');
   const timeoutMs = Number(env.OPENCLAW_TIMEOUT_MS ?? 8000);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 30000) fail('OPENCLAW_TIMEOUT_MS');
+  const speechTimeoutMs = Number(env.OPENCLAW_SPEECH_TIMEOUT_MS ?? timeoutMs);
+  if (!Number.isInteger(speechTimeoutMs) || speechTimeoutMs < 1000 || speechTimeoutMs > 30000) fail('OPENCLAW_SPEECH_TIMEOUT_MS');
   const partnerKeys = ['BETTALOTTO_PARTNER_KEY_ID', 'BETTALOTTO_PARTNER_SECRET', 'BETTALOTTO_PARTNER_PLAYER_ID'];
   const partnerPresent = partnerKeys.map(name => Boolean(env[name]));
   if (partnerPresent.some(Boolean) && !partnerPresent.every(Boolean)) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
@@ -164,7 +166,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
-    director, productSpeech, labRemote, timeoutMs, camera, generatedSpeech, streaming,
+    director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming,
     mediaStorage, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
@@ -253,6 +255,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         CROUPIER_PRESENTATION_DIRECTOR_TOKEN: config.director.token,
         OPENCLAW_PRODUCT_SPEECH_URL: config.productSpeech.url,
         OPENCLAW_PRODUCT_SPEECH_TOKEN: config.productSpeech.token,
+        OPENCLAW_SPEECH_TIMEOUT_MS: String(config.speechTimeoutMs),
         OPENCLAW_TIMEOUT_MS: String(config.timeoutMs) } },
     lab: { command: process.execPath,
       args: [join(REPOSITORY, 'lab/node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(LAB_PORT)],

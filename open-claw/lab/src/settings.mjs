@@ -11,6 +11,7 @@ const DEFAULT_ENV_FILES = basename(dirname(resolve(LAB_ROOT))) === 'open-claw'
 const KEYS = ['HOST', 'PORT', 'LAB_API_TOKEN', 'LAB_DATA_DIR', 'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',
   'OPENCLAW_BASE_URL', 'OPENCLAW_HOSTPORT', 'OPENCLAWAPI_KEY', 'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_TIMEOUT_MS',
   'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
+  'OPENCLAW_SPEECH_ROUTING', 'OPENCLAW_SPEECH_DEEP_MODEL', 'OPENCLAW_SPEECH_TIMEOUT_MS',
   'OPENCLAW_DASHBOARD_ENABLED', 'OPENCLAW_DASHBOARD_ORIGIN', 'OPENCLAW_DASHBOARD_ALLOW_LOOPBACK', 'RENDER_EXTERNAL_URL',
   'LAB_COMPANION_ENABLED', 'LAB_COMPANION_FUN_ENABLED', 'LAB_COMPANION_WEB_ENABLED'];
 export const isLoopback = hostname => ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname);
@@ -35,6 +36,9 @@ export function readSettings({ env = process.env, envFiles = DEFAULT_ENV_FILES }
     chatAgent: values.OPENCLAW_CHAT_AGENT || 'openclaw/croupier-chat',
     speechAgent: values.OPENCLAW_SPEECH_AGENT || 'openclaw/croupier-speech',
     speechUrl: values.OPENCLAW_PRODUCT_SPEECH_URL || '', speechToken: values.OPENCLAW_PRODUCT_SPEECH_TOKEN || '',
+    speechRouting: values.OPENCLAW_SPEECH_ROUTING ?? 'fixed',
+    speechDeepModel: values.OPENCLAW_SPEECH_DEEP_MODEL ?? 'gpt-6-sol',
+    ...(values.OPENCLAW_SPEECH_TIMEOUT_MS === undefined ? {} : { speechTimeoutMs: Number(values.OPENCLAW_SPEECH_TIMEOUT_MS) }),
     companionEnabled: values.LAB_COMPANION_ENABLED !== 'false',
     companionFunEnabled: values.LAB_COMPANION_FUN_ENABLED !== 'false',
     companionWebEnabled: values.LAB_COMPANION_WEB_ENABLED !== 'false',

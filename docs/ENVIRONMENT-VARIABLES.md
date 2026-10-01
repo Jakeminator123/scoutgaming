@@ -74,6 +74,28 @@ Gatewayns nya kod-, Compose- och Blueprint-standard för `OPENCLAW_MODEL_ID`
 omstart och kräver ett uttryckligt byte av sparade rollmodeller; ett env-byte
 ensamt bevisar inte att Gatewayns primärmodell har ändrats.
 
+Den 1 oktober återlästes både processmiljön och fem sparade rollmodeller som
+Terra efter en riktig env-deploy; vanlig Restart service hade behållit den
+gamla miljöbilden. Se [driftkvittot](TERRA-ROUTING-AUDIT-2026-10-01.md).
+
+### Adaptiv chatt genom samma OpenClaw
+
+Ny kod har opt-in `OPENCLAW_SPEECH_ROUTING=adaptive` på **Director** och
+`OPENCLAW_SPEECH_DEEP_MODEL=gpt-6-sol`. Standard är `fixed`: ingen andra
+modell aktiveras av enbart koddeploy eller katalogregistrering. Vid adaptive
+kan Astrids vanliga modell begära en enda fördjupning; tekniska fel eller
+ogiltiga svar utlöser inte fler modellanrop. Båda anropen går genom samma
+verktygslösa OpenClaw-roll. Slutligt svar ger högst en talvideo.
+
+Sätt `OPENCLAW_SPEECH_TIMEOUT_MS=20000` på **både croupier-v2 och Director**
+före aktivering. Spelets molnstart skickar den enbart till Web; den är en
+sammanlagd chattdeadline, inte en ny 20-sekundersfrist per modell.
+`OPENCLAW_TIMEOUT_MS=8000` kan ligga kvar för övriga Director-råd.
+Gateway behöver modellen i sin tillåtna katalog men inga routervariabler.
+Inga av dessa variabler hör hemma på Vercels startsida eller RunPod.
+Aktivera först efter verifierad modell- och bildåtkomst samt ny kod i båda
+berörda tjänsterna. [Flöde, prov och exakta steg](ADAPTIVE-CHAT-ROUTING-2026-10-01.md).
+
 `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` ska sparas som serverhemlighet i
 Render → `croupier-v2` → Environment, tillsammans med bootstrap-användaren.
 Den används bara för att skapa första administratören i en tom CRAIG-databas.

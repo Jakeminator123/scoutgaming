@@ -77,7 +77,7 @@ test('product chat reuses existing settings/complete and accepts only a policy-o
   assert.equal(capture[0], settings);
   assert.equal(capture[1].model, settings.speechAgent);
   assert.equal(capture[1].tool_choice, 'none');
-  assert.equal(capture[2], settings.adviceTimeoutMs);
+  assert.ok(capture[2] > 0 && capture[2] <= settings.adviceTimeoutMs, 'completion receives only its remaining deadline');
   const modelInput = capture[1].messages[1].content;
   assert.equal(modelInput.includes('raw-player-must-not-leak'), false);
   assert.equal(modelInput.includes('private-key'), false);
