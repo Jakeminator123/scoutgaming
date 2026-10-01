@@ -1,5 +1,33 @@
 # Aktuellt molnläge
 
+## 2026-10-01 — Terra som standard och begränsad fördjupning genom OpenClaw
+
+OpenClaws körande Render-process och alla fem sparade roller är nu verifierade
+med `gpt-5.6-terra`, tomma fallbacks och godkänd native config-validering.
+`Save only` följt av omstart räckte inte för processens miljö: deployment
+`dep-dav28s8u01pc7385ja30` av samma Gateway-kod tog in Terra-värdet.
+Produktens sparade modell är Terra och strömbanan `lissabon-stream-lane`.
+Sol lades därefter till additivt i katalogen; två syntetiska OpenClaw-anrop
+gav korrekt text respektive bildsvar, med faktisk Sol-modell styrkt av
+de egna QA-sessionernas metadata. Ingen spelardatabas eller GPU användes.
+
+Nytt opt-in-läge `OPENCLAW_SPEECH_ROUTING=adaptive` på Director låter Terra
+eller ett uttryckligt Luna-val begära ett enda Sol-pass vid flerstegsresonemang.
+Allt går genom samma OpenClaw-speechroll. Högst två anrop delar tidsgräns;
+fel, osäker information eller timeout ger ingen dyr automatisk omkörning.
+Den befintliga texten ”Astrid tänker…” visas under väntan, och bara slutligt
+svar går till röst/video. Explicit mini-val fortsätter som ett enda fast pass.
+
+Kodens standard är fortsatt `fixed` till separat liveverifiering. Inställningar,
+aktuellt aktiveringsläge och begränsningar finns i
+[ADAPTIVE-CHAT-ROUTING-2026-10-01.md](ADAPTIVE-CHAT-ROUTING-2026-10-01.md);
+modell- och driftbevis finns i [TERRA-ROUTING-AUDIT-2026-10-01.md](TERRA-ROUTING-AUDIT-2026-10-01.md).
+Gateway/config/start och cloud relay: 54/54 tester PASS. Director/routing:
+26/26 PASS; hela OpenClaw Lab: 185 PASS, 0 FAIL, 1 plattformsskip.
+Inga media eller kalibreringar har ändrats. Två riktiga strömmade röstsvar
+och audiovisuellt godkännande återstår fortfarande; dessa modellprov är
+inte ett sådant godkännande.
+
 ## 2026-10-01 — Helt stilla startsida på mobil
 
 Jakob rapporterade fortsatt frysning på mobilen. Vercels produktionsalias

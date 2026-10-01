@@ -24,6 +24,23 @@ const fixture = () => ({
 });
 const LAB_SECRET = '0123456789abcdef'.repeat(4);
 
+test('chat deadline reaches only the product relay and does not extend Director advice', () => {
+  const env = { ...fixture(), OPENCLAW_TIMEOUT_MS: '8000', OPENCLAW_SPEECH_TIMEOUT_MS: '20000',
+    OPENCLAW_SPEECH_ROUTING: 'adaptive', OPENCLAW_SPEECH_DEEP_MODEL: 'gpt-6-sol' };
+  const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+  assert.equal(specs.web.env.OPENCLAW_SPEECH_TIMEOUT_MS, '20000');
+  assert.equal(specs.web.env.OPENCLAW_TIMEOUT_MS, '8000');
+  assert.equal(specs.lab.env.OPENCLAW_SPEECH_TIMEOUT_MS, undefined);
+  for (const name of ['OPENCLAW_SPEECH_ROUTING', 'OPENCLAW_SPEECH_DEEP_MODEL']) {
+    assert.equal(specs.web.env[name], undefined, 'routing policy belongs to the Director');
+    assert.equal(specs.lab.env[name], undefined);
+  }
+  assert.equal(validateCloudConfig(fixture()).speechTimeoutMs, 8000);
+  for (const value of ['', '0', '999', '30001', 'NaN', '20000.5']) {
+    assert.throws(() => validateCloudConfig({ ...fixture(), OPENCLAW_SPEECH_TIMEOUT_MS: value }), /OPENCLAW_SPEECH_TIMEOUT_MS/);
+  }
+});
+
 test('private media credentials reach both servers; scoped zones database reaches only Lab', () => {
   const env = { ...fixture(), CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-private-blob-token',
     CROUPIER_ZONES_DATABASE_URL: 'postgresql://zones:fixture-password@zones.neon.tech/neondb?sslmode=require',
