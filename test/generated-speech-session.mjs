@@ -50,7 +50,7 @@ async function missingStatusFixture(t, { ageMs = SPEECH_SESSION_POLICY.reservati
   f.finish();
   f.setTime(new Date(Date.parse('2026-09-29T08:00:00Z') + ageMs).toISOString());
   const dependencies = { fetchImpl: async (url, init) => {
-    if (url.endsWith('/status/job-1')) {
+    if (url.endsWith('/status/job-1') || url.endsWith('/cancel/job-1')) {
       f.calls.push({ url, ...init });
       return new Response('private provider response must not escape', { status });
     }
@@ -217,6 +217,57 @@ test('idle session stops without automatically replenishing a worker', async t =
   assert.equal(starts(f.calls).length, 1);
 });
 
+test('idle cancellation persists its terminal receipt before the provider forgets the job', async t => {
+  const f = await fixture(t, { idleTimeoutMs: 10 });
+  await f.create().ensure(f.input);
+  const reservation = (await readdir(f.directory)).find(name => name.endsWith('.reservation.json'));
+  const reservationBefore = await readFile(join(f.directory, reservation), 'utf8');
+  const policyBefore = await readFile(join(f.directory, 'gpu-budget-policy.json'), 'utf8');
+  const receiptPath = join(f.directory, reservation.replace('.reservation.json', '.terminal.json'));
+  await t.waitFor(async () => assert.deepEqual(JSON.parse(await readFile(receiptPath, 'utf8')), { status: 'CANCELLED' }),
+    { interval: 5, timeout: 1000 });
+  assert.equal(starts(f.calls).length, 1, 'idle cancellation never creates a replacement');
+  let oldStatusReads = 0;
+  const restarted = f.create({}, { fetchImpl: async (url, init) => {
+    if (url.endsWith('/status/job-1')) { oldStatusReads++; return new Response('expired', { status: 404 }); }
+    return f.fetchImpl(url, init);
+  } });
+  assert.deepEqual(await restarted.ensure(f.input), { ready: true });
+  assert.equal(oldStatusReads, 0, 'the durable terminal receipt survives provider retention and process restart');
+  assert.equal(starts(f.calls).length, 2, 'only the next explicit turn admits one new paid session');
+  assert.equal(await readFile(join(f.directory, reservation), 'utf8'), reservationBefore);
+  assert.equal(await readFile(join(f.directory, 'gpu-budget-policy.json'), 'utf8'), policyBefore);
+});
+
+test('cancel acknowledgement requires the exact job and a known terminal status', async t => {
+  for (const reply of [
+    () => response({ id: 'another-job', status: 'CANCELLED' }),
+    () => response({ status: 'CANCELLED' }),
+    () => response({ id: 'job-1', status: 'IN_PROGRESS' }),
+    () => response({ id: 'job-1', status: 'UNKNOWN' }),
+    () => new Response('unavailable', { status: 503 }),
+    () => { throw Error('network unavailable'); },
+  ]) {
+    const f = await fixture(t);
+    const manager = f.create({}, { fetchImpl: (url, init) => url.endsWith('/cancel/job-1') ? reply() : f.fetchImpl(url, init) });
+    await manager.ensure(f.input);
+    await manager.close();
+    const files = await readdir(f.directory);
+    assert.equal(files.filter(name => name.endsWith('.cancel.json')).length, 1, 'intent is retained');
+    assert.equal(files.filter(name => name.endsWith('.terminal.json')).length, 0, 'intent and uncertain responses are not terminal evidence');
+    assert.equal(starts(f.calls).length, 1);
+  }
+});
+
+test('a verified cancellation receipt never refunds the reserved session cost', async t => {
+  const f = await fixture(t, { dailyBudgetUsd: '0.50' }), manager = f.create();
+  await manager.ensure(f.input);
+  await manager.close();
+  assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.terminal.json')).length, 1);
+  await assert.rejects(f.create().ensure(f.input), { code: 'generated_speech_daily_budget_exhausted' });
+  assert.equal(starts(f.calls).length, 1);
+});
+
 test('unrelated connected worker cannot satisfy readiness for this reserved job', async t => {
   const f = await fixture(t, { connect: false });
   const manager = f.create({}, { workerState: id => ({ workers: starts(f.calls).length ? 1 : 0, busy: 0, available: id ? 0 : 1 }) });
@@ -289,7 +340,7 @@ test('terminal provider state waits for the known relay worker to disconnect bef
 
 test('a persisted terminal receipt still identifies its lingering reverse worker after restart', async t => {
   const f = await fixture(t), retired = [];
-  let connected = true;
+  let connected = true, waited = 0;
   const id = 'a'.repeat(32), workerId = `croupier-${id}`;
   await writeFile(join(f.directory, 'gpu-budget-policy.json'), JSON.stringify({ version: 1, dailyBudgetMicroUsd: 9940000 }));
   await writeFile(join(f.directory, `gpu-session-${id}.reservation.json`), JSON.stringify({
@@ -303,10 +354,17 @@ test('a persisted terminal receipt still identifies its lingering reverse worker
     workerState: requested => requested === workerId || !requested && connected
       ? { workers: connected ? 1 : 0, busy: 0, available: connected ? 1 : 0 }
       : { workers: starts(f.calls).length ? 1 : 0, busy: 0, available: starts(f.calls).length ? 1 : 0 },
-    stopWorker: requested => { retired.push(requested); assert.equal(requested, workerId); connected = false; },
+    stopWorker: requested => { retired.push(requested); assert.equal(requested, workerId); },
+    fetchImpl: async (url, init) => {
+      assert.ok(!url.endsWith('/status/retired-job'), 'a durable terminal receipt must survive provider retention');
+      if (url.endsWith('/run')) assert.equal(connected, false, 'the known reverse worker must finish draining first');
+      return f.fetchImpl(url, init);
+    },
+    sleep: async () => { waited++; connected = false; },
   });
   await manager.ensure(f.input);
   assert.deepEqual(retired, [workerId]);
+  assert.equal(waited, 1);
   assert.equal(starts(f.calls).length, 1, 'one replacement only after known old worker is retired');
 });
 

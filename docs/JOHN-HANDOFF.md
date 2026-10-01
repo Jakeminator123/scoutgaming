@@ -1,5 +1,49 @@
 # Aktuellt molnläge
 
+## 2026-10-01 — Färgfelet borta live, avslutskvitto rättat
+
+RunPod release 4 och Render `66b07a7c` gav ett färdigt röstsvar utan
+magenta/grön mask. Inspelningen granskades vid 1 och 3 sekunder. Start/slut,
+ljudspår och återgång till vila finns, men detta godkänner inte exakt
+fonemsynk. Kampanjens tre försök gav först gammalt-jobb-404, sedan
+kallstart över 90 s och sist ett lyckat svar. Inga försök nollställdes;
+grinden är borttagen och QA-identiteter/relay-workers är noll.
+
+En separat snäv rättning bevarar nu RunPods terminalkvitto från `/cancel`
+om både jobb-ID och terminalstatus är verifierade. Tidigare kastades svaret
+bort, så nästa uttryckliga begäran kunde läsa ett redan bortglömt jobb och
+få 404. Kvittot får återanvändas under nedstängning, men rätt workersocket
+måste fortfarande försvinna före ersättning. 60/60 fokustester och 25/25
+oberoende sessionskontroller passerade. Budget, timeout och regler mot
+automatiska betalda omförsök är oförändrade. Äldre saknade kvitton skrivs
+inte om i efterhand; kallstart över 90 s är fortsatt en separat begränsning.
+
+## 2026-10-01 — Leveranskontroll av `66b07a7c`
+
+Färgfixen är pushad med ren arbetskopia. Full pre-commit passerade med
+653 godkända tester, noll fel och en plattformsskip. Byteprovet bekräftar
+att FFmpeg 4.4.1 med direct I/O börjar vid byte 10, utan flaggan vid byte 0.
+Privat reproduktionskvitto finns i Windows TEMP som
+`croupier-bgra-fix-2026-10-01.json`; den tillfälliga äldre binären är borttagen.
+
+Ny publiceringskörning: GitHub Actions `36854537682`, PASS. Den byggda
+imagens FFmpeg `4.4.2-0ubuntu0.22.04.1` passerade den verkliga pixelregressionen
+före publicering. Digest:
+`sha256:c35439fe6df8b2fc0c2be393232c13e4930fcf2f3d4812e4ef5839507b2b1b00`.
+RunPod accepterade SHA-taggen `66b07a7c75a74a68d79492d9001bdab0db046961`
+som release 4 för befintlig endpoint, med oförändrad avatar och min 0/max 1.
+Releasevyn visar en worker med den nya konfigurationen.
+Release och liveprov följs separat; inget visuellt godkännande följer av
+kodleveransen ensam.
+
+Mobilgranskningen av publicerad Vercel `66b07a7c` (`dpl_9qB5YYzai4kmvcfESPcZbBxLFrSU`)
+bekräftar statisk poster på alla tre publika domäner. Desktop-, iPhone- och
+iPad-desktop-useragent gav samma initiala HTML utan video, canvas, iframe,
+object eller embed. Publicerad JavaScript blockerar dekor vid touch och
+reduced motion; fyra isolerade kontroller av den grinden och fem befintliga
+landningstester passerade. Fysisk Safari-prestanda och redan öppna gamla
+flikar är inte verifierade. Inget ytterligare mobilfel reproducerades.
+
 ## 2026-10-01 — Färgmasken reproducerad i FFmpeg 4.4
 
 CPU-provet reproducerar magenta ansiktsruta och grön mun med samma
