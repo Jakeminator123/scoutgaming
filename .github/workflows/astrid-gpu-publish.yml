@@ -42,19 +42,41 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and publish immutable commit tag
+      - name: Build immutable commit tag for verification
         id: image
         uses: docker/build-push-action@v6
         with:
           context: services/astrid-gpu-worker
-          push: true
+          push: false
+          load: true
           tags: ${{ env.IMAGE }}:sha-${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/Jakeminator123/github-work
             org.opencontainers.image.revision=${{ github.sha }}
+      - name: Verify BGRA channels with the image's actual FFmpeg before publishing
+        run: |
+          docker run --rm --network none --entrypoint /bin/sh \
+            --mount "type=bind,src=$PWD/services/astrid-gpu-worker/tests,dst=/workspace/tests,readonly" \
+            "$IMAGE:sha-$GITHUB_SHA" -ec '
+              export PATH="/usr/bin:$PATH"
+              test "$(command -v ffmpeg)" = /usr/bin/ffmpeg
+              test "$(command -v ffprobe)" = /usr/bin/ffprobe
+              /usr/bin/ffmpeg -version | head -n 1
+              cd /workspace/tests
+              /workspace/mt-venv/bin/python -B -m unittest test_streaming.EncoderTests.test_bgra_channels_and_alpha_survive_raw_tcp_input -v
+            '
+      - name: Publish only the verified image
+        id: publish
+        run: |
+          docker push "$IMAGE:sha-$GITHUB_SHA"
+          reference=$(docker image inspect "$IMAGE:sha-$GITHUB_SHA" --format '{{index .RepoDigests 0}}')
+          test "${reference%@*}" = "$IMAGE"
+          digest=${reference#*@}
+          printf '%s\n' "$digest" | grep -Eq '^sha256:[a-f0-9]{64}$'
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
       - name: Record digest for private pull and rollback
         env:
-          DIGEST: ${{ steps.image.outputs.digest }}
+          DIGEST: ${{ steps.publish.outputs.digest }}
         run: |
           test -n "$DIGEST"
           echo "Image: $IMAGE@$DIGEST" >> "$GITHUB_STEP_SUMMARY"

@@ -92,6 +92,39 @@ class TimelineTests(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'FFmpeg required')
 class EncoderTests(unittest.TestCase):
+    def test_bgra_channels_and_alpha_survive_raw_tcp_input(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)/'base.yuv'
+            base.write_bytes(bytes([100])*(96*96) + bytes([128])*(96*96//2))
+            data = bytearray()
+            timeline = Timeline(24000, before=0, after=0)
+            timeline.append(bytes(24000*2))
+            timeline.finish()
+            # Three bands expose channel/byte offsets: transparent, half and opaque.
+            row = b''.join(bytes([30, 100, 200, alpha])*16 for alpha in (0, 128, 255))
+            crop = row*48
+
+            def factory(emit, cancelled):
+                return FragmentMuxer(shutil.which('ffmpeg'), str(base), 96, 96, 48, 48,
+                    24, 24, 24000, ['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '13'], emit, cancelled)
+
+            def infer(pcm, rate, left, start, end, total):
+                for frame in range(start, end): yield crop
+
+            render(timeline, infer, factory, data.extend)
+            output = Path(directory)/'colors.mp4'
+            output.write_bytes(data)
+            decoded = subprocess.check_output(['ffmpeg', '-v', 'error', '-i', str(output),
+                '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1'])
+            frame_bytes = 96*96*3
+            self.assertEqual(len(decoded), frame_bytes)
+            for x, y, expected in ((8, 8, (97, 97, 97)), (32, 48, (97, 97, 97)),
+                                   (48, 48, (149, 99, 64)), (64, 48, (200, 100, 30))):
+                offset = (y*96+x)*3
+                actual = decoded[offset:offset+3]
+                self.assertTrue(all(abs(a-b) <= 5 for a, b in zip(actual, expected)),
+                    f'pixel {x},{y}: RGB {list(actual)} != {expected}')
+
     def test_failed_encoder_reports_without_waiting_for_end(self):
         timeline = Timeline(24000)
         errors, muxers = [], []
