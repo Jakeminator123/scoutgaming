@@ -36,20 +36,21 @@ test('generated text keeps neutral idle instead of a recorded mouth clip', () =>
 });
 
 function playbackFixture(dealerId) {
-  const events = [], tts = [], videos = [], poses = [], pending = {};
+  const events = [], tts = [], videos = [], poses = [], statuses = [], captions = [], pending = {};
   const context = {
-    DEALER: { key: dealerId }, pendingChatReplies: new Map([['reply-1', pending]]),
+    DEALER: { key: dealerId, name: dealerId === 'astrid' ? 'Astrid' : dealerId }, pendingChatReplies: new Map([['reply-1', pending]]),
     chatPlaybackDiagnostic: { finish: (requestId, state) => { pending.diagnostic = { requestId, state }; } },
     localPresentation: { state() {} }, updatePoseState: value => poses.push(value), speaking: false,
     playNeutralTts: async text => tts.push(text),
     playGeneratedSpeech: async media => videos.push(media),
+    chatStatus: null, setChatStatus: text => statuses.push(text), showCaption: text => captions.push(text),
     nativeObservation: { emit: (type, data) => events.push({ type, ...data }) },
     $: () => ({ classList: { remove() {} } }), greenActor: false,
     engine: { presentedClip: 'other' }, CLIP: { idle: 'idle' },
   };
   const playback = source.slice(source.indexOf('async function playChatDecision'), source.indexOf('function sayLine'));
   const play = runInNewContext(`${playback}\nplayChatDecision`, context);
-  return { play, events, tts, videos, poses, pending, context };
+  return { play, events, tts, videos, poses, statuses, captions, pending, context };
 }
 
 test('Astrid without generated media stays text-only and never calls a substitute voice', async () => {
@@ -76,6 +77,32 @@ test('Astrid still plays a generated package or stream through the shared video 
     assert.equal(f.videos[0], media);
     assert.equal(f.tts.length, 0);
     assert.equal(f.pending.voiceUnavailable, undefined);
+  }
+});
+
+test('generated media preparation replaces the table wait status until actual media start', async () => {
+  for (const [visualMode, key] of [
+    ['generated-lipsync-preview', 'speechPackage'],
+    ['generated-lipsync-stream-preview', 'speechStream'],
+  ]) {
+    const f = playbackFixture('astrid');
+    let callbacks, finish;
+    f.statuses.push('Svar klart · väntar på ledigt bord');
+    f.context.playGeneratedSpeech = (_media, options) => {
+      callbacks = options;
+      return new Promise(resolve => { finish = resolve; });
+    };
+    const playing = f.play({ kind: 'generatedText', exactText: 'Good evening.', requestId: 'reply-1', visualMode, [key]: {} },
+      new AbortController().signal, 'reply-1');
+    await Promise.resolve();
+    assert.equal(f.statuses.at(-1), 'Förbereder röst och läppsynk…');
+    assert.equal(f.statuses.includes('Astrid svarar'), false);
+    assert.equal(f.captions.length, 0);
+    callbacks.onStart('Good evening.');
+    assert.equal(f.statuses.at(-1), 'Astrid svarar');
+    assert.deepEqual(f.captions, ['Good evening.']);
+    finish();
+    await playing;
   }
 });
 
