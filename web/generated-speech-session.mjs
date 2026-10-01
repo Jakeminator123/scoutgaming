@@ -137,14 +137,21 @@ export function createSpeechSessionManager(configuration, {
       // a job terminal before the handler observes shutdown.
       stopWorker(job.workerId);
       // Cancellation is limited to our known job, never a shared queue purge.
-      await call(`cancel/${job.jobId}`, { body: {} });
+      const value = await call(`cancel/${job.jobId}`, { body: {} });
+      // A cancellation request alone is not proof. Preserve only a terminal
+      // response bound to this job before provider retention removes its ID.
+      if (value?.id === job.jobId && terminal.has(value.status) && !(await optional(`${prefix(job.id)}.terminal.json`))) {
+        await record(`${prefix(job.id)}.terminal.json`, { status: value.status });
+      }
     } catch { /* Reservation remains spent and known ID stays recoverable. */ }
   }
   async function waitUntilStopped(job, signal, fresh) {
     const started = now();
     for (;;) {
       await fresh();
-      if (terminal.has(await inspect(job, signal)) && !workerState(job.workerId).workers) return;
+      const receipt = await optional(`${prefix(job.id)}.terminal.json`);
+      const status = terminal.has(receipt?.status) ? receipt.status : await inspect(job, signal);
+      if (terminal.has(status) && !workerState(job.workerId).workers) return;
       if (now() - started >= readyTimeoutMs) fail('generated_speech_session_stop_timeout', 504);
       await sleep(pollMs, signal);
     }

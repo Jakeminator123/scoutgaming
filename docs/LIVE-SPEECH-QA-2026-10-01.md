@@ -1,5 +1,38 @@
 # Isolated speech rehearsal in the live relay
 
+## Follow-up live result — 1 October, 11:31–11:36 UTC
+
+The color defect is absent in the successful repaired-image recording.
+Render deployment `dep-dav4768473hc73adi6q0` served `66b07a7c`; RunPod
+release 4 used that commit's image with digest
+`sha256:c35439fe6df8b2fc0c2be393232c13e4930fcf2f3d4812e4ef5839507b2b1b00`.
+Publishing run `36854537682` passed the actual image's FFmpeg 4.4.2 pixel
+test before publishing. Worker logs confirmed that exact digest, Astrid's
+game avatar, RTX 4090 and libx264 fallback after the NVENC probe failed.
+
+Campaign `02728523-964e-4bbe-bbab-6915cee1b24c` used all three attempts:
+
+| Attempt | UTC start | Result |
+| --- | --- | --- |
+| 1 | 11:31:55.525 | Old session status returned `generated_speech_session_provider_not_found`; no replacement was automatically attempted. |
+| 2 | 11:32:36.698 | New-image download/startup exceeded the 90 s readiness limit; `generated_speech_session_start_timeout`. |
+| 3 | 11:34:42.003 | Speech completed, audible element, start/end receipts and return to idle. |
+
+The successful text was the first fixed sentence below. Preparation took
+45,958 ms, first visible frame 60,885 ms and completion 65,618 ms from click;
+this includes the still-cold worker. The private VP9/Opus recording is
+`C:\Users\jakem\Downloads\astrid-qa-turn-1 (1).webm`, 646,667 bytes, SHA-256
+`cb2ede57dc9087c2b5b1fe784e5b7767807966cea5c25a2a7acc97d90d31fe57`.
+Frames at one and three seconds show natural face colors without the former
+rectangle/green mouth. This confirms the color repair, not phoneme accuracy
+or two consecutive repaired-image answers. The attempt limit was retained.
+
+Only the matching gate was removed. QA then reported disabled, zero
+identities/pending work and zero relay workers. Campaign, attempts and cost
+reservations remain intact. A subsequent session-manager fix preserves the
+provider's exact terminal cancellation receipt instead of discarding it;
+it has red/green local regression evidence but needs deployed verification.
+
 The operator rehearsal at `/bo/speech-qa.html` uses the running product's
 OpenClaw speech call, generated-speech service, RunPod session manager,
 budget journal, WebSocket relay and shared browser speech player. It does
