@@ -35,6 +35,48 @@ klipp lades upp.
 
 ## Aktuellt driftläge 2026-09-29
 
+### Uppföljning 2026-10-01: liveprovets återstående åtkomst
+
+Arbetet är samordnat med chatten **Förtydliga V2-strömmen**: den äger
+modellrouting och röstdrift, medan detta spår äger lagring/intake/Lab.
+Inga parallella Render-envändringar, GPU-anrop eller dubblettimporter görs.
+
+Vercels Storage-vy återverifierade den 1 oktober att privat Blob,
+`croupier-astrid-background-zones-db` och den separata Preview-databasen
+finns och är **Available**, med samma projektkopplingar som tabellen ovan.
+Zonresursens Getting Started-vy bekräftar Neon-ID `wandering-hill-60561912`.
+Dess Data Editor visade åter **0 rader i `croupier_zones.clips`**. Det var
+en läsning, inte ett nytt upload-/sparprov eller en verifiering av speldata.
+
+**Open in Neon** via den befintliga Vercel-kopplingen stannar fortfarande
+på **Verify your email**: kontot måste verifieras innan Neon kan koppla
+VercelMarketplace-identiteten. Den öppnade Neon-fliken lämnades för Jakob.
+Inga hemligheter visades, kopierades eller dekrypterades och ingen ny token,
+databas eller server startades. Tidigare godkännandegrind kring dekrypterad
+miljöinformation kringgicks inte.
+
+Efter verifierad inloggning återstår följande avgränsade prov:
+
+1. Bekräfta den befintliga syntetiska QA-grenen `br-soft-base-b1z5814s`
+   och dess endpoint i **zonprojektet**, separat från huvudgrenen
+   `br-flat-fog-b161a6r8`, spelet och Preview-databasen.
+2. Använd en isolerad Lab-server/databas på separat hostname och en
+   avgränsad privat medienamnrymd. Kontrollera autentisering och origin
+   innan någon skrivning. Återanvänd befintlig behörighet utan att exponera
+   anslutningssträng eller Blob-token; kopiera inte produktionsmiljön.
+3. Ladda upp ett litet syntetiskt klipp med exakta pixelmått. Spara en
+   QA-zon, läs tillbaka via ny session/cache och spela klippet två gånger.
+   Verifiera bytehash, HEAD/Range, revision och avvisad gammal revision.
+4. Dokumentera resultatet och städa enbart provets egna referenser, objekt
+   och processer. Lämna befintliga användarzoner, browserutkast, kandidater
+   och produktionsdata orörda; återställ tidigare stoppad QA-status.
+
+Detta prov är ännu **inte genomfört**. Det ersätts inte av ytterligare
+testdubblar eller en lyckad läsning av huvudgrenens tomma tabell. Aktiv
+uppladdningsguide är rättad i [MEDIA-UPLOAD-AND-ZONES](MEDIA-UPLOAD-AND-ZONES.md):
+familje-/zonrutterna finns redan, och 22 befintliga mediekandidater behöver
+inte importeras på nytt.
+
 Render-anslutningen är aktiverad. Den 29 september cirka 15:42 UTC öppnades
 Studio med befintlig administratörssession. Zonvyn visade **Molnet har 0 zoner,
 version 0**. **Läs från molnet** gav **Molnzonerna är inlästa** och samma

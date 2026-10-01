@@ -93,6 +93,12 @@ sammanlagd chattdeadline, inte en ny 20-sekundersfrist per modell.
 `OPENCLAW_TIMEOUT_MS=8000` kan ligga kvar för övriga Director-råd.
 Gateway behöver modellen i sin tillåtna katalog men inga routervariabler.
 Inga av dessa variabler hör hemma på Vercels startsida eller RunPod.
+
+Den lokala Lissabon-startaren tillåter samma explicita speech-timeout och
+skickar den bara till Web. I denna checkout är privat `lab/.env.local` satt
+till `20000`, med effektiv generisk timeout kvar på `8000`; ingen lokal
+server har startats. Senare privata speech-/cloud-storage-filer och processenv
+har fortfarande högre prioritet. Compose-mallen ändras inte av detta.
 Aktivera först efter verifierad modell- och bildåtkomst samt ny kod i båda
 berörda tjänsterna. [Flöde, prov och exakta steg](ADAPTIVE-CHAT-ROUTING-2026-10-01.md).
 

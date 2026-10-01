@@ -3,7 +3,7 @@ import { boundedJson, complete, GatewayError } from './openclaw.mjs';
 import { isLoopback } from './settings.mjs';
 import { normalizeAstridObservation } from './astrid-observation.mjs';
 import { normalizeConversationMemory, CONVERSATION_MEMORY_SYSTEM } from './conversation-memory.mjs';
-import { speechRoutingConfiguration, speechRoutingBudget, validateSpeechEscalation, SPEECH_ROUTING_SYSTEM, SPEECH_PASS_TOKENS } from './speech-routing.mjs';
+import { speechRoutingConfiguration, speechRoutingBudget, validateSpeechEscalation, SPEECH_ROUTING_SYSTEM, SPEECH_PASS_TOKENS, SPEECH_DEEP_PASS_TOKENS } from './speech-routing.mjs';
 
 export const PRODUCT_SPEECH_AGENT = 'openclaw/croupier-speech';
 export const PRODUCT_SPEECH_PATH = '/api/product/speech';
@@ -239,6 +239,10 @@ export async function decideProductSpeech(envelopeValue, settings, fetchImpl = f
     // Rebuild from the original trusted projection each time. The first model's
     // control output is never conversation history or instructions to the next.
     const pass = structuredClone(body);
+    if (routing.adaptive) {
+      pass.response_format = { type: 'json_object' };
+      if (attempt === 1) pass.max_completion_tokens = SPEECH_DEEP_PASS_TOKENS;
+    }
     if (!envelope.request.observation) pass.user = `croupier-product-speech:${envelope.request.requestId}${routing.adaptive ? `:attempt-${attempt}` : ''}`;
     if (routing.adaptive && attempt === 0) pass.messages[0].content += '\n' + SPEECH_ROUTING_SYSTEM;
     let content;

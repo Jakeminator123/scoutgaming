@@ -1,10 +1,9 @@
 # Astrid: lägg in klipp, varianter och små bakgrundszoner
 
-Status 2026-09-29. Den här guiden gäller den aktuella checkouten
+Uppdaterad 2026-10-01. Den här guiden gäller den aktuella checkouten
 `C:\Users\jakem\Projects\croupier`. En film som syns i Labbet är en kandidat;
-den är inte därmed godkänd i produktens spelare. Pågående, ocommittade MP4,
-manifest och policyer i `emil/dealklipp-v1` tillhör pågående mediaarbete och
-ska bevaras tills ägare och avsikt har kvitterats via `agent-talk`.
+den är inte därmed godkänd i produktens spelare. Bevara originalmedia och
+samordna nya fil-, manifest- och policyändringar via `agent-talk`.
 
 ## 1. Färdiga Astridfilmer och varianter
 
@@ -18,9 +17,9 @@ mikrofon eller kamera aktiveras.
 
 ### Direkt i Astrid Studio
 
-Vercel-ingången `/labb-lissabon` öppnar det befintliga, skyddade Labbet på
+Vercel-ingången `/labb` öppnar det befintliga, skyddade Labbet på
 Render `/studio`, från samma GitHub-repo. Inloggningen ägs av Render/BO.
-Efter att den nya Lab-versionen driftsatts:
+Det publicerade flödet är:
 
 1. Välj **Ladda upp & bibliotek**, en MP4/WebM (högst 128 MB) och ett namn.
 2. Välj exakt kortplats, replik eller Idle. Förhandsvisa den valda filen.
@@ -29,16 +28,24 @@ Efter att den nya Lab-versionen driftsatts:
 4. Välj **Välj hur klippet ska användas**. Kort får frekvens, repliker får
    urvalstillåtelse/villkor och Idle får sin egen policy. Spara inställningarna.
 
-Filen lagras på Lab-serverns beständiga Render-disk (`/var/data/studio/videos`)
-och blir en manuell kandidat i samma exakta familj som uppspelningsmodulen
-läser. Standardfilen ersätts inte. Gamla vanliga bankuppladdningar flyttas
-inte automatiskt till gemensam uppspelning. Detta är inte Blob-synk; den
-separata Blob-/zonkopplingen nedan återstår. Visuell granskning enligt
-checklistan nedan krävs innan ett nytt klipp godkänns.
+I den aktiverade molnkonfigurationen lagras nya familjeklipp i privat Vercel
+Blob under `croupier/videos/`. Servern läser tillbaka hela filen och
+kontrollerar hash innan den publicerar klippets metadata. Familjeindex,
+projekt och policy ligger fortfarande på Render-disken. Befintliga
+diskklipp fungerar parallellt. Utan aktiverad Blob-konfiguration använder
+det lokala Labbet sin diskbank.
 
-Det lokala biblioteket kontrollerades till 51 tillgängliga klipp, varav
-22 varianter. Pågående ocommittade mediefiler måste importeras separat som
-kandidater till Render; Git-publicering av enbart denna kod skickar inte dem.
+Uppladdningen blir en manuell kandidat i exakt den valda familjen;
+standardfilen ersätts inte. Gamla fristående bankuppladdningar flyttas inte
+automatiskt till gemensam uppspelning. Visuell granskning enligt checklistan
+nedan krävs innan ett nytt klipp godkänns.
+
+De 22 överlämnade varianterna är redan importerade och verifierade: **12 i
+privat Blob och 10 befintliga diskposter**, med exakt familj/hash. Importera
+inte dem igen enbart för att tio inte ligger i Blob. Det lokala manifestet
+omfattar 51 klipp. Se [mediekvittot](MEDIA-BEST-TAKES-2026-09-29.md) och
+[importkvittot](qa/cloud-media-import-2026-09-29.json) för exakta identiteter.
+En Git-push, en Blob-upload och godkänd användningspolicy är skilda steg.
 
 ### Mappimport och granskning
 
@@ -118,31 +125,37 @@ Referensen är Astrids startbild på 1080 × 1920 pixlar.
    för just den webbläsarprofilen. En JSON-export innehåller inte själva
    videobytes. Byt inte profil/rensa webbplatsdata utan dessa exporter.
 
+Välj **Spara till molnet** för att ladda upp zonklippen och spara koordinater
+i den separata zondatabasen. **Läs från molnet** öppnar en separat molnvy;
+**Till webbläsarkopian** behåller ditt lokala original. Sparning kräver
+konfigurerad molnlagring och stoppar vid versionskonflikt, så en gammal flik
+inte skriver över en nyare sparning. Lokala och osparade molnutkast är skilda.
+
 Detta är fortfarande en **Labförhandsvisning**. Spelets runtime-spelare läser
-inte zonerna från webbläsarlagret. Nuvarande privata QA-Blob innehåller en
-separat, godkänd testuppladdning av en man-MP4; det är inte ett publicerat
-zonbibliotek eller ett visuellt godkännande för alla Astridfilmer. Se
-[zonernas molnplan](ZONE-CLOUD-STORAGE.md).
+ännu inte zonerna. Den tidigare uppladdade manfilmen i Blob är inte samma
+sak som ett sparat, aktiverat zonbibliotek. Fullt isolerat liveprov av
+uppladdning, sparning, återläsning och uppspelning återstår; se
+[zonlagringen och provstatusen](ZONE-CLOUD-STORAGE.md).
 
 ## 3. Ska vi använda Vercel Blob?
 
-Ja, för **godkända små zonfilmer och exporterat zonmanifest** är en privat
-Blob rimlig när vi bygger synk och runtime. Det finns redan en privat
-QA-store `croupier-astrid-zone-media-private` med
+Privat Blob används redan för nya familje- och zonklipp. Zonernas
+koordinater och klippkopplingar sparas i egen Neon, inte i ett Blob-manifest.
+Det befintliga privata lagret heter `croupier-astrid-zone-media-private` med
 `BLOB_READ_WRITE_TOKEN` kopplad till
 `croupier-player-preview-qa`. Skapa inte en ny token
 eller kopiera denna till Director, Gateway, rotens `.env` eller browsern bara
 för att få lokal uppladdning att fungera. Den nya Git-kopplade startsidan
 `croupier-frontend` är ett annat Vercel-projekt och saknar denna koppling.
 
-Nästa faktiska integrationssteg är en behörighetskontrollerad serverroute som
-tar emot en zonfilm, verifierar MIME, storlek, mått, ägare och zon-ID, skriver
-till **privat** Blob och lagrar bara metadata/revision i zon-Neon. En separat
-spelroute måste kontrollera läsbehörighet och vidarebefordra HTTP Range/206
-så att MP4 kan sökas/spelas utan att `BLOB_READ_WRITE_TOKEN` syns i klienten.
-Först därefter kan Lab export/import ersättas med riktig synk och spelruntime
-kopplas in. För stora originaltakes behövs en egen publiceringspipeline med
-frame index, kalibrering och QA; att lägga rå-MP4 i Blob löser inte den delen.
+De skyddade serverrutterna finns redan: familjeuppladdning använder samma
+videoregister som produktspelaren; zonuppladdning kontrollerar klippformat,
+storlek och pixelmått innan privat lagring och metadata i zon-Neon.
+Läsning går genom autentiserade GET/HEAD/Range-rutter, utan att token eller
+privat Blob-adress skickas till browsern. Familjer använder `croupier/videos/`,
+zoner `croupier/zones/`. Nästa kvarvarande verifiering är zonernas isolerade
+liveprov och därefter separat inkoppling i spelruntime. Exakt tal behöver
+fortfarande frame index, kalibrering och audiovisuell acceptans.
 
 Privat Blob kräver token även för läsning enligt
 [Vercels dokumentation](https://vercel.com/docs/vercel-blob/private-storage).

@@ -27,7 +27,7 @@ const GUARD_INSTALLED = Symbol.for('croupier.openclaw-local-connection.guard');
 const PRIVATE_KEYS = new Set([
   'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
   'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
-  'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL',
+  'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_SPEECH_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL',
   'LAB_VIDEO_ARCHIVE',
 ]);
 const GENERATED_SPEECH_KEYS = ['CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
@@ -139,6 +139,10 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
   const remoteUrl = values.LAB_REMOTE_URL?.trim() || '';
   const timeout = Number(values.OPENCLAW_TIMEOUT_MS ?? 8000);
   if (!Number.isFinite(timeout) || timeout < 50 || timeout > 30000) throw new Error('OPENCLAW_TIMEOUT_MS must be between 50 and 30000.');
+  const speechTimeoutMs = values.OPENCLAW_SPEECH_TIMEOUT_MS === undefined ? undefined : Number(values.OPENCLAW_SPEECH_TIMEOUT_MS);
+  if (speechTimeoutMs !== undefined && (!Number.isSafeInteger(speechTimeoutMs) || speechTimeoutMs < 1000 || speechTimeoutMs > 30000)) {
+    throw new Error('OPENCLAW_SPEECH_TIMEOUT_MS must be an integer between 1000 and 30000.');
+  }
   const productAgent = values.OPENCLAW_SPEECH_AGENT?.trim() || 'openclaw/croupier-speech';
   const directorAgent = values.OPENCLAW_AGENT?.trim() || 'openclaw/croupier-director';
   const role = productAgent === 'openclaw/croupier-speech'
@@ -198,7 +202,8 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
       zonesOrigin = `https://${database.hostname.replace(/^[^.]+/, 'api')}`;
     }
   }
-  const configuration = { repoRoot, baseUrl, speechUrl, remoteUrl, productAgent, directorAgent, timeoutMs: Math.round(timeout), generatedSpeech: Boolean(generatedSpeech), cloudStorage };
+  const configuration = { repoRoot, baseUrl, speechUrl, remoteUrl, productAgent, directorAgent, timeoutMs: Math.round(timeout),
+    ...(speechTimeoutMs === undefined ? {} : { speechTimeoutMs }), generatedSpeech: Boolean(generatedSpeech), cloudStorage };
   // Keep credentials accessible to the in-memory launcher/probe, but make an
   // accidental JSON/string inspection safe by default.
   Object.defineProperties(configuration, {
@@ -397,6 +402,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         OPENCLAW_BASE_URL: useSpeechRelay ? '' : configuration.baseUrl, OPENCLAWAPI_KEY: useSpeechRelay ? '' : configuration.gatewayKey,
         OPENCLAW_AGENT: configuration.directorAgent, OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: configuration.productAgent,
         OPENCLAW_PRODUCT_SPEECH_URL: configuration.speechUrl, OPENCLAW_PRODUCT_SPEECH_TOKEN: configuration.speechToken,
+        ...(configuration.speechTimeoutMs === undefined ? {} : { OPENCLAW_SPEECH_TIMEOUT_MS: String(configuration.speechTimeoutMs) }),
         OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs), LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
       }, [productOrigin, speechOrigin, directorOrigin, ...speechOrigins, ...storageOrigins, ...(translationKey ? [TRANSLATION_ORIGIN] : [])], ports),
     },

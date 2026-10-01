@@ -43,6 +43,9 @@ export async function complete(settings, body, timeoutMs, fetchImpl) {
     });
     if (!response.ok) { await response.body?.cancel(); throw new GatewayError(`openclaw_http_${response.status}`); }
     const json = await boundedJson(response);
+    if (['json_object', 'json_schema'].includes(body.response_format?.type) && json.choices?.[0]?.finish_reason === 'length') {
+      throw new GatewayError('openclaw_output_truncated', 502);
+    }
     const text = json.choices?.[0]?.message?.content;
     if (typeof text !== 'string' || !text.trim() || text.length > 16000) throw new GatewayError('invalid_completion');
     return text;

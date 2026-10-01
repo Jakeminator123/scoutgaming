@@ -18,15 +18,38 @@ fel, osäker information eller timeout ger ingen dyr automatisk omkörning.
 Den befintliga texten ”Astrid tänker…” visas under väntan, och bara slutligt
 svar går till röst/video. Explicit mini-val fortsätter som ett enda fast pass.
 
-Kodens standard är fortsatt `fixed` till separat liveverifiering. Inställningar,
-aktuellt aktiveringsläge och begränsningar finns i
+Kodens standard är fortsatt `fixed`. Render Director aktiverades separat
+med `adaptive` och Sol; både dess körande process och produktens faktiska
+Web-barnprocess har verifierad speech-timeout 20000, generell timeout 8000.
+Produktens lane är fortsatt Lissabon och speech-host samma Director.
+CI för `a34875d8` är grön i alla tre jobb. Inställningar,
+aktuellt provresultat och begränsningar finns i
 [ADAPTIVE-CHAT-ROUTING-2026-10-01.md](ADAPTIVE-CHAT-ROUTING-2026-10-01.md);
 modell- och driftbevis finns i [TERRA-ROUTING-AUDIT-2026-10-01.md](TERRA-ROUTING-AUDIT-2026-10-01.md).
+Det efterföljande aktiveringskvittot finns i
+[ADAPTIVE-ROUTING-LIVE-2026-10-01.md](ADAPTIVE-ROUTING-LIVE-2026-10-01.md).
+Liveprovet hittade därefter avklippt Sol-JSON: Terra eskalerade korrekt,
+men OpenClaw gjorde tre interna Sol-anrop om 512 tokens. Det enkla Terra-
+svaret gick igenom. Återställning till fast Terra och en format-/budgeträttning
+pågår; ovanstående kodtester är inte ett godkännande av adaptiv drift.
+Den efterföljande kodrättningen använder JSON-object-format och begär
+512 tokens för första passet, 2048 för Sol; explicita längdstopp avvisas
+utan nytt Director-anrop. 36/36 riktade tester och oberoende review PASS.
+Native OpenClaw har fortfarande interna fortsättningsförsök: dessa siffror
+är per providerförsök, ingen sammanlagd kostnadsgräns. Ny liveacceptans återstår.
 Gateway/config/start och cloud relay: 54/54 tester PASS. Director/routing:
 26/26 PASS; hela OpenClaw Lab: 185 PASS, 0 FAIL, 1 plattformsskip.
 Inga media eller kalibreringar har ändrats. Två riktiga strömmade röstsvar
 och audiovisuellt godkännande återstår fortfarande; dessa modellprov är
 inte ett sådant godkännande.
+
+En separat liten startarrättning vidarebefordrar explicit speech-timeout
+till lokala Web. 29/29 tester PASS; verklig privat konfiguration återläst
+som 20 sekunder för tal och 8 sekunder generellt. Lokalt serverpar förblev
+stoppat. Lagringsagentens två granskade guider levereras tillsammans med
+slutkvittot: 22 kandidater är redan importerade (12 Blob, 10 disk), medan
+zonernas isolerade liveprov väntar på Neons e-postverifiering och därefter
+separat inkoppling i spelruntime. Ingen dubblettimport eller zondataskrivning.
 
 ## 2026-10-01 — Helt stilla startsida på mobil
 
