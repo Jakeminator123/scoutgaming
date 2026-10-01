@@ -95,6 +95,28 @@ acceptance baseline has been changed.
 
 ## Cleanup and related checks
 
+### Follow-up: reproduced BGRA byte-phase defect
+
+A CPU-only test of the actual `FragmentMuxer` reproduced the visual failure
+with FFmpeg 4.4.1. A BGRA `(30, 100, 200)` crop over a neutral base decoded
+to RGB approximately `(70, 57, 136)` even at alpha zero; increasing alpha
+changed the green channel instead of transparency. FFmpeg 9.0.1 decoded
+the same input correctly, explaining why a recent local encoder did not
+expose the older runtime defect. The color pattern also matches pixels in
+the private live recordings. Normal buffered input, without `-avioflags
+direct`, is the focused fix; model output, masks and original media are
+unchanged. The regression checks decoded pixels at alpha 0, 128 and 255.
+It failed before the fix and passed afterward on FFmpeg 4.4.1 and 9.0.1.
+The complete worker Python suite passed 12/12 on each version, including
+streaming before EOF, A/V timing, cancellation and session reuse. The
+four-dealer `audit-dealer-sync.mjs --probe` also passed.
+
+The RunPod dashboard confirms the existing endpoint uses image
+`ghcr.io/jakeminator123/astrid-gpu-worker:sha-12ce6d472a32495704dd557bfc4e420ba4a90b20`.
+The publishing workflow now checks the regression using the built image's
+own FFmpeg before pushing it. A repaired-image deployment and fresh visual
+acceptance are still required; CPU correctness does not approve lip sync.
+
 Only the matching temporary gate was removed. The QA endpoint then reported
 disabled, zero identities, zero pending work and zero workers/busy/available.
 The normal idle shutdown requested provider cancellation; budget, campaign

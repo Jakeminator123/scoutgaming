@@ -236,7 +236,11 @@ class FragmentMuxer:
         if 'libx264' in encoder_args:
             # ultrafast otherwise writes Constrained Baseline despite -profile high.
             encoder_args = [*encoder_args, '-x264-params', '8x8dct=1:cabac=1']
-        common = ['-thread_queue_size', '64', '-probesize', '32', '-analyzeduration', '0', '-avioflags', 'direct']
+        # Keep AVIO buffering: FFmpeg 4.4 probes ten ID3 bytes even for raw
+        # inputs. Direct I/O cannot seek them back on TCP, shifting BGRA by
+        # two channels and dropping five PCM16 samples. Bounded probing and
+        # queues still allow fragments before input EOF without that flag.
+        common = ['-thread_queue_size', '64', '-probesize', '32', '-analyzeduration', '0']
         cmd = [ffmpeg, '-hide_banner', '-v', 'error', '-nostdin', '-filter_complex_threads', '1',
                '-f', 'rawvideo', '-pix_fmt', 'yuv420p', '-s', f'{width}x{height}',
                '-r', str(FPS), '-color_range', 'tv', '-colorspace', 'bt709',

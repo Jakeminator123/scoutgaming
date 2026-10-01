@@ -199,3 +199,18 @@ providerjobb gjordes och inga env-värden exporterades. Vid driftjämförelsen
 behövs både rätt nyckelplacering och säkra kontroller av aktiv barnprocess,
 persistens, modellmetadata och resursåtkomst. Env-matrisen ensam bevisar inte
 att en MP4 laddats upp eller att kamera, röst och läppsynk godkänts.
+
+## Uppföljning 1 oktober, 11:15 UTC — privata RunPod-värden
+
+Selektiv omläsning av de aktiva lokala filerna och processmiljön visar ingen
+effektiv `RUNPOD_API_KEY`. De befintliga lokala endpointvärdena matchar
+Render-produktens endpoint. Tomma äldre alias i `lab/.env.local` är alltså
+inte en separat aktiv koppling till Emils podd. Detta uttalar sig inte om
+okända eller arkiverade privata filer, och ingen sådan arkivsökning gjordes.
+
+Render-nyckeln gav HTTP 200 på den konfigurerade endpointens `/health`, med
+noll pågående eller köade jobb. Leverantörens administrativa REST-listning
+gav däremot 401; behörighet till jobb-API bevisar inte administrativ åtkomst.
+Dashboarden verifierade Croupier-imagen på SHA `12ce6d47` och
+`AVATAR_ID=astrid_spel2x`. Inga nycklar kopierades mellan lokalt och molnet,
+och inga hemliga värden sparades i dokumentationen.

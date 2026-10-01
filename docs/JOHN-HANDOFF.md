@@ -1,5 +1,26 @@
 # Aktuellt molnläge
 
+## 2026-10-01 — Färgmasken reproducerad i FFmpeg 4.4
+
+CPU-provet reproducerar magenta ansiktsruta och grön mun med samma
+`FragmentMuxer` och FFmpeg 4.4.1. `-avioflags direct` på rå TCP-input tappar
+bytefasen vid inläsning: BGRA-alfa hamnar i grönkanalen. FFmpeg 9.0.1 dolde
+felet i tidigare lokala tester. Rättningen behåller normal buffrad inläsning;
+ett verkligt kodnings-/avkodningsprov kontrollerar färg och alfa vid 0, 128
+och 255. Publicering ska också köra detta prov med den byggda imagéns egen
+FFmpeg innan samma image pushas till GHCR.
+
+Regressionen fallerade före rättningen och hela worker-sviten passerar
+12/12 med både FFmpeg 4.4.1 och 9.0.1 efteråt, inklusive ström före EOF,
+A/V-tider, avbrott och återanvänd session. Fyrdealeraudit med `--probe`
+passerar; detta är kod-/transportkontroller, inte ny visuell acceptans.
+
+RunPods befintliga endpoint verifierades i dashboarden till SHA-taggen
+`12ce6d472a32495704dd557bfc4e420ba4a90b20`, med aktiv/min 0 och max 1 worker.
+En vanlig produktpush byter inte GPU-image. Ny image och ett nytt visuellt
+liveprov återstår vid denna kodleverans; läppsynken är ännu inte godkänd.
+Originalmedia och acceptansbaseline har inte ändrats.
+
 ## 2026-10-01 — Två riktiga röstsvar, visuellt underkänt
 
 På live `7fa0400d` gick två syntetiska OpenClaw→Cartesia→RunPod-svar igenom
