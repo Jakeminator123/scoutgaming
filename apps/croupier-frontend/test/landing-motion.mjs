@@ -61,13 +61,18 @@ function harness({ matches = true, touches = 0, hidden = false, observer = true 
   };
 }
 
-test('server-rendered landing exposes content and demo links without an overlay or hidden matte decoder', () => {
+test('server-rendered landing is complete without loading desktop code, videos or compositing layers', () => {
   const { default: Home } = load(resolve(root, 'app/page.tsx'));
   const html = renderToStaticMarkup(React.createElement(Home));
   assert.match(html, /Möt Astrid/);
   assert.match(html, /href="\/demo"/);
-  assert.match(html, /videos\/astrid-card\.mp4/);
-  assert.doesNotMatch(html, /intro-root|retro-window|videos\/intro\/|croupiers-matte\.mp4|<canvas/);
+  assert.match(html, /images\/astrid-card-poster\.jpg/);
+  assert.match(html, /data-landing-motion="static"/);
+  assert.doesNotMatch(html, /<video|<canvas|intro-root|retro-window|floor-stage|preserve-3d|will-change|mode-tint|animate-/);
+  for (const filename of modules.keys()) {
+    assert.doesNotMatch(filename, /desktop-effects|hero-card|card-stream|croupier-ride|logo-laser|perspective-floor/,
+      'SSR must not eagerly import the optional animation bundle');
+  }
 });
 
 test('late hydration requires actual visibility before creating decorative playback', () => {

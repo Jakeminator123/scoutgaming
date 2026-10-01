@@ -1,3 +1,6 @@
+"use client"
+
+import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { type Suit, SUIT_SYMBOL } from "@/lib/blackjack"
 
@@ -74,6 +77,17 @@ export function QueenCard({ suit, className }: { suit: keyof typeof QUEENS; clas
   const red = suit === "hearts"
   const symbol = SUIT_SYMBOL[suit]
   const media = QUEENS[suit]
+  const videoRef = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    if (!video.hasAttribute("src")) video.src = media.video
+    return () => {
+      video.pause()
+      video.removeAttribute("src")
+      video.load()
+    }
+  }, [media.video])
   return (
     <div aria-hidden="true" className={cn("@container w-full", className)}>
       <div
@@ -84,6 +98,7 @@ export function QueenCard({ suit, className }: { suit: keyof typeof QUEENS; clas
       >
         <div className="absolute inset-x-[24cqw] top-[10cqw] bottom-[10cqw] overflow-hidden rounded-[2cqw] border-[0.8cqw] border-current/80 bg-ink">
           <video
+            ref={videoRef}
             src={media.video}
             poster={media.poster}
             autoPlay
