@@ -2224,6 +2224,7 @@ async function playChatDecision(decision, signal, jobId) {
             };
             check(); await pendingChatReplies.get(jobId)?.beforeStart?.(); check();
           };
+          setChatStatus('Förbereder röst och läppsynk…');
           await playGeneratedSpeech(decision.speechStream, { exactText: decision.exactText, dealerId: DEALER.key,
             requestId: jobId, mount: $('#scene'), signal, beforeStart: beforeStreamStart,
             onStart: text => {
@@ -2244,6 +2245,7 @@ async function playChatDecision(decision, signal, jobId) {
           });
         } else
         if (decision.visualMode === 'generated-lipsync-preview' && decision.speechPackage) {
+          setChatStatus('Förbereder röst och läppsynk…');
           await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
             beforeStart: pendingChatReplies.get(jobId)?.beforeStart,
             onStart: text => {

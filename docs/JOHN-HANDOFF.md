@@ -1,5 +1,28 @@
 # Aktuellt molnläge
 
+## 2026-10-01 — Två riktiga röstsvar, visuellt underkänt
+
+På live `7fa0400d` gick två syntetiska OpenClaw→Cartesia→RunPod-svar igenom
+med verklig ljud-/videoström, start/slut och återgång till vila på 7,888 och
+9,225 sekunder. Inget 404 eller Voice off i dessa prov. Båda inspelningarna
+visar dock en magenta ansiktsrektangel och grön munregion: **visuell QA är
+underkänd och läppsynken är inte godkänd**. Exakt orsak är inte bevisad;
+nästa steg är kontroll av publicerad worker-image och BGRA/alfakomposition.
+Privata inspelningssökvägar, hashvärden, tider och avgränsningar finns i
+[liveprovets kvitto](LIVE-SPEECH-QA-2026-10-01.md#live-result--1-october-2026-1058-utc).
+
+Provgrinden är borttagen; endpointen visar avstängt, inga QA-identiteter,
+inget väntande arbete och noll GPU-arbetare. Normal idle-cancel är begärd,
+budget- och försöksjournaler är bevarade. Ingen spelardatabas ändrades för QA.
+Den sista sessionens terminalkvitto är ännu inte verifierat i journalen.
+
+En liten efterföljande statusfix ersätter missvisande “väntar på ledigt bord”
+med “Förbereder röst och läppsynk…” under faktisk mediaförberedelse. “Astrid
+svarar” visas först vid mediastart. Regression reproducerad före fix; 50/50
+fokustester och fyrdealeraudit passerade. Originalmedia är oförändrade.
+Kontoingången är live, 6/6 isolerade auth-tester passerade. Konton ligger
+fortfarande i SQLite; publik lösenordsåterställning saknas.
+
 ## 2026-10-01 — Avgränsat läppsynkprov i produktens egen relay
 
 `/bo/speech-qa.html` förbereder två manuella syntetiska röstsvar utan att
