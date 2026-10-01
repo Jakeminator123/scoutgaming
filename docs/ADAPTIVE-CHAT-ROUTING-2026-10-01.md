@@ -4,6 +4,14 @@ Arbetskvitto 2026-10-01. Kodcommit `a34875d8` är pushad till den godkända
 GitHub-branchen med hela pre-commit godkänd. Aktivering i drift verifieras separat.
 [CI för exakt kodcommit](https://github.com/Jakeminator123/github-work/actions/runs/36843542326)
 är godkänd i samtliga tre jobb, inklusive hela Lab-sviten på Linux.
+Format-/budgeträttningen är pushad i `ccdba78e`, med hela pre-commit godkänd
+och [alla tre CI-jobb gröna](https://github.com/Jakeminator123/github-work/actions/runs/36846448400).
+Director är därefter verifierad live med `adaptive` på repairrevisionen,
+10:09:53 UTC. [Driftkvittot](ADAPTIVE-ROUTING-LIVE-2026-10-01.md)
+redovisar både det första felet, återställningen och det godkända nya provet.
+Produkten är också verifierad på `ccdba78e` 10:11:20 UTC, med Lissabon-lanen,
+samma Director-host, speech-timeout 20000 och grön health. Röst/läppsynk har
+inte fått ny liveacceptans genom dessa textprov.
 
 ## Kodverifiering
 
@@ -47,13 +55,19 @@ Den första driftversionens begärda gräns 512 tokens per pass var för snäv
 för Sol: det syntetiska svåra provet gav tre interna Sol-fortsättningar om
 512 tokens och till sist avklippt JSON. Två Director-anrop är därför inte
 bevis för högst två provideranrop eller 1024 tokens totalt. Adaptiv drift
-återställs till fast Terra medan tokenhantering och format rättas; se livekvittot.
+återställdes till fast Terra, verifierat i körande process 09:57:48 UTC.
+Efter det godkända repairprovet nedan återaktiverades adaptiv drift,
+verifierat i ny process 10:09:53 UTC; se livekvittot.
 
 Den efterföljande rättningen begär JSON-object-format på båda adaptiva passen,
 512 tokens för första modellen och 2048 för Sol per providerförsök. En
 `finish_reason=length` avvisas uttryckligen även om texten ser ut som giltig
 JSON; Director gör inget nytt försök. 36/36 relevanta tester PASS, även vid
-oberoende granskning. Detta är ännu inte ett nytt godkänt driftprov.
+oberoende granskning. Ett isolerat driftprov på `ccdba78e` gav därefter
+korrekt svar på den svåra frågan på 12,862 sekunder: Terra eskalerade
+naturligt till Sol. Egna sessionskvitton visar en completion per modell,
+104 respektive 1182 outputtokens, båda avslutade normalt. Ingen intern
+fortsättning skedde i det provet. Detta är en mätpunkt, inte en latensgaranti.
 OpenClaw 2026.9.5 har hårdkodade interna gränser för reasoning-only och tomma
 svar. `retry.provider.maxRetries` styr en annan gren och stoppar inte dessa.
 En hård totalgräns för provideranrop kräver en separat nativeändring eller
@@ -69,7 +83,7 @@ Rollernas vanliga fallbacks är fortsatt tomma. Se
 | Tjänst | Variabel | Avsett värde |
 | --- | --- | --- |
 | croupier-lab-openclaw | `OPENCLAW_MODEL_ID` | `gpt-5.6-terra` — redan liveverifierat |
-| croupier-lab-director | `OPENCLAW_SPEECH_ROUTING` | `adaptive` först efter verifiering; standard `fixed` |
+| croupier-lab-director | `OPENCLAW_SPEECH_ROUTING` | `adaptive` — nu liveverifierat; kodstandard `fixed` |
 | croupier-lab-director | `OPENCLAW_SPEECH_DEEP_MODEL` | `gpt-6-sol` |
 | croupier-lab-director | `OPENCLAW_SPEECH_TIMEOUT_MS` | `20000` |
 | croupier-v2 | `OPENCLAW_SPEECH_TIMEOUT_MS` | `20000` |
@@ -104,6 +118,9 @@ lokal Render CLI-inloggning har hittats. För löpande drift är officiell CLI
 en enklare väg än att styra varje knapp:
 
 1. Installera Render CLI från [officiella installationsguiden](https://render.com/docs/cli).
+   På Windows: `winget install render.cli`. Öppna därefter en ny PowerShell-flik
+   så att den uppdaterade PATH läses in. Felet "render is not recognized" betyder
+   att CLI saknas eller ännu inte hittas via PATH, inte att inloggningen nekats.
 2. Kör `render login` lokalt och godkänn **Authorize CLI** i Render.
 3. Välj rätt workspace med `render workspace set`.
 4. Agenten kan därefter läsa tjänster, deploymentstatus och loggar i

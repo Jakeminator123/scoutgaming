@@ -30,18 +30,36 @@ Det efterföljande aktiveringskvittot finns i
 [ADAPTIVE-ROUTING-LIVE-2026-10-01.md](ADAPTIVE-ROUTING-LIVE-2026-10-01.md).
 Liveprovet hittade därefter avklippt Sol-JSON: Terra eskalerade korrekt,
 men OpenClaw gjorde tre interna Sol-anrop om 512 tokens. Det enkla Terra-
-svaret gick igenom. Återställning till fast Terra och en format-/budgeträttning
-pågår; ovanstående kodtester är inte ett godkännande av adaptiv drift.
+svaret gick igenom. Fast Terra är återställt och verifierat i processen
+09:57:48 UTC; format-/budgeträttningen är pushad i `ccdba78e` med full
+pre-commit godkänd. Kodtester är inte ett godkännande av adaptiv drift.
 Den efterföljande kodrättningen använder JSON-object-format och begär
 512 tokens för första passet, 2048 för Sol; explicita längdstopp avvisas
 utan nytt Director-anrop. 36/36 riktade tester och oberoende review PASS.
 Native OpenClaw har fortfarande interna fortsättningsförsök: dessa siffror
-är per providerförsök, ingen sammanlagd kostnadsgräns. Ny liveacceptans återstår.
+är per providerförsök, ingen sammanlagd kostnadsgräns. Repairprovet på
+`ccdba78e` passerade: naturlig Terra→Sol, korrekt svar med giltiga scheman
+på 12,862 sekunder. Egna sessionsmetadata bekräftar en completion per modell,
+104 respektive 1182 outputtokens och normalt stopp, inga interna omförsök.
+Alla tre CI-jobb för repairrevisionen är gröna. Publik Director är åter
+`adaptive` på repairrevisionen, verifierat i ny barnprocess 10:09:53 UTC
+efter deployment `dep-dav32au0tbcc73dciqsg`; health 200/ok.
+Produkten verifierades 10:11:20 UTC på samma repairrevision: verklig
+Web-barnprocess behåller Lissabon, samma Director-host och 20s/8s; health 200.
 Gateway/config/start och cloud relay: 54/54 tester PASS. Director/routing:
 26/26 PASS; hela OpenClaw Lab: 185 PASS, 0 FAIL, 1 plattformsskip.
 Inga media eller kalibreringar har ändrats. Två riktiga strömmade röstsvar
 och audiovisuellt godkännande återstår fortfarande; dessa modellprov är
 inte ett sådant godkännande.
+
+Läsande GPU-kvitto 10:11:20 UTC: fyra reservationsposter, en utan terminalkvitto;
+gällande dagsgräns 9,94 USD och kvarvarande journalbudget 9,94 USD, ingen
+sessionslock. Det gamla jobbet ger fortfarande GET 404 och är äldre än
+720 sekunder. Inga ledgerändringar eller GPU-starter gjordes. Aktuella
+relay-workers kan inte observeras via befintlig HTTP-status och är inte
+verifierade som noll. Fortsatt röst-QA behöver isolerad testidentitet i samma
+auktoritativa relay/budget-process eller en samordnad exklusiv fixture;
+en kopierad budgetjournal eller andra relay ger inte gemensam budgetgräns.
 
 En separat liten startarrättning vidarebefordrar explicit speech-timeout
 till lokala Web. 29/29 tester PASS; verklig privat konfiguration återläst

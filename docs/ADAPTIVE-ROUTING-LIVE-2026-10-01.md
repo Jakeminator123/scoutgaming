@@ -1,5 +1,9 @@
 # Adaptive routing live check — 2026-10-01
 
+**Current:** repair revision `ccdba78e` passed the isolated complex fixture
+and is live with public adaptive routing, verified in the actual Director
+process at 10:09:53 UTC. Details and the earlier failed probe follow below.
+
 Target revision: `a34875d8b3eea4e1fb9ab8313a12aa81b433f729`.
 Scope: deploy the reviewed opt-in Director router, align the product speech
 deadline, and run at most two synthetic Director requests. No GPU/Cartesia
@@ -113,15 +117,92 @@ The failed probe triggered the prescribed rollback of only Director
 at 09:52:56 still showed `adaptive`. This deployment is **not** rollback
 evidence. The non-secret flag was revealed, edited with explicit blur,
 saved, and read back as persisted `fixed` before another deployment of the
-same exact SHA in `dep-dav2ri0u01pc7387so80`. Its build completed and it
-entered deployment at 09:56:21 UTC. Final process confirmation is still
-pending at handoff to the integrating agent; timeout 20000 and the Sol
-catalogue remain. The public flag must remain `fixed` during subsequent
-repair validation.
+same exact SHA in `dep-dav2ri0u01pc7387so80`. At 09:57:48.210 UTC the
+actual Director child process (PID 15, instance `v8ppk`) confirmed `fixed`,
+deep model `gpt-6-sol`, speech timeout 20000 and general timeout 8000 on
+`a34875d8`. `/healthz` returned HTTP 200 and `ok: true`. The public flag
+remains `fixed` during subsequent repair validation.
 
 Private screenshot receipts, stored outside Git in the task's visualization
 directory: `adaptive-product-runtime-2026-10-01.png`,
 `adaptive-director-tests-2026-10-01.png`, and
-`adaptive-model-metadata-2026-10-01.png`. They contain only the sanitized
+`adaptive-model-metadata-2026-10-01.png`, and
+`adaptive-fixed-rollback-2026-10-01.png`. They contain only the sanitized
 runtime fields, synthetic result and exact-session model metadata described
 above. No credential values or player history were copied into this report.
+
+## Repair validation
+
+Repair revision `ccdba78e96efc7c34eebd41ad672d0929afc7856` is pushed.
+It requests JSON-object format, 512 first-pass and 2048 deep-pass output
+tokens per provider completion, and rejects explicit length stops without
+another Director attempt. Routing tests: 36/36 PASS; local speech-deadline
+forwarding: 29/29 PASS; full pre-commit PASS.
+[CI for the exact repair revision](https://github.com/Jakeminator123/github-work/actions/runs/36846448400)
+passed all three jobs. Director deployment `dep-dav2vinpn0mc739s76l0`
+became Live on that revision at 10:05:23 UTC, retaining public `fixed`.
+
+The repair is being validated with the public Director kept on `fixed`.
+One isolated synthetic complex fixture imports the deployed decision
+function with adaptive settings for that invocation only. It uses a fresh
+request ID and the same independently checked scheduling question. The
+allowance is one fixture invocation with at most two Gateway passes and
+the shared deadline. Native continuations may amplify provider completions;
+512/2048 are not total-request token caps. No client retries, player data,
+GPU jobs, media generation or additional proof requests are included.
+Activation requires a valid, correct answer and actual session-model and
+completion-count evidence.
+
+The two exact attempt keys for
+`qa-adaptive-ccdba78e-20261001-b39f2-complex` were absent before the repair
+fixture. It started at 10:06:12.750 UTC and returned a valid generatedText
+choice after 12862 ms. The answer correctly gave optimum 14 in both cases
+with feasible schedules. Terra naturally escalated at 2685 ms and the Sol
+pass returned at 12860 ms. The invocation wrapper observed exactly two
+Gateway calls with JSON-object format and the intended 512/2048 requested
+completion limits. Exact-session metadata then confirmed
+`lab-provider/gpt-5.6-terra` with 104 output tokens and one assistant
+completion (`stopReason=stop`), followed by `lab-provider/gpt-6-sol` with
+1182 output tokens and one assistant completion (`stopReason=stop`). Both
+session updates occurred after the fixture started. Thus this fixture used
+two Gateway calls and two provider completions with no internal
+continuations. This verifies one natural escalation and correct response;
+it does not establish a typical latency or a hard provider-call cap for
+future requests. No further model probe is part of activation.
+
+## Public activation after repair
+
+After the passing fixture, `OPENCLAW_SPEECH_ROUTING=adaptive` was saved with
+explicit blur and persisted dashboard readback. Environment deployment
+`dep-dav32au0tbcc73dciqsg` is Live on exact repair revision `ccdba78e`.
+At 10:09:53.581 UTC the new actual Director child process (PID 14, instance
+`tch7k`) confirmed routing `adaptive`, deep model `gpt-6-sol`, speech timeout
+20000 and general timeout 8000. `/healthz` returned HTTP 200 and `ok: true`.
+
+Private repair receipts outside Git:
+`adaptive-repair-answer-2026-10-01.png`,
+`adaptive-repair-models-2026-10-01.png`, and
+`adaptive-live-runtime-2026-10-01.png`. These record the synthetic answer,
+its exact-session model/count metadata and sanitized runtime fields.
+
+At 10:11:20.253 UTC the product also ran `ccdba78e`. Its actual web child
+(PID 19) retained `lissabon-stream-lane`, the same Director speech host,
+speech/general timeouts 20000/8000, and generated/streaming flags enabled.
+The public health route returned HTTP 200 with body `ok`.
+
+The separate read-only GPU check found four journal reservations, one
+without a terminal receipt, effective daily cap 9.94 USD, zero reserved
+today, journal remaining 9.94 USD, session reserve 0.50 USD and no session
+lock. The configured RunPod endpoint and credential were present. A GET
+for the existing old job still returned 404; it was older than 720 seconds.
+No ledger was changed and no GPU job was started. Current relay worker
+counts remain unobserved because the existing relay status is process-local
+and has no exposed status route. Do not infer zero workers from the journal.
+
+Two actual successive streamed voice answers and audiovisual approval are
+still outstanding. Their safe test boundary requires an isolated test
+identity inside the same authoritative relay/budget process, or a coordinated
+exclusive fixture with the real budget disk and production stopped. A copied
+budget journal or a second independent relay does not enforce the shared
+cap. Do not test by changing the real player database. This remaining work
+is handed to the coordinating agent separately from the accepted text route.
