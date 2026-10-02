@@ -34,9 +34,48 @@ JSON-register, media, acceptansbaseline och befintliga QA-kvitton bevaras.
 | Spelarkonton/rundor | Separat Neon game-databas, schema `croupier_game` |
 | CRAIG/BO-konton | Samma game-databas, separat schema `croupier_auth` |
 | Studio-projekt/index | `/var/data/studio`, beständig Render-disk |
-| Privata nya filmer | Vercel Blob, skyddad serverrutt med hash/familj/Range |
+| Privata media | Vercel Blob `croupier-media-private`, skyddad serverrutt med hash/familj/Range |
 | Zonmetadata | Dedikerad Neon, schema `croupier_zones`; browserkopia är separat |
 | Director/Gateway | Egna beständiga diskar, se återställningsguiden |
+
+### Blob är ett gemensamt filarkiv, inte två tjänster
+
+Lagret `store_AqwvebTbBHarOjvG` heter nu `croupier-media-private`, är privat
+och ligger i Stockholm. All media har roten `croupier/`; under
+`croupier/media/dealers/` ligger Astrid, Vera, Amira och Mei. `source` bevarar
+original, `runtime` är spelmedia, `review` är uppladdningar/granskning och
+`staging` är arbetsmaterial. `game` och `site` är gemensamma resurser.
+Det är filnamnsgrupper i samma Blob, inte separata Vercel-appar eller Render-diskar.
+
+Den gamla roten `astrid/` konsoliderades den 2 oktober: ett äldre zonklipp
+flyttades med identisk SHA-256 till `croupier/media/dealers/astrid/source/background-zones/`.
+Det lades inte till i det aktiva spelindexet. Tolv äldre `croupier/videos/`
+adresser behålls för kompatibilitet med Render-uppladdningsindex/historik;
+deras nya runtime-kopior är hashverifierade. Radera inte dessa adresser innan
+alla diskreferenser inventerats och migrerats. Historiska QA-kvitton skrivs inte om.
+
+### Vad ligger kvar på Render-diskarna?
+
+**Studio-projekt** betyder sparade presentationsinställningar: val av
+dealerklipp, event-/idle-bindningar och regler för när de används. Det är
+`studio/project.json` och dess versionshistorik, inte en extra app eller en
+samling spelarkonton. "Lab-projekt" syftar här på samma sparade inställningar,
+inte ytterligare ett projekt. Lab är arbetsmiljön; Studio är editorn i den.
+Ett **Vercel-projekt** är däremot en webbpublicering, ett helt annat begrepp.
+
+| Tjänst | Monterad disk | Kvarvarande ansvar |
+| --- | --- | --- |
+| Produktion `croupier-v2` | `/var/data`, 5 GB | Studio-projekt, historik, profiler och uppladdnings-/familjeindex; BO-konfiguration; generationer/tal och mediacache; historiska SQLite-filer |
+| Isolerad QA `croupier-vercel-preview-qa` | `/var/data`, 1 GB | QA:s separata Studio-/arbetsdata och cache; inte produktionskonton |
+| Director `croupier-lab-director` | `/data/catalog`, 1 GB | Katalog, historik och Companion-databas |
+| Gateway `croupier-lab-openclaw` | `/data/openclaw`, 1 GB | OpenClaw-konfiguration, agentfiler, sessioner och sökdatabas |
+
+Diskarnas montering/storlek och produktens Blob/Postgres-konfiguration är
+kontrollerade live. Innehållstyperna ovan följer sparvägarna och backupkontraktet;
+det är inte en fullständig live-fillista. Konton, spelar-ID:n, saldo och rundor
+har Neon som aktiv källa. Blob innehåller mediefiler, inte dessa konton.
+Render-diskarna behövs därför fortfarande och får inte tömmas. De ersätter
+inte en extern verifierad backup; full Studio-/Director-/Gateway-backup återstår.
 
 `croupier-player-preview-qa` bär lagringskopplingar och är ingen dubblett.
 Testbackenden `croupier-vercel-preview-qa` startas bara på begäran.

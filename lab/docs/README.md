@@ -9,6 +9,14 @@ presentationsväg och kopplar dessutom spelflikens händelser till Studio.
 Spela och chatta i spelfliken. BO är administration och inloggning,
 ingen separat spelström.
 
+**Vad betyder projekt här?** Studios projekt är dina sparade inställningar
+för spelets presentation: exempelvis vilka dealerklipp som används och när
+de spelas. "Lab-projekt" är inget separat projekt; det syftar på samma
+sparning. Lab är arbetsmiljön, Studio är editorn. Inställningarna och äldre
+versioner sparas på Render-disken. Själva mediefilerna finns i privat Vercel
+Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
+en teknisk webbpublicering och har inget med Studios sparknapp att göra.
+
 I den gemensamma menyn finns Studio och aktiva klipp, Event och regler,
 Mediebibliotek, Uppspelning och spår, Bakgrundszoner, OpenClaw och alla
 befintliga administrationsfunktioner. Administration använder BO-kontots
