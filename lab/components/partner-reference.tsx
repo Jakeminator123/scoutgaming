@@ -16,7 +16,8 @@ interface Mapping { fetchedAt: string; source: string; actualPlayback: false; ma
 export function PartnerReference({ trace, connected, connection, dealerId = 'astrid', onConnect, onDisconnect, onNative, onActivity, onImport, onNewObservation, children, diagnostics, focused = false }: { focused?: boolean; trace: PartnerTrace; connected: boolean; connection: string; dealerId?: string; onConnect: () => Promise<void>; onDisconnect: () => void; onNative: (record: Record<string, unknown>) => void; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; onNewObservation?: () => void; children?: ReactNode; diagnostics?: ReactNode }) {
   // The cloud build mounts Studio on the game origin. Its ordinary player
   // entry is usable even when the optional Partner observer is unconfigured.
-  const directGameUrl = focused && labBasePath() === '/studio' ? '/blackjack' : null;
+  const cloudStudio = labBasePath() === '/studio';
+  const directGameUrl = focused && cloudStudio ? '/blackjack' : null;
   const [configuration, setConfiguration] = useState<Configuration | null>(null);
   const [access, setAccess] = useState<Access | null>(null);
   const [mapping, setMapping] = useState<Mapping | null>(null);
@@ -55,7 +56,7 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
     fetch(labUrl('/api/inputs/reference'), { cache: 'no-store' }).then(async response => {
       if (!response.ok) throw new Error();
       const data = await response.json(); if (current) setConfiguration(data);
-    }).catch(() => { if (current) setError('Referensspelets konfiguration kunde inte läsas.'); });
+    }).catch(() => { if (current && !cloudStudio) setError('Referensspelets konfiguration kunde inte läsas.'); });
     return () => { current = false; };
   }, []);
   async function request(action: string) {
@@ -73,14 +74,52 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
         return;
       }
       observing.current = true;
-      try { await onConnect(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Strömmen kunde inte anslutas.'); }
+      if (!cloudStudio) try { await onConnect(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Strömmen kunde inte anslutas.'); }
       return;
     }
-    const game = window.open('about:blank', '_blank');
+    let cloudOrigin: string | null = null;
+    if (cloudStudio) {
+      try {
+        const url = new URL(window.location.origin);
+        if (url.protocol !== 'https:' || url.origin !== window.location.origin || ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error();
+        cloudOrigin = url.origin;
+      } catch { setError('Studiokopplingen kräver spelets gemensamma HTTPS-adress.'); return; }
+    }
+    // An empty URL reuses the named cloud popup without replacing ongoing play.
+    const game = window.open(cloudStudio ? '' : 'about:blank', cloudStudio ? 'croupier-lab-game' : '_blank');
     if (!game) { setError('Tillåt en ny flik för att ansluta referensspelet.'); return; }
     gameWindow.current = game;
     setBusy('connect'); setError('');
+    let closeOnError = !cloudStudio;
     try {
+      if (cloudOrigin) {
+        const current = new URL(game.location.href || 'about:blank');
+        closeOnError = current.href === 'about:blank';
+        if (!closeOnError) {
+          const channel = current.searchParams.get('labObserverChannel');
+          if (game.opener !== window || current.origin !== cloudOrigin || !['/game', '/game/', '/v2', '/v2/'].includes(current.pathname)
+            || current.searchParams.get('labObserverOrigin') !== cloudOrigin || !/^[a-zA-Z0-9_-]{16,128}$/.test(channel?.replaceAll('-', '') ?? '')) {
+            throw new Error('Spelet är redan öppet utan denna studiokoppling. Spela klart och stäng spelfliken före Anslut & följ spelet.');
+          }
+          observer.current = { source: game, origin: cloudOrigin, channel: channel!, lastSequence: 0 };
+          observing.current = true;
+          game.focus();
+          onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Befintlig spelflik följs igen', owner: 'Spelflikens native-observation', reason: 'Pågående spel bevaras. Studion väntar på kommande native-kvitton.', data: { replay: false } });
+          return;
+        }
+        const url = new URL('/game', cloudOrigin), channel = crypto.randomUUID();
+        url.searchParams.set('dealer', dealerId);
+        if (dealerId === 'astrid') url.searchParams.set('presentation', 'local');
+        url.searchParams.set('labObserverOrigin', cloudOrigin);
+        url.searchParams.set('labObserverChannel', channel);
+        observer.current = { source: game, origin: cloudOrigin, channel, lastSequence: 0 };
+        observing.current = true;
+        const start = new URL('/api/auth/bo/start', cloudOrigin);
+        start.searchParams.set('next', url.pathname + url.search);
+        game.location.replace(start.href);
+        onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Spelflik och studiokoppling öppnas', owner: 'Vanlig spelarinloggning + native-observation', reason: 'Spela i spelfliken. Studion väntar på dess verkliga speldata och uppspelningskvitton.', data: { dealerId, presentationMode: dealerId === 'astrid' ? 'local' : 'legacy' } });
+        return;
+      }
       const verified = await request('verify'); setAccess(verified);
       if (!verified.scopes.includes('launch')) throw new Error('Partner-nyckeln saknar launch och kan inte öppna referensspelet.');
       // Open the event channel before navigation so the first accepted round is
@@ -100,7 +139,7 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
       if (dealerId === 'astrid') url.searchParams.set('presentation', 'local');
       game.location.replace(url.href);
       onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Originalspel och labbföljning startade', owner: 'Partner-launch + native-observation', reason: 'Spela i originalfliken. Bilddelningen väljs i webbläsaren; data följs automatiskt.', data: { dealerId, presentationMode: data.presentationMode } });
-    } catch (cause) { game.close(); gameWindow.current = null; observer.current = null; onDisconnect(); setError(cause instanceof Error ? cause.message : 'Spelet kunde inte anslutas.'); }
+    } catch (cause) { if (closeOnError) { game.close(); gameWindow.current = null; } observer.current = null; observing.current = false; onDisconnect(); setError(cause instanceof Error ? cause.message : 'Spelet kunde inte anslutas.'); }
     finally { setBusy(''); }
   }
   function openGame() {
@@ -171,19 +210,20 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
     <span className="eyebrow">SPELFLIKENS PRESENTATION · LÄSANDE OBSERVATION</span>
     <h3>Spela i spelfliken. Konfigurera och följ i Lab.</h3>
     <p>{dealerId === 'astrid' ? 'Astrid använder Labbets gemensamma klippfamiljer. Spela och chatta i spelfliken. Anslut & följ spelet öppnar dessutom observation så att klippval och uppspelningskvitton visas här.' : 'Anslut öppnar rätt spelarsession och följer originalets speldata och tillgängliga native-kvitton. Ett separat Lab-previewprov startas bara efter ditt uttryckliga val och har egna kvitton.'}</p>
-    <div className={styles.tools}>{directGameUrl ? <a className="primary-button" href={directGameUrl} target="_blank" rel="noopener" onClick={event => { event.preventDefault(); openGame(); }}>Öppna spelet ↗</a> : null}<button className={directGameUrl ? 'text-button' : 'primary-button'} disabled={Boolean(busy) || !configuration?.configured} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : focused ? 'Anslut & följ spelet' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
-    {!configuration?.configured ? <p className={styles.note}>{configuration ? directGameUrl ? 'Studions observation är inte konfigurerad. Öppna spelet fungerar ändå med vanlig spelarinloggning och sparade klippval.' : 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
+    <div className={styles.tools}>{directGameUrl ? <a className="primary-button" href={directGameUrl} target="_blank" rel="noopener" onClick={event => { event.preventDefault(); openGame(); }}>Öppna spelet ↗</a> : null}<button className={directGameUrl ? 'text-button' : 'primary-button'} disabled={Boolean(busy) || (!cloudStudio && !configuration?.configured)} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : focused ? 'Anslut & följ spelet' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
+    {cloudStudio ? <p className={styles.note}>Studiokopplingen använder din vanliga spelarinloggning och spelflikens uppspelningskvitton.</p> : !configuration?.configured ? <p className={styles.note}>{configuration ? 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
     {error ? <p role="alert">{error}</p> : null}
     <NativeSpeechContext.Provider value={{ binding: speechBinding, connected }}>{children}</NativeSpeechContext.Provider>
     <details className={styles.mapping}><summary>{focused ? 'Diagnostik · anslutning och observationsfiler' : 'Diagnostik · videokarta, anslutning och observationsfiler'}</summary>
-    <p><strong>{focused ? "Teknisk launch-identitet:" : "Spelare:"}</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
+    {!cloudStudio ? <><p><strong>{focused ? "Teknisk launch-identitet:" : "Spelare:"}</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
     <div className={styles.tools}>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => void run('verify')}>{busy === 'verify' ? 'Verifierar…' : 'Verifiera Partner-åtkomst'}</button>
       {!focused ? <><button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.mappingConfigured} onClick={() => void run('mapping')}>{busy === 'mapping' ? 'Hämtar…' : 'Hämta videokarta'}</button></> : null}
     </div>
+    </> : null}
     {diagnostics}
-    {!focused ? <details className={styles.mapping}>
+    {!focused && !cloudStudio ? <details className={styles.mapping}>
       <summary>Testa Astrids grundfilmer</summary>
       <p>Öppnar staged-grundläget utan smooth60 eller rhythm. Grundfilmerna är märkta för granskning. Använd detta för att jämföra videolägen efter en avslutad runda.</p>
       <button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch-staged-base')}>{busy === 'launch-staged-base' ? 'Öppnar…' : 'Öppna staged-grundläge ↗'}</button>

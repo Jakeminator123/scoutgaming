@@ -30,7 +30,13 @@ med två verkliga uppspelningar vardera (14 starter och 14 avslut), ljud- och
 bildframsteg, Lab save/reload, projektrevision i spelaren och en beständig
 spelrunda med saldo/ledger-paritet. Tidiga repetitionsklick spärras tills
 serverns verkliga initialisering är klar. Inga JavaScript-fel eller HTTP 500.
-Deployerat WebSocket-prov återstår; detta ersätter inte visuell läppsynks-QA.
+Molnets Lab-observation kan nu öppna och återanvända samma BO-spelflik med
+exakt HTTPS-origin och spelarens riktiga kvitton, utan Partner-launch/SSE.
+23 fokustester och Lab-TypeScript passerar. Det deployerade WebSocket-provet
+fick HTTP 404 genom Vercels externa rewrite; transporten rättas separat innan
+UI-bytet. CI:s isolerade HTTP-fixture väntar nu högst fem sekunder på serverns
+korta SQLite-skrivningar; alla nio riktiga HTTP-kontroller passerar lokalt.
+Detta ersätter inte visuell läppsynks-QA.
 
 Media har flyttats till `media/dealers/<dealer>/{runtime,source,review,staging}`
 samt `media/game` och `media/site`. `runtime` anger användning, inte visuellt

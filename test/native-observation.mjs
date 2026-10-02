@@ -4,7 +4,7 @@ import { createNativeObservation } from '../web/public/native-observation.mjs';
 
 const channel='cc1c94e5-4d2d-455b-a321-262fa4ea48be';
 const href=origin=>`https://game.example/?labObserverOrigin=${encodeURIComponent(origin)}&labObserverChannel=${channel}&launch=private-launch`;
-test('observation is explicitly opt-in and only addresses a loopback lab opener',()=>{
+test('observation is explicitly opt-in and addresses only loopback or the same HTTPS origin',()=>{
   const messages=[],opener={postMessage:(...args)=>messages.push(args)};
   for(const value of ['',href('https://evil.example'),href('http://localhost.evil.example'),href('http://localhost:4188/path')]) {
     const observer=createNativeObservation({href:value,opener});
@@ -14,6 +14,11 @@ test('observation is explicitly opt-in and only addresses a loopback lab opener'
   assert.equal(observer.enabled,true);observer.emit('status',{state:'attached'});
   assert.equal(messages.length,1);assert.equal(messages[0][1],'http://127.0.0.1:4188');
   assert.equal(messages[0][0].channel,channel);assert.equal(messages[0][0].sequence,1);
+  const cloud=createNativeObservation({href:href('https://game.example'),opener});
+  assert.equal(cloud.enabled,true);cloud.emit('status',{state:'attached'});
+  assert.equal(messages[1][1],'https://game.example');
+  assert.equal(createNativeObservation({href:href('https://game.example'),opener:null}).enabled,false);
+  assert.equal(createNativeObservation({href:href('http://game.example').replace('https://game.example/?','http://game.example/?'),opener}).enabled,false);
 });
 test('native observation keeps public correlation and hides credentials and face-down cards',()=>{
   const messages=[],observer=createNativeObservation({href:href('http://localhost:4188'),opener:{postMessage:m=>messages.push(m)}});

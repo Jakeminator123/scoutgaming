@@ -93,6 +93,7 @@ try {
   checks.push('Original/V2 routes: same shared entry document, local guest access preserved');
   player = await post('/api/player', {}); await refresh();
   db = new DatabaseSync(join(dir,'data/croupier.db'));
+  db.exec('PRAGMA busy_timeout=5000'); // Wait for the isolated server's brief SQLite writes.
   assert.equal(state.balance,1000); assert.equal(state.shoe.remaining,415);
   fixture([['8','♠'],['6','♦'],['8','♥'],['10','♣'],['3','♦'],['2','♣'],['9','♦'],['K','♥'],['5','♠']]);
   const startRequest = await send('start',{bets});
