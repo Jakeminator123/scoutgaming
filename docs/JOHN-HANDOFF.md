@@ -4,6 +4,52 @@ Uppdaterad 2 oktober 2026. Kort aktuell handoff; äldre rapporter har rensats
 på Jakobs begäran. Media, JSON-kvitton, kalibreringar och baseline bevaras.
 Uppdatera denna fil i stället för att skapa fler arbetsrapporter.
 
+## Backoffice/Lab — 2 oktober
+
+Före: Lab/Studio och separat BO-navigation; originalmotorernas klippval låg
+i BO medan Astrids Studio-val låg i projektet; privata profiler låg i Lissabon.
+Efter: gemensam Backoffice/Lab-meny, återanvänd BO-administration (14 sektioner),
+versionssparade klippval i Lab och en native-vy för spelarens verkliga kvitton.
+Eventeditor, bibliotek, bakgrundszoner och OpenClaw finns i samma navigation.
+BO:s egna rollkontroller bevaras; Lab-kontot ger inga nya BO-rättigheter.
+
+Alla aktiva redigerbara klippbindningar sparas i det befintliga projektet.
+`legacyClipPolicy` används av originalmotorerna efter sidstart;
+`mediaPolicy`/`idlePolicy` av Astrids `presentation=local`. Äldre BO-tilldelningar
+är bevarade men inaktiva; skrivendpointen ger 410. Import kräver uttrycklig
+exakt match. Inspelat tal och osäkra staged-klipp behåller sina kvalitetsgränser.
+Medieregistren återanvänds; inga filmer eller kalibreringar kopieras/ändras.
+
+Observation startar ingen extra spelare. Explicit separat Lab-preview är
+märkt och av från början; native och Partner-SSE dubbelmatar inte samma prov.
+Nativekedjan visar event, urval/familj/variant, orsak, revision och faktiskt
+start-/bild-/slutkvitto. Registrerat/valt/nedladdat innebär aldrig spelat.
+Genererat tal visas separat med samma request-ID genom besluten och kvittona.
+
+Hela `lissabon/` är borttagen. 39 privata datafiler (4 568 960 byte) flyttades
+utan överskrivning till `lab/data`, inklusive projekt, historik och båda DB.
+42 originalfiler finns i hashverifierad extern privat backup, se
+[återställningsguiden](ENVIRONMENT-RESTORATION.md). Startare och sessionsvakt
+använder Lab och återskapar inte Lissabon; äldre sparade projekt kräver migrering.
+`/lissabon`-redirect och Start-Lissabon.cmd är kompatibilitetslänkar till Lab.
+
+Kodkontroll: 549 Lab-tester, full hook (godkänd, en plattformsskip),
+TypeScript, produktionsbygge, migrations-/backup-/guardprov och fyrdealerprobe
+godkända. Oberoende review hittade ett falskt ärvt playbackkvitto; rättat med
+regression där ett nytt valt klipp aldrig ärver föregående klipps uppspelning.
+Browser på isolerade DB: sparning/omladdning och runtimeval för alla fyra,
+14 verkliga BO-sektioner och nekad äldre klippskrivning efter autentisering.
+Native-ronden gav nio bildkvitton och sju slutkvitton; reset/återanslutning
+gav ingen extra launch eller gammal uppspelning. Två verkliga `goodluck`-
+starter/slut och avancerande audio/video på sju vägar: varje originaldealer,
+Astrids Studio-spelare samt Astrid/Amira V2. Sparad revision och spelarens
+`CLIP.idle` verifierades för alla fyra originalmotorer; det var uttryckliga
+standardbindningar, inga alternativa idlefiler. Inga JS-fel; previewkvitton
+var skilda från Web.
+Privata lokala testkvitton ligger i `lab/data/qa-backoffice-lab`, utanför Git.
+Gamla öppna frågor nedan är fortsatt öppna; denna konsolidering godkänner inte
+läppsynk, kallstart, fysisk mobil/Safari eller produktionsbackup.
+
 ## Senaste administrativa ändring
 
 `main` är enda lokala/GitHub-branch i `Jakeminator123/github-work`.

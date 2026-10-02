@@ -36,7 +36,7 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
       if (!expected || !observing.current) return;
       const record = acceptNativeObservation(message, expected);
       if (!record) return;
-      const scoped = focused ? scopeNativeSession(record, nativeSessionEpoch.current) : { epoch: nativeSessionEpoch.current, record };
+      const scoped = scopeNativeSession(record, nativeSessionEpoch.current);
       nativeSessionEpoch.current = scoped.epoch;
       const observed = scoped.record;
       if (record.kind === 'status' && record.data?.state === 'attached') setSpeechBinding(previous => ({
@@ -168,9 +168,9 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   const rounds = trace.records.filter(record => record.kind === 'round').length;
   const canLaunch = access?.scopes.includes('launch');
   return <section className={styles.reference} aria-label="Referensspel och observationsprotokoll">
-    <span className="eyebrow">{dealerId === 'astrid' ? 'ETT SPEL · EN PRESENTATION' : 'ETT SPEL · TVÅ PRESENTATIONER'}</span>
-    <h3>{dealerId === 'astrid' ? 'Spela i spelfliken. Konfigurera och följ i Studio.' : 'Originalet och labbet, sida vid sida'}</h3>
-    <p>{dealerId === 'astrid' ? 'Astrid använder studions gemensamma klippfamiljer. Spela och chatta i spelfliken. Anslut & följ spelet öppnar dessutom observation så att klippval och uppspelningskvitton visas här.' : 'Anslut öppnar rätt spelarsession och följer dess speldata. Spela i originalfliken; här ser du samma instruktioner, labbets variantval och faktisk uppspelning.'}</p>
+    <span className="eyebrow">SPELFLIKENS PRESENTATION · LÄSANDE OBSERVATION</span>
+    <h3>Spela i spelfliken. Konfigurera och följ i Lab.</h3>
+    <p>{dealerId === 'astrid' ? 'Astrid använder Labbets gemensamma klippfamiljer. Spela och chatta i spelfliken. Anslut & följ spelet öppnar dessutom observation så att klippval och uppspelningskvitton visas här.' : 'Anslut öppnar rätt spelarsession och följer originalets speldata och tillgängliga native-kvitton. Ett separat Lab-previewprov startas bara efter ditt uttryckliga val och har egna kvitton.'}</p>
     <div className={styles.tools}>{directGameUrl ? <a className="primary-button" href={directGameUrl} target="_blank" rel="noopener" onClick={event => { event.preventDefault(); openGame(); }}>Öppna spelet ↗</a> : null}<button className={directGameUrl ? 'text-button' : 'primary-button'} disabled={Boolean(busy) || !configuration?.configured} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : focused ? 'Anslut & följ spelet' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
     {!configuration?.configured ? <p className={styles.note}>{configuration ? directGameUrl ? 'Studions observation är inte konfigurerad. Öppna spelet fungerar ändå med vanlig spelarinloggning och sparade klippval.' : 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
     {error ? <p role="alert">{error}</p> : null}

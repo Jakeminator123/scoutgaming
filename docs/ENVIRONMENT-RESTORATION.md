@@ -10,8 +10,24 @@ Använd koordinerad startare enligt [labbguiden](../lab/docs/README.md).
 Kör endast ett produkt-/labbpar; stoppa det före miljöbyte. Från Codex används
 `--no-open`. Återanvänd spel- och labbflik, bevara utkast och spel.
 Stoppade servrar förblir stoppade tills Jakob ber om start.
-Bevara sparade Lissabon-profiler på befintlig plats; isolerade testprofiler
-får inte ersätta dem. Lokal backup: `tools/backup-lissabon-state.mjs`.
+Sparade lokala projekt, historik och profiler finns i `lab/data`;
+spel-/CRAIG-databaserna ligger i `lab/data/players`. Isolerade testprofiler
+får inte ersätta dem. Lokal backup: `tools/backup-lab-state.mjs`.
+
+Den 2 oktober flyttades 39 privata filer (4 568 960 byte) utan överskrivning
+från Lissabon till Lab. Hela gamla katalogen, 42 filer, finns i en separat
+hashverifierad privat kopia: `C:\Users\jakem\CroupierBackups\lab-consolidation-20261002`.
+`lissabon/` är därefter borttagen. Projektets bytes och historik bevarades;
+den gamla sessionsvakten ersattes med `lab/data/.local-session.sqlite`.
+
+Andra äldre checkouter flyttas offline med
+`node tools/migrate-lab-state.mjs --destination <ny-absolut-backup-utanför-Git> --apply`.
+Verktyget stoppar vid aktiv session, SQLite-sidecars, länkar eller målkonflikt.
+Utan `--apply` inventerar det endast; ett giltigt gammalt projekt får inte
+ignoreras av startaren. Backupen verifieras med `verifyLabMigrationBackup()`
+i samma modul. Återställ endast med stoppade servrar, bevara nuvarande Lab-data
+separat och kopiera den verifierade backupens `lissabon/data` till en tom
+`lab/data`, utan den gamla `.local-session.sqlite`. Återskapa inte Lissabon.
 
 ## Beständig molndata
 

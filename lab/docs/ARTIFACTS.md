@@ -77,7 +77,7 @@ Privata QA- och användarloggar stannar utanför Git och publika wiki/webb.
 
 `tools/start-local-comparison.mjs` kör spelet och byggt labb med temporära
 databaser/processinställningar. Inga användar-env ändras; externa providers
-blockeras i provprocesserna. `test/local-comparison-browser.mjs` använder
+blockeras i provprocesserna. `test/backoffice-lab-browser.mjs` använder
 denna fixture för verklig lokal rundtrafik och ett märkt syntetiskt chattsvar.
 
 ## OpenClaw och nästa integrationskontrakt

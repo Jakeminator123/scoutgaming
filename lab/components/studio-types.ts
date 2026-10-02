@@ -91,7 +91,7 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
   return social ? undefined : result ? result.videoGenerationId : variant.videoGenerationId;
 }
 
-export const viewPaths: Record<StudioView, string> = { tree: labUrl('/tree'), lab: labUrl('/'), videos: labUrl('/videos'), activity: labUrl('/activity'), openclaw: labUrl('/openclaw'), guide: labUrl('/guide'), probe: labUrl('/probe') };
+export const viewPaths: Record<StudioView, string> = { tree: labUrl('/tree'), lab: labUrl('/events'), videos: labUrl('/videos'), activity: labUrl('/activity'), openclaw: labUrl('/openclaw'), guide: labUrl('/guide'), probe: labUrl('/probe') };
 
 export function studioViewForPath(path: string): StudioView {
   const segment = stripLabBasePath(path).split('/').filter(Boolean)[0];

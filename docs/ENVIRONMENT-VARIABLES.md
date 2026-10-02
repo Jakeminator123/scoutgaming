@@ -15,6 +15,12 @@ Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md
 
 Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
 
+Backoffice/Lab kräver inga nya nyckelnamn. Koordinerad start vidarebefordrar
+`CROUPIER_DATA_DIR` till Lab för läsning av samma äldre BO-granskningsdata,
+`BO_URL` i molnet för administration och `CROUPIER_GAME_ORIGIN` lokalt.
+Aktiva klippval sparas i `LAB_STUDIO_DATA_DIR`; Web läser samma projekt via
+`CROUPIER_PRESENTATION_STUDIO_DIR`. Inga credentials skickas i navigationen.
+
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
 | Render: spel + BO + Lab (`/studio`) | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_CLOUD_DATA_ROOT`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER` + `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` på tom databas | Se grupper nedan | Render sätter `PORT`, `RENDER_EXTERNAL_URL` |

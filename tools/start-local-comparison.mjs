@@ -172,6 +172,8 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
       await unusedPort(labPort, '127.0.0.1');
       labChild = await startChild([join(labDir, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)], {
         cwd: labDir, env: { ...env, NODE_ENV: 'production', PORT: String(labPort),
+          CROUPIER_GAME_ORIGIN: gameUrl,
+          CROUPIER_DATA_DIR: dataDir,
           BETTALOTTO_PARTNER_BASE_URL: gameUrl, BETTALOTTO_PARTNER_KEY_ID: credentials.partner.keyId,
           BETTALOTTO_PARTNER_SECRET: credentials.partner.secret, BETTALOTTO_PARTNER_PLAYER_ID: credentials.partner.playerId,
           BETTALOTTO_API: readToken },

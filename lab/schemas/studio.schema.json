@@ -606,6 +606,18 @@
     "idlePolicy": {
       "$ref": "#/$defs/idlePolicy"
     },
+    "legacyClipPolicy": {
+      "description": "Exact Lab-owned bindings for the existing four-dealer engine and explicit staged destinations. Old BO picks are review-only; never copy uncertain destinations or recorded speech.",
+      "type": "array", "maxItems": 60,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["dealerId", "part", "clipId"],
+        "properties": {
+          "dealerId": { "enum": ["vera", "astrid", "amira", "mei"] },
+          "part": { "enum": ["idle", "headTilt", "deal", "dealWatch", "think", "gest", "box0", "box1", "box2", "box3", "box4", "box5", "box6", "dealer-up", "dealer-hole"] },
+          "clipId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$" }
+        }
+      }
+    },
     "probePolicy": {
       "$ref": "probe-policy.schema.json"
     }

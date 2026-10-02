@@ -5,6 +5,10 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import { webcrypto } from 'node:crypto';
+import { buildPlaybackTrace } from '../lib/playback-trace.mjs';
+import { appendPartnerTrace, createPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
+import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
+import { createSeedProject } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -117,4 +121,32 @@ test('speech capability binds only after trusted attachment and renews on origin
   ui.receive(attached); ui.flush(); assert.equal(ui.speech().binding.revision, first.revision + 1);
   assert.ok(!JSON.stringify(ui.received).includes('PRIVATE'));
   assert.ok(ui.received.every(record => record.data?.source !== ui.popup));
+});
+
+test('every dealer scopes reloads, accepts lower versions and excludes stale receipt sequences after reset', async () => {
+  for (const dealerId of ['vera', 'astrid', 'amira', 'mei']) {
+    const ui = setup(); ui.update({ dealerId }); await tick(); ui.flush();
+    ui.button('Anslut').onClick(); await tick(); ui.flush();
+    ui.receive(ui.message('status', { state: 'attached', dealer: dealerId }, 1));
+    ui.receive(ui.message('command', { requestId: 'old', op: 'state', view: { version: 8 }, presentation: [{ type: 'idle' }], dealer: dealerId }, 2));
+    let trace = createPartnerTrace(); for (const record of ui.received) trace = appendPartnerTrace(trace, record);
+    trace = restartPartnerTrace(trace);
+    const offset = ui.received.length;
+    ui.receive({ ...ui.message('status', { state: 'attached', dealer: dealerId }, 1), at: '2026-10-02T12:00:00Z' });
+    const command = ui.message('command', { requestId: 'new', op: 'state', view: { version: 0 }, presentation: [{ type: 'idle' }], dealer: dealerId }, 2);
+    ui.receive(command);
+    const accepted = ui.received.length;
+    ui.receive(command);
+    ui.receive(ui.message('playback', { event: 'idle', state: 'end', requestId: 'old', version: 8 }, 1));
+    assert.equal(ui.received.length, accepted, dealerId);
+    assert.deepEqual(ui.received.filter(record => record.kind === 'round').map(record => record.channel), ['native-session-1', 'native-session-2']);
+    for (const record of ui.received.slice(offset)) trace = appendPartnerTrace(trace, record);
+    trace = appendPartnerTrace(trace, { source: 'partner', kind: 'round', data: { requestId: 'new', version: 0, type: 'round', events: [{ type: 'idle' }] } });
+    const report = buildPlaybackTrace(trace.records);
+    assert.equal(report.rows.length, 1); assert.equal(report.rows[0].requestId, 'new');
+    assert.equal(report.rows[0].played, false); assert.equal(report.inventory.played, 0);
+    const nativePreview = { ...trace, records: trace.records.filter(record => record.source !== 'partner') };
+    const sequence = buildPresentationSequence(nativePreview.records, createSeedProject());
+    assert.deepEqual(sequence.steps.map(step => step.requestId), ['new']);
+  }
 });

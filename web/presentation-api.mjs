@@ -9,6 +9,7 @@ import { buildRuntimeCatalog } from '../lab/lib/studio-model.mjs';
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
 import { selectPresentation } from '../presentation-runtime/selection.mjs';
 import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
+import { legacyClipControls } from '../lab/lib/legacy-clip-inventory.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const publicModules = new Map(['live-idle', 'idle-policy'].map(name => [`/presentation-runtime/${name}.mjs`, `presentation-runtime/${name}.mjs`]));
@@ -33,7 +34,7 @@ export function presentationInput(event, published) {
 
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data'), 'videos') },
-  select = selectPresentation } = {}) {
+  select = selectPresentation, legacyOptions } = {}) {
   const decisions = new Map();
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
   let adviceService;
@@ -63,8 +64,12 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       }
       if (pathname === '/api/presentation/config' && req.method === 'GET') {
         const [project, inventory] = await Promise.all([store.load(), loadVideoRegistry(registryOptions)]);
-        json(200, { owner: 'web', revision: project.revision, idlePolicy: project.idlePolicy, inventory,
+        json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource: 'lab/project.json', idlePolicy: project.idlePolicy, inventory,
           defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
+      }
+      if (pathname === '/api/presentation/legacy-config' && req.method === 'GET') {
+        const controls = await legacyClipControls(await store.load(), { ...legacyOptions, ...(env.CROUPIER_DATA_DIR ? { dataDirectory: env.CROUPIER_DATA_DIR } : {}) });
+        json(200, controls.runtime); return true;
       }
       if (!['/api/presentation/select', '/api/presentation/idle-advice'].includes(pathname) || req.method !== 'POST') fail('Unknown presentation endpoint', 404);
       let raw = '';
@@ -77,7 +82,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         const controller = new AbortController();
         const disconnected = () => { if (!res.writableEnded) controller.abort(); };
         res.once('close', disconnected);
-        try { json(200, await advise({ ...body, project }, { signal: controller.signal })); }
+        try { json(200, { ...await advise({ ...body, project }, { signal: controller.signal }), projectRevision: project.revision, configurationSource: 'lab/project.json' }); }
         finally { res.removeListener('close', disconnected); }
         return true;
       }
@@ -95,7 +100,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
           const family = inventory.families.find(item => item.id === video?.familyId);
           const standard = inventory.videos.find(item => family?.standardIds.includes(item.id) && item.available);
           const publicVideo = item => item ? { id: item.id, sha256: item.sha256, fileName: item.fileName, src: `/api/presentation/videos/${item.id}` } : null;
-          return { ...result, video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision };
+          return { ...result, video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource: 'lab/project.json' };
         }));
       }
       json(200, await decisions.get(key));

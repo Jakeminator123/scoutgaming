@@ -42,6 +42,8 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   const response = await choose(); assert.equal(response.status, 200);
   const result = await response.json();
   assert.equal(result.owner, 'web'); assert.equal(result.video.fileName, 'deal_pos4.mp4');
+  assert.equal(result.projectRevision, createSeedProject().revision);
+  assert.equal(result.configurationSource, 'lab/project.json');
   assert.equal(result.decision.sourceEvent.card.r, 'A'); assert.equal(result.decision.sourceEvent.handIndex, 1);
   assert.deepEqual(await (await choose()).json(), result);
   assert.equal((await choose({ version: 1 })).status, 409);
@@ -66,6 +68,8 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   }) });
   assert.equal(idle.status, 200); const advice = await idle.json();
   assert.equal(advice.videoId, null); assert.equal(advice.provider, 'openclaw_not_configured');
+  assert.equal(advice.projectRevision, createSeedProject().revision);
+  assert.equal(advice.configurationSource, 'lab/project.json');
 });
 
 test('product selection and Lab inventory use the same configured Astrid archive', async t => {
@@ -204,8 +208,8 @@ async function controllerFixture(t) {
   const element = () => ({ style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) });
   globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
   const selected = inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/config') ? { inventory, idlePolicy: createSeedProject().idlePolicy }
-    : { video: selected, standard: selected, decision: { sourceEvent: source, media: { familyId: selected.familyId } } }), { headers: { 'content-type': 'application/json' } });
+  globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/config') ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json' }
+    : { video: selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: selected.familyId } } }), { headers: { 'content-type': 'application/json' } });
   let proofs = 0;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
@@ -216,6 +220,31 @@ async function controllerFixture(t) {
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, get proofs() { return proofs; } };
 }
+
+test('native configuration and actual film receipts preserve their saved project revision and selection id', async t => {
+  const { controller, jobs, receipts } = await controllerFixture(t);
+  assert.equal(receipts[0].event, 'configuration'); assert.equal(receipts[0].mode, 'off');
+  assert.equal(receipts[0].projectRevision, 'studio-config-fixture');
+  const result = controller.present(source); await new Promise(resolve => setImmediate(resolve));
+  jobs[0].options.onReceipt({ state: 'start' }); jobs[0].options.onReceipt({ state: 'presented' }); jobs[0].options.onReceipt({ state: 'end' });
+  jobs[0].resolve({ completed: true }); assert.equal(await result, true);
+  const deal = receipts.filter(row => row.event === 'deal');
+  assert.deepEqual(deal.map(row => row.state), ['selected', 'start', 'presented', 'end']);
+  for (const row of deal) {
+    assert.equal(row.projectRevision, 'studio-selection-fixture'); assert.equal(row.configurationSource, 'lab/project.json');
+    assert.equal(row.requestId, 'selection-fixture');
+  }
+});
+
+test('a film error keeps the selection correlation when reporting a 2D fallback, never an end receipt', async t => {
+  const { controller, jobs, receipts } = await controllerFixture(t);
+  const result = controller.present(source); await new Promise(resolve => setImmediate(resolve));
+  jobs[0].reject(new Error('fixture film unavailable')); assert.equal(await result, false);
+  const fallback = receipts.find(row => row.state === 'fallback');
+  assert.equal(fallback.renderer, '2d'); assert.equal(fallback.requestId, 'selection-fixture');
+  assert.equal(fallback.projectRevision, 'studio-selection-fixture'); assert.ok(fallback.familyId);
+  assert.equal(receipts.some(row => row.event === 'deal' && row.state === 'end'), false);
+});
 
 test('selection exposes server event and frames cannot outlive the action owner', async t => {
   const { controller, jobs } = await controllerFixture(t), selected = [], frames = [];

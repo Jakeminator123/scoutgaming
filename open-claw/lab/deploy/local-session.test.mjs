@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, rm, access } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, access } from 'node:fs/promises';
 import { join, dirname, basename, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createServer } from 'node:net';
@@ -13,6 +13,25 @@ import { startLocalComparison } from '../../../tools/start-local-comparison.mjs'
 import { startLabSession } from '../../../tools/start-lab-session.mjs';
 
 const moduleUrl = new URL('./local-session.mjs', import.meta.url).href;
+
+test('retired live session blocks canonical guard and a released one never recreates the old directory', async t => {
+  const repoRoot = await testRoot(t), pair = await ports();
+  const legacyDir = join(repoRoot, 'lissabon', 'data');
+  await mkdir(legacyDir, { recursive: true });
+  const file = join(legacyDir, '.local-session.sqlite');
+  const db = new DatabaseSync(file);
+  try {
+    db.exec('CREATE TABLE local_session(id INTEGER PRIMARY KEY,token TEXT,revision INTEGER,payload TEXT)');
+    db.prepare('INSERT INTO local_session VALUES(1,?,1,?)').run('legacy', JSON.stringify({ ownerPid: process.pid, childPids: [], ...pair }));
+    await assert.rejects(acquireLocalSession({ repoRoot, ...await ports() }), { code: 'CROUPIER_SESSION_ACTIVE' });
+    db.prepare('DELETE FROM local_session').run();
+  } finally { db.close(); }
+  const migrated = await acquireLocalSession({ repoRoot, ...pair }); await migrated.release();
+  await rm(join(repoRoot, 'lissabon'), { recursive: true });
+  const next = await acquireLocalSession({ repoRoot, ...pair }); await next.release();
+  await assert.rejects(access(join(repoRoot, 'lissabon')), { code: 'ENOENT' });
+  await access(join(repoRoot, 'lab/data/.local-session.sqlite'));
+});
 
 async function testRoot(t) {
   const root = await mkdtemp(join(tmpdir(), 'croupier-session-test-'));
@@ -33,7 +52,7 @@ async function ports() {
 }
 
 function changeSession(root, change) {
-  const db = new DatabaseSync(join(root, 'lissabon', 'data', '.local-session.sqlite'));
+  const db = new DatabaseSync(join(root, 'lab', 'data', '.local-session.sqlite'));
   try {
     const row = db.prepare('SELECT payload FROM local_session WHERE id=1').get();
     const state = JSON.parse(row.payload);

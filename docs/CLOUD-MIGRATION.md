@@ -28,8 +28,9 @@ JSON-register, media, acceptansbaseline och befintliga QA-kvitton bevaras.
 | --- | --- |
 | Publik frontend | `apps/croupier-frontend`, Vercel `croupier-frontend`; [scoutgaming.tech](https://www.scoutgaming.tech/) |
 | Spel | [croupier-v2.onrender.com](https://croupier-v2.onrender.com/blackjack?dealer=astrid); konto, kort, shoe, wallet och uppspelning |
-| Studio / Lab | Render `/studio`, samma Lab-app; `/tree` är allmänna editorn |
-| BO | Render `/bo`, administration, ingen separat dealerström |
+| Backoffice/Lab | Render `/studio`, gemensam navigation för Studio, media, event, zoner, OpenClaw och uppspelning; `/tree` är allmänna editorn |
+| Administration | `/studio/administration` återanvänder befintlig `/bo`; samma konton och rollkontroller, ingen separat dealerström |
+| Lokal beständig data | `lab/data` för projekt, historik och profiler; `lab/data/players` för konto-/speldatabaser; Lissabon är borttagen med privat backup |
 | Spelarkonton/rundor | `/var/data/players/croupier.db`, SQLite |
 | CRAIG/BO-konton | `/var/data/players/craig.db`, SQLite |
 | Studio-projekt/index | `/var/data/studio`, beständig Render-disk |
@@ -46,6 +47,11 @@ konto-, saldo-, sessions- och återgångsprov krävs.
 
 `presentation=local` betecknar gemensam presentation även i molnet.
 Speluppspelning, Studios observation och genererat tal/video är olika flöden.
+Aktiva klippval sparas i samma Studio-projekt. Originalmotorernas exakta
+bindningar ligger i `legacyClipPolicy`, Astrids gemensamma spelväg i
+`mediaPolicy`/`idlePolicy`. Äldre BO-val bevaras för granskning och explicit
+exakt import. BO:s gamla tilldelningsskrivning är avvecklad (HTTP 410).
+Nativekvitton visar vad spelet faktiskt presenterat; Partner-SSE är diagnostik.
 Vercel är landningen; gameplay/WebSocket finns på Render.
 Privat Blob läses genom servern; frontend får inga modell-/lagringsnycklar.
 Zoner använder `CROUPIER_ZONES_DATABASE_URL`, inga generella DB-fallbacks.

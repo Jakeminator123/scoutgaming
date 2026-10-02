@@ -40,6 +40,7 @@ function loadComponent(relativeFile) {
       : name === './media-family-editor' ? loadComponent('./media-family-editor.tsx')
       : name === './deal-frequency-editor' ? loadComponent('./deal-frequency-editor.tsx')
       : name === './family-video-library' ? loadComponent('./family-video-library.tsx')
+      : name === './legacy-clip-editor' ? loadComponent('./legacy-clip-editor.tsx')
         : mocks[name] ?? require(name),
   }, { filename: relativeFile });
   return module.exports;

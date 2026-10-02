@@ -16,8 +16,9 @@ Labbets tidigare moduler återexporterar den gemensamma implementationen.
 Web använder `PerformancePlayer.playLocalClip` för hashverifierade MP4-filer
 från `emil/dealklipp-v1`. En film äger ytan i taget. Den tidigare Astridmotorn,
 dess talmedia och supervisor laddas inte i det lokala läget. Lab monterar ingen
-parallell följningsspelare för Astrid, inte heller före anslutningskvittot eller
-efter **Ny observation**. Fristående editorprov är fortfarande möjliga.
+parallell följningsspelare för någon dealer vid anslutning, återanslutning
+eller **Ny observation**. En separat Lab-preview kräver ett uttryckligt val
+och har egna kvitton; fristående editorprov är fortfarande möjliga.
 
 Det autentiserade `/api/presentation/select` slår upp dealinstruktionen i
 serverns publicerade `native_presentations` för aktuell spelare och version.
@@ -27,13 +28,29 @@ aldrig. Ingen tredje server eller alternativ spelmotor har tillkommit.
 
 ## Sparad policy och chatt
 
+Backoffice/Lab är den gemensamma arbetsytan. Administration återanvänder
+befintliga BO-funktioner och deras rollkontroller. **Ladda upp & bibliotek**
+visar exakta klippflöden för alla fyra dealers; **Event och regler** behåller
+Studiofamiljerna. BO:s äldre tilldelningar är inaktiva och skrivskyddade.
+Endast en exakt match i dealer, situation/destination och registrerad fil
+kan importeras uttryckligen till Lab-utkastet. Osäkra tal-/stagedkopplingar
+finns kvar för granskning och lånas aldrig till en annan replik/plats.
+
+`legacyClipPolicy` styr originalmotorernas befintliga rörelseval och exakt
+verifierade staged-destinationer. Dessa läses vid sidstart; ladda om mellan
+händer efter sparning. Inspelat tal följer sitt befintliga exakta audio/video-par.
+Astrids `presentation=local` använder fortsatt `mediaPolicy`/`idlePolicy`.
+Projekt, versioner och historik sparas i samma Lab-projekt; lokalt `lab/data`,
+i molnet `/var/data/studio`. Medieregistren återanvänds utan filmkopiering.
+
 Helpern ger Web och Lab samma isolerade projektkatalog. Spara ändringar i
 Eventstudion. Nästa deal/replik läser sparad policy; idlepolicyn läses vid
 sidstart, så ladda om spelfliken efter idleändringar. Osparade editorändringar
 är inte produktens policy. En ny helperkörning börjar med en ny testkatalog.
 
 Välj **Standard**, **Regler**, **Slump**, **OpenClaw** eller **OpenClaw · skugga**
-i spelfliken. Tom variantmapp ger standard utan modellanrop. Standard är default.
+i spelfliken. Tom variantmapp ger standard utan modellanrop. Den anslutna
+Studio-profilen startar med OpenClaw/active; utan den är startläget Standard/off.
 Idleråd bygger på färsk chatt och samma befintliga begränsningar och tillåtna
 varianter, inklusive `idle_insulted`. Skugga kan aldrig spela AI-förslaget.
 
@@ -55,6 +72,13 @@ Native-observationen rapporterar urval, faktisk start, presenterad videobild,
 slut, avbrott och reserv. Ett valt klipp räknas inte som spelat. MP4-slut kräver
 verkligt `ended` och presenterad bild. Avbrott/stall slutar aldrig med falskt
 completion-kvitto. Lab kan valfritt spegla spelfliken med browserns bilddelning.
+
+**Uppspelning och spår** visar aktiv native-session, presentationsläge,
+sparad/kvitterad revision och event → familj/variant/orsak → start/bild/slut.
+Nya urval har egna kvittorader; sena slutkvitton kan inte godkänna nästa klipp.
+Genererat tal visar sin egen besluts-/genererings-/uppspelningskedja. Partner-SSE
+är tydligt märkt diagnostik. Registrering, preview och runtimebindning är
+separata statusar från spelarens faktiska kvitto.
 
 Hela 1080×1920-filmen visas med `object-fit: contain`, även på dator.
 Spelkorten är auktoritativa 2D-överlägg. Råfilmerna har ännu ingen kalibrerad

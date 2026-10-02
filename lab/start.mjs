@@ -13,11 +13,13 @@ import profile from './policies/local-profile.json' with { type: 'json' };
 
 const directory = dirname(fileURLToPath(import.meta.url));
 const root = resolve(directory, '..');
-// The session guard also creates lissabon/data. Its lock alone must never
-// redirect a new Lab project away from its data on the second launch.
-export const localDataDir = (repoRoot = root) => existsSync(join(repoRoot, 'lissabon/data/project.json'))
-  ? join(repoRoot, 'lissabon/data') : join(repoRoot, 'lab/data');
-export const defaultDataDir = localDataDir();
+export const localDataDir = (repoRoot = root) => {
+  if (existsSync(join(repoRoot, 'lissabon/data/project.json'))) {
+    throw new Error('Sparad Lissabon-data måste flyttas först: node tools/migrate-lab-state.mjs --destination <privat backup utanför Git> --apply.');
+  }
+  return join(repoRoot, 'lab/data');
+};
+export const defaultDataDir = join(root, 'lab/data');
 export function createLocalProject() {
   const project = createSeedProject();
   for (const row of project.idlePolicy.variants) if (profile.openClawIdleIds.includes(row.videoId)) { row.use = 'openclaw'; row.automatic = null; }
@@ -81,13 +83,13 @@ export async function main(args = process.argv.slice(2)) {
   }
   const running = await fetch(`http://127.0.0.1:${profile.labPort}/api/health`, { signal: AbortSignal.timeout(2000) }).then(r => r.json()).catch(() => null);
   if (running?.service === 'croupier-next-studio' && running.streamLane === profile.id) {
-    console.log(`Lissabon kör redan: ${url}`);
+    console.log(`Backoffice/Lab kör redan: ${url}`);
     if (args.includes('--astrid-camera')) console.log('Kameraflaggan ändras bara vid en ny start. Den körande sessionen ändrades inte.');
     if (args.includes('--cloud-storage')) console.log('Molnlagring väljs bara vid en ny start. Den körande sessionen ändrades inte.');
     return;
   }
   if (running) throw new Error(`Port ${profile.labPort} används av ett annat labb. Stoppa dess startprocess först; ingen process stängs automatiskt.`);
-  const studioDataDir = defaultDataDir;
+  const studioDataDir = localDataDir();
   const fixture = await startIsolatedConnection({ ...profile, studioDataDir, streamLane: profile.id,
     astridCamera: args.includes('--astrid-camera'),
     cloudStorage: args.includes('--cloud-storage'),
@@ -96,7 +98,7 @@ export async function main(args = process.argv.slice(2)) {
       if (!args.includes('--skip-build')) await buildLab(session);
     },
   });
-  console.log(`Lissabon redo: ${url}\nTryck Anslut för att öppna Astrid och följa samma ström.\nCtrl+C stoppar båda servrarna. Sparade inställningar finns kvar i ${studioDataDir}.`);
+  console.log(`Backoffice/Lab redo: ${url}\nTryck Anslut för att öppna Astrid och följa samma ström.\nCtrl+C stoppar båda servrarna. Sparade inställningar finns kvar i ${studioDataDir}.`);
   const stop = async () => { await fixture.stop(); process.exit(0); };
   process.once('SIGINT', stop); process.once('SIGTERM', stop);
   if (!args.includes('--no-open')) openBrowser(url);

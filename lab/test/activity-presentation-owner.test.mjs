@@ -35,5 +35,22 @@ test('Web ownership prevents a second player before attachment and survives obse
   props.streamView.dealerId = 'vera'; // Changing editor selection cannot start a competing stream.
   tree = render(); assert.equal(hasPlayer(tree), false);
   partner(tree).props.onNative({ source: 'native', kind: 'status', data: { state: 'attached', presentationOwner: 'legacy' } });
-  assert.equal(hasPlayer(render()), true);
+  tree = render(); assert.equal(hasPlayer(tree), false);
+  const preview = tree.find(node => node.type === 'button' && node.props.children === 'Öppna separat Lab-preview');
+  assert.ok(preview); preview.props.onClick();
+  tree = render(); assert.equal(hasPlayer(tree), true);
+  assert.equal(tree.find(node => node.type === Player).props.autoFollow, false);
+  assert.equal(tree.find(node => node.type === Player).props.followFromRecord, 2);
+  partner(tree).props.onNewObservation();
+  assert.equal(hasPlayer(render()), false);
+  tree = render();
+  partner(tree).props.onImport([
+    { source: 'native', kind: 'round', data: { requestId: 'same', version: 1, events: [{ type: 'idle' }] } },
+    { source: 'partner', kind: 'round', data: { requestId: 'same', version: 1, events: [{ type: 'idle' }] } },
+  ]);
+  tree = render(); tree.find(node => node.type === 'button' && node.props.children === 'Öppna separat Lab-preview').props.onClick();
+  const player = render().find(node => node.type === Player);
+  assert.equal(player.props.trace.records.length, 1);
+  assert.equal(player.props.trace.records[0].source, 'native');
+  assert.equal(player.props.followFromRecord, 1);
 });

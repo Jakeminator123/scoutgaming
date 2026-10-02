@@ -477,7 +477,7 @@ function boApi(url) {
   if (url === '/api/bo/config') return cfg;
   if (url === '/api/bo/apikeys') return { keys: partner().keys.list(), scopes: partner().SCOPES, docs: '/docs/partner-api.html' };
   if (url === '/api/bo/gen-verdicts') return { genVerdicts: cfg.genVerdicts ?? {}, genLandings: cfg.genLandings ?? {}, parts: CLIP_PARTS };
-  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {}, landings: cfg.clipLandings ?? {} };
+  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {}, landings: cfg.clipLandings ?? {}, assignmentsReadOnly: true, assignmentSource: 'legacy-review-only', activeEditor: 'Backoffice/Lab', actualPlayback: false };
   if (url === '/api/bo/users') {
     return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
   }
@@ -670,12 +670,7 @@ async function boPost(url, body, who) {
     boSave(cfg); return { ok: true, genVerdicts: cfg.genVerdicts };
   }
   if (url === '/api/bo/clip-assign') {
-    const { dealer, part, clip } = body ?? {};
-    if (!['vera','astrid','amira','mei'].includes(dealer) || !CLIP_PARTS.includes(part)) return { error: 'bad dealer/part' };
-    if (clip && cfg.neverAgain?.[clip]) return { error: 'clip is in Never again' };
-    cfg.clipAssignments ??= {}; cfg.clipAssignments[dealer] ??= {};
-    if (clip) cfg.clipAssignments[dealer][part] = { clip, by: who?.sub ?? who ?? null, at: new Date().toISOString() }; else delete cfg.clipAssignments[dealer][part];
-    boSave(cfg); return { ok: true, assignments: cfg.clipAssignments };
+    return { error: 'Aktiva klippval redigeras i Backoffice/Lab. Äldre BO-val är endast granskningsdata.', statusCode: 410, editor: 'Backoffice/Lab' };
   }
   if (url === '/api/bo/pitboss') { cfg.pitboss = { ...cfg.pitboss, ...body }; boSave(cfg); return { ok: true, pitboss: cfg.pitboss }; }
   if (url === '/api/bo/tournament') {
@@ -1091,7 +1086,7 @@ const server = createServer(async (req, res) => {
     req.on('end', async () => {
       let out = null;
       try { out = await boPost(req.url, JSON.parse(body || '{}'), who); } catch (e) { out = { error: 'bad request' }; }
-      res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });
+      res.writeHead(out?.statusCode ?? (out ? 200 : 404), { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out ?? { error: 'not found' }));
     });
     return;
