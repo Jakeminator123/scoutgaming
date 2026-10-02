@@ -20,9 +20,22 @@ Dealer-UI och OpenClaw har byggts parallellt; navigation, Backoffice-gruppering,
 guide och docs är integrerade. Läsgranskningens observationsfel är rättade:
 panelen behåller sin monterade observation och frysta dealer; befintlig
 molnspelflik med fel/saknad/tvetydig dealer nekas utan att navigeras eller stängas.
-43 riktade UI-/navigationstester och Lab-TypeScript: PASS. De nya testerna
-ingår i normal pre-commit och Lab-CI. Publicering verifieras vid leverans;
-detta är inte ny gameplay-/läppsynk-/GPU-acceptans eller native API-cutover.
+Kodleverans `d8b1b928d3feef9f4004ea6ee26697af2613a10f`: 43 riktade
+UI-/navigationstester, Lab-TypeScript och normal pre-commit PASS. Alla tre
+[CI-jobb](https://github.com/Jakeminator123/github-work/actions/runs/37077434621)
+är gröna; frontend och `croupier-lab-ui` är READY på Vercel för samma kod-SHA.
+Anonym åtkomst till Studio, Backoffice och OpenClaw-portalen kräver fortsatt
+inloggning. De nya testerna ingår i normal pre-commit och Lab-CI. Automatisk
+webview-kontroll kunde inte starta; visuell livegranskning kvarstår. Detta är
+inte ny gameplay-/läppsynk-/GPU-acceptans eller native API-cutover.
+Ingen Croupier-devserver är kvar på de vanliga lokala portarna efter testernas
+isolerade fixtures. Inga andra projekts servrar har stoppats i detta UI-steg.
+
+Byggloggen rapporterar en befintlig kritisk Next.js-varning
+[GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j).
+Den gäller Node-baserad `next/og` med användarstyrt SVG-innehåll; ingen sådan
+route hittades i Lab/app eller frontend/app. Beroendeuppdatering återstår;
+ingen automatisk `audit fix --force` har körts och inga paket har ändrats.
 
 [Masterplan och återanvändbara agentprompter](CLOUD-MIGRATION.md#masterplan-en-croupier-studio)
 är införda i befintlig migrationsguide. Jakob har godkänt målbilden och vill
@@ -45,7 +58,7 @@ Request-/GPU-kostnadsjournaler måste bestå så att tidigare försök inte debi
 Tre implementationer körs på exklusiva filer: dokument/CAS/migration, fenced
 request-/budgetjournal och aktiv förenkling av Studio-navigationen. Gemensamma
 runtimecallers och driftkällor byts inte förrän delarna verifierats/integrerats.
-Efter kontrakt och isolerade lagringsutkast: cirka 25 % före UI-leveransen.
+Efter kontrakt, isolerade lagringsutkast och publicerat UI-steg: cirka 30 %.
 Detta är en grov omfattningsbedömning, inte uppmätt tidsåtgång eller ett tidslöfte.
 GitHub-kopplingen bekräftar tre CI-jobb och båda Vercel-byggena gröna på `16aa738f`.
 
