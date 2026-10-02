@@ -31,8 +31,8 @@ JSON-register, media, acceptansbaseline och befintliga QA-kvitton bevaras.
 | Backoffice/Lab | Render `/studio`, gemensam navigation för Studio, media, event, zoner, OpenClaw och uppspelning; `/tree` är allmänna editorn |
 | Administration | `/studio/administration` återanvänder befintlig `/bo`; samma konton och rollkontroller, ingen separat dealerström |
 | Lokal beständig data | `lab/data` för projekt, historik och profiler; `lab/data/players` för konto-/speldatabaser; Lissabon är borttagen med privat backup |
-| Spelarkonton/rundor | `/var/data/players/croupier.db`, SQLite |
-| CRAIG/BO-konton | `/var/data/players/craig.db`, SQLite |
+| Spelarkonton/rundor | Separat Neon game-databas, schema `croupier_game` |
+| CRAIG/BO-konton | Samma game-databas, separat schema `croupier_auth` |
 | Studio-projekt/index | `/var/data/studio`, beständig Render-disk |
 | Privata nya filmer | Vercel Blob, skyddad serverrutt med hash/familj/Range |
 | Zonmetadata | Dedikerad Neon, schema `croupier_zones`; browserkopia är separat |
@@ -41,9 +41,11 @@ JSON-register, media, acceptansbaseline och befintliga QA-kvitton bevaras.
 `croupier-player-preview-qa` bär lagringskopplingar och är ingen dubblett.
 Testbackenden `croupier-vercel-preview-qa` startas bara på begäran.
 Frontend-Preview kan peka mot produktion; syntetiska konton/rundor kräver
-isolerad backend och annat hostname. Game-Neon-migration och byte av
-spelklient till Vercel är inte genomförda. Byt inte bara `DATABASE_URL`;
-konto-, saldo-, sessions- och återgångsprov krävs.
+isolerad backend och annat hostname. Game-Neon är aktivt sedan 2 oktober
+efter verifierad produktionsimport och separat återläsningsprov. Spelklientens
+byte till Vercel och det nya Blob-indexet inväntar fortfarande moln-QA.
+Bevarade SQLite-filer är historisk rollbackkälla; starta dem aldrig blindt
+efter nya PostgreSQL-skrivningar.
 
 `presentation=local` betecknar gemensam presentation även i molnet.
 Speluppspelning, Studios observation och genererat tal/video är olika flöden.

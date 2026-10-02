@@ -20,6 +20,18 @@ test('unpaid QA refuses other services, origins, real provider credentials and p
   assert.throws(() => unpaidQaSpecifications(specifications, {...env, NODE_OPTIONS: '--require=foreign'}));
 });
 
+test('each unpaid run isolates speech journals without changing Lab or the original child specification', () => {
+  const originalDirectory='/var/data/speech';
+  const specifications={web:{env:{...env,CROUPIER_GENERATED_SPEECH_DIR:originalDirectory}},lab:{env:{unchanged:true}}};
+  const first='/var/data/speech/transport-qa-00000000-0000-0000-0000-000000000001';
+  const second='/var/data/speech/transport-qa-00000000-0000-0000-0000-000000000002';
+  assert.equal(unpaidQaSpecifications(specifications,env,{speechDirectory:first}).web.env.CROUPIER_GENERATED_SPEECH_DIR,first);
+  assert.equal(unpaidQaSpecifications(specifications,env,{speechDirectory:second}).web.env.CROUPIER_GENERATED_SPEECH_DIR,second);
+  assert.equal(specifications.web.env.CROUPIER_GENERATED_SPEECH_DIR,originalDirectory);
+  assert.equal(unpaidQaSpecifications(specifications,env,{speechDirectory:first}).lab,specifications.lab);
+  for(const speechDirectory of ['/var/data/speech','/var/data/players','/var/data/speech/../players','/tmp/transport-qa-00000000-0000-0000-0000-000000000001'])assert.throws(()=>unpaidQaSpecifications(specifications,env,{speechDirectory}),/Invalid isolated/);
+});
+
 test('fixture provider never reaches a paid host and uses the real session worker request', async () => {
   let realCalls = 0, closed = 0, workerInput;
   const fixtureFetch = unpaidQaFetch(env, {realFetch: async () => {realCalls++; return Response.json({local: true});}, createWorker: async input => {workerInput = input; return {close: () => {closed++;}};}});

@@ -47,8 +47,11 @@ Host/forwarded headers utan privat ingressbevis nekas.
 
 Gemensam privat media: `CROUPIER_MEDIA_BLOB_INDEX` är opt-in med aktiv
 Blob-lagring och pekar på `/app/media/blob-index.json` eller exakt härledd
-`studio/media-blob-index.json`. Endast verifierad SHA-256/size/public-allowlist
-får serverlevereras. Källa/review/staging blir inte publik genom indexet.
+`studio/media-blob-index.json`. Publika assets kräver public-allowlist;
+privata bankklipp kräver autentisering och exakt familj, roll, fil-ID, hash,
+storlek och Blob-path. Originalpreview har dessutom inventory-allowlist.
+Källa/review/staging blir inte allmänt publik genom indexet. Aktivt indexläge
+ger 503 vid saknad eller felaktig källa, utan lokal bytesfallback.
 Gamla explicita `LAB_VIDEO_ARCHIVE=/app/emil/dealklipp-v1` normaliseras till
 `/app/media/dealers/astrid/runtime/presentation`; andra overrides bevaras.
 

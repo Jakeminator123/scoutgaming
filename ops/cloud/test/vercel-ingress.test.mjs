@@ -29,6 +29,17 @@ test('only a secret-authenticated exact Vercel origin can cross the backend tran
   assert.equal(vercelIngressRequest(request('/__vercel/lab/session'), ingress).accepted, false);
 });
 
+test('old Render document bookmarks redirect to canonical UI without forwarding credentials or accepting APIs', () => {
+  const direct=url=>({url,method:'GET',headers:{host:'isolated.onrender.com'}});
+  assert.equal(vercelIngressRequest(direct('/blackjack?dealer=astrid&presentation=local&launch=private&token=secret'),ingress).redirect,'https://preview.example.test/game?dealer=astrid&presentation=local');
+  assert.equal(vercelIngressRequest(direct('/studio/activity'),ingress).redirect,'https://preview.example.test/studio/activity');
+  assert.equal(vercelIngressRequest(direct('/v2?dealer=amira&rehearsal=1'),ingress).redirect,'https://preview.example.test/v2?dealer=amira&rehearsal=1');
+  for(const path of ['/api/table','/studio/api/project','/speech-stream','/lipsync-worker','/%62o','//evil.test','/api/auth/bo/callback?code=secret'])assert.equal(vercelIngressRequest(direct(path),ingress).accepted,false,path);
+  assert.equal(vercelIngressRequest({...direct('/bo'),method:'POST'},ingress).accepted,false);
+  assert.equal(vercelIngressRequest({...direct('/bo'),headers:{host:'evil.test'}},ingress).accepted,false);
+  assert.equal(vercelIngressRequest({...request('/game?launch=private'),method:'GET'},ingress).transported,true,'private launch continues through authenticated backend ingress');
+});
+
 test('WebSocket and SSE pass through the same authenticated ingress without replay or origin rewriting', () => {
   for (const path of ['/speech-stream', '/lipsync-worker', '/studio/api/inputs/events']) {
     const input = {...request(path), method: 'GET'};

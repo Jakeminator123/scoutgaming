@@ -4,13 +4,15 @@ import {mkdir, writeFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {assertUnpaidQaEnvironment, QA_SERVICE_ID, QA_TRANSPORT_ORIGIN} from './qa-stream-transport-preload.mjs';
 
-export function unpaidQaSpecifications(specifications, env) {
+export function unpaidQaSpecifications(specifications, env, {speechDirectory} = {}) {
   assertUnpaidQaEnvironment(env);
   if (env.NODE_OPTIONS || specifications.web.env.NODE_OPTIONS) throw Error('Unpaid QA runner requires a single explicit preload.');
+  if (speechDirectory !== undefined && !/^\/var\/data\/speech\/transport-qa-[a-f0-9-]{36}$/.test(speechDirectory)) throw Error('Invalid isolated QA speech directory.');
   const webEnvironment = {...specifications.web.env, RENDER_SERVICE_ID: QA_SERVICE_ID,
     CROUPIER_VERCEL_TRANSPORT_ORIGIN: QA_TRANSPORT_ORIGIN};
   assertUnpaidQaEnvironment(webEnvironment);
   return {...specifications, web: {...specifications.web, env: {...webEnvironment,
+    ...(speechDirectory ? {CROUPIER_GENERATED_SPEECH_DIR: speechDirectory} : {}),
     NODE_OPTIONS: `--import=${new URL('./qa-stream-transport-preload.mjs', import.meta.url).href}`}}};
 }
 
@@ -19,14 +21,16 @@ export async function mainUnpaidQa(env = process.env) {
   if (env.CROUPIER_CLOUD_DATA_ROOT !== '/var/data') throw Error('Unpaid QA requires the isolated Render disk.');
   const {prepareContainerUser} = await import('./container-entry.mjs');
   await prepareContainerUser(env);
-  const directory = '/var/data/speech';
-  await mkdir(directory, {recursive: true, mode: 0o700});
+  await mkdir('/var/data/speech', {recursive: true, mode: 0o700});
+  const directory = `/var/data/speech/transport-qa-${randomUUID()}`;
+  await mkdir(directory, {mode: 0o700});
   const createdAt = Date.now();
   // The existing operator gate is private, time bounded and tied to real BO
-  // authentication. Refreshing it invalidates old operator identities.
-  await writeFile(`${directory}/operator-qa.json`, JSON.stringify({id: randomUUID(), createdAt, expiresAt: createdAt + 30 * 60 * 1000}), {mode: 0o600});
+  // authentication. A new run preserves all previous attempt/budget journals,
+  // including uncertain fake-provider submissions, in their original directory.
+  await writeFile(`${directory}/operator-qa.json`, JSON.stringify({id: randomUUID(), createdAt, expiresAt: createdAt + 30 * 60 * 1000}), {mode: 0o600, flag: 'wx'});
   const {main} = await import('./start.mjs');
-  return main(['--start'], env, {transformChildSpecifications: specifications => unpaidQaSpecifications(specifications, env)});
+  return main(['--start'], env, {transformChildSpecifications: specifications => unpaidQaSpecifications(specifications, env, {speechDirectory: directory})});
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
