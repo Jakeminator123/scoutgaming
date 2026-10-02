@@ -41,7 +41,7 @@ document.getElementById('f').onsubmit = async e => {
     body: JSON.stringify({ user: document.getElementById('u').value, pass: document.getElementById('p').value }) });
   if (r.ok) {
     const next=new URLSearchParams(location.search).get('returnTo');
-    location.href = /^\/api\/bo\/(?:game-login|lab-login)\?state=[a-f0-9]{64}$/.test(next??'') ? next : '/bo/';
+    location.href = next === '/studio/administration' || /^\/api\/bo\/(?:game-login|lab-login)\?state=[a-f0-9]{64}$/.test(next??'') ? next : '/bo/';
   }
   else document.getElementById('err').textContent = 'Wrong username or password.';
 };

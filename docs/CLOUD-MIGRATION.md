@@ -117,8 +117,9 @@ Föreslagna native adresser är `/studio/login`, `/studio/administration/<sektio
 administrationsrättigheter; Studio-projekt/media får inte därför öppnas för skrivning.
 Spelar-/partnerroller, okända actions och icke-exakta paths nekas av helpers.
 
-Detta är en fristående **kontraktsgrund, inte implementerade endpoints**.
-Inga aktiva routes importerar modulerna. Rollgolven är inte fullständig
+Det första paketet var en fristående **kontraktsgrund**. Den 3 oktober har
+native admin/session-routes tillkommit bakom explicit avstängd driftflagga;
+det är ännu inte produktionsaktivering eller fullständigt BO. Rollgolven är inte fullständig
 auktorisering: integratören måste kontrollera aktuell session/source_stamp/
 auth_epoch, exakt Origin/CSRF, begränsade bodies, CAS och audit. Självrollbyte/
 självradering förbjuds, spelarstatusändring måste avbryta aktuell spelarchatt/
@@ -174,7 +175,8 @@ källinventering är inte en live-fillista eller bevisad borttagning.
 Procent i chatten är en grov bedömning av **den nya Studio-sammanslagningen**,
 inte filantal eller den tidigare frontendflytten. Startläge efter kontraktsgrunden:
 cirka 10 %. Efter kontrakt, isolerade oaktiverade lagringsutkast och den
-publicerade UI-förenklingen 3 oktober: cirka 30 %. Viktning: kontrakt/åtkomst
+publicerade UI-förenklingen 3 oktober: cirka 30 %. Efter levererbar Neon-/journalgrund
+och native BO-UI/API bakom avstängd aktivering: cirka 40 %. Viktning: kontrakt/åtkomst
 10, beständig Studio-state 20, enkel native
 UI/auth 20, API-/spelintegration 20, säkra jobbjournaler 10, QA 10, avveckling/docs 10.
 Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
@@ -201,12 +203,21 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   restart-prov i isolerad databas. Konton och saldo får inte återställas/resetas.
   Gammal Studio-mediakatalog/historiska generationer är bortvalda; börja med
   dokument/CAS/historik/audit och bara nödvändig metadata för nya uppladdningar.
+  - [x] Fristående kodgrund: separat 001/002-schema och checksum-/strukturkontrollerad
+    migration; asynkron repository med serverägd scope, CAS, historik/audit,
+    transaktionsrollback och explicit snapshotimport. 27 repository/migrations-
+    fixturtester PASS. Inget fröprojekt eller diskfallback. Ett tidigare isolerat
+    PostgreSQL-/omstartsprov gav 15 PASS; detta har inte körts om för senaste paketet.
+  - [ ] Verifierad aktuell import och aktiv gemensam källa för Studio/Render.
 - [ ] **P3 — Blob och jobbstate:** beständiga generationer/talpaket ligger i
   samma privata Blob; request-idempotens, sessionägarskap, kostnadsreservationer,
   job recovery och budgetledger är beständiga i Neon. Bevis: hash/HEAD/Range,
   fel-/retry-/avbrottsprov och restart utan dubbeljobb eller budgetnollställning.
   Detta avser nya paket och nödvändiga jobbjournaler, inte en full import av
   gammal slaskmedia. Slopad mediaimport gör inte osäkra betalda jobb nya igen.
+  - [x] Fristående Neon-jobbjournal med fenced lease, request-idempotens,
+    submit/cancel/terminal och budgetreservationer: 17 fixturtester PASS.
+    Aktiva stream-/fullfilscallers och nya Blob-talpaket är ännu inte inkopplade.
 - [ ] **P4 — en Studio:** native administration ersätter iframe; navigation,
   rollstyrd kontohantering (lägg till/spärra/ta bort enligt nuvarande livscykel)
   och speladresser är integrerade. Bevis: login, callback/launch, alla roller,
@@ -223,10 +234,24 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     READY för samma kod-SHA. Anonyma entréer kräver fortsatt inloggning.
     Webview-kontrollen kunde inte starta; visuell livegranskning kvarstår.
     Befintlig backend/iframe består. Detta är inte P4/P5-klart.
+  - [x] Native administrationskomponent skriven: sex lokala grupper, rollstyrda
+    formulär, serverannonserade aktiva actions, strängrevision/CAS och bevarade
+    formulärutkast. Inga iframe- eller parallella gamla menyer inuti komponenten.
+    Funktionsluckor visas uttryckligen. Drift använder ännu den tidigare ytan.
 - [ ] **P5 — API på Vercel:** Studio/admin använder P2/P3 utan beständig lokal
   disk. Render-spelet läser samma policy och får erforderlig spelkonfigprojektion.
   Bevis: sparning från Studio följs av spelets kvitterade revision, utan iframe,
   gammal adminbackend, splittrade register eller kontroller på enbart klienten.
+  - [x] Avstängd integrationsgrund: `/studio/api/admin/*` och
+    `/studio/api/auth/session` använder samma befintliga CRAIG/BO-identitet
+    direkt mot Neon, aktuell roll/fingerprint/auth_epoch, exakt Host/Origin,
+    begränsad JSON och explicita extra gates. Config/room/pit/tournament använder
+    repository-CAS; kontoläsning, atomiskt skapa spelare och BO-roll/remove finns.
+    Inga kunddata eller providerhemligheter går via klientprops.
+  - [ ] Komplettera native invite/resend, partnerfunktioner och spelarstatus
+    inklusive Render-runtime cancellation; exakt tier-idle-validering, medie-
+    review och spelkonfigprojektion. Produktens gamla skrivare är fortfarande aktiva.
+    `CROUPIER_STUDIO_NATIVE_ADMIN` får inte aktiveras innan detta och importen verifierats.
 - [ ] **P6 — helhets-QA:** isolerad backend/databas/hostname, ett koordinerat
   serverpar. Fyra dealers med två faktiska plays, sparade revisioner/native-kvitton,
   auth/revoke, privata media och strömtransport. OpenClaw-roller, bild/transkriberat

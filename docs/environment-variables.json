@@ -290,7 +290,8 @@
     },
     "vercel-lab-ui": {
       "sources": [
-        "lab/lib/remote-ui.mjs"
+        "lab/lib/remote-ui.mjs",
+        "lab/lib/studio-native-runtime.mjs"
       ],
       "project": "croupier-lab-ui",
       "gitBranch": "main",
@@ -305,11 +306,14 @@
         "CROUPIER_VERCEL_INGRESS_SECRET",
         "CROUPIER_LAB_BASE_PATH",
         "CROUPIER_STREAM_LANE",
-        "BO_URL"
+        "BO_URL",
+        "CROUPIER_STUDIO_NATIVE_ADMIN",
+        "CROUPIER_STUDIO_ENVIRONMENT_ID",
+        "CROUPIER_STUDIO_WORKSPACE_ID",
+        "CROUPIER_GAME_DATABASE_URL"
       ],
       "managed": [],
       "blocked": [
-        "CROUPIER_GAME_DATABASE_URL",
         "CROUPIER_ZONES_DATABASE_URL",
         "BLOB_READ_WRITE_TOKEN",
         "CARTESIA_API_KEY",
