@@ -68,3 +68,4 @@ vendor/
 /media/**/source/
 /media/**/staging/
 /media/layout.json
+/media/blob-index.json

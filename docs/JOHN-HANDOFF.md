@@ -37,8 +37,11 @@ samt `media/game` och `media/site`. `runtime` anger användning, inte visuellt
 godkännande. 4 924 filer, 2 911 452 931 byte, kopierades och SHA-256-kontrollerades
 före gamla filer togs bort. ID, bytes, kalibrering och Emil/Kevin-proveniens
 bevaras; `media/layout.json` innehåller explicita gamla URL-/sökvägskopplingar.
-Ingen ny godkänd läppsynk påstås. Blob-export är påbörjad men inte färdig;
-runtime aktiveras endast med verifierat index. Inga gamla Blob-objekt raderas.
+Ingen ny godkänd läppsynk påstås. Privat Blob-export är färdig: 4 265 mediafiler,
+2 907 216 339 byte och 4 162 unika objekt verifierades efter uppladdning.
+`media/blob-index.json` matchar exakt hela exportplanen; Lab-banken och tillåtna
+originalförhandsvisningar läser samma index. Felaktig eller saknad aktiv källa
+ger 503 utan diskfallback. Moln-QA föregår aktivering; gamla Blob-objekt bevaras.
 
 Produktionsdrift ligger fortfarande på föregående SQLite/Render-konfiguration.
 Isolerade QA-projekt har egen Neon-databas, hostname och privata ingressnycklar;
