@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BACKOFFICE_SECTIONS, backofficeSection, backofficeOrigin, backofficeFrameUrl } from '../lib/backoffice-navigation.mjs';
+import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroup, backofficeSection, backofficeOrigin, backofficeFrameUrl } from '../lib/backoffice-navigation.mjs';
 import { canOpenLab, workspaceUrl, isEmbeddedWorkspace } from '../../web/public/bo/workspace-navigation.mjs';
 
 test('all fourteen existing Backoffice surfaces have a stable administration destination', () => {
@@ -12,6 +12,19 @@ test('all fourteen existing Backoffice surfaces have a stable administration des
     assert.equal(url.search, '?workspace=lab');
     assert.equal(url.hash, `#${section.id}`);
   }
+});
+
+test('six local Backoffice areas cover every existing function exactly once', () => {
+  const ids = BACKOFFICE_GROUPS.flatMap(group => group.sections);
+  assert.equal(BACKOFFICE_GROUPS.length, 6);
+  assert.equal(ids.length, new Set(ids).size);
+  assert.deepEqual([...ids].sort(), BACKOFFICE_SECTIONS.map(section => section.id).sort());
+  for (const group of BACKOFFICE_GROUPS) {
+    assert.ok(Object.isFrozen(group));
+    assert.ok(Object.isFrozen(group.sections));
+    for (const id of group.sections) assert.equal(backofficeGroup(`#${id}`), group);
+  }
+  assert.equal(backofficeGroup('__proto__'), BACKOFFICE_GROUPS[0]);
 });
 
 test('hash navigation cannot introduce a credential, arbitrary path or HTML', () => {

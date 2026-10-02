@@ -1,31 +1,36 @@
 {
-  "title": "Välj händelse. Spela rätt klipp.",
-  "intro": "Backoffice/Lab samlar Studio, klippflöden, event, bakgrundszoner, OpenClaw, uppspelningsspår och administration. Öppna /studio i molnet eller Lab-serverns startsida lokalt. Spela och chatta i spelfliken; motorn äger kort och resultat. Administration behåller BO-kontots behörigheter.",
+  "title": "En Studio. Välj dealer och klipp.",
+  "intro": "Studio har tre delar: Dealer & klipp, Backoffice och OpenClaw. På klippsidan väljer du dealer och kategori: Idle, Kort & deal, Fasta repliker, Bakgrund eller Probe. Uppladdning hör till klipparbetet; granskning i spel är ett utfällbart verktyg. Backoffice behåller sina 14 funktioner och befintliga behörigheter. OpenClaw öppnar den befintliga dashboarden på Render.",
   "steps": [
     {
       "view": "tree",
-      "title": "1. Välj plats eller replik",
-      "body": "Översikten visar kortdestinationer, exakta repliker och vänteläge. Plats 1–7 motsvarar box 0–6. Öppna en familj direkt i Eventstudion."
+      "href": "/#idle",
+      "title": "1. Välj dealer och kategori",
+      "body": "Astrid har familje-, idle- och Probe-editorer. Vera, Amira och Mei visar sina egna exakta klippregister och originalmotorns val. De ärver aldrig Astrids inställningar. Välj Idle, Kort & deal, Fasta repliker, Bakgrund eller Probe."
     },
     {
       "view": "videos",
+      "href": "/#upload",
       "title": "2. Se och lägg in klipp",
-      "body": "Ladda upp & bibliotek visar exakta familjer för deal, repliker och idle. Välj rätt familj vid uppladdning. Molnstudion sparar filmer i privat Blob. Lokalt kan MP4-filer också läggas i rätt variant-mapp i media/dealers/astrid/runtime/presentation och läsas in med Läs in nya filer. En lokal filändring laddar inte upp nya bytes till molnet. Lägg till nya varianter i policyn och spara innan de kan väljas automatiskt."
+      "body": "Ladda upp klipp är en handling på dealerns klippsida. Astrids befintliga uppladdning använder en exakt familj för deal, fasta repliker eller idle och privat Blob när den är konfigurerad. Större direktuppladdning med nytt Neon-register är ännu inte aktiverad. Övriga dealers har ännu ingen motsvarande familjeuppladdning. Lägg till och spara tillåten användning innan en ny variant kan väljas automatiskt."
     },
     {
       "view": "lab",
-      "title": "3. Spela och ställ in",
-      "body": "Spela valt klipp förhandsvisar filen direkt. Testa event provar standard, regler, slump eller OpenClaw. Nya varianter är manuella tills du tillåter ett automatiskt val. Stäng av en variant med Manuell i Idle eller alla variantval av för det klippet i Deal/Repliker, och spara. Filen finns kvar för prov. Gränssnittet kan inte radera råfiler eller flytta dem till en annan familj. Varje replik och plats har egna val."
+      "href": "/#deal",
+      "title": "3. Granska klipp och spara användningen",
+      "body": "Öppna klippets exakta situation och granska standardfilen eller dess alternativ. Ett uppladdat klipp är manuellt tills du tillåter dess användning och sparar. Astrids deal/replikval läses inför nästa beslut; idle och originalmotorns klippval kräver omladdad spelflik mellan händer. Osparade projektändringar behålls vid kategori- och dealerbyte."
     },
     {
       "view": "activity",
+      "href": "/#stream",
       "title": "4. Spela och följ upp",
       "body": "Öppna spelet i molnstudion använder vanlig spelarinloggning. Anslut & följ spelet öppnar samma Astrid-presentation och kopplar spelflikens verkliga händelser och uppspelningskvitton till Studio. BO-kontot kan öppna den anslutna spelfliken utan Partner-anslutning. Spela och chatta i spelfliken. Spelet använder studions sparade klippfamiljer och policy. Standard, Regler, Slump och OpenClaw väljer klipp inom samma presentationsväg; chattsvar är separat. Ladda om spelet efter sparade idleändringar när handen är avslutad. Exportera observationen före omladdning."
     },
     {
       "view": "probe",
+      "href": "/#probe",
       "title": "5. Prova Astrids egna initiativ",
-      "body": "Välj Probe i Astrid Studio eller avancerat Lab. Av är standard. Textprov använder syntetiska spelare utan röst/video. Automatiskt väntar på ett lugnt bord. Snabbt inaktivitetsprov väljer 5 sekunders inaktivitet, 15 sekunders paus, 100 procent sannolikhet och högst 12 initiativ per timme. Egen väntetid kan vara ned till 1 sekund. Spara gemensam policy och modell; spelaren läser nästa version utan omstart. Tiden att skapa svaret och talfilmen tillkommer. Ha spelfliken synlig och ljudet på. Efter ett obesvarat initiativ krävs ny spelaraktivitet. Separat talprov kräver en knapp i Astrids verkliga spelare."
+      "body": "Probe hör till Astrids initiativ när spelaren är inaktiv och bordet är lugnt. Den verkliga spelvägen kan skapa text, röst och video; det utfällbara syntetiska textprovet skapar ingen film. Sparad policy används inför nästa beslut utan Render-omstart. Tid för text, röst och talfilm tillkommer. Modell- och minnesinställningar är avancerade, inte vanliga klippval. Faktisk uppspelning måste verifieras i spelfliken."
     }
   ],
   "boundaries": [
@@ -69,8 +74,8 @@
       "purpose": "Anslut originalet och följ publika spelfakta, valda filer och faktiska uppspelningskvitton."
     },
     {
-      "name": "Chatt & OpenClaw",
-      "purpose": "Separata ingångar till socialt prov och operatörschatt, anslutningsstatus, Gateway-dashboard och konfigurationskällor."
+      "name": "OpenClaw",
+      "purpose": "En ren ingång till befintlig autentiserad Control UI på Render. Inställningar och verktyg hanteras där, utan ny pairing eller modell-/GPU-ändring från Studio."
     },
     {
       "name": "Probe",

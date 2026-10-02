@@ -1,10 +1,15 @@
 .shell { min-height: 100vh; background: #111b1a; color: #e6ede5; }
-.header { display: flex; align-items: center; gap: 40px; padding: 28px 4vw; border-bottom: 1px solid #33433e; background: #172420; flex-wrap: wrap; }
+.header { display: flex; align-items: center; gap: 28px; padding: 28px 4vw; border-bottom: 1px solid #33433e; background: #172420; flex-wrap: wrap; }
 .header h1 { margin: 6px 0 0; font-size: 30px; letter-spacing: -.8px; }
 .header h1 span { font-size: 14px; font-weight: 400; margin-left: 12px; color: #a8b9b0; letter-spacing: 0; }
-.header nav { display: flex; gap: 8px; }
-.header nav button, .header nav a { text-decoration: none; font-size: inherit; padding: 12px 18px; border: 1px solid #3c5045; border-radius: 24px; color: inherit; background: transparent; cursor: pointer; }
-.header nav .active { background: #d0ec55; border-color: #d0ec55; color: #182014; }
+.dealer { display: grid; gap: 6px; font-size: 12px; color: #b4c6bc; }
+.dealer select { min-width: 150px; padding: 10px 14px; border: 1px solid #3c5045; border-radius: 8px; background: #111b1a; color: #e6ede5; font: inherit; font-size: 16px; }
+.categories { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+.categories button { font: inherit; padding: 12px 18px; border: 1px solid #3c5045; border-radius: 24px; color: inherit; background: transparent; cursor: pointer; }
+.categories .active { background: #d0ec55; border-color: #d0ec55; color: #182014; }
+.categories button:focus-visible, .dealer select:focus-visible { outline: 2px solid #d0ec55; outline-offset: 3px; }
+.actions { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; }
+.actions .intro { margin: 0 0 18px; }
 .save { margin-left: auto; display: flex; gap: 16px; align-items: center; font-size: 12px; }
 .main { max-width: 1440px; margin: auto; padding: 28px 4vw 64px; }
 .intro { color: #b4c6bc; line-height: 1.7; max-width: 850px; margin-bottom: 28px; }
@@ -14,4 +19,4 @@
 .help { border-top: 1px solid #33433e; margin-top: 36px; padding-top: 20px; color: #acbdb2; line-height: 1.7; }
 .help summary { cursor: pointer; color: #e6ede5; }
 .help a { color: #d0ec55; }
-@media (max-width: 760px) { .header { gap: 20px; } .save { margin-left: 0; } .editor { grid-template-columns: 1fr; } .header nav button, .header nav a { text-decoration: none; font-size: inherit; padding: 10px 14px; } }
+@media (max-width: 760px) { .header { gap: 20px; } .save { margin-left: 0; flex-wrap: wrap; } .editor { grid-template-columns: 1fr; } .categories button { padding: 10px 14px; } }

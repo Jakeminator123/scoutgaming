@@ -5,6 +5,7 @@ node --test test/precommit-checks.mjs
 node --test test/backup-lissabon-state.mjs test/migrate-lab-state.mjs
 node --test lab/test/backoffice-navigation.test.mjs lab/test/legacy-clip-policy.test.mjs lab/test/playback-trace.test.mjs
 node --test lab/test/studio-access-policy.test.mjs lab/test/studio-admin-contract.test.mjs
+node --test lab/test/studio-navigation.test.mjs lab/test/dealer-workspace.test.mjs lab/test/openclaw-dashboard.test.mjs lab/components/dealer-workspace.test.mjs lab/components/backoffice-panel.test.mjs lab/components/openclaw-workspace.test.mjs lab/components/partner-reference.test.mjs
 node --test test/bo-lab-auth.mjs
 node --test test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
 node --test ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/player-admin.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs
