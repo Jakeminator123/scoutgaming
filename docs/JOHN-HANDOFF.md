@@ -41,6 +41,24 @@ de saknade aktiva konsumenter och hänvisade till raderade sprintdokument.
 GitHub-/inbox-pausskydden finns kvar (25 riktade tester godkända).
 Inga servrar, betaljobb, media eller databaser ändrades.
 
+## Fortsatt rensning — 2 oktober
+
+random-stuff-jakob/ är borttagen på Jakobs begäran. Mappen saknade spårade
+filer och aktiva konsumenter; kvarvarande ignorerad åtkomstnotis raderades
+utan innehållsläsning. Det pensionerade arkivet fanns inte i checkouten.
+Dess tidigare läsgräns och ignore-skydd gäller om material återställs.
+
+ANDRINGSLOGG-V2.md är borttagen: dess 29-septemberstatus om branch,
+Render-start och GPU-publicering var ersatt av denna aktuella handoff.
+Behållen beslutsgräns: vanlig inloggning och förinspelat spel ska inte starta
+GPU. GPU-vila får inte logga ut spelaren, radera sparande eller avbryta
+ekonomiska transaktioner. Gamla föreslagna timeoutvärden är inte driftkontrakt.
+
+pipeline/ och content/ bevaras efter källgranskning. Pipeline bygger och
+granskar video-/medieregister och används av Lab, hook och CI. Content har
+original, dealerreferenser och kalibrerings-/stagingunderlag som aktiva
+tester och produktens dealerinventering använder. Inga mediabytes ändrades.
+
 ## Intro och startsida
 
 Datorintrot publicerades i `033b97a9`, livekontroll i `64c903ab`.

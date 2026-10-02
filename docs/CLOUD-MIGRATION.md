@@ -89,3 +89,8 @@ Rena dokumentations-/index-ignore-commits kör snabba env-, GitHub-policy-
 och hooktester. Kod, konfiguration, tester och media kör hela regressionen;
 CI kör alltid full. Manuell full kontroll: sh .githooks/pre-commit --full.
 node tools/precommit-checks.mjs --plan visar valet för aktuellt Git-index.
+
+Källmaterial: pipeline/ innehåller mediebygge och obligatoriska audits;
+content/ innehåller original och kalibrerings-/stagingunderlag med aktiva
+beroenden. Bevara båda. Obsoleta random-stuff-jakob/ och rotens daterade
+ANDRINGSLOGG-V2.md är rensade; aktuell status finns i JOHN-HANDOFF.md.
