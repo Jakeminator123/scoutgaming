@@ -6,6 +6,7 @@ import { ArrowRight, RotateCcw, Volume2, VolumeX } from "lucide-react"
 import { DealerButton, DecoCard } from "./deco"
 import { type Face, useFantasyMode } from "./fantasy-mode"
 import type { Suit } from "@/lib/blackjack"
+import { useIntroHandoff } from "@/lib/intro-handoff"
 
 /** How long the Scout Gaming end card may sit before the card turns to the other face. */
 const END_CARD_MS = 4000
@@ -155,6 +156,7 @@ export function HeroCard() {
   const [projectile, setProjectile] = useState<Projectile | null>(null)
   /** Index into TRAJECTORIES while the hero card recoils from a hit, otherwise null. */
   const [jolt, setJolt] = useState<number | null>(null)
+  const holding = useIntroHandoff() === "holding"
 
   const videoFor = (face: Face) => (face === "casino" ? casinoRef.current : fantasyRef.current)
 
@@ -178,8 +180,14 @@ export function HeroCard() {
   // Only the face turned toward the viewer plays, so audio never overlaps across the flip.
   useEffect(() => {
     videoFor(active === "casino" ? "fantasy" : "casino")?.pause()
+    if (holding) {
+      const video = videoFor(active)
+      video?.pause()
+      if (video) video.currentTime = 0
+      return
+    }
     if (!ended[active]) videoFor(active)?.play().catch(() => {})
-  }, [active, ended])
+  }, [active, ended, holding])
 
   // Unattended end card: within END_CARD_MS something turns the card to the face that has not
   // just played — the stream sends a card or the dealer button, or it simply turns by itself.
@@ -243,7 +251,8 @@ export function HeroCard() {
   const markEnded = (face: Face) => () => setEnded((prev) => ({ ...prev, [face]: true }))
 
   return (
-    <div className="relative shrink-0 [perspective:1600px]">
+    <div className={`relative shrink-0 [perspective:1600px] ${holding ? "pointer-events-none opacity-0" : ""}`}
+      aria-hidden={holding || undefined}>
       <div aria-hidden="true" className="hero-glow absolute -inset-16 rounded-full" />
       <div className="relative [transform-style:preserve-3d] will-change-transform" style={TILT}>
         <div
@@ -258,6 +267,7 @@ export function HeroCard() {
             className="block [transform-style:preserve-3d]"
           >
             <div
+              data-intro-target
               className={`relative aspect-[33/52] w-[min(330px,calc(100vw-3rem))] transition-transform duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] [transform-style:preserve-3d] md:h-[720px] md:w-[440px] ${
                 fantasy ? "[transform:rotateY(180deg)]" : "[transform:rotateY(0deg)]"
               }`}

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { observeDecorativeMotion } from "@/lib/decorative-motion"
+import { observeDesktopIntro } from "@/lib/intro-device"
 
 type Effects = typeof import("./desktop-effects")
 const DesktopContext = createContext<Effects | null>(null)
@@ -32,9 +33,28 @@ export function LandingExperience({ children }: { children: ReactNode }) {
 
   return (
     <DesktopContext.Provider value={effects}>
-      <div ref={root} data-landing-motion={effects ? "desktop" : "static"}>{children}</div>
+      <div ref={root} data-landing-motion={effects ? "desktop" : "static"}>
+        <LandingIntro />
+        {children}
+      </div>
     </DesktopContext.Provider>
   )
+}
+
+function LandingIntro() {
+  const [Intro, setIntro] = useState<typeof import("../intro/curtain-intro").CurtainIntro | null>(null)
+  useEffect(() => {
+    let revision = 0
+    const stop = observeDesktopIntro(enabled => {
+      const current = ++revision
+      if (!enabled) { setIntro(null); return }
+      import("../intro/curtain-intro").then(module => {
+        if (current === revision) setIntro(() => module.CurtainIntro)
+      }).catch(() => { /* The complete landing remains usable if the optional intro cannot load. */ })
+    })
+    return () => { revision++; stop() }
+  }, [])
+  return Intro ? <Intro /> : null
 }
 
 export function LandingEffects() {

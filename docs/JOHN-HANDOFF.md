@@ -1,5 +1,22 @@
 # Aktuellt molnläge
 
+## 2026-10-02 — Intro på dator, statisk startsida på mobil
+
+Den tidigare introfilmen med retro-HTML och Astrid återställs för datorbesök.
+Mobil och surfplatta laddar varken introkomponenten eller dess filmer; iPad
+med desktop-useragent förblir exkluderad. Dator med touchskärm och ett smalt
+desktopfönster räknas däremot som dator. Övriga dekorers tidigare mobilgrind
+är kvar. Originalfilmerna är oförändrade.
+
+Intro spelas en gång per full sidladdning, med hoppa över/Escape, fel- och
+tidsgränser. Scrollning, sidbyte, dold flik eller rörelsepreferens avbryter
+även en pågående import, så ett sent overlay inte kan dyka upp efter att
+besökaren börjat bläddra. Videodekodrar och WebGL städas vid avslut.
+
+10/10 fokustester, separat TypeScript-kontroll och produktionsbygge passerar.
+Fyrdealeraudit med `--probe` passerar; ingen gameplay eller dealermedia är
+ändrad. Visuell kontroll av publicerad desktopfilm följer efter deployment.
+
 ## 2026-10-01 — Slutkontroll före lokal avstängning
 
 Render `6c24b4a5` och RunPod release 4 gav två på varandra följande lyckade

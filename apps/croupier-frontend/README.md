@@ -20,12 +20,16 @@ Import receipt: this directory came from `Jakeminator123/croupier-frontend`, `ma
 
 This is a [Next.js](https://nextjs.org) landing page. `/` shows the imported design and `/demo` links to the server-owned blackjack game. `CROUPIER_GAME_URL` sets the exact target for both game links on `/demo`; without it, the existing `https://croupier-v2.onrender.com/blackjack?dealer=astrid` pilot link is used. This page has no database. The unused client-only `BlackjackGame` component is retained as upstream source but is not routed publicly.
 
-The landing content and game links render directly. The automatic fullscreen
-retro HTML scene, avatar intro and hero handoff have been removed; delayed
-hydration, scrolling and history restoration must never cover the page with
-them. Their original media files remain preserved but are not requested by
-the page. The server renders a still Astrid poster and working links. Mobile,
-touch devices and reduced-motion clients never import the desktop effects:
+The landing content and game links render directly. On computers, the original
+fullscreen retro HTML scene and Astrid avatar intro load after hydration and
+play once per full page load. Phones and tablets never import that intro or
+request its videos, including iPad desktop mode. Touchscreen laptops remain
+computers, and a narrow desktop window still plays the intro. Reduced motion,
+restored scroll, hidden pages, browsing gestures and history navigation leave
+the page usable without a late overlay. Skip/Escape, media errors and a 30 s
+watchdog release the intro; teardown releases videos and WebGL resources.
+The server renders a still Astrid poster and working links. Mobile,
+touch devices and reduced-motion clients never import the other desktop effects:
 no autoplay videos, card stream, parallax, floor, laser or WebGL renderer.
 The optional desktop bundle loads only while the page is visible at >=1024px
 with a fine hovering pointer, no touch points and motion allowed. Hiding the
