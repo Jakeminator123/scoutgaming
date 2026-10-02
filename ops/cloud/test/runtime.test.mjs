@@ -114,6 +114,8 @@ test('three exact public origins share one port and two loopback children', () =
   assert.equal(specs.web.env.LAB_PUBLIC_URL, config.labOrigin);
   assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, specs.web.env.CROUPIER_PRESENTATION_STUDIO_DIR);
   assert.equal(specs.web.env.CROUPIER_DATA_DIR, join(config.dataRoot, 'players'));
+  assert.equal(specs.lab.env.CROUPIER_DATA_DIR, specs.web.env.CROUPIER_DATA_DIR);
+  assert.equal(specs.lab.env.BO_URL, config.boOrigin);
   assert.equal(specs.web.env.CROUPIER_CLOUD_RUNTIME, '1');
   assert.equal(specs.web.env.OPENCLAW_TIMEOUT_MS, '8000');
   assert.equal(specs.web.env.UNRELATED_SECRET, undefined);

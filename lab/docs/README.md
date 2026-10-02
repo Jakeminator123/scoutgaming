@@ -1,6 +1,6 @@
 # Guide — en gemensam ingång
 
-**Gemensam arbetsyta: Astrid Studio.** I molnet öppnar du
+**Gemensam arbetsyta: Backoffice/Lab.** I molnet öppnar du
 [`/studio`](https://croupier-v2.onrender.com/studio); Vercels Studio-länk leder
 dit. Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
 **Öppna spelet** i molnstudion fungerar med vanlig spelarinloggning även om
@@ -8,6 +8,16 @@ Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
 presentationsväg och kopplar dessutom spelflikens händelser till Studio.
 Spela och chatta i spelfliken. BO är administration och inloggning,
 ingen separat spelström.
+
+I den gemensamma menyn finns Studio och aktiva klipp, Event och regler,
+Mediebibliotek, Uppspelning och spår, Bakgrundszoner, OpenClaw och alla
+befintliga administrationsfunktioner. Administration använder BO-kontots
+behörigheter; en Lab-inloggning ger inga nya administratörsrättigheter.
+Under **Ladda upp & bibliotek** väljer du dealer och exakta originalklipp.
+Spara med projektets vanliga knapp och ladda om originalspelaren mellan händer.
+Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
+Äldre BO-val är inaktiva och kan bara importeras uttryckligen vid säker match.
+Lissabon-katalogen är avvecklad; sparade lokala data finns i `lab/data`.
 Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 
@@ -66,7 +76,11 @@ Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
 **Händelseloggen** på `/activity` skiljer källa, eventdata, kontext, beslut och
 uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
-originalsession och startar läsande observation och automatisk labbföljning.
+originalsession och startar läsande observation.
+Observation startar ingen separat Lab-spelare. Native-kedjan visar mottaget
+event, klippval och verkliga start-/bild-/slutkvitton med sparad revision.
+Partner-SSE visas som separat diagnostik. För övriga dealers kräver separat
+Lab-preview ett uttryckligt val; dess kvitton är tydligt skilda från spelets.
 För Astrid öppnas nu `?dealer=astrid&presentation=local`: Web är ensam spelare
 och Lab visar **En spelare · Web**. Spela och chatta i spelfliken. Valfri
 bilddelning speglar just den fliken; speldata fungerar även utan bilden.
@@ -117,7 +131,7 @@ inte filmens nya byteinnehåll till molnet.
 
 ### Astrids Deal-frekvenser
 
-I Lissabon → Deal och samma familj i avancerade labbet anger du procent för
+I Backoffice/Lab → Kort och samma familj i avancerade labbet anger du procent för
 varje variant. Andelen gäller varje kort till just den platsen; återstoden
 använder standardfilen. 0 % behåller klippet för manuellt prov. Summan får
 vara högst 100 %. Ett saknat klipps andel går till standard. Högst fyra
@@ -161,7 +175,7 @@ ungefär var 25:e sekund med ±5 sekunders variation. Eftersom blinkklippet tar
 tid blir `idle_still` i praktiken ungefär 79 %, vilket editorn visar. Ett
 spel-, deal- eller talprov äger spelaren och blockerar idleprovet tills det är
 klart. Policyn sparas lokalt med projektet. Den lokala Web-spelaren läser samma
-projekt; ladda om spelfliken efter ändringar i idlepolicyn. Lissabons snapshot
+projekt; ladda om spelfliken efter ändringar i idlepolicyn. Labs startprofil
 erbjuder i stället de ursprungliga sex variationerna till OpenClaw; kaffeklippet
 börjar som manuellt. Ingen fjärrdrift deployas
 och OpenClaw behöver inte startas om när beskrivningar eller val ändras.
@@ -171,12 +185,12 @@ intervall, jitter, cooldown och maxfrekvens. OpenClaw-valbar variant kräver en
 färsk chattmöjlighet; manuell variant schemaläggs inte. Regelstyrd idle har
 ännu ingen ansluten trigger och kan inte nyväljas i editorn.
 Det deterministiska enminutsprovet spelar verkliga lokala filer och loggar
-start/slut/återgång. Labbytan i Händelseloggen använder dessutom en levande
+start/slut/återgång. En uttryckligen öppnad separat Lab-preview använder en
 idle-controller med samma sparade policy: verkligt `ended` väljer nästa klipp,
 och cooldown/maxfrekvens räknas från faktiska starter. Deal går först och färdigt
 tal återställer en ny primärbas innan talgrinden öppnas. Varianter eller sekundär
 bas ger aldrig standardpositionskvitto. I Astrids lokala presentationsläge
-används controllern av Web; Lab startar ingen parallell följningsfilm.
+används controllern av Web. Observation startar ingen parallell film för någon dealer.
 
 I OpenClaw-/Skuggläge kan en färsk observerad användarchatt också ge ett råd
 för uttryckligen OpenClaw-valbara `idle/variant/`-filer. Det är en lokal
@@ -199,8 +213,10 @@ standardreserv tills den uppdaterats. Ett isolerat offlineprov startas med
 
 **Diagnostik** samlar verifiering, videokarta, import/export och särskilda
 videolägen. Sekvenssteg öppnar befintlig editor. Loggen håller högst 150
-poster; hela observationsprotokollet håller högst 300 meddelanden/4 MiB i
-flikens minne. Exportera före omladdning. Native-observation kräver den nya
+poster; observationsprotokollet håller högst 300 meddelanden/4 MiB i
+flikens minne. Avancerat Lab stoppar vid gränsen, fokuserad Studio rullar
+fönstret med gap-/bortfallsmarkör och är då ingen full historik.
+Exportera före omladdning. Native-observation kräver den nya
 spelarkoden på vald server; lokal merge är inte Bettalotto-deploy.
 Vid full historik: exportera och välj **Ny observation** i Diagnostik.
 Det ersätter protokollet och gamla labbkön men behåller spelet och anslutningen.

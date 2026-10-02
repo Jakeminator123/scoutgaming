@@ -3,6 +3,7 @@ import contract from '../policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
 import { validateMediaPolicy } from './media-family-policy.mjs';
 import { createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
+import { validateLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
 
 // Pure, browser-safe policy model. This file never reads environment, network,
 // player identities, game state or media files. JSON is the editable artefact.
@@ -80,7 +81,11 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy'])) throw new StudioValidationError(errors);
+  if (Object.hasOwn(project, 'legacyClipPolicy')) {
+    try { validateLegacyClipPolicy(project.legacyClipPolicy); }
+    catch (cause) { error('legacyClipPolicy', cause.message); }
+  }
   if (Object.hasOwn(project, 'probePolicy')) {
     try { validateProbePolicy(project.probePolicy); }
     catch (cause) { error('probePolicy', cause.message); }

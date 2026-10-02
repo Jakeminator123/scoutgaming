@@ -15,7 +15,8 @@ export interface IdleVariantPolicy { videoId: string; durationMs: number; use: '
 export interface IdlePolicy { schemaVersion: 1; familyId: 'astrid/idle.ready/ready'; base: IdleBaseVideo[]; variants: IdleVariantPolicy[] }
 export interface MediaVariantPolicy { videoId: string; selection: VariantSelection; priority: number; triggerIds: string[]; frequencyPercent?: number }
 export interface MediaFamilyPolicy { familyId: string; variants: MediaVariantPolicy[] }
-export interface StudioProject { schemaVersion: 1; revision: string; gameId: 'blackjack'; dealers: {id: DealerId; label: string}[]; events: StudioEvent[]; triggers: StudioTrigger[]; lines: StudioLine[]; assets: StudioAsset[]; idlePolicy?: IdlePolicy; mediaPolicy?: MediaFamilyPolicy[]; probePolicy?: import('./probe-policy.mjs').ProbePolicy }
+export interface LegacyClipBinding { dealerId: DealerId; part: string; clipId: string }
+export interface StudioProject { schemaVersion: 1; revision: string; gameId: 'blackjack'; dealers: {id: DealerId; label: string}[]; events: StudioEvent[]; triggers: StudioTrigger[]; lines: StudioLine[]; assets: StudioAsset[]; idlePolicy?: IdlePolicy; mediaPolicy?: MediaFamilyPolicy[]; legacyClipPolicy?: LegacyClipBinding[]; probePolicy?: import('./probe-policy.mjs').ProbePolicy }
 export interface PathDescriptor { path: string; label: string; category: TriggerCategory; kind: 'enum' | 'boolean' | 'number' | 'string' | 'array'; values?: Scalar[]; min?: number; max?: number; operators: PredicateOperator[] }
 export interface RuntimeCatalog { schemaVersion: 1; revision: string; sourceNote: string; triggerSources: {id: string; label: string; description: string; status: string}[]; events: (StudioEvent & {baselineVariantId: string; variants: {id: string; label: string; priority: number; when: {all: {path: string; op: PredicateOperator; value: Scalar | Scalar[]}[]}; assetId: string}[]})[]; assets: StudioAsset[] }
 export const DEALER_IDS: readonly DealerId[];

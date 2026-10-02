@@ -9,7 +9,7 @@ test('dashboard uses the Scout palette and code-native wordmark', () => {
   assert.match(css, /--scout-ink:#0a0b0d/);
   assert.match(css, /--scout-off:#f2f1ed/);
   assert.match(css, /--scout-lime:#d6ff3a/);
-  assert.match(studio, /Scout Gaming · Croupier Lab/);
+  assert.match(studio, /Scout Gaming · Backoffice\/Lab/);
   assert.match(studio, /className="brand-wordmark"/);
   assert.match(studio, /scout<span>\/</);
 });

@@ -4,11 +4,13 @@ Croupier is the working blackjack demo with server-owned game state and a
 shared playback path for four AI dealers. It is a development product, not a
 certified RNG/RGS or a real-money system.
 
-The focused Astrid studio and the advanced editor now share **Lab**.
+The focused Astrid studio, advanced editor and administration share **Backoffice/Lab**.
 See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
 The cloud entry is [Croupier on Vercel](https://croupier-frontend.vercel.app/).
 Its demo opens the Render game; [Astrid Studio](https://croupier-v2.onrender.com/studio)
-configures that same presentation. BO is administration, not a separate stream.
+configures that same presentation. Existing BO tools are available under
+Administration with their original permissions. Observation follows the game
+player's receipts; a separate Lab preview requires an explicit action.
 See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)
 and [route guide](docs/LOCAL-PRESENTATION-RUNTIME.md).
 For a disposable local preview with existing films and no external providers:
@@ -19,9 +21,10 @@ node lab/start.mjs --offline --no-open
 
 [Start-Lab.cmd](Start-Lab.cmd) starts the existing connected profile.
 [Start-Lissabon.cmd](Start-Lissabon.cmd) is a compatibility shortcut.
-Private existing Lissabon data stay at their current location; no database is moved.
+Lissabon has been removed. Private saved projects, history and players now live
+in `lab/data`, after a verified backup outside Git. See the restoration guide.
 The general editor remains at `/tree`. Key names and locations
-(no secret values) are listed in [_ENVIROMENT-INFO.md](_ENVIROMENT-INFO.md).
+(no secret values) are listed in [environment variables](docs/ENVIRONMENT-VARIABLES.md).
 OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
 
 ## Sources of truth

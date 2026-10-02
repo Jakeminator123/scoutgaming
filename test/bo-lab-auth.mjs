@@ -122,7 +122,7 @@ try {
   const flow = await authorize(adminCookie);
   assert.equal((await request(lab + new URL(flow.authorize).pathname + new URL(flow.authorize).search, { cookie: adminCookie })).status, 403);
   assert.equal((await request(bo + new URL(flow.callback).pathname + new URL(flow.callback).search, { cookie: flow.stateCookie })).status, 403);
-  assert.equal((await request(flow.callback)).status, 400, 'callback needs the initiating Lab browser cookie');
+  assert.equal((await request(flow.callback)).status, 410, 'callback without its initiating Lab browser cookie receives the existing expired-handoff response');
   assert.equal((await request(flow.callback, { cookie: flow.stateCookie, headers: { Origin: game } })).status, 403, 'sibling Origin is rejected');
   const completed = await request(flow.callback, { cookie: flow.stateCookie });
   assert.equal(completed.status, 303); assert.equal(location(completed), '/');
@@ -151,7 +151,10 @@ try {
   assert.equal((await request(bo + '/api/auth/lab/check', { cookie: labCookie })).status, 401);
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: adminCookie })).status, 401);
   assert.equal((await request(bo + '/api/bo/users', { cookie: labCookie })).status, 401, 'Lab bearer grants no BO role');
-  assert.equal((await request(flow.callback, { cookie: flow.stateCookie })).status, 400, 'code is single-use');
+  const reused = await request(flow.callback, { cookie: flow.stateCookie });
+  assert.equal(reused.status, 410, 'single-use code receives the expired-handoff response on reuse');
+  assert.match(reused.headers.get('content-security-policy'), /frame-ancestors 'none'/);
+  assert.match(await reused.text(), /Starta en ny labbinloggning/);
 
   const sessionFlow = await authorize(adminCookie);
   const sessionResponse = await request(sessionFlow.callback, { cookie: sessionFlow.stateCookie });
@@ -164,7 +167,7 @@ try {
   const expiring = await authorize(adminCookie);
   craig.prepare('UPDATE bo_lab_handoffs SET expires=0 WHERE state_digest=?').run(
     createHash('sha256').update(expiring.stateCookie.split('=')[1]).digest('hex'));
-  assert.equal((await request(expiring.callback, { cookie: expiring.stateCookie })).status, 400, 'expired code cannot be used');
+  assert.equal((await request(expiring.callback, { cookie: expiring.stateCookie })).status, 410, 'expired code cannot be used');
   const beforeRole = await authorize(adminCookie);
   craig.prepare("UPDATE users SET role='staff' WHERE id=1").run();
   assert.equal((await request(beforeRole.callback, { cookie: beforeRole.stateCookie })).status, 401, 'role downgrade revokes pending code');

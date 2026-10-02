@@ -412,6 +412,8 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
       cwd: join(configuration.repoRoot, 'lab'),
       readyText: 'Ready in', dataDir: labData,
       env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), ...storageEnvironment, ...videoArchiveEnvironment, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
+        CROUPIER_GAME_ORIGIN: productUrl,
+        CROUPIER_DATA_DIR: productData,
         CROUPIER_ZONES_DATABASE_URL: configuration.zonesDatabaseUrl || '',
         CROUPIER_LAB_DIST_DIR: labDistDir,
         LAB_STUDIO_DATA_DIR: labData, LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',

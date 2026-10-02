@@ -22,16 +22,19 @@ export function createPartnerTrace({ rolling = false } = {}) {
 }
 export function restartPartnerTrace(previous, { time = new Date().toISOString(), observedVersions = {} } = {}) {
   const previousVersionByChannel = Object.create(null);
+  const previousNativeSequenceByChannel = Object.create(null);
   for (const record of previous.records) {
     const channel = typeof record.channel === 'string' ? record.channel : 'configured-partner';
     const version = record.data?.version;
     if (Number.isSafeInteger(version) && version >= 0) previousVersionByChannel[channel] = Math.max(previousVersionByChannel[channel] ?? -1, version);
+    if (record.source === 'native' && Number.isSafeInteger(record.nativeSequence)) previousNativeSequenceByChannel[channel] = Math.max(previousNativeSequenceByChannel[channel] ?? -1, record.nativeSequence);
+    for (const [id, sequence] of Object.entries(record.data?.previousNativeSequenceByChannel ?? {})) if (Number.isSafeInteger(sequence)) previousNativeSequenceByChannel[id] = Math.max(previousNativeSequenceByChannel[id] ?? -1, sequence);
   }
   const boundaries = [observedVersions, ...previous.records.filter(record => record.data?.state === 'observation-reset').map(record => record.data.previousVersionByChannel)];
   for (const boundary of boundaries) for (const [channel, version] of Object.entries(boundary ?? {})) if (Number.isSafeInteger(version) && version >= 0) previousVersionByChannel[channel] = Math.max(previousVersionByChannel[channel] ?? -1, version);
   return appendPartnerTrace(createPartnerTrace({ rolling: previous.rolling }), { source: 'lab-observer', kind: 'status', time,
     data: { state: 'observation-reset', reason: 'user-started-new-observation', gap: true, replay: false,
-      discardedRecords: previous.records.length, previousLimited: previous.limited, previousVersionByChannel } });
+      discardedRecords: previous.records.length, previousLimited: previous.limited, previousVersionByChannel, previousNativeSequenceByChannel } });
 }
 export function appendPartnerTrace(trace, envelope) {
   if (trace.limited) return trace;
@@ -45,7 +48,10 @@ export function appendPartnerTrace(trace, envelope) {
     const records = [...trace.records, record];
     let total = trace.bytes + bytes, droppedRecords = trace.droppedRecords ?? 0;
     const previousVersionByChannel = Object.create(null);
+    const previousNativeSequenceByChannel = Object.create(null);
     const remember = old => {
+      for (const [channel, sequence] of Object.entries(old.data?.previousNativeSequenceByChannel ?? {})) if (Number.isSafeInteger(sequence)) previousNativeSequenceByChannel[channel] = Math.max(previousNativeSequenceByChannel[channel] ?? -1, sequence);
+      if (old.source === 'native' && Number.isSafeInteger(old.nativeSequence)) previousNativeSequenceByChannel[old.channel ?? 'configured-partner'] = Math.max(previousNativeSequenceByChannel[old.channel ?? 'configured-partner'] ?? -1, old.nativeSequence);
       for (const [channel, version] of Object.entries(old.data?.previousVersionByChannel ?? {})) {
         if (Number.isSafeInteger(version) && version >= 0) previousVersionByChannel[channel] = Math.max(previousVersionByChannel[channel] ?? -1, version);
       }
@@ -59,7 +65,7 @@ export function appendPartnerTrace(trace, envelope) {
       return { ...trace, records, bytes: total, limited: false };
     }
     const boundary = () => ({ source: 'lab-observer', kind: 'status', time: record.time,
-      data: { state: 'observation-reset', reason: 'rolling-window', gap: true, replay: false, droppedRecords, previousVersionByChannel } });
+      data: { state: 'observation-reset', reason: 'rolling-window', gap: true, replay: false, droppedRecords, previousVersionByChannel, previousNativeSequenceByChannel } });
     while (records.length && (records.length + 1 > TRACE_RECORD_LIMIT || total + size(boundary()) > TRACE_BYTE_LIMIT)) {
       const old = records.shift(); total -= size(old); remember(old); droppedRecords++;
     }

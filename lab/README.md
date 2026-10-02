@@ -1,4 +1,4 @@
-# Croupier Studio — gemensam arbetsyta för presentation
+# Backoffice/Lab — gemensam arbetsyta
 
 **Användarguide: [Guide i dashboarden](http://127.0.0.1:4188/guide).**
 Det är den gemensamma dokumentationsytan. Denna README är utvecklarreferens.
@@ -21,7 +21,8 @@ flikar. Källreferenser skickas inte till modellen. `decision.director` visar
 alternativ med otillgänglig eller felmatchad video utesluts före modellval.
 
 Den nya Next.js-arbetsytan. Den riktiga spelklienten och OpenClaws egen
-dashboard är separata. Inget du sparar här publiceras automatiskt.
+dashboard är separata. Sparade klippval påverkar den angivna spelvägen;
+osparade utkast och manuella förhandsvisningar påverkar endast Lab-provet.
 
 [Aktiv systemkarta: studio, JSON och lagring](../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
@@ -52,9 +53,11 @@ Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
 
 [Start-Lab.cmd](../Start-Lab.cmd) startar den befintliga anslutna profilen på
 4200/4201. [Start-Lissabon.cmd](../Start-Lissabon.cmd) fungerar som alias.
-Om `lissabon/data/project.json` redan finns används dess datakatalog; annars
-används `lab/data`. En ensam gammal sessionslåsfil påverkar inte valet.
-Inga privata filer kopieras eller flyttas. Standardprojektet skapas från
+Sparat projekt, historik och profiler finns i `lab/data`; speldata i dess
+`players/`. Den gamla Lissabon-katalogen är avvecklad med verifierad privat
+backup enligt [återställningsguiden](../docs/ENVIRONMENT-RESTORATION.md).
+Äldre checkouter måste migreras med `tools/migrate-lab-state.mjs` före start.
+Startaren återskapar aldrig Lissabon. Standardprojektet skapas från
 `policies/project.seed.json` och profilens få idleval. En separat projektsnapshot
 behövs inte. Exakt oförändrade gamla demoexempel tas bort vid uppgradering;
 egna ändringar/bindningar bevaras och hela föregående revision sparas i historik.
@@ -298,7 +301,8 @@ den 21 september. Endast `BETTALOTTO_API` läses från rotens `.env`, sedan
 inläsning. Inga miljöfiler skrivs eller videobinära filer hämtas av knappen.
 
 Nycklar skapas i backoffice under API Keys. **Anslut** verifierar åtkomsten,
-öppnar rätt originalsession och samordnar observation och labbföljning.
+öppnar rätt originalsession och samordnar native-observation. Separat preview
+kräver ett uttryckligt val.
 ”Konfigurerad” bevisar inte behörighet eller trafik. Saknade
 uppgifter visas som saknade. Loggen fylls aldrig med låtsad live-trafik.
 Ofullständiga nycklar och secrets stoppas av en lokal formatkontroll innan
@@ -313,8 +317,8 @@ verifierade launch-sessionens nyckel/spelare och endast vid versionsökning.
 Bryggan måste driftsättas på spelservern innan detta gäller live. **Launch → rund-event är ännu oprövat live.**
 En accepterad anslutning bevisar inte denna koppling. BO-inloggning ansluter inte labbet.
 Observern läser publicerade rundor och presentationsinstruktioner, gör inga
-spelhandlingar. Automatisk följning efter **Anslut**, eller explicit återspelning,
-driver labbscenen från dessa fakta. Mottagen instruktion, lokalt variantval
+spelhandlingar. **Anslut** startar endast observation. Separat Lab-preview
+kräver uttryckligt val och återspelar inte gammal observationskö. Mottagen instruktion, lokalt variantval
 och uppspelningskvitto är tre skilda saker.
 
 SSE-källan saknar replay. Avbrott loggas som möjliga luckor och kräver ny
@@ -332,9 +336,9 @@ uttrycklig anslutning; loggen är ingen fullständig spelhistorik. Lokala API:n
 3. Välj originalfliken i bilddelningen för lokal bildvisning bredvid labbet.
    Webbläsartillståndet kan inte automatiseras bort. Ingen bild spelas in eller
    laddas upp och inget ljud fångas. Data kan fungera även utan delad bild.
-4. Labbet följer automatiskt med **Bara standard** utan modellkostnad.
-   **Variantval** byter urvalsläge; OpenClaw/Skuggläge kan göra modellanrop.
-   **Pausa labbet** stoppar lokal uppspelning. Videokarta, scopes, särskilda
+4. Labbet följer spelflikens native-kvitton utan att starta en andra spelare.
+   Separat Lab-preview är ett uttryckligt manuellt prov. Klippväljaren i
+   spelet styr dess Standard/Regler/Slump/OpenClaw-läge. Videokarta, scopes, särskilda
    filmlägen, konfigurationsomläsning och import/export finns i **Diagnostik**.
 5. Använd en avsedd demospelare med verifierad intern demoplånbok för rundprov.
    Liveöppningen den 21 september visade Astrid och 0,00 €; inga insatser,
@@ -343,15 +347,17 @@ uttrycklig anslutning; loggen är ingen fullständig spelhistorik. Lokala API:n
    JSON-underlaget visas även för kopiering när webbläsaren inte hämtar filen.
 
 Protokollet håller hela mottagna rundmeddelanden före loggvisningens kortning.
-Det stoppar uttryckligen vid 300 meddelanden eller 4 MiB, utan att kasta bort
-äldre rundor. Det bevaras mellan labbvyernas navigation men försvinner vid omladdning. Töm visningen
+Gränsen är 300 meddelanden eller 4 MiB. Avancerat Lab stoppar vid gränsen;
+fokuserad Studio fortsätter med ett rullande fönster och tydlig gapmarkör som
+anger bortfall och tidigare kanal-/sekvensgräns. Exporten är då ingen full
+historik. Det bevaras mellan labbvyernas navigation men försvinner vid omladdning. Töm visningen
 tömmer bara de 150 loggraderna. Nycklar maskeras och URL-frågesträngar utelämnas.
 Videokartan, verifierade scopes och avbrott följer med exporten.
 
 Vid fullständigt protokoll: exportera och välj **Ny observation** under
 Diagnostik. Det ersätter minnesprotokollet och stoppar den gamla labbkön;
 spelet, anslutningen och bilddelningen behålls. Bara kommande instruktioner
-följs. Gränsen höjs inte och gamla poster kastas aldrig tyst bort.
+följs. Gränsen höjs inte och bortfall markeras.
 
 Mapping beskriver registrerade klipp och BO-val; den är inget kvitto på klipp
 som faktiskt spelats. Native-observern tillför publika kommandosvar/bordsvy samt
@@ -405,7 +411,7 @@ visar den lokala kedjan, inte en riktig OpenClaw-dialog eller Bettalotto-deploy.
 
 Stäng med Ctrl+C: testprocesserna stoppas och deras egna temporära data tas
 bort. Bygg om efter kodändringar; verktyget använder labbets byggda version.
-Automatiserad acceptans körs med `node test/local-comparison-browser.mjs`.
+Automatiserad acceptans körs med `node test/backoffice-lab-browser.mjs`.
 Den kräver Playwright och Edge; ange `CROUPIER_PLAYWRIGHT_MODULE` till
 värdmiljöns `index.mjs` om paketet inte finns i repot. BO-inloggningen för QA
 finns endast i fixture-objektets minne och skrivs inte ut av CLI:t.

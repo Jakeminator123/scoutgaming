@@ -1,16 +1,26 @@
 // Scout Live Casino backoffice - live data from the game server.
 import { createSinglePreviewController } from './media-preview.mjs';
+import { canOpenLab, workspaceUrl, isEmbeddedWorkspace } from './workspace-navigation.mjs';
 
 const $=s=>document.querySelector(s);
 const fmt=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const pill=(t,k)=>`<span class="pill ${k}">${t}</span>`;
 const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2200);};
 const api=async(p,body)=>{const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:undefined);return r.json();};
+const labWorkspace=workspaceUrl(location.href);
+document.body.classList.toggle('lab-embedded',isEmbeddedWorkspace(location.href,document.referrer,parent!==window));
+api('/api/bo/me').then(me=>{
+  $('#account-name').textContent=me.user||'Ej inloggad';
+  $('#account-avatar').textContent=me.user?.slice(0,1).toUpperCase()||'?';
+  $('#account-role').textContent=me.role?.toUpperCase()||'INGEN BEHÖRIGHET';
+  const link=$('#workspace-link');
+  if(canOpenLab(me.role)&&labWorkspace){link.hidden=false;link.href=labWorkspace;link.target='_top';}
+}).catch(()=>{$('#account-role').textContent='KUNDE INTE LÄSA BEHÖRIGHET';});
 
 const SECTIONS=[
  ['ops','Operations','SCOUT LIVE CASINO · ALL SYSTEMS'],
  ['voice','Voice Lines','SYNC VERIFICATION · EVERY TAKE, AS THE GAME PLAYS IT'],
- ['clips','Dealing Clips','CLIP LIBRARY · TRANSPARENT FILTER · ASSIGN TO TABLE PARTS'],
+ ['clips','Äldre klipp och granskning','ÄLDRE BO-VAL · AKTIVA KLIPPVAL SPARAS I LAB'],
  ['gens','Generations','EVERY HIGGSFIELD VIDEO · WITH ITS PROMPT'],
  ['apikeys','API Keys','PARTNER INTEGRATIONS · SIGNED KEYS · SEAMLESS WALLET'],
  ['emails','Emails','BRAND TEMPLATES · TRANSACTIONAL & LIFECYCLE'],
@@ -43,6 +53,7 @@ addEventListener('pagehide',()=>mediaPreviews.release(document));
 addEventListener('pageshow',event=>{if(event.persisted)void render(location.hash.slice(1)||'ops');});
 
 async function render(id){
+  if(!SECTIONS.some(section=>section[0]===id))id='ops';
   render.closePreview?.(false);
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.id===id));
   const meta=SECTIONS.find(s=>s[0]===id)||SECTIONS[0];
@@ -217,130 +228,50 @@ async function render(id){
   }
   if(id==='clips'){
     const lib=await api('/api/bo/clips');
-    const st=render.clipState??={dealer:'astrid',part:'',mode:'transparent',sort:'dealer',selected:null,landing:''};
-    const PARTN={box0:'Box 0 (far left)',box1:'Box 1',box2:'Box 2',box3:'Box 3 (centre)',box4:'Box 4',box5:'Box 5',box6:'Box 6 (far right)','dealer-up':'Dealer upcard','dealer-hole':'Dealer hole card',return:'Return to idle',idle:'Idle'};
-    const byId=Object.fromEntries(lib.clips.map(c=>[c.id,c]));
-    const assignedParts=id=>Object.entries(lib.assignments[st.dealer]??{}).filter(([,a])=>a.clip===id).map(([p])=>p);
-    const tileInner=p=>{const a=(lib.assignments[st.dealer]??{})[p];const c=a?byId[a.clip]:null;return `<div class="mono" style="font-size:9px;letter-spacing:.12em;color:var(--mut)">${PARTN[p].toUpperCase()}</div>
-          <div style="font-size:11px;margin-top:4px;${c?'':'color:var(--mut)'}">${c?c.name:a?'(missing '+a.clip+')':'legacy / none'}</div>
-          ${c?`<div style="margin-top:4px;display:flex;gap:4px;align-items:center">${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}<button data-clear="${p}" style="padding:1px 6px;font-size:9px">clear</button></div>`:''}`;};
-    const cardBadge=c=>{const ps=assignedParts(c.id);return ps.length?`<span class="pill live" style="background:var(--lime);color:#111">&#10003; ASSIGNED &middot; ${ps.map(p=>PARTN[p].toUpperCase()).join(' + ')}</span>`:'';};
-    const markCard=id=>{const el=C.querySelector(`[data-clip="${id}"]`);if(!el)return;const ps=assignedParts(id);el.style.borderColor=ps.length||st.selected===id?'var(--lime)':'var(--line)';el.style.boxShadow=ps.length?'0 0 0 2px rgba(214,255,58,.25)':'';el.querySelector('[data-badge]').innerHTML=cardBadge(byId[id]);};
+    const st=render.clipState??={dealer:'astrid',part:'',mode:'all',landing:''};
+    const PARTN={box0:'Box 0',box1:'Box 1',box2:'Box 2',box3:'Box 3',box4:'Box 4',box5:'Box 5',box6:'Box 6','dealer-up':'Dealer upcard','dealer-hole':'Dealer hole card',return:'Return to idle',idle:'Idle'};
+    const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     const draw=()=>{
       mediaPreviews.release(C);
-      const never=lib.neverAgain??{};const land=lib.landings??{};
-      let list=lib.clips.filter(c=>(!st.dealer||c.dealer===st.dealer)&&(!st.part||c.part===st.part)&&(st.mode==='never'?!!never[c.id]:!never[c.id]&&(st.mode==='all'||(st.mode==='transparent'?c.transparent:!c.transparent)))&&(!st.landing||(st.landing==='verified'?!!land[c.id]:st.landing==='unverified'?!land[c.id]:land[c.id]?.part===st.landing)));
-      const cmp={dealer:(a,b)=>a.dealer.localeCompare(b.dealer)||(a.part??'zz').localeCompare(b.part??'zz')||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),part:(a,b)=>(a.part??'zz').localeCompare(b.part??'zz')||a.dealer.localeCompare(b.dealer),frames:(a,b)=>(b.frames??0)-(a.frames??0)}[st.sort];
-      list.sort(cmp);
-      const asg=lib.assignments[st.dealer]??{};
-      const sel=st.selected?byId[st.selected]:null;
-      C.innerHTML=`
-      <div class="panel"><div class="t">FILTERS &middot; ${list.length} OF ${lib.clips.length} CLIPS</div><div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <select id="cf-dealer"><option value="">All dealers</option>${lib.dealers.map(d=>`<option value="${d.key}" ${st.dealer===d.key?'selected':''}>${d.name}</option>`).join('')}</select>
-        <select id="cf-part"><option value="">All table parts</option>${lib.parts.map(p=>`<option value="${p}" ${st.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select>
-        <span style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">${[['transparent','TRANSPARENT ONLY'],['full','FULL-SCENE ONLY'],['all','ALL'],['never',`&#10006; NEVER AGAIN (${Object.keys(never).length})`]].map(([k,l])=>`<button data-mode="${k}" style="border:0;border-radius:0;${st.mode===k?(k==='never'?'background:rgba(255,80,80,.18);color:var(--red)':'background:rgba(214,255,58,.15);color:var(--lime)'):''}">${l}</button>`).join('')}</span>
-        <select id="cf-landing"><option value="">Landed at: any</option><option value="verified" ${st.landing==='verified'?'selected':''}>Landed at: verified only</option><option value="unverified" ${st.landing==='unverified'?'selected':''}>Landed at: not yet marked</option>${lib.parts.map(p=>`<option value="${p}" ${st.landing===p?'selected':''}>Landed at: ${PARTN[p]}</option>`).join('')}</select>
-        <select id="cf-sort">${[['dealer','Sort: dealer'],['part','Sort: table part'],['name','Sort: name'],['frames','Sort: length']].map(([k,l])=>`<option value="${k}" ${st.sort===k?'selected':''}>${l}</option>`).join('')}</select>
-        ${st.mode!=='never'&&list.length?`<button id="cf-swipe" style="margin-left:auto;background:var(--lime);color:#111;border-color:var(--lime)">&#8646; SWIPE MODE (${list.length})</button>`:''}
-      </div></div>
-      ${st.dealer?`<div class="panel"><div class="t">ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${sel?`&middot; <span style="color:var(--lime)">SELECTED: ${sel.name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}</div>
-      <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
-        ${lib.parts.map(p=>`<div data-part="${p}" style="border:1px solid ${sel?'var(--lime)':'var(--line)'};border-radius:8px;padding:8px 10px;cursor:${sel?'pointer':'default'};background:var(--panel2)">${tileInner(p)}</div>`).join('')}
-      </div></div>`:''}
-      <div class="pad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
-      ${list.map(c=>`<div data-clip="${c.id}" style="border:1px solid ${st.selected===c.id||assignedParts(c.id).length?'var(--lime)':'var(--line)'};${assignedParts(c.id).length?'box-shadow:0 0 0 2px rgba(214,255,58,.25);':''}border-radius:10px;overflow:hidden;background:var(--panel2);cursor:pointer;position:relative"><div data-badge style="position:absolute;top:8px;left:8px;z-index:2">${cardBadge(c)}</div>
-        ${c.src?`<video data-bo-preview src="/${c.src}" preload="metadata" muted playsinline controls style="width:100%;max-height:220px;display:block;background:#000;object-fit:contain"></video>`:`<div style="height:90px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:8px;letter-spacing:.12em;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
-        <div style="padding:9px 11px">
-          <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start"><span class="mono" style="font-size:10px;letter-spacing:.06em;word-break:break-all">${c.name}</span><span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}<span data-landbadge="${c.id}">${land[c.id]?`<span class="pill live" style="background:#7cc6ff;color:#111">&#9673; LANDED &middot; ${PARTN[land[c.id].part].toUpperCase()}</span>`:''}</span></span></div>
-          <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.status?' &middot; '+c.status:''}</div>
-          ${c.text?`<div style="font-size:11px;margin-top:5px;padding:6px 8px;border-left:2px solid var(--lime);background:rgba(214,255,58,.05)">&ldquo;${c.text}&rdquo;</div>`:''}${c.audio&&!c.src?`<audio data-bo-preview src="/${c.audio}" controls preload="none" style="width:100%;height:26px;margin-top:5px"></audio>`:''}
-          <div style="font-size:10px;color:var(--mut);margin-top:3px">${c.layout??''}${c.width?` &middot; ${c.width}&times;${c.height}`:''}${c.frames?` &middot; ${c.frames}f`:''}${c.fps?` @${c.fps}`:''}${c.route?`<br>route: <span class="mono">${c.route}</span>`:''}</div>
-          ${never[c.id]?`<div style="margin-top:8px;padding:6px 8px;border:1px solid var(--red);border-radius:6px;font-size:11px"><span class="mono" style="color:var(--red);font-size:9px;letter-spacing:.12em">NEVER AGAIN</span> ${never[c.id].reason?'&middot; '+never[c.id].reason:''}<div style="font-size:9px;color:var(--mut);margin-top:2px">${never[c.id].by??''} ${never[c.id].at?never[c.id].at.slice(0,16).replace('T',' '):''}</div><button data-restore="${c.id}" style="margin-top:6px;padding:2px 8px;font-size:9px">RESTORE</button></div>`
-          :`<div style="margin-top:8px;display:flex;gap:6px;align-items:center"><select data-assign-part="${c.id}" style="flex:1"><option value="">Assign to&hellip;</option>${lib.parts.map(p=>`<option value="${p}" ${c.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><button data-assign="${c.id}">ASSIGN</button></div>
-          <div data-land-row="${c.id}" style="margin-top:6px;display:flex;gap:6px;align-items:center"><span class="mono" style="font-size:9px;letter-spacing:.1em;color:var(--mut);white-space:nowrap">LANDED AT</span><select data-land-part="${c.id}" style="flex:1"><option value="">not marked</option>${lib.parts.map(p=>`<option value="${p}" ${land[c.id]?.part===p?'selected':''}>${PARTN[p]}</option>`).join('')}</select><input data-land-note="${c.id}" value="${(land[c.id]?.note??'').replace(/"/g,'&quot;')}" placeholder="note" style="width:110px;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-land="${c.id}" style="border-color:#7cc6ff;color:#7cc6ff;font-size:10px">MARK</button></div>
-          <div data-never-row="${c.id}" style="margin-top:6px;display:flex;gap:6px;align-items:center"><input data-never-reason="${c.id}" placeholder="why it's awful (optional)" style="flex:1;font-size:11px;padding:4px 6px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><button data-never="${c.id}" style="border-color:rgba(255,80,80,.5);color:var(--red);font-size:10px">&#10006; NEVER AGAIN</button></div>`}
-        </div></div>`).join('')}
-      </div>`;
+      const never=lib.neverAgain??{},land=lib.landings??{},assignments=lib.assignments?.[st.dealer]??{};
+      const clips=lib.clips.filter(clip=>(!st.dealer||clip.dealer===st.dealer)&&(!st.part||clip.part===st.part)
+        &&(st.mode==='never'?Boolean(never[clip.id]):st.mode==='all'||!never[clip.id])
+        &&(!st.landing||(st.landing==='verified'?Boolean(land[clip.id]):!land[clip.id])));
+      C.innerHTML=`<div class="panel"><div class="t">AKTIVA KLIPPVAL REDIGERAS I BACKOFFICE/LAB</div><div class="pad">
+        <p>Det här är den äldre BO-katalogen. Äldre tilldelningar visas för granskning och är inte aktiva klippval. Lab:s sparade projekt styr spelarnas klippflöden.</p>
+        ${labWorkspace?`<a href="${esc(labWorkspace)}#upload" target="_top" style="color:var(--lime)">Öppna Studio och aktiva klippval →</a>`:'<p>Öppna den konfigurerade Lab-arbetsytan för att ändra klippval.</p>'}
+        <p>Never again är en granskningsspärr som kan göra en befintlig äldre Lab-koppling inaktiv; den ändrar inte Studios separata mediaPolicy. Landningsanteckningar väljer inga klipp och bevisar inte godkänd synk.</p>
+      </div></div><div class="panel"><div class="t">FILTER · ${clips.length} AV ${lib.clips.length} KLIPP</div><div class="pad" style="display:flex;gap:10px;flex-wrap:wrap">
+        <select id="cf-dealer"><option value="">Alla dealers</option>${lib.dealers.map(dealer=>`<option value="${esc(dealer.key)}" ${st.dealer===dealer.key?'selected':''}>${esc(dealer.name)}</option>`).join('')}</select>
+        <select id="cf-part"><option value="">Alla bordsdelar</option>${lib.parts.map(part=>`<option value="${esc(part)}" ${st.part===part?'selected':''}>${esc(PARTN[part]||part)}</option>`).join('')}</select>
+        <select id="cf-mode">${[['all','Alla klipp'],['keep','Ej markerade Never again'],['never','Never again']].map(([id,label])=>`<option value="${id}" ${st.mode===id?'selected':''}>${label}</option>`).join('')}</select>
+        <select id="cf-landing"><option value="">Alla landningsanteckningar</option><option value="verified" ${st.landing==='verified'?'selected':''}>Markerade</option><option value="unverified" ${st.landing==='unverified'?'selected':''}>Ej markerade</option></select>
+      </div></div>${st.dealer?`<div class="panel"><div class="t">ÄLDRE BO-TILLDELNINGAR · ${esc(st.dealer.toUpperCase())} · INAKTIVA I ORDINARIE KLIPPURVAL</div><div class="pad">
+        ${Object.entries(assignments).length?Object.entries(assignments).map(([part,assignment])=>`<div class="kv"><b>${esc(PARTN[part]||part)}</b><code>${esc(assignment.clip)}</code></div>`).join(''):'Inga äldre tilldelningar.'}
+      </div></div>`:''}<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px">
+        ${clips.map(clip=>`<div class="panel">
+          ${clip.src?`<video data-bo-preview src="/${esc(clip.src)}" controls playsinline preload="metadata" style="width:100%;max-height:260px;object-fit:contain;background:#000"></video>`:'<div class="pad mono">Ingen MP4-förhandsvisning</div>'}
+          ${clip.audio&&!clip.src?`<audio data-bo-preview src="/${esc(clip.audio)}" controls preload="none" style="width:100%"></audio>`:''}
+          <div class="pad"><strong>${esc(clip.name)}</strong><div class="mono" style="font-size:10px;color:var(--mut)">${esc(clip.dealer)} · ${esc(PARTN[clip.part]||clip.part||'utan bordsdel')} · ${esc(clip.kind)} · ${esc(clip.id)}</div>
+          ${clip.text?`<p>${esc(clip.text)}</p>`:''}<small>Källa: ${esc(clip.route||clip.src||clip.audio||'engine')}</small>
+          ${never[clip.id]?`<p style="color:var(--red)">Never again · ${esc(never[clip.id].reason)}</p><button data-restore="${esc(clip.id)}">Ångra granskningsmarkering</button>`:`<div style="display:flex;gap:6px;margin-top:12px"><input data-never-note="${esc(clip.id)}" placeholder="Granskningsorsak"><button data-never="${esc(clip.id)}">Never again</button></div>`}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px"><label>Observerad landning <select data-land-part="${esc(clip.id)}"><option value="">Ej markerad</option>${lib.parts.map(part=>`<option value="${esc(part)}" ${land[clip.id]?.part===part?'selected':''}>${esc(PARTN[part]||part)}</option>`).join('')}</select></label><input data-land-note="${esc(clip.id)}" value="${esc(land[clip.id]?.note)}" placeholder="Landningsanteckning"><button data-land="${esc(clip.id)}">Spara granskningsanteckning</button></div>
+          </div></div>`).join('')}</div>`;
+      for(const [id,key] of [['cf-dealer','dealer'],['cf-part','part'],['cf-mode','mode'],['cf-landing','landing']])C.querySelector('#'+id).onchange=event=>{st[key]=event.target.value;draw();};
+      C.querySelectorAll('[data-never]').forEach(button=>button.onclick=async()=>{
+        const clip=button.dataset.never,reason=C.querySelector(`[data-never-note="${CSS.escape(clip)}"]`).value;
+        const result=await api('/api/bo/clip-never',{clip,reason});if(!result.ok){toast(result.error||'Kunde inte spara.');return;}lib.neverAgain=result.neverAgain;lib.assignments=result.assignments;draw();
+      });
+      C.querySelectorAll('[data-restore]').forEach(button=>button.onclick=async()=>{
+        const result=await api('/api/bo/clip-never',{clip:button.dataset.restore,undo:true});if(!result.ok){toast(result.error||'Kunde inte spara.');return;}lib.neverAgain=result.neverAgain;lib.assignments=result.assignments;draw();
+      });
+      C.querySelectorAll('[data-land]').forEach(button=>button.onclick=async()=>{
+        const clip=button.dataset.land,part=C.querySelector(`[data-land-part="${CSS.escape(clip)}"]`).value,note=C.querySelector(`[data-land-note="${CSS.escape(clip)}"]`).value;
+        const result=await api('/api/bo/clip-landing',{clip,part,note});if(!result.ok){toast(result.error||'Kunde inte spara.');return;}lib.landings=result.landings;toast('Granskningsanteckning sparad.');draw();
+      });
       mediaPreviews.bind(C);
-      $('#cf-dealer').onchange=e=>{st.dealer=e.target.value;st.selected=null;draw();};
-      $('#cf-part').onchange=e=>{st.part=e.target.value;draw();};
-      $('#cf-sort').onchange=e=>{st.sort=e.target.value;draw();};
-      $('#cf-landing').onchange=e=>{st.landing=e.target.value;draw();};
-      C.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{st.mode=b.dataset.mode;draw();});
-      const swb=$('#cf-swipe');if(swb)swb.onclick=()=>swipe(list.map(c=>c.id));
-      const assign=async(dealer,part,clip,btn)=>{const prev=(lib.assignments[dealer]??{})[part]?.clip;const r=await api('/api/bo/clip-assign',{dealer,part,clip});if(!r.ok){toast(r.error||'failed');return;}
-        lib.assignments=r.assignments;toast(clip?`${PARTN[part]} ← ${byId[clip]?.name??clip}`:`${PARTN[part]} cleared`);
-        const tile=C.querySelector(`[data-part="${part}"]`);if(tile){tile.innerHTML=tileInner(part);tile.style.borderColor=clip?'var(--lime)':'var(--line)';tile.animate([{background:'rgba(214,255,58,.35)'},{background:'var(--panel2)'}],{duration:900});tile.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(dealer,b.dataset.clear,null));}
-        if(prev)markCard(prev);if(clip)markCard(clip);
-        if(btn){const t=btn.textContent;btn.textContent='✓ ASSIGNED';btn.style.background='var(--lime)';btn.style.color='#111';setTimeout(()=>{btn.textContent=t;btn.style.background='';btn.style.color='';},1500);}
-        if(st.selected){const old=st.selected;st.selected=null;markCard(old);C.querySelectorAll('[data-part]').forEach(t=>{t.style.cursor='default';if(!(lib.assignments[dealer]??{})[t.dataset.part])t.style.borderColor='var(--line)';});const head=C.querySelector('.panel:nth-of-type(2) .t');if(head)head.innerHTML=`ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} &middot; click a clip below, then a part here`;}};
-      C.querySelectorAll('[data-clip]').forEach(el=>el.onclick=e=>{if(e.target.closest('video,select,button'))return;const id=el.dataset.clip;if(!st.dealer||st.dealer!==byId[id].dealer){st.dealer=byId[id].dealer;st.selected=id;draw();return;}const old=st.selected;st.selected=st.selected===id?null:id;if(old)markCard(old);markCard(id);const on=!!st.selected;C.querySelectorAll('[data-part]').forEach(t=>{t.style.cursor=on?'pointer':'default';t.style.borderColor=on||(lib.assignments[st.dealer]??{})[t.dataset.part]?'var(--lime)':'var(--line)';});const head=C.querySelector('.panel:nth-of-type(2) .t');if(head)head.innerHTML=`ASSIGNMENTS &middot; ${st.dealer.toUpperCase()} ${on?`&middot; <span style="color:var(--lime)">SELECTED: ${byId[id].name}</span> &rarr; click a part to assign`:'&middot; click a clip below, then a part here'}`;});
-      C.querySelectorAll('[data-part]').forEach(el=>el.onclick=e=>{if(e.target.closest('button'))return;if(!st.selected)return;assign(st.dealer,el.dataset.part,st.selected);});
-      C.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));
-      const neverAgain=async(id,undo)=>{const reason=C.querySelector(`[data-never-reason="${id}"]`)?.value??'';const r=await api('/api/bo/clip-never',{clip:id,reason,undo});if(!r.ok){toast(r.error||'failed');return;}lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;
-        const el=C.querySelector(`[data-clip="${id}"]`);if(el){mediaPreviews.release(el);el.animate([{opacity:1},{opacity:0,transform:'scale(.96)'}],{duration:350,fill:'forwards'});setTimeout(()=>el.remove(),360);}
-        C.querySelectorAll('[data-part]').forEach(t=>{t.innerHTML=tileInner(t.dataset.part);t.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>assign(st.dealer,b.dataset.clear,null));});
-        const nb=C.querySelector('[data-mode="never"]');if(nb)nb.innerHTML=`&#10006; NEVER AGAIN (${Object.keys(lib.neverAgain).length})`;
-        toast(undo?`restored ${byId[id]?.name??id}`:`never again: ${byId[id]?.name??id}`);};
-      C.querySelectorAll('[data-land]').forEach(b=>b.onclick=async()=>{const id=b.dataset.land;const part=C.querySelector(`[data-land-part="${id}"]`).value;const note=C.querySelector(`[data-land-note="${id}"]`).value;const r=await api('/api/bo/clip-landing',{clip:id,part:part||null,note});if(!r.ok){toast(r.error||'failed');return;}lib.landings=r.landings;const bd=C.querySelector(`[data-landbadge="${id}"]`);if(bd)bd.innerHTML=r.landings[id]?`<span class="pill live" style="background:#7cc6ff;color:#111">&#9673; LANDED &middot; ${PARTN[r.landings[id].part].toUpperCase()}</span>`:'';const t=b.textContent;b.textContent='\u2713 MARKED';b.style.background='#7cc6ff';b.style.color='#111';setTimeout(()=>{b.textContent=t;b.style.background='';b.style.color='';},1400);toast(part?`${byId[id]?.name??id} landed at ${PARTN[part]}`:`landing cleared`);});
-      C.querySelectorAll('[data-never]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.never,false));
-      C.querySelectorAll('[data-restore]').forEach(b=>b.onclick=()=>neverAgain(b.dataset.restore,true));
-      C.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const c=byId[b.dataset.assign];const part=C.querySelector(`[data-assign-part="${c.id}"]`).value;if(!part){toast('pick a table part first');return;}if(st.dealer!==c.dealer){st.dealer=c.dealer;draw();}assign(c.dealer,part,c.id,C.querySelector(`[data-assign="${c.id}"]`));});
     };
-    // Swipe mode: one clip at a time, left = never again, right = keep, up = assign to the chosen part, Z = undo.
-    const swipe=ids=>{
-      mediaPreviews.release(C);
-      let i=0,closed=false;const hist=[];const ov=document.createElement('div');
-      ov.style.cssText='position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;touch-action:none';
-      document.body.appendChild(ov);
-      const close=(redraw=true)=>{if(closed)return;closed=true;document.removeEventListener('keydown',key);mediaPreviews.release(ov);ov.remove();render.closePreview=null;if(redraw)draw();};
-      render.closePreview=close;
-      const show=()=>{
-        if(closed)return;
-        mediaPreviews.release(ov);
-        if(i>=ids.length){ov.innerHTML=`<div class="mono" style="letter-spacing:.14em;color:var(--lime)">ALL ${ids.length} CLIPS SWIPED</div><div style="display:flex;gap:10px">${hist.length?'<button data-u>&#8630; UNDO</button>':''}<button data-x>CLOSE</button></div>`;ov.querySelector('[data-x]').onclick=close;const u=ov.querySelector('[data-u]');if(u)u.onclick=undo;return;}
-        const c=byId[ids[i]];const cur=(lib.assignments[c.dealer]??{});
-        ov.innerHTML=`<div class="mono" style="font-size:10px;letter-spacing:.14em;color:var(--mut)">${i+1} / ${ids.length} &middot; &larr; NEVER AGAIN &middot; &rarr; KEEP &middot; &uarr; ASSIGN &middot; Z UNDO &middot; ESC CLOSE</div>
-          <div data-card style="width:min(720px,100%);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel2);transition:transform .22s,opacity .22s;position:relative;cursor:grab">
-            <div style="position:absolute;top:16px;left:16px;right:16px;z-index:2;display:flex;justify-content:space-between;pointer-events:none"><span data-l class="mono" style="opacity:0;border:2px solid var(--red);color:var(--red);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">NEVER AGAIN</span><span data-r class="mono" style="opacity:0;border:2px solid var(--lime);color:var(--lime);padding:4px 10px;border-radius:6px;letter-spacing:.14em;background:rgba(0,0,0,.6)">KEEP</span></div>
-            ${c.src?`<video data-bo-preview src="/${c.src}" autoplay loop muted playsinline style="width:100%;max-height:60vh;display:block;background:#000;object-fit:contain;pointer-events:none"></video>`:`<div style="height:200px;display:flex;align-items:center;justify-content:center;background:#000"><span class="mono" style="font-size:9px;color:var(--mut)">ENGINE STREAM &middot; NO MP4 PREVIEW</span></div>`}
-            <div style="padding:10px 14px"><div style="display:flex;justify-content:space-between;gap:8px"><span class="mono" style="font-size:11px;word-break:break-all">${c.name}</span>${pill(c.transparent?'TRANSPARENT':'FULL-SCENE',c.transparent?'live':'pending')}</div>
-            <div style="font-size:11px;color:var(--mut);margin-top:4px">${c.dealer.toUpperCase()} &middot; ${c.part?PARTN[c.part]:'unassigned part'} &middot; ${c.kind}${c.frames?` &middot; ${c.frames}f`:''}${assignedParts(c.id).length?` &middot; <span style="color:var(--lime)">ASSIGNED ${assignedParts(c.id).map(p=>PARTN[p]).join(' + ')}</span>`:''}</div></div>
-          </div>
-          <div style="display:flex;gap:8px;width:min(720px,100%)"><input data-reason placeholder="why it's awful (optional)" style="flex:1;font-size:12px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--paper)"><select data-part>${lib.parts.map(p=>`<option value="${p}" ${(c.part??'')===p?'selected':''}>${PARTN[p]}${cur[p]?' (taken)':''}</option>`).join('')}</select></div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button data-a="left" style="border-color:rgba(255,80,80,.5);color:var(--red);padding:10px 18px">&#10006; NEVER AGAIN</button><button data-a="up" style="padding:10px 18px">&#8593; ASSIGN</button><button data-a="right" style="border-color:var(--lime);color:var(--lime);padding:10px 18px">&#10003; KEEP</button><button data-u ${hist.length?'':'disabled'}>&#8630; UNDO</button><button data-x>CLOSE</button></div>`;
-        mediaPreviews.bind(ov);
-        ov.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>act(b.dataset.a));
-        ov.querySelector('[data-u]').onclick=undo;ov.querySelector('[data-x]').onclick=close;
-        const card=ov.querySelector('[data-card]');let x0=null,y0=0,dx=0,dy=0;
-        card.onpointerdown=e=>{x0=e.clientX;y0=e.clientY;card.setPointerCapture(e.pointerId);card.style.transition='none';};
-        card.onpointermove=e=>{if(x0===null)return;dx=e.clientX-x0;dy=e.clientY-y0;card.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/20}deg)`;ov.querySelector('[data-l]').style.opacity=Math.max(0,-dx/120);ov.querySelector('[data-r]').style.opacity=Math.max(0,dx/120);};
-        card.onpointerup=()=>{if(x0===null)return;x0=null;card.style.transition='';if(dx>120)act('right');else if(dx<-120)act('left');else if(dy<-120)act('up');else{card.style.transform='';ov.querySelectorAll('[data-l],[data-r]').forEach(e=>e.style.opacity=0);}dx=dy=0;};
-      };
-      let busy=false;
-      const act=async dir=>{
-        const c=byId[ids[i]];if(!c||busy||closed)return;busy=true;
-        try{
-          if(dir==='left'){const reason=ov.querySelector('[data-reason]').value;const r=await api('/api/bo/clip-never',{clip:c.id,reason});if(!r.ok){toast(r.error||'failed');return;}lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;hist.push({k:'never',id:c.id});toast(`never again: ${c.name}`);}
-          else if(dir==='up'){const part=ov.querySelector('[data-part]').value;const prev=(lib.assignments[c.dealer]??{})[part]?.clip??null;const r=await api('/api/bo/clip-assign',{dealer:c.dealer,part,clip:c.id});if(!r.ok){toast(r.error||'failed');return;}lib.assignments=r.assignments;hist.push({k:'assign',dealer:c.dealer,part,prev});toast(`${PARTN[part]} ← ${c.name}`);}
-          else hist.push({k:'keep'});
-          if(closed)return;
-          const card=ov.querySelector('[data-card]');card.style.transform={left:'translateX(-120vw) rotate(-25deg)',right:'translateX(120vw) rotate(25deg)',up:'translateY(-120vh)'}[dir];card.style.opacity=0;
-          await new Promise(r=>setTimeout(r,220));i++;show();
-        }finally{busy=false;}
-      };
-      const undo=async()=>{
-        const h=hist.pop();if(!h)return;
-        if(h.k==='never'){const r=await api('/api/bo/clip-never',{clip:h.id,undo:true});if(r.ok){lib.neverAgain=r.neverAgain;lib.assignments=r.assignments;}}
-        if(h.k==='assign'){const r=await api('/api/bo/clip-assign',{dealer:h.dealer,part:h.part,clip:h.prev});if(r.ok)lib.assignments=r.assignments;}
-        i--;show();toast('undone');
-      };
-      const key=e=>{if(e.target.matches('input,select'))return;if(e.key==='ArrowLeft')act('left');else if(e.key==='ArrowRight')act('right');else if(e.key==='ArrowUp'){e.preventDefault();act('up');}else if(e.key==='z'||e.key==='Backspace')undo();else if(e.key==='Escape')close();};
-      document.addEventListener('keydown',key);
-      show();
-    };
-    draw();
-    return;
+    draw();return;
   }
   if(id==='voice'){
     const vl=await api('/api/bo/voicelines');

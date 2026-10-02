@@ -72,6 +72,8 @@ let probeClient = null;
 let idlePresentationSequence = 0;
 const dealerV2Route = location.pathname === '/v2' || location.pathname.startsWith('/v2/');
 const nativeObservation = createNativeObservation({ href: location.href, opener: window.opener });
+let legacyClipConfiguration = null;
+const clipAssignments = {};
 nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original', presentationOwner: localPresentationEnabled ? 'web-local' : 'legacy' });
 if (!dealerV2Route && DEALER.key === 'amira') DEALER.scene = 'dealers/amira/scene.png';
 if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
@@ -111,6 +113,21 @@ const speechMedia = (greenActor||localPresentationEnabled)?{}:await fetch('speec
 const performanceStaged=!localPresentationEnabled&&(astridRestart||(!riggedReview&&DEALER.key==='astrid'&&new URLSearchParams(location.search).get('performance')==='staged'));
 const performanceContinuity=performanceStaged&&new URLSearchParams(location.search).get('continuity')==='review';
 const performanceMotion=new URLSearchParams(location.search).get('motion');
+async function loadLabClipConfiguration() {
+  if (localPresentationEnabled || greenActor || riggedReview || legacyClipConfiguration) return;
+  try {
+    const response = await fetch('/api/presentation/legacy-config', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Lab-klippkonfiguration kunde inte läsas');
+    legacyClipConfiguration = await response.json();
+    const choices = legacyClipConfiguration.dealers?.[DEALER.key];
+    if (!performanceStaged) for (const [part, key] of Object.entries(choices?.engine ?? {})) if (Object.hasOwn(CLIP, part)) CLIP[part] = key;
+    if (performanceStaged) Object.assign(clipAssignments, choices?.staged ?? {});
+    nativeObservation.emit('playback', { event: 'configuration', state: 'selected', mode: performanceStaged ? 'legacy-staged' : 'legacy-engine',
+      projectRevision: legacyClipConfiguration.projectRevision, configurationSource: legacyClipConfiguration.source,
+      conflicts: legacyClipConfiguration.conflicts?.filter(row => row.dealerId === DEALER.key) ?? [] });
+  } catch (error) { console.warn('[Lab-klippval]', error.message); }
+}
+await loadLabClipConfiguration();
 const astridGreenReview=astridRestart;
 const astridBlender=astridRestart;
 const blenderTable=astridBlender||amiraBlender;
@@ -813,15 +830,10 @@ const TABLES = [
   { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000], dealer: 'vera' },
 ];
 let table = TABLES[0];
-const clipAssignments = {};
 // the backoffice owns tier->dealer assignment; apply it before anyone switches
 fetch('/api/bo/config').then(r => r.ok ? r.json() : null).then(cfg => {
   if (!cfg) return;
-  // Dealing Clips page: the clip picked per table part for this dealer (Never again never plays)
-  const picked = cfg.clipAssignments?.[DEALER.key] ?? {};
-  if(!astridRestart)for (const [part, a] of Object.entries(picked)) if (a?.clip && !cfg.neverAgain?.[a.clip]) clipAssignments[part] = a.clip;
-  const idle = clipAssignments.idle?.startsWith(DEALER.key + ':') ? clipAssignments.idle.slice(DEALER.key.length + 1) : null;
-  if (idle?.includes("/idle/") && !performanceStaged) CLIP.idle = idle;
+  // BO keeps table administration; active clip bindings are loaded from Lab.
   if (!cfg.tiers) return;
   for (const t of TABLES) if (cfg.tiers[t.id]) t.dealer = cfg.tiers[t.id];
 }).catch(() => {});
@@ -897,6 +909,9 @@ async function prepareTable() {
   const session=await fetch('/api/auth/session').then(r=>r.json());
   $('#sign-out').hidden=!session.authenticated;
   if(!session.authenticated && !session.guest){player=null;busy=false;renderBets();return null;}
+  // A page may show the dealer before login. Retry its private Lab policy once
+  // the actual session exists, before preparing that session's first hand.
+  await loadLabClipConfiguration();
   const out = await tableCommand('state'); showShoe(out.shoe);
   if (out.round) {
     bets = out.round.boxes.map(b => ({main:b.stake,pp:b.pp,tp:b.tp}));
@@ -1359,8 +1374,9 @@ function flyFromShoe(el, card, faceDown, cardMotion) {
       selectPlayerPerformance(performanceManifest,{x:target.x+target.width/2,y:target.y+target.height/2},{width:innerWidth,height:innerHeight},{staged:performanceStaged})??cardMotion.performance;
     const take=cardMotion.green?cardMotion.performance:assigned??selectSequencePerformance(performanceManifest,delivery,{staged:performanceContinuity,continues:cardMotion.continues});
     const correlation=nativeObservation.context();
-    nativeObservation.emit('playback',{event:'deal',state:'selected',part,takeId:take.id,media:take.media?.src,card:faceDown?null:card,faceDown},correlation);
-    if(assigned)console.info('[performance] backoffice pick',part,assigned.id);
+    nativeObservation.emit('playback',{event:'deal',state:'selected',part,takeId:take.id,media:take.media?.src,card:faceDown?null:card,faceDown,
+      projectRevision:legacyClipConfiguration?.projectRevision,configurationSource:'lab/project.json',reason:assigned?'exact_lab_binding':'existing_registered_standard'},correlation);
+    if(assigned)console.info('[performance] Lab pick',part,assigned.id);
     return performancePlayer.play(take,{target,card,faceDown,corners,
       origin:tableScene.shoeOutlet(),onCue:phase=>sfx.play(phase),onLand:()=>{el.style.visibility='';nativeObservation.emit('playback',{event:'deal',state:'landed',part,takeId:take.id,evidence:'player-onLand'},correlation);}})
       .catch(error=>{console.warn('[performance]',error.message);const status=$('#performance-status');if(status)status.textContent=error.message;})
@@ -2240,7 +2256,7 @@ async function playChatDecision(decision, signal, jobId) {
               const pending = pendingChatReplies.get(jobId); if (pending) pending.playbackReceipt = receipt;
               chatPlaybackDiagnostic.stream(jobId, receipt);
               nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync-stream',
-                synthetic: Boolean(pending?.synthetic), ...receipt });
+                synthetic: Boolean(pending?.synthetic), ...receipt, requestId: jobId });
             },
           });
         } else
@@ -2255,7 +2271,7 @@ async function playChatDecision(decision, signal, jobId) {
             },
             onReceipt: receipt => {
               const pending=pendingChatReplies.get(jobId);if(pending)pending.playbackReceipt=receipt;
-              nativeObservation.emit('playback', { event: 'speech', source: pending?.probe ? 'probe' : 'generated-lipsync', synthetic: Boolean(pending?.synthetic), ...receipt });
+              nativeObservation.emit('playback', { event: 'speech', source: pending?.probe ? 'probe' : 'generated-lipsync', synthetic: Boolean(pending?.synthetic), ...receipt, requestId: jobId });
             },
           });
         } else if (DEALER.key === 'astrid') {
@@ -2265,7 +2281,7 @@ async function playChatDecision(decision, signal, jobId) {
           if (pending) pending.voiceUnavailable = true;
           chatPlaybackDiagnostic.finish(jobId, 'text-only');
           nativeObservation.emit('playback', { event: 'speech', state: 'fallback',
-            reason: 'astrid-generated-media-unavailable', renderer: 'text-only' });
+            reason: 'astrid-generated-media-unavailable', renderer: 'text-only', source: 'generated-lipsync', requestId: jobId });
         } else await playNeutralTts(decision.exactText, signal);
       }
       finally { speaking = false; }

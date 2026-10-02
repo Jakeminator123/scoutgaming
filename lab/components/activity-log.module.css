@@ -39,3 +39,23 @@
 .protocol strong { font-size: 14px; }
 @media (max-width: 700px) { .header, .connection { display: flex; flex-direction: column; gap: 14px; } .timeline > li { grid-template-columns: 1fr; gap: 10px; } .timestamp { flex-direction: row; } .tools { flex-wrap: wrap; } }
 .exportText { width: 100%; max-width: 100%; box-sizing: border-box; resize: vertical; font: 12px/1.5 monospace; }
+.playbackTrace { margin-top: 20px; padding: 20px; border: 1px solid var(--line, #d3ddd8); border-radius: 10px; }
+.playbackTrace h3 { margin: 22px 0 10px; font-size: 17px; }
+.traceStatus { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.traceStatus dt { font-size: 11px; opacity: .7; margin-bottom: 8px; }
+.traceStatus dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.traceStatus small { display: block; margin-top: 6px; font: 10px ui-monospace, monospace; opacity: .7; }
+.traceNotice { padding: 10px 14px; border-left: 3px solid #a46b29; font-size: 12px; line-height: 1.6; }
+.playbackRows { list-style: none; margin: 0; padding: 0; }
+.playbackRows > li { padding: 16px 0; border-top: 1px solid var(--line, #d3ddd8); }
+.playbackRows p { margin: 8px 0; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.traceHeading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font-size: 13px; overflow-wrap: anywhere; }
+.traceHeading span { font-size: 11px; }
+.receiptSteps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.receiptSteps > span { padding: 6px 9px; border: 1px solid var(--line, #d3ddd8); border-radius: 5px; font-size: 11px; }
+.receiptSteps small { display: block; margin-top: 4px; max-width: 260px; overflow-wrap: anywhere; opacity: .7; }
+.sourceTable { overflow-x: auto; }
+.sourceTable table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sourceTable th, .sourceTable td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--line, #d3ddd8); }
+@media (max-width: 900px) { .traceStatus { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 500px) { .playbackTrace { padding: 14px; } .traceStatus { grid-template-columns: 1fr; } }

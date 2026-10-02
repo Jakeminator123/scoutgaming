@@ -16,6 +16,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     if (video) player.prepareLocalClip?.({ media: { src: `/api/presentation/videos/${video.id}`, sha256: video.sha256 } });
   };
   let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null;
+  const configurationSource = config.configurationSource || 'lab/project.json';
+  receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource });
   const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status'); host.append(status);
   const control = document.createElement('select'); control.setAttribute('aria-label', 'Klippval');
   for (const [value, text] of [['off','Standard'],['rules','Regler'],['random','Slump'],['active','OpenClaw'],['shadow','OpenClaw · skugga']]) {
@@ -44,7 +46,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (!response.ok) return;
       const result = await response.json();
       if (controller.signal.aborted || closed || mode !== startedMode || version() !== revision) return;
-      receipt({ event: 'idle-advice', state: 'selected', result });
+      receipt({ event: 'idle-advice', state: 'selected', result, projectRevision: result.projectRevision, configurationSource });
       if (mode === 'active' && result.videoId) idle.offerVariant({ videoId: result.videoId, requestId, expiresAt: performance.now() + Math.max(0, Math.min(30000, Date.parse(at) + 30000 - Date.now())) });
     } catch { /* Advice is optional; automatic idle and gameplay continue. */ }
     finally { if (adviceController === controller) adviceController = null; }
@@ -71,7 +73,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     idleRun = clip.playId; const epoch = ++serial;
     const video = config.inventory.videos.find(item => item.id === clip.videoId);
     if (!video) { status.textContent = 'Ingen lokal idlefilm · 2D-reserv'; return; }
-    void film(video, { kind: 'idle', details: { idleKind: clip.kind, standardBase: clip.standardBase, reason: clip.reason },
+    void film(video, { kind: 'idle', details: { idleKind: clip.kind, standardBase: clip.standardBase, reason: clip.reason, projectRevision: config.projectRevision || config.revision, configurationSource },
       onFrame: () => { if (epoch !== serial) return; idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
@@ -98,13 +100,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     ++serial; stop(); onBusy();
     status.textContent = '';
     const token = serial;
+    let result;
     try {
       const selected = await fetch('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode, version: requestVersion, event }) });
       if (!selected.ok) throw new Error('Inget verifierat klipp för instruktionen');
-      const result = await selected.json();
+      result = await selected.json();
       if (token !== serial || requestVersion !== version() || signal?.aborted) return false;
-      receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider });
+      receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider, mode, projectRevision: result.projectRevision, configurationSource });
       if (!result.video) throw new Error('Exakt film saknas');
       if (queueVersion === requestVersion && upcoming[0]?.type === event.type
         && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
@@ -115,22 +118,25 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         const current = ++attempt;
         onSelected?.(video, result.decision.sourceEvent);
         try {
-          await film(video, { kind, signal, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId },
+          await film(video, { kind, signal, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
             onFrame: () => { if (owns(current)) onPresented?.(); },
             onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined,
             onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
         } finally { if (current === attempt) ++attempt; }
       };
       try { await play(result.video); }
-      catch (error) { if (signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id) throw error; await play(result.standard); }
+      catch (error) { if (signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id) throw error;
+        receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: 'performance-local', requestId: result.decision.requestId, mediaId: result.standard.id, projectRevision: result.projectRevision, configurationSource });
+        await play(result.standard); }
       return token === serial && requestVersion === version() && !signal?.aborted;
     } catch (error) {
       if (signal?.aborted || token !== serial) return false;
       status.textContent = `${error.message} · 2D-reserv`;
-      receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: '2d' }); return false;
+      receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
+        projectRevision: result?.projectRevision, configurationSource }); return false;
     }
   }
-  control.onchange = () => { adviceController?.abort(); mode = control.value; state({}); receipt({ event: 'configuration', state: 'selected', mode }); };
+  control.onchange = () => { adviceController?.abort(); mode = control.value; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, start: resumeIdle,
     prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },

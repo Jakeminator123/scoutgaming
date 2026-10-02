@@ -78,13 +78,11 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
   for (const [dealer, parts] of Object.entries(bo.clipAssignments ?? {})) {
     picks[dealer] = Object.fromEntries(Object.entries(parts).map(([part, assignment]) => {
       const idle = part === 'idle';
-      const consumed = !!DEALERS[dealer] && (idle || (dealer === 'astrid' && /^(box[0-6]|dealer-up|dealer-hole)$/.test(part)));
+      const formerConsumer = !!DEALERS[dealer] && (idle || (dealer === 'astrid' && /^(box[0-6]|dealer-up|dealer-hole)$/.test(part)));
       return [PART_EVENT[part] ?? part, { clip: assignment.clip, at: assignment.at, part,
-        consumed, excluded: !!bo.neverAgain?.[assignment.clip], actualPlayback: false,
-        route: consumed ? `/?dealer=${dealer}${idle ? '' : '&performance=staged'}` : null,
-        condition: idle ? 'Must reference this dealer engine idle clip; only the original, non-staged path uses it.'
-          : consumed ? 'Must match a take in the selected staged manifest and survive never-again filtering; V2 does not use this filmed-deal selection.'
-          : 'Stored review choice only; this part/dealer has no playback consumer (including return).',
+        consumed: false, active: false, excluded: !!bo.neverAgain?.[assignment.clip], actualPlayback: false,
+        route: null, formerRoute: formerConsumer ? `/?dealer=${dealer}${idle ? '' : '&performance=staged'}` : null,
+        condition: 'Preserved BO review data, inactive in ordinary gameplay. An exact registered dealer/situation may be explicitly imported to the saved Lab project; uncertain destinations and recorded speech are never borrowed.',
       }];
     }));
   }
@@ -95,9 +93,10 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
       'Original speech uses the original bank/engine or the exact native embedded-audio override. V2 greenSpeech has separate exact text, video, paired MP3 and delay; never substitute one route\'s caption for another.',
       'Engine clips are h264 elementary streams spliced on a canonical pose; performance/green takes are mp4 atlases composited over the table.',
       'Astrid V2 filmed dealing is paused. Original staged playback remains opt-in; base staged entries do not describe the alternative rhythm/smooth60 manifests.',
-      'Backoffice picks are configured choices with route-specific consumers. Return is not consumed; a deal pick must match the active staged manifest. Never-again excludes BO selections, not every automatic/fallback selector in the game.',
+      'Active choices are edited in Backoffice/Lab and saved in project.json: mediaPolicy/idlePolicy for Astrid local presentation, legacyClipPolicy for the existing original engine/staged path. Historical BO picks remain read-only review data and are not runtime fallbacks. Never-again blocks exact legacy Lab bindings/imports, not every independent automatic selector.',
       'Landing annotations and want/no verdicts are human metadata, not measured card contact, acceptance or runtime promotion.'
     ],
+    clipControl: { editor: 'Backoffice/Lab', source: 'lab/project.json', legacyBackofficeActive: false },
     events: { partsToEvents: PART_EVENT, actionsToEvents: ACTION_EVENT },
     backofficePicks: picks, neverAgain: Object.keys(bo.neverAgain ?? {}), verdicts: bo.genVerdicts ?? {},
     clipLandings: bo.clipLandings ?? {}, genLandings: bo.genLandings ?? {},

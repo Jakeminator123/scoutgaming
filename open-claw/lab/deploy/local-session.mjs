@@ -1,5 +1,5 @@
 import { mkdir, realpath } from 'node:fs/promises';
-import { readFileSync, readlinkSync } from 'node:fs';
+import { existsSync, readFileSync, readlinkSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { createServer } from 'node:net';
 import { randomUUID } from 'node:crypto';
@@ -156,7 +156,16 @@ export async function acquireLocalSession({ repoRoot, productPort = null, labPor
     throw new Error('Croupier requires two distinct valid local ports.');
   }
   const root = await realpath(resolve(repoRoot));
-  const directory = join(root, 'lissabon', 'data');
+  // An older launcher can still own the retired guard. Inspect it without
+  // creating the old directory or writing to its database during migration.
+  const legacyFile = join(root, 'lissabon', 'data', '.local-session.sqlite');
+  if (existsSync(legacyFile)) {
+    const legacy = new DatabaseSync(legacyFile, { readOnly: true });
+    let state;
+    try { state = read(legacy); } finally { legacy.close(); }
+    if (state && await occupied(state)) throw conflict(state);
+  }
+  const directory = join(root, 'lab', 'data');
   await mkdir(directory, { recursive: true });
   const file = join(directory, '.local-session.sqlite');
   const token = randomUUID();

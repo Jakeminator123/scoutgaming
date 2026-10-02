@@ -29,6 +29,7 @@ vendor/
 /agent-talk/state.json
 /agent-talk/write.lock
 /web/data/
+/lab/data/
 /lissabon/data/
 /random-stuff-jakob/jakob-log-files/
 

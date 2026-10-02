@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Private, offline copy of the current Lissabon player and studio state.
+// Compatibility entry point: private, offline copy of Lab player/studio state.
 // Never point this at an active server or a destination inside the checkout.
 import { createHash, randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
@@ -163,7 +163,7 @@ export async function backupLissabonState({ repoRoot = DEFAULT_REPO, destination
   const repoReal = await realpath(repo), parentReal = await realpath(parent);
   if (inside(repoReal, target) || inside(repoReal, parentReal) || inside(target, repoReal)) fail('destination_must_be_outside_checkout');
   if (!(await missing(target))) fail('destination_already_exists');
-  const dataDir = join(repo, 'lissabon', 'data');
+  const dataDir = join(repo, 'lab', 'data');
   // The same guard used by the coordinated launchers blocks all Croupier
   // product/lab starts for the whole copy, including starts on other ports.
   const session = await acquireLocalSession({ repoRoot: repo, labPort: 4211 });

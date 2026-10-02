@@ -1,9 +1,9 @@
 # Lokal OpenClaw-anslutning
 
 Guiden gäller `Jakeminator123/github-work`, branch
-`jakemanator123-github-work`, i den aktuella Croupier-arbetskopian.
+`main`, i den aktuella Croupier-arbetskopian.
 Helpern läser privata lokala miljöfiler och ansluter via Render Director.
-Se [miljökartan](../../../_ENVIROMENT-INFO.md) för filernas placering och
+Se [miljökartan](../../../docs/ENVIRONMENT-VARIABLES.md) för filernas placering och
 [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) för spelaren.
 
 ## Aktuell anslutningskontroll — 2026-09-29
@@ -21,12 +21,13 @@ Gateway-autentisering; `OPENCLAW_MODEL_API_KEY` används av Gateway mot modellen
 
 ## Ett lokalt serverpar
 
-Högst ett produkt-/labbpar får köras åt gången. Lissabon-startaren, denna
+Högst ett produkt-/labbpar får köras åt gången. Lab-startaren, denna
 helper och offline-jämförelsens startare delar sessionsspärr även för olika
 portval. Kontrollera befintlig körning före start och respektera användarens
 stoppbeslut. Codex använder `--no-open` där startaren stöder det och
 återanvänder befintliga spel-/labbflikar. Se
-[aktuell Lissabon-start](../../../lissabon/README.md).
+[aktuell Backoffice/Lab-start](../../../lab/README.md). Projekt, historik och
+lokala profiler finns i `lab/data`; den gamla Lissabon-katalogen är borttagen.
 
 Standardadresser för den isolerade helpern efter uttrycklig start:
 
