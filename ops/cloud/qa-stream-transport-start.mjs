@@ -2,16 +2,23 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {mkdir, writeFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
-import {assertUnpaidQaEnvironment, QA_SERVICE_ID, QA_TRANSPORT_ORIGIN} from './qa-stream-transport-preload.mjs';
+import {assertUnpaidQaEnvironment, safeUnpaidDiagnosticLine, QA_SERVICE_ID, QA_TRANSPORT_ORIGIN} from './qa-stream-transport-preload.mjs';
 
-export function unpaidQaSpecifications(specifications, env, {speechDirectory} = {}) {
+export function unpaidQaSpecifications(specifications, env, {speechDirectory, emit = value => console.info(value)} = {}) {
   assertUnpaidQaEnvironment(env);
   if (env.NODE_OPTIONS || specifications.web.env.NODE_OPTIONS) throw Error('Unpaid QA runner requires a single explicit preload.');
   if (speechDirectory !== undefined && !/^\/var\/data\/speech\/transport-qa-[a-f0-9-]{36}$/.test(speechDirectory)) throw Error('Invalid isolated QA speech directory.');
   const webEnvironment = {...specifications.web.env, RENDER_SERVICE_ID: QA_SERVICE_ID,
     CROUPIER_VERCEL_TRANSPORT_ORIGIN: QA_TRANSPORT_ORIGIN};
   assertUnpaidQaEnvironment(webEnvironment);
-  return {...specifications, web: {...specifications.web, env: {...webEnvironment,
+  let diagnosticLines = 0;
+  const onStdoutLine = line => {
+    const safe = safeUnpaidDiagnosticLine(line);
+    if (!safe || diagnosticLines >= 256) return;
+    diagnosticLines++;
+    try {emit(safe);} catch { /* Evidence never changes child lifecycle. */ }
+  };
+  return {...specifications, web: {...specifications.web, onStdoutLine, env: {...webEnvironment,
     ...(speechDirectory ? {CROUPIER_GENERATED_SPEECH_DIR: speechDirectory} : {}),
     NODE_OPTIONS: `--import=${new URL('./qa-stream-transport-preload.mjs', import.meta.url).href}`}}};
 }

@@ -2,6 +2,27 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { LAB_PORT, WEB_PORT } from './config.mjs';
 
+// An explicit diagnostic subscriber receives bounded complete lines. Ordinary
+// children keep their discarded output; no stderr is exposed by this option.
+export function observeChildStdout(stdout, onLine) {
+  let pending = '', dropping = false;
+  stdout.setEncoding('utf8');
+  stdout.on('error', () => {});
+  stdout.on('data', chunk => {
+    for (const part of String(chunk).split(/(?<=\n)/)) {
+      const ended = part.endsWith('\n');
+      if (!dropping) {
+        pending += part;
+        if (Buffer.byteLength(pending) > 8192) {pending = ''; dropping = true;}
+      }
+      if (ended) {
+        if (!dropping) {try {onLine(pending.trimEnd());} catch { /* Diagnostics cannot stop a child. */ }}
+        pending = ''; dropping = false;
+      }
+    }
+  });
+}
+
 export async function assertChildPortsFree(ports = [WEB_PORT, LAB_PORT]) {
   for (const port of ports) {
     const server = createServer();
@@ -60,8 +81,10 @@ export async function startChildren(specs, { spawnProcess = spawn, wait = waitFo
     if (signal?.aborted) throw new Error('Cloud start was interrupted.');
     await portCheck();
     web = spawnProcess(specs.web.command, specs.web.args,
-      { cwd: specs.web.cwd, env: specs.web.env, stdio: 'ignore', windowsHide: true });
+      { cwd: specs.web.cwd, env: specs.web.env,
+        stdio: typeof specs.web.onStdoutLine === 'function' ? ['ignore', 'pipe', 'ignore'] : 'ignore', windowsHide: true });
     web.on('error', () => {});
+    if (typeof specs.web.onStdoutLine === 'function') observeChildStdout(web.stdout, specs.web.onStdoutLine);
     webExit = new Promise(resolve => web.once('exit', () => resolve('web-exit')));
     await wait(web, 'http://127.0.0.1:4173/api/auth/access', response => [200, 302, 401].includes(response.status), 30000, signal);
     if (signal?.aborted) throw new Error('Cloud start was interrupted.');

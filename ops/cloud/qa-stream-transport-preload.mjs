@@ -16,6 +16,19 @@ const TRACE_PHASES = new Set(['fresh_before', 'fresh_after', 'source_opened', 't
   'worker_open', 'worker_recv_start', 'worker_recv_pcm', 'worker_recv_end', 'worker_recv_abort',
   'worker_send_stream', 'worker_send_bytes', 'worker_send_done', 'worker_close', 'worker_error']);
 
+export function safeUnpaidDiagnosticLine(line) {
+  const prefix = 'CROUPIER_UNPAID_STREAM ';
+  if (typeof line !== 'string' || !line.startsWith(prefix) || line.length > 8192) return null;
+  let input;
+  try {input = JSON.parse(line.slice(prefix.length));} catch {return null;}
+  if (!input || !TRACE_PHASES.has(input.phase)) return null;
+  const output = {phase: input.phase};
+  for (const name of ['count', 'ms', 'bytes', 'code']) {
+    if (Number.isSafeInteger(input[name]) && input[name] >= 0 && input[name] <= 16 * 1024 * 1024) output[name] = input[name];
+  }
+  return prefix + JSON.stringify(output);
+}
+
 export function installUnpaidDiagnostics(env, {emit = value => console.info(value)} = {}) {
   assertUnpaidQaEnvironment(env);
   const counts = new Map();
