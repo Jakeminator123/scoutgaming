@@ -44,7 +44,9 @@ exakt HTTPS-origin och spelarens riktiga kvitton, utan Partner-launch/SSE.
 23 fokustester och Lab-TypeScript passerar. Vercels externa WebSocket-rewrite
 gav HTTP 404. Två fasta SDK-rutter ersätter den: faktisk installerad SDK och
 isolerad relay verifierar bytes, ägarbiljett, återspelningsspärr, kögränser och
-stängning; 19 frontendtester och båda byggen passerar. Render behåller auth;
+stängning; 19 frontendtester och båda byggen passerar. SDK-testets verkliga
+relay körs med frontendens egna installerade beroenden även i Vercelbygget.
+Render behåller auth;
 worker-anslutningen har plats för hela befintliga 540-sekundersleasen.
 Det nya molnprovet återstår före UI-bytet. CI:s isolerade HTTP-fixture väntar
 nu högst fem sekunder på serverns
