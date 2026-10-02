@@ -7,9 +7,10 @@ import {mkdtemp, copyFile, symlink, unlink, rm, realpath} from 'node:fs/promises
 import {tmpdir} from 'node:os';
 import {join, dirname, basename} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+import {createRequire} from 'node:module';
 import WebSocket from 'ws';
 import {platformConfiguration} from '../lib/platform-routing.mjs';
-import {platformSocketRequest, bridgePlatformSocket, handlePlatformWebSocket} from '../lib/platform-websocket.mjs';
+import {platformSocketRequest, bridgePlatformSocket, handlePlatformWebSocket, platformSocketDiagnostics} from '../lib/platform-websocket.mjs';
 import {issueTicket, ticketAuthenticator} from '../../../services/astrid-gpu-worker/gateway/auth.mjs';
 import {vercelIngressRequest} from '../../../ops/cloud/vercel-ingress.mjs';
 
@@ -71,7 +72,7 @@ async function rejected(url, protocols, options = {}) {
   });
 }
 
-test('actual SDK upgrade bridges real relay worker/client bytes and preserves owner/replay rejection before frontend accept', {timeout: 15000}, async () => {
+test('actual SDK and Next after retain real relay bytes after response204 without SDK waitUntil and preserve owner/replay checks', {timeout: 15000}, async () => {
   // Vercel installs only this app's dependencies. Keep the actual relay bytes
   // unchanged while resolving ws through the app's installed node_modules.
   const temporaryRoot = await realpath(tmpdir());
@@ -81,6 +82,12 @@ test('actual SDK upgrade bridges real relay worker/client bytes and preserves ow
   const authenticate = ticketAuthenticator(ticketSecret);
   const context = new AsyncLocalStorage(), contextSymbol = Symbol.for('@vercel/request-context');
   const oldContext = globalThis[contextSymbol];
+  const previousAsyncLocalStorage = globalThis.AsyncLocalStorage;
+  globalThis.AsyncLocalStorage = AsyncLocalStorage;
+  const requireNext = createRequire(import.meta.url);
+  const {after} = requireNext('next/server');
+  const {AfterContext} = requireNext('next/dist/server/after/after-context.js');
+  const {workAsyncStorage} = requireNext('next/dist/server/app-render/work-async-storage.external.js');
   globalThis[contextSymbol] = {get: () => context.getStore()};
   const lifetimes = [], replies = new EventEmitter(), returned = new Map(), workerRequestAbort = new AbortController();
   function returnedReply(path) {
@@ -111,17 +118,20 @@ test('actual SDK upgrade bridges real relay worker/client bytes and preserves ow
       }
     }
     frontend.on('upgrade', (req, socket, head) => {
-      context.run({upgradeWebSocket: () => ({req, socket, head}), waitUntil: promise => {
+      let responseFinished;
+      const afterContext = new AfterContext({onClose: callback => {responseFinished = callback;}, waitUntil: promise => {
         const lifetime = {promise, settled: false}; lifetimes.push(lifetime);
         promise.then(() => {lifetime.settled = true;});
-      }}, async () => {
+      }});
+      context.run({upgradeWebSocket: () => ({req, socket, head})}, () => workAsyncStorage.run({afterContext}, async () => {
         const reply = await handlePlatformWebSocket(new Request(configuration.publicOrigin + req.url,
           {headers: req.headers, ...(req.url === '/lipsync-worker' ? {signal: workerRequestAbort.signal} : {})}),
-          {env, WebSocketImpl: BackendSocket, bridgeOptions: {closeTimeoutMs: 30}});
+          {env, WebSocketImpl: BackendSocket, retain: promise => after(() => promise), bridgeOptions: {closeTimeoutMs: 30}});
         const result = {status: reply.status, pendingLifetimes: lifetimes.filter(value => !value.settled).length};
         returned.set(req.url, result); replies.emit(req.url, result);
+        responseFinished?.();
         if (reply.status !== 204 && !socket.destroyed) socket.end(`HTTP/1.1 ${reply.status} Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
-      });
+      }));
     });
     frontend.listen(0, '127.0.0.1'); await once(frontend, 'listening');
     const base = `ws://127.0.0.1:${frontend.address().port}`;
@@ -169,6 +179,7 @@ test('actual SDK upgrade bridges real relay worker/client bytes and preserves ow
     worker?.terminate(); client?.terminate(); relay?.close();
     await Promise.all([new Promise(resolve => backend.close(resolve)), new Promise(resolve => frontend.close(resolve))]);
     if (oldContext === undefined) delete globalThis[contextSymbol]; else globalThis[contextSymbol] = oldContext;
+    if (previousAsyncLocalStorage === undefined) delete globalThis.AsyncLocalStorage; else globalThis.AsyncLocalStorage = previousAsyncLocalStorage;
     if (dirname(fixtureDirectory) !== temporaryRoot || !basename(fixtureDirectory).startsWith('croupier-relay-runtime-')) throw Error('Unexpected fixture cleanup path');
     // Remove the directory link before deleting our own temporary sources.
     if (linkedDependencies) await unlink(join(fixtureDirectory, 'node_modules'));
@@ -182,6 +193,37 @@ class FakeSocket extends EventEmitter {
   close(code) {this.codes.push(code); this.readyState = WebSocket.CLOSED; this.emit('close', code);}
   terminate() {this.close(1006);}
 }
+
+test('QA socket counters reveal phase and waitUntil presence without payloads, and remain silent for production origins', async () => {
+  const rows = [], symbol = Symbol.for('@vercel/request-context'), previous = globalThis[symbol];
+  const qa = {...configuration, publicOrigin: 'https://croupier-player-preview-qa.vercel.app', backendOrigin: 'https://croupier-vercel-preview-qa.onrender.com'};
+  try {
+    globalThis[symbol] = {get: () => ({waitUntil() {}})};
+    const trace = platformSocketDiagnostics(qa, {NODE_ENV: 'production'}, '/lipsync-worker', {emit: value => rows.push(value)});
+    const upstream = new FakeSocket(), frontend = new FakeSocket();
+    const bridge = bridgePlatformSocket(upstream, {trace, closeTimeoutMs: 5});
+    upstream.emit('message', Buffer.from('{"t":"start","id":"private-id"}'), false);
+    bridge.attach(frontend);
+    frontend.emit('message', Buffer.from('private-media-payload'), true);
+    upstream.close(1000); await bridge.done;
+    const parsed = rows.map(value => JSON.parse(value.slice('CROUPIER_UNPAID_SOCKET '.length)));
+    assert.equal(parsed.find(value => value.phase === 'attached').contextWaitUntil, true);
+    assert.equal(parsed.find(value => value.phase === 'done').counters.frontend_receive, 1);
+    assert.equal(parsed.find(value => value.phase === 'done').counters.upstream_send, 1);
+    assert.doesNotMatch(rows.join(''), /private-id|private-media|cookie|ticket/);
+    const before = rows.length;
+    for (const [candidate, runtime] of [[configuration, {NODE_ENV: 'production'}], [qa, {}]]) {
+      platformSocketDiagnostics(candidate, runtime, '/speech-stream', {emit: value => rows.push(value)})('attached');
+    }
+    assert.equal(rows.length, before);
+    trace('unknown-private-phase', {text: 'private-text'});
+    for (let index = 0; index < 300; index++) trace('upstream_receive', {bytes: 1, binary: true, payload: 'private-extra'});
+    assert.equal(rows.length - before, 7);
+    assert.doesNotMatch(rows.join(''), /private-/);
+  } finally {
+    if (previous === undefined) delete globalThis[symbol]; else globalThis[symbol] = previous;
+  }
+});
 
 test('early ready is retained once, close drains it, and bounded queue/backpressure closes both sides', async () => {
   const upstream = new FakeSocket(), frontend = new FakeSocket();

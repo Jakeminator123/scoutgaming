@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
 import {QA_SERVICE_ID, QA_PUBLIC_ORIGIN, QA_TRANSPORT_ORIGIN, FIXTURE_PROVIDER_ORIGIN, FIXTURE_CREDENTIAL, FIXTURE_ENDPOINT,
-  TRANSPORT_SENTINEL, unpaidQaFetch, openSyntheticWorker, assertUnpaidQaEnvironment, verifyUnpaidWssTransport} from '../qa-stream-transport-preload.mjs';
+  TRANSPORT_SENTINEL, unpaidQaFetch, openSyntheticWorker, assertUnpaidQaEnvironment, verifyUnpaidWssTransport, installUnpaidDiagnostics} from '../qa-stream-transport-preload.mjs';
 import {unpaidQaSpecifications} from '../qa-stream-transport-start.mjs';
 
 const env = {RENDER_SERVICE_ID: QA_SERVICE_ID, PUBLIC_URL: QA_PUBLIC_ORIGIN, CROUPIER_VERCEL_TRANSPORT_ORIGIN: QA_TRANSPORT_ORIGIN,
@@ -52,20 +52,46 @@ test('fixture provider never reaches a paid host and uses the real session worke
 
 test('synthetic worker proves bidirectional binary transport without claiming media playback', async () => {
   let ws;
+  const phases = [];
   class FixtureSocket extends EventEmitter {
     constructor(url, options) {super(); ws = this; this.sent = []; assert.equal(url, QA_PUBLIC_ORIGIN.replace('https:', 'wss:') + '/lipsync-worker'); assert.match(options.headers.Authorization, /^Bearer /); queueMicrotask(() => this.emit('open'));}
     send(...args) {this.sent.push(args);}
     terminate() {}
   }
   const input = {ws_url: QA_PUBLIC_ORIGIN.replace('https:', 'wss:') + '/lipsync-worker', ws_token: 'isolated-worker-secret'.repeat(3), worker_id: 'croupier-' + 'a'.repeat(32)};
-  await openSyntheticWorker(input, {WebSocketImpl: FixtureSocket});
+  await openSyntheticWorker(input, {WebSocketImpl: FixtureSocket, trace: (phase, fields) => phases.push({phase, fields})});
   ws.emit('message', Buffer.from('{"t":"start","id":"utterance"}'), false);
   assert.equal(ws.sent.length, 1);
   ws.emit('message', Buffer.alloc(4800), true);
   assert.deepEqual(ws.sent[1], [TRANSPORT_SENTINEL, {binary: true}]);
   ws.emit('message', Buffer.from('{"t":"end","id":"utterance"}'), false);
   assert.equal(JSON.parse(ws.sent[2][0]).syntheticTransport, true);
+  assert.deepEqual(phases.map(value => value.phase), ['worker_open', 'worker_recv_start', 'worker_send_stream', 'worker_recv_pcm', 'worker_send_bytes', 'worker_recv_end', 'worker_send_done']);
+  assert.doesNotMatch(JSON.stringify(phases), /utterance|ws_token|worker_id|isolated-worker-secret/);
   await assert.rejects(openSyntheticWorker({...input, ws_url: QA_TRANSPORT_ORIGIN.replace('https:', 'wss:') + '/lipsync-worker'}, {WebSocketImpl: FixtureSocket}), /Invalid/);
+});
+
+test('diagnostics require the exact unpaid environment, filter private fields and bound log volume', () => {
+  const symbol = Symbol.for('croupier.unpaid-stream-diagnostics'), previous = globalThis[symbol];
+  const output = [];
+  try {
+    assert.throws(() => installUnpaidDiagnostics({...env, RENDER_SERVICE_ID: 'production'}, {emit: value => output.push(value)}));
+    assert.equal(globalThis[symbol], previous);
+    const trace = installUnpaidDiagnostics(env, {emit: value => output.push(value)});
+    trace('fresh_before', {ticket: 'private-ticket', cookie: 'private-cookie', text: 'private-text', id: 'private-id'});
+    trace('worker_recv_pcm', {bytes: 4800, payload: 'private-media'});
+    trace('unknown-private-phase', {bytes: 42});
+    trace('fresh_after', 7);
+    assert.deepEqual(output.map(value => JSON.parse(value.slice('CROUPIER_UNPAID_STREAM '.length))),
+      [{phase: 'fresh_before', count: 1}, {phase: 'worker_recv_pcm', count: 1, bytes: 4800}, {phase: 'fresh_after', count: 1, ms: 7}]);
+    assert.doesNotMatch(output.join(''), /private-/);
+    for (let index = 0; index < 300; index++) trace('worker_recv_pcm', {bytes: 2});
+    assert.equal(output.length, 256);
+    const throwingTrace = installUnpaidDiagnostics(env, {emit() {throw Error('Log destination unavailable');}});
+    assert.doesNotThrow(() => throwingTrace('worker_close', {code: 1000}));
+  } finally {
+    if (previous === undefined) delete globalThis[symbol]; else globalThis[symbol] = previous;
+  }
 });
 
 test('client transport verifier requires ready, stream, exact bytes and synthetic terminal, keeping credentials private', async () => {

@@ -8,6 +8,27 @@ const MAX_MESSAGES = 256;
 const response = status => new Response(null, {status, headers: {'Cache-Control': 'private, no-store', 'CDN-Cache-Control': 'no-store'}});
 const closeCode = code => code === 1000 || (code >= 1001 && code <= 1014 && ![1004, 1005, 1006].includes(code)) || (code >= 3000 && code <= 4999) ? code : 1011;
 const byteLength = data => Buffer.byteLength(data);
+const DIAGNOSTIC_PHASES = new Set(['created', 'upstream_open', 'upstream_receive', 'frontend_send', 'frontend_receive', 'upstream_send',
+  'upstream_close', 'frontend_close', 'attached', 'returned', 'request_abort', 'failed', 'done']);
+
+export function platformSocketDiagnostics(configuration, env, path, {emit = value => console.info(value)} = {}) {
+  if (env.NODE_ENV !== 'production' || configuration.publicOrigin !== 'https://croupier-player-preview-qa.vercel.app'
+      || configuration.backendOrigin !== 'https://croupier-vercel-preview-qa.onrender.com') return () => {};
+  const counts = new Map();
+  return (phase, fields = {}) => {
+    if (!DIAGNOSTIC_PHASES.has(phase)) return;
+    const count = (counts.get(phase) ?? 0) + 1; counts.set(phase, count);
+    if (count > 8 && phase !== 'done') return;
+    const value = {channel: path === WORKER_PATH ? 'worker' : 'client', phase, count};
+    for (const name of ['bytes', 'code', 'status']) if (Number.isSafeInteger(fields?.[name]) && fields[name] >= 0 && fields[name] <= MAX_BUFFERED) value[name] = fields[name];
+    for (const name of ['binary', 'contextWaitUntil']) if (typeof fields?.[name] === 'boolean') value[name] = fields[name];
+    if (phase === 'attached') {
+      try {value.contextWaitUntil = typeof globalThis[Symbol.for('@vercel/request-context')]?.get?.()?.waitUntil === 'function';} catch {value.contextWaitUntil = false;}
+    }
+    if (phase === 'done') value.counters = Object.fromEntries(counts);
+    try {emit('CROUPIER_UNPAID_SOCKET ' + JSON.stringify(value));} catch { /* Evidence never changes transport. */ }
+  };
+}
 
 // Only application credentials cross this boundary. ws constructs a fresh
 // Host/Connection/Upgrade/key/extensions handshake to the configured backend.
@@ -39,7 +60,7 @@ export function platformSocketRequest(request, configuration) {
     maxPayload: path === CLIENT_PATH ? 1024 * 1024 : 4 * 1024 * 1024};
 }
 
-export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED, maxMessages = MAX_MESSAGES, lifetimeMs = 290000, attachTimeoutMs = 10000, closeTimeoutMs = 2000} = {}) {
+export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED, maxMessages = MAX_MESSAGES, lifetimeMs = 290000, attachTimeoutMs = 10000, closeTimeoutMs = 2000, trace = () => {}} = {}) {
   let frontend, terminal, queuedBytes = 0, finished = false, closing = false;
   const queue = [];
   let resolveDone;
@@ -48,7 +69,7 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
   const finish = () => {
     if (finished) return;
     finished = true; clearTimeout(attachTimer); clearTimeout(lifetimeTimer); clearTimeout(closeTimer);
-    queue.length = 0; queuedBytes = 0; resolveDone();
+    queue.length = 0; queuedBytes = 0; trace('done'); resolveDone();
   };
   const shut = (code = 1011) => {
     if (finished || closing) return;
@@ -63,16 +84,17 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
     closeTimer.unref?.();
     if (!frontend && upstream.readyState === WebSocket.CLOSED) finish();
   };
-  const send = (socket, data, binary) => {
+  const send = (socket, data, binary, phase) => {
     if (socket.readyState !== WebSocket.OPEN || socket.bufferedAmount + byteLength(data) > maxBufferedBytes) {shut(1013); return false;}
-    try {socket.send(data, {binary}, error => {if (error) shut(1011);}); return true;} catch {shut(1011); return false;}
+    try {socket.send(data, {binary}, error => {if (error) shut(1011);}); if (phase) trace(phase, {bytes: byteLength(data), binary}); return true;} catch {shut(1011); return false;}
   };
   const attachTimer = setTimeout(() => shut(1011), attachTimeoutMs);
   const lifetimeTimer = setTimeout(() => shut(1001), lifetimeMs);
   attachTimer.unref?.(); lifetimeTimer.unref?.();
   upstream.on('message', (data, binary) => {
+    trace('upstream_receive', {bytes: byteLength(data), binary});
     if (finished || closing) return;
-    if (frontend) {send(frontend, data, binary); return;}
+    if (frontend) {send(frontend, data, binary, 'frontend_send'); return;}
     const bytes = byteLength(data);
     if (queuedBytes + bytes > maxBufferedBytes || queue.length >= maxMessages) {shut(1013); return;}
     // ready/stream can arrive in the same read as the backend handshake.
@@ -80,6 +102,7 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
   });
   upstream.on('error', () => shut(1011));
   upstream.on('close', code => {
+    trace('upstream_close', {code});
     terminal = closeCode(code);
     if (frontend) {
       shut(terminal);
@@ -92,14 +115,16 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
     attach(socket) {
       if (frontend) throw Error('Socket transport already attached.');
       frontend = socket; clearTimeout(attachTimer);
+      trace('attached');
       frontend.on('error', () => shut(1011));
       frontend.on('close', code => {
+        trace('frontend_close', {code});
         shut(code);
         if (upstream.readyState === WebSocket.CLOSED) finish();
       });
-      frontend.on('message', (data, binary) => {if (!finished && !closing) send(upstream, data, binary);});
+      frontend.on('message', (data, binary) => {trace('frontend_receive', {bytes: byteLength(data), binary}); if (!finished && !closing) send(upstream, data, binary, 'upstream_send');});
       if (finished || closing) {socket.close(1011, 'Transport closed'); return done;}
-      for (const item of queue) if (!send(frontend, item.data, item.binary)) break;
+      for (const item of queue) if (!send(frontend, item.data, item.binary, 'frontend_send')) break;
       queue.length = 0; queuedBytes = 0;
       if (terminal) shut(terminal);
       return done;
@@ -107,17 +132,19 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
   };
 }
 
-export async function handlePlatformWebSocket(request, {env = process.env, WebSocketImpl = WebSocket, upgrade = experimental_upgradeWebSocket, handshakeMs = 10000, bridgeOptions} = {}) {
+export async function handlePlatformWebSocket(request, {env = process.env, WebSocketImpl = WebSocket, upgrade = experimental_upgradeWebSocket, retain = waitUntil, handshakeMs = 10000, bridgeOptions, diagnosticEmit} = {}) {
   let configuration;
   try {configuration = platformConfiguration(env);} catch {return response(503);}
   if (!configuration) return response(404);
   const input = platformSocketRequest(request, configuration);
   if (input.status) return response(input.status);
+  const trace = platformSocketDiagnostics(configuration, env, new URL(input.url).pathname, {emit: diagnosticEmit});
+  trace('created');
   let upstream, bridge, removeAbort;
   try {
     upstream = new WebSocketImpl(input.url, input.protocols, {headers: input.headers, followRedirects: false,
       perMessageDeflate: false, handshakeTimeout: handshakeMs, maxPayload: 4 * 1024 * 1024});
-    bridge = bridgePlatformSocket(upstream, {lifetimeMs: input.url.endsWith(WORKER_PATH) ? 590000 : 290000, ...bridgeOptions});
+    bridge = bridgePlatformSocket(upstream, {lifetimeMs: input.url.endsWith(WORKER_PATH) ? 590000 : 290000, ...bridgeOptions, trace});
     const status = await new Promise(resolve => {
       upstream.once('open', () => resolve(101));
       upstream.once('error', () => resolve(502));
@@ -128,21 +155,25 @@ export async function handlePlatformWebSocket(request, {env = process.env, WebSo
       });
     });
     if (status !== 101) {bridge.cancel(); return response(status);}
+    trace('upstream_open');
     if (input.protocols.length && upstream.protocol !== 'astrid-v2') {bridge.cancel(); return response(502);}
     if (request.signal.aborted) {bridge.cancel(); return response(499);}
-    const abort = () => bridge.cancel();
+    const abort = () => {trace('request_abort'); bridge.cancel();};
     request.signal.addEventListener('abort', abort, {once: true});
     removeAbort = () => request.signal.removeEventListener('abort', abort);
     bridge.done.then(removeAbort);
     // Render has already checked current role/session, ticket ownership or
     // worker bearer. No reconnect/retry here: tickets are single use.
-    return await upgrade(socket => {
+    const reply = await upgrade(socket => {
       bridge.attach(socket);
       // SDK awaits its handler before returning the upgrade Response. Register
       // the bounded socket lifetime separately; return from setup immediately.
-      waitUntil(bridge.done);
+      retain(bridge.done);
     }, {maxPayload: input.maxPayload});
+    trace('returned', {status: reply.status});
+    return reply;
   } catch {
+    trace('failed');
     removeAbort?.();
     bridge?.cancel();
     return response(502);
