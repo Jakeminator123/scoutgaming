@@ -1,4 +1,4 @@
-// Explicit opt-in, read-only local lab observation. No network, storage, player
+// Explicit opt-in, read-only Lab observation. No network, storage, player
 // identity, cookies or launch credentials leave the game through this channel.
 export function createNativeObservation({ href = '', opener = null, now = () => new Date().toISOString() } = {}) {
   let target = null, channel = null, sequence = 0, context = {}, lastClip = null;
@@ -6,8 +6,10 @@ export function createNativeObservation({ href = '', opener = null, now = () => 
     const url = new URL(href), raw = url.searchParams.get('labObserverOrigin');
     const origin = new URL(raw);
     const id = url.searchParams.get('labObserverChannel');
-    if (opener && raw === origin.origin && ['http:', 'https:'].includes(origin.protocol)
-      && ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)
+    const loopback = ['http:', 'https:'].includes(origin.protocol)
+      && ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
+    const sameCloudOrigin = url.protocol === 'https:' && origin.origin === url.origin;
+    if (opener && raw === origin.origin && (loopback || sameCloudOrigin)
       && /^[a-zA-Z0-9_-]{16,128}$/.test(id?.replaceAll('-', '') ?? '')) {
       target = origin.origin; channel = id;
     }
