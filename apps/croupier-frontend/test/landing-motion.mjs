@@ -70,7 +70,7 @@ test('server-rendered landing is complete without loading desktop code, videos o
   assert.match(html, /data-landing-motion="static"/);
   assert.doesNotMatch(html, /<video|<canvas|intro-root|retro-window|floor-stage|preserve-3d|will-change|mode-tint|animate-/);
   for (const filename of modules.keys()) {
-    assert.doesNotMatch(filename, /desktop-effects|hero-card|card-stream|croupier-ride|logo-laser|perspective-floor/,
+    assert.doesNotMatch(filename, /desktop-effects|hero-card|card-stream|croupier-ride|logo-laser|perspective-floor|curtain-intro|retro-site|intro-playing-card/,
       'SSR must not eagerly import the optional animation bundle');
   }
 });
