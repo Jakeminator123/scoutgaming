@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {once, EventEmitter} from 'node:events';
+import {mkdtemp, copyFile, symlink, unlink, rm, realpath} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join, dirname, basename} from 'node:path';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import WebSocket from 'ws';
 import {platformConfiguration} from '../lib/platform-routing.mjs';
 import {platformSocketRequest, bridgePlatformSocket, handlePlatformWebSocket} from '../lib/platform-websocket.mjs';
-import {attachSpeechRelay} from '../../../services/astrid-gpu-worker/gateway/relay.mjs';
 import {issueTicket, ticketAuthenticator} from '../../../services/astrid-gpu-worker/gateway/auth.mjs';
 import {vercelIngressRequest} from '../../../ops/cloud/vercel-ingress.mjs';
 
@@ -69,17 +72,27 @@ async function rejected(url, protocols, options = {}) {
 }
 
 test('actual SDK upgrade bridges real relay worker/client bytes and preserves owner/replay rejection before frontend accept', {timeout: 15000}, async () => {
+  // Vercel installs only this app's dependencies. Keep the actual relay bytes
+  // unchanged while resolving ws through the app's installed node_modules.
+  const temporaryRoot = await realpath(tmpdir());
+  const fixtureDirectory = await mkdtemp(join(temporaryRoot, 'croupier-relay-runtime-'));
+  let linkedDependencies = false, relay;
   const backend = createServer(), frontend = createServer();
   const authenticate = ticketAuthenticator(ticketSecret);
-  const relay = attachSpeechRelay(backend, {workerSecret, allowedOrigins: [configuration.publicOrigin],
-    authenticateClient: req => req.headers.cookie === 'player_session=owner' ? authenticate(req) : null,
-    allowClientPCM: true});
   const context = new AsyncLocalStorage(), contextSymbol = Symbol.for('@vercel/request-context');
   const oldContext = globalThis[contextSymbol];
   globalThis[contextSymbol] = {get: () => context.getStore()};
   const backendRequests = [];
   let worker, client;
   try {
+    await copyFile(new URL('../../../services/astrid-gpu-worker/gateway/relay.mjs', import.meta.url), join(fixtureDirectory, 'relay.mjs'));
+    await copyFile(new URL('../../../services/astrid-gpu-worker/gateway/auth.mjs', import.meta.url), join(fixtureDirectory, 'auth.mjs'));
+    await symlink(fileURLToPath(new URL('../node_modules', import.meta.url)), join(fixtureDirectory, 'node_modules'), 'junction');
+    linkedDependencies = true;
+    const {attachSpeechRelay} = await import(pathToFileURL(join(fixtureDirectory, 'relay.mjs')).href);
+    relay = attachSpeechRelay(backend, {workerSecret, allowedOrigins: [configuration.publicOrigin],
+      authenticateClient: req => req.headers.cookie === 'player_session=owner' ? authenticate(req) : null,
+      allowClientPCM: true});
     backend.listen(0, '127.0.0.1'); await once(backend, 'listening');
     class BackendSocket extends WebSocket {
       constructor(url, protocols, options) {
@@ -129,9 +142,13 @@ test('actual SDK upgrade bridges real relay worker/client bytes and preserves ow
     assert.ok(backendRequests.every(value => value.headers['x-croupier-vercel-secret'] === configuration.secret));
     const workerClosed = once(worker, 'close'); worker.close(1000); await workerClosed;
   } finally {
-    worker?.terminate(); client?.terminate(); relay.close();
+    worker?.terminate(); client?.terminate(); relay?.close();
     await Promise.all([new Promise(resolve => backend.close(resolve)), new Promise(resolve => frontend.close(resolve))]);
     if (oldContext === undefined) delete globalThis[contextSymbol]; else globalThis[contextSymbol] = oldContext;
+    if (dirname(fixtureDirectory) !== temporaryRoot || !basename(fixtureDirectory).startsWith('croupier-relay-runtime-')) throw Error('Unexpected fixture cleanup path');
+    // Remove the directory link before deleting our own temporary sources.
+    if (linkedDependencies) await unlink(join(fixtureDirectory, 'node_modules'));
+    await rm(fixtureDirectory, {recursive: true, force: true});
   }
 });
 
