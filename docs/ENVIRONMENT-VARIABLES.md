@@ -107,7 +107,7 @@ ensamt bevisar inte att Gatewayns primärmodell har ändrats.
 
 Den 1 oktober återlästes både processmiljön och fem sparade rollmodeller som
 Terra efter en riktig env-deploy; vanlig Restart service hade behållit den
-gamla miljöbilden. Se [driftkvittot](ENVIRONMENT-VARIABLES.md).
+gamla miljöbilden. Se [driftkvittot](JOHN-HANDOFF.md).
 
 ### Adaptiv chatt genom samma OpenClaw
 
@@ -125,13 +125,13 @@ sammanlagd chattdeadline, inte en ny 20-sekundersfrist per modell.
 Gateway behöver modellen i sin tillåtna katalog men inga routervariabler.
 Inga av dessa variabler hör hemma på Vercels startsida eller RunPod.
 
-Den lokala Lissabon-startaren tillåter samma explicita speech-timeout och
+Den lokala Lab-startaren tillåter samma explicita speech-timeout och
 skickar den bara till Web. I denna checkout är privat `lab/.env.local` satt
 till `20000`, med effektiv generisk timeout kvar på `8000`; ingen lokal
 server har startats. Senare privata speech-/cloud-storage-filer och processenv
 har fortfarande högre prioritet. Compose-mallen ändras inte av detta.
 Aktivera först efter verifierad modell- och bildåtkomst samt ny kod i båda
-berörda tjänsterna. [Flöde, prov och exakta steg](ENVIRONMENT-VARIABLES.md).
+berörda tjänsterna. [Flöde och prov](JOHN-HANDOFF.md).
 
 `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` ska sparas som serverhemlighet i
 Render → `croupier-v2` → Environment, tillsammans med bootstrap-användaren.
@@ -151,7 +151,7 @@ Render-spelets villkorliga grupper:
   Lab. Schemat i `lab/lib/zone-cloud-schema.sql` installeras uttryckligen;
   det är installerat i zonprojektet efter separat QA den 29 september.
   Generella `DATABASE_URL`/`POSTGRES_URL` används aldrig som reserv.
-  Befintliga spelkonton och saldon ligger kvar i sin tidigare databas.
+  Spelkonton och saldon använder en separat game/auth-Neon-databas.
 - Lokal molnlagring: koordinerad `node lab/start.mjs --cloud-storage --no-open`
   läser den Git-ignorerade `lab/.env.cloud-storage.local` med samma tre namn.
   Flaggan är opt-in. Nycklarna begränsas till avsedda serverprocesser och
@@ -195,9 +195,9 @@ Render-spelets villkorliga grupper:
   decimalformat och högst 10 USD, minst sessionsreserven. Även den går
   endast till Web. Redan förbrukade GPU-medel ska räknas av från dagens
   tillgängliga budget före aktivering; den beständiga sessionsliggaren
-  behåller reserver genom omstart. Se den separata streaminghandoffen.
+  behåller reserver genom omstart. Se [aktuell handoff](JOHN-HANDOFF.md).
   Ingen av dessa funktioner är
-  nödvändig för de förinspelade Lissabon-klippen.
+  nödvändig för de registrerade förinspelade klippen.
 - Partner: `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_SECRET` och
   `BETTALOTTO_PARTNER_PLAYER_ID` är en grupp om partnerkopplingen används.
 
@@ -206,8 +206,9 @@ eller `CROUPIER_LISSABON_PROFILES=1` i molndrift; startvalideringen avvisar
 dem. Lösenord och token är endast i leverantörens hemlighetslager eller
 ignorerad lokal `.env`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemligheter.
 
-Aktuell driftsättningsföljd: behåll Render-spelet och dess SQLite tills en
-extern verifierad backup, separat game-Neon och återgångsprov finns. Den nya
+Game/auth använder nu separat Neon med verifierad extern backup och full
+återläsningsparitet. Bevara historiska SQLite-filer; efter nya Neon-skrivningar
+får en äldre SQLite-kopia aldrig återaktiveras som datakälla. Den nya
 Git-kopplade landningen har rätt rot/branch och lagrad `CROUPIER_GAME_URL`;
 kontrollera varje automatisk deploy där. Genererat tal genom Render/Cartesia/RunPod har passerat två liveprov;
 kallstart, exakt synk och fysisk mikrofon återstår enligt handoffen.

@@ -44,7 +44,7 @@ do not bypass it with direct server commands, another port or deleted state.
 Stop the current pair before switching environments, preserving saved data.
 Short-lived isolated test fixtures must clean up their own processes.
 
-From Codex, start Lissabon with `--no-open`. Before opening browser tabs,
+From Codex, start Lab with `--no-open`. Before opening browser tabs,
 inspect the connected browser and reuse the existing Croupier game or lab
 tab for that surface. Reload when its URL is already correct; navigate that
 same tab when replacing an older URL. Preserve drafts and ongoing play.

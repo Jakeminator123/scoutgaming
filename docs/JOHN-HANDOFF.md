@@ -48,7 +48,13 @@ stängning; 19 frontendtester och båda byggen passerar. SDK-testets verkliga
 relay körs med frontendens egna installerade beroenden även i Vercelbygget.
 Render behåller auth;
 worker-anslutningen har plats för hela befintliga 540-sekundersleasen.
-Det nya molnprovet återstår före UI-bytet. CI:s isolerade HTTP-fixture väntar
+Molnprovet på `5de1ae75` öppnade anslutningen men stoppade vid `owner_stream`.
+SDK-uppgraderingen returnerar nu direkt efter setup; den begränsade sessionen
+hålls separat med `waitUntil` och avbrottslyssnaren följer sessionens livstid.
+Riktigt SDK-/relayprov och oberoende review verifierar detta kontrakt; nytt
+molnprov krävs för att bevisa rättningen. UI/nya Blob-indexet aktiveras först
+efter verkligt godkänt prov. Samtliga tre
+CI-jobb på samma revision är gröna. CI:s isolerade HTTP-fixture väntar
 nu högst fem sekunder på serverns
 korta SQLite-skrivningar; alla nio riktiga HTTP-kontroller passerar lokalt.
 Detta ersätter inte visuell läppsynks-QA.
@@ -112,7 +118,7 @@ standardbindningar, inga alternativa idlefiler. Inga JS-fel; previewkvitton
 var skilda från Web.
 Privata lokala testkvitton ligger i `lab/data/qa-backoffice-lab`, utanför Git.
 Gamla öppna frågor nedan är fortsatt öppna; denna konsolidering godkänner inte
-läppsynk, kallstart, fysisk mobil/Safari eller produktionsbackup.
+läppsynk, kallstart, fysisk mobil/Safari eller fulla diskbackuper.
 
 ## Städning och leverans
 
@@ -167,7 +173,9 @@ dygnstak USD 9,94, sessionsreserv USD 0,50, worker min 0/max 1.
 Inga automatiska betalda omförsök eller ändringar av gamla journaler.
 
 Kvar: lång kallstart, exakt läppsynk, verklig mikrofon-till-svar, fysisk
-mobil/Safari, extern återläsbar produktionsbackup och full zonlagringsacceptans.
+mobil/Safari, full diskbackup för Studio/Director/Gateway och full
+zonlagringsacceptans. Game/auth-databasens externa backup och återläsning är
+verifierade ovan.
 Nya GPU-prov kräver uttryckligt avgränsad kampanj och bevarad förbrukad budget.
 
 ## Speldata och medieacceptans

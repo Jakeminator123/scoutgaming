@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import {experimental_upgradeWebSocket} from '@vercel/functions';
+import {experimental_upgradeWebSocket, waitUntil} from '@vercel/functions';
 import {platformConfiguration, canonicalPlatformPath} from './platform-routing.mjs';
 
 const CLIENT_PATH = '/speech-stream', WORKER_PATH = '/lipsync-worker';
@@ -113,7 +113,7 @@ export async function handlePlatformWebSocket(request, {env = process.env, WebSo
   if (!configuration) return response(404);
   const input = platformSocketRequest(request, configuration);
   if (input.status) return response(input.status);
-  let upstream, bridge;
+  let upstream, bridge, removeAbort;
   try {
     upstream = new WebSocketImpl(input.url, input.protocols, {headers: input.headers, followRedirects: false,
       perMessageDeflate: false, handshakeTimeout: handshakeMs, maxPayload: 4 * 1024 * 1024});
@@ -132,12 +132,18 @@ export async function handlePlatformWebSocket(request, {env = process.env, WebSo
     if (request.signal.aborted) {bridge.cancel(); return response(499);}
     const abort = () => bridge.cancel();
     request.signal.addEventListener('abort', abort, {once: true});
-    try {
-      // Render has already checked current role/session, ticket ownership or
-      // worker bearer. No reconnect/retry here: tickets are single use.
-      return await upgrade(socket => bridge.attach(socket), {maxPayload: input.maxPayload});
-    } finally {request.signal.removeEventListener('abort', abort);}
+    removeAbort = () => request.signal.removeEventListener('abort', abort);
+    bridge.done.then(removeAbort);
+    // Render has already checked current role/session, ticket ownership or
+    // worker bearer. No reconnect/retry here: tickets are single use.
+    return await upgrade(socket => {
+      bridge.attach(socket);
+      // SDK awaits its handler before returning the upgrade Response. Register
+      // the bounded socket lifetime separately; return from setup immediately.
+      waitUntil(bridge.done);
+    }, {maxPayload: input.maxPayload});
   } catch {
+    removeAbort?.();
     bridge?.cancel();
     return response(502);
   }
