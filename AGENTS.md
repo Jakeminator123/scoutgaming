@@ -8,12 +8,14 @@ before commit/push. Claim affected paths before editing; use ping/ack for
 overlap and done to release. Keep major progress notes short. No background
 polling; file messages do not wake paused agents or override user instructions.
 
-## GitHub-only work — 2026-09-28
+## GitHub-only work on main — 2026-10-02
 
-Work only on `jakemanator123-github-work`, in `Jakeminator123/github-work`.
+Work only on `main`, in `Jakeminator123/github-work`. Jakob explicitly moved
+all work to `main` on 2026-10-02 and requested removal of the other branches.
+Do not create another branch or worktree unless Jakob explicitly requests it.
 GitLab integration is paused: no inbox fetch/send, wiki publication or mirror
-push. Deliver with `node tools/push-github-work.mjs`; never push `main` or
-force-push. `tools/repository-policy.json` and the pre-push hook enforce this
+push. Deliver with `node tools/push-github-work.mjs`; never force-push or
+push another branch. `tools/repository-policy.json` and the pre-push hook enforce this
 destination. This section supersedes historical GitLab workflow instructions
 elsewhere in this checkout. `Jakobs-v1` at
 `600093e4522efc57bd82979cff65492a528ffeb7` is verified on both GitHub and GitLab.

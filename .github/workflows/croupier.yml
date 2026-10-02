@@ -2,9 +2,9 @@ name: Croupier GitHub checks
 
 on:
   push:
-    branches: [jakemanator123-github-work]
+    branches: [main]
   pull_request:
-    branches: [jakemanator123-github-work]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

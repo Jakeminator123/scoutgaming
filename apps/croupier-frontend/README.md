@@ -12,7 +12,7 @@ they are not links to an isolated Lab test environment.
 
 ## Current deployment — 2026-09-29
 
-The Git-connected landing page is [croupier-frontend.vercel.app](https://croupier-frontend.vercel.app/). Vercel project `croupier-frontend` builds this directory from `Jakeminator123/github-work`, branch `jakemanator123-github-work`. `CROUPIER_GAME_URL` is stored for Production and Preview as `https://croupier-v2.onrender.com/blackjack?dealer=astrid`. Both game links open the Render-hosted game. See the [delivery handoff](../../docs/JOHN-HANDOFF.md) for the latest verified deployment and checks.
+The Git-connected landing page is [croupier-frontend.vercel.app](https://croupier-frontend.vercel.app/). Vercel project `croupier-frontend` builds this directory from `Jakeminator123/github-work`, branch `main`. `CROUPIER_GAME_URL` is stored for Production and Preview as `https://croupier-v2.onrender.com/blackjack?dealer=astrid`. Both game links open the Render-hosted game. See the [delivery handoff](../../docs/JOHN-HANDOFF.md) for the latest verified deployment and checks.
 
 The old Vercel projects `github-work-vercel-entry`, `croupier-landing-preview-qa` and `modern-landing-page` have been removed. The separate source repository `Jakeminator123/croupier-frontend` was also removed after import; this directory is the maintained source. See the [current cloud map](../../docs/CLOUD-CURRENT-STATE-2026-09-29.md) and [frontend migration contract](../../docs/VERCEL-FRONTEND-MIGRATION.md) before changing deployments or game routing.
 

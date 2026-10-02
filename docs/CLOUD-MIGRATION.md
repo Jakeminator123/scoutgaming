@@ -1,6 +1,6 @@
 # Croupier V2: GitHub och drift utan lokal dator
 
-Arbetsbranch: `jakemanator123-github-work` i `Jakeminator123/github-work`.
+Arbetsbranch: `main` i `Jakeminator123/github-work` från 2026-10-02.
 V1-återställningsankare: tagg `Jakobs-v1`, commit `600093e`, verifierad på
 både GitLab och GitHub. Senare färdigställt agentarbete behöver följa med till
 GitHub innan V2 betraktas som den kompletta fortsättningen.
@@ -96,7 +96,7 @@ serverstyrd strömning utan att lyfta startspärren. Se
 
 ## Ett källrepo, separata driftsenheter
 
-Behåll ett monorepo på `jakemanator123-github-work` nu. Produktservern,
+Behåll ett monorepo på `main`. Produktservern,
 Next-labbet, OpenClaw-koden och presentationsmotorn importerar moduler direkt
 från varandras kataloger. En uppdelning i två källrepo skulle först kräva
 versionerade gemensamma paket och ett separat mediekontrakt. Bygg i stället

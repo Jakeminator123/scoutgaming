@@ -12,4 +12,4 @@ submodule or copy their engine, wallet or RNG into Croupier.
 
 Current V3 work is different: Emil works with Kevin on video in the branch Kevin
 designates. Jakob consumes only the resulting verified manifests, identifiers and
-handoff on `jakeminator123/work`; the external Emil reference remains historical.
+handoff on `main`; the external Emil reference remains historical.
