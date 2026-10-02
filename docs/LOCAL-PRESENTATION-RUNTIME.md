@@ -1,6 +1,6 @@
 # Gemensam lokal presentation
 
-Arbetsrepo: `C:\Users\jakem\Projects\croupier`, branch `jakeminator123/work`.
+Arbetsrepo: `C:\Users\jakem\Projects\croupier`, branch `main`.
 Starta med [anslutningshelpern](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
 Astrids lokala läge finns i det riktiga spelet:
 <http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
@@ -38,7 +38,7 @@ Idleråd bygger på färsk chatt och samma befintliga begränsningar och tillåt
 varianter, inklusive `idle_insulted`. Skugga kan aldrig spela AI-förslaget.
 
 Chatta i spelfliken. Serverbunden identitet, synliga kort, minne och den
-befintliga ElevenLabs/RunPod-vägen är kvar. `--generated-speech` krävs för
+befintliga Cartesia/RunPod-vägen är kvar. `--generated-speech` krävs för
 genererad läppsynk. Ett talpaket får förberedas under deal men får uppspelning
 först efter en ny faktiskt renderad primär-idle. Deal avbryter pågående tal.
 Sena chatt-/idlecallbacks får inte avbryta en ny deal eller öppna talgrinden.
@@ -73,3 +73,24 @@ och Mei använder sin befintliga gemensamma spelare.
 
 Verifiering och kvarstående arbete dokumenteras vid leverans i
 [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
+
+
+## Kamera och mikrofon
+
+Record aktiverar lokal lyssning efter ”Astrid”; Play styr spelljudet.
+Efter aktiveringsordet skickas turen vid 1 150 ms tystnad. Ljudbufferten är
+högst tre sekunder i RAM; turen högst 30 sekunder. Kamerabilder tas först
+efter aktivering. Dold flik, spelarbyte och Record av avbryter. Första
+aktiveringen begär samtycke. Text/bilder visas i en tillfällig logg via
+fem sekunders långtryck, inte i normalvyn.
+
+Webbläsarens lokala talstöd krävs för aktiveringsordet. Produktservern
+använder Whisper `whisper-1` via audio/translations för engelsk text;
+Cartesia ger utgående röst. Nycklar finns enbart på servern. Modell- och
+bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
+inte slutgodkännande av fysisk mikrofon/kamera eller exakt läppsynk.
+
+Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
+`emil/dealklipp-v1/lab-video-manifest.json` och `presentation-runtime/`.
+Studio följer native-kvitton; Partner-SSE är kompletterande instruktioner.
+Transportanslutning är inte speldata, valt klipp är inte spelat klipp.

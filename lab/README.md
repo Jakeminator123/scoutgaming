@@ -7,7 +7,7 @@ Källa och begreppsägarskap: [lab/docs](docs/README.md).
 **Moln:** [Astrid Studio](https://croupier-v2.onrender.com/studio) är den
 kanoniska arbetsytan bakom ordinarie Lab-inloggning. Vercel är ingången;
 Render kör Studio och spelet. **Lokalt:** samma Studio körs på det enda
-koordinerade serverparet. [Väg- och strömkartan](../docs/systemkarta/04-studio-json-och-lagring/STUDIO-ROUTING.md)
+koordinerade serverparet. [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
 
 Eventeditor och sekvensspelare går genom `POST /api/presentation/decision`.
@@ -23,13 +23,13 @@ alternativ med otillgänglig eller felmatchad video utesluts före modellval.
 Den nya Next.js-arbetsytan. Den riktiga spelklienten och OpenClaws egen
 dashboard är separata. Inget du sparar här publiceras automatiskt.
 
-[Aktiv systemkarta: studio, JSON och lagring](../docs/systemkarta/04-studio-json-och-lagring/README.md).
+[Aktiv systemkarta: studio, JSON och lagring](../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
-Fördjupning/äldre systemunderlag: [systemkartan](../docs/systemkarta/README.md).
+Fördjupning/äldre systemunderlag: [systemkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Praktiskt prov: [Astrids sociala svar i idle, högst sex sekunder tal](SOCIAL-CHAT.md).
 Video-intake: [lägg in standardtagningar och alternativ, välj användning och se täckning](VIDEO-LIBRARY.md).
 Buggar, förbättringar och öppna kontroller för labbet och övriga repot finns i
-[findings](../docs/findings/README.md); implementation och QA följs i Jira CAC.
+[findings](../docs/CLOUD-MIGRATION.md); implementation och QA följs i Jira CAC.
 
 ## Starta
 
@@ -147,7 +147,7 @@ en separat social rörelse. Seedens 256 variantkopplingar delar dessa filer
 alla kortsekvenser, sju exakta platser, split, övergångar och läppsynk täcks inte.
 
 API:er, nyckelroller och miljöfiler finns i
-[Jakobs miljöförklaring](../docs/systemkarta/05-openclaw-rost-och-drift/MILJO-OCH-API.md).
+[Jakobs miljöförklaring](../docs/ENVIRONMENT-VARIABLES.md).
 
 ## Filer och begrepp
 
@@ -183,7 +183,7 @@ Fristående ElevenLabs-prov (inte scen-/chattintegration):
 `node tools/elevenlabs-lab-preview.mjs --check` från repots rot, eller
 `--generate` för ett kort debiterbart röstprov. MP3 + text/röst/hash-metadata
 sparas lokalt i `lab/data/voice-previews/`, utanför Git. Ingen produktmedia
-eller lipsync ersätts. [Status och urvalsmodell](../docs/systemkarta/05-openclaw-rost-och-drift/README.md).
+eller lipsync ersätts. [Status och urvalsmodell](../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 Signal → event + relevant kontext → urval → material → uppspelningskvitto.
 Signal är samlingsordet för indata, till exempel spelfakta, ett chattmeddelande

@@ -9,8 +9,8 @@ See [start and architecture](lab/README.md) and the [user guide](lab/docs/README
 The cloud entry is [Croupier on Vercel](https://croupier-frontend.vercel.app/).
 Its demo opens the Render game; [Astrid Studio](https://croupier-v2.onrender.com/studio)
 configures that same presentation. BO is administration, not a separate stream.
-See the [current cloud and storage map](docs/CLOUD-CURRENT-STATE-2026-09-29.md)
-and [route guide](docs/systemkarta/04-studio-json-och-lagring/STUDIO-ROUTING.md).
+See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)
+and [route guide](docs/LOCAL-PRESENTATION-RUNTIME.md).
 For a disposable local preview with existing films and no external providers:
 
 ```powershell
@@ -27,33 +27,31 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
 ## Sources of truth
 
 - The private [GitHub repository](https://github.com/Jakeminator123/github-work)
-  is the active source on `jakemanator123-github-work`. Keep it private.
+  is the active source on `main`. Keep it private.
   GitLab integration is paused; `Jakobs-v1` preserves commit `600093e` on both
-  services. See [migration and delivery](docs/GITHUB-MIGRATION.md).
-- [Current cloud state](docs/CLOUD-CURRENT-STATE-2026-09-29.md) describes the
-  running Vercel/Render services, private media and separate databases.
-  [Cloud migration](docs/CLOUD-MIGRATION.md) retains the architectural contract.
+  services. See [migration and delivery](docs/CLOUD-MIGRATION.md).
+- [Cloud and storage map](docs/CLOUD-MIGRATION.md) describes services and delivery.
 - Historical GitLab references do not authorize inbox, wiki or mirror work.
   New code and documentation are delivered to GitHub only.
 - [Croupier documentation · V5](https://github.com/Jakeminator123/animation-events-v1)
   is the source repository for the interactive documentation canvas. It does
   not own game outcomes or runtime contracts.
-- The active repo-near V5 documentation is under
-  [`docs/animation-events/v5-7-days-mvp/`](docs/animation-events/v5-7-days-mvp/README.md),
-  with a [portable seven-day handoff](docs/animation-events/v5-7-days-mvp/HANDOFF-7-DAGAR.md).
-  Seven remaining working days after the D0 start gate are Jakob's planning horizon, not a verified
-  launch date or a new historical meeting decision.
+- Repo documentation is limited to five current Markdown files in `docs/`.
+  Update them in place; further reports and sprint documents are paused.
 
-Work on `jakemanator123-github-work`; deliver with `node tools/push-github-work.mjs`.
+Work on `main`; deliver with `node tools/push-github-work.mjs`.
 Kevin’s reviewed source is imported selectively; no push to his branch is authorized.
 
 ## Documentation navigation
 
-- [Jakob's short start guide](docs/systemkarta/START-HAR.md):
-  repo map, current environments, local configuration and indexing boundary.
-- [System map](docs/systemkarta/README.md): explanations by system area.
-- [Findings](docs/findings/README.md): evidenced bugs, improvement proposals and open checks across this repository; implementation and QA remain in Jira CAC.
-- Personal historical reports are outside the active checkout and agent reading paths.
+- [Latest verified work and open checks](docs/JOHN-HANDOFF.md).
+- [Deployment and storage map](docs/CLOUD-MIGRATION.md).
+- [Data restoration and media rules](docs/ENVIRONMENT-RESTORATION.md).
+- [Environment variable registry](docs/ENVIRONMENT-VARIABLES.md).
+- [Presentation runtime](docs/LOCAL-PRESENTATION-RUNTIME.md).
+
+Keep these five documents short and update in place. New reports and sprint
+documentation are paused. Personal archives remain outside agent reading paths.
 
 ## Runtime map
 

@@ -2,7 +2,7 @@
 
 V5, uppdaterad 22 september 2026. Användarguiden finns fortsatt i `guide.json` och Guide.
 Den här kartan visar tekniska källor och ägare; den skapar inget andra
-medieregister. [Sprinten](../../docs/animation-events/v5-7-days-mvp/README.md)
+medieregister. [Sprinten](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 är plan och handoff, inte runtimekonfiguration.
 
 ## Format och policy i labbet

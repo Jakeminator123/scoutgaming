@@ -3,7 +3,7 @@
 28 september 2026. Detta dokument är designunderlaget. Funktionen är nu
 implementerad bakom uttryckliga flaggor, Av som standard. Lokal implementation,
 utförda tester och kvarvarande driftprov finns i
-[implementationsrapporten](../../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md).
+[implementationsrapporten](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Ingen verklig kamera har aktiverats. Beskrivningen nedan visar utgångsläget.
 Utgångspunkt är Lissabon och `presentation=local`, enbart Astrid.
 

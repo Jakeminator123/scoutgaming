@@ -9,26 +9,11 @@ Den kontrollerar **inte** värden eller leverantörspaneler. Vid ändring direkt
 i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
-Status 2026-09-29: Render visar `croupier-v2` som **Live** på
-`https://croupier-v2.onrender.com`, senast verifierad Live-deploy `225433fe` från
-GitHub `Jakeminator123/github-work`/`jakemanator123-github-work`.
-Vercels nya `croupier-frontend` är Git-kopplat till `Jakeminator123/github-work`,
-branch `jakemanator123-github-work`, rot `apps/croupier-frontend`. Dess första
-Production-deploy från `d78eb4cb` är READY, och `CROUPIER_GAME_URL` är sparad
-för Production och Preview med Render-spelets riktiga URL.
-`github-work-vercel-entry` och `croupier-landing-preview-qa` är borttagna;
-Vercels API bekräftade 404 för båda den 29 september. `CROUPIER_GAME_ORIGIN`
-hör till den äldre statiska byggkoden och den kvarvarande spelpreviewn;
-variabeln styr inte Next-sidan. Spelpreviewn är manuellt driftsatt utan Git-koppling. Dess browserprov
-med ett syntetiskt konto styrker spelrunda, saldo efter omladdning och synlig
-Astridvideo mot en isolerad Render-testbackend. Det bevisar inte produktions-
-omstart, backup eller läppsynk. Se [aktuell resurskarta](CLOUD-CURRENT-STATE-2026-09-29.md).
+Aktuell källa: `Jakeminator123/github-work` på `main`.
+Vercels frontend använder `apps/croupier-frontend` och `CROUPIER_GAME_URL`.
+Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 
-OpenClaw Director och Gateway är båda **Live från GitHub** på `15bd1541`.
-Ett internt Render-prov bekräftade att spelets produkt-token accepteras av
-Director utan att värdet lästes ut; Directors `/healthz`, tokenavgränsning och
-privat Gateway-modellista provades separat. Ett giltigt produktbeslut genom
-hela spelkedjan återstår. Se [OpenClaw-kedjan](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
@@ -38,7 +23,7 @@ hela spelkedjan återstår. Se [OpenClaw-kedjan](../open-claw/lab/docs/CLOUD-ACT
 | Render: separat GPU-relä (ännu ej driftsatt) | `WORKER_SECRET`, annat `TICKET_SECRET` (båda minst 32 tecken), `ALLOWED_ORIGINS` = exakta spel-origins | – | – | Render sätter `PORT` |
 | Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAWAPI_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |
 | Render: privat OpenClaw Gateway | Separata `OPENCLAWAPI_KEY` och `OPENCLAW_MODEL_API_KEY` | – | `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_MODEL_API`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, lokalt endast `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK`; `CROUPIER_SPEECH_VISION` är opt-in | Blueprint anger icke-hemliga standardvärden; två nycklar anges privat |
-| RunPod: separat GPU-testworker (ej produktkopplad) | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
+| RunPod: äldre separat GPU-testworker | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
 | Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `lab/.env.example`; nyckelnamnen speglas i JSON-listan | – |
 
 Vercels opt-in `node build.mjs --frontend-preview` använder samma
@@ -67,7 +52,7 @@ kontrollerade. Den 29 september aktiverades `CROUPIER_GENERATED_SPEECH=1`,
 genom env-deploy `dep-datnfph7lnhs73e2c670`. Två riktiga strömmar gav första
 videobild; följdsvar och visuell läppsynk är ännu inte godkända. Sessionens
 reservation är 0,50 USD och dagens konservativa budget 9,94 USD. Se
-[talets driftskvitto](LIVE-SPEECH-ACTIVATION-2026-09-29.md).
+[talets driftskvitto](JOHN-HANDOFF.md).
 
 Gatewayns nya kod-, Compose- och Blueprint-standard för `OPENCLAW_MODEL_ID`
 är `gpt-5.6-terra`. En befintlig `/data/openclaw/openclaw.json` bevaras vid
@@ -76,7 +61,7 @@ ensamt bevisar inte att Gatewayns primärmodell har ändrats.
 
 Den 1 oktober återlästes både processmiljön och fem sparade rollmodeller som
 Terra efter en riktig env-deploy; vanlig Restart service hade behållit den
-gamla miljöbilden. Se [driftkvittot](TERRA-ROUTING-AUDIT-2026-10-01.md).
+gamla miljöbilden. Se [driftkvittot](ENVIRONMENT-VARIABLES.md).
 
 ### Adaptiv chatt genom samma OpenClaw
 
@@ -100,7 +85,7 @@ till `20000`, med effektiv generisk timeout kvar på `8000`; ingen lokal
 server har startats. Senare privata speech-/cloud-storage-filer och processenv
 har fortfarande högre prioritet. Compose-mallen ändras inte av detta.
 Aktivera först efter verifierad modell- och bildåtkomst samt ny kod i båda
-berörda tjänsterna. [Flöde, prov och exakta steg](ADAPTIVE-CHAT-ROUTING-2026-10-01.md).
+berörda tjänsterna. [Flöde, prov och exakta steg](ENVIRONMENT-VARIABLES.md).
 
 `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` ska sparas som serverhemlighet i
 Render → `croupier-v2` → Environment, tillsammans med bootstrap-användaren.
@@ -178,5 +163,5 @@ ignorerad lokal `.env`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemlighet
 Aktuell driftsättningsföljd: behåll Render-spelet och dess SQLite tills en
 extern verifierad backup, separat game-Neon och återgångsprov finns. Den nya
 Git-kopplade landningen har rätt rot/branch och lagrad `CROUPIER_GAME_URL`;
-kontrollera varje automatisk deploy där. RunPods separata testendpoint
-har producerat syntetisk MP4; Render-spelet använder ännu inget GPU-relä.
+kontrollera varje automatisk deploy där. Genererat tal genom Render/Cartesia/RunPod har passerat två liveprov;
+kallstart, exakt synk och fysisk mikrofon återstår enligt handoffen.

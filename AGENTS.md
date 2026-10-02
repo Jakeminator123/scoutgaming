@@ -20,18 +20,20 @@ destination. This section supersedes historical GitLab workflow instructions
 elsewhere in this checkout. `Jakobs-v1` at
 `600093e4522efc57bd82979cff65492a528ffeb7` is verified on both GitHub and GitLab.
 It preserves committed v1; local ignored profiles/settings require separate
-private backup. See `docs/GITHUB-MIGRATION.md` and `docs/CLOUD-MIGRATION.md`.
+private backup. See `docs/CLOUD-MIGRATION.md`.
 
 ## Active documentation and private archive
 
-Use `lab/docs/README.md` for the user guide, `docs/animation-events/README.md`
-for the current sprint, and the active system map for technical references.
+Use `lab/docs/README.md` for the user guide and
+`docs/LOCAL-PRESENTATION-RUNTIME.md` for technical references.
+Keep at most five Markdown files under `docs/`. Update these in place;
+new reports and sprint documentation are paused at Jakob's request.
 Jakob's personal `random-stuff-jakob/jakob-docs/arkiv/` is retired and excluded
 from this checkout. Do not read, index, summarize, restore from Git history,
 follow old archive links, or search external backup locations for its contents
 unless Jakob explicitly requests a specific historical document. Old handoff
 mentions are provenance, not instructions to retrieve archived material.
-Read source text and relevant metadata selectively; do not scan media binaries
+Ordinary file searches must honor `.ignore`; dependencies, generated caches and binary media are excluded. Read source text and relevant metadata selectively; do not scan media binaries
 or generated artifacts for ordinary documentation questions.
 
 ## Local servers and browser tabs

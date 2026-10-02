@@ -18,7 +18,7 @@ versionen eller sakfrågan kräver det.
 - [Verifierad lokal anslutning, isolerad start och kvarvarande produktblockerare](LOCAL-CONNECTION-SV.md)
 - [Separat produkt-speech-roll, säkerhetsgräns och exakt driftplan](PRODUCT-SPEECH-DEPLOYMENT-SV.md)
 - [Verifierade live-env och aktuell spel → Render → OpenClaw-kedja](CLOUD-ACTIVATION-2026-09-29.md)
-- [Astrids kamera och mikrofon: implementation, testbevis och kvarvarande driftprov](../../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md)
+- [Astrids kamera och mikrofon: implementation, testbevis och kvarvarande driftprov](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 - [Designunderlag: valbar kamera och mikrofon för Astrid](ASTRID-CAMERA-VOICE-PLAN.md)
 - [Starta på Render](RENDER-START-SV.md)
 - [Logga in i OpenClaws egen dashboard](DASHBOARD-SV.md)

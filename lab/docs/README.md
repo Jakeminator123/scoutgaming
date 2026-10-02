@@ -8,7 +8,7 @@ Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
 presentationsväg och kopplar dessutom spelflikens händelser till Studio.
 Spela och chatta i spelfliken. BO är administration och inloggning,
 ingen separat spelström.
-Se [vägar och strömmar](../../docs/systemkarta/04-studio-json-och-lagring/STUDIO-ROUTING.md)
+Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 
 **Bakgrundszoner:** öppna **Bakgrundszoner** från Astrid Studio
@@ -61,7 +61,7 @@ tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
 beslut, kontrakt/schemaändring, tester och migrationsbeskrivning. Visningsnamn
 kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 
-Tekniska fördjupningar finns i den [aktiva systemkartan](../../docs/systemkarta/README.md).
+Tekniska fördjupningar finns i den [aktiva systemkartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
 **Händelseloggen** på `/activity` skiljer källa, eventdata, kontext, beslut och
@@ -76,9 +76,9 @@ Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 
 Astrids valbara kamera/mikrofon finns i samma spelflik, Av som standard.
 Aktuella kontroller och provgränser beskrivs i
-[kamera- och talguiden](../../docs/animation-events/ASTRID-CAMERA-IMPLEMENTATION.md).
+[kamera- och talguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Driftens aktiverade funktioner och återstående liveprov följs i
-[molnstatusen](../../docs/CLOUD-CURRENT-STATE-2026-09-29.md).
+[molnstatusen](../../docs/CLOUD-MIGRATION.md).
 För lokalt kameratest används den koordinerade startarens `--astrid-camera`;
 stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
 
@@ -238,12 +238,12 @@ om en exakt labbtake saknas; native-eventets inspelade replik påverkas inte.
 **Fristående chattprov** i Eventstudion har egen provkontext och högst 25
 sekunder ljud. Det styr inte det anslutna bordet. Se [socialt prov](../SOCIAL-CHAT.md).
 
-[Signal- och begreppskartan](../../docs/systemkarta/02-events-triggers-urval/SIGNALER-OCH-TAKES.md)
+[Signal- och begreppskartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna,
 relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
 nuvarande kod från nästa steg; den aktiverar inte nya funktioner.
 
-Aktuell plan och publicerade läsytor finns i [V5 · sju arbetsdagar](../../docs/animation-events/v5-7-days-mvp/README.md). Guide beskriver dagens labb; sprintplanens förslag aktiverar inga funktioner.
+Aktuellt arbete och kvarvarande QA finns i [handoffen](../../docs/JOHN-HANDOFF.md). Nya sprintdokument är pausade.
 
 [Artefaktkarta: scheman, manifest och lagring](ARTIFACTS.md) ·
 [OpenClaw-talägarskap: implementationsbrief](OPENCLAW-SPEECH-OWNERSHIP.md) ·

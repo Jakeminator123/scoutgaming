@@ -7,7 +7,7 @@ Kevin och Emil levererar matchande läppsynk, material och acceptans. Skapa inte
 en ny parallell kö eller en andra agent som väljer dialog.
 
 Detta är den delade källan för uppdraget. Den privata mappens gamla promptlänk
-pekar hit. [V5-planen](../../docs/animation-events/v5-7-days-mvp/s06-plan.md)
+pekar hit. [V5-planen](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 anger omfattning och prioritering. Instruktionerna nedan gäller kommande
 implementation; inga föreslagna talfält är ett redan driftsatt API.
 
@@ -25,8 +25,8 @@ kalibrering och pågående arbetsändringar. Läs först:
 
 - `docs/JOHN-HANDOFF.md` och `docs/ENVIRONMENT-RESTORATION.md`,
 - `lab/docs/README.md`,
-- `docs/systemkarta/README.md`,
-- `docs/systemkarta/03-dealers-video-takes/ASTRID-KALLKARTA-OCH-DUBBELSTROM-2026-09-21.md`,
+- `docs/LOCAL-PRESENTATION-RUNTIME.md`,
+- `docs/LOCAL-PRESENTATION-RUNTIME.md`,
 - `open-claw/lab/docs/README.md` och därifrån endast relevanta lokala
   OpenClaw-källor.
 

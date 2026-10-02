@@ -1,11 +1,38 @@
+# Cursor context/index exclusions; files stay available to builds.
+# Retired private archive: never read or re-index.
 /random-stuff-jakob/jakob-docs/arkiv/
 /random-stuff-jakob/jakob-docs/KEVIN-ATKOMST-PRIVAT.txt
 
-# Generated dependencies and builds: keep locally, skip semantic indexing.
+# Dependencies and generated cache (not source dist/public directories).
 node_modules/
 .next/
+.nuxt/
+.cache/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+__pycache__/
+.venv/
+.lipsync-venv/
+vendor/
+*.tsbuildinfo
+*.log
 
-# Binary media and 3D assets: source/sidecar metadata stays indexable.
+# Local secrets, state and logs.
+.git/
+.env
+.env.*
+!.env.example
+!.env.*.example
+.croupier-inbox/
+/agent-talk/state.json
+/agent-talk/write.lock
+/web/data/
+/lissabon/data/
+/random-stuff-jakob/jakob-log-files/
+
+# Binary media/data: JSON manifests, calibration and source stay searchable.
 *.mp4
 *.mov
 *.webm
@@ -13,6 +40,7 @@ node_modules/
 *.mp3
 *.wav
 *.ogg
+*.flac
 *.png
 *.jpg
 *.jpeg
@@ -26,3 +54,10 @@ node_modules/
 *.stl
 *.usdz
 *.bin
+*.h264
+*.webpseq
+*.zip
+*.7z
+*.sqlite
+*.sqlite3
+*.db
