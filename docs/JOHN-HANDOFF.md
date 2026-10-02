@@ -3,6 +3,30 @@
 Uppdaterad 2 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Nästa uppdrag: en Studio — plan, inte genomförd
+
+[Masterplan och återanvändbara agentprompter](CLOUD-MIGRATION.md#masterplan-en-croupier-studio)
+är införda i befintlig migrationsguide. Jakob har godkänt målbilden och vill
+att ersatta delar faktiskt avvecklas, inte sparas som parallella legacy-system.
+Tre underagenter har gjort avgränsad läsanalys av UI/auth, lagring och OpenClaw/GPU;
+orchestratorn äger checklistan, gemensamma kontrakt, docs och senare integration.
+Endast plan/dokumentation levereras i denna etapp; ingen implementerad
+Neon-migrering, kontoförändring, mediaregenerering, disk-/objektradering eller
+betald provkampanj. Aktuell driftskarta nedan gäller fortfarande.
+
+Adressprecisering: idag är `/blackjack` spelarens inloggningsentré och `/game`
+spelet. Målbilden är `/blackjack` som spel och `/game` som redirect; launch,
+callback, returnTo och partner-allowlists måste följa samma samordnade ändring.
+BO:s `/api/bo/config` används fortfarande av spelet och kan inte blindraderas.
+Render-disken har även jobbidempotens och RunPod-reservations-/budgetjournaler;
+beständigt Blob-media ersätter inte dessa. Bevara checksumlåst product-v1,
+befintliga auth-/spelarroller och OpenClaw/GPU-funktioner. Director/Gateway-
+diskar är aktiv systemlagring, inte avvecklingsmål för den här flytten.
+Planen har sakgranskats av alla tre underagenter. Miljövariabelregistret och
+17 lokala dokumentations-/leverans-/hooktester: PASS. Detta är inte ny
+spel-/media-/GPU-acceptans eller en full liveinventering. docs har fortsatt
+exakt fem Markdown-filer.
+
 ## Drift och ansvar
 
 - [Startsida](https://www.scoutgaming.tech/), [spel](https://www.scoutgaming.tech/game)
