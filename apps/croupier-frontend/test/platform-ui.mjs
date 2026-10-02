@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp, readFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders} from '../lib/platform-routing.mjs';
+import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../lib/platform-routing.mjs';
 import {platformUiDocument} from '../lib/server-ui.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {createRequire} from 'node:module';
@@ -18,7 +18,12 @@ test('platform routes preserve exact backend boundaries, public origin and query
   for (const path of ['/api/table', '/api/bo/users/role', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
     assert.equal(platformRoute(new URL(path + '?requestId=a%20b', config.publicOrigin), config).kind, 'backend');
   }
-  for (const path of ['/speech-stream', '/lipsync-worker']) assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'socket');
+  for (const path of ['/speech-stream', '/lipsync-worker']) {
+    const route = platformRoute(new URL(path, config.publicOrigin), config);
+    assert.equal(route.kind, 'socket');
+    assert.equal(route.destination, config.publicOrigin + PLATFORM_SOCKET_ENDPOINTS[path]);
+    assert.equal(platformRoute(new URL(PLATFORM_SOCKET_ENDPOINTS[path], config.publicOrigin), config).kind, 'reject');
+  }
   for (const path of ['/api/auth/lab/check', '/api/auth/access', '/__vercel/lab/session', '/api/internal', '/studio/api/unknown', '/api/bo/%75sers', '/studio/api/../project', '//api/bo/users']) assert.equal(backendPlatformPath(path), false, path);
   assert.equal(platformRoute(new URL('/studio/activity', config.publicOrigin), config).kind, 'lab');
   assert.equal(platformRoute(new URL('/game', config.publicOrigin), config).kind, 'frontend');
@@ -86,8 +91,12 @@ test('actual Next middleware disables rewrite caching for backend and authentica
     assert.equal(ordinary.headers.get('x-vercel-enable-rewrite-caching'), null);
     for (const path of ['/speech-stream', '/lipsync-worker']) {
       const socket = module.exports.middleware(new NextRequest(config.publicOrigin + path));
-      assert.equal(socket.headers.get('x-middleware-rewrite'), null);
+      assert.equal(socket.headers.get('x-middleware-rewrite'), config.publicOrigin + PLATFORM_SOCKET_ENDPOINTS[path]);
+      assert.equal(socket.headers.get('cdn-cache-control'), 'no-store');
+      assert.equal(socket.headers.get('x-vercel-enable-rewrite-caching'), '0');
       assert.equal(socket.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
+      const direct = module.exports.middleware(new NextRequest(config.publicOrigin + PLATFORM_SOCKET_ENDPOINTS[path]));
+      assert.equal(direct.status, 400);
     }
   } finally {
     for (const [key, value] of Object.entries(previous)) {if (value === undefined) delete process.env[key]; else process.env[key] = value;}

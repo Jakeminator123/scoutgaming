@@ -1,4 +1,8 @@
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
+export const PLATFORM_SOCKET_ENDPOINTS = Object.freeze({
+  '/speech-stream': '/api/platform-speech-stream',
+  '/lipsync-worker': '/api/platform-lipsync-worker',
+});
 
 export function exactPlatformOrigin(value, name) {
   let url;
@@ -56,7 +60,10 @@ export function backendPlatformPath(value) {
 export function platformRoute(url, config) {
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
-  if (['/speech-stream', '/lipsync-worker'].includes(path)) return {kind: 'socket'};
+  // Internal Node endpoints are reachable through these two exact rewrites.
+  // A direct browser/API request must not create an alternative public route.
+  if (Object.values(PLATFORM_SOCKET_ENDPOINTS).includes(path)) return {kind: 'reject'};
+  if (Object.hasOwn(PLATFORM_SOCKET_ENDPOINTS, path)) return {kind: 'socket', destination: `${config.publicOrigin}${PLATFORM_SOCKET_ENDPOINTS[path]}${url.search}`};
   if ((path === '/' || path === '/game' || path === '/game/') && url.searchParams.has('launch')) {
     return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };
   }
