@@ -84,3 +84,8 @@ Ingen force-push, branchradering eller annan destination är tillåten.
 Hooks i ny checkout: `git config core.hooksPath .githooks`.
 Verifiera GitHub checks och avsedd driftcommit; GPU-image är separat release.
 Tester/hashar godkänner inte synk, fysisk mobil/Safari eller backup i drift.
+
+Rena dokumentations-/index-ignore-commits kör snabba env-, GitHub-policy-
+och hooktester. Kod, konfiguration, tester och media kör hela regressionen;
+CI kör alltid full. Manuell full kontroll: sh .githooks/pre-commit --full.
+node tools/precommit-checks.mjs --plan visar valet för aktuellt Git-index.

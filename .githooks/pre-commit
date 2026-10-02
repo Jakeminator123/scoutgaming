@@ -1,35 +1,4 @@
 #!/bin/sh
 # Keep this hook LF-only; .gitattributes enforces it on Windows checkouts.
 set -eu
-node tools/check-environment-variables.mjs
-node --test test/check-environment-variables.mjs
-node pipeline/build-lab-video-manifest.mjs --check
-node test/player-auth.mjs
-node --test test/agent-talk.mjs test/backup-render-state.mjs test/player-signup.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs ops/vercel-entry/test/build-preview.mjs
-node --test ops/cloud/test/runtime.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs ops/vercel-entry/test/preview-routes.mjs
-node test/craig-login.mjs
-node test/bo-game-auth.mjs
-node pipeline/audit-dealer-sync.mjs
-node pipeline/audit-performance.mjs
-node pipeline/audit-astrid-actor.mjs
-node --test test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
-node --test test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
-node --test test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs
-node --test test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs
-node --test test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs
-node --test test/player-probe.mjs
-node --test test/performance-contact.mjs test/pack-contact-media.mjs test/table-audio.mjs test/shoe-contact-occlusion.mjs
-node --test test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
-node --test test/idle-video-loop.mjs
-node --test test/action-placement.mjs test/bugshot-report.mjs
-node test/blackjack-asset-state.mjs
-node --test test/dealer-motion.mjs test/dealer-skin-contact.mjs
-node --test test/rigged-card-layout.mjs test/rigged-layout-contact.mjs test/rigged-discard-state.mjs
-node --test test/dealer-collection.mjs
-node --test test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-face-bindings.mjs
-node --test test/native-partner-events.mjs test/bo-media-preview.mjs
-node --test test/native-observation.mjs test/clip-mapping.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
-node --test test/local-comparison-fixture.mjs test/generation-media.mjs
-node --test test/local-presentation.mjs test/local-card-overlay.mjs test/verified-video-buffer.mjs lab/test/media-family-playback.test.mjs lab/test/retire-demo-examples.test.mjs
-node --test test/lissabon-profiles.mjs test/player-results.mjs lab/test/local-start.test.mjs
-node --test open-claw/lab/deploy/local-session.test.mjs open-claw/lab/deploy/local-connection.test.mjs
+exec node tools/precommit-checks.mjs "$@"
