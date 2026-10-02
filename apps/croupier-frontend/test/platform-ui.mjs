@@ -15,9 +15,10 @@ const config = platformConfiguration(env);
 test('platform routes preserve exact backend boundaries, public origin and query correlation', () => {
   assert.equal(platformConfiguration({}), null);
   assert.throws(() => platformConfiguration({...env, CROUPIER_BACKEND_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN}));
-  for (const path of ['/api/table', '/api/bo/users/role', '/studio/api/videos/id', '/speech-stream', '/lipsync-worker', '/api/presentation/videos/abc']) {
+  for (const path of ['/api/table', '/api/bo/users/role', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
     assert.equal(platformRoute(new URL(path + '?requestId=a%20b', config.publicOrigin), config).kind, 'backend');
   }
+  for (const path of ['/speech-stream', '/lipsync-worker']) assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'socket');
   for (const path of ['/api/auth/lab/check', '/api/auth/access', '/__vercel/lab/session', '/api/internal', '/studio/api/unknown', '/api/bo/%75sers', '/studio/api/../project', '//api/bo/users']) assert.equal(backendPlatformPath(path), false, path);
   assert.equal(platformRoute(new URL('/studio/activity', config.publicOrigin), config).kind, 'lab');
   assert.equal(platformRoute(new URL('/game', config.publicOrigin), config).kind, 'frontend');
@@ -72,7 +73,7 @@ test('actual Next middleware disables rewrite caching for backend and authentica
   const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
   Object.assign(process.env, env);
   try {
-    for (const path of ['/api/bo/me', '/studio/api/project', '/studio/activity', '/speech-stream']) {
+    for (const path of ['/api/bo/me', '/studio/api/project', '/studio/activity']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path));
       assert.equal(response.headers.get('x-vercel-enable-rewrite-caching'), '0', path);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store', path);
@@ -83,6 +84,11 @@ test('actual Next middleware disables rewrite caching for backend and authentica
     }
     const ordinary = module.exports.middleware(new NextRequest(config.publicOrigin));
     assert.equal(ordinary.headers.get('x-vercel-enable-rewrite-caching'), null);
+    for (const path of ['/speech-stream', '/lipsync-worker']) {
+      const socket = module.exports.middleware(new NextRequest(config.publicOrigin + path));
+      assert.equal(socket.headers.get('x-middleware-rewrite'), null);
+      assert.equal(socket.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
+    }
   } finally {
     for (const [key, value] of Object.entries(previous)) {if (value === undefined) delete process.env[key]; else process.env[key] = value;}
   }

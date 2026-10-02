@@ -56,6 +56,7 @@ export function backendPlatformPath(value) {
 export function platformRoute(url, config) {
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
+  if (['/speech-stream', '/lipsync-worker'].includes(path)) return {kind: 'socket'};
   if ((path === '/' || path === '/game' || path === '/game/') && url.searchParams.has('launch')) {
     return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };
   }

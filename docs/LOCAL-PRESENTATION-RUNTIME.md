@@ -14,7 +14,7 @@ med samma triggers, regler, slump och Director-kontrakt som Eventstudion.
 Labbets tidigare moduler återexporterar den gemensamma implementationen.
 
 Web använder `PerformancePlayer.playLocalClip` för hashverifierade MP4-filer
-från `emil/dealklipp-v1`. En film äger ytan i taget. Den tidigare Astridmotorn,
+från `media/dealers/astrid/runtime/presentation`. En film äger ytan i taget. Den tidigare Astridmotorn,
 dess talmedia och supervisor laddas inte i det lokala läget. Lab monterar ingen
 parallell följningsspelare för någon dealer vid anslutning, återanslutning
 eller **Ny observation**. En separat Lab-preview kräver ett uttryckligt val
@@ -41,7 +41,7 @@ verifierade staged-destinationer. Dessa läses vid sidstart; ladda om mellan
 händer efter sparning. Inspelat tal följer sitt befintliga exakta audio/video-par.
 Astrids `presentation=local` använder fortsatt `mediaPolicy`/`idlePolicy`.
 Projekt, versioner och historik sparas i samma Lab-projekt; lokalt `lab/data`,
-i molnet `/var/data/studio`. Medieregistren återanvänds utan filmkopiering.
+i molnet `/var/data/studio`. Medieregistren återanvänds med bevarade fil-ID och bytes.
 
 Helpern ger Web och Lab samma isolerade projektkatalog. Spara ändringar i
 Eventstudion. Nästa deal/replik läser sparad policy; idlepolicyn läses vid
@@ -84,10 +84,10 @@ Hela 1080×1920-filmen visas med `object-fit: contain`, även på dator.
 Spelkorten är auktoritativa 2D-överlägg. Råfilmerna har ännu ingen kalibrerad
 pickup/release/land-kontakt; DOM-kortets landningskvitto anger uttryckligen
 `calibratedContact: false`. Filmens slut är inte bevis för handkontakt.
-Saknat exakt klipp, till exempel dealer-hålkort, ger synlig **2D-reserv**.
+Saknat eller otillgängligt exakt klipp ger synlig **2D-reserv**.
 
 Inspelade fria chattsvar är text-only när deras exakta text/video-paket inte
-är verifierat. Native-eventrepliker använder sina exakta lokala filmer och
+är verifierat. Native-eventrepliker använder sina exakt registrerade filmer och
 inbäddat ljud. Genererad läppsynk kräver fortsatt mänsklig granskning.
 Inga mediabytes, kalibreringar eller visuella godkännanden ändras här.
 
@@ -115,6 +115,6 @@ bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
 inte slutgodkännande av fysisk mikrofon/kamera eller exakt läppsynk.
 
 Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
-`emil/dealklipp-v1/lab-video-manifest.json` och `presentation-runtime/`.
+`media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `presentation-runtime/`.
 Studio följer native-kvitton; Partner-SSE är kompletterande instruktioner.
 Transportanslutning är inte speldata, valt klipp är inte spelat klipp.

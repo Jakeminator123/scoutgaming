@@ -9,7 +9,16 @@ Uppdatera denna fil i stället för att skapa fler arbetsrapporter.
 Ansvar: Render äger fortsatt slump, kort, shoe, regler, saldo och resultat.
 Vercel får spel-/BO-gränssnitt och Lab UI; Lab API och sparade projekt finns
 fortsatt på Render. Neon har separata game/auth-scheman och en separat databas
-från befintliga zonmetadata. Produktionsbyte är ännu inte genomfört.
+från befintliga zonmetadata. Produktionsdatabasen är flyttad till Neon;
+Vercel-UI och det nya Blob-indexet inväntar sina molnprov.
+
+Produktionsbyte 2 oktober: aktuellt exportläge med noll Web/Lab-skrivare,
+hashverifierade SQLite-backuper utanför Git, 24 källtabeller/102 rader och
+full backup/restore-paritet för 32 PostgreSQL-tabeller. Inga aktiva externa
+wallet-kopplingar fanns. Render `dep-davr1iegekts73f4s9cg`, commit `77793dc1`,
+är live med PostgreSQL; verklig befintlig superadmin-login och spelarnas
+administrationsvy bekräftar rätt lagring. Två befintliga spelare bevarade;
+inga produktionskonton eller spelrundor skapades för test.
 
 Implementerat: asynkron PostgreSQL-väg utan SQLite-fallback; explicit
 schema-install/import och backup/restore med tabellantal, radhasher och
@@ -32,9 +41,13 @@ spelrunda med saldo/ledger-paritet. Tidiga repetitionsklick spärras tills
 serverns verkliga initialisering är klar. Inga JavaScript-fel eller HTTP 500.
 Molnets Lab-observation kan nu öppna och återanvända samma BO-spelflik med
 exakt HTTPS-origin och spelarens riktiga kvitton, utan Partner-launch/SSE.
-23 fokustester och Lab-TypeScript passerar. Det deployerade WebSocket-provet
-fick HTTP 404 genom Vercels externa rewrite; transporten rättas separat innan
-UI-bytet. CI:s isolerade HTTP-fixture väntar nu högst fem sekunder på serverns
+23 fokustester och Lab-TypeScript passerar. Vercels externa WebSocket-rewrite
+gav HTTP 404. Två fasta SDK-rutter ersätter den: faktisk installerad SDK och
+isolerad relay verifierar bytes, ägarbiljett, återspelningsspärr, kögränser och
+stängning; 19 frontendtester och båda byggen passerar. Render behåller auth;
+worker-anslutningen har plats för hela befintliga 540-sekundersleasen.
+Det nya molnprovet återstår före UI-bytet. CI:s isolerade HTTP-fixture väntar
+nu högst fem sekunder på serverns
 korta SQLite-skrivningar; alla nio riktiga HTTP-kontroller passerar lokalt.
 Detta ersätter inte visuell läppsynks-QA.
 
@@ -49,7 +62,7 @@ Ingen ny godkänd läppsynk påstås. Privat Blob-export är färdig: 4 265 medi
 originalförhandsvisningar läser samma index. Felaktig eller saknad aktiv källa
 ger 503 utan diskfallback. Moln-QA föregår aktivering; gamla Blob-objekt bevaras.
 
-Produktionsdrift ligger fortfarande på föregående SQLite/Render-konfiguration.
+Produktionsdrift använder Neon med befintliga Render-adresser och mediekonfiguration.
 Isolerade QA-projekt har egen Neon-databas, hostname och privata ingressnycklar;
 betalda speech-/kameraanrop är av. Backup och verifiering föregår skarp flytt.
 
@@ -99,60 +112,24 @@ Privata lokala testkvitton ligger i `lab/data/qa-backoffice-lab`, utanför Git.
 Gamla öppna frågor nedan är fortsatt öppna; denna konsolidering godkänner inte
 läppsynk, kallstart, fysisk mobil/Safari eller produktionsbackup.
 
-## Senaste administrativa ändring
+## Städning och leverans
 
-`main` är enda lokala/GitHub-branch i `Jakeminator123/github-work`.
-Övriga brancher saknade egna commits och den gamla rena worktreen är borta.
-Vercel och fyra Render-kopplingar följer `main` med bevarade autodeploylägen.
-Leverans `61241a09`: grön full hook, tre gröna CI-jobb och READY i Vercel.
-GitLab förblir pausat.
+`main` är enda lokal/GitHub-branch i `Jakeminator123/github-work`;
+övriga brancher och den gamla rena worktreen är borttagna. GitLab är pausat.
+Dokumentationen har minskats från 99 till fem MD-filer under `docs/`.
+Uppdatera dem i stället för att skapa nya rapporter. Ignorefiler utesluter
+beroenden, byggcache, binär media och privat data från vanliga sökningar.
 
-Dokumentationsrensningen behåller fem Markdown-filer under `docs`.
-GitLab-inboxinstruktioner ersätts med pausstatus; navigationen är uppdaterad.
-Sök-/Cursor-ignore omfattar beroenden, byggcache, binärer och privat data.
-Ingen produktkod, media, databas, GPU-budget eller testhook har ändrats.
-Kontroll: 99 → 5 filer, cirka 98 procent mindre dokumentationstext;
-inga ändrade JSON-/mediekvitton eller trasiga docs-länkar. Riktade
-env-/GitHub-policytester passerar (9/9); full hook körs vid commit.
+`random-stuff-jakob/`, gammal GitLab-wikihelper, inaktuell ändringslogg och
+tomma äldre kataloger är borttagna. `test/` och `pipeline/` används av
+produktionen, byggverktyg och CI och behålls. Värdefullt innehåll från
+`content/`, `assets/`, Emil och `docs/reference` finns nu under `media/`,
+med bevarade bytes, kalibreringar och provenance. Personarkivets läsgräns gäller.
 
-## Snabbare verifiering och katalogrensning — 2 oktober
-
-Rena dokumentations-/index-ignore-commits får ett snabbt spår med envregister,
-GitHub-pausskydd, hookregressioner och staged whitespace-kontroll.
-Kod, test, konfiguration, runtime-prompter och media använder hela befintliga
-regressionen. Tomt index, CI och explicit --full väljer också full kontroll.
-CI anger --full; de ursprungliga 32 stegen ligger i .githooks/pre-commit-full.
-Verklig staged docs-körning tog 1,393 s mot tidigare fulla 68,55 s;
-17 snabba kontroller passerade. Oberoende designgranskning hittade inget
-falskt snabbspår; alla 32 ursprungliga kommandon finns kvar.
-Nya tester verifierar bland annat kod→docs-rename, blandade ändringar och
-misslyckade delkommandon utan att röra produktens data.
-
-Underagenter tog bort tomma rot-reference och tolv tomma docs-kataloger.
-docs/reference bevaras: kamera, spelarmål, ankare och bilder används av
-medieunderlag. test/ är aktiv (76 testfiler i hook, ytterligare 7 i CI).
-Endast den avvecklade GitLab-wikihelpern och dess enda test togs bort;
-de saknade aktiva konsumenter och hänvisade till raderade sprintdokument.
-GitHub-/inbox-pausskydden finns kvar (25 riktade tester godkända).
-Inga servrar, betaljobb, media eller databaser ändrades.
-
-## Fortsatt rensning — 2 oktober
-
-random-stuff-jakob/ är borttagen på Jakobs begäran. Mappen saknade spårade
-filer och aktiva konsumenter; kvarvarande ignorerad åtkomstnotis raderades
-utan innehållsläsning. Det pensionerade arkivet fanns inte i checkouten.
-Dess tidigare läsgräns och ignore-skydd gäller om material återställs.
-
-ANDRINGSLOGG-V2.md är borttagen: dess 29-septemberstatus om branch,
-Render-start och GPU-publicering var ersatt av denna aktuella handoff.
-Behållen beslutsgräns: vanlig inloggning och förinspelat spel ska inte starta
-GPU. GPU-vila får inte logga ut spelaren, radera sparande eller avbryta
-ekonomiska transaktioner. Gamla föreslagna timeoutvärden är inte driftkontrakt.
-
-pipeline/ bygger och granskar medieregister och används av Lab, hook och CI.
-Värdefullt innehåll från content/, assets/ och Emil har flyttats till media/;
-gamla tomma kataloger är borttagna. Original, dealerreferenser, kalibrering
-och stagingunderlag är bevarade med hashkontrollerade bytes.
+Dokumentations-/ignoreändringar får snabba hookkontroller; kod, tester,
+konfiguration och media kräver full regression. CI kör alltid hela hooken.
+Vanlig inloggning och förinspelat spel startar inte GPU; GPU-vila får inte
+logga ut spelaren eller avbryta ekonomiska transaktioner.
 
 ## Intro och startsida
 
@@ -193,9 +170,9 @@ Nya GPU-prov kräver uttryckligt avgränsad kampanj och bevarad förbrukad budge
 
 ## Speldata och medieacceptans
 
-Konton/saldo ligger i SQLite; Neon används för zonmetadata. OpenClaw får
+Konton/saldo ligger i en separat game-Neon; zonmetadata har sin egen databas. OpenClaw får
 begränsad publik spelar-/samtalskontext, ingen direkt saldoåtkomst.
-Publik lösenordsåterställning och game-Neon-migration är inte införda.
+Publik lösenordsåterställning är ännu inte slutverifierad i drift.
 Råfilmernas kortkontakt är inte kalibrerad; 2D-landning kan rapportera
 `calibratedContact: false`. Saknad exakt film använder uttrycklig reserv.
 Gamla godkännanden överförs inte till media med annan hash.

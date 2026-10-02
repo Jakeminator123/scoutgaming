@@ -37,7 +37,8 @@ separat och kopiera den verifierade backupens `lissabon/data` till en tom
 | Director | `/data/catalog` | `catalog.json`, `history/`, använt `companion.sqlite` |
 | Gateway | `/data/openclaw` | `openclaw.json`, agentfiler/sessioner, `companion-search.sqlite` |
 
-SQLite är fortfarande konto-/speldatabasen; Neon lagrar zonmetadata.
+Game/auth-Neon är konto-/speldatabasen sedan 2 oktober; zonmetadata har sin
+egen databas. SQLite-filerna på disken är bevarade historiska källor.
 Git och Blob-upload säkerhetskopierar inte Studio-index, konton eller saldo.
 Behåll diskdata tills extern verifierad backup och isolerat återgångsprov finns.
 
@@ -71,7 +72,17 @@ Verifiera inloggning, saldo/shoe, BO-roller, Studio-projekt och historik efter
 start och ytterligare omstart. Blanda inte äldre CRAIG med nyare speldata.
 Efter avbruten restore: håll tjänsten stoppad och granska dataroten.
 Backup/restore är provat med syntetiska filer; extern produktionsbackup och
-full återläsning i drift är ännu inte slutverifierade.
+full återläsning av hela diskprofilen är ännu inte slutverifierade.
+
+Produktionsdatabaserna har separat verifierad extern backup i
+`C:\Users\jakem\CroupierBackups\neon-game-20261002-132437`: två orörda
+SQLite-filer, snapshotmanifest, PostgreSQL-backup och migrationskvitto.
+24 källtabeller/102 rader importerades; full återläsning av 32 PostgreSQL-
+tabeller inklusive sekvenser gav identisk hash. Exportprocessen ersatte
+både Web och Lab och bevisade noll skrivare; samma aktuella snapshot krävdes
+omedelbart före aktivering. Studio-index och Director/Gateway behöver sina
+separata fulla diskbackuper. Efter nya Neon-skrivningar är äldre SQLite
+ingen automatisk återgång.
 
 ## Media och regression
 

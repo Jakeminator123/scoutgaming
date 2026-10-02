@@ -105,6 +105,7 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
     const ingress = vercelIngressRequest(incoming, vercelIngress);
     if (!ingress.accepted) { outgoing.writeHead(421, { 'Cache-Control': 'no-store' }); outgoing.end(); return; }
     if (ingress.health) { outgoing.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); outgoing.end('ok'); return; }
+    if (ingress.redirect) { outgoing.writeHead(307, {Location:ingress.redirect,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}); outgoing.end(); return; }
     if (ingress.transported) incoming.headers = ingress.headers;
     if (ingress.session) {
       let session;
