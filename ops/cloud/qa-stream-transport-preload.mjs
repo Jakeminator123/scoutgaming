@@ -10,6 +10,28 @@ export const FIXTURE_PROVIDER_ORIGIN = 'https://unpaid-transport.invalid';
 export const FIXTURE_CREDENTIAL = 'unpaid-transport-fixture';
 export const FIXTURE_ENDPOINT = 'unpaid-transport-fixture';
 export const TRANSPORT_SENTINEL = Buffer.from('CROUPIER_UNPAID_WSS_TRANSPORT_V1');
+const DIAGNOSTICS = Symbol.for('croupier.unpaid-stream-diagnostics');
+const TRACE_PHASES = new Set(['fresh_before', 'fresh_after', 'source_opened', 'tts_source_before', 'pcm_written', 'source_error',
+  'product_request', 'tts_request', 'tts_return_pcm', 'gpu_submit', 'gpu_worker_ready', 'gpu_status', 'gpu_cancel',
+  'worker_open', 'worker_recv_start', 'worker_recv_pcm', 'worker_recv_end', 'worker_recv_abort',
+  'worker_send_stream', 'worker_send_bytes', 'worker_send_done', 'worker_close', 'worker_error']);
+
+export function installUnpaidDiagnostics(env, {emit = value => console.info(value)} = {}) {
+  assertUnpaidQaEnvironment(env);
+  const counts = new Map();
+  let emitted = 0;
+  const trace = (phase, fields = {}) => {
+    if (!TRACE_PHASES.has(phase) || emitted >= 256) return;
+    const count = (counts.get(phase) ?? 0) + 1; counts.set(phase, count);
+    const value = {phase, count};
+    if (Number.isSafeInteger(fields)) fields = {ms: fields};
+    for (const name of ['ms', 'bytes', 'code']) if (Number.isSafeInteger(fields?.[name]) && fields[name] >= 0 && fields[name] <= 16 * 1024 * 1024) value[name] = fields[name];
+    emitted++;
+    try {emit('CROUPIER_UNPAID_STREAM ' + JSON.stringify(value));} catch { /* Evidence never changes transport. */ }
+  };
+  globalThis[DIAGNOSTICS] = trace;
+  return trace;
+}
 
 export function assertUnpaidQaEnvironment(env) {
   if (env.RENDER_SERVICE_ID !== QA_SERVICE_ID || env.PUBLIC_URL !== QA_PUBLIC_ORIGIN
@@ -23,7 +45,7 @@ export function assertUnpaidQaEnvironment(env) {
       || env.CROUPIER_MEDIA_STORAGE !== 'disk') throw Error('Unpaid transport fixture requires the exact isolated QA deployment and fake provider configuration.');
 }
 
-export async function openSyntheticWorker(input, {WebSocketImpl, timeoutMs = 10000} = {}) {
+export async function openSyntheticWorker(input, {WebSocketImpl, timeoutMs = 10000, trace = globalThis[DIAGNOSTICS] ?? (() => {})} = {}) {
   if (input.ws_url !== QA_PUBLIC_ORIGIN.replace('https:', 'wss:') + '/lipsync-worker'
       || typeof input.ws_token !== 'string' || input.ws_token.length < 32
       || !/^croupier-[a-f0-9]{32}$/.test(input.worker_id)) throw Error('Invalid isolated worker transport.');
@@ -32,39 +54,48 @@ export async function openSyntheticWorker(input, {WebSocketImpl, timeoutMs = 100
   let currentId, sent = false;
   worker.on('message', (bytes, binary) => {
     if (binary) {
-      if (currentId && !sent) {sent = true; worker.send(TRANSPORT_SENTINEL, {binary: true});}
+      trace('worker_recv_pcm', {bytes: bytes.length});
+      if (currentId && !sent) {sent = true; worker.send(TRANSPORT_SENTINEL, {binary: true}); trace('worker_send_bytes', {bytes: TRANSPORT_SENTINEL.length});}
       return;
     }
     const message = JSON.parse(bytes.toString());
     if (message.t === 'start') {
+      trace('worker_recv_start');
       currentId = message.id; sent = false;
       worker.send(JSON.stringify({t: 'stream', id: currentId, mime: 'video/mp4; codecs="avc1.64002a, mp4a.40.2"'}));
+      trace('worker_send_stream');
     }
     if (['end', 'abort'].includes(message.t)) {
+      trace(message.t === 'end' ? 'worker_recv_end' : 'worker_recv_abort');
       worker.send(JSON.stringify({t: 'done', id: message.id, frames: 0, ms: 0, syntheticTransport: true, ...(message.t === 'abort' ? {aborted: true} : {})}));
+      trace('worker_send_done');
       currentId = null;
     }
   });
-  worker.on('error', () => {});
+  worker.on('error', () => trace('worker_error'));
+  worker.on('close', code => trace('worker_close', {code}));
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {worker.terminate(); reject(Error('Unpaid worker upgrade failed.'));}, timeoutMs);
-    worker.once('open', () => {clearTimeout(timer); resolve(worker);});
+    worker.once('open', () => {trace('worker_open'); clearTimeout(timer); resolve(worker);});
     worker.once('error', () => {clearTimeout(timer); worker.terminate(); reject(Error('Unpaid worker upgrade failed.'));});
   });
 }
 
-export function unpaidQaFetch(env, {realFetch = fetch, createWorker = openSyntheticWorker} = {}) {
+export function unpaidQaFetch(env, {realFetch = fetch, createWorker = openSyntheticWorker, trace = globalThis[DIAGNOSTICS] ?? (() => {})} = {}) {
   assertUnpaidQaEnvironment(env);
   const jobs = new Map();
   return async (input, init = {}) => {
     const url = new URL(input instanceof Request ? input.url : String(input));
     if (url.href === FIXTURE_PROVIDER_ORIGIN + '/api/product/speech') {
+      trace('product_request');
       const {request, status} = JSON.parse(init.body);
       return Response.json({kind: 'generatedText', requestId: request.requestId, dealerId: status.dealerId,
         sessionRevision: status.sessionRevision, roundRevision: status.roundRevision, text: 'Synthetic unpaid transport fixture.'});
     }
     if (url.href === 'https://api.cartesia.ai/tts/bytes') {
+      trace('tts_request');
       init.signal?.throwIfAborted();
+      trace('tts_return_pcm', {bytes: 4800});
       return new Response(new Uint8Array(4800), {headers: {'Content-Type': 'audio/pcm'}});
     }
     if (url.origin === 'https://api.runpod.ai') {
@@ -72,9 +103,11 @@ export function unpaidQaFetch(env, {realFetch = fetch, createWorker = openSynthe
       if (!url.pathname.startsWith(prefix)) throw Error('Nonfixture RunPod endpoint is forbidden.');
       const route = url.pathname.slice(prefix.length);
       if (route === 'run' && init.method === 'POST') {
+        trace('gpu_submit');
         const body = JSON.parse(init.body);
         const id = `unpaid-${body.input.worker_id}`;
         const worker = await createWorker(body.input);
+        trace('gpu_worker_ready');
         jobs.set(id, {worker, status: 'IN_PROGRESS'});
         return Response.json({id, status: 'IN_PROGRESS'});
       }
@@ -83,6 +116,7 @@ export function unpaidQaFetch(env, {realFetch = fetch, createWorker = openSynthe
       // A QA process restart terminates every synthetic worker. Preserve the
       // existing session ledger while allowing its normal terminal recovery.
       if (!job) return Response.json({id: match[2], status: 'COMPLETED'});
+      trace(match[1] === 'cancel' ? 'gpu_cancel' : 'gpu_status');
       if (match[1] === 'cancel') {job.worker.close(); job.status = 'CANCELLED';}
       return Response.json({id: match[2], status: job.status});
     }
@@ -135,5 +169,6 @@ export async function verifyUnpaidWssTransport({cookie, descriptor}, {WebSocketI
 }
 
 if (process.env.NODE_OPTIONS === `--import=${import.meta.url}`) {
+  installUnpaidDiagnostics(process.env);
   globalThis.fetch = unpaidQaFetch(process.env);
 }

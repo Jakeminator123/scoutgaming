@@ -48,13 +48,18 @@ stängning; 19 frontendtester och båda byggen passerar. SDK-testets verkliga
 relay körs med frontendens egna installerade beroenden även i Vercelbygget.
 Render behåller auth;
 worker-anslutningen har plats för hela befintliga 540-sekundersleasen.
-Molnprovet på `5de1ae75` öppnade anslutningen men stoppade vid `owner_stream`.
-SDK-uppgraderingen returnerar nu direkt efter setup; den begränsade sessionen
-hålls separat med `waitUntil` och avbrottslyssnaren följer sessionens livstid.
-Riktigt SDK-/relayprov och oberoende review verifierar detta kontrakt; nytt
-molnprov krävs för att bevisa rättningen. UI/nya Blob-indexet aktiveras först
-efter verkligt godkänt prov. Samtliga tre
-CI-jobb på samma revision är gröna. CI:s isolerade HTTP-fixture väntar
+SDK-uppgraderingen returnerar direkt efter setup; den begränsade sessionen
+hålls med Nexts `after` även när SDK-kontexten saknar `waitUntil`.
+Avbrottslyssnaren följer sessionens livstid. Regressionen använder faktisk
+Next 15.5.26, SDK och relay och verifierar bytes efter setup-svaret.
+Riktigt SDK-/relayprov och oberoende review verifierar detta kontrakt.
+Molnprovet på `e78441f0` öppnar klient och worker men ger endast `ready`,
+inga mediebytes; både 15 och 60 sekunders provgräns misslyckas. Hela den
+isolerade strömkedjan med faktisk serverkod, SDK och syntetisk worker passerar.
+Säker QA-instrumentering av faser och byteantal avgränsar molnfelet;
+inga identiteter, repliker, biljetter eller nycklar loggas. UI/nya Blob-indexet
+aktiveras först efter verkligt godkänt prov. Samtliga tre CI-jobb på
+`e78441f0` är gröna. CI:s isolerade HTTP-fixture väntar
 nu högst fem sekunder på serverns
 korta SQLite-skrivningar; alla nio riktiga HTTP-kontroller passerar lokalt.
 Detta ersätter inte visuell läppsynks-QA.
