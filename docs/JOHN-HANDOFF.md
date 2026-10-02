@@ -17,7 +17,7 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
   Studio-projekt, historik och familjeindex ligger fortfarande på beständig Render-disk.
   Director/Gateway behåller sina befintliga tjänster och diskar.
 
-Verifierad runtime/media: 22dca5c4. Render dep-davta5e7bikc73fcpafg är live med samma revision.
+Molnacceptansen verifierar runtime/media i 22dca5c4; senare slutcommits ändrar bara dokumentation och guide.
 Frontend och Lab är aktiverade på de kanoniska Vercel-adresserna och uppdateras
 från main. Slutleveransen fb3c0860 ändrar bara dokumentation och guideinnehåll;
 båda UI-byggena är publicerade och kontrollerade igen. Render-koden och godkända media är oförändrade.
