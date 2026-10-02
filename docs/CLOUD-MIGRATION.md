@@ -27,8 +27,8 @@ JSON-register, media, acceptansbaseline och befintliga QA-kvitton bevaras.
 | Yta/data | Ansvar och plats |
 | --- | --- |
 | Publik frontend | `apps/croupier-frontend`, Vercel `croupier-frontend`; [scoutgaming.tech](https://www.scoutgaming.tech/) |
-| Spel | [croupier-v2.onrender.com](https://croupier-v2.onrender.com/blackjack?dealer=astrid); konto, kort, shoe, wallet och uppspelning |
-| Backoffice/Lab | Render `/studio`, gemensam navigation för Studio, media, event, zoner, OpenClaw och uppspelning; `/tree` är allmänna editorn |
+| Spelgränssnitt | Vercel [scoutgaming.tech/game](https://www.scoutgaming.tech/game); Render äger slump, kort, shoe, regler, wallet och resultat |
+| Backoffice/Lab | Vercel [scoutgaming.tech/studio](https://www.scoutgaming.tech/studio), gemensam navigation för Studio, media, event, zoner, OpenClaw och uppspelning; `/studio/tree` är allmänna editorn |
 | Administration | `/studio/administration` återanvänder befintlig `/bo`; samma konton och rollkontroller, ingen separat dealerström |
 | Lokal beständig data | `lab/data` för projekt, historik och profiler; `lab/data/players` för konto-/speldatabaser; Lissabon är borttagen med privat backup |
 | Spelarkonton/rundor | Separat Neon game-databas, schema `croupier_game` |
@@ -43,7 +43,7 @@ Testbackenden `croupier-vercel-preview-qa` startas bara på begäran.
 Frontend-Preview kan peka mot produktion; syntetiska konton/rundor kräver
 isolerad backend och annat hostname. Game-Neon är aktivt sedan 2 oktober
 efter verifierad produktionsimport och separat återläsningsprov. Spelklientens
-byte till Vercel och det nya Blob-indexet inväntar fortfarande moln-QA.
+gränssnitt finns på Vercel och det gemensamma privata Blob-indexet är aktivt.
 Bevarade SQLite-filer är historisk rollbackkälla; starta dem aldrig blindt
 efter nya PostgreSQL-skrivningar.
 
@@ -54,7 +54,10 @@ bindningar ligger i `legacyClipPolicy`, Astrids gemensamma spelväg i
 `mediaPolicy`/`idlePolicy`. Äldre BO-val bevaras för granskning och explicit
 exakt import. BO:s gamla tilldelningsskrivning är avvecklad (HTTP 410).
 Nativekvitton visar vad spelet faktiskt presenterat; Partner-SSE är diagnostik.
-Vercel är landningen; gameplay/WebSocket finns på Render.
+Vercel visar spel, BO och Lab. Två native Node-funktioner för `/speech-stream`
+och `/lipsync-worker` vidarebefordrar WebSocket till Render efter dess autentisering;
+gränserna är 300 respektive 600 sekunder. API/SSE, spelmotor och sparade projekt
+finns kvar på Render. Lab följer en spelfliks verkliga kvitton utan extra uppspelning.
 Privat Blob läses genom servern; frontend får inga modell-/lagringsnycklar.
 Zoner använder `CROUPIER_ZONES_DATABASE_URL`, inga generella DB-fallbacks.
 Vercels projektkoppling kopierar inte hemligheter till Render.

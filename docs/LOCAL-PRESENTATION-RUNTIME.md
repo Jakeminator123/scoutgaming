@@ -6,6 +6,14 @@ Astrids lokala läge finns i det riktiga spelet:
 <http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
+I molnet finns [spelet](https://www.scoutgaming.tech/game) och
+[Backoffice/Lab](https://www.scoutgaming.tech/studio) på samma exakta origin.
+Vercel visar gränssnitten; Render äger spelmotor, API och sparade projekt.
+**Anslut & följ spelet** använder BO-inloggning och den faktiska spelflikens
+native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
+behöriga mediarutter. Tal och lipsync-worker har varsin autentiserad native
+Node-WebSocket-ingress på Vercel och behåller Render som sessionsägare.
+
 ## Ägarskap och ordning
 
 Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordning.

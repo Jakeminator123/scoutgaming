@@ -6,9 +6,10 @@ certified RNG/RGS or a real-money system.
 
 The focused Astrid studio, advanced editor and administration share **Backoffice/Lab**.
 See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
-The cloud entry is [Croupier on Vercel](https://croupier-frontend.vercel.app/).
-Its demo opens the Render game; [Astrid Studio](https://croupier-v2.onrender.com/studio)
-configures that same presentation. Existing BO tools are available under
+The cloud entry is [Croupier on Vercel](https://www.scoutgaming.tech/).
+[The game](https://www.scoutgaming.tech/game) and
+[Backoffice/Lab](https://www.scoutgaming.tech/studio) share that origin.
+Render owns the game engine, APIs and persistent projects. Existing BO tools are available under
 Administration with their original permissions. Observation follows the game
 player's receipts; a separate Lab preview requires an explicit action.
 See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)

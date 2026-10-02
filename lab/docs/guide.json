@@ -10,7 +10,7 @@
     {
       "view": "videos",
       "title": "2. Se och lägg in klipp",
-      "body": "Ladda upp & bibliotek visar exakta familjer för deal, repliker och idle. Välj rätt familj vid uppladdning. Molnstudion sparar filmer i privat Blob när lagringen är konfigurerad. Lokalt kan MP4-filer också läggas i rätt variant-mapp i emil/dealklipp-v1 och läsas in med Läs in nya filer. En lokal filändring laddar inte upp nya bytes till molnet. Lägg till nya varianter i policyn och spara innan de kan väljas automatiskt."
+      "body": "Ladda upp & bibliotek visar exakta familjer för deal, repliker och idle. Välj rätt familj vid uppladdning. Molnstudion sparar filmer i privat Blob. Lokalt kan MP4-filer också läggas i rätt variant-mapp i media/dealers/astrid/runtime/presentation och läsas in med Läs in nya filer. En lokal filändring laddar inte upp nya bytes till molnet. Lägg till nya varianter i policyn och spara innan de kan väljas automatiskt."
     },
     {
       "view": "lab",
@@ -20,7 +20,7 @@
     {
       "view": "activity",
       "title": "4. Spela och följ upp",
-      "body": "Öppna spelet i molnstudion använder vanlig spelarinloggning och fungerar även utan Partner-observation. Anslut & följ spelet öppnar samma Astrid-presentation och kopplar dessutom spelflikens händelser till Studio. Observation kräver konfigurerad Partner-anslutning. Spela och chatta i spelfliken. Spelet använder studions sparade klippfamiljer och policy. Standard, Regler, Slump och OpenClaw väljer klipp inom samma presentationsväg; chattsvar är separat. Ladda om spelet efter sparade idleändringar när handen är avslutad. Exportera observationen före omladdning."
+      "body": "Öppna spelet i molnstudion använder vanlig spelarinloggning. Anslut & följ spelet öppnar samma Astrid-presentation och kopplar spelflikens verkliga händelser och uppspelningskvitton till Studio. BO-kontot kan öppna den anslutna spelfliken utan Partner-anslutning. Spela och chatta i spelfliken. Spelet använder studions sparade klippfamiljer och policy. Standard, Regler, Slump och OpenClaw väljer klipp inom samma presentationsväg; chattsvar är separat. Ladda om spelet efter sparade idleändringar när handen är avslutad. Exportera observationen före omladdning."
     },
     {
       "view": "probe",
@@ -77,6 +77,6 @@
       "purpose": "Gemensam policy, modellval, syntetiska textprov och belagda minnen. Verkliga minnen visas endast i den autentiserade spelflikens Minne."
     }
   ],
-  "storage": "Studio, avancerat labb och spelfliken delar sparat projekt i det samordnade serverparet: mediaPolicy för deal/repliker, idlePolicy för idle och probePolicy för Probe. Molnuppladdningar ligger i privat Blob; projekt, historik och familjeindex har fortfarande serverdisk som behöver backup. Zoners molnkoordinater ligger separat i Neon. Lokal filinläsning använder emil/dealklipp-v1 och dess manifest. Deal/replikval och Probe läses inför nästa beslut; ladda om spelfliken efter idleändringar när handen är avslutad. Andra öppna editorer behöver läsas om. Lissabon är avvecklad. Privata lokala projekt, historik och profiler finns i lab/data efter verifierad backup utanför Git. HTTP 409 erbjuder sammanslagning med explicit konfliktval. Hemligheter stannar på serversidan.",
-  "authority": "Källans sex eventtyper och 16 grupper finns i lab/policies/studio-contract.json. Videofamiljerna finns i emil/dealklipp-v1/lab-video-manifest.json. Konfiguration av OpenClaw börjar i open-claw/lab/docs/README.md och dess officiella källindex."
+  "storage": "Studio, avancerat labb och spelfliken delar sparat projekt: legacyClipPolicy för originalspelarna, mediaPolicy för Astrids deal/repliker, idlePolicy för idle och probePolicy för Probe. Molnmedia ligger i privat Blob; projekt, historik och familjeindex ligger på beständig Render-disk och behöver separat backup. Spelarkonton och saldo ligger i game-Neon; zoners molnkoordinater ligger i en separat Neon-databas. Lokal filinläsning använder media/dealers/astrid/runtime/presentation och dess manifest. Deal/replikval och Probe läses inför nästa beslut; ladda om spelfliken efter idleändringar när handen är avslutad. Andra öppna editorer behöver läsas om. Lissabon är avvecklad. Privata lokala projekt, historik och profiler finns i lab/data efter verifierad backup utanför Git. HTTP 409 erbjuder sammanslagning med explicit konfliktval. Hemligheter stannar på serversidan.",
+  "authority": "Källans sex eventtyper och 16 grupper finns i lab/policies/studio-contract.json. Videofamiljerna finns i media/dealers/astrid/runtime/presentation/lab-video-manifest.json. Historiska Emil/Kevin-källnamn är proveniens. Konfiguration av OpenClaw börjar i open-claw/lab/docs/README.md och dess officiella källindex."
 }
