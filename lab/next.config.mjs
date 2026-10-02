@@ -10,5 +10,7 @@ export default {
   poweredByHeader: false,
   reactStrictMode: true,
   outputFileTracingRoot: resolve(root, '..'),
+  outputFileTracingIncludes: Object.fromEntries(['/administration', '/api/admin/**', '/api/auth/session']
+    .map(route => [route, ['../ops/neon-game/product-schema.sql', '../ops/neon-studio/*.sql']])),
   experimental: { externalDir: true },
 };

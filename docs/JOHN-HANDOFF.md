@@ -5,6 +5,53 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 ## Pågående uppdrag: en Studio — inte genomförd migrering
 
+Senaste kodsteg 3 oktober: Neon-/jobbjournalgrund samt native BO bakom
+**avstängd** `CROUPIER_STUDIO_NATIVE_ADMIN`. Det är cirka 40 % av den nya
+sammanslagningen, inte live-cutover. Tre agentdelar har integrerats på main:
+`web/storage/studio-{contract,repository}.mjs`, `ops/neon-studio/001/002` och
+migrationsrunner; `web/postgres-speech-journal.mjs`; native komponent och
+`lab/lib/studio-{admin-api,admin-data,native-auth,native-runtime}.mjs`.
+Native routes finns för admin och auth/session; flagga-av ansluter aldrig DB
+eller skriver något. Påslagen flagga kräver explicit miljö/workspace, verifierat
+product-v1 och båda Studio-migrationerna. Saknad sparad administration/fel DB
+ger fel, aldrig seed, iframe eller diskfallback i native-läget.
+Samma BO JWT/opaque Lab-session används med live roll, passwordfingerprint och
+auth_epoch; inga nya lösenord/OAuth/konton har skapats i drift. Reader/staff får
+endast sina BO-rättigheter, inte därigenom Studio-projekt-/medieskrivning.
+Exakt login-returnTo `/studio/administration` är tillagt utan generell URL-allowlist.
+UI återvaliderar sessionen, använder endast annonserade handlers, sparar med
+strängrevision/CAS och kastar inte äldre formulärutkast tyst efter omladdning.
+API-grunden har säkra errors, Origin/Host/JSON-gräns, explicita specialgates och
+serverägd actor/scope. Partnerlistan väljer inte credential-kolumner.
+
+Native BO är ännu **inte redo att aktiveras**: invite/resend/mail, partner-
+launch/credit/revoke, spelarstatus med Render chat/speech/probe-cancellation,
+exakt tier-/klippvalidering och full medie-review behöver riktiga handlers.
+Render läser/skriver fortfarande bo.json och Studio-dokument på disk. Nästa
+integratör fortsätter med dessa motsvarigheter och en enda sparad spelprojektion,
+verifierar aktuell explicit import och auth i isolerad HTTPS-miljö, därefter
+samordnat källbyte och verklig borttagning. Slå inte bara på flaggan: det skulle
+ge splittrad konfiguration och saknade funktioner. Förbrukade kostnadsjournaler
+ska importeras, aldrig återinitialiseras. Ingen live-migration, moln-env-ändring,
+disk-/Blob-radering eller betald provkampanj har gjorts i detta kodsteg.
+
+Verifiering av senaste grund: 90 riktade prov PASS (44 lagring/journal och
+46 native API/auth/data/runtime/UI), TypeScript och Next-produktionsbygge PASS.
+En tidig serverbundlingskrasch reparerades: pg-loadern är lazy och native
+schema-check läser uttryckligt spårade SQL-källfiler, inte webpack asset-URL:er.
+Byggkvitto visar product-v1 samt 001/002 i native admin-routens file trace.
+Det tidigare verkliga PostgreSQL-/restartprovet (15 PASS) är äldre; senaste
+schema-/runtimepaket behöver aktuellt isolerat SQL-/restart-/HTTPS-prov före cutover.
+Ordinarie hook omfattar nu även de nya testerna. Leveransstatus kompletteras
+efter gemensam kontroll; ingen produktionseffekt ska härledas från enbart fixturprov.
+Jakob bad att stänga Backoffice-webview och eventuell devserver: CUA kunde inte
+starta (kernel-sökväg), så flikstängningen är inte bekräftad. Read-only kontroll
+visade inga Croupier-nodeprocesser eller lyssnare på 4179/4188/4190/4191. Ingen
+ny devserver startas; andra projekts/verktygens processer lämnas ifred.
+`test/` och `pipeline/` är inte raderingsmål i sin helhet: vid inventeringen
+fanns 107 respektive 119 spårade filer, med många aktiva CI-/mediaanrop. Ingen
+av dem har blindrensats. Befintlig John-handoff räcker för sömlös fortsättning.
+
 Jakob har nu preciserat UI:t: Dealer & klipp, Backoffice och OpenClaw som tre
 huvuddelar. Den faktiska startsidan använder `LabStudio`; dess Astrid-menyer
 var kvar även efter föregående städning av den andra `Studio`-komponenten.
@@ -43,9 +90,9 @@ att ersatta delar faktiskt avvecklas, inte sparas som parallella legacy-system.
 Tre underagenter har gjort avgränsad läsanalys av UI/auth, lagring och OpenClaw/GPU;
 orchestratorn äger checklistan, gemensamma kontrakt, docs och senare integration.
 Första fristående kodpaketet för sektioner/behörigheter/API är skrivet; inga aktiva
-routes använder det ännu. Neon-schema/adaptrar och fenced jobbjournaler finns
-som oaktiverade arbetsutkast; tidigare 15 isolerade PostgreSQL-prov och 47
-fixturprov passerade. Det är inte produktionsmigrering. Ingen kontoförändring,
+routes använde det då. Neon-schema/adaptrar och fenced jobbjournaler ingår nu
+i det avstängda integrationspaketet ovan; tidigare 15 isolerade PostgreSQL-prov och 47
+fixturprov passerade på äldre arbetsversion. Det är inte produktionsmigrering. Ingen kontoförändring,
 mediaregenerering, disk-/objektradering eller betald provkampanj har gjorts.
 Aktuell driftskarta nedan gäller fortfarande.
 
@@ -58,9 +105,10 @@ Request-/GPU-kostnadsjournaler måste bestå så att tidigare försök inte debi
 Tre implementationer körs på exklusiva filer: dokument/CAS/migration, fenced
 request-/budgetjournal och aktiv förenkling av Studio-navigationen. Gemensamma
 runtimecallers och driftkällor byts inte förrän delarna verifierats/integrerats.
-Efter kontrakt, isolerade lagringsutkast och publicerat UI-steg: cirka 30 %.
+Efter kontrakt, isolerade lagringsutkast och publicerat UI-steg var läget cirka 30 %;
+senaste native integrationsgrund ovan ger grovt cirka 40 %.
 Detta är en grov omfattningsbedömning, inte uppmätt tidsåtgång eller ett tidslöfte.
-GitHub-kopplingen bekräftar tre CI-jobb och båda Vercel-byggena gröna på `16aa738f`.
+Äldre GitHub-/Vercel-kvitton gäller sina angivna SHA, inte automatiskt senaste kodsteget.
 
 Adressprecisering: idag är `/blackjack` spelarens inloggningsentré och `/game`
 spelet. Målbilden är `/blackjack` som spel och `/game` som redirect; launch,

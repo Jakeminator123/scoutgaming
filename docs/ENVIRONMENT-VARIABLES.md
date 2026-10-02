@@ -38,6 +38,19 @@ Vercel-Lab UI: `CROUPIER_LAB_REMOTE_UI=1`, samma fyra origins/ingressnyckel,
 och `BO_URL` till publik origin. Serverrendering läser autentiserad revision
 från Render; den får inte falla tillbaka till ett nytt lokalt seed-projekt.
 
+Native administration är ett separat **ännu ej aktiverat** kodsteg:
+`CROUPIER_STUDIO_NATIVE_ADMIN=1` kräver `CROUPIER_GAME_DATABASE_URL` till rätt
+befintliga game/auth-Neon, installerat checksumverifierat product-v1 samt båda
+Studio-migrationerna. `CROUPIER_STUDIO_ENVIRONMENT_ID` och
+`CROUPIER_STUDIO_WORKSPACE_ID` är explicita serverägda scopes; de läses aldrig
+från klienten. De två tekniska UI-origins består bakom samma publika adress.
+Flaggan migrerar/initialiserar ingenting och får inte slås på före verifierad
+import och kompletterad administration/spelprojektion. Avstängd flagga behåller
+dagens BO; fel med påslagen flagga ger felstängning, inte iframe/diskfallback.
+Inga nya env-värden eller DB-hemligheter har lagts in i molnprojekten här.
+Spelarstatus, partner-launch/credit/revoke, inbjudningsmail och speech-QA saknar
+ännu kompletta native handlers och annonseras inte som tillgängliga.
+
 Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
 `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_GAME_ORIGIN` och
 `BETTALOTTO_PARTNER_BASE_URL` anger samma exakta publika Vercel-origin.

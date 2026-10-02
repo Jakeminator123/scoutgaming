@@ -4,7 +4,6 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 
 const transactionContext = new AsyncLocalStorage();
-const requireWeb = createRequire(new URL('../package.json', import.meta.url));
 const SCHEMAS = new Set(['croupier_game', 'croupier_auth']);
 const TABLES = new Set(['players','transactions','blackjack_tables','native_presentations','player_accounts','player_sessions','craig_player_links','bo_game_handoffs','preview_sessions','lissabon_profiles','lissabon_profile_sessions','player_chat_memory_meta','player_chat_memory_profiles','player_chat_memory_requests','player_probe_profiles','player_probe_sessions','player_probe_attempts','player_probe_sources','player_probe_facts','player_probe_rounds','partner_rounds','partner_players','partner_idem','player_admin_events','users','tokens','meta','bo_auth_epochs','bo_lab_handoffs','lab_sessions','api_keys']);
 function qualified(sql, schema) {
@@ -68,6 +67,7 @@ function normalizeRow(row, fields) {
 export function createPostgresStore({ pool, connectionString, zonesConnectionString = '' } = {}) {
   if (!pool) {
     validateGameConnection(connectionString, zonesConnectionString);
+    const requireWeb = createRequire(new URL('../package.json', import.meta.url));
     const { Pool } = requireWeb('pg');
     // Preserve certificate verification explicitly instead of depending on
     // pg-connection-string's version-specific sslmode=require interpretation.
@@ -119,9 +119,10 @@ export function createPostgresStore({ pool, connectionString, zonesConnectionStr
           async run(...args) { const result = await query(sql, args); return { changes: result.rowCount, lastInsertRowid: result.rows[0]?.id }; },
         };
       },
-      async assertInstalled() {
-        const source=(await readFile(new URL('../../ops/neon-game/product-schema.sql',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
-        const checksum=createHash('sha256').update(source).digest('hex');
+      async assertInstalled({ source } = {}) {
+        source ??= await readFile(new URL('../../ops/neon-game/product-schema.sql',import.meta.url),'utf8');
+        if(typeof source !== 'string' || Buffer.byteLength(source)>1024*1024)throw new Error('Game PostgreSQL source is invalid');
+        const checksum=createHash('sha256').update(source.replace(/\r\n/g,'\n')).digest('hex');
         const result = await pool.query("SELECT version,checksum FROM croupier_game.storage_migrations WHERE version='product-v1'");
         if (result.rows.length !== 1 || result.rows[0].checksum!==checksum) throw new Error('Game PostgreSQL migration is not installed or has changed');
       },
