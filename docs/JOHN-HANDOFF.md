@@ -15,7 +15,13 @@ besökaren börjat bläddra. Videodekodrar och WebGL städas vid avslut.
 
 10/10 fokustester, separat TypeScript-kontroll och produktionsbygge passerar.
 Fyrdealeraudit med `--probe` passerar; ingen gameplay eller dealermedia är
-ändrad. Visuell kontroll av publicerad desktopfilm följer efter deployment.
+ändrad. Kodcommit `033b97a9` är live i Vercel
+`dpl_4RNJocpsytDGMj7BVHTNLfLfgXtX`; alla tre GitHub-jobb passerade.
+I appens webview spelades walk→drag→natural med verkligt ökande videotid.
+Retro-HTML och Astrid granskades visuellt. Efter hela introt var både
+intro-overlay och dess videonoder borta och startsidans rubrik synlig.
+Mobilgrinden är testad för telefon, Android, iPad desktopläge och client hints;
+fysisk Safari ingår inte i detta desktopkvitto. Inga lokala servrar startades.
 
 ## 2026-10-01 — Slutkontroll före lokal avstängning
 
