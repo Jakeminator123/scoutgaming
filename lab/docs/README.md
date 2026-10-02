@@ -105,7 +105,7 @@ events behåller kort, box, handindex och replik. Standardfil och varianter
 kommer från manifestet, inte från projektets gamla 2D-demovarianter.
 
 Manifest v2 grupperar deal, kortvändning, exakta repliker och idle.
-Aktuellt filantal och innehåll hör till manifestet och [mediebanken](../../emil/README.md).
+Aktuellt filantal och innehåll finns i [det kanoniska manifestet](../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json).
 Deal/replik använder
 `deal/<familj>/<standard>.mp4` respektive
 `repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då
@@ -145,7 +145,7 @@ frekvensurval utan modellanrop. Standard spelar standard, och Skuggläge
 provar urvalet men spelar standard. Språk- och sociala testvillkor visas
 inte för Astrids Deal. Repliker och övriga dealers behåller sina val.
 
-De aktuella projektfilerna i `emil/dealklipp-v1` är källan för Astrids
+De registrerade klippen i `media/dealers/astrid/runtime/presentation` är källan för Astrids
 manifeststyrda familjer. Arbetskopior och backuper på skrivbordet är inte
 automatiskt spelbara eller molnpublicerade. Nya varianter är manuella tills
 de uttryckligen läggs till och aktiveras i den sparade policyn.
@@ -165,8 +165,8 @@ till OpenClaw som konfigurationsdata, inte som en systeminstruktion.
 
 Mappstrukturen är kontraktet för släktskapet:
 
-- `emil/dealklipp-v1/idle/*.mp4` är loopande grundklipp.
-- `emil/dealklipp-v1/idle/variant/*.mp4` är korta varianter.
+- `media/dealers/astrid/runtime/presentation/idle/*.mp4` är loopande grundklipp.
+- `media/dealers/astrid/runtime/presentation/idle/variant/*.mp4` är korta varianter.
 - policyn `lab/policies/idle-policy.seed.json` bestämmer grundvikter och om en
   variant är manuell, automatisk, regelstyrd eller OpenClaw-valbar.
 
@@ -174,8 +174,8 @@ Det avancerade labbets startpolicy visar `idle_still` med 90 % grundvikt och sch
 ungefär var 25:e sekund med ±5 sekunders variation. Eftersom blinkklippet tar
 tid blir `idle_still` i praktiken ungefär 79 %, vilket editorn visar. Ett
 spel-, deal- eller talprov äger spelaren och blockerar idleprovet tills det är
-klart. Policyn sparas lokalt med projektet. Den lokala Web-spelaren läser samma
-projekt; ladda om spelfliken efter ändringar i idlepolicyn. Labs startprofil
+klart. Policyn sparas i det aktiva serverägda Lab-projektet. Web-spelaren läser
+samma projekt; ladda om spelfliken efter ändringar i idlepolicyn. Labs startprofil
 erbjuder i stället de ursprungliga sex variationerna till OpenClaw; kaffeklippet
 börjar som manuellt. Ingen fjärrdrift deployas
 och OpenClaw behöver inte startas om när beskrivningar eller val ändras.
@@ -184,7 +184,7 @@ Grundvikt är alltså inte faktisk tidsandel. Automatisk idlevariant följer
 intervall, jitter, cooldown och maxfrekvens. OpenClaw-valbar variant kräver en
 färsk chattmöjlighet; manuell variant schemaläggs inte. Regelstyrd idle har
 ännu ingen ansluten trigger och kan inte nyväljas i editorn.
-Det deterministiska enminutsprovet spelar verkliga lokala filer och loggar
+Det deterministiska enminutsprovet spelar exakta registrerade klipp och loggar
 start/slut/återgång. En uttryckligen öppnad separat Lab-preview använder en
 idle-controller med samma sparade policy: verkligt `ended` väljer nästa klipp,
 och cooldown/maxfrekvens räknas från faktiska starter. Deal går först och färdigt
@@ -235,7 +235,8 @@ produktspelaren; det är inte en ny Eventstudio-flik.
 avgränsad brygga skickar bara text till originalets autentiserade chatt; servern
 hämtar publika kort och spelarminne. Fri text kan förberedas som Cartesia-ljud
 och matchande RunPod-video medan spelet dealar. Talpaketet överförs tillbaka
-utan sessionnycklar och spelas först efter en ny renderad primärbas i labbet.
+utan sessionnycklar och spelas först efter en ny renderad primärbas i spelfliken.
+Lab följer spelarens uppspelningskvitton.
 Deal avbryter tal; gamla svar, fel hashar och fel revisioner får inte spelas.
 Native-eventrepliker behåller sin separata exakta replik-/familjemappning.
 

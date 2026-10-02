@@ -82,6 +82,15 @@ test('actual SDK upgrade bridges real relay worker/client bytes and preserves ow
   const context = new AsyncLocalStorage(), contextSymbol = Symbol.for('@vercel/request-context');
   const oldContext = globalThis[contextSymbol];
   globalThis[contextSymbol] = {get: () => context.getStore()};
+  const lifetimes = [], replies = new EventEmitter(), returned = new Map(), workerRequestAbort = new AbortController();
+  function returnedReply(path) {
+    if (returned.has(path)) return Promise.resolve(returned.get(path));
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {replies.off(path, ready); reject(Error('Upgrade setup waited for socket closure'));}, 1000);
+      const ready = value => {clearTimeout(timer); resolve(value);};
+      replies.once(path, ready);
+    });
+  }
   const backendRequests = [];
   let worker, client;
   try {
@@ -102,15 +111,23 @@ test('actual SDK upgrade bridges real relay worker/client bytes and preserves ow
       }
     }
     frontend.on('upgrade', (req, socket, head) => {
-      context.run({upgradeWebSocket: () => ({req, socket, head})}, async () => {
-        const reply = await handlePlatformWebSocket(new Request(configuration.publicOrigin + req.url, {headers: req.headers}),
+      context.run({upgradeWebSocket: () => ({req, socket, head}), waitUntil: promise => {
+        const lifetime = {promise, settled: false}; lifetimes.push(lifetime);
+        promise.then(() => {lifetime.settled = true;});
+      }}, async () => {
+        const reply = await handlePlatformWebSocket(new Request(configuration.publicOrigin + req.url,
+          {headers: req.headers, ...(req.url === '/lipsync-worker' ? {signal: workerRequestAbort.signal} : {})}),
           {env, WebSocketImpl: BackendSocket, bridgeOptions: {closeTimeoutMs: 30}});
+        const result = {status: reply.status, pendingLifetimes: lifetimes.filter(value => !value.settled).length};
+        returned.set(req.url, result); replies.emit(req.url, result);
         if (reply.status !== 204 && !socket.destroyed) socket.end(`HTTP/1.1 ${reply.status} Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       });
     });
     frontend.listen(0, '127.0.0.1'); await once(frontend, 'listening');
     const base = `ws://127.0.0.1:${frontend.address().port}`;
     worker = await connect(base + '/lipsync-worker', [], {headers: {authorization: `Bearer ${workerSecret}`, 'x-worker-id': 'fixture-worker'}});
+    assert.deepEqual(await returnedReply('/lipsync-worker'), {status: 204, pendingLifetimes: 1});
+    assert.equal(lifetimes[0].settled, false);
     worker.on('message', (data, binary) => {
       if (binary) {worker.send(Buffer.from('exact-fixture-bytes')); return;}
       const message = JSON.parse(data.toString());
@@ -134,13 +151,20 @@ test('actual SDK upgrade bridges real relay worker/client bytes and preserves ow
       client.once('close', code => resolve(code));
     });
     assert.equal(await closed, 1000);
+    assert.equal((await returnedReply('/speech-stream')).status, 204);
+    await lifetimes[1].promise;
+    assert.equal(lifetimes[0].settled, false);
     assert.equal(client.protocol, 'astrid-v2');
     assert.deepEqual(messages, ['ready', 'stream', 'done']);
     assert.deepEqual(binaryFrames, [Buffer.from('exact-fixture-bytes')]);
     assert.equal(await rejected(base + '/speech-stream', protocols, {headers}), 401);
     assert.ok(backendRequests.length >= 4);
     assert.ok(backendRequests.every(value => value.headers['x-croupier-vercel-secret'] === configuration.secret));
-    const workerClosed = once(worker, 'close'); worker.close(1000); await workerClosed;
+    // Request cancellation remains active after setup has already returned204.
+    const workerClosed = once(worker, 'close'); workerRequestAbort.abort();
+    assert.equal((await workerClosed)[0], 1011);
+    await lifetimes[0].promise;
+    assert.equal(lifetimes[0].settled, true);
   } finally {
     worker?.terminate(); client?.terminate(); relay?.close();
     await Promise.all([new Promise(resolve => backend.close(resolve)), new Promise(resolve => frontend.close(resolve))]);
