@@ -3,16 +3,17 @@
 Uppdaterad 2 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
-## Nästa uppdrag: en Studio — plan, inte genomförd
+## Pågående uppdrag: en Studio — inte genomförd migrering
 
 [Masterplan och återanvändbara agentprompter](CLOUD-MIGRATION.md#masterplan-en-croupier-studio)
 är införda i befintlig migrationsguide. Jakob har godkänt målbilden och vill
 att ersatta delar faktiskt avvecklas, inte sparas som parallella legacy-system.
 Tre underagenter har gjort avgränsad läsanalys av UI/auth, lagring och OpenClaw/GPU;
 orchestratorn äger checklistan, gemensamma kontrakt, docs och senare integration.
-Endast plan/dokumentation levereras i denna etapp; ingen implementerad
-Neon-migrering, kontoförändring, mediaregenerering, disk-/objektradering eller
-betald provkampanj. Aktuell driftskarta nedan gäller fortfarande.
+Första fristående kodpaketet för sektioner/behörigheter/API är skrivet; inga aktiva
+routes använder det ännu. Ingen implementerad Neon-migrering, kontoförändring,
+mediaregenerering, disk-/objektradering eller betald provkampanj.
+Aktuell driftskarta nedan gäller fortfarande.
 
 Adressprecisering: idag är `/blackjack` spelarens inloggningsentré och `/game`
 spelet. Målbilden är `/blackjack` som spel och `/game` som redirect; launch,
@@ -26,6 +27,30 @@ Planen har sakgranskats av alla tre underagenter. Miljövariabelregistret och
 17 lokala dokumentations-/leverans-/hooktester: PASS. Detta är inte ny
 spel-/media-/GPU-acceptans eller en full liveinventering. docs har fortsatt
 exakt fem Markdown-filer.
+
+Jakobs senaste beslut: Jira/CAC och gamla GitLab-trackerflöden ska inte
+användas. Kravet är borttaget ur AGENTS.md, chef-instruktionen och masterplanens
+prompter. GitHub plus den befintliga checklistan är arbetsflödet; ingen ny tracker.
+Läsande startkontroll: GitHub-repo har admin/push-åtkomst; main är synkad,
+tre CI-jobb och båda Vercel-publiceringarna på `cd4d8480` är gröna. Vercel-CLI
+är autentiserad och når rätt frontend-/Studio-projekt. Detaljverktyget i
+Vercel-kopplingen har ett parameterfel; CLI fungerar som verifierad reservväg.
+Render API och Director health/status svarar; befintliga rollnycklar matchar.
+Neon game/auth och zones anslöts i READ ONLY-transaktion med SELECT/schema-
+metadata; rätt scheman och schema-create-privilegium finns. Inga kontorader
+lästes och ingen DDL/live-migrering kördes. Full diskinventering kvarstår i P1.
+
+Kodpaket `studio-native-admin-contract-v1`: två nya MJS-moduler med
+TypeScript-deklarationer i lab/lib och två tester i lab/test. Bevarar 14 sektioner,
+31 explicita actionregler, fem auth-adresser och nuvarande rollgolv; nekar
+okända/spelarroller, prototypnycklar, fel metod och icke-exakta paths.
+11 riktade tester och sex befintliga navigationstester PASS; Lab-TypeScript PASS.
+Full lokal pre-commit-regression PASS, med miljöbundna prov skippade där avsedd
+isolerad Neon/Linux-miljö saknas. Det är inte ny live-/media-/GPU-acceptans.
+De nya testerna ingår i den fulla pre-commit-hooken och Lab-CI.
+Rollhelpers är inte sessions-/Origin-/CAS-/providerauktorisering. Self-role/remove,
+spelarstatusens runtime-cancellation och speech-QA-gate är uttryckliga framtida
+handlerkrav, inte genomförda i dessa helpers. Ingen UI-/API-aktivering ingår.
 
 ## Drift och ansvar
 
