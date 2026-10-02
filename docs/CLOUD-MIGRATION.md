@@ -173,8 +173,9 @@ Bocka av endast efter angivet acceptansbevis. Planering är inte implementation;
 källinventering är inte en live-fillista eller bevisad borttagning.
 Procent i chatten är en grov bedömning av **den nya Studio-sammanslagningen**,
 inte filantal eller den tidigare frontendflytten. Startläge efter kontraktsgrunden:
-cirka 10 %. Efter kontrakt och isolerade, oaktiverade lagringsutkast: cirka 25 %
-före UI-leveransen. Viktning: kontrakt/åtkomst 10, beständig Studio-state 20, enkel native
+cirka 10 %. Efter kontrakt, isolerade oaktiverade lagringsutkast och den
+publicerade UI-förenklingen 3 oktober: cirka 30 %. Viktning: kontrakt/åtkomst
+10, beständig Studio-state 20, enkel native
 UI/auth 20, API-/spelintegration 20, säkra jobbjournaler 10, QA 10, avveckling/docs 10.
 Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
 
@@ -215,9 +216,13 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   deras slaskbibliotek är uttryckligen bortvalt. Konton, roller, spelinställningar,
   drift/journal och nödvändiga partnerfunktioner måste ha en riktig motsvarighet.
   Enbart ny kontosida räknas fortfarande inte som hela administrationen.
-  - [ ] UI-steg: tre huvuddelar, dealerneutral fokuserad klippyta, lokala
-    Backoffice-grupper och autentiserad OpenClaw-portal. Riktade kontroller och
-    publicering verifieras separat; fungerande navigation är inte P4/P5-klart.
+  - [x] UI-steg: tre huvuddelar, dealerneutral fokuserad klippyta, lokala
+    Backoffice-grupper och autentiserad OpenClaw-portal publicerade i
+    `d8b1b928d3feef9f4004ea6ee26697af2613a10f`. 43 riktade tester, TypeScript,
+    normal pre-commit och alla tre CI-jobb PASS; frontend och Studio på Vercel
+    READY för samma kod-SHA. Anonyma entréer kräver fortsatt inloggning.
+    Webview-kontrollen kunde inte starta; visuell livegranskning kvarstår.
+    Befintlig backend/iframe består. Detta är inte P4/P5-klart.
 - [ ] **P5 — API på Vercel:** Studio/admin använder P2/P3 utan beständig lokal
   disk. Render-spelet läser samma policy och får erforderlig spelkonfigprojektion.
   Bevis: sparning från Studio följs av spelets kvitterade revision, utan iframe,
