@@ -74,5 +74,5 @@ kostnadsram och faktisk ljud-/videogranskning.
 
 Se [miljökartan](../../../_ENVIROMENT-INFO.md),
 [speech-kontraktet](PRODUCT-SPEECH-DEPLOYMENT-SV.md),
-[medieguiden](../../../docs/MEDIA-UPLOAD-AND-ZONES.md) och
-[game-Neon-planen](../../../docs/NEON-GAME-MIGRATION.md).
+[medieguiden](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) och
+[game-Neon-planen](../../../docs/CLOUD-MIGRATION.md).

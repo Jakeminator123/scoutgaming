@@ -40,4 +40,4 @@ limited to standard films for the already committed opening sequence; it does
 not call selectors, models or game commands. A different selected variant
 replaces the preparation. No iOS verification bypass is imported.
 
-See `docs/KEVIN-LISSABON-REVIEW.md` for browser evidence and remaining limits.
+See `docs/JOHN-HANDOFF.md` for browser evidence and remaining limits.
