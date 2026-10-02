@@ -24,6 +24,23 @@ båda UI-byggena är publicerade och kontrollerade igen. Render-koden och godkä
 
 ## Verifierat
 
+- Blob-städning 2 oktober: samma privata Stockholm-lager döpt till
+  `croupier-media-private`. Den fristående `astrid/`-roten är borta; zonklippet
+  (67 342 byte, SHA `022ad98b747149501b014f1bd04f4251808f9332e4f1e69b4ab605f250b4b668`)
+  bevaras oförändrat under `croupier/media/dealers/astrid/source/background-zones/`.
+  Återställning av gamla adressen kan göras från denna verifierade kopia.
+  Tolv äldre uppladdningsadresser behålls tills diskindex/historik kan inventeras;
+  samtliga tolv runtime-dubbletter återlästa med identisk storlek och SHA.
+  Aktivt Blob-index, media-ID:n, kalibrering och spelval är oförändrade.
+  Produktions-BO, Studio-projekt och videoregister lästes utan ändring;
+  zonernas molnregister innehöll inga klippreferenser. Detta är inte ny visuell acceptans.
+  QA:s bootstrap-lösenord gav HTTP 401; inga konton eller lösenord ändrades.
+  Render-diskarnas ansvar och live-konfiguration är tydliggjorda i driftskartan;
+  direkt full diskinventering/extern backup återstår.
+  Dealer-audit med ffprobe: PASS mot oförändrad fyrdealerbaseline. Dokumentations-
+  och leveranskontroller: 17 tester PASS. Inga nya visuella speltester behövdes
+  för namnbytet/arkivflytten; aktiv presentation och medias bytes är oförändrade.
+
 - Produktionsimport: noll Web/Lab-skrivare, hashverifierade SQLite-backuper
   utanför Git, 24 källtabeller/102 rader och full backup/restore-paritet för
   32 PostgreSQL-tabeller inklusive radhasher och sekvenser. Inga aktiva externa wallet-kopplingar.
