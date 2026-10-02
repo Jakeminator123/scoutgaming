@@ -4,7 +4,7 @@ import { BackgroundZones } from '@/components/background-zones';
 import type { VideoInventory } from '@/components/studio-types';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Bakgrundszoner · Backoffice/Lab' };
+export const metadata = { title: 'Bakgrundszoner · Croupier Studio' };
 
 export default async function Page() {
   const h = await headers();

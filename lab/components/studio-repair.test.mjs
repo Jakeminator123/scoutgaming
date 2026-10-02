@@ -101,7 +101,8 @@ test('Guide and OpenClaw are full-width surfaces without the unrelated event sid
   for (const initialView of ['guide', 'openclaw', 'activity']) {
     const html = renderToStaticMarkup(React.createElement(Studio, { initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: {}, initialView }));
     assert.doesNotMatch(html, /class="event-sidebar"/);
-    assert.match(html, /href="\/guide"/);
+    assert.doesNotMatch(html, /aria-label="Huvudnavigation"|class="main-nav"|Backoffice\/Lab/);
+    assert.match(html, /Spara projekt/);
   }
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/guide'), 'guide');
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/activity'), 'activity');

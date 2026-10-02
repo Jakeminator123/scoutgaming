@@ -101,6 +101,9 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
             || current.searchParams.get('labObserverOrigin') !== cloudOrigin || !/^[a-zA-Z0-9_-]{16,128}$/.test(channel?.replaceAll('-', '') ?? '')) {
             throw new Error('Spelet är redan öppet utan denna studiokoppling. Spela klart och stäng spelfliken före Anslut & följ spelet.');
           }
+          if (current.searchParams.getAll('dealer').length !== 1 || current.searchParams.get('dealer') !== dealerId) {
+            throw new Error('Den öppna spelfliken har en annan dealer. Välj samma dealer i Studio innan du ansluter igen. Pågående spel har inte ändrats.');
+          }
           observer.current = { source: game, origin: cloudOrigin, channel: channel!, lastSequence: 0 };
           observing.current = true;
           game.focus();

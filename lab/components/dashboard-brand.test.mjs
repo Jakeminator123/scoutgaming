@@ -4,14 +4,15 @@ import { readFileSync } from 'node:fs';
 
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 const studio = readFileSync(new URL('./studio.tsx', import.meta.url), 'utf8');
+const navigation = readFileSync(new URL('./workspace-navigation.tsx', import.meta.url), 'utf8');
 
 test('dashboard uses the Scout palette and code-native wordmark', () => {
   assert.match(css, /--scout-ink:#0a0b0d/);
   assert.match(css, /--scout-off:#f2f1ed/);
   assert.match(css, /--scout-lime:#d6ff3a/);
-  assert.match(studio, /Scout Gaming · Backoffice\/Lab/);
-  assert.match(studio, /className="brand-wordmark"/);
-  assert.match(studio, /scout<span>\/</);
+  assert.match(navigation, /Croupier Studio · Scout Gaming/);
+  assert.match(navigation, /scout<b>\/</);
+  assert.doesNotMatch(studio, /Backoffice\/Lab|BACKOFFICE\/LAB|className="main-nav"|className="studio-brand"/);
 });
 
 test('dashboard motion has a reduced-motion fallback', () => {

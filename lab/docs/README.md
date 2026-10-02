@@ -1,6 +1,6 @@
 # Guide — en gemensam ingång
 
-**Gemensam arbetsyta: Backoffice/Lab.** I molnet öppnar du
+**En arbetsyta: Croupier Studio.** I molnet öppnar du
 [`/studio`](https://www.scoutgaming.tech/studio) på Vercel. Render äger
 spelmotorn, API och sparade projekt. Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
 **Öppna spelet** i molnstudion fungerar med vanlig spelarinloggning även om
@@ -17,11 +17,32 @@ versioner sparas på Render-disken. Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med Studios sparknapp att göra.
 
-I den gemensamma menyn finns Studio och aktiva klipp, Event och regler,
-Mediebibliotek, Uppspelning och spår, Bakgrundszoner, OpenClaw och alla
-befintliga administrationsfunktioner. Administration använder BO-kontots
-behörigheter; en Lab-inloggning ger inga nya administratörsrättigheter.
-Under **Ladda upp & bibliotek** väljer du dealer och exakta originalklipp.
+Menyn har tre huvuddelar: **Dealer & klipp**, **Backoffice** och **OpenClaw**.
+Välj dealer på klippsidan och arbeta i **Idle**, **Kort & deal**,
+**Fasta repliker**, **Bakgrund** eller **Probe**. Uppladdning hör till
+klipparbetet, inte till ett parallellt mediebibliotek. Granska i spel och
+tekniska detaljer är sekundära verktyg; avancerade regler och diagnostik
+ligger under Verktyg.
+
+Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
+och Mei visar sina egna exakta medieregister och originalspelarens klippval;
+de ärver inte Astrids idle/Probe-inställningar. Fasta repliker är inspelat
+exakt tal, medan Probe kan skapa ett nytt tal-/videopaket när spelaren är
+inaktiv. Ett syntetiskt Probe-textprov är inte en skapad eller spelad film.
+Bakgrundsytans molnsparning är inte bevis på spelintegration.
+
+Backoffice grupperar alla 14 befintliga funktioner under drift/spelintegritet,
+bord/personal, konton, partner, betalningar/journal och mediegranskning.
+Den befintliga Backoffice-backenden och dess rollkontroller används tills
+den native ersättningen och API-/lagringsflytten är verifierade. En Studio-
+inloggning ger inga nya administrativa rättigheter.
+
+OpenClaw öppnar den befintliga autentiserade dashboarden på Render.
+Agentinställningar, pairing och modell-/GPU-konfiguration förändras inte av
+den nya menyn. Vanliga sparade klippval kräver ingen Render-omstart;
+idleändringar kräver omladdning av spelfliken mellan händer.
+
+Under klippens uppladdning väljer du exakt familj och originalklipp.
 Spara med projektets vanliga knapp och ladda om originalspelaren mellan händer.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Äldre BO-val är inaktiva och kan bara importeras uttryckligen vid säker match.
@@ -29,7 +50,7 @@ Lissabon-katalogen är avvecklad; sparade lokala data finns i `lab/data`.
 Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 
-**Bakgrundszoner:** öppna **Bakgrundszoner** från Astrid Studio
+**Bakgrundszoner:** öppna **Bakgrund** på Astrids klippsida och dess zoneditor
 (`/studio/zones` i molnet, `/zones` lokalt). Rita en pixelruta på
 1080×1920-startbilden, skapa ett tvåsekunders blinkklipp eller lägg in en
 MP4/WebM med exakt rutans storlek. Välj **Automatisk · högst 2/minut** i zonens

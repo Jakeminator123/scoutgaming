@@ -15,6 +15,21 @@ export const BACKOFFICE_SECTIONS = Object.freeze([
   { id: 'shoes', label: 'Shoe och spelintegritet' },
 ]);
 
+// All existing functions remain reachable, but only inside the Backoffice area.
+export const BACKOFFICE_GROUPS = Object.freeze([
+  { id: 'operations', label: 'Drift & spelintegritet', sections: ['ops', 'shoes'] },
+  { id: 'tables', label: 'Bord & personal', sections: ['rooms', 'dealers', 'pit', 'tours'] },
+  { id: 'accounts', label: 'Konton', sections: ['players', 'users'] },
+  { id: 'partners', label: 'Partner', sections: ['apikeys', 'emails'] },
+  { id: 'finance', label: 'Betalningar & journal', sections: ['pay'] },
+  { id: 'media-review', label: 'Mediegranskning', sections: ['voice', 'clips', 'gens'] },
+].map(group => Object.freeze({ ...group, sections: Object.freeze(group.sections) })));
+
+export function backofficeGroup(value) {
+  const section = backofficeSection(value);
+  return BACKOFFICE_GROUPS.find(group => group.sections.includes(section));
+}
+
 export function backofficeSection(value) {
   const id = typeof value === 'string' ? value.replace(/^#/, '') : '';
   return BACKOFFICE_SECTIONS.some(section => section.id === id) ? id : 'ops';

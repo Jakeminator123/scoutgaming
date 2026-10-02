@@ -1,9 +1,28 @@
 # Aktuell handoff — Croupier
 
-Uppdaterad 2 oktober 2026. Detta är den enda löpande John-handofffilen.
+Uppdaterad 3 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 ## Pågående uppdrag: en Studio — inte genomförd migrering
+
+Jakob har nu preciserat UI:t: Dealer & klipp, Backoffice och OpenClaw som tre
+huvuddelar. Den faktiska startsidan använder `LabStudio`; dess Astrid-menyer
+var kvar även efter föregående städning av den andra `Studio`-komponenten.
+Fokuserat dealerskal är ombyggt; gamla event-/simulatorvyer flyttas inte in.
+Astrids idle/familjer/Probe består; andra dealers får sina egna exakta register
+och ärver ingen Astrid-policy. Probe-textprov, genererad film och faktiskt
+spelad film ska skiljas åt. Bakgrundszonernas preview är inte spelintegration.
+Den lokala Backoffice-menyn återställs i sex grupper med alla 14 funktioner;
+dess befintliga backend/iframe består till native API-/lagringsersättningen.
+OpenClaw blir en fokuserad autentiserad portal till den befintliga dashboarden.
+Ingen devserver, modell-/GPU-ändring eller generell Render-omstart aktiveras.
+Dealer-UI och OpenClaw har byggts parallellt; navigation, Backoffice-gruppering,
+guide och docs är integrerade. Läsgranskningens observationsfel är rättade:
+panelen behåller sin monterade observation och frysta dealer; befintlig
+molnspelflik med fel/saknad/tvetydig dealer nekas utan att navigeras eller stängas.
+43 riktade UI-/navigationstester och Lab-TypeScript: PASS. De nya testerna
+ingår i normal pre-commit och Lab-CI. Publicering verifieras vid leverans;
+detta är inte ny gameplay-/läppsynk-/GPU-acceptans eller native API-cutover.
 
 [Masterplan och återanvändbara agentprompter](CLOUD-MIGRATION.md#masterplan-en-croupier-studio)
 är införda i befintlig migrationsguide. Jakob har godkänt målbilden och vill
@@ -11,9 +30,24 @@ att ersatta delar faktiskt avvecklas, inte sparas som parallella legacy-system.
 Tre underagenter har gjort avgränsad läsanalys av UI/auth, lagring och OpenClaw/GPU;
 orchestratorn äger checklistan, gemensamma kontrakt, docs och senare integration.
 Första fristående kodpaketet för sektioner/behörigheter/API är skrivet; inga aktiva
-routes använder det ännu. Ingen implementerad Neon-migrering, kontoförändring,
-mediaregenerering, disk-/objektradering eller betald provkampanj.
+routes använder det ännu. Neon-schema/adaptrar och fenced jobbjournaler finns
+som oaktiverade arbetsutkast; tidigare 15 isolerade PostgreSQL-prov och 47
+fixturprov passerade. Det är inte produktionsmigrering. Ingen kontoförändring,
+mediaregenerering, disk-/objektradering eller betald provkampanj har gjorts.
 Aktuell driftskarta nedan gäller fortfarande.
+
+Senaste uppdraget: fortsätt faktisk implementation, ge grova procentuppdateringar
+för hela den nya Studio-sammanslagningen och förenkla överlappande menyer.
+Gamla Studio-granskningsklipp/generationer/cache behöver inte migreras; Jakob kan
+ladda upp nytt manuellt. Ingen ny arkiv-/backupkampanj för bortvalt medieslask.
+Aktiva spelklipp, konton/saldo och OpenClaw påverkas inte av det bortvalet.
+Request-/GPU-kostnadsjournaler måste bestå så att tidigare försök inte debiteras igen.
+Tre implementationer körs på exklusiva filer: dokument/CAS/migration, fenced
+request-/budgetjournal och aktiv förenkling av Studio-navigationen. Gemensamma
+runtimecallers och driftkällor byts inte förrän delarna verifierats/integrerats.
+Efter kontrakt och isolerade lagringsutkast: cirka 25 % före UI-leveransen.
+Detta är en grov omfattningsbedömning, inte uppmätt tidsåtgång eller ett tidslöfte.
+GitHub-kopplingen bekräftar tre CI-jobb och båda Vercel-byggena gröna på `16aa738f`.
 
 Adressprecisering: idag är `/blackjack` spelarens inloggningsentré och `/game`
 spelet. Målbilden är `/blackjack` som spel och `/game` som redirect; launch,

@@ -3,8 +3,8 @@ import './globals.css';
 import { WorkspaceNavigation } from '@/components/workspace-navigation';
 
 export const metadata: Metadata = {
-  title: 'Backoffice/Lab · Scout Gaming',
-  description: 'Gemensam arbetsyta för administration, klippval, uppspelning och OpenClaw.',
+  title: 'Croupier Studio · Scout Gaming',
+  description: 'Studio för klipp, regler, konton, drift och OpenClaw.',
   robots: { index: false, follow: false },
 };
 

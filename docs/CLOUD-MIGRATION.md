@@ -30,6 +30,22 @@ löpande; inga nya plandokument eller parallella statuskopior i docs.
 
 ### Mål och städprincip
 
+- **UI-precisering 3 oktober:** tre huvuddelar — Dealer & klipp, Backoffice,
+  OpenClaw. Dealerarbetsytan har en väljare och Idle, Kort & deal, Fasta repliker,
+  Bakgrund och Probe. Uppladdning är en klipphandling; observation/avancerade
+  regler är sekundära verktyg. Huvudytan byggs från den fokuserade Astrid-sidan,
+  inte genom att flytta hela gamla event-/simulatorlabbet. Andra dealers använder
+  sina egna exakta register; Astrids policy får inte kopieras till dem.
+  Backoffice behåller 14 funktioner i sex lokala grupper. OpenClaw får en ren
+  länkportal till befintlig native dashboard, inte en ny modell-/chatt-/GPU-editor.
+  Ingen generell Render-omstartsknapp ingår i detta UI-steg.
+- **Senaste avgränsning från Jakob:** förenkla överlappande/felaktiga menyer,
+  prioritera en begriplig Studio och fungerande lagring. Gamla Studio-uppladdningar,
+  granskningsgenerationer och cache/slask behöver inte migreras eller få nya
+  säkerhetskopior; nytt material kan laddas upp manuellt. Ett nytt tomt
+  granskningsbibliotek är därför tillåtet som uttryckligt startbeslut, inte som
+  tyst fallback vid databasfel. Aktiva spelklipp/baseline, konton/saldo och
+  OpenClaw är inte slask. Förbrukade request-/kostnadsjournaler får inte nollställas.
 - En användaryta: `https://www.scoutgaming.tech/studio`, kallad **Croupier Studio**.
   Klipp, event/regler, observation, zoner och administration finns där.
   Lab/BO försvinner som separata användarytor och menybegrepp. Ingen admin-iframe.
@@ -44,7 +60,8 @@ löpande; inga nya plandokument eller parallella statuskopior i docs.
   Studio-/administrationsmetadata. Föreslagen ny domän är `croupier_studio`
   i avsedd befintlig databas; zonernas explicita databasanslutning bevaras.
 - Samma privata Blob `croupier-media-private` äger beständiga medier, även
-  genererade talpaket. ID, bytes, hash, exakt talpar och kalibrering bevaras.
+  nya genererade talpaket. Aktiva spelmediers ID, bytes, hash, exakta talpar och
+  kalibrering bevaras. Gamla Studio-slaskpaket behöver inte återimporteras.
 - Render behåller auktoritativ spelmotor, live spel-/strömtransport och
   tung bearbetning. OpenClaw Director/Gateway och RunPod GPU-läppsynk består.
   Studio länkar till befintlig native OpenClaw-dashboard; ingen omparning,
@@ -154,6 +171,12 @@ vanliga API-anrop. Verifiera aktuell plattform vid implementation:
 
 Bocka av endast efter angivet acceptansbevis. Planering är inte implementation;
 källinventering är inte en live-fillista eller bevisad borttagning.
+Procent i chatten är en grov bedömning av **den nya Studio-sammanslagningen**,
+inte filantal eller den tidigare frontendflytten. Startläge efter kontraktsgrunden:
+cirka 10 %. Efter kontrakt och isolerade, oaktiverade lagringsutkast: cirka 25 %
+före UI-leveransen. Viktning: kontrakt/åtkomst 10, beständig Studio-state 20, enkel native
+UI/auth 20, API-/spelintegration 20, säkra jobbjournaler 10, QA 10, avveckling/docs 10.
+Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
 
 - [x] **P0 — målbild:** en Studio, en privat Blob, Neon för beständig struktur,
   Render/OpenClaw/RunPod behålls för sina aktiva ansvar; obligatorisk slutstädning.
@@ -175,16 +198,26 @@ källinventering är inte en live-fillista eller bevisad borttagning.
   klassificering och beständig BO-konfiguration har en gemensam databasadapter.
   Bevis: schema-migration, importparitet, samtidiga sparningar/rollback och
   restart-prov i isolerad databas. Konton och saldo får inte återställas/resetas.
+  Gammal Studio-mediakatalog/historiska generationer är bortvalda; börja med
+  dokument/CAS/historik/audit och bara nödvändig metadata för nya uppladdningar.
 - [ ] **P3 — Blob och jobbstate:** beständiga generationer/talpaket ligger i
   samma privata Blob; request-idempotens, sessionägarskap, kostnadsreservationer,
   job recovery och budgetledger är beständiga i Neon. Bevis: hash/HEAD/Range,
   fel-/retry-/avbrottsprov och restart utan dubbeljobb eller budgetnollställning.
+  Detta avser nya paket och nödvändiga jobbjournaler, inte en full import av
+  gammal slaskmedia. Slopad mediaimport gör inte osäkra betalda jobb nya igen.
 - [ ] **P4 — en Studio:** native administration ersätter iframe; navigation,
   rollstyrd kontohantering (lägg till/spärra/ta bort enligt nuvarande livscykel)
   och speladresser är integrerade. Bevis: login, callback/launch, alla roller,
   nekad spelaranvändare/anonym, reviderade adresser och bevarade utkast. Alla
-  14 nuvarande adminsektioner ska porteras eller få uttryckligt avvecklingsbeslut;
-  enbart ny kontosida räknas inte som ersättare för hela administrationen.
+  Funktionerna från de 14 adminsektionerna får grupperas under färre menyval.
+  Gamla parallella klipp-/generationsvyer behöver inte kopieras som egna ytor;
+  deras slaskbibliotek är uttryckligen bortvalt. Konton, roller, spelinställningar,
+  drift/journal och nödvändiga partnerfunktioner måste ha en riktig motsvarighet.
+  Enbart ny kontosida räknas fortfarande inte som hela administrationen.
+  - [ ] UI-steg: tre huvuddelar, dealerneutral fokuserad klippyta, lokala
+    Backoffice-grupper och autentiserad OpenClaw-portal. Riktade kontroller och
+    publicering verifieras separat; fungerande navigation är inte P4/P5-klart.
 - [ ] **P5 — API på Vercel:** Studio/admin använder P2/P3 utan beständig lokal
   disk. Render-spelet läser samma policy och får erforderlig spelkonfigprojektion.
   Bevis: sparning från Studio följs av spelets kvitterade revision, utan iframe,
@@ -257,7 +290,8 @@ Genomför P2 enligt hela masterplanen i docs/CLOUD-MIGRATION.md och AGENTS.md,
 i C:\Users\jakem\Projects\croupier på main. Stäm av låst P1 och filägarskap
 med orchestratorn innan du ändrar. Planera/implementera gemensam asynkron
 lagring för projekt/revision/historik/profiler, videoindex/klassificering och
-BO-konfiguration (bo.json innehåller mer än konton). Befintliga game/auth och
+BO-konfiguration (bo.json innehåller mer än konton). Prioritera dokument/CAS/history/
+audit; gammal Studio-slaskmedia ska inte få en import-/backupkampanj. Befintliga game/auth och
 zonernas separata anslutning ska bestå. Ändra inte checksumlåst product-v1 SQL;
 använd separat versionerad Studio-migration. Bevara CAS, transaktioner, audit,
 ID:n och sparad-policy-vs-utkast. Agent B äger media/job/budgetjournaler:
@@ -274,10 +308,11 @@ och vilka tidigare metadataimplementationer som nu kan tas bort. Ingen egen push
 Genomför P3 enligt hela masterplanen och AGENTS.md i
 C:\Users\jakem\Projects\croupier på main; invänta låst P1 och filanspråk.
 Använd befintliga privata croupier-media-private, inte ett nytt lager. Flytta
-beständiga generationer/talpaket från Render till Blob med metadata och
+nya beständiga generationer/talpaket till Blob med metadata och
 request-idempotens/job recovery/GPU-reservationer/budgetledger i Neon enligt
-Agent A:s kontrakt. Inventera både generations/, speech/ och äldre videoalias:
-Blob-kopiering ensam gör inte disken överflödig. Bevara media-ID, bytes, hash,
+Agent A:s kontrakt. Migrera inte bortvalt Studio-slask; inventera nödvändiga
+journaler och aktiva spelreferenser före diskavveckling. Blob-kopiering ensam
+gör inte disken överflödig. Bevara aktiva spelmediers ID, bytes, hash,
 talpar/kalibrering, privata HEAD/Range och serverbehörighet. Tillfällig scratch
 får vara disponibel, men inget beständigt state får kräva diskfallback.
 Testa retries, cancellation, konkurrens, restart och förhindrad dubbeldebitering
@@ -293,8 +328,9 @@ orchestratorn; ingen självständig deploy/push eller docsändring.
 Genomför P4 enligt hela masterplanen och AGENTS.md i
 C:\Users\jakem\Projects\croupier på main efter P1 och filanspråk. Bygg en
 Croupier Studio under /studio: klipp/regler/observation/zoner och native
-administration, inte iframe till gammalt BO. Portera alla 14 befintliga
-adminsektioner eller få uttryckligt avvecklingsbeslut, inte bara kontosidan.
+administration, inte iframe till gammalt BO. Förenkla överlappande menyer och
+gruppera befintliga användbara adminfunktioner; gamla klipp-/generationsslaskvyer
+behöver inte kopieras. Bara kontosidan räcker däremot inte för hela administrationen.
 Använd låsta API-kontrakt och
 befintliga roller per sektion; testspelare blir aldrig administratörer.
 Konton ska kunna skapas/spärras/tas bort med bevarad ledger/livscykel. Ändra

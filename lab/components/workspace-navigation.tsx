@@ -1,26 +1,21 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { labUrl, stripLabBasePath } from '../lib/lab-url.mjs';
-import { BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
+import { labUrl } from '../lib/lab-url.mjs';
+import { STUDIO_PRIMARY_NAVIGATION, STUDIO_TOOL_NAVIGATION, studioNavigationItem } from '../lib/studio-navigation.mjs';
 import styles from './workspace-navigation.module.css';
 
-const surfaces = [
-  ['/', 'Studio och aktiva klipp'], ['/tree', 'Event och regler'],
-  ['/videos', 'Mediebibliotek'], ['/activity', 'Uppspelning och spår'],
-  ['/zones', 'Bakgrundszoner'], ['/openclaw', 'OpenClaw'], ['/guide', 'Guide'],
-] as const;
-
 export function WorkspaceNavigation() {
-  const path = stripLabBasePath(usePathname() || '/');
-  const administration = path === '/administration';
+  const current = studioNavigationItem(usePathname());
+  const toolActive = STUDIO_TOOL_NAVIGATION.some(item => item === current);
+  // Full page navigation retains native unsaved-draft protection, including Back/Forward.
   return <header className={styles.header}>
-    <a className={styles.brand} href={labUrl('/')} aria-label="Backoffice/Lab · Scout Gaming"><span>scout<b>/</b>gaming</span><strong>Backoffice/Lab</strong></a>
-    <nav className={styles.nav} aria-label="Backoffice/Lab">
-      {surfaces.map(([href, label]) => <a key={href} href={labUrl(href)} aria-current={path === href ? 'page' : undefined}>{label}</a>)}
-      <details className={styles.administration}>
-        <summary aria-current={administration ? 'page' : undefined}>Administration</summary>
-        <div>{BACKOFFICE_SECTIONS.map(section => <a key={section.id} href={`${labUrl('/administration')}#${section.id}`}>{section.label}</a>)}</div>
+    <a className={styles.brand} href={labUrl('/')} aria-label="Croupier Studio · Scout Gaming"><span>scout<b>/</b>gaming</span><strong>Croupier Studio</strong></a>
+    <nav className={styles.nav} aria-label="Studio">
+      {STUDIO_PRIMARY_NAVIGATION.map(item => <a key={item.href} href={labUrl(item.href)} aria-current={current === item ? 'page' : undefined}>{item.label}</a>)}
+      <details className={styles.tools}>
+        <summary data-active={toolActive || undefined}>Verktyg</summary>
+        <div>{STUDIO_TOOL_NAVIGATION.map(item => <a key={item.href} href={labUrl(item.href)} aria-current={current === item ? 'page' : undefined}>{item.label}</a>)}</div>
       </details>
     </nav>
   </header>;
