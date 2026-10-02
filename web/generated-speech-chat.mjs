@@ -3,10 +3,10 @@
 export async function completeChatWithSpeech({ request, status, owner, playerId, readOwner, readStatus, signal, decide, service, streamService, onProgress = () => {}, onDecision = () => {}, onTiming = () => {} }) {
   const fresh = async () => {
     if (signal?.aborted) throw Object.assign(new Error('chat_cancelled'), { statusCode: 499 });
-    if (!owner || readOwner() !== owner) throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
+    if (!owner || await readOwner() !== owner) throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
     await readStatus();
     if (signal?.aborted) throw Object.assign(new Error('chat_cancelled'), { statusCode: 499 });
-    if (!owner || readOwner() !== owner) throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
+    if (!owner || await readOwner() !== owner) throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
   };
   await fresh();
   onProgress('text');

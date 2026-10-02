@@ -1,0 +1,166 @@
+{
+  "keys": [
+    "3",
+    "21",
+    "34",
+    "47",
+    "idle"
+  ],
+  "requests": [
+    {
+      "index": 0,
+      "params": {
+        "model": "seedance_2_0",
+        "duration": 4,
+        "resolution": "1080p",
+        "mode": "std",
+        "bitrate_mode": "high",
+        "aspect_ratio": "auto",
+        "generate_audio": false,
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "364ab5bc-011b-46e3-9c59-eb9f54696a81"
+          },
+          {
+            "role": "end_image",
+            "value": "07706bc6-76da-4862-b8d5-fb2cd3f4e158"
+          }
+        ],
+        "prompt": "One short continuous realistic movement connecting these EXACT supplied first and last frames of Astrid. From the first empty-handed ready pose, smoothly move her hands, wrists, forearms and gaze into the exact final card-dealing preparation pose. Complete the small movement directly without an extra gesture or pause. Preserve her exact face identity, blonde hair, black suit, ivory blouse, natural proportions, skin colour and exposure. Camera completely locked, no zoom or reframing. Match both reference images precisely, including body size and position. Pure black background throughout. No tabletop, horizontal bar, furniture, extra props, speech, dissolve, cut or distorted fingers. Do not invent a wide-arm gesture. Only the short anatomically natural movement needed to connect these two poses."
+      }
+    },
+    {
+      "index": 1,
+      "params": {
+        "model": "seedance_2_0",
+        "duration": 4,
+        "resolution": "1080p",
+        "mode": "std",
+        "bitrate_mode": "high",
+        "aspect_ratio": "auto",
+        "generate_audio": false,
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "364ab5bc-011b-46e3-9c59-eb9f54696a81"
+          },
+          {
+            "role": "end_image",
+            "value": "65679afd-830a-4bc7-9892-caa388fa5d6e"
+          }
+        ],
+        "prompt": "One short continuous realistic movement connecting these EXACT supplied first and last frames of Astrid. From the first empty-handed ready pose, smoothly move her hands, wrists, forearms and gaze into the exact final card-dealing preparation pose. Complete the small movement directly without an extra gesture or pause. Preserve her exact face identity, blonde hair, black suit, ivory blouse, natural proportions, skin colour and exposure. Camera completely locked, no zoom or reframing. Match both reference images precisely, including body size and position. Pure black background throughout. No tabletop, horizontal bar, furniture, extra props, speech, dissolve, cut or distorted fingers. Do not invent a wide-arm gesture. Only the short anatomically natural movement needed to connect these two poses."
+      }
+    },
+    {
+      "index": 2,
+      "params": {
+        "model": "seedance_2_0",
+        "duration": 4,
+        "resolution": "1080p",
+        "mode": "std",
+        "bitrate_mode": "high",
+        "aspect_ratio": "auto",
+        "generate_audio": false,
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "364ab5bc-011b-46e3-9c59-eb9f54696a81"
+          },
+          {
+            "role": "end_image",
+            "value": "53dd9eae-ff5d-4aa3-bc0b-9782330be551"
+          }
+        ],
+        "prompt": "One short continuous realistic movement connecting these EXACT supplied first and last frames of Astrid. From the first empty-handed ready pose, smoothly move her hands, wrists, forearms and gaze into the exact final card-dealing preparation pose. Complete the small movement directly without an extra gesture or pause. Preserve her exact face identity, blonde hair, black suit, ivory blouse, natural proportions, skin colour and exposure. Camera completely locked, no zoom or reframing. Match both reference images precisely, including body size and position. Pure black background throughout. No tabletop, horizontal bar, furniture, extra props, speech, dissolve, cut or distorted fingers. Do not invent a wide-arm gesture. Only the short anatomically natural movement needed to connect these two poses."
+      }
+    },
+    {
+      "index": 3,
+      "params": {
+        "model": "seedance_2_0",
+        "duration": 4,
+        "resolution": "1080p",
+        "mode": "std",
+        "bitrate_mode": "high",
+        "aspect_ratio": "auto",
+        "generate_audio": false,
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "364ab5bc-011b-46e3-9c59-eb9f54696a81"
+          },
+          {
+            "role": "end_image",
+            "value": "8c35d6f8-b8e0-42e1-a307-e13b5851b837"
+          }
+        ],
+        "prompt": "One short continuous realistic movement connecting these EXACT supplied first and last frames of Astrid. From the first empty-handed ready pose, smoothly move her hands, wrists, forearms and gaze into the exact final card-dealing preparation pose. Complete the small movement directly without an extra gesture or pause. Preserve her exact face identity, blonde hair, black suit, ivory blouse, natural proportions, skin colour and exposure. Camera completely locked, no zoom or reframing. Match both reference images precisely, including body size and position. Pure black background throughout. No tabletop, horizontal bar, furniture, extra props, speech, dissolve, cut or distorted fingers. Do not invent a wide-arm gesture. Only the short anatomically natural movement needed to connect these two poses."
+      }
+    },
+    {
+      "index": 4,
+      "params": {
+        "model": "seedance_2_0",
+        "duration": 4,
+        "resolution": "1080p",
+        "mode": "std",
+        "bitrate_mode": "high",
+        "aspect_ratio": "auto",
+        "generate_audio": false,
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "364ab5bc-011b-46e3-9c59-eb9f54696a81"
+          },
+          {
+            "role": "end_image",
+            "value": "a331a978-444a-4efa-a81b-e84ea5d93d7e"
+          }
+        ],
+        "prompt": "One short continuous realistic movement connecting these EXACT supplied first and last frames of Astrid. From the first empty-handed ready pose, smoothly move her hands, wrists, forearms and gaze into the exact final folded-arm resting pose facing camera. Complete the small movement directly without an extra gesture or pause. Preserve her exact face identity, blonde hair, black suit, ivory blouse, natural proportions, skin colour and exposure. Camera completely locked, no zoom or reframing. Match both reference images precisely, including body size and position. Pure black background throughout. No tabletop, horizontal bar, furniture, extra props, speech, dissolve, cut or distorted fingers. Do not invent a wide-arm gesture. Only the short anatomically natural movement needed to connect these two poses."
+      }
+    }
+  ],
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Submitted 2/5 video generations.\n- index 0: 19260b8c-af4f-4985-9922-e7f47fc942a4 (pending)\n- index 1: submission_failed — Out of credits on Team (monthly) plan in Shared workspace.\n- index 2: submission_failed — Out of credits on Team (monthly) plan in Shared workspace.\n- index 3: 8409448f-bf01-4a96-a24c-042dfdec38df (pending)\n- index 4: submission_failed — Out of credits on Team (monthly) plan in Shared workspace.\nWait for the complete requested set with jobs_wait, then show it together with show_generation_by_ids using the collected indexed jobs. This includes jobs submitted across separate calls. job_display accepts only one id and cannot display a group; do not pass ids or call it once per job."
+      }
+    ],
+    "structuredContent": {
+      "jobs": [
+        {
+          "index": 0,
+          "job_id": "19260b8c-af4f-4985-9922-e7f47fc942a4",
+          "status": "pending"
+        },
+        {
+          "index": 1,
+          "status": "submission_failed",
+          "error": "Out of credits on Team (monthly) plan in Shared workspace."
+        },
+        {
+          "index": 2,
+          "status": "submission_failed",
+          "error": "Out of credits on Team (monthly) plan in Shared workspace."
+        },
+        {
+          "index": 3,
+          "job_id": "8409448f-bf01-4a96-a24c-042dfdec38df",
+          "status": "pending"
+        },
+        {
+          "index": 4,
+          "status": "submission_failed",
+          "error": "Out of credits on Team (monthly) plan in Shared workspace."
+        }
+      ],
+      "submitted_count": 2,
+      "failed_count": 3
+    },
+    "isError": false
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "status": "NOT SUBMITTED; reference UUID unresolved; do not send placeholder",
+  "tool": "higgsfield_generate_video",
+  "request": {
+    "params": {
+      "model": "hf_mult_motion_control",
+      "resolution": "1080p",
+      "count": 1,
+      "medias": [
+        {
+          "role": "image",
+          "value": "dd01ae2e-cfb1-40c1-9bb6-43e16fda47f1"
+        },
+        {
+          "role": "video",
+          "value": "REPLACE_WITH_CONFIRMED_QA_REFERENCE_TRIM_MEDIA_UUID"
+        }
+      ],
+      "prompt": "Transfer only the continuous professional blackjack hand choreography and real-time cadence from the driving video to Astrid in the reference image. Preserve Astrid's exact face, hair, skin tone, ivory blouse, long black sleeves to wrists, body proportions, fixed camera, room, green table and existing shoe. Her left feeding hand at viewer right extracts each card through the existing low front shoe mouth. Her adjacent right receiving hand at viewer left receives it, makes the same brief supported wrist turn, and slides it directly outward to the corresponding player position. As the receiving hand delivers the current card, the feeding hand is already preparing the next card at the shoe: preserve the reference's overlapping hand rhythm and extraction intervals, without resetting both hands between cards. Match exactly the driving clip's card count and action order. Each card starts inside the shoe; never spawn one in a palm or on the felt. Maintain one rigid card per transfer, visible contact through handoff/turn/push, then release only at the destination. Dealt cards remain stationary at their own destinations. No chest-height presentation, separate pose holds, extra cards, teleporting, duplicate fingers, stretching arms or torso, card texture morph, cuts, dissolves, zoom, reframing or slow motion. Copy the motion, not the other dealer's identity, clothing, face, room or graphics. One uninterrupted real-time take."
+    }
+  }
+}

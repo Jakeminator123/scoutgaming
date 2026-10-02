@@ -62,3 +62,9 @@ vendor/
 *.sqlite
 *.sqlite3
 *.db
+
+# Large source/staging metadata and generated layout stay available for explicit reads.
+/media/.migration/
+/media/**/source/
+/media/**/staging/
+/media/layout.json

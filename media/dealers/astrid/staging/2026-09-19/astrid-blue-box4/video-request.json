@@ -1,0 +1,32 @@
+{
+  "approvedByUser": true,
+  "approval": "great — one Box 4 take using the built-in start/end pair",
+  "estimatedCredits": 36,
+  "startSha256": "493c5f9b00516a219fde328dd8caf1147d86410fda47880c4f8a06d619bf42f0",
+  "endSha256": "ba88f6be46e9ac9af0bd7ede6f6e7be492ff29ea628f26b7e5c5559fb66c09de",
+  "params": {
+    "model": "seedance_2_0",
+    "duration": 4,
+    "resolution": "1080p",
+    "mode": "std",
+    "bitrate_mode": "high",
+    "generate_audio": false,
+    "aspect_ratio": "16:9",
+    "count": 1,
+    "medias": [
+      {
+        "role": "start_image",
+        "value": "2d404615-bed2-4223-810f-4ac0e5e9b9f3"
+      },
+      {
+        "role": "end_image",
+        "value": "ac6a5ea5-2251-43f4-b588-de9ea7276d4c"
+      },
+      {
+        "role": "image",
+        "value": "b2c16866-56c4-4406-bbb1-7fed713ca485"
+      }
+    ],
+    "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid green-screen table scene from the approved ELEVATED camera looking down across the tabletop. Start in the exact supplied ready pose. Deal exactly ONE cobalt-blue tracking card from the fixed shoe to the single card location shown in the ending image: the player card area one position to the viewer's right of centre, called Box 4 (zero-based), not Astrid's own card and not the far-right seat. The ending image precisely specifies the landing. Extract the one partly visible blue card from the actual shoe mouth, transfer to the receiving hand, briefly turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the green tabletop to that location. The receiving fingers remain naturally in contact until the card is there. Then visibly release and return the EMPTY hand to the exact ready posture. The card remains stationary on the green tabletop for the remainder. Aim for about 0.9 seconds from first extraction motion to release, and complete the empty return by about 1.5 seconds, followed by gentle breathing and relaxed eye contact. The single card has a cobalt-blue body and thin white border. Its back has ONE white centre dot. Its front has four distinct small corner dots, clockwise from far-left in the ending image: magenta, yellow, cyan, white. Preserve this pattern through the physical wrist turn; the card is a rigid 72 by 103 mm rectangle of constant physical size, never stretching or growing during the slide. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, green shoe, curved green table, plain green background, lighting, and the elevated camera and table perspective. The third image ref-identity.png is Astrid's identity only; use the first and last images for camera and composition. No second extraction or extra card, no new text or labels, no pose freeze, no hovering card, no body scaling, no body dragging, no camera movement, no zoom, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card."
+  }
+}

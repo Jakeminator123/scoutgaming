@@ -4,6 +4,8 @@ import { assertLocalRequest, assertLocalPageRequest, readLocalJson, jsonResponse
 import { readFile, readdir } from 'node:fs/promises';
 import { StudioError } from '../lib/project-store.mjs';
 import { StudioValidationError } from '../lib/studio-model.mjs';
+import { createRequire, stripTypeScriptTypes } from 'node:module';
+import { pathToFileURL } from 'node:url';
 
 const MAX_BYTES = 1024 * 1024;
 const LOCAL = 'http://127.0.0.1:4188';
@@ -79,13 +81,26 @@ test('ordinary same-origin page and RSC fetches still work without relaxing fore
   assert.throws(() => assertLocalPageRequest(pageRequest({ ...sameOrigin, Origin: 'https://external.example' })), status(403));
 });
 
-test('only StudioPage uses the navigation guard; API route sources never import it', async () => {
+test('StudioPage delegates to the guarded UI helper; API routes cannot use the navigation exception', async () => {
   const page = await readFile(new URL('../app/studio-page.tsx', import.meta.url), 'utf8');
-  assert.match(page, /assertLocalPageRequest/);
+  assert.match(page, /studioUiInitialData/);
+  const require = createRequire(new URL('../lib/ui-server.ts', import.meta.url));
+  const helperSource = await readFile(new URL('../lib/ui-server.ts', import.meta.url), 'utf8');
+  const compiled = stripTypeScriptTypes(helperSource).replace(/from (['"])([^'"]+)\1/g, (_match, _quote, specifier) =>
+    `from '${specifier.startsWith('.') ? new URL(specifier, new URL('../lib/ui-server.ts', import.meta.url)).href : pathToFileURL(require.resolve(specifier)).href}'`);
+  const helper = await import('data:text/javascript;base64,' + Buffer.from(compiled).toString('base64'));
+  const previous = process.env.CROUPIER_LAB_REMOTE_UI;
+  process.env.CROUPIER_LAB_REMOTE_UI = '';
+  try {
+    await assert.doesNotReject(helper.authorizeUiPage(pageRequest({Origin: 'chrome-extension://fixture-extension'})));
+    await assert.rejects(helper.authorizeUiPage(pageRequest({'Sec-Fetch-Dest': 'iframe'})), status(403));
+    await assert.rejects(helper.studioUiInitialData(pageRequest({}, 'GET', 'https://external.example/openclaw')), status(403));
+    await assert.rejects(helper.studioUiInitialData(pageRequest({'Next-Action': 'forged-action'})), status(403));
+  } finally {if (previous === undefined) delete process.env.CROUPIER_LAB_REMOTE_UI; else process.env.CROUPIER_LAB_REMOTE_UI = previous;}
   const routes = await readdir(new URL('../app/api/', import.meta.url), { recursive: true, withFileTypes: true });
   for (const file of routes.filter(file => file.isFile() && file.name === 'route.ts')) {
     const source = await readFile(`${file.parentPath}/${file.name}`, 'utf8');
-    assert.doesNotMatch(source, /assertLocalPageRequest/, file.parentPath);
+    assert.doesNotMatch(source, /assertLocalPageRequest|studioUiInitialData|authorizeUiPage|\/ui-server/, file.parentPath);
   }
 });
 

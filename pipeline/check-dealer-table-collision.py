@@ -6,10 +6,10 @@ photorealistic performance. Run against the delivered animation source.
 import bpy,json,sys,argparse,numpy as np
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]
-motion=json.loads((R/'assets/astrid-3d/motion-samples.json').read_text())
+motion=json.loads((R/'media/dealers/astrid/source/3d/motion-samples.json').read_text())
 expected={(s['action'],s['frame']):np.array(s['bones']['Head'][12:15]) for s in motion['samples']}
 parser=argparse.ArgumentParser()
-parser.add_argument('source',nargs='?',type=Path,default=R/'assets/astrid-3d/astrid-animated.blend')
+parser.add_argument('source',nargs='?',type=Path,default=R/'media/dealers/astrid/source/3d/astrid-animated.blend')
 parser.add_argument('--all-frames',action='store_true')
 args=parser.parse_args();source=args.source
 out=R/'content/staging/2026-09-10/rig-game-qa';out.mkdir(parents=True,exist_ok=True)

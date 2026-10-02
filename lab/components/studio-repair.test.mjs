@@ -7,7 +7,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { modeLabels, modeExplanations } from '../lib/director-modes.mjs';
-import manifest from '../../emil/dealklipp-v1/lab-video-manifest.json' with { type: 'json' };
+import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');

@@ -1,0 +1,57 @@
+{
+  "sha256": "dc8292ec7b37b55c809755b7d00372194bab9fd08914312d6820930ae549159e",
+  "probe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "width": 1664,
+        "height": 1248,
+        "r_frame_rate": "24/1",
+        "nb_read_frames": "145"
+      }
+    ],
+    "format": {
+      "duration": "6.041667"
+    }
+  },
+  "sampledFrames": [
+    0,
+    13,
+    26,
+    39,
+    52,
+    65,
+    79,
+    92,
+    105,
+    118,
+    131,
+    144
+  ],
+  "endpointDiagnostics": [
+    {
+      "frame": 0,
+      "foregroundMeanAbsoluteRGBError": 35.21443616369159
+    },
+    {
+      "frame": 144,
+      "foregroundMeanAbsoluteRGBError": 9.693811025760983
+    }
+  ],
+  "status": "rejected",
+  "acceptance": [
+    "No invented or damaged cards/paper in ready hands",
+    "No folded arms",
+    "Natural breathing, blink and gaze without speech",
+    "Same face, exposure, body scale",
+    "Seam-compatible endpoints",
+    "Live speech and action handoff before promotion"
+  ],
+  "limitation": "Endpoint image error is not anatomy, loop or gameplay acceptance.",
+  "reasons": [
+    "Invented horizontal table edge across torso",
+    "Damaged source card retained in ready hand",
+    "First pose fails exact source endpoint"
+  ]
+}

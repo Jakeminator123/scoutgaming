@@ -1,0 +1,20 @@
+{
+  "source": "/Users/solvifyab/Downloads/hf_20260912_082704_fd488027-8cc9-4fa3-b16d-a0a9f4bdff8e.mp4",
+  "sha256": "b57c7e091070193dc31b10e9f04d2ab77cec87e9a86b120942e85e9e52febbad",
+  "nativeFrames": 141,
+  "fps": 24,
+  "width": 1080,
+  "height": 1080,
+  "observedFrames": [
+    0,
+    20,
+    40,
+    60,
+    80,
+    100,
+    120,
+    140
+  ],
+  "finding": "User supplied clip is an editor view of head/shoulders and face rotation. No hands, shoe or card motion; not an extraction continuation.",
+  "desktopReference": "Desktop screen recording2026-09-13 15.55.29 is11.36s real-dealer reference, not Astrid source. Reviewed1fps overview confirms low pickup/transfer cadence and ongoing speech. Not used as replacementidentity footage."
+}

@@ -1,10 +1,11 @@
+import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 
 // The matte is an extension of the original take, never a replacement voice.
-const base=path.resolve('web/public/dealers/astrid');
+const base=path.resolve('media/dealers/astrid/runtime/indexed');
 const actor=path.join(base,'actor');
 const read=p=>JSON.parse(fs.readFileSync(p));
 const sha=p=>createHash('sha256').update(fs.readFileSync(p)).digest('hex');
@@ -22,7 +23,7 @@ for(const [key,clip] of Object.entries(main.clips)){
 }
 const audioHash=p=>execFileSync('ffmpeg',['-v','error','-i',p,'-map','0:a','-c','copy','-f','hash','-hash','sha256','-'],{encoding:'utf8'}).trim();
 for(const [key,take] of Object.entries(provenance.nativeSpeech)){
-  const source=path.join(base,'speech',`${key}.mp4`),packed=path.resolve('web/public',take.src);
+  const source=path.join(base,'speech',`${key}.mp4`),packed=resolveMediaAbsolutePath(path.resolve('web/public',take.src));
   check(sha(source)===take.sourceSha256&&sha(packed)===take.sha256,`Native speech pair changed: ${key}`);
   if(process.argv.includes('--probe')){
     check(audioHash(source)===take.audioHash&&audioHash(packed)===take.audioHash,`Embedded audio changed: ${key}`);
@@ -30,5 +31,5 @@ for(const [key,take] of Object.entries(provenance.nativeSpeech)){
     check(metadata.width===take.width&&metadata.height===take.height*2&&+metadata.nb_frames===take.frames,`Native frame pairing failed: ${key}`);
   }
 }
-check(sha(path.resolve('web/public',provenance.room.src))===provenance.room.sha256,'Room plate changed');
+check(sha(resolveMediaAbsolutePath(path.resolve('web/public',provenance.room.src)))===provenance.room.sha256,'Room plate changed');
 console.log(`PASS: ${Object.keys(main.clips).length} Astrid actor mattes, two original embedded audio tracks and one room plate. Visual approval remains separate.`);

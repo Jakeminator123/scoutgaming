@@ -4,6 +4,10 @@ import { isIP } from 'node:net';
 import { DatabaseSync } from 'node:sqlite';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readVercelIngressConfig } from './vercel-ingress.mjs';
+import { readStorageExportConfig } from './storage-export.mjs';
+import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
+import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;
@@ -110,6 +114,11 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
       || !['require', 'verify-ca', 'verify-full'].includes(database.searchParams.get('sslmode'))
       || zonesDatabaseUrl.length > 8192 || /[\r\n\t]/.test(zonesDatabaseUrl)) fail('CROUPIER_ZONES_DATABASE_URL');
   }
+  const database = env.CROUPIER_DATABASE || 'sqlite';
+  if (!['sqlite', 'postgres'].includes(database)) fail('CROUPIER_DATABASE');
+  const gameDatabaseUrl = env.CROUPIER_GAME_DATABASE_URL || '';
+  if (database === 'postgres') validateGameConnection(gameDatabaseUrl, zonesDatabaseUrl);
+  else if (gameDatabaseUrl) fail('CROUPIER_DATABASE/CROUPIER_GAME_DATABASE_URL');
   const layout = env.CROUPIER_CLOUD_LAYOUT || 'separate-hosts';
   if (!['separate-hosts', 'single-origin'].includes(layout)) fail('CROUPIER_CLOUD_LAYOUT');
   const singleOrigin = layout === 'single-origin';
@@ -122,6 +131,11 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     if (gameOrigin === labOrigin) fail('LAB_PUBLIC_URL');
     if (boOrigin === gameOrigin || boOrigin === labOrigin) fail('BO_URL');
   }
+  const vercelIngress = readVercelIngressConfig(env);
+  if (vercelIngress && (!singleOrigin || vercelIngress.publicOrigin !== gameOrigin)) fail('CROUPIER_PUBLIC_ORIGIN');
+  const publicGamePath = env.CROUPIER_PUBLIC_GAME_PATH || '/';
+  if (!['/', '/game'].includes(publicGamePath) || vercelIngress && publicGamePath !== '/game') fail('CROUPIER_PUBLIC_GAME_PATH');
+  const storageExport = readStorageExportConfig(env);
   const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN
     ? httpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN, 'CROUPIER_VERCEL_FRONTEND_ORIGIN') : '';
   if (frontendOrigin && [gameOrigin, boOrigin, labOrigin].includes(frontendOrigin)) fail('CROUPIER_VERCEL_FRONTEND_ORIGIN');
@@ -141,6 +155,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     players: join(dataRoot, 'players'), studio: join(dataRoot, 'studio'),
     generations: join(dataRoot, 'generations'), speech: join(dataRoot, 'speech'),
   };
+  const mediaBlobIndex = env.CROUPIER_MEDIA_BLOB_INDEX || '';
+  if (mediaBlobIndex && (mediaStorage !== 'blob' || !isAbsolute(mediaBlobIndex)
+    || ![join(repository,'media/blob-index.json'),join(paths.studio,'media-blob-index.json')].some(path => samePath(path,mediaBlobIndex)))) fail('CROUPIER_MEDIA_BLOB_INDEX');
   for (const [name, path] of Object.entries({ CROUPIER_DATA_DIR: paths.players,
     LAB_STUDIO_DATA_DIR: paths.studio, CROUPIER_PRESENTATION_STUDIO_DIR: paths.studio,
     CROUPIER_GENERATIONS_DIR: paths.generations, CROUPIER_GENERATED_SPEECH_DIR: paths.speech })) {
@@ -149,7 +166,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   let videoArchive;
   if (env.LAB_VIDEO_ARCHIVE !== undefined) {
     if (!isAbsolute(env.LAB_VIDEO_ARCHIVE)) fail('LAB_VIDEO_ARCHIVE');
-    videoArchive = resolve(env.LAB_VIDEO_ARCHIVE);
+    videoArchive = resolve(normalizePresentationArchive(env.LAB_VIDEO_ARCHIVE, repository));
   }
   const director = optionalPair(env, 'CROUPIER_PRESENTATION_DIRECTOR_URL', 'CROUPIER_PRESENTATION_DIRECTOR_TOKEN');
   const productSpeech = optionalPair(env, 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN');
@@ -166,8 +183,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
+    database, gameDatabaseUrl, vercelIngress, publicGamePath, storageExport,
     director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming,
-    mediaStorage, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
+    mediaStorage, mediaBlobIndex, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
@@ -193,6 +211,14 @@ export async function inspectCloudDisk(config) {
 // that the Web child would reject on startup. It never creates a database.
 export async function inspectCloudBootstrap(config) {
   if (config.bootstrapAdmin) return;
+  if (config.database === 'postgres') {
+    const storage = createPostgresStore({ connectionString: config.gameDatabaseUrl, zonesConnectionString: config.zonesDatabaseUrl });
+    try {
+      await storage.db.assertInstalled();
+      if (!(await storage.boDb.prepare('SELECT COUNT(*) AS n FROM users').get()).n) fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
+    } finally { await storage.close(); }
+    return;
+  }
   const dbPath = join(config.paths.players, 'craig.db');
   const info = await lstat(dbPath).catch(() => null);
   if (!info?.isFile() || info.isSymbolicLink()
@@ -218,11 +244,15 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
   const shared = { ...base, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1',
     CROUPIER_STREAM_LANE: 'lissabon-stream-lane',
     CROUPIER_MEDIA_STORAGE: config.mediaStorage,
+    ...(config.mediaBlobIndex ? { CROUPIER_MEDIA_BLOB_INDEX: config.mediaBlobIndex } : {}),
     ...(config.blobToken ? { BLOB_READ_WRITE_TOKEN: config.blobToken } : {}),
     ...(config.videoArchive ? { LAB_VIDEO_ARCHIVE: config.videoArchive } : {}) };
   return {
     web: { command: process.execPath, args: [join(REPOSITORY, 'web/server.mjs')], cwd: REPOSITORY,
       env: { ...shared, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
+        CROUPIER_DATABASE: config.database,
+        ...(config.gameDatabaseUrl ? { CROUPIER_GAME_DATABASE_URL: config.gameDatabaseUrl } : {}),
+        CROUPIER_PUBLIC_GAME_PATH: config.publicGamePath,
         BO_URL: config.boOrigin, LAB_PUBLIC_URL: config.labOrigin,
         CROUPIER_VERCEL_FRONTEND_ORIGIN: config.frontendOrigin,
         CROUPIER_CLOUD_RUNTIME: '1',

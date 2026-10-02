@@ -6,7 +6,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { StudioError } from './project-store.mjs';
 import { assertLocalRequest, readLocalJson } from './http-guard.mjs';
-import { isCloudMediaConfigured, putPrivateMedia, getPrivateMedia, deletePrivateMedia } from './cloud-media-store.mjs';
+import { isCloudMediaConfigured, putPrivateMedia, getPrivateMedia, deletePrivateMedia, mediaBlobPath } from './cloud-media-store.mjs';
 
 const exec = promisify(execFile);
 export const MAX_ZONE_CLIP_BYTES = 64 * 1024 * 1024;
@@ -130,7 +130,7 @@ export async function uploadZoneClip(request, options = {}) {
   const dimensions = await (options.probe ?? probeZoneVideo)(bytes, extension);
   if (dimensions.width !== width || dimensions.height !== height) throw new StudioError(`Klippet är ${dimensions.width} × ${dimensions.height}; zonen kräver exakt ${width} × ${height}.`);
   const id = randomUUID(), sha256 = createHash('sha256').update(bytes).digest('hex');
-  const media = await (options.putMedia ?? putPrivateMedia)(`croupier/zones/${id}/${sha256}.${extension}`, bytes, { ...options, contentType: type, sha256, size });
+  const media = await (options.putMedia ?? putPrivateMedia)(mediaBlobPath('dealers/astrid/runtime/zones',id,sha256,extension), bytes, { ...options, contentType: type, sha256, size });
   try { await query('INSERT INTO croupier_zones.clips (id, width, height, media) VALUES ($1::uuid, $2, $3, $4::jsonb)', [id, width, height, JSON.stringify(media)]); }
   catch (error) {
     // The object is new and unreferenced. Existing saved clips are never deleted.

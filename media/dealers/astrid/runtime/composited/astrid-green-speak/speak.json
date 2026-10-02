@@ -1,0 +1,1776 @@
+{
+  "version": 2,
+  "id": "astrid-green-speak-creatify-aurora",
+  "dealer": "astrid",
+  "action": "speak",
+  "status": "review",
+  "enabled": true,
+  "provider": "ElevenLabs Image & Video API, model creatify-aurora 720p",
+  "approval": "Review revision: fixed per-source color and uniform registration. Previous mask approval does not imply approval of these display copies.",
+  "spliceOffset": [
+    0,
+    0
+  ],
+  "actorOffset": [
+    0,
+    20
+  ],
+  "spliceMeasurement": {
+    "method": "greeting frame 0/115 against the base eye-contact idle frame 0 and the dealer take frame 0; phase correlation of head/torso/hand windows, dx/dy in source px",
+    "windows": {
+      "head": [
+        870,
+        26,
+        1050,
+        226
+      ],
+      "torso": [
+        760,
+        240,
+        1200,
+        520
+      ],
+      "leftHand": [
+        760,
+        560,
+        960,
+        700
+      ],
+      "shoeHand": [
+        1080,
+        540,
+        1330,
+        700
+      ]
+    },
+    "source-f0000": {
+      "baseIdle": {
+        "head": {
+          "dx": -1,
+          "dy": 21,
+          "meanAbsDiff": 30.08
+        },
+        "torso": {
+          "dx": 0,
+          "dy": 20,
+          "meanAbsDiff": 12.85
+        },
+        "leftHand": {
+          "dx": 0,
+          "dy": 6,
+          "meanAbsDiff": 22.12
+        },
+        "shoeHand": {
+          "dx": -2,
+          "dy": 10,
+          "meanAbsDiff": 20.41
+        }
+      },
+      "dealerTake": {
+        "head": {
+          "dx": 22,
+          "dy": 16,
+          "meanAbsDiff": 35.22
+        },
+        "torso": {
+          "dx": 187,
+          "dy": 0,
+          "meanAbsDiff": 47.14
+        },
+        "leftHand": {
+          "dx": 0,
+          "dy": -8,
+          "meanAbsDiff": 38.31
+        },
+        "shoeHand": {
+          "dx": 0,
+          "dy": 0,
+          "meanAbsDiff": 32.11
+        }
+      }
+    },
+    "source-f0115": {
+      "baseIdle": {
+        "head": {
+          "dx": -1,
+          "dy": 19,
+          "meanAbsDiff": 28.38
+        },
+        "torso": {
+          "dx": 0,
+          "dy": 18,
+          "meanAbsDiff": 11.68
+        },
+        "leftHand": {
+          "dx": 0,
+          "dy": 8,
+          "meanAbsDiff": 21.22
+        },
+        "shoeHand": {
+          "dx": -3,
+          "dy": 10,
+          "meanAbsDiff": 19.41
+        }
+      },
+      "dealerTake": {
+        "head": {
+          "dx": 22,
+          "dy": 14,
+          "meanAbsDiff": 34.11
+        },
+        "torso": {
+          "dx": 1,
+          "dy": 0,
+          "meanAbsDiff": 46.01
+        },
+        "leftHand": {
+          "dx": -15,
+          "dy": 0,
+          "meanAbsDiff": 38.09
+        },
+        "shoeHand": {
+          "dx": 0,
+          "dy": 0,
+          "meanAbsDiff": 31.09
+        }
+      }
+    },
+    "note": "Source registration and actorOffset remain bound to the original take. The display copy adds the fixed uniform transform and RGB gain recorded in media.displayCalibration; entry/exit maps are measured from those calibrated pixels."
+  },
+  "lines": {
+    "greeting": {
+      "jobId": "Mn2vLqTOAmDaJKBYJeKy",
+      "media": {
+        "src": "review/astrid-seam-repair/greeting-f1b704dc282d.mp4",
+        "sha256": "f1b704dc282dc7b7ab39fd0d83181cb08dcf1baca5fe8b471b8710c1f0d3606b",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 116,
+        "sourceSha256": "9fea307b1eec12493aefa116e78b967b86c8ef9a7a411fafaca892ee245bd848",
+        "nativeTakeSha256": "9548226ec97315537bef200e5677726807309c03113e0b953fd5f04791f703a7",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "5b1f348737efd4374f498b23e21be935d8cdd450172af79e944a36845ca9dd75",
+        "displayCalibration": {
+          "scale": 0.9815906286239624,
+          "offset": [
+            7.050079345703125,
+            2.979766845703125
+          ],
+          "gain": [
+            1.0132077185549737,
+            1.0055654682730593,
+            1.0964734270488738
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/greeting.mp3",
+      "audioSha256": "84a5345cdba72e722c37d7abd5baec0ee46fbdb9a443414ff6d28044acf6690e",
+      "text": "Welcome to Priv\u00e9 Blackjack. Take a seat, I'll be your dealer tonight.",
+      "cutIn": 0,
+      "cutOut": 115,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.09045351473922902,
+        "lineOnsetSec": 0.09047619047619047
+      },
+      "registration": {
+        "method": "phase correlation of gradient images (actor masked out) against frame 0 of assets/astrid-3d/greenscreen/take-dealer-first-card.mp4 (1920x1080, the runtime placement basis); windows leftRail/rightRail/shoe agree at dx 0/-1, dy 15 for scale 1.5; frontRail dy 9 (generative drift, not corrected)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept for lip sync), audio copied",
+        "sourceFrames": 116
+      },
+      "readyPose": "frame 0 and the last frame (both the plate ready pose; hands, shoe and card stationary)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "f1b704dc282dc7b7ab39fd0d83181cb08dcf1baca5fe8b471b8710c1f0d3606b",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "greeting-enter.png",
+          "sha256": "ff2bd8389de9dcd2ebe752c75308693cf6c702962d51c6a4f4b1250514c41cf2",
+          "src": "review/astrid-seam-repair/greeting-enter-ff2bd8389de9.png"
+        },
+        "exit": {
+          "flow": "greeting-exit.png",
+          "sha256": "e7036f4cd4dddd5ce2305432d8f4c506dcc3a8bedd081e6d577b94e5988825a9",
+          "src": "review/astrid-seam-repair/greeting-exit-e7036f4cd4dd.png"
+        }
+      }
+    },
+    "blackjack": {
+      "jobId": "aIoxUD7sBZg1JuRHxIJv",
+      "media": {
+        "src": "review/astrid-seam-repair/blackjack-e41444ea1fb3.mp4",
+        "sha256": "e41444ea1fb31f1315d7de9d0f8fc633d07ae3df019ab1e85b478fed4ecdb73b",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 93,
+        "sourceSha256": "1057ee03f9308b23edfbf8c5156601af9bd26b2fb78d2a5669d378809238ea84",
+        "nativeTakeSha256": "d760770518e7d5e0451981b1ea8e85f37f453db671e4f607f33d8ea027014b93",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "6052f1d41755014712019d260d2b4713ee40262769e29c7a726c60ff883220b2",
+        "displayCalibration": {
+          "scale": 0.977397620677948,
+          "offset": [
+            8.467041015625,
+            3.8459930419921875
+          ],
+          "gain": [
+            1.0218362724970844,
+            1.0224968573442363,
+            1.1088741570635055
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/blackjack.mp3",
+      "audioSha256": "fe1a7682a7a11ed3f56d0177cf44899f0e95e27ea8076b5664c288772535f30f",
+      "text": "Blackjack! That is beautifully done. Congratulations!",
+      "cutIn": 0,
+      "cutOut": 92,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.057006802721088434,
+        "lineOnsetSec": 0.057006802721088434
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 93
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "e41444ea1fb31f1315d7de9d0f8fc633d07ae3df019ab1e85b478fed4ecdb73b",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "blackjack-enter.png",
+          "sha256": "c28caf86480921d241da38b1531a2e969df5f949de466215d5ece28c49941071",
+          "src": "review/astrid-seam-repair/blackjack-enter-c28caf864809.png"
+        },
+        "exit": {
+          "flow": "blackjack-exit.png",
+          "sha256": "e101a49433f6e72c60c891a44308e32ea126e9d892844c5086391028d96e78cb",
+          "src": "review/astrid-seam-repair/blackjack-exit-e101a49433f6.png"
+        }
+      }
+    },
+    "bust": {
+      "jobId": "JXaFT7JI1SFy2rfwISk5",
+      "media": {
+        "src": "review/astrid-seam-repair/bust-2b5a7d064bc9.mp4",
+        "sha256": "2b5a7d064bc95d48d09684be9e03eb90427c86b4d9e891193161bbfe2c4227ad",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 36,
+        "sourceSha256": "d7e2441e3f1a435bb35b899eab553d3ad75563ce57f3b4e9cff90a126bcd58f0",
+        "nativeTakeSha256": "b7035322a521557614705b5cec2ab8af928e34b71220c4173e1f62653b138494",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "1811e6e0ac57c4daabe45d822ca22a6d9e4e1eb47956bb1992829130dd098cf9",
+        "displayCalibration": {
+          "scale": 0.9779354333877563,
+          "offset": [
+            8.259185791015625,
+            3.65283203125
+          ],
+          "gain": [
+            1.0565136299179567,
+            1.0475339700072044,
+            1.1082917394532692
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/bust.mp3",
+      "audioSha256": "4f62c572de418db93fcfc228415f07e05c0efc30638dab8434fb81457ab6488d",
+      "text": "Bust. I'm sorry, that hand is over.",
+      "cutIn": 0,
+      "cutOut": 35,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 0.9996,
+        "takeOnsetSec": 0,
+        "lineOnsetSec": 0
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 36
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "2b5a7d064bc95d48d09684be9e03eb90427c86b4d9e891193161bbfe2c4227ad",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "bust-enter.png",
+          "sha256": "bddfa9ff984fd8332ffdbd58ce8a5736f94d0a27e4b17f813af1d315940886d4",
+          "src": "review/astrid-seam-repair/bust-enter-bddfa9ff984f.png"
+        },
+        "exit": {
+          "flow": "bust-exit.png",
+          "sha256": "799c26ae7e96b56d7b0f746b7f6b93a326638902c18ea5b53c9140d1a2db376b",
+          "src": "review/astrid-seam-repair/bust-exit-799c26ae7e96.png"
+        }
+      }
+    },
+    "chatter1": {
+      "jobId": "jRivECKXGLbqv84rmVpH",
+      "media": {
+        "src": "review/astrid-seam-repair/chatter1-71f85776ec7e.mp4",
+        "sha256": "71f85776ec7eaa836375c247864255cdd86eebc02aa832030b5d42772036f98f",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 752,
+        "height": 682,
+        "fps": 24,
+        "frames": 70,
+        "sourceSha256": "69db3fd6e40e1f6511474ae3121e94daa7445ece6505b457c296c025f1a90375",
+        "nativeTakeSha256": "1aca9ec340f8dedcf6d86b98dc6878668d7fec7d685830216a8132907b41073c",
+        "crop": [
+          560,
+          0,
+          752,
+          682
+        ],
+        "parentPackedSha256": "baa85a529b30c1ee235b1821b1034f183f442f4febb64b2779d0be634ed359c7",
+        "displayCalibration": {
+          "scale": 0.9811879396438599,
+          "offset": [
+            7.20123291015625,
+            3.218414306640625
+          ],
+          "gain": [
+            1.0528166026128238,
+            1.0397087110388503,
+            1.097009531554889
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 752,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/chatter1.mp3",
+      "audioSha256": "985d836207cf99959aae54236b07b439899472ea33486a746fe035e4cfa6e2f8",
+      "text": "The cards have been kind tonight.",
+      "cutIn": 0,
+      "cutOut": 69,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.10843537414965987,
+        "lineOnsetSec": 0.10843537414965987
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 70
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "71f85776ec7eaa836375c247864255cdd86eebc02aa832030b5d42772036f98f",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "chatter1-enter.png",
+          "sha256": "f8dca175d8192d88103f57ceefc0aaeace2c9f4f37eb47d6b8f6062c465171c5",
+          "src": "review/astrid-seam-repair/chatter1-enter-f8dca175d819.png"
+        },
+        "exit": {
+          "flow": "chatter1-exit.png",
+          "sha256": "481341ce8b9cdfffb6515e0a5c582f06a0f761a28ede0df95c3dc4772110f1fa",
+          "src": "review/astrid-seam-repair/chatter1-exit-481341ce8b9c.png"
+        }
+      }
+    },
+    "chatter2": {
+      "jobId": "A8sn5azPbSIBi5ixLIRk",
+      "media": {
+        "src": "review/astrid-seam-repair/chatter2-bc8fa6f18a98.mp4",
+        "sha256": "bc8fa6f18a98ca9d31594a1b9e51f5a6e30ddb45db6ffc0a50bf2d58ac4b951e",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 62,
+        "sourceSha256": "933e9ec90e696d204709ee66e350d7f03107fc48d5e01aa8df7fa1199ef6cf87",
+        "nativeTakeSha256": "911596e837fded2c66eeb6ef98551e7483f9559cb62df4535127948f20b87a81",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "738d7d5230b958bc4c895bc2f1cb6cba00d0f9643f890add4986fe1e7006efe3",
+        "displayCalibration": {
+          "scale": 0.9787300825119019,
+          "offset": [
+            7.997406005859375,
+            3.711273193359375
+          ],
+          "gain": [
+            1.0560723943346129,
+            1.0468955616944546,
+            1.1081553701695652
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/chatter2.mp3",
+      "audioSha256": "bdbc0a775627d758bd60e83139e7cb54af1b4406386db474bea36644c02139b8",
+      "text": "Take your time. There's no rush at my table.",
+      "cutIn": 0,
+      "cutOut": 61,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.03841269841269841,
+        "lineOnsetSec": 0.03841269841269841
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 62
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "bc8fa6f18a98ca9d31594a1b9e51f5a6e30ddb45db6ffc0a50bf2d58ac4b951e",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "chatter2-enter.png",
+          "sha256": "1ceb305b2b7a382d356e15b478b45328f772c28e4972e444bd07b9417b1f1ae5",
+          "src": "review/astrid-seam-repair/chatter2-enter-1ceb305b2b7a.png"
+        },
+        "exit": {
+          "flow": "chatter2-exit.png",
+          "sha256": "eaf942781922da32678f871db68f028a65fa0457bf1a0f80186b0b8847e07707",
+          "src": "review/astrid-seam-repair/chatter2-exit-eaf942781922.png"
+        }
+      }
+    },
+    "dealerblackjack": {
+      "jobId": "8mEKMKBomCk526p7Gkad",
+      "media": {
+        "src": "review/astrid-seam-repair/dealerblackjack-b4857292a4ae.mp4",
+        "sha256": "b4857292a4ae0fb9ab5638cf9d8d9047d841ebac9b1723ee4ccb97073d560188",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "60b6ded71d80066a259e6b6a6f8d8afa2db127b738cef6450521f6f416562843",
+        "nativeTakeSha256": "92f85f591bc85f246998f1abc961a54c73b1b4018a98f2435383e96f479545c2",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "4e591a1bb640db6a177e244c8c5e6c16a7294e53e77460e69de0b834552f924b",
+        "displayCalibration": {
+          "scale": 0.9787924289703369,
+          "offset": [
+            8.020477294921875,
+            3.7678680419921875
+          ],
+          "gain": [
+            1.0640180691092311,
+            1.0594976950847788,
+            1.1223962308077984
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/dealerblackjack.mp3",
+      "audioSha256": "5830b3bd57e53d85ae82c32a0478ec41adcc8d1e86949960adcbfb799f199f09",
+      "text": "Dealer has blackjack. This round goes to the house.",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.0004308390022675737,
+        "lineOnsetSec": 0.0004308390022675737
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "b4857292a4ae0fb9ab5638cf9d8d9047d841ebac9b1723ee4ccb97073d560188",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "dealerblackjack-enter.png",
+          "sha256": "c601c50093dcc18d86a129530b4e05bf5ae18469d584aa2c81640c215d6f9dc7",
+          "src": "review/astrid-seam-repair/dealerblackjack-enter-c601c50093dc.png"
+        },
+        "exit": {
+          "flow": "dealerblackjack-exit.png",
+          "sha256": "f2ce160b0e31694b576b1418b1f20af0b2db17d04d9fcf50b7342e49fe5e19cc",
+          "src": "review/astrid-seam-repair/dealerblackjack-exit-f2ce160b0e31.png"
+        }
+      }
+    },
+    "dealerbust": {
+      "jobId": "n0XUXKw6zM0cT2ZeL7ON",
+      "media": {
+        "src": "review/astrid-seam-repair/dealerbust-e67e33d66fe9.mp4",
+        "sha256": "e67e33d66fe984015d1665700bc8d4d70b55181a6c77fbeb752d964b2581e5da",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 85,
+        "sourceSha256": "51f8e43704a9da3c4821e2034c98afb1c3c6f7f43feda1365c1ed9b8ac3dc99e",
+        "nativeTakeSha256": "9fb758f825de7852e1173319f3279a8cb146797aa6df135fe3186f9c7c8591a0",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "f4bc28973851987340094e7e3a7c51162f0a4a04b456b5abe82bdd8bdf727c86",
+        "displayCalibration": {
+          "scale": 0.9757319092750549,
+          "offset": [
+            9.289520263671875,
+            4.0795440673828125
+          ],
+          "gain": [
+            1.0278396698835897,
+            1.0296430514668962,
+            1.124185794498486
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/dealerbust.mp3",
+      "audioSha256": "0cb1a5f12e0269fed94c2985570a3c7afe02bb7f02544a1d0019d791a7dbcc55",
+      "text": "Dealer busts! Congratulations, the table wins.",
+      "cutIn": 0,
+      "cutOut": 84,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.06764172335600907,
+        "lineOnsetSec": 0.06764172335600907
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 85
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "e67e33d66fe984015d1665700bc8d4d70b55181a6c77fbeb752d964b2581e5da",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "dealerbust-enter.png",
+          "sha256": "83e8093ad341f7be1402e1706b398f740e84b6453cee2cf5e926b89f261309e4",
+          "src": "review/astrid-seam-repair/dealerbust-enter-83e8093ad341.png"
+        },
+        "exit": {
+          "flow": "dealerbust-exit.png",
+          "sha256": "ab1e2bb870f3471841decf2b0a052ea7dcba3dd356695d540a72f2f98229d1bb",
+          "src": "review/astrid-seam-repair/dealerbust-exit-ab1e2bb870f3.png"
+        }
+      }
+    },
+    "double": {
+      "jobId": "xJrgoE5julUV1agzVGWs",
+      "media": {
+        "src": "review/astrid-seam-repair/double-4abde0594548.mp4",
+        "sha256": "4abde059454839aea6d9491999d688f66c42607ad152da53d8e9483f9190992c",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "606baad0d4a8df98225cb5d5afe5fe54236194bf7b14f9d5794c2ac6eefe50d6",
+        "nativeTakeSha256": "5f4fc4bfd8f5afbca8ed4cf0cfba5d43b07d15a942eccda6f1751aeef84df5e1",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "c27d613e68e0fa41fce79fcfd951a93f9f57d5d3959fe8edf0577d5d9a5da415",
+        "displayCalibration": {
+          "scale": 0.980525016784668,
+          "offset": [
+            7.340667724609375,
+            3.4857177734375
+          ],
+          "gain": [
+            1.0484211408717103,
+            1.0343899595977422,
+            1.087168524748083
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/double.mp3",
+      "audioSha256": "c4c30b73267ad6af635a21449d7942d0142da6647ab8e7e8ecca52841b1b56fc",
+      "text": "Doubling down. One card, let's make it count.",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.08775510204081632,
+        "lineOnsetSec": 0.08775510204081632
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "4abde059454839aea6d9491999d688f66c42607ad152da53d8e9483f9190992c",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "double-enter.png",
+          "sha256": "531a4465a0b65a7a3dfd9e65f9c415f3a230bc85310bf60b622a39bda71d90b1",
+          "src": "review/astrid-seam-repair/double-enter-531a4465a0b6.png"
+        },
+        "exit": {
+          "flow": "double-exit.png",
+          "sha256": "a3e9d30379ba5f092193b375d53fb665a94bc29f5a389b397273c28fa5b2f6ab",
+          "src": "review/astrid-seam-repair/double-exit-a3e9d30379ba.png"
+        }
+      }
+    },
+    "farewell": {
+      "jobId": "cuAeX41T0nLE0q9gG86w",
+      "media": {
+        "src": "review/astrid-seam-repair/farewell-9c941998c255.mp4",
+        "sha256": "9c941998c255adf77d40e31652b23879b11c09ef5d32d6fe6e5073bff70cf682",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 47,
+        "sourceSha256": "6e73191d76ba894701ac131bf9294114d0f94543a8bf05a20e711bb84ec8d0c2",
+        "nativeTakeSha256": "d61feb25c1b1278f92c1f954e73b8b741f0bafbc9e3ea5b130c6f9a293435340",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "68bf0168d8ce71bd64b7aaae0ad3151edd7d8f83e99949719f1e0051f90578b6",
+        "displayCalibration": {
+          "scale": 0.9806561470031738,
+          "offset": [
+            7.2916259765625,
+            3.1269989013671875
+          ],
+          "gain": [
+            1.0576000671039902,
+            1.0505732452544798,
+            1.104691411458123
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/farewell.mp3",
+      "audioSha256": "cb22f40ecbdf5fba352d983522cd50ccaa3138b10d63299c1dac3308f785d04a",
+      "text": "Thanks for playing with me. Come back soon.",
+      "cutIn": 0,
+      "cutOut": 46,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.10294784580498866,
+        "lineOnsetSec": 0.10294784580498866
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 47
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "9c941998c255adf77d40e31652b23879b11c09ef5d32d6fe6e5073bff70cf682",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "farewell-enter.png",
+          "sha256": "d1965f22fdc5a4e06c1b30b1164999c846d0cbeb96df81a838b0aab9b77814a2",
+          "src": "review/astrid-seam-repair/farewell-enter-d1965f22fdc5.png"
+        },
+        "exit": {
+          "flow": "farewell-exit.png",
+          "sha256": "c427a40db92c2e0c6da640f4e1e157402f6c47ab9a1dc2f9581deebb11481651",
+          "src": "review/astrid-seam-repair/farewell-exit-c427a40db92c.png"
+        }
+      }
+    },
+    "goodluck": {
+      "jobId": "gUoli6tA6QtpwAbwP1xq",
+      "media": {
+        "src": "review/astrid-seam-repair/goodluck-baedca28d5e7.mp4",
+        "sha256": "baedca28d5e71e4d68169db1d8f2b4ca23ac09e64c3faf97f1888696b7cc4431",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "2e684f0559987e33526eb64afd5c27322152a7cbec28a7083ad5e8123981e1e0",
+        "nativeTakeSha256": "186bab84114187baf551aa94aa16c66844e218040eb11e4995de346bb81ca743",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "d45d9dfd609b04f508100214975656181b135b8a2f6c06033d4a03a46e25cb7f",
+        "displayCalibration": {
+          "scale": 0.9829754829406738,
+          "offset": [
+            6.3231201171875,
+            3.039215087890625
+          ],
+          "gain": [
+            1.0500466731069236,
+            1.0355995688799653,
+            1.0922630670496876
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/goodluck.mp3",
+      "audioSha256": "4ab3706389183bedd27fdcf278e388da9fddf4fcf3a950cac371132dd3bc3efd",
+      "text": "Bets are closed. Good luck at my table!",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.11206349206349206,
+        "lineOnsetSec": 0.11206349206349206
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "baedca28d5e71e4d68169db1d8f2b4ca23ac09e64c3faf97f1888696b7cc4431",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "goodluck-enter.png",
+          "sha256": "da2375a0a76eb7fcc00ff82e79d057eefe47e1cd5c9f5aba725386aa3396b20d",
+          "src": "review/astrid-seam-repair/goodluck-enter-da2375a0a76e.png"
+        },
+        "exit": {
+          "flow": "goodluck-exit.png",
+          "sha256": "356ff52d4ee7dbda6e0d576710f9cbce2748dc4ed7177420f782da8d78b782a7",
+          "src": "review/astrid-seam-repair/goodluck-exit-356ff52d4ee7.png"
+        }
+      }
+    },
+    "insurance": {
+      "jobId": "Poc0uboe25IctsbKmH8d",
+      "media": {
+        "src": "review/astrid-seam-repair/insurance-4f04a79a9bbc.mp4",
+        "sha256": "4f04a79a9bbc081a52fbda261bd4d0c8856891a95efbb24ee8c338b48ef52b10",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "503e283a6106e50e8661e967fc419100a4436a8377b1b61e1c2f71427ea28ea5",
+        "nativeTakeSha256": "e49eb768e71bb4c64c856f1dd18ebc725039209b0ad2e2fe5572cb8d7ebe3074",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "80c938468af8cfdbd0a828603b57b489c53dd0ab1ab5ab7c89e93dc148aca019",
+        "displayCalibration": {
+          "scale": 0.9773990511894226,
+          "offset": [
+            8.353759765625,
+            3.8189544677734375
+          ],
+          "gain": [
+            1.0658371067819101,
+            1.0634623315506309,
+            1.123962538059978
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/insurance.mp3",
+      "audioSha256": "ce5863ac64782ae3c45e44ca09e0fc3b6e1fbd33f7610c3dbbf3a4f76c2f2a86",
+      "text": "Insurance is open. Would you like to protect your hand?",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.114421768707483,
+        "lineOnsetSec": 0.11439909297052155
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "4f04a79a9bbc081a52fbda261bd4d0c8856891a95efbb24ee8c338b48ef52b10",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "insurance-enter.png",
+          "sha256": "de610df4a7327d11302692cf63f9aede68902bb2212f8bb867d52de433bf9946",
+          "src": "review/astrid-seam-repair/insurance-enter-de610df4a732.png"
+        },
+        "exit": {
+          "flow": "insurance-exit.png",
+          "sha256": "382f06077f8d67adc5c79179c214651028362fd4db5d2abde4802fa22cec0efa",
+          "src": "review/astrid-seam-repair/insurance-exit-382f06077f8d.png"
+        }
+      }
+    },
+    "lose": {
+      "jobId": "IHh6jAgPIe1LiPVBzbM7",
+      "media": {
+        "src": "review/astrid-seam-repair/lose-64a958bf9337.mp4",
+        "sha256": "64a958bf933727a5076aad9d9065e3ec3e39277522e02a703af71b238ee1963b",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 752,
+        "height": 682,
+        "fps": 24,
+        "frames": 39,
+        "sourceSha256": "44c674de71baddf2d6028b3a5078965e10fa266e8700cdfed3091fa5e5cc3414",
+        "nativeTakeSha256": "0512fbe5a557832b3d0f6eff500b1862f3e797841b5c1995af72e526db04a564",
+        "crop": [
+          560,
+          0,
+          752,
+          682
+        ],
+        "parentPackedSha256": "2ac791b2f1a41817a30e5b29a56559cec2b73141d1726d7b1a1451e7a5686157",
+        "displayCalibration": {
+          "scale": 0.9796735048294067,
+          "offset": [
+            7.643157958984375,
+            3.34417724609375
+          ],
+          "gain": [
+            1.053295497517814,
+            1.041610528258908,
+            1.098970401928789
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 752,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/lose.mp3",
+      "audioSha256": "2f2925cbee67be7451ac110f6e603003ef7b9f05e3b49bef8b44324414ac888f",
+      "text": "Dealer wins this one. Better luck next round.",
+      "cutIn": 0,
+      "cutOut": 38,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.10165532879818594,
+        "lineOnsetSec": 0.10165532879818594
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 39
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "64a958bf933727a5076aad9d9065e3ec3e39277522e02a703af71b238ee1963b",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "lose-enter.png",
+          "sha256": "38995a3fac8e2816e5e80bf9effe62f68072b90d1e5b416188b064d1a7449c57",
+          "src": "review/astrid-seam-repair/lose-enter-38995a3fac8e.png"
+        },
+        "exit": {
+          "flow": "lose-exit.png",
+          "sha256": "7ccea38a05385a3195576a7d130313905ee541a022848c0a16d30a82ab4a8307",
+          "src": "review/astrid-seam-repair/lose-exit-7ccea38a0538.png"
+        }
+      }
+    },
+    "peek": {
+      "jobId": "P2CbnCJePYCpwGYwP5P4",
+      "media": {
+        "src": "review/astrid-seam-repair/peek-494c4aefaf5f.mp4",
+        "sha256": "494c4aefaf5f954a723133fdc1ff25cf2069dea94ae5b496a8cb04a903cd8fe6",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 752,
+        "height": 682,
+        "fps": 24,
+        "frames": 66,
+        "sourceSha256": "9e7011916b3ed971330b52b95df392385532a2f990860b53e19a5e40368cc2e1",
+        "nativeTakeSha256": "bc0193a0b662a8e5e374804cdaf5fc64251767d01d0137597e48a9f842a2772c",
+        "crop": [
+          560,
+          0,
+          752,
+          682
+        ],
+        "parentPackedSha256": "671dcff986a4f6967bf3efb0e5e1bc756c7fce216f42da2bf4a28bee3eb378f7",
+        "displayCalibration": {
+          "scale": 0.9826794862747192,
+          "offset": [
+            6.488067626953125,
+            3.11236572265625
+          ],
+          "gain": [
+            1.0573893943942765,
+            1.0516990107766357,
+            1.1112491359902223
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 752,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/peek.mp3",
+      "audioSha256": "7f86eeb07f9d4fec544035ae845890cce081dd5096ed55499bf0948138c11e1a",
+      "text": "Let me take a look at my hand.",
+      "cutIn": 0,
+      "cutOut": 65,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.05920634920634921,
+        "lineOnsetSec": 0.05920634920634921
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 66
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "494c4aefaf5f954a723133fdc1ff25cf2069dea94ae5b496a8cb04a903cd8fe6",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "peek-enter.png",
+          "sha256": "4fb048eac4010ab2e7d2ab6f3bf8ab65607cb5eb6a99ae5005c78eb87747d9fa",
+          "src": "review/astrid-seam-repair/peek-enter-4fb048eac401.png"
+        },
+        "exit": {
+          "flow": "peek-exit.png",
+          "sha256": "11feb1dce5d00d699dd1b020e9ee7563f662d7cd32d2c050621e0cbc8f432b67",
+          "src": "review/astrid-seam-repair/peek-exit-11feb1dce5d0.png"
+        }
+      }
+    },
+    "placebets": {
+      "jobId": "wXrifkkD3tgxGuOyPv36",
+      "media": {
+        "src": "review/astrid-seam-repair/placebets-a3d48dd3fceb.mp4",
+        "sha256": "a3d48dd3fceb67f89e59575887f3c20d469df03a00f612910beaacda4f60f5dc",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 752,
+        "height": 682,
+        "fps": 24,
+        "frames": 55,
+        "sourceSha256": "5d0a20be14de8d2516bdf1a80a9ebd90dc063ce5ce8c71678396d781a9994d8e",
+        "nativeTakeSha256": "08ae7e114480dbbe1e7012d4f5314bd72a9ffad43194f3f022caf27c2b71a11d",
+        "crop": [
+          560,
+          0,
+          752,
+          682
+        ],
+        "parentPackedSha256": "fdf802a1592e1db7c764f049eb8fc2ccca5daca69ce7512ff86816aa769c3751",
+        "displayCalibration": {
+          "scale": 0.9812428951263428,
+          "offset": [
+            7.0960693359375,
+            3.3370513916015625
+          ],
+          "gain": [
+            1.0579863951559774,
+            1.0516514741758014,
+            1.1133939195019256
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 752,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/placebets.mp3",
+      "audioSha256": "a25740b33d92067e66173f535cb246ed212cab79748de9574f19131a038c6770",
+      "text": "Place your bets, please.",
+      "cutIn": 0,
+      "cutOut": 54,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 0.9999,
+        "takeOnsetSec": 0.08378684807256236,
+        "lineOnsetSec": 0.08378684807256236
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 55
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "a3d48dd3fceb67f89e59575887f3c20d469df03a00f612910beaacda4f60f5dc",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "placebets-enter.png",
+          "sha256": "fc2a4b75d456e05e591763f0248e2f8ad06dd6b585ee0758fa8533f849e8652a",
+          "src": "review/astrid-seam-repair/placebets-enter-fc2a4b75d456.png"
+        },
+        "exit": {
+          "flow": "placebets-exit.png",
+          "sha256": "6c8c6baf7f239491a032357a3f048b7a7da2046f15aa7caf5bda31666a18b958",
+          "src": "review/astrid-seam-repair/placebets-exit-6c8c6baf7f23.png"
+        }
+      }
+    },
+    "push": {
+      "jobId": "obV9gn6nWg569kfeMeUu",
+      "media": {
+        "src": "review/astrid-seam-repair/push-f08a746fce0e.mp4",
+        "sha256": "f08a746fce0e52e74bc280824d468f08520215ac5056ca4e120eebb16f6a8dfb",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 47,
+        "sourceSha256": "33089981819ccc31a8ee35d0446b5567e97bf72c6d325df1f46ec8574eee8430",
+        "nativeTakeSha256": "97ef7e9dd33f0482a19c6121f6f7b0a88cc0b3a3885ec5b0bf63951d9249d72a",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "b31ee86831c9aa0df8a5f97611de7a31d00cc8481e2d2477735af26d42354e4f",
+        "displayCalibration": {
+          "scale": 0.9813721776008606,
+          "offset": [
+            6.965240478515625,
+            3.4580230712890625
+          ],
+          "gain": [
+            1.0581544594123975,
+            1.0478375972973297,
+            1.1064638882472586
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/push.mp3",
+      "audioSha256": "a440d0c435369d7a8c020b5be2358e130c7aaeecb6ede9df3ae6d45a22d327a6",
+      "text": "It's a push. Your stake is returned.",
+      "cutIn": 0,
+      "cutOut": 46,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.0954421768707483,
+        "lineOnsetSec": 0.0954421768707483
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 47
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "f08a746fce0e52e74bc280824d468f08520215ac5056ca4e120eebb16f6a8dfb",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "push-enter.png",
+          "sha256": "7f187f71930dc402b09f0492f46d208c8acfa581c472d02a97a4bdb821785dfe",
+          "src": "review/astrid-seam-repair/push-enter-7f187f71930d.png"
+        },
+        "exit": {
+          "flow": "push-exit.png",
+          "sha256": "0b0a1c9c43d1b21a9c7b1802b4690268109a5291dea0bc9fe5caa36cfd70fcf9",
+          "src": "review/astrid-seam-repair/push-exit-0b0a1c9c43d1.png"
+        }
+      }
+    },
+    "sidebet": {
+      "jobId": "dNQBzah6jqH1zbGxKCPZ",
+      "media": {
+        "src": "review/astrid-seam-repair/sidebet-84c6ce4af9a5.mp4",
+        "sha256": "84c6ce4af9a51fac73f9da5f5fa422575e6da412d7ef2e1ddc27a351ac2063c1",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 51,
+        "sourceSha256": "b0fad20fb9eeeedec792255ee32b0034f80effdc94478ac0bf15b0d4ce4d1cba",
+        "nativeTakeSha256": "e2e806eb18b996be2271838a351291d5885ff2b2aa3c20fcdfd931c91482c626",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "6ef921569fa3d301d09bd00f548baaaf0b98fd7ad239ff84b47458010bb10953",
+        "displayCalibration": {
+          "scale": 0.9804690480232239,
+          "offset": [
+            7.33447265625,
+            3.466583251953125
+          ],
+          "gain": [
+            1.0588580655859008,
+            1.053106868910585,
+            1.1143527224459089
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/sidebet.mp3",
+      "audioSha256": "d29b7d5c2803318e587f06bef6a81202f8fd9538facb99840fb6621116d68808",
+      "text": "Your side bet pays! Nicely done.",
+      "cutIn": 0,
+      "cutOut": 50,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 0.9999,
+        "takeOnsetSec": 0.11229024943310657,
+        "lineOnsetSec": 0.11229024943310657
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 51
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "84c6ce4af9a51fac73f9da5f5fa422575e6da412d7ef2e1ddc27a351ac2063c1",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "sidebet-enter.png",
+          "sha256": "6799699d3e3863fcb22b0af96a2dd837eca46e5ac91bf0998e28402057199253",
+          "src": "review/astrid-seam-repair/sidebet-enter-6799699d3e38.png"
+        },
+        "exit": {
+          "flow": "sidebet-exit.png",
+          "sha256": "9c2f2d417269a4acd74f00578978eecfad3558814734b6c64ebf8ed26d0f60af",
+          "src": "review/astrid-seam-repair/sidebet-exit-9c2f2d417269.png"
+        }
+      }
+    },
+    "win": {
+      "jobId": "8DAy8aReZIWwp4p4zpvd",
+      "media": {
+        "src": "review/astrid-seam-repair/win-999997e6ddbc.mp4",
+        "sha256": "999997e6ddbc3c0cab1fa65f02b1e3ed81a7f5fd7d94347b5de5b72983cd7461",
+        "matteRevision": "opaque-head-interior-v2",
+        "layout": "rgb-over-alpha",
+        "width": 754,
+        "height": 682,
+        "fps": 24,
+        "frames": 89,
+        "sourceSha256": "8f0fc3203509c8b54991e1155fa2281285b5c32d5de76cbd64923294ac54a8e5",
+        "nativeTakeSha256": "0cb38ae7b936323b44c06e697970b77e065a6750229758b73bad70dfcb394cd3",
+        "crop": [
+          560,
+          0,
+          754,
+          682
+        ],
+        "parentPackedSha256": "f1fb10e61552d8a953a43f715ea7d63bb82964408c823369c5d35db4a08f8a3f",
+        "displayCalibration": {
+          "scale": 0.978755533695221,
+          "offset": [
+            8.087890625,
+            3.763702392578125
+          ],
+          "gain": [
+            1.0198276885087751,
+            1.0215151402221019,
+            1.1082422515459505
+          ],
+          "space": "common crop after actorOffset",
+          "revision": "seam-repair-v1",
+          "referenceSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d"
+        }
+      },
+      "camera": {
+        "width": 754,
+        "height": 682,
+        "placement": {
+          "width": 1920,
+          "height": 1080,
+          "scale": 1,
+          "x": 560,
+          "y": 0,
+          "framingScale": 0.85
+        }
+      },
+      "audio": "dealers/astrid/audio/en/win.mp3",
+      "audioSha256": "5c0352e834d1a16e9d72fc081b59828b44ee8b7df207dc15e17658caa861140b",
+      "text": "Well played! Enjoy your winnings.",
+      "cutIn": 0,
+      "cutOut": 88,
+      "audioOffsetSeconds": 0,
+      "audioMeasurement": {
+        "method": "cross-correlation of the take's embedded AAC track against the line mp3 (44.1 kHz mono)",
+        "lagSamples": 0,
+        "normalisedPeak": 1,
+        "takeOnsetSec": 0.04673469387755102,
+        "lineOnsetSec": 0.04673469387755102
+      },
+      "registration": {
+        "method": "greeting registration reused (verified on blackjack/win/bust frame 0, registration/verify-take.py)",
+        "scale": 1.5,
+        "offset": [
+          0,
+          15
+        ],
+        "resample": "scale=1920:1056 lanczos, pad=1920:1080 at (0,15) with backdrop green 0x196f2d, fps=24 by frame drop (timing kept), audio copied",
+        "sourceFrames": 89
+      },
+      "readyPose": "frame 0 and the last frame (plate ready pose)",
+      "transition": {
+        "width": 960,
+        "height": 760,
+        "durationMs": 220,
+        "flowRange": 64,
+        "actorOffset": [
+          0,
+          20
+        ],
+        "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+        "mediaSha256": "999997e6ddbc3c0cab1fa65f02b1e3ed81a7f5fd7d94347b5de5b72983cd7461",
+        "method": "Fixed uniform registration and RGB calibration, then bidirectional DIS whole-actor silent join. Native speech frames and exact mp3 timing retained. New visual review required.",
+        "enter": {
+          "flow": "win-enter.png",
+          "sha256": "f19f549c9c89ab59ad95a0f52e244183b4b840e79333bbec2781f58ca6281cad",
+          "src": "review/astrid-seam-repair/win-enter-f19f549c9c89.png"
+        },
+        "exit": {
+          "flow": "win-exit.png",
+          "sha256": "c2d79db0d5299eb778549f2f934392020427d01622a8692c509f9485c488d2e2",
+          "src": "review/astrid-seam-repair/win-exit-c2d79db0d529.png"
+        }
+      }
+    }
+  },
+  "note": "Each original recording and its mp3 stay unchanged on disk. The display copy applies one fixed measured RGB grade and uniform scale/translation, retaining native fps, frame count and audio offset. Joins are remeasured against the calibrated display copies. No generated replacement or per-frame color pumping.",
+  "visualRevision": "seam-repair-v1"
+}

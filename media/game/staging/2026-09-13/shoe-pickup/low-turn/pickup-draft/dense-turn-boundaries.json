@@ -1,0 +1,185 @@
+{
+  "status": "rough visual estimates only; not a rigid quad tracking solution",
+  "frames": [
+    {
+      "frame": 36,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1103,
+          543
+        ],
+        [
+          1091,
+          588
+        ]
+      ],
+      "interpretation": "approximate visible distal upper and lower corners only",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 37,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1105,
+          551
+        ],
+        [
+          1096,
+          587
+        ]
+      ],
+      "interpretation": "approximate visible distal upper and lower corners only",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 38,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1110,
+          565
+        ],
+        [
+          1101,
+          588
+        ]
+      ],
+      "interpretation": "approximate visible distal upper and lower corners only",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 39,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1110,
+          564
+        ],
+        [
+          1100,
+          586
+        ]
+      ],
+      "interpretation": "approximate visible distal upper and lower corners only",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 40,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1060,
+          587
+        ],
+        [
+          1120,
+          592
+        ]
+      ],
+      "interpretation": "approximate gripping-to-distal visible edge line, corners unresolved",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 41,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1065,
+          598
+        ],
+        [
+          1122,
+          605
+        ]
+      ],
+      "interpretation": "approximate gripping-to-distal visible edge line, corners unresolved",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 42,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1068,
+          608
+        ],
+        [
+          1119,
+          615
+        ]
+      ],
+      "interpretation": "approximate gripping-to-distal visible edge line, corners unresolved",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 43,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1110,
+          616
+        ],
+        [
+          1128,
+          631
+        ]
+      ],
+      "interpretation": "approximate visible distal upper and lower corners only",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 44,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1115,
+          616
+        ],
+        [
+          1130,
+          640
+        ]
+      ],
+      "interpretation": "approximate visible distal upper and lower corners only",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    },
+    {
+      "frame": 45,
+      "visibleBoundaryEstimatesNative": [
+        [
+          1108,
+          617
+        ],
+        [
+          1125,
+          643
+        ]
+      ],
+      "interpretation": "approximate visible distal upper and lower corners only",
+      "hiddenNearCorners": null,
+      "method": "manual visual estimate from 2x native crop; not subpixel measured",
+      "uncertaintyPixels": 8,
+      "contactMeasured": false
+    }
+  ]
+}

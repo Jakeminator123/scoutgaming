@@ -82,13 +82,14 @@ export function createPartnerReference({ env = () => process.env, token = genera
         const result = await post('/api/v1/launch', { playerId: settings.partner.BETTALOTTO_PARTNER_PLAYER_ID }, settings);
         let url;
         try { url = new URL(result.url); } catch { throw new StudioError('Spelets öppningslänk är ogiltig.', 502); }
-        if (url.origin !== settings.origin || url.pathname !== '/' || url.username || url.password || !url.searchParams.get('launch')) throw new StudioError('Spelets öppningslänk har fel adress.', 502);
+        const gamePath = settings.raw.CROUPIER_PUBLIC_GAME_PATH === '/game' ? '/game' : '/';
+        if (url.origin !== settings.origin || url.pathname !== gamePath || url.username || url.password || !url.searchParams.get('launch')) throw new StudioError('Spelets öppningslänk har fel adress.', 502);
         const presentationMode = body.action === 'launch-staged-base' ? 'astrid-staged-base' : 'partner-default';
         if (presentationMode === 'astrid-staged-base') {
           // Explicit diagnostic choice. Keep the validated launch identity but
           // use only the base manifest, never inherit motion/scene overrides.
           const launchToken = url.searchParams.get('launch');
-          url = new URL('/', settings.origin);
+          url = new URL(gamePath, settings.origin);
           url.searchParams.set('launch', launchToken);
           url.searchParams.set('dealer', 'astrid');
           url.searchParams.set('performance', 'staged');

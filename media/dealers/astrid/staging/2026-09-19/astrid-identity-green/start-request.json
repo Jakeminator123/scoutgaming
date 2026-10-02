@@ -1,0 +1,14 @@
+{
+  "model": "gpt_image_2_5",
+  "aspect_ratio": "16:9",
+  "resolution": "2k",
+  "quality": "high",
+  "count": 1,
+  "medias": [
+    {
+      "role": "image",
+      "value": "b2c16866-56c4-4406-bbb1-7fed713ca485"
+    }
+  ],
+  "prompt": "Edit this supplied Astrid photograph into a VFX green-screen studio reference. The woman in this photograph is the exact identity to preserve: same face shape, eyes, nose, lips, jaw, blonde hairstyle, small gold earrings, smooth natural skin, makeup, black blazer and ivory blouse. Keep her age and appearance exactly as photographed. Preserve the soft flattering facial light; do not sharpen wrinkles, age her, change her features or invent a different woman. Use a locked, wide 16:9 seated dealer composition showing her entire upper body, both forearms, complete hands and ample work surface in front. Replace all casino surroundings with a plain evenly lit green screen and plain green work surface. Her arms are now unfolded naturally: one empty hand rests on the surface; her left hand on viewer-right rests beside the low outlet of a small matte-green card shoe. One thin lime-green card with four small magenta corner dots is barely exposed at that outlet, not yet drawn. Keep the shoe small and realistically sized for playing cards. Natural proportions, soft skin illumination without green spill. No casino decoration, lettering, chips, extra cards or transparency."
+}

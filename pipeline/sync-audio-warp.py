@@ -37,9 +37,9 @@ def window_lags(m,e,half=30,step=24):
         if bl is not None and best>0.2: anchors.append((c,bl,best))
     return anchors
 def warp(key, src=None):
-    stream=f'web/public/dealer/streams/idle-1_speak_{key}.h264'
-    cur=f'web/public/dealer/audio/en/{key}.mp3'
-    orig=f'web/public/dealer/audio/en/orig/{key}.mp3'
+    stream=f'media/dealers/vera/runtime/indexed/streams/idle-1_speak_{key}.h264'
+    cur=f'media/dealers/vera/runtime/indexed/audio/en/{key}.mp3'
+    orig=f'media/dealers/vera/runtime/indexed/audio/en/orig/{key}.mp3'
     if not (os.path.exists(stream) and os.path.exists(cur)): return f'{key}: missing assets, skipped'
     if not os.path.exists(orig): shutil.copy(cur,orig)
     if src is None: src=orig
@@ -79,8 +79,8 @@ def warp(key, src=None):
     lags=[f'{int(l*1000/FPS):+d}' for _,l,_ in anchors]
     return f'{key}: warped, {len(segs)} segments, head +{int(head_delay*1000)}ms, lag curve ms [{" ".join(lags)}]'
 def residual_ms(key):
-    stream=f'web/public/dealer/streams/idle-1_speak_{key}.h264'
-    cur=f'web/public/dealer/audio/en/{key}.mp3'
+    stream=f'media/dealers/vera/runtime/indexed/streams/idle-1_speak_{key}.h264'
+    cur=f'media/dealers/vera/runtime/indexed/audio/en/{key}.mp3'
     m=mouth_track(stream); e=audio_env(cur,len(m)+48)
     a=window_lags(m,e)
     if not a: return None
@@ -92,7 +92,7 @@ def iterate(key, passes=3):
     for i in range(passes-1):
         r=residual_ms(key)
         if r is None or abs(r)<=100: return msg+f' | residual {r}ms after pass {i+1}'
-        tmp=tempfile.mktemp(suffix='.mp3'); shutil.copy(f'web/public/dealer/audio/en/{key}.mp3',tmp)
+        tmp=tempfile.mktemp(suffix='.mp3'); shutil.copy(f'media/dealers/vera/runtime/indexed/audio/en/{key}.mp3',tmp)
         msg=warp(key,src=tmp); os.unlink(tmp)
         if 'warped' not in msg: return msg
     return msg+f' | residual {residual_ms(key)}ms final'

@@ -1,10 +1,12 @@
+import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
+const mediaUrl=(value,base)=>{const old=new URL(value,base),result=pathToFileURL(resolveMediaAbsolutePath(fileURLToPath(old)));if(old.pathname.endsWith('/')&&!result.pathname.endsWith('/'))result.pathname+='/';return result;};
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
 import {createHash} from 'node:crypto';import {execFileSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {sceneJoinPayload} from '../web/public/scene-join.mjs';
 import {readyMotionErrors} from '../web/public/ready-motion.mjs';
 import {PerformancePlayer} from '../web/public/performance-player.mjs';
-const pub=new URL('../web/public/',import.meta.url),read=p=>JSON.parse(fs.readFileSync(new URL(p,pub)));
+const pub=mediaUrl('../web/public/',import.meta.url),read=p=>JSON.parse(fs.readFileSync(mediaUrl(p,pub)));
 const takes=read('dealers/astrid/performance/smooth60/manifest.json').takes,idle=read('dealers/astrid/actor/provenance.json').sources['idle-1/idle/idle'];
 const old=read('dealers/astrid/performance/joins/manifest.json');
 function fixture(){const loop=structuredClone(old.joins[0]);loop.ready={kind:'loop',loopSha256:loop.media.sha256};const speech=structuredClone(loop);speech.ready.kind='speech';return {status:'review',loop,speech,joins:old.joins.map(j=>({...structuredClone(j),ready:{kind:j.bindings[0].edge,loopSha256:loop.media.sha256}}))};}
@@ -35,7 +37,7 @@ test('installed ready motion covers every actual take with a bounded loop',()=>{
  assert.deepEqual(readyMotionErrors(m,takes,idle),[]);
  assert.ok(m.loop.media.frames/m.loop.media.fps<=1.2,'waiting must not delay an action for a four-second source loop');
  for(const clip of [m.loop,m.speech,...m.joins]){
-  const file=new URL(clip.media.src,pub),sha=x=>createHash('sha256').update(x).digest('hex');
+  const file=mediaUrl(clip.media.src,pub),sha=x=>createHash('sha256').update(x).digest('hex');
   assert.equal(sha(fs.readFileSync(file)),clip.media.sha256);assert.equal(sha(sceneJoinPayload(clip)),clip.calibrationSha256);
   const v=JSON.parse(execFileSync('ffprobe',['-v','error','-select_streams','v:0','-count_frames','-show_entries','stream=width,height,r_frame_rate,nb_read_frames,has_b_frames','-of','json',fileURLToPath(file)])).streams[0];
   assert.equal(v.width,1920);assert.equal(v.height,2160);assert.equal(v.r_frame_rate,'60/1');assert.equal(Number(v.nb_read_frames),clip.media.frames);assert.equal(v.has_b_frames,0);

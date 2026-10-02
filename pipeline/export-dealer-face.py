@@ -2,7 +2,7 @@
 import bpy,json,math
 from pathlib import Path
 from mathutils import Vector
-ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'content/staging/2026-09-10/astrid-head-v2';bpy.ops.wm.open_mainfile(filepath=str(OUT/'astrid-face-groomed.blend'))
+ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'media/dealers/astrid/staging/2026-09-10/astrid-head-v2';bpy.ops.wm.open_mainfile(filepath=str(OUT/'astrid-face-groomed.blend'))
 scene=bpy.context.scene;scene.render.engine='CYCLES';scene.cycles.samples=1;scene.render.threads_mode='FIXED';scene.render.threads=6
 for obj in scene.objects:
  if obj.type=='MESH' and obj.data.shape_keys:

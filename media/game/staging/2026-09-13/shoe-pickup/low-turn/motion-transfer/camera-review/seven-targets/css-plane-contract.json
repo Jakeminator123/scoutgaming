@@ -1,0 +1,90 @@
+{
+  "status": "staging local CSS game-card plane, not source camera or metric world calibration",
+  "targetCaptureSHA256": "718a0ba42ef10261fe06224ee95d75ba74d3088bcb5cc82fd651eecea93af065",
+  "box": 0,
+  "capturedCSSDimensions": [
+    46,
+    66.0078
+  ],
+  "sourceQuad": [
+    [
+      422.3961032796214,
+      644.2297424178292
+    ],
+    [
+      497.39373662947105,
+      681.7895259107156
+    ],
+    [
+      447.1400098311399,
+      742.0158263093458
+    ],
+    [
+      372.1423764812902,
+      704.4560428164596
+    ]
+  ],
+  "cssLocalCenteredToSource": [
+    [
+      1.6303833336923836,
+      -0.7613301276262983,
+      434.76805655538067
+    ],
+    [
+      0.8165170324540515,
+      0.9124118725155256,
+      693.1227843635876
+    ],
+    [
+      0,
+      0,
+      1
+    ]
+  ],
+  "sourceToCSSLocalCentered": [
+    [
+      0.4325825744131194,
+      0.3609533769862786,
+      -438.25809485948446
+    ],
+    [
+      -0.3871179788326614,
+      0.7729792224474746,
+      -367.4629796032714
+    ],
+    [
+      0,
+      0,
+      1
+    ]
+  ],
+  "logical63x88CenteredToSource": [
+    [
+      1.190438624600788,
+      -0.5710650772537633,
+      434.76805655538067
+    ],
+    [
+      0.5961870395696249,
+      0.6843897772571627,
+      693.1227843635876
+    ],
+    [
+      0,
+      0,
+      1
+    ]
+  ],
+  "logical63x88Units": "optional normalized parameterization only; CSSaspect1.435 differs88/63",
+  "parallelogramClosureMaxError": 2.2737367544323206e-13,
+  "sourceRegistration": {
+    "scale": 0.5421688741883204,
+    "translation": [
+      121.01686751907214,
+      0.1039891799197603
+    ],
+    "method": "Measured live1091 shoe registration composed with exact uniformRegistration viewport resize"
+  },
+  "inheritedUncertainty": "All seven game corners actual rendered; source inverse inherits ~5nativepx shoe localization plus unquantified distant perspective error. Box0 actual +5.5deg/-44px fan differs from default first-card -4deg/-32px.",
+  "continuation": "For source-screen delta(dx,dy), inverse linear2x2 maps delta to localCSS delta; forward mapping of that delta preserves all four fixed corner offsets. Parent/game CSS placement is affine at this captured viewport. Does not establish physical felt plane or shared map for other seats."
+}

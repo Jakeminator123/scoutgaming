@@ -1,0 +1,125 @@
+{
+  "status": "manualvisiblepaperonly-draft",
+  "rows": [
+    {
+      "frame": 23,
+      "paperPolygonNative": [
+        [
+          1118,
+          565
+        ],
+        [
+          1128,
+          561
+        ],
+        [
+          1128,
+          568
+        ],
+        [
+          1120,
+          571
+        ]
+      ],
+      "changedRGpixels": 62,
+      "inputSha256": "50388cdc75cf7ec4fa926fe0a66caed5ba499ca3090d484363e3d2766f8890d5",
+      "outputSha256": "41f35a126101a9237925275fcbfe2e076b35424ac1ee176b77e0aeb88cfee69f"
+    },
+    {
+      "frame": 24,
+      "paperPolygonNative": [
+        [
+          1089,
+          557
+        ],
+        [
+          1116,
+          545
+        ],
+        [
+          1117,
+          550
+        ],
+        [
+          1091,
+          564
+        ]
+      ],
+      "changedRGpixels": 191,
+      "inputSha256": "6be5c3706ac90c66533143c7d138b9e52cd0968324a7e7c62fe20ceae80226be",
+      "outputSha256": "16f9fa4f10bf77b36fd62f4d9310204ec1fb5122c941322b95f9c76a323d9456"
+    },
+    {
+      "frame": 25,
+      "paperPolygonNative": [
+        [
+          1066,
+          530
+        ],
+        [
+          1097,
+          528
+        ],
+        [
+          1097,
+          543
+        ],
+        [
+          1066,
+          543
+        ]
+      ],
+      "changedRGpixels": 246,
+      "inputSha256": "3e49f4a897ddb787ca60117892054115df456947c0c1c8b73bd775527ac7d3e6",
+      "outputSha256": "8f3342fea448d1a3150150c11f2a519d6e1a973ec2fa7e21c0089f2b420218d8"
+    },
+    {
+      "frame": 26,
+      "paperPolygonNative": [
+        [
+          1080,
+          520
+        ],
+        [
+          1089,
+          520
+        ],
+        [
+          1089,
+          527
+        ],
+        [
+          1080,
+          527
+        ]
+      ],
+      "changedRGpixels": 35,
+      "inputSha256": "0c34379ec990acd84ec06fe9ad54e92e1299dba42b4e723599c3b507dbf3da46",
+      "outputSha256": "4efb14e2c14f9ad09725ee431de2362dbc2aa3acd61f1c4735c3eb577ace33f5"
+    },
+    {
+      "frame": 27,
+      "paperPolygonNative": [
+        [
+          1063,
+          498
+        ],
+        [
+          1087,
+          505
+        ],
+        [
+          1087,
+          514
+        ],
+        [
+          1063,
+          512
+        ]
+      ],
+      "changedRGpixels": 293,
+      "inputSha256": "c9cf98c75590da32d891a33cb79d3f9f64e30d02078b9c369331a850a5a44fdf",
+      "outputSha256": "3752f297a05f30705d5a52383c7e19f0d3f2227e571e32d35a0e0ecec990ff11"
+    }
+  ]
+}

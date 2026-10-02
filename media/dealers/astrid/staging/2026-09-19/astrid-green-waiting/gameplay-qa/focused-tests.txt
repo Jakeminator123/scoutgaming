@@ -1,0 +1,118 @@
+TAP version 13
+# (node:41544) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: edge parameters parse from ?edge=erode,feather,wrap with defaults and clamps
+ok 1 - edge parameters parse from ?edge=erode,feather,wrap with defaults and clamps
+  ---
+  duration_ms: 0.9315
+  type: 'test'
+  ...
+# Subtest: live tuning clamps and updates the shared parameters
+ok 2 - live tuning clamps and updates the shared parameters
+  ---
+  duration_ms: 0.181125
+  type: 'test'
+  ...
+# Subtest: the blend shader softens alpha and wraps colour without blurring RGB, and both compositors use it
+ok 3 - the blend shader softens alpha and wraps colour without blurring RGB, and both compositors use it
+  ---
+  duration_ms: 0.3625
+  type: 'test'
+  ...
+# (node:41545) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only the FIRST card of the configured box selects the box take
+ok 4 - only the FIRST card of the configured box selects the box take
+  ---
+  duration_ms: 0.591916
+  type: 'test'
+  ...
+# Subtest: the dealer upcard keeps its own take and never the box take
+ok 5 - the dealer upcard keeps its own take and never the box take
+  ---
+  duration_ms: 0.114292
+  type: 'test'
+  ...
+# Subtest: a box take keeps the filmed landing like the dealer take; the contract still rejects giving it up
+ok 6 - a box take keeps the filmed landing like the dealer take; the contract still rejects giving it up
+  ---
+  duration_ms: 1.096
+  type: 'test'
+  ...
+# Subtest: every installed review take validates and shares the plate registration
+ok 7 - every installed review take validates and shares the plate registration
+  ---
+  duration_ms: 1.8525
+  type: 'test'
+  ...
+# (node:41546) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: approved green action owns only the first face-up Astrid dealer card
+ok 8 - approved green action owns only the first face-up Astrid dealer card
+  ---
+  duration_ms: 0.481958
+  type: 'test'
+  ...
+# Subtest: player cards and other dealers cannot consume the approved upcard action
+ok 9 - player cards and other dealers cannot consume the approved upcard action
+  ---
+  duration_ms: 0.130417
+  type: 'test'
+  ...
+# Subtest: missing or non-numeric card counts do not accidentally enable the action
+ok 10 - missing or non-numeric card counts do not accidentally enable the action
+  ---
+  duration_ms: 0.0595
+  type: 'test'
+  ...
+# Subtest: shoe registration follows the selected take and cropped source placement
+ok 11 - shoe registration follows the selected take and cropped source placement
+  ---
+  duration_ms: 0.433166
+  type: 'test'
+  ...
+# Subtest: pulling back the shot keeps the filmed shoe and Blender table in the same frame
+ok 12 - pulling back the shot keeps the filmed shoe and Blender table in the same frame
+  ---
+  duration_ms: 0.208083
+  type: 'test'
+  ...
+# Subtest: the waiting cadence never glances twice in a row and never idles more than 3 base loops
+ok 13 - the waiting cadence never glances twice in a row and never idles more than 3 base loops
+  ---
+  duration_ms: 6.628875
+  type: 'test'
+  ...
+# Subtest: the cadence is not periodic: base holds vary in length
+ok 14 - the cadence is not periodic: base holds vary in length
+  ---
+  duration_ms: 0.395792
+  type: 'test'
+  ...
+# Subtest: glance segments only start and end on the waiting clip ready-pose frames; base is its own loop
+ok 15 - glance segments only start and end on the waiting clip ready-pose frames; base is its own loop
+  ---
+  duration_ms: 0.52825
+  type: 'test'
+  ...
+# Subtest: the installed idle keeps the eye-contact loop as base and splices 15777d5f glances with the measured offset
+ok 16 - the installed idle keeps the eye-contact loop as base and splices 15777d5f glances with the measured offset
+  ---
+  duration_ms: 1.102125
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 72.924625

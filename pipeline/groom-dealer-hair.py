@@ -3,7 +3,7 @@ import bpy,math,random,numpy as np
 from pathlib import Path
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
-ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'content/staging/2026-09-10/astrid-head-v2';bpy.ops.wm.open_mainfile(filepath=str(OUT/'astrid-face-textured.blend'))
+ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'media/dealers/astrid/staging/2026-09-10/astrid-head-v2';bpy.ops.wm.open_mainfile(filepath=str(OUT/'astrid-face-textured.blend'))
 scene=bpy.context.scene;head=bpy.data.objects['Astrid_Face'];camera=bpy.data.objects['Identity_Camera'];bpy.context.view_layer.update();project=camera.calc_matrix_camera(bpy.context.evaluated_depsgraph_get(),x=900,y=1100)@camera.matrix_world.inverted()
 def scalp_point(v):
  c=project@v.co.to_4d();x=(c.x/c.w+1)*450;y=(1-c.y/c.w)*550

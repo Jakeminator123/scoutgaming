@@ -65,10 +65,10 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
       db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${column === 'next_path' ? "TEXT NOT NULL DEFAULT '/'" : 'INTEGER'}`);
     }
   }
-  const current = id => {
+  const current = async id => {
     const user = db.prepare('SELECT role FROM users WHERE id=?').get(id);
-    const stamp = user && identity.stamp(id);
-    return user && stamp && ADMIN_ROLES.has(user.role) ? { role: user.role, stamp, epoch: authEpoch(id) } : null;
+    const stamp = user && await identity.stamp(id);
+    return user && stamp && ADMIN_ROLES.has(user.role) ? { role: user.role, stamp, epoch: await authEpoch(id) } : null;
   };
   const stateCookie = (value, age) => `bo_lab_state=${value}; Path=/api/auth/lab/callback; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
   const sessionCookie = (value, age) => `lab_session=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
@@ -85,7 +85,7 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
     return true;
   };
 
-  return function handle(req, res) {
+  return async function handle(req, res) {
     const url = new URL(req.url, lab), path = url.pathname;
     if (!PATHS.has(path)) return false;
     if (req.method !== 'GET') return reply(res, 405);
@@ -100,7 +100,7 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
       const bearer = cookie(req, 'lab_session');
       if (!bearer) return reply(res, 401);
       const session = db.prepare('SELECT * FROM lab_sessions WHERE token_digest=? AND expires>?').get(digest(bearer), Date.now());
-      const account = session && current(session.craig_user_id);
+      const account = session && await current(session.craig_user_id);
       const valid = session && account && account.role === session.role &&
         account.stamp === session.source_stamp && account.epoch === session.auth_epoch;
       if (session && !valid) db.prepare('DELETE FROM lab_sessions WHERE token_digest=?').run(digest(bearer));
@@ -128,18 +128,18 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
     if (path === '/api/bo/lab-login') {
       const flow = db.prepare('SELECT 1 FROM bo_lab_handoffs WHERE state_digest=? AND expires>? AND code_digest IS NULL').get(digest(state), Date.now());
       if (!flow) return staleHandoff(res);
-      const claims = boSession(req);
+      const claims = await boSession(req);
       if (!claims) return reply(res, 303, { Location: `/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/lab-login?state=${state}`)}` });
       if (!ADMIN_ROLES.has(claims.role)) return reply(res, 403);
-      const account = identity.find(claims.sub);
-      if (!account || account.stamp !== claims.source_stamp || claims.auth_epoch !== authEpoch(account.id)) return reply(res, 401);
+      const account = await identity.find(claims.sub);
+      if (!account || account.stamp !== claims.source_stamp || claims.auth_epoch !== await authEpoch(account.id)) return reply(res, 401);
       const until = Math.min(claims.exp * 1000, Date.now() + 86400000);
       if (until <= Date.now() + 1000) return reply(res, 401);
       const code = token();
       const updated = db.prepare(`UPDATE bo_lab_handoffs
         SET code_digest=?,craig_user_id=?,role=?,source_stamp=?,auth_epoch=?,session_until=?,expires=?
         WHERE state_digest=? AND expires>? AND code_digest IS NULL RETURNING state_digest`).get(
-        digest(code), account.id, claims.role, account.stamp, authEpoch(account.id), until,
+        digest(code), account.id, claims.role, account.stamp, await authEpoch(account.id), until,
         Math.min(Date.now() + 60000, until), digest(state), Date.now());
       if (!updated) return staleHandoff(res);
       return reply(res, 303, { Location: `${lab.origin}/api/auth/lab/callback?state=${state}&code=${code}` });
@@ -149,7 +149,7 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
     if (cookie(req, 'bo_lab_state') !== state || !validToken(code)) return staleHandoff(res);
     const flow = db.prepare('DELETE FROM bo_lab_handoffs WHERE state_digest=? AND code_digest=? AND expires>? RETURNING *').get(digest(state), digest(code), Date.now());
     if (!flow) return staleHandoff(res);
-    const account = current(flow.craig_user_id);
+    const account = await current(flow.craig_user_id);
     const age = Math.floor((flow.session_until - Date.now()) / 1000);
     if (!account || account.role !== flow.role || account.stamp !== flow.source_stamp ||
       account.epoch !== flow.auth_epoch || age < 1) {

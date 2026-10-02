@@ -16,7 +16,7 @@ test('the simple idle policy has two base loops and thirteen one-shot variants',
 
 test('idle policy entries use the correct physical manifest folders', async () => {
   const policy = createDefaultIdlePolicy();
-  const manifest = JSON.parse(await readFile(new URL('../../emil/dealklipp-v1/lab-video-manifest.json', import.meta.url), 'utf8'));
+  const manifest = JSON.parse(await readFile(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
   const family = manifest.families.find(item => item.id === policy.familyId);
   assert.deepEqual(new Set(policy.base.map(item => item.videoId)), new Set(family.standardIds));
   assert.ok(policy.variants.every(item => family.variantIds.includes(item.videoId)));

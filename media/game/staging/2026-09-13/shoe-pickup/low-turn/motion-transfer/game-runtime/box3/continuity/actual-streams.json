@@ -1,0 +1,42 @@
+[
+  {
+    "path": "/Users/solvifyab/Desktop/croupier/web/public/dealers/astrid/streams/idle-1_idle_idle.h264",
+    "sha256": "d7be3e9df26a46f422184f6e2dc3e50b46048302f34c34f8d286959dfb4f5a8b",
+    "frames": 145,
+    "shape": [
+      1440,
+      1440,
+      3
+    ]
+  },
+  {
+    "path": "/Users/solvifyab/Desktop/croupier/web/public/dealers/astrid/streams/idle-1_speak_greeting.h264",
+    "sha256": "9ebaf30ab3eeaad0da05b61d32a36ea35875a8b4b2d1519e0bcf2be46107d419",
+    "frames": 125,
+    "shape": [
+      1440,
+      1440,
+      3
+    ]
+  },
+  {
+    "path": "/Users/solvifyab/Desktop/croupier/web/public/dealers/astrid/streams/idle-1_actions_action-deal.h264",
+    "sha256": "49c5ab519c4fce89c184a570b1cb414d1d95efc49faf068299cb740980976387",
+    "frames": 145,
+    "shape": [
+      1440,
+      1440,
+      3
+    ]
+  },
+  {
+    "path": "/Users/solvifyab/Desktop/croupier/web/public/dealers/astrid/streams/idle-1_actions_action-return.h264",
+    "sha256": "9f63d098f6c2d5136ec1e9e91a4f582b3ae858ef565b0731733f4bbab7479438",
+    "frames": 41,
+    "shape": [
+      1440,
+      1440,
+      3
+    ]
+  }
+]

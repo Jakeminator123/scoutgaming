@@ -1,0 +1,10 @@
+{
+  "action": "deal-left",
+  "preserveThrough": 138,
+  "resumeFrame": 55,
+  "baseMediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
+  "baseSource": "left-outlet-source.mp4",
+  "baseSourceSha256": "dded708128e254020e7264508d94cf05d917b3a73f7321a768f81c0dd4649452",
+  "bridgeSourceSha256": "bf4fa85b7d8acbc931072371a46cdf18eb3843adb58fc370c06f24c595d38e14",
+  "bridgeStartFrame": 19
+}

@@ -3,8 +3,8 @@ import bpy, json, hashlib, shutil, struct
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / 'content/staging/2026-09-10/astrid-head-v2'
-DEST = ROOT / 'assets/astrid-3d/anatomical'
+SOURCE = ROOT / 'media/dealers/astrid/staging/2026-09-10/astrid-head-v2'
+DEST = ROOT / 'media/dealers/astrid/source/3d/anatomical'
 DEST.mkdir(parents=True, exist_ok=True)
 projects = {
     'astrid-face-source.blend': SOURCE / 'astrid-face-groomed.blend',

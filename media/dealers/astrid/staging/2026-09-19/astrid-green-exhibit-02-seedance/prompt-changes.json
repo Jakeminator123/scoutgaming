@@ -1,0 +1,24 @@
+{
+  "sourceJob": "9dc93653-625a-4074-ad0b-f1e8a8fed51e",
+  "sourceVerdict": "want",
+  "edits": [
+    {
+      "from": "exact supplied Astrid scene",
+      "to": "exact supplied Astrid green-screen studio scene"
+    },
+    {
+      "from": "exactly ONE card",
+      "to": "exactly ONE green tracking card"
+    },
+    {
+      "from": "on the felt",
+      "to": "on the green work surface"
+    },
+    {
+      "from": "body proportions, shoe, table, room, lighting, and camera",
+      "to": "body proportions, green shoe, green work surface, plain green background, lighting, and camera"
+    }
+  ],
+  "mechanicalActionAndTiming": "unchanged",
+  "referenceImages": "Reuse the existing generated green studio frames; no new images."
+}

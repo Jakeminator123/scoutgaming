@@ -1,0 +1,39 @@
+{
+  "packedProbe": {
+    "width": 960,
+    "height": 1520,
+    "has_b_frames": 0,
+    "avg_frame_rate": "24/1",
+    "nb_read_frames": "97"
+  },
+  "allFramesFaceInteriorMinAlpha": 255,
+  "allFramesMagentaMarkerMaxAlpha": 0,
+  "allFramesBackgroundAndUnoccludedShoeMaxAlpha": 0,
+  "restRgbDifferentValues": 0,
+  "restFullMatchesNative96": true,
+  "restCropMatchesFull": true,
+  "alphaChangedFromPriorVerifiedElevatedMatte": 0,
+  "decodedSamples": [
+    {
+      "frame": 0,
+      "faceEncodedRgbMae": 1.8300456621004566,
+      "alphaMeanAbsoluteError": 0.0018319143446852365
+    },
+    {
+      "frame": 16,
+      "faceEncodedRgbMae": 2.033881278538813,
+      "alphaMeanAbsoluteError": 0.001826044891640861
+    },
+    {
+      "frame": 36,
+      "faceEncodedRgbMae": 1.908904109589041,
+      "alphaMeanAbsoluteError": 0.0020458215084279254
+    },
+    {
+      "frame": 96,
+      "faceEncodedRgbMae": 2.0922374429223742,
+      "alphaMeanAbsoluteError": 0.0019801556587547234
+    }
+  ],
+  "scope": "Mask/media contract; does not verify Blender camera or rendered gameplay."
+}

@@ -18,7 +18,7 @@ const redact = value => {
   return text.replace(/https?:\/\/[^\s<>'"]+/g, address => { try { const url = new URL(address); return url.origin + url.pathname; } catch { return '[url]'; } });
 };
 try {
-  fixture = await startLocalComparison({ generationDirectory: resolve('emil/dealklipp-v1'), streamLane: 'lissabon-stream-lane', prepareStudio: prepareProject });
+  fixture = await startLocalComparison({ generationDirectory: resolve('media/dealers/astrid/runtime/presentation'), streamLane: 'lissabon-stream-lane', prepareStudio: prepareProject });
   const labUrl = fixture.labUrl.replace('127.0.0.1', 'localhost');
   browser = await chromium.launch({ channel: 'msedge', headless: true, args: ['--autoplay-policy=no-user-gesture-required', '--enable-unsafe-swiftshader', '--disable-background-networking', '--disable-component-update', '--disable-domain-reliability'] });
   context = await browser.newContext({ viewport: { width: 1600, height: 1000 }, acceptDownloads: true });

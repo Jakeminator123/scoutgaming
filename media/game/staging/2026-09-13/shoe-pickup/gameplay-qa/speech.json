@@ -1,0 +1,50 @@
+[
+  {
+    "level": "info",
+    "message": "[speech] start goodluck embedded audio/video",
+    "timestamp": "2026-09-13T21:54:02.532Z",
+    "url": "http://astridcontactnightqa.localhost:4173/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] end goodluck",
+    "timestamp": "2026-09-13T21:54:07.694Z",
+    "url": "http://astridcontactnightqa.localhost:4173/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] start bust matched",
+    "timestamp": "2026-09-13T21:54:44.590Z",
+    "url": "http://astridcontactnightqa.localhost:4173/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] end bust",
+    "timestamp": "2026-09-13T21:54:46.009Z",
+    "url": "http://astridcontactnightqa.localhost:4173/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] start lose matched",
+    "timestamp": "2026-09-13T21:55:29.589Z",
+    "url": "http://astridcontactnightqa.localhost:4173/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] end lose",
+    "timestamp": "2026-09-13T21:55:31.258Z",
+    "url": "http://astridcontactnightqa.localhost:4173/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] start placebets matched",
+    "timestamp": "2026-09-13T21:55:31.333Z",
+    "url": "http://astridcontactnightqa.localhost:4173/app.mjs"
+  },
+  {
+    "level": "info",
+    "message": "[speech] end placebets",
+    "timestamp": "2026-09-13T21:55:33.634Z",
+    "url": "http://astridcontactnightqa.localhost:4173/app.mjs"
+  }
+]

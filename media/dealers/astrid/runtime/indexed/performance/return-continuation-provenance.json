@@ -1,0 +1,20 @@
+{
+  "generationJobId": "1b1fba28-e83e-43c7-acdf-385cf265074d",
+  "model": "Seedance 2.0",
+  "source": "return-bridge-source.mp4",
+  "sourceSha256": "6ba6f7c1e9b0c584ffa0ecc06be276ac6d1cd99c722bcb78e3e88750ab7e7e14",
+  "prompt": "Exactly four seconds, locked photographic blackjack camera, identical blonde Astrid in black blazer and ivory blouse. This is ONLY her EMPTY hand returning from a completed player delivery directly to the shoe, ready for the next card. Start exactly in the first frame. Her right hand is already empty and lifting away after release. Immediately move that empty hand in one economical smooth low arc toward image-right, directly to the BLACK FRONT OUTLET of the shoe, matching the supplied final fingertip, wrist, elbow and gaze position. Complete the reach within the FIRST ONE SECOND, then hold the exact supplied final pose calmly for the final three seconds. She must NOT fold her arms in between. Do not extract or move a card. Do not shuffle, rub, sweep the table or touch the red cut marker. No gestures with the other hand except the small reposition needed to match the final pose. Preserve the same face, body, room, shoe, camera and lighting. Fixed focus and exposure, crisp hands and facial detail, no synthetic motion blur or slow motion. No speech, no cut or dissolve. The one previously dealt card stays flat on the felt and is untouched; it is outside the actor layer. Final pose matches the supplied image exactly, with EMPTY fingertips poised at the low front outlet. A natural continuation of the same person's movement, not a new scene.\n",
+  "bridgeFrames": [
+    1,
+    55
+  ],
+  "preservedCentreFrames": [
+    0,
+    124
+  ],
+  "nextDeliveryStartFrame": 55,
+  "packedMediaSha256": "3cc8783842c87ef37a9066d3d44d9714a664eb006c7fd8baa7a80b754f07c6fc",
+  "calibrationSha256": "9b6e23088b3c1b5160de7439bd85146e6ed32e5b8d167cd5584bd852b25b2237",
+  "status": "review",
+  "scope": "Only an empty-hand centre return; not a complete dealing set."
+}

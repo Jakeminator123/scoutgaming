@@ -1,0 +1,305 @@
+{
+  "body": "8 DECK SHOE\nscout/gaming\nPRIVÉ BLACKJACK · $5.00 – $2,000.00 · 21:15 · AI DEALER\n⚙\n🔊\n➤\nBets are closed. Good luck at my table.\nPP\n21+3\n5\n12\nPP\n21+3\n5\n16\nPP\n21+3\n5\n14\nPP\n21+3\n5\n16\nPP\n21+3\n5\n14\nPP\n21+3\n5\n11/21\nPP\n21+3\n5\n14\n5\n2×\n+\n−\n↔\nBALANCE\n$810.00\nTOTAL BET\n$35.00\nLAST WIN\n–\n+ ADD FUNDS\nCLASSIC\nHIGH ROLLER\nVIP SALON\n⧉\n⨯\n◉\n⟳\nWalk casino\nCHOOSE TABLE\nVera\nAstrid\nAmira\nMei",
+  "receipts": [
+    {
+      "cards": [
+        {
+          "faceDown": false,
+          "shoeDraw": 30
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 31
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 32
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 33
+        }
+      ],
+      "endFrame": 333,
+      "endpointPolicy": "Source hand contact then distance-aware decelerating glide to actual game card; not exact physical destination approval",
+      "glides": [
+        {
+          "distance": 264.03474886188565,
+          "durationFrames": 18,
+          "endFrame": 108
+        },
+        {
+          "distance": 223.45938866556276,
+          "durationFrames": 17,
+          "endFrame": 167
+        },
+        {
+          "distance": 196.57511714681007,
+          "durationFrames": 16,
+          "endFrame": 234
+        },
+        {
+          "distance": 127.1683301793298,
+          "durationFrames": 13,
+          "endFrame": 298
+        }
+      ],
+      "landings": [
+        {
+          "frame": 108,
+          "shoeDraw": 30,
+          "slot": 1
+        },
+        {
+          "frame": 167,
+          "shoeDraw": 31,
+          "slot": 2
+        },
+        {
+          "frame": 234,
+          "shoeDraw": 32,
+          "slot": 3
+        },
+        {
+          "frame": 298,
+          "shoeDraw": 33,
+          "slot": 4
+        }
+      ],
+      "mode": "continuous-rough-gameplay",
+      "releases": [
+        90,
+        150,
+        218,
+        285
+      ],
+      "sessionPass": 1,
+      "state": "complete"
+    },
+    {
+      "cards": [
+        {
+          "faceDown": false,
+          "shoeDraw": 34
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 35
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 36
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 37
+        }
+      ],
+      "endFrame": 333,
+      "endpointPolicy": "Source hand contact then distance-aware decelerating glide to actual game card; not exact physical destination approval",
+      "glides": [
+        {
+          "distance": 434.86594386395694,
+          "durationFrames": 23,
+          "endFrame": 113
+        },
+        {
+          "distance": 491.5411164032257,
+          "durationFrames": 25,
+          "endFrame": 175
+        },
+        {
+          "distance": 536.7102711244494,
+          "durationFrames": 26,
+          "endFrame": 244
+        },
+        {
+          "distance": 189.25926239365805,
+          "durationFrames": 16,
+          "endFrame": 301
+        }
+      ],
+      "landings": [
+        {
+          "frame": 113,
+          "shoeDraw": 34,
+          "slot": 1
+        },
+        {
+          "frame": 175,
+          "shoeDraw": 35,
+          "slot": 2
+        },
+        {
+          "frame": 244,
+          "shoeDraw": 36,
+          "slot": 3
+        },
+        {
+          "frame": 301,
+          "shoeDraw": 37,
+          "slot": 4
+        }
+      ],
+      "mode": "continuous-rough-gameplay",
+      "releases": [
+        90,
+        150,
+        218,
+        285
+      ],
+      "sessionPass": 2,
+      "state": "complete"
+    },
+    {
+      "cards": [
+        {
+          "faceDown": false,
+          "shoeDraw": 38
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 39
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 40
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 41
+        }
+      ],
+      "endFrame": 333,
+      "endpointPolicy": "Source hand contact then distance-aware decelerating glide to actual game card; not exact physical destination approval",
+      "glides": [
+        {
+          "distance": 292.2952529983771,
+          "durationFrames": 19,
+          "endFrame": 109
+        },
+        {
+          "distance": 255.1942196960432,
+          "durationFrames": 18,
+          "endFrame": 168
+        },
+        {
+          "distance": 228.9372027915189,
+          "durationFrames": 17,
+          "endFrame": 235
+        },
+        {
+          "distance": 159.95026965142324,
+          "durationFrames": 14,
+          "endFrame": 299
+        }
+      ],
+      "landings": [
+        {
+          "frame": 109,
+          "shoeDraw": 38,
+          "slot": 1
+        },
+        {
+          "frame": 168,
+          "shoeDraw": 39,
+          "slot": 2
+        },
+        {
+          "frame": 236,
+          "shoeDraw": 40,
+          "slot": 3
+        },
+        {
+          "frame": 299,
+          "shoeDraw": 41,
+          "slot": 4
+        }
+      ],
+      "mode": "continuous-rough-gameplay",
+      "releases": [
+        90,
+        150,
+        218,
+        285
+      ],
+      "sessionPass": 3,
+      "state": "complete"
+    },
+    {
+      "cards": [
+        {
+          "faceDown": false,
+          "shoeDraw": 42
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 43
+        },
+        {
+          "faceDown": false,
+          "shoeDraw": 44
+        },
+        {
+          "faceDown": true,
+          "shoeDraw": 45
+        }
+      ],
+      "endFrame": 333,
+      "endpointPolicy": "Source hand contact then distance-aware decelerating glide to actual game card; not exact physical destination approval",
+      "glides": [
+        {
+          "distance": 401.84215868973865,
+          "durationFrames": 22,
+          "endFrame": 112
+        },
+        {
+          "distance": 458.49669157838287,
+          "durationFrames": 24,
+          "endFrame": 174
+        },
+        {
+          "distance": 483.0426689788658,
+          "durationFrames": 25,
+          "endFrame": 243
+        },
+        {
+          "distance": 216.9226963049428,
+          "durationFrames": 17,
+          "endFrame": 302
+        }
+      ],
+      "landings": [
+        {
+          "frame": 112,
+          "shoeDraw": 42,
+          "slot": 1
+        },
+        {
+          "frame": 174,
+          "shoeDraw": 43,
+          "slot": 2
+        },
+        {
+          "frame": 243,
+          "shoeDraw": 44,
+          "slot": 3
+        },
+        {
+          "frame": 303,
+          "shoeDraw": 45,
+          "slot": 4
+        }
+      ],
+      "mode": "continuous-rough-gameplay",
+      "releases": [
+        90,
+        150,
+        218,
+        285
+      ],
+      "sessionPass": 4,
+      "state": "complete"
+    }
+  ]
+}

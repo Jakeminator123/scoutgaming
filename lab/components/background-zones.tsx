@@ -369,7 +369,7 @@ export function BackgroundZones({ videos }: { videos: Clip[] }) {
     setZones(current => current.filter(zone => zone.id !== active.id)); setSelected('');
   }
   function exportJson() {
-    const output = { schemaVersion: 1, dealer: 'astrid', reference: 'emil/dealklipp-v1/astrid_startbild_spel_1080x1920.png', frame: { width: WIDTH, height: HEIGHT }, zones: zones.map(zone => ({ ...zone, playback: zone.playback || 'continuous', clipName: zone.clipName || null })) };
+    const output = { schemaVersion: 1, dealer: 'astrid', reference: 'media/dealers/astrid/runtime/presentation/astrid_startbild_spel_1080x1920.png', frame: { width: WIDTH, height: HEIGHT }, zones: zones.map(zone => ({ ...zone, playback: zone.playback || 'continuous', clipName: zone.clipName || null })) };
     const url = URL.createObjectURL(new Blob([JSON.stringify(output, null, 2) + '\n'], { type: 'application/json' }));
     const link = document.createElement('a'); link.href = url; link.download = 'astrid-bakgrundszoner.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }

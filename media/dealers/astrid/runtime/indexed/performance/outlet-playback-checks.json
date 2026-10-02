@@ -1,0 +1,106 @@
+{
+  "vera": [
+    {
+      "level": "info",
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-09T17:53:39.406Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-09T17:53:42.519Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-09T17:53:42.572Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-09T17:53:45.684Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    }
+  ],
+  "astrid": [
+    {
+      "level": "info",
+      "message": "[speech] start goodluck embedded audio/video",
+      "timestamp": "2026-09-09T17:52:07.068Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-09T17:52:12.204Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] start goodluck embedded audio/video",
+      "timestamp": "2026-09-09T17:52:12.218Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-09T17:52:17.379Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    }
+  ],
+  "amira": [
+    {
+      "level": "info",
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-09T17:52:47.207Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-09T17:52:49.266Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-09T17:52:49.331Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-09T17:52:51.372Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    }
+  ],
+  "mei": [
+    {
+      "level": "info",
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-09T17:52:54.291Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-09T17:52:55.947Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-09T17:52:56.005Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    },
+    {
+      "level": "info",
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-09T17:52:57.654Z",
+      "url": "http://127.0.0.1:4177/app.mjs"
+    }
+  ]
+}

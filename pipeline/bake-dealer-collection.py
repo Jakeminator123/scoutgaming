@@ -8,9 +8,9 @@ from pathlib import Path
 from mathutils import Matrix,Vector
 root=Path(__file__).resolve().parents[1];folder=Path(sys.argv[1]).resolve()
 data=json.loads((folder/'motion-samples.json').read_text())
-model=root/'web/public/dealers/astrid/rig/face-study/astrid-rigged.glb'
+model=root/'media/dealers/astrid/runtime/indexed/rig/face-study/astrid-rigged.glb'
 if hashlib.sha256(model.read_bytes()).hexdigest()!=data['modelSha256']:raise ValueError('Collection was measured on another model')
-bpy.ops.wm.open_mainfile(filepath=str(root/'assets/astrid-3d/anatomical/astrid-animated.blend'))
+bpy.ops.wm.open_mainfile(filepath=str(root/'media/dealers/astrid/source/3d/anatomical/astrid-animated.blend'))
 scene=bpy.context.scene;arm=next(o for o in scene.objects if o.type=='ARMATURE');original={a.name for a in bpy.data.actions}
 assert len(original)==12,original
 arm.animation_data_create();arm.animation_data.action=None

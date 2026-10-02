@@ -1,0 +1,27 @@
+{
+  "status": "prepared-not-submitted",
+  "previousAttempt": {
+    "outcome": "rejected-no-job",
+    "reason": "H3 start/end frames cannot be mixed with reference media"
+  },
+  "params": {
+    "model": "minimax_h3",
+    "resolution": "2K",
+    "duration": 4,
+    "aspect_ratio": "16:9",
+    "count": 1,
+    "prompt": "One continuous realistic locked-camera blackjack deal in the exact green-screen scene of the supplied START and END frames. Preserve the user-approved Astrid: identical face, youthful adult appearance, soft friendly expression, blonde hair, black blazer, ivory blouse, skin colour and body proportions. Same elevated camera, lens, subject size, green table and shoe. No camera movement, crop or zoom.\n\nDeal exactly ONE physical card from the actual shoe at SCREEN RIGHT to the CENTER PLAYER position, BOX 3, as shown in the END frame. At the start the small blue card is partly exposed at the lower shoe outlet. Astrid's LEFT hand (on screen right, beside the shoe) visibly pinches that exposed card and draws it cleanly OUT of the outlet, low and parallel to the felt. Her other hand receives it naturally; use a brief controlled wrist turn from back-up to face-up, then an economical forward slide toward the viewer to the centre landing shown in the END frame. Keep the fingertips physically touching the card during the transfer and push. Release only as the card settles flat at its destination. Both hands return EMPTY to the supplied resting positions, with a short quiet hold at the end. Professional casino pace, fluid and unhurried, one action completed within four seconds. Small natural eye movement toward the card during the deal and warm eye contact again at the end.\n\nThe START frame shows the BACK of the single card; the END frame shows its FACE. These are the two sides of the SAME physical card. Maintain a continuous full-scene shot, never a cutaway or close-up. It is a rigid thin normal playing card of fixed physical size (72 x 103 mm): cobalt blue, fine white border. BACK: one white centre dot, no corner dots. FACE: four different tiny corners, top-left magenta, top-right yellow, bottom-right cyan, bottom-left white. Preserve the marker identities through rotation and hand occlusion. Never stretch, grow, thicken, duplicate or dissolve the card. Only its position, orientation and natural perspective change. No extra card at the shoe after extraction. No held pack, no additional deal, no flourish, no teleporting, no fingers through the card. No spoken dialogue, music, logos, text, transitions or new objects.",
+    "medias": [
+      {
+        "role": "start_image",
+        "value": "7b9acd83-cfaa-4fd2-aeda-68f7ae941f01"
+      },
+      {
+        "role": "end_image",
+        "value": "61e835c9-e3d7-495f-9653-c454017d559f"
+      }
+    ]
+  },
+  "estimatedCredits": 8,
+  "closeupUse": "Used to prepare the endpoint markers; not included as an additional H3 input because H3 forbids mixed keyframe/reference modes."
+}

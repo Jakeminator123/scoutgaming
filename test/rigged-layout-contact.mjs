@@ -5,9 +5,9 @@ import * as T from '../web/public/vendor/three/three.module.js';
 import {loadRigGeometry} from '../pipeline/load-dealer-rig.mjs';
 import {poseDealer,poseCardAction} from '../web/public/dealer-rig.mjs';
 import {riggedCardPose} from '../web/public/rigged-card-layout.mjs';
-const folder=new URL('../web/public/dealers/astrid/rig/',import.meta.url);
+const folder=new URL('../media/dealers/astrid/runtime/indexed/rig/',import.meta.url);
 const {rig,root}=loadRigGeometry(new URL('astrid-rigged.glb',folder),JSON.parse(fs.readFileSync(new URL('profile.json',folder))));
-const profile=JSON.parse(fs.readFileSync(new URL('../assets/blackjack-3d/profile.json',import.meta.url)));
+const profile=JSON.parse(fs.readFileSync(new URL('../media/game/source/3d/profile.json',import.meta.url)));
 const vertices=[];
 root.traverse(mesh=>{
   if(!mesh.isSkinnedMesh)return;

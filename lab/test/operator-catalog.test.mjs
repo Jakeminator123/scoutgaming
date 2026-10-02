@@ -4,7 +4,7 @@ import test from 'node:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import manifest from '../../emil/dealklipp-v1/lab-video-manifest.json' with { type: 'json' };
+import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
 import { } from '../lib/studio-model.mjs';
 import { buildOperatorCatalog } from '../lib/operator-catalog.mjs';
 import { studioChat } from '../lib/studio-server.mjs';

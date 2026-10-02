@@ -1,13 +1,15 @@
+import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
+const mediaUrl=(value,base)=>{const old=new URL(value,base),result=pathToFileURL(resolveMediaAbsolutePath(fileURLToPath(old)));if(old.pathname.endsWith('/')&&!result.pathname.endsWith('/'))result.pathname+='/';return result;};
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {selectSceneJoin,validateSceneJoin,sceneJoinPayload} from '../web/public/scene-join.mjs';
 import {PerformancePlayer} from '../web/public/performance-player.mjs';
-const root=new URL('../web/public/',import.meta.url);
-const read=p=>JSON.parse(fs.readFileSync(new URL(p,root)));
+const root=mediaUrl('../web/public/',import.meta.url);
+const read=p=>JSON.parse(fs.readFileSync(mediaUrl(p,root)));
 const manifest=read('dealers/astrid/performance/joins/manifest.json');
 const takes=read('dealers/astrid/performance/smooth60/manifest.json').takes;
 const idle=read('dealers/astrid/actor/provenance.json').sources['idle-1/idle/idle'];
@@ -16,7 +18,7 @@ test('each real take has a frame-bound entry and exit, with a 60 fps actor clock
   for(const take of takes)for(const edge of ['entry','exit'])assert.ok(selectSceneJoin(manifest,take,edge,idle),`${take.id} ${edge}`);
   for(const j of manifest.joins){
     assert.deepEqual(validateSceneJoin(j),[]);assert.equal(sha(sceneJoinPayload(j)),j.calibrationSha256);
-    const file=new URL(j.media.src,root);assert.equal(sha(fs.readFileSync(file)),j.media.sha256);
+    const file=mediaUrl(j.media.src,root);assert.equal(sha(fs.readFileSync(file)),j.media.sha256);
     const p=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,has_b_frames','-of','json',fileURLToPath(file)])).streams[0];
     assert.equal(p.width,1920);assert.equal(p.height,2160);assert.equal(p.r_frame_rate,'60/1');assert.equal(p.has_b_frames,0);assert.equal(Number(p.nb_read_frames),j.media.frames);
   }

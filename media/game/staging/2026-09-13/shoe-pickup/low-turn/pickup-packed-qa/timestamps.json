@@ -1,0 +1,219 @@
+{
+  "frames": [
+    {
+      "best_effort_timestamp_time": "0.000000",
+      "side_data_list": [
+        {}
+      ]
+    },
+    {
+      "best_effort_timestamp_time": "0.041667"
+    },
+    {
+      "best_effort_timestamp_time": "0.083333"
+    },
+    {
+      "best_effort_timestamp_time": "0.125000"
+    },
+    {
+      "best_effort_timestamp_time": "0.166667"
+    },
+    {
+      "best_effort_timestamp_time": "0.208333"
+    },
+    {
+      "best_effort_timestamp_time": "0.250000"
+    },
+    {
+      "best_effort_timestamp_time": "0.291667"
+    },
+    {
+      "best_effort_timestamp_time": "0.333333"
+    },
+    {
+      "best_effort_timestamp_time": "0.375000"
+    },
+    {
+      "best_effort_timestamp_time": "0.416667"
+    },
+    {
+      "best_effort_timestamp_time": "0.458333"
+    },
+    {
+      "best_effort_timestamp_time": "0.500000"
+    },
+    {
+      "best_effort_timestamp_time": "0.541667"
+    },
+    {
+      "best_effort_timestamp_time": "0.583333"
+    },
+    {
+      "best_effort_timestamp_time": "0.625000"
+    },
+    {
+      "best_effort_timestamp_time": "0.666667"
+    },
+    {
+      "best_effort_timestamp_time": "0.708333"
+    },
+    {
+      "best_effort_timestamp_time": "0.750000"
+    },
+    {
+      "best_effort_timestamp_time": "0.791667"
+    },
+    {
+      "best_effort_timestamp_time": "0.833333"
+    },
+    {
+      "best_effort_timestamp_time": "0.875000"
+    },
+    {
+      "best_effort_timestamp_time": "0.916667"
+    },
+    {
+      "best_effort_timestamp_time": "0.958333"
+    },
+    {
+      "best_effort_timestamp_time": "1.000000"
+    },
+    {
+      "best_effort_timestamp_time": "1.041667"
+    },
+    {
+      "best_effort_timestamp_time": "1.083333"
+    },
+    {
+      "best_effort_timestamp_time": "1.125000"
+    },
+    {
+      "best_effort_timestamp_time": "1.166667"
+    },
+    {
+      "best_effort_timestamp_time": "1.208333"
+    },
+    {
+      "best_effort_timestamp_time": "1.250000"
+    },
+    {
+      "best_effort_timestamp_time": "1.291667"
+    },
+    {
+      "best_effort_timestamp_time": "1.333333"
+    },
+    {
+      "best_effort_timestamp_time": "1.375000"
+    },
+    {
+      "best_effort_timestamp_time": "1.416667"
+    },
+    {
+      "best_effort_timestamp_time": "1.458333"
+    },
+    {
+      "best_effort_timestamp_time": "1.500000"
+    },
+    {
+      "best_effort_timestamp_time": "1.541667"
+    },
+    {
+      "best_effort_timestamp_time": "1.583333"
+    },
+    {
+      "best_effort_timestamp_time": "1.625000"
+    },
+    {
+      "best_effort_timestamp_time": "1.666667"
+    },
+    {
+      "best_effort_timestamp_time": "1.708333"
+    },
+    {
+      "best_effort_timestamp_time": "1.750000"
+    },
+    {
+      "best_effort_timestamp_time": "1.791667"
+    },
+    {
+      "best_effort_timestamp_time": "1.833333"
+    },
+    {
+      "best_effort_timestamp_time": "1.875000"
+    },
+    {
+      "best_effort_timestamp_time": "1.916667"
+    },
+    {
+      "best_effort_timestamp_time": "1.958333"
+    },
+    {
+      "best_effort_timestamp_time": "2.000000"
+    },
+    {
+      "best_effort_timestamp_time": "2.041667"
+    },
+    {
+      "best_effort_timestamp_time": "2.083333"
+    },
+    {
+      "best_effort_timestamp_time": "2.125000"
+    },
+    {
+      "best_effort_timestamp_time": "2.166667"
+    },
+    {
+      "best_effort_timestamp_time": "2.208333"
+    },
+    {
+      "best_effort_timestamp_time": "2.250000"
+    },
+    {
+      "best_effort_timestamp_time": "2.291667"
+    },
+    {
+      "best_effort_timestamp_time": "2.333333"
+    },
+    {
+      "best_effort_timestamp_time": "2.375000"
+    },
+    {
+      "best_effort_timestamp_time": "2.416667"
+    },
+    {
+      "best_effort_timestamp_time": "2.458333"
+    },
+    {
+      "best_effort_timestamp_time": "2.500000"
+    },
+    {
+      "best_effort_timestamp_time": "2.541667"
+    },
+    {
+      "best_effort_timestamp_time": "2.583333"
+    },
+    {
+      "best_effort_timestamp_time": "2.625000"
+    },
+    {
+      "best_effort_timestamp_time": "2.666667"
+    },
+    {
+      "best_effort_timestamp_time": "2.708333"
+    },
+    {
+      "best_effort_timestamp_time": "2.750000"
+    }
+  ],
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 1920,
+      "height": 2160,
+      "pix_fmt": "yuv420p",
+      "r_frame_rate": "24/1",
+      "nb_frames": "67"
+    }
+  ]
+}

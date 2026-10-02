@@ -1,3 +1,0 @@
-# Isolated rough review — VISUAL ACCEPTANCE FAILED
-
-Root inspected full artifact and authorizes isolated server-card binding. `staged-reviewed` records inspection, not acceptance. Known failures: source finger holes14–20, oversized edge-on paper/prop, shoe debris, mask residue. No public promotion. The independent packed actor contains no authoritative game card art; original printed debris may remain where masks fail. Frame67 is continuation14, observed hand release and ownership handoff; feltcontact occurs earlier. Only last moving endpoint float32 serialization differences<=.001px normalized; exact data in ledger.89frames at60fps use nearest-native3x sampling, not newly generated smooth motion.

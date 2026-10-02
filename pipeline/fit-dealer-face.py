@@ -2,7 +2,7 @@
 import bpy,json,numpy as np
 from pathlib import Path
 from mathutils import Vector
-ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'content/staging/2026-09-10/astrid-head-v2'
+ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'media/dealers/astrid/staging/2026-09-10/astrid-head-v2'
 bpy.ops.wm.open_mainfile(filepath=str(OUT/'astrid-face-base.blend'))
 scene=bpy.context.scene;camera=bpy.data.objects.new('Identity_Camera',bpy.data.cameras.new('Identity_Camera'));scene.collection.objects.link(camera);camera.location=(0,-1,1.6);camera.rotation_euler=(Vector((0,0,1.6))-camera.location).to_track_quat('-Z','Y').to_euler();camera.data.lens=85
 scene.render.resolution_x=900;scene.render.resolution_y=1100;bpy.context.view_layer.update();projection=np.array(camera.calc_matrix_camera(bpy.context.evaluated_depsgraph_get(),x=900,y=1100))@np.array(camera.matrix_world.inverted());inverse=np.linalg.inv(projection)

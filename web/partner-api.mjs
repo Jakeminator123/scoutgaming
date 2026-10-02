@@ -16,7 +16,8 @@ export function normalizeDisplayName(value) {
   return compact;
 }
 
-export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root }) {
+export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/' }) {
+  if (!['/', '/game'].includes(publicGamePath)) throw Error('Invalid public game path');
   // SSE subscribers per (key,player): partner clients receive presentation events as they happen.
   const subs = new Map(); const chan = (k, pid) => `${k}:${pid}`;
   function publish(k, pid, payload) { const set = subs.get(chan(k, pid)); if (!set) return; const line = `id: ${Date.now()}\nevent: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`; for (const res of set) { try { res.write(line); } catch {} } }
@@ -52,7 +53,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       const ts = Math.floor(Date.now() / 1000), body = JSON.stringify({ playerId: pid, displayName: presentedAs, currency: currency || 'EUR' });
       const sig = createHmac('sha256', row.secret).update(`${ts}.POST./api/v1/launch.${body}`).digest('hex');
       return { playerId: pid, playerRef: p.id, balance: p.balance, currency: p.currency, expiresIn: 21600,
-        url: `${publicUrl}/?dealer=astrid&launch=${tok}`,
+        url: `${publicUrl}${publicGamePath}?dealer=astrid&launch=${tok}`,
         curlLines: [`curl -X POST ${publicUrl}/api/v1/launch`, `  -H 'Content-Type: application/json'`, `  -H 'X-Api-Key: ${row.key}'`, `  -H 'X-Timestamp: ${ts}'`, `  -H 'X-Signature: ${sig}'`, `  -d '${body}'`],
         signedString: `${ts}.POST./api/v1/launch.${body}`,
         curlNote: 'Signature valid 5 minutes. signedString is the exact input to HMAC-SHA256 with the key secret.' };
@@ -147,7 +148,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
         const presentedAs = normalizeDisplayName(displayName);
         const p = playerFor(k, playerId, currency);
         const tok = jwtSign({ sub: p.id, partner: k.id, displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
-        return send(200, { url: `${publicUrl}/?dealer=astrid&launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
+        return send(200, { url: `${publicUrl}${publicGamePath}?dealer=astrid&launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
       if (pathname === '/api/v1/table') { const e = need(k, 'play'); if (e) return send(e.status, e);
         const { playerId, requestId, ...cmd } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });
         if (cmd.op !== 'state') { if (typeof requestId !== 'string' || !requestId) return send(400, { error: 'requestId required (idempotency)' });

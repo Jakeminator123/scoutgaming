@@ -1,0 +1,2050 @@
+{
+  "status": "STAGING ONLY; visible manual estimates plus authored pose fit; not source calibration or approved contact",
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/source.mp4",
+  "sourceSHA256": "3ac36f71ad4f3c5144e6258ca1e46b174325278eea4f37d4f9c559fe7f97274e",
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "fps": 24,
+  "physicalDimensions": {
+    "width": 60,
+    "height": 86,
+    "units": "authored orthographic pixel units; absolute scale/depth unmeasured"
+  },
+  "cornerOrder": "A B C D maintain physical identity through turnover",
+  "observations": [
+    {
+      "frame": 13,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1190,
+            626
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1263,
+            642
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1242,
+            659
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        10.635345514153007,
+        null,
+        2.389306026265357,
+        13.024651563754132
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 19,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1166,
+            612
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1246,
+            644
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1210,
+            661
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        5.187382653371693,
+        null,
+        10.22302409407013,
+        5.035669439878819
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 25,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1072,
+            535
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1136,
+            595
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1084,
+            605
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        0.5223950099441835,
+        null,
+        2.9937656836011084,
+        3.5161129090783123
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 31,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1054,
+            513
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1091,
+            592
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1037,
+            576
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        0.02630356546308239,
+        null,
+        1.8283164792761704,
+        1.8519695925338095
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 33,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1048,
+            512
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1100,
+            530
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1075,
+            597
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1026,
+            578
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        2.65133086021287,
+        2.460957970976624,
+        3.832182885919437,
+        3.636963330047688
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 35,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1044,
+            516
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1100,
+            531
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1080,
+            595
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1029,
+            578
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        1.4140145041342687,
+        1.313730683752087,
+        3.27245284713281,
+        3.154347929955927
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 37,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1048,
+            559
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1105,
+            563
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1096,
+            598
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        1.227115380509962,
+        1.320552814145431,
+        0.09616237051154689,
+        null
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 39,
+      "corners": [
+        {
+          "id": "A",
+          "status": "visible-estimate",
+          "native": [
+            1050,
+            576
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1110,
+            579
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1100,
+            599
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        }
+      ],
+      "residualPixels": [
+        0.19572595738494455,
+        0.2104070121864549,
+        0.017031898319911462,
+        null
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 41,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1120,
+            611
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "C",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        }
+      ],
+      "residualPixels": [
+        null,
+        3.888683149793331,
+        null,
+        null
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 43,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1128,
+            635
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1108,
+            618
+          ],
+          "uncertaintyPixels": 8
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1070,
+            615
+          ],
+          "uncertaintyPixels": 8
+        }
+      ],
+      "residualPixels": [
+        null,
+        1.2010679840349736,
+        10.007352957802679,
+        11.20824487594493
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 45,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1135,
+            655
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1112,
+            626
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "visible-estimate",
+          "native": [
+            1068,
+            626
+          ],
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        null,
+        1.3660935546539543,
+        6.553983516427416,
+        7.92005094241798
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 50,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1135,
+            657
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1114,
+            625
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        null,
+        0.0563511973998668,
+        0.05635125271145069,
+        null
+      ],
+      "contactMeasured": false
+    },
+    {
+      "frame": 54,
+      "corners": [
+        {
+          "id": "A",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "B",
+          "status": "visible-estimate",
+          "native": [
+            1135,
+            649
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "C",
+          "status": "visible-estimate",
+          "native": [
+            1113,
+            618
+          ],
+          "uncertaintyPixels": 5
+        },
+        {
+          "id": "D",
+          "status": "occluded-or-ambiguous",
+          "native": null,
+          "uncertaintyPixels": 5
+        }
+      ],
+      "residualPixels": [
+        null,
+        0.01529174663096293,
+        0.015291809353751363,
+        null
+      ],
+      "contactMeasured": false
+    }
+  ],
+  "frames": [
+    {
+      "frame": 0,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 1,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 2,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 3,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 4,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 5,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 6,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 7,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 8,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 9,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 10,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 11,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 12,
+      "quadNative": null,
+      "status": "unresolved shoe-occluded; do not display an invented extracted card"
+    },
+    {
+      "frame": 13,
+      "quadNative": [
+        [
+          1181.6093337301602,
+          619.4649182290053
+        ],
+        [
+          1190.448862503491,
+          592.993222077163
+        ],
+        [
+          1261.1150975077583,
+          640.5316928516523
+        ],
+        [
+          1252.2755687344275,
+          667.0033890034947
+        ]
+      ],
+      "rotationVector": [
+        -0.42689838766762656,
+        -1.078707734603099,
+        -0.9488159760021074
+      ],
+      "centerNative": [
+        1221.3622156189592,
+        629.9983055403288
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 2290.872781478895
+    },
+    {
+      "frame": 14,
+      "quadNative": [
+        [
+          1175.2595828450303,
+          617.4102375969024
+        ],
+        [
+          1192.807019460745,
+          592.5910020098667
+        ],
+        [
+          1263.1762764725918,
+          642.0292974196958
+        ],
+        [
+          1245.628839856877,
+          666.8485330067316
+        ]
+      ],
+      "rotationVector": [
+        -0.49808875270502856,
+        -0.9550910710366183,
+        -0.8669811660093649
+      ],
+      "centerNative": [
+        1219.217929658811,
+        629.7197675082991
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 2614.0265229546535
+    },
+    {
+      "frame": 15,
+      "quadNative": [
+        [
+          1169.9982838210049,
+          615.523411609656
+        ],
+        [
+          1195.8176872860765,
+          592.5927504121726
+        ],
+        [
+          1264.1490035763213,
+          643.3590473428828
+        ],
+        [
+          1238.3296001112496,
+          666.2897085403663
+        ]
+      ],
+      "rotationVector": [
+        -0.5692791177424306,
+        -0.8314744074701376,
+        -0.7851463560166225
+      ],
+      "centerNative": [
+        1217.073643698663,
+        629.4412294762694
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 2877.6377659113236
+    },
+    {
+      "frame": 16,
+      "quadNative": [
+        [
+          1165.8998223413273,
+          613.8932665188772
+        ],
+        [
+          1199.3682737625322,
+          592.9904525203924
+        ],
+        [
+          1263.958893135702,
+          644.4321163696022
+        ],
+        [
+          1230.4904417144971,
+          665.334930368087
+        ]
+      ],
+      "rotationVector": [
+        -0.6404694827798325,
+        -0.7078577439036566,
+        -0.7033115460238799
+      ],
+      "centerNative": [
+        1214.9293577385147,
+        629.1626914442397
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3071.798530367531
+    },
+    {
+      "frame": 17,
+      "quadNative": [
+        [
+          1163.0079273677193,
+          612.6010565171149
+        ],
+        [
+          1203.3350867828417,
+          593.7644599882411
+        ],
+        [
+          1262.5622161890142,
+          645.1672503073052
+        ],
+        [
+          1222.2350567738918,
+          664.0038468361789
+        ]
+      ],
+      "rotationVector": [
+        -0.7116598478172345,
+        -0.5842410803371759,
+        -0.6214767360311375
+      ],
+      "centerNative": [
+        1212.7850717783667,
+        628.88415341221
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3188.566059766473
+    },
+    {
+      "frame": 18,
+      "quadNative": [
+        [
+          1161.33457933339,
+          611.7178432045863
+        ],
+        [
+          1207.586450844813,
+          594.8840532043408
+        ],
+        [
+          1259.9469923030472,
+          645.4933875557743
+        ],
+        [
+          1213.695120791624,
+          662.3271775560198
+        ]
+      ],
+      "rotationVector": [
+        -0.7828502128546364,
+        -0.4606244167706951,
+        -0.539641926038395
+      ],
+      "centerNative": [
+        1210.6407858182185,
+        628.6056153801803
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3222.202788908216
+    },
+    {
+      "frame": 19,
+      "quadNative": [
+        [
+          1160.8597707303825,
+          611.3021591526223
+        ],
+        [
+          1211.9859996580215,
+          596.3083093325366
+        ],
+        [
+          1256.1332289857583,
+          645.3519955436788
+        ],
+        [
+          1205.0070000581193,
+          660.3458453637644
+        ]
+      ],
+      "rotationVector": [
+        -0.8540405778920384,
+        -0.3370077532042143,
+        -0.4578071160456525
+      ],
+      "centerNative": [
+        1208.4964998580704,
+        628.3270773481505
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3169.3556551991096
+    },
+    {
+      "frame": 20,
+      "quadNative": [
+        [
+          1145.4400325158545,
+          598.7481772170122
+        ],
+        [
+          1199.0948849635008,
+          583.1687001857999
+        ],
+        [
+          1237.2559234264277,
+          636.5580760118921
+        ],
+        [
+          1183.6010709787813,
+          652.1375530431044
+        ]
+      ],
+      "rotationVector": [
+        -0.80568727652718,
+        -0.24592107509872635,
+        -0.40888064013399356
+      ],
+      "centerNative": [
+        1191.347977971141,
+        617.6531266144522
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3459.128104441291
+    },
+    {
+      "frame": 21,
+      "quadNative": [
+        [
+          1130.3249583438849,
+          586.08412552998
+        ],
+        [
+          1185.9911572463398,
+          570.3203580571817
+        ],
+        [
+          1218.0739538245386,
+          627.8742262315274
+        ],
+        [
+          1162.4077549220838,
+          643.6379937043257
+        ]
+      ],
+      "rotationVector": [
+        -0.7573339751623216,
+        -0.15483439699323842,
+        -0.35995416422233456
+      ],
+      "centerNative": [
+        1174.1994560842118,
+        606.9791758807537
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3709.550818534611
+    },
+    {
+      "frame": 22,
+      "quadNative": [
+        [
+          1115.4955447668335,
+          573.3327495822913
+        ],
+        [
+          1172.6205324983878,
+          557.7812270284634
+        ],
+        [
+          1198.6063236277314,
+          619.2777007118194
+        ],
+        [
+          1141.4813358961771,
+          634.8292232656473
+        ]
+      ],
+      "rotationVector": [
+        -0.7089806737974631,
+        -0.06374771888775041,
+        -0.31102768831067557
+      ],
+      "centerNative": [
+        1157.0509341972825,
+        596.3052251470554
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3917.103921522612
+    },
+    {
+      "frame": 23,
+      "quadNative": [
+        [
+          1100.9292414621234,
+          560.5176391810136
+        ],
+        [
+          1158.932265088609,
+          545.5649635734998
+        ],
+        [
+          1178.875583158583,
+          610.7449096457002
+        ],
+        [
+          1120.8725595320973,
+          625.697585253214
+        ]
+      ],
+      "rotationVector": [
+        -0.6606273724326048,
+        0.02733895921773752,
+        -0.26210121239901657
+      ],
+      "centerNative": [
+        1139.9024123103532,
+        585.6312744133569
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4078.839917636689
+    },
+    {
+      "frame": 24,
+      "quadNative": [
+        [
+          1086.600213537478,
+          547.662935073323
+        ],
+        [
+          1144.8798174031997,
+          533.6808041387594
+        ],
+        [
+          1158.9075673093691,
+          602.2517122859939
+        ],
+        [
+          1100.6279634436476,
+          616.2338432205574
+        ]
+      ],
+      "rotationVector": [
+        -0.6122740710677463,
+        0.11842563732322553,
+        -0.21317473648735757
+      ],
+      "centerNative": [
+        1122.7538904234236,
+        574.9573236796584
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4192.423199438979
+    },
+    {
+      "frame": 25,
+      "quadNative": [
+        [
+          1072.4796455974752,
+          534.7930298397418
+        ],
+        [
+          1130.4214741233275,
+          522.1334916984957
+        ],
+        [
+          1138.7310914755135,
+          593.7737160521783
+        ],
+        [
+          1080.7892629496612,
+          606.4332541934244
+        ]
+      ],
+      "rotationVector": [
+        -0.563920769702888,
+        0.20951231542871346,
+        -0.1642482605756986
+      ],
+      "centerNative": [
+        1105.6053685364943,
+        564.2833729459601
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4256.161512863824
+    },
+    {
+      "frame": 26,
+      "quadNative": [
+        [
+          1069.005768539507,
+          530.6269990052447
+        ],
+        [
+          1128.0316842363522,
+          522.8018216164818
+        ],
+        [
+          1131.4691739365287,
+          594.0872857168338
+        ],
+        [
+          1072.4432582396835,
+          601.9124631055967
+        ]
+      ],
+      "rotationVector": [
+        -0.5873250723350938,
+        0.15895158248505,
+        -0.09081623279774323
+      ],
+      "centerNative": [
+        1100.2374712380179,
+        562.3571423610392
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4234.58876107379
+    },
+    {
+      "frame": 27,
+      "quadNative": [
+        [
+          1065.7223052196555,
+          526.6526669518162
+        ],
+        [
+          1125.3722338716289,
+          523.7522594388854
+        ],
+        [
+          1124.0168426594278,
+          594.2091566004206
+        ],
+        [
+          1064.3669140074544,
+          597.1095641133513
+        ]
+      ],
+      "rotationVector": [
+        -0.6107293749672995,
+        0.10839084954138656,
+        -0.01738420501978788
+      ],
+      "centerNative": [
+        1094.8695739395416,
+        560.4309117761184
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4198.817701870168
+    },
+    {
+      "frame": 28,
+      "quadNative": [
+        [
+          1062.606905982454,
+          522.8875971393715
+        ],
+        [
+          1122.4188712787327,
+          524.9628767498845
+        ],
+        [
+          1116.3964472996763,
+          594.1217652430236
+        ],
+        [
+          1056.5844820033976,
+          592.0464856325106
+        ]
+      ],
+      "rotationVector": [
+        -0.6341336775995052,
+        0.05783011659772308,
+        0.05604782275816751
+      ],
+      "centerNative": [
+        1089.5016766410652,
+        558.5046811911975
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4149.027252170444
+    },
+    {
+      "frame": 29,
+      "quadNative": [
+        [
+          1059.6358121170617,
+          519.34747857281
+        ],
+        [
+          1119.1498807281223,
+          526.4094935363005
+        ],
+        [
+          1108.6317465681157,
+          593.809422639743
+        ],
+        [
+          1049.117677957055,
+          586.7474076762526
+        ]
+      ],
+      "rotationVector": [
+        -0.657537980231711,
+        0.00726938365405963,
+        0.12947985053612288
+      ],
+      "centerNative": [
+        1084.1337793425887,
+        556.5784506062765
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4085.523225868865
+    },
+    {
+      "frame": 30,
+      "quadNative": [
+        [
+          1056.7840712626041,
+          516.0459920738394
+        ],
+        [
+          1115.5462707488064,
+          528.0658769524757
+        ],
+        [
+          1100.7476928256208,
+          593.2584479688719
+        ],
+        [
+          1041.9854933394186,
+          581.2385630902356
+        ]
+      ],
+      "rotationVector": [
+        -0.6809422828639168,
+        -0.04329134928960385,
+        0.20291187831407825
+      ],
+      "centerNative": [
+        1078.7658820441125,
+        554.6522200213557
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4008.7360660880977
+    },
+    {
+      "frame": 31,
+      "quadNative": [
+        [
+          1054.0257628267632,
+          512.994693936182
+        ],
+        [
+          1111.59193900952,
+          529.9039577011279
+        ],
+        [
+          1092.7702066645088,
+          592.4572849366876
+        ],
+        [
+          1035.204030481752,
+          575.5480211717418
+        ]
+      ],
+      "rotationVector": [
+        -0.7043465854961225,
+        -0.0938520822332673,
+        0.27634390609203363
+      ],
+      "centerNative": [
+        1073.397984745636,
+        552.7259894364348
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3919.2174931948857
+    },
+    {
+      "frame": 32,
+      "quadNative": [
+        [
+          1049.8669245056171,
+          511.6804130757062
+        ],
+        [
+          1106.8043813560748,
+          530.5977253628663
+        ],
+        [
+          1085.7810602400186,
+          595.2955763607285
+        ],
+        [
+          1028.843603389561,
+          576.3782640735684
+        ]
+      ],
+      "rotationVector": [
+        -0.6512399608547548,
+        -0.11370553139839966,
+        0.30625825083779207
+      ],
+      "centerNative": [
+        1067.8239923728179,
+        553.4879947182174
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4081.4358303738018
+    },
+    {
+      "frame": 33,
+      "quadNative": [
+        [
+          1045.7920397902767,
+          510.5321897116467
+        ],
+        [
+          1102.0237963379527,
+          531.40020088466
+        ],
+        [
+          1078.7079602097233,
+          597.9678102883533
+        ],
+        [
+          1022.4762036620473,
+          577.09979911534
+        ]
+      ],
+      "rotationVector": [
+        -0.5981333362133869,
+        -0.13355898056353202,
+        0.3361725955835505
+      ],
+      "centerNative": [
+        1062.25,
+        554.25
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4229.768734781309
+    },
+    {
+      "frame": 34,
+      "quadNative": [
+        [
+          1044.49120722021,
+          512.6057409977227
+        ],
+        [
+          1101.348194448693,
+          531.7039823338048
+        ],
+        [
+          1081.00879277979,
+          596.6442590022773
+        ],
+        [
+          1024.151805551307,
+          577.5460176661952
+        ]
+      ],
+      "rotationVector": [
+        -0.6479585667338179,
+        -0.13196117664886073,
+        0.3034797291363426
+      ],
+      "centerNative": [
+        1062.75,
+        554.625
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 4080.75528285771
+    },
+    {
+      "frame": 35,
+      "quadNative": [
+        [
+          1043.2329450607292,
+          514.8121179612258
+        ],
+        [
+          1100.651195947545,
+          532.1409785919695
+        ],
+        [
+          1083.2670549392708,
+          595.1878820387742
+        ],
+        [
+          1025.848804052455,
+          577.8590214080305
+        ]
+      ],
+      "rotationVector": [
+        -0.697783797254249,
+        -0.13036337273418944,
+        0.2707868626891346
+      ],
+      "centerNative": [
+        1063.25,
+        555.0
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3921.2902764630558
+    },
+    {
+      "frame": 36,
+      "quadNative": [
+        [
+          1044.3209613414688,
+          535.9306654681634
+        ],
+        [
+          1103.2194484923496,
+          546.9786522631251
+        ],
+        [
+          1090.268900951065,
+          597.5558020420731
+        ],
+        [
+          1031.3704138001842,
+          586.5078152471114
+        ]
+      ],
+      "rotationVector": [
+        -0.9217459883914612,
+        -0.03921420491977158,
+        0.19500096387776172
+      ],
+      "centerNative": [
+        1067.294931146267,
+        566.7432337551182
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 3121.9950846071747
+    },
+    {
+      "frame": 37,
+      "quadNative": [
+        [
+          1046.7737870048545,
+          558.9529484578314
+        ],
+        [
+          1106.3202754358945,
+          563.0270648909304
+        ],
+        [
+          1095.905937580213,
+          598.0199865626415
+        ],
+        [
+          1036.359449149173,
+          593.9458701295425
+        ]
+      ],
+      "rotationVector": [
+        -1.1457081795286732,
+        0.05193496289464628,
+        0.11921506506638882
+      ],
+      "centerNative": [
+        1071.3398622925338,
+        578.4864675102365
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 2126.134830490508
+    },
+    {
+      "frame": 38,
+      "quadNative": [
+        [
+          1048.4838673470988,
+          567.4179174389461
+        ],
+        [
+          1108.0547178548572,
+          570.9459394947563
+        ],
+        [
+          1097.9610091373304,
+          598.5748581824247
+        ],
+        [
+          1038.390158629572,
+          595.0468361266145
+        ]
+      ],
+      "rotationVector": [
+        -1.2385099865621452,
+        0.05390270972957751,
+        0.11575843044381849
+      ],
+      "centerNative": [
+        1073.2224382422146,
+        582.9963878106854
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 1681.489011814465
+    },
+    {
+      "frame": 39,
+      "quadNative": [
+        [
+          1050.195696173135,
+          576.003414412768
+        ],
+        [
+          1109.7899715705196,
+          578.9873837570085
+        ],
+        [
+          1100.0143322106562,
+          599.0092018095006
+        ],
+        [
+          1040.4200568132717,
+          596.0252324652602
+        ]
+      ],
+      "rotationVector": [
+        -1.3313117935956171,
+        0.05587045656450874,
+        0.11230179582124816
+      ],
+      "centerNative": [
+        1075.1050141918956,
+        587.5063081111343
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 1222.3559471467227
+    },
+    {
+      "frame": 40,
+      "quadNative": [
+        [
+          1055.3306496345454,
+          589.2779229146786
+        ],
+        [
+          1114.8173727900926,
+          593.0433527587959
+        ],
+        [
+          1104.3434675055819,
+          604.178391708677
+        ],
+        [
+          1044.8567443500347,
+          600.4129618645597
+        ]
+      ],
+      "rotationVector": [
+        -1.4348782785452339,
+        0.04907679094930749,
+        0.13416744194368607
+      ],
+      "centerNative": [
+        1079.8370585700636,
+        596.7281573116778
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 701.8257348805706
+    },
+    {
+      "frame": 41,
+      "quadNative": [
+        [
+          1060.3659814332182,
+          602.6627499058167
+        ],
+        [
+          1119.7263482869957,
+          607.1209574145859
+        ],
+        [
+          1108.7722244632446,
+          609.237263118626
+        ],
+        [
+          1049.411857609467,
+          604.7790556098568
+        ]
+      ],
+      "rotationVector": [
+        -1.5384447634948506,
+        0.04228312533410624,
+        0.15603308806612398
+      ],
+      "centerNative": [
+        1084.5691029482314,
+        605.9500065122213
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "back",
+      "signedArea": 174.4604400495965
+    },
+    {
+      "frame": 42,
+      "quadNative": [
+        [
+          1065.3001501753602,
+          616.1109672638482
+        ],
+        [
+          1124.517987561635,
+          621.1657928221265
+        ],
+        [
+          1113.302144477438,
+          614.2327441616814
+        ],
+        [
+          1054.0843070911633,
+          609.1779186034031
+        ]
+      ],
+      "rotationVector": [
+        -1.6420112484444673,
+        0.03548945971890499,
+        0.1778987341885619
+      ],
+      "centerNative": [
+        1089.3011473263991,
+        615.1718557127648
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -353.8660178857339
+    },
+    {
+      "frame": 43,
+      "quadNative": [
+        [
+          1070.13276684395,
+          629.5748195586607
+        ],
+        [
+          1129.194659683628,
+          635.123905377557
+        ],
+        [
+          1117.9336165651841,
+          619.2125902679559
+        ],
+        [
+          1058.8717237255062,
+          613.6635044490596
+        ]
+      ],
+      "rotationVector": [
+        -1.745577733394084,
+        0.028695794103703744,
+        0.19976438031099977
+      ],
+      "centerNative": [
+        1094.0331917045671,
+        624.3937049133083
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -877.2638932670725
+    },
+    {
+      "frame": 44,
+      "quadNative": [
+        [
+          1074.0320131145816,
+          641.6040854266099
+        ],
+        [
+          1132.8169645253092,
+          645.2121870693891
+        ],
+        [
+          1118.2426411609033,
+          622.9423315446207
+        ],
+        [
+          1059.4576897501756,
+          619.3342299018416
+        ]
+      ],
+      "rotationVector": [
+        -1.820435278338519,
+        0.08018442021068466,
+        0.21827453616025289
+      ],
+      "centerNative": [
+        1096.1373271377424,
+        632.2732084856153
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1256.546734873924
+    },
+    {
+      "frame": 45,
+      "quadNative": [
+        [
+          1077.9658503263831,
+          653.6108481420356
+        ],
+        [
+          1136.3593539193232,
+          655.1355305208715
+        ],
+        [
+          1118.5170748154528,
+          626.6945759738092
+        ],
+        [
+          1060.1235712225127,
+          625.1698935949732
+        ]
+      ],
+      "rotationVector": [
+        -1.8952928232829538,
+        0.13167304631766558,
+        0.236784692009506
+      ],
+      "centerNative": [
+        1098.241462570918,
+        640.1527120579224
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1633.5631729825873
+    },
+    {
+      "frame": 46,
+      "quadNative": [
+        [
+          1077.7974190568636,
+          654.1621005656341
+        ],
+        [
+          1136.086782815689,
+          655.5072789153937
+        ],
+        [
+          1117.6208697664476,
+          626.3642891894776
+        ],
+        [
+          1059.3315060076222,
+          625.019110839718
+        ]
+      ],
+      "rotationVector": [
+        -1.9034956570930146,
+        0.13892841546389573,
+        0.24313361293842706
+      ],
+      "centerNative": [
+        1097.7091444116556,
+        640.2631948775559
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1673.8863827112511
+    },
+    {
+      "frame": 47,
+      "quadNative": [
+        [
+          1077.6284686656088,
+          654.7139665978076
+        ],
+        [
+          1135.8103916442453,
+          655.8758712545962
+        ],
+        [
+          1116.7251838391774,
+          626.0333887965706
+        ],
+        [
+          1058.5432608605408,
+          624.8714841397821
+        ]
+      ],
+      "rotationVector": [
+        -1.9116984909030752,
+        0.14618378461012585,
+        0.2494825338673481
+      ],
+      "centerNative": [
+        1097.176826252393,
+        640.3736776971891
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1714.1178240396666
+    },
+    {
+      "frame": 48,
+      "quadNative": [
+        [
+          1077.458933272774,
+          655.2663786871547
+        ],
+        [
+          1135.5301604774104,
+          656.241267871521
+        ],
+        [
+          1115.8300829134876,
+          625.7019423464903
+        ],
+        [
+          1057.7588557088511,
+          624.727053162124
+        ]
+      ],
+      "rotationVector": [
+        -1.9199013247131358,
+        0.15343915375635597,
+        0.2558314547962692
+      ],
+      "centerNative": [
+        1096.6445080931308,
+        640.4841605168225
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1754.2507186921628
+    },
+    {
+      "frame": 49,
+      "quadNative": [
+        [
+          1077.2887472247364,
+          655.8192690409951
+        ],
+        [
+          1135.2460700067604,
+          656.6034295275737
+        ],
+        [
+          1114.935632643,
+          625.3700176319167
+        ],
+        [
+          1056.978309860976,
+          624.5858571453381
+        ]
+      ],
+      "rotationVector": [
+        -1.9281041585231968,
+        0.16069452290258612,
+        0.2621803757251902
+      ],
+      "centerNative": [
+        1096.1121899338682,
+        640.5946433364559
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1794.2782923747113
+    },
+    {
+      "frame": 50,
+      "quadNative": [
+        [
+          1077.1178451049782,
+          656.3725696364115
+        ],
+        [
+          1134.9581015450954,
+          656.9623174188118
+        ],
+        [
+          1114.0418984442335,
+          625.037682675767
+        ],
+        [
+          1056.2016420041164,
+          624.4479348933667
+        ]
+      ],
+      "rotationVector": [
+        -1.9363069923332574,
+        0.16794989204881625,
+        0.2685292966541113
+      ],
+      "centerNative": [
+        1095.5798717746059,
+        640.7051261560892
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1834.1937758998215
+    },
+    {
+      "frame": 51,
+      "quadNative": [
+        [
+          1077.1682358782189,
+          654.4441899111968
+        ],
+        [
+          1134.9658630872343,
+          654.973696639604
+        ],
+        [
+          1113.7849988664177,
+          623.2757619649523
+        ],
+        [
+          1055.9873716574023,
+          622.746255236545
+        ]
+      ],
+      "rotationVector": [
+        -1.933346145031804,
+        0.1710027837010611,
+        0.27012214995862266
+      ],
+      "centerNative": [
+        1095.4766173723183,
+        638.8599759380745
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1820.850001502842
+    },
+    {
+      "frame": 52,
+      "quadNative": [
+        [
+          1077.2188656113142,
+          652.5155177990154
+        ],
+        [
+          1134.9732895491659,
+          652.9851438255607
+        ],
+        [
+          1113.5278603287468,
+          621.514133641104
+        ],
+        [
+          1055.773436390895,
+          621.0445076145586
+        ]
+      ],
+      "rotationVector": [
+        -1.9303852977303504,
+        0.17405567535330596,
+        0.271715003263134
+      ],
+      "centerNative": [
+        1095.3733629700305,
+        637.0148257200597
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1807.5187322332185
+    },
+    {
+      "frame": 53,
+      "quadNative": [
+        [
+          1077.2697323614657,
+          650.5865548400843
+        ],
+        [
+          1134.980378086572,
+          650.996661432453
+        ],
+        [
+          1113.2704847740197,
+          619.7527961640053
+        ],
+        [
+          1055.5598390489133,
+          619.3426895716366
+        ]
+      ],
+      "rotationVector": [
+        -1.927424450428897,
+        0.1771085670055508,
+        0.27330785656764545
+      ],
+      "centerNative": [
+        1095.2701085677427,
+        635.1696755020448
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1794.200269223243
+    },
+    {
+      "frame": 54,
+      "quadNative": [
+        [
+          1077.3208341802117,
+          648.6573025785492
+        ],
+        [
+          1134.9871258601459,
+          649.0082519111751
+        ],
+        [
+          1113.012874150698,
+          617.9917479895107
+        ],
+        [
+          1055.346582470764,
+          617.6407986568848
+        ]
+      ],
+      "rotationVector": [
+        -1.9244636031274436,
+        0.18016145865779565,
+        0.2749007098721568
+      ],
+      "centerNative": [
+        1095.1668541654549,
+        633.32452528403
+      ],
+      "status": "authored rigid orthographic fit, NOT measured geometry",
+      "face": "front",
+      "signedArea": -1780.8949130661351
+    }
+  ]
+}

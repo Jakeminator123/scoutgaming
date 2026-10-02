@@ -1,20 +1,22 @@
+import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
+const mediaUrl=(value,base)=>{const old=new URL(value,base),result=pathToFileURL(resolveMediaAbsolutePath(fileURLToPath(old)));if(old.pathname.endsWith('/')&&!result.pathname.endsWith('/'))result.pathname+='/';return result;};
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {validateContactTake,calibrationPayload,selectContactTake,contactCueClock} from '../web/public/performance-contact.mjs';
 import {canRetargetTake} from '../web/public/dealer-reach.mjs';
-const root=new URL('../web/public/',import.meta.url);
-const manifest=JSON.parse(fs.readFileSync(new URL('dealers/astrid/performance/smooth60/manifest.json',root)));
-const original=JSON.parse(fs.readFileSync(new URL('dealers/astrid/performance/rhythm/manifest.json',root)));
+const root=mediaUrl('../web/public/',import.meta.url);
+const manifest=JSON.parse(fs.readFileSync(mediaUrl('dealers/astrid/performance/smooth60/manifest.json',root)));
+const original=JSON.parse(fs.readFileSync(mediaUrl('dealers/astrid/performance/rhythm/manifest.json',root)));
 const sha=b=>createHash('sha256').update(b).digest('hex');
 test('60 fps native RGB and interpolated frame records preserve the source clock',()=>{
   for(const t of manifest.takes){
     assert.deepEqual(validateContactTake(t),[]);
     assert.equal(sha(calibrationPayload(t)),t.calibrationSha256);
-    const file=new URL(t.media.src,root);
+    const file=mediaUrl(t.media.src,root);
     assert.equal(sha(fs.readFileSync(file)),t.media.sha256);
     const p=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,has_b_frames','-of','json',fileURLToPath(file)])).streams[0];
     assert.equal(p.width,t.media.width);assert.equal(p.height,t.media.height*2);

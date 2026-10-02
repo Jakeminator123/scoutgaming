@@ -1,0 +1,44 @@
+{
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-19/astrid-elevated-camera/start.png",
+  "sourceSha256": "7bc9c315542a84448bc6401aed13187ba976cdaf0a28124042f9b478031e6011",
+  "dimensions": [
+    2688,
+    1520
+  ],
+  "alphaBounds": [
+    921,
+    29,
+    1827,
+    943
+  ],
+  "provisionalCrop": [
+    784,
+    0,
+    1344,
+    1070
+  ],
+  "sourceToCropRowMajor3x3": [
+    1,
+    0,
+    -784,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "cropToSourceRowMajor3x3": [
+    1,
+    0,
+    784,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "nativeRgbAlterations": 0,
+  "status": "Single reference frame key only; future video unverified"
+}

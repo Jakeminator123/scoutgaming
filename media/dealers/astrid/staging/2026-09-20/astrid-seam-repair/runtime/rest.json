@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "jobId": "744a9e34-944a-4788-9d81-a0e50bd20039",
+  "transitionJobId": "92521ca6-1037-498a-ad71-933248fcf253",
+  "readySha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+  "width": 960,
+  "height": 760,
+  "camera": {
+    "width": 960,
+    "height": 760,
+    "placement": {
+      "width": 1920,
+      "height": 1080,
+      "scale": 1,
+      "x": 560,
+      "y": 0,
+      "framingScale": 0.85
+    }
+  },
+  "loop": {
+    "src": "review/astrid-seam-repair/loop-dd8258097b1b.mp4",
+    "sha256": "dd8258097b1b5fd22e8adfc8621293be87b54bfc84cd2e67eb703e3b5076e253",
+    "sourceSha256": "161027b091e5001a42e6deb3fdf3143f38a00fde40c0cfed70082a3df078c391",
+    "fps": 24,
+    "frames": 61,
+    "sourceFrames": [
+      72,
+      144
+    ],
+    "calibrationRevision": "seam-repair-v1"
+  },
+  "out": {
+    "src": "review/astrid-seam-repair/out-b1cf62468689.mp4",
+    "sha256": "b1cf624686892e61857ce44896281c763cf91d0d9e1ab5b9a38b9316d1a5119a",
+    "sourceSha256": "0300b053aa71c3d802532cfd6ebfe383fe41cb9cef872e82883ed5e14546e087",
+    "fps": 36,
+    "frames": 73,
+    "sourceFrames": [
+      40,
+      96
+    ],
+    "calibrationRevision": "seam-repair-v1"
+  },
+  "back": {
+    "src": "review/astrid-seam-repair/back-fc3615057eaa.mp4",
+    "sha256": "fc3615057eaaecd8da0a1fc712bc57e03d2f914fdf752dbd3bffb40953792b40",
+    "sourceSha256": "0300b053aa71c3d802532cfd6ebfe383fe41cb9cef872e82883ed5e14546e087",
+    "fps": 36,
+    "frames": 73,
+    "sourceFrames": [
+      96,
+      40
+    ],
+    "calibrationRevision": "seam-repair-v1"
+  },
+  "note": "Fixed measured uniform actor scale/translation and per-take RGB balance. Folded loop uses a 12-frame motion-aligned moving overlap; wrap is adjacent native frames60->61 of the previous trimmed loop. Out starts on the exact loop entry; return ends there. Speech exits the loop only at that boundary. The folded native loop provides breathing and subtle eyes without extra full head-turn clips.",
+  "automaticGlances": false
+}

@@ -1,0 +1,135 @@
+[
+  {
+    "duration": 3.041667,
+    "frameCallbacks": 0,
+    "height": 1080,
+    "observations": [],
+    "qualityDelta": null,
+    "state": "paused",
+    "width": 1920
+  },
+  {
+    "duration": 0.416667,
+    "first": {
+      "frame": 0,
+      "mediaTime": 0,
+      "presentedFrames": 2
+    },
+    "frameCallbacks": 20,
+    "height": 1080,
+    "last": {
+      "frame": 24,
+      "mediaTime": 0.4,
+      "presentedFrames": 25
+    },
+    "observations": [
+      {
+        "frame": 0,
+        "mediaTime": 0,
+        "presentedFrames": 2
+      },
+      {
+        "frame": 2,
+        "mediaTime": 0.033333,
+        "presentedFrames": 3
+      },
+      {
+        "frame": 3,
+        "mediaTime": 0.05,
+        "presentedFrames": 4
+      },
+      {
+        "frame": 5,
+        "mediaTime": 0.083333,
+        "presentedFrames": 6
+      },
+      {
+        "frame": 6,
+        "mediaTime": 0.1,
+        "presentedFrames": 7
+      },
+      {
+        "frame": 7,
+        "mediaTime": 0.116667,
+        "presentedFrames": 8
+      },
+      {
+        "frame": 8,
+        "mediaTime": 0.133333,
+        "presentedFrames": 9
+      },
+      {
+        "frame": 10,
+        "mediaTime": 0.166667,
+        "presentedFrames": 11
+      },
+      {
+        "frame": 11,
+        "mediaTime": 0.183333,
+        "presentedFrames": 12
+      },
+      {
+        "frame": 12,
+        "mediaTime": 0.2,
+        "presentedFrames": 13
+      },
+      {
+        "frame": 14,
+        "mediaTime": 0.233333,
+        "presentedFrames": 15
+      },
+      {
+        "frame": 15,
+        "mediaTime": 0.25,
+        "presentedFrames": 16
+      },
+      {
+        "frame": 16,
+        "mediaTime": 0.266667,
+        "presentedFrames": 17
+      },
+      {
+        "frame": 17,
+        "mediaTime": 0.283333,
+        "presentedFrames": 18
+      },
+      {
+        "frame": 18,
+        "mediaTime": 0.3,
+        "presentedFrames": 19
+      },
+      {
+        "frame": 19,
+        "mediaTime": 0.316667,
+        "presentedFrames": 20
+      },
+      {
+        "frame": 20,
+        "mediaTime": 0.333333,
+        "presentedFrames": 21
+      },
+      {
+        "frame": 21,
+        "mediaTime": 0.35,
+        "presentedFrames": 22
+      },
+      {
+        "frame": 23,
+        "mediaTime": 0.383333,
+        "presentedFrames": 24
+      },
+      {
+        "frame": 24,
+        "mediaTime": 0.4,
+        "presentedFrames": 25
+      }
+    ],
+    "qualityDelta": {
+      "corrupted": 0,
+      "dropped": 5,
+      "total": 25
+    },
+    "state": "ended",
+    "width": 1920
+  }
+]

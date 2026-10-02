@@ -1,0 +1,18 @@
+{
+  "sourceSha256": "963f30dabf5ff472a2183bb307963d621867726d0fdd7f151891b94da5f795bf",
+  "frames": 73,
+  "fps": 24,
+  "destination": [
+    890,
+    766,
+    1016,
+    895
+  ],
+  "donorTranslation": [
+    170,
+    0
+  ],
+  "method": "same-frame spatial clone of nearby real felt, fixed pixel registration, connected original fingertip preservation",
+  "status": "diagnostic-not-approved",
+  "allPreservedFingerPixelsIdenticalBeforeEncode": true
+}

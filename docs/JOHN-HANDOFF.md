@@ -4,7 +4,47 @@ Uppdaterad 2 oktober 2026. Kort aktuell handoff; äldre rapporter har rensats
 på Jakobs begäran. Media, JSON-kvitton, kalibreringar och baseline bevaras.
 Uppdatera denna fil i stället för att skapa fler arbetsrapporter.
 
-## Backoffice/Lab — 2 oktober
+## Plattform och gemensam media — pågående verifiering 2 oktober
+
+Ansvar: Render äger fortsatt slump, kort, shoe, regler, saldo och resultat.
+Vercel får spel-/BO-gränssnitt och Lab UI; Lab API och sparade projekt finns
+fortsatt på Render. Neon har separata game/auth-scheman och en separat databas
+från befintliga zonmetadata. Produktionsbyte är ännu inte genomfört.
+
+Implementerat: asynkron PostgreSQL-väg utan SQLite-fallback; explicit
+schema-install/import och backup/restore med tabellantal, radhasher och
+sekvenskontroll. Aktiva externa wallet-kopplingar spärrar import tills deras
+återställningskontrakt är verifierat. BO kan skapa demospelare, blockera,
+återaktivera och avsluta konto med orsak/audit; historik och saldo bevaras.
+Stängning vägrar pågående hand; avslutade konton kan inte återaktiveras.
+
+Riktig isolerad Neon QA: import av 31 tabeller, full backup/restore-paritet,
+samtidiga identiska native-starts med ett avdrag, transaktionsrollback,
+CRAIG-epoch, block/revoke/reactivate, chat-forget-race och probe-kvitton
+godkända. Riktig Web-server: BO/player-login, kontoavslut, native table och
+alla fyra dealers gamla media-GET/HEAD/304 godkända; inga SQLite-filer skapades.
+Vercel/Lab opt-in-byggen, 555 Lab-tester, hela obligatoriska hooken och
+riktade ingress-/roll-/streamtester godkända.
+Isolerad browserkontroll mot riktig Neon passerade samtliga sju spelvägar
+med två verkliga uppspelningar vardera (14 starter och 14 avslut), ljud- och
+bildframsteg, Lab save/reload, projektrevision i spelaren och en beständig
+spelrunda med saldo/ledger-paritet. Tidiga repetitionsklick spärras tills
+serverns verkliga initialisering är klar. Inga JavaScript-fel eller HTTP 500.
+Deployerat WebSocket-prov återstår; detta ersätter inte visuell läppsynks-QA.
+
+Media har flyttats till `media/dealers/<dealer>/{runtime,source,review,staging}`
+samt `media/game` och `media/site`. `runtime` anger användning, inte visuellt
+godkännande. 4 924 filer, 2 911 452 931 byte, kopierades och SHA-256-kontrollerades
+före gamla filer togs bort. ID, bytes, kalibrering och Emil/Kevin-proveniens
+bevaras; `media/layout.json` innehåller explicita gamla URL-/sökvägskopplingar.
+Ingen ny godkänd läppsynk påstås. Blob-export är påbörjad men inte färdig;
+runtime aktiveras endast med verifierat index. Inga gamla Blob-objekt raderas.
+
+Produktionsdrift ligger fortfarande på föregående SQLite/Render-konfiguration.
+Isolerade QA-projekt har egen Neon-databas, hostname och privata ingressnycklar;
+betalda speech-/kameraanrop är av. Backup och verifiering föregår skarp flytt.
+
+## Tidigare verifierad Backoffice/Lab-konsolidering
 
 Före: Lab/Studio och separat BO-navigation; originalmotorernas klippval låg
 i BO medan Astrids Studio-val låg i projektet; privata profiler låg i Lissabon.
@@ -100,10 +140,10 @@ Behållen beslutsgräns: vanlig inloggning och förinspelat spel ska inte starta
 GPU. GPU-vila får inte logga ut spelaren, radera sparande eller avbryta
 ekonomiska transaktioner. Gamla föreslagna timeoutvärden är inte driftkontrakt.
 
-pipeline/ och content/ bevaras efter källgranskning. Pipeline bygger och
-granskar video-/medieregister och används av Lab, hook och CI. Content har
-original, dealerreferenser och kalibrerings-/stagingunderlag som aktiva
-tester och produktens dealerinventering använder. Inga mediabytes ändrades.
+pipeline/ bygger och granskar medieregister och används av Lab, hook och CI.
+Värdefullt innehåll från content/, assets/ och Emil har flyttats till media/;
+gamla tomma kataloger är borttagna. Original, dealerreferenser, kalibrering
+och stagingunderlag är bevarade med hashkontrollerade bytes.
 
 ## Intro och startsida
 

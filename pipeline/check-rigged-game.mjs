@@ -7,7 +7,7 @@ const root=fileURLToPath(new URL('..',import.meta.url)),dir=process.env.CROUPIER
 await fs.mkdir(dir,{recursive:true});
 const base=new URL(process.env.CROUPIER_REVIEW_URL??'http://rigqa.localhost:4197');
 assert.ok(base.hostname==='localhost'||base.hostname==='127.0.0.1'||base.hostname.endsWith('.localhost'),'Use an isolated local demo server');
-const manifest=JSON.parse(await fs.readFile(root+'/web/public/dealers/astrid/rig/face-study/speech-manifest.json'));
+const manifest=JSON.parse(await fs.readFile(root+'/media/dealers/astrid/runtime/indexed/rig/face-study/speech-manifest.json'));
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{}),args:[`--host-resolver-rules=MAP ${base.hostname} 127.0.0.1`,...(process.platform==='darwin'?['--enable-gpu','--use-angle=metal']:[])]});
 const context=await browser.newContext({viewport:{width:1440,height:900},recordVideo:{dir,size:{width:1280,height:800}}});
 const page=await context.newPage(),errors=[],logs=[],lines=[],rounds=[];let currentDealer='astrid-rig';

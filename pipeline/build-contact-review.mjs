@@ -5,11 +5,12 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {calibrationPayload,validateContactTake} from '../web/public/performance-contact.mjs';
 import {packContactMedia} from './pack-contact-media.mjs';
+import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
 const [source,action,pickup,release,land,rest,publicDirectory='web/public',assetName]=process.argv.slice(2);
 if(!source||!/^deal-(?:centre|dealer|left|right)$/.test(action)||![pickup,release,land,rest].every(v=>/^\d+$/.test(v??'')))
   throw new Error('Usage: node pipeline/build-contact-review.mjs staging-directory action pickup release land rest');
-const root=path.resolve(source),publicRoot=path.resolve(publicDirectory);
-const target=path.join(publicRoot,'dealers/astrid/performance'),prefix=assetName??action.slice(5);
+const root=resolveMediaAbsolutePath(path.resolve(source)),publicRoot=path.resolve(publicDirectory);
+const target=resolveMediaAbsolutePath(path.join(publicRoot,'dealers/astrid/performance')),prefix=assetName??action.slice(5);
 if(!/^[a-z0-9-]+$/.test(prefix))throw new Error('Invalid asset name');
 const read=file=>JSON.parse(fs.readFileSync(path.join(root,file)));
 const measurements=read('measurements.json'),tracking=read('marker-tracking.json');

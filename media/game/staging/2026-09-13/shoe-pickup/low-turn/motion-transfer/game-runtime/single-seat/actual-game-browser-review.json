@@ -1,0 +1,17 @@
+{
+  "cards": [
+    {
+      "label": "8♠",
+      "text": "",
+      "visibility": ""
+    },
+    {
+      "label": "A♦",
+      "text": "",
+      "visibility": ""
+    }
+  ],
+  "receipt": "{\"outcome\":{\"state\":\"complete\",\"landed\":true},\"landings\":1,\"issuedCardId\":\"tableVersion:4:shoeDraw:6\",\"faceDown\":false,\"fit\":{\"scale\":0.5421688741883204,\"x\":121.01686751907214,\"y\":0.1039891799197603},\"actual\":[[422.39605247955467,644.2297075183751],[497.3936858294043,681.7894910112614],[447.13995903107315,742.0157914098917],[372.1423256812235,704.4560079170054]],\"target\":[[422.3961032796214,644.2297424178292],[497.39373662947105,681.7895259107156],[447.1400098311399,742.0158263093458],[372.1423764812902,704.4560428164596]],\"visualAcceptance\":\"FAILED; roughactualgame review\"}",
+  "review": "ROUGH CANDIDATE · one DOM handoff · known visual failures",
+  "wallet": "\n        BALANCE$990.00\n        TOTAL BET$5.00\n        LAST WIN$0.00\n        + ADD FUNDS\n      "
+}

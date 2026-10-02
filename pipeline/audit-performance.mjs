@@ -4,8 +4,9 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {validateContactTake,validateSharedExtraction,validateContinuation,calibrationPayload} from '../web/public/performance-contact.mjs';
+import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
 const root=fileURLToPath(new URL('../web/public/',import.meta.url));
-const manifest=JSON.parse(fs.readFileSync(path.join(root,'dealers/astrid/performance/manifest.json')));
+const manifest=JSON.parse(fs.readFileSync(resolveMediaAbsolutePath(path.join(root,'dealers/astrid/performance/manifest.json'))));
 const sha=value=>createHash('sha256').update(value).digest('hex');
 let failures=0;
 for(const take of [...manifest.takes??[],...manifest.continuations??[]]) {
@@ -13,8 +14,8 @@ for(const take of [...manifest.takes??[],...manifest.continuations??[]]) {
   errors.push(...validateSharedExtraction(take,manifest.takes));
   if(take.continuation)errors.push(...validateContinuation(take,manifest.takes));
   if(sha(calibrationPayload(take))!==take.calibrationSha256)errors.push('Tracking/camera checksum mismatch');
-  const file=path.resolve(root,take.media.src);
-  if(!file.startsWith(root))errors.push('Asset outside public directory');
+  const oldFile=path.resolve(root,take.media.src),file=resolveMediaAbsolutePath(oldFile);
+  if(!oldFile.startsWith(root))errors.push('Asset outside public directory');
   else if(!fs.existsSync(file)||sha(fs.readFileSync(file))!==take.media.sha256)errors.push('Packed RGB/mask checksum mismatch');
   else if(process.argv.includes('--probe')) {
     const probe=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=codec_name,width,height,has_b_frames,r_frame_rate,nb_read_frames','-of','json',file],{encoding:'utf8'}));

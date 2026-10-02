@@ -1,0 +1,71 @@
+{
+  "requests": [
+    {
+      "index": 34,
+      "params": {
+        "model": "kling3_0",
+        "mode": "pro",
+        "duration": 3,
+        "sound": "off",
+        "aspect_ratio": "16:9",
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "4781f219-874f-4074-bca9-08492641556b"
+          },
+          {
+            "role": "end_image",
+            "value": "c36ab753-1bc1-49f4-9dd2-67951555d438"
+          }
+        ],
+        "prompt": "Locked camera continuous footage of this exact woman, Astrid. Begin precisely in the supplied first pose. She calmly lowers and releases the small card already in her hands straight down out of the crop, then raises her empty hands only a few centimetres into the supplied final relaxed ready pose. One economical action, completed in the first two seconds, then hold the final pose with natural breathing. Head and torso stay steady, gaze down, mouth closed. Maintain the exact same face, blonde hair, clothing, body scale and light throughout. Opaque photographic skin and clothing in every frame; physically continuous wrists and fingers. Pure black empty background. This is one uninterrupted camera take with no editing, no dissolve, no ghosting, no morph between portraits, no extra sweep or reaching, no table or new objects. Keep the subject at this exact small size in the full 1920 by 1080 black frame. Empty margins and framing must remain unchanged. No portrait close-up or zoom."
+      }
+    },
+    {
+      "index": 100,
+      "params": {
+        "model": "kling3_0",
+        "mode": "pro",
+        "duration": 3,
+        "sound": "off",
+        "aspect_ratio": "16:9",
+        "medias": [
+          {
+            "role": "start_image",
+            "value": "c36ab753-1bc1-49f4-9dd2-67951555d438"
+          },
+          {
+            "role": "end_image",
+            "value": "2cd6f001-1ab4-4f5c-928a-46788d6d1d2c"
+          }
+        ],
+        "prompt": "Locked camera continuous footage of this exact woman, Astrid. Begin precisely in the supplied first empty-handed pose. In one small natural movement she rests one forearm across the other into the exact supplied final folded-hand resting pose, while lifting her gaze to the camera. Complete the movement in the first two seconds, then remain in the exact final pose with slight breathing and closed mouth. Head, shoulders, body scale, face identity, blonde hair, suit, blouse and exposure remain consistent. Hands follow continuous short physical paths, never disappear. Pure black empty background. Single uninterrupted photographic camera take; no dissolve, ghosting, portrait morph, camera change, speech, cards, new props or large gestures. Keep the subject at this exact small size in the full 1920 by 1080 black frame. Empty margins and framing must remain unchanged. No portrait close-up or zoom."
+      }
+    }
+  ],
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Submitted 2/2 video generations.\n- index 34: 01fdd2a7-7c50-4f3b-be04-3204939731b5 (pending)\n- index 100: 2a9b2034-ccfc-46c2-a177-39f0f9cbc71f (pending)\nWait for the complete requested set with jobs_wait, then show it together with show_generation_by_ids using the collected indexed jobs. This includes jobs submitted across separate calls. job_display accepts only one id and cannot display a group; do not pass ids or call it once per job."
+      }
+    ],
+    "structuredContent": {
+      "jobs": [
+        {
+          "index": 34,
+          "job_id": "01fdd2a7-7c50-4f3b-be04-3204939731b5",
+          "status": "pending"
+        },
+        {
+          "index": 100,
+          "job_id": "2a9b2034-ccfc-46c2-a177-39f0f9cbc71f",
+          "status": "pending"
+        }
+      ],
+      "submitted_count": 2,
+      "failed_count": 0
+    },
+    "isError": false
+  }
+}

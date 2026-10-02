@@ -1,0 +1,92 @@
+[
+  {
+    "id": "astrid-smooth60-deal-centre",
+    "group": "smooth60",
+    "src": "dealers/astrid/performance/smooth60/deal-centre.mp4",
+    "inputSha256": "2ef8a8aa642150d908c526e8c88d46e7805d4ac808d24ef1ecd86ce0d4e2b471",
+    "outputSha256": "b66b66a244a6fa892891801a79217d25bc0a78d6c759faf940ac4061e2d8b2be",
+    "frames": 42,
+    "changedMaskPixels": 697346
+  },
+  {
+    "id": "astrid-smooth60-deal-left",
+    "group": "smooth60",
+    "src": "dealers/astrid/performance/smooth60/deal-left.mp4",
+    "inputSha256": "fe65fee28785f3d7966da3a62deeebe96eea7362dedf86dcc89bd665ddd0ad8d",
+    "outputSha256": "674b003ccca978b242e30648e60f24bc06d0daf5a52bea272ed677a3efc0fa43",
+    "frames": 42,
+    "changedMaskPixels": 723082
+  },
+  {
+    "id": "astrid-smooth60-deal-right",
+    "group": "smooth60",
+    "src": "dealers/astrid/performance/smooth60/deal-right.mp4",
+    "inputSha256": "1d9fa83bd3858fc00a687280343cb6c6a311edfee63ff910296b82e5c8f6e192",
+    "outputSha256": "5ace8ec5f99be6cfc915d569afe4c8ee7d1acc3f043b5320d592ebacb5374f67",
+    "frames": 58,
+    "changedMaskPixels": 1001403
+  },
+  {
+    "id": "astrid-smooth60-deal-dealer",
+    "group": "smooth60",
+    "src": "dealers/astrid/performance/smooth60/deal-dealer.mp4",
+    "inputSha256": "2ef8a8aa642150d908c526e8c88d46e7805d4ac808d24ef1ecd86ce0d4e2b471",
+    "outputSha256": "b66b66a244a6fa892891801a79217d25bc0a78d6c759faf940ac4061e2d8b2be",
+    "frames": 42,
+    "changedMaskPixels": 697346
+  },
+  {
+    "id": "entry-21",
+    "group": "joins",
+    "src": "dealers/astrid/performance/joins/entry-21.mp4",
+    "inputSha256": "a97ed4d11021e45c7e221e7ef16f8591cccfa7763a3725c3441f02488023bc59",
+    "outputSha256": "d482384e2ef99a8364a486fcc8e498a564ae8244d12590c6abe9129f3ac71d7a",
+    "frames": 121,
+    "changedMaskPixels": 1341326
+  },
+  {
+    "id": "exit-21",
+    "group": "joins",
+    "src": "dealers/astrid/performance/joins/return-21.mp4",
+    "inputSha256": "1b50c04ff40e5be633dcdb941159d599b6ab105a99aab9487f358e3da25da1b0",
+    "outputSha256": "185b522b877cc4449bd39866fc01cc4b8dbc9c82567b48bb7d053f8ce9a203ff",
+    "frames": 121,
+    "changedMaskPixels": 1288762
+  },
+  {
+    "id": "entry-34",
+    "group": "joins",
+    "src": "dealers/astrid/performance/joins/entry-34.mp4",
+    "inputSha256": "4e1fb5818f2dc16a87f4fe19fdaf303ea85e9deb5fd0e12201cce240ab4206da",
+    "outputSha256": "39af68a67ad3bbe9d7b762fc31c2743abdc792763d6a8834dffe74a22ddf8d75",
+    "frames": 121,
+    "changedMaskPixels": 1317306
+  },
+  {
+    "id": "exit-34",
+    "group": "joins",
+    "src": "dealers/astrid/performance/joins/return-34.mp4",
+    "inputSha256": "e2eb57c1e91401abd815ba64ad8c0011b9f1c9cc07bbe1b97f8b1ec5f56da4e7",
+    "outputSha256": "8658f9fe2b596be8f613aba0bfd89f868c1cc62d545214cdd73c235f039abcdc",
+    "frames": 121,
+    "changedMaskPixels": 1286401
+  },
+  {
+    "id": "exit-47",
+    "group": "joins",
+    "src": "dealers/astrid/performance/joins/return-47.mp4",
+    "inputSha256": "dccef31a0abc88a7f6691b4be1d0590873445144fc2d38ee6d27ad376acbdbd9",
+    "outputSha256": "431a56ff1490d3289b8b769305e08dba55658543632c0dc3d7c415e44ad2dde5",
+    "frames": 121,
+    "changedMaskPixels": 1325403
+  },
+  {
+    "id": "entry-3",
+    "group": "joins",
+    "src": "dealers/astrid/performance/joins/entry-3.mp4",
+    "inputSha256": "f397eacadeea7efe533a8494294284d7e47c9b7a3526cf798bad182f194d4490",
+    "outputSha256": "8cfbf3832985f735ee0596b53e814cf69fe23416c52201f18064ac371be19b37",
+    "frames": 121,
+    "changedMaskPixels": 1451638
+  }
+]

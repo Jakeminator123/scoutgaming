@@ -10,7 +10,7 @@ import { firstFaceTime } from '../web/public/kevin-cards/card-face-projection.js
 test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
   assert.equal(calibration.videos.length, 10);
   for (const video of calibration.videos) {
-    const bytes = readFileSync(new URL(`../emil/dealklipp-v1/${video.path}`, import.meta.url));
+    const bytes = readFileSync(new URL(`../media/dealers/astrid/runtime/presentation/${video.path}`, import.meta.url));
     assert.equal(createHash('sha256').update(bytes).digest('hex'), video.sha256, video.path);
   }
 });

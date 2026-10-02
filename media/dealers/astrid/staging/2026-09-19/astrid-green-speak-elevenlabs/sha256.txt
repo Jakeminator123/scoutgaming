@@ -1,0 +1,3 @@
+9fea307b1eec12493aefa116e78b967b86c8ef9a7a411fafaca892ee245bd848  source.mp4
+9548226ec97315537bef200e5677726807309c03113e0b953fd5f04791f703a7  take-greeting-creatify-aurora.mp4
+84a5345cdba72e722c37d7abd5baec0ee46fbdb9a443414ff6d28044acf6690e  /Users/solvifyab/Desktop/croupier/web/public/dealers/astrid/audio/en/greeting.mp3

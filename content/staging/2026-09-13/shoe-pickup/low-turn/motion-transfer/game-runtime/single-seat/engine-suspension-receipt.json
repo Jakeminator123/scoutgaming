@@ -1,9 +1,0 @@
-{
-  "source": "/Users/solvifyab/Desktop/croupier/web/public/dealer-engine.mjs",
-  "sourceSHA256": "75e5f1a5b79a224a1492ee5e958632c50200a053f4717669c6122869bfd356c5",
-  "output": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/game-runtime/runtime/public/dealer-engine.mjs",
-  "outputSHA256": "7b1edef5ab32e16a27129d6c3bac193b418c87857c1fbede7f20ac6115d8a71a",
-  "scope": "isolated4190 only",
-  "contract": "suspendPresentation returns idempotent release; caller releases in finally; no stop/start",
-  "limitation": "Already submitted decode callbacks may finish, bounded by existing24-frame buffer. Cached/network fetch can finish; no abort or speech pause."
-}

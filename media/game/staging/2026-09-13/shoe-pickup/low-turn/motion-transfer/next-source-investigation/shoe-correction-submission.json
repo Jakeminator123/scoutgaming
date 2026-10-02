@@ -1,0 +1,97 @@
+{
+  "params": {
+    "model": "gpt_image_2",
+    "resolution": "2k",
+    "quality": "high",
+    "aspect_ratio": "16:9",
+    "count": 1,
+    "medias": [
+      {
+        "role": "image",
+        "value": "0c70e596-012c-4b0b-b3f7-c51eb3b45e22"
+      },
+      {
+        "role": "image",
+        "value": "ffe1b13a-ff74-400d-b978-3ea2651383df"
+      }
+    ],
+    "prompt": "Make a tightly localized correction to the shoe in FIRST image only. SECOND image shows the exact original shoe in the same scene unobscured; use only its shoe construction, not its actor pose or playing card. Restore that original shoe: inclined uninterrupted white stack leading directly into the large black front mouth, with original thin sidewalls and black bottom tray/lip. Remove the invented thick gray horizontal block across the throat in the first image. Do not add a new divider, fascia, stock shoe, raised panel or alternate aperture. Preserve first image's low red-backed face-down card and the drawing fingertips pressing its exposed leading edge. The red BACK remains UP, low and almost flat; rear of card is naturally occluded within the original black mouth, exposed end passes over the existing low tray/lip. Preserve current hand/finger positions and natural sleeve-to-wrist contact; only the minimum true shoe/card occlusion boundary may adjust to restore original geometry. Keep all pixels outside this small shoe throat region visually unchanged: exact Astrid identity, face, hair, skin tone, both hands, wrist pose, body, black suit, ivory blouse, lighting, background, table text, camera framing and scale. Do not copy the second image's delivery pose or extra white card. No labels or annotations."
+  },
+  "preflight": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Cost preflight for gpt_image_2: 6 credits (6.5 exact). No job submitted."
+      }
+    ],
+    "structuredContent": {
+      "cost": {
+        "credits": 6,
+        "credits_exact": 6.5
+      }
+    },
+    "isError": false
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "This tool provides an auto-updating generation widget for these jobs. Do not call job_display, show_generations, or show_generation_by_ids to display these jobs again, either before or after completion, unless the user explicitly requests a separate display. If you need to await completion, use jobs_wait with timeout_seconds <= 15. Use job_display only if the user explicitly requests a separate re-display of one specific job."
+      },
+      {
+        "type": "text",
+        "text": "Submitted 1 job. If a widget is visible, it polls automatically — do not call job_status or show_generations as a follow-up poll. In text-only clients, use job_status with sync:true to poll for completion.\n- 149cbd41-1c1f-4fda-852a-e7162dac6266  \"Make a tightly localized correction to the shoe in FIRST image only. SECOND image shows the exact original shoe in the same scene unobscured; use only its shoe construction, not its actor pose or playing card. Restore that original shoe: inclined uninterrupted white stack leading directly into the large black front mouth, with original thin sidewalls and black bottom tray/lip. Remove the invented thick gray horizontal block across the throat in the first image. Do not add a new divider, fascia, stock shoe, raised panel or alternate aperture. Preserve first image's low red-backed face-down card and the drawing fingertips pressing its exposed leading edge. The red BACK remains UP, low and almost flat; rear of card is naturally occluded within the original black mouth, exposed end passes over the existing low tray/lip. Preserve current hand/finger positions and natural sleeve-to-wrist contact; only the minimum true shoe/card occlusion boundary may adjust to restore original geometry. Keep all pixels outside this small shoe throat region visually unchanged: exact Astrid identity, face, hair, skin tone, both hands, wrist pose, body, black suit, ivory blouse, lighting, background, table text, camera framing and scale. Do not copy the second image's delivery pose or extra white card. No labels or annotations.\""
+      },
+      {
+        "type": "text",
+        "text": "If the user requests a combined display of multiple generations, including jobs submitted through separate generate_* calls, collect all requested job IDs, wait for the complete set with jobs_wait, then call show_generation_by_ids with jobs: [{\"index\":0,\"job_id\":\"<first actual job ID>\"},{\"index\":1,\"job_id\":\"<second actual job ID>\"}, ...]. job_display accepts only one id: never pass ids to it or loop over it to show a group. Do not create an extra display when the existing generation widgets already satisfy the request."
+      }
+    ],
+    "structuredContent": {
+      "results": [
+        {
+          "id": "149cbd41-1c1f-4fda-852a-e7162dac6266",
+          "type": "image",
+          "status": "pending",
+          "model": "gpt_image_2",
+          "params": {
+            "prompt": "Make a tightly localized correction to the shoe in FIRST image only. SECOND image shows the exact original shoe in the same scene unobscured; use only its shoe construction, not its actor pose or playing card. Restore that original shoe: inclined uninterrupted white stack leading directly into the large black front mouth, with original thin sidewalls and black bottom tray/lip. Remove the invented thick gray horizontal block across the throat in the first image. Do not add a new divider, fascia, stock shoe, raised panel or alternate aperture. Preserve first image's low red-backed face-down card and the drawing fingertips pressing its exposed leading edge. The red BACK remains UP, low and almost flat; rear of card is naturally occluded within the original black mouth, exposed end passes over the existing low tray/lip. Preserve current hand/finger positions and natural sleeve-to-wrist contact; only the minimum true shoe/card occlusion boundary may adjust to restore original geometry. Keep all pixels outside this small shoe throat region visually unchanged: exact Astrid identity, face, hair, skin tone, both hands, wrist pose, body, black suit, ivory blouse, lighting, background, table text, camera framing and scale. Do not copy the second image's delivery pose or extra white card. No labels or annotations.",
+            "aspect_ratio": "16:9",
+            "reference_images": [
+              "0c70e596-012c-4b0b-b3f7-c51eb3b45e22",
+              "ffe1b13a-ff74-400d-b978-3ea2651383df"
+            ],
+            "resolution": "2k",
+            "quality": "high",
+            "medias": [
+              {
+                "role": "image",
+                "data": {
+                  "id": "0c70e596-012c-4b0b-b3f7-c51eb3b45e22",
+                  "type": "image_job",
+                  "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_112250_0c70e596-012c-4b0b-b3f7-c51eb3b45e22.png"
+                }
+              },
+              {
+                "role": "image",
+                "data": {
+                  "id": "ffe1b13a-ff74-400d-b978-3ea2651383df",
+                  "type": "media_input",
+                  "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/ffe1b13a-ff74-400d-b978-3ea2651383df.jpg"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "isError": false
+  },
+  "source40Sha256": "7e3e4836bd2a48148585121a9578ab4f6d1daa48b1879ebfe600c7594ed20df2",
+  "source40Bytes": 399204,
+  "upload": {
+    "mediaId": "ffe1b13a-ff74-400d-b978-3ea2651383df",
+    "httpStatus": 200,
+    "route": "exact local JPG base64 chunks to MCP sandbox, concat/decode and PUT same command"
+  }
+}

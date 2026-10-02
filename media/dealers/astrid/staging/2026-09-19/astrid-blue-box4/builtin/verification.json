@@ -1,0 +1,132 @@
+{
+  "start": {
+    "sha256": "493c5f9b00516a219fde328dd8caf1147d86410fda47880c4f8a06d619bf42f0",
+    "dimensions": [
+      1668,
+      943
+    ],
+    "blueCardComponents": 1,
+    "blueContour": [
+      [
+        1115.0,
+        545.0
+      ],
+      [
+        1082.0,
+        577.0
+      ],
+      [
+        1111.0,
+        595.0
+      ],
+      [
+        1138.0,
+        564.0
+      ],
+      [
+        1136.0,
+        558.0
+      ]
+    ]
+  },
+  "end": {
+    "sha256": "ba88f6be46e9ac9af0bd7ede6f6e7be492ff29ea628f26b7e5c5559fb66c09de",
+    "dimensions": [
+      1668,
+      943
+    ],
+    "blueCardComponents": 1,
+    "blueContour": [
+      [
+        1001.0,
+        598.0
+      ],
+      [
+        951.0,
+        604.0
+      ],
+      [
+        968.0,
+        651.0
+      ],
+      [
+        1021.0,
+        645.0
+      ]
+    ],
+    "blueInteriorCornerResidualNativePx": [
+      3.184482125230286,
+      2.353598038152407,
+      3.2378100743883587,
+      2.0534947813612248
+    ],
+    "meanBlueInteriorResidualNativePx": 2.707346254783069,
+    "note": "Blue interior contour sits inside the requested outside white border; not a motion/pose-acceptance measurement.",
+    "markerCandidates": {
+      "magenta": [
+        {
+          "centre": [
+            956.5555555555555,
+            606.6666666666666
+          ],
+          "pixels": 9
+        }
+      ],
+      "yellow": [
+        {
+          "centre": [
+            997.5,
+            602.0
+          ],
+          "pixels": 10
+        }
+      ],
+      "cyan": [
+        {
+          "centre": [
+            1014.5,
+            642.5
+          ],
+          "pixels": 12
+        }
+      ],
+      "white": [
+        {
+          "centre": [
+            972.056338028169,
+            600.0281690140845
+          ],
+          "pixels": 71
+        },
+        {
+          "centre": [
+            1011.7435897435897,
+            618.4871794871794
+          ],
+          "pixels": 78
+        },
+        {
+          "centre": [
+            958.506329113924,
+            630.126582278481
+          ],
+          "pixels": 79
+        },
+        {
+          "centre": [
+            972.8,
+            648.0
+          ],
+          "pixels": 10
+        },
+        {
+          "centre": [
+            1000.9830508474577,
+            649.0847457627119
+          ],
+          "pixels": 59
+        }
+      ]
+    }
+  }
+}

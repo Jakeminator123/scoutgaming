@@ -6,7 +6,7 @@ from pathlib import Path
 from mathutils import Vector
 import numpy as np
 ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'content/staging/2026-09-10/astrid-head-v2'
+OUT=ROOT/'media/dealers/astrid/staging/2026-09-10/astrid-head-v2'
 DATA=OUT/'vendor/makehuman/makehuman/data'; SYS=OUT/'vendor/system'
 bpy.ops.wm.read_factory_settings(use_empty=True)
 def obj_data(path):

@@ -1,0 +1,12 @@
+{
+  "frames": 268,
+  "cardHelpers": 16,
+  "animations": [
+    "Collect_All_Cards_Sweep_Study"
+  ],
+  "originalGeometryMaterialsAndSkinPreserved": true,
+  "maxJointPositionErrorMm": 0.8326446193678706,
+  "maxCardPositionErrorMm": 0.0004731800593439675,
+  "maxCardYawErrorDegrees": 0.0017562308603778845,
+  "status": "GLB frame correspondence verified; visual motion acceptance separate"
+}

@@ -1,11 +1,13 @@
+import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
+const mediaUrl=(value,base)=>{const old=new URL(value,base),result=pathToFileURL(resolveMediaAbsolutePath(fileURLToPath(old)));if(old.pathname.endsWith('/')&&!result.pathname.endsWith('/'))result.pathname+='/';return result;};
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath,pathToFileURL } from 'node:url';
 import { clipMapping } from '../web/clip-mapping.mjs';
 
-const root = fileURLToPath(new URL('../web/public/', import.meta.url));
-const read = file => JSON.parse(readFileSync(new URL(`../web/public/${file}`, import.meta.url)));
+const root = fileURLToPath(mediaUrl('../web/public/', import.meta.url));
+const read = file => JSON.parse(readFileSync(mediaUrl(`../web/public/${file}`, import.meta.url)));
 
 test('mapping preserves original and V2 speech as distinct exact media sets', () => {
   const mapping = clipMapping({ root, revision: 'test' });

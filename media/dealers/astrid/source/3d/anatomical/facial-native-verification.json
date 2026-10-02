@@ -1,0 +1,15 @@
+{
+  "sourceHash": "222154b3a76e14ce0968e6cf92558c0fdce91a181e7ac61cac08dae8b37089b6",
+  "sourceFrames": 121,
+  "fps": 24,
+  "duration": 5.041666666666667,
+  "actions": [
+    "Speech_Goodluck_Astrid_Face",
+    "Speech_Goodluck_Astrid_Eyes",
+    "Speech_Goodluck_Astrid_Teeth",
+    "Speech_Goodluck_Astrid_Tongue",
+    "Speech_Goodluck_Astrid_Eyelashes"
+  ],
+  "audioPacked": true,
+  "status": "baked; rendered speech review still required"
+}

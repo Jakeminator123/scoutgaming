@@ -7,7 +7,7 @@ import {selectGreenTake,shouldUseGreenBoxCard,shouldUseGreenDealerCard,greenRest
 import {validateContactTake,uniformRegistration,contactFrame,dealingCardSample} from '../web/public/performance-contact.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
-const reviewDir=path.resolve(dir,'../web/public/review/astrid-table-v2');
+const reviewDir=path.resolve(dir,'../media/dealers/astrid/runtime/composited/astrid-table-v2');
 const read=file=>JSON.parse(fs.readFileSync(path.join(reviewDir,file)));
 const dealerTake=read('take.json');
 // A synthetic box take mirrors the composed shape without depending on which

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { SPEECH_LINES } from '../web/public/speech-lines.mjs';
+import { resolveMediaPath } from '../tools/media-layout.mjs';
 const rootArg = process.argv.indexOf('--root');
 const root = rootArg >= 0 ? resolve(process.argv[rootArg+1]) : resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const baselineFile = join(root, 'docs/dealer-sync-baseline.json');
@@ -28,10 +29,10 @@ const probe = file => {
 const deep = process.argv.includes('--probe');
 const snapshot = { version:1, purpose:'Asset regression baseline only. Human audiovisual acceptance remains pending.', dealers:{} };
 const errors = [];
-const nativeFile=join(root,'web/public/speech-media.json');
+const nativeFile=resolveMediaPath('web/public/speech-media.json',{repositoryRoot:root});
 const nativeMedia=existsSync(nativeFile)?read(nativeFile):{};
 for (const [name, relative] of Object.entries(roster)) {
-  const base = join(root, 'web/public', relative);
+  const base = resolveMediaPath('web/public/'+relative,{repositoryRoot:root});
   const index = read(join(base, 'streams/index.json'));
   const bank = read(join(base, 'audio/en/bank.json'));
   const lines = {};
@@ -71,7 +72,7 @@ for (const [name, relative] of Object.entries(roster)) {
     }
     streams[key] = {video:bytes ? sha(bytes) : null, metadata:sha(JSON.stringify(clip))};
   }
-  const matteBase = join(root,'web/public',name==='vera'?'dealer-hands':`dealers/${name}-hands`);
+  const matteBase = resolveMediaPath('web/public/'+(name==='vera'?'dealer-hands':`dealers/${name}-hands`),{repositoryRoot:root});
   const matteIndex = join(matteBase,'streams/index.json');
   const mattes = {};
   if (existsSync(matteIndex)) for (const [key, clip] of Object.entries(read(matteIndex).clips)) {
@@ -83,7 +84,7 @@ for (const [name, relative] of Object.entries(roster)) {
   }
   const native = {};
   for(const [id, take] of Object.entries(nativeMedia[name] ?? {})) {
-    const file=join(root,'web/public',take.src);
+    const file=resolveMediaPath('web/public/'+take.src,{repositoryRoot:root});
     native[id]={...take,sha256:fingerprint(file)};
     if(!native[id].sha256 || !take.text || !take.review) errors.push(`${name}/${id}: native speech requires media, text and review`);
     if(deep && native[id].sha256) {

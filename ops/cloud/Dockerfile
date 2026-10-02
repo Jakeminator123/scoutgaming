@@ -7,6 +7,7 @@ COPY . .
 ARG CROUPIER_LAB_BASE_PATH=/studio
 ENV CROUPIER_LAB_BASE_PATH=$CROUPIER_LAB_BASE_PATH
 RUN npm --prefix services/astrid-gpu-worker/gateway ci --omit=dev --ignore-scripts \
+    && npm --prefix web ci --omit=dev --ignore-scripts \
     && npm --prefix lab ci && npm --prefix lab run build \
     && chown -R node:node /app/lab/.next
 ENV NODE_ENV=production

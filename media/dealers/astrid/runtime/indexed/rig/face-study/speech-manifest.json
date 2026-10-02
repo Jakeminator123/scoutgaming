@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "dealer": "astrid",
+  "status": "calibrated-integration-review-not-photoreal-approved",
+  "lines": {
+    "greeting": {
+      "file": "greeting-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "greeting",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_greeting.h264",
+        "audioUrl": "dealers/astrid/audio/en/greeting.mp3",
+        "audioSha256": "84a5345cdba72e722c37d7abd5baec0ee46fbdb9a443414ff6d28044acf6690e",
+        "audioDelayMs": 0,
+        "text": "Welcome to the Dark Hall. I'm Astrid. Take a seat whenever you're ready."
+      },
+      "frames": 125,
+      "missing": 0
+    },
+    "goodluck": {
+      "file": "goodluck-face.json",
+      "binding": {
+        "kind": "embedded-video",
+        "lineId": "goodluck",
+        "videoUrl": "dealers/astrid/speech/goodluck.mp4",
+        "audioUrl": "dealers/astrid/speech/goodluck.mp4",
+        "audioSha256": "222154b3a76e14ce0968e6cf92558c0fdce91a181e7ac61cac08dae8b37089b6",
+        "audioDelayMs": 0,
+        "text": "Bets are closed. Good luck at my table."
+      },
+      "frames": 121,
+      "missing": 0
+    },
+    "win": {
+      "file": "win-face.json",
+      "binding": {
+        "kind": "embedded-video",
+        "lineId": "win",
+        "videoUrl": "dealers/astrid/speech/win.mp4",
+        "audioUrl": "dealers/astrid/speech/win.mp4",
+        "audioSha256": "d6b1c106a86f337850ae2541686c6176e59dff8fa67dc36e7a8a5ee7cf2f0301",
+        "audioDelayMs": 0,
+        "text": "Well played. Your winnings exactly as earned."
+      },
+      "frames": 121,
+      "missing": 0
+    },
+    "lose": {
+      "file": "lose-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "lose",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_lose.h264",
+        "audioUrl": "dealers/astrid/audio/en/lose.mp3",
+        "audioSha256": "2f2925cbee67be7451ac110f6e603003ef7b9f05e3b49bef8b44324414ac888f",
+        "audioDelayMs": 350.0,
+        "text": "The house takes this one."
+      },
+      "frames": 99,
+      "missing": 0
+    },
+    "push": {
+      "file": "push-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "push",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_push.h264",
+        "audioUrl": "dealers/astrid/audio/en/push.mp3",
+        "audioSha256": "a440d0c435369d7a8c020b5be2358e130c7aaeecb6ede9df3ae6d45a22d327a6",
+        "audioDelayMs": 0,
+        "text": "A push, your stake goes back."
+      },
+      "frames": 101,
+      "missing": 0
+    },
+    "bust": {
+      "file": "bust-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "bust",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_bust.h264",
+        "audioUrl": "dealers/astrid/audio/en/bust.mp3",
+        "audioSha256": "4f62c572de418db93fcfc228415f07e05c0efc30638dab8434fb81457ab6488d",
+        "audioDelayMs": 0,
+        "text": "That is a bust."
+      },
+      "frames": 100,
+      "missing": 0
+    },
+    "dealerbust": {
+      "file": "dealerbust-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "dealerbust",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_dealerbust.h264",
+        "audioUrl": "dealers/astrid/audio/en/dealerbust.mp3",
+        "audioSha256": "0cb1a5f12e0269fed94c2985570a3c7afe02bb7f02544a1d0019d791a7dbcc55",
+        "audioDelayMs": 142.0,
+        "text": "Dealer busts this time, and the round goes to all of you."
+      },
+      "frames": 104,
+      "missing": 0
+    },
+    "insurance": {
+      "file": "insurance-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "insurance",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_insurance.h264",
+        "audioUrl": "dealers/astrid/audio/en/insurance.mp3",
+        "audioSha256": "ce5863ac64782ae3c45e44ca09e0fc3b6e1fbd33f7610c3dbbf3a4f76c2f2a86",
+        "audioDelayMs": 796.0,
+        "text": "Insurance is open if you want it."
+      },
+      "frames": 104,
+      "missing": 0
+    },
+    "blackjack": {
+      "file": "blackjack-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "blackjack",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_blackjack.h264",
+        "audioUrl": "dealers/astrid/audio/en/blackjack.mp3",
+        "audioSha256": "fe1a7682a7a11ed3f56d0177cf44899f0e95e27ea8076b5664c288772535f30f",
+        "audioDelayMs": 162.0,
+        "text": "That's blackjack right away, and it pays three to two."
+      },
+      "frames": 112,
+      "missing": 0
+    },
+    "placebets": {
+      "file": "placebets-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "placebets",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_placebets.h264",
+        "audioUrl": "dealers/astrid/audio/en/placebets.mp3",
+        "audioSha256": "a25740b33d92067e66173f535cb246ed212cab79748de9574f19131a038c6770",
+        "audioDelayMs": 26.0,
+        "text": "Place your bets whenever you are ready."
+      },
+      "frames": 98,
+      "missing": 0
+    },
+    "dealerblackjack": {
+      "file": "dealerblackjack-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "dealerblackjack",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_dealerblackjack.h264",
+        "audioUrl": "dealers/astrid/audio/en/dealerblackjack.mp3",
+        "audioSha256": "5830b3bd57e53d85ae82c32a0478ec41adcc8d1e86949960adcbfb799f199f09",
+        "audioDelayMs": 162.0,
+        "text": "Dealer has blackjack this round."
+      },
+      "frames": 105,
+      "missing": 0
+    },
+    "sidebet": {
+      "file": "sidebet-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "sidebet",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_sidebet.h264",
+        "audioUrl": "dealers/astrid/audio/en/sidebet.mp3",
+        "audioSha256": "d29b7d5c2803318e587f06bef6a81202f8fd9538facb99840fb6621116d68808",
+        "audioDelayMs": 37.0,
+        "text": "Your side bet pays, nicely done."
+      },
+      "frames": 96,
+      "missing": 0
+    },
+    "double": {
+      "file": "double-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "double",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_double.h264",
+        "audioUrl": "dealers/astrid/audio/en/double.mp3",
+        "audioSha256": "c4c30b73267ad6af635a21449d7942d0142da6647ab8e7e8ecca52841b1b56fc",
+        "audioDelayMs": 410.0,
+        "text": "Doubling down, one card coming."
+      },
+      "frames": 90,
+      "missing": 0
+    },
+    "peek": {
+      "file": "peek-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "peek",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_peek.h264",
+        "audioUrl": "dealers/astrid/audio/en/peek.mp3",
+        "audioSha256": "7f86eeb07f9d4fec544035ae845890cce081dd5096ed55499bf0948138c11e1a",
+        "audioDelayMs": 265.0,
+        "text": "Let me take a quick look to see if the house has blackjack."
+      },
+      "frames": 87,
+      "missing": 0
+    },
+    "farewell": {
+      "file": "farewell-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "farewell",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_farewell.h264",
+        "audioUrl": "dealers/astrid/audio/en/farewell.mp3",
+        "audioSha256": "cb22f40ecbdf5fba352d983522cd50ccaa3138b10d63299c1dac3308f785d04a",
+        "audioDelayMs": 306.0,
+        "text": "Thanks for playing, come back soon."
+      },
+      "frames": 100,
+      "missing": 0
+    },
+    "chatter1": {
+      "file": "chatter1-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "chatter1",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_chatter1.h264",
+        "audioUrl": "dealers/astrid/audio/en/chatter1.mp3",
+        "audioSha256": "985d836207cf99959aae54236b07b439899472ea33486a746fe035e4cfa6e2f8",
+        "audioDelayMs": 563.0,
+        "text": "The cards are being rather kind to everyone tonight."
+      },
+      "frames": 97,
+      "missing": 0
+    },
+    "chatter2": {
+      "file": "chatter2-face.json",
+      "binding": {
+        "kind": "indexed-audio",
+        "lineId": "chatter2",
+        "videoUrl": "dealers/astrid/streams/idle-1_speak_chatter2.h264",
+        "audioUrl": "dealers/astrid/audio/en/chatter2.mp3",
+        "audioSha256": "bdbc0a775627d758bd60e83139e7cb54af1b4406386db474bea36644c02139b8",
+        "audioDelayMs": 650.0,
+        "text": "Take your time, there is no rush."
+      },
+      "frames": 96,
+      "missing": 0
+    }
+  },
+  "modelSha256": "73c8d9858ec6f300d8a9bc37b906aa0a7a76295d95d7c3632b858e31d07fff6d",
+  "calibration": {
+    "sourceMeasurements": "Preserved unchanged; calibrated rigWeights are separate and model-bound.",
+    "visualScope": "Source-aperture, oral occlusion and posterior collar correction; complete in-game visual acceptance pending."
+  }
+}

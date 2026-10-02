@@ -40,46 +40,46 @@ test('one-origin router isolates the mounted Lab and rejects spoofing or interna
   assert.equal(route('/studio', 'other.onrender.com'), null);
 });
 
-test('same-origin BO/Lab handoff still checks admin role, browser state, one-use code and live identity', () => {
+test('same-origin BO/Lab handoff still checks admin role, browser state, one-use code and live identity', async () => {
   const db = new DatabaseSync(':memory:');
   db.exec("CREATE TABLE users (id TEXT PRIMARY KEY, role TEXT); INSERT INTO users VALUES ('1','admin')");
   let claims = null;
   const handle = backofficeLabAuth({ db, singleOrigin: true, publicUrl: origin, boUrl: origin, labPublicUrl: origin,
     boSession: () => claims, identity: { stamp: () => 'fixture-stamp', find: () => ({ id: '1', stamp: 'fixture-stamp' }) }, authEpoch: () => 1 });
-  const call = (url, cookie = '') => {
+  const call = async (url, cookie = '') => {
     const result = {};
-    handle({ url, method: 'GET', headers: { host: new URL(origin).host, cookie }, socket: { remoteAddress: '127.0.0.1' } },
+    await handle({ url, method: 'GET', headers: { host: new URL(origin).host, cookie }, socket: { remoteAddress: '127.0.0.1' } },
       { writeHead(status, headers) { result.status = status; result.headers = headers; }, end(body) { result.body = body; } });
     return result;
   };
   try {
-    const start = call('/api/auth/lab/start?next=/studio/openclaw');
+    const start = await call('/api/auth/lab/start?next=/studio/openclaw');
     const auth = start.headers.Location;
     const stateCookie = start.headers['Set-Cookie'].split(';')[0];
-    assert.equal(call(auth).status, 303);
-    assert.match(call(auth).headers.Location, /^\/bo\/login/);
+    assert.equal((await call(auth)).status, 303);
+    assert.match((await call(auth)).headers.Location, /^\/bo\/login/);
     claims = { sub: '1', role: 'admin', aud: 'backoffice', source_stamp: 'fixture-stamp', auth_epoch: 1, exp: Date.now() / 1000 + 600 };
-    const grant = call(auth);
+    const grant = await call(auth);
     assert.equal(grant.status, 303);
-    const missingCookie = call(grant.headers.Location);
+    const missingCookie = await call(grant.headers.Location);
     assert.equal(missingCookie.status, 410);
     assert.match(missingCookie.body, /Starta en ny labbinloggning/);
     assert.match(missingCookie.body, /api\/auth\/lab\/start\?next=%2Fstudio/);
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM lab_sessions').get().n, 0);
-    const callback = call(grant.headers.Location, stateCookie);
+    const callback = await call(grant.headers.Location, stateCookie);
     assert.equal(callback.status, 303);
     assert.equal(callback.headers.Location, '/studio/openclaw');
     const session = callback.headers['Set-Cookie'].find(value => value.startsWith('lab_session=')).split(';')[0];
-    assert.equal(call('/api/auth/lab/check', session).status, 200);
-    assert.equal(call(grant.headers.Location, stateCookie).status, 410);
-    assert.equal(call(auth).status, 410);
-    const expired = call('/api/auth/lab/start?next=/studio');
+    assert.equal((await call('/api/auth/lab/check', session)).status, 200);
+    assert.equal((await call(grant.headers.Location, stateCookie)).status, 410);
+    assert.equal((await call(auth)).status, 410);
+    const expired = await call('/api/auth/lab/start?next=/studio');
     db.exec('UPDATE bo_lab_handoffs SET expires=0');
-    assert.equal(call(expired.headers.Location).status, 410);
-    assert.equal(call('/api/bo/lab-login?state=invalid').status, 400);
+    assert.equal((await call(expired.headers.Location)).status, 410);
+    assert.equal((await call('/api/bo/lab-login?state=invalid')).status, 400);
     db.exec("UPDATE users SET role='reader'");
-    assert.equal(call('/api/auth/lab/check', session).status, 401);
-    const fallback = call('/api/auth/lab/start?next=/api/bo/users');
+    assert.equal((await call('/api/auth/lab/check', session)).status, 401);
+    const fallback = await call('/api/auth/lab/start?next=/api/bo/users');
     assert.equal(db.prepare('SELECT next_path FROM bo_lab_handoffs ORDER BY rowid DESC LIMIT 1').get().next_path, '/studio');
     assert.equal(fallback.status, 303);
   } finally { db.close(); }

@@ -35,10 +35,10 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
   const identities = new Map();
   let pending = false, preparing = null;
 
-  function principal(req) {
+  async function principal(req) {
     // Validate the live BO account/epoch before inspecting a QA identity.
     let claims;
-    try { claims = authenticate(req); } catch { fail('operator_speech_qa_auth_required', 403); }
+    try { claims = await authenticate(req); } catch { fail('operator_speech_qa_auth_required', 403); }
     if (!claims || !['admin', 'superadmin'].includes(claims.role)) fail('operator_speech_qa_auth_required', 403);
     const cookies = (req.headers.cookie ?? '').split(';').map(value => value.trim()).filter(value => value.startsWith('bo_jwt='));
     if (cookies.length !== 1 || !/^bo_jwt=[A-Za-z0-9_.-]{1,8192}$/.test(cookies[0])) fail('operator_speech_qa_auth_required', 403);
@@ -113,10 +113,10 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
       expiresAt: current.gate?.expiresAt ?? null, pending: Number(pending), identities: identities.size, relay: capacity(stream) };
   }
   async function currentEntry(req, playerId) {
-    const bound = principal(req);
+    const bound = await principal(req);
     const current = await state();
     const entry = identities.get(playerId);
-    if (!current.gate || !entry || entry.binding !== bound || principal(req) !== bound || entry.controller.signal.aborted
+    if (!current.gate || !entry || entry.binding !== bound || await principal(req) !== bound || entry.controller.signal.aborted
       || now() >= current.gate.expiresAt
       || fingerprint(entry.gate) !== fingerprint(current.gate)) fail('operator_speech_qa_stale', 401);
     return entry;
@@ -167,7 +167,7 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
       let entry, lock, lockInfo, lockPath, attempt, success = false;
       const disconnected = () => { if (!res.writableEnded && entry) cancel(entry); };
       try {
-        const binding = principal(req);
+        const binding = await principal(req);
         if (!publicOrigin || req.headers.host !== publicOrigin.host || req.url !== PATH) fail('operator_speech_qa_invalid_origin', 403);
         if (!['GET', 'POST', 'DELETE'].includes(req.method)) fail('operator_speech_qa_method', 405);
         if (req.method !== 'GET' && (req.headers.origin !== origin
@@ -211,7 +211,7 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
           const timings = {};
           const decision = await completeChatWithSpeech({ request, status: context, owner: entry.owner, playerId,
             signal: entry.controller.signal,
-            readOwner: () => !entry.controller.signal.aborted && now() < entry.gate.expiresAt && principal(req) === binding ? entry.owner : null,
+            readOwner: async () => !entry.controller.signal.aborted && now() < entry.gate.expiresAt && await principal(req) === binding ? entry.owner : null,
             readStatus: async () => { await currentEntry(req, playerId); return context; },
             decide: (value, state) => decide(value, state, entry.controller.signal),
             streamService: stream,

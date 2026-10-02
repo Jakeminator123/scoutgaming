@@ -1,0 +1,96 @@
+{
+  "astrid": [
+    {
+      "message": "[speech] start goodluck embedded audio/video",
+      "timestamp": "2026-09-10T00:48:15.103Z"
+    },
+    {
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-10T00:48:20.273Z"
+    },
+    {
+      "message": "[speech] start goodluck embedded audio/video",
+      "timestamp": "2026-09-10T00:48:20.300Z"
+    },
+    {
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-10T00:48:25.473Z"
+    }
+  ],
+  "vera": [
+    {
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-10T00:50:03.219Z"
+    },
+    {
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-10T00:50:06.317Z"
+    },
+    {
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-10T00:50:06.362Z"
+    },
+    {
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-10T00:50:09.464Z"
+    }
+  ],
+  "amira": [
+    {
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-10T00:51:58.779Z"
+    },
+    {
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-10T00:52:00.859Z"
+    },
+    {
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-10T00:52:00.936Z"
+    },
+    {
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-10T00:52:02.961Z"
+    }
+  ],
+  "mei": [
+    {
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-10T00:52:50.644Z"
+    },
+    {
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-10T00:52:52.295Z"
+    },
+    {
+      "message": "[speech] start goodluck matched",
+      "timestamp": "2026-09-10T00:52:52.312Z"
+    },
+    {
+      "message": "[speech] end goodluck",
+      "timestamp": "2026-09-10T00:52:53.961Z"
+    }
+  ],
+  "cancellation": {
+    "astrid": [
+      {
+        "message": "[speech] start goodluck embedded audio/video",
+        "timestamp": "2026-09-10T00:49:15.199Z"
+      },
+      {
+        "message": "[speech] end goodluck",
+        "timestamp": "2026-09-10T00:49:15.950Z"
+      }
+    ],
+    "vera": [
+      {
+        "message": "[speech] start goodluck matched",
+        "timestamp": "2026-09-10T00:50:51.496Z"
+      },
+      {
+        "message": "[speech] end goodluck",
+        "timestamp": "2026-09-10T00:50:52.284Z"
+      }
+    ]
+  }
+}

@@ -5,15 +5,16 @@
 // Configuration, availability and declared hashes are not actual playback or visual approval.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveMediaAbsolutePath } from '../tools/media-layout.mjs';
 
 const DEALERS = { vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' };
 const PART_EVENT = { box0: 'show.deal.box0', box1: 'show.deal.box1', box2: 'show.deal.box2', box3: 'show.deal.box3', box4: 'show.deal.box4', box5: 'show.deal.box5', box6: 'show.deal.box6', 'dealer-up': 'show.deal.dealer', 'dealer-hole': 'show.deal.hole', return: 'show.return', idle: 'show.idle' };
 const ACTION_EVENT = { 'deal-left': 'show.deal.left', 'deal-centre': 'show.deal.centre', 'deal-right': 'show.deal.right', 'deal-dealer': 'show.deal.dealer' };
-const readJson = p => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; } };
+const readJson = p => { try { return JSON.parse(readFileSync(resolveMediaAbsolutePath(p), 'utf8')); } catch { return null; } };
 
 export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) {
   const dealers = {};
-  const available = file => typeof file === 'string' && existsSync(join(root, file));
+  const available = file => typeof file === 'string' && existsSync(resolveMediaAbsolutePath(join(root, file)));
   const native = readJson(join(root, 'speech-media.json')) ?? {};
   for (const [dealer, base] of Object.entries(DEALERS)) {
     const idx = readJson(join(root, base, 'streams/index.json')); if (!idx) continue;
@@ -26,8 +27,8 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
       const event = kind === 'speech' ? `show.line.${short}` : kind === 'idle' ? 'show.idle' : key.includes('action-deal') ? 'show.deal.*' : key.includes('think') ? 'show.hand.think' : `show.gesture.${short}`;
       entries.push({ event, kind, line: kind === 'speech' ? short : null, text: bank[short]?.text ?? null, plays: kind === 'idle' ? 'loop' : 'once',
         file: `${base}/streams/${c.file}`, format: 'h264 annex-b elementary stream, WebCodecs, spliced on canonical pose', frames: c.frameCount, fps: c.fps, width: idx.width, height: idx.height,
-        audio: kind === 'speech' && existsSync(join(root, base, 'audio/en', short + '.mp3')) ? `${base}/audio/en/${short}.mp3` : null, audioDelayMs: c.audioDelayMs ?? null,
-        preview: existsSync(join(root, base, 'preview', short + '.mp4')) ? `${base}/preview/${short}.mp4` : null,
+        audio: kind === 'speech' && existsSync(resolveMediaAbsolutePath(join(root, base, 'audio/en', short + '.mp3'))) ? `${base}/audio/en/${short}.mp3` : null, audioDelayMs: c.audioDelayMs ?? null,
+        preview: existsSync(resolveMediaAbsolutePath(join(root, base, 'preview', short + '.mp4'))) ? `${base}/preview/${short}.mp4` : null,
         route: originalRoute, candidate: true, actualPlayback: false, fileAvailable: available(`${base}/streams/${c.file}`),
         selector: 'CLIP map in app.mjs + DealerEngine; catalogue entry, not proof the current route selects it. Exact line id, never nearest duration.' });
     }

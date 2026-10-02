@@ -1,0 +1,41 @@
+{
+  "params": {
+    "model": "seedance_2_5",
+    "mode": "omni_reference",
+    "duration": 4,
+    "resolution": "1080p",
+    "aspect_ratio": "16:9",
+    "generate_audio": false,
+    "bitrate_mode": "high",
+    "count": 1,
+    "medias": [
+      {
+        "role": "start_image",
+        "value": "42d15cc3-032d-4abe-b509-13ad819cbf87"
+      }
+    ],
+    "prompt": "One uncut photorealistic live-blackjack performance, locked camera matching the supplied start image exactly. Preserve Astrid's identity, blonde tied-back hair, black blazer, ivory blouse, lighting, table and shoe. This is a precise SINGLE CARD delivery to PLAYER SEAT TWO, the INNER LEFT position, not the far-left edge and not the middle. Destination centre is 30.85 percent of full image width from the left, 68.99 percent of full image height from the top. The fingertips must physically reach that exact destination with the card, not stop in the middle and let it float. At natural confident professional dealer speed: from the supplied resting pose, unfold and reach the front black outlet of the existing shoe at image right (64 percent width, 58 percent height), slide ONE thin blank ivory card out while gripping its edge, carry it low and nearly flat across the felt with continuous hand contact, place it at the specified inner-left destination by 2 seconds. Release there; the card stays completely still there. Return the EMPTY hand directly to the shoe by 3 seconds, with no pause or extra sweep and no second card. Finish with fingers resting beside the outlet, ready for the next delivery, not arms folded. All fingers intact, mechanically plausible wrists and elbows. Face stays the same, lips closed, gaze follows card. No speech, no shuffle, no camera movement, no new props, no graphic markers, no text changes, no card retrieval, no teleportation. One card only, complete visible pickup, transport, release and empty return."
+  },
+  "job": {
+    "results": [
+      {
+        "id": "398fc6f3-fb96-4283-ad31-5a891386d529",
+        "type": "video",
+        "status": "pending",
+        "model": "seedance_2_5",
+        "params": {
+          "prompt": "One uncut photorealistic live-blackjack performance, locked camera matching the supplied start image exactly. Preserve Astrid's identity, blonde tied-back hair, black blazer, ivory blouse, lighting, table and shoe. This is a precise SINGLE CARD delivery to PLAYER SEAT TWO, the INNER LEFT position, not the far-left edge and not the middle. Destination centre is 30.85 percent of full image width from the left, 68.99 percent of full image height from the top. The fingertips must physically reach that exact destination with the card, not stop in the middle and let it float. At natural confident professional dealer speed: from the supplied resting pose, unfold and reach the front black outlet of the existing shoe at image right (64 percent width, 58 percent height), slide ONE thin blank ivory card out while gripping its edge, carry it low and nearly flat across the felt with continuous hand contact, place it at the specified inner-left destination by 2 seconds. Release there; the card stays completely still there. Return the EMPTY hand directly to the shoe by 3 seconds, with no pause or extra sweep and no second card. Finish with fingers resting beside the outlet, ready for the next delivery, not arms folded. All fingers intact, mechanically plausible wrists and elbows. Face stays the same, lips closed, gaze follows card. No speech, no shuffle, no camera movement, no new props, no graphic markers, no text changes, no card retrieval, no teleportation. One card only, complete visible pickup, transport, release and empty return.",
+          "aspect_ratio": "16:9",
+          "duration": 4,
+          "reference_images": [
+            "42d15cc3-032d-4abe-b509-13ad819cbf87"
+          ],
+          "mode": "omni_reference",
+          "resolution": "1080p",
+          "generate_audio": false,
+          "bitrate_mode": "high"
+        }
+      }
+    ]
+  }
+}

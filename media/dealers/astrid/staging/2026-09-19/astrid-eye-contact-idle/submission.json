@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "id": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "type": "video",
+      "status": "pending",
+      "model": "seedance_2_0",
+      "params": {
+        "prompt": "One continuous locked-camera photorealistic WAITING IDLE LOOP of the exact supplied adult Astrid green-screen table scene. Quiet, relaxed, warm and subtly flirtatious feminine presence. She is comfortably making DIRECT EYE CONTACT with the viewer for essentially the entire shot. Her eyes remain directed toward the lens; her face stays facing forward. Natural life comes from slow subtle breathing visible in the shoulders and blouse, two gentle natural blinks at different moments, tiny eye micro-movements and a very small soft closed-mouth smile that gradually warms and then relaxes. Easygoing, self-assured, welcoming. Her head is comfortably steady with only imperceptible natural settling, never scanning the room, never turning left or right, no repetitive nodding, no head sway, no exaggerated expressions. Both EMPTY hands rest loosely in exactly the supplied table positions with a tiny natural finger relaxation, without lifting or gesturing. No talking or lip speech. Over eight seconds let one gentle breath complete and return naturally to the same quiet forward-facing pose for a continuous loop. The supplied START and END image are the same exact native final frame of the approved dealing take: preserve its identity, proportions, hand locations, table, green shoe, lighting and composition at both endpoints. The additional green table reference defines the APPROVED ELEVATED player-side camera looking DOWN across the tabletop. The last ref-identity.png is ONLY her face/hair/clothing identity reference, NOT a camera or pose reference. Preserve the exact elevated camera height, downward tilt, focal length, wide framing, actor size and tabletop perspective in EVERY frame. No camera motion, zoom, crop or push-in. Do not make her larger, change her age, beautify or redesign her face, change makeup, change blonde hairstyle, black blazer or ivory blouse. Preserve natural skin color and exposure. The background, table, rail and shoe remain matte chroma GREEN with their exact supplied geometry. Do not touch the shoe or move any props. No dealing or card handling. Do not create or remove cards during the take; any existing green prop remains stationary. Actor stays normally colored and opaque with clean edges. No other people, text, chips or audio.",
+        "aspect_ratio": "16:9",
+        "duration": 8,
+        "reference_images": [
+          "e1c14906-b0aa-4cd7-b359-48fa6cd47e3e",
+          "e1c14906-b0aa-4cd7-b359-48fa6cd47e3e",
+          "269f8943-e9ba-473e-9167-13774c61dd9f",
+          "b2c16866-56c4-4406-bbb1-7fed713ca485"
+        ],
+        "resolution": "1080p",
+        "mode": "std",
+        "bitrate_mode": "high",
+        "generate_audio": false
+      }
+    }
+  ],
+  "adjustments": {
+    "medias[2].role": {
+      "requested": "image",
+      "used": "image_references",
+      "reason": "Seedance 2.0 backend expects schema-key media roles"
+    },
+    "medias[3].role": {
+      "requested": "image",
+      "used": "image_references",
+      "reason": "Seedance 2.0 backend expects schema-key media roles"
+    }
+  }
+}

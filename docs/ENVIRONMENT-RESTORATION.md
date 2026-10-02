@@ -75,6 +75,26 @@ full återläsning i drift är ännu inte slutverifierade.
 
 ## Media och regression
 
+Media lagras nu i `media/dealers/<dealer>/{runtime,source,review,staging}`,
+`media/game` och `media/site`. `media/layout.json` binder exakt gamla paths,
+publika URL:er, storlek och hash till nya filer. Originalnamn och historisk
+Emil-/Kevin-proveniens bevaras i metadata; `v1` är ingen gemensam rotversion.
+4 924 kopior kontrollerades före källradering. Privata rollback-ledgers ligger
+i ignorerade `media/.migration`; `migrate-media-layout.mjs --rollback <ledger>`
+vägrar överskrivning och behåller den kanoniska kopian. Kör med stoppade skrivare.
+
+`docs/reference` har flyttats till `media/dealers/astrid/source/reference`.
+Kalibreringsverktyg använder samma resolver. Privat Blob-export använder
+`croupier/media/<samma-logiska-katalog>/<id>/<sha256>.<ext>`; indexet publiceras
+först efter återläsningshash. Äldre privata `croupier/videos`/`zones`-objekt
+behålls tills alla projektlänkar är verifierade.
+
+Neon-verktyg: `tools/migrate-sqlite-postgres.mjs` installerar/importerar till
+tom, separat game-databas; `tools/postgres-backup-restore.mjs` verifierar full
+rad-/sekvensparitet. De vägrar zon-databas och import med aktiv extern wallet.
+Bevara orörda SQLite-backuper utanför Git. Efter första nya Neon-skrivning
+kräver återgång senaste data/ledger; starta aldrig blindt en äldre SQLite-kopia.
+
 Bevara råmedia, kalibreringar och `dealer-sync-baseline.json`. Varje taländring
 är ett paket: exakt text, audio, video, frame-index, kalibrering och mänskligt
 acceptanskvitto. Ny audio-/videohash ogiltigförklarar tidigare godkännande.

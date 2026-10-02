@@ -1,0 +1,98 @@
+{
+  "version": 2,
+  "id": "amira-green-waiting-5f2929a3",
+  "dealer": "amira",
+  "action": "idle",
+  "status": "review",
+  "enabled": true,
+  "base": {
+    "jobId": "5f2929a3-384e-4632-862c-96b1a3f6bfb1",
+    "src": "review/amira-green-waiting/actor-packed.mp4",
+    "sha256": "a710745f9ea0c667a751a489b794a623820fd3b145a6e3d93651b07d7b34af57",
+    "sourceSha256": "2b36e7ad47595f20cb98431fa7613da525f7513729a7a23e7667a7acb67957cf",
+    "width": 706,
+    "height": 696,
+    "fps": 24,
+    "frames": 121,
+    "crop": [
+      630,
+      12,
+      706,
+      696
+    ],
+    "loop": true,
+    "layout": "rgb-over-alpha"
+  },
+  "camera": {
+    "width": 706,
+    "height": 696,
+    "placement": {
+      "width": 1920,
+      "height": 1080,
+      "scale": 1,
+      "x": 641,
+      "y": 13,
+      "framingScale": 0.85
+    }
+  },
+  "spliceOffset": [
+    0,
+    0
+  ],
+  "note": "Only this explicit 5f2929a3 native waiting loop. No folded-pose substitution or generation.",
+  "registration": {
+    "method": "Native 1920x1080 source, crop only; same virtual framing as speech plus measured uniform display translation (+11,+1) to align face. No actor scale or RGB warp.",
+    "newPlateComparedWithSpeech": true,
+    "actorWarpApplied": false,
+    "framingScale": 0.85,
+    "displayTranslation": [
+      11,
+      1
+    ]
+  },
+  "sourceSeam": {
+    "lastToFirstCompositeMeanAbsoluteError": 1.203628857195576,
+    "adjacentCompositeMeanAbsoluteErrorMedian": 0.2390314816623794,
+    "adjacentCompositeMeanAbsoluteErrorMax": 1.4090614926247924,
+    "sourceFirstLastPose": "Close matching ready poses; all121 original frames retained, no crossfade/interpolation."
+  },
+  "mode": "loop",
+  "ready": {
+    "src": "review/amira-green-waiting/rest-0000.png",
+    "sha256": "0920f0cebba9c4a13d940316eb8f9ac6525a6ae2a34e259a86c7003d9f73a97a",
+    "camera": {
+      "width": 706,
+      "height": 696,
+      "placement": {
+        "width": 1920,
+        "height": 1080,
+        "scale": 1,
+        "x": 641,
+        "y": 13,
+        "framingScale": 0.85
+      }
+    },
+    "sourceFrame": 0
+  },
+  "readyFull": {
+    "src": "review/amira-green-waiting/rest-full.png",
+    "sha256": "0cb52172ebd1e97675a24cf4a1c7e779a638406ff633fb0f0d3a6ea1182438af",
+    "width": 1920,
+    "height": 1080,
+    "sourceFrame": 0
+  },
+  "recommendedSpeechAlignment": {
+    "translation": [
+      11,
+      1
+    ],
+    "scale": 1,
+    "space": "1920x1080 virtual source pixels",
+    "applyToCameraPlacement": {
+      "x": 641,
+      "y": 13
+    },
+    "applied": true,
+    "limitation": "Aligns face/hair. Independent jacket and left-hand pose differences remain; no single rigid translation matches every body region."
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "status": "frozen incremental hair improvement; full realism acceptance remains open",
+  "restModelSha256": "2d81e327fd9dccb25278c4ee217ff86f0c0d8fb6fe4ab2fd14bce6d948239359",
+  "nativeStudySha256": "f6beb8a1836cac86ebfcafea5bd3f4e422e61fa588dd6444a74b83a6e4c2a37a",
+  "nativeAnimatedSha256": "f5a4073e74c1cf68506c10c0192442061bd315eeaf58e3650b38023d8bc1dba9",
+  "animatedGlbSha256": "79447cb566cbc15b3b1998c29df14041fa56bba5fa3df585201842b7c9c3d192",
+  "preservedAnimationCount": 12,
+  "review": "Independent review accepted incremental hair improvement only; no public promotion",
+  "remaining": [
+    "face/eyes/skin realism",
+    "stiff shoulders and body posture",
+    "jacket collar gaps",
+    "rear hair and bun detail",
+    "full candidate regression before public promotion"
+  ],
+  "appearanceEvidence": [
+    "table-rest.png",
+    "table-carry-paused.png",
+    "turn-deal.png",
+    "turn-collect.png"
+  ],
+  "exportEvidence": [
+    "native-transfer/glb-deal.png",
+    "native-transfer/glb-collect.png"
+  ],
+  "pausedCarryIsAppearanceOnly": true
+}

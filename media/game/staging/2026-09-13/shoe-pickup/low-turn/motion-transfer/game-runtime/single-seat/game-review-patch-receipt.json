@@ -1,0 +1,7 @@
+{
+  "scope": "isolated runtime app only",
+  "app": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/game-runtime/runtime/public/app.mjs",
+  "beforeSHA256": "27f44c420f5146b1f1d361676cd397e699236cd1ef2296e50f8ab02e3f2c8056",
+  "afterSHA256": "27f44c420f5146b1f1d361676cd397e699236cd1ef2296e50f8ab02e3f2c8056",
+  "optin": "astridBox0=review; exactastridsingleseat.localhost:4190;Astridbox0/box1firstcard;astridBox1=review"
+}

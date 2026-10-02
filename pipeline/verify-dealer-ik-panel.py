@@ -1,8 +1,8 @@
 import bpy, runpy, json, hashlib, sys, os
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-out=root/'content/staging/2026-09-11/dealer-controls'
-source=root/'assets/astrid-3d/anatomical/astrid-animated.blend'
+out=root/'media/game/staging/2026-09-11/dealer-controls'
+source=root/'media/dealers/astrid/source/3d/anatomical/astrid-animated.blend'
 bpy.ops.wm.open_mainfile(filepath=str(source))
 module=runpy.run_path(str(root/'pipeline/dealer-ik-panel.py'))
 arm=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE' and 'LeftHand' in o.pose.bones)

@@ -1,0 +1,173 @@
+{
+  "date": "2026-09-10",
+  "items": [
+    {
+      "direction": "left",
+      "sourceContract": {
+        "action": "deal-left",
+        "preserveThrough": 138,
+        "resumeFrame": 55,
+        "baseMediaSha256": "29e4628522e1dfb72fcb3a80c9340b1ca23aece3de7604478dc187ddfa8b5873",
+        "baseSource": "left-outlet-source.mp4",
+        "baseSourceSha256": "dded708128e254020e7264508d94cf05d917b3a73f7321a768f81c0dd4649452",
+        "bridgeSourceSha256": "bf4fa85b7d8acbc931072371a46cdf18eb3843adb58fc370c06f24c595d38e14",
+        "bridgeStartFrame": 19
+      },
+      "review": {
+        "result": "partial",
+        "reason": "Original bridge entry snapped back; trim now starts at generated frame19 after the unchanged delivery frame138. Both joins inspected in real gameplay; broader motion acceptance remains open.",
+        "sourceSha256": "bf4fa85b7d8acbc931072371a46cdf18eb3843adb58fc370c06f24c595d38e14",
+        "inspectedFrames": [
+          0,
+          12,
+          24,
+          36,
+          48,
+          60,
+          72,
+          84,
+          96
+        ]
+      },
+      "generation": {
+        "jobId": "2c6e8168-2d5a-48e6-bdae-52ce93c05ab8",
+        "params": {
+          "model": "seedance_2_0",
+          "duration": 4,
+          "resolution": "1080p",
+          "mode": "std",
+          "bitrate_mode": "high",
+          "aspect_ratio": "16:9",
+          "generate_audio": false,
+          "use_unlim": false,
+          "prompt": "Locked-camera photographic blackjack performance, one continuous silent shot, exact same Astrid woman, blonde tied-back hair, fitted black blazer and ivory blouse. Match the provided START frame exactly at time zero and END frame exactly at the finish; maintain the reference lens, body proportions, face, exposure and shoe geometry. This is ONLY an EMPTY-HAND RETURN from the just-completed left player card delivery. Her working right hand (the arm visible reaching in the START frame) is already EMPTY. Immediately continue its motion in one economical smooth low arc directly to the BLACK FRONT OUTLET of the acrylic shoe at screen-right, finishing in the supplied end-frame pinch-ready pose. Finish the travel within the first 1.4 seconds, then hold the exact end pose. Her other hand stays quietly at the rear rail. Natural professional dealing rhythm: no intermediate folded-arm reset, no greeting, no waving, no shuffling, no dealing another card and no top-of-stack reach. All cards already on the felt stay absolutely stationary. Do not pick up, slide, erase, duplicate or generate any card. No camera movement, zoom, cuts, dissolves, focus pumping, facial change or background drift. Crisp natural hands and fingers; avoid smeared motion. Four seconds total. No talking, lip movement, music or sound.",
+          "medias": [
+            {
+              "role": "start_image",
+              "value": "4dbe2c79-ab90-4aaa-9031-6b2c09ae60ec"
+            },
+            {
+              "role": "end_image",
+              "value": "2a0bf5bb-60cc-46fd-b4a1-d2c604403589"
+            }
+          ]
+        },
+        "terminalStatus": "completed"
+      }
+    },
+    {
+      "direction": "right",
+      "sourceContract": {
+        "action": "deal-right",
+        "preserveThrough": 125,
+        "resumeFrame": 55,
+        "baseMediaSha256": "d22d37c9f8ce8eba7250fe9af571143e20a7d793e2baadcd7d9bf73914f07151",
+        "baseSource": "right-outlet-source.mp4",
+        "baseSourceSha256": "589b310bf1fafed75ef6d1316c02e825e4a010edd18e3dc5c57ccf14a07bf7a7",
+        "bridgeSourceSha256": "d3483802232574cade30f77bd2ecc882a1783af6f3224add767b9d72351312af"
+      },
+      "review": {
+        "result": "rejected",
+        "reason": "Hand sweeps away from the shoe toward the centre/left before returning, an unnecessary gesture.",
+        "sourceSha256": "d3483802232574cade30f77bd2ecc882a1783af6f3224add767b9d72351312af",
+        "inspectedFrames": [
+          0,
+          12,
+          24,
+          36,
+          48,
+          60,
+          72,
+          84,
+          96
+        ]
+      },
+      "generation": {
+        "jobId": "ae46f7f7-d029-4b14-92d5-7472553a4a77",
+        "params": {
+          "model": "seedance_2_0",
+          "duration": 4,
+          "resolution": "1080p",
+          "mode": "std",
+          "bitrate_mode": "high",
+          "aspect_ratio": "16:9",
+          "generate_audio": false,
+          "use_unlim": false,
+          "prompt": "Locked-camera photographic blackjack performance, one continuous silent shot, exact same Astrid woman, blonde tied-back hair, fitted black blazer and ivory blouse. Match the provided START frame exactly at time zero and END frame exactly at the finish; maintain the reference lens, body proportions, face, exposure and shoe geometry. This is ONLY an EMPTY-HAND RETURN from the just-completed right player card delivery. Her working right hand (the arm visible reaching in the START frame) is already EMPTY. Immediately continue its motion in one economical smooth low arc directly to the BLACK FRONT OUTLET of the acrylic shoe at screen-right, finishing in the supplied end-frame pinch-ready pose. Finish the travel within the first 1.4 seconds, then hold the exact end pose. Her other hand stays quietly at the rear rail. Natural professional dealing rhythm: no intermediate folded-arm reset, no greeting, no waving, no shuffling, no dealing another card and no top-of-stack reach. All cards already on the felt stay absolutely stationary. Do not pick up, slide, erase, duplicate or generate any card. No camera movement, zoom, cuts, dissolves, focus pumping, facial change or background drift. Crisp natural hands and fingers; avoid smeared motion. Four seconds total. No talking, lip movement, music or sound.",
+          "medias": [
+            {
+              "role": "start_image",
+              "value": "16c3a442-711a-486c-a41e-290d97754555"
+            },
+            {
+              "role": "end_image",
+              "value": "2a0bf5bb-60cc-46fd-b4a1-d2c604403589"
+            }
+          ]
+        },
+        "terminalStatus": "completed"
+      }
+    },
+    {
+      "direction": "dealer",
+      "sourceContract": {
+        "action": "deal-dealer",
+        "preserveThrough": 122,
+        "resumeFrame": 55,
+        "baseMediaSha256": "ebeaf8d31aa9765d0f4180975223949fb4fd7736cc2b867bf3b37db8892001cf",
+        "baseSource": "dealer-front-source.mp4",
+        "baseSourceSha256": "836841cdce0bf5a4ecc07921294ef5ae1c2b4f58ed1a954f982b75bd3aab11a7",
+        "bridgeSourceSha256": "eb3e730293f6bc7c195e14815ca989ad0a3952ae939622fa5b9ba5ddb658b5ed"
+      },
+      "review": {
+        "result": "rejected",
+        "reason": "Generated hand moves the delivered prop card back toward the shoe; not an empty-hand return.",
+        "sourceSha256": "eb3e730293f6bc7c195e14815ca989ad0a3952ae939622fa5b9ba5ddb658b5ed",
+        "inspectedFrames": [
+          0,
+          12,
+          24,
+          36,
+          48,
+          60,
+          72,
+          84,
+          96
+        ]
+      },
+      "generation": {
+        "jobId": "3a837abd-a2e5-4109-b1c7-dde736bb4922",
+        "params": {
+          "model": "seedance_2_0",
+          "duration": 4,
+          "resolution": "1080p",
+          "mode": "std",
+          "bitrate_mode": "high",
+          "aspect_ratio": "16:9",
+          "generate_audio": false,
+          "use_unlim": false,
+          "prompt": "Locked-camera photographic blackjack performance, one continuous silent shot, exact same Astrid woman, blonde tied-back hair, fitted black blazer and ivory blouse. Match the provided START frame exactly at time zero and END frame exactly at the finish; maintain the reference lens, body proportions, face, exposure and shoe geometry. This is ONLY an EMPTY-HAND RETURN from the just-completed dealer's own card delivery. Her working right hand (the arm visible reaching in the START frame) is already EMPTY. Immediately continue its motion in one economical smooth low arc directly to the BLACK FRONT OUTLET of the acrylic shoe at screen-right, finishing in the supplied end-frame pinch-ready pose. Finish the travel within the first 1.4 seconds, then hold the exact end pose. Her other hand stays quietly at the rear rail. Natural professional dealing rhythm: no intermediate folded-arm reset, no greeting, no waving, no shuffling, no dealing another card and no top-of-stack reach. All cards already on the felt stay absolutely stationary. Do not pick up, slide, erase, duplicate or generate any card. No camera movement, zoom, cuts, dissolves, focus pumping, facial change or background drift. Crisp natural hands and fingers; avoid smeared motion. Four seconds total. No talking, lip movement, music or sound.",
+          "medias": [
+            {
+              "role": "start_image",
+              "value": "b47130af-0a75-49ea-a570-cbf67b2346a5"
+            },
+            {
+              "role": "end_image",
+              "value": "2a0bf5bb-60cc-46fd-b4a1-d2c604403589"
+            }
+          ]
+        },
+        "terminalStatus": "completed"
+      }
+    }
+  ],
+  "installed": [
+    "left"
+  ],
+  "notInstalled": [
+    "right",
+    "dealer"
+  ],
+  "note": "Left entry trim corrected to bridge frame19 after actual-game join inspection. Generation source alone was insufficient to approve the join."
+}

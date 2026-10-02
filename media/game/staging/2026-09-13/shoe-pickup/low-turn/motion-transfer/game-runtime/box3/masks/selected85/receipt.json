@@ -1,0 +1,4893 @@
+{
+  "status": "Stable selected85 candidate; all85 contact/entry overview samples visually inspected; remaining mixed edges and table lettering not accepted",
+  "dimensions": [
+    1280,
+    720
+  ],
+  "count": 85,
+  "channels": "PNG R actor G existing foreground clamped toR B0",
+  "clock": "output filename0000..0084 equals pace outputFrame. First10 samples existing prefix; following75 sourceNative exact from pace receipt.",
+  "paceReceiptSHA256": "affdf5a396110fd5c90e2daa38e8766c853df7a29e61cb8279bb91d96d1afbea",
+  "sourceRGB": "unchanged; all input PNGs immutable",
+  "limitations": [
+    "1280 masks do not supply native1920 edge detail.",
+    "Frozen critical-v4 carries documented mixed paper rim and contact shadow91.",
+    "Extension uses actual white component hull inside tracking searchwindow, not tracking quadrilateral as erasure geometry.",
+    "Existing G heuristic and table lettering outside paper/shoe domains remain unapproved."
+  ],
+  "frames": [
+    {
+      "outputFrame": 0,
+      "outputPTS": 0.0,
+      "packedNative": 0,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0000.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0001.png",
+      "inputSHA256": "eff614f0e399d47749f08d31cbb9773a094e86d748026fbabbd984702e4bfa3f",
+      "sha256": "d19af83c595e199b43411cc6af3f9f56b48cc7d22feaf2044e8fe465e4ccd99f",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 1,
+      "outputPTS": 0.016666666666666666,
+      "packedNative": 3,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0001.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0004.png",
+      "inputSHA256": "936ff1175761baa5ab9e7f3f93ad40cb54e85f57616f94d38fe03a2bd133cada",
+      "sha256": "71f74c38e659e43fd398cfb9a21d2cf422080ad9e1354d0f2b2ac929ad4bf7b9",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 2,
+      "outputPTS": 0.03333333333333333,
+      "packedNative": 5,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0002.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0006.png",
+      "inputSHA256": "b6d3cb9d196e2aaf9db0805ea3941dc2f90bc2e459c1a38fc28201db40068ae9",
+      "sha256": "e0318d676364ffa046856f4314dd51046f7d16845e327017610dfd5bf3bf2009",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 3,
+      "outputPTS": 0.05,
+      "packedNative": 8,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0003.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0009.png",
+      "inputSHA256": "e5e19efae4cf02a7744b2b00988781cf24be8a1d87ea0333b7d55fb139343b74",
+      "sha256": "9aeed4ac57b5ecd02ed76b267a7ba8a9bfadb30e1fbd76a1757062901076cc10",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 4,
+      "outputPTS": 0.06666666666666667,
+      "packedNative": 10,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0004.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0011.png",
+      "inputSHA256": "e92110d2d432025f7c03bd25e8c43ce294d19179fcd25631b6f73d81714d0198",
+      "sha256": "43b3723b77a28c5241dfc306bb21edf7b32e1422da9248c5deb73119282bb845",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 5,
+      "outputPTS": 0.08333333333333333,
+      "packedNative": 13,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0005.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0014.png",
+      "inputSHA256": "ea2d810b3b019fc78d895ee4e65cf90c54c66a0a74c8e64ddcb8f797e1415c72",
+      "sha256": "51bbe3bbc5668da1dbee6fa6f55edffac8ba5bf71e33c9303bc3f8438e211bca",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 6,
+      "outputPTS": 0.1,
+      "packedNative": 15,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0006.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0016.png",
+      "inputSHA256": "56469e9a9c46085a66796f70b50d936c64e038f0d2740b96b30e6b4f3e4ff76a",
+      "sha256": "96bf4c53306813f39d0e742f08873124b15d62c69a55d8f2f21a91006e5cbac6",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 7,
+      "outputPTS": 0.11666666666666667,
+      "packedNative": 18,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0007.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0019.png",
+      "inputSHA256": "e1015442ce54312a90cb6365586c5f58572fe15a9ccfcaf219828ce9e1ecd93a",
+      "sha256": "ba281fba5f5d914125b843e4c7d186b8cd09933713ca6756981a9089dbef5d36",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 8,
+      "outputPTS": 0.13333333333333333,
+      "packedNative": 20,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0008.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0021.png",
+      "inputSHA256": "253cc432b030ddbf0f9c9fc32cca33156a432f9dc80c98c72b5be49fdc4a50c1",
+      "sha256": "6f1a8444292a8a02b6269e8f877ca998b761699756bdc4bde03bef8849fbb0cf",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 9,
+      "outputPTS": 0.15,
+      "packedNative": 23,
+      "sourceNative": null,
+      "phase": "entry",
+      "file": "0009.png",
+      "origin": "existing prefix PNG",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0024.png",
+      "inputSHA256": "a8c4c2ea37b3bd0189d84093918deb20577202a1fddb0ca572da93f3cc89641f",
+      "sha256": "2e0b7a96d723008a927201b5b46686bf2485084e96e54fc4cea87853f7e17aa0",
+      "domains1280": [],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 10,
+      "outputPTS": 0.16666666666666666,
+      "packedNative": 24,
+      "sourceNative": 0,
+      "phase": "source",
+      "file": "0010.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0025.png",
+      "inputSHA256": "53c98af490bf67dc6a3676cdc83a16771db532c77f18c6859dcd71b2189bd7fc",
+      "sha256": "e4f10938749de8133ffc9414af3cdbb322a37b2ba259e3135abe780ca518ee48",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 11,
+      "outputPTS": 0.18333333333333332,
+      "packedNative": 26,
+      "sourceNative": 2,
+      "phase": "source",
+      "file": "0011.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0027.png",
+      "inputSHA256": "cec93e55f9c3be86fcf47eb9857de403ee29e43266983f3db7298ce37ffcbb09",
+      "sha256": "d33a4afe28048de47a094876a1b1aa9aad081f1e2a67a9b1bd35375e10f28b12",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 12,
+      "outputPTS": 0.2,
+      "packedNative": 28,
+      "sourceNative": 4,
+      "phase": "source",
+      "file": "0012.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0029.png",
+      "inputSHA256": "356f0e48f446e184f5a9ee1255ea85fe052976b45654f904227cf4e2f150eb19",
+      "sha256": "4b38a2fcc3c4031c770db2de99262eb4a575119d95fe3c84ad4299c27f558b2b",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 13,
+      "outputPTS": 0.21666666666666667,
+      "packedNative": 30,
+      "sourceNative": 6,
+      "phase": "source",
+      "file": "0013.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0031.png",
+      "inputSHA256": "46442ea59cf7e2d9e8f7d63b0f7bf05ed0a8d3472973b86f3854b62d9a7ef07d",
+      "sha256": "9a2da0f652d7a59ea08054f46bdeeaede343f1897d07b2767c6c510172f1d737",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 678,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 14,
+      "outputPTS": 0.23333333333333334,
+      "packedNative": 32,
+      "sourceNative": 8,
+      "phase": "source",
+      "file": "0014.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0033.png",
+      "inputSHA256": "2cf7ee77f95b93ea362c4d21e6fc6ce2ba9144feb90ac0eeada28656360b4843",
+      "sha256": "9307bd219ec9994f398a5e17810ce1c7e1f698e71d96183a14d6f92aabb7ebf7",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 6,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 15,
+      "outputPTS": 0.25,
+      "packedNative": 34,
+      "sourceNative": 10,
+      "phase": "source",
+      "file": "0015.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0035.png",
+      "inputSHA256": "cf755f260309ffab0a4a4825d6c4f535373599d1be32f424ac9ac7ab2c6f460b",
+      "sha256": "d339cc85551bdcbca60b859a8b878e83e5a5b923c272921dcfb55e47a83071ed",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 98,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 16,
+      "outputPTS": 0.26666666666666666,
+      "packedNative": 36,
+      "sourceNative": 12,
+      "phase": "source",
+      "file": "0016.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0037.png",
+      "inputSHA256": "80decb27214b20d28cb2c6bc9d3cccb0814c4cbb84302393a992a64b35173ef8",
+      "sha256": "2010d122e3720eac5a468b693483e793b32d57fe646a0275379f0153702d61e3",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 553,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 17,
+      "outputPTS": 0.2833333333333333,
+      "packedNative": 38,
+      "sourceNative": 14,
+      "phase": "source",
+      "file": "0017.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0039.png",
+      "inputSHA256": "61d7066c680999a9f0dd0911d108718ef4390be0eb8634fc92a06fd5e0646f5a",
+      "sha256": "9590b886c86b72d27351411dd7e531a360c0d09897eff85b246a9c8ad0347e39",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 4406,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 18,
+      "outputPTS": 0.3,
+      "packedNative": 40,
+      "sourceNative": 16,
+      "phase": "source",
+      "file": "0018.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0041.png",
+      "inputSHA256": "927e26596eddd5494826b066790fccfdf5ef07e9e60bfe4b10ea57ce4bae2334",
+      "sha256": "3dba6bd6be17ba4822220a5c61b86452bb065ea75467f7e28ac7e47328fd27bd",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 4823,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 19,
+      "outputPTS": 0.31666666666666665,
+      "packedNative": 42,
+      "sourceNative": 18,
+      "phase": "source",
+      "file": "0019.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0043.png",
+      "inputSHA256": "346e50b7eb92a295f08061b658a62446c1490f33a082ae357dcb7a6804c732b9",
+      "sha256": "72e61b477333e115a85808b7d8a3f68a9d7f364dd8f892a585e0689e4d6772cd",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 5049,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 20,
+      "outputPTS": 0.3333333333333333,
+      "packedNative": 44,
+      "sourceNative": 20,
+      "phase": "source",
+      "file": "0020.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0045.png",
+      "inputSHA256": "3f7ff6da104bf624924d59172920635304ec2f703c01d6cbe79247453d7ff7ca",
+      "sha256": "042c73a532224f9829b1696974069b5d41f400a40f6eee2ee4be52a85546a4a1",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 4993,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 21,
+      "outputPTS": 0.35,
+      "packedNative": 46,
+      "sourceNative": 22,
+      "phase": "source",
+      "file": "0021.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0047.png",
+      "inputSHA256": "b6b9652f2d33e0c1daa085f4dbbcf6bab234e4e0fb4796d9aa2e7443e53224fa",
+      "sha256": "150de3eb825c18a1a49cab65d2578c0272ee6c0bb5877501ddf347c8993f479a",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 5216,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 22,
+      "outputPTS": 0.36666666666666664,
+      "packedNative": 48,
+      "sourceNative": 24,
+      "phase": "source",
+      "file": "0022.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0049.png",
+      "inputSHA256": "dc788af18bd43d5b6787a92064f8447bb106297d1e78cc4788f338d79544e536",
+      "sha256": "9373e17f4512eeb0b7cbfef65b4f31c9f749b2a47261c142f9eb13974fa056a5",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 4790,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 23,
+      "outputPTS": 0.38333333333333336,
+      "packedNative": 50,
+      "sourceNative": 26,
+      "phase": "source",
+      "file": "0023.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0051.png",
+      "inputSHA256": "68fb9d2750596462944bf208ae3d612d67507484463368d6a829f7de56dd393b",
+      "sha256": "ee9687e4e9a9310dcc811746187c1353353794c3b90f517aaa4541ad52061237",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 5407,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 24,
+      "outputPTS": 0.4,
+      "packedNative": 52,
+      "sourceNative": 28,
+      "phase": "source",
+      "file": "0024.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0053.png",
+      "inputSHA256": "8ab81d6598749a9ef9bfd18922a4f5546e2c56e3aa4571f8c03fea369aed1988",
+      "sha256": "7c32f147447bbb8dded12f220afaacfa030c337abe6709501357379ebc8ec4c4",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 6516,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 25,
+      "outputPTS": 0.4166666666666667,
+      "packedNative": 53,
+      "sourceNative": 29,
+      "phase": "source",
+      "file": "0025.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0054.png",
+      "inputSHA256": "4540b197216aa4168dbd21a1bbfff89643445dad943668d58fc275915d0dd03c",
+      "sha256": "ee939eb5b0e721a8a0f4f1c72597894f67c34d9d4003e068f9750f6d939035e1",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 6188,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 26,
+      "outputPTS": 0.43333333333333335,
+      "packedNative": 55,
+      "sourceNative": 31,
+      "phase": "source",
+      "file": "0026.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0056.png",
+      "inputSHA256": "fdf02b210e617c156c07146af6a905f62d2ecf28fef9d4be24ac49e34ba5f5a6",
+      "sha256": "1083e2b257f5c779a85fcb3e1c2318052faba8d10e1bc15c6a430a25a72b649c",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 5607,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 27,
+      "outputPTS": 0.45,
+      "packedNative": 57,
+      "sourceNative": 33,
+      "phase": "source",
+      "file": "0027.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0058.png",
+      "inputSHA256": "3a93d1eecc896ffe14c4088b208b3f3b35ef49bdca320115d18fb1cb2ec188e9",
+      "sha256": "df18d7d0a24b3d614df715972b29e2e739040ee6332566d171d7ec28477f6578",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 5951,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 28,
+      "outputPTS": 0.4666666666666667,
+      "packedNative": 59,
+      "sourceNative": 35,
+      "phase": "source",
+      "file": "0028.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0060.png",
+      "inputSHA256": "3a352ab678ec69aa2f4cfc87e37da32cdd7141899ae81a59eb88cf1712e36518",
+      "sha256": "68df3a8fa61d8eb05f3dd07474a1eb15d345558742de3696f23a678a1aaef2d9",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 5300,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 29,
+      "outputPTS": 0.48333333333333334,
+      "packedNative": 60,
+      "sourceNative": 36,
+      "phase": "source",
+      "file": "0029.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0061.png",
+      "inputSHA256": "e4341a682f8ea3f54eb239119f1eb0b8cb5b78f4d82779409a25785374b93295",
+      "sha256": "b81e5a700e337f8325f7dc34c1006c492e33909f2e6377eaac0a783534a18152",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            750,
+            416
+          ],
+          [
+            846,
+            407
+          ],
+          [
+            855,
+            446
+          ],
+          [
+            790,
+            478
+          ],
+          [
+            750,
+            453
+          ]
+        ]
+      ],
+      "RRemovedPixels": 5586,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 30,
+      "outputPTS": 0.5,
+      "packedNative": 62,
+      "sourceNative": 38,
+      "phase": "source",
+      "file": "0030.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0063.png",
+      "inputSHA256": "66dd708359529e7ec04f5e3797ebc6b44eb18e0b4f79e26a04b93c59527454f9",
+      "sha256": "1aceecba53498d9a9354456e756b669bf65fc29912b1dd86c866750d96599578",
+      "domains1280": [],
+      "RRemovedPixels": 5595,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 31,
+      "outputPTS": 0.5166666666666667,
+      "packedNative": 63,
+      "sourceNative": 39,
+      "phase": "source",
+      "file": "0031.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0064.png",
+      "inputSHA256": "30086124d4b99306e95acca36228b7954ea485dd45f412881d53b5780c91127f",
+      "sha256": "5b2f16d4fb5fff2db1ae17cbfc76e669b67315af5a21c6e993e39a6e112d1ed6",
+      "domains1280": [],
+      "RRemovedPixels": 5315,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 32,
+      "outputPTS": 0.5333333333333333,
+      "packedNative": 64,
+      "sourceNative": 40,
+      "phase": "source",
+      "file": "0032.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0065.png",
+      "inputSHA256": "267f50c5e732a27f64716b6d29d290701a51cfdabc3bd62cdbb8db94a2b40f67",
+      "sha256": "c70198bf2874760a8ef75695859a5af282b44841dc7ae9908843e5666427da1b",
+      "domains1280": [],
+      "RRemovedPixels": 5368,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 33,
+      "outputPTS": 0.55,
+      "packedNative": 66,
+      "sourceNative": 42,
+      "phase": "source",
+      "file": "0033.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0067.png",
+      "inputSHA256": "aa70a3bd57cfe5da76bac7b66f22e15a76031ff723e3e942e45d235fd45f38cf",
+      "sha256": "14b354e7523e741e181899628d5f823bdde1b4091d9fbfd5a69ee8795873bf79",
+      "domains1280": [],
+      "RRemovedPixels": 12663,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 34,
+      "outputPTS": 0.5666666666666667,
+      "packedNative": 67,
+      "sourceNative": 43,
+      "phase": "source",
+      "file": "0034.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0068.png",
+      "inputSHA256": "08c41be157773fbf1b7cdab2fd1382b5eba810860b5991ee0f66049e4634b832",
+      "sha256": "96c8d547bde56feafac663e068f396802a2f560e24bbc2455ace60000cccda19",
+      "domains1280": [],
+      "RRemovedPixels": 12559,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 35,
+      "outputPTS": 0.5833333333333334,
+      "packedNative": 68,
+      "sourceNative": 44,
+      "phase": "source",
+      "file": "0035.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0069.png",
+      "inputSHA256": "602a1cc6dc197be35cebb32fbc2e2337faa67c4aafc28db47a70ad23eb1139e7",
+      "sha256": "f59d5c4420f71609b4d67552b1a6f46797f98ab7f1ea035e45e7e745405e09f8",
+      "domains1280": [],
+      "RRemovedPixels": 12494,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 36,
+      "outputPTS": 0.6,
+      "packedNative": 69,
+      "sourceNative": 45,
+      "phase": "source",
+      "file": "0036.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0070.png",
+      "inputSHA256": "39568618f46bb1bbfeb40bc2fe71e97e84ddf8963f8057bd8877785e87037d20",
+      "sha256": "315d04366c3f9bc42b71747eef7c610f8163206f34dd2a28756befaf86b5eaa3",
+      "domains1280": [],
+      "RRemovedPixels": 4628,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 37,
+      "outputPTS": 0.6166666666666667,
+      "packedNative": 71,
+      "sourceNative": 47,
+      "phase": "source",
+      "file": "0037.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0072.png",
+      "inputSHA256": "67d4fac8dbdff303650f75b0cbbad532429ce4b5f3f99f2dd7197ad2b8cf90c7",
+      "sha256": "46d728a57a7c993f2664f274007d2ae2cbedcbd755ea843731171505085c42e4",
+      "domains1280": [],
+      "RRemovedPixels": 2092,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 38,
+      "outputPTS": 0.6333333333333333,
+      "packedNative": 72,
+      "sourceNative": 48,
+      "phase": "source",
+      "file": "0038.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0073.png",
+      "inputSHA256": "57fd5103940d9d0c149a0de4faee72593cfc890aec1d3f1b6a965cc7ee34f65f",
+      "sha256": "827d4dcb9b861a92e732d6b17ea520105959e0e84204eaa560a879bf0cc6ee02",
+      "domains1280": [],
+      "RRemovedPixels": 3322,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 39,
+      "outputPTS": 0.65,
+      "packedNative": 73,
+      "sourceNative": 49,
+      "phase": "source",
+      "file": "0039.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0074.png",
+      "inputSHA256": "daa2424617b5fa1183427cb3ae73c0543accdb4e788724886768839194d9207b",
+      "sha256": "5469d4249a821b61b5fe9417bb436f273d0348a3d2f527dae70f5c41fd486f53",
+      "domains1280": [],
+      "RRemovedPixels": 2006,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 40,
+      "outputPTS": 0.6666666666666666,
+      "packedNative": 74,
+      "sourceNative": 50,
+      "phase": "source",
+      "file": "0040.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0075.png",
+      "inputSHA256": "3af2956c0a3be391009810583bb342da9ad1fa07527aed3f14cd292a266001d3",
+      "sha256": "d726c7728680444424615f0a77e5b0211105b4bfe9651406bcbfae6d6fff0a86",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            805,
+            424
+          ],
+          [
+            815,
+            430
+          ],
+          [
+            823,
+            435
+          ],
+          [
+            826,
+            437
+          ],
+          [
+            826,
+            444
+          ],
+          [
+            812,
+            453
+          ],
+          [
+            804,
+            458
+          ],
+          [
+            791,
+            466
+          ],
+          [
+            785,
+            469
+          ],
+          [
+            782,
+            469
+          ],
+          [
+            780,
+            468
+          ],
+          [
+            772,
+            460
+          ],
+          [
+            772,
+            459
+          ],
+          [
+            773,
+            442
+          ],
+          [
+            774,
+            441
+          ],
+          [
+            801,
+            424
+          ]
+        ]
+      ],
+      "RRemovedPixels": 3379,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 41,
+      "outputPTS": 0.6833333333333333,
+      "packedNative": 76,
+      "sourceNative": 52,
+      "phase": "source",
+      "file": "0041.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0077.png",
+      "inputSHA256": "bb69e1a4e0b35727bfb9c841018c0d1d8a0d3844bc8d6d41a3a2d795b34f3646",
+      "sha256": "42ac700ee9af48ffb6aac2698cb4949007a3c0c87590c7ddf06350c80f7c02ff",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            800,
+            441
+          ],
+          [
+            809,
+            450
+          ],
+          [
+            820,
+            462
+          ],
+          [
+            820,
+            463
+          ],
+          [
+            819,
+            464
+          ],
+          [
+            817,
+            465
+          ],
+          [
+            773,
+            480
+          ],
+          [
+            770,
+            481
+          ],
+          [
+            766,
+            481
+          ],
+          [
+            761,
+            476
+          ],
+          [
+            759,
+            473
+          ],
+          [
+            758,
+            471
+          ],
+          [
+            758,
+            470
+          ],
+          [
+            762,
+            453
+          ],
+          [
+            763,
+            452
+          ],
+          [
+            792,
+            442
+          ],
+          [
+            795,
+            441
+          ]
+        ]
+      ],
+      "RRemovedPixels": 253,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 42,
+      "outputPTS": 0.7,
+      "packedNative": 77,
+      "sourceNative": 53,
+      "phase": "source",
+      "file": "0042.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0078.png",
+      "inputSHA256": "764b08908678be14ea165c7da186ed6ef6bd1fe6055e63463f3655748ea262cd",
+      "sha256": "77a5c671c0aafa6571e7750157d58b861532e991f16234aae8db7dcaf6b3f38f",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            796,
+            449
+          ],
+          [
+            799,
+            452
+          ],
+          [
+            811,
+            467
+          ],
+          [
+            813,
+            470
+          ],
+          [
+            814,
+            472
+          ],
+          [
+            813,
+            473
+          ],
+          [
+            811,
+            474
+          ],
+          [
+            807,
+            475
+          ],
+          [
+            762,
+            486
+          ],
+          [
+            757,
+            486
+          ],
+          [
+            756,
+            485
+          ],
+          [
+            754,
+            482
+          ],
+          [
+            751,
+            476
+          ],
+          [
+            757,
+            458
+          ],
+          [
+            760,
+            457
+          ],
+          [
+            792,
+            449
+          ]
+        ]
+      ],
+      "RRemovedPixels": 117,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 43,
+      "outputPTS": 0.7166666666666667,
+      "packedNative": 79,
+      "sourceNative": 55,
+      "phase": "source",
+      "file": "0043.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0080.png",
+      "inputSHA256": "00933f828ab4b53e8ef5e0b3f2f769736c91935e8ef234f78036b8c70af1a08f",
+      "sha256": "24c0f6e5785cd5802fa1a1afac4916d7d204235b5408f80aa9dfcb7e6f883bc7",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            788,
+            464
+          ],
+          [
+            791,
+            467
+          ],
+          [
+            801,
+            487
+          ],
+          [
+            801,
+            488
+          ],
+          [
+            800,
+            489
+          ],
+          [
+            796,
+            490
+          ],
+          [
+            743,
+            496
+          ],
+          [
+            741,
+            496
+          ],
+          [
+            739,
+            495
+          ],
+          [
+            738,
+            493
+          ],
+          [
+            737,
+            489
+          ],
+          [
+            737,
+            487
+          ],
+          [
+            746,
+            468
+          ],
+          [
+            786,
+            464
+          ]
+        ]
+      ],
+      "RRemovedPixels": 227,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 44,
+      "outputPTS": 0.7333333333333333,
+      "packedNative": 80,
+      "sourceNative": 56,
+      "phase": "source",
+      "file": "0044.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0081.png",
+      "inputSHA256": "2e1ca8a86d130e5cf983e6c8f516741bf9f89dc18f8ec1618fafc74a12839768",
+      "sha256": "cac8e5f6ffdac231d8938d2654cd3f1d7df0b2a867f0199b3bd4955d10b59df8",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            786,
+            470
+          ],
+          [
+            787,
+            471
+          ],
+          [
+            788,
+            473
+          ],
+          [
+            791,
+            481
+          ],
+          [
+            795,
+            492
+          ],
+          [
+            795,
+            495
+          ],
+          [
+            793,
+            496
+          ],
+          [
+            746,
+            499
+          ],
+          [
+            732,
+            499
+          ],
+          [
+            731,
+            497
+          ],
+          [
+            730,
+            494
+          ],
+          [
+            730,
+            491
+          ],
+          [
+            741,
+            471
+          ],
+          [
+            781,
+            470
+          ]
+        ]
+      ],
+      "RRemovedPixels": 54,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 45,
+      "outputPTS": 0.75,
+      "packedNative": 81,
+      "sourceNative": 57,
+      "phase": "source",
+      "file": "0045.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0082.png",
+      "inputSHA256": "3ab137b63b108e01a15b64c5e1f8db510c9e92145e0ea69190db3be1c26008b1",
+      "sha256": "8e8ef0c31dbefcee829e46b7e2d107f6d3481d0673cfc10aab16de34138295be",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            743,
+            473
+          ],
+          [
+            783,
+            477
+          ],
+          [
+            784,
+            479
+          ],
+          [
+            785,
+            482
+          ],
+          [
+            788,
+            497
+          ],
+          [
+            788,
+            502
+          ],
+          [
+            768,
+            503
+          ],
+          [
+            728,
+            503
+          ],
+          [
+            725,
+            502
+          ],
+          [
+            724,
+            501
+          ],
+          [
+            723,
+            498
+          ],
+          [
+            723,
+            494
+          ],
+          [
+            736,
+            476
+          ],
+          [
+            737,
+            475
+          ],
+          [
+            742,
+            473
+          ]
+        ]
+      ],
+      "RRemovedPixels": 1676,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 46,
+      "outputPTS": 0.7666666666666667,
+      "packedNative": 83,
+      "sourceNative": 59,
+      "phase": "source",
+      "file": "0046.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0084.png",
+      "inputSHA256": "f78e4025788ad6376ce181273b6b8dfc71c28088326e8de0b1e12872b4623139",
+      "sha256": "0751d154001300a267d6ade19c95653e9cba19ea4d4be820bc02e3a50fe57427",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            732,
+            485
+          ],
+          [
+            775,
+            490
+          ],
+          [
+            776,
+            491
+          ],
+          [
+            776,
+            498
+          ],
+          [
+            775,
+            508
+          ],
+          [
+            774,
+            514
+          ],
+          [
+            772,
+            516
+          ],
+          [
+            768,
+            516
+          ],
+          [
+            747,
+            514
+          ],
+          [
+            720,
+            511
+          ],
+          [
+            712,
+            510
+          ],
+          [
+            708,
+            509
+          ],
+          [
+            708,
+            504
+          ],
+          [
+            709,
+            501
+          ],
+          [
+            725,
+            485
+          ]
+        ]
+      ],
+      "RRemovedPixels": 1360,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 47,
+      "outputPTS": 0.7833333333333333,
+      "packedNative": 84,
+      "sourceNative": 60,
+      "phase": "source",
+      "file": "0047.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0085.png",
+      "inputSHA256": "08e0bf5acfce20f9b0e7bc5fbdb7859d0d9959a9d98bf61316e2a1bf6e5d9fca",
+      "sha256": "669241ef7ccfb4742f0de2b3dfc06e14cde1a850f7d699bb1dae1714380dc6a8",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            721,
+            488
+          ],
+          [
+            759,
+            494
+          ],
+          [
+            771,
+            496
+          ],
+          [
+            772,
+            497
+          ],
+          [
+            772,
+            499
+          ],
+          [
+            770,
+            509
+          ],
+          [
+            769,
+            513
+          ],
+          [
+            767,
+            520
+          ],
+          [
+            765,
+            522
+          ],
+          [
+            760,
+            522
+          ],
+          [
+            722,
+            516
+          ],
+          [
+            704,
+            513
+          ],
+          [
+            701,
+            512
+          ],
+          [
+            700,
+            511
+          ],
+          [
+            702,
+            505
+          ],
+          [
+            703,
+            503
+          ],
+          [
+            720,
+            488
+          ]
+        ]
+      ],
+      "RRemovedPixels": 2409,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 48,
+      "outputPTS": 0.8,
+      "packedNative": 86,
+      "sourceNative": 62,
+      "phase": "source",
+      "file": "0048.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0087.png",
+      "inputSHA256": "64a174f66abcd88dc48b65e3feb68dca900de5bece6e922ae7068e6f192d3e85",
+      "sha256": "5b01a5cd24d5f8af9d42e3bb7d6a49bb9457c26cfbef0ea3de23122134c06853",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            711,
+            496
+          ],
+          [
+            756,
+            507
+          ],
+          [
+            759,
+            508
+          ],
+          [
+            761,
+            509
+          ],
+          [
+            761,
+            512
+          ],
+          [
+            751,
+            530
+          ],
+          [
+            749,
+            533
+          ],
+          [
+            747,
+            534
+          ],
+          [
+            745,
+            534
+          ],
+          [
+            737,
+            532
+          ],
+          [
+            688,
+            519
+          ],
+          [
+            685,
+            518
+          ],
+          [
+            685,
+            516
+          ],
+          [
+            687,
+            512
+          ],
+          [
+            690,
+            509
+          ],
+          [
+            708,
+            496
+          ]
+        ]
+      ],
+      "RRemovedPixels": 2711,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 49,
+      "outputPTS": 0.8166666666666667,
+      "packedNative": 87,
+      "sourceNative": 63,
+      "phase": "source",
+      "file": "0049.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0088.png",
+      "inputSHA256": "fe3813f2dec285dbd68374d79e1d442e24f41a2be59264354f20533c9a1c144c",
+      "sha256": "be5da1b009e8de757d6cb77e3c3910d8ee35ac1bcf3e1b5be0e61127e328d0a1",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            721,
+            502
+          ],
+          [
+            754,
+            514
+          ],
+          [
+            756,
+            515
+          ],
+          [
+            756,
+            516
+          ],
+          [
+            755,
+            518
+          ],
+          [
+            751,
+            524
+          ],
+          [
+            743,
+            535
+          ],
+          [
+            740,
+            539
+          ],
+          [
+            737,
+            540
+          ],
+          [
+            730,
+            538
+          ],
+          [
+            680,
+            522
+          ],
+          [
+            678,
+            521
+          ],
+          [
+            677,
+            520
+          ],
+          [
+            677,
+            519
+          ],
+          [
+            683,
+            513
+          ],
+          [
+            702,
+            499
+          ]
+        ]
+      ],
+      "RRemovedPixels": 2493,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 50,
+      "outputPTS": 0.8333333333333334,
+      "packedNative": 88,
+      "sourceNative": 64,
+      "phase": "source",
+      "file": "0050.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0089.png",
+      "inputSHA256": "96be881b04df5634d89f29427f25a13a2cb627102ea5b773abdd0428c1d049ad",
+      "sha256": "42003807ddf77713ddeb534e3b6c3cc3f28276ce37eabd2423e11c5c7660c36b",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            707,
+            502
+          ],
+          [
+            749,
+            520
+          ],
+          [
+            750,
+            521
+          ],
+          [
+            750,
+            522
+          ],
+          [
+            748,
+            525
+          ],
+          [
+            731,
+            544
+          ],
+          [
+            729,
+            545
+          ],
+          [
+            728,
+            545
+          ],
+          [
+            719,
+            542
+          ],
+          [
+            672,
+            524
+          ],
+          [
+            670,
+            523
+          ],
+          [
+            670,
+            522
+          ],
+          [
+            671,
+            520
+          ],
+          [
+            674,
+            517
+          ],
+          [
+            696,
+            502
+          ]
+        ]
+      ],
+      "RRemovedPixels": 4821,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 51,
+      "outputPTS": 0.85,
+      "packedNative": 90,
+      "sourceNative": 66,
+      "phase": "source",
+      "file": "0051.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0091.png",
+      "inputSHA256": "be0afbe6276179a2c14c3a4af3d012c2755a00c60e0f99e07412d3ed85b10eb7",
+      "sha256": "b25226b2e54f3be3bf33b36800f28dac6cdf2f22ab36780233e43c85eaf55ec3",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            688,
+            507
+          ],
+          [
+            736,
+            531
+          ],
+          [
+            737,
+            532
+          ],
+          [
+            737,
+            533
+          ],
+          [
+            735,
+            535
+          ],
+          [
+            726,
+            542
+          ],
+          [
+            713,
+            552
+          ],
+          [
+            711,
+            553
+          ],
+          [
+            707,
+            553
+          ],
+          [
+            659,
+            528
+          ],
+          [
+            657,
+            526
+          ],
+          [
+            657,
+            525
+          ],
+          [
+            658,
+            524
+          ],
+          [
+            661,
+            522
+          ],
+          [
+            685,
+            507
+          ]
+        ]
+      ],
+      "RRemovedPixels": 2133,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 52,
+      "outputPTS": 0.8666666666666667,
+      "packedNative": 91,
+      "sourceNative": 67,
+      "phase": "source",
+      "file": "0052.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0092.png",
+      "inputSHA256": "1d9b3249780bd5ca8466f0db2e5f9bfbf22e80c7ce6075f311404d5d2f5cf1f4",
+      "sha256": "5f311ebb4e124bef3150eaf9dd5022d9a100309b119820e01a73329b95c5464c",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            682,
+            509
+          ],
+          [
+            688,
+            512
+          ],
+          [
+            697,
+            517
+          ],
+          [
+            727,
+            534
+          ],
+          [
+            730,
+            536
+          ],
+          [
+            731,
+            537
+          ],
+          [
+            729,
+            539
+          ],
+          [
+            725,
+            542
+          ],
+          [
+            704,
+            556
+          ],
+          [
+            702,
+            557
+          ],
+          [
+            699,
+            557
+          ],
+          [
+            697,
+            556
+          ],
+          [
+            682,
+            547
+          ],
+          [
+            654,
+            530
+          ],
+          [
+            651,
+            527
+          ],
+          [
+            653,
+            525
+          ],
+          [
+            680,
+            509
+          ]
+        ]
+      ],
+      "RRemovedPixels": 1850,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 53,
+      "outputPTS": 0.8833333333333333,
+      "packedNative": 92,
+      "sourceNative": 68,
+      "phase": "source",
+      "file": "0053.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0093.png",
+      "inputSHA256": "aa54b83c6220ddb8d58268217fa661fb05536eb1cb13ed42752f242315d49e7a",
+      "sha256": "aebb52f4edf08fa31b7071e7fbe7073c93fae88258141d3ac6a2ab93574967e6",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            680,
+            511
+          ],
+          [
+            691,
+            518
+          ],
+          [
+            722,
+            539
+          ],
+          [
+            724,
+            541
+          ],
+          [
+            724,
+            542
+          ],
+          [
+            722,
+            544
+          ],
+          [
+            696,
+            559
+          ],
+          [
+            694,
+            560
+          ],
+          [
+            690,
+            560
+          ],
+          [
+            688,
+            559
+          ],
+          [
+            647,
+            530
+          ],
+          [
+            646,
+            529
+          ],
+          [
+            646,
+            527
+          ],
+          [
+            649,
+            525
+          ],
+          [
+            676,
+            511
+          ]
+        ]
+      ],
+      "RRemovedPixels": 3254,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 54,
+      "outputPTS": 0.9,
+      "packedNative": 94,
+      "sourceNative": 70,
+      "phase": "source",
+      "file": "0054.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0095.png",
+      "inputSHA256": "a9f123537509a0760e22716aec9365d596ceb3cd5de9df25151617c00211e939",
+      "sha256": "7592c198ed1dd009487d4a3e0540ab19ae461fac78ebeb3054e34cc3bd0cdde7",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            673,
+            515
+          ],
+          [
+            675,
+            516
+          ],
+          [
+            709,
+            550
+          ],
+          [
+            709,
+            551
+          ],
+          [
+            705,
+            553
+          ],
+          [
+            700,
+            555
+          ],
+          [
+            677,
+            564
+          ],
+          [
+            674,
+            565
+          ],
+          [
+            670,
+            565
+          ],
+          [
+            652,
+            547
+          ],
+          [
+            636,
+            530
+          ],
+          [
+            636,
+            528
+          ],
+          [
+            637,
+            527
+          ],
+          [
+            639,
+            526
+          ],
+          [
+            668,
+            515
+          ]
+        ]
+      ],
+      "RRemovedPixels": 3345,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 55,
+      "outputPTS": 0.9166666666666666,
+      "packedNative": 95,
+      "sourceNative": 71,
+      "phase": "source",
+      "file": "0055.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0096.png",
+      "inputSHA256": "bb4a562660a0faf7ac52307085c45f95f58f2156d1c6a6f36d71414e6930a2d2",
+      "sha256": "4d6b25d0bca3219a4c57a975b4104edee4d586e9b098f2b23007a0639ff41d4c",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            669,
+            516
+          ],
+          [
+            671,
+            517
+          ],
+          [
+            673,
+            519
+          ],
+          [
+            693,
+            544
+          ],
+          [
+            699,
+            552
+          ],
+          [
+            700,
+            554
+          ],
+          [
+            700,
+            555
+          ],
+          [
+            699,
+            556
+          ],
+          [
+            696,
+            557
+          ],
+          [
+            683,
+            561
+          ],
+          [
+            663,
+            567
+          ],
+          [
+            660,
+            567
+          ],
+          [
+            658,
+            565
+          ],
+          [
+            632,
+            531
+          ],
+          [
+            631,
+            529
+          ],
+          [
+            631,
+            528
+          ],
+          [
+            632,
+            527
+          ],
+          [
+            634,
+            526
+          ],
+          [
+            664,
+            517
+          ],
+          [
+            668,
+            516
+          ]
+        ]
+      ],
+      "RRemovedPixels": 3964,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 56,
+      "outputPTS": 0.9333333333333333,
+      "packedNative": 97,
+      "sourceNative": 73,
+      "phase": "source",
+      "file": "0056.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0098.png",
+      "inputSHA256": "9901e125594cc578e8c393f7a22e45546e5016d07cc4ec96f92c4a1020ec1d10",
+      "sha256": "b112afb348057ad9ef6be5eb8cdbb97c4274c77aad3cca3db91b4c88134cca0f",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            665,
+            522
+          ],
+          [
+            667,
+            526
+          ],
+          [
+            681,
+            561
+          ],
+          [
+            681,
+            563
+          ],
+          [
+            677,
+            564
+          ],
+          [
+            670,
+            565
+          ],
+          [
+            641,
+            569
+          ],
+          [
+            636,
+            569
+          ],
+          [
+            635,
+            568
+          ],
+          [
+            622,
+            529
+          ],
+          [
+            622,
+            527
+          ],
+          [
+            624,
+            526
+          ],
+          [
+            655,
+            521
+          ],
+          [
+            663,
+            520
+          ]
+        ]
+      ],
+      "RRemovedPixels": 2375,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 57,
+      "outputPTS": 0.95,
+      "packedNative": 98,
+      "sourceNative": 74,
+      "phase": "source",
+      "file": "0057.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0099.png",
+      "inputSHA256": "0c540bd718a223251a748603ac2f0c0d3d873962eded564cb155264dc25da037",
+      "sha256": "5d6f15601fbf6de15169eb7e8cba3d186b40f2d8b96658109e9ba2b8625c2a90",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            661,
+            521
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            664,
+            524
+          ],
+          [
+            675,
+            559
+          ],
+          [
+            676,
+            563
+          ],
+          [
+            676,
+            564
+          ],
+          [
+            675,
+            565
+          ],
+          [
+            668,
+            566
+          ],
+          [
+            639,
+            569
+          ],
+          [
+            631,
+            569
+          ],
+          [
+            630,
+            568
+          ],
+          [
+            629,
+            565
+          ],
+          [
+            622,
+            538
+          ],
+          [
+            620,
+            529
+          ],
+          [
+            620,
+            527
+          ],
+          [
+            622,
+            526
+          ],
+          [
+            652,
+            522
+          ],
+          [
+            660,
+            521
+          ]
+        ]
+      ],
+      "RRemovedPixels": 3694,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 58,
+      "outputPTS": 0.9666666666666667,
+      "packedNative": 103,
+      "sourceNative": 79,
+      "phase": "source",
+      "file": "0058.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0104.png",
+      "inputSHA256": "59d6cb05efdc58e14e0bc4124d44b23fa620ffa57551b61a577b5a91004423a4",
+      "sha256": "3235595a7c8f982f9740a3f54a239602cb7ce67e238df70ea9d6c32b1db609b1",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            658,
+            523
+          ],
+          [
+            660,
+            524
+          ],
+          [
+            661,
+            525
+          ],
+          [
+            662,
+            532
+          ],
+          [
+            665,
+            555
+          ],
+          [
+            666,
+            563
+          ],
+          [
+            666,
+            567
+          ],
+          [
+            664,
+            568
+          ],
+          [
+            638,
+            569
+          ],
+          [
+            621,
+            569
+          ],
+          [
+            620,
+            568
+          ],
+          [
+            619,
+            560
+          ],
+          [
+            618,
+            545
+          ],
+          [
+            617,
+            529
+          ],
+          [
+            618,
+            526
+          ],
+          [
+            656,
+            523
+          ]
+        ]
+      ],
+      "RRemovedPixels": 380,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 59,
+      "outputPTS": 0.9833333333333333,
+      "packedNative": 108,
+      "sourceNative": 84,
+      "phase": "source",
+      "file": "0059.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0109.png",
+      "inputSHA256": "748637b2bea8f9b6b527e3a97e1e43e67dc3b5e62e3cac6fb832a9be06918dda",
+      "sha256": "1ae18ad089c4718bf7108d64b8413062f524857274c6a30d03b9266656f2f9df",
+      "domains1280": [],
+      "RRemovedPixels": 265,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 60,
+      "outputPTS": 1.0,
+      "packedNative": 113,
+      "sourceNative": 89,
+      "phase": "source",
+      "file": "0060.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0114.png",
+      "inputSHA256": "4fe1abd5435a16f4b8fc657f4678cc0d700900dab2d3e72ba361afbf0c92a27f",
+      "sha256": "f72446774d5e90dd4851e2c7e424b96fd2eaecbc7436be59d9035a3decd1ad40",
+      "domains1280": [],
+      "RRemovedPixels": 310,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 61,
+      "outputPTS": 1.0166666666666666,
+      "packedNative": 114,
+      "sourceNative": 90,
+      "phase": "source",
+      "file": "0061.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0115.png",
+      "inputSHA256": "18f4082ad2d492397734bcbff91947fa02dfa56a57ff66d6acba9bc251c74efa",
+      "sha256": "bb83de33e87e13900baffa955e6dc2f808b36dcaf2b0f370098f1f9f1e4fff79",
+      "domains1280": [],
+      "RRemovedPixels": 334,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 62,
+      "outputPTS": 1.0333333333333334,
+      "packedNative": 115,
+      "sourceNative": 91,
+      "phase": "source",
+      "file": "0062.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0116.png",
+      "inputSHA256": "d9a32fdb243cfaad4f85d0cd9de18526e271261b1726652b6bebb887f68240c3",
+      "sha256": "5f6dad2dd7e33b00cbb8be7095b0da62ad9335d15b445b4a92874782a1abe78e",
+      "domains1280": [],
+      "RRemovedPixels": 595,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 63,
+      "outputPTS": 1.05,
+      "packedNative": 116,
+      "sourceNative": 92,
+      "phase": "source",
+      "file": "0063.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0117.png",
+      "inputSHA256": "788cce0ff62f5c99eb2b2f76fa24f8af254edaa96daa8a5a73707a83e4cbd14b",
+      "sha256": "22e3b2ebb28983a0b0ea9df72a3dbf2da40e8c861583702313e899bfc9d1d5bd",
+      "domains1280": [],
+      "RRemovedPixels": 752,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 64,
+      "outputPTS": 1.0666666666666667,
+      "packedNative": 118,
+      "sourceNative": 94,
+      "phase": "source",
+      "file": "0064.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0119.png",
+      "inputSHA256": "6b51f5e9e53a2b82f36cee4d43b701eeb1036ed4d6aba9b357edc10bc6750746",
+      "sha256": "d7eafcc100f2e3f841fc54dfd8d6d19543ee9bafcfec3c0d1c2a367e2bd14a3d",
+      "domains1280": [],
+      "RRemovedPixels": 327,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 65,
+      "outputPTS": 1.0833333333333333,
+      "packedNative": 119,
+      "sourceNative": 95,
+      "phase": "source",
+      "file": "0065.png",
+      "origin": "frozen critical-v4",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0120.png",
+      "inputSHA256": "21bf4e1f6613d4ffe07e5bad979027bd445db2eb65b628f9b8b083a88dff50f4",
+      "sha256": "672bbe6fafb7ffd06806b9bf6495684fb7c7cad5f6f95dc7da2485e09920e59f",
+      "domains1280": [],
+      "RRemovedPixels": 28,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 66,
+      "outputPTS": 1.1,
+      "packedNative": 121,
+      "sourceNative": 97,
+      "phase": "source",
+      "file": "0066.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0122.png",
+      "inputSHA256": "15fd77c913177260b1dec29a844f2248d631d56d592b0b7d358ec7408f96126a",
+      "sha256": "c7f53b68857d922cfa25fa09b35b0a2953fa3642d4aa244817e6ebc3b188cdaf",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 52,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 67,
+      "outputPTS": 1.1166666666666667,
+      "packedNative": 122,
+      "sourceNative": 98,
+      "phase": "source",
+      "file": "0067.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0123.png",
+      "inputSHA256": "2f26b30dd22b5e3f99efbdbf2e796835643b9722bedaba1dad6c68b06c8abf34",
+      "sha256": "2eb2ae6d455a75704fc7263d1b1798b02cac670923eb99dcc71757b5864682a0",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 68,
+      "outputPTS": 1.1333333333333333,
+      "packedNative": 124,
+      "sourceNative": 100,
+      "phase": "source",
+      "file": "0068.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0125.png",
+      "inputSHA256": "18b1220858dc6bc171f9f62adc56884fe1d9198cad02bbcaa2303d9afb7a7990",
+      "sha256": "f38310900b77f88acb175b2e026336a270cfe9c1b8f43cfdeb35eb8b7b370f00",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 69,
+      "outputPTS": 1.15,
+      "packedNative": 125,
+      "sourceNative": 101,
+      "phase": "source",
+      "file": "0069.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0126.png",
+      "inputSHA256": "65fd16437ba39e29a9b01d89bfa0afb59504192cedd98f192d347f906b425769",
+      "sha256": "10f4fdd3093f3c12427da85d234ce22f5cc3a853d36ff2a0c49a59c73343453f",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 4,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 70,
+      "outputPTS": 1.1666666666666667,
+      "packedNative": 127,
+      "sourceNative": 103,
+      "phase": "source",
+      "file": "0070.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0128.png",
+      "inputSHA256": "27aa10fc8f80998389ea287d54efc367440cd1561b4a3a71eaad557acc5ecf1c",
+      "sha256": "1660070754dc5b0121760fd4d5a87b05bd5af5c7ea5bd4f46a27183a1e9c3c51",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 3,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 71,
+      "outputPTS": 1.1833333333333333,
+      "packedNative": 128,
+      "sourceNative": 104,
+      "phase": "source",
+      "file": "0071.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0129.png",
+      "inputSHA256": "52c9e135b8f2582174842dc902a4eea1427c7010aaada654dd015add44ecd5f1",
+      "sha256": "62472dea9735bc6a5b3482cc22e363eae874f436508cea27c6d170c465d281b7",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 72,
+      "outputPTS": 1.2,
+      "packedNative": 130,
+      "sourceNative": 106,
+      "phase": "source",
+      "file": "0072.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0131.png",
+      "inputSHA256": "3475c504b91bddcdbc0d8471d01484c793c5fc19aeca6cf17c87cb047771ba87",
+      "sha256": "77137ff4d427c1c65c1d8f393ca3d0c943ee54989b577439679a2a2568c7e7d7",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 73,
+      "outputPTS": 1.2166666666666666,
+      "packedNative": 131,
+      "sourceNative": 107,
+      "phase": "source",
+      "file": "0073.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0132.png",
+      "inputSHA256": "c3df21611665ea304408c29155afd689dbcf20e1055e96ad6319c8e17a30f982",
+      "sha256": "d1e82f4d90e83a5068f4ab3ae673fc2b60143fdfb1f081b78ddd998f1f28863f",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 74,
+      "outputPTS": 1.2333333333333334,
+      "packedNative": 133,
+      "sourceNative": 109,
+      "phase": "source",
+      "file": "0074.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0134.png",
+      "inputSHA256": "6cdab69a0f8fa91af327e64def78b13520483779b9504e0bf76804b447eebc6f",
+      "sha256": "9424918ca0e35e94f01104e25dec458ac5c0eb84a658d2e1b3a2fa263e63d253",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 75,
+      "outputPTS": 1.25,
+      "packedNative": 134,
+      "sourceNative": 110,
+      "phase": "source",
+      "file": "0075.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0135.png",
+      "inputSHA256": "39cab381dbcb6a7f3ae60328584429d8e25ef18e9f4a12f9180bc2b3ce42c241",
+      "sha256": "4e9c4207c7d5f2a3902a1cbd9aaff79f8b8c53177df423f4c9e40a54a4a6e3b3",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 76,
+      "outputPTS": 1.2666666666666666,
+      "packedNative": 138,
+      "sourceNative": 114,
+      "phase": "source",
+      "file": "0076.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0139.png",
+      "inputSHA256": "55496d6f820fa416a29b84e8b42f619a2c6c4648f099e6716ab6f793387fe0b2",
+      "sha256": "fd981b709a3d1e72ff70470f0342da6b8b21d582734c7bd7c9314dca42028e31",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 77,
+      "outputPTS": 1.2833333333333334,
+      "packedNative": 142,
+      "sourceNative": 118,
+      "phase": "source",
+      "file": "0077.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0143.png",
+      "inputSHA256": "39652f013e95aaa19e5cfae5dbdcd179a1883e350a2cb865728a54f7bba1e21b",
+      "sha256": "5a338f3cea84e522505abfcd4aafbe18409c3a5897be20ddeba35e1a9417bb21",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 78,
+      "outputPTS": 1.3,
+      "packedNative": 145,
+      "sourceNative": 121,
+      "phase": "source",
+      "file": "0078.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0146.png",
+      "inputSHA256": "f52b807039be24f90dbb01263e9c6ff4470eafa96e9f08e5570b2329579741b2",
+      "sha256": "30efbf3f52d6a99d3762bc55c36d0b2dfa95ab4b4a6a140a0f49b8f2c649ebdf",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 79,
+      "outputPTS": 1.3166666666666667,
+      "packedNative": 149,
+      "sourceNative": 125,
+      "phase": "source",
+      "file": "0079.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0150.png",
+      "inputSHA256": "88a0bb446412d6b658f8d76145899eefb422da86f8214e91e90616c08437b881",
+      "sha256": "17cffec2b5230c383ed77f5ddf368a4a3f42f1bc567f19db958a3d649ccfee13",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 80,
+      "outputPTS": 1.3333333333333333,
+      "packedNative": 153,
+      "sourceNative": 129,
+      "phase": "source",
+      "file": "0080.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0154.png",
+      "inputSHA256": "f79da35ca2e5d8c23d0412926b5e49ad51ff8fcc7f4fcbb0478e5dfd03adcbef",
+      "sha256": "d6f66b960265d3d87dacd0e46362f3e9f9fd1960f3fce55b061b63ba5e455b0e",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 81,
+      "outputPTS": 1.35,
+      "packedNative": 157,
+      "sourceNative": 133,
+      "phase": "source",
+      "file": "0081.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0158.png",
+      "inputSHA256": "9b4da5ebbbca5002a69efa90f5336ed012340aa8293f390f64a586f170e0c8b0",
+      "sha256": "65ea5013c671e3b320b7e73c1d09204b0dfae4507719cba77569445457ab6c4b",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 82,
+      "outputPTS": 1.3666666666666667,
+      "packedNative": 160,
+      "sourceNative": 136,
+      "phase": "source",
+      "file": "0082.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0161.png",
+      "inputSHA256": "0cdf000086f81f2719604065794201e9319482b7838eeffdb6ca56cc9af1a61d",
+      "sha256": "105364db4caba3d212c5626a9c88ef241cad3e12c38e38d296b9d7ada7e92d78",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 83,
+      "outputPTS": 1.3833333333333333,
+      "packedNative": 164,
+      "sourceNative": 140,
+      "phase": "source",
+      "file": "0083.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0165.png",
+      "inputSHA256": "56a1bbce97fc686208a4972a3fd1cc8ecefe35644a137433d97a3f3e7a73ccf1",
+      "sha256": "b0b8338d159bf0fcdaa07c71489f83d746d037550a23b538ed49a9631f2e3ff5",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    },
+    {
+      "outputFrame": 84,
+      "outputPTS": 1.4,
+      "packedNative": 168,
+      "sourceNative": 144,
+      "phase": "source",
+      "file": "0084.png",
+      "origin": "source-bound selected extension",
+      "input": "content/staging/2026-09-09/centre-entry-clean/combined/contact-masks/0169.png",
+      "inputSHA256": "9cb8cf7ca96cc64f45a03be57ab9644d62836693162be8a91cc87db9023a5795",
+      "sha256": "b1b89ce09b4462cc86824ca326c561885ac66c3cf515760516f953047b32f97e",
+      "domains1280": [
+        [
+          [
+            784,
+            405
+          ],
+          [
+            850,
+            309
+          ],
+          [
+            919,
+            338
+          ],
+          [
+            919,
+            391
+          ],
+          [
+            840,
+            464
+          ],
+          [
+            784,
+            443
+          ]
+        ],
+        [
+          [
+            610,
+            522
+          ],
+          [
+            663,
+            522
+          ],
+          [
+            667,
+            574
+          ],
+          [
+            610,
+            576
+          ]
+        ]
+      ],
+      "RRemovedPixels": 0,
+      "GoutsideR": 0
+    }
+  ],
+  "manifestSHA256": "f05d47050b675b08bb08516053cfa3a93acd89df593c0aa31a56bef38fea16ee",
+  "visualFindings": [
+    "No obvious new gross hand loss in selected overview.",
+    "Source shoe removed through pickup; thin white finger rim remains aroundsource42-50.",
+    "Faint lettering and felt arcs persist beside hand source52-74 and92-95; outside current source-paper/shoe cleanup.",
+    "Narrow paper-shadow strip remains native91/output62; separated paper cleared native92/output63 onward.",
+    "Prefix shoulder matte remnants remain; existing10prefix mask pixels retained."
+  ]
+}

@@ -1,7 +1,7 @@
 import { command as shoeCommand, newGame, gameView } from './shoe-game.mjs';
 import { presentationEvents } from './partner-presentation.mjs';
 
-// Additive Neon path. The live server still uses native-table.mjs and SQLite.
+// PostgreSQL path selected explicitly by the server's storage configuration.
 // A single checked-out PostgreSQL client keeps the wallet, shoe, receipt and
 // ledger in one transaction. Locking the player row serializes commands for
 // that player, including the first command before a table row exists.
@@ -11,10 +11,11 @@ export function createPostgresNativeTableCommand({ pool, publish = () => {}, onP
     const client = await pool.connect();
     let out, observation, committed = false;
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN; SET LOCAL statement_timeout = '15000ms'; SET LOCAL lock_timeout = '5000ms'");
       const player = (await client.query(
-        'SELECT id, name, currency, balance FROM players WHERE id=$1 FOR UPDATE', [id])).rows[0];
+        'SELECT id, name, currency, balance, status FROM players WHERE id=$1 FOR UPDATE', [id])).rows[0];
       if (!player) throw new Error('Load your player first');
+      if (player.status && player.status !== 'active') throw new Error('Player account is unavailable');
       const balanceBefore = Number(player.balance);
       if (!Number.isFinite(balanceBefore)) throw new Error('Invalid saved balance');
       const saved = (await client.query(

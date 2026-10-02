@@ -1,0 +1,17 @@
+{
+  "job": "07ace54e-06f4-4245-96cc-a51bd41a8ad9",
+  "params": {
+    "model": "seedance_2_5",
+    "mode": "video_edit",
+    "resolution": "1080p",
+    "generate_audio": false,
+    "bitrate_mode": "high",
+    "medias": [
+      {
+        "role": "video",
+        "value": "398fc6f3-fb96-4283-ad31-5a891386d529"
+      }
+    ],
+    "prompt": "Correct only the DEALING REACH AND RELEASE LOCATION in this exact source video. Preserve the source video camera, framing, Astrid's face identity, clothes, skin colour, room, table, shoe, professional speed and empty return to the shoe. The current card release is TOO CLOSE TO THE CENTRE at 37 percent width, 66 percent height. Extend the physical arm reach further LEFT and a little TOWARD THE VIEWER: the hand and held card must continue together until the card centre is at 30.85 percent of the full image width from the left, 68.99 percent of image height from the top. This is a further 124 image pixels at 1920x1080: approximately two card widths left and half a card length down. She must physically carry it to that point while fingers remain in contact, then release there. Do not leave the hand in the old position with a sliding/floating card. Keep the card lying motionless at this NEW location while her EMPTY hand returns directly to the existing shoe. Natural elbow and wrist articulation, no elongated fingers, no extra arm. One card only, no shuffle, no speech. This is an exact movement correction to serve the inner-left player, not a new scene."
+  }
+}

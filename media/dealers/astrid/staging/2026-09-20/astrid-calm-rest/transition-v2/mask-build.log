@@ -1,0 +1,70 @@
+24/97
+48/97
+72/97
+96/97
+masks: 97/97
+Masked 0000/97
+Masked 0024/97
+Masked 0048/97
+Masked 0072/97
+Masked 0096/97
+{
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/astrid-calm-rest/transition-v2/source.mp4",
+  "sourceSha256": "0300b053aa71c3d802532cfd6ebfe383fe41cb9cef872e82883ed5e14546e087",
+  "sourceDimensions": [
+    1920,
+    1080
+  ],
+  "frameCount": 97,
+  "fps": "24/1",
+  "crop": [
+    560,
+    0,
+    960,
+    760
+  ],
+  "packedDimensions": [
+    960,
+    1520
+  ],
+  "packing": "RGB upper half; straight grayscale alpha lower half",
+  "sourceToCropRowMajor3x3": [
+    1,
+    0,
+    -560,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "cropToSourceRowMajor3x3": [
+    1,
+    0,
+    560,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "packedTopLeftPixelRects": {
+    "rgb": [
+      0,
+      0,
+      960,
+      760
+    ],
+    "alpha": [
+      0,
+      760,
+      960,
+      760
+    ]
+  },
+  "rgbPolicy": "Original decoded source RGB preserved before ordinary lossy H264 encode",
+  "actorPackedSha256": "067be080525c6c1c8f5b403659ab46d9e8fa601a86348ee3ab06947a926487eb",
+  "status": "Native matte candidate only; requires complete rendered motion and card registration review"
+}

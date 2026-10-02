@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import manifest from '../../emil/dealklipp-v1/lab-video-manifest.json' with { type: 'json' };
+import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { validateCatalog } from '../../open-claw/lab/src/engine.mjs';
 import { createSeedProject } from '../lib/studio-model.mjs';

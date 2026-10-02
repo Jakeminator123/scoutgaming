@@ -1,6 +1,7 @@
 // Scout Live Casino backoffice - live data from the game server.
 import { createSinglePreviewController } from './media-preview.mjs';
 import { canOpenLab, workspaceUrl, isEmbeddedWorkspace } from './workspace-navigation.mjs';
+import { mountPlayerAdministration } from './player-admin.mjs';
 
 const $=s=>document.querySelector(s);
 const fmt=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -453,10 +454,9 @@ async function render(id){
     };
   }
   if(id==='players'){
-    const p=await api('/api/bo/players');
-    C.innerHTML=`<div class="panel"><div class="t">PLAYERS &middot; LIVE FROM THE GAME DATABASE</div><table><thead><tr><th>NAME</th><th>ID</th><th>CURRENCY</th><th>BALANCE</th><th>OPENED</th></tr></thead><tbody>
-    ${p.players.map(x=>`<tr><td>${x.name}</td><td class="mono" style="color:var(--mut)">${x.id.slice(0,8)}&hellip;</td><td class="mono">${x.currency}</td><td class="mono">${x.currency==='USD'?fmt(x.balance):Number(x.balance).toLocaleString()+' '+x.currency}</td><td style="color:var(--mut)">${(x.created_at||'').slice(0,10)}</td></tr>`).join('')}
-    </tbody></table></div>`;
+    const [p,me]=await Promise.all([api('/api/bo/players'),api('/api/bo/me')]);
+    if(!Array.isArray(p.players)){C.textContent=p.error||'Players could not be loaded.';return;}
+    mountPlayerAdministration(C,{players:p.players,role:me.role,available:p.administration===true,api,refresh:()=>render('players'),notify:toast});
   }
   if(id==='pay'){
     const p=await api('/api/bo/transactions');

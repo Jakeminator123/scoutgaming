@@ -1,0 +1,119 @@
+{
+  "issues": [
+    "CAC-3",
+    "CAC-6"
+  ],
+  "date": "2026-09-10",
+  "environment": "isolated 127.0.0.1:4180, CUA browser",
+  "checks": [
+    {
+      "evidence": "seven-pairs-desktop",
+      "viewport": [
+        1280,
+        720
+      ],
+      "visibleTotals": 7,
+      "failures": []
+    },
+    {
+      "evidence": "seven-pairs-phone390",
+      "viewport": [
+        390,
+        844
+      ],
+      "visibleTotals": 3,
+      "failures": []
+    },
+    {
+      "evidence": "split-desktop",
+      "viewport": [
+        1280,
+        720
+      ],
+      "visibleTotals": 8,
+      "failures": []
+    },
+    {
+      "evidence": "split-phone390",
+      "viewport": [
+        390,
+        844
+      ],
+      "visibleTotals": 4,
+      "failures": []
+    },
+    {
+      "evidence": "centre-split-desktop",
+      "viewport": [
+        1280,
+        720
+      ],
+      "visibleTotals": 9,
+      "failures": []
+    },
+    {
+      "evidence": "centre-split-phone360",
+      "viewport": [
+        360,
+        780
+      ],
+      "visibleTotals": 4,
+      "failures": []
+    },
+    {
+      "evidence": "active-seat2-phone360",
+      "viewport": [
+        360,
+        780
+      ],
+      "visibleTotals": 4,
+      "failures": []
+    },
+    {
+      "evidence": "active-seat1-phone360",
+      "viewport": [
+        360,
+        780
+      ],
+      "visibleTotals": 3,
+      "failures": []
+    },
+    {
+      "evidence": "active-seat0-phone360",
+      "viewport": [
+        360,
+        780
+      ],
+      "visibleTotals": 3,
+      "failures": []
+    },
+    {
+      "evidence": "left-split-phone360-accepted",
+      "viewport": [
+        360,
+        780
+      ],
+      "visibleTotals": 4,
+      "failures": []
+    },
+    {
+      "evidence": "three-split-groups-desktop-final",
+      "viewport": [
+        1280,
+        720
+      ],
+      "visibleTotals": 10,
+      "failures": []
+    }
+  ],
+  "result": "PASS for reported total/side-bet/action collisions",
+  "additionalFixes": [
+    "Keep disabled stake-tier selector out of the narrow in-round control area",
+    "Recompute action placement after rehearsal panel opens or closes"
+  ],
+  "limits": [
+    "Viewport checks are not physical Safari/iPhone/Android validation",
+    "Ten simultaneous player hands including left/centre/right splits; not every possible four-way resplit configuration",
+    "No motion or lip-sync acceptance implied"
+  ]
+}

@@ -1,0 +1,16 @@
+__pycache__/
+start-frame/alpha.png
+start-frame/rgba.png
+start-frame/checker.png
+start-frame/vision-ground.png
+vision-input/
+vision-output/
+start-hybrid/alpha.png
+start-hybrid/rgba.png
+start-hybrid/checker.png
+video/frames/
+video/vision/
+video/alpha/
+video/rgba/
+video/actor-packed.mp4
+video/actor-transparent.webm

@@ -1,0 +1,71 @@
+{
+ "rules_decks": {
+  "text": "Eight decks here, love, shuffled fresh every single round. No counting your way out of this one."
+ },
+ "rules_s17": {
+  "text": "I stand on all seventeens, soft ones included. House rules, and they don't bend for anyone."
+ },
+ "rules_bj_pays": {
+  "text": "Blackjack pays three to two at this table. None of that six to five nonsense."
+ },
+ "rules_insurance": {
+  "text": "Insurance pays two to one. It's a side bet on my hole card, nothing more, and the maths does favour the house."
+ },
+ "rules_double": {
+  "text": "You can double on any two cards. One more card, then you stand with whatever comes."
+ },
+ "side_pp": {
+  "text": "Perfect Pairs pays up to twenty five to one, for a matched pair in suit and colour."
+ },
+ "side_213": {
+  "text": "Twenty one plus three looks at your two cards and my upcard. A suited three of a kind pays a hundred to one."
+ },
+ "fair_rng": {
+  "text": "Every card comes from a certified random number generator. I don't choose them, and I couldn't if I wanted to."
+ },
+ "fair_streak": {
+  "text": "Rough runs happen, they always have. The cards have no memory of the last hand, and neither should we."
+ },
+ "no_advice": {
+  "text": "I don't give betting advice, love. I deal the cards and keep you company. That's the arrangement."
+ },
+ "no_predict": {
+  "text": "I've no idea what's coming next, and I'd be a liar if I said otherwise. That's rather the point."
+ },
+ "rg_support": {
+  "text": "If it has stopped being fun, there are responsible gambling tools in the menu. No shame at all in using them."
+ },
+ "greet_back": {
+  "text": "Good to see you back at my table. Place your bets whenever you're ready."
+ },
+ "who_are_you": {
+  "text": "I'm Vera. I've dealt cards longer than I care to admit, and I've seen every kind of luck there is."
+ },
+ "limits_table": {
+  "text": "Table limits are posted up top. Pick the room that suits your pocket, not your mood."
+ },
+ "limits_vip": {
+  "text": "The VIP salon runs to a million a box. Do mind your footing up there."
+ },
+ "no_peek": {
+  "text": "I don't peek at the shoe, and I don't stack it. Wouldn't be much of a game if I did."
+ },
+ "house_edge": {
+  "text": "The house edge is small, but it's real. You act first, and busting costs you before I ever play my hand."
+ },
+ "thanks": {
+  "text": "You're very welcome, love."
+ },
+ "small_talk": {
+  "text": "Quiet night so far. Those are usually the ones that turn interesting."
+ },
+ "side_when": {
+  "text": "Side bets are settled the moment the cards are out, win or lose, before we play the hand."
+ },
+ "ask_me": {
+  "text": "Ask me the rules, the odds, or anything about this table. Just don't ask me what's coming next."
+ },
+ "farewell_bank": {
+  "text": "Off already? Do come back. The table's always here."
+ }
+}

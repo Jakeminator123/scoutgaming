@@ -4,7 +4,7 @@
 # byte-for-byte what the game plays. Run after any clip/audio/delay change.
 set -uo pipefail
 cd "$(dirname "$0")/.."
-for base in web/public/dealer web/public/dealers/astrid web/public/dealers/amira web/public/dealers/mei; do
+for base in media/dealers/vera/runtime/indexed media/dealers/astrid/runtime/indexed media/dealers/amira/runtime/indexed media/dealers/mei/runtime/indexed; do
   [ -f "$base/streams/index.json" ] || continue
   mkdir -p "$base/preview"
   python3 - "$base" <<'PYEOF'

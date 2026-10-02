@@ -1,0 +1,3 @@
+mei: 17 lines, 3 missing speech takes (not approved), 15 streams
+PASS: all four dealer asset sets match the regression baseline. Human lip-sync acceptance is still pending.
+probe exit 

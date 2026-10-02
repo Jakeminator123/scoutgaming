@@ -1,0 +1,626 @@
+{
+  "status": "staging interpolated60fps at2x, NOT native60 or accepted motion",
+  "clip": "return",
+  "nativeFPS": 24,
+  "outputFPS": 60,
+  "speed": 2,
+  "first": 5,
+  "last": 36,
+  "frames": 40,
+  "sourceVideoSHA": "f5236f1c185ab6ca665d7f177610c583a2d44265f42145f310f7e84e6a354396",
+  "inputFrameSHAs": {
+    "5": {
+      "rgb": "48049ffdb2b9344b287b33733b693ace01505bda4e263d71146a6f70aaa8c3ce",
+      "rg": "e76a837a3bd246f91811d518ca8f618a1b2eb99578c1ee344e2a7622bd8c001c"
+    },
+    "6": {
+      "rgb": "73cdaef512f9d65d65d05bf7171e25343a2908afc13f024694d549ef58759d24",
+      "rg": "58c97d5b86d744e39d1d92d94e2bec5fff57f5ae45edb83d810e849867d688d1"
+    },
+    "7": {
+      "rgb": "574c61434eefefed5b3392e748dd46a772f7ee5ed53b3d8fce70eb2180cd8660",
+      "rg": "3b461f058f1d217dd299b1da07347f631a074e4f2a284dcc388cb7eac08bafba"
+    },
+    "8": {
+      "rgb": "bf5bb5d0d93cccf47b3450baa2acf6b485d815038aea90f956e6bae4cce009a8",
+      "rg": "7416a4a9b8c154b0fc292caac5162b7565cf28f928f683a90a2b5c4d0a5827d6"
+    },
+    "9": {
+      "rgb": "09c3f88f416d62c1713ec40982983b194c679df5cc01b9393b30adcfb652fcf2",
+      "rg": "8423cf25f219b0784caa50a548b781150c311977e69eb6919bc77e766acb96e3"
+    },
+    "10": {
+      "rgb": "4aa77b433bc3f048b311d55499cbb467e7471d3478b4129330cee49a473d7f9c",
+      "rg": "0b6b5d1663f7b5abd9f254b4d2b4f7afd91b8a7fcff4d709780ec65a5cc26dce"
+    },
+    "11": {
+      "rgb": "4f9236f3ba7b73df2df9d20a9293303e9ce24357e1515b232bccb3d0126b0757",
+      "rg": "da3d05c8d6c1eb69e5ec698418dcafdd4198b4f61c8bb7d5599aecc9a2283b0e"
+    },
+    "12": {
+      "rgb": "6d0070e71767ebc198fffbf73d70efc6b41eb3a072ba470e0fc2a9b5ae793810",
+      "rg": "484b05741ce4d38865e6aac16901267abe411a68310cb9061a3be74e3c5ddeea"
+    },
+    "13": {
+      "rgb": "2b3706769ddff64ffd32144cd5f36e75c13a3d20c380d667fa30ca779aaf13df",
+      "rg": "2d1399305fa6c211fafdd3831c874a362f82371eb5d6f69cc3dfba60d1d9df33"
+    },
+    "14": {
+      "rgb": "eab11e50b67a4a483aade53bda421cc7714e319e23bc83c421cc5d5af6db1e1d",
+      "rg": "276eae01479da2ca62f8a6e369088e347116390aafb399e9ff84119e43f71803"
+    },
+    "15": {
+      "rgb": "9de8b51543dfacf9cf879cb92fa6ebf7ea7213d0b7027cca1c6450933314791a",
+      "rg": "367b64c0c303c08f670ff7d0fa38cd172bc0c35a0463a08bad317d5d18dab88d"
+    },
+    "16": {
+      "rgb": "1a08e07076a4c8a787718e0fdd456ff3a406763013d2b189252c69a3856a8946",
+      "rg": "701ee807f64c0c1745a47b6b57ab0350b541590490ff53191cbd87de4deaaca4"
+    },
+    "17": {
+      "rgb": "e47a3ef585952a9397a979e40d21ddd2ea42964402b09ab2da0b62b3f8dc7359",
+      "rg": "a9dcba1f4d6a6822215dcb661e1b37c8d75f3f22aefee047f7233736791cc38a"
+    },
+    "18": {
+      "rgb": "fa39f2adc3450c04e9c022d692340a0925ce86a4fcb0221530ae2a636c1ee1d6",
+      "rg": "1caae0ba03c0c7f33eb62e27291b895aa5fd3f8fd717fb36b5ca7ecd2f20edca"
+    },
+    "19": {
+      "rgb": "1217a0aa1ebea2bf861c44a136002bf29bb6b2dfa1e1af0aac88c4d3e9619a58",
+      "rg": "1b1fd5d8432b1cf505cd2acf6f7082c996434b04daaccc59948969cd2a62e85a"
+    },
+    "20": {
+      "rgb": "fb4e37fd21d96bdba67704ea765056c9aac066f14eab4705ec0f1e9bcfe6ce97",
+      "rg": "075371fb2e30ab3202e8e9764cc0d365314890217edb325534856ea1b326f6d1"
+    },
+    "21": {
+      "rgb": "2592f71c5420ffc7123e5771b9aebc780e002f954a08b2371de032863aa30c2a",
+      "rg": "c6ac8dfbaf1322c0b353474288513386686604f888be881ca6ddac0b842767a2"
+    },
+    "22": {
+      "rgb": "6d27a5fb291d87f4596ed661139d46f7852481fdffbf215d5461282015acaa1f",
+      "rg": "56e3df5b5f0ba661b247351014b9c87bb146c948490a1cf6c823b6b4fbf18809"
+    },
+    "23": {
+      "rgb": "ecba77fa2a8691db417910d646b125ee3a910bae1f5d0c20a4a6a65ea4ad9128",
+      "rg": "f8159a40aa78cbe809b26a1e882c0b2a97c7c5d7df1c2946af0fe87ec6d1eb55"
+    },
+    "24": {
+      "rgb": "fa3b4fb1a7e1ae82547faa66d963db4234bbbd2257bb8cd3abdfadfd6dff3f2c",
+      "rg": "053a90e5be38c192944e74e45a137a6033af9a9e6d63f0ecb89a42c5bc519360"
+    },
+    "25": {
+      "rgb": "5ecc6cbc3053ad0e3e372b050d882bad754be6ac868c9a8586ff1e655caba4ff",
+      "rg": "1ed79d6ab6a7f1658cd6d0347a9a79200aaa6d0be3e655a0bdfa63d2a94701a7"
+    },
+    "26": {
+      "rgb": "c4fee7c4b94d757d3337c500d85d6aad8d4a7b0be33106b11fcb9661b0a1a30d",
+      "rg": "873776d89b6490e133fa5e5400db16f9f473f09cbcc940ce13b9164201e9759b"
+    },
+    "27": {
+      "rgb": "1ba7d3847dabc73db2c4df16d2a3d890a5163aee26a893b7e6cce093c8958ca4",
+      "rg": "2a06115c2cf5d13b1350a9153ec48acc324b63103e591f17fe0998d42f3bf05d"
+    },
+    "28": {
+      "rgb": "6b5d80d530184175f3ea8305fe0217e9fcb4d473b84587554b6ffda89b3152b9",
+      "rg": "5e8df44f9fac344c01ef14ef1d9497cbee1f75df74dab0dd6335cca9d3916136"
+    },
+    "29": {
+      "rgb": "b6f1d8ad8c68f98008db2b4b1b2d3dea1fc6bf39dcf38177928c073aaba1a6e3",
+      "rg": "34c87a314659a4db40f107081697fc724ff571654cd451b401d29c8655eee974"
+    },
+    "30": {
+      "rgb": "96f51041a508a4660e576f2e6762a16400da1b959b03367c106814600be01e3b",
+      "rg": "6fbc2bc2fada60fe599ba3c495f9233ea720a9439c5d9e3c9d8ab41239f68037"
+    },
+    "31": {
+      "rgb": "ab9c49f6d7b04fc04f9999d62e7c5048ac8ada09b154c992dbc9fc5b71d1437f",
+      "rg": "52e16fdfa06a97715ba8c41e571b8ff5cae7029f91524b641a1a78915b119f6f"
+    },
+    "32": {
+      "rgb": "59f5ded64a61768fb86d5d1b7e3487a6ba5df4bc85c8d7564a1461e786ac03e7",
+      "rg": "5a9b423e2d510057bceec75fb1fc452a2b7d21c8074a2e83cdf1f79a0e45b11d"
+    },
+    "33": {
+      "rgb": "41e92ab053026c205c403b75475aab3920ed9f6669380745b07bba8c1b75e298",
+      "rg": "3eba3aafdd3e16975001c3510cf940d6f25b2b4beac110d265dc491203c6300b"
+    },
+    "34": {
+      "rgb": "a569bd4a961013c896757518cc2dfcdb6d9f64029c5e03734a9b17b850ef002b",
+      "rg": "e84a05f59ded5392118433fc150ef47f9de424213d8e1283d75aa1f73a9a5f64"
+    },
+    "35": {
+      "rgb": "62f3fc786c1fdc808c7426ca6fcabe23ce964b6402751f8599e9623d003c2082",
+      "rg": "445d4cc674900d688853a4c5c27e0a4c6fcf320a217a63fa1e4f51a875c6c219"
+    },
+    "36": {
+      "rgb": "58306da3db29109e0fe1bf404997f68c40dc3383e8fd4512e7974e297b017b8d",
+      "rg": "12f6761c6e17045f7b24eeb6ed58b0458c81fdd63acfa05d2cd297c623d3370d"
+    }
+  },
+  "method": "bidirectional DIS flow at960x540, upsampled uniformly2x; same remap and blend for premultiplied RGB, actorR and foregroundG; actor-coverage disagreement>0.15 selects nearer warped source jointly for all channels; independent clips, no cross-boundary flow",
+  "flowStorage": "float16 audit fields; calculation uses float32; deterministic cv2 singlethread",
+  "packedLayout": "3840x1080 leftRGB rightRG, channels Ractor Ghand B0",
+  "ledger": [
+    {
+      "outputFrame": 0,
+      "outputSeconds": 0.0,
+      "sourcePosition": 5.0,
+      "sourceFrames": [
+        5,
+        6
+      ],
+      "blend": 0.0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 1,
+      "outputSeconds": 0.016666666666666666,
+      "sourcePosition": 5.8,
+      "sourceFrames": [
+        5,
+        6
+      ],
+      "blend": 0.7999999999999998,
+      "flowPair": 5,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 2,
+      "outputSeconds": 0.03333333333333333,
+      "sourcePosition": 6.6,
+      "sourceFrames": [
+        6,
+        7
+      ],
+      "blend": 0.5999999999999996,
+      "flowPair": 6,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 3,
+      "outputSeconds": 0.05,
+      "sourcePosition": 7.4,
+      "sourceFrames": [
+        7,
+        8
+      ],
+      "blend": 0.40000000000000036,
+      "flowPair": 7,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 4,
+      "outputSeconds": 0.06666666666666667,
+      "sourcePosition": 8.2,
+      "sourceFrames": [
+        8,
+        9
+      ],
+      "blend": 0.1999999999999993,
+      "flowPair": 8,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 5,
+      "outputSeconds": 0.08333333333333333,
+      "sourcePosition": 9.0,
+      "sourceFrames": [
+        9,
+        10
+      ],
+      "blend": 0.0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 6,
+      "outputSeconds": 0.1,
+      "sourcePosition": 9.8,
+      "sourceFrames": [
+        9,
+        10
+      ],
+      "blend": 0.8000000000000007,
+      "flowPair": 9,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 7,
+      "outputSeconds": 0.11666666666666667,
+      "sourcePosition": 10.600000000000001,
+      "sourceFrames": [
+        10,
+        11
+      ],
+      "blend": 0.6000000000000014,
+      "flowPair": 10,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 8,
+      "outputSeconds": 0.13333333333333333,
+      "sourcePosition": 11.4,
+      "sourceFrames": [
+        11,
+        12
+      ],
+      "blend": 0.40000000000000036,
+      "flowPair": 11,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 9,
+      "outputSeconds": 0.15,
+      "sourcePosition": 12.2,
+      "sourceFrames": [
+        12,
+        13
+      ],
+      "blend": 0.1999999999999993,
+      "flowPair": 12,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 10,
+      "outputSeconds": 0.16666666666666666,
+      "sourcePosition": 13.0,
+      "sourceFrames": [
+        13,
+        14
+      ],
+      "blend": 0.0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 11,
+      "outputSeconds": 0.18333333333333332,
+      "sourcePosition": 13.8,
+      "sourceFrames": [
+        13,
+        14
+      ],
+      "blend": 0.8000000000000007,
+      "flowPair": 13,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 12,
+      "outputSeconds": 0.2,
+      "sourcePosition": 14.600000000000001,
+      "sourceFrames": [
+        14,
+        15
+      ],
+      "blend": 0.6000000000000014,
+      "flowPair": 14,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 13,
+      "outputSeconds": 0.21666666666666667,
+      "sourcePosition": 15.4,
+      "sourceFrames": [
+        15,
+        16
+      ],
+      "blend": 0.40000000000000036,
+      "flowPair": 15,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 14,
+      "outputSeconds": 0.23333333333333334,
+      "sourcePosition": 16.200000000000003,
+      "sourceFrames": [
+        16,
+        17
+      ],
+      "blend": 0.20000000000000284,
+      "flowPair": 16,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 15,
+      "outputSeconds": 0.25,
+      "sourcePosition": 17.0,
+      "sourceFrames": [
+        17,
+        18
+      ],
+      "blend": 0.0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 16,
+      "outputSeconds": 0.26666666666666666,
+      "sourcePosition": 17.8,
+      "sourceFrames": [
+        17,
+        18
+      ],
+      "blend": 0.8000000000000007,
+      "flowPair": 17,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 17,
+      "outputSeconds": 0.2833333333333333,
+      "sourcePosition": 18.6,
+      "sourceFrames": [
+        18,
+        19
+      ],
+      "blend": 0.6000000000000014,
+      "flowPair": 18,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 18,
+      "outputSeconds": 0.3,
+      "sourcePosition": 19.4,
+      "sourceFrames": [
+        19,
+        20
+      ],
+      "blend": 0.3999999999999986,
+      "flowPair": 19,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 19,
+      "outputSeconds": 0.31666666666666665,
+      "sourcePosition": 20.200000000000003,
+      "sourceFrames": [
+        20,
+        21
+      ],
+      "blend": 0.20000000000000284,
+      "flowPair": 20,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 20,
+      "outputSeconds": 0.3333333333333333,
+      "sourcePosition": 21.0,
+      "sourceFrames": [
+        21,
+        22
+      ],
+      "blend": 0.0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 21,
+      "outputSeconds": 0.35,
+      "sourcePosition": 21.8,
+      "sourceFrames": [
+        21,
+        22
+      ],
+      "blend": 0.8000000000000007,
+      "flowPair": 21,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 22,
+      "outputSeconds": 0.36666666666666664,
+      "sourcePosition": 22.6,
+      "sourceFrames": [
+        22,
+        23
+      ],
+      "blend": 0.6000000000000014,
+      "flowPair": 22,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 23,
+      "outputSeconds": 0.38333333333333336,
+      "sourcePosition": 23.400000000000002,
+      "sourceFrames": [
+        23,
+        24
+      ],
+      "blend": 0.40000000000000213,
+      "flowPair": 23,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 24,
+      "outputSeconds": 0.4,
+      "sourcePosition": 24.200000000000003,
+      "sourceFrames": [
+        24,
+        25
+      ],
+      "blend": 0.20000000000000284,
+      "flowPair": 24,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 25,
+      "outputSeconds": 0.4166666666666667,
+      "sourcePosition": 25.0,
+      "sourceFrames": [
+        25,
+        26
+      ],
+      "blend": 0.0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 26,
+      "outputSeconds": 0.43333333333333335,
+      "sourcePosition": 25.8,
+      "sourceFrames": [
+        25,
+        26
+      ],
+      "blend": 0.8000000000000007,
+      "flowPair": 25,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 27,
+      "outputSeconds": 0.45,
+      "sourcePosition": 26.6,
+      "sourceFrames": [
+        26,
+        27
+      ],
+      "blend": 0.6000000000000014,
+      "flowPair": 26,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 28,
+      "outputSeconds": 0.4666666666666667,
+      "sourcePosition": 27.400000000000002,
+      "sourceFrames": [
+        27,
+        28
+      ],
+      "blend": 0.40000000000000213,
+      "flowPair": 27,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 29,
+      "outputSeconds": 0.48333333333333334,
+      "sourcePosition": 28.200000000000003,
+      "sourceFrames": [
+        28,
+        29
+      ],
+      "blend": 0.20000000000000284,
+      "flowPair": 28,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 30,
+      "outputSeconds": 0.5,
+      "sourcePosition": 29.0,
+      "sourceFrames": [
+        29,
+        30
+      ],
+      "blend": 0.0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 31,
+      "outputSeconds": 0.5166666666666667,
+      "sourcePosition": 29.8,
+      "sourceFrames": [
+        29,
+        30
+      ],
+      "blend": 0.8000000000000007,
+      "flowPair": 29,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 32,
+      "outputSeconds": 0.5333333333333333,
+      "sourcePosition": 30.6,
+      "sourceFrames": [
+        30,
+        31
+      ],
+      "blend": 0.6000000000000014,
+      "flowPair": 30,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 33,
+      "outputSeconds": 0.55,
+      "sourcePosition": 31.400000000000002,
+      "sourceFrames": [
+        31,
+        32
+      ],
+      "blend": 0.40000000000000213,
+      "flowPair": 31,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 34,
+      "outputSeconds": 0.5666666666666667,
+      "sourcePosition": 32.2,
+      "sourceFrames": [
+        32,
+        33
+      ],
+      "blend": 0.20000000000000284,
+      "flowPair": 32,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 35,
+      "outputSeconds": 0.5833333333333334,
+      "sourcePosition": 33.0,
+      "sourceFrames": [
+        33,
+        34
+      ],
+      "blend": 0.0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 36,
+      "outputSeconds": 0.6,
+      "sourcePosition": 33.8,
+      "sourceFrames": [
+        33,
+        34
+      ],
+      "blend": 0.7999999999999972,
+      "flowPair": 33,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 37,
+      "outputSeconds": 0.6166666666666667,
+      "sourcePosition": 34.6,
+      "sourceFrames": [
+        34,
+        35
+      ],
+      "blend": 0.6000000000000014,
+      "flowPair": 34,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 38,
+      "outputSeconds": 0.6333333333333333,
+      "sourcePosition": 35.400000000000006,
+      "sourceFrames": [
+        35,
+        36
+      ],
+      "blend": 0.4000000000000057,
+      "flowPair": 35,
+      "sharedRGBandRG": true
+    },
+    {
+      "outputFrame": 39,
+      "outputSeconds": 0.65,
+      "sourcePosition": 36,
+      "sourceFrames": [
+        36,
+        36
+      ],
+      "blend": 0,
+      "flowPair": null,
+      "sharedRGBandRG": true
+    }
+  ]
+}

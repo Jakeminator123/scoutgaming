@@ -18,9 +18,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 name=$1
-stream=web/public/dealer/streams/$name.h264
+stream=media/dealers/vera/runtime/indexed/streams/$name.h264
 cache=content/hands-masks/$name
-PLATE=content/norm/bg.png
+PLATE=media/game/source/pipeline/norm/bg.png
 work=content/bake2/$name
 rm -rf "$work"; mkdir -p "$work/out"
 [ -f "$PLATE" ] || ffmpeg -nostdin -hide_banner -loglevel error -y -i content/scene-16x9.png \
@@ -120,6 +120,6 @@ ffmpeg -nostdin -hide_banner -loglevel error -y -framerate 24 -i "$work/out/f%04
   -vf "format=yuv420p" -an \
   -c:v libx264 -preset slow -profile:v main -level:v 4.0 \
   -x264-params "keyint=infinite:min-keyint=infinite:scenecut=0:bframes=0:open-gop=0:repeat-headers=1:aud=1" \
-  -crf 21 -f h264 "content/encoded2/$name.h264"
-echo "baked-with-table $name ($(stat -f%z "content/encoded2/$name.h264") bytes)"
+  -crf 21 -f h264 "media/game/source/pipeline/encoded2/$name.h264"
+echo "baked-with-table $name ($(stat -f%z "media/game/source/pipeline/encoded2/$name.h264") bytes)"
 rm -rf "$work"

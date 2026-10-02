@@ -3,7 +3,7 @@ import bpy,json,sys
 from pathlib import Path
 from mathutils.bvhtree import BVHTree
 from dealer_posterior_neck_fit import apply_posterior_neck_fit
-root=Path(__file__).resolve().parents[1];output=Path(sys.argv[1]);bpy.ops.wm.open_mainfile(filepath=str(root/'assets/astrid-3d/anatomical/astrid-animated.blend'));scene=bpy.context.scene;arm=next(o for o in scene.objects if o.type=='ARMATURE');head=bpy.data.objects['Astrid_Face'];body=bpy.data.objects['char1']
+root=Path(__file__).resolve().parents[1];output=Path(sys.argv[1]);bpy.ops.wm.open_mainfile(filepath=str(root/'media/dealers/astrid/source/3d/anatomical/astrid-animated.blend'));scene=bpy.context.scene;arm=next(o for o in scene.objects if o.type=='ARMATURE');head=bpy.data.objects['Astrid_Face'];body=bpy.data.objects['char1']
 for track in arm.animation_data.nla_tracks:track.mute=True
 data=json.loads((Path(__file__).parent/'data/astrid-posterior-neck-fit.json').read_text());ids=[r['vertex'] for r in data['changes'] if r['before'][2]>=1.47];rows=[]
 actions=['Deal_Seat_01_Contact_Study','Deal_Seat_07_Contact_Study','Greeting_Wave_Study','Accept_Bets_Nod_Study']

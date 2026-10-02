@@ -1,0 +1,160 @@
+[
+  {
+    "src": "review/astrid-seam-repair/loop-dd8258097b1b.mp4",
+    "sha256": "dd8258097b1b5fd22e8adfc8621293be87b54bfc84cd2e67eb703e3b5076e253",
+    "sourceSha256": "161027b091e5001a42e6deb3fdf3143f38a00fde40c0cfed70082a3df078c391",
+    "fps": 24,
+    "frames": 61,
+    "sourceFrames": [
+      72,
+      144
+    ],
+    "calibrationRevision": "seam-repair-v1",
+    "file": "loop.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/out-b1cf62468689.mp4",
+    "sha256": "b1cf624686892e61857ce44896281c763cf91d0d9e1ab5b9a38b9316d1a5119a",
+    "sourceSha256": "0300b053aa71c3d802532cfd6ebfe383fe41cb9cef872e82883ed5e14546e087",
+    "fps": 36,
+    "frames": 73,
+    "sourceFrames": [
+      40,
+      96
+    ],
+    "calibrationRevision": "seam-repair-v1",
+    "file": "out.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/back-fc3615057eaa.mp4",
+    "sha256": "fc3615057eaaecd8da0a1fc712bc57e03d2f914fdf752dbd3bffb40953792b40",
+    "sourceSha256": "0300b053aa71c3d802532cfd6ebfe383fe41cb9cef872e82883ed5e14546e087",
+    "fps": 36,
+    "frames": 73,
+    "sourceFrames": [
+      96,
+      40
+    ],
+    "calibrationRevision": "seam-repair-v1",
+    "file": "back.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/greeting-f1b704dc282d.mp4",
+    "sha256": "f1b704dc282dc7b7ab39fd0d83181cb08dcf1baca5fe8b471b8710c1f0d3606b",
+    "fps": 24,
+    "frames": 116,
+    "file": "greeting.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/blackjack-e41444ea1fb3.mp4",
+    "sha256": "e41444ea1fb31f1315d7de9d0f8fc633d07ae3df019ab1e85b478fed4ecdb73b",
+    "fps": 24,
+    "frames": 93,
+    "file": "blackjack.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/bust-2b5a7d064bc9.mp4",
+    "sha256": "2b5a7d064bc95d48d09684be9e03eb90427c86b4d9e891193161bbfe2c4227ad",
+    "fps": 24,
+    "frames": 36,
+    "file": "bust.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/chatter1-71f85776ec7e.mp4",
+    "sha256": "71f85776ec7eaa836375c247864255cdd86eebc02aa832030b5d42772036f98f",
+    "fps": 24,
+    "frames": 70,
+    "file": "chatter1.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/chatter2-bc8fa6f18a98.mp4",
+    "sha256": "bc8fa6f18a98ca9d31594a1b9e51f5a6e30ddb45db6ffc0a50bf2d58ac4b951e",
+    "fps": 24,
+    "frames": 62,
+    "file": "chatter2.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/dealerblackjack-b4857292a4ae.mp4",
+    "sha256": "b4857292a4ae0fb9ab5638cf9d8d9047d841ebac9b1723ee4ccb97073d560188",
+    "fps": 24,
+    "frames": 51,
+    "file": "dealerblackjack.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/dealerbust-e67e33d66fe9.mp4",
+    "sha256": "e67e33d66fe984015d1665700bc8d4d70b55181a6c77fbeb752d964b2581e5da",
+    "fps": 24,
+    "frames": 85,
+    "file": "dealerbust.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/double-4abde0594548.mp4",
+    "sha256": "4abde059454839aea6d9491999d688f66c42607ad152da53d8e9483f9190992c",
+    "fps": 24,
+    "frames": 51,
+    "file": "double.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/farewell-9c941998c255.mp4",
+    "sha256": "9c941998c255adf77d40e31652b23879b11c09ef5d32d6fe6e5073bff70cf682",
+    "fps": 24,
+    "frames": 47,
+    "file": "farewell.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/goodluck-baedca28d5e7.mp4",
+    "sha256": "baedca28d5e71e4d68169db1d8f2b4ca23ac09e64c3faf97f1888696b7cc4431",
+    "fps": 24,
+    "frames": 51,
+    "file": "goodluck.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/insurance-4f04a79a9bbc.mp4",
+    "sha256": "4f04a79a9bbc081a52fbda261bd4d0c8856891a95efbb24ee8c338b48ef52b10",
+    "fps": 24,
+    "frames": 51,
+    "file": "insurance.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/lose-64a958bf9337.mp4",
+    "sha256": "64a958bf933727a5076aad9d9065e3ec3e39277522e02a703af71b238ee1963b",
+    "fps": 24,
+    "frames": 39,
+    "file": "lose.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/peek-494c4aefaf5f.mp4",
+    "sha256": "494c4aefaf5f954a723133fdc1ff25cf2069dea94ae5b496a8cb04a903cd8fe6",
+    "fps": 24,
+    "frames": 66,
+    "file": "peek.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/placebets-a3d48dd3fceb.mp4",
+    "sha256": "a3d48dd3fceb67f89e59575887f3c20d469df03a00f612910beaacda4f60f5dc",
+    "fps": 24,
+    "frames": 55,
+    "file": "placebets.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/push-f08a746fce0e.mp4",
+    "sha256": "f08a746fce0e52e74bc280824d468f08520215ac5056ca4e120eebb16f6a8dfb",
+    "fps": 24,
+    "frames": 47,
+    "file": "push.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/sidebet-84c6ce4af9a5.mp4",
+    "sha256": "84c6ce4af9a51fac73f9da5f5fa422575e6da412d7ef2e1ddc27a351ac2063c1",
+    "fps": 24,
+    "frames": 51,
+    "file": "sidebet.mp4"
+  },
+  {
+    "src": "review/astrid-seam-repair/win-999997e6ddbc.mp4",
+    "sha256": "999997e6ddbc3c0cab1fa65f02b1e3ed81a7f5fd7d94347b5de5b72983cd7461",
+    "fps": 24,
+    "frames": 89,
+    "file": "win.mp4"
+  }
+]
