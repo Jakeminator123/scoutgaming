@@ -1,6 +1,21 @@
 # GitHub-only från 28 september 2026
 
-Aktiv branch: `jakemanator123-github-work` i det privata repot
+## Main från 2 oktober 2026
+
+Jakob har flyttat allt fortsatt arbete till `main` i
+[Jakeminator123/github-work](https://github.com/Jakeminator123/github-work).
+`main` utgår från den publicerade produktversionen `64c903ab` och bevarar hela
+historiken, inklusive `033b97a9` och v1-taggen. De övriga brancherna innehöll
+inga egna commits utanför denna historik. Pushpolicyn och GitHub-workflows
+använder nu `main`; GitLab förblir pausat. Skapa inte andra brancher eller
+worktrees utan Jakobs uttryckliga begäran.
+
+Se [prestandakontrollen](PERFORMANCE-REVIEW-2026-10-02.md) för uppmätta väntetider
+och städförslag. Avsnitten nedan beskriver den tidigare övergången.
+
+## Övergången 28 september 2026
+
+Vid övergången var arbetsbranchen `jakemanator123-github-work` i det privata repot
 [Jakeminator123/github-work](https://github.com/Jakeminator123/github-work).
 `origin` pekar på GitHub och den nya branchen är repots standardbranch.
 Migrationen `b3e830a` och Astrid-förberedelsen `e3eec8f` har verifierats på

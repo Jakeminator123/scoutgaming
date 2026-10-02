@@ -1,20 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { validatePush } from '../tools/check-push-target.mjs';
 import { main as inbox } from '../tools/croupier-inbox.mjs';
 
-const policy = { repository: 'Jakeminator123/github-work', branch: 'jakemanator123-github-work' };
+const policy = JSON.parse(await readFile(new URL('../tools/repository-policy.json', import.meta.url), 'utf8'));
 const url = `git@github.com:${policy.repository}.git`;
 const update = `HEAD ${'a'.repeat(40)} refs/heads/${policy.branch} ${'b'.repeat(40)}`;
 test('only the approved GitHub branch can be pushed', () => {
+  assert.equal(policy.repository, 'Jakeminator123/github-work');
+  assert.equal(policy.branch, 'main');
   assert.doesNotThrow(() => validatePush(url, update, policy, () => true));
   assert.throws(() => validatePush(url, update, policy, () => false), /rewrite history/);
   assert.doesNotThrow(() => validatePush(url, update.replace('b'.repeat(40), '0'.repeat(40)), policy, () => false));
   assert.throws(() => validatePush('git@gitlab.com:scout-gg/croupier.git', update, policy));
-  assert.throws(() => validatePush(url, update.replace(`refs/heads/${policy.branch}`, 'refs/heads/main'), policy));
+  assert.throws(() => validatePush(url, update.replace(`refs/heads/${policy.branch}`, 'refs/heads/jakemanator123-github-work'), policy));
   assert.throws(() => validatePush(url, update.replace('a'.repeat(40), '0'.repeat(40)), policy));
   assert.throws(() => validatePush('git@github.com:someone/else.git', update, policy));
 });

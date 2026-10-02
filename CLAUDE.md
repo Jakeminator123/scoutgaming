@@ -1,9 +1,10 @@
 # Jakob · Croupier V2
 
-Work on `jakemanator123-github-work` in `Jakeminator123/github-work`.
+Work only on `main` in `Jakeminator123/github-work`, as requested on 2026-10-02.
 GitLab integration is paused. Follow `AGENTS.md` and deliver with
 `node tools/push-github-work.mjs`. No inbox polling, GitLab wiki publication,
-mirror pushes, force-push or pushes to `main`.
+mirror pushes, force-push or pushes to other branches. Do not create another
+branch or worktree unless Jakob explicitly requests it.
 
 - v1 checkpoint: tag `Jakobs-v1`, commit `600093e`, verified on both services.
 - Current guide: `lab/docs/README.md`.

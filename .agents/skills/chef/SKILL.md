@@ -18,10 +18,10 @@ Kevin behåller produkt-/integrationsbesluten. Den lokala användaren styr uppdr
   godkännande att publicera andra agenters commits eller starta nya uppgifter.
 
 Läs `node tools/croupier-chef.mjs status`. Vid aktivering, välj känd målbranch
-(här normalt `jakeminator123/work`, aldrig automatiskt `main`) och kör:
+(här `main` enligt Jakobs beslut 2026-10-02) och kör:
 
 ```sh
-node tools/croupier-chef.mjs activate --owner Jakob --title "AKTUELL CHATTTITEL" --target jakeminator123/work
+node tools/croupier-chef.mjs activate --owner Jakob --title "AKTUELL CHATTTITEL" --target main
 ```
 
 Använd verklig lokal ägare och titel; behåll samma Agent-ID som inboxen.
@@ -59,8 +59,8 @@ tekniskt sätt att stoppa agenter som saknar/förbigår instruktionerna.
    eller kontroll på varje verktygssvar. Skapa inte nya användaruppgifter utan
    uttrycklig beställning. Gemensamma svar följer befintlig ping-croupier/To/CC.
 3. **Integrera beställt arbete.** Bara när användaren beställt integration:
-   välj uttryckligen omfattade commits och testa i ren separat worktree/gren
-   från verifierad `origin/<målbranch>` efter lyckad fetch, inte en äldre lokal
+   välj uttryckligen omfattade commits och testa på `main` i denna arbetskopia
+   efter lyckad fetch och kontroll mot `origin/main`, inte en äldre lokal
    målbranch. Bevara original och smutsiga filer. Kontrollera
    patch-ekvivalenta commits; ”ahead” betyder inte alltid nya ändringar.
    Förenliga textändringar får sammanfogas. Motstridiga avsikter, events eller
@@ -77,8 +77,8 @@ tekniskt sätt att stoppa agenter som saknar/förbigår instruktionerna.
 
 Rollen ligger kvar till `/chef av` eller uttryckligt byte, men arbetar bara
 på användarturer och inom beställd uppgift. Ingen timer, bakgrundsprocess,
-automatisk agentväckning eller obegränsad delegation. Andra agenter kan fortsätta
-på egna grenar; chefen samordnar gemensam integration, inte deras varje åtgärd.
+automatisk agentväckning eller obegränsad delegation. Andra agenter kan arbeta
+på `main` med tydliga filanspråk; chefen samordnar gemensam integration, inte deras varje åtgärd.
 Svara med en kort statuslista och nästa beslut, inte en kopia av all historik.
 När denna chatt förbereder ny gemensam integration: kontrollera ägarskapet igen.
 

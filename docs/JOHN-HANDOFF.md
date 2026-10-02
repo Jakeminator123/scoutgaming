@@ -1,5 +1,34 @@
 # Aktuellt molnläge
 
+## 2026-10-02 — Allt fortsatt arbete på main; väntetider uppmätta
+
+På Jakobs uttryckliga begäran är `main` nu enda lokala och GitHub-branch i
+`Jakeminator123/github-work`, och GitHubs standardbranch. Utgångspunkt är
+`64c903ab`; allt tidigare commitinnehåll och v1-taggen finns kvar. De övriga
+brancherna hade inga egna commits. Den rena gamla `inbox-publish`-arbetskopian
+är borttagen efter kontroll även av ospårade och ignorerade filer.
+
+Pushpolicy, agent-/Cursor-instruktioner, CI och GPU-workflowets manuella
+branchgrind följer `main`. Vercels produktionsbranch och samtliga fyra Render-
+tjänster kopplade till detta repo är verifierade på `main`; tidigare
+autodeploylägen är bevarade. GitLab förblir pausat. Ingen gameplay, media,
+spelar-/profildata, GPU-budget eller testhook har ändrats.
+
+Commit-hookens 32 steg tog 68,55 s i en separat mätning: 656 TAP-tester
+godkända, 0 fel, 1 plattformsskip; scriptaudits passerade. Riktad pushpolicy-
+regression passerar. Datorn hade cirka 46 GiB ledigt RAM, låg CPU-belastning,
+ingen diskkö och ingen lokal produkt-/labserver. Git-status tog 84–124 ms.
+Första commitkontrollen avbröts av ett intermittent Windows-`EPERM` i det
+syntetiska agent-talk-låstestet; tre riktade omkörningar passerade.
+Tidigare leverans innehöll också ett webbläsaranrop på 173,8 s och full
+regression för en ren dokumentationscommit. Prioritera färre upprepade
+kontroller och avgränsade browseranrop. Hooken har inte kortats i detta uppdrag.
+
+Mätning, städförslag och kvarvarande begränsningar finns i
+[prestandakontrollen](PERFORMANCE-REVIEW-2026-10-02.md). Startsidesflimmer,
+kallstart, exakt läppsynk och fysisk mobil/Safari återstår enligt tidigare
+handoff. Äldre branchinstruktioner längre ned är historik.
+
 ## 2026-10-02 — Intro på dator, statisk startsida på mobil
 
 Den tidigare introfilmen med retro-HTML och Astrid återställs för datorbesök.

@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   publish:
-    if: github.ref == 'refs/heads/jakemanator123-github-work'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
