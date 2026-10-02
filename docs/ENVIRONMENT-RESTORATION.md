@@ -97,7 +97,8 @@ vägrar överskrivning och behåller den kanoniska kopian. Kör med stoppade skr
 `docs/reference` har flyttats till `media/dealers/astrid/source/reference`.
 Kalibreringsverktyg använder samma resolver. Privat Blob-export använder
 `croupier/media/<samma-logiska-katalog>/<id>/<sha256>.<ext>`; indexet publiceras
-först efter återläsningshash. Äldre privata `croupier/videos`/`zones`-objekt
+efter återläsningshash. `media/blob-index.json` är aktivt i molnet; 4 265 filer
+har verifierad återläsningshash. Äldre privata `croupier/videos`/`zones`-objekt
 behålls tills alla projektlänkar är verifierade.
 
 Neon-verktyg: `tools/migrate-sqlite-postgres.mjs` installerar/importerar till

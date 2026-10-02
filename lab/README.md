@@ -1,12 +1,12 @@
 # Backoffice/Lab — gemensam arbetsyta
 
-**Användarguide: [Guide i dashboarden](http://127.0.0.1:4188/guide).**
+**Användarguide: [Guide i Backoffice/Lab](https://www.scoutgaming.tech/studio/guide).**
 Det är den gemensamma dokumentationsytan. Denna README är utvecklarreferens.
 Källa och begreppsägarskap: [lab/docs](docs/README.md).
 
-**Moln:** [Astrid Studio](https://croupier-v2.onrender.com/studio) är den
-kanoniska arbetsytan bakom ordinarie Lab-inloggning. Vercel är ingången;
-Render kör Studio och spelet. **Lokalt:** samma Studio körs på det enda
+**Moln:** [Backoffice/Lab](https://www.scoutgaming.tech/studio) är den
+kanoniska arbetsytan. Vercel visar spel, BO och Lab; Render kör spelmotorn,
+API och sparade projekt. **Lokalt:** samma Studio körs på det enda
 koordinerade serverparet. [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
 
@@ -73,7 +73,7 @@ används den befintliga [koordinerade molnstartaren](../ops/cloud/README.md).
 | --- | --- | --- |
 | Event-ID, källtyper och begrepp | `policies/studio-contract.json` | `test/studio-contract.test.mjs` |
 | Filmfamiljer, standardfiler, variantmappar | `../presentation-runtime/media-families.mjs` | Byggare och validator importerar samma register |
-| Faktiska filer, storlek och SHA-256 | `../emil/dealklipp-v1/lab-video-manifest.json` | `node pipeline/build-lab-video-manifest.mjs --check` från reporoten |
+| Faktiska filer, storlek och SHA-256 | `../media/dealers/astrid/runtime/presentation/lab-video-manifest.json` | `node pipeline/build-lab-video-manifest.mjs --check` från reporoten |
 | Format/validering | `schemas/`, `lib/lab-video-manifest.mjs` | Manifest- och kontraktstester |
 | Sparade operatörsval | vald datakatalogs `project.json` | Revisionslås + historik |
 | Uppmätta kortspår och filhashar | `../web/public/kevin-cards/` | `test/local-card-overlay.mjs` + faktisk browsergranskning |

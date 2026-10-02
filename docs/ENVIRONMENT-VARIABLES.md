@@ -10,7 +10,7 @@ i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
 Aktuell källa: `Jakeminator123/github-work` på `main`.
-Vercels frontend använder `apps/croupier-frontend` och `CROUPIER_GAME_URL`.
+Vercels frontend använder `apps/croupier-frontend` med UI-kontraktet nedan.
 Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 
 Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
@@ -64,7 +64,8 @@ båda efter migrering. Aktuellt verifieringsläge står i handoffen.
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
 | Render: spel + BO + Lab (`/studio`) | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_CLOUD_DATA_ROOT`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER` + `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` på tom databas | Se grupper nedan | Render sätter `PORT`, `RENDER_EXTERNAL_URL` |
-| Vercel: publik Next-landning (`apps/croupier-frontend`) | `CROUPIER_GAME_URL` = avsedd speladress för aktuell miljö | – | Kodfallback går till produktions-Render; lås värdet i projektet före automatisk Git-publicering | – |
+| Vercel: spel/BO (`apps/croupier-frontend`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet; UI behöver inga modell-/DB-/Blob-nycklar | – |
+| Vercel: Lab UI (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Autentiserad SSR läser befintligt Render-projekt | – |
 | Vercel: äldre statisk ingång (`ops/vercel-entry`, inte längre publicerad) | `CROUPIER_GAME_ORIGIN` = Render-tjänstens exakta HTTPS-origin utan snedstreck på slutet | – | Historiskt byggkontrakt | – |
 | Render: separat GPU-relä (ännu ej driftsatt) | `WORKER_SECRET`, annat `TICKET_SECRET` (båda minst 32 tecken), `ALLOWED_ORIGINS` = exakta spel-origins | – | – | Render sätter `PORT` |
 | Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAWAPI_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |
@@ -72,16 +73,14 @@ båda efter migrering. Aktuellt verifieringsläge står i handoffen.
 | RunPod: äldre separat GPU-testworker | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
 | Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `lab/.env.example`; nyckelnamnen speglas i JSON-listan | – |
 
-Vercels opt-in `node build.mjs --frontend-preview` använder samma
+Äldre statisk kompatibilitet: `node build.mjs --frontend-preview` använder samma
 `CROUPIER_GAME_ORIGIN` som standardbygget och inför **ingen ny env-nyckel**.
-Den importerade Next-landningen har däremot `CROUPIER_GAME_URL`: i QA måste
-den sättas till den isolerade spel-Previewns exakta publika URL, annars faller
-knapparna tillbaka till `croupier-v2` i produktion. Det tidigare separata
-QA-landningsprojektet är avvecklat. Konfigurera en isolerad speladress i
-huvudprojektets Preview-miljö före spel-QA; dess nuvarande värde pekar på
-produktion. Spelarprojektet `croupier-player-preview-qa` har egen Preview-
-`CROUPIER_GAME_ORIGIN`, separata Neon-integrationer och Blob-token. Där finns
-17 `CROUPIER_ZONES_*`-nycklar för Preview/Development från zon-Neon.
+Next-landningens `CROUPIER_GAME_URL` används bara med UI-flaggan av.
+Den aktiva UI-vägen använder exakt publik/backend/Lab-origin och privat
+ingressnyckel. Huvudprojektets Preview pekar mot produktion; syntetisk QA
+kräver `croupier-player-preview-qa` och den isolerade Render-backenden med
+egen game-Neon och privata ingressnycklar. QA innehåller separat zon-Neon
+och Blob-integration; UI vidarebefordrar lagringsanrop till backend.
 Lab-serverns zonlagring läser nu enbart `CROUPIER_ZONES_DATABASE_URL`;
 de andra är alternativa leverantörsformat och styr inte zonflödet.
 `BLOB_READ_WRITE_TOKEN` finns för Production/Preview/Development och är en
@@ -209,6 +208,8 @@ ignorerad lokal `.env`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemlighet
 Game/auth använder nu separat Neon med verifierad extern backup och full
 återläsningsparitet. Bevara historiska SQLite-filer; efter nya Neon-skrivningar
 får en äldre SQLite-kopia aldrig återaktiveras som datakälla. Den nya
-Git-kopplade landningen har rätt rot/branch och lagrad `CROUPIER_GAME_URL`;
-kontrollera varje automatisk deploy där. Genererat tal genom Render/Cartesia/RunPod har passerat två liveprov;
+Git-kopplade UI-projekten har rätt rot/branch och kanoniska origins/ingress;
+kontrollera varje automatisk deploy där. Native Node-funktionerna för
+`/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns.
+Genererat tal genom Render/Cartesia/RunPod har passerat två tidigare liveprov;
 kallstart, exakt synk och fysisk mikrofon återstår enligt handoffen.

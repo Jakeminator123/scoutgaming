@@ -1,8 +1,8 @@
 # Guide — en gemensam ingång
 
 **Gemensam arbetsyta: Backoffice/Lab.** I molnet öppnar du
-[`/studio`](https://croupier-v2.onrender.com/studio); Vercels Studio-länk leder
-dit. Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
+[`/studio`](https://www.scoutgaming.tech/studio) på Vercel. Render äger
+spelmotorn, API och sparade projekt. Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
 **Öppna spelet** i molnstudion fungerar med vanlig spelarinloggning även om
 Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
 presentationsväg och kopplar dessutom spelflikens händelser till Studio.
@@ -54,7 +54,8 @@ tjänster. `Start-Lab.cmd` behåller den befintliga privata anslutna profilen.
 Avancerade verktyg nås genom **Avancerat labb** (`/studio/tree` i molnet,
 `/tree` lokalt). Det äldre `/lissabon` inne i Lab omdirigerar till startsidan.
 
-Jakobs arbetsdokumentation visas i [Guide i labbet](http://127.0.0.1:4188/guide).
+Jakobs arbetsdokumentation visas i [Guide i labbet](https://www.scoutgaming.tech/studio/guide)
+(lokalt `http://127.0.0.1:4201/guide` på det koordinerade paret).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
 [studio-contract.json](../policies/studio-contract.json). Uppdatera dessa,
 inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
