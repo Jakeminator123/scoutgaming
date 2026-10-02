@@ -6,8 +6,16 @@ export function middleware(request: NextRequest) {
   if (!config) return NextResponse.next();
   const route = platformRoute(new URL(request.url), config);
   if (route.kind === 'reject') return new NextResponse(null, {status: 400});
-  if (route.kind === 'frontend' || route.kind === 'socket') return NextResponse.next();
+  if (route.kind === 'frontend') return NextResponse.next();
   if (route.kind === 'redirect') return NextResponse.redirect(route.destination, 307);
+  if (route.kind === 'socket') {
+    // Same project, native Node upgrade. The handler constructs a fresh
+    // backend handshake after validating the original cookie/ticket or bearer.
+    const response = NextResponse.rewrite(route.destination);
+    response.headers.set('x-vercel-enable-rewrite-caching', '0');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+    return response;
+  }
   const headers = route.kind === 'backend' ? platformBackendHeaders(request.headers, config) : new Headers(request.headers);
   if (route.kind === 'lab') {
     // Neither a browser nor the UI zone receives the backend ingress credential.

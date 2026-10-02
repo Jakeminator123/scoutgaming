@@ -15,8 +15,8 @@ Vercel-UI och det nya Blob-indexet inväntar sina molnprov.
 Produktionsbyte 2 oktober: aktuellt exportläge med noll Web/Lab-skrivare,
 hashverifierade SQLite-backuper utanför Git, 24 källtabeller/102 rader och
 full backup/restore-paritet för 32 PostgreSQL-tabeller. Inga aktiva externa
-wallet-kopplingar fanns. Senaste driftkontroll: Render `dep-davs5hbm8hqs73ce27a0`,
-commit `8d678f3e`, är live med PostgreSQL; verklig befintlig superadmin-login och spelarnas
+wallet-kopplingar fanns. Senaste driftkontroll: Render `dep-davsisqvcj2c738laod0`,
+commit `f52ded5f`, är live med PostgreSQL; verklig befintlig superadmin-login och spelarnas
 administrationsvy bekräftar rätt lagring. Två befintliga spelare bevarade;
 inga produktionskonton eller spelrundor skapades för test.
 
@@ -41,31 +41,38 @@ spelrunda med saldo/ledger-paritet. Tidiga repetitionsklick spärras tills
 serverns verkliga initialisering är klar. Inga JavaScript-fel eller HTTP 500.
 Molnets Lab-observation kan nu öppna och återanvända samma BO-spelflik med
 exakt HTTPS-origin och spelarens riktiga kvitton, utan Partner-launch/SSE.
-23 fokustester och Lab-TypeScript passerar. Vercels externa WebSocket-rewrite
-gav HTTP 404. Två fasta SDK-rutter ersätter den: faktisk installerad SDK och
-isolerad relay verifierar bytes, ägarbiljett, återspelningsspärr, kögränser och
-stängning; riktade frontendtester och båda byggen passerar. SDK-testets verkliga
-relay körs med frontendens egna installerade beroenden även i Vercelbygget.
-Render behåller auth;
-worker-anslutningen har plats för hela befintliga 540-sekundersleasen.
-SDK-uppgraderingen returnerar direkt efter setup; den begränsade sessionen
-hålls med Nexts `after` även när SDK-kontexten saknar `waitUntil`.
-Avbrottslyssnaren följer sessionens livstid. Regressionen använder faktisk
-Next 15.5.26, SDK och relay och verifierar bytes efter setup-svaret.
-Riktigt SDK-/relayprov och oberoende review verifierar detta kontrakt.
+23 fokustester och Lab-TypeScript passerar. Två fasta native Node-funktioner
+ersätter nu de experimentella SDK-rutterna för `/speech-stream` och
+`/lipsync-worker`. Middleware skriver om till två interna API-paths i samma
+projekt och avvisar direkta anrop till dessa paths. Node-funktionerna
+exporterar HTTP-server utan egen lyssningsport och väntar på Render-auth
+före publik 101: exakt Origin/kaka/ägarsession och engångsbiljett, eller
+worker-bearer. Inga nya servrar eller spelmotorer införs.
+Native 4/4, hela frontend 26/26, faktiskt Next-bygge och installerad
+`@vercel/node`-byggare passerar. Båda funktionernas filspårning inkluderar
+native-factory och ws. Riktig relay verifierar två sessioner, bytes och
+terminal 1000 samt nekad främmande kaka, återspelning och worker-token.
+Worker-funktionen har 600 sekunder för befintlig 540-sekunderslease;
+klientfunktionen har 300 sekunder. Nativevägens molnprov återstår.
 Molnproven på `e78441f0` och `8d678f3e` öppnar klient och worker men ger endast
 `ready`, inga mediebytes; 60 sekunders provgräns misslyckas även med `after`.
 Vercels säkra faslogg visar mottaget start/4800 PCM-byte/slut från Render
 och köade utgående meddelanden; klienten får bara första `ready`.
 SDK-kontextens `waitUntil` finns i molnet, så dess frånvaro är inte felets
-bevisade orsak. Nästa kontroll gäller faktisk socket-write/drain/cork.
+bevisade orsak. Molnprov `f52ded5f` avgränsar felet vidare: alla sex utgående
+skrivningar får callback utan fel, med noll kö/cork och ökande byteantal.
+Render bekräftar start, 4 800 PCM-byte och slut till testworkern; workern
+svarar med stream, 32 syntetiska mediebyte och done. Inga inkommande
+worker-meddelanden når SDK-bridgen. Samma 60-sekunders klientprov misslyckas.
+Detta avgränsar ändringen till native Node-ingress/livscykel för de två
+strömningsrutterna; manuell uncork eller längre timeout saknar stöd i mätningen.
 Render-barnens vanliga stdout kastas bort; endast strikt tillåtna QA-faser
 vidarebefordras i den isolerade obetalda testmiljön. Hela den
 isolerade strömkedjan med faktisk serverkod, SDK och syntetisk worker passerar.
 Säker QA-instrumentering av faser och byteantal avgränsar molnfelet;
 inga identiteter, repliker, biljetter eller nycklar loggas. UI/nya Blob-indexet
 aktiveras först efter verkligt godkänt prov. Samtliga tre CI-jobb på
-`8d678f3e` är gröna. CI:s isolerade HTTP-fixture väntar
+`f52ded5f` är gröna. CI:s isolerade HTTP-fixture väntar
 nu högst fem sekunder på serverns
 korta SQLite-skrivningar; alla nio riktiga HTTP-kontroller passerar lokalt.
 Detta ersätter inte visuell läppsynks-QA.
