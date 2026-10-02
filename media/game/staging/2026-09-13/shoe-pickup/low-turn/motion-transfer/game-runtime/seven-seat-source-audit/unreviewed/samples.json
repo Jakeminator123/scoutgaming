@@ -1,0 +1,94 @@
+[
+  {
+    "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-09/cac-side-delivery/right/source.mp4",
+    "nativeFrames": 97,
+    "fps": 24.0,
+    "inspectedSamples": [
+      0,
+      9,
+      17,
+      26,
+      35,
+      44,
+      52,
+      61,
+      70,
+      79,
+      87,
+      96
+    ],
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-09/centre-continuity/source.mp4",
+    "nativeFrames": 145,
+    "fps": 24.0,
+    "inspectedSamples": [
+      0,
+      13,
+      26,
+      39,
+      52,
+      65,
+      79,
+      92,
+      105,
+      118,
+      131,
+      144
+    ],
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-09/dealer-front-continuation/source.mp4",
+    "nativeFrames": 97,
+    "fps": 24.0,
+    "inspectedSamples": [
+      0,
+      9,
+      17,
+      26,
+      35,
+      44,
+      52,
+      61,
+      70,
+      79,
+      87,
+      96
+    ],
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-09/dealer-delivery/source.mp4",
+    "nativeFrames": 145,
+    "fps": 24.0,
+    "inspectedSamples": [
+      0,
+      13,
+      26,
+      39,
+      52,
+      65,
+      79,
+      92,
+      105,
+      118,
+      131,
+      144
+    ],
+    "size": [
+      1920,
+      1080
+    ]
+  }
+]

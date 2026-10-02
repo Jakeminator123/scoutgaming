@@ -26,3 +26,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+runtime-ui/
+/public/*.mjs
+/public/*.js
+/public/*.css
+/public/speech-media.json
+/public/presentation-runtime/
+/public/lab/
+/public/bo/

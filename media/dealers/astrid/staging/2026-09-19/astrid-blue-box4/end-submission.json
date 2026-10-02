@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "id": "9e7df4f0-996b-46dd-848e-80ecacecf436",
+      "type": "image",
+      "status": "pending",
+      "model": "gpt_image_2_5",
+      "params": {
+        "prompt": "Create the matching END PLATE by editing this exact approved composition. Preserve the whole photograph: exact same Astrid, face, gaze, hair, skin, black blazer, ivory blouse, both relaxed EMPTY hands, seated pose, camera viewpoint, lens, subject size, green studio, curved green table, green shoe, lighting and framing. Change ONLY the tracking card. Remove it entirely from the shoe outlet, leaving the existing mouth empty and green/dark. Put that SAME ONE rigid normal-sized playing card FLAT on the felt at the precise calibrated BOX 4 landing position, one player position to the viewer's right of centre, above the chip zone. Coordinates refer to the entire image, not a crop. The four outside corners of the landed card are: FAR-LEFT at (56.86% width,63.93% height); FAR-RIGHT (60.11%,63.28%); NEAR-RIGHT (61.37%,68.52%); NEAR-LEFT (58.01%,69.22%). Thus the card centre is (59.09%,66.24%), only about 4.5% of image width by 6% of image height overall; do not enlarge it for readability or move it down to the chip position. This quadrilateral is the perspective projection of a physical 72 by 103 mm rectangle on the calibrated game table. Follow its foreshortening and angle, do not make it a tall screen-facing card. The visible surface is now its FACE: solid matte cobalt blue #164BDF with a very thin continuous white border, and exactly FOUR small round colored dots inset consistently inside the corners. In clockwise material corner order viewed as specified above: FAR-LEFT MAGENTA #FF30C8, FAR-RIGHT YELLOW #FFE500, NEAR-RIGHT CYAN #00E5FF, NEAR-LEFT WHITE #FFFFFF. Each dot is about 6mm diameter physically, inset about 9mm from both card edges; the dots are easy to separate and do not touch the border. No centre dot on the face, no other pattern or text. The back's single white centre dot is hidden against the felt. One card only, no duplicate at the shoe, no other cards or chips. Card lies flat and still with a small realistic contact shadow. Her empty hands stay in EXACTLY their current ready positions; no reaching, pointing, changed fingers, or hand over the new card. No zoom, crop, face redesign, exposure change or perspective change. Produce the full scene, not a closeup or a diagram.",
+        "aspect_ratio": "16:9",
+        "reference_images": [
+          "2ad17459-f388-4741-bd50-0eae525e0bbf"
+        ],
+        "resolution": "2k",
+        "quality": "low"
+      }
+    }
+  ],
+  "adjustments": {
+    "medias[0].role": {
+      "requested": "image",
+      "used": "image_references",
+      "reason": "GPT Image 2.5 backend expects schema-key media roles"
+    }
+  }
+}

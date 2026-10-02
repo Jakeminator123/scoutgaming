@@ -4,11 +4,11 @@ import json,mediapipe as mp,numpy as np
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from scipy.spatial import Delaunay
-root=Path(__file__).resolve().parents[1];out=root/'content/staging/2026-09-10/astrid-head-v2'
+root=Path(__file__).resolve().parents[1];out=root/'media/dealers/astrid/staging/2026-09-10/astrid-head-v2'
 options=vision.FaceLandmarkerOptions(base_options=python.BaseOptions(delegate=python.BaseOptions.Delegate.CPU,model_asset_path='/Users/solvifyab/.codex/tools/astrid-face/face_landmarker.task'),num_faces=1,min_face_detection_confidence=.4,min_face_presence_confidence=.4)
 points=[]
 with vision.FaceLandmarker.create_from_options(options) as detector:
- for f in [out/'base-front.png',root/'content/dealers/astrid/canonical-frame0.png']:
+ for f in [out/'base-front.png',root/'media/dealers/astrid/source/generation/canonical-frame0.png']:
   im=mp.Image.create_from_file(str(f));r=detector.detect(im)
   if len(r.face_landmarks)!=1:raise ValueError('Face not detected: '+str(f))
   points.append(np.array([[p.x*im.width,p.y*im.height] for p in r.face_landmarks[0]][:468]))

@@ -1,0 +1,21 @@
+{
+  "width": 960,
+  "height": 760,
+  "durationMs": 220,
+  "flowRange": 64,
+  "actorOffset": [
+    0,
+    20
+  ],
+  "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+  "mediaSha256": "d45d9dfd609b04f508100214975656181b135b8a2f6c06033d4a03a46e25cb7f",
+  "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+  "enter": {
+    "flow": "goodluck-enter-flow.png",
+    "sha256": "41f6d3a0ef58ed82e893e39f60ed4df0a9d4fbd2e92c5d7c27580498da99fcb5"
+  },
+  "exit": {
+    "flow": "goodluck-exit-flow.png",
+    "sha256": "ff33cb19ee1c116f8f25c02c97d5405183f0cb86ce5cf0c0d9d4bf37cee08315"
+  }
+}

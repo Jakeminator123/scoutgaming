@@ -1,0 +1,13 @@
+{
+  "status": "UNAPPROVED complete97frame integration draft; pickup9\u201313 materially inferred; actor masks pending",
+  "sourceSHA256": "ac46fe3283544d40a7d80c6d9f7f1592fe4d9c566887a8abc73f250734419e0b",
+  "completeTrajectorySHA256": "b3f68d4f53014dbdde6ad82a4950b78eef2dea459476edbc3fbca90ffce4a707",
+  "nativeFrameCount": 97,
+  "pickup": 9,
+  "release": 63,
+  "land": 63,
+  "sourceRGBModified": false,
+  "fullRGBExports": false,
+  "maskReady": false,
+  "reviewed": false
+}

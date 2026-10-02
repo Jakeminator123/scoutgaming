@@ -1,0 +1,62 @@
+[
+  {
+    "action": "Accept_Bets_Nod_Study",
+    "maxJointPositionErrorMm": 0.08432078956405505,
+    "maxJointRotationErrorDegrees": 0.0640377722231981
+  },
+  {
+    "action": "Collect_Card_Study",
+    "maxJointPositionErrorMm": 0.0012332613589490099,
+    "maxJointRotationErrorDegrees": 0.10360789094954564
+  },
+  {
+    "action": "Deal_Own_Card_Contact_Study",
+    "maxJointPositionErrorMm": 0.0016254051746953206,
+    "maxJointRotationErrorDegrees": 0.08080373558453101
+  },
+  {
+    "action": "Deal_Seat_01_Contact_Study",
+    "maxJointPositionErrorMm": 0.6479506227483343,
+    "maxJointRotationErrorDegrees": 0.13141777921347694
+  },
+  {
+    "action": "Deal_Seat_02_Contact_Study",
+    "maxJointPositionErrorMm": 0.41717305252573306,
+    "maxJointRotationErrorDegrees": 0.10546875548586084
+  },
+  {
+    "action": "Deal_Seat_03_Contact_Study",
+    "maxJointPositionErrorMm": 0.6346244492437003,
+    "maxJointRotationErrorDegrees": 0.11454404837279931
+  },
+  {
+    "action": "Deal_Seat_04_Contact_Study",
+    "maxJointPositionErrorMm": 0.627772630638577,
+    "maxJointRotationErrorDegrees": 0.06416288762742467
+  },
+  {
+    "action": "Deal_Seat_05_Contact_Study",
+    "maxJointPositionErrorMm": 0.0014316649750631477,
+    "maxJointRotationErrorDegrees": 0.08173386265313755
+  },
+  {
+    "action": "Deal_Seat_06_Contact_Study",
+    "maxJointPositionErrorMm": 0.0013215256018223656,
+    "maxJointRotationErrorDegrees": 0.09196275922217965
+  },
+  {
+    "action": "Deal_Seat_07_Contact_Study",
+    "maxJointPositionErrorMm": 0.001233451355590055,
+    "maxJointRotationErrorDegrees": 0.1077562281416569
+  },
+  {
+    "action": "Greeting_Wave_Study",
+    "maxJointPositionErrorMm": 0.08432078956405505,
+    "maxJointRotationErrorDegrees": 0.06948452737287912
+  },
+  {
+    "action": "Reveal_Hole_Card_Study",
+    "maxJointPositionErrorMm": 0.07762848133963769,
+    "maxJointRotationErrorDegrees": 0.06483880385830075
+  }
+]

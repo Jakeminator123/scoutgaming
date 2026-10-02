@@ -2,4 +2,8 @@
 *.sh text eol=lf
 .githooks/* text eol=lf
 # The deterministic manifest check compares its canonical LF serialization.
-emil/dealklipp-v1/lab-video-manifest.json text eol=lf
+# The layout records exact migration hashes, including calibration/source bytes.
+# Keep the same bytes on Linux and Windows checkouts.
+media/** -text
+media/layout.json text eol=lf
+media/.gitignore text eol=lf

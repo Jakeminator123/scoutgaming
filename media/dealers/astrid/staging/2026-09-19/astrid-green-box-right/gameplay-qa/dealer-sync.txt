@@ -1,0 +1,5 @@
+astrid: 17 lines, 0 missing speech takes (not approved), 20 streams
+amira: 17 lines, 2 missing speech takes (not approved), 16 streams
+mei: 17 lines, 3 missing speech takes (not approved), 15 streams
+PASS: all four dealer asset sets match the regression baseline. Human lip-sync acceptance is still pending.
+probe exit 

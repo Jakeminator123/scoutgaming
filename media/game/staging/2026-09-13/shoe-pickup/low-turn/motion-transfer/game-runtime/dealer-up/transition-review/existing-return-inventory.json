@@ -1,0 +1,20 @@
+[
+  {
+    "name": "right-return",
+    "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-10/return-directions/right/source.mp4",
+    "sha256": "d3483802232574cade30f77bd2ecc882a1783af6f3224add767b9d72351312af",
+    "nativeFrames": 97
+  },
+  {
+    "name": "legacy-return47",
+    "path": "/Users/solvifyab/Desktop/croupier/web/public/dealers/astrid/performance/joins/return-47.mp4",
+    "sha256": "dccef31a0abc88a7f6691b4be1d0590873445144fc2d38ee6d27ad376acbdbd9",
+    "nativeFrames": 121
+  },
+  {
+    "name": "legacy-right",
+    "path": "/Users/solvifyab/Desktop/croupier/web/public/dealers/astrid/performance/right-outlet-review.mp4",
+    "sha256": "d22d37c9f8ce8eba7250fe9af571143e20a7d793e2baadcd7d9bf73914f07151",
+    "nativeFrames": 169
+  }
+]

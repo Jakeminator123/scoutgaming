@@ -19,6 +19,14 @@ test('fresh reply produces one preview in the bound session', async () => {
   assert.deepEqual(progress, ['text', 'ready']);
   assert.deepEqual(previews, ['Hej.']);
 });
+test('async database ownership is awaited before paid work and after generation', async () => {
+  const f = fixture(), originalOwner = f.data.readOwner;
+  f.data.readOwner = async () => { await Promise.resolve(); return originalOwner(); };
+  const result = await completeChatWithSpeech(f.data);
+  assert.equal(result.visualMode, 'generated-lipsync-preview'); assert.equal(f.jobs, 1);
+  f.data.service.generate = async () => { f.changeOwner(); return {}; };
+  await assert.rejects(completeChatWithSpeech(f.data), /stale_chat_session/);
+});
 for (const change of ['owner', 'round', 'abort']) test(`${change} during model work prevents paid generation`, async () => {
   const f = fixture(control => change === 'owner' ? control.setOwner(null) : change === 'round' ? control.stale() : control.abort());
   await assert.rejects(completeChatWithSpeech(f.data)); assert.equal(f.jobs, 0);

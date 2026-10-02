@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {resolveMediaPath,readMediaLayout} from '../tools/media-layout.mjs';
 import {shoePresentation} from '../web/public/blackjack-asset-state.mjs';
 const full=shoePresentation({total:416,remaining:415,dealt:1,cutAfter:312,cutReached:false});
 const half=shoePresentation({total:416,remaining:208,dealt:208,cutAfter:312,cutReached:false});
@@ -10,7 +11,9 @@ const empty=shoePresentation({total:416,remaining:0,dealt:416,cutAfter:312,cutRe
 assert.equal(empty.hasCards,false);assert.equal(empty.fraction,0);
 assert.throws(()=>shoePresentation({total:416,remaining:400,dealt:1,cutAfter:312}),/Invalid/);
 // Verify the actual exported binary, not a mocked object hierarchy.
-const path=new URL('../web/public/assets/blackjack-3d/blackjack-table.glb',import.meta.url),buffer=fs.readFileSync(path);
+const legacy='web/public/assets/blackjack-3d/blackjack-table.glb';
+assert.equal(readMediaLayout().files.find(row=>row.legacyPath===legacy)?.access,'public');
+const path=resolveMediaPath(legacy),buffer=fs.readFileSync(path);
 assert.equal(buffer.toString('ascii',0,4),'glTF');assert.equal(buffer.readUInt32LE(4),2);
 const length=buffer.readUInt32LE(12),gltf=JSON.parse(buffer.toString('utf8',20,20+length));
 const byName=new Map(gltf.nodes.map(n=>[n.name,n]));

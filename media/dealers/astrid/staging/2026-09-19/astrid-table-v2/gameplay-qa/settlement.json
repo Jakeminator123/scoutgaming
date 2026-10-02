@@ -1,0 +1,25 @@
+{
+  "oldDealerVisible": "hidden",
+  "rest": {
+    "rect": {
+      "bottom": 459.28125,
+      "height": 375.8203125,
+      "left": 360.6953125,
+      "right": 835.4140625,
+      "top": 83.4609375,
+      "width": 474.71875,
+      "x": 360.6953125,
+      "y": 83.4609375
+    },
+    "src": "http://astridblenderv2.localhost:4190/review/astrid-table-v2/rest.png",
+    "visible": "visible"
+  },
+  "settlement": "\n    ROUNDstaked $5.00 · returned $0.00\n    BOX 4$5.00-$5.00\n    NET\n      -$5.00",
+  "table": {
+    "camera": "PlateCam",
+    "engine": "three.js r180",
+    "sourceHash": "06e425527ab43a22a0b503f2c2792f8dd0bacccf1cd6ff56c60c78c7a00fb0dc",
+    "tableSource": "table-v2.blend"
+  },
+  "wallet": "\n        BALANCE$990.00\n        TOTAL BET$0.00\n        LAST WIN$0.00\n        + ADD FUNDS\n      "
+}

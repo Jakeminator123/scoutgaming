@@ -1,0 +1,62 @@
+{
+  "request": {
+    "model": "seedance_2_0",
+    "duration": 6,
+    "resolution": "1080p",
+    "mode": "std",
+    "bitrate_mode": "high",
+    "aspect_ratio": "auto",
+    "generate_audio": false,
+    "medias": [
+      {
+        "role": "start_image",
+        "value": "53dd9eae-ff5d-4aa3-bc0b-9782330be551"
+      },
+      {
+        "role": "end_image",
+        "value": "53dd9eae-ff5d-4aa3-bc0b-9782330be551"
+      }
+    ],
+    "prompt": "One continuous photographic shot of the exact seated blonde blackjack dealer Astrid from the reference, on the identical pure black background, absolutely locked camera and unchanged body scale. She is waiting attentively for a player's decision between card deliveries. Both hands remain low, separate, relaxed and ready at the table in the same positions as the reference, near the card shoe area. Small natural breathing, a single blink, brief gaze toward the player then down toward the cards, tiny comfortable wrist/finger adjustments. Silent, closed relaxed lips; do not speak. Never fold or cross the arms. Never deal a card or invent paper, cards, props, furniture or a table. Preserve her exact face identity, blonde hair, black blazer, ivory blouse, skin colour, exposure and shoulder proportions. No camera movement, zoom, body elongation, dissolve, morph, or cuts. Start and finish at the exact supplied reference pose and framing so this quiet ready movement can loop naturally. Keep both hands anatomically correct and visible throughout."
+  },
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "This tool provides an auto-updating generation widget for these jobs. Do not call job_display, show_generations, or show_generation_by_ids to display these jobs again, either before or after completion, unless the user explicitly requests a separate display. If you need to await completion, use jobs_wait with timeout_seconds <= 15. Use job_display only if the user explicitly requests a separate re-display of one specific job."
+      },
+      {
+        "type": "text",
+        "text": "Submitted 1 job. If a widget is visible, it polls automatically — do not call job_status or show_generations as a follow-up poll. In text-only clients, use job_status with sync:true to poll for completion.\n- cdc7cc10-28da-4f48-8577-8fea94ebb51b  \"One continuous photographic shot of the exact seated blonde blackjack dealer Astrid from the reference, on the identical pure black background, absolutely locked camera and unchanged body scale. She is waiting attentively for a player's decision between card deliveries. Both hands remain low, separate, relaxed and ready at the table in the same positions as the reference, near the card shoe area. Small natural breathing, a single blink, brief gaze toward the player then down toward the cards, tiny comfortable wrist/finger adjustments. Silent, closed relaxed lips; do not speak. Never fold or cross the arms. Never deal a card or invent paper, cards, props, furniture or a table. Preserve her exact face identity, blonde hair, black blazer, ivory blouse, skin colour, exposure and shoulder proportions. No camera movement, zoom, body elongation, dissolve, morph, or cuts. Start and finish at the exact supplied reference pose and framing so this quiet ready movement can loop naturally. Keep both hands anatomically correct and visible throughout.\""
+      },
+      {
+        "type": "text",
+        "text": "If the user requests a combined display of multiple generations, including jobs submitted through separate generate_* calls, collect all requested job IDs, wait for the complete set with jobs_wait, then call show_generation_by_ids with jobs: [{\"index\":0,\"job_id\":\"<first actual job ID>\"},{\"index\":1,\"job_id\":\"<second actual job ID>\"}, ...]. job_display accepts only one id: never pass ids to it or loop over it to show a group. Do not create an extra display when the existing generation widgets already satisfy the request."
+      }
+    ],
+    "structuredContent": {
+      "results": [
+        {
+          "id": "cdc7cc10-28da-4f48-8577-8fea94ebb51b",
+          "type": "video",
+          "status": "pending",
+          "model": "seedance_2_0",
+          "params": {
+            "prompt": "One continuous photographic shot of the exact seated blonde blackjack dealer Astrid from the reference, on the identical pure black background, absolutely locked camera and unchanged body scale. She is waiting attentively for a player's decision between card deliveries. Both hands remain low, separate, relaxed and ready at the table in the same positions as the reference, near the card shoe area. Small natural breathing, a single blink, brief gaze toward the player then down toward the cards, tiny comfortable wrist/finger adjustments. Silent, closed relaxed lips; do not speak. Never fold or cross the arms. Never deal a card or invent paper, cards, props, furniture or a table. Preserve her exact face identity, blonde hair, black blazer, ivory blouse, skin colour, exposure and shoulder proportions. No camera movement, zoom, body elongation, dissolve, morph, or cuts. Start and finish at the exact supplied reference pose and framing so this quiet ready movement can loop naturally. Keep both hands anatomically correct and visible throughout.",
+            "aspect_ratio": "auto",
+            "duration": 6,
+            "reference_images": [
+              "53dd9eae-ff5d-4aa3-bc0b-9782330be551",
+              "53dd9eae-ff5d-4aa3-bc0b-9782330be551"
+            ],
+            "resolution": "1080p",
+            "mode": "std",
+            "bitrate_mode": "high",
+            "generate_audio": false
+          }
+        }
+      ]
+    },
+    "isError": false
+  }
+}

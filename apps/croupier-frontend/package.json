@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "npm test && next build",
+    "build": "npm test && node tools/prepare-platform-ui.mjs && next build",
     "test": "node --test test/*.mjs",
     "dev": "next dev",
     "lint": "eslint .",

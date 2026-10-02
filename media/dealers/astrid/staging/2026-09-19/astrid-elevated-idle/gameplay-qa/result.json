@@ -1,0 +1,54 @@
+{
+  "date": "2026-09-19",
+  "url": "http://astridplaneqa.localhost:4190/?dealer=astrid&table=blender",
+  "sourceJob": "87fc5852-f3a5-4046-a93f-f1ac21e35b0d",
+  "result": "Integrated review of elevated waiting loop and felt card placement; user visual acceptance pending",
+  "nativeMaskFramesReviewed": 145,
+  "idleCyclesObserved": [
+    5,
+    11,
+    18,
+    33
+  ],
+  "actionIdleRegistrationPx": {
+    "x": 456.140625,
+    "y": 43.796875,
+    "width": 441.2421875,
+    "height": 349.3125
+  },
+  "idleHiddenDuringAction": true,
+  "idleResumedAfterAction": true,
+  "round": {
+    "startingBalance": 1000,
+    "openingStake": 35,
+    "splitStake": 5,
+    "totalStake": 40,
+    "return": 17.5,
+    "endingBalance": 977.5,
+    "shoeBefore": 415,
+    "shoeAfterOpening": 399,
+    "shoeAfterRound": 396,
+    "dealerUpcard": "Q diamonds",
+    "allSevenPlayerBoxes": true,
+    "splitBox": 6,
+    "splitPair": [
+      "2 hearts",
+      "2 clubs"
+    ],
+    "splitDraws": [
+      "5 diamonds",
+      "J hearts"
+    ],
+    "hit": "8 spades on split hand, total20",
+    "refreshPreservedHand": true,
+    "settled": true
+  },
+  "consoleWarningsAndErrors": [],
+  "limits": [
+    "First-upcard source starts with a reach already in progress; idle-to-pickup cut still exists.",
+    "New idle head glance is wider than requested five degrees but face, framing, torso and hands remain coherent.",
+    "Green raw card appears during generated idle; actor-only matte removes all prop/background pixels. No generated card enters the game.",
+    "No new player-seat motion or speech.",
+    "Original lower34degree runtime table fit retained; new footage uses approved elevated source reference."
+  ]
+}

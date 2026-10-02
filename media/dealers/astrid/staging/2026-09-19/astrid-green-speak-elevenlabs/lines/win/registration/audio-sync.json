@@ -1,0 +1,13 @@
+{
+ "line": "win",
+ "takeSamples": 155648,
+ "lineSamples": 155232,
+ "sampleRate": 44100,
+ "lagSamples": 0,
+ "lagSeconds": 0.0,
+ "normalisedPeak": 1.0,
+ "takeOnsetSec": 0.04673469387755102,
+ "lineOnsetSec": 0.04673469387755102,
+ "takeDurationSec": 3.5294331065759637,
+ "lineDurationSec": 3.52
+}

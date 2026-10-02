@@ -1,0 +1,42 @@
+{
+  "status": "staged-not-integrated",
+  "sourceFrames": 97,
+  "frames": 241,
+  "fps": 60,
+  "sourceFps": 24,
+  "interpolation": "DIS bidirectional optical flow",
+  "camera": {
+    "width": 1920,
+    "height": 1080
+  },
+  "crop": [
+    570,
+    0,
+    1500,
+    675
+  ],
+  "sha256": "65f873104724f89feeafa9759b2e1bcdfeebbe408f5b94d794975bd3024a9186",
+  "missingBridges": [
+    21,
+    34,
+    "speech-idle"
+  ],
+  "limitation": "Interpolation does not add source detail or prove loop seams. Requires rendered handoff review.",
+  "rejectedBridges": [
+    3,
+    47
+  ],
+  "notSubmittedBridges": [
+    21,
+    34,
+    "speech-idle"
+  ],
+  "browserReview": {
+    "url": "http://127.0.0.1:4219/preview.html",
+    "result": "Video playing and looping on neutral matte inspection background; empty hands and silhouette visible. Not a full game round or seam acceptance."
+  },
+  "checks": [
+    "Deep dealer media audit passed",
+    "Full pre-commit suite passed"
+  ]
+}

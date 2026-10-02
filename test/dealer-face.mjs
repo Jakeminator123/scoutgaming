@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-const faceFolder=process.env.ASTRID_FACE_FIXTURE_ROOT?pathToFileURL(path.resolve(process.env.ASTRID_FACE_FIXTURE_ROOT)+path.sep):new URL('../web/public/dealers/astrid/rig/face-study/',import.meta.url);
+const faceFolder=process.env.ASTRID_FACE_FIXTURE_ROOT?pathToFileURL(path.resolve(process.env.ASTRID_FACE_FIXTURE_ROOT)+path.sep):new URL('../media/dealers/astrid/runtime/indexed/rig/face-study/',import.meta.url);
 import {prepareFacialPerformance,controlDealerFace,mapFacialWeights,verifyFacialSource} from '../web/public/dealer-face.mjs';
 const data={schemaVersion:1,duration:1,frames:[{time:0,weights:{jawOpen:0}},{time:.1,weights:{jawOpen:1}},{time:.2,weights:{jawOpen:0}}]};
 test('source-clock sampling supports seek, reverse scrub and playback-rate changes without state drift',()=>{
@@ -16,8 +16,8 @@ test('reset clears the face after interrupted speech and clamps invalid controls
  const face={morphTargetDictionary:{jawOpen:0,eyeBlinkLeft:1},morphTargetInfluences:[.9,1]};const controller=controlDealerFace({traverse:f=>f(face)});controller.apply({jawOpen:5,eyeBlinkLeft:NaN});assert.deepEqual(face.morphTargetInfluences,[1,0]);controller.reset();assert.deepEqual(face.morphTargetInfluences,[0,0]);assert.equal(mapFacialWeights({mouthSmileLeft:.2,mouthSmileRight:.6}).mouthSmile,.4);
 });
 test('measured performance is rejected when the source video bytes change',async()=>{
- const source=JSON.parse(fs.readFileSync(new URL('../web/public/dealers/astrid/rig/face-study/goodluck-face.json',import.meta.url)));
- const bytes=fs.readFileSync(new URL('../web/public/dealers/astrid/speech/goodluck.mp4',import.meta.url));
+ const source=JSON.parse(fs.readFileSync(new URL('../media/dealers/astrid/runtime/indexed/rig/face-study/goodluck-face.json',import.meta.url)));
+ const bytes=fs.readFileSync(new URL('../media/dealers/astrid/runtime/indexed/speech/goodluck.mp4',import.meta.url));
  assert.equal(await verifyFacialSource(source,bytes),source.sha256);
  await assert.rejects(verifyFacialSource(source,Buffer.concat([bytes,Buffer.from([0])])),/does not match/);
 });

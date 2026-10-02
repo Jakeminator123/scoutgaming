@@ -1,0 +1,12 @@
+{
+ "takeSamples": 204800,
+ "greetingSamples": 204624,
+ "sampleRate": 44100,
+ "lagSamples": 0,
+ "lagSeconds": 0.0,
+ "normalisedPeak": 1.0,
+ "takeOnsetSec": 0.09045351473922902,
+ "greetingOnsetSec": 0.09047619047619047,
+ "takeDurationSec": 4.6439909297052155,
+ "greetingDurationSec": 4.64
+}

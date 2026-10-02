@@ -1,0 +1,38 @@
+{
+  "date": "2026-09-19",
+  "scope": "Green take 6a378270 installed as the FIRST card of box 5 (second seat from the viewer's right) on the Blender table, beside the retained de1f90a9 dealer upcard",
+  "qaUrl": "http://astridboxright.localhost:4190/?dealer=astrid&table=blender",
+  "isolatedDemo": true,
+  "generationJobs": 0,
+  "productionDeployment": false,
+  "installedTakes": ["astrid-table-v2-first-upcard-de1f90a9", "astrid-table-v2-first-card-box5-6a378270"],
+  "takeSelection": "action + box: deal-dealer for the first face-up dealer card; box 5, first card, not split, face up for the box take; every other card keeps the ordinary 3D shoe path",
+  "finalRound": {
+    "viewport": [1200, 730],
+    "bets": "box 5 $5, box 2 $5",
+    "balance": "970 -> 960 (stakes) -> 965 (box 2 18 won, box 5 bust)",
+    "opening": {"box5": ["7S green take, landed at DOM rect [744.2,373.1,37.3,34.1] = filmed quad", "KC fanned slot 1 at [756.8,374.3]"], "box2": ["10D", "8S"], "dealer": ["8D green upcard", "hole"]},
+    "sequencing": "box-5 take frames 0-96 first, box 2 cards by the 3D shoe path, dealer upcard take frames 0-96, hole card; no overlap of the two actor clips",
+    "refreshMidRound": "identical box-5 card rects after reload; hand, totals and balance restored from the server",
+    "hit": "box 5 +10C = 27 bust, third card fanned at slot 2 from the filmed quad",
+    "settled": "returned to PLEASE PLACE BETS, all cards cleared, both replay buttons disabled",
+    "shoe": "391 -> 385 (opening) -> 384 (hit); HUD and rendered pack agree",
+    "consoleErrorsOrWarnings": 0
+  },
+  "earlierRounds": [
+    "box-6 install (superseded): round 1 dealer natural, round 2 dealer natural A-Q, both settled cleanly; evidence in box6-evidence/",
+    "box-5 with the non-rigid track: 9C landed at [730.1,336.8] at 1200x674, 5D fanned, hit 3S, settled 975",
+    "box-5 open round left by a failed script: pair of sixes stood, settled 970"
+  ],
+  "screenshots": ["final-01-bets", "final-02-pickup (frame 12)", "final-03-carry (frame 29)", "final-04-mid-slide (frame 46)", "final-05-release (frame 62)", "final-06-landed (frame 79)", "final-07-return (frame 95)", "final-08-dealer-turn", "final-09-dealer-landed", "final-10-opening-complete", "final-11-decisions", "final-12-after-refresh", "final-13-after-hit", "final-14-settled", "final-15-back-to-bets"],
+  "checks": {"dealerSyncProbe": "PASS (dealer-sync.txt)", "preCommit": "exit 0 (pre-commit.txt)", "focusedTests": "9 pass (focused-tests.txt): pipeline/test-astrid-green-box-right.mjs + pipeline/test-astrid-green-first-card.mjs"},
+  "visualCaveats": [
+    "The box-5 fan sits where the hand left the card, which is right of and below the box-5 betting marker and partly over its chip; later cards fan from there.",
+    "Hard cut from the green idle to the box take's frame 0 (hands at rest) and from the box take's rest frame 96 into the dealer take's frame 0 (hand already at the shoe).",
+    "Replacement card is drawn at a fixed size from frame 9: during the carry (9-22) it is about 1.2-1.5x wider than the filmed card, and frames 23-30 use an interpolated pose.",
+    "Frames 9-11 draw the replacement over the shoe mouth; frames 0-8 show the shoe pack only, while the filmed hand already holds the (keyed-out) card.",
+    "Native edge spill and slight blur remain on the gripping fingers; one green speck at the left shoulder in native 33.",
+    "A split of box 5 re-renders through the ordinary felt layout and loses the filmed registration.",
+    "Not visual acceptance: Kevin reviews."
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "status": "source-specific static hardware mask PROPOSAL, not game3D calibration or accepted extraction fit",
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "coordinateFrame": "original contact-proof/source.mp4 native pixels xright ydown",
+  "mask": "allowed-card.png",
+  "encoding": "8bit grayscale255 allows card,0 static housing occludes; load NoColorSpace,flipY=false when shader uses source-top-left UV",
+  "sourceSHA256": "fdc1edca5671b88ccee6906746614c15b1e2b26bdabc83342b8505e0c97272c9",
+  "maskSHA256": "4de640ee7721fc2aeedabddbef9e8a763e8492bd241bb361f48b1ff8f75f4d76",
+  "polygons": {
+    "black_front_fascia_above_outlet": [
+      [
+        1210,
+        590
+      ],
+      [
+        1263,
+        617
+      ],
+      [
+        1263,
+        637
+      ],
+      [
+        1210,
+        613
+      ]
+    ],
+    "stack_top_and_right_face": [
+      [
+        1210,
+        588
+      ],
+      [
+        1296,
+        492
+      ],
+      [
+        1353,
+        522
+      ],
+      [
+        1353,
+        568
+      ],
+      [
+        1264,
+        644
+      ],
+      [
+        1264,
+        617
+      ]
+    ],
+    "left_rail": [
+      [
+        1186,
+        608
+      ],
+      [
+        1288,
+        479
+      ],
+      [
+        1294,
+        481
+      ],
+      [
+        1294,
+        492
+      ],
+      [
+        1194,
+        615
+      ],
+      [
+        1194,
+        635
+      ],
+      [
+        1186,
+        632
+      ]
+    ],
+    "right_sidewall": [
+      [
+        1264,
+        618
+      ],
+      [
+        1355,
+        522
+      ],
+      [
+        1362,
+        521
+      ],
+      [
+        1362,
+        568
+      ],
+      [
+        1259,
+        669
+      ],
+      [
+        1256,
+        666
+      ],
+      [
+        1257,
+        644
+      ]
+    ]
+  },
+  "suggestedGate": "Source38-48 extraction only;49 fully out, disable. Gate must be reviewed with final trajectory.",
+  "uncertainty": "Manual source0 housing edges +/-2nativepx; left mouth shadow ambiguous. Thin lower outlet seam and tray interior explicitly open; black logo-bearing fascia above it is opaque housing. Tray front lip is below the observed extractedpaper, excluded from foreground mask rather than incorrectly cutting it.",
+  "proofRows": [
+    {
+      "sourceNative": 38,
+      "fullProxyPixels": 4472,
+      "allowedProxyPixels": 116
+    },
+    {
+      "sourceNative": 45,
+      "fullProxyPixels": 4472,
+      "allowedProxyPixels": 1821
+    },
+    {
+      "sourceNative": 49,
+      "fullProxyPixels": 4468,
+      "allowedProxyPixels": 4429
+    }
+  ]
+}

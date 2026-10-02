@@ -1,0 +1,21 @@
+{
+  "crop": [
+    560,
+    0,
+    960,
+    800
+  ],
+  "sourceSha256": "38dad95f8ad60819bbb2604f85b4ce424d4db425324bdbd0aceca91eb759215a",
+  "actorPackedSha256": "0a7beface3055fbe01523b9c6f3a88aedcae8eaf55279abe6e06b7a8eb3a9fab",
+  "frameCount": 97,
+  "fps": "24/1",
+  "actorUnionBounds": [
+    658,
+    24,
+    1305,
+    736
+  ],
+  "rgbPolicy": "Source RGB unchanged before encoding",
+  "maskPolicy": "Approved green key + person semantic matte; blue hull/border removed except skin; grayscale alpha also supplies foreground fingers",
+  "status": "User-requested live experiment, not visual acceptance"
+}

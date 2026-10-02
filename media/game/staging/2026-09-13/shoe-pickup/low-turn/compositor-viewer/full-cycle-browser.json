@@ -1,0 +1,508 @@
+{
+  "candidateStatus": "unapproved-independent-surface-review",
+  "videoSha256": "e4a6797eea9c8586bfc8d3f15668f6b6881b2956cccdca6d643cfc23e762d3a5",
+  "lastPaintedFrame": 88,
+  "expectedFinalFrame": 88,
+  "quality": {},
+  "frames": [
+    {
+      "frame": 5,
+      "mediaTime": 0.083333,
+      "expectedDisplayTime": 6608,
+      "callbackTime": 6624.1
+    },
+    {
+      "frame": 6,
+      "mediaTime": 0.1,
+      "expectedDisplayTime": 6657.2,
+      "callbackTime": 6640.6
+    },
+    {
+      "frame": 7,
+      "mediaTime": 0.116667,
+      "expectedDisplayTime": 6674.7,
+      "callbackTime": 6658.1
+    },
+    {
+      "frame": 8,
+      "mediaTime": 0.133333,
+      "expectedDisplayTime": 6690.5,
+      "callbackTime": 6673.8
+    },
+    {
+      "frame": 9,
+      "mediaTime": 0.15,
+      "expectedDisplayTime": 6707.5,
+      "callbackTime": 6690.9
+    },
+    {
+      "frame": 10,
+      "mediaTime": 0.166667,
+      "expectedDisplayTime": 6724.1,
+      "callbackTime": 6707.4
+    },
+    {
+      "frame": 11,
+      "mediaTime": 0.183333,
+      "expectedDisplayTime": 6741,
+      "callbackTime": 6724.3
+    },
+    {
+      "frame": 12,
+      "mediaTime": 0.2,
+      "expectedDisplayTime": 6757.3,
+      "callbackTime": 6740.6
+    },
+    {
+      "frame": 13,
+      "mediaTime": 0.216667,
+      "expectedDisplayTime": 6774.2,
+      "callbackTime": 6757.5
+    },
+    {
+      "frame": 14,
+      "mediaTime": 0.233333,
+      "expectedDisplayTime": 6791.5,
+      "callbackTime": 6774.8
+    },
+    {
+      "frame": 15,
+      "mediaTime": 0.25,
+      "expectedDisplayTime": 6807.8,
+      "callbackTime": 6791.2
+    },
+    {
+      "frame": 16,
+      "mediaTime": 0.266667,
+      "expectedDisplayTime": 6824.6,
+      "callbackTime": 6807.9
+    },
+    {
+      "frame": 17,
+      "mediaTime": 0.283333,
+      "expectedDisplayTime": 6840.9,
+      "callbackTime": 6824.2
+    },
+    {
+      "frame": 18,
+      "mediaTime": 0.3,
+      "expectedDisplayTime": 6857.2,
+      "callbackTime": 6840.5
+    },
+    {
+      "frame": 19,
+      "mediaTime": 0.316667,
+      "expectedDisplayTime": 6874.2,
+      "callbackTime": 6857.5
+    },
+    {
+      "frame": 20,
+      "mediaTime": 0.333333,
+      "expectedDisplayTime": 6890.6,
+      "callbackTime": 6873.9
+    },
+    {
+      "frame": 21,
+      "mediaTime": 0.35,
+      "expectedDisplayTime": 6907.2,
+      "callbackTime": 6890.6
+    },
+    {
+      "frame": 22,
+      "mediaTime": 0.366667,
+      "expectedDisplayTime": 6924,
+      "callbackTime": 6907.3
+    },
+    {
+      "frame": 23,
+      "mediaTime": 0.383333,
+      "expectedDisplayTime": 6940.5,
+      "callbackTime": 6923.8
+    },
+    {
+      "frame": 24,
+      "mediaTime": 0.4,
+      "expectedDisplayTime": 6957.3,
+      "callbackTime": 6940.6
+    },
+    {
+      "frame": 25,
+      "mediaTime": 0.416667,
+      "expectedDisplayTime": 6974.3,
+      "callbackTime": 6957.5
+    },
+    {
+      "frame": 26,
+      "mediaTime": 0.433333,
+      "expectedDisplayTime": 6991.5,
+      "callbackTime": 6974.8
+    },
+    {
+      "frame": 27,
+      "mediaTime": 0.45,
+      "expectedDisplayTime": 7007.6,
+      "callbackTime": 6990.9
+    },
+    {
+      "frame": 28,
+      "mediaTime": 0.466667,
+      "expectedDisplayTime": 7024.8,
+      "callbackTime": 7008.2
+    },
+    {
+      "frame": 29,
+      "mediaTime": 0.483333,
+      "expectedDisplayTime": 7041.5,
+      "callbackTime": 7024.8
+    },
+    {
+      "frame": 30,
+      "mediaTime": 0.5,
+      "expectedDisplayTime": 7058.2,
+      "callbackTime": 7041.5
+    },
+    {
+      "frame": 31,
+      "mediaTime": 0.516667,
+      "expectedDisplayTime": 7074.2,
+      "callbackTime": 7057.5
+    },
+    {
+      "frame": 32,
+      "mediaTime": 0.533333,
+      "expectedDisplayTime": 7090.8,
+      "callbackTime": 7074.2
+    },
+    {
+      "frame": 33,
+      "mediaTime": 0.55,
+      "expectedDisplayTime": 7107.3,
+      "callbackTime": 7090.7
+    },
+    {
+      "frame": 34,
+      "mediaTime": 0.566667,
+      "expectedDisplayTime": 7124.8,
+      "callbackTime": 7108.2
+    },
+    {
+      "frame": 35,
+      "mediaTime": 0.583333,
+      "expectedDisplayTime": 7141.5,
+      "callbackTime": 7124.8
+    },
+    {
+      "frame": 36,
+      "mediaTime": 0.6,
+      "expectedDisplayTime": 7158.2,
+      "callbackTime": 7141.5
+    },
+    {
+      "frame": 37,
+      "mediaTime": 0.616667,
+      "expectedDisplayTime": 7173.9,
+      "callbackTime": 7157.2
+    },
+    {
+      "frame": 38,
+      "mediaTime": 0.633333,
+      "expectedDisplayTime": 7190.7,
+      "callbackTime": 7174.1
+    },
+    {
+      "frame": 39,
+      "mediaTime": 0.65,
+      "expectedDisplayTime": 7207.2,
+      "callbackTime": 7190.5
+    },
+    {
+      "frame": 40,
+      "mediaTime": 0.666667,
+      "expectedDisplayTime": 7224.6,
+      "callbackTime": 7208
+    },
+    {
+      "frame": 41,
+      "mediaTime": 0.683333,
+      "expectedDisplayTime": 7241.6,
+      "callbackTime": 7224.8
+    },
+    {
+      "frame": 42,
+      "mediaTime": 0.7,
+      "expectedDisplayTime": 7258.1,
+      "callbackTime": 7241.6
+    },
+    {
+      "frame": 43,
+      "mediaTime": 0.716667,
+      "expectedDisplayTime": 7274,
+      "callbackTime": 7257.3
+    },
+    {
+      "frame": 44,
+      "mediaTime": 0.733333,
+      "expectedDisplayTime": 7290.6,
+      "callbackTime": 7274
+    },
+    {
+      "frame": 45,
+      "mediaTime": 0.75,
+      "expectedDisplayTime": 7307.7,
+      "callbackTime": 7291.1
+    },
+    {
+      "frame": 46,
+      "mediaTime": 0.766667,
+      "expectedDisplayTime": 7323.9,
+      "callbackTime": 7307.3
+    },
+    {
+      "frame": 47,
+      "mediaTime": 0.783333,
+      "expectedDisplayTime": 7340.6,
+      "callbackTime": 7323.9
+    },
+    {
+      "frame": 48,
+      "mediaTime": 0.8,
+      "expectedDisplayTime": 7358.2,
+      "callbackTime": 7341.5
+    },
+    {
+      "frame": 49,
+      "mediaTime": 0.816667,
+      "expectedDisplayTime": 7374.3,
+      "callbackTime": 7357.6
+    },
+    {
+      "frame": 50,
+      "mediaTime": 0.833333,
+      "expectedDisplayTime": 7390.5,
+      "callbackTime": 7373.9
+    },
+    {
+      "frame": 51,
+      "mediaTime": 0.85,
+      "expectedDisplayTime": 7408.2,
+      "callbackTime": 7391.5
+    },
+    {
+      "frame": 52,
+      "mediaTime": 0.866667,
+      "expectedDisplayTime": 7424.8,
+      "callbackTime": 7408.2
+    },
+    {
+      "frame": 53,
+      "mediaTime": 0.883333,
+      "expectedDisplayTime": 7441.6,
+      "callbackTime": 7424.9
+    },
+    {
+      "frame": 54,
+      "mediaTime": 0.9,
+      "expectedDisplayTime": 7458.2,
+      "callbackTime": 7441.5
+    },
+    {
+      "frame": 55,
+      "mediaTime": 0.916667,
+      "expectedDisplayTime": 7474.9,
+      "callbackTime": 7458.1
+    },
+    {
+      "frame": 56,
+      "mediaTime": 0.933333,
+      "expectedDisplayTime": 7490.6,
+      "callbackTime": 7473.9
+    },
+    {
+      "frame": 57,
+      "mediaTime": 0.95,
+      "expectedDisplayTime": 7507.5,
+      "callbackTime": 7490.9
+    },
+    {
+      "frame": 58,
+      "mediaTime": 0.966667,
+      "expectedDisplayTime": 7524.1,
+      "callbackTime": 7507.5
+    },
+    {
+      "frame": 59,
+      "mediaTime": 0.983333,
+      "expectedDisplayTime": 7540.7,
+      "callbackTime": 7524.1
+    },
+    {
+      "frame": 60,
+      "mediaTime": 1,
+      "expectedDisplayTime": 7558.2,
+      "callbackTime": 7541.5
+    },
+    {
+      "frame": 61,
+      "mediaTime": 1.016667,
+      "expectedDisplayTime": 7574.9,
+      "callbackTime": 7558.2
+    },
+    {
+      "frame": 62,
+      "mediaTime": 1.033333,
+      "expectedDisplayTime": 7591.6,
+      "callbackTime": 7574.8
+    },
+    {
+      "frame": 63,
+      "mediaTime": 1.05,
+      "expectedDisplayTime": 7608.1,
+      "callbackTime": 7591.5
+    },
+    {
+      "frame": 64,
+      "mediaTime": 1.066667,
+      "expectedDisplayTime": 7624.9,
+      "callbackTime": 7608.2
+    },
+    {
+      "frame": 65,
+      "mediaTime": 1.083333,
+      "expectedDisplayTime": 7641.5,
+      "callbackTime": 7624.9
+    },
+    {
+      "frame": 66,
+      "mediaTime": 1.1,
+      "expectedDisplayTime": 7658.1,
+      "callbackTime": 7641.5
+    },
+    {
+      "frame": 67,
+      "mediaTime": 1.116667,
+      "expectedDisplayTime": 7674.9,
+      "callbackTime": 7658.2
+    },
+    {
+      "frame": 68,
+      "mediaTime": 1.133333,
+      "expectedDisplayTime": 7691.5,
+      "callbackTime": 7674.9
+    },
+    {
+      "frame": 69,
+      "mediaTime": 1.15,
+      "expectedDisplayTime": 7708.2,
+      "callbackTime": 7691.5
+    },
+    {
+      "frame": 70,
+      "mediaTime": 1.166667,
+      "expectedDisplayTime": 7724.9,
+      "callbackTime": 7708.1
+    },
+    {
+      "frame": 71,
+      "mediaTime": 1.183333,
+      "expectedDisplayTime": 7741.5,
+      "callbackTime": 7724.8
+    },
+    {
+      "frame": 72,
+      "mediaTime": 1.2,
+      "expectedDisplayTime": 7758.2,
+      "callbackTime": 7741.6
+    },
+    {
+      "frame": 74,
+      "mediaTime": 1.233333,
+      "expectedDisplayTime": 7791.5,
+      "callbackTime": 7774.9
+    },
+    {
+      "frame": 75,
+      "mediaTime": 1.25,
+      "expectedDisplayTime": 7808.2,
+      "callbackTime": 7791.5
+    },
+    {
+      "frame": 76,
+      "mediaTime": 1.266667,
+      "expectedDisplayTime": 7824.8,
+      "callbackTime": 7808.2
+    },
+    {
+      "frame": 77,
+      "mediaTime": 1.283333,
+      "expectedDisplayTime": 7841.5,
+      "callbackTime": 7824.9
+    },
+    {
+      "frame": 78,
+      "mediaTime": 1.3,
+      "expectedDisplayTime": 7857.8,
+      "callbackTime": 7841.2
+    },
+    {
+      "frame": 79,
+      "mediaTime": 1.316667,
+      "expectedDisplayTime": 7874.8,
+      "callbackTime": 7858.2
+    },
+    {
+      "frame": 80,
+      "mediaTime": 1.333333,
+      "expectedDisplayTime": 7891.5,
+      "callbackTime": 7874.8
+    },
+    {
+      "frame": 81,
+      "mediaTime": 1.35,
+      "expectedDisplayTime": 7908.2,
+      "callbackTime": 7891.5
+    },
+    {
+      "frame": 82,
+      "mediaTime": 1.366667,
+      "expectedDisplayTime": 7924.9,
+      "callbackTime": 7908.2
+    },
+    {
+      "frame": 83,
+      "mediaTime": 1.383333,
+      "expectedDisplayTime": 7941.5,
+      "callbackTime": 7924.9
+    },
+    {
+      "frame": 84,
+      "mediaTime": 1.4,
+      "expectedDisplayTime": 7958.2,
+      "callbackTime": 7941.5
+    },
+    {
+      "frame": 85,
+      "mediaTime": 1.416667,
+      "expectedDisplayTime": 7974.8,
+      "callbackTime": 7958.2
+    },
+    {
+      "frame": 86,
+      "mediaTime": 1.433333,
+      "expectedDisplayTime": 7991.5,
+      "callbackTime": 7974.8
+    },
+    {
+      "frame": 87,
+      "mediaTime": 1.45,
+      "expectedDisplayTime": 8008.2,
+      "callbackTime": 7991.6
+    },
+    {
+      "frame": 88,
+      "mediaTime": 1.466667,
+      "expectedDisplayTime": 8024.8,
+      "callbackTime": 8008.2
+    }
+  ],
+  "policy": "Review only. Callback coverage is not visual contact or all-seven-seat gameplay acceptance."
+}

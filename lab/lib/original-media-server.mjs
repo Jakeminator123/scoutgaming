@@ -7,6 +7,9 @@ import { assertLocalRequest, jsonResponse } from './http-guard.mjs';
 import { originalMediaId, isOriginalMediaId } from './original-media.mjs';
 import { SPEECH_LINES } from '../../web/public/speech-lines.mjs';
 import { labUrl } from './lab-url.mjs';
+import { resolveMediaPath, resolvePublicMedia, readMediaLayout } from '../../tools/media-layout.mjs';
+import { getPublicMediaBlobResponse, isMediaBlobIndexConfigured, verifiedMediaBlobStorage } from './media-blob-index.mjs';
+import { isCloudMediaConfigured } from './cloud-media-store.mjs';
 
 // Match the lab's existing server path resolution. A directory new URL(...,
 // import.meta.url) would be treated as a webpack asset import by Next.
@@ -16,11 +19,21 @@ const RUNTIME = path.resolve(LAB, 'lib/original-media-runtime.mjs');
 const ROOT = labUrl('/api/original-media');
 const DEALERS = { astrid: 'dealers/astrid', vera: 'dealer', amira: 'dealers/amira', mei: 'dealers/mei' };
 const MODULES = ['dealer-engine.mjs', 'actor-compositor.mjs', 'actor-edge-blend.mjs', 'actor-grade.mjs', 'speech-playback.mjs', 'performance-player.mjs', 'local-film-player.mjs', 'verified-video-buffer.mjs', 'performance-contact.mjs', 'card-art.mjs', 'dealer-reach.mjs', 'scene-join.mjs', 'vendor/three/three.module.js', 'vendor/three/three.core.min.js'];
-const readJson = async relative => JSON.parse(await readFile(path.join(PUBLIC, relative), 'utf8'));
-async function exists(relative) { try { return (await stat(path.join(PUBLIC, relative))).isFile(); } catch { return false; } }
+const mediaFile = relative => resolveMediaPath('web/public/'+relative,{repositoryRoot:path.resolve(LAB,'..')});
+const readJson = async relative => JSON.parse(await readFile(mediaFile(relative), 'utf8'));
+async function exists(relative,options) {
+  try {
+    if(isMediaBlobIndexConfigured(options)){
+      const entry=resolvePublicMedia('/'+relative,{repositoryRoot:options.repositoryRoot??path.resolve(LAB,'..')});
+      if(entry)return Boolean(verifiedMediaBlobStorage(entry.logicalPath,{access:'public'},options)&&isCloudMediaConfigured(options.env??process.env));
+      return false;
+    }
+    return (await stat(mediaFile(relative))).isFile();
+  }catch{return false;}
+}
 function sourceEvent(line) { return ['goodluck', 'insurance', 'double'].includes(line) ? `speak.${line}` : 'speak.other'; }
 
-async function inventory() {
+async function inventory(options={}) {
   const entries = [], definitions = new Map(), files = new Set(MODULES);
   const nativeSpeech = await readJson('speech-media.json');
   for (const [dealerId, base] of Object.entries(DEALERS)) {
@@ -39,8 +52,8 @@ async function inventory() {
       const audioPath = line ? `${base}/audio/en/${line}.mp3` : null;
       const native = line ? nativeSpeech[dealerId]?.[line] : null;
       const nativePath = typeof native?.src === 'string' && native.src.startsWith(`${base}/speech/`) && /^[\w/-]+\.mp4$/.test(native.src) ? native.src : null;
-      const nativeAvailable = nativePath && await exists(nativePath);
-      const sourceAvailable = await exists(sourcePath), audioAvailable = !audioPath || await exists(audioPath);
+      const nativeAvailable = nativePath && await exists(nativePath,options);
+      const sourceAvailable = await exists(sourcePath,options), audioAvailable = !audioPath || await exists(audioPath,options);
       const id = originalMediaId(dealerId, kind, line ?? 'ready');
       const entry = { id, label: `${dealerId[0].toUpperCase()}${dealerId.slice(1)} · ${line ?? 'idle'} · lokalt original`, dealerId,
         eventId: idle ? 'idle.ready' : sourceEvent(line), kind, situation: line ?? '',
@@ -59,7 +72,7 @@ async function inventory() {
     if (!/^dealers\/astrid\/performance\/[\w-]+\.mp4$/.test(take.media?.src)) continue;
     const destination = take.action.slice('deal-'.length), id = originalMediaId('astrid', 'action', destination);
     const entry = { id, label: `Astrid · ${take.action} · grundtagning`, dealerId: 'astrid', eventId: destination === 'dealer' ? 'deal.dealer' : `deal.player.${destination}`,
-      kind: 'action', situation: destination, available: await exists(take.media.src), durationMs: Math.round((take.events.rest + 1) / take.media.fps / (take.playbackRate ?? 1) * 1000),
+      kind: 'action', situation: destination, available: await exists(take.media.src,options), durationMs: Math.round((take.events.rest + 1) / take.media.fps / (take.playbackRate ?? 1) * 1000),
       reviewStatus: 'review', previewUrl: `${ROOT}/player?id=${encodeURIComponent(id)}`, playbackKind: 'packed', sourcePath: take.media.src,
       note: 'Staged-grundfilm under granskning. Originalets mask, kortkontakt och kalibrering; platsretargeting är ännu ofullständig.' };
     files.add(take.media.src); entries.push(entry); definitions.set(id, { ...entry, take });
@@ -67,8 +80,8 @@ async function inventory() {
   return { entries, definitions, files };
 }
 
-export async function loadOriginalMediaCatalog() {
-  const { entries } = await inventory();
+export async function loadOriginalMediaCatalog(options={}) {
+  const { entries } = await inventory(options);
   return { entries, notes: ['Originalförval gäller standardlinjer utan egen videokoppling och matchar alltid exakt replik.', 'Astrids avvisade gamla utdelning används aldrig. Reveal, tur, resultat och saknade filmer behåller 2D.', 'Grundfilmerna visar sina kalibrerade riktningar; individuell handkontakt för varje spelplats är inte färdig.'] };
 }
 
@@ -94,13 +107,13 @@ async function fileResponse(file, request, type) {
   } catch (error) { await handle.close().catch(() => {}); throw error; }
 }
 
-export async function getOriginalMediaResponse(parts, request) {
+export async function getOriginalMediaResponse(parts, request,options={}) {
   assertLocalRequest(request);
   if (parts.length === 1 && parts[0] === 'runtime.mjs') return fileResponse(RUNTIME, request, 'text/javascript; charset=utf-8');
   if (parts.length === 1 && parts[0] === 'player') {
     const id = new URL(request.url).searchParams.get('id');
     if (!isOriginalMediaId(id)) throw new StudioError('Okänt originalklipp.', 404);
-    const { definitions } = await inventory();
+    const { definitions } = await inventory(options);
     if (!definitions.has(id)) throw new StudioError('Okänt originalklipp.', 404);
     const posterPath = `${ROOT}/assets/${DEALERS[definitions.get(id).dealerId]}/poster.jpg`;
     const nonce = randomBytes(18).toString('base64');
@@ -108,7 +121,7 @@ export async function getOriginalMediaResponse(parts, request) {
     const withPoster = html.replace('<canvas id="stream">', `<img id="poster" alt="Dealerns stillbild · uppspelning startar med Spela" src="${posterPath}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain"><canvas id="stream">`);
     return new Response(request.method === 'HEAD' ? null : withPoster, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': `default-src 'none'; script-src 'self' 'nonce-${nonce}'; style-src 'nonce-${nonce}'; style-src-attr 'unsafe-inline'; media-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'`, 'Cross-Origin-Resource-Policy': 'same-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
-  const inventoryData = await inventory();
+  const inventoryData = await inventory(options);
   if (parts.length === 2 && parts[0] === 'definition') {
     const definition = inventoryData.definitions.get(parts[1]);
     if (!definition) throw new StudioError('Okänt originalklipp.', 404);
@@ -117,9 +130,20 @@ export async function getOriginalMediaResponse(parts, request) {
   if (parts[0] !== 'assets') throw new StudioError('Okänd originalresurs.', 404);
   const relative = parts.slice(1).join('/');
   if (!inventoryData.files.has(relative) || parts.some(part => part === '..' || part.includes('\\'))) throw new StudioError('Okänd originalresurs.', 404);
+  const blobResponse=await getPublicMediaBlobResponse('/'+relative,request,{...options,repositoryRoot:options.repositoryRoot??path.resolve(LAB,'..'),trustedProxyOrigin:process.env.LAB_PUBLIC_URL});
+  if(blobResponse)return blobResponse;
+  if(isMediaBlobIndexConfigured(options)){
+    const layout=readMediaLayout(options.repositoryRoot??path.resolve(LAB,'..'));
+    if(layout.files.some(row=>row.legacyPath==='web/public/'+relative)||!MODULES.includes(relative)&&path.extname(relative)!=='.json'){
+      throw new StudioError('Originalfilen saknas i den publika medieallowlisten.',503);
+    }
+  }
   let resolved;
-  try { resolved = await realpath(path.join(PUBLIC, relative)); } catch { throw new StudioError('Originalfil saknas.', 404); }
-  const publicReal = await realpath(PUBLIC), distance = path.relative(publicReal, resolved);
+  const canonicalEntry=resolvePublicMedia('/'+relative,{repositoryRoot:path.resolve(LAB,'..')});
+  const requested=canonicalEntry?.file??path.join(PUBLIC,relative);
+  try { resolved = await realpath(requested); } catch { throw new StudioError('Originalfil saknas.', 404); }
+  if(resolved.toLowerCase()!==path.resolve(requested).toLowerCase())throw new StudioError('Originalfilens länkar tillåts inte.',403);
+  const publicReal = await realpath(canonicalEntry?path.resolve(LAB,'../media'):PUBLIC), distance = path.relative(publicReal, resolved);
   if (distance.startsWith('..') || path.isAbsolute(distance)) throw new StudioError('Originalfilen ligger utanför mediebanken.', 403);
   const types = { '.mjs': 'text/javascript; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.h264': 'application/octet-stream', '.mp4': 'video/mp4', '.mp3': 'audio/mpeg', '.jpg': 'image/jpeg' };
   return fileResponse(resolved, request, types[path.extname(relative)] ?? 'application/octet-stream');

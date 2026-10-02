@@ -1,0 +1,261 @@
+{
+  "frames": 51,
+  "minimumEncodedRepairedAlpha": 253,
+  "framesChecked": [
+    {
+      "frame": 0,
+      "repairedPixels": 4,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 1,
+      "repairedPixels": 3,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 2,
+      "repairedPixels": 4,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 3,
+      "repairedPixels": 4,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 4,
+      "repairedPixels": 26,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 5,
+      "repairedPixels": 11,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 6,
+      "repairedPixels": 24,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 7,
+      "repairedPixels": 3,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 8,
+      "repairedPixels": 26,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 9,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 10,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 11,
+      "repairedPixels": 1,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 12,
+      "repairedPixels": 3,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 13,
+      "repairedPixels": 6,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 14,
+      "repairedPixels": 5,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 15,
+      "repairedPixels": 16,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 16,
+      "repairedPixels": 2,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 17,
+      "repairedPixels": 12,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 18,
+      "repairedPixels": 15,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 19,
+      "repairedPixels": 26,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 20,
+      "repairedPixels": 28,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 21,
+      "repairedPixels": 47,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 22,
+      "repairedPixels": 35,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 23,
+      "repairedPixels": 47,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 24,
+      "repairedPixels": 25,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 25,
+      "repairedPixels": 37,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 26,
+      "repairedPixels": 45,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 27,
+      "repairedPixels": 27,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 28,
+      "repairedPixels": 32,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 29,
+      "repairedPixels": 41,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 30,
+      "repairedPixels": 20,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 31,
+      "repairedPixels": 41,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 32,
+      "repairedPixels": 25,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 33,
+      "repairedPixels": 13,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 34,
+      "repairedPixels": 25,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 35,
+      "repairedPixels": 30,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 36,
+      "repairedPixels": 12,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 37,
+      "repairedPixels": 6,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 38,
+      "repairedPixels": 3,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 39,
+      "repairedPixels": 2,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 40,
+      "repairedPixels": 1,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 41,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 42,
+      "repairedPixels": 4,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 43,
+      "repairedPixels": 2,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 44,
+      "repairedPixels": 2,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 45,
+      "repairedPixels": 2,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 46,
+      "repairedPixels": 3,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 47,
+      "repairedPixels": 3,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 48,
+      "repairedPixels": 4,
+      "minimumEncodedRepairedAlpha": 253
+    },
+    {
+      "frame": 49,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 50,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { buildPreview } from '../preview/build.mjs';
 import { prepareConfig } from '../preview/prepare.mjs';
+import {resolveMediaPath} from '../../../tools/media-layout.mjs';
 
 const origin = 'https://isolated-croupier-preview.example.test';
 const root = new URL('../../../', import.meta.url);
@@ -53,7 +54,7 @@ test('Preview routes are isolated and forward only exact player/API and Astrid m
     && row.headers.some(header => header.key === 'Cache-Control' && header.value === 'private, no-store')));
   assert.ok(!preview.headers.some(row => row.headers.some(header => header.key === 'x-vercel-enable-rewrite-caching')));
   for (const source of sources.filter(source => /\.(?:png|jpg|mp3|webm|json)$/.test(source)
-    && !source.startsWith('/api/'))) await access(new URL(`web/public${source}`, root));
+    && !source.startsWith('/api/'))) await access(resolveMediaPath(`web/public${source}`));
 });
 
 test('Preview builder requires the one isolated backend origin and hides unsupported dealer navigation', async () => {

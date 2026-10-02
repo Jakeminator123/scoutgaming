@@ -1,0 +1,21 @@
+✔ queued rest exit retains the tail before bridge decode and coalesces callers (5.295167ms)
+✔ a request during folding unfolds directly without restarting the idle loop (1.756042ms)
+✔ dispose releases a request waiting for the next loop boundary (0.652875ms)
+(node:11901) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the installed speak manifest is valid and every line's media and recording are the reviewed bytes (30.792209ms)
+✔ every line cuts in at the first frame and out at the last, both ready poses, on the dealer take placement (0.838541ms)
+✔ audio starts on the first presented frame: each offset is the cross-correlation lag of the embedded track (0.367875ms)
+✔ speech joins are bound to the current repaired take and waiting source, without replacing speech frames (8.8955ms)
+✔ the validator rejects broken manifests (0.955292ms)
+✔ the runtime is opt-in for Astrid on the Blender table only and generic over lines (1.90275ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 178.371667

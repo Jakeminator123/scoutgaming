@@ -76,7 +76,7 @@ test('product selection and Lab inventory use the same configured Astrid archive
   const directory = await mkdtemp(join(tmpdir(), 'croupier-shared-archive-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const archiveDir = join(directory, 'archive'), media = Buffer.from('configured-archive-video-fixture');
-  const manifest = JSON.parse(await readFile(new URL('../emil/dealklipp-v1/lab-video-manifest.json', import.meta.url)));
+  const manifest = JSON.parse(await readFile(new URL('../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url)));
   const relativePath = 'deal/deal_pos4/deal_pos4.mp4';
   const entry = manifest.items.find(item => item.relativePath === relativePath);
   assert.ok(entry);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'node:net';
-import { mkdtemp, mkdir, writeFile, symlink, rm, readdir, copyFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, symlink, rm, readdir, copyFile, lstat, realpath, unlink } from 'node:fs/promises';
 import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -76,13 +76,21 @@ test('explicit media directory serves BO and token API with auth, HEAD and byte 
 
 test('default media directory cannot bypass BO auth or catalog checks through Windows route aliases', async () => {
   const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-case-'));
-  const web = join(tmp, 'web'), directory = join(web, 'public/bo/gen');
+  const web = join(tmp, 'web'), mediaRoot=join(tmp,'media'),directory=join(mediaRoot,'site/runtime/backoffice/gen');
   const known = '11111111-2222-3333-4444-555555555555';
   const unknown = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   let fixture;
   try {
-    await mkdir(directory, { recursive: true });
     await copyOpenClawRuntime(tmp);
+    // Detach only the temporary link created by the copy helper. Never write
+    // synthetic files through it or recursively remove its real repo target.
+    assert.equal((await lstat(mediaRoot)).isSymbolicLink(),true);
+    assert.equal(await realpath(mediaRoot),await realpath(fileURLToPath(new URL('../media/',import.meta.url))));
+    await unlink(mediaRoot);
+    await mkdir(directory,{recursive:true});
+    assert.equal((await lstat(mediaRoot)).isSymbolicLink(),false);
+    await writeFile(join(mediaRoot,'layout.json'),JSON.stringify({schemaVersion:1,roots:{'web/public/bo/gen':'media/site/runtime/backoffice/gen'},files:[]}));
+    await mkdir(join(web,'public/bo'),{recursive:true});
     const source = new URL('../web/', import.meta.url);
     for (const file of await readdir(source)) if (file.endsWith('.mjs')) {
       await copyFile(new URL(file, source), join(web, file === 'server.mjs' ? 'server-under-test.mjs' : file));

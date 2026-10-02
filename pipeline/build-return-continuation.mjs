@@ -1,3 +1,4 @@
+import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
 // Build one explicit in-game review candidate. The existing four deliveries
 // and their measurements remain unchanged. Run person-mask.swift on the bridge
 // frames first; the bridge contains no card contact and only uses actor alpha.
@@ -10,7 +11,7 @@ import {packContactMedia} from './pack-contact-media.mjs';
 import {calibrationPayload,validateContactTake,validateContinuation} from '../web/public/performance-contact.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-const staging=path.resolve(process.argv[2]??path.join(root,'content/staging/2026-09-10/return-bridge'));
+const staging=resolveMediaAbsolutePath(path.resolve(process.argv[2]??path.join(root,'media/dealers/astrid/staging/2026-09-10/return-bridge')));
 const contractFile=path.join(staging,'source-contract.json');
 const contract=fs.existsSync(contractFile)?JSON.parse(fs.readFileSync(contractFile)):{
   action:'deal-centre',preserveThrough:124,resumeFrame:55,baseSource:'centre-source.mp4',
@@ -25,21 +26,21 @@ const start=contract.bridgeStartFrame??1;
 if(!Number.isInteger(start)||start<1||!Number.isInteger(end)||end<=start||end>97)throw new Error('Invalid reviewed bridge interval');
 const bridgeFrames=end-start;
 const publicRoot=path.join(root,'web/public'),prefix='dealers/astrid/performance';
-const manifestFile=path.join(publicRoot,prefix,'manifest.json');
+const manifestFile=resolveMediaAbsolutePath(path.join(publicRoot,prefix,'manifest.json'));
 const manifest=JSON.parse(fs.readFileSync(manifestFile));
 const base=manifest.takes.find(t=>t.action===contract.action);
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 if(!base||base.media.sha256!==contract.baseMediaSha256)throw new Error('Delivery source changed; review new anchors');
 for(const [file,expectedHash] of [
-  [path.join(publicRoot,base.media.src),base.media.sha256],
-  [path.join(publicRoot,prefix,contract.baseSource),contract.baseSourceSha256],
+  [resolveMediaAbsolutePath(path.join(publicRoot,base.media.src)),base.media.sha256],
+  [resolveMediaAbsolutePath(path.join(publicRoot,prefix,contract.baseSource)),contract.baseSourceSha256],
   [path.join(staging,'source.mp4'),contract.bridgeSourceSha256],
 ])if(sha(fs.readFileSync(file))!==expectedHash)throw new Error('Source bytes changed; review new anchors: '+file);
 const {preserveThrough,resumeFrame}=contract;
 if(!Number.isInteger(preserveThrough)||preserveThrough<base.events.land||preserveThrough>=base.media.frames||!Number.isInteger(resumeFrame)||resumeFrame<0||resumeFrame>=base.events.pickup)throw new Error('Return must follow landing and resume before pickup');
 const masks=path.join(staging,'continuation-masks');fs.mkdirSync(masks,{recursive:true});
 const ffmpeg=args=>execFileSync('ffmpeg',['-y','-hide_banner','-loglevel','error',...args]);
-ffmpeg(['-i',path.join(publicRoot,base.media.src),'-vf',`crop=iw:ih/2:0:ih/2,trim=end_frame=${preserveThrough+1}`,'-fps_mode','vfr',path.join(masks,'%04d.png')]);
+ffmpeg(['-i',resolveMediaAbsolutePath(path.join(publicRoot,base.media.src)),'-vf',`crop=iw:ih/2:0:ih/2,trim=end_frame=${preserveThrough+1}`,'-fps_mode','vfr',path.join(masks,'%04d.png')]);
 // A separate temporary prefix avoids including stale frames from an older trim.
 const bridgeMasks=path.join(staging,'bridge-masks');fs.mkdirSync(bridgeMasks,{recursive:true});
 ffmpeg(['-framerate','24','-i',path.join(staging,'person/%04d.png'),'-vf',`trim=start_frame=${start}:end_frame=${end},format=rgb24,lutrgb=g=0:b=0`,'-fps_mode','vfr',path.join(bridgeMasks,'%04d.png')]);
@@ -48,8 +49,8 @@ const expected=preserveThrough+1+bridgeFrames;
 // Remove only surplus output PNGs created by this builder, never source masks.
 for(const f of fs.readdirSync(masks))if(/^\d{4}\.png$/.test(f)&&Number(f.slice(0,4))>expected)fs.unlinkSync(path.join(masks,f));
 const sourceOutput=path.join(staging,`${name}-return-source.mp4`);
-const packedOutput=path.join(publicRoot,prefix,`${name}-return-review.mp4`);
-const segments=[{file:path.join(publicRoot,prefix,contract.baseSource),start:0,end:preserveThrough+1},{file:path.join(staging,'source.mp4'),start,end}];
+const packedOutput=resolveMediaAbsolutePath(path.join(publicRoot,prefix,`${name}-return-review.mp4`));
+const segments=[{file:resolveMediaAbsolutePath(path.join(publicRoot,prefix,contract.baseSource)),start:0,end:preserveThrough+1},{file:path.join(staging,'source.mp4'),start,end}];
 const media=packContactMedia({segments,masks,sourceOutput,packedOutput});
 const take=structuredClone(base);
 take.id=`astrid-${name}-return-review-20260910`;take.status='review';

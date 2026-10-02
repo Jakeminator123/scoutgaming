@@ -27,6 +27,7 @@ jobs:
           cache-dependency-path: lab/package-lock.json
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: npm --prefix lab ci
+      - run: npm --prefix web ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
       - run: npm --prefix lab test
       - run: npm --prefix lab run build
@@ -45,6 +46,7 @@ jobs:
           cache-dependency-path: lab/package-lock.json
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg jq
       - run: npm --prefix lab ci
+      - run: npm --prefix web ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
       - name: Build the real studio used by launcher regression tests
         run: npm --prefix lab run build

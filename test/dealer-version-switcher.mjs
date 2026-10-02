@@ -68,7 +68,7 @@ test('shared rehearsal describes its own playback path without consulting the le
   const update=rehearsalSource.match(/const update = \(\) => \{[\s\S]*?\n  \};/)?.[0];
   assert.ok(update);
   const status={textContent:''};
-  vm.runInNewContext(`${update}; update();`,{localPresentationEnabled:true,lineSelect:{value:'goodluck'},bank:{goodluck:{text:'Good luck.'}},LINES:{},status});
+  vm.runInNewContext(`${update}; update();`,{rehearsalInitialized:true,localPresentationEnabled:true,lineSelect:{value:'goodluck'},bank:{goodluck:{text:'Good luck.'}},LINES:{},status});
   assert.match(status.textContent,/Good luck.*shared Studio presentation/);
   assert.doesNotMatch(status.textContent,/matching clip missing|voice only/);
 });
@@ -93,11 +93,34 @@ test('shared rehearsal counts two completed clips and never counts a failed seco
   for(const failSecond of [false,true]){
     const controls=[{disabled:false},{disabled:false}],messages=[];let calls=0;
     const status={set textContent(value){messages.push(value);}};
-    await vm.runInNewContext(`${review}; review(2);`,{localPresentationEnabled:true,lineSelect:{value:'goodluck'},panel:{querySelectorAll:()=>controls},status,speaking:false,update(){},
+    await vm.runInNewContext(`${review}; review(2);`,{rehearsalInitialized:true,localPresentationEnabled:true,lineSelect:{value:'goodluck'},panel:{querySelectorAll:()=>controls},status,speaking:false,update(){},
       async play(){calls++;if(failSecond&&calls===2)throw new Error('interrupted');return true;}});
     assert.equal(calls,2);assert.ok(controls.every(control=>control.disabled===false));
     assert.ok(messages.some(message=>message.startsWith('1/2 completed')));
     if(failSecond){assert.match(messages.at(-1),/Playback failed: interrupted/);assert.ok(messages.every(message=>!message.startsWith('2/2 completed')));}
     else assert.match(messages.at(-1),/^2\/2 completed/);
+  }
+});
+
+test('rehearsal cannot start before server-owned table initialization and stays disabled on failure',async()=>{
+  const review=rehearsalSource.match(/const review = async count => \{[\s\S]*?\n  \};/)?.[0];
+  const settle=rehearsalSource.match(/settleRehearsalInitialization = failed => \{[\s\S]*?\n  \};/)?.[0];
+  const bind=appSource.match(/tableReady\.then\(\(\) => settleRehearsalInitialization\?\.\(false\), \(\) => settleRehearsalInitialization\?\.\(true\)\);/)?.[0];
+  assert.ok(review&&settle&&bind);
+  for(const failed of [false,true]){
+    const controls=[{disabled:true},{disabled:true}];let plays=0,finish,fail;
+    const tableReady=new Promise((resolve,reject)=>{finish=resolve;fail=reject;});
+    const context=vm.createContext({rehearsalInitialized:false,settleRehearsalInitialization:null,initialControls:controls,tableReady,
+      localPresentationEnabled:true,lineSelect:{value:'goodluck'},panel:{querySelectorAll:()=>controls},status:{textContent:''},speaking:false,
+      update(){},async play(){plays++;return true;}});
+    vm.runInContext(`${review}; ${settle}; ${bind};`,context);
+    await vm.runInContext('review(2)',context);
+    assert.equal(plays,0);assert.ok(controls.every(control=>control.disabled));
+    if(failed)fail(new Error('table init failed'));else finish();
+    await tableReady.catch(()=>{});await Promise.resolve();
+    await vm.runInContext('review(2)',context);
+    assert.equal(plays,failed?0:2);
+    assert.ok(controls.every(control=>control.disabled===failed));
+    if(failed)assert.match(context.status.textContent,/table could not start/);
   }
 });

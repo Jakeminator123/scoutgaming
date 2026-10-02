@@ -1,0 +1,26 @@
+[
+  {
+    "nativeFrame": 283,
+    "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/next-source-investigation/mouth-reference283.png",
+    "crop": [
+      740,
+      330,
+      1100,
+      500
+    ],
+    "sha256": "ae66d0d7b9fcd5b2c685de33006372f8facfa86436d75699a370abfc0643d784",
+    "uploaded": false
+  },
+  {
+    "nativeFrame": 290,
+    "path": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/next-source-investigation/mouth-reference290.png",
+    "crop": [
+      740,
+      330,
+      1100,
+      500
+    ],
+    "sha256": "f843fb2726e4dff7eb44c9cf814fffe00d27ca68cd3dcc7dceb88d4f9e62444c",
+    "uploaded": false
+  }
+]

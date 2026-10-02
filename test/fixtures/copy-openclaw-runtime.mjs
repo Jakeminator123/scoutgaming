@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
 // Disposable server copies keep the repository's sibling-module layout. Copy
@@ -10,4 +10,9 @@ export async function copyOpenClawRuntime(root) {
   for (const file of await readdir(source)) if (file.endsWith('.mjs')) {
     await copyFile(new URL(file, source), join(target, file));
   }
+  await mkdir(join(root, 'tools'), {recursive: true});
+  await copyFile(new URL('../../tools/media-layout.mjs', import.meta.url), join(root, 'tools/media-layout.mjs'));
+  // Media consumers resolve their canonical metadata beneath the disposable
+  // repository root. Only test databases and runtime state remain writable.
+  await symlink(new URL('../../media/', import.meta.url), join(root, 'media'), process.platform === 'win32' ? 'junction' : 'dir');
 }

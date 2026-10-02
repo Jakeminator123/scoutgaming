@@ -14,7 +14,7 @@ async function fixture(t, items) {
     assert.ok(basename(root).startsWith('croupier-cloud-readiness-'));
     await rm(root, { recursive: true, force: true });
   });
-  const media = join(root, 'emil/dealklipp-v1');
+  const media = join(root, 'media/dealers/astrid/runtime/presentation');
   await mkdir(media, { recursive: true });
   await writeFile(join(media, 'lab-video-manifest.json'), JSON.stringify({ schemaVersion: 2, items }));
   return { root, media };

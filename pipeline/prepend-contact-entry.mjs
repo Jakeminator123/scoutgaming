@@ -28,7 +28,7 @@ for(let index=0;index<original.media.frames;index++){
   const name=String(index+1).padStart(4,'0')+'.png';
   for(const folder of ['frames','contact-masks'])copy(path.join(contact,folder,name),folder,index+selected.length);
 }
-const target=path.resolve('web/public/dealers/astrid/performance');
+const target=path.resolve('media/dealers/astrid/runtime/indexed/performance');
 const dimensions=packContactMedia({segments:[
   {file:path.join(entry,'source.mp4'),start:0,end:selected.length*stride,stride},
   {file:path.join(contact,'source.mp4')},

@@ -1,0 +1,13 @@
+{
+ "line": "double",
+ "takeSamples": 88064,
+ "lineSamples": 87930,
+ "sampleRate": 44100,
+ "lagSamples": 0,
+ "lagSeconds": 0.0,
+ "normalisedPeak": 1.0,
+ "takeOnsetSec": 0.08775510204081632,
+ "lineOnsetSec": 0.08775510204081632,
+ "takeDurationSec": 1.9969160997732427,
+ "lineDurationSec": 1.993877551020408
+}

@@ -11,7 +11,7 @@ parser.add_argument('output',type=Path)
 parser.add_argument('--exclude',nargs='*',default=[])
 args=parser.parse_args()
 root=Path(__file__).resolve().parents[1]
-base=root/'web/public/dealers/astrid'
+base=root/'media/dealers/astrid/runtime/indexed'
 index=json.loads((base/'streams/index.json').read_text())
 bank=json.loads((base/'audio/en/bank.json').read_text())
 args.output.mkdir(parents=True,exist_ok=True)

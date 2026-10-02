@@ -1,0 +1,716 @@
+{
+  "viewport": {
+    "dpr": 2,
+    "height": 720,
+    "width": 1280
+  },
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/isolated-seven-rendered.json",
+  "targets": [
+    {
+      "box": 0,
+      "gamePixelsCorners": [
+        [
+          350.026887295718,
+          349.3853033452259
+        ],
+        [
+          390.6882697357944,
+          369.7490488763211
+        ],
+        [
+          363.44226325377576,
+          402.4018743599741
+        ],
+        [
+          322.78088081369935,
+          382.0381288288789
+        ]
+      ],
+      "center": [
+        356.7345752747468,
+        375.8935888526
+      ],
+      "kind": "rendered first-card corners reconstructed from observed CSS matrices",
+      "inputContainer": {
+        "class": "cards",
+        "data": {},
+        "id": "",
+        "inlineStyle": "--cn: 2; --fan: 1.000;",
+        "parent": "seat-inner",
+        "rect": {
+          "height": 0,
+          "width": 0,
+          "x": 386.8068542480469,
+          "y": 366.5
+        },
+        "style": {
+          "height": "0px",
+          "left": "78.82px",
+          "perspective": "none",
+          "top": "-19.01px",
+          "transform": "matrix(0.919436, 0.393239, -0.326147, 0.534834, 0, 0)",
+          "transformOrigin": "62px 103px",
+          "width": "0px"
+        }
+      },
+      "actualCardStyle": {
+        "height": "66.0078px",
+        "left": "-44px",
+        "perspective": "none",
+        "top": "0px",
+        "transform": "matrix(0.995396, 0.0958458, -0.0958458, 0.995396, 0, 0)",
+        "transformOrigin": "23px 33.0039px",
+        "width": "46px"
+      },
+      "observedBBox": [
+        322.7808532714844,
+        349.3852844238281,
+        67.90744018554688,
+        53.016632080078125
+      ],
+      "reconstructedBBoxResidual": [
+        2.7542214979803248e-05,
+        1.8921397781923588e-05,
+        -5.126345183725789e-05,
+        -6.106532993044311e-05
+      ],
+      "sourceCameraCorners": [
+        [
+          422.3961032796214,
+          644.2297424178292
+        ],
+        [
+          497.39373662947105,
+          681.7895259107156
+        ],
+        [
+          447.1400098311399,
+          742.0158263093458
+        ],
+        [
+          372.1423764812902,
+          704.4560428164596
+        ]
+      ],
+      "sourceCameraCenter": [
+        434.76805655538067,
+        693.1227843635876
+      ]
+    },
+    {
+      "box": 1,
+      "gamePixelsCorners": [
+        [
+          426.7758031664568,
+          376.2286688316987
+        ],
+        [
+          470.3312761180578,
+          391.43564052397767
+        ],
+        [
+          455.63240029139945,
+          429.52538768679506
+        ],
+        [
+          412.07692733979843,
+          414.31841599451604
+        ]
+      ],
+      "center": [
+        441.20410172892815,
+        402.87702825924686
+      ],
+      "kind": "rendered first-card corners reconstructed from observed CSS matrices",
+      "inputContainer": {
+        "class": "cards",
+        "data": {},
+        "id": "",
+        "inlineStyle": "--cn: 2; --fan: 1.000;",
+        "parent": "seat-inner",
+        "rect": {
+          "height": 0,
+          "width": 0,
+          "x": 459.0766906738281,
+          "y": 387.9699401855469
+        },
+        "style": {
+          "height": "0px",
+          "left": "66.47px",
+          "perspective": "none",
+          "top": "-28.93px",
+          "transform": "matrix(0.929018, 0.370034, -0.288191, 0.552583, 0, 0)",
+          "transformOrigin": "62px 103px",
+          "width": "0px"
+        }
+      },
+      "actualCardStyle": {
+        "height": "66.0078px",
+        "left": "-32px",
+        "perspective": "none",
+        "top": "0px",
+        "transform": "matrix(0.997564, -0.0697565, 0.0697565, 0.997564, 0, 0)",
+        "transformOrigin": "23px 33.0039px",
+        "width": "46px"
+      },
+      "observedBBox": [
+        412.0769653320313,
+        376.2286682128906,
+        58.254302978515625,
+        53.2967529296875
+      ],
+      "reconstructedBBoxResidual": [
+        -3.79922328761495e-05,
+        6.18808087438083e-07,
+        4.579974375928941e-05,
+        -3.407459115578604e-05
+      ],
+      "sourceCameraCorners": [
+        [
+          563.9551626882594,
+          693.740820542076
+        ],
+        [
+          644.2907832397117,
+          721.7892246763879
+        ],
+        [
+          617.1795333571654,
+          792.0436213712212
+        ],
+        [
+          536.8439128057131,
+          763.9952172369091
+        ]
+      ],
+      "sourceCameraCenter": [
+        590.5673480227124,
+        742.8922209566484
+      ]
+    },
+    {
+      "box": 2,
+      "gamePixelsCorners": [
+        [
+          506.7164743097333,
+          398.03861636966957
+        ],
+        [
+          552.6076299511424,
+          401.66514901300656
+        ],
+        [
+          550.1022374318917,
+          442.48905749483043
+        ],
+        [
+          504.2110817904827,
+          438.86252485149345
+        ]
+      ],
+      "center": [
+        528.4093558708125,
+        420.26383693225
+      ],
+      "kind": "rendered first-card corners reconstructed from observed CSS matrices",
+      "inputContainer": {
+        "class": "cards",
+        "data": {},
+        "id": "",
+        "inlineStyle": "--cn: 2; --fan: 1.000;",
+        "parent": "seat-inner",
+        "rect": {
+          "height": 0,
+          "width": 0,
+          "x": 540.8887939453125,
+          "y": 401.17919921875
+        },
+        "style": {
+          "height": "0px",
+          "left": "64.57px",
+          "perspective": "none",
+          "top": "-45.17px",
+          "transform": "matrix(0.992556, 0.121788, -0.107455, 0.611465, 0, 0)",
+          "transformOrigin": "62px 103px",
+          "width": "0px"
+        }
+      },
+      "actualCardStyle": {
+        "height": "66.0078px",
+        "left": "-32px",
+        "perspective": "none",
+        "top": "0px",
+        "transform": "matrix(0.997564, -0.0697565, 0.0697565, 0.997564, 0, 0)",
+        "transformOrigin": "23px 33.0039px",
+        "width": "46px"
+      },
+      "observedBBox": [
+        504.2110595703125,
+        398.0386047363281,
+        48.3966064453125,
+        44.450439453125
+      ],
+      "reconstructedBBoxResidual": [
+        2.2220170194486855e-05,
+        1.1633341443939571e-05,
+        -5.828465282320394e-05,
+        1.6720358644306543e-06
+      ],
+      "sourceCameraCorners": [
+        [
+          711.401235211245,
+          733.9680423106116
+        ],
+        [
+          796.0448911387685,
+          740.6569778360348
+        ],
+        [
+          791.4238355257892,
+          815.9543813303635
+        ],
+        [
+          706.7801795982656,
+          809.2654458049402
+        ]
+      ],
+      "sourceCameraCenter": [
+        751.4125353685171,
+        774.9612118204875
+      ]
+    },
+    {
+      "box": 3,
+      "gamePixelsCorners": [
+        [
+          600.5219881033688,
+          405.52984144706824
+        ],
+        [
+          646.4108075900324,
+          403.6625191277785
+        ],
+        [
+          650.9935299956161,
+          444.4999834319818
+        ],
+        [
+          605.1047105089525,
+          446.3673057512715
+        ]
+      ],
+      "center": [
+        625.7577590494924,
+        425.014912439525
+      ],
+      "kind": "rendered first-card corners reconstructed from observed CSS matrices",
+      "inputContainer": {
+        "class": "cards",
+        "data": {},
+        "id": "",
+        "inlineStyle": "--cn: 2; --fan: 1.000;",
+        "parent": "seat-inner",
+        "rect": {
+          "height": 0,
+          "width": 0,
+          "x": 634.7686157226562,
+          "y": 404.576416015625
+        },
+        "style": {
+          "height": "0px",
+          "left": "54.74px",
+          "perspective": "none",
+          "top": "-55.16px",
+          "transform": "matrix(0.999996, 0.00266162, -0.000330042, 0.620001, 0, 0)",
+          "transformOrigin": "62px 103px",
+          "width": "0px"
+        }
+      },
+      "actualCardStyle": {
+        "height": "66.0078px",
+        "left": "-32px",
+        "perspective": "none",
+        "top": "0px",
+        "transform": "matrix(0.997564, -0.0697565, 0.0697565, 0.997564, 0, 0)",
+        "transformOrigin": "23px 33.0039px",
+        "width": "46px"
+      },
+      "observedBBox": [
+        600.52197265625,
+        403.6625061035156,
+        50.4715576171875,
+        42.704803466796875
+      ],
+      "reconstructedBBoxResidual": [
+        1.5447118812517147e-05,
+        1.3024262898397865e-05,
+        -1.5724940226391482e-05,
+        -1.6843303910718532e-05
+      ],
+      "sourceCameraCorners": [
+        [
+          884.4202303242924,
+          747.7851857027213
+        ],
+        [
+          969.0595773457601,
+          744.3410146921938
+        ],
+        [
+          977.5121511170679,
+          819.6634211386001
+        ],
+        [
+          892.8728040956003,
+          823.1075921491276
+        ]
+      ],
+      "sourceCameraCenter": [
+        930.9661907206802,
+        783.7243034206606
+      ]
+    },
+    {
+      "box": 4,
+      "gamePixelsCorners": [
+        [
+          716.6935969295596,
+          400.6027287251107
+        ],
+        [
+          762.4966145000386,
+          401.8270436292669
+        ],
+        [
+          766.5160428855235,
+          443.0353387735831
+        ],
+        [
+          720.7130253150443,
+          441.8110238694269
+        ]
+      ],
+      "center": [
+        741.6048199075415,
+        421.8190337493469
+      ],
+      "kind": "rendered first-card corners reconstructed from observed CSS matrices",
+      "inputContainer": {
+        "class": "cards",
+        "data": {},
+        "id": "",
+        "inlineStyle": "--cn: 2; --fan: 1.000;",
+        "parent": "seat-inner",
+        "rect": {
+          "height": 0,
+          "width": 0,
+          "x": 750.8702392578125,
+          "y": 401.9572448730469
+        },
+        "style": {
+          "height": "0px",
+          "left": "54.63px",
+          "perspective": "none",
+          "top": "-46.62px",
+          "transform": "matrix(0.99754, 0.0700993, -0.00871289, 0.620917, 0, 0)",
+          "transformOrigin": "62px 103px",
+          "width": "0px"
+        }
+      },
+      "actualCardStyle": {
+        "height": "66.0078px",
+        "left": "-32px",
+        "perspective": "none",
+        "top": "0px",
+        "transform": "matrix(0.997564, -0.0697565, 0.0697565, 0.997564, 0, 0)",
+        "transformOrigin": "23px 33.0039px",
+        "width": "46px"
+      },
+      "observedBBox": [
+        716.693603515625,
+        400.6027221679687,
+        49.82244873046875,
+        42.432586669921875
+      ],
+      "reconstructedBBoxResidual": [
+        -6.586065410374431e-06,
+        6.5571420009291614e-06,
+        -2.774504878289008e-06,
+        2.3378550508823537e-05
+      ],
+      "sourceCameraCorners": [
+        [
+          1098.6922299851196,
+          738.6974033593805
+        ],
+        [
+          1183.173320197188,
+          740.9555833517105
+        ],
+        [
+          1190.58692982482,
+          816.9619664293245
+        ],
+        [
+          1106.1058396127512,
+          814.7037864369945
+        ]
+      ],
+      "sourceCameraCenter": [
+        1144.6395799049697,
+        777.8296848943525
+      ]
+    },
+    {
+      "box": 5,
+      "gamePixelsCorners": [
+        [
+          787.1919045117056,
+          403.57901018447745
+        ],
+        [
+          830.2392377034556,
+          388.1771047437574
+        ],
+        [
+          850.8525261211569,
+          424.53377359292256
+        ],
+        [
+          807.8051929294069,
+          439.9356790336426
+        ]
+      ],
+      "center": [
+        819.0222153164314,
+        414.05639188870003
+      ],
+      "kind": "rendered first-card corners reconstructed from observed CSS matrices",
+      "inputContainer": {
+        "class": "cards",
+        "data": {},
+        "id": "",
+        "inlineStyle": "--cn: 2; --fan: 1.000;",
+        "parent": "seat-inner",
+        "rect": {
+          "height": 0,
+          "width": 0,
+          "x": 819.4929809570312,
+          "y": 392.4912109375
+        },
+        "style": {
+          "height": "0px",
+          "left": "40.62px",
+          "perspective": "none",
+          "top": "-63.6px",
+          "transform": "matrix(0.955316, -0.295587, 0.246246, 0.572808, 0, 0)",
+          "transformOrigin": "62px 103px",
+          "width": "0px"
+        }
+      },
+      "actualCardStyle": {
+        "height": "66.0078px",
+        "left": "-32px",
+        "perspective": "none",
+        "top": "0px",
+        "transform": "matrix(0.997564, -0.0697565, 0.0697565, 0.997564, 0, 0)",
+        "transformOrigin": "23px 33.0039px",
+        "width": "46px"
+      },
+      "observedBBox": [
+        787.19189453125,
+        388.1770935058594,
+        63.66064453125,
+        51.75860595703125
+      ],
+      "reconstructedBBoxResidual": [
+        9.980455615732353e-06,
+        1.1237898036142724e-05,
+        -2.2921798745301203e-05,
+        -3.166714606095411e-05
+      ],
+      "sourceCameraCorners": [
+        [
+          1228.7223939034907,
+          744.1869871423347
+        ],
+        [
+          1308.1207792427379,
+          715.7790386709693
+        ],
+        [
+          1346.1408305571208,
+          782.8368698745672
+        ],
+        [
+          1266.7424452178739,
+          811.2448183459327
+        ]
+      ],
+      "sourceCameraCenter": [
+        1287.4316122303057,
+        763.511928508451
+      ]
+    },
+    {
+      "box": 6,
+      "gamePixelsCorners": [
+        [
+          862.9316572770983,
+          393.5637918818457
+        ],
+        [
+          896.8240967471993,
+          363.0042613814877
+        ],
+        [
+          931.0499392747391,
+          387.6887406726043
+        ],
+        [
+          897.1574998046382,
+          418.2482711729623
+        ]
+      ],
+      "center": [
+        896.9907982759187,
+        390.626266277225
+      ],
+      "kind": "rendered first-card corners reconstructed from observed CSS matrices",
+      "inputContainer": {
+        "class": "cards",
+        "data": {},
+        "id": "",
+        "inlineStyle": "--cn: 2; --fan: 1.000;",
+        "parent": "seat-inner",
+        "rect": {
+          "height": 0,
+          "width": 0,
+          "x": 888.5563354492188,
+          "y": 371.054931640625
+        },
+        "style": {
+          "height": "0px",
+          "left": "31.77px",
+          "perspective": "none",
+          "top": "-90.2px",
+          "transform": "matrix(0.771167, -0.636633, 0.465853, 0.419394, 0, 0)",
+          "transformOrigin": "62px 103px",
+          "width": "0px"
+        }
+      },
+      "actualCardStyle": {
+        "height": "66.0078px",
+        "left": "-32px",
+        "perspective": "none",
+        "top": "0px",
+        "transform": "matrix(0.997564, -0.0697565, 0.0697565, 0.997564, 0, 0)",
+        "transformOrigin": "23px 33.0039px",
+        "width": "46px"
+      },
+      "observedBBox": [
+        862.931640625,
+        363.0042419433594,
+        68.1182861328125,
+        55.243988037109375
+      ],
+      "reconstructedBBoxResidual": [
+        1.665209833845438e-05,
+        1.9438128333604254e-05,
+        -4.135171707275731e-06,
+        2.1754365207016235e-05
+      ],
+      "sourceCameraCorners": [
+        [
+          1368.4201087138117,
+          725.7144801810572
+        ],
+        [
+          1430.9328074017274,
+          669.349144664317
+        ],
+        [
+          1494.0604492804302,
+          714.8782786044969
+        ],
+        [
+          1431.5477505925146,
+          771.2436141212371
+        ]
+      ],
+      "sourceCameraCenter": [
+        1431.240278997121,
+        720.2963793927771
+      ]
+    }
+  ],
+  "sourceCameraInverse": "pending verified common camera registration",
+  "sourceTo1280Game": {
+    "scale": 0.5421688741883204,
+    "translation": [
+      121.01686751907214,
+      0.1039891799197603
+    ],
+    "method": "Measured live1091 shoe registration composed with exact uniformRegistration viewport resize"
+  },
+  "responsiveComparison": [
+    {
+      "box": 0,
+      "nativeCenterDeltaVs1091": [
+        -16.92714298096172,
+        -12.398037272311399
+      ],
+      "reason": "actual fan offset differs at box0; fixed CSS card size/offset vs uniformly scaled table causes remaining responsive residuals"
+    },
+    {
+      "box": 1,
+      "nativeCenterDeltaVs1091": [
+        2.0221348222958113,
+        -4.546286500654787
+      ],
+      "reason": "actual fan offset differs at box0; fixed CSS card size/offset vs uniformly scaled table causes remaining responsive residuals"
+    },
+    {
+      "box": 2,
+      "nativeCenterDeltaVs1091": [
+        0.32768397309541797,
+        -4.777572851300306
+      ],
+      "reason": "actual fan offset differs at box0; fixed CSS card size/offset vs uniformly scaled table causes remaining responsive residuals"
+    },
+    {
+      "box": 3,
+      "nativeCenterDeltaVs1091": [
+        -1.2707791987671726,
+        -4.970721772832576
+      ],
+      "reason": "actual fan offset differs at box0; fixed CSS card size/offset vs uniformly scaled table causes remaining responsive residuals"
+    },
+    {
+      "box": 4,
+      "nativeCenterDeltaVs1091": [
+        -1.2186798316483873,
+        -4.638808750059297
+      ],
+      "reason": "actual fan offset differs at box0; fixed CSS card size/offset vs uniformly scaled table causes remaining responsive residuals"
+    },
+    {
+      "box": 5,
+      "nativeCenterDeltaVs1091": [
+        -3.78646285670402,
+        -3.548795810451452
+      ],
+      "reason": "actual fan offset differs at box0; fixed CSS card size/offset vs uniformly scaled table causes remaining responsive residuals"
+    },
+    {
+      "box": 6,
+      "nativeCenterDeltaVs1091": [
+        -4.782962737460821,
+        -2.800857739889125
+      ],
+      "reason": "actual fan offset differs at box0; fixed CSS card size/offset vs uniformly scaled table causes remaining responsive residuals"
+    }
+  ],
+  "captureSHA256": "fd88cc4ca3faa5b8f32ecc820ff8f3aa868a4a677fb23a7f0cec18dfdd8ddf81",
+  "uncertainty": "All seven game corners actual rendered; source inverse inherits ~5nativepx shoe localization plus unquantified distant perspective error. Box0 actual +5.5deg/-44px fan differs from default first-card -4deg/-32px."
+}

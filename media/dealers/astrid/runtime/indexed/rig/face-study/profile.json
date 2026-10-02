@@ -1,0 +1,76 @@
+{
+  "version": 2,
+  "status": "unreviewed",
+  "bones": {
+    "hips": "Hips",
+    "head": "Head",
+    "leftUpperArm": "LeftArm",
+    "leftForeArm": "LeftForeArm",
+    "leftHand": "LeftHand",
+    "rightUpperArm": "RightArm",
+    "rightForeArm": "RightForeArm",
+    "rightHand": "RightHand",
+    "fingers": {
+      "right": [
+        "RightThumb1",
+        "RightThumb2",
+        "RightThumb3",
+        "RightIndex1",
+        "RightIndex2",
+        "RightIndex3",
+        "RightMiddle1",
+        "RightMiddle2",
+        "RightMiddle3",
+        "RightRing1",
+        "RightRing2",
+        "RightRing3",
+        "RightPinky1",
+        "RightPinky2",
+        "RightPinky3"
+      ],
+      "left": [
+        "LeftThumb1",
+        "LeftThumb2",
+        "LeftThumb3",
+        "LeftIndex1",
+        "LeftIndex2",
+        "LeftIndex3",
+        "LeftMiddle1",
+        "LeftMiddle2",
+        "LeftMiddle3",
+        "LeftRing1",
+        "LeftRing2",
+        "LeftRing3",
+        "LeftPinky1",
+        "LeftPinky2",
+        "LeftPinky3"
+      ]
+    }
+  },
+  "vertices": 197385,
+  "polygons": 257019,
+  "sourceJob": "cc1a080e-8d37-4f3c-847d-5f70bf1c3125",
+  "limitations": [
+    "Facial identity and source-driven speech require final visual review.",
+    "Body rig retains its earlier contact checks; face/neck integration is a new candidate."
+  ],
+  "face": {
+    "gazeBones": [
+      "EyeLeft",
+      "EyeRight"
+    ],
+    "shapes": [
+      "mouthPucker",
+      "jawOpen",
+      "mouthFunnel",
+      "mouthClose",
+      "browInnerUpRight",
+      "eyeBlinkLeft",
+      "mouthWide",
+      "mouthSmile",
+      "eyeBlinkRight",
+      "browInnerUpLeft"
+    ],
+    "status": "rendered integration pending"
+  }
+}

@@ -1,9 +1,0 @@
-# Rejected: low-contact guidance did not change extraction
-
-Job3dd450da-2ca2-44c4-a2bb-4327c0f1cbb6 completed,97 native frames at24fps. Saved `low-contact-video.mp4`; exact output hash and per-frame metrics in `low-contact-review/metrics.json`. Every native opening frame0–34 was inspected in paired source/output sheets; all remaining35–96 inspected in four downstream native grids. This is discrete native-frame inspection, not a claim of watching real-time playback.
-
-At0–7 the hand stays in the original shoe contact. At8–12 (0.333–0.500s) the red-backed card emerges ABOVE the white inclined stack, with upward hand travel. At13–19 (0.542–0.792s) it is held upright well above the shoe. At20–30 (0.833–1.250s) it descends toward the other hand, still the source-like raised presentation. The requested low half-extracted card pose never occurs. The most visible edit is replacing the source printed face with a red back, not correcting the physical extraction.
-
-At35–62 the red-backed card follows the existing reaching/sliding motion toward the same left-side destination. At63 the hand is visibly clear;64–81 returns empty,82–96 settles facing forward. Card remains red-backed on the felt through96; no successful turnover to a printed front is evidenced. Broad camera/body path remains source-like, but this does not mean pixel-identical identity or clean grip anatomy. Central extraction acceptance fails independently of downstream motion.
-
-Do not promote, retime as a fix, or submit another unchanged video_edit. Parent authorized a different mechanism: true canonical start_image/end_image constraints, original native0 to low-contact pose. Seedance2.0 std1080p/high/silent shortest duration4s validated at36 credits. Its submission was rejected with `Out of credits on Team (monthly) plan in Shared workspace.` No job was created. Exact request and error: `pickup-primitive-submission.json`. No automatic retry or further paid generation.

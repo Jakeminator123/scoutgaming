@@ -1,0 +1,15 @@
+{
+  "sourceSHA256": "ac46fe3283544d40a7d80c6d9f7f1592fe4d9c566887a8abc73f250734419e0b",
+  "trajectorySHA256": "36d917e57844b51d02c7ca2cbd6eb8a7a712683a19e2d23b85b45bce4870355a",
+  "nativeFrameCount": 97,
+  "pickup": 9,
+  "release": 63,
+  "land": 63,
+  "actorRGBModified": false,
+  "maskReady": false,
+  "reviewed": false,
+  "rawPersonMasksReady": true,
+  "rawPersonMaskReceipt": "person-masks/receipt.json",
+  "rawPersonMaskReceiptSHA256": "38bddf13bb90f8a9eb2cb82a411479bf91ac0e39307daed586ab92327d161438",
+  "maskReadyMeaning": "cleaned actor R and explicit hand foreground G; raw person masks alone do not satisfy this"
+}

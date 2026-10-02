@@ -4,11 +4,11 @@ from pathlib import Path
 from mathutils import Vector
 REPO=Path(__file__).resolve().parents[1]
 anatomical='--anatomical' in sys.argv
-OUT=REPO/'assets/blackjack-3d';DELIVERY=OUT/'editable-project'
+OUT=REPO/'media/game/source/3d';DELIVERY=OUT/'editable-project'
 if anatomical:DELIVERY=DELIVERY/'anatomical'
 DELIVERY.mkdir(parents=True,exist_ok=True)
 def p(v):return(v[0],-v[2],v[1])
-dealer=REPO/('assets/astrid-3d/anatomical/astrid-animated.blend' if anatomical else 'assets/astrid-3d/astrid-animated.blend')
+dealer=REPO/('media/dealers/astrid/source/3d/anatomical/astrid-animated.blend' if anatomical else 'media/dealers/astrid/source/3d/astrid-animated.blend')
 assert dealer.exists(),'Wait for the verified dealer bake before assembly'
 bpy.ops.wm.open_mainfile(filepath=str(OUT/'blackjack-table-optimized.blend'))
 scene=bpy.context.scene
@@ -24,7 +24,7 @@ for obj in dest.objects:
 templates=bpy.data.objects.get('Prop_Templates')
 if templates:
     for obj in (templates,*templates.children_recursive):obj.hide_render=True
-motion=json.loads((REPO/'assets/astrid-3d/motion-samples.json').read_text())
+motion=json.loads((REPO/'media/dealers/astrid/source/3d/motion-samples.json').read_text())
 arm=next(o for o in added if o.type=='ARMATURE')
 arm.animation_data_create();arm.animation_data.action=None;arm.animation_data.use_nla=True
 for track in list(arm.animation_data.nla_tracks):arm.animation_data.nla_tracks.remove(track)
@@ -80,7 +80,7 @@ if anatomical:
     room=bpy.data.objects.get('Room_Root')
     if room:
         for obj in [room,*room.children_recursive]:obj.hide_render=True
-    image=bpy.data.images.load(str(REPO/'web/public/dealers/astrid/actor/room.jpg'),check_existing=True)
+    image=bpy.data.images.load(str(REPO/'media/dealers/astrid/runtime/indexed/actor/room.jpg'),check_existing=True)
     depth=12;height=2*depth*math.tan(math.radians(19));aspect=image.size[0]/image.size[1]
     height=max(height,height*scene.render.resolution_x/scene.render.resolution_y/aspect)
     bpy.ops.mesh.primitive_plane_add(size=1)

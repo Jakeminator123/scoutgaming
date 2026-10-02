@@ -1,0 +1,192 @@
+{
+  "reference": "source native0",
+  "status": "camera registration only, no pose correction",
+  "sourceSha256": {
+    "source": "3ac36f71ad4f3c5144e6258ca1e46b174325278eea4f37d4f9c559fe7f97274e",
+    "slide": "b8f2c43255a3ded3e5ee966169229aa4adb564d528ee544145fa288e3729c732",
+    "return": "f5236f1c185ab6ca665d7f177610c583a2d44265f42145f310f7e84e6a354396"
+  },
+  "backgroundMask": "x<730 or x>1420 or y>820; excludes actor and shoe",
+  "frames": {
+    "source-0": {
+      "sourceToReference": [
+        [
+          1.0000000000000016,
+          0.0,
+          1.8382631105874994e-13
+        ],
+        [
+          0.0,
+          1.0000000000000016,
+          4.140963288353675e-14
+        ]
+      ],
+      "convention": "reference_xy = uniformScale * source_xy + translation; origin top left; no rotation or local warp",
+      "scale": 1.0000000000000016,
+      "translation": [
+        1.8382631105874994e-13,
+        4.140963288353675e-14
+      ],
+      "featureMatches": 538,
+      "inliers": 538,
+      "medianResidualPixels": 1.4779288903810084e-12,
+      "p95ResidualPixels": 3.2095145373871455e-12,
+      "similarityRotationDegrees": 0.0,
+      "nativeDimensions": [
+        1920,
+        1080
+      ],
+      "confidence": "background-feature fit; actor pose excluded"
+    },
+    "source-54": {
+      "sourceToReference": [
+        [
+          0.9999356554544119,
+          0.0,
+          0.030011013902743158
+        ],
+        [
+          0.0,
+          0.9999356554544119,
+          -0.03130248490293655
+        ]
+      ],
+      "convention": "reference_xy = uniformScale * source_xy + translation; origin top left; no rotation or local warp",
+      "scale": 0.9999356554544119,
+      "translation": [
+        0.030011013902743158,
+        -0.03130248490293655
+      ],
+      "featureMatches": 405,
+      "inliers": 390,
+      "medianResidualPixels": 0.12784337524846168,
+      "p95ResidualPixels": 0.6729443554706291,
+      "similarityRotationDegrees": 0.00040639785622122106,
+      "nativeDimensions": [
+        1920,
+        1080
+      ],
+      "confidence": "background-feature fit; actor pose excluded"
+    },
+    "slide-0": {
+      "sourceToReference": [
+        [
+          1.0073031950578744,
+          0.0,
+          -6.010164458199504
+        ],
+        [
+          0.0,
+          1.0073031950578744,
+          -2.822220753184142
+        ]
+      ],
+      "convention": "reference_xy = uniformScale * source_xy + translation; origin top left; no rotation or local warp",
+      "scale": 1.0073031950578744,
+      "translation": [
+        -6.010164458199504,
+        -2.822220753184142
+      ],
+      "featureMatches": 280,
+      "inliers": 230,
+      "medianResidualPixels": 0.5315222963169319,
+      "p95ResidualPixels": 1.7038261172543112,
+      "similarityRotationDegrees": -0.0014986664243124771,
+      "nativeDimensions": [
+        1920,
+        1080
+      ],
+      "confidence": "background-feature fit; actor pose excluded"
+    },
+    "slide-54": {
+      "sourceToReference": [
+        [
+          1.0071504829271767,
+          0.0,
+          -5.817139117336626
+        ],
+        [
+          0.0,
+          1.0071504829271767,
+          -3.0312556222177895
+        ]
+      ],
+      "convention": "reference_xy = uniformScale * source_xy + translation; origin top left; no rotation or local warp",
+      "scale": 1.0071504829271767,
+      "translation": [
+        -5.817139117336626,
+        -3.0312556222177895
+      ],
+      "featureMatches": 264,
+      "inliers": 225,
+      "medianResidualPixels": 0.5127662499289423,
+      "p95ResidualPixels": 1.4454444881350028,
+      "similarityRotationDegrees": -0.0004094607327332213,
+      "nativeDimensions": [
+        1920,
+        1080
+      ],
+      "confidence": "background-feature fit; actor pose excluded"
+    },
+    "return-0": {
+      "sourceToReference": [
+        [
+          0.9990359226821496,
+          0.0,
+          1.448092044313267
+        ],
+        [
+          0.0,
+          0.9990359226821496,
+          16.936315447008614
+        ]
+      ],
+      "convention": "reference_xy = uniformScale * source_xy + translation; origin top left; no rotation or local warp",
+      "scale": 0.9990359226821496,
+      "translation": [
+        1.448092044313267,
+        16.936315447008614
+      ],
+      "featureMatches": 255,
+      "inliers": 205,
+      "medianResidualPixels": 0.6916238677866694,
+      "p95ResidualPixels": 1.6433888699872379,
+      "similarityRotationDegrees": 0.005176776698052517,
+      "nativeDimensions": [
+        1920,
+        1080
+      ],
+      "confidence": "background-feature fit; actor pose excluded"
+    },
+    "return-36": {
+      "sourceToReference": [
+        [
+          0.9988759676250676,
+          0.0,
+          1.5797928407502366
+        ],
+        [
+          0.0,
+          0.9988759676250676,
+          16.91444073301526
+        ]
+      ],
+      "convention": "reference_xy = uniformScale * source_xy + translation; origin top left; no rotation or local warp",
+      "scale": 0.9988759676250676,
+      "translation": [
+        1.5797928407502366,
+        16.91444073301526
+      ],
+      "featureMatches": 286,
+      "inliers": 230,
+      "medianResidualPixels": 0.6950224223811637,
+      "p95ResidualPixels": 1.7873978583527357,
+      "similarityRotationDegrees": 0.035292217328282194,
+      "nativeDimensions": [
+        1920,
+        1080
+      ],
+      "confidence": "background-feature fit; actor pose excluded"
+    }
+  }
+}

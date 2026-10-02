@@ -2,12 +2,13 @@ import { createHash, randomBytes } from 'node:crypto';
 
 // A BO cookie stays on the BO host. Only a single-use, browser-bound code crosses
 // to the game, where it becomes an ordinary player session with no BO role.
-export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publicUrl,boUrl}) {
+export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publicUrl,boUrl,publicGamePath='/'}) {
+  if (!['/', '/game'].includes(publicGamePath)) throw Error('Invalid public game path');
   const game=new URL(publicUrl),bo=new URL(boUrl);
   const hash=value=>createHash('sha256').update(value).digest('hex');
   const token=()=>randomBytes(32).toString('hex');
   const validToken=value=>typeof value==='string' && /^[a-f0-9]{64}$/.test(value);
-  const entry=path=>['/','/index.html','/v2','/v2/','/v2/index.html'].includes(path);
+  const entry=path=>['/','/index.html','/v2','/v2/','/v2/index.html', ...(publicGamePath === '/game' ? ['/game','/game/'] : [])].includes(path);
   const nextPath=value=>{
     if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.length>2048)return '/';
     const url=new URL(value,game);
@@ -20,17 +21,17 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
     state_digest TEXT PRIMARY KEY, next_path TEXT NOT NULL, expires INTEGER NOT NULL,
     code_digest TEXT UNIQUE, craig_user_id TEXT, username TEXT, source_stamp TEXT, session_until INTEGER
   )`);
-  return function handle(req,res) {
+  return async function handle(req,res) {
     const url=new URL(req.url,game),path=url.pathname;
     if(!['/api/auth/access','/api/auth/bo/start','/api/auth/bo/callback','/api/bo/game-login'].includes(path))return false;
     const reply=(status,body='',headers={})=>{res.writeHead(status,{'Cache-Control':'no-store','Referrer-Policy':'no-referrer','Content-Type':'text/plain; charset=utf-8',...headers});res.end(body);return true;};
     if(!['GET','HEAD'].includes(req.method))return reply(405,'GET required');
     if(path==='/api/auth/access') {
-      if(auth.user(req))return reply(200);
+      if(await auth.user(req))return reply(200);
       let original;
       try {original=new URL(req.headers['x-forwarded-uri']??'/',game);}catch{return reply(400,'Invalid request URL');}
       // Caddy checks the original URL before the launch handler can set a cookie.
-      if(entry(original.pathname)&&validLaunch(original.searchParams.get('launch')))return reply(200);
+      if(entry(original.pathname)&&await validLaunch(original.searchParams.get('launch')))return reply(200);
       const method=req.headers['x-forwarded-method']??'GET';
       if(entry(original.pathname)&&['GET','HEAD'].includes(method))return reply(302,'', {Location:`/api/auth/bo/start?next=${encodeURIComponent(nextPath(original.pathname+original.search))}`});
       return reply(401,'Sign in required');
@@ -39,7 +40,7 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
     if(req.headers.host!==expectedHost)return reply(400,'Wrong sign-in host');
     if(path==='/api/auth/bo/start') {
       const next=nextPath(url.searchParams.get('next'));
-      if(auth.user(req))return reply(303,'',{Location:next});
+      if(await auth.user(req))return reply(303,'',{Location:next});
       db.prepare('DELETE FROM bo_game_handoffs WHERE expires<=?').run(Date.now());
       const state=token();
       db.prepare('INSERT INTO bo_game_handoffs (state_digest,next_path,expires) VALUES (?,?,?)').run(hash(state),next,Date.now()+300000);
@@ -50,8 +51,8 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
     if(path==='/api/bo/game-login') {
       const flow=db.prepare('SELECT * FROM bo_game_handoffs WHERE state_digest=? AND expires>? AND code_digest IS NULL').get(hash(state),Date.now());
       if(!flow)return reply(400,'Sign-in request expired. Open the game again.');
-      const claims=boSession(req);
-      const account=claims&&!claims.partner&&['reader','staff','admin','superadmin'].includes(claims.role)&&(!claims.aud||claims.aud==='backoffice')?identity.find(claims.sub):null;
+      const claims=await boSession(req);
+      const account=claims&&!claims.partner&&['reader','staff','admin','superadmin'].includes(claims.role)&&(!claims.aud||claims.aud==='backoffice')?await identity.find(claims.sub):null;
       if(!account || (claims.source_stamp && claims.source_stamp!==account.stamp))return reply(303,'',{Location:`/bo/login.html?returnTo=${encodeURIComponent('/api/bo/game-login?state='+state)}`});
       const age=Math.min(86400,Math.floor(claims.exp-Date.now()/1000));
       if(age<1)return reply(401,'Backoffice session expired');
@@ -67,7 +68,7 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
     try {
       const age=Math.floor((flow.session_until-Date.now())/1000);
       if(age<1)throw Error('Session expired');
-      const session=auth.fromBackoffice(req,{id:flow.craig_user_id,name:flow.username,stamp:flow.source_stamp},age);
+      const session=await auth.fromBackoffice(req,{id:flow.craig_user_id,name:flow.username,stamp:flow.source_stamp},age);
       return reply(303,'',{Location:flow.next_path,'Set-Cookie':[session,stateCookie(req,'',0)]});
     }catch{return reply(401,'Scout account changed. Sign in again.',{'Set-Cookie':stateCookie(req,'',0)});}
   };

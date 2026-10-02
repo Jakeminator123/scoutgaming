@@ -8,7 +8,7 @@ const dir=process.argv[2];if(!dir)throw new Error('Pass prepared rig directory')
 const profile=JSON.parse(fs.readFileSync(path.join(dir,'profile.json'))),{rig,root,json}=loadRigGeometry(path.join(dir,'astrid-rigged.glb'),profile);
 const rest=Object.fromEntries([...rig.bones].map(([name,b])=>[name,b.matrixWorld.toArray()]));
 const samples=[],summary=[];
-const tableProfile=JSON.parse(fs.readFileSync(new URL('../web/public/assets/blackjack-3d/profile.json',import.meta.url)));
+const tableProfile=JSON.parse(fs.readFileSync(new URL('../media/game/runtime/assets/blackjack-3d/profile.json',import.meta.url)));
 const actions=[...Array.from({length:7},(_,seat)=>({name:`Deal_Seat_${String(seat+1).padStart(2,'0')}_Contact_Study`,kind:'deal',target:seatTarget(seat),seconds:1.65})),
  {name:'Deal_Own_Card_Contact_Study',kind:'deal',target:[0,.91055,.23],seconds:1.65},
  {name:'Reveal_Hole_Card_Study',kind:'reveal',source:[0,.91055,.23],target:[0,.91055,.23],seconds:1.8},

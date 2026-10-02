@@ -67,7 +67,7 @@ export async function main(args = process.argv.slice(2)) {
   if (args.some(arg => !['--check', '--no-open', '--skip-build', '--astrid-camera', '--cloud-storage', '--offline'].includes(arg))) throw new Error('Använd --check, --no-open, --skip-build, --astrid-camera, --cloud-storage eller --offline.');
   if (args.includes('--offline')) {
     if (args.includes('--check') || args.includes('--astrid-camera') || args.includes('--cloud-storage')) throw new Error('--offline kan inte kombineras med --check, --astrid-camera eller --cloud-storage.');
-    const fixture = await startLocalComparison({ generationDirectory: join(root, 'emil/dealklipp-v1'), streamLane: profile.id,
+    const fixture = await startLocalComparison({ generationDirectory: join(root, 'media/dealers/astrid/runtime/presentation'), streamLane: profile.id,
       prepare: args.includes('--skip-build') ? undefined : buildLab, prepareStudio: prepareProject });
     console.log(`Lab: ${fixture.labUrl}\nSpel: ${fixture.gameUrl}/?dealer=astrid&presentation=local\nIsolerat prov med tom testdatabas och externa tjänster avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
     const stop = async () => { await fixture.stop(); process.exit(0); };

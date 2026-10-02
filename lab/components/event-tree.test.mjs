@@ -26,7 +26,7 @@ function loadTs(relativeFile) {
 
 const { EventTree } = loadTs('./event-tree.tsx');
 const { studioViewForPath, viewPaths } = loadTs('./studio-types.ts');
-const mediaManifest = JSON.parse(readFileSync(new URL('../../emil/dealklipp-v1/lab-video-manifest.json', import.meta.url), 'utf8'));
+const mediaManifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
 const mediaInventory = {
   families: mediaManifest.families,
   videos: mediaManifest.items.map(item => ({ ...item, available: true, fileName: item.relativePath.split('/').at(-1) })),

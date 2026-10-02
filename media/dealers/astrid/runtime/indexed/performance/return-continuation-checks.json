@@ -1,0 +1,70 @@
+{
+  "date": "2026-09-10",
+  "issue": "CAC-4",
+  "result": "partial; remains In Dev",
+  "runtime": "127.0.0.1:4180 isolated demo wallet",
+  "urlQuery": "dealer=astrid&performance=staged&rehearsal=1&continuity=review",
+  "mediaSha256": "3cc8783842c87ef37a9066d3d44d9714a664eb006c7fd8baa7a80b754f07c6fc",
+  "calibrationSha256": "9b6e23088b3c1b5160de7439bd85146e6ed32e5b8d167cd5584bd852b25b2237",
+  "initialDeal": {
+    "player": [
+      "A♠",
+      "4♠"
+    ],
+    "dealerUp": "10♣",
+    "hole": "unrevealed",
+    "startBalance": 1085,
+    "stake": 5,
+    "settledBalance": 1080,
+    "remainingCards": 0,
+    "ownDeliveryStarts": [
+      55,
+      55
+    ]
+  },
+  "refresh": {
+    "during": "centre return frame 168",
+    "balanceBefore": 1075,
+    "balanceAfter": 1075,
+    "stake": 5,
+    "recoveredPlayer": [
+      "9♠",
+      "9♥"
+    ],
+    "dealerUp": "3♣",
+    "hole": "unrevealed"
+  },
+  "split": {
+    "balance": 1070,
+    "stake": 10,
+    "hands": [
+      [
+        "9♠",
+        "J♠"
+      ],
+      [
+        "9♥",
+        "9♦"
+      ]
+    ],
+    "lastDeliveryStartFrame": 55,
+    "lastDeliveryEndFrame": 168,
+    "settledBalance": 1090,
+    "returned": 20,
+    "remainingCards": 0
+  },
+  "repeatedSpeech": [
+    "Vera goodluck twice",
+    "Amira goodluck twice",
+    "Mei goodluck twice",
+    "Astrid embedded goodluck twice"
+  ],
+  "limitations": [
+    "Other three directions still return to folded rest",
+    "Original speech/action pose mismatch remains",
+    "Generated motion remains soft",
+    "No physical Safari/iPhone/Android acceptance",
+    "Not full phoneme approval"
+  ],
+  "evidence": "continuous-return-game.mp4"
+}

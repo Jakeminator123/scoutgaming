@@ -1,0 +1,15 @@
+# Fixed-card feasibility: existing contact-proof source
+
+Source1920x1080 RGB preserved. No skin edits, no body retarget, no new credits. Keyframe wireframes assess geometry only; they are not final masked composites or gameplay approval.
+
+One fixed affine card basis is derived from the native94 rounded-corner estimate. Local63x88 coordinates are normalized logical units, not measured metric calibration. Only translation and in-plane rotation vary. Constant basis does not model a physically calibrated camera or prove planarity; it tests whether a rigid-looking replacement fits without pursuing generated shape changes.
+
+Native49/57 maximum observed-corner residuals6.996/7.217px;72/84/91/92 residuals2.435/1.352/1.519/1.519px. The early residual exceeds nominal3px observation uncertainty: likely source geometry/constant-affine approximation error. It is visible and must not be hidden by claiming exact tracking. Replacement covers most source paper and remains beneath the original fingertip pads. A bounded source paper mask and original hand foreground can plausibly replace it without moving anatomy, but edge coverage needs actual compositing review.
+
+Native38 leading-edge end approximately[1255,640] ±4px;45 leading exposed corner[1230,661] ±3px. Their fullcard shapes are explicitly INFERRED from native49 orientation and fixed dimensions. Most rear paper lies inside the shoe. Fullquad must be occluded by the original shoe, not painted over it. Source38 paper is dark/thin and colour segmentation mostly detects shoe/lettering; contour-candidates.json is diagnostic and must NOT become erasure masks.
+
+Material corner order uses a continuous in-plane orientation from0.841radian at49 to1.552 at57 to2.888 at72 and3.139 by91. The raw independent fit had a180degree symmetric branch; the saved sequence unwraps it. There is NO front/back turnover or allowed face swap. A server-issued card can supply the same visible surface throughout this action; a claimed flip is unsupported.
+
+Records are bounded eight-keypose proposals at38,45,49,57,72,84,91,92. Intermediate frames are deliberately not labeled measured or runtime-ready. Native49–91 was previously visually inspected densely, but a complete fitted intermediate trajectory and final source-alpha/finger review remain necessary. If deriving intermediate poses, track observed straight edges and preserve this orientation branch; do not use arbitrary min-area boxes or interpolate through an unobserved flip.
+
+Evidence eight-keypose-proof.jpg and individualfit images shows originalRGB beneath cyan proposed quad, red source corner observations. Extraction38/45 observations are partly hidden;49 leftcorner hidden behind fingers;57 upperlefthidden;72 onward near-complete outline apart from pads. Original source0/end144 and release proof remain under existing-continuation-search/extended. Candidate remains a low extraction→slide→empty return improvement with a long hold and absent turnover, not the entire requested dealer behaviour.

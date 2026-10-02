@@ -1,0 +1,59 @@
+{
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/youtube-reference/watch/download/video.mp4",
+  "sourceSHA256": "7f912f65a4bd8cf0b00c26fd196cdd956b9666cbc272bc35bada015e736d4a8e",
+  "output": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/cadence-comparison/consecutive-deals-native60.mp4",
+  "outputSHA256": "c3cf4eb5d5fe8e958ecedcaf4fde67ebfcb922332573ecdb2c7f8470fd9cb1a0",
+  "sourceNativeFramesInclusive": [
+    240,
+    539
+  ],
+  "sourceSecondsHalfOpen": [
+    4,
+    9
+  ],
+  "durationSeconds": 5,
+  "frameCount": 300,
+  "decodedAllFrameSHA256Equal": true,
+  "speed": 1,
+  "crop": null,
+  "scale": null,
+  "audio": "omitted in silent motion reference; original untouched",
+  "command": [
+    "ffmpeg",
+    "-v",
+    "error",
+    "-i",
+    "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/youtube-reference/watch/download/video.mp4",
+    "-vf",
+    "trim=start_frame=240:end_frame=540,setpts=PTS-STARTPTS",
+    "-an",
+    "-c:v",
+    "libx264",
+    "-crf",
+    "0",
+    "-preset",
+    "fast",
+    "-fps_mode",
+    "passthrough",
+    "-movflags",
+    "+faststart",
+    "-y",
+    "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/cadence-comparison/consecutive-deals-native60.mp4"
+  ],
+  "probe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "width": 1280,
+        "height": 720,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "60/1",
+        "nb_read_frames": "300"
+      }
+    ],
+    "format": {
+      "duration": "5.000000"
+    }
+  }
+}

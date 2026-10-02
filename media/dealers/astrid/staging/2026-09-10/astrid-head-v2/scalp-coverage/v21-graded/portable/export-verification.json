@@ -1,0 +1,230 @@
+{
+  "exportMeshBindings": [
+    {
+      "name": "Astrid_Eyelashes",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Lashes"
+        }
+      ]
+    },
+    {
+      "name": "Astrid_Eyes",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Eyes_Blue"
+        }
+      ]
+    },
+    {
+      "name": "Astrid_Face.001",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TEXCOORD_1",
+            "TEXCOORD_2",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Astrid_Posterior_Atlas_Study"
+        }
+      ]
+    },
+    {
+      "name": "Mesh.001",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TEXCOORD_1",
+            "TEXCOORD_2",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Continuous_Combed_Hair"
+        }
+      ]
+    },
+    {
+      "name": "Sphere",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "TEXCOORD_1",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Combed_Bun_Core"
+        }
+      ]
+    },
+    {
+      "name": "Continuous swept groom",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Combed_Fiber_0"
+        },
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Combed_Fiber_1"
+        },
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Combed_Fiber_2"
+        },
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Combed_Fiber_3"
+        },
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Combed_Fiber_4"
+        },
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Combed_Fiber_5"
+        }
+      ]
+    },
+    {
+      "name": "Astrid_Teeth",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Teeth"
+        }
+      ]
+    },
+    {
+      "name": "Astrid_Tongue",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Tongue"
+        }
+      ]
+    },
+    {
+      "name": "char1",
+      "primitives": [
+        {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TEXCOORD_0",
+            "JOINTS_0",
+            "WEIGHTS_0"
+          ],
+          "material": "Material_1"
+        }
+      ]
+    }
+  ],
+  "sourceSha256": "f6beb8a1836cac86ebfcafea5bd3f4e422e61fa588dd6444a74b83a6e4c2a37a",
+  "blendSha256": "b517e2e990981640db8bea564c8e2cbb17c2caf7095d66e9afb9994e85bd8b79",
+  "glbSha256": "2d81e327fd9dccb25278c4ee217ff86f0c0d8fb6fe4ab2fd14bce6d948239359",
+  "textures": [
+    {
+      "object": "Astrid_Hair",
+      "size": 2048,
+      "color": "Astrid_Hair_Portable_Color",
+      "normal": "Astrid_Hair_Portable_Normal",
+      "removedExportColorAttributes": [
+        "RootDensity",
+        "PosteriorAtlasCorrection",
+        "FrontReference"
+      ]
+    },
+    {
+      "object": "Astrid_Hair_Bun_Core",
+      "size": 512,
+      "color": "Astrid_Hair_Bun_Core_Portable_Color",
+      "normal": "Astrid_Hair_Bun_Core_Portable_Normal",
+      "removedExportColorAttributes": []
+    },
+    {
+      "object": "Astrid_Face",
+      "size": 4096,
+      "color": "Astrid_Face_Portable_Color",
+      "normal": "unchanged",
+      "removedExportColorAttributes": [
+        "PosteriorAtlasCorrection",
+        "Identity_Texture_Weight",
+        "NeckBlend",
+        "NeckColor"
+      ]
+    }
+  ],
+  "status": "isolated portable material bake; native and browser comparison required"
+}

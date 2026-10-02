@@ -1,0 +1,19 @@
+{
+  "rest": {
+    "engine": "three.js r180",
+    "restFrame": "20",
+    "restLoops": "78",
+    "restState": "unfolding"
+  },
+  "speak": {
+    "speakFrame": "84",
+    "speakJob": "n0XUXKw6zM0cT2ZeL7ON",
+    "speakJoinProgress": "1.000",
+    "speakLine": "dealerbust",
+    "speakSettledDeltaMs": "-71",
+    "speakStartDeltaMs": "-23",
+    "speakState": "idle"
+  },
+  "url": "http://astridmaskall.localhost:4211/?dealer=astrid&table=blender&astridBlue=box4&rehearsal=1",
+  "wallet": "BALANCE\n$1,005.00\nTOTAL BET\n$0.00\nLAST WIN\n$10.00\n+ ADD FUNDS"
+}

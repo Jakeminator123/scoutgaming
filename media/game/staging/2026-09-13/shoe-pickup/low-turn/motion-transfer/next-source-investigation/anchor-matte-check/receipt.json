@@ -1,0 +1,71 @@
+{
+  "status": "Raw Vision still mask; inspected contact candidate, not video acceptance",
+  "source": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-13/shoe-pickup/low-turn/motion-transfer/next-source-investigation/low-mouth-anchor.png",
+  "sourceSHA256": "7ba03609b27b20ac3707e183708bad9170b1124cc37fa67d702c6c6e56f395de",
+  "maskSHA256": "aa2cd6298ec30d431cfa68817e7d65302461f8200823549417d9dc97d9a0ddf8",
+  "dimensions": [
+    2688,
+    1520
+  ],
+  "method": "VNGeneratePersonSegmentationRequest accurate, OneComponent8, uniformly upsampled to originalimage dimensions",
+  "samples": {
+    "fascia_inner_1": {
+      "point": [
+        1710,
+        853
+      ],
+      "alpha": 0
+    },
+    "fascia_inner_2": {
+      "point": [
+        1740,
+        864
+      ],
+      "alpha": 0
+    },
+    "fascia_inner_3": {
+      "point": [
+        1755,
+        870
+      ],
+      "alpha": 0
+    },
+    "drawing_hand_core": {
+      "point": [
+        1580,
+        840
+      ],
+      "alpha": 255
+    },
+    "drawing_finger_core": {
+      "point": [
+        1640,
+        889
+      ],
+      "alpha": 255
+    },
+    "drawing_tip": {
+      "point": [
+        1664,
+        899
+      ],
+      "alpha": 255
+    },
+    "resting_finger": {
+      "point": [
+        1485,
+        873
+      ],
+      "alpha": 251
+    },
+    "source_card": {
+      "point": [
+        1710,
+        900
+      ],
+      "alpha": 51
+    }
+  },
+  "finding": "New gray shoe fascia is excluded; main drawing hand and fingers retained. Faint source-card/sidewall alpha remains below fingertip. Other resting hand has uneven partial alpha. No RGB edit or runtime use.",
+  "limits": "A still segmentation result does not prove video temporal mask quality, finger contact or source motion. Full actor shoulders not audited here."
+}

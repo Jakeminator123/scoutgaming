@@ -3,13 +3,13 @@
 # an audio line. The engine delays that clip's voice by this amount; the CSS
 # --lipsync-offset remains the fallback for unmeasured clips.
 import json, os, subprocess, sys
-BASE=sys.argv[1] if len(sys.argv)>1 else 'web/public/dealer'
+BASE=sys.argv[1] if len(sys.argv)>1 else 'media/dealers/vera/runtime/indexed'
 IDX=f'{BASE}/streams/index.json'
 idx=json.load(open(IDX))
 # hand-verified delays (contact-sheet mouth onset vs waveform word onset)
 # beat every automatic method on short clips; they win outright
 # hand-tuned overrides are per-dealer: the repo file belongs to Vera's set
-ov_path='pipeline/lipsync-overrides.json' if BASE=='web/public/dealer' else f'{BASE}/lipsync-overrides.json'
+ov_path='pipeline/lipsync-overrides.json' if BASE=='media/dealers/vera/runtime/indexed' else f'{BASE}/lipsync-overrides.json'
 try: OVERRIDES=json.load(open(ov_path))
 except FileNotFoundError: OVERRIDES={}
 changed=0

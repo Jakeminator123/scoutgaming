@@ -1,0 +1,47 @@
+{
+  "request": {
+    "requests": [
+      {
+        "index": 3,
+        "params": {
+          "model": "kling3_0",
+          "mode": "pro",
+          "duration": 3,
+          "sound": "off",
+          "aspect_ratio": "16:9",
+          "medias": [
+            {
+              "role": "start_image",
+              "value": "d207da34-c322-49a1-997c-9a8d6022522e"
+            },
+            {
+              "role": "end_image",
+              "value": "33776e49-e64c-4f13-92d8-bd19ed71f3ec"
+            }
+          ],
+          "prompt": "Connect these exact frames with ONE real uninterrupted blackjack dealing action, no editing transition. Empty hands at first; exactly one face-up queen of spades at the end. Immediately pull a single red-backed card out of the existing shoe's low front mouth with the left hand (viewer right). Right hand receives it beside the shoe and physically turns it over in a quick wrist roll, exposing its WHITE QUEEN OF SPADES FACE. Right hand slides that same face-up card directly forward onto its exact final position shown in the last image, below the gold arc. Release it and return the empty hands to their exact final positions. Keep the white printed face visible after the wrist turn all the way to landing. Extraction, transfer, turn, delivery and empty return in one brisk 1.5-second cycle, then slight breathing. No showing a card vertically to the camera, no hesitation, no extra sweep. Every card movement is caused by the contacting fingers; the card cannot appear at its destination or change sides magically. Exact stable Astrid identity, body proportions, room, exposure, table, shoe and locked camera. No dissolve, morph, ghost image, camera movement, talking or new objects."
+        }
+      }
+    ]
+  },
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Submitted 1/1 video generations.\n- index 3: 2bc43925-eb41-4aba-b0c1-ace56546b0e0 (pending)\nWait for the complete requested set with jobs_wait, then show it together with show_generation_by_ids using the collected indexed jobs. This includes jobs submitted across separate calls. job_display accepts only one id and cannot display a group; do not pass ids or call it once per job."
+      }
+    ],
+    "structuredContent": {
+      "jobs": [
+        {
+          "index": 3,
+          "job_id": "2bc43925-eb41-4aba-b0c1-ace56546b0e0",
+          "status": "pending"
+        }
+      ],
+      "submitted_count": 1,
+      "failed_count": 0
+    },
+    "isError": false
+  }
+}

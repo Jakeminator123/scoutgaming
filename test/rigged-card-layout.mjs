@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {riggedCardPose,cardCorners} from '../web/public/rigged-card-layout.mjs';
-const profile=JSON.parse(readFileSync(new URL('../assets/blackjack-3d/profile.json',import.meta.url)));
+const profile=JSON.parse(readFileSync(new URL('../media/game/source/3d/profile.json',import.meta.url)));
 function insideFelt([x,,z]){
   const ax=Math.abs(x),rear=ax<=.26?.16:ax<.50?-.15+.31*Math.sqrt(1-((ax-.26)/.24)**2):-.15;
   return (x/1.16)**2+((z+.15)/1.25)**2<1&&z>rear;

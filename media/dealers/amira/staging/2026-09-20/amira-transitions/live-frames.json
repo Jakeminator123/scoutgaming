@@ -1,0 +1,104 @@
+[
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-00.png",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "0.531",
+    "speakLine": "greeting",
+    "speakState": "enter"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-01.png",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "0.820",
+    "speakLine": "greeting",
+    "speakState": "enter"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-02.png",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "0.921",
+    "speakLine": "greeting",
+    "speakState": "enter"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-03.png",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakState": "playing"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-04.png",
+    "speakFrame": "2",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakStartDeltaMs": "-40",
+    "speakState": "playing"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-05.png",
+    "speakFrame": "4",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakStartDeltaMs": "-40",
+    "speakState": "playing"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-06.png",
+    "speakFrame": "5",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakStartDeltaMs": "-40",
+    "speakState": "playing"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-07.png",
+    "speakFrame": "8",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakStartDeltaMs": "-40",
+    "speakState": "playing"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-08.png",
+    "speakFrame": "8",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakStartDeltaMs": "-40",
+    "speakState": "playing"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-09.png",
+    "speakFrame": "10",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakStartDeltaMs": "-40",
+    "speakState": "playing"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-10.png",
+    "speakFrame": "12",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakSettledDeltaMs": "-104",
+    "speakStartDeltaMs": "-40",
+    "speakState": "playing"
+  },
+  {
+    "file": "/Users/solvifyab/Desktop/croupier/content/staging/2026-09-20/amira-transitions/live-enter-11.png",
+    "speakFrame": "12",
+    "speakJob": "jHDHfWSSQaMcukt5Evey",
+    "speakJoinProgress": "1.000",
+    "speakLine": "greeting",
+    "speakSettledDeltaMs": "-104",
+    "speakStartDeltaMs": "-40",
+    "speakState": "playing"
+  }
+]

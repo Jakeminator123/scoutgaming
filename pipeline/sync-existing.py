@@ -8,10 +8,10 @@ apw=importlib.util.module_from_spec(spec); spec.loader.exec_module(apw)
 
 CROPS=json.load(open('pipeline/mouth-crops.json'))
 DEALERS={
-    'vera': 'web/public/dealer',
-    'astrid': 'web/public/dealers/astrid',
-    'amira': 'web/public/dealers/amira',
-    'mei': 'web/public/dealers/mei',
+    'vera': 'media/dealers/vera/runtime/indexed',
+    'astrid': 'media/dealers/astrid/runtime/indexed',
+    'amira': 'media/dealers/amira/runtime/indexed',
+    'mei': 'media/dealers/mei/runtime/indexed',
 }
 # Vera already passed Kevin's gate; only touch her worst leftovers.
 VERA_ONLY={'goodluck','peek','placebets','chatter2','rules_bj_pays','side_213','bust','win','rules_s17'}

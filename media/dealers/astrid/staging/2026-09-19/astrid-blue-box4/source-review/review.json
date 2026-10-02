@@ -1,0 +1,87 @@
+{
+  "jobId": "c01866d1-7c93-43a4-9493-73f7c66d3725",
+  "status": "completed",
+  "resultUrl": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260919_165023_c01866d1-7c93-43a4-9493-73f7c66d3725.mp4",
+  "sourceSha256": "38dad95f8ad60819bbb2604f85b4ce424d4db425324bdbd0aceca91eb759215a",
+  "width": 1920,
+  "height": 1080,
+  "fps": 24,
+  "frameCount": 97,
+  "decision": "Do not install: choreography gate failed. Preserve as blue-card tracking experiment.",
+  "inspected": "Decoded contact sheets at every source frame through empty return, full-frame overview through frame 96, native browser playback and diagnostic fixed-size overlay.",
+  "events": {
+    "contactAtShoe": {
+      "frame": 8,
+      "seconds": 0.3333333333333333
+    },
+    "extraction": {
+      "frame": 22,
+      "seconds": 0.9166666666666666
+    },
+    "thinEdgeTurn": {
+      "frame": 28,
+      "seconds": 1.1666666666666667
+    },
+    "frontPatternVisible": {
+      "frame": 30,
+      "seconds": 1.25
+    },
+    "presentationHold": {
+      "frames": [
+        31,
+        41
+      ],
+      "seconds": [
+        1.2916666666666667,
+        1.7083333333333333
+      ]
+    },
+    "tableContact": {
+      "frame": 44,
+      "seconds": 1.8333333333333333
+    },
+    "fingertipRelease": {
+      "frame": 55,
+      "seconds": 2.2916666666666665,
+      "uncertaintyFrames": 1
+    },
+    "emptyReturn": {
+      "frame": 68,
+      "seconds": 2.8333333333333335,
+      "uncertaintyFrames": 3
+    }
+  },
+  "improvements": [
+    "Only one card; visibly extracted from shoe mouth.",
+    "Back white centre dot changes to coloured front-corner pattern through an observed thin edge.",
+    "Empty-hand return and stationary card after release.",
+    "Landed card closely matches approved Box 4 target. Fixed physical-size table fit needs no scale changes."
+  ],
+  "failures": [
+    "The same hand extracts, turns and places the card; requested hand-to-hand transfer is absent.",
+    "Prolonged grip at shoe and upright presentation gesture. Release about 2.29s rather than requested roughly 0.9s.",
+    "Unrequested white Box 4 label added to table.",
+    "Blue detection absent at thin-edge frame 28; corner colour candidates include border ringing and cyan bleaching. No claim of reliable full-clip marker correspondence."
+  ],
+  "tracking": {
+    "scope": "Diagnostic face-up frames 31–96 only. No replacement card rendered in game.",
+    "scaleFitted": false,
+    "sizeMetres": [
+      0.072,
+      0.103
+    ],
+    "landingMeanMarkerErrorPx": 0.25936,
+    "markerOffsetCalibration": "same clip end frame; measures repeatability, not independent absolute accuracy",
+    "liftedPose": "underconstrained partial markers use outline filtering and temporal prior; low residual is not unique-pose proof",
+    "pickupAndTurn": "not solved",
+    "gameplayInstalled": false
+  },
+  "validation": [
+    "audit-dealer-sync.mjs --probe passed",
+    "repository .githooks/pre-commit passed",
+    "inspect-source.py and check-rigid-fit.py executed successfully"
+  ],
+  "generationCount": 1,
+  "estimatedCredits": 36,
+  "nextGenerationSubmitted": false
+}

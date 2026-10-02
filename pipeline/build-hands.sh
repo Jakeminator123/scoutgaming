@@ -13,7 +13,7 @@
 # centered on the true contour (drs=0.5): her hands read solid on the felt,
 # no green tinting through the edge.
 #
-# Vision masks are cached in content/hands-masks/<name>/ keyed by the stream
+# Vision masks are cached in media/dealers/vera/staging/hands-masks/<name>/ keyed by the stream
 # file's mtime, so matte-math changes re-run in seconds, not minutes.
 #
 # Usage: build-hands.sh [name ...]   (default: every stream except supervisor)
@@ -21,15 +21,15 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BAND_Y=1124; BAND_H=316   # band v0.7806..1.0 (even height for yuv420p)
-ENC=content/hands-encoded
-PLATE=content/norm/bg.png
-mkdir -p "$ENC" content/norm content/hands-masks
-[ -f "$PLATE" ] || ffmpeg -nostdin -hide_banner -loglevel error -y -i content/scene-16x9.png \
+ENC=media/dealers/vera/staging/hands-encoded
+PLATE=media/game/source/pipeline/norm/bg.png
+mkdir -p "$ENC" content/norm media/dealers/vera/staging/hands-masks
+[ -f "$PLATE" ] || ffmpeg -nostdin -hide_banner -loglevel error -y -i media/game/source/scene/scene-16x9.png \
   -vf "crop=1044:1044:854:15,scale=1440:1440" "$PLATE"
 
 names=("$@")
 if [ ${#names[@]} -eq 0 ]; then
-  for f in web/public/dealer/streams/*.h264; do
+  for f in media/dealers/vera/runtime/indexed/streams/*.h264; do
     n=$(basename "$f" .h264)
     [ "$n" = "idle-1_actions_supervisor" ] && continue  # two people in frame; no matte
     names+=("$n")
@@ -38,9 +38,9 @@ fi
 
 for name in "${names[@]}"; do
   echo "== $name"
-  stream=web/public/dealer/streams/$name.h264
+  stream=media/dealers/vera/runtime/indexed/streams/$name.h264
   work=content/hands-work/$name
-  cache=content/hands-masks/$name
+  cache=media/dealers/vera/staging/hands-masks/$name
   stamp=$(stat -f%m "$stream")
   rm -rf "$work"; mkdir -p "$work/frames" "$work/matte"
   ffmpeg -nostdin -hide_banner -loglevel error -y -f h264 -i "$stream" \
@@ -82,11 +82,11 @@ PYEOF
     -c:v libx264 -preset fast -profile:v main -level:v 3.1 \
     -x264-params "keyint=infinite:min-keyint=infinite:scenecut=0:bframes=0:open-gop=0:repeat-headers=1:aud=1" \
     -crf 26 -f h264 "$ENC/$name.h264"
-  want=$(node -e "const i=require('./web/public/dealer/streams/index.json');const c=Object.values(i.clips).find(c=>c.file==='$name.h264');console.log(c?c.frameCount:'?')" 2>/dev/null || echo '?')
+  want=$(node -e "const i=require('./media/dealers/vera/runtime/indexed/streams/index.json');const c=Object.values(i.clips).find(c=>c.file==='$name.h264');console.log(c?c.frameCount:'?')" 2>/dev/null || echo '?')
   got=$(ls "$work/matte" | wc -l | tr -d ' ')
   echo "   matte=$got streamFrames=$want"
   [ "$got" = "$want" ] || echo "   WARNING: frame count mismatch"
   rm -rf "$work"
 done
 
-node pipeline/build-index.mjs "$ENC" web/public/dealer-hands --codec avc1.4D401F --wh 1440 --h "$BAND_H"
+node pipeline/build-index.mjs "$ENC" media/dealers/vera/runtime/hands --codec avc1.4D401F --wh 1440 --h "$BAND_H"

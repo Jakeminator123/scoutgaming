@@ -2,74 +2,320 @@
   "schema": 1,
   "services": {
     "render-game": {
-      "sources": ["ops/cloud/config.mjs", "ops/cloud/start.mjs"],
-      "required": ["NODE_ENV", "CROUPIER_CLOUD_LAUNCH", "CROUPIER_CLOUD_LAYOUT", "CROUPIER_LAB_BASE_PATH", "CROUPIER_CLOUD_DATA_ROOT", "CROUPIER_STREAM_LANE", "OPENCLAW_PRODUCT_SPEECH_URL", "OPENCLAW_PRODUCT_SPEECH_TOKEN"],
-      "firstBoot": ["CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER", "CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD"],
-      "conditional": ["CROUPIER_MEDIA_STORAGE", "BLOB_READ_WRITE_TOKEN", "CROUPIER_ZONES_DATABASE_URL", "CROUPIER_PLAYER_ACCOUNTS", "CROUPIER_VERCEL_FRONTEND_ORIGIN", "LAB_VIDEO_ARCHIVE", "CROUPIER_PRESENTATION_DIRECTOR_URL", "CROUPIER_PRESENTATION_DIRECTOR_TOKEN", "LAB_REMOTE_URL", "LAB_REMOTE_TOKEN", "CROUPIER_ASTRID_CAMERA", "CROUPIER_ASTRID_TRANSLATION_KEY", "CROUPIER_GENERATED_SPEECH", "CROUPIER_CLOUD_GENERATED_SPEECH", "CROUPIER_GENERATED_SPEECH_STREAMING", "CROUPIER_SPEECH_STREAM_WORKER_SECRET", "CROUPIER_SPEECH_STREAM_TICKET_SECRET", "CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD", "CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD", "CARTESIA_API_KEY", "RUNPOD_API_KEY", "CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID", "BETTALOTTO_PARTNER_KEY_ID", "BETTALOTTO_PARTNER_SECRET", "BETTALOTTO_PARTNER_PLAYER_ID", "OPENCLAW_TIMEOUT_MS", "PUBLIC_URL", "BO_URL", "LAB_PUBLIC_URL", "CROUPIER_GAME_ORIGIN", "BETTALOTTO_PARTNER_BASE_URL", "CROUPIER_DATA_DIR", "LAB_STUDIO_DATA_DIR", "CROUPIER_PRESENTATION_STUDIO_DIR", "CROUPIER_GENERATIONS_DIR", "CROUPIER_GENERATED_SPEECH_DIR", "OPENCLAW_SPEECH_TIMEOUT_MS"],
-      "managed": ["PORT", "RENDER_EXTERNAL_URL"],
-      "blocked": ["DEMO_GUEST_ACCESS", "CROUPIER_GENERATED_SPEECH_PREVIEW", "CROUPIER_LISSABON_PROFILES"]
+      "sources": [
+        "ops/cloud/config.mjs",
+        "ops/cloud/start.mjs",
+        "ops/cloud/vercel-ingress.mjs",
+        "ops/cloud/storage-export.mjs"
+      ],
+      "required": [
+        "NODE_ENV",
+        "CROUPIER_CLOUD_LAUNCH",
+        "CROUPIER_CLOUD_LAYOUT",
+        "CROUPIER_LAB_BASE_PATH",
+        "CROUPIER_CLOUD_DATA_ROOT",
+        "CROUPIER_STREAM_LANE",
+        "OPENCLAW_PRODUCT_SPEECH_URL",
+        "OPENCLAW_PRODUCT_SPEECH_TOKEN"
+      ],
+      "firstBoot": [
+        "CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER",
+        "CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD"
+      ],
+      "conditional": [
+        "CROUPIER_MEDIA_STORAGE",
+        "CROUPIER_MEDIA_BLOB_INDEX",
+        "BLOB_READ_WRITE_TOKEN",
+        "CROUPIER_ZONES_DATABASE_URL",
+        "CROUPIER_PLAYER_ACCOUNTS",
+        "CROUPIER_VERCEL_FRONTEND_ORIGIN",
+        "LAB_VIDEO_ARCHIVE",
+        "CROUPIER_PRESENTATION_DIRECTOR_URL",
+        "CROUPIER_PRESENTATION_DIRECTOR_TOKEN",
+        "LAB_REMOTE_URL",
+        "LAB_REMOTE_TOKEN",
+        "CROUPIER_ASTRID_CAMERA",
+        "CROUPIER_ASTRID_TRANSLATION_KEY",
+        "CROUPIER_GENERATED_SPEECH",
+        "CROUPIER_CLOUD_GENERATED_SPEECH",
+        "CROUPIER_GENERATED_SPEECH_STREAMING",
+        "CROUPIER_SPEECH_STREAM_WORKER_SECRET",
+        "CROUPIER_SPEECH_STREAM_TICKET_SECRET",
+        "CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD",
+        "CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD",
+        "CARTESIA_API_KEY",
+        "RUNPOD_API_KEY",
+        "CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID",
+        "BETTALOTTO_PARTNER_KEY_ID",
+        "BETTALOTTO_PARTNER_SECRET",
+        "BETTALOTTO_PARTNER_PLAYER_ID",
+        "OPENCLAW_TIMEOUT_MS",
+        "PUBLIC_URL",
+        "BO_URL",
+        "LAB_PUBLIC_URL",
+        "CROUPIER_GAME_ORIGIN",
+        "BETTALOTTO_PARTNER_BASE_URL",
+        "CROUPIER_DATA_DIR",
+        "LAB_STUDIO_DATA_DIR",
+        "CROUPIER_PRESENTATION_STUDIO_DIR",
+        "CROUPIER_GENERATIONS_DIR",
+        "CROUPIER_GENERATED_SPEECH_DIR",
+        "OPENCLAW_SPEECH_TIMEOUT_MS",
+        "CROUPIER_DATABASE",
+        "CROUPIER_GAME_DATABASE_URL",
+        "CROUPIER_PUBLIC_GAME_PATH",
+        "CROUPIER_VERCEL_TRANSPORT_ORIGIN",
+        "CROUPIER_PUBLIC_ORIGIN",
+        "CROUPIER_VERCEL_INGRESS_SECRET",
+        "CROUPIER_STORAGE_MAINTENANCE",
+        "CROUPIER_STORAGE_EXPORT_SECRET"
+      ],
+      "managed": [
+        "PORT",
+        "RENDER_EXTERNAL_URL"
+      ],
+      "blocked": [
+        "DEMO_GUEST_ACCESS",
+        "CROUPIER_GENERATED_SPEECH_PREVIEW",
+        "CROUPIER_LISSABON_PROFILES"
+      ]
     },
     "vercel-entry": {
-      "sources": ["ops/vercel-entry/build.mjs"],
-      "templates": ["ops/vercel-entry/.env.example"],
-      "required": ["CROUPIER_GAME_ORIGIN"],
+      "sources": [
+        "ops/vercel-entry/build.mjs"
+      ],
+      "templates": [
+        "ops/vercel-entry/.env.example"
+      ],
+      "required": [
+        "CROUPIER_GAME_ORIGIN"
+      ],
       "frontendPreviewBuildCommand": "node build.mjs --frontend-preview (same required env; no new keys)",
       "publicOriginConfigured": "https://croupier-v2.onrender.com",
       "configurationCheckedOn": "2026-09-29",
       "deploymentStatus": "Legacy landing retired; build source retained for isolated player preview",
-      "firstBoot": [], "conditional": [], "managed": [], "blocked": []
+      "firstBoot": [],
+      "conditional": [],
+      "managed": [],
+      "blocked": []
     },
     "vercel-frontend-production": {
-      "sources": ["apps/croupier-frontend/lib/game-url.ts"],
+      "sources": [
+        "apps/croupier-frontend/lib/game-url.ts",
+        "apps/croupier-frontend/lib/platform-routing.mjs"
+      ],
       "project": "croupier-frontend",
-      "gitBranch": "jakemanator123-github-work",
+      "gitBranch": "main",
       "rootDirectory": "apps/croupier-frontend",
-      "configuredTargets": ["production", "preview"],
-      "required": [], "firstBoot": [],
-      "conditional": ["CROUPIER_GAME_URL"],
-      "managed": [], "blocked": []
+      "configuredTargets": [
+        "production",
+        "preview"
+      ],
+      "required": [],
+      "firstBoot": [],
+      "conditional": [
+        "CROUPIER_GAME_URL",
+        "CROUPIER_VERCEL_UI",
+        "CROUPIER_PUBLIC_ORIGIN",
+        "CROUPIER_BACKEND_ORIGIN",
+        "CROUPIER_LAB_UI_ORIGIN",
+        "CROUPIER_VERCEL_INGRESS_SECRET"
+      ],
+      "managed": [],
+      "blocked": []
     },
     "vercel-zones-qa": {
       "sources": [],
       "project": "croupier-player-preview-qa",
-      "required": [], "firstBoot": [],
-      "conditional": ["CROUPIER_ZONES_DATABASE_URL"],
-      "managed": ["BLOB_READ_WRITE_TOKEN", "CROUPIER_ZONES_NEON_PROJECT_ID", "CROUPIER_ZONES_POSTGRES_URL_NO_SSL", "CROUPIER_ZONES_POSTGRES_USER", "CROUPIER_ZONES_DATABASE_URL_UNPOOLED", "CROUPIER_ZONES_POSTGRES_PRISMA_URL", "CROUPIER_ZONES_POSTGRES_URL_NON_POOLING", "CROUPIER_ZONES_POSTGRES_HOST", "CROUPIER_ZONES_PGHOST", "CROUPIER_ZONES_PGPASSWORD", "CROUPIER_ZONES_PGUSER", "CROUPIER_ZONES_POSTGRES_DATABASE", "CROUPIER_ZONES_PGDATABASE", "CROUPIER_ZONES_PGHOST_UNPOOLED", "CROUPIER_ZONES_POSTGRES_PASSWORD", "CROUPIER_ZONES_POSTGRES_URL"],
+      "required": [],
+      "firstBoot": [],
+      "conditional": [
+        "CROUPIER_ZONES_DATABASE_URL"
+      ],
+      "managed": [
+        "BLOB_READ_WRITE_TOKEN",
+        "CROUPIER_ZONES_NEON_PROJECT_ID",
+        "CROUPIER_ZONES_POSTGRES_URL_NO_SSL",
+        "CROUPIER_ZONES_POSTGRES_USER",
+        "CROUPIER_ZONES_DATABASE_URL_UNPOOLED",
+        "CROUPIER_ZONES_POSTGRES_PRISMA_URL",
+        "CROUPIER_ZONES_POSTGRES_URL_NON_POOLING",
+        "CROUPIER_ZONES_POSTGRES_HOST",
+        "CROUPIER_ZONES_PGHOST",
+        "CROUPIER_ZONES_PGPASSWORD",
+        "CROUPIER_ZONES_PGUSER",
+        "CROUPIER_ZONES_POSTGRES_DATABASE",
+        "CROUPIER_ZONES_PGDATABASE",
+        "CROUPIER_ZONES_PGHOST_UNPOOLED",
+        "CROUPIER_ZONES_POSTGRES_PASSWORD",
+        "CROUPIER_ZONES_POSTGRES_URL"
+      ],
       "blocked": []
     },
     "render-gpu-relay": {
-      "sources": ["services/astrid-gpu-worker/gateway/server.mjs"],
-      "required": ["WORKER_SECRET", "TICKET_SECRET", "ALLOWED_ORIGINS"],
-      "firstBoot": [], "conditional": [], "managed": ["PORT"], "blocked": []
+      "sources": [
+        "services/astrid-gpu-worker/gateway/server.mjs"
+      ],
+      "required": [
+        "WORKER_SECRET",
+        "TICKET_SECRET",
+        "ALLOWED_ORIGINS"
+      ],
+      "firstBoot": [],
+      "conditional": [],
+      "managed": [
+        "PORT"
+      ],
+      "blocked": []
     },
     "render-openclaw-director": {
-      "sources": ["open-claw/lab/deploy/start-director.mjs"],
-      "blueprint": { "path": "open-claw/lab/render.yaml", "service": "croupier-lab-director" },
-      "required": ["LAB_API_TOKEN", "OPENCLAWAPI_KEY"],
+      "sources": [
+        "open-claw/lab/deploy/start-director.mjs"
+      ],
+      "blueprint": {
+        "path": "open-claw/lab/render.yaml",
+        "service": "croupier-lab-director"
+      },
+      "required": [
+        "LAB_API_TOKEN",
+        "OPENCLAWAPI_KEY"
+      ],
       "firstBoot": [],
-      "conditional": ["HOST", "PORT", "LAB_DATA_DIR", "OPENCLAW_HOSTPORT", "OPENCLAW_BASE_URL", "OPENCLAW_AGENT", "OPENCLAW_CHAT_AGENT", "OPENCLAW_SPEECH_AGENT", "OPENCLAW_PRODUCT_SPEECH_TOKEN", "OPENCLAW_TIMEOUT_MS", "OPENCLAW_DASHBOARD_ENABLED", "OPENCLAW_SPEECH_ROUTING", "OPENCLAW_SPEECH_DEEP_MODEL", "OPENCLAW_SPEECH_TIMEOUT_MS"],
-      "managed": [], "blocked": []
+      "conditional": [
+        "HOST",
+        "PORT",
+        "LAB_DATA_DIR",
+        "OPENCLAW_HOSTPORT",
+        "OPENCLAW_BASE_URL",
+        "OPENCLAW_AGENT",
+        "OPENCLAW_CHAT_AGENT",
+        "OPENCLAW_SPEECH_AGENT",
+        "OPENCLAW_PRODUCT_SPEECH_TOKEN",
+        "OPENCLAW_TIMEOUT_MS",
+        "OPENCLAW_DASHBOARD_ENABLED",
+        "OPENCLAW_SPEECH_ROUTING",
+        "OPENCLAW_SPEECH_DEEP_MODEL",
+        "OPENCLAW_SPEECH_TIMEOUT_MS"
+      ],
+      "managed": [],
+      "blocked": []
     },
     "render-openclaw-gateway": {
-      "sources": ["open-claw/lab/deploy/gateway-config.mjs"],
+      "sources": [
+        "open-claw/lab/deploy/gateway-config.mjs"
+      ],
       "defaultModel": "gpt-5.6-terra",
       "defaultModelScope": "New configurations; existing persistent role models require an explicit operator update",
-      "blueprint": { "path": "open-claw/lab/render.yaml", "service": "croupier-lab-openclaw" },
-      "required": ["OPENCLAWAPI_KEY", "OPENCLAW_MODEL_API_KEY"],
+      "blueprint": {
+        "path": "open-claw/lab/render.yaml",
+        "service": "croupier-lab-openclaw"
+      },
+      "required": [
+        "OPENCLAWAPI_KEY",
+        "OPENCLAW_MODEL_API_KEY"
+      ],
       "firstBoot": [],
-      "conditional": ["OPENCLAW_MODEL_BASE_URL", "OPENCLAW_MODEL_ID", "OPENCLAW_MODEL_API", "OPENCLAW_GATEWAY_PORT", "OPENCLAW_STATE_DIR", "OPENCLAW_CONFIG_PATH", "OPENCLAW_DASHBOARD_ORIGIN", "OPENCLAW_DASHBOARD_ALLOW_LOOPBACK", "CROUPIER_SPEECH_VISION"],
-      "managed": [], "blocked": []
+      "conditional": [
+        "OPENCLAW_MODEL_BASE_URL",
+        "OPENCLAW_MODEL_ID",
+        "OPENCLAW_MODEL_API",
+        "OPENCLAW_GATEWAY_PORT",
+        "OPENCLAW_STATE_DIR",
+        "OPENCLAW_CONFIG_PATH",
+        "OPENCLAW_DASHBOARD_ORIGIN",
+        "OPENCLAW_DASHBOARD_ALLOW_LOOPBACK",
+        "CROUPIER_SPEECH_VISION"
+      ],
+      "managed": [],
+      "blocked": []
     },
     "runpod-gpu-worker": {
       "sources": [],
-      "required": [], "firstBoot": [], "conditional": ["AVATAR_ID", "NVIDIA_DRIVER_CAPABILITIES", "NVENC"], "managed": [], "blocked": []
+      "required": [],
+      "firstBoot": [],
+      "conditional": [
+        "AVATAR_ID",
+        "NVIDIA_DRIVER_CAPABILITIES",
+        "NVENC"
+      ],
+      "managed": [],
+      "blocked": []
     },
     "local-lab-openclaw": {
       "sources": [],
-      "templates": ["lab/.env.example", "open-claw/lab/.env.example"],
-      "required": [], "firstBoot": [],
-      "conditional": ["CROUPIER_MEDIA_STORAGE", "BLOB_READ_WRITE_TOKEN", "CROUPIER_ZONES_DATABASE_URL", "OPENCLAWAPI_KEY", "OPENCLAW_BASE_URL", "OPENCLAW_AGENT", "OPENCLAW_CHAT_AGENT", "OPENCLAW_SPEECH_AGENT", "OPENCLAW_PRODUCT_SPEECH_URL", "OPENCLAW_PRODUCT_SPEECH_TOKEN", "OPENCLAW_TIMEOUT_MS", "LAB_REMOTE_URL", "LAB_REMOTE_TOKEN", "LAB_API_TOKEN", "OPENCLAW_MODEL_API_KEY", "OPENCLAW_MODEL_BASE_URL", "OPENCLAW_MODEL_ID", "OPENCLAW_MODEL_API", "LAB_COMPANION_ENABLED", "LAB_COMPANION_FUN_ENABLED", "LAB_COMPANION_WEB_ENABLED", "OPENCLAW_DASHBOARD_ORIGIN", "OPENCLAW_DASHBOARD_ALLOW_LOOPBACK", "HOST", "PORT", "LAB_VIDEO_ARCHIVE", "LAB_STUDIO_DATA_DIR", "BETTALOTTO_PARTNER_BASE_URL", "BETTALOTTO_PARTNER_KEY_ID", "BETTALOTTO_PARTNER_SECRET", "BETTALOTTO_PARTNER_PLAYER_ID", "OPENCLAW_SPEECH_ROUTING", "OPENCLAW_SPEECH_DEEP_MODEL", "OPENCLAW_SPEECH_TIMEOUT_MS"],
-      "managed": [], "blocked": []
+      "templates": [
+        "lab/.env.example",
+        "open-claw/lab/.env.example"
+      ],
+      "required": [],
+      "firstBoot": [],
+      "conditional": [
+        "CROUPIER_MEDIA_STORAGE",
+        "BLOB_READ_WRITE_TOKEN",
+        "CROUPIER_ZONES_DATABASE_URL",
+        "OPENCLAWAPI_KEY",
+        "OPENCLAW_BASE_URL",
+        "OPENCLAW_AGENT",
+        "OPENCLAW_CHAT_AGENT",
+        "OPENCLAW_SPEECH_AGENT",
+        "OPENCLAW_PRODUCT_SPEECH_URL",
+        "OPENCLAW_PRODUCT_SPEECH_TOKEN",
+        "OPENCLAW_TIMEOUT_MS",
+        "LAB_REMOTE_URL",
+        "LAB_REMOTE_TOKEN",
+        "LAB_API_TOKEN",
+        "OPENCLAW_MODEL_API_KEY",
+        "OPENCLAW_MODEL_BASE_URL",
+        "OPENCLAW_MODEL_ID",
+        "OPENCLAW_MODEL_API",
+        "LAB_COMPANION_ENABLED",
+        "LAB_COMPANION_FUN_ENABLED",
+        "LAB_COMPANION_WEB_ENABLED",
+        "OPENCLAW_DASHBOARD_ORIGIN",
+        "OPENCLAW_DASHBOARD_ALLOW_LOOPBACK",
+        "HOST",
+        "PORT",
+        "LAB_VIDEO_ARCHIVE",
+        "LAB_STUDIO_DATA_DIR",
+        "BETTALOTTO_PARTNER_BASE_URL",
+        "BETTALOTTO_PARTNER_KEY_ID",
+        "BETTALOTTO_PARTNER_SECRET",
+        "BETTALOTTO_PARTNER_PLAYER_ID",
+        "OPENCLAW_SPEECH_ROUTING",
+        "OPENCLAW_SPEECH_DEEP_MODEL",
+        "OPENCLAW_SPEECH_TIMEOUT_MS"
+      ],
+      "managed": [],
+      "blocked": []
+    },
+    "vercel-lab-ui": {
+      "sources": [
+        "lab/lib/remote-ui.mjs"
+      ],
+      "project": "croupier-lab-ui",
+      "gitBranch": "main",
+      "rootDirectory": "lab",
+      "required": [],
+      "firstBoot": [],
+      "conditional": [
+        "CROUPIER_LAB_REMOTE_UI",
+        "CROUPIER_PUBLIC_ORIGIN",
+        "CROUPIER_BACKEND_ORIGIN",
+        "CROUPIER_LAB_UI_ORIGIN",
+        "CROUPIER_VERCEL_INGRESS_SECRET",
+        "CROUPIER_LAB_BASE_PATH",
+        "CROUPIER_STREAM_LANE",
+        "BO_URL"
+      ],
+      "managed": [],
+      "blocked": [
+        "CROUPIER_GAME_DATABASE_URL",
+        "CROUPIER_ZONES_DATABASE_URL",
+        "BLOB_READ_WRITE_TOKEN",
+        "CARTESIA_API_KEY",
+        "RUNPOD_API_KEY",
+        "OPENCLAW_PRODUCT_SPEECH_TOKEN"
+      ]
     }
   }
 }

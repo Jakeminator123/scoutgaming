@@ -1,0 +1,84 @@
+greeting 116 headAlpha 250 eyes 250
+blackjack 93 headAlpha 250 eyes 250
+bust 36 headAlpha 251 eyes 251
+chatter1 70 headAlpha 249 eyes 250
+chatter2 62 headAlpha 250 eyes 250
+dealerblackjack 51 headAlpha 250 eyes 250
+dealerbust 85 headAlpha 250 eyes 250
+double 51 headAlpha 250 eyes 250
+farewell 47 headAlpha 250 eyes 251
+goodluck 51 headAlpha 250 eyes 251
+insurance 51 headAlpha 250 eyes 250
+lose 39 headAlpha 250 eyes 251
+peek 66 headAlpha 250 eyes 250
+placebets 55 headAlpha 250 eyes 250
+push 47 headAlpha 250 eyes 250
+sidebet 51 headAlpha 250 eyes 250
+win 89 headAlpha 249 eyes 250
+{
+  "failures": [],
+  "all17Present": true,
+  "speechFrames": 1060,
+  "minimumHeadAlpha": 249,
+  "minimumEyeAlpha": 250,
+  "maxNewCropLoss": 0,
+  "loopBefore": {
+    "frames": 73,
+    "headInteriorRgbMeanAbsDifference": {
+      "wrap": 25.32219123840332,
+      "adjacentMedian": 1.130013108253479,
+      "adjacentP95": 2.965080273151398,
+      "adjacentMax": 3.5368306636810303,
+      "wrapOverMedian": 22.408758848417865
+    },
+    "largestInteriorChanges": [
+      {
+        "frame": 10,
+        "nextFrame": 11,
+        "rgbMeanAbsDifference": 3.5368306636810303
+      },
+      {
+        "frame": 4,
+        "nextFrame": 5,
+        "rgbMeanAbsDifference": 3.5336883068084717
+      },
+      {
+        "frame": 5,
+        "nextFrame": 6,
+        "rgbMeanAbsDifference": 3.022716760635376
+      }
+    ]
+  },
+  "loopAfter": {
+    "frames": 61,
+    "headInteriorRgbMeanAbsDifference": {
+      "wrap": 1.9054652452468872,
+      "adjacentMedian": 1.2056556940078735,
+      "adjacentP95": 4.387076473236084,
+      "adjacentMax": 4.902896881103516,
+      "wrapOverMedian": 1.5804389716874208
+    },
+    "largestInteriorChanges": [
+      {
+        "frame": 3,
+        "nextFrame": 4,
+        "rgbMeanAbsDifference": 4.902896881103516
+      },
+      {
+        "frame": 4,
+        "nextFrame": 5,
+        "rgbMeanAbsDifference": 4.618357181549072
+      },
+      {
+        "frame": 5,
+        "nextFrame": 6,
+        "rgbMeanAbsDifference": 4.610087871551514
+      }
+    ]
+  },
+  "restAlpha": {
+    "loop": 250,
+    "out": 249,
+    "back": 250
+  }
+}

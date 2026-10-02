@@ -9,13 +9,15 @@ import { readClassifications } from './video-classifications.mjs';
 import { mediaDefinitionForPath, readLabVideoManifest } from './lab-video-manifest.mjs';
 import { buildLabVideoManifest, manifestJson } from '../../pipeline/build-lab-video-manifest.mjs';
 import { StudioError } from './project-store.mjs';
-import { getPrivateMedia, isCloudMediaConfigured } from './cloud-media-store.mjs';
+import { getPrivateMedia, isCloudMediaConfigured, mediaBlobPath } from './cloud-media-store.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
+import { normalizePresentationArchive, presentationBankRoot } from '../../tools/media-layout.mjs';
+import { isMediaBlobIndexConfigured, verifiedMediaBlobStorage, getIndexedMediaBlobResponse, readMediaBlobIndex } from './media-blob-index.mjs';
 
 // Server-only: the browser receives logical IDs, never archive paths or credentials.
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
-const EMIL_SOURCE = ['emil', 'dealklipp-v1'];
+const EMIL_SOURCE = ['media', 'dealers', 'astrid', 'runtime', 'presentation'];
 const verified = new Map();
 
 export function exactHttpsOrigin(value) {
@@ -79,14 +81,24 @@ async function readEntries(options) {
 }
 
 function selectArchive(options) {
-  if (Object.hasOwn(options, 'archiveDir')) return { path: options.archiveDir, source: options.archiveDir ? 'explicit' : 'none' };
+  if (Object.hasOwn(options, 'archiveDir')) return { path: normalizePresentationArchive(options.archiveDir,options.repositoryRoot??repositoryRoot()), source: options.archiveDir ? 'explicit' : 'none' };
   const env = options.env ?? process.env;
-  if (Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE')) return { path: env.LAB_VIDEO_ARCHIVE, source: 'environment' };
+  if (Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE')) return { path: normalizePresentationArchive(env.LAB_VIDEO_ARCHIVE,options.repositoryRoot??repositoryRoot()), source: 'environment' };
   return { path: join(options.repositoryRoot ?? repositoryRoot(), ...EMIL_SOURCE), source: 'emil-default' };
 }
 
 function samePath(a, b) {
   return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+}
+
+function bankBlobIdentity(selection,entry,options){
+  const root=options.repositoryRoot??repositoryRoot();
+  if(!selection.path||!isAbsolute(selection.path)||!samePath(resolve(selection.path),presentationBankRoot(root)))throw new RegistryError(503,'The active Blob bank requires the canonical video archive.');
+  const placement=mediaDefinitionForPath(entry.relativePath);
+  if(!placement||placement.definition.id!==entry.familyId||placement.role!==entry.role)throw new RegistryError(503,'Video does not match its registered family.');
+  const logicalPath=`dealers/astrid/runtime/presentation/${entry.relativePath}`;
+  return {logicalPath,expected:{access:'source',id:entry.id,sha256:entry.sha256,size:entry.size,contentType:'video/mp4',
+    pathname:mediaBlobPath(logicalPath.slice(0,logicalPath.lastIndexOf('/')),entry.id,entry.sha256,'mp4')}};
 }
 
 async function archiveLocation(selection) {
@@ -207,8 +219,15 @@ export async function loadVideoRegistry(options = {}) {
     entries.set(entry.id, entry);
   }
   let archive;
-  try { archive = await archiveLocation(selection); summary.readable = true; }
-  catch { summary.notes.push('Emils videomapp är inte tillgänglig. LAB_VIDEO_ARCHIVE måste ange en absolut rot med samma manifeststruktur.'); }
+  const indexedBank=isMediaBlobIndexConfigured(options);
+  if(indexedBank){
+    summary.notes[2]='Tillgänglig betyder en exakt registerkoppling och konfigurerad privat mediekälla. SHA-256 kontrolleras före uppspelning.';
+    try { readMediaBlobIndex(options); summary.readable=Boolean(selection.path&&isAbsolute(selection.path)&&samePath(resolve(selection.path),presentationBankRoot(options.repositoryRoot??repositoryRoot()))&&isCloudMediaConfigured(options.env??process.env)); }
+    catch { summary.notes.push('Det aktiva Blob-indexet kunde inte verifieras. Lokal disk används inte som reserv.'); }
+  }else{
+    try { archive = await archiveLocation(selection); summary.readable = true; }
+    catch { summary.notes.push('Emils videomapp är inte tillgänglig. LAB_VIDEO_ARCHIVE måste ange en absolut rot med samma manifeststruktur.'); }
+  }
   const videos = [];
   let classifications = [];
   try { classifications = await readClassifications(options); }
@@ -224,6 +243,13 @@ export async function loadVideoRegistry(options = {}) {
       // configured retrieval; playback still verifies all bytes before serving.
       available = isCloudMediaConfigured(options.env ?? process.env);
       integrity = available ? 'unchecked' : 'unavailable';
+    } else if(indexedBank&&!entry.classification){
+      try{
+        const identity=bankBlobIdentity(selection,entry,options);
+        verifiedMediaBlobStorage(identity.logicalPath,identity.expected,options);
+        available=isCloudMediaConfigured(options.env??process.env);
+        integrity=available?'unchecked':'unavailable';
+      }catch{summary.missing+=1;}
     } else if (location) {
       try {
         const { file, info } = await inspectFile(location, entry);
@@ -234,6 +260,7 @@ export async function loadVideoRegistry(options = {}) {
       }
     }
     const video = publicEntry(entry, available, integrity, familyById.get(entry.familyId));
+    if(indexedBank&&!entry.classification)video.storage='private-blob';
     // Only an explicit upload to an exact family joins shared playback. Legacy
     // bank uploads remain lab-only, and standards are never replaced by intake.
     const uploadFamily = entry.classification?.familyId && familyById.get(entry.classification.familyId);
@@ -317,6 +344,10 @@ export async function getVideoResponse(id, request, options = {}) {
     if (!entry && snapshotFailed) throw new RegistryError(503, 'Video inventory unavailable.');
     if (!entry) return errorResponse(request, 404, 'Unknown video.');
     if (uploaded?.storage) return getPrivateMedia(uploaded.storage, request, options);
+    if(!uploaded&&isMediaBlobIndexConfigured(options)){
+      const identity=bankBlobIdentity(selectArchive(options),entry,options);
+      return getIndexedMediaBlobResponse(identity.logicalPath,identity.expected,request,options);
+    }
     const archive = await archiveLocation(uploaded ? { path: uploadDirectory(options) } : selectArchive(options));
     const { file, info } = await inspectFile(archive, entry);
     // Validate and stream the same open file descriptor, not a second path lookup.

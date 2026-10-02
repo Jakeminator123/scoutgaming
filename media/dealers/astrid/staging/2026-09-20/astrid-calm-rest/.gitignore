@@ -1,0 +1,16 @@
+mask/frames/
+mask/vision/
+mask/alpha/
+mask/rgba/
+mask-face-repair/alpha/
+transition/mask/frames/
+transition/mask/vision/
+transition/mask/alpha/
+transition/mask/rgba/
+transition-v2/mask/frames/
+transition-v2/mask/vision/
+transition-v2/mask/alpha/
+transition-v2/mask/rgba/
+transition-v2/mask-face-repair/alpha/
+height-qa/*.png
+gameplay-qa/*.png

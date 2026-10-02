@@ -5,7 +5,7 @@ import lockfile from 'proper-lockfile';
 import { StudioError } from './project-store.mjs';
 import { MAX_VIDEO_BYTES, validateVideoMetadata } from './video-intake.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
-import { isCloudMediaConfigured, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia } from './cloud-media-store.mjs';
+import { isCloudMediaConfigured, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, mediaBlobPath } from './cloud-media-store.mjs';
 const MAX_INDEX_BYTES = 8 * 1024 * 1024;
 
 export function uploadDirectory(options = {}) {
@@ -32,7 +32,7 @@ export async function readUploads(options = {}) {
       validateVideoMetadata(v.classification, { allowLegacySituation: true }); ids.add(v.id);
       if (v.storage !== undefined) {
         validatePrivateMedia(v.storage);
-        if (v.storage.pathname !== `croupier/videos/${v.id}/${v.sha256}.${v.extension}`
+        if (![ `croupier/videos/${v.id}/${v.sha256}.${v.extension}`,mediaBlobPath(`dealers/${v.classification.dealerId}/review/uploads`,v.id,v.sha256,v.extension)].includes(v.storage.pathname)
           || v.storage.sha256 !== v.sha256 || v.storage.size !== v.size
           || v.storage.contentType !== `video/${v.extension}`) throw new Error('Invalid cloud record');
       }
@@ -110,7 +110,7 @@ export async function uploadVideo(request, options = {}) {
       handle = await open(temp, 'r');
       const source = handle.createReadStream({ autoClose: false });
       try {
-        storage = await putPrivateMedia(`croupier/videos/${id}/${sha256}.${extension}`,
+        storage = await putPrivateMedia(mediaBlobPath(`dealers/${metadata.dealerId}/review/uploads`,id,sha256,extension),
           source, { ...options, sha256, size, contentType: type });
       } finally { source.destroy(); await handle.close(); handle = null; }
       record.storage = storage;

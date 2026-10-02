@@ -2607,14 +2607,15 @@ setBanner('PLEASE PLACE BETS');
 
 // Optional rehearsal uses the exact in-game playback path, with no generation
 // or chat request. This lets every dealer and recorded line be checked locally.
+let settleRehearsalInitialization;
 if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehearsal')) {
   const panel = document.createElement('details'); panel.id = 'rehearsal'; panel.open = true;
   panel.addEventListener('toggle', () => { if(round&&!busy)activeBoxHighlight(); });
   panel.innerHTML = `<summary>Dealer rehearsal</summary>
-    <label>Dealer<select id="rehearsal-dealer" aria-label="Rehearsal dealer"></select></label>
-    <label>Recorded line<select id="rehearsal-line" aria-label="Recorded line"></select></label>
-    <p id="rehearsal-status" aria-live="polite">Choose a line to review.</p>
-    <button id="rehearsal-play">Play line</button><button id="rehearsal-repeat">Play twice</button>`;
+    <label>Dealer<select id="rehearsal-dealer" aria-label="Rehearsal dealer" disabled></select></label>
+    <label>Recorded line<select id="rehearsal-line" aria-label="Recorded line" disabled></select></label>
+    <p id="rehearsal-status" aria-live="polite">Preparing the table for rehearsal…</p>
+    <button id="rehearsal-play" disabled>Play line</button><button id="rehearsal-repeat" disabled>Play twice</button>`;
   $('#scene').appendChild(panel);
   const dealerSelect = panel.querySelector('#rehearsal-dealer');
   for (const d of Object.values(DEALERS)) dealerSelect.add(new Option(d.name, d.key));
@@ -2628,7 +2629,9 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
     lineSelect.add(new Option(id.replaceAll('_', ' '), id));
   }
   const status = panel.querySelector('#rehearsal-status');
+  let rehearsalInitialized = false;
   const update = () => {
+    if (!rehearsalInitialized) { status.textContent = 'Preparing the table for rehearsal…'; return; }
     const id = lineSelect.value;
     if (localPresentationEnabled) {
       status.textContent = (bank[id]?.text ?? LINES[id] ?? id) + ' — shared Studio presentation; exact clip selected at playback.';
@@ -2649,6 +2652,7 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
     return completed;
   };
   const review = async count => {
+    if (!rehearsalInitialized) return;
     const controls=[...panel.querySelectorAll('button,select')];
     controls.forEach(control=>control.disabled=true);
     update();
@@ -2665,6 +2669,13 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
   };
   panel.querySelector('#rehearsal-play').onclick = () => review(1);
   panel.querySelector('#rehearsal-repeat').onclick = () => review(2);
+  const initialControls = [...panel.querySelectorAll('button,select')];
+  settleRehearsalInitialization = failed => {
+    if (failed) { status.textContent = 'The table could not start. Sign in and reload to rehearse.'; return; }
+    rehearsalInitialized = true;
+    initialControls.forEach(control => { control.disabled = false; });
+    update();
+  };
   if (DEALER.key === 'astrid'&&!astridRestart) {
     const { installPerformanceAuthoring } = await import('./performance-authoring.mjs');
     installPerformanceAuthoring({panel,tableScene});
@@ -2676,6 +2687,7 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
 
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
+tableReady.then(() => settleRehearsalInitialization?.(false), () => settleRehearsalInitialization?.(true));
 if (localPresentationEnabled) tableReady.then(async () => {
   const { installLissabonProfileUi } = await import('./lissabon-profile.mjs');
   await installLissabonProfileUi({ canSwitch: () => !round && !busy && !chatBusy, beforeSwitch: () => astridCamera?.stop('Profilbyte · Av') });

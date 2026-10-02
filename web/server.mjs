@@ -2,60 +2,82 @@
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
-import { craigIdentity } from './craig-identity.mjs';
-import { installBoAuthEpoch } from './bo-auth-epoch.mjs';
-import { playerAuth, playerPostOriginOk } from './player-auth.mjs';
-import { backofficeGameAuth } from './bo-game-auth.mjs';
-import { backofficeLabAuth } from './bo-lab-auth.mjs';
+import { playerPostOriginOk } from './player-auth.mjs';
+import { createPostgresNativeTableCommand } from './postgres-native-table.mjs';
 import { createServer } from 'node:http';
+import { Readable } from 'node:stream';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
 import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
-import { readPlayerResults } from './player-results.mjs';
 import { getGeneratedSpeechService } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
 import { createOperatorSpeechQa } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from './public/chat-response.mjs';
-import { createPlayerChatMemory } from './player-chat-memory.mjs';
-import { createPlayerProbeStore } from './player-probe-store.mjs';
 import { createLissabonProfiles } from './lissabon-profiles.mjs';
-import { installPartnerApi } from './partner-api.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
 import { openGenerationMedia, serveGenerationMedia } from './generation-media.mjs';
 import { clipMapping } from './clip-mapping.mjs';
 import { loginLimiter } from './login-limiter.mjs';
 const boLogins = loginLimiter();
+const persistenceFailure = error => Boolean(error?.severity)
+  || /^[0-9A-Z]{5}$/.test(error?.code || '')
+  || ['ERR_SQLITE_ERROR','ECONNRESET','ECONNREFUSED','ETIMEDOUT','ENOTFOUND','EAI_AGAIN','EPIPE'].includes(error?.code)
+  || /(?:connection (?:terminated|timeout)|timeout exceeded when trying to connect)/i.test(error?.message || '');
+const publicFailure = (error, statusCode = 400) => persistenceFailure(error)
+  ? { error: 'Service temporarily unavailable', statusCode: 503 }
+  : { error: String(error?.message || error), statusCode };
 import { readFileSync as readSync, writeFileSync as writeSync } from 'node:fs';
-import { statSync, createReadStream, existsSync, mkdirSync } from 'node:fs';
+import { statSync, createReadStream, existsSync, mkdirSync, realpathSync, closeSync } from 'node:fs';
 import { join, normalize, extname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
 
-const root = join(fileURLToPath(new URL('.', import.meta.url)), 'public');
+const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
+const mediaRepository = resolve(root, '../..');
+const mediaLayout = existsSync(join(mediaRepository, 'media/layout.json'))
+  ? await import(pathToFileURL(join(mediaRepository, 'tools/media-layout.mjs')).href) : null;
+const publicAssetPath = (...parts) => mediaLayout
+  ? mediaLayout.resolveMediaPath(`web/public/${parts.join('/').replace(/\\/g, '/').replace(/^\/+/, '')}`, { repositoryRoot: mediaRepository })
+  : join(root, ...parts);
+const publicBlobMedia = process.env.CROUPIER_MEDIA_BLOB_INDEX
+  ? (await import(pathToFileURL(join(mediaRepository, 'lab/lib/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
-const generationDirectory = process.env.CROUPIER_GENERATIONS_DIR ? resolve(process.env.CROUPIER_GENERATIONS_DIR) : join(root, 'bo/gen');
+const databaseBackend = process.env.CROUPIER_DATABASE || 'sqlite';
+if (!['sqlite', 'postgres'].includes(databaseBackend)) throw new Error('Invalid CROUPIER_DATABASE.');
+const postgres = databaseBackend === 'postgres';
+const { createPostgresStore } = postgres ? await import('./storage/postgres-store.mjs') : {};
+if (!postgres && process.env.CROUPIER_GAME_DATABASE_URL) throw new Error('Game database mode must be explicit.');
+const storage = postgres ? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
+  zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null;
+if (storage) await storage.db.assertInstalled();
+const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
+const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
+  { readPlayerResults }, { createPlayerChatMemory }, { createPlayerProbeStore }, { installPartnerApi }] = await Promise.all(
+  ['craig-identity', 'bo-auth-epoch', 'player-auth', 'bo-game-auth', 'bo-lab-auth', 'player-results',
+    'player-chat-memory', 'player-probe-store', 'partner-api'].map(domain));
+const generationDirectory = process.env.CROUPIER_GENERATIONS_DIR ? resolve(process.env.CROUPIER_GENERATIONS_DIR) : publicAssetPath('bo/gen');
 
 // ---------- player database (demo money only) ----------
 // An explicit directory lets local QA exercise the real player/server without
 // opening the operator's databases. Production keeps its existing default.
 const dataDir = process.env.CROUPIER_DATA_DIR ? resolve(process.env.CROUPIER_DATA_DIR) : join(fileURLToPath(new URL('.', import.meta.url)), 'data');
 mkdirSync(dataDir, { recursive: true });
-const db = new DatabaseSync(join(dataDir, 'croupier.db'));
-const playerChatMemory = createPlayerChatMemory(db);
+const db = storage?.db ?? new DatabaseSync(join(dataDir, 'croupier.db'));
+const playerChatMemory = (await createPlayerChatMemory(db));
 let presentationApi;
 const activePlayerChats = new Map();
 let speechStreamService = null;
-const probeStore = createPlayerProbeStore(db, playerChatMemory);
+const probeStore = (await createPlayerProbeStore(db, playerChatMemory));
 let activeProbeRuntime;
 async function loadProbeRuntime() {
   if(!activeProbeRuntime){
     const [{createProbeRuntime},{createProjectStore},{readSettings}]=await Promise.all([
-      import('./probe-runtime.mjs'),import('../lab/lib/project-store.mjs'),import('../open-claw/lab/src/settings.mjs')]);
-    activeProbeRuntime ??= createProbeRuntime({store:probeStore,memory:playerChatMemory,
+      domain('probe-runtime'),import('../lab/lib/project-store.mjs'),import('../open-claw/lab/src/settings.mjs')]);
+    activeProbeRuntime ??= await createProbeRuntime({store:probeStore,memory:playerChatMemory,
       projectStore:createProjectStore(process.env.CROUPIER_PRESENTATION_STUDIO_DIR || resolve(root,'../../lab/data')),
       settingsProvider:readSettings,serviceProvider:getGeneratedSpeechService,
       chatBusy:playerId=>activePlayerChats.has(JSON.stringify([playerId,'astrid']))});
@@ -63,15 +85,15 @@ async function loadProbeRuntime() {
   return activeProbeRuntime;
 }
 const probeRuntime={
-  cancel(scope,reason){if(activeProbeRuntime)return activeProbeRuntime.cancel(scope,reason);return probeStore.activity(scope);},
-  forget(scope,factId){if(activeProbeRuntime)activeProbeRuntime.forget(scope,factId);else probeStore.forget(scope,factId);},
-  ...Object.fromEntries(['config','inspect','presence','run','test','receipt','rememberMessage','completedRound'].map(method=>[method,(...args)=>{
+  async cancel(scope,reason){if(activeProbeRuntime)return activeProbeRuntime.cancel(scope,reason);return (await probeStore.activity(scope));},
+  async forget(scope,factId){if(activeProbeRuntime)return activeProbeRuntime.forget(scope,factId);return probeStore.forget(scope,factId);},
+  ...Object.fromEntries(['config','inspect','presence','run','test','receipt','rememberMessage','completedRound'].map(method=>[method,async (...args)=>{
     // Capture before lazy imports / policy I/O so Forget also wins that race.
-    if(['rememberMessage','completedRound'].includes(method))args.push(probeStore.generation(args[0]));
+    if(['rememberMessage','completedRound'].includes(method))args.push((await probeStore.generation(args[0])));
     return loadProbeRuntime().then(runtime=>runtime[method](...args));
   }])),
 };
-db.exec(`
+if (!postgres) db.exec(`
   CREATE TABLE IF NOT EXISTS players (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, currency TEXT NOT NULL DEFAULT 'USD',
     balance REAL NOT NULL DEFAULT 1000, created_at TEXT NOT NULL
@@ -85,9 +107,9 @@ const RATES = { USD: 1, EUR: 0.92, SEK: 10.6 }; // fixed demo rates per USD
 const logTx = (pid, type, amount, currency, meta = '') =>
   db.prepare('INSERT INTO transactions (player_id, type, amount, currency, meta, at) VALUES (?,?,?,?,?,?)')
     .run(pid, type, amount, currency, meta, new Date().toISOString());
-const getPlayer = id => db.prepare('SELECT id, name, currency, balance FROM players WHERE id = ?').get(id);
+const getPlayer = id => db.prepare(`SELECT id, name, currency, balance${postgres ? ', status' : ''} FROM players WHERE id = ?`).get(id);
 
-function apiPlayer({ id, name }) {
+function sqliteApiPlayer({ id, name }) {
   let p = id ? getPlayer(id) : undefined;
   if (!p) {
     p = { id: randomUUID(), name: (typeof name === 'string' && name.trim().slice(0, 40)) || 'Player', currency: 'USD', balance: 1000 };
@@ -97,7 +119,7 @@ function apiPlayer({ id, name }) {
   }
   return p;
 }
-function apiDeposit({ id, amount }) {
+function sqliteApiDeposit({ id, amount }) {
   const p = getPlayer(id);
   if (!p) return { error: 'no such player' };
   const amt = Number(amount);
@@ -107,7 +129,7 @@ function apiDeposit({ id, amount }) {
   logTx(id, 'deposit', amt, p.currency, 'demo test card');
   return { balance, currency: p.currency };
 }
-function apiBalance({ id, balance, reason }) {
+function sqliteApiBalance({ id, balance, reason }) {
   if (db.prepare('SELECT 1 FROM blackjack_tables WHERE player_id=?').get(id)) return { error: 'Table balances are server-managed' };
   const p = getPlayer(id);
   if (!p) return { error: 'no such player' };
@@ -117,7 +139,7 @@ function apiBalance({ id, balance, reason }) {
   logTx(id, 'sync', Math.round((b - p.balance) * 100) / 100, p.currency, String(reason ?? '').slice(0, 80));
   return { balance: b };
 }
-function apiCurrency({ id, currency }) {
+function sqliteApiCurrency({ id, currency }) {
   const saved = db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(id);
   if (saved) { const g = JSON.parse(saved.state); if (g.round && !g.paid) return { error: 'Finish the current round before changing currency' }; }
   const p = getPlayer(id);
@@ -128,32 +150,70 @@ function apiCurrency({ id, currency }) {
   logTx(id, 'fx', balance, currency, `converted from ${p.currency}`);
   return { balance, currency };
 }
+const apiPlayer = postgres ? async ({ id, name }) => db.transaction(async () => {
+  const existing = id ? await getPlayer(id) : null;
+  if (existing) return existing;
+  const player = { id: randomUUID(), name: (typeof name === 'string' && name.trim().slice(0, 40)) || 'Player', currency: 'USD', balance: 1000 };
+  await db.prepare('INSERT INTO players (id, name, currency, balance, created_at) VALUES (?,?,?,?,?)')
+    .run(player.id, player.name, player.currency, player.balance, new Date().toISOString());
+  await logTx(player.id, 'open', player.balance, player.currency, 'starting demo balance');
+  return player;
+}) : sqliteApiPlayer;
+async function postgresWallet(id, work) {
+  return db.transaction(async () => {
+    const player = await db.prepare('SELECT id, name, currency, balance, status FROM players WHERE id=? FOR UPDATE').get(id);
+    if (!player) return { error: 'no such player' };
+    if (player.status !== 'active') return { error: 'Player account is inactive' };
+    return work(player);
+  });
+}
+const apiDeposit = postgres ? async ({ id, amount }) => postgresWallet(id, async player => {
+  const value = Number(amount);
+  if (!Number.isFinite(value) || value < 1 || value > 100_000_000) return { error: 'amount must be 1-100000000' };
+  const balance = Math.round((player.balance + value) * 100) / 100;
+  await db.prepare('UPDATE players SET balance=? WHERE id=?').run(balance, id);
+  await logTx(id, 'deposit', value, player.currency, 'demo test card');
+  return { balance, currency: player.currency };
+}) : sqliteApiDeposit;
+const apiBalance = postgres ? async () => ({ error: 'Table balances are server-managed' }) : sqliteApiBalance;
+const apiCurrency = postgres ? async ({ id, currency }) => postgresWallet(id, async player => {
+  if (!RATES[currency]) return { error: 'currency must be USD, EUR or SEK' };
+  const saved = await db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(id);
+  if (saved) { const game = JSON.parse(saved.state); if (game.round && !game.paid) return { error: 'Finish the current round before changing currency' }; }
+  const balance = Math.round((player.balance / RATES[player.currency]) * RATES[currency] * 100) / 100;
+  await db.prepare('UPDATE players SET balance=?,currency=? WHERE id=?').run(balance, currency, id);
+  await logTx(id, 'fx', balance, currency, `converted from ${player.currency}`);
+  return { balance, currency };
+}) : sqliteApiCurrency;
 const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency };
 
 // Server-owned demo table; SQLite transaction commits wallet and shoe together.
-API['/api/table'] = createNativeTableCommand({ db, getPlayer, logTx,
-  publish: observation => {
+const nativeOptions = { db, getPlayer, logTx,
+  publish: async observation => {
+    try {
     const scope = {playerId:observation.playerId,dealerId:'astrid'};
-    probeRuntime.cancel(scope);
+    (await probeRuntime.cancel(scope));
     if (observation.command.op === 'collect' && observation.previousView.round?.phase === 'settled') {
       const hands = observation.command.dealer === 'astrid' ? observation.previousView.round.hands.filter(hand=>hand.stake>0).map((hand,handIndex)=>({
         handIndex,box:hand.box,cards:hand.cards.map(({r,s})=>({r,s})),split:hand.splitFrom !== null && hand.splitFrom !== undefined,
         outcome:hand.busted || !(hand.result>0) ? 'lose' : hand.result>hand.stake ? 'win' : 'push',
       })) : [];
-      void probeRuntime.completedRound(scope,{roundId:`collected-${observation.view.shoe.id}-${observation.view.version}`,sequence:readPlayerResults(db,observation.playerId,{},getPlayer(observation.playerId).currency).currencies.reduce((sum,row)=>sum+row.rounds,0),hands}).catch(()=>{});
+      await probeRuntime.completedRound(scope,{roundId:`collected-${observation.view.shoe.id}-${observation.view.version}`,sequence:(await readPlayerResults(db,observation.playerId,{},(await getPlayer(observation.playerId)).currency)).currencies.reduce((sum,row)=>sum+row.rounds,0),hands});
     }
-    if (observation.session?.partnerKeyId) partner().publishNativeRound(observation);
+    if (observation.session?.partnerKeyId) (await (await partner()).publishNativeRound(observation));
+    } catch { console.warn('[partner-events] Native command committed; observation could not be published.'); }
   },
   onPublishError: () => console.warn('[partner-events] Native command committed; observation could not be published.'),
-});
+};
+API['/api/table'] = postgres ? createPostgresNativeTableCommand({ ...nativeOptions, pool: storage.gamePool }) : createNativeTableCommand(nativeOptions);
 
 // ---------- partner API v1 (operators / aggregators) ----------
 let partnerApi = null;
-const generationsApi = installGenerationsApi({ catalogPath: join(root, 'bo/generations.json'), genDir: generationDirectory,
+const generationsApi = installGenerationsApi({ catalogPath: publicAssetPath('bo/generations.json'), genDir: generationDirectory,
   verdicts: () => boLoad().genVerdicts ?? {}, tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
   publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se',
   mapping: () => clipMapping({ root, bo: boLoad(), publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) });
-function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', root }); }
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: process.env.CROUPIER_PUBLIC_GAME_PATH || '/', root }); }
 
 // ---------- backoffice (BO) ----------
 // Real data where it exists (players/transactions from SQLite, dealer assets
@@ -197,11 +257,13 @@ function dealerScan() {
   for (const d of spec) {
     let clips = 0, speak = 0, stills = false;
     try {
-      const idx = JSON.parse(readSync(join(root, d.base, 'streams/index.json'), 'utf8'));
+      const idx = JSON.parse(readSync(publicAssetPath(d.base, 'streams/index.json'), 'utf8'));
       clips = Object.keys(idx.clips).length;
       speak = Object.keys(idx.clips).filter(k => k.includes('/speak/')).length;
     } catch { /* no assets yet */ }
-    try { stills = existsSync(join(root, '..', '..', 'content/persona/roster', d.key + '-canonical.png')) || d.key === 'vera'; } catch {}
+    try { stills = existsSync(mediaLayout
+      ? mediaLayout.resolveMediaPath(`content/persona/roster/${d.key}-canonical.png`, { repositoryRoot: mediaRepository })
+      : join(root, '..', '..', 'content/persona/roster', d.key + '-canonical.png')) || d.key === 'vera'; } catch {}
     out.push({ ...d, clips, speak, stills });
   }
   return out;
@@ -211,8 +273,10 @@ function dealerScan() {
 // separate from the players DB. Auth is a stateless HS256 JWT in an HttpOnly
 // cookie, checked against a monotonic CRAIG auth epoch after every role or
 // password change. Current logins survive server restarts.
-const boDb = new DatabaseSync(join(dataDir, 'craig.db'));
-boDb.exec(`
+const boDb = storage?.boDb ?? new DatabaseSync(join(dataDir, 'craig.db'));
+const playerAdministration = postgres
+  ? (await import('./storage/player-administration.mjs')).createPlayerAdministration({ db }) : null;
+if (!postgres) boDb.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
     email TEXT, salt TEXT, hash TEXT, role TEXT NOT NULL DEFAULT 'reader',
@@ -224,11 +288,11 @@ boDb.exec(`
   );
   CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 `);
-try { boDb.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch { /* exists */ }
+if (!postgres) try { boDb.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch { /* exists */ }
 // pre-invite schema had NOT NULL salt/hash - invited users have neither until
 // they choose a password, so rebuild the table once if the old constraint is there
-{
-  const saltCol = boDb.prepare('PRAGMA table_info(users)').all().find(c => c.name === 'salt');
+if (!postgres) {
+  const saltCol = (await boDb.prepare('PRAGMA table_info(users)').all()).find(c => c.name === 'salt');
   if (saltCol?.notnull) {
     boDb.exec(`BEGIN;
       CREATE TABLE users_new (
@@ -245,15 +309,15 @@ try { boDb.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch { /* exists 
   }
 }
 const ROLE_RANK = { reader: 0, staff: 1, admin: 2, superadmin: 3 };
-const boAuthEpoch = installBoAuthEpoch(boDb);
-function boSecret() {
-  const row = boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
+const boAuthEpoch = (await installBoAuthEpoch(boDb));
+async function boSecret() {
+  const row = (await boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get());
   if (row) return Buffer.from(row.v, 'hex');
   const sec = randomBytes(32);
-  boDb.prepare("INSERT INTO meta (k, v) VALUES ('jwt_secret', ?)").run(sec.toString('hex'));
-  return sec;
+  await boDb.prepare("INSERT INTO meta (k, v) VALUES ('jwt_secret', ?) ON CONFLICT(k) DO NOTHING").run(sec.toString('hex'));
+  return Buffer.from((await boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get()).v, 'hex');
 }
-const BO_SECRET = boSecret();
+const BO_SECRET = (await boSecret());
 const b64u = b => Buffer.from(b).toString('base64url');
 function jwtSign(payload) {
   const h = b64u(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
@@ -273,17 +337,17 @@ function jwtVerify(tok) {
     return p;
   } catch { return null; }
 }
-function boCreateUser(username, pw, role = 'admin') {
+async function boCreateUser(username, pw, role = 'admin') {
   const salt = randomBytes(16).toString('hex');
   const hash = scryptSync(pw, salt, 64).toString('hex');
-  boDb.prepare('INSERT INTO users (username, salt, hash, role, created_at) VALUES (?,?,?,?,?)')
-    .run(username, salt, hash, role, new Date().toISOString());
+  (await boDb.prepare('INSERT INTO users (username, salt, hash, role, created_at) VALUES (?,?,?,?,?)')
+    .run(username, salt, hash, role, new Date().toISOString()));
 }
 // Preserve the legacy local account behavior without changing roles in a cloud DB.
-if (!cloudRuntime) {
+if (!cloudRuntime && !postgres) {
   try { boDb.exec("UPDATE users SET role='superadmin' WHERE username='kevin'"); } catch {}
 }
-if (!boDb.prepare('SELECT COUNT(*) n FROM users').get().n) {
+if (!(await boDb.prepare('SELECT COUNT(*) n FROM users').get()).n) {
   if (cloudRuntime) {
     const username = process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER;
     const password = process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
@@ -292,21 +356,21 @@ if (!boDb.prepare('SELECT COUNT(*) n FROM users').get().n) {
       || password.length < 16 || password.length > 256 || /[\u0000-\u001f\u007f-\u009f]/u.test(password)) {
       throw new Error('Cloud operator bootstrap credentials are required for an empty CRAIG database.');
     }
-    boCreateUser(username, password, 'superadmin');
+    (await boCreateUser(username, password, 'superadmin'));
   } else {
     const pw = randomBytes(9).toString('base64url');
-    boCreateUser('kevin', pw, 'superadmin');
+    (await boCreateUser('kevin', pw, 'superadmin'));
     console.log(`[bo] backoffice login created - user: kevin  password: ${pw}`);
   }
 }
 if (cloudRuntime) delete process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
-function boCheckLogin(user, pass) {
-  const account = scoutIdentity.authenticate(user, pass);
+async function boCheckLogin(user, pass) {
+  const account = (await scoutIdentity.authenticate(user, pass));
   if (!account) return null;
-  const role = boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id)?.role;
+  const role = (await boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id))?.role;
   return Object.hasOwn(ROLE_RANK, role) ? { ...account, role } : null;
 }
-function boSessionOk(req) {
+async function boSessionOk(req) {
   const c = req.headers.cookie ?? '';
   const m = /(?:^|;\s*)bo_jwt=([A-Za-z0-9_.-]+)/.exec(c);
   const claims = m ? jwtVerify(m[1]) : null;
@@ -315,10 +379,10 @@ function boSessionOk(req) {
   if (!claims || claims.aud !== 'backoffice' || claims.partner ||
       typeof claims.sub !== 'string' || !Object.hasOwn(ROLE_RANK, claims.role) ||
       typeof claims.source_stamp !== 'string' || !Number.isSafeInteger(claims.auth_epoch)) return null;
-  const account = scoutIdentity.find(claims.sub);
+  const account = (await scoutIdentity.find(claims.sub));
   if (!account || account.stamp !== claims.source_stamp ||
-      boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id)?.role !== claims.role ||
-      claims.auth_epoch !== boAuthEpoch(account.id)) return null;
+      (await boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id))?.role !== claims.role ||
+      claims.auth_epoch !== (await boAuthEpoch(account.id))) return null;
   return { ...claims, sub: account.name };
 }
 
@@ -391,10 +455,10 @@ function boPostOriginOk(req) {
   const fetchSite = req.headers['sec-fetch-site'];
   return origin === expected && (!fetchSite || fetchSite === 'same-origin');
 }
-function mintToken(username, kind, hours) {
+async function mintToken(username, kind, hours) {
   const t = randomBytes(24).toString('base64url');
-  boDb.prepare('INSERT INTO tokens (token, username, kind, exp) VALUES (?,?,?,?)')
-    .run(t, username, kind, Math.floor(Date.now() / 1000) + hours * 3600);
+  (await boDb.prepare('INSERT INTO tokens (token, username, kind, exp) VALUES (?,?,?,?)')
+    .run(t, username, kind, Math.floor(Date.now() / 1000) + hours * 3600));
   return t;
 }
 
@@ -406,7 +470,7 @@ function probeVideo(rel) {
   if (probeCache.has(rel)) return probeCache.get(rel);
   let out = null;
   try {
-    const abs = join(root, rel);
+    const abs = publicAssetPath(rel);
     const txt = execFileSync('ffprobe', ['-v','error','-select_streams','v:0','-show_entries','stream=width,height,nb_frames,r_frame_rate','-of','csv=p=0', abs], { encoding: 'utf8', timeout: 4000 }).trim();
     const [w, h, fps, n] = txt.split(',');
     out = { width: +w, height: +h, frames: +n || null, fps: fps?.includes('/') ? Math.round(+fps.split('/')[0] / +fps.split('/')[1]) : +fps };
@@ -434,7 +498,7 @@ function clipScan() {
   for (const d of dealerScan()) {
     // 1. performance takes (staged player): packed RGB-over-mask atlases
     try {
-      const m = JSON.parse(readSync(join(root, d.base, 'performance/manifest.json'), 'utf8'));
+      const m = JSON.parse(readSync(publicAssetPath(d.base, 'performance/manifest.json'), 'utf8'));
       for (const t of [...(m.takes ?? []), ...(m.reviewCandidates ?? []), ...(m.continuations ?? [])]) {
         if (!t?.media?.src) continue;
         const layout = t.media.layout ?? '';
@@ -444,57 +508,58 @@ function clipScan() {
     } catch {}
     // 2. engine streams (idle/actions/speak); previews exist only for speech lines
     try {
-      const idx = JSON.parse(readSync(join(root, d.base, 'streams/index.json'), 'utf8'));
-      const hands = existsSync(join(root, d.base === 'dealer' ? 'dealer' : d.base + '-hands', 'streams/index.json'));
-      let bank = {}; try { bank = JSON.parse(readSync(join(root, d.base, 'audio/en/bank.json'), 'utf8')); } catch {}
+      const idx = JSON.parse(readSync(publicAssetPath(d.base, 'streams/index.json'), 'utf8'));
+      const hands = existsSync(publicAssetPath(d.base === 'dealer' ? 'dealer' : d.base + '-hands', 'streams/index.json'));
+      let bank = {}; try { bank = JSON.parse(readSync(publicAssetPath(d.base, 'audio/en/bank.json'), 'utf8')); } catch {}
       for (const [k, c] of Object.entries(idx.clips)) {
         const key = k.split('/').pop();
-        const preview = existsSync(join(root, d.base, 'preview', key + '.mp4')) ? `${d.base}/preview/${key}.mp4` : null;
+        const preview = existsSync(publicAssetPath(d.base, 'preview', key + '.mp4')) ? `${d.base}/preview/${key}.mp4` : null;
         clips.push({ id: `${d.key}:${k}`, dealer: d.key, name: k, src: preview, stream: `${d.base}/streams/${c.file}`, part: k.includes('/actions/action-deal') ? 'box3' : k.includes('/idle/') ? 'idle' : k.includes('action-return') ? 'return' : null,
-          text: bank[key]?.text ?? null, audio: existsSync(join(root, d.base, 'audio/en', key + '.mp3')) ? `${d.base}/audio/en/${key}.mp3` : null, transparent: hands, layout: hands ? 'engine clip + hands matte (person-only band over felt)' : 'engine clip, baked over scene crop', width: idx.width, height: idx.height, frames: c.frameCount, fps: c.fps, kind: 'engine' });
+          text: bank[key]?.text ?? null, audio: existsSync(publicAssetPath(d.base, 'audio/en', key + '.mp3')) ? `${d.base}/audio/en/${key}.mp3` : null, transparent: hands, layout: hands ? 'engine clip + hands matte (person-only band over felt)' : 'engine clip, baked over scene crop', width: idx.width, height: idx.height, frames: c.frameCount, fps: c.fps, kind: 'engine' });
       }
     } catch {}
   }
-  for (const r of ROUTE_CLIPS) if (existsSync(join(root, r.src))) clips.push({ ...r, ...(probeVideo(r.src) ?? {}) });
+  for (const r of ROUTE_CLIPS) if (existsSync(publicAssetPath(r.src))) clips.push({ ...r, ...(probeVideo(r.src) ?? {}) });
   for (const c of clips) if (c.src && c.width == null) Object.assign(c, probeVideo(c.src) ?? {});
   return clips;
 }
-function boApi(url) {
+async function boApi(url) {
   const cfg = boLoad();
   if (url === '/api/bo/overview') {
     const day = new Date().toISOString().slice(0, 10);
     // game rounds arrive as balance syncs whose meta names the reason
-    const tx = db.prepare("SELECT CASE WHEN type='sync' THEN meta ELSE type END AS type, COUNT(*) n, SUM(amount) sum FROM transactions WHERE at >= ? GROUP BY 1").all(day);
-    const players = db.prepare('SELECT COUNT(*) n FROM players').get();
+    const tx = (await db.prepare("SELECT CASE WHEN type='sync' THEN meta ELSE type END AS type, COUNT(*) n, SUM(amount) sum FROM transactions WHERE at >= ? GROUP BY 1").all(day));
+    const players = (await db.prepare('SELECT COUNT(*) n FROM players').get());
     return { tiers: cfg.tiers, rooms: cfg.rooms, tx, players: players.n, dealers: dealerScan() };
   }
   if (url === '/api/bo/players') {
-    return { players: db.prepare('SELECT id, name, currency, balance, created_at FROM players ORDER BY balance DESC LIMIT 50').all() };
+    return { players: (await db.prepare(`SELECT id, name, currency, balance, created_at${postgres ? ', status, closed_at' : ''} FROM players ORDER BY created_at DESC LIMIT 500`).all()),
+      administration: Boolean(playerAdministration), storage: databaseBackend };
   }
   if (url === '/api/bo/transactions') {
-    return { tx: db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all() };
+    return { tx: (await db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all()) };
   }
   if (url === '/api/bo/config') return cfg;
-  if (url === '/api/bo/apikeys') return { keys: partner().keys.list(), scopes: partner().SCOPES, docs: '/docs/partner-api.html' };
+  if (url === '/api/bo/apikeys') return { keys: (await (await partner()).keys.list()), scopes: (await partner()).SCOPES, docs: '/docs/partner-api.html' };
   if (url === '/api/bo/gen-verdicts') return { genVerdicts: cfg.genVerdicts ?? {}, genLandings: cfg.genLandings ?? {}, parts: CLIP_PARTS };
   if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {}, landings: cfg.clipLandings ?? {}, assignmentsReadOnly: true, assignmentSource: 'legacy-review-only', activeEditor: 'Backoffice/Lab', actualPlayback: false };
   if (url === '/api/bo/users') {
-    return { users: boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all() };
+    return { users: (await boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all()) };
   }
   if (url === '/api/bo/voicelines') {
     const out = [];
     for (const d of dealerScan()) {
       let idx = {}, bank = {};
-      try { idx = JSON.parse(readSync(join(root, d.base, 'streams/index.json'), 'utf8')).clips; } catch {}
-      try { bank = JSON.parse(readSync(join(root, d.base, 'audio/en/bank.json'), 'utf8')); } catch {}
+      try { idx = JSON.parse(readSync(publicAssetPath(d.base, 'streams/index.json'), 'utf8')).clips; } catch {}
+      try { bank = JSON.parse(readSync(publicAssetPath(d.base, 'audio/en/bank.json'), 'utf8')); } catch {}
       const lines = [];
-      const audioDir = join(root, d.base, 'audio/en');
+      const audioDir = publicAssetPath(d.base, 'audio/en');
       let mp3s = [];
       try { mp3s = readdirSync(audioDir).filter(f => f.endsWith('.mp3')); } catch {}
       for (const f of mp3s) {
         const k = f.replace('.mp3', '');
         const clip = idx['idle-1/speak/' + k];
-        const preview = existsSync(join(root, d.base, 'preview', k + '.mp4'));
+        const preview = existsSync(publicAssetPath(d.base, 'preview', k + '.mp4'));
         lines.push({ key: k, text: bank[k]?.text ?? '', clip: !!clip, delay: clip?.audioDelayMs ?? null,
                      preview: preview ? `/${d.base}/preview/${k}.mp4` : null,
                      audio: `/${d.base}/audio/en/${k}.mp3` });
@@ -509,14 +574,29 @@ function boApi(url) {
   return null;
 }
 async function boPost(url, body, who) {
+  if (url === '/api/bo/players/create' || url === '/api/bo/players/status') {
+    if (!who || !['admin', 'superadmin'].includes(who.role)) return { error: 'admin role required', statusCode: 403 };
+    if (!playerAdministration) return { error: 'Player administration requires PostgreSQL storage', statusCode: 503 };
+    try {
+      if (url.endsWith('/create')) return { ok: true, player: await playerAdministration.create({ ...body, actor: who.sub }) };
+      const changed = await playerAdministration.setStatus({ ...body, actor: who.sub });
+      if (changed.changed) {
+        speechStreamService?.cancelPlayer(changed.id);
+        for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([changed.id, dealerId]))?.abort('player_account_changed');
+        await probeRuntime.cancel({ playerId: changed.id, dealerId: 'astrid' }, 'player_account_changed');
+      }
+      return { ok: true, ...changed };
+    } catch (error) { return error.code === '23505'
+      ? {error:'Player account already exists',statusCode:400} : publicFailure(error,error.statusCode || 400); }
+  }
   if (url === '/api/bo/users/invite') {
     const { email, role } = body;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email ?? '')) return { error: 'bad email' };
     if (!['reader', 'staff', 'admin', 'superadmin'].includes(role)) return { error: 'bad role' };
-    if (boDb.prepare('SELECT 1 FROM users WHERE username = ? OR email = ?').get(email, email)) return { error: 'user exists' };
-    boDb.prepare('INSERT INTO users (username, email, role, created_at) VALUES (?,?,?,?)')
-      .run(email, email, role, new Date().toISOString());
-    const t = mintToken(email, 'invite', 72);
+    if ((await boDb.prepare('SELECT 1 FROM users WHERE username = ? OR email = ?').get(email, email))) return { error: 'user exists' };
+    (await boDb.prepare('INSERT INTO users (username, email, role, created_at) VALUES (?,?,?,?)')
+      .run(email, email, role, new Date().toISOString()));
+    const t = (await mintToken(email, 'invite', 72));
     const link = `${BO_URL}/bo/set-password.html?t=${t}`;
     const mail = await sendMail(email, 'You are invited to the Scout backoffice', brandEmail({
       preheader: 'Choose your password to activate your account.',
@@ -529,12 +609,12 @@ async function boPost(url, body, who) {
   }
   if (url === '/api/bo/users/resend') {
     const { username } = body;
-    const u = boDb.prepare('SELECT username, email, role, hash FROM users WHERE username = ?').get(username ?? '');
+    const u = (await boDb.prepare('SELECT username, email, role, hash FROM users WHERE username = ?').get(username ?? ''));
     if (!u) return { error: 'no such user' };
     if (!u.email) return { error: 'user has no email on file' };
-    boDb.prepare("DELETE FROM tokens WHERE username = ?").run(u.username);
+    (await boDb.prepare("DELETE FROM tokens WHERE username = ?").run(u.username));
     if (!u.hash) {
-      const t = mintToken(u.username, 'invite', 72);
+      const t = (await mintToken(u.username, 'invite', 72));
       const mail = await sendMail(u.email, 'You are invited to the Scout backoffice', brandEmail({
         preheader: 'Choose your password to activate your account.',
         headline: 'You have a seat in the backoffice.',
@@ -544,7 +624,7 @@ async function boPost(url, body, who) {
       }));
       return { ok: true, kind: 'invite', emailSent: mail.sent, reason: mail.reason };
     }
-    const t = mintToken(u.username, 'reset', 2);
+    const t = (await mintToken(u.username, 'reset', 2));
     const mail = await sendMail(u.email, 'Reset your Scout backoffice password', brandEmail({
       preheader: 'Password reset for your backoffice account.',
       headline: 'Reset your password.',
@@ -558,21 +638,21 @@ async function boPost(url, body, who) {
     const { username, role } = body;
     if (!['reader', 'staff', 'admin', 'superadmin'].includes(role)) return { error: 'bad role' };
     if (username === who?.sub) return { error: 'cannot change your own role' };
-    const r = boDb.prepare('UPDATE users SET role = ? WHERE username = ?').run(role, username);
+    const r = (await boDb.prepare('UPDATE users SET role = ? WHERE username = ?').run(role, username));
     return r.changes ? { ok: true } : { error: 'no such user' };
   }
   if (url === '/api/bo/users/remove') {
     const { username } = body;
     if (username === who?.sub) return { error: 'cannot remove yourself' };
-    boDb.prepare('DELETE FROM tokens WHERE username = ?').run(username);
-    const r = boDb.prepare('DELETE FROM users WHERE username = ?').run(username);
+    (await boDb.prepare('DELETE FROM tokens WHERE username = ?').run(username));
+    const r = (await boDb.prepare('DELETE FROM users WHERE username = ?').run(username));
     return r.changes ? { ok: true } : { error: 'no such user' };
   }
   if (url === '/api/bo/reset-request') {
     const { user } = body;
-    const u = boDb.prepare('SELECT username, email FROM users WHERE username = ? OR email = ?').get(user ?? '', user ?? '');
+    const u = (await boDb.prepare('SELECT username, email FROM users WHERE username = ? OR email = ?').get(user ?? '', user ?? ''));
     if (u && u.email) {
-      const t = mintToken(u.username, 'reset', 2);
+      const t = (await mintToken(u.username, 'reset', 2));
       await sendMail(u.email, 'Reset your Scout backoffice password', brandEmail({
         preheader: 'Password reset for your backoffice account.',
         headline: 'Reset your password.',
@@ -586,6 +666,17 @@ async function boPost(url, body, who) {
   if (url === '/api/bo/set-password') {
     const { token, pass } = body;
     if (!pass || String(pass).length < 8) return { error: 'password must be at least 8 characters' };
+    if (postgres) {
+      const salt = randomBytes(16).toString('hex');
+      const hash = scryptSync(String(pass), salt, 64).toString('hex');
+      return boDb.transaction(async () => {
+        const row = await boDb.prepare('DELETE FROM tokens WHERE token=? AND exp>=? RETURNING username').get(token ?? '',Math.floor(Date.now()/1000));
+        if (!row) return { error: 'invalid or expired link' };
+        const changed = await boDb.prepare('UPDATE users SET salt=?,hash=? WHERE username=?').run(salt,hash,row.username);
+        await boDb.prepare('DELETE FROM tokens WHERE username=?').run(row.username);
+        return changed.changes ? { ok:true } : { error:'invalid or expired link' };
+      });
+    }
     const row = boDb.prepare('SELECT username, kind, exp FROM tokens WHERE token = ?').get(token ?? '');
     if (!row || row.exp < Date.now() / 1000) return { error: 'invalid or expired link' };
     const salt = randomBytes(16).toString('hex');
@@ -601,7 +692,7 @@ async function boPost(url, body, who) {
     // a dealer with no playable clips cannot hold a live tier
     const base = dealer === 'vera' ? 'dealer' : 'dealers/' + dealer;
     try {
-      const idx = JSON.parse(readSync(join(root, base, 'streams/index.json'), 'utf8'));
+      const idx = JSON.parse(readSync(publicAssetPath(base, 'streams/index.json'), 'utf8'));
       if (!idx.clips['idle-1/idle/idle']) return { error: dealer + ' has no idle clip yet' };
     } catch { return { error: dealer + ' has no clips yet' }; }
     cfg.tiers[tier] = dealer; boSave(cfg);
@@ -624,11 +715,11 @@ async function boPost(url, body, who) {
     boSave(cfg);
     return { ok: true };
   }
-  if (url === '/api/bo/apikeys/create') { try { return { ok: true, key: partner().keys.create(body, who?.sub ?? who ?? null) }; } catch (e) { return { error: e.message }; } }
-  if (url === '/api/bo/apikeys/revoke') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return partner().keys.revoke(body.id); }
-  if (url === '/api/bo/apikeys/launch') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...partner().keys.mintLaunch(body.id, body) }; } catch (e) { return { error: e.message }; } }
-  if (url === '/api/bo/apikeys/credit') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...partner().keys.credit(body.id, body) }; } catch (e) { return { error: e.message }; } }
-  if (url === '/api/bo/apikeys/rotate') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return { ok: true, ...partner().keys.rotate(body.id) }; }
+  if (url === '/api/bo/apikeys/create') { try { return { ok: true, key: (await (await partner()).keys.create(body, who?.sub ?? who ?? null)) }; } catch (e) { return publicFailure(e); } }
+  if (url === '/api/bo/apikeys/revoke') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return (await (await partner()).keys.revoke(body.id)); }
+  if (url === '/api/bo/apikeys/launch') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...(await (await partner()).keys.mintLaunch(body.id, body)) }; } catch (e) { return publicFailure(e); } }
+  if (url === '/api/bo/apikeys/credit') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...(await (await partner()).keys.credit(body.id, body)) }; } catch (e) { return publicFailure(e); } }
+  if (url === '/api/bo/apikeys/rotate') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return { ok: true, ...(await (await partner()).keys.rotate(body.id)) }; }
   if (url === '/api/bo/clip-landing') {
     // Human-verified observation: which table part the card in this clip actually went to. Separate from assignment.
     const { clip, part, note } = body ?? {};
@@ -716,7 +807,7 @@ function chatSpeechPolicy(dealerId) {
     return { recordedLines: [], generatedText: true, silence: true, mediaFamilies: [] };
   }
   let bank = {};
-  try { bank = JSON.parse(readSync(join(root, CHAT_DEALERS[dealerId], 'audio/en/bank.json'), 'utf8')); }
+  try { bank = JSON.parse(readSync(publicAssetPath(CHAT_DEALERS[dealerId], 'audio/en/bank.json'), 'utf8')); }
   catch { /* Generated text or silence remains available. */ }
   const recordedLines = Object.entries(bank)
     .filter(([lineId, line]) => /^[a-z0-9_]{1,64}$/.test(lineId) && typeof line?.text === 'string' && line.text.trim()
@@ -728,25 +819,25 @@ function chatSpeechPolicy(dealerId) {
   };
 }
 
-function authoritativeChatStatus(playerId, session, request) {
-  const saved = db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(playerId);
+async function authoritativeChatStatus(playerId, session, request) {
+  const saved = (await db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(playerId));
   const game = saved ? JSON.parse(saved.state) : newGame();
   const view = shoeCommand(game, { op: 'state' }, 0).view;
   if (request.roundRevision !== String(view.version)) {
     const error = new Error('stale_round_revision'); error.statusCode = 409; throw error;
   }
-  const receipt = db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId);
+  const receipt = (await db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId));
   let publishedEvents = [];
   if (receipt?.version === view.version) {
     try { publishedEvents = JSON.parse(receipt.payload); } catch { /* Invalid stored observations are never forwarded. */ }
   }
   const occupiedBoxes = [...new Set((view.round?.hands ?? []).map(hand => hand.box))].filter(Number.isInteger);
-  const player = getPlayer(playerId);
+  const player = (await getPlayer(playerId));
   return {
     dealerId: request.dealerId, sessionRevision: request.sessionRevision, roundRevision: String(view.version),
     displayName: session?.displayName ?? player?.name ?? 'spelaren',
     ...(process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
-      ? { playResults: readPlayerResults(db, playerId, game, player.currency) } : {}),
+      ? { playResults: (await readPlayerResults(db, playerId, game, player.currency)) } : {}),
     round: view.round, occupiedBoxes, publishedEvents, policy: chatSpeechPolicy(request.dealerId),
   };
 }
@@ -754,7 +845,7 @@ function authoritativeChatStatus(playerId, session, request) {
 // Calibration APPLY: bake the tuned values to public/calibration.css, which
 // index.html loads after styles.css. Only custom properties are accepted, and
 // only :root plus per-box selectors, so this cannot inject arbitrary CSS.
-const CAL_FILE = join(root, 'calibration.css');
+const CAL_FILE = publicAssetPath('calibration.css');
 const CAL_PROP = /^--[a-z0-9-]+$/i;
 const CAL_VALUE = /^-?[0-9.]+(px|deg|vh|vw|%)?$/;
 
@@ -793,44 +884,45 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
   return css;
 }
 
-const scoutIdentity=craigIdentity(boDb);
+const scoutIdentity=(await craigIdentity(boDb));
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
 const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
 const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
-const auth=playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin});
-const validLaunch=token=>{const claims=jwtVerify(token);return !!(claims?.sub&&claims.partner&&getPlayer(claims.sub));};
-const boGameAuth=backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL});
-const boLabAuth=backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
+const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,
+  partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
+const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner)));};
+const boGameAuth=(await backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',publicGamePath:process.env.CROUPIER_PUBLIC_GAME_PATH || '/',boUrl:BO_URL}));
+const boLabAuth=(await backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
   authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
-  labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'});
+  labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
-const lissabonProfiles = createLissabonProfiles({ db, createPlayer: apiPlayer,
+const lissabonProfiles = postgres ? { enabled: false, session: () => null, handle: () => false } : createLissabonProfiles({ db, createPlayer: apiPlayer,
   enabled: !playerAccounts && guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
     && process.env.CROUPIER_LISSABON_PROFILES === '1' && process.env.NODE_ENV !== 'production',
-  onSwitch: playerId => { speechStreamService?.cancelPlayer(playerId); probeRuntime.cancel({playerId,dealerId:'astrid'}); for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
+  onSwitch: async playerId => { speechStreamService?.cancelPlayer(playerId); (await probeRuntime.cancel({playerId,dealerId:'astrid'})); for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
 });
-const playerSession = req => lissabonProfiles.session(req) ?? auth.session(req);
-db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
-function previewPlayer(req,res) {
+const playerSession = async req => lissabonProfiles.session(req) ?? (await auth.session(req));
+if (!postgres) db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
+async function previewPlayer(req,res) {
   const token=(req.headers.cookie??'').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
   const digest=t=>createHash('sha256').update(t).digest('hex');
-  const existing=token && db.prepare('SELECT player_id FROM preview_sessions WHERE digest=? AND expires>?').get(digest(token),Date.now());
-  if(existing && getPlayer(existing.player_id))return existing.player_id;
-  const p=apiPlayer({name:'Product preview'}), fresh=randomBytes(32).toString('hex');
-  db.prepare('DELETE FROM preview_sessions WHERE expires<=?').run(Date.now());
-  db.prepare('INSERT INTO preview_sessions VALUES (?,?,?)').run(digest(fresh),p.id,Date.now()+7*86400000);
+  const existing=token && (await db.prepare('SELECT player_id FROM preview_sessions WHERE digest=? AND expires>?').get(digest(token),Date.now()));
+  if(existing && (await getPlayer(existing.player_id)))return existing.player_id;
+  const p=await apiPlayer({name:'Product preview'}), fresh=randomBytes(32).toString('hex');
+  (await db.prepare('DELETE FROM preview_sessions WHERE expires<=?').run(Date.now()));
+  (await db.prepare('INSERT INTO preview_sessions VALUES (?,?,?)').run(digest(fresh),p.id,Date.now()+7*86400000));
   res.setHeader('Set-Cookie',`preview_session=${fresh}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`);
   return p.id;
 }
-function chatSessionOwner(req, playerId) {
+async function chatSessionOwner(req, playerId) {
   const localProfile = lissabonProfiles.session(req);
   if (localProfile?.playerId === playerId) return localProfile.owner;
   const playerToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
-  if (playerToken && auth.session(req)?.playerId === playerId) return `player-${createHash('sha256').update(playerToken).digest('hex')}`;
+  if (playerToken && (await auth.session(req))?.playerId === playerId) return `player-${createHash('sha256').update(playerToken).digest('hex')}`;
   const previewToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
   if (guestPreview && previewToken) {
     const digest = createHash('sha256').update(previewToken).digest('hex');
-    const session = db.prepare('SELECT player_id FROM preview_sessions WHERE digest=? AND expires>?').get(digest, Date.now());
+    const session = (await db.prepare('SELECT player_id FROM preview_sessions WHERE digest=? AND expires>?').get(digest, Date.now()));
     if (session?.player_id === playerId) return `preview-${digest}`;
   }
   throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
@@ -848,35 +940,39 @@ const operatorSpeechQa = createOperatorSpeechQa({
   }),
 });
 const server = createServer(async (req, res) => {
+  try {
   const pathname=new URL(req.url,'http://local').pathname;
-  if(boGameAuth(req,res))return;
-  if(boLabAuth(req,res))return;
+  if((await boGameAuth(req,res)))return;
+  if((await boLabAuth(req,res)))return;
   { const u=new URL(req.url,'http://local'); const launch=u.searchParams.get('launch');
-    if(['/', '/v2', '/v2/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
-      if(!claims?.sub||!claims.partner||!getPlayer(claims.sub)){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
+    if(['/', '/v2', '/v2/', '/game', '/game/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
+      if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       u.searchParams.delete('launch');
-      const sessionCookie=auth.fromPartner(req,claims);
+      if (process.env.CROUPIER_PUBLIC_GAME_PATH === '/game') u.pathname = '/game';
+      let sessionCookie;
+      try { sessionCookie = await auth.fromPartner(req,claims); }
+      catch { res.writeHead(403, {'Content-Type':'text/plain','Cache-Control':'no-store'}); res.end('Launch token invalid or expired'); return; }
       res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':sessionCookie});res.end();return; } }
   try {
-    const loggingOut=pathname==='/api/auth/logout'?auth.session(req):null;
+    const loggingOut=pathname==='/api/auth/logout'?(await auth.session(req)):null;
     if(await auth.handle(req,res)){
-      if(loggingOut && res.statusCode===200){speechStreamService?.cancelPlayer(loggingOut.playerId);probeRuntime.cancel({playerId:loggingOut.playerId,dealerId:'astrid'},'logout');}
+      if(loggingOut && res.statusCode===200){speechStreamService?.cancelPlayer(loggingOut.playerId);(await probeRuntime.cancel({playerId:loggingOut.playerId,dealerId:'astrid'},'logout'));}
       return;
     }
   } catch { if(!res.headersSent){res.writeHead(400);res.end('Invalid request');}return; }
   if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
   if(pathname.startsWith('/api/v1/generations')&&await generationsApi(req,res,pathname))return;
-  if(pathname==='/api/v1/events'&&req.method==='GET'){ partner().handleEvents(req,res,new URL(req.url,'http://local')); return; }
-  if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await partner().handle(req,res,pathname); return; }
+  if(pathname==='/api/v1/events'&&req.method==='GET'){ (await (await partner()).handleEvents(req,res,new URL(req.url,'http://local'))); return; }
+  if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await (await partner()).handle(req,res,pathname); return; }
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
-  let authenticated=playerSession(req)?.playerId ?? null;
+  let authenticated=(await playerSession(req))?.playerId ?? null;
   const guest=guestPreview && !authenticated && !backoffice && (pathname.startsWith('/api/') || pathname==='/chat');
-  if(guest)authenticated=previewPlayer(req,res);
+  if(guest)authenticated=(await previewPlayer(req,res));
   if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
   if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
-  if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||req.method!=='GET')) {
+  if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method))) {
     res.setHeader('Cache-Control','no-store');
-    if(pathname.startsWith('/api/')||req.method!=='GET'){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
+    if(pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method)){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
     else {res.writeHead(303,{Location:'/login.html'});res.end();}
     return;
   }
@@ -888,7 +984,7 @@ const server = createServer(async (req, res) => {
     try {
       const config = await probeRuntime.config();
       const enabled = astridCameraEnabled;
-      const profileRevision = enabled ? createHash('sha256').update(chatSessionOwner(req, authenticated)).digest('hex') : null;
+      const profileRevision = enabled ? createHash('sha256').update((await chatSessionOwner(req, authenticated))).digest('hex') : null;
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
       res.end(JSON.stringify({ enabled, profileRevision, model: config.policy.model,
         reason: !enabled ? 'feature_disabled' : !astridTranscription.configured ? 'transcription_unavailable' : null,
@@ -900,16 +996,16 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (pathname === '/api/astrid/transcription') {
-    const ownerRevision = () => createHash('sha256').update(chatSessionOwner(req, authenticated)).digest('hex');
+    const ownerRevision = async () => createHash('sha256').update((await chatSessionOwner(req, authenticated))).digest('hex');
     let profileRevision;
-    try { profileRevision = ownerRevision(); }
+    try { profileRevision = (await ownerRevision()); }
     catch { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"stale_transcription_context"}'); return; }
     await astridTranscription.handle(req, res, { enabled: astridCameraEnabled, profileRevision,
       checkCurrent: async context => {
-        if (ownerRevision() !== profileRevision) {
+        if ((await ownerRevision()) !== profileRevision) {
           throw Object.assign(new Error('stale_transcription_context'), { code: 'stale_transcription_context', statusCode: 409 });
         }
-        authoritativeChatStatus(authenticated, playerSession(req), context);
+        (await authoritativeChatStatus(authenticated, (await playerSession(req)), context));
       } });
     return;
   }
@@ -919,18 +1015,18 @@ const server = createServer(async (req, res) => {
     const controller=new AbortController();
     const disconnected=()=>{if(!res.writableEnded)controller.abort();};res.once('close',disconnected);
     try {
-      const owner=chatSessionOwner(req,authenticated);
+      const owner=(await chatSessionOwner(req,authenticated));
       if(pathname==='/api/probe'&&req.method==='GET'){json(200,await probeRuntime.inspect(scope));return;}
       if(req.method!=='POST')throw Object.assign(new Error('method_not_allowed'),{code:'method_not_allowed',statusCode:405});
       let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Object.assign(new Error('request_too_large'),{code:'request_too_large',statusCode:413});}
       const body=JSON.parse(raw||'{}');
-      const context={owner,signal:controller.signal,readOwner:()=>chatSessionOwner(req,authenticated),
-        readState:()=>({playerId:authenticated,...authoritativeChatStatus(authenticated,playerSession(req),{dealerId:'astrid',sessionRevision:body.sessionRevision,roundRevision:body.roundRevision})})};
+      const context={owner,signal:controller.signal,readOwner:async ()=>(await chatSessionOwner(req,authenticated)),
+        readState:async ()=>({playerId:authenticated,...(await authoritativeChatStatus(authenticated,(await playerSession(req)),{dealerId:'astrid',sessionRevision:body.sessionRevision,roundRevision:body.roundRevision}))})};
       if(pathname==='/api/probe/presence')json(200,await probeRuntime.presence(scope,body,owner));
       else if(pathname==='/api/probe/forget'){
         activePlayerChats.get(JSON.stringify([authenticated,'astrid']))?.abort('chat_memory_changed');
         speechStreamService?.cancelPlayer(authenticated);
-        probeRuntime.forget(scope,body.factId);json(200,await probeRuntime.inspect(scope));
+        (await probeRuntime.forget(scope,body.factId));json(200,await probeRuntime.inspect(scope));
       }
       else if(pathname==='/api/probe/decide'||pathname==='/api/probe/receipt'||pathname==='/api/probe/test'){
         if(!CHAT_REVISION.test(body.sessionRevision)||!CHAT_REVISION.test(body.roundRevision))throw Object.assign(new Error('invalid_probe_context'),{code:'invalid_probe_context',statusCode:400});
@@ -951,9 +1047,9 @@ const server = createServer(async (req, res) => {
   }
   if (pathname === '/api/chat/memory' || pathname === '/api/chat/memory/forget') {
     const respond = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' }); res.end(JSON.stringify(value)); };
-    const handle = incoming => {
+    const handle = async incoming => {
       try {
-        chatSessionOwner(req, authenticated);
+        (await chatSessionOwner(req, authenticated));
         const dealerId = incoming.dealer;
         if (!Object.hasOwn(CHAT_DEALERS, dealerId)) throw Object.assign(new Error('invalid_chat_dealer'), { statusCode: 400 });
         const scope = { playerId: authenticated, dealerId };
@@ -961,16 +1057,16 @@ const server = createServer(async (req, res) => {
           const key = JSON.stringify([authenticated, dealerId]);
           activePlayerChats.get(key)?.abort('chat_memory_changed');
           if (dealerId === 'astrid') speechStreamService?.cancelPlayer(authenticated);
-          probeRuntime.forget(scope);
-          respond(200, playerChatMemory.forget(scope));
-        } else respond(200, playerChatMemory.profile(scope));
+          (await probeRuntime.forget(scope));
+          respond(200, (await playerChatMemory.forget(scope)));
+        } else respond(200, (await playerChatMemory.profile(scope)));
       } catch (error) { respond(error.statusCode || 400, { error: error.code || error.message }); }
     };
-    if (pathname === '/api/chat/memory' && req.method === 'GET') handle({ dealer: new URL(req.url, 'http://local').searchParams.get('dealer') });
+    if (pathname === '/api/chat/memory' && req.method === 'GET') (await handle({ dealer: new URL(req.url, 'http://local').searchParams.get('dealer') }));
     else if (pathname.endsWith('/forget') && req.method === 'POST') {
       let body = '';
       req.on('data', chunk => { body += chunk; if (body.length > 2000) req.destroy(); });
-      req.on('end', () => { try { handle(JSON.parse(body || '{}')); } catch { respond(400, { error: 'invalid_request' }); } });
+      req.on('end', async () => { try { (await handle(JSON.parse(body || '{}'))); } catch { respond(400, { error: 'invalid_request' }); } });
     } else respond(405, { error: 'method_not_allowed' });
     return;
   }
@@ -979,7 +1075,7 @@ const server = createServer(async (req, res) => {
       const match = /^\/api\/generated-speech\/([a-f0-9-]{32,64})\/(audio|video)$/.exec(pathname);
       const service = getGeneratedSpeechService();
       if (!match || !service || !['GET', 'HEAD'].includes(req.method)) { res.writeHead(404); res.end(); return; }
-      const media = await service.media({ id: match[1], kind: match[2], owner: chatSessionOwner(req, authenticated) });
+      const media = await service.media({ id: match[1], kind: match[2], owner: (await chatSessionOwner(req, authenticated)) });
       res.writeHead(200, { 'Content-Type': media.contentType, 'Content-Length': media.bytes.length, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' });
       res.end(req.method === 'HEAD' ? undefined : media.bytes);
     } catch (error) { res.writeHead(error.statusCode || 404); res.end(); }
@@ -1024,18 +1120,25 @@ const server = createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/api/bo/login') {
     let body = '';
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
-    req.on('end', () => {
+    req.on('end', async () => {
+      try {
       let who = null, uname = '';
       try { uname = JSON.parse(body || '{}').user; } catch {}
       if (boLogins.blocked(req, uname)) { res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '900' }); res.end('{"error":"too many login attempts, try again in 15 minutes"}'); return; }
-      try { const { user, pass } = JSON.parse(body || '{}'); who = boCheckLogin(user, pass); } catch {}
+      try { const { user, pass } = JSON.parse(body || '{}'); who = (await boCheckLogin(user, pass)); } catch (error) { if (persistenceFailure(error)) throw error; }
       if (!who) { boLogins.fail(req, uname); console.warn('[bo] failed login', uname, boLogins.ipOf(req)); res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
       boLogins.ok(req, uname);
       const tok = jwtSign({ sub: who.name, role: who.role, aud:'backoffice', source_stamp:who.stamp,
-        auth_epoch:boAuthEpoch(who.id), exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
+        auth_epoch:(await boAuthEpoch(who.id)), exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
       const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control':'no-store', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}` });
       res.end('{"ok":true}');
+      } catch {
+        if (res.destroyed || res.writableEnded) return;
+        if (res.headersSent) { res.destroy(); return; }
+        res.writeHead(503, {'Content-Type':'application/json','Cache-Control':'no-store'});
+        res.end('{"error":"Service temporarily unavailable"}');
+      }
     });
     return;
   }
@@ -1045,14 +1148,14 @@ const server = createServer(async (req, res) => {
     || (req.method === 'POST' && ['/api/bo/reset-request', '/api/bo/set-password'].includes(req.url))
     || pathname === '/bo/login.html' || req.url.startsWith('/bo/set-password.html');
   if ((req.url.startsWith('/api/bo/') || req.url === '/bo' || req.url.startsWith('/bo/')) && !boOpen
-      && !boSessionOk(req)) {
+      && !(await boSessionOk(req))) {
     if (req.url.startsWith('/api/')) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"login required"}'); }
     else { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); }
     return;
   }
   if (await operatorSpeechQa.handle(req, res, pathname)) return;
   if (req.method === 'GET' && req.url.startsWith('/api/bo/')) {
-    const who = boSessionOk(req);
+    const who = (await boSessionOk(req));
     if (req.url === '/api/bo/me') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(who ? { user: who.sub, role: who.role } : {}));
@@ -1061,7 +1164,7 @@ const server = createServer(async (req, res) => {
     if (req.url === '/api/bo/users' && (who?.role !== 'superadmin')) {
       res.writeHead(403, { 'Content-Type': 'application/json' }); res.end('{"error":"superadmin only"}'); return;
     }
-    const out = boApi(req.url);
+    const out = (await boApi(req.url));
     res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(out ?? { error: 'not found' }));
     return;
@@ -1072,7 +1175,7 @@ const server = createServer(async (req, res) => {
                    '/api/bo/pitboss': 'admin', '/api/bo/tier': 'admin', '/api/bo/room': 'admin',
                    '/api/bo/users/invite': 'superadmin', '/api/bo/apikeys/create': 'superadmin', '/api/bo/apikeys/launch': 'admin', '/api/bo/apikeys/credit': 'admin', '/api/bo/apikeys/revoke': 'superadmin', '/api/bo/apikeys/rotate': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin', '/api/bo/users/resend': 'superadmin' };
     const PUBLIC = ['/api/bo/reset-request', '/api/bo/set-password'];
-    const who = boSessionOk(req);
+    const who = (await boSessionOk(req));
     if (!PUBLIC.includes(req.url)) {
       const need = NEED[req.url] ?? 'admin';
       if (!who || (ROLE_RANK[who.role] ?? -1) < ROLE_RANK[need]) {
@@ -1085,7 +1188,7 @@ const server = createServer(async (req, res) => {
     req.on('data', c => { body += c; if (body.length > 100000) req.destroy(); });
     req.on('end', async () => {
       let out = null;
-      try { out = await boPost(req.url, JSON.parse(body || '{}'), who); } catch (e) { out = { error: 'bad request' }; }
+      try { out = await boPost(req.url, JSON.parse(body || '{}'), who); } catch (e) { out = persistenceFailure(e) ? publicFailure(e) : {error:'bad request'}; }
       res.writeHead(out?.statusCode ?? (out ? 200 : 404), { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out ?? { error: 'not found' }));
     });
@@ -1121,9 +1224,9 @@ const server = createServer(async (req, res) => {
         if (!dealerId || !CHAT_REVISION.test(incoming.sessionRevision) || !CHAT_REVISION.test(incoming.roundRevision)) {
           res.writeHead(400, { 'Content-Type': 'application/json' }); res.end('{"error":"invalid_chat_context"}'); return;
         }
-        const session = playerSession(req);
-        const status = authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
-        const owner = chatSessionOwner(req, authenticated);
+        const session = (await playerSession(req));
+        const status = (await authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision }));
+        const owner = (await chatSessionOwner(req, authenticated));
         if (dealerId === 'astrid') speechStreamService?.cancelOwner(owner);
         const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
         let observation;
@@ -1141,11 +1244,11 @@ const server = createServer(async (req, res) => {
         }
         const scope = { playerId: authenticated, dealerId };
         await probeRuntime.cancel(scope);
-        memoryTurn = playerChatMemory.begin({ ...scope, requestId: incoming.requestId, message: incoming.message });
+        memoryTurn = (await playerChatMemory.begin({ ...scope, requestId: incoming.requestId, message: incoming.message }));
         expectedMemoryRevision = memoryTurn.revision;
         memoryKey = JSON.stringify([authenticated, dealerId]);
         activePlayerChats.set(memoryKey, controller);
-        const conversation = probeConfig ? probeStore.conversation(scope, probeConfig.policy) : null;
+        const conversation = probeConfig ? (await probeStore.conversation(scope, probeConfig.policy)) : null;
         if (conversation) status.conversationMemory = conversation.context;
         // Neither a browser-supplied player ID nor fabricated assistant history
         // may enter the model. Stable identity and bounded recall are server-owned.
@@ -1158,9 +1261,9 @@ const server = createServer(async (req, res) => {
               throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
             }
           }
-          if (playerChatMemory.profile(scope).revision !== expectedMemoryRevision) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
-          if (conversation && !probeStore.conversationCurrent(scope, conversation)) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
-          return authoritativeChatStatus(authenticated, playerSession(req), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision });
+          if ((await playerChatMemory.profile(scope)).revision !== expectedMemoryRevision) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
+          if (conversation && !(await probeStore.conversationCurrent(scope, conversation))) throw Object.assign(new Error('stale_chat_memory'), { statusCode: 409 });
+          return (await authoritativeChatStatus(authenticated, (await playerSession(req)), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision }));
         };
         const speechTrace = randomBytes(8).toString('hex');
         const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
@@ -1173,7 +1276,7 @@ const server = createServer(async (req, res) => {
           },
           onProgress: (stage, metrics) => { if (stream && Object.hasOwn(CHAT_STAGES, stage)) frame({ type: 'progress', stage, elapsedMs: Math.round(performance.now() - startedAt), ...(metrics ? { metrics } : {}) }); },
           onDecision: exactText => { if (stream) frame({ type: 'preview', exactText }); },
-          readOwner: () => chatSessionOwner(req, authenticated),
+          readOwner: async () => (await chatSessionOwner(req, authenticated)),
           readStatus,
           signal: controller.signal,
           decide: async (value, state) => openClawChat(value, state, { model: probeConfig?.policy.model ?? 'gateway-default', fetchImpl: (url, options = {}) => fetch(url, {
@@ -1184,7 +1287,7 @@ const server = createServer(async (req, res) => {
         });
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
-        const memoryReceipt = memoryTurn.commit({ kind: decision.kind, exactText: decision.exactText });
+        const memoryReceipt = (await memoryTurn.commit({ kind: decision.kind, exactText: decision.exactText }));
         // This reply's own commit is expected; a later forget/turn remains stale.
         expectedMemoryRevision = memoryReceipt.revision;
         if(dealerId==='astrid')void probeRuntime.rememberMessage(scope,incoming.requestId,incoming.message).catch(()=>{});
@@ -1192,10 +1295,11 @@ const server = createServer(async (req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(decision));
       } catch (e) {
-        if (controller.signal.aborted) memoryTurn?.cancel(); else memoryTurn?.fail();
+        try { if (controller.signal.aborted) await memoryTurn?.cancel(); else await memoryTurn?.fail(); }
+        catch { /* Failed persistence cleanup must not replace the original response. */ }
         if (res.destroyed) return;
         if (stream && res.headersSent) {
-          frame({ type: 'error', error: controller.signal.aborted ? 'chat_cancelled' : e?.code || String(e.message || e) });
+          frame({ type: 'error', error: controller.signal.aborted ? 'chat_cancelled' : persistenceFailure(e) ? publicFailure(e).error : e?.code || String(e.message || e) });
           res.end(); return;
         }
         if (controller.signal.aborted) {
@@ -1203,9 +1307,9 @@ const server = createServer(async (req, res) => {
           res.end(JSON.stringify({ error: controller.signal.reason === 'chat_memory_changed' ? 'chat_memory_changed' : 'chat_cancelled' }));
           return;
         }
-        const status = Number.isInteger(e?.statusCode) ? e.statusCode : 502;
+        const status = persistenceFailure(e) ? 503 : Number.isInteger(e?.statusCode) ? e.statusCode : 502;
         res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-        res.end(JSON.stringify({ error: e?.code || String(e.message || e) }));
+        res.end(JSON.stringify({ error: persistenceFailure(e) ? publicFailure(e).error : e?.code || String(e.message || e) }));
       } finally {
         if (activePlayerChats.get(memoryKey) === controller) activePlayerChats.delete(memoryKey);
         res.removeListener('close', disconnected);
@@ -1216,15 +1320,15 @@ const server = createServer(async (req, res) => {
   if (req.method === 'POST' && API[req.url]) {
     let body = '';
     req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       let out;
       try {
-        const activeSession=playerSession(req);
-        out = API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }, req.url === '/api/table' ? activeSession : null);
+        const activeSession=(await playerSession(req));
+        out = (await API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }, req.url === '/api/table' ? activeSession : null));
         if(req.url==='/api/player'&&activeSession?.displayName&&!out?.error)out={...out,name:activeSession.displayName};
       }
-      catch (e) { out = { error: String(e.message || e) }; }
-      res.writeHead(out.error ? 400 : 200, { 'Content-Type': 'application/json' });
+      catch (e) { out = publicFailure(e); }
+      res.writeHead(out.statusCode ?? (out.error ? 400 : 200), { 'Content-Type': 'application/json','Cache-Control':'no-store' });
       res.end(JSON.stringify(out));
     });
     return;
@@ -1241,14 +1345,39 @@ const server = createServer(async (req, res) => {
     // Repeat auth after decoding/normalization so encoded slashes cannot bypass
     // the ordinary BO gate above. Windows also ignores directory casing and
     // trailing dots/spaces. None of these aliases may fall through to static files.
-    if (!boSessionOk(req)) { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); return; }
+    if (!(await boSessionOk(req))) { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); return; }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
-    let catalog; try { catalog = JSON.parse(readSync(join(root, 'bo/generations.json'), 'utf8')); } catch { catalog = []; }
+    let catalog; try { catalog = JSON.parse(readSync(publicAssetPath('bo/generations.json'), 'utf8')); } catch { catalog = []; }
     const media = openGenerationMedia({ directory: generationDirectory, catalog, fileName: generationPath.slice(generationPrefix[0].length) });
     if (!media) { res.writeHead(404, { 'Cache-Control': 'no-store' }); res.end('not found'); return; }
     serveGenerationMedia(req, res, media); return;
   }
-  if (['/v2', '/v2/', '/v2/index.html'].includes(decoded)) path = '/index.html';
+  if (mediaLayout) {
+    if (publicBlobMedia) {
+      const response = await publicBlobMedia(url.pathname,
+        new Request(gameOrigin + url.pathname, { method: req.method, headers: req.headers }),
+        { repositoryRoot: mediaRepository, trustedProxyOrigin: frontendOrigin });
+      if (response) {
+        res.writeHead(response.status, Object.fromEntries(response.headers));
+        if (!response.body) { res.end(); return; }
+        const source = Readable.fromWeb(response.body);
+        res.once('close', () => source.destroy());
+        source.once('error', () => res.destroy());
+        source.pipe(res); return;
+      }
+    }
+    let media;
+    try { media = mediaLayout.openPublicMedia(url.pathname, { repositoryRoot: mediaRepository }); }
+    catch { res.writeHead(503, { 'Cache-Control': 'no-store' }); res.end('media unavailable'); return; }
+    if (media) {
+      const etag = `"${media.sha256}"`;
+      if (!req.headers.range && ['GET', 'HEAD'].includes(req.method) && req.headers['if-none-match'] === etag) {
+        closeSync(media.fd); res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' }); res.end(); return;
+      }
+      serveGenerationMedia(req, res, media, { ETag: etag, 'Cache-Control': 'no-cache' }); return;
+    }
+  }
+  if (['/v2', '/v2/', '/v2/index.html', '/game', '/game/'].includes(decoded)) path = '/index.html';
   if (decoded === '/blackjack' || decoded === '/blackjack/') path = '/blackjack-entry.html';
   if (path === '/' || path === '\\') path = '/index.html';
   if (/[/\\]$/.test(path)) path += 'index.html';   // directory index on Windows and POSIX
@@ -1278,13 +1407,22 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': size, ...cache });
     createReadStream(file).pipe(res);
   }
+  } catch {
+    // A failed database/transport request must not crash other player sessions
+    // or expose PostgreSQL diagnostics and connection details to the browser.
+    if (res.destroyed || res.writableEnded) return;
+    if (res.headersSent) { res.destroy(); return; }
+    res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ error: 'Service temporarily unavailable' }));
+  }
 });
+server.once('close', () => { if (storage) void storage.close(); });
 if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
-    resolveOwner: (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)
-      ? operatorSpeechQa.resolveOwner(req, playerId) : chatSessionOwner(req, playerId),
+    resolveOwner: async (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)
+      ? operatorSpeechQa.resolveOwner(req, playerId) : (await chatSessionOwner(req, playerId)),
   });
   server.once('close', () => speechStreamService.close());
 }

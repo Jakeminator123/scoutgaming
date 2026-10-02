@@ -15,11 +15,48 @@ Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md
 
 Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
 
-Backoffice/Lab kräver inga nya nyckelnamn. Koordinerad start vidarebefordrar
+Backoffice/Lab vidarebefordrar
 `CROUPIER_DATA_DIR` till Lab för läsning av samma äldre BO-granskningsdata,
 `BO_URL` i molnet för administration och `CROUPIER_GAME_ORIGIN` lokalt.
 Aktiva klippval sparas i `LAB_STUDIO_DATA_DIR`; Web läser samma projekt via
 `CROUPIER_PRESENTATION_STUDIO_DIR`. Inga credentials skickas i navigationen.
+
+### Ny plattform: explicit opt-in
+
+Render: `CROUPIER_DATABASE=postgres` kräver `CROUPIER_GAME_DATABASE_URL` till
+en separat TLS-skyddad game-databas, färdiginstallerat `product-v1`-schema och
+verifierad import. `sqlite` är kompatibilitetsstandard; en game-URL utan
+postgres-flagga är fel. Zon-URL får aldrig vara reserv för konton/spel.
+
+Vercel-spel/BO: `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`,
+`CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN` och serverhemligheten
+`CROUPIER_VERCEL_INGRESS_SECRET`. `CROUPIER_GAME_URL` bevaras för äldre
+flagga-av-kompatibilitet. Inga DB-, Blob- eller talleverantörsnycklar behövs här.
+
+Vercel-Lab UI: `CROUPIER_LAB_REMOTE_UI=1`, samma fyra origins/ingressnyckel,
+`CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`
+och `BO_URL` till publik origin. Serverrendering läser autentiserad revision
+från Render; den får inte falla tillbaka till ett nytt lokalt seed-projekt.
+
+Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
+`CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_GAME_ORIGIN` och
+`BETTALOTTO_PARTNER_BASE_URL` anger samma exakta publika Vercel-origin.
+`CROUPIER_PUBLIC_GAME_PATH=/game`, `CROUPIER_VERCEL_TRANSPORT_ORIGIN` anger
+exakt Render-origin och `CROUPIER_VERCEL_INGRESS_SECRET` matchar UI-projekten.
+Host/forwarded headers utan privat ingressbevis nekas.
+
+Gemensam privat media: `CROUPIER_MEDIA_BLOB_INDEX` är opt-in med aktiv
+Blob-lagring och pekar på `/app/media/blob-index.json` eller exakt härledd
+`studio/media-blob-index.json`. Endast verifierad SHA-256/size/public-allowlist
+får serverlevereras. Källa/review/staging blir inte publik genom indexet.
+Gamla explicita `LAB_VIDEO_ARCHIVE=/app/emil/dealklipp-v1` normaliseras till
+`/app/media/dealers/astrid/runtime/presentation`; andra overrides bevaras.
+
+Tillfällig SQLite-export: `CROUPIER_STORAGE_MAINTENANCE=export` och separat
+`CROUPIER_STORAGE_EXPORT_SECRET` startar en exporttjänst med noll Web/Lab-
+skrivare. Normalt spel ger 503; endast hemlighetsskyddad POST kan hämta backup
+inklusive committad WAL. Flaggan får inte kombineras med postgres. Ta bort
+båda efter migrering. Aktuellt verifieringsläge står i handoffen.
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |

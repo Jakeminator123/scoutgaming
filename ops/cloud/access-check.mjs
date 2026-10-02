@@ -22,6 +22,12 @@ export async function verifyCloudAccess(config, { gatewayPort, labPort = LAB_POR
   const game = new URL(config.gameOrigin).host;
   const bo = new URL(config.boOrigin).host;
   const lab = new URL(config.labOrigin).host;
+  const transportHost = config.vercelIngress ? new URL(config.vercelIngress.transportOrigin).host : null;
+  const ingressHeaders = config.vercelIngress ? {
+    'X-Croupier-Vercel-Secret': config.vercelIngress.secret,
+    'X-Croupier-Public-Origin': config.vercelIngress.publicOrigin,
+    'X-Forwarded-Host': game, 'X-Forwarded-Proto': 'https',
+  } : {};
   const probes = [
     ['gateway health', game, '/__cloud/health', 200],
     ['unknown host', 'cloud-access-probe.invalid', '/__cloud/health', 421],
@@ -33,7 +39,9 @@ export async function verifyCloudAccess(config, { gatewayPort, labPort = LAB_POR
     ['Lab internal route', lab, '/api/auth/lab/check', 421],
   ];
   for (const [label, host, path, expected, headers] of probes) {
-    const status = await probeStatus({ port: gatewayPort, host, path, headers });
+    const unknown = label === 'unknown host';
+    const status = await probeStatus({ port: gatewayPort, host: transportHost && !unknown ? transportHost : host,
+      path, headers: { ...(!unknown ? ingressHeaders : {}), ...headers } });
     if (status !== expected) throw new Error(`Cloud access check failed: ${label}.`);
   }
   // Check the actual Lab guard, not just the gateway's cookie rejection.

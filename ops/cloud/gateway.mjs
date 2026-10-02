@@ -2,6 +2,7 @@ import { createServer, request as httpRequest } from 'node:http';
 import { posix } from 'node:path';
 import { LAB_PORT, WEB_PORT } from './config.mjs';
 import { checkLabSession } from './lab-session-check.mjs';
+import { vercelIngressRequest } from './vercel-ingress.mjs';
 
 const HOP_HEADERS = new Set(['connection', 'keep-alive', 'proxy-authenticate',
   'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade']);
@@ -92,12 +93,29 @@ export function proxyHeaders(headers, host) {
 // One platform port, three exact public hostnames. The original Host and Origin
 // reach the child; rewriting them to loopback would defeat application checks.
 export function createCloudGateway(config, { labInternalSecret, sessionCheck = checkLabSession,
-  webPort = WEB_PORT, labPort = LAB_PORT } = {}) {
+  webPort = WEB_PORT, labPort = LAB_PORT, vercelIngress = config.vercelIngress } = {}) {
   if (typeof labInternalSecret !== 'string' || Buffer.byteLength(labInternalSecret) < 32) {
     throw new Error('The cloud Lab gateway requires an internal secret.');
   }
   const labHost = new URL(config.labOrigin).host;
+  if (vercelIngress && (!config.singleOrigin || vercelIngress.publicOrigin !== config.gameOrigin)) {
+    throw new Error('Vercel ingress requires the canonical single-origin layout.');
+  }
   const server = createServer(async (incoming, outgoing) => {
+    const ingress = vercelIngressRequest(incoming, vercelIngress);
+    if (!ingress.accepted) { outgoing.writeHead(421, { 'Cache-Control': 'no-store' }); outgoing.end(); return; }
+    if (ingress.health) { outgoing.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); outgoing.end('ok'); return; }
+    if (ingress.transported) incoming.headers = ingress.headers;
+    if (ingress.session) {
+      let session;
+      try { session = await sessionCheck(incoming.headers.cookie, labHost, { port: webPort }); }
+      catch { session = { authorized: false, available: false }; }
+      outgoing.writeHead(!session.available ? 503 : session.authorized ? 200 : 401, {
+        'Content-Type': 'application/json', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
+      });
+      outgoing.end(JSON.stringify({ authorized: session.available && session.authorized }));
+      return;
+    }
     const studioLocation = studioAliasRedirect(incoming, config);
     if (studioLocation) {
       outgoing.writeHead(307, { Location: studioLocation, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
@@ -159,6 +177,9 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
     const reject = status => {
       if (!socket.destroyed) socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
     };
+    const ingress = vercelIngressRequest(incoming, vercelIngress);
+    if (!ingress.accepted) { reject(421); return; }
+    if (ingress.transported) incoming.headers = ingress.headers;
     // Only Web's two authenticated speech endpoints may cross this boundary.
     // The relay still verifies the worker bearer token or the client's signed
     // ticket, session cookie and current owner before any paid work begins.

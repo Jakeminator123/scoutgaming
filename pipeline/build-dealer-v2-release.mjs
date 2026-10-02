@@ -4,7 +4,10 @@
 import {readFile,writeFile,mkdir,copyFile,readdir,stat} from 'node:fs/promises';
 import {resolve,dirname,join,relative,extname} from 'node:path';
 import {createHash} from 'node:crypto';
-const root=resolve(new URL('..',import.meta.url).pathname), source=join(root,'web/public');
+import {fileURLToPath} from 'node:url';
+import {resolveMediaPath} from '../tools/media-layout.mjs';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'), source=join(root,'web/public');
+const mediaFile=path=>resolveMediaPath('web/public/'+path.replaceAll('\\','/'),{repositoryRoot:root});
 const [originalArg,outArg]=process.argv.slice(2);
 if(!originalArg||!outArg)throw new Error('Supply captured live public and output public paths');
 const original=resolve(originalArg),out=resolve(outArg);
@@ -12,7 +15,8 @@ if(out===source||out.startsWith(source+'/'))throw new Error('Release output must
 const copied=new Set(),queue=[],missingReferences=[];
 async function copy(path){
   path=path.replace(/^\.\//,'');if(copied.has(path))return;
-  const file=resolve(source,path);if(!file.startsWith(source+'/'))throw new Error('Asset outside public: '+path);
+  if(path.split(/[\\/]/).some(p=>p==='..')||path.startsWith('/')||path.includes(':'))throw new Error('Asset outside public: '+path);
+  const file=mediaFile(path);
   const info=await stat(file);
   if(info.isDirectory()){for(const name of await readdir(file))await copy(join(path,name));return;}
   copied.add(path);const target=join(out,'v2',path);await mkdir(dirname(target),{recursive:true});await copyFile(file,target);
@@ -25,18 +29,18 @@ for(const path of ['app.mjs','index.html','styles.css','environment.css','calibr
   'review/astrid-table-v2','review/astrid-green-waiting/idle.json','review/astrid-green-speak/speak.json',
   'review/amira-green-waiting/idle.json','review/amira-green-speak/speak.json','review/amira-composite/profile.json'])await copy(path);
 while(queue.length){
-  const path=queue.shift(),text=await readFile(join(source,path),'utf8');
+  const path=queue.shift(),text=await readFile(mediaFile(path),'utf8');
   if(/\.m?js$/.test(path))for(const match of text.matchAll(/(?:from\s*|import\s*\(?)['"](\.\.?\/[^'"]+\.(?:mjs|js))['"]/g))await copy(join(dirname(path),match[1]));
   if(/\.(css|html)$/.test(path))for(const match of text.matchAll(/(?:url\(\s*|(?:src|href)=)['"]([^'"]+)['"]/g)){
     if(/^(?:https?:|data:|\/|#)/.test(match[1]))continue;
     const asset=join(dirname(path),match[1].split('?')[0]);
-    if(await stat(join(source,asset)).catch(()=>null))await copy(asset);
+    if(await stat(mediaFile(asset)).catch(()=>null))await copy(asset);
   }
   if(path.endsWith('.json')){
     const walk=async (value,key='')=>{
-      if(typeof value==='string'&&/^(?:review|assets|dealers|dealer)\//.test(value)&&/\.(?:mp4|png|jpg|webm|mp3|json|glb)$/.test(value)){ if(await stat(join(source,value)).catch(()=>null))await copy(value); else {
+      if(typeof value==='string'&&/^(?:review|assets|dealers|dealer)\//.test(value)&&/\.(?:mp4|png|jpg|webm|mp3|json|glb)$/.test(value)){ if(await stat(mediaFile(value)).catch(()=>null))await copy(value); else {
       // These unused provenance images were already absent in the accepted preview.
-      const metadataOnly=['assets/astrid-3d/greenscreen/blackjack-camera-reference.jpg','review/amira-green-waiting/rest-0000.png','review/amira-green-waiting/rest-full.png'];
+      const metadataOnly=['media/dealers/astrid/source/3d/greenscreen/blackjack-camera-reference.jpg','review/amira-green-waiting/rest-0000.png','review/amira-green-waiting/rest-full.png'];
       if(!metadataOnly.includes(value))throw new Error(`Missing referenced asset ${value}`);
       missingReferences.push({manifest:path,key,path:value});
     } }

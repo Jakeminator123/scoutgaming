@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, relative, dirname, join, sep } from 'node:path';
+import { resolveMediaPath } from '../../tools/media-layout.mjs';
 
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 const publicRoot = join(repo, 'web', 'public');
@@ -13,6 +14,7 @@ const styles = [
 ];
 
 function outputName(source) {
+  if (source === resolveMediaPath('web/public/speech-media.json', {repositoryRoot: repo})) return 'speech-media.json';
   const path = relative(repo, source).split(sep).join('/');
   if (path.startsWith('web/public/')) return path.slice('web/public/'.length);
   if (path.startsWith('presentation-runtime/') || path === 'lab/policies/idle-policy.seed.json') return path;
@@ -34,7 +36,7 @@ async function writePreview(output) {
     join(publicRoot, 'astrid-camera-audio-worklet.mjs')];
   const seen = new Set();
   for (const style of styles) queue.push(join(publicRoot, style));
-  queue.push(join(publicRoot, 'speech-media.json'));
+  queue.push(resolveMediaPath('web/public/speech-media.json', {repositoryRoot: repo}));
   while (queue.length) {
     const sourcePath = resolve(queue.shift());
     if (seen.has(sourcePath)) continue;

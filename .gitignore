@@ -13,6 +13,7 @@ content/cutout/
 .env
 inbox-token.txt
 vendor/
+media/.migration/
 
 # Personal historical reports are kept outside the active checkout.
 /random-stuff-jakob/jakob-docs/arkiv/

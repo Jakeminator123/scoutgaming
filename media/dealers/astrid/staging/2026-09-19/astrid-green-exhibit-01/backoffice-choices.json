@@ -1,0 +1,1323 @@
+{
+  "choices": [
+    {
+      "id": "010802fc-2af4-48fe-a76f-cc27a0c1e73f",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:01:01.944Z",
+      "landing": null,
+      "generation": {
+        "id": "010802fc-2af4-48fe-a76f-cc27a0c1e73f",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:24",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the far right player position from the viewer's side, near the table edge beside the shoe. Her left hand carries the card down to that spot. Extract the card low through the actual shoe mouth, then keep the fingertips pressed on the card the entire way as she slides it along the felt to that location. The card NEVER leaves her fingers and NEVER moves by itself; it stops only where her hand stops. Only after the card is fully at that location does she lift her fingers and bring the EMPTY hand back to the exact starting ready posture. The card remains stationary on the felt afterwards. Deliberate professional pace: about 1.5 seconds from extraction to release, empty return by about 2.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction, no extra card, no text, no floating or sliding card without hand contact, no teleporting card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162419_010802fc-2af4-48fe-a76f-cc27a0c1e73f.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "66abe9fe-4186-4de4-b412-b56572d969b2",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:01:02.450Z",
+      "landing": null,
+      "generation": {
+        "id": "66abe9fe-4186-4de4-b412-b56572d969b2",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:24",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the second player position from viewer-right, just in front of and below the shoe. Her left hand carries the card down to that spot. Extract the card low through the actual shoe mouth, then keep the fingertips pressed on the card the entire way as she slides it along the felt to that location. The card NEVER leaves her fingers and NEVER moves by itself; it stops only where her hand stops. Only after the card is fully at that location does she lift her fingers and bring the EMPTY hand back to the exact starting ready posture. The card remains stationary on the felt afterwards. Deliberate professional pace: about 1.5 seconds from extraction to release, empty return by about 2.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction, no extra card, no text, no floating or sliding card without hand contact, no teleporting card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162418_66abe9fe-4186-4de4-b412-b56572d969b2.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "d6f34e24-0754-42f2-bae9-4a5eee37ad16",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T11:05:01.088Z",
+      "landing": null,
+      "generation": {
+        "id": "d6f34e24-0754-42f2-bae9-4a5eee37ad16",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:24",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the second player position from viewer-left. She leans forward so her right hand physically travels all the way to that spot. Extract the card low through the actual shoe mouth, then keep the fingertips pressed on the card the entire way as she slides it along the felt to that location. The card NEVER leaves her fingers and NEVER moves by itself; it stops only where her hand stops. Only after the card is fully at that location does she lift her fingers and bring the EMPTY hand back to the exact starting ready posture. The card remains stationary on the felt afterwards. Deliberate professional pace: about 1.5 seconds from extraction to release, empty return by about 2.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction, no extra card, no text, no floating or sliding card without hand contact, no teleporting card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162417_d6f34e24-0754-42f2-bae9-4a5eee37ad16.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "ac2fa366-b9a1-4011-8e87-0476b369a9ba",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:01:53.063Z",
+      "landing": null,
+      "generation": {
+        "id": "ac2fa366-b9a1-4011-8e87-0476b369a9ba",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:24",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the far left player position from the viewer's side. This is a long reach: she leans her torso and shoulder forward and to her right so her right hand physically travels all the way to that spot. Extract the card low through the actual shoe mouth, then keep the fingertips pressed on the card the entire way as she slides it along the felt to that location. The card NEVER leaves her fingers and NEVER moves by itself; it stops only where her hand stops. Only after the card is fully at that location does she lift her fingers and bring the EMPTY hand back to the exact starting ready posture. The card remains stationary on the felt afterwards. Deliberate professional pace: about 1.5 seconds from extraction to release, empty return by about 2.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction, no extra card, no text, no floating or sliding card without hand contact, no teleporting card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162416_ac2fa366-b9a1-4011-8e87-0476b369a9ba.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "03b29fb6-bf00-4a5c-bf53-216ee844f931",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:02:01.320Z",
+      "landing": null,
+      "generation": {
+        "id": "03b29fb6-bf00-4a5c-bf53-216ee844f931",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:21",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the far right player position from the viewer's side, close beside the shoe. Extract the card low through the actual shoe mouth, transfer it to the receiving hand, turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers stay in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt afterwards. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction or extra card, no text or labels, no pose freeze, no hovering card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162100_03b29fb6-bf00-4a5c-bf53-216ee844f931.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "b0753d65-c01d-4169-843b-ae79022130f0",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:02:12.820Z",
+      "landing": null,
+      "generation": {
+        "id": "b0753d65-c01d-4169-843b-ae79022130f0",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:20",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the second player position from viewer-right. Extract the card low through the actual shoe mouth, transfer it to the receiving hand, turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers stay in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt afterwards. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction or extra card, no text or labels, no pose freeze, no hovering card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162059_b0753d65-c01d-4169-843b-ae79022130f0.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "e1a12d04-0a38-4efe-be6a-8a572416387f",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:02:18.889Z",
+      "landing": null,
+      "generation": {
+        "id": "e1a12d04-0a38-4efe-be6a-8a572416387f",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:20",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the third player position from viewer-right. Extract the card low through the actual shoe mouth, transfer it to the receiving hand, turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers stay in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt afterwards. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction or extra card, no text or labels, no pose freeze, no hovering card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162058_e1a12d04-0a38-4efe-be6a-8a572416387f.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "0f5d719c-57a1-4a12-8d1e-f7608f322f1c",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:02:27.363Z",
+      "landing": null,
+      "generation": {
+        "id": "0f5d719c-57a1-4a12-8d1e-f7608f322f1c",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:20",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the centre player position. Extract the card low through the actual shoe mouth, transfer it to the receiving hand, turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers stay in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt afterwards. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction or extra card, no text or labels, no pose freeze, no hovering card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162057_0f5d719c-57a1-4a12-8d1e-f7608f322f1c.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "a9fa1da6-066c-47f4-8466-7f4924a3bfe2",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:02:37.123Z",
+      "landing": "box2",
+      "generation": {
+        "id": "a9fa1da6-066c-47f4-8466-7f4924a3bfe2",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:20",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the third player position from viewer-left. Extract the card low through the actual shoe mouth, transfer it to the receiving hand, turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers stay in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt afterwards. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction or extra card, no text or labels, no pose freeze, no hovering card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162056_a9fa1da6-066c-47f4-8466-7f4924a3bfe2.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "d9c797a1-63ab-4e48-80c6-7de2eb5b3790",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:02:44.677Z",
+      "landing": null,
+      "generation": {
+        "id": "d9c797a1-63ab-4e48-80c6-7de2eb5b3790",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:20",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the second player position from viewer-left. Extract the card low through the actual shoe mouth, transfer it to the receiving hand, turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers stay in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt afterwards. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction or extra card, no text or labels, no pose freeze, no hovering card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162055_d9c797a1-63ab-4e48-80c6-7de2eb5b3790.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "8e4689e0-8fff-4d53-aa0f-36b8701019a5",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:02:53.326Z",
+      "landing": null,
+      "generation": {
+        "id": "8e4689e0-8fff-4d53-aa0f-36b8701019a5",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-17T16:20",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the far left player position from the viewer's side, which needs a natural torso lean and shoulder reach. Extract the card low through the actual shoe mouth, transfer it to the receiving hand, turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers stay in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt afterwards. About 0.9 seconds from first extraction to release, empty return complete by about 1.5 seconds, then gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting and camera. No second extraction or extra card, no text or labels, no pose freeze, no hovering card, no body scaling, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260917_162055_8e4689e0-8fff-4d53-aa0f-36b8701019a5.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/5962e894-5efd-4181-a8f4-05470928358c.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "bc9d45f0-b2a3-48c3-b850-fc5e0899fdcd",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:03:11.975Z",
+      "landing": null,
+      "generation": {
+        "id": "bc9d45f0-b2a3-48c3-b850-fc5e0899fdcd",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-14T11:50",
+        "prompt": "Continuous locked-camera close mechanical action from EXACT START frame to EXACT END hand/card pose. Astrid performs only the beginning of ONE card extraction. Her drawing fingertips travel DOWN along the front of the fixed white inclined card stack, press the exposed leading edge of a single red-backed face-down card, then pull it OUTWARD toward viewer-left/down through the LOW BLACK FRONT MOUTH over its low tray/lip, arriving at the end frame with the rear card still partly inside the mouth. Red BACK faces UP. Keep the card low near felt; no lifting above the white stack, no upright presentation, no wrist turnover yet, no complete deal or second draw. Make the down/out motion brisk and continuous within the first0.7s, then settle naturally in the exact end contact pose for the remainder of the3-second clip without releasing or moving the card again. Preserve exact Astrid identity, skin tone, hair, body proportions, black sleeves to wrists, other resting hand, original camera, table and lighting. White stack remains fixed throughout; no separate card appears on top of it. One rigid card, normal attached fingers, supported front-mouth extraction. No cuts, fades, camera movement, body stretch, additional hand or duplicate card. The original start shoe construction is authoritative; the end frame defines the low hand/card placement.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_115038_bc9d45f0-b2a3-48c3-b850-fc5e0899fdcd.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/1047e9de-6501-4e1d-baa9-67e087ee8657.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "3dd450da-2ca2-44c4-a2bb-4327c0f1cbb6",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T11:14:49.709Z",
+      "landing": null,
+      "generation": {
+        "id": "3dd450da-2ca2-44c4-a2bb-4327c0f1cbb6",
+        "model": "seedance_2_5",
+        "status": "completed",
+        "at": "2026-09-14T11:39",
+        "prompt": "Edit the supplied Astrid VIDEO's first card pickup only, preserving its exact identity, camera, lighting, body proportions, table, original shoe, later destination, release and empty return. The FIRST IMAGE is a specific LOW HAND/CARD CONTACT POSE reference: her drawing fingertips press one RED-BACK-UP face-down card low at the existing front mouth, sliding DOWN and OUT over the lip. Incorporate this low contact pose in the opening extraction instead of the video's upward lift off the inclined white stack. The SECOND IMAGE shows the exact original unobscured shoe: preserve that construction and location from the VIDEO, uninterrupted white stack ending above large black mouth with original thin sidewalls and bottom tray. Ignore the invented gray horizontal fascia in the FIRST IMAGE: it is not a shoe design reference. Start from the video's own ready pose, lower the drawing fingers along the front of the fixed stack, press the exposed card leading edge and slide exactly one card out through the low black mouth near felt level. Show continuous fingertip attachment and the card rear naturally occluded inside the mouth while extracting; the stack remains fixed. Reach the first image's low contact around0.45s, clear the shoe by0.65s, then a small low wrist turnover and two-hand transfer reconnects naturally with the existing reach by about1.1s. Allow the original early upright presentation to be replaced by this low turnover; do not rush or teleport to the old raised pose. Preserve remaining delivery to the same left-side destination, supported slide, release and empty return, with normal sleeve lengths and hand anatomy. No second card, card spawning above stack, vertical card lift, extra shoe, camera change, cut, dissolve or body stretch. The hand pose image is local motion guidance only; keep video framing, actor and shoe throughout.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_113939_3dd450da-2ca2-44c4-a2bb-4327c0f1cbb6.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_113142_149cbd41-1c1f-4fda-852a-e7162dac6266.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "3f9e0fb1-cc43-4a49-9299-565461877df5",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:03:28.473Z",
+      "landing": null,
+      "generation": {
+        "id": "3f9e0fb1-cc43-4a49-9299-565461877df5",
+        "model": "seedance_2_5",
+        "status": "completed",
+        "at": "2026-09-14T11:12",
+        "prompt": "Edit only the opening shoe extraction in the supplied Astrid source video, approximately 0.15\u20130.65 seconds. Preserve the exact Astrid identity, camera, scene, body, shoe, downstream delivery and empty return. Correct the feeding hand so it pulls the single card outward through the existing shoe front opening near felt level instead of lifting it off the inclined stack. Reconnect continuously to the original held-card pose by 0.75 seconds. No second card, extra shoe, body deformation, cut or dissolve. The second and third image references show mechanical action only: fingertips press the leading card down along the inclined front and pull it outward over the low lip while the stack stays fixed. Do not copy reference skin, shoe design, camera or room. Retain Astrid proportions and existing shoe. Show that same card continuously leaving the opening and reaching the original supported pose. After 0.75 seconds preserve the source action and appearance through delivery, release and return.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_111234_3f9e0fb1-cc43-4a49-9299-565461877df5.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/43039066-9e6a-4e1d-9628-9e6a7629c194.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "9dc93653-625a-4074-ad0b-f1e8a8fed51e",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:03:34.965Z",
+      "landing": null,
+      "generation": {
+        "id": "9dc93653-625a-4074-ad0b-f1e8a8fed51e",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-14T09:31",
+        "prompt": "One continuous locked-camera realistic shot of the exact supplied Astrid scene. Start in the exact supplied ready pose. Deal exactly ONE card from the fixed shoe to the single card location shown in the ending image, the second player position from viewer-left. Extract from the actual shoe mouth, transfer to the receiving hand, briefly turn the rigid card through a visibly thin edge, and make a low direct fingertip-driven slide on the felt to that location. The receiving fingers remain naturally in contact until the card is there. Then visibly release and return the EMPTY hand to the exact starting ready posture. The card remains stationary on the felt for the remainder. Aim for about 0.9 seconds from first extraction motion to release, and complete the empty return by about 1.5 seconds, followed by gentle breathing. Preserve the exact face, hair, skin tone, long black sleeves, normal hand anatomy, body proportions, shoe, table, room, lighting, and camera. No second extraction or extra card, no new text or labels, no pose freeze, no hovering card, no body scaling, no body dragging, no camera movement, no dissolve, no speaking. Finish with hands empty in the supplied end pose and only one landed card.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_093110_9dc93653-625a-4074-ad0b-f1e8a8fed51e.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/43039066-9e6a-4e1d-9628-9e6a7629c194.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "2825e599-2346-478b-bb7f-12ca5aa518bc",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:03:45.720Z",
+      "landing": null,
+      "generation": {
+        "id": "2825e599-2346-478b-bb7f-12ca5aa518bc",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-14T07:59",
+        "prompt": "One uninterrupted photographic locked-camera continuation between these exact supplied frames. Start with Astrid's receiving fingertips still touching the ONE face-up playing card at far viewer-left, feeding hand beside the fixed viewer-right shoe. Finish the current deal: with fingertips in continuous physical contact, slide this same rigid card a very short distance leftward and toward the viewer and turn it flat into the precise final-image location and orientation. This is a small approximately32pixel finishing placement in a1920wide image, not another long deal. During first0.25seconds finish the supported slide and table-flat turn; then visibly lift and separate fingertips from the card. Card stays completely stationary in its final location for the rest of the shot. Receiving hand returns EMPTY by a low direct arc across the felt toward the shoe; torso naturally uncurls into the exact crossed-arm own ready pose in final image by about1.1seconds. No new extraction, no additional cards, no carrying the card back, no vanishing card or drifting paper after release. Keep one rigid standard63x88mm card, natural wrist rotation and hand anatomy, normal arm lengths, black sleeves to wrists. Maintain identity, face, skin colour, hair, clothing, table, fixed shoe, lighting and camera. Gentle breathing after returning, no frozen held frame, no speaking. Camera completely locked, no zoom, no cut, no dissolve, no body stretching. Original source card artwork may resolve to the final reference's clear seven of hearts, but it remains ONE physical card throughout. Both hands end visibly empty at the exact final reference positions.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_075906_2825e599-2346-478b-bb7f-12ca5aa518bc.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/3d3eedac-a6a2-4c1f-85e1-ca4bdf8331e2.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "31828ef9-9a5b-4fbd-a56c-15a89be13816",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:15:49.360Z",
+      "landing": null,
+      "generation": {
+        "id": "31828ef9-9a5b-4fbd-a56c-15a89be13816",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-14T02:20",
+        "prompt": "One continuous silent, photorealistic fixed-camera shot of this exact blackjack dealer Astrid smoothly returning from the precise first-frame pose to the precise last-frame resting pose. She withdraws her empty hands from the card shoe, gently brings her forearms inward and settles them comfortably crossed exactly as in the ending image while gently straightening her posture and bringing her gaze forward. Start movement immediately, natural coordinated shoulder/elbow/wrist articulation, finish the movement within the first three seconds and settle with subtle breathing. Both hands remain anatomically stable with five fingers each. Her same face, hair, skin tone, black suit, blouse, body proportions and identity remain consistent throughout; preserve lighting and exposure without whitening or colour drift. Camera perfectly locked: no pan, tilt, zoom, reframing, cuts, dissolves or crossfades. The room, table, rail, card shoe and its opening are rigid and completely stationary. All four existing dealt cards remain precisely where they are, unchanged throughout. No new card is drawn, no cards appear in her hands. This is real physical arm and torso motion between the two supplied poses, never morphing or fading one pose into another. No talking or lip movement, no generated sound, no music.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_022058_31828ef9-9a5b-4fbd-a56c-15a89be13816.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/c286dbe6-f07e-4eea-8a55-b90356fb042f.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "6cfa7ffb-9f6d-4419-bf55-c9529d548ac8",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:16:00.127Z",
+      "landing": null,
+      "generation": {
+        "id": "6cfa7ffb-9f6d-4419-bf55-c9529d548ac8",
+        "model": "seedance_2_5",
+        "status": "completed",
+        "at": "2026-09-14T01:57",
+        "prompt": "Edit this existing blackjack dealer video. Preserve the original camera, Astrid's identity, face, hair, black suit, full sleeves, table, shoe, lighting, duration and natural motion timing. Preserve the original opening ready pose and the entire first physical shoe extraction and low two-hand wrist turnover up to approximately 1.0 seconds. Change only the FIRST outward delivery after that turnover: her receiving hand now carries and smoothly slides that same single rigid card farther to the viewer's far-left, reaching the contact pose and card location shown in the image reference, then releases and returns empty naturally. The image is a destination pose reference only, not a replacement opening frame. The feeding hand remains at the viewer-right shoe. Use natural shoulder rotation and modest torso lean with normal arm length, no stretched arms. Keep continuous finger contact throughout transfer and slide; no second regrip, no duplicate paper, no new card appearing in the receiving hand. Preserve the other deliveries and their original destinations, keeping the first landed card stationary at its new far-left position. Preserve the original camera and environment exactly; no cuts, zoom, fades, light changes, added text or anatomy changes.",
+        "duration": 6,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_015759_6cfa7ffb-9f6d-4419-bf55-c9529d548ac8.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/f1c111b3-35e0-48b0-a4a8-f4aa557a6baa.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "f1d08e82-48d9-46a8-9521-7d396cdd9734",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:16:12.225Z",
+      "landing": null,
+      "generation": {
+        "id": "f1d08e82-48d9-46a8-9521-7d396cdd9734",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-14T01:41",
+        "prompt": "One uninterrupted locked-camera photographic blackjack dealer shot from the exact empty-handed first frame to the exact far viewer-left hand-contact end frame. ONE physical card is drawn from the fixed shoe on viewer-right: feeding fingertips visibly grip and pull that card out of the shoe outlet, never spawn paper in the other hand. Receiving hand meets the feeding hand low beside the shoe, receives the same rigid card, turns it over through a genuinely narrow edge-on plane with the wrist, then immediately slides and carries it low over the felt toward the far viewer-left destination shown in the final image. Brisk economical professional movement; complete extraction, transfer/turn and the long leftward reach in about1.4seconds, then remain in gentle natural contact at the supplied final pose without extra draw or repeated deal. Preserve shoulder rotation and natural torso lean from the end frame, normal arm lengths, anatomically connected hands and fingers. Fingers stay attached to the card until its final flat contact; no unsupported drift, no long raised card presentation. The single card stays in the final image position. Exactly one draw and one card, no extra cards or early paper elsewhere. No return gesture after contact because final frame must match supplied contact. Black suit sleeves remain full length to both anatomical wrists throughout. Preserve Astrid face, hair, skin tone, camera, fixed shoe, table and room/lighting. No zoom, reframing, camera motion, body scaling/stretching, rubber wrists, cuts or dissolve. Both hands remain visible and feeding hand ends empty at shoe.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_014105_f1d08e82-48d9-46a8-9521-7d396cdd9734.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/43039066-9e6a-4e1d-9628-9e6a7629c194.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "26f3a6e1-c6bf-4bfa-ae64-5dbb29cf2877",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:16:27.550Z",
+      "landing": null,
+      "generation": {
+        "id": "26f3a6e1-c6bf-4bfa-ae64-5dbb29cf2877",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-14T00:38",
+        "prompt": "Continue the exact first frame into the exact resting end frame, one locked-camera uninterrupted 4-second shot. Astrid has just finished delivering the fourth card. In the first 0.15 second her receiving fingertips lift cleanly off that fourth landed card without moving it; her now EMPTY receiving hand smoothly retracts to the supplied resting pose within about 0.7 second. Her feeding hand stays EMPTY at the shoe mouth throughout; it does not draw, grip or reveal another card. All FOUR landed cards remain completely stationary at their existing corners throughout. No fifth card, no new deal, no card pickup. She gently returns her gaze toward the camera and settles naturally with subtle breathing and a blink for the remainder, no freeze. Preserve exact face identity, skin tone, lighting, long black sleeves to wrists, ivory blouse, body proportions, room, fixed shoe and felt text. No camera movement, reframing, zoom, body stretch, dissolve or cuts. Finish in the supplied new empty-handed resting pose with all four cards still present.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_003818_26f3a6e1-c6bf-4bfa-ae64-5dbb29cf2877.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/38a6745f-db19-46b8-8f24-2f2b858f0be9.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "582f2a76-162d-4e60-9d92-3f96d4fef822",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:16:40.453Z",
+      "landing": null,
+      "generation": {
+        "id": "582f2a76-162d-4e60-9d92-3f96d4fef822",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-14T00:05",
+        "prompt": "The start image is the exact first frame and sole authority for the entire shot's composition. Animate this exact Astrid scene in place for five seconds. Keep the camera completely fixed at the start image's height, lens, crop and perspective; keep Astrid's face, hair, ivory blouse, black long sleeves to wrists, proportions, room, lighting, green felt and existing shoe at their original image coordinates. Do not recreate the reference video's elevated camera, wider table, other dealers or room. Use the reference video ONLY for the continuous two-hand blackjack rhythm: four sequential cards delivered from the shoe toward four successive player directions, from viewer right toward center. Her left feeding hand at viewer right pulls one card through the existing shoe mouth; her adjacent right receiving hand receives it, makes a brief supported low wrist turn and immediately slides it outward. During that outward travel the feeding hand is already at the shoe preparing the next card. Preserve the reference's approximate one-second extraction intervals, without resetting both hands between cards. Every card remains one rigid card under visible fingers through transfer and slide, and remains stationary after release. One uninterrupted shot, no cuts, dissolves, reframing, body scaling, chest-high presentation or invented cards. Maintain the exact start-image scene throughout; reinterpret the referenced hand movement within that fixed view.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_000540_582f2a76-162d-4e60-9d92-3f96d4fef822.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_222803_dd01ae2e-cfb1-40c1-9bb6-43e16fda47f1.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "d8214fb8-fef1-4810-a29e-70230d1baa20",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:16:51.717Z",
+      "landing": null,
+      "generation": {
+        "id": "d8214fb8-fef1-4810-a29e-70230d1baa20",
+        "model": "hf_mult_motion_control",
+        "status": "completed",
+        "at": "2026-09-13T23:53",
+        "prompt": "Transfer only the continuous professional blackjack hand choreography and real-time cadence from the driving video to Astrid in the reference image. Preserve Astrid's exact face, hair, skin tone, ivory blouse, long black sleeves to wrists, body proportions, fixed camera, room, green table and existing shoe. Her left feeding hand at viewer right extracts each card through the existing low front shoe mouth. Her adjacent right receiving hand at viewer left receives it, makes the same brief supported wrist turn, and slides it directly outward to the corresponding player position. As the receiving hand delivers the current card, the feeding hand is already preparing the next card at the shoe: preserve the reference's overlapping hand rhythm and extraction intervals, without resetting both hands between cards. Match exactly the driving clip's card count and action order. Each card starts inside the shoe; never spawn one in a palm or on the felt. Maintain one rigid card per transfer, visible contact through handoff/turn/push, then release only at the destination. Dealt cards remain stationary at their own destinations. No chest-height presentation, separate pose holds, extra cards, teleporting, duplicate fingers, stretching arms or torso, card texture morph, cuts, dissolves, zoom, reframing or slow motion. Copy the motion, not the other dealer's identity, clothing, face, room or graphics. One uninterrupted real-time take.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_235359_d8214fb8-fef1-4810-a29e-70230d1baa20.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_222803_dd01ae2e-cfb1-40c1-9bb6-43e16fda47f1.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "7e2dae43-1200-4716-862e-d0721390d894",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:17:04.735Z",
+      "landing": null,
+      "generation": {
+        "id": "7e2dae43-1200-4716-862e-d0721390d894",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T23:03",
+        "prompt": "One continuous EMPTY-HAND RETURN after a blackjack deal, actor-only performance for compositing. Start in image ONE with right fingertips at the landed card. Immediately lift only the fingertips a few millimetres to release the card, then return the EMPTY right hand smoothly back across the felt to the ready position ADJACENT TO THE SHOE shown in image TWO. Complete arm return in the first0.65seconds, then settle with subtle breathing in exact image TWO posture, hands EMPTY beside shoe. Her gaze naturally rises to the player as the arm returns. She does not pick up, carry, drag or sweep away the dealt card; returning hand remains visibly empty. No new card drawn. The separate final game card is composited elsewhere, so prioritize perfect physical finger release and empty-hand motion plus the exact final body/face/hand pose. Preserve Astrid identity, fixed camera, black full-length sleeves to both wrists, ivory blouse, natural proportions, room, table, shoe and skin exposure. No gestures, pauses midway, body stretching, cuts, dissolves or speech.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_230348_7e2dae43-1200-4716-862e-d0721390d894.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_220521_8324bd35-0273-44ba-88f2-1f633714d0e5.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "fa57fdb7-ef02-4c4c-8ec8-ad33757dbac7",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:11.765Z",
+      "landing": null,
+      "generation": {
+        "id": "fa57fdb7-ef02-4c4c-8ec8-ad33757dbac7",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T22:38",
+        "prompt": "One compact professional blackjack outward push of the existing face-up card, continuous fixed-camera real-time broadcast. Start exactly at supplied first image: card flat immediately beside shoe, right fingertips touching its trailing edge. In the FIRST 0.6 SECONDS the RIGHT hand pushes that SAME rigid face-up card smoothly over the felt toward the centre player to exactly the final image position. Fingertips STAY PHYSICALLY ON the trailing edge the entire outward movement AND stay touching it in the final pose; this clip ends BEFORE finger release. Card is flat on felt throughout, no lifting, no rotation to display, no inward detour, no card drifting ahead of fingers, no stretching or changing size/artwork. Remaining time hold that final supported contact pose naturally. Left hand empty at shoe. Preserve same Astrid face/hair, skin exposure and colour, long black sleeves fully covering both forearms, blouse, locked camera, room, green table and shoe. Silent, no dialogue. Exact fingertip/card contact matters more than flourish. No cuts, dissolves, body stretching or extra cards.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_223818_fa57fdb7-ef02-4c4c-8ec8-ad33757dbac7.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_222642_6aa9c335-7018-4e6e-aefa-b232cbf24099.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "9a9d4020-eb1e-499d-8cdc-bcac7782a4be",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:21.800Z",
+      "landing": null,
+      "generation": {
+        "id": "9a9d4020-eb1e-499d-8cdc-bcac7782a4be",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T22:29",
+        "prompt": "Locked-camera real-time casino broadcast of ONE professional blackjack pickup and compact turn, then a natural hold in the exact last pose. FIRST 0.7 SECOND: starting with both hands empty adjacent to shoe, her left hand at viewer right immediately draws one red-backed card OUT THROUGH THE LOW FRONT SHOE MOUTH. Her already-waiting right hand receives it beside the mouth. In a single economical wrist roll lasting about 0.15 seconds the rigid card briefly tips and rotates from red back to white printed face, its lower edge stays just above felt, fingers retain physical contact; she immediately lays it FACE UP low next to the shoe exactly as final image. No travel toward torso centre, no raising to chest, no presentation hold, no second card. REST OF CLIP: maintain the final low fingertip-contact pose with only subtle natural breathing. The card is rigid: visible perspective narrows then broadens in the turn, never a texture crossfade. Card originates INSIDE shoe, not fingers or midair. Same Astrid identity, full black sleeves to wrists, ivory blouse, room/table markings, shoe and fixed camera. Silent, no speech, no cuts or dissolve. Prioritize continuous credible hand contact and a quick practical card turnover.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_222924_9a9d4020-eb1e-499d-8cdc-bcac7782a4be.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_222803_dd01ae2e-cfb1-40c1-9bb6-43e16fda47f1.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "e2e8bddf-b7aa-41d5-bc89-d91eff267435",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:24.255Z",
+      "landing": null,
+      "generation": {
+        "id": "e2e8bddf-b7aa-41d5-bc89-d91eff267435",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T22:10",
+        "prompt": "Finish only the SECOND HALF of this natural card-turn movement. The narrow white edge in the first image belongs to ONE rigid rectangular playing card held edge-on between the right thumb and fingertips near the shoe. Rotate that same card with the right wrist: as it rotates its narrow projected edge widens continuously into the WHITE PRINTED QUEEN OF SPADES FACE. Its physical dimensions remain constant; it does not grow, unfold, stretch or appear magically. Lower the face-up card gently into the exact low fingertip-contact pose on the felt shown in the last image, near her body. Do not release or slide it towards a player. Right fingers keep contact; left hand empty beside shoe. No upright presentation pause or extra action. Fixed camera and identical Astrid face, long black sleeves, blouse, proportions, table, shoe and light. Continuous uncut physical rotation, no dissolve or morph.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_221000_e2e8bddf-b7aa-41d5-bc89-d91eff267435.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_220723_c850a883-79e2-4e60-a31f-6d2f759b2a06.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "a066ac46-869b-47e0-8e08-15d475dcb370",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:26.732Z",
+      "landing": null,
+      "generation": {
+        "id": "a066ac46-869b-47e0-8e08-15d475dcb370",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T22:10",
+        "prompt": "One continuous physical card extraction and HALF of a wrist turn. Begin with empty hands exactly as first image. Left fingers at viewer right pull ONE red-backed rigid playing card out through the low front mouth of the existing shoe. Right hand takes the card just beside the shoe, thumb and fingertips pinch its edge. Rotate the wrist so the card's visible broad red back gradually narrows through perspective until only the THIN EDGE is visible, finishing precisely in the supplied final edge-on grip. The final white line is the thin edge of this same normal rectangular playing card, never a stick or different object. Do not reveal the white printed face yet, do not deal outward, do not release the card. Keep opposing fingers physically gripping it. Natural compact movement close to shoe, no display to camera, no pauses, cuts, dissolves or texture morph. Preserve identity, long black sleeves, scene and locked camera.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_221000_a066ac46-869b-47e0-8e08-15d475dcb370.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_210937_d207da34-c322-49a1-997c-9a8d6022522e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "23d5e527-b654-4d29-881e-8cb6a7b1d39a",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:31.100Z",
+      "landing": null,
+      "generation": {
+        "id": "23d5e527-b654-4d29-881e-8cb6a7b1d39a",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T22:07",
+        "prompt": "Connect these exact two frames with ONLY a single supported forward card slide. Right fingertips remain in uninterrupted physical contact with the same face-up queen of spades from the first frame until the last frame. PUSH the card flat along the felt while extending the arm naturally forward; fingers and card travel together at the same speed. Finish exactly with the fingertips STILL TOUCHING the rear edge of the card at the final foreground position. Never release, lift or toss the card. No empty-hand return in this clip. The face-up rigid rectangle stays flat on the table, never vertical or floating. One smooth economical forward movement and a brief contact hold at its end. Keep left hand still by the shoe. Keep exact face, full-length black blazer sleeves down to wrists, blouse, lighting, table and stationary camera. No speech, cuts, morphs or extra gestures.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_220744_23d5e527-b654-4d29-881e-8cb6a7b1d39a.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_215423_7d9a23ca-67c7-45eb-908b-2146a2be973c.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "5b470613-0db9-4729-a164-3dcc8683c0b3",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:34.321Z",
+      "landing": null,
+      "generation": {
+        "id": "5b470613-0db9-4729-a164-3dcc8683c0b3",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T22:07",
+        "prompt": "One small natural empty-hand return connecting these exact poses. At first frame the face-up queen is already at its final destination, right fingertips touching its rear edge. Lift those fingertips only a centimetre off the card, leave the card EXACTLY STATIONARY on the felt, and return the empty right hand directly to the exact final resting position near her body. The left hand remains beside the shoe, the dealer gently lifts her gaze towards camera at the end. The card must never move, be picked up, vanish, duplicate, or change its printed face. Natural brisk hand return, no big sweep or other deal. Preserve exact identity, body dimensions, long black blazer sleeves covering both wrists, white blouse, room, shoe, table, light and locked camera. Continuous footage with no cuts or dissolves.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_220743_5b470613-0db9-4729-a164-3dcc8683c0b3.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_220521_8324bd35-0273-44ba-88f2-1f633714d0e5.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "043d1d3b-1895-45a5-87cf-68121903a15c",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:36.220Z",
+      "landing": null,
+      "generation": {
+        "id": "043d1d3b-1895-45a5-87cf-68121903a15c",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T21:57",
+        "prompt": "Single continuous close-observed physical action at this locked full game camera. ONLY extract and turn ONE card, finishing precisely in the supplied low face-up hand-contact pose. Left fingers (viewer right) draw one red-backed card OUT of the low front mouth of the existing shoe. Right hand meets and takes it beside the shoe; the right wrist rotates the rigid card half a turn so its white queen-of-spades face is upward BEFORE moving leftwards to the exact final pose. Final right fingertips rest on the upper-left edge of the face-up card lying low on the felt near her body, as shown in the last image. Keep the card under finger control, never flying or disappearing. Finish the motion promptly, then stay at that precise low contact pose. Do not deal outward to a player or release the card; this clip ends BEFORE the outward slide. No holding a vertical card up to display it. No dissolving or changing the red back into a white face without the actual wrist turn. Preserve same face, clothing, body, table, shoe and camera; subtle downward gaze follows the hand. No speech or cuts.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_215721_043d1d3b-1895-45a5-87cf-68121903a15c.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_210937_d207da34-c322-49a1-997c-9a8d6022522e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "81960afc-7caf-4ad6-8916-f44720272e8f",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:38.103Z",
+      "landing": null,
+      "generation": {
+        "id": "81960afc-7caf-4ad6-8916-f44720272e8f",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T21:57",
+        "prompt": "One continuous realistic dealer action connecting these exact camera frames. Starting with right fingertips already touching the FACE-UP QUEEN OF SPADES on the felt, immediately PUSH that SAME card flat forward across the felt to its exact centre-player destination in the final image. The right hand physically travels WITH the card, fingertips pressed on its rear edge throughout the slide. At its final destination release the card and lift the EMPTY hand only a centimetre to return directly to its final resting pose. Left hand stays empty by the existing shoe. No pickup from shoe, no other cards, no wrist turn needed, no lifting the card or tossing it, no card travelling without the following hand before release. A short brisk outward push and empty return, then stay in the exact final pose. Preserve fixed camera, identity, face, hair, outfit, table, shoe and exposure. Continuous anatomy. No editing cut, dissolve, morph, slow-motion presentation, extra gesture or dialogue.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_215721_81960afc-7caf-4ad6-8916-f44720272e8f.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_215423_7d9a23ca-67c7-45eb-908b-2146a2be973c.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "2bc43925-eb41-4aba-b0c1-ace56546b0e0",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:41.105Z",
+      "landing": null,
+      "generation": {
+        "id": "2bc43925-eb41-4aba-b0c1-ace56546b0e0",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T21:21",
+        "prompt": "Connect these exact frames with ONE real uninterrupted blackjack dealing action, no editing transition. Empty hands at first; exactly one face-up queen of spades at the end. Immediately pull a single red-backed card out of the existing shoe's low front mouth with the left hand (viewer right). Right hand receives it beside the shoe and physically turns it over in a quick wrist roll, exposing its WHITE QUEEN OF SPADES FACE. Right hand slides that same face-up card directly forward onto its exact final position shown in the last image, below the gold arc. Release it and return the empty hands to their exact final positions. Keep the white printed face visible after the wrist turn all the way to landing. Extraction, transfer, turn, delivery and empty return in one brisk 1.5-second cycle, then slight breathing. No showing a card vertically to the camera, no hesitation, no extra sweep. Every card movement is caused by the contacting fingers; the card cannot appear at its destination or change sides magically. Exact stable Astrid identity, body proportions, room, exposure, table, shoe and locked camera. No dissolve, morph, ghost image, camera movement, talking or new objects.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_212131_2bc43925-eb41-4aba-b0c1-ace56546b0e0.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_210937_d207da34-c322-49a1-997c-9a8d6022522e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "b761026b-2599-42a1-ad1b-2e2481ac6b9a",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:52.195Z",
+      "landing": null,
+      "generation": {
+        "id": "b761026b-2599-42a1-ad1b-2e2481ac6b9a",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T21:17",
+        "prompt": "Real-time professional blackjack deal, exactly ONE card, one continuous fixed-camera take. Begin immediately. Astrid's left fingers at viewer right pull one red-backed card out of the LOW FRONT OPENING of the existing shoe. Her right hand meets it immediately beside the shoe; while taking it her right wrist briefly ROLLS THE CARD OVER so its white printed FACE is up. This quick turn is part of the transfer, not a display or pause. In the same uninterrupted movement her right hand slides the face-up card forward to the centre player position below the gold lettering, releases it and returns empty straight towards the shoe. Her left hand remains near the shoe outlet. A single brisk 1.5-second extraction-turn-slide-release-return cycle followed by quiet readiness for the remaining time. The card stays one rigid rectangle, back red before the wrist turn and white printed face after it. No second card, no extra dealing, no prolonged vertical card display, no hesitation. Her gaze follows her hands down to the shoe then the landing, with only a subtle head tilt. Preserve exactly this Astrid face, blonde hair, suit, blouse, body scale, table, shoe, camera framing and warm lighting. Photorealistic hands, continuous finger contact, stable face. No cuts, slow motion, morphing, zoom or dialogue.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_211744_b761026b-2599-42a1-ad1b-2e2481ac6b9a.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_210937_d207da34-c322-49a1-997c-9a8d6022522e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "f44bf201-4c28-4d63-8496-1459ebda635a",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:17:56.355Z",
+      "landing": null,
+      "generation": {
+        "id": "f44bf201-4c28-4d63-8496-1459ebda635a",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T21:13",
+        "prompt": "Fixed-camera realistic footage of this exact professional blackjack dealer. ONE quick ordinary deal with no presentation gesture. Starting immediately, the hand already at the shoe opening pulls a single card out of its low front mouth FLAT ALONG THE FELT. The opposite hand takes that flat card beside the shoe and immediately slides it face-up to the centre player position, forward of the printed gold text. Both hands and the card stay within two centimetres of the felt throughout. No vertical card, no lifting, no displaying the card to camera, no pause between extraction and transfer. This entire extraction-transfer-slide-release takes 1.2 seconds at normal brisk dealer speed. The card remains stationary at its destination as the dealing hand returns EMPTY straight beside the shoe in the next 0.4 second. Stay naturally ready thereafter. Exactly one card emerges from the existing shoe and is dealt. Preserve Astrid's exact face, suit, hair, body dimensions, table, shoe, lighting and camera. Continuous physical contact, natural human joints and fingertips. Single uncut take; no slow motion, dissolve, zoom or mouth movement.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_211314_f44bf201-4c28-4d63-8496-1459ebda635a.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_210937_d207da34-c322-49a1-997c-9a8d6022522e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "f9ab611b-8409-4007-b2f9-97c2019f4840",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:18:01.791Z",
+      "landing": null,
+      "generation": {
+        "id": "f9ab611b-8409-4007-b2f9-97c2019f4840",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T21:10",
+        "prompt": "One continuous locked-camera real-time shot of this exact blackjack dealer Astrid. Perform EXACTLY ONE physical card delivery, beginning immediately. At 0.0\u20130.5 seconds her LEFT hand, on viewer RIGHT and already touching the shoe opening, pinches ONE bottom exposed playing card at the LOW FRONT MOUTH of that existing shoe and draws it flat out onto the felt towards her other hand. Show the card visibly emerging from inside this precise opening; she must never lift a card from the top of the stack. At 0.5\u20130.8 seconds her RIGHT hand (viewer LEFT) takes that same single card from the left fingertips near the shoe. At 0.8\u20131.3 seconds her right hand carries and slides that single face-up card onto the felt at the centre player position, well forward of the gold text. At 1.3\u20131.8 seconds she releases it, leaving exactly one stationary card on the felt, and returns her visibly empty right hand beside her left hand at the shoe opening. For the remaining seconds breathe naturally in this ready position. Economical professional motion at normal speed, no preliminary gesture or slow-motion sweep. Left hand stays by the shoe, empty after transfer. Fingers physically contact the same rigid card throughout extraction and transfer. Exact identity, face, hair, suit, body proportions, room, table, shoe position, fixed camera and exposure. No cuts, dissolves, camera movement, talking, extra cards, disappearing cards or duplicated fingers.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_211030_f9ab611b-8409-4007-b2f9-97c2019f4840.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_210937_d207da34-c322-49a1-997c-9a8d6022522e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "071c648a-5ba7-49b9-9261-9d3b0c3ca3cc",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:18:20.006Z",
+      "landing": null,
+      "generation": {
+        "id": "071c648a-5ba7-49b9-9261-9d3b0c3ca3cc",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T20:25",
+        "prompt": "One economical preparation movement: from the exact first empty-handed ready pose, her left hand reaches a short distance toward the shoe just outside her left wrist and collects one card, while her right hand settles into the exact final card-dealing pose. A single continuous locked-camera photographic take of Astrid. Keep the subject at precisely the reference size and position in the full black 1920 by 1080 frame. Head and torso steady, mouth closed, same face identity, hair, suit, blouse and light. Complete the movement naturally in 1.5 seconds then settle. Hands and fingers follow a single continuous physical path. No dissolve, ghosting, portrait morph, repeated hand sweeps, speech, zoom, table, or background objects.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_202506_071c648a-5ba7-49b9-9261-9d3b0c3ca3cc.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/c36ab753-1bc1-49f4-9dd2-67951555d438.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "1c6ad16f-32b2-4f12-819e-88c229d5bf8f",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:18:24.085Z",
+      "landing": null,
+      "generation": {
+        "id": "1c6ad16f-32b2-4f12-819e-88c229d5bf8f",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T20:25",
+        "prompt": "One economical return movement: from the exact first card-dealing pose she lowers the held card below her hands and rests both empty hands in the exact final ready pose. A single continuous locked-camera photographic take of Astrid. Keep the subject at precisely the reference size and position in the full black 1920 by 1080 frame. Head and torso steady, mouth closed, same face identity, hair, suit, blouse and light. Complete the movement naturally in 1.5 seconds then settle. Hands and fingers follow a single continuous physical path. No dissolve, ghosting, portrait morph, repeated hand sweeps, speech, zoom, table, or background objects.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_202506_1c6ad16f-32b2-4f12-819e-88c229d5bf8f.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/f868c5d3-e37b-4007-a26d-a81605c82d30.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "39f091db-70d2-4ca5-8dc7-9ec48716a005",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:18:26.855Z",
+      "landing": null,
+      "generation": {
+        "id": "39f091db-70d2-4ca5-8dc7-9ec48716a005",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T20:25",
+        "prompt": "One economical return movement: from the exact first card-dealing pose she lowers the held card below her hands and rests both empty hands in the exact final ready pose. A single continuous locked-camera photographic take of Astrid. Keep the subject at precisely the reference size and position in the full black 1920 by 1080 frame. Head and torso steady, mouth closed, same face identity, hair, suit, blouse and light. Complete the movement naturally in 1.5 seconds then settle. Hands and fingers follow a single continuous physical path. No dissolve, ghosting, portrait morph, repeated hand sweeps, speech, zoom, table, or background objects.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_202506_39f091db-70d2-4ca5-8dc7-9ec48716a005.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/abcd7811-db16-4b59-aaf4-509a5de09eec.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "2a9b2034-ccfc-46c2-a177-39f0f9cbc71f",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:18:31.483Z",
+      "landing": null,
+      "generation": {
+        "id": "2a9b2034-ccfc-46c2-a177-39f0f9cbc71f",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T20:17",
+        "prompt": "Locked camera continuous footage of this exact woman, Astrid. Begin precisely in the supplied first empty-handed pose. In one small natural movement she rests one forearm across the other into the exact supplied final folded-hand resting pose, while lifting her gaze to the camera. Complete the movement in the first two seconds, then remain in the exact final pose with slight breathing and closed mouth. Head, shoulders, body scale, face identity, blonde hair, suit, blouse and exposure remain consistent. Hands follow continuous short physical paths, never disappear. Pure black empty background. Single uninterrupted photographic camera take; no dissolve, ghosting, portrait morph, camera change, speech, cards, new props or large gestures. Keep the subject at this exact small size in the full 1920 by 1080 black frame. Empty margins and framing must remain unchanged. No portrait close-up or zoom.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_201740_2a9b2034-ccfc-46c2-a177-39f0f9cbc71f.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/c36ab753-1bc1-49f4-9dd2-67951555d438.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "01fdd2a7-7c50-4f3b-be04-3204939731b5",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:18:34.267Z",
+      "landing": null,
+      "generation": {
+        "id": "01fdd2a7-7c50-4f3b-be04-3204939731b5",
+        "model": "kling3_0",
+        "status": "completed",
+        "at": "2026-09-13T20:17",
+        "prompt": "Locked camera continuous footage of this exact woman, Astrid. Begin precisely in the supplied first pose. She calmly lowers and releases the small card already in her hands straight down out of the crop, then raises her empty hands only a few centimetres into the supplied final relaxed ready pose. One economical action, completed in the first two seconds, then hold the final pose with natural breathing. Head and torso stay steady, gaze down, mouth closed. Maintain the exact same face, blonde hair, clothing, body scale and light throughout. Opaque photographic skin and clothing in every frame; physically continuous wrists and fingers. Pure black empty background. This is one uninterrupted camera take with no editing, no dissolve, no ghosting, no morph between portraits, no extra sweep or reaching, no table or new objects. Keep the subject at this exact small size in the full 1920 by 1080 black frame. Empty margins and framing must remain unchanged. No portrait close-up or zoom.",
+        "duration": 3,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_201740_01fdd2a7-7c50-4f3b-be04-3204939731b5.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/4781f219-874f-4074-bca9-08492641556b.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "19260b8c-af4f-4985-9922-e7f47fc942a4",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:18:40.752Z",
+      "landing": null,
+      "generation": {
+        "id": "19260b8c-af4f-4985-9922-e7f47fc942a4",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T19:55",
+        "prompt": "One short continuous realistic movement connecting these EXACT supplied first and last frames of Astrid. From the first empty-handed ready pose, smoothly move her hands, wrists, forearms and gaze into the exact final card-dealing preparation pose. Complete the small movement directly without an extra gesture or pause. Preserve her exact face identity, blonde hair, black suit, ivory blouse, natural proportions, skin colour and exposure. Camera completely locked, no zoom or reframing. Match both reference images precisely, including body size and position. Pure black background throughout. No tabletop, horizontal bar, furniture, extra props, speech, dissolve, cut or distorted fingers. Do not invent a wide-arm gesture. Only the short anatomically natural movement needed to connect these two poses.",
+        "duration": 4,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_195543_19260b8c-af4f-4985-9922-e7f47fc942a4.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_193711_364ab5bc-011b-46e3-9c59-eb9f54696a81.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "8409448f-bf01-4a96-a24c-042dfdec38df",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:18:51.788Z",
+      "landing": null,
+      "generation": {
+        "id": "8409448f-bf01-4a96-a24c-042dfdec38df",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T19:55",
+        "prompt": "One short continuous realistic movement connecting these EXACT supplied first and last frames of Astrid. From the first empty-handed ready pose, smoothly move her hands, wrists, forearms and gaze into the exact final card-dealing preparation pose. Complete the small movement directly without an extra gesture or pause. Preserve her exact face identity, blonde hair, black suit, ivory blouse, natural proportions, skin colour and exposure. Camera completely locked, no zoom or reframing. Match both reference images precisely, including body size and position. Pure black background throughout. No tabletop, horizontal bar, furniture, extra props, speech, dissolve, cut or distorted fingers. Do not invent a wide-arm gesture. Only the short anatomically natural movement needed to connect these two poses.",
+        "duration": 4,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_195543_8409448f-bf01-4a96-a24c-042dfdec38df.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_193711_364ab5bc-011b-46e3-9c59-eb9f54696a81.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "3dc65a6d-e345-4870-b1f9-ece2b70d2dcb",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:19:01.591Z",
+      "landing": null,
+      "generation": {
+        "id": "3dc65a6d-e345-4870-b1f9-ece2b70d2dcb",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T19:38",
+        "prompt": "Animate this exact cutout photograph very subtly. The seated woman waits quietly with her EMPTY hands low and separated exactly as pictured. Only small breathing, one gentle blink and a brief upward glance before looking down again. Hands and wrists stay almost still. Silent closed lips. Locked camera, exact same framing, scale, face, hair, clothing, skin tone and black background. Match both endpoint images exactly. No cards, paper, tabletop, horizontal bar, furniture, props, added objects, crossed arms, gestures, zoom, cuts or body distortion. Preserve the natural empty fingers in the reference.",
+        "duration": 4,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_193826_3dc65a6d-e345-4870-b1f9-ece2b70d2dcb.mp4",
+        "thumb": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_193711_364ab5bc-011b-46e3-9c59-eb9f54696a81.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "cdc7cc10-28da-4f48-8577-8fea94ebb51b",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:19:05.576Z",
+      "landing": null,
+      "generation": {
+        "id": "cdc7cc10-28da-4f48-8577-8fea94ebb51b",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T19:32",
+        "prompt": "One continuous photographic shot of the exact seated blonde blackjack dealer Astrid from the reference, on the identical pure black background, absolutely locked camera and unchanged body scale. She is waiting attentively for a player's decision between card deliveries. Both hands remain low, separate, relaxed and ready at the table in the same positions as the reference, near the card shoe area. Small natural breathing, a single blink, brief gaze toward the player then down toward the cards, tiny comfortable wrist/finger adjustments. Silent, closed relaxed lips; do not speak. Never fold or cross the arms. Never deal a card or invent paper, cards, props, furniture or a table. Preserve her exact face identity, blonde hair, black blazer, ivory blouse, skin colour, exposure and shoulder proportions. No camera movement, zoom, body elongation, dissolve, morph, or cuts. Start and finish at the exact supplied reference pose and framing so this quiet ready movement can loop naturally. Keep both hands anatomically correct and visible throughout.",
+        "duration": 6,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_193218_cdc7cc10-28da-4f48-8577-8fea94ebb51b.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/53dd9eae-ff5d-4aa3-bc0b-9782330be551.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "70623221-2529-4c47-bd55-fb9ca4737ec9",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:19:12.611Z",
+      "landing": null,
+      "generation": {
+        "id": "70623221-2529-4c47-bd55-fb9ca4737ec9",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T18:29",
+        "prompt": "Exactly connect the provided FIRST frame to the provided LAST frame in one natural photographic movement of the SAME seated woman. Astrid begins with her arms folded exactly as the first image. She gently unfolds her forearms, looks down toward screen right, and moves her hands into the precise final ready-to-deal pose shown in the last image. Keep elbows close to the body. Do NOT spread both arms wide, raise arms, stretch the torso, reach outside the reference silhouette or perform extra gestures. Finish with exact final reference head angle, shoulder position, elbow positions, hand positions and clothing. Preserve her face identity, hair, warm skin tone, ivory blouse, black suit, exposure and body scale. Camera locked with identical framing throughout. No cuts, dissolves, zoom, camera motion, scene, table, text or additional props. Solid black background remains black. One controlled 4-second preparation motion.",
+        "duration": 4,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_182907_70623221-2529-4c47-bd55-fb9ca4737ec9.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/a331a978-444a-4efa-a81b-e84ea5d93d7e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "d9e236a7-073b-4459-b78b-9f6833beb325",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:19:18.056Z",
+      "landing": null,
+      "generation": {
+        "id": "d9e236a7-073b-4459-b78b-9f6833beb325",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T18:20",
+        "prompt": "Connect these exact first and last photographic frames of Astrid, the same seated blonde blackjack dealer, in one continuous natural movement. She gently brings her arms back from the starting position and folds her forearms into the exact final resting pose, while raising her gaze to the camera. Keep the movement smooth and gradual across the shot. Preserve the exact identity, facial features, hair, ivory blouse, black blazer, warm skin tone, exposure, body proportions and fixed body scale. Camera locked. No zoom, reframing, cuts, fades, morphing, elongated torso or gestures unrelated to returning to rest. Keep both hands anatomically correct and visible throughout. Solid black background remains entirely black; introduce no room, furniture, table, text, titles, new props or cards. Exact starting and ending composition and pose.",
+        "duration": 4,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_182025_d9e236a7-073b-4459-b78b-9f6833beb325.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/8c35d6f8-b8e0-42e1-a307-e13b5851b837.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "63176c40-d31b-4c28-8c5a-d13acd141848",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:19:22.811Z",
+      "landing": null,
+      "generation": {
+        "id": "63176c40-d31b-4c28-8c5a-d13acd141848",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T18:20",
+        "prompt": "Connect these exact first and last photographic frames of Astrid, the same seated blonde blackjack dealer, in one continuous natural movement. She gently brings her arms back from the starting position and folds her forearms into the exact final resting pose, while raising her gaze to the camera. Keep the movement smooth and gradual across the shot. Preserve the exact identity, facial features, hair, ivory blouse, black blazer, warm skin tone, exposure, body proportions and fixed body scale. Camera locked. No zoom, reframing, cuts, fades, morphing, elongated torso or gestures unrelated to returning to rest. Keep both hands anatomically correct and visible throughout. Solid black background remains entirely black; introduce no room, furniture, table, text, titles, new props or cards. Exact starting and ending composition and pose.",
+        "duration": 4,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_182025_63176c40-d31b-4c28-8c5a-d13acd141848.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/07706bc6-76da-4862-b8d5-fb2cd3f4e158.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "f978476a-5375-4cba-8a4b-ab87da2c1425",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:19:27.434Z",
+      "landing": null,
+      "generation": {
+        "id": "f978476a-5375-4cba-8a4b-ab87da2c1425",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T18:20",
+        "prompt": "Connect these exact first and last photographic frames of Astrid, the same seated blonde blackjack dealer, in one continuous natural movement. She gently brings her arms back from the starting position and folds her forearms into the exact final resting pose, while raising her gaze to the camera. Keep the movement smooth and gradual across the shot. Preserve the exact identity, facial features, hair, ivory blouse, black blazer, warm skin tone, exposure, body proportions and fixed body scale. Camera locked. No zoom, reframing, cuts, fades, morphing, elongated torso or gestures unrelated to returning to rest. Keep both hands anatomically correct and visible throughout. Solid black background remains entirely black; introduce no room, furniture, table, text, titles, new props or cards. Exact starting and ending composition and pose.",
+        "duration": 4,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_182024_f978476a-5375-4cba-8a4b-ab87da2c1425.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/65679afd-830a-4bc7-9892-caa388fa5d6e.jpg",
+        "croupier": true
+      }
+    },
+    {
+      "id": "75d1d46f-b536-4e75-bd8b-54fd351409bf",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:19:34.320Z",
+      "landing": null,
+      "generation": {
+        "id": "75d1d46f-b536-4e75-bd8b-54fd351409bf",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-13T18:09",
+        "prompt": "One continuous natural photographic motion connecting these exact first and last frames of Astrid, the same seated blonde blackjack dealer. Starting looking down with hands together, she relaxes her hands, smoothly folds her forearms into the exact final resting pose, and raises her gaze to face the camera. Small anatomically realistic shoulder, elbow, wrist and head movements. Complete the change comfortably in the middle two seconds with brief stillness at each end. Preserve her exact face identity, hair, black blazer, ivory blouse, skin colour and exposure throughout. The camera and body scale are absolutely locked; no zoom, camera movement, framing change, cuts, dissolves, morph effects or elongated torso. Keep the solid black background black with no new scene, furniture, text or props. Both hands stay visible. Match the exact final reference position and expression.",
+        "duration": 4,
+        "aspect": "auto",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_180945_75d1d46f-b536-4e75-bd8b-54fd351409bf.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/53dd9eae-ff5d-4aa3-bc0b-9782330be551.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "10bfb266-4e8c-4778-b3d2-659ae8373dcb",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:19:39.780Z",
+      "landing": null,
+      "generation": {
+        "id": "10bfb266-4e8c-4778-b3d2-659ae8373dcb",
+        "model": "hf_mult_motion_control",
+        "status": "completed",
+        "at": "2026-09-13T14:03",
+        "prompt": "Transfer ONLY the continuous professional blackjack dealing movements of the seated female dealer in the main video panel of the driving screen recording to Astrid, the blonde woman in the reference image. Use the image as the complete output scene and identity: exactly Astrid's face, hair, skin colour, white blouse, black suit, fixed front camera, lighting, table and shoe. The driving video is a screen recording: ignore all browser/YouTube interfaces, text, thumbnails and the standing background man. Reproduce the seated woman's precise efficient hand rhythm at original speed: take one card at the shoe, carry and slide it to successive player spots across the table, immediately return the empty hand to the shoe and deal the next card; no folded arms or idle reset between cards. Maintain natural anatomy and stable face and skin exposure. Both hands and every fingertip stay visible. Single uninterrupted fixed-camera photographic shot, no zooms or cuts. No interface, captions, numbers or text overlays.",
+        "duration": 11,
+        "aspect": "4:3",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_140310_10bfb266-4e8c-4778-b3d2-659ae8373dcb.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/42d15cc3-032d-4abe-b509-13ad819cbf87.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "07ace54e-06f4-4245-96cc-a51bd41a8ad9",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:19:49.438Z",
+      "landing": null,
+      "generation": {
+        "id": "07ace54e-06f4-4245-96cc-a51bd41a8ad9",
+        "model": "seedance_2_5",
+        "status": "completed",
+        "at": "2026-09-13T12:34",
+        "prompt": "Correct only the DEALING REACH AND RELEASE LOCATION in this exact source video. Preserve the source video camera, framing, Astrid's face identity, clothes, skin colour, room, table, shoe, professional speed and empty return to the shoe. The current card release is TOO CLOSE TO THE CENTRE at 37 percent width, 66 percent height. Extend the physical arm reach further LEFT and a little TOWARD THE VIEWER: the hand and held card must continue together until the card centre is at 30.85 percent of the full image width from the left, 68.99 percent of image height from the top. This is a further 124 image pixels at 1920x1080: approximately two card widths left and half a card length down. She must physically carry it to that point while fingers remain in contact, then release there. Do not leave the hand in the old position with a sliding/floating card. Keep the card lying motionless at this NEW location while her EMPTY hand returns directly to the existing shoe. Natural elbow and wrist articulation, no elongated fingers, no extra arm. One card only, no shuffle, no speech. This is an exact movement correction to serve the inner-left player, not a new scene.",
+        "duration": 5,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_123415_07ace54e-06f4-4245-96cc-a51bd41a8ad9.mp4",
+        "thumb": null,
+        "croupier": true
+      }
+    },
+    {
+      "id": "398fc6f3-fb96-4283-ad31-5a891386d529",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:20:19.091Z",
+      "landing": null,
+      "generation": {
+        "id": "398fc6f3-fb96-4283-ad31-5a891386d529",
+        "model": "seedance_2_5",
+        "status": "completed",
+        "at": "2026-09-13T12:11",
+        "prompt": "One uncut photorealistic live-blackjack performance, locked camera matching the supplied start image exactly. Preserve Astrid's identity, blonde tied-back hair, black blazer, ivory blouse, lighting, table and shoe. This is a precise SINGLE CARD delivery to PLAYER SEAT TWO, the INNER LEFT position, not the far-left edge and not the middle. Destination centre is 30.85 percent of full image width from the left, 68.99 percent of full image height from the top. The fingertips must physically reach that exact destination with the card, not stop in the middle and let it float. At natural confident professional dealer speed: from the supplied resting pose, unfold and reach the front black outlet of the existing shoe at image right (64 percent width, 58 percent height), slide ONE thin blank ivory card out while gripping its edge, carry it low and nearly flat across the felt with continuous hand contact, place it at the specified inner-left destination by 2 seconds. Release there; the card stays completely still there. Return the EMPTY hand directly to the shoe by 3 seconds, with no pause or extra sweep and no second card. Finish with fingers resting beside the outlet, ready for the next delivery, not arms folded. All fingers intact, mechanically plausible wrists and elbows. Face stays the same, lips closed, gaze follows card. No speech, no shuffle, no camera movement, no new props, no graphic markers, no text changes, no card retrieval, no teleportation. One card only, complete visible pickup, transport, release and empty return.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260913_121107_398fc6f3-fb96-4283-ad31-5a891386d529.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/42d15cc3-032d-4abe-b509-13ad819cbf87.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "3a837abd-a2e5-4109-b1c7-dde736bb4922",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:20:22.980Z",
+      "landing": null,
+      "generation": {
+        "id": "3a837abd-a2e5-4109-b1c7-dde736bb4922",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T22:49",
+        "prompt": "Locked-camera photographic blackjack performance, one continuous silent shot, exact same Astrid woman, blonde tied-back hair, fitted black blazer and ivory blouse. Match the provided START frame exactly at time zero and END frame exactly at the finish; maintain the reference lens, body proportions, face, exposure and shoe geometry. This is ONLY an EMPTY-HAND RETURN from the just-completed dealer's own card delivery. Her working right hand (the arm visible reaching in the START frame) is already EMPTY. Immediately continue its motion in one economical smooth low arc directly to the BLACK FRONT OUTLET of the acrylic shoe at screen-right, finishing in the supplied end-frame pinch-ready pose. Finish the travel within the first 1.4 seconds, then hold the exact end pose. Her other hand stays quietly at the rear rail. Natural professional dealing rhythm: no intermediate folded-arm reset, no greeting, no waving, no shuffling, no dealing another card and no top-of-stack reach. All cards already on the felt stay absolutely stationary. Do not pick up, slide, erase, duplicate or generate any card. No camera movement, zoom, cuts, dissolves, focus pumping, facial change or background drift. Crisp natural hands and fingers; avoid smeared motion. Four seconds total. No talking, lip movement, music or sound.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_224949_3a837abd-a2e5-4109-b1c7-dde736bb4922.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/b47130af-0a75-49ea-a570-cbf67b2346a5.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "ae46f7f7-d029-4b14-92d5-7472553a4a77",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:20:27.203Z",
+      "landing": null,
+      "generation": {
+        "id": "ae46f7f7-d029-4b14-92d5-7472553a4a77",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T22:49",
+        "prompt": "Locked-camera photographic blackjack performance, one continuous silent shot, exact same Astrid woman, blonde tied-back hair, fitted black blazer and ivory blouse. Match the provided START frame exactly at time zero and END frame exactly at the finish; maintain the reference lens, body proportions, face, exposure and shoe geometry. This is ONLY an EMPTY-HAND RETURN from the just-completed right player card delivery. Her working right hand (the arm visible reaching in the START frame) is already EMPTY. Immediately continue its motion in one economical smooth low arc directly to the BLACK FRONT OUTLET of the acrylic shoe at screen-right, finishing in the supplied end-frame pinch-ready pose. Finish the travel within the first 1.4 seconds, then hold the exact end pose. Her other hand stays quietly at the rear rail. Natural professional dealing rhythm: no intermediate folded-arm reset, no greeting, no waving, no shuffling, no dealing another card and no top-of-stack reach. All cards already on the felt stay absolutely stationary. Do not pick up, slide, erase, duplicate or generate any card. No camera movement, zoom, cuts, dissolves, focus pumping, facial change or background drift. Crisp natural hands and fingers; avoid smeared motion. Four seconds total. No talking, lip movement, music or sound.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_224947_ae46f7f7-d029-4b14-92d5-7472553a4a77.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/16c3a442-711a-486c-a41e-290d97754555.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "2c6e8168-2d5a-48e6-bdae-52ce93c05ab8",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:20:36.259Z",
+      "landing": null,
+      "generation": {
+        "id": "2c6e8168-2d5a-48e6-bdae-52ce93c05ab8",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T22:49",
+        "prompt": "Locked-camera photographic blackjack performance, one continuous silent shot, exact same Astrid woman, blonde tied-back hair, fitted black blazer and ivory blouse. Match the provided START frame exactly at time zero and END frame exactly at the finish; maintain the reference lens, body proportions, face, exposure and shoe geometry. This is ONLY an EMPTY-HAND RETURN from the just-completed left player card delivery. Her working right hand (the arm visible reaching in the START frame) is already EMPTY. Immediately continue its motion in one economical smooth low arc directly to the BLACK FRONT OUTLET of the acrylic shoe at screen-right, finishing in the supplied end-frame pinch-ready pose. Finish the travel within the first 1.4 seconds, then hold the exact end pose. Her other hand stays quietly at the rear rail. Natural professional dealing rhythm: no intermediate folded-arm reset, no greeting, no waving, no shuffling, no dealing another card and no top-of-stack reach. All cards already on the felt stay absolutely stationary. Do not pick up, slide, erase, duplicate or generate any card. No camera movement, zoom, cuts, dissolves, focus pumping, facial change or background drift. Crisp natural hands and fingers; avoid smeared motion. Four seconds total. No talking, lip movement, music or sound.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_224944_2c6e8168-2d5a-48e6-bdae-52ce93c05ab8.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/4dbe2c79-ab90-4aaa-9031-6b2c09ae60ec.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "1b1fba28-e83e-43c7-acdf-385cf265074d",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:20:39.390Z",
+      "landing": null,
+      "generation": {
+        "id": "1b1fba28-e83e-43c7-acdf-385cf265074d",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T22:00",
+        "prompt": "Exactly four seconds, locked photographic blackjack camera, identical blonde Astrid in black blazer and ivory blouse. This is ONLY her EMPTY hand returning from a completed player delivery directly to the shoe, ready for the next card. Start exactly in the first frame. Her right hand is already empty and lifting away after release. Immediately move that empty hand in one economical smooth low arc toward image-right, directly to the BLACK FRONT OUTLET of the shoe, matching the supplied final fingertip, wrist, elbow and gaze position. Complete the reach within the FIRST ONE SECOND, then hold the exact supplied final pose calmly for the final three seconds. She must NOT fold her arms in between. Do not extract or move a card. Do not shuffle, rub, sweep the table or touch the red cut marker. No gestures with the other hand except the small reposition needed to match the final pose. Preserve the same face, body, room, shoe, camera and lighting. Fixed focus and exposure, crisp hands and facial detail, no synthetic motion blur or slow motion. No speech, no cut or dissolve. The one previously dealt card stays flat on the felt and is untouched; it is outside the actor layer. Final pose matches the supplied image exactly, with EMPTY fingertips poised at the low front outlet. A natural continuation of the same person's movement, not a new scene.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_220039_1b1fba28-e83e-43c7-acdf-385cf265074d.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/be11ede5-2b18-48b5-b657-06d7b89382df.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "2725c451-0bd1-4f39-8c86-305b66da2ca8",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:20:45.116Z",
+      "landing": null,
+      "generation": {
+        "id": "2725c451-0bd1-4f39-8c86-305b66da2ca8",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T19:47",
+        "prompt": "Continue the exact supplied first frame into the supplied final frame in ONE locked-camera four-second real-time shot. Astrid must move the ONE ivory card from the FRONT BLACK OUTLET of the stationary shoe to the FAR VIEWER RIGHT position shown in the final image. The destination is to the RIGHT OF THE SHOE, near the right table edge. It is not the centre or dealer hand. Finish extracting the same partly exposed card. With her working right fingertips remaining on its top surface, sweep it decisively around the FRONT of the shoe and slide it toward the player on the far viewer right, reaching across her body and naturally leaning her torso to the viewer right. Keep the card flat touching the felt and visibly under her finger pads continuously until release at the right destination. End with that single card at exactly the final image position, her hand withdrawn and both hands folded as in the final frame. Complete the delivery by 1.7 seconds and return to rest by 2.8 seconds, hold rest to the end. Fast economical professional dealing, no slow motion, no pauses, no shuffling, no upright pinch, no lifting the card, no extra cards, no duplicating or teleporting the card. Exact same face, hair, suit, room, exposure and table geometry. No zoom, camera motion, dissolve, text or speech. Photographic sharp movement detail.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_194723_2725c451-0bd1-4f39-8c86-305b66da2ca8.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/9c21571f-9a13-4b44-809e-79c747592c5c.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "84dfb977-ad21-4a5b-81f2-dcd3062b46d6",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:20:52.034Z",
+      "landing": null,
+      "generation": {
+        "id": "84dfb977-ad21-4a5b-81f2-dcd3062b46d6",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T19:32",
+        "prompt": "One uninterrupted locked-camera professional blackjack dealing movement, four seconds, exact continuation of the supplied image. Same photographic blonde Astrid, dark navy blazer, ivory V-neck blouse, exact face and pinned hair, identical room, fixed shoe and table, identical framing and exposure. Her right fingertips already hold ONE blank ivory card partly extracted from the FRONT BLACK OUTLET of the shoe. Finish extracting that same card, keep it flat against the felt under the pads of her index and middle finger and slide it in a clean natural economical sweep toward the viewer LEFT side, at 30 percent of the frame width and 70 percent of the frame height, placing it on the player's part of the table. She physically reaches toward that side with her shoulder and elbow and looks briefly toward the destination. Release that single card flat by about 1.6 seconds, smoothly withdraw her hand and regain the folded empty-hand resting pose by 2.6 seconds, hold that pose through the end. Comfortable professional full-speed movement, no slow motion or theatrical pause. No additional cards, no shuffling, no upright card, no raised pinch, no turning face toward camera mid-action. No picking from the top/middle of the stack. The shoe is stationary, the card stays beneath the same fingertips until release, no floating or warping. The blank tracking card is visible and unprinted throughout so it can be removed in compositing. Do not move camera, zoom, relight, change her identity/clothes, add speech, labels, graphics or sound. Crisp 1080p detail, short shutter motion, natural continuous hand trajectory.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_193237_84dfb977-ad21-4a5b-81f2-dcd3062b46d6.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/9b5d488b-ed4d-43c9-bbb1-2000e88d3b4e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "21e26bdd-9bca-4d85-933f-01aa9f7d2f17",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:20:56.710Z",
+      "landing": null,
+      "generation": {
+        "id": "21e26bdd-9bca-4d85-933f-01aa9f7d2f17",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T19:32",
+        "prompt": "One uninterrupted locked-camera professional blackjack dealing movement, four seconds, exact continuation of the supplied image. Same photographic blonde Astrid, dark navy blazer, ivory V-neck blouse, exact face and pinned hair, identical room, fixed shoe and table, identical framing and exposure. Her right fingertips already hold ONE blank ivory card partly extracted from the FRONT BLACK OUTLET of the shoe. Finish extracting that same card, keep it flat against the felt under the pads of her index and middle finger and slide it in a clean natural economical sweep toward the viewer RIGHT side, at 74 percent of the frame width and 71 percent of the frame height, placing it on the player's part of the table. She physically reaches toward that side with her shoulder and elbow and looks briefly toward the destination. Release that single card flat by about 1.6 seconds, smoothly withdraw her hand and regain the folded empty-hand resting pose by 2.6 seconds, hold that pose through the end. Comfortable professional full-speed movement, no slow motion or theatrical pause. No additional cards, no shuffling, no upright card, no raised pinch, no turning face toward camera mid-action. No picking from the top/middle of the stack. The shoe is stationary, the card stays beneath the same fingertips until release, no floating or warping. The blank tracking card is visible and unprinted throughout so it can be removed in compositing. Do not move camera, zoom, relight, change her identity/clothes, add speech, labels, graphics or sound. Crisp 1080p detail, short shutter motion, natural continuous hand trajectory.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_193237_21e26bdd-9bca-4d85-933f-01aa9f7d2f17.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/a2c7220d-e242-45d1-8579-7bdce13033fd.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "5342f3c5-0d6d-43e0-9c92-4776b3beb1cd",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:21:12.046Z",
+      "landing": null,
+      "generation": {
+        "id": "5342f3c5-0d6d-43e0-9c92-4776b3beb1cd",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T17:24",
+        "prompt": "Continue EXACTLY from the supplied first frame, a single uninterrupted photographic blackjack dealing action, locked camera. The blonde dealer already holds ONE blank ivory card partly withdrawn from the FRONT BLACK MOUTH of the transparent shoe. Complete pulling this same card straight out of the low front outlet for the first 0.35 seconds. Her fingertips stay on that card. Then slide this same card LEFT along the felt to her OWN dealer position immediately in front of her torso, at the exact white card position in the final image, normalized centre (0.495,0.596). Release it flat there around 1.8 seconds, lift her empty fingers, return her arms naturally to the EXACT folded resting pose in the supplied end frame by 3.4 seconds, hold for the final 0.6 seconds. Keep the card low and in contact with the felt throughout the transport; no lifting it upright. Preserve the same face, fingers, blazer, ivory blouse, lighting, focal length, room and table. Crisp photographic skin and hair detail throughout movement, fast shutter, no synthetic motion blur, no soft-focus, no camera motion. One card, one direct delivery, no second reach, no additional card, no card appears at destination before the hand carries it there, no shuffling, no rubbing, no talking, no dissolves. The top of the shoe and red cut marker are untouched. The destination is the short dealer hand near the rear rail, above the BLACKJACK lettering, not any player betting position. The start is already a physical front-outlet pickup; do not change that starting grip. Exactly four seconds.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_172407_5342f3c5-0d6d-43e0-9c92-4776b3beb1cd.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/10199b8d-d4fc-4f92-b703-9089de3e3222.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "9bbd4a8c-2336-4241-9341-ab450348bd39",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:21:24.722Z",
+      "landing": null,
+      "generation": {
+        "id": "9bbd4a8c-2336-4241-9341-ab450348bd39",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T16:36",
+        "prompt": "A locked-off photographic portrait. Same blonde woman in a black blazer and ivory blouse, seated with forearms folded. Over four seconds she gently lowers her gaze toward image right and makes a tiny adjustment of her folded wrists to match the supplied final image. Her hands REMAIN RESTING TOGETHER in front of her body the entire time. Do not extend either arm. Do not reach anywhere. No dealing, no cards, no sweep, no shuffle, no objects touched, no speech. The only movement is a small natural downward glance and a subtle reposition of folded wrists. Begin exactly in the supplied first image, end exactly in the supplied last image. Preserve camera, face identity, room, shoe and lighting exactly. One continuous natural movement, no transition effects or cuts.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_163651_9bbd4a8c-2336-4241-9341-ab450348bd39.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/00c70b03-7499-45ed-9885-771aa2bdd395.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "cfb36866-f66b-4280-b29c-cef580ae380d",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:21:31.071Z",
+      "landing": null,
+      "generation": {
+        "id": "cfb36866-f66b-4280-b29c-cef580ae380d",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T16:29",
+        "prompt": "Photographic blackjack dealer Astrid, one continuous gentle preparatory hand movement. EXACT supplied first and last frames. Camera entirely locked. Four seconds. Start in the exact folded-arm resting pose in first image. Calmly and naturally move her image-right arm and hand into the exact ready-to-reach pose in the last image. End exactly in that supplied last pose, including gaze and head angle. This is ONLY the preparatory movement BEFORE she takes a card. Both hands EMPTY throughout. No cards drawn, no dealing, no shuffling, no rubbing hands, no new props, no speech. Keep the dealer identity, face, blonde tied-back hair, black blazer, ivory blouse, skin exposure, room, shoe, felt and geometry perfectly fixed. Smooth ease in and ease out, no cuts or dissolves. Body and hands follow a plausible physical path between the supplied poses. Keep all fingers and arms intact.",
+        "duration": 4,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_162958_cfb36866-f66b-4280-b29c-cef580ae380d.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/7c76da75-557d-42e5-a534-b7098e81049e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "8c7cdd98-37cb-4ff9-988c-1d8cc2b0a218",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:21:34.685Z",
+      "landing": null,
+      "generation": {
+        "id": "8c7cdd98-37cb-4ff9-988c-1d8cc2b0a218",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T16:13",
+        "prompt": "One continuous fixed-camera photographic blackjack delivery, six seconds. Match the provided FIRST AND LAST image exactly. Astrid: blonde tied-back hair, black blazer, ivory blouse. Preserve identity, body size, exposure, lens, warm casino and existing table geometry throughout. Start 0-0.5 seconds looking toward player, forearms neatly folded in the EXACT reference resting pose. Then her image-right hand reaches to the FRONT BLACK CARD OUTLET of the transparent shoe at normalized coordinate (0.636,0.599), pulls ONE rigid blank ivory poker card out from the bottom front outlet, and slides it along the felt forward-left toward the centre player at (0.50,0.77). Keep the card nearly flat on the felt under her index and middle fingertips with realistic contact. Do not lift it upright. Release at 3.5 seconds, leave the card flat, and return her EMPTY hand calmly to folded resting arms by 5 seconds. Final second faces the player in the EXACT supplied end-frame pose. No shuffle, no second card, no card fan, no speech, no camera drift, no zoom, no cuts, no pose jumps. Full hand stays in frame. The blank card is a tracking prop only. First and last frames must match the reference actor pose and lighting so this action joins seamlessly to the other dealer delivery.",
+        "duration": 6,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_161352_8c7cdd98-37cb-4ff9-988c-1d8cc2b0a218.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/72a5817c-08f3-4ae0-8060-faf8d992dd5e.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "cc719eb9-cc3f-4555-9489-a48ecd0a9977",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:21:37.621Z",
+      "landing": null,
+      "generation": {
+        "id": "cc719eb9-cc3f-4555-9489-a48ecd0a9977",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T15:38",
+        "prompt": "Locked-off photographic blackjack dealer broadcast, identical supplied start and end camera composition, six seconds, ONE continuous action. Preserve Astrid exactly: blonde tied-back hair, black blazer and ivory blouse, warm room, lights, existing green-grey felt, transparent shoe at image right, fixed lens and framing. First and final resting posture must match the supplied image: both arms folded lightly in front, facing the player. 0-0.7 seconds hold that rest, lips closed. 0.7-2 seconds her image-right hand reaches the FRONT BLACK OUTLET of the existing shoe at normalized image coordinate (0.636,0.599). Thumb and index pull out ONE rigid blank ivory poker card. 2-3.5 seconds she deals the card TO HER OWN DEALER HAND: carry it sideways LEFT from the shoe, close to the back edge of the felt, and lay it at normalized image coordinate (0.50,0.615), immediately in front of her torso. Do NOT push it toward the player's betting circles or the insurance writing. This is a short sideways dealer delivery, not a long forward player delivery. The full card is visible beneath fingertips after leaving the outlet, keep its rectangle rigid with natural finger occlusion. At 3.5 seconds release onto the felt. 3.5-5 seconds empty hand returns to the original resting posture; 5-6 seconds look toward player, arms resting in the EXACT supplied end pose. Keep all fingers and wrist intact and in frame. No shuffling, no rubbing, no second card, no tossing, no card flipping, no speech, no camera movement, no cut, no zoom, no lighting changes. One blank tracking prop only; natural physical hand contact throughout.",
+        "duration": 6,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_153810_cc719eb9-cc3f-4555-9489-a48ecd0a9977.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/2833f604-3ff8-4e18-8e58-7bed32c2c47b.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "2d3b9918-2b53-4639-875f-74425ef19706",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:21:43.356Z",
+      "landing": null,
+      "generation": {
+        "id": "2d3b9918-2b53-4639-875f-74425ef19706",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T14:09",
+        "prompt": "Locked-off real casino broadcast camera, one continuous six-second photographic take. Preserve the provided first image EXACTLY: Astrid with blonde tied-back hair, black blazer and ivory blouse, her face, body proportions, dark warm room, every light, felt, rail, table legs and the transparent card shoe at image right of her. No camera movement, zoom, cut, reframing or background change. This is a precision motion-capture source for one single blackjack card, not a shuffle. 0-0.7 seconds: her hands rest exactly as in reference, lips closed. 0.7-2 seconds: the hand on image right extends naturally down and right to the BLACK FRONT OUTLET of the existing transparent shoe, near normalized image position (0.645,0.581). The other hand stays resting. 2-2.8 seconds: index finger and thumb visibly pinch the nearest edge of ONE thin blank ivory card and slide that card forward out of that existing shoe. 2.8-4 seconds: with continuous physical fingertip contact, guide this one card low over the felt toward normalized image position (0.53,0.60). Keep card nearly flat, no vertical flourish. At 4 seconds release the card gently so it slides forward a short distance onto the felt at (0.50,0.69). 4-5.3 seconds: empty hand withdraws to its original resting position, without dealing a second card. 5.3-6 seconds: still rest, lips closed, subtle natural breathing. All fingertips, both wrists, the outlet, and the complete card trajectory stay within the image. Fingers overlap the card edge naturally, card cannot float detached from grip. Only one blank card may move; no existing cards on table, no shuffling, no rubbing, no tapping, no talking, no extra gestures. Shoe does not move or deform. No text changes or new graphics. Warm natural skin, physically plausible motion and crisp hands.",
+        "duration": 6,
+        "aspect": "16:9",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_140916_2d3b9918-2b53-4639-875f-74425ef19706.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/42d15cc3-032d-4abe-b509-13ad819cbf87.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "36f7b6e4-746d-4b20-9094-a585695745d2",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:21:51.736Z",
+      "landing": null,
+      "generation": {
+        "id": "36f7b6e4-746d-4b20-9094-a585695745d2",
+        "model": "seedance_2_5",
+        "status": "completed",
+        "at": "2026-09-09T13:04",
+        "prompt": "VFX cleanup only. Remove every playing card from this video, including the cards lying on the table and the card between her fingertips. Reconstruct the clean tabletop or background behind removed cards. Preserve the woman, her exact existing hand and finger movements frame by frame, skin, face, clothing, camera, timing, room and lighting without any changes. Her hand still performs the identical low dealing movement but holds nothing: this is an empty-hand actor plate for a digital card to be composited later. Do not raise her hands, change any gesture, add props or create any new cards. No audio.",
+        "duration": 9,
+        "aspect": "1:1",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_130456_36f7b6e4-746d-4b20-9094-a585695745d2.mp4",
+        "thumb": null,
+        "croupier": true
+      }
+    },
+    {
+      "id": "e0410b0e-ef64-452f-9985-41c9ae60c475",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:21:58.538Z",
+      "landing": null,
+      "generation": {
+        "id": "e0410b0e-ef64-452f-9985-41c9ae60c475",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T13:00",
+        "prompt": "Locked camera VFX actor plate, preserve the provided reference composition pixel-for-pixel: same Astrid face size, location, room, outfit, light, camera and rail. Mouth closed and silent. Keep the scene completely free of cards and other props; the game adds a digital card later. Astrid performs a single EMPTY-HAND dealing mime, not shuffling. Begin in exact folded-hands resting pose for 0.5 seconds. Her left hand on viewer right reaches just above the rail toward viewer right, fingers straighten with thumb and index pinching an imaginary thin card. Keep that pinching grip, then sweep that hand smoothly inward toward the lower center of frame, palm downward. At the lower center open the thumb and fingers once to release the imaginary card. Withdraw and return to the exact reference resting pose, holding still for the final second. Other hand remains still on the rail. No actual cards, no visible objects held, no flipping, no extra hand gesture, no camera changes. Both hands and fingertips fully in frame throughout.",
+        "duration": 6,
+        "aspect": "1:1",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_130006_e0410b0e-ef64-452f-9985-41c9ae60c475.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/d61990e9-7905-4ffb-bda8-965ac99f7530.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "ec0a773e-9666-4c2d-a288-dd8646918bbe",
+      "verdict": "no",
+      "reason": "",
+      "at": "2026-09-19T10:22:08.106Z",
+      "landing": null,
+      "generation": {
+        "id": "ec0a773e-9666-4c2d-a288-dd8646918bbe",
+        "model": "seedance_2_0",
+        "status": "completed",
+        "at": "2026-09-09T12:49",
+        "prompt": "Animate the supplied first frame without changing its composition at all. Camera locked, no zoom, same exact face size, head position and table rail location for the entire shot. Astrid holds the supplied folded-hands resting pose for the first full second. Mouth closed throughout. Then she performs one restrained blackjack dealing gesture with her left hand on viewer right: reach toward viewer right just above the rail, pinch a single card at its edge, draw it inward toward the lower center, release it once, then return to the supplied folded hands pose by second six. Hold still for the final two seconds. Only one card. Other hand stays still. No shuffling, no added furniture, no repeated gestures, no wide shot, no reframing. All fingertips remain visible inside the original crop. Subtle natural card foley synchronized to contact, no speech, no music.",
+        "duration": 8,
+        "aspect": "1:1",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260909_124929_ec0a773e-9666-4c2d-a288-dd8646918bbe.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/2268743f-fd00-42af-8dc6-6a15c881dd87.png",
+        "croupier": true
+      }
+    },
+    {
+      "id": "06a0e022-8655-489d-9045-452b1e2f8c55",
+      "verdict": "want",
+      "reason": "",
+      "at": "2026-09-19T10:22:56.357Z",
+      "landing": null,
+      "generation": {
+        "id": "06a0e022-8655-489d-9045-452b1e2f8c55",
+        "model": "seedance_2_5",
+        "status": "completed",
+        "at": "2026-08-29T08:57",
+        "prompt": "Continue this exact static shot, same camera, same framing, same lighting: a brunette dealer in a camel blazer with a gold name tag at a tan felt casino table with a softly glowing rim, warm golden salon behind. She speaks the provided audio line directly to camera in one continuous breath with PRECISE lip sync - her lips move only while the voice speaks, at its exact pace - then returns calmly to rest with lips closed. No camera movement.",
+        "duration": 4,
+        "aspect": "1:1",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260829_085727_06a0e022-8655-489d-9045-452b1e2f8c55.mp4",
+        "thumb": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/92f48199-69c0-47e8-acaa-a62d8ecc67cf.png",
+        "croupier": true
+      }
+    }
+  ],
+  "neverAgain": [
+    "astrid-left-outlet-contact-20260909",
+    "astrid-centre-return-review-20260910",
+    "astrid:idle-1/speak/chatter1",
+    "astrid:idle-1/speak/blackjack"
+  ],
+  "readAt": "2026-09-19T11:31:57.951147+00:00",
+  "source": "Live backoffice, read only. Actor emails excluded."
+}

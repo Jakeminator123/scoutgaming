@@ -13,7 +13,7 @@ import {
 } from '../lib/lab-video-manifest.mjs';
 import { buildLabVideoManifest, manifestJson } from '../../pipeline/build-lab-video-manifest.mjs';
 
-const repositoryManifest = fileURLToPath(new URL('../../emil/dealklipp-v1/lab-video-manifest.json', import.meta.url));
+const repositoryManifest = fileURLToPath(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url));
 
 async function fixture(t, { variant = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'croupier-manifest-v2-'));

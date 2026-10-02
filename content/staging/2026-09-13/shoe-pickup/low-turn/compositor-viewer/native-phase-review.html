@@ -1,7 +1,0 @@
-<!doctype html><meta charset="utf-8"><title>Astrid frame contact comparison</title>
-<style>body{font:16px system-ui;color:#eee;background:#181b20;margin:20px}button,input{font:inherit;padding:8px} .scene{position:relative;width:min(100%,1280px,calc((100vh - 220px)*1.777778));aspect-ratio:16/9;background:#30363b}.scene>*{position:absolute;width:100%;height:100%;inset:0}#rear{z-index:0}#cards{z-index:1}#front{z-index:2}pre{white-space:pre-wrap}label{margin-right:16px}</style>
-<h1>Paused contact geometry — not dynamic synchronization</h1><p>Both native actor layers seek to the same joined frame midpoint. Compare the rigid game card at −1, matching, and +1 frame without changing actor pixels.</p>
-<label>Actor joined frame <input id="frame" type="number" min="0" max="349" value="86"></label>
-<button id="previous">Previous actor frame</button><button id="next">Next actor frame</button><button data-shift="-1">Card one frame behind</button><button data-shift="0">Matching card</button><button data-shift="1">Card one frame ahead</button><button id="apply">Seek</button>
-<p id="status">Loading…</p><div class="scene"><video id="rear" muted playsinline preload="auto" src="/native-rear-joined709.webm"></video><canvas id="cards"></canvas><video id="front" muted playsinline preload="auto" src="/native-front-joined709.webm"></video></div><pre id="receipt"></pre>
-<script type="module" src="/native-phase-review.mjs"></script>

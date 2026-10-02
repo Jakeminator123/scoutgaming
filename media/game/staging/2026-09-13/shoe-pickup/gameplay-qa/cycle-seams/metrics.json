@@ -1,0 +1,155 @@
+[
+  {
+    "name": "extract-to-turn",
+    "dimensionsA": [
+      1924,
+      1076
+    ],
+    "dimensionsB": [
+      1912,
+      1080
+    ],
+    "similarity_A_to_B": [
+      [
+        0.9936634834106451,
+        -6.697033635322116e-05,
+        0.05217791173219296
+      ],
+      [
+        6.697033635322116e-05,
+        0.9936634834106451,
+        5.623616802759766
+      ]
+    ],
+    "backgroundInliers": 640,
+    "backgroundMedianResidual": 0.738040523952899,
+    "regions_after_global_alignment": {
+      "face": {
+        "residualShiftPixels": [
+          0.3904054949243161,
+          -0.06417527433669079
+        ],
+        "phaseCorrelationResponse": 1.0606914037068684,
+        "rgbMAE": 2.4815744680851064
+      },
+      "body": {
+        "residualShiftPixels": [
+          0.04631305272638997,
+          0.03299161109089255
+        ],
+        "phaseCorrelationResponse": 0.998996455286756,
+        "rgbMAE": 1.332539584364176
+      },
+      "shoe": {
+        "residualShiftPixels": [
+          0.010613696097266256,
+          -0.2933911470897499
+        ],
+        "phaseCorrelationResponse": 1.034099783367581,
+        "rgbMAE": 2.4469560278000535
+      }
+    }
+  },
+  {
+    "name": "turn-to-slide",
+    "dimensionsA": [
+      1912,
+      1080
+    ],
+    "dimensionsB": [
+      1924,
+      1076
+    ],
+    "similarity_A_to_B": [
+      [
+        0.9960373913705727,
+        -4.999501246734477e-05,
+        9.984314614997205
+      ],
+      [
+        4.999501246734477e-05,
+        0.9960373913705727,
+        0.29295014282035886
+      ]
+    ],
+    "backgroundInliers": 558,
+    "backgroundMedianResidual": 0.7421866368665091,
+    "regions_after_global_alignment": {
+      "face": {
+        "residualShiftPixels": [
+          0.37506996394462533,
+          -0.3886295031796294
+        ],
+        "phaseCorrelationResponse": 0.9842902330160141,
+        "rgbMAE": 3.1508932127211695
+      },
+      "body": {
+        "residualShiftPixels": [
+          0.5981047280083658,
+          -0.3476458922370398
+        ],
+        "phaseCorrelationResponse": 0.9891582930199894,
+        "rgbMAE": 1.5413617370721928
+      },
+      "shoe": {
+        "residualShiftPixels": [
+          -0.13366543771816453,
+          -0.06945293231173366
+        ],
+        "phaseCorrelationResponse": 1.0368219944282815,
+        "rgbMAE": 2.8189327301667086
+      }
+    }
+  },
+  {
+    "name": "return-to-extract",
+    "dimensionsA": [
+      1924,
+      1076
+    ],
+    "dimensionsB": [
+      1924,
+      1076
+    ],
+    "similarity_A_to_B": [
+      [
+        1.0001443197940565,
+        -8.983109234542422e-05,
+        -0.2997468322579738
+      ],
+      [
+        8.983109234542422e-05,
+        1.0001443197940565,
+        0.336110246996499
+      ]
+    ],
+    "backgroundInliers": 420,
+    "backgroundMedianResidual": 0.5166306661482585,
+    "regions_after_global_alignment": {
+      "face": {
+        "residualShiftPixels": [
+          -0.06346188356249627,
+          0.16703089836589413
+        ],
+        "phaseCorrelationResponse": 0.9517584953308106,
+        "rgbMAE": 5.868539007092199
+      },
+      "body": {
+        "residualShiftPixels": [
+          -0.6406217001066921,
+          0.9642636757682226
+        ],
+        "phaseCorrelationResponse": 0.8145506764635627,
+        "rgbMAE": 3.1479843586783223
+      },
+      "shoe": {
+        "residualShiftPixels": [
+          -0.2580521863325558,
+          1.4290455584265942
+        ],
+        "phaseCorrelationResponse": 1.2054544900964808,
+        "rgbMAE": 9.706629243517776
+      }
+    }
+  }
+]

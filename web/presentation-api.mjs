@@ -87,7 +87,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         return true;
       }
       if (body.dealerId !== 'astrid' || !modes.has(body.mode) || !Number.isInteger(body.version)) fail('Invalid presentation request');
-      const receipt = db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
+      const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
       if (['deal', 'reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
       const [project, inventory] = await Promise.all([store.load(), loadVideoRegistry(registryOptions)]);

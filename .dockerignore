@@ -38,8 +38,12 @@ lab/data
 lissabon/data
 open-claw/lab/data
 
-# Source/render experiments. Published runtime assets stay in web/public,
-# content/dealers, content/persona, and emil/dealklipp-v1.
+# Published runtime media use media/**/runtime; public code stays in web/public.
+# Source, staging and review material is preserved outside runtime images.
+media/.migration
+media/**/source
+media/**/staging
+media/**/review
 assets/astrid-3d
 assets/blackjack-3d
 content/staging

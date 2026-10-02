@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
-ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'content/staging/2026-09-10/astrid-head-v2';bpy.ops.wm.open_mainfile(filepath=str(OUT/'astrid-face-game.blend'))
+ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'media/dealers/astrid/staging/2026-09-10/astrid-head-v2';bpy.ops.wm.open_mainfile(filepath=str(OUT/'astrid-face-game.blend'))
 scene=bpy.context.scene;head=bpy.data.objects['Astrid_Face'];arm=bpy.data.objects['Face_Rig'];dg=bpy.context.evaluated_depsgraph_get();keys=head.data.shape_keys.key_blocks;names=[b.name for b in keys][1:]
 # Carry the anatomy author's semantic skin weights through subdivision. Height
 # alone cannot distinguish the chin from the neck and caused jaw stretching.

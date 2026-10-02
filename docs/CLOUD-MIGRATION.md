@@ -96,7 +96,11 @@ och hooktester. Kod, konfiguration, tester och media kör hela regressionen;
 CI kör alltid full. Manuell full kontroll: sh .githooks/pre-commit --full.
 node tools/precommit-checks.mjs --plan visar valet för aktuellt Git-index.
 
-Källmaterial: pipeline/ innehåller mediebygge och obligatoriska audits;
-content/ innehåller original och kalibrerings-/stagingunderlag med aktiva
-beroenden. Bevara båda. Obsoleta random-stuff-jakob/ och rotens daterade
+Källmaterial: pipeline/ innehåller mediebygge och obligatoriska audits.
+Tidigare content/, assets/ och Emil-bank är flyttade till gemensam media:
+`media/dealers/<dealer>/{runtime,source,review,staging}`, `media/game` och
+`media/site`. ID, hash, kalibrering och historisk proveniens bevaras;
+`media/layout.json` kopplar exakt gamla paths/URL:er. Licenser och underlag
+följer källorna. Nya mappar är ansvar/usage, inte påstått godkänd videokvalitet.
+Obsoleta random-stuff-jakob/ och rotens daterade
 ANDRINGSLOGG-V2.md är rensade; aktuell status finns i JOHN-HANDOFF.md.

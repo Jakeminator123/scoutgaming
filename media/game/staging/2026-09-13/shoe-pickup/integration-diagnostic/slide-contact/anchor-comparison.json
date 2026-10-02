@@ -1,0 +1,75 @@
+[
+  {
+    "file": "anchor.png",
+    "nativeDimensions": [
+      1344,
+      752
+    ],
+    "nativePolygon": [
+      [
+        796,
+        441
+      ],
+      [
+        754,
+        444
+      ],
+      [
+        739,
+        426
+      ],
+      [
+        778,
+        420
+      ]
+    ],
+    "uniformScale1920": 1.4285714285714286,
+    "area1920": 1986.734693877551,
+    "edges1920": [
+      60.15286648979229,
+      33.47249861102852,
+      56.369770448425314,
+      39.51233338839809
+    ],
+    "method": "observed white boundary convex hull; fingertip occlusion may bias boundary"
+  },
+  {
+    "file": "landing-planar.png",
+    "nativeDimensions": [
+      1344,
+      752
+    ],
+    "nativePolygon": [
+      [
+        685,
+        540
+      ],
+      [
+        686,
+        577
+      ],
+      [
+        639,
+        575
+      ],
+      [
+        641,
+        546
+      ],
+      [
+        662,
+        538
+      ]
+    ],
+    "uniformScale1920": 1.4285714285714286,
+    "area1920": 3524.4897959183672,
+    "edges1920": [
+      52.876444352347846,
+      67.20361992193757,
+      41.526976724996096,
+      32.10315007749176,
+      32.98113251604342
+    ],
+    "method": "observed white boundary convex hull; fingertip occlusion may bias boundary"
+  }
+]

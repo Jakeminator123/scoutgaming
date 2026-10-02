@@ -1,0 +1,58 @@
+{
+  "request": {
+    "params": {
+      "model": "seedance_2_0",
+      "mode": "std",
+      "resolution": "1080p",
+      "duration": 5,
+      "bitrate_mode": "high",
+      "aspect_ratio": "16:9",
+      "count": 1,
+      "generate_audio": false,
+      "medias": [
+        {
+          "role": "start_image",
+          "value": "dd01ae2e-cfb1-40c1-9bb6-43e16fda47f1"
+        },
+        {
+          "role": "video",
+          "value": "deb07381-e850-4c68-a7f2-96299f6c88e5"
+        }
+      ],
+      "prompt": "The start image is the exact first frame and sole authority for the entire shot's composition. Animate this exact Astrid scene in place for five seconds. Keep the camera completely fixed at the start image's height, lens, crop and perspective; keep Astrid's face, hair, ivory blouse, black long sleeves to wrists, proportions, room, lighting, green felt and existing shoe at their original image coordinates. Do not recreate the reference video's elevated camera, wider table, other dealers or room. Use the reference video ONLY for the continuous two-hand blackjack rhythm: four sequential cards delivered from the shoe toward four successive player directions, from viewer right toward center. Her left feeding hand at viewer right pulls one card through the existing shoe mouth; her adjacent right receiving hand receives it, makes a brief supported low wrist turn and immediately slides it outward. During that outward travel the feeding hand is already at the shoe preparing the next card. Preserve the reference's approximate one-second extraction intervals, without resetting both hands between cards. Every card remains one rigid card under visible fingers through transfer and slide, and remains stationary after release. One uninterrupted shot, no cuts, dissolves, reframing, body scaling, chest-high presentation or invented cards. Maintain the exact start-image scene throughout; reinterpret the referenced hand movement within that fixed view."
+    }
+  },
+  "result": {
+    "results": [
+      {
+        "id": "582f2a76-162d-4e60-9d92-3f96d4fef822",
+        "type": "video",
+        "status": "completed",
+        "model": "seedance_2_0",
+        "params": {
+          "prompt": "The start image is the exact first frame and sole authority for the entire shot's composition. Animate this exact Astrid scene in place for five seconds. Keep the camera completely fixed at the start image's height, lens, crop and perspective; keep Astrid's face, hair, ivory blouse, black long sleeves to wrists, proportions, room, lighting, green felt and existing shoe at their original image coordinates. Do not recreate the reference video's elevated camera, wider table, other dealers or room. Use the reference video ONLY for the continuous two-hand blackjack rhythm: four sequential cards delivered from the shoe toward four successive player directions, from viewer right toward center. Her left feeding hand at viewer right pulls one card through the existing shoe mouth; her adjacent right receiving hand receives it, makes a brief supported low wrist turn and immediately slides it outward. During that outward travel the feeding hand is already at the shoe preparing the next card. Preserve the reference's approximate one-second extraction intervals, without resetting both hands between cards. Every card remains one rigid card under visible fingers through transfer and slide, and remains stationary after release. One uninterrupted shot, no cuts, dissolves, reframing, body scaling, chest-high presentation or invented cards. Maintain the exact start-image scene throughout; reinterpret the referenced hand movement within that fixed view.",
+          "aspect_ratio": "16:9",
+          "duration": 5,
+          "reference_images": [
+            "dd01ae2e-cfb1-40c1-9bb6-43e16fda47f1",
+            "deb07381-e850-4c68-a7f2-96299f6c88e5"
+          ],
+          "mode": "std",
+          "resolution": "1080p",
+          "bitrate_mode": "high",
+          "generate_audio": false
+        }
+      }
+    ],
+    "adjustments": {
+      "medias[1].role": {
+        "requested": "video",
+        "used": "video_references",
+        "reason": "Seedance 2.0 backend expects schema-key media roles"
+      }
+    }
+  },
+  "status": "completed; actor candidate for independent-card reconstruction; not gameplay-approved",
+  "resultURL": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260914_000540_582f2a76-162d-4e60-9d92-3f96d4fef822.mp4",
+  "sourceSHA256": "c4e46c9cbde5383dacf87d22910a9a15eefb2c2b7e408785931795ac46d53664"
+}

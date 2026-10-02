@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "status": "unreviewed",
+  "bones": {
+    "hips": "Hips",
+    "head": "Head",
+    "leftUpperArm": "LeftArm",
+    "leftForeArm": "LeftForeArm",
+    "leftHand": "LeftHand",
+    "rightUpperArm": "RightArm",
+    "rightForeArm": "RightForeArm",
+    "rightHand": "RightHand",
+    "fingers": {
+      "right": [
+        "RightThumb1",
+        "RightThumb2",
+        "RightThumb3",
+        "RightIndex1",
+        "RightIndex2",
+        "RightIndex3",
+        "RightMiddle1",
+        "RightMiddle2",
+        "RightMiddle3",
+        "RightRing1",
+        "RightRing2",
+        "RightRing3",
+        "RightPinky1",
+        "RightPinky2",
+        "RightPinky3"
+      ],
+      "left": [
+        "LeftThumb1",
+        "LeftThumb2",
+        "LeftThumb3",
+        "LeftIndex1",
+        "LeftIndex2",
+        "LeftIndex3",
+        "LeftMiddle1",
+        "LeftMiddle2",
+        "LeftMiddle3",
+        "LeftRing1",
+        "LeftRing2",
+        "LeftRing3",
+        "LeftPinky1",
+        "LeftPinky2",
+        "LeftPinky3"
+      ]
+    }
+  },
+  "vertices": 91278,
+  "polygons": 159728,
+  "sourceJob": "cc1a080e-8d37-4f3c-847d-5f70bf1c3125",
+  "limitations": [
+    "No facial blend shapes or phoneme approval.",
+    "Finger chains added from source hand landmarks; curl and contact require visual review.",
+    "Original source preserved separately; generated mesh is not a hand-sculpted master."
+  ]
+}

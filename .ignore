@@ -30,6 +30,7 @@ vendor/
 /agent-talk/write.lock
 /web/data/
 /lab/data/
+/media/.migration/
 /lissabon/data/
 /random-stuff-jakob/jakob-log-files/
 
@@ -62,3 +63,8 @@ vendor/
 *.sqlite
 *.sqlite3
 *.db
+
+# Large source/staging metadata and generated layout stay available for explicit reads.
+/media/**/source/
+/media/**/staging/
+/media/layout.json

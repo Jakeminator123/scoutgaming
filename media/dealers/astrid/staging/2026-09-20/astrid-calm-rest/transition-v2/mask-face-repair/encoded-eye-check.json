@@ -1,0 +1,491 @@
+{
+  "frames": 97,
+  "minimumEncodedRepairedAlpha": 255,
+  "framesChecked": [
+    {
+      "frame": 0,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 1,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 2,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 3,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 4,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 5,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 6,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 7,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 8,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 9,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 10,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 11,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 12,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 13,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 14,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 15,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 16,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 17,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 18,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 19,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 20,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 21,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 22,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 23,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 24,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 25,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 26,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 27,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 28,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 29,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 30,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 31,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 32,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 33,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 34,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 35,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 36,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 37,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 38,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 39,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 40,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 41,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 42,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 43,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 44,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 45,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 46,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 47,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 48,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 49,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 50,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 51,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 52,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 53,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 54,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 55,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 56,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 57,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 58,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 59,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 60,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 61,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 62,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 63,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 64,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 65,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 66,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 67,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 68,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 69,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 70,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 71,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 72,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 73,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 74,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 75,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 76,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 77,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 78,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 79,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 80,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 81,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 82,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 83,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 84,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 85,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 86,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 87,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 88,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 89,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 90,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 91,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 92,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 93,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 94,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 95,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    },
+    {
+      "frame": 96,
+      "repairedPixels": 0,
+      "minimumEncodedRepairedAlpha": 255
+    }
+  ]
+}

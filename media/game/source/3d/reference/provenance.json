@@ -1,0 +1,12 @@
+{
+  "provider": "Higgsfield MCP",
+  "model": "gpt_image_2",
+  "completedJob": "ba685bc9-adc2-4b38-9971-5d00f95df769",
+  "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260910_054948_ba685bc9-adc2-4b38-9971-5d00f95df769.png",
+  "purpose": "Visual table and prop design reference; not a rig or 3D export",
+  "sceneReferenceAttempt": {
+    "status": "rejected",
+    "reason": "Out of credits on Team (monthly) plan in Shared workspace"
+  },
+  "inspection": "Reviewed through browser image. Fine leather, compact acrylic shoe and chip tray guide actual geometry; generated circle placement is not gameplay calibration."
+}

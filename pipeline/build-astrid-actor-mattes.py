@@ -8,7 +8,7 @@ root=Path(sys.argv[1]).resolve()
 output=root/'public/dealers/astrid/actor'
 encoded=root/'encoded'
 encoded.mkdir(parents=True,exist_ok=True)
-source=repo/'web/public/dealers/astrid'
+source=repo/'media/dealers/astrid/runtime/indexed'
 index=json.loads((source/'streams/index.json').read_text())
 provenance={"version":1,"dealer":"astrid","sources":{},"nativeSpeech":{}}
 # Room generation is a separate reviewed asset. Preserve it when rebuilding

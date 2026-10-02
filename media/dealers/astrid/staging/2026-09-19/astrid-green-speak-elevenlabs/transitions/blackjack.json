@@ -1,0 +1,21 @@
+{
+  "width": 960,
+  "height": 760,
+  "durationMs": 220,
+  "flowRange": 64,
+  "actorOffset": [
+    0,
+    20
+  ],
+  "idleSha256": "a847935bf8df1046072bce269354e3faadb31749d88232afed083401de71ea8d",
+  "mediaSha256": "6052f1d41755014712019d260d2b4713ee40262769e29c7a726c60ff883220b2",
+  "method": "Rigid speech actor offset, then bidirectional DIS flow over the keyed actor, bounded to 60 source pixels. Premultiplied interpolation; no camera transform.",
+  "enter": {
+    "flow": "blackjack-enter-flow.png",
+    "sha256": "90c170f4e55b97ed3ec4805ad36ebf18555aa9add157fd8dabf5d7edae504f67"
+  },
+  "exit": {
+    "flow": "blackjack-exit-flow.png",
+    "sha256": "5ed0c206cd20e829f7ef5146b2c524337b544854c3391a7f5d25df81aed7719a"
+  }
+}

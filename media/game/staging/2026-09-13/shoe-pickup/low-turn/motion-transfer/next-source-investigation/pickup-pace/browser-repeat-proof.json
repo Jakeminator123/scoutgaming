@@ -1,0 +1,119 @@
+{
+  "duration": 0.416667,
+  "first": {
+    "frame": 0,
+    "mediaTime": 0,
+    "presentedFrames": 26
+  },
+  "frameCallbacks": 19,
+  "height": 1080,
+  "last": {
+    "frame": 24,
+    "mediaTime": 0.4,
+    "presentedFrames": 49
+  },
+  "observations": [
+    {
+      "frame": 0,
+      "mediaTime": 0,
+      "presentedFrames": 26
+    },
+    {
+      "frame": 2,
+      "mediaTime": 0.033333,
+      "presentedFrames": 27
+    },
+    {
+      "frame": 4,
+      "mediaTime": 0.066667,
+      "presentedFrames": 29
+    },
+    {
+      "frame": 5,
+      "mediaTime": 0.083333,
+      "presentedFrames": 30
+    },
+    {
+      "frame": 6,
+      "mediaTime": 0.1,
+      "presentedFrames": 31
+    },
+    {
+      "frame": 7,
+      "mediaTime": 0.116667,
+      "presentedFrames": 32
+    },
+    {
+      "frame": 9,
+      "mediaTime": 0.15,
+      "presentedFrames": 34
+    },
+    {
+      "frame": 11,
+      "mediaTime": 0.183333,
+      "presentedFrames": 36
+    },
+    {
+      "frame": 12,
+      "mediaTime": 0.2,
+      "presentedFrames": 37
+    },
+    {
+      "frame": 13,
+      "mediaTime": 0.216667,
+      "presentedFrames": 38
+    },
+    {
+      "frame": 15,
+      "mediaTime": 0.25,
+      "presentedFrames": 40
+    },
+    {
+      "frame": 16,
+      "mediaTime": 0.266667,
+      "presentedFrames": 41
+    },
+    {
+      "frame": 17,
+      "mediaTime": 0.283333,
+      "presentedFrames": 42
+    },
+    {
+      "frame": 18,
+      "mediaTime": 0.3,
+      "presentedFrames": 43
+    },
+    {
+      "frame": 19,
+      "mediaTime": 0.316667,
+      "presentedFrames": 44
+    },
+    {
+      "frame": 20,
+      "mediaTime": 0.333333,
+      "presentedFrames": 45
+    },
+    {
+      "frame": 22,
+      "mediaTime": 0.366667,
+      "presentedFrames": 47
+    },
+    {
+      "frame": 23,
+      "mediaTime": 0.383333,
+      "presentedFrames": 48
+    },
+    {
+      "frame": 24,
+      "mediaTime": 0.4,
+      "presentedFrames": 49
+    }
+  ],
+  "qualityDelta": {
+    "corrupted": 0,
+    "dropped": 6,
+    "total": 25
+  },
+  "state": "ended",
+  "width": 1920
+}

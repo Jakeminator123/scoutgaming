@@ -7,6 +7,7 @@ import { REPOSITORY, childSpecifications, inspectCloudBootstrap, inspectCloudDis
 import { createCloudGateway } from './gateway.mjs';
 import { closeGateway, startChildren } from './process-group.mjs';
 import { verifyCloudAccess } from './access-check.mjs';
+import { createStorageExportServer } from './storage-export.mjs';
 
 // Deliberate pilot opt-in is not a claim of production acceptance.
 export function assertCloudAccessReady(env = process.env) {
@@ -50,7 +51,8 @@ async function preflight(env) {
   return config;
 }
 
-export async function main(args = process.argv.slice(2), env = process.env) {
+export async function main(args = process.argv.slice(2), env = process.env,
+  { transformChildSpecifications = specifications => specifications } = {}) {
   if (args.length !== 1 || !['--check', '--start'].includes(args[0])) {
     throw new Error('Usage: node ops/cloud/start.mjs --check|--start');
   }
@@ -67,9 +69,16 @@ export async function main(args = process.argv.slice(2), env = process.env) {
   process.once('SIGTERM', stop);
   let children, gateway;
   try {
+    if (config.storageExport) {
+      gateway = createStorageExportServer(config, config.storageExport);
+      await listen(gateway, config.publicPort, '0.0.0.0');
+      console.log('Storage maintenance active; no product or Lab writers started.');
+      await new Promise(done => { abort.signal.addEventListener('abort', done, { once: true }); if (abort.signal.aborted) done(); });
+      return 0;
+    }
     for (const path of Object.values(config.paths)) await mkdir(path, { recursive: true, mode: 0o700 });
-    children = await startChildren(childSpecifications(config, env, { labInternalSecret }), { signal: abort.signal });
-    gateway = createCloudGateway(config, { labInternalSecret });
+    children = await startChildren(transformChildSpecifications(childSpecifications(config, env, { labInternalSecret })), { signal: abort.signal });
+    gateway = createCloudGateway(config, { labInternalSecret, vercelIngress: config.vercelIngress });
     await openCheckedGateway(gateway, config, { signal: abort.signal });
     console.log('Cloud pilot listening after local access checks; public deployment acceptance remains outstanding.');
     const interrupted = new Promise(resolveDone => {

@@ -5,6 +5,7 @@ import { lstat, readFile, realpath } from 'node:fs/promises';
 import { isIP } from 'node:net';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { normalizePresentationArchive } from './media-layout.mjs';
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const SOURCE_FILES = [
@@ -62,7 +63,7 @@ function secureOrigin(value) {
   } catch { return false; }
 }
 async function mediaReport(root, env) {
-  const archive = Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE') ? env.LAB_VIDEO_ARCHIVE : join(root, 'emil/dealklipp-v1');
+  const archive = normalizePresentationArchive(Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE') ? env.LAB_VIDEO_ARCHIVE : join(root, 'media/dealers/astrid/runtime/presentation'),root);
   const result = { status: 'unavailable', items: 0, present: 0, missing: 0, invalid: 0, sizeMismatch: 0,
     validation: 'Metadata and file sizes only; no hashes, decoding, or visual acceptance.' };
   if (typeof archive !== 'string' || !isAbsolute(archive)) return result;

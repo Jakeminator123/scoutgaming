@@ -1,0 +1,102 @@
+{
+  "date": "2026-09-19",
+  "scope": "Astrid Blender table branding, shoe stack, restored original idle, felt betting boxes and fitted chips",
+  "qaUrl": "http://astridfeltqa.localhost:4190/?dealer=astrid&table=blender",
+  "isolatedDemo": true,
+  "generationJobs": 0,
+  "productionDeployment": false,
+  "sourceReferences": [
+    "design-kit/ScoutBrand.dc.html",
+    "web/public/assets/cardback.png",
+    "web/public/table-scene.mjs",
+    "web/public/dealers/astrid/actor/provenance.json"
+  ],
+  "round": {
+    "initialBalance": 1000,
+    "mainBets": 7,
+    "mainStakeEach": 5,
+    "sideBets": {
+      "box0PerfectPairs": 5,
+      "box6_21plus3": 5
+    },
+    "totalStake": 45,
+    "afterStake": 955,
+    "playerHit": "box6 8D 9H +10S =27",
+    "stands": [
+      5,
+      4,
+      2,
+      1,
+      0
+    ],
+    "naturalBlackjackBox": 3,
+    "returned": 62.5,
+    "finalBalance": 1017.5,
+    "returnedToBetting": true
+  },
+  "shoeCounts": {
+    "before": 415,
+    "opening": 399,
+    "afterHit": 398,
+    "settled": 397,
+    "renderedStackMatchesHud": true
+  },
+  "idle": {
+    "clip": "idle-1/idle/idle",
+    "pairedFullActorMask": true,
+    "observedCycles": [
+      30208575,
+      66458865,
+      132917730
+    ],
+    "observedFrames": [
+      109,
+      42,
+      116
+    ],
+    "visualEvidence": [
+      "idle-and-seven-bets.png",
+      "seven-seat-opening.png",
+      "fitted-chips.png"
+    ],
+    "duringGreenReplay": {
+      "frame": 4,
+      "idleVisibility": "hidden"
+    },
+    "oldSpeechAndDealActionsStillDisabled": true
+  },
+  "betControls": {
+    "allSevenMainTargetsClicked": true,
+    "sideTargetsClicked": [
+      "box0 pp",
+      "box6 tp"
+    ],
+    "mainChipLocalSize": [
+      44,
+      44
+    ],
+    "mainCircleDiameter": 60,
+    "sideChipLocalSize": [
+      12,
+      12
+    ],
+    "sideBandRadii": [
+      38,
+      52
+    ],
+    "sideChipCentreRadius": 45,
+    "oneSharedPerspectivePlanePerBox": true
+  },
+  "checks": {
+    "focusedTests": 8,
+    "dealerSyncProbe": "pass",
+    "preCommit": "pass",
+    "newQaBrowserWarningsErrors": []
+  },
+  "limits": [
+    "Restored idle has a different arm pose and original camera appearance; no seamless green dealing join claimed.",
+    "Only first dealer upcard has approved green action; player-seat and later-card green motion and new speech remain absent.",
+    "Tiny side-bet chip denominations rely on existing stake text for readability."
+  ],
+  "userState": "User started a subsequent two-seat demo round after completed QA; left it untouched and open."
+}

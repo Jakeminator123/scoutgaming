@@ -1,0 +1,232 @@
+vera: 40 lines, 8 missing speech takes (not approved), 39 streams
+astrid: 17 lines, 0 missing speech takes (not approved), 20 streams
+amira: 17 lines, 2 missing speech takes (not approved), 16 streams
+mei: 17 lines, 3 missing speech takes (not approved), 15 streams
+PASS: all four dealer asset sets match the regression baseline. Human lip-sync acceptance is still pending.
+astrid-centre-native-20260909: technical integrity PASS; visual status review.
+astrid-dealer-front-contact-20260909: technical integrity PASS; visual status review.
+astrid-left-outlet-contact-20260909: technical integrity PASS; visual status review.
+astrid-right-outlet-contact-20260909: technical integrity PASS; visual status review.
+astrid-centre-return-review-20260910: technical integrity PASS; visual status review.
+astrid-left-return-review-20260910: technical integrity PASS; visual status review.
+Performance integrity passed. This does not approve card contact, likeness, or device performance.
+PASS: 20 Astrid actor mattes, two original embedded audio tracks and one room plate. Visual approval remains separate.
+✔ hidden tab lands the card and ignores stale frames (2.560083ms)
+✔ occluded window still resolves when no frames arrive (2.576791ms)
+✔ render failure rejects once and cancels future work (1.005333ms)
+✔ identical partial rebuild preserves calibration, metadata, dimensions and other clips (94.523209ms)
+✔ changed calibrated video fails before replacing deployed files or index (78.378458ms)
+✔ walk cannot tunnel through tables after a delayed frame (0.961875ms)
+✔ walls stop movement and diagonal input can slide along obstacles (0.208083ms)
+✔ approaching each table selects its existing dealer route (0.149625ms)
+✔ all dealers pass unchanged; replacing any dealer audio is detected (487.629083ms)
+✔ caption and calibration changes require explicit baseline review (229.711083ms)
+✔ embedded speech media and wording are protected by the roster baseline (395.931584ms)
+(node:9955) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ card cue waits for the painted release frame, not decoded progress (1.252083ms)
+✔ next-cycle cue cannot reuse a release from the previous dealing loop (0.13525ms)
+✔ unavailable hand footage releases the wait and removes its listener (0.367291ms)
+✔ movement emits pickup and contact once despite repeated frames (1.741459ms)
+✔ hidden completion cannot replay old audio (0.105875ms)
+✔ late first frame and reduced motion only sound at landing (0.077041ms)
+(node:9957) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ cancelling a loading line releases gameplay and suppresses its late voice after unmute (3.725333ms)
+✔ a hidden queue drops current and queued speech and does not replay them on return (1.088ms)
+✔ repeated requested lines remain sequential and cancellation stops active audio (1.0945ms)
+✔ completed line cannot stop a later line when its timeout would fire (0.657583ms)
+✔ timeout aborts pending preparation and prevents late audio (0.286625ms)
+✔ mute during calibration prevents audio start and finishes once (0.295083ms)
+✔ decode output keeps submitting clip identity across an asynchronous boundary (0.183958ms)
+✔ repeating the same speech clip gets a different presentation request (0.175042ms)
+✔ provider session limit cannot be performed as dealer dialogue (1.433917ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1299.26525
+✔ concatenated RGB and masks retain exactly one frame per tracking record (310.903958ms)
+✔ draft, rejected, missing and stale reviews cannot enter the staged player (2.623792ms)
+✔ single contact approval is usable only in explicit staging; entire-table promotion needs every action (0.570625ms)
+✔ every contact frame, card corner and finger measurement is required (0.535417ms)
+✔ a fully calibrated candidate can be reviewed in-game without declaring it approved (0.128ms)
+✔ presented timestamps select their measured frame without a second animation clock (0.172958ms)
+✔ cue clock handles repeated frames, backwards seeks, skipped frames and hidden completion once (1.061875ms)
+✔ viewport registration preserves aspect ratio and actor/shoe coordinates together (0.190541ms)
+✔ accelerated card cues survive ordinary frame drops but never replay after a stall (0.10275ms)
+✔ native-resolution media preserves calibrated on-screen contact at desktop and phone sizes (0.196208ms)
+✔ player delivery follows the measured fan target after resize and split offsets (0.479ms)
+✔ own-card contact cannot silently diverge from its shared player extraction (0.239417ms)
+✔ silent action pacing is calibrated while cues follow presented source frames (0.577ms)
+✔ only a continuing reviewed sequence can use the empty-hand return (0.392125ms)
+✔ return replacement cannot alter the issued card or move its landing (0.451416ms)
+✔ next pickup seek is bound to media, calibration and pre-pickup frames (0.278334ms)
+✔ actor grading is calibrated and cannot silently differ on a return (0.22325ms)
+✔ partial card clipping preserves physical positions and interpolates UV at lip (1.999125ms)
+✔ inside card is hidden; fully outside card is untouched (0.135459ms)
+✔ measured frame window disables clipping exactly at full extraction (0.258959ms)
+✔ lip projects from actual model dimensions with external side preserved (0.334ms)
+✔ source fit offsets and sizes are applied once, including portrait crop (0.151291ms)
+✔ shoe matrix rotation and translation are projected instead of hardcoded outlet (0.803583ms)
+✔ invalid source timing, matrix and perspective camera fail closed (0.1805ms)
+✔ diagonal lip may produce five vertices and interpolates depth without stretching (0.122792ms)
+✔ corners exactly on lip are emitted once for every winding start (0.209792ms)
+✔ tangent corner and tangent edge have no repeated closing vertices (0.145208ms)
+✔ gesture resumes suspended or interrupted audio; pending resume never queues an effect (0.866125ms)
+✔ mute or hidden reset cancels scheduled output, and unmute uses a new context (0.175167ms)
+✔ failed audio startup does not block gameplay and can retry on another gesture (0.157209ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 408.005875
+✔ seven destinations preserve pickup and rest and place the attached release at the target (3.592208ms)
+✔ rhythm footage and frame records stay bound, with subsecond shoe returns (422.923834ms)
+✔ estimated card footprints cannot masquerade as contact-approved takes (1.215792ms)
+✔ rhythm footage cannot stretch even with the old reach query; landing fires once (0.446ms)
+✔ 60 fps native RGB and interpolated frame records preserve the source clock (3013.75375ms)
+✔ estimated card footprints cannot masquerade as contact-approved takes (2.189208ms)
+✔ rhythm footage cannot stretch even with the old reach query; landing fires once (0.399583ms)
+(node:10000) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ ready lifecycle requires all take entries, exits, loop and paired speech (2.210167ms)
+✔ speech waits for the moving loop and filmed idle return before release (0.21175ms)
+✔ concurrent speech return requests share one transition (0.107042ms)
+✔ a failed speech-return bridge releases actor ownership (0.313583ms)
+✔ installed ready motion covers every actual take with a bounded loop (2165.445792ms)
+(node:10001) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ each real take has a frame-bound entry and exit, with a 60 fps actor clock (1974.805083ms)
+✔ changed idle, actor source, or contact calibration cannot reuse a join (0.543792ms)
+✔ the actor is not released until the return and matched idle have both finished (0.2655ms)
+✔ an interrupted return cleans up instead of freezing the actor over decisions (0.426958ms)
+✔ recorded speech waits across the entire dealing sequence, including media loading (0.164792ms)
+✔ cancelled speech leaves no waiting callback on a dealing sequence (0.224917ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3128.975375
+✔ temporary lack of current data at loop end cannot disarm future native frames (1.621333ms)
+✔ display fallback keeps motion visible when native callbacks stop arriving (0.207292ms)
+✔ stuck final media frame recovers without a user click (0.170291ms)
+✔ dealing suspension is not mistaken for a stall and resumes the same loop (0.13275ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.352709
+✔ controls stay clear of a seven-seat fan, totals and wallet at each active seat (3.537625ms)
+✔ portrait split hand keeps both totals and the dealer count above a usable panel (0.14675ms)
+✔ actions stay below totals when clear space exists beside the wallet (0.419541ms)
+✔ CAC and SV2 retain exact Expected Results locally and through the field fallback (38.064292ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 127.887917
+Blackjack asset state: shoe lifecycle and exported node contract pass (79214 unique triangles, 4656368 bytes).
+✔ arm solver retains bone lengths across reachable, singular and unreachable targets (0.985625ms)
+✔ every seat and split releases in place and the empty hand never retrieves the card (8.841417ms)
+✔ two-hand transfer is continuous and keeps the released card stationary (0.390542ms)
+✔ reveal keeps rigid card at its original landing and tracks its rotating edge (0.319709ms)
+✔ collection selects the near hand, lands at discard, and never changes source inputs (0.402292ms)
+(node:10064) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ actual deformed hand skin clears felt at pickup, transfer and release for every seat (80.653167ms)
+✔ reveal and collection skin clear the table instead of only passing a bone-distance check (107.610625ms)
+✔ skin-based target selection cannot make the wrist teleport between adjacent motion samples (393.575042ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 783.660625
+✔ all seven seats keep up to four split fans and long hands on the actual felt (24.637583ms)
+✔ dealer long hands stay clear of the dealer notch (0.146042ms)
+✔ neighbouring players retain separate cards when either box splits (77.63925ms)
+✔ reject invalid presentation indices without inventing a game target (0.259292ms)
+✔ burn and previous cards persist while the hidden dealer card stays on the table (1.83425ms)
+✔ hit and split snapshots do not prematurely move newly drawn cards into the discard (0.167375ms)
+✔ new shoe clears the old pile and refresh during a paid collection restores the complete count (0.143375ms)
+(node:10069) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ collection reaches the growing discard stack without pulling hand skin through felt (208.77875ms)
+✔ extreme split destinations remain reachable with real hand skin above the felt (269.20625ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 672.583125
+(node:10071) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ sweep keeps original cards still until contact and deposits exactly one coherent packet (8.407709ms)
+✔ sweep reaches the actual stack with skin above the felt for seven seats and outer split hands (1288.375292ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1477.469667
+✔ source-clock sampling supports seek, reverse scrub and playback-rate changes without state drift (0.993792ms)
+✔ missing source intervals are not presented as measured facial performance (0.174292ms)
+✔ reset clears the face after interrupted speech and clamps invalid controls (0.926166ms)
+✔ measured performance is rejected when the source video bytes change (11.563917ms)
+✔ exported face contains real deformation targets and separately weighted gaze bones (30.402083ms)
+✔ all Astrid lines bind measured frames to the shipped media, wording and calibration (53.066583ms)
+✔ review model revision names the actual exported geometry (23.651167ms)
+(node:10076) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/solvifyab/Desktop/croupier/web/public/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/solvifyab/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ silent action gaze follows a world-space card in the posed head without changing speech (6.921208ms)
+✔ indexed speech samples actual media time plus the exact shipped delay, including pause and seeking (0.59425ms)
+✔ native speech uses the embedded video clock without adding a separate offset (1.399916ms)
+✔ cancelled preparation and late completion cannot animate or stop a repeated line (1.126833ms)
+✔ mismatched video, audio, line identity or calibration cannot start a face performance (0.551834ms)
+✔ game playback uses calibrated articulation only for the loaded dealer geometry (1.392333ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 186.010916

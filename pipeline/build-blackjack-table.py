@@ -11,8 +11,8 @@ from mathutils import Vector
 import numpy as np
 
 REPO=Path(__file__).resolve().parents[1]
-OUT=REPO/'assets/blackjack-3d'
-PUBLIC=REPO/'web/public/assets/blackjack-3d'
+OUT=REPO/'media/game/source/3d'
+PUBLIC=REPO/'media/game/runtime/assets/blackjack-3d'
 OUT.mkdir(parents=True,exist_ok=True); PUBLIC.mkdir(parents=True,exist_ok=True)
 TEX=OUT/'textures'; TEX.mkdir(exist_ok=True)
 bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
@@ -73,7 +73,7 @@ bs=acrylic.node_tree.nodes.get('Principled BSDF');bs.inputs['Transmission Weight
 steel=mat('Shoe fixings | brushed steel',(.46,.49,.48),.22,.9)
 stitch=mat('Rail stitching | dark taupe',(.11,.09,.065),.9)
 back=mat('CardBack | Scout original',(.012,.024,.037),.64)
-backpath=REPO/'web/public/assets/cardback.png'
+backpath=REPO/'media/game/runtime/assets/cardback.png'
 if backpath.exists():
     img=bpy.data.images.load(str(backpath),check_existing=True);img.pack();shutil.copy2(backpath,TEX/'cardback.png')
     node=back.node_tree.nodes.new('ShaderNodeTexImage');node.image=img

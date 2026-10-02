@@ -1,0 +1,19 @@
+# Rhythmic footage in gameplay
+
+Preview: `http://astridreach.localhost:4173/?dealer=astrid&performance=staged&motion=rhythm`.
+
+Uses the existing PerformancePlayer, authoritative server cards, shoe accounting, landing callbacks and speech lifecycle. Four staged packed takes are extracted from the preserved Genjutsu source at 24 fps. Player directions use source frames 3–21, 21–34 and 34–47; dealer uses the centre motion. Takes last 0.54–0.75 seconds to the terminal frame, plus loading and the existing 80 ms gameplay spacing. They return toward the shoe rather than to folded arms. This is a sequence of short source excerpts, not a seamless unedited continuous recording.
+
+The source is registered to 1280×720, with the same static crop/scale on RGB, person matte and tracking. Vision person masks are cleaned in the lower workspace to remove the generated table/card row and shoe. The feeding hand still carries a source card back; this is not an additional server-issued card. Fingertip/skin observations drive an explicitly labelled **hand proxy** for the moving game-card footprint. Those footprints are fitted estimates, not measured paper corners. They cannot be approved by changing a status string: validation restricts them to staged review and binds their source range and metadata into the calibration checksum.
+
+## Body distortion correction
+
+The first integration applied the earlier reach deformation to the new source. The user reported an elongated body, and gameplay inspection confirmed unnatural stretching. That version is rejected. The delivered rhythm path explicitly disables retarget deformation, including when `reach=tracked` is present. All actor vertices remain at their original positions. The photographed hand moves naturally, then the released game card slides to the actual DOM fan corners. This does not claim that Astrid physically reaches all seven destinations. The original experimental reach path is preserved separately for old non-rhythm takes.
+
+An overly strict skin threshold was also rejected because it cut holes in pale hands. The final mask preserves warm skin before removing paper, and removes the shoe spill below the feeding hand. Original source, Vision masks and observations remain available in this staging directory. Run build.py with the bundled Python/Pillow/NumPy runtime from this repo; it writes four media files and their bound manifest. `hand-proxies.json` records the observation/estimate method for every used frame.
+
+## Verification
+
+The initial seven-seat guest round delivered 16 cards in about 15 seconds, settled a 35 stake with 10 returned and restored idle (balance 975). This exposed the body-warp defect and is not visual acceptance of the final version. The corrected isolated round at `astridrigidqa.localhost` visibly used `retarget=false`, showed natural body proportions and delivered two cards to each of seven spots plus dealer cards. Player Stand controls responded for all seven hands. It settled with 70 returned on a 35 stake, balance 1,035 and zero stake. One dealer-draw playback was interrupted, retaining the server card, and the QA tab was subsequently closed. This is not interruption-free visual acceptance of every dealer draw.
+
+Deep four-dealer media audit, the complete pre-commit suite, and 20 focused contact/rhythm/reach tests pass. Tests verify encoded frame counts, rate, no B frames, hashes, subsecond take durations, single landing cues, staged-only proxy access and the prohibition on deforming rhythm footage. All four dealers completed two consecutive greeting plays through the actual shared speech player. Speech media and baseline were not changed. These technical checks do not certify source likeness, perfect grip, every transition or every viewport. CAC-2/CAC-4/CAC-9 remain subject to their visual acceptance criteria.

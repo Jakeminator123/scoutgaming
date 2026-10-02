@@ -1,0 +1,330 @@
+{
+  "modelSha256": "73c8d9858ec6f300d8a9bc37b906aa0a7a76295d95d7c3632b858e31d07fff6d",
+  "nativeProjects": {
+    "astrid-rigged.blend": {
+      "sha256": "f3e7642bea2f4b060a437e7152fa446ac4ed17eb24eb9a05667c915482e56b9c",
+      "bytes": 41661570,
+      "meshes": 8,
+      "packedImages": 9,
+      "shapeKeys": {
+        "Astrid_Face": 10,
+        "Astrid_Eyes": 10,
+        "Astrid_Teeth": 10,
+        "Astrid_Tongue": 10,
+        "Astrid_Eyelashes": 10
+      },
+      "actions": [
+        "Armature|clip0|baselayer"
+      ],
+      "controls": [
+        "CTRL_LEFT_WRIST",
+        "CTRL_LEFT_ELBOW",
+        "CTRL_RIGHT_WRIST",
+        "CTRL_RIGHT_ELBOW",
+        "CTRL_BODY",
+        "CTRL_LOOK"
+      ],
+      "oralFitVersion": 1,
+      "posteriorNeckFitVersion": 1
+    },
+    "astrid-animated.blend": {
+      "sha256": "813367b2b5cfddcf30519c5366470a11c08aae3849ca190a8d3ea282488bf40b",
+      "bytes": 44636540,
+      "meshes": 8,
+      "packedImages": 9,
+      "shapeKeys": {
+        "Astrid_Face": 10,
+        "Astrid_Eyes": 10,
+        "Astrid_Teeth": 10,
+        "Astrid_Tongue": 10,
+        "Astrid_Eyelashes": 10
+      },
+      "actions": [
+        "Accept_Bets_Nod_Study",
+        "Collect_Card_Study",
+        "Deal_Own_Card_Contact_Study",
+        "Deal_Seat_01_Contact_Study",
+        "Deal_Seat_02_Contact_Study",
+        "Deal_Seat_03_Contact_Study",
+        "Deal_Seat_04_Contact_Study",
+        "Deal_Seat_05_Contact_Study",
+        "Deal_Seat_06_Contact_Study",
+        "Deal_Seat_07_Contact_Study",
+        "Greeting_Wave_Study",
+        "Reveal_Hole_Card_Study"
+      ],
+      "controls": [
+        "CTRL_LEFT_WRIST",
+        "CTRL_LEFT_ELBOW",
+        "CTRL_RIGHT_WRIST",
+        "CTRL_RIGHT_ELBOW",
+        "CTRL_BODY",
+        "CTRL_LEFT_FOOT",
+        "CTRL_LEFT_KNEE",
+        "CTRL_RIGHT_FOOT",
+        "CTRL_RIGHT_KNEE",
+        "CTRL_HEAD_ROTATION"
+      ],
+      "oralFitVersion": 1,
+      "posteriorNeckFitVersion": 1
+    },
+    "astrid-goodluck.blend": {
+      "sha256": "6904f16ede6fc069ff3678ed8dd0473d9dfb2e6eac2797b6ba62708bf6189991",
+      "bytes": 45145888,
+      "meshes": 8,
+      "packedImages": 9,
+      "shapeKeys": {
+        "Astrid_Face": 10,
+        "Astrid_Eyes": 10,
+        "Astrid_Teeth": 10,
+        "Astrid_Tongue": 10,
+        "Astrid_Eyelashes": 10
+      },
+      "actions": [
+        "Accept_Bets_Nod_Study",
+        "Collect_Card_Study",
+        "Deal_Own_Card_Contact_Study",
+        "Deal_Seat_01_Contact_Study",
+        "Deal_Seat_02_Contact_Study",
+        "Deal_Seat_03_Contact_Study",
+        "Deal_Seat_04_Contact_Study",
+        "Deal_Seat_05_Contact_Study",
+        "Deal_Seat_06_Contact_Study",
+        "Deal_Seat_07_Contact_Study",
+        "Greeting_Wave_Study",
+        "Reveal_Hole_Card_Study",
+        "Speech_Goodluck_Astrid_Eyelashes",
+        "Speech_Goodluck_Astrid_Eyes",
+        "Speech_Goodluck_Astrid_Face",
+        "Speech_Goodluck_Astrid_Teeth",
+        "Speech_Goodluck_Astrid_Tongue"
+      ],
+      "controls": [
+        "CTRL_LEFT_WRIST",
+        "CTRL_LEFT_ELBOW",
+        "CTRL_RIGHT_WRIST",
+        "CTRL_RIGHT_ELBOW",
+        "CTRL_BODY",
+        "CTRL_LEFT_FOOT",
+        "CTRL_LEFT_KNEE",
+        "CTRL_RIGHT_FOOT",
+        "CTRL_RIGHT_KNEE",
+        "CTRL_HEAD_ROTATION"
+      ],
+      "oralFitVersion": 1,
+      "posteriorNeckFitVersion": 1
+    },
+    "astrid-collection-sweep.blend": {
+      "sha256": "a96ce507f9d9670e4c927a561bfa29d1dbee3a35416751000c31a13e831f6600",
+      "bytes": 46192349,
+      "meshes": 24,
+      "packedImages": 9,
+      "shapeKeys": {
+        "Astrid_Face": 10,
+        "Astrid_Eyes": 10,
+        "Astrid_Teeth": 10,
+        "Astrid_Tongue": 10,
+        "Astrid_Eyelashes": 10
+      },
+      "actions": [
+        "Accept_Bets_Nod_Study",
+        "Collect_All_Cards_Sweep_Study",
+        "Collect_Card_Study",
+        "Deal_Own_Card_Contact_Study",
+        "Deal_Seat_01_Contact_Study",
+        "Deal_Seat_02_Contact_Study",
+        "Deal_Seat_03_Contact_Study",
+        "Deal_Seat_04_Contact_Study",
+        "Deal_Seat_05_Contact_Study",
+        "Deal_Seat_06_Contact_Study",
+        "Deal_Seat_07_Contact_Study",
+        "Greeting_Wave_Study",
+        "Reveal_Hole_Card_Study",
+        "Sweep_Card_00",
+        "Sweep_Card_01",
+        "Sweep_Card_02",
+        "Sweep_Card_03",
+        "Sweep_Card_04",
+        "Sweep_Card_05",
+        "Sweep_Card_06",
+        "Sweep_Card_07",
+        "Sweep_Card_08",
+        "Sweep_Card_09",
+        "Sweep_Card_10",
+        "Sweep_Card_11",
+        "Sweep_Card_12",
+        "Sweep_Card_13",
+        "Sweep_Card_14",
+        "Sweep_Card_15"
+      ],
+      "controls": [
+        "CTRL_LEFT_WRIST",
+        "CTRL_LEFT_ELBOW",
+        "CTRL_RIGHT_WRIST",
+        "CTRL_RIGHT_ELBOW",
+        "CTRL_BODY",
+        "CTRL_LEFT_FOOT",
+        "CTRL_LEFT_KNEE",
+        "CTRL_RIGHT_FOOT",
+        "CTRL_RIGHT_KNEE",
+        "CTRL_HEAD_ROTATION"
+      ],
+      "oralFitVersion": 1,
+      "posteriorNeckFitVersion": 1
+    }
+  },
+  "posteriorPoseVerification": {
+    "verticesChecked": 476,
+    "before": [
+      {
+        "action": "Deal_Seat_01_Contact_Study",
+        "frame": 18,
+        "maximumOutwardM": 0.08160499877703842,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Deal_Seat_01_Contact_Study",
+        "frame": 29,
+        "maximumOutwardM": 0.08160489960573614,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Deal_Seat_01_Contact_Study",
+        "frame": 41,
+        "maximumOutwardM": 0.08158715860918164,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Deal_Seat_07_Contact_Study",
+        "frame": 18,
+        "maximumOutwardM": 0.08160500863687048,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Deal_Seat_07_Contact_Study",
+        "frame": 29,
+        "maximumOutwardM": 0.0815874437103048,
+        "outsideVertices": 475
+      },
+      {
+        "action": "Deal_Seat_07_Contact_Study",
+        "frame": 41,
+        "maximumOutwardM": 0.08158710913266987,
+        "outsideVertices": 475
+      },
+      {
+        "action": "Greeting_Wave_Study",
+        "frame": 18,
+        "maximumOutwardM": 0.08158707405164023,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Greeting_Wave_Study",
+        "frame": 29,
+        "maximumOutwardM": 0.08160485065309331,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Greeting_Wave_Study",
+        "frame": 41,
+        "maximumOutwardM": 0.08158707405164023,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Accept_Bets_Nod_Study",
+        "frame": 18,
+        "maximumOutwardM": 0.08158707405164023,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Accept_Bets_Nod_Study",
+        "frame": 29,
+        "maximumOutwardM": 0.08160485065309331,
+        "outsideVertices": 476
+      },
+      {
+        "action": "Accept_Bets_Nod_Study",
+        "frame": 41,
+        "maximumOutwardM": 0.08158707405164023,
+        "outsideVertices": 476
+      }
+    ],
+    "after": [
+      {
+        "action": "Deal_Seat_01_Contact_Study",
+        "frame": 18,
+        "maximumOutwardM": -0.003312573857400025,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Deal_Seat_01_Contact_Study",
+        "frame": 29,
+        "maximumOutwardM": -0.002701673006260785,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Deal_Seat_01_Contact_Study",
+        "frame": 41,
+        "maximumOutwardM": -0.0026689940802668843,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Deal_Seat_07_Contact_Study",
+        "frame": 18,
+        "maximumOutwardM": -0.0032205499562234507,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Deal_Seat_07_Contact_Study",
+        "frame": 29,
+        "maximumOutwardM": -0.0034040790312355185,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Deal_Seat_07_Contact_Study",
+        "frame": 41,
+        "maximumOutwardM": -0.003868643230308333,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Greeting_Wave_Study",
+        "frame": 18,
+        "maximumOutwardM": -0.0038927877733385685,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Greeting_Wave_Study",
+        "frame": 29,
+        "maximumOutwardM": -0.0038927877733385685,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Greeting_Wave_Study",
+        "frame": 41,
+        "maximumOutwardM": -0.0038927877733385685,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Accept_Bets_Nod_Study",
+        "frame": 18,
+        "maximumOutwardM": -0.0033913161703189587,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Accept_Bets_Nod_Study",
+        "frame": 29,
+        "maximumOutwardM": -0.0033913161703189587,
+        "outsideVertices": 0
+      },
+      {
+        "action": "Accept_Bets_Nod_Study",
+        "frame": 41,
+        "maximumOutwardM": -0.0033913161703189587,
+        "outsideVertices": 0
+      }
+    ],
+    "idempotent": true,
+    "status": "posed surface measurements; visible garment review remains separate"
+  },
+  "status": "reviewed geometry corrections; photographic likeness and complete game acceptance remain open"
+}

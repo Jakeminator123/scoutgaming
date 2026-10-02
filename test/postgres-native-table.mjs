@@ -17,9 +17,10 @@ function fixture({ failOn = '' } = {}) {
     return {
       async query(sql, args = []) {
         store.queries.push(sql);
-        if (sql === 'BEGIN') { tx = structuredClone(store.state); return { rows: [] }; }
+        if (sql.startsWith('BEGIN;')) { tx = structuredClone(store.state); return { rows: [] }; }
         if (sql === 'COMMIT') { store.state = tx; tx = undefined; return { rows: [] }; }
         if (sql === 'ROLLBACK') { tx = undefined; return { rows: [] }; }
+        if (sql.startsWith('SET LOCAL')) return {rows:[]};
         if (!tx) throw new Error('Query outside transaction');
         if (failOn && sql.includes(failOn)) throw new Error('synthetic SQL failure');
         if (sql.startsWith('SELECT id, name, currency, balance')) return { rows: tx.players[args[0]] ? [tx.players[args[0]]] : [] };
@@ -62,7 +63,7 @@ test('Postgres command commits wallet, shoe, ledger and presentation together; r
   assert.equal(store.state.transactions.length, 1);
   assert.equal(published.length, 1);
   assert.equal(store.releases, 2);
-  assert.ok(store.queries.indexOf('SELECT id, name, currency, balance FROM players WHERE id=$1 FOR UPDATE') < store.queries.indexOf('UPDATE players SET balance=$1 WHERE id=$2'));
+  assert.ok(store.queries.indexOf('SELECT id, name, currency, balance, status FROM players WHERE id=$1 FOR UPDATE') < store.queries.indexOf('UPDATE players SET balance=$1 WHERE id=$2'));
 });
 
 test('failed ledger write rolls back wallet and shoe, without publishing an observation', async () => {

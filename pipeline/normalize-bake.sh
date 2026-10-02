@@ -13,17 +13,17 @@
 #   <name>  stream stem, e.g. idle-1_speak_fair_rng
 #   <scale> e.g. 0.833  (raw is scaled by this, <1 shrinks her)
 #   <padx>/<pady>  top-left offset of the scaled image on the 1440 canvas
-# Output: content/encoded2/<name>.h264, work kept in content/norm/<name>/
+# Output: media/game/source/pipeline/encoded2/<name>.h264, work kept in media/game/source/pipeline/norm/<name>/
 #         (frames+masks stay: build-hands.sh reuses the masks for the matte)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 raw=$1; name=$2; S=$3; PX=$4; PY=$5
-work=content/norm/$name
+work=media/game/source/pipeline/norm/$name
 rm -rf "$work"; mkdir -p "$work/frames" "$work/masks"
 
 # scene plate for the dealer window (same crop as bake-composite.sh)
-BG=content/norm/bg.png
+BG=media/game/source/pipeline/norm/bg.png
 [ -f "$BG" ] || ffmpeg -nostdin -hide_banner -loglevel error -y -i content/scene-16x9.png \
   -vf "crop=1044:1044:854:15,scale=1440:1440" "$BG"
 
@@ -42,5 +42,5 @@ ffmpeg -nostdin -hide_banner -loglevel error -y \
   -map "[out]" -an \
   -c:v libx264 -preset slow -profile:v main -level:v 4.0 \
   -x264-params "keyint=infinite:min-keyint=infinite:scenecut=0:bframes=0:open-gop=0:repeat-headers=1:aud=1" \
-  -crf 21 -f h264 "content/encoded2/$name.h264"
-echo "normalized $name -> content/encoded2/$name.h264 ($(stat -f%z "content/encoded2/$name.h264") bytes)"
+  -crf 21 -f h264 "media/game/source/pipeline/encoded2/$name.h264"
+echo "normalized $name -> media/game/source/pipeline/encoded2/$name.h264 ($(stat -f%z "media/game/source/pipeline/encoded2/$name.h264") bytes)"

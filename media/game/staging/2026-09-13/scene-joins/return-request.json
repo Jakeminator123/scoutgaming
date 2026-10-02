@@ -1,0 +1,45 @@
+{
+  "request": {
+    "model": "seedance_2_0",
+    "duration": 4,
+    "resolution": "1080p",
+    "mode": "std",
+    "bitrate_mode": "high",
+    "aspect_ratio": "auto",
+    "generate_audio": false,
+    "medias": [
+      {
+        "role": "start_image",
+        "value": "53dd9eae-ff5d-4aa3-bc0b-9782330be551"
+      },
+      {
+        "role": "end_image",
+        "value": "a331a978-444a-4efa-a81b-e84ea5d93d7e"
+      }
+    ],
+    "prompt": "One continuous natural photographic motion connecting these exact first and last frames of Astrid, the same seated blonde blackjack dealer. Starting looking down with hands together, she relaxes her hands, smoothly folds her forearms into the exact final resting pose, and raises her gaze to face the camera. Small anatomically realistic shoulder, elbow, wrist and head movements. Complete the change comfortably in the middle two seconds with brief stillness at each end. Preserve her exact face identity, hair, black blazer, ivory blouse, skin colour and exposure throughout. The camera and body scale are absolutely locked; no zoom, camera movement, framing change, cuts, dissolves, morph effects or elongated torso. Keep the solid black background black with no new scene, furniture, text or props. Both hands stay visible. Match the exact final reference position and expression."
+  },
+  "submission": {
+    "results": [
+      {
+        "id": "75d1d46f-b536-4e75-bd8b-54fd351409bf",
+        "type": "video",
+        "status": "pending",
+        "model": "seedance_2_0",
+        "params": {
+          "prompt": "One continuous natural photographic motion connecting these exact first and last frames of Astrid, the same seated blonde blackjack dealer. Starting looking down with hands together, she relaxes her hands, smoothly folds her forearms into the exact final resting pose, and raises her gaze to face the camera. Small anatomically realistic shoulder, elbow, wrist and head movements. Complete the change comfortably in the middle two seconds with brief stillness at each end. Preserve her exact face identity, hair, black blazer, ivory blouse, skin colour and exposure throughout. The camera and body scale are absolutely locked; no zoom, camera movement, framing change, cuts, dissolves, morph effects or elongated torso. Keep the solid black background black with no new scene, furniture, text or props. Both hands stay visible. Match the exact final reference position and expression.",
+          "aspect_ratio": "auto",
+          "duration": 4,
+          "reference_images": [
+            "53dd9eae-ff5d-4aa3-bc0b-9782330be551",
+            "a331a978-444a-4efa-a81b-e84ea5d93d7e"
+          ],
+          "resolution": "1080p",
+          "mode": "std",
+          "bitrate_mode": "high",
+          "generate_audio": false
+        }
+      }
+    ]
+  }
+}

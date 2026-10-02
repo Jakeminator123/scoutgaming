@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import manifest from '../../emil/dealklipp-v1/lab-video-manifest.json' with { type: 'json' };
+import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
 import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
 import { simulateStudio } from '../lib/studio-server.mjs';
 import { mediaLineForEvent, mediaVideoForEvent, validateMediaPolicy, mediaSituationForEvent, upsertMediaVariantPolicy } from '../lib/media-family-policy.mjs';

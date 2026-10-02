@@ -1,0 +1,21 @@
+{
+  "jobs": [
+    {
+      "index": 0,
+      "job_id": "2a721f7d-c2da-4e7a-9812-9d9b4a087232",
+      "status": "completed",
+      "type": "video",
+      "model": "seedance_2_0",
+      "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/hf_20260919_155643_2a721f7d-c2da-4e7a-9812-9d9b4a087232.mp4",
+      "thumbnail_url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3GJD3LKj4ESOwh24CTotdLe3Xp6/e1c14906-b0aa-4cd7-b359-48fa6cd47e3e.png"
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "completed": 1,
+    "failed": 0,
+    "active": 0,
+    "errors": 0
+  },
+  "all_terminal": true
+}
