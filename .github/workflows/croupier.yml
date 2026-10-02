@@ -49,7 +49,7 @@ jobs:
       - name: Build the real studio used by launcher regression tests
         run: npm --prefix lab run build
       - name: Shared pre-commit regression suite
-        run: sh .githooks/pre-commit
+        run: sh .githooks/pre-commit --full
       - run: node pipeline/audit-dealer-sync.mjs --probe
       - run: node pipeline/audit-performance.mjs --probe
       - run: node pipeline/audit-astrid-actor.mjs --probe

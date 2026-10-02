@@ -20,6 +20,27 @@ Kontroll: 99 → 5 filer, cirka 98 procent mindre dokumentationstext;
 inga ändrade JSON-/mediekvitton eller trasiga docs-länkar. Riktade
 env-/GitHub-policytester passerar (9/9); full hook körs vid commit.
 
+## Snabbare verifiering och katalogrensning — 2 oktober
+
+Rena dokumentations-/index-ignore-commits får ett snabbt spår med envregister,
+GitHub-pausskydd, hookregressioner och staged whitespace-kontroll.
+Kod, test, konfiguration, runtime-prompter och media använder hela befintliga
+regressionen. Tomt index, CI och explicit --full väljer också full kontroll.
+CI anger --full; de ursprungliga 32 stegen ligger i .githooks/pre-commit-full.
+Verklig staged docs-körning tog 1,393 s mot tidigare fulla 68,55 s;
+17 snabba kontroller passerade. Oberoende designgranskning hittade inget
+falskt snabbspår; alla 32 ursprungliga kommandon finns kvar.
+Nya tester verifierar bland annat kod→docs-rename, blandade ändringar och
+misslyckade delkommandon utan att röra produktens data.
+
+Underagenter tog bort tomma rot-reference och tolv tomma docs-kataloger.
+docs/reference bevaras: kamera, spelarmål, ankare och bilder används av
+medieunderlag. test/ är aktiv (76 testfiler i hook, ytterligare 7 i CI).
+Endast den avvecklade GitLab-wikihelpern och dess enda test togs bort;
+de saknade aktiva konsumenter och hänvisade till raderade sprintdokument.
+GitHub-/inbox-pausskydden finns kvar (25 riktade tester godkända).
+Inga servrar, betaljobb, media eller databaser ändrades.
+
 ## Intro och startsida
 
 Datorintrot publicerades i `033b97a9`, livekontroll i `64c903ab`.
@@ -74,5 +95,5 @@ produkt-/labbservrar. Git-status tog 84–124 ms. Hookens 32 steg tog 68,55 s
 (656 godkända tester, 0 fel, 1 plattformsskip); den körs även för docs.
 Ett tidigare browseranrop tog 173,8 s. Agent-talks syntetiska låstest hade
 intermittent Windows-EPERM; tre riktade omkörningar och senare full hook passerade.
-Hooken är inte kortad. Rensningen minskar sök-/kontextbrus; den bevisar inte
+Den tidigare fulla hooken har nu ett separat snabbspår för docs. Rensningen minskar sök-/kontextbrus; den bevisar inte
 att Codex kör en bakgrundsindexerare eller att modell-/serverväntan försvinner.
