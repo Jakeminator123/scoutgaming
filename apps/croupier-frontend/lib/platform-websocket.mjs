@@ -9,25 +9,42 @@ const response = status => new Response(null, {status, headers: {'Cache-Control'
 const closeCode = code => code === 1000 || (code >= 1001 && code <= 1014 && ![1004, 1005, 1006].includes(code)) || (code >= 3000 && code <= 4999) ? code : 1011;
 const byteLength = data => Buffer.byteLength(data);
 const DIAGNOSTIC_PHASES = new Set(['created', 'upstream_open', 'upstream_receive', 'frontend_send', 'frontend_receive', 'upstream_send',
+  'frontend_send_before', 'upstream_send_before',
+  'frontend_send_callback', 'frontend_send_pending', 'upstream_send_callback', 'upstream_send_pending', 'frontend_drain', 'upstream_drain',
   'upstream_close', 'frontend_close', 'attached', 'returned', 'request_abort', 'failed', 'done']);
+const WRITE_ERROR_CODES = new Set(['EPIPE', 'ECONNRESET', 'ERR_STREAM_DESTROYED', 'ERR_STREAM_WRITE_AFTER_END']);
 
 export function platformSocketDiagnostics(configuration, env, path, {emit = value => console.info(value)} = {}) {
   if (env.NODE_ENV !== 'production' || configuration.publicOrigin !== 'https://croupier-player-preview-qa.vercel.app'
       || configuration.backendOrigin !== 'https://croupier-vercel-preview-qa.onrender.com') return () => {};
   const counts = new Map();
-  return (phase, fields = {}) => {
+  const trace = (phase, fields = {}) => {
     if (!DIAGNOSTIC_PHASES.has(phase)) return;
     const count = (counts.get(phase) ?? 0) + 1; counts.set(phase, count);
     if (count > 8 && phase !== 'done') return;
     const value = {channel: path === WORKER_PATH ? 'worker' : 'client', phase, count};
-    for (const name of ['bytes', 'code', 'status']) if (Number.isSafeInteger(fields?.[name]) && fields[name] >= 0 && fields[name] <= MAX_BUFFERED) value[name] = fields[name];
-    for (const name of ['binary', 'contextWaitUntil']) if (typeof fields?.[name] === 'boolean') value[name] = fields[name];
+    for (const name of ['bytes', 'code', 'status', 'sequence', 'bufferedAmount', 'writableLength', 'writableCorked', 'bytesWritten']) if (Number.isSafeInteger(fields?.[name]) && fields[name] >= 0 && fields[name] <= MAX_BUFFERED) value[name] = fields[name];
+    for (const name of ['binary', 'contextWaitUntil', 'hasSocket', 'writable', 'writableEnded', 'needDrain', 'destroyed', 'writeError']) if (typeof fields?.[name] === 'boolean') value[name] = fields[name];
+    if (WRITE_ERROR_CODES.has(fields?.writeErrorCode) || fields?.writeErrorCode === 'OTHER') value.writeErrorCode = fields.writeErrorCode;
     if (phase === 'attached') {
       try {value.contextWaitUntil = typeof globalThis[Symbol.for('@vercel/request-context')]?.get?.()?.waitUntil === 'function';} catch {value.contextWaitUntil = false;}
     }
     if (phase === 'done') value.counters = Object.fromEntries(counts);
     try {emit('CROUPIER_UNPAID_SOCKET ' + JSON.stringify(value));} catch { /* Evidence never changes transport. */ }
   };
+  trace.enabled = true;
+  return trace;
+}
+
+// ws exposes its Node socket internally. Read only numeric/boolean state for
+// isolated QA; never uncork a stream owned by the runtime or log socket data.
+function socketWriteState(socket) {
+  try {
+    const raw = socket._socket;
+    return {hasSocket: !!raw, bufferedAmount: socket.bufferedAmount,
+      writableLength: raw?.writableLength, writableCorked: raw?.writableCorked, bytesWritten: raw?.bytesWritten,
+      writable: raw?.writable, writableEnded: raw?.writableEnded, needDrain: raw?.writableNeedDrain, destroyed: raw?.destroyed};
+  } catch {return {};}
 }
 
 // Only application credentials cross this boundary. ws constructs a fresh
@@ -60,15 +77,21 @@ export function platformSocketRequest(request, configuration) {
     maxPayload: path === CLIENT_PATH ? 1024 * 1024 : 4 * 1024 * 1024};
 }
 
-export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED, maxMessages = MAX_MESSAGES, lifetimeMs = 290000, attachTimeoutMs = 10000, closeTimeoutMs = 2000, trace = () => {}} = {}) {
+export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED, maxMessages = MAX_MESSAGES, lifetimeMs = 290000, attachTimeoutMs = 10000, closeTimeoutMs = 2000, writeObservationMs = 2000, trace = () => {}} = {}) {
   let frontend, terminal, queuedBytes = 0, finished = false, closing = false;
   const queue = [];
+  const observations = new Set(), drainListeners = [], sendSequences = new Map();
+  const observeWrites = trace.enabled === true;
+  let upstreamDrainOnOpen;
   let resolveDone;
   const done = new Promise(resolve => {resolveDone = resolve;});
   let closeTimer;
   const finish = () => {
     if (finished) return;
     finished = true; clearTimeout(attachTimer); clearTimeout(lifetimeTimer); clearTimeout(closeTimer);
+    for (const timer of observations) clearTimeout(timer);
+    for (const [socket, listener] of drainListeners) socket.removeListener('drain', listener);
+    if (upstreamDrainOnOpen) upstream.removeListener('open', upstreamDrainOnOpen);
     queue.length = 0; queuedBytes = 0; trace('done'); resolveDone();
   };
   const shut = (code = 1011) => {
@@ -86,11 +109,45 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
   };
   const send = (socket, data, binary, phase) => {
     if (socket.readyState !== WebSocket.OPEN || socket.bufferedAmount + byteLength(data) > maxBufferedBytes) {shut(1013); return false;}
-    try {socket.send(data, {binary}, error => {if (error) shut(1011);}); if (phase) trace(phase, {bytes: byteLength(data), binary}); return true;} catch {shut(1011); return false;}
+    let observation, sequence;
+    if (observeWrites) {
+      sequence = (sendSequences.get(phase) ?? 0) + 1; sendSequences.set(phase, sequence);
+      trace(phase + '_before', {sequence, ...socketWriteState(socket)});
+      // Only the first eight sends per direction need a delayed observation.
+      if (sequence <= 8) {
+        observation = setTimeout(() => {
+          observations.delete(observation);
+          trace(phase + '_pending', {sequence, ...socketWriteState(socket)});
+        }, writeObservationMs);
+        observation.unref?.(); observations.add(observation);
+      }
+    }
+    try {
+      socket.send(data, {binary}, error => {
+        if (observation) {clearTimeout(observation); observations.delete(observation);}
+        if (observeWrites) trace(phase + '_callback', {sequence, writeError: !!error,
+          ...(error ? {writeErrorCode: WRITE_ERROR_CODES.has(error.code) ? error.code : 'OTHER'} : {}), ...socketWriteState(socket)});
+        if (error) shut(1011);
+      });
+      if (phase) trace(phase, {bytes: byteLength(data), binary, ...(observeWrites ? {sequence, ...socketWriteState(socket)} : {})});
+      return true;
+    } catch {
+      if (observation) {clearTimeout(observation); observations.delete(observation);}
+      shut(1011); return false;
+    }
+  };
+  const observeDrain = (socket, phase) => {
+    if (!observeWrites || !socket._socket?.on) return;
+    const listener = () => trace(phase, socketWriteState(socket));
+    socket._socket.on('drain', listener); drainListeners.push([socket._socket, listener]);
   };
   const attachTimer = setTimeout(() => shut(1011), attachTimeoutMs);
   const lifetimeTimer = setTimeout(() => shut(1001), lifetimeMs);
   attachTimer.unref?.(); lifetimeTimer.unref?.();
+  if (observeWrites && upstream.readyState !== WebSocket.OPEN) {
+    upstreamDrainOnOpen = () => observeDrain(upstream, 'upstream_drain');
+    upstream.once('open', upstreamDrainOnOpen);
+  } else observeDrain(upstream, 'upstream_drain');
   upstream.on('message', (data, binary) => {
     trace('upstream_receive', {bytes: byteLength(data), binary});
     if (finished || closing) return;
@@ -115,7 +172,8 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
     attach(socket) {
       if (frontend) throw Error('Socket transport already attached.');
       frontend = socket; clearTimeout(attachTimer);
-      trace('attached');
+      trace('attached', observeWrites ? socketWriteState(frontend) : {});
+      observeDrain(frontend, 'frontend_drain');
       frontend.on('error', () => shut(1011));
       frontend.on('close', code => {
         trace('frontend_close', {code});

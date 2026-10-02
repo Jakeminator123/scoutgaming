@@ -32,6 +32,22 @@ test('each unpaid run isolates speech journals without changing Lab or the origi
   for(const speechDirectory of ['/var/data/speech','/var/data/players','/var/data/speech/../players','/tmp/transport-qa-00000000-0000-0000-0000-000000000001'])assert.throws(()=>unpaidQaSpecifications(specifications,env,{speechDirectory}),/Invalid isolated/);
 });
 
+test('only bounded allowlisted child phases reach QA parent logs, with private stdout discarded', () => {
+  const rows = [], specifications = {web: {env: {...env}}, lab: {env: {unchanged: true}}};
+  const qa = unpaidQaSpecifications(specifications, env, {emit: row => rows.push(row)});
+  qa.web.onStdoutLine('user=private-user password=private-password');
+  qa.web.onStdoutLine('CROUPIER_UNPAID_STREAM ' + JSON.stringify({phase: 'fresh_before', count: 1, cookie: 'private-cookie', text: 'private-text'}));
+  qa.web.onStdoutLine('CROUPIER_UNPAID_STREAM ' + JSON.stringify({phase: 'unknown-private', count: 1}));
+  qa.web.onStdoutLine('CROUPIER_UNPAID_STREAM broken');
+  for (let index = 0; index < 300; index++) qa.web.onStdoutLine('CROUPIER_UNPAID_STREAM ' + JSON.stringify({phase: 'pcm_written', bytes: 4800}));
+  assert.equal(rows.length, 256);
+  assert.deepEqual(JSON.parse(rows[0].slice('CROUPIER_UNPAID_STREAM '.length)), {phase: 'fresh_before', count: 1});
+  assert.doesNotMatch(rows.join(''), /private-/);
+  assert.equal(specifications.web.onStdoutLine, undefined);
+  assert.equal(qa.lab, specifications.lab);
+  assert.throws(() => unpaidQaSpecifications(specifications, {...env, RENDER_SERVICE_ID: 'production'}));
+});
+
 test('fixture provider never reaches a paid host and uses the real session worker request', async () => {
   let realCalls = 0, closed = 0, workerInput;
   const fixtureFetch = unpaidQaFetch(env, {realFetch: async () => {realCalls++; return Response.json({local: true});}, createWorker: async input => {workerInput = input; return {close: () => {closed++;}};}});

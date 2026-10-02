@@ -8,7 +8,8 @@ import { test } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from '../config.mjs';
 import { createCloudGateway, proxyHeaders, upstreamForHost, upstreamForRequest } from '../gateway.mjs';
-import { startChildren, terminateChild } from '../process-group.mjs';
+import { startChildren, terminateChild, observeChildStdout } from '../process-group.mjs';
+import { PassThrough } from 'node:stream';
 import { assertCloudAccessReady } from '../start.mjs';
 
 const fixture = () => ({
@@ -459,6 +460,19 @@ test('child shutdown sends TERM once and waits for close', async () => {
   assert.deepEqual(child.signals, ['SIGTERM']);
 });
 
+test('explicit child stdout observer handles chunks and drops oversized incomplete lines', () => {
+  const stream = new PassThrough(), lines = [];
+  observeChildStdout(stream, line => lines.push(line));
+  stream.write('first'); stream.write(' line\nsecond\n');
+  stream.write('x'.repeat(8193)); stream.write('discarded\nthird\n');
+  assert.deepEqual(lines, ['first line', 'second', 'third']);
+  const throwing = new PassThrough();
+  observeChildStdout(throwing, () => {throw Error('Unavailable diagnostic destination');});
+  assert.doesNotThrow(() => throwing.write('ignored\n'));
+  assert.doesNotThrow(() => throwing.emit('error', Error('Diagnostic pipe closed')));
+  stream.end(); throwing.end();
+});
+
 test('process group starts Web then Lab and stops Lab then Web without real servers', async () => {
   const activity = [];
   class FakeChild extends EventEmitter {
@@ -475,6 +489,7 @@ test('process group starts Web then Lab and stops Lab then Web without real serv
   const specs = childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET });
   const group = await startChildren(specs, {
     spawnProcess: (_command, _args, options) => {
+      assert.equal(options.stdio, 'ignore');
       const name = options.cwd.endsWith('lab') ? 'lab' : 'web';
       activity.push(`start:${name}`);
       return new FakeChild(name);

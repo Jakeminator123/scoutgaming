@@ -9,6 +9,7 @@ import {join, dirname, basename} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {createRequire} from 'node:module';
 import WebSocket from 'ws';
+import {experimental_upgradeWebSocket} from '@vercel/functions';
 import {platformConfiguration} from '../lib/platform-routing.mjs';
 import {platformSocketRequest, bridgePlatformSocket, handlePlatformWebSocket, platformSocketDiagnostics} from '../lib/platform-websocket.mjs';
 import {issueTicket, ticketAuthenticator} from '../../../services/astrid-gpu-worker/gateway/auth.mjs';
@@ -210,6 +211,7 @@ test('QA socket counters reveal phase and waitUntil presence without payloads, a
     assert.equal(parsed.find(value => value.phase === 'attached').contextWaitUntil, true);
     assert.equal(parsed.find(value => value.phase === 'done').counters.frontend_receive, 1);
     assert.equal(parsed.find(value => value.phase === 'done').counters.upstream_send, 1);
+    assert.equal(parsed.find(value => value.phase === 'frontend_send_callback').writeError, false);
     assert.doesNotMatch(rows.join(''), /private-id|private-media|cookie|ticket/);
     const before = rows.length;
     for (const [candidate, runtime] of [[configuration, {NODE_ENV: 'production'}], [qa, {}]]) {
@@ -222,6 +224,84 @@ test('QA socket counters reveal phase and waitUntil presence without payloads, a
     assert.doesNotMatch(rows.join(''), /private-/);
   } finally {
     if (previous === undefined) delete globalThis[symbol]; else globalThis[symbol] = previous;
+  }
+});
+
+test('actual SDK pre-corked socket reports pending writes until its owner uncorks and exact frames arrive', {timeout: 5000}, async () => {
+  const qaEnv = {...env, NODE_ENV: 'production', CROUPIER_PUBLIC_ORIGIN: 'https://croupier-player-preview-qa.vercel.app',
+    CROUPIER_BACKEND_ORIGIN: 'https://croupier-vercel-preview-qa.onrender.com'};
+  const context = new AsyncLocalStorage(), contextSymbol = Symbol.for('@vercel/request-context'), previous = globalThis[contextSymbol];
+  globalThis[contextSymbol] = {get: () => context.getStore()};
+  const server = createServer(), events = new EventEmitter(), rows = [], lifetimes = [];
+  let upstream, sdkSocket, client, frames = [];
+  class OpenUpstream extends FakeSocket {
+    constructor() {super(); upstream = this; queueMicrotask(() => this.emit('open'));}
+  }
+  const diagnosticEmit = line => {
+    const row = JSON.parse(line.slice('CROUPIER_UNPAID_SOCKET '.length)); rows.push(row); events.emit('row', row);
+  };
+  async function waitFor(predicate) {
+    const prior = rows.find(predicate); if (prior) return prior;
+    return new Promise(resolve => {
+      const listener = row => {if (predicate(row)) {events.off('row', listener); resolve(row);}};
+      events.on('row', listener);
+    });
+  }
+  try {
+    server.on('upgrade', (req, socket, head) => context.run({upgradeWebSocket: () => ({req, socket, head})}, async () => {
+      const reply = await handlePlatformWebSocket(new Request(qaEnv.CROUPIER_PUBLIC_ORIGIN + req.url, {headers: req.headers}),
+        {env: qaEnv, WebSocketImpl: OpenUpstream, diagnosticEmit, bridgeOptions: {writeObservationMs: 25, closeTimeoutMs: 25},
+          upgrade: (handler, options) => experimental_upgradeWebSocket(ws => {sdkSocket = ws; return handler(ws);}, options),
+          retain: promise => lifetimes.push(promise)});
+      assert.equal(reply.status, 204);
+    }));
+    server.listen(0, '127.0.0.1'); await once(server, 'listening');
+    client = await connect(`ws://127.0.0.1:${server.address().port}/lipsync-worker`, [],
+      {headers: {authorization: `Bearer ${workerSecret}`, 'x-worker-id': 'fixture-worker'}});
+    client.on('message', (data, binary) => {frames.push({data: Buffer.from(data), binary}); events.emit('frame');});
+    await waitFor(row => row.phase === 'returned');
+    const receivedReady = once(events, 'frame'); upstream.emit('message', Buffer.from('ready'), false); await receivedReady;
+    assert.equal(sdkSocket._socket.writableCorked, 0);
+    // The test owns this cork. The bridge must observe it without releasing it.
+    sdkSocket._socket.cork();
+    upstream.emit('message', Buffer.from('later'), false);
+    upstream.emit('message', Buffer.from([1, 2, 3, 4]), true);
+    const pending = await waitFor(row => row.phase === 'frontend_send_pending' && row.sequence === 3);
+    assert.equal(pending.writableCorked, 1);
+    assert.ok(pending.bufferedAmount > 0); assert.ok(pending.writableLength > 0);
+    assert.equal(pending.destroyed, false); assert.equal(pending.writable, true); assert.equal(pending.writableEnded, false);
+    assert.deepEqual(frames.map(frame => frame.data.toString()), ['ready']);
+    assert.equal(rows.filter(row => row.phase === 'frontend_send_callback').length, 1);
+    const before = rows.find(row => row.phase === 'frontend_send_before' && row.sequence === 2);
+    const queued = rows.find(row => row.phase === 'frontend_send' && row.sequence === 2);
+    assert.equal(before.writableCorked, 1); assert.equal(before.bufferedAmount, 0);
+    assert.ok(queued.bufferedAmount > before.bufferedAmount);
+    sdkSocket._socket.uncork();
+    await waitFor(row => row.phase === 'frontend_send_callback' && row.sequence === 3);
+    while (frames.length < 3) await once(events, 'frame');
+    assert.deepEqual(frames, [{data: Buffer.from('ready'), binary: false}, {data: Buffer.from('later'), binary: false}, {data: Buffer.from([1, 2, 3, 4]), binary: true}]);
+    assert.ok(rows.filter(row => row.phase === 'frontend_send_callback').every(row => row.writeError === false && row.writableCorked === 0));
+    const closed = once(client, 'close'); upstream.close(1000); assert.equal((await closed)[0], 1000);
+    await Promise.all(lifetimes);
+  } finally {
+    sdkSocket?.terminate(); client?.terminate(); upstream?.terminate();
+    await new Promise(resolve => server.close(resolve));
+    if (previous === undefined) delete globalThis[contextSymbol]; else globalThis[contextSymbol] = previous;
+  }
+});
+
+test('QA write errors expose only allowlisted codes and keep failure closure intact', async () => {
+  const qa = {...configuration, publicOrigin: 'https://croupier-player-preview-qa.vercel.app', backendOrigin: 'https://croupier-vercel-preview-qa.onrender.com'};
+  for (const [code, expected] of [['EPIPE', 'EPIPE'], ['private-ticket-error', 'OTHER']]) {
+    const rows = [], trace = platformSocketDiagnostics(qa, {NODE_ENV: 'production'}, '/speech-stream', {emit: value => rows.push(value)});
+    const upstream = new FakeSocket(), frontend = new FakeSocket();
+    frontend.send = (_data, _options, callback) => callback(Object.assign(Error('private-payload'), {code}));
+    const bridge = bridgePlatformSocket(upstream, {trace, closeTimeoutMs: 5}); bridge.attach(frontend);
+    upstream.emit('message', Buffer.from('private-input'), false); await bridge.done;
+    const callback = rows.map(value => JSON.parse(value.slice('CROUPIER_UNPAID_SOCKET '.length))).find(value => value.phase === 'frontend_send_callback');
+    assert.equal(callback.writeError, true); assert.equal(callback.writeErrorCode, expected);
+    assert.equal(frontend.codes[0], 1011); assert.equal(upstream.codes[0], 1011);
+    assert.doesNotMatch(rows.join(''), /private-payload|private-input|private-ticket-error/);
   }
 });
 

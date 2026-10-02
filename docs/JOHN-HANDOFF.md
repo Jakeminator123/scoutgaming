@@ -15,8 +15,8 @@ Vercel-UI och det nya Blob-indexet inväntar sina molnprov.
 Produktionsbyte 2 oktober: aktuellt exportläge med noll Web/Lab-skrivare,
 hashverifierade SQLite-backuper utanför Git, 24 källtabeller/102 rader och
 full backup/restore-paritet för 32 PostgreSQL-tabeller. Inga aktiva externa
-wallet-kopplingar fanns. Render `dep-davr1iegekts73f4s9cg`, commit `77793dc1`,
-är live med PostgreSQL; verklig befintlig superadmin-login och spelarnas
+wallet-kopplingar fanns. Senaste driftkontroll: Render `dep-davs5hbm8hqs73ce27a0`,
+commit `8d678f3e`, är live med PostgreSQL; verklig befintlig superadmin-login och spelarnas
 administrationsvy bekräftar rätt lagring. Två befintliga spelare bevarade;
 inga produktionskonton eller spelrundor skapades för test.
 
@@ -44,7 +44,7 @@ exakt HTTPS-origin och spelarens riktiga kvitton, utan Partner-launch/SSE.
 23 fokustester och Lab-TypeScript passerar. Vercels externa WebSocket-rewrite
 gav HTTP 404. Två fasta SDK-rutter ersätter den: faktisk installerad SDK och
 isolerad relay verifierar bytes, ägarbiljett, återspelningsspärr, kögränser och
-stängning; 19 frontendtester och båda byggen passerar. SDK-testets verkliga
+stängning; riktade frontendtester och båda byggen passerar. SDK-testets verkliga
 relay körs med frontendens egna installerade beroenden även i Vercelbygget.
 Render behåller auth;
 worker-anslutningen har plats för hela befintliga 540-sekundersleasen.
@@ -53,13 +53,19 @@ hålls med Nexts `after` även när SDK-kontexten saknar `waitUntil`.
 Avbrottslyssnaren följer sessionens livstid. Regressionen använder faktisk
 Next 15.5.26, SDK och relay och verifierar bytes efter setup-svaret.
 Riktigt SDK-/relayprov och oberoende review verifierar detta kontrakt.
-Molnprovet på `e78441f0` öppnar klient och worker men ger endast `ready`,
-inga mediebytes; både 15 och 60 sekunders provgräns misslyckas. Hela den
+Molnproven på `e78441f0` och `8d678f3e` öppnar klient och worker men ger endast
+`ready`, inga mediebytes; 60 sekunders provgräns misslyckas även med `after`.
+Vercels säkra faslogg visar mottaget start/4800 PCM-byte/slut från Render
+och köade utgående meddelanden; klienten får bara första `ready`.
+SDK-kontextens `waitUntil` finns i molnet, så dess frånvaro är inte felets
+bevisade orsak. Nästa kontroll gäller faktisk socket-write/drain/cork.
+Render-barnens vanliga stdout kastas bort; endast strikt tillåtna QA-faser
+vidarebefordras i den isolerade obetalda testmiljön. Hela den
 isolerade strömkedjan med faktisk serverkod, SDK och syntetisk worker passerar.
 Säker QA-instrumentering av faser och byteantal avgränsar molnfelet;
 inga identiteter, repliker, biljetter eller nycklar loggas. UI/nya Blob-indexet
 aktiveras först efter verkligt godkänt prov. Samtliga tre CI-jobb på
-`e78441f0` är gröna. CI:s isolerade HTTP-fixture väntar
+`8d678f3e` är gröna. CI:s isolerade HTTP-fixture väntar
 nu högst fem sekunder på serverns
 korta SQLite-skrivningar; alla nio riktiga HTTP-kontroller passerar lokalt.
 Detta ersätter inte visuell läppsynks-QA.
