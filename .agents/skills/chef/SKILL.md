@@ -65,7 +65,7 @@ tekniskt sätt att stoppa agenter som saknar/förbigår instruktionerna.
    patch-ekvivalenta commits; ”ahead” betyder inte alltid nya ändringar.
    Förenliga textändringar får sammanfogas. Motstridiga avsikter, events eller
    produktbeslut kräver ägarens besked; välj inte blint ours/theirs eller senaste.
-   Kör relevanta tester och följ media-, Jira- och säkerhetsregler där de gäller.
+   Kör relevanta tester och följ media-, säkerhets- och checklistreglerna i AGENTS.md.
 4. **Verifiera och lämna över.** Redovisa vad som ingår/utesluts, tester och
    kvarvarande beslut. Push endast inom uttryckligt publiceringsuppdrag.
    Kontrollera chefstatus igen före integration/push; om rollen övertagits, stopp.

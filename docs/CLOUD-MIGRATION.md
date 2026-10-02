@@ -24,7 +24,7 @@ JSON-register, media, acceptansbaseline och befintliga QA-kvitton bevaras.
 
 ## Masterplan: en Croupier Studio
 
-Beslutad målbild 2 oktober 2026; **plan, inte genomförd migrering**.
+Beslutad målbild 2 oktober 2026; **implementation påbörjad, inte genomförd migrering**.
 Den här checklistan är den enda masterplanen. Uppdatera den och handoffen
 löpande; inga nya plandokument eller parallella statuskopior i docs.
 
@@ -90,6 +90,25 @@ löpande; inga nya plandokument eller parallella statuskopior i docs.
    alla äldre BO-endpoints innan de tas bort: spelet läser idag `/api/bo/config`,
    och launch-allowlists accepterar idag `/` eller `/game`, inte `/blackjack`.
 
+### Första kodpaketet: native administrationskontrakt
+
+`lab/lib/studio-access-policy.mjs` och `studio-admin-contract.mjs`, med
+TypeScript-deklarationer och två isolerade tester, anger de 14 sektionerna,
+31 actionregler, 33 explicita admin method/path-par och fem auth-adresser.
+Föreslagna native adresser är `/studio/login`, `/studio/administration/<sektion>`,
+`/studio/api/auth/*` och `/studio/api/admin/*`. Reader/staff behåller sina
+administrationsrättigheter; Studio-projekt/media får inte därför öppnas för skrivning.
+Spelar-/partnerroller, okända actions och icke-exakta paths nekas av helpers.
+
+Detta är en fristående **kontraktsgrund, inte implementerade endpoints**.
+Inga aktiva routes importerar modulerna. Rollgolven är inte fullständig
+auktorisering: integratören måste kontrollera aktuell session/source_stamp/
+auth_epoch, exakt Origin/CSRF, begränsade bodies, CAS och audit. Självrollbyte/
+självradering förbjuds, spelarstatusändring måste avbryta aktuell spelarchatt/
+speech/probe och operatörens speech-QA-gate består. Avvecklad `clip-assign`
+återinförs inte; spelkonfigprojektion och launch/credit måste behålla spelauktoriteten.
+De två nya testerna körs av både Lab-testsviten och den ordinarie fulla hooken.
+
 ### Förstudie: inventerad källkod, inte live-disk
 
 Tre avgränsade läsanalyser är klara. De har inte läst molnkonton/databasdata,
@@ -139,10 +158,19 @@ källinventering är inte en live-fillista eller bevisad borttagning.
 - [x] **P0 — målbild:** en Studio, en privat Blob, Neon för beständig struktur,
   Render/OpenClaw/RunPod behålls för sina aktiva ansvar; obligatorisk slutstädning.
 - [ ] **P1 — kontrakt och inventering:** lås API/datakontrakt, käll-/mål-/ägarmapp
-  och exklusiva filanspråk. Läs relevant Jira CAC Expected Result/custom fields
-  innan implementation; använd befintligt ärende om det täcker arbetet, annars
-  koppla rätt uppdrag innan kodning. Inventera faktiskt molnstate och alla läsare/
-  skrivare före senare radering. Verktygsåtkomst som saknas ska redovisas, inte antas.
+  och exklusiva filanspråk. Läs uppdragets förväntade resultat och acceptansvillkor
+  före implementation. GitHub hanterar källa/leverans/checks; denna checklista
+  hanterar status. Jira och gamla GitLab-flöden används inte. Inventera molnstate
+  och alla läsare/skrivare före senare radering. Saknad åtkomst ska redovisas, inte antas.
+  - [x] Läsande anslutningskontroll: GitHub admin/push och gröna checks på
+    plancommit `cd4d8480`; autentiserad Vercel-CLI når båda produktprojekten;
+    Render API/Director-status samt Neon game/auth/zones svarar. Inga livekonton,
+    migrationsskrivningar eller betalda providerprov användes för kontrollen.
+  - [x] Första kodpaketet: fristående Studio-sektions-/behörighets-/APIkontrakt;
+    11 isolerade tester PASS, inklusive negativa fall. Inga aktiva route-, cookie-
+    eller lagringsbyten. Detta bockar inte av hela P1/P4 eller live-acceptans.
+  - [ ] Full molndiskinventering och återstående lagrings-/journal-/transportkontrakt
+    låsta före migreringsintegration och radering. P1 är därför inte helt klart.
 - [ ] **P2 — Neon-state:** projekt/revision/historik/profiler, videoregister/
   klassificering och beständig BO-konfiguration har en gemensam databasadapter.
   Bevis: schema-migration, importparitet, samtidiga sparningar/rollback och
@@ -192,12 +220,12 @@ sekventiellt. P8 är en obligatorisk del av leveransen, inte ett möjligt senare
 ### Agentprompter att återanvända
 
 Kopiera relevant block till en agent. Dessa är **genomförandemallar**;
-den här planleveransen aktiverar bara läsuppgifter, inte P2–P8. Varje agent
+kontraktsgrunden är påbörjad, men P2–P8 är inte levererade eller aktiverade. Varje agent
 läser först AGENTS.md och hela masterplanen ovan, arbetar i
 `C:\Users\jakem\Projects\croupier` på `main`, använder agent-talk och
 reserverar faktiska filer innan ändring. Ingen ny branch/worktree, GitLab,
-force-push eller självständig produktionsradering. Jira, isolerad QA och
-repo-/mediaregler gäller. Orchestratorn ensam äger docs, integration och push.
+force-push eller självständig produktionsradering. Checklistans acceptansvillkor,
+isolerad QA och repo-/mediaregler gäller. Orchestratorn ensam äger docs, integration och push.
 Vid överlapp: stanna för ping/ack; återställ aldrig annans ändringar.
 
 #### Orchestrator — kontrakt, integration och städning
@@ -210,8 +238,8 @@ API-ägarskap, migreringsgräns och exakt vad varje ersättare avvecklar. Förde
 exklusiva filer till agenter för Neon, media/journaler och Studio-UI. Shared
 auth/server/routing/config-filer ägs av en utsedd integratör, inte flera;
 Agent A äger nya DB-migrationer och delade lagringskontrakt efter avstämning.
-Läs aktuellt Jira CAC-ärende och Expected Result före implementation; håll
-status korrekt och markera inte Done efter bara källanalys eller fixtures.
+Läs uppdragets förväntade resultat före implementation; använd GitHub och
+denna checklista, inte Jira eller GitLab. Bocka inte av efter bara källanalys/fixtures.
 Uppdatera denna checklista, befintliga guide/envdocs och JOHN-HANDOFF löpande.
 Kör P2/P3/P4 parallellt efter kontraktet; integrera P5 och därefter P6 sekventiellt.
 Ingen produktionsaktivering/radering eller betald provkampanj under planfasen.
