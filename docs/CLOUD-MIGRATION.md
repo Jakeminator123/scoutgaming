@@ -134,8 +134,9 @@ serverstyrd formbehörighet, sessionåterkallelse och runtimecancel före OK.
 CRAIG-konton hanteras genom befintliga invitations-/resetlänkar.
 Riktade collision-, roll-, reset-/saldo-/historik- och samtidiga adminprov
 är godkända. Full lokal regression och byggen redovisas i John-handoff.
-Installerad QA från samma källa och riktad browser/auth/revoke-acceptans
-återstår i P6; tidigare installerade SHA/kvitton täcker inte denna ändring.
+Installerad QA från samma källa är verifierad 4 oktober på exakt e461ef07
+i alla tre tjänster. Riktad auth/revoke-acceptans redovisas överst i
+John-handoff; tidigare installerade SHA/kvitton täcker inte denna ändring.
 Historiska rollkontrakt nedan beskriver tidigare paket, inte den nya policyn.
 ### Första kodpaketet: native administrationskontrakt
 
@@ -398,6 +399,40 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   ljud/chatt samt båda GPU-vägar verifieras utan oavsiktlig ändring. Fixtures först;
   betalda liveprov kräver uttryckligt avgränsad budget/auktorisation. Fysisk kamera/
   mikrofon/mobil/Safari och mänsklig läppsynk redovisas separat om de återstår.
+  - [x] **QA-uppgradering efter gemensamma credentials, 4 oktober:** exakt
+    `e461ef073b63b2d1c937454bbfa31289774fcb8f` i Render
+    `dep-db0nq30u01pc73b6ep40`, frontend
+    `dpl_2tY7tigYk7ZDXoQGzfGC3ekvSnws` och Studio
+    `dpl_CMoZh3VwNx8FVc17gF8iWjnbEN5K`; LIVE/READY, alias faktiskt återlästa
+    och health 200. Tio bevarandegrupper PASS, samma env/disk/konton/saldon/
+    råmedia/kostnader/originaljournal. SDK 7.12.1 och 17 privata flyktiga
+    källfiler återlästa, nio spelmoduler identiska i publik QA, Git och Linux.
+    Installerad prepare-only-plan och ursprunglig budget består; detta bockar
+    inte av aktiv router/authority, full AI/GPU eller hela P6.
+    Privata `native-p6-qa-release-e461ef07/ready.json` och
+    `p6-ai-readiness-e461ef07/readiness.json` anger exakt drift och fortsatt gap.
+  - [x] **Gemensamma credentials i verklig QA, HTTP/native HTML 4 oktober:**
+    80/80 kontroller över 68 HTTPS-anrop på e461ef07. Admin till spel/Studio/
+    native BO på båda origins, spelarnekande och cookie-rensning, native
+    lösenordsbyte med gammalt lösenord/session återkallat och bevarat saldo/
+    historik. Reader/staff-reset behåller game-only, adminreset återkallar
+    spel-/Studio-sessioner. Verklig beständig cancellation-epoch återläst;
+    pending providerjobb är fortsatt separat livegap. 27 städgrupper PASS,
+    noll egna rader kvar och övrig konto-/wallet-/historikstate oförändrad.
+    Inga mejl/provider-/produktionsanrop. Privat kvitto:
+    `p6-shared-auth-evidence/157ef3e2-d91a-4ab9-89b1-515460988c5e/receipt.json`.
+  - [x] **Verkliga QA-loginformulär 4 oktober:** 18 UI-, två städ-/paritets-
+    och två källkontroller PASS (22/22) på e461. Admin får Studio/native
+    Konton med spelcookie; utloggning och spelarnekande verifierade. Egna
+    fixtures borttagna, befintliga konton/saldon/historik och användarens
+    Chrome bevarade. Separat återattest verifierar fångade loginmoduler mot
+    avsiktlig byggomskrivning; provets ursprungliga råkällfel är bevarat.
+    `p6-shared-auth-browser-evidence/1a6a69a9-a9b8-4a3c-94e7-79e67b9d182c/source-reattest.json`.
+  - [x] **Befintliga greeting-klipp i faktisk QA-rehearsal 4 oktober:**
+    Astrid/Vera/Amira/Mei har rätt matching clip och Play twice återaktiveras
+    efter sekvensen utan synligt fel, på e461. Ingen explicit ended-räknare,
+    mediehash-/baseline- eller mänsklig synkapproval; nytt AI/GPU-paket är
+    fortfarande öppet. `p6-browser-evidence-e461ef07/receipt.json`.
   - Fortsättningskoden 3 oktober kopplar faktisk Director/SDK till serverägd
     Web-session, aktuell spelstatus och återläst sparad policy. Idle-cache
     avgränsas per ägare/policy, signerade tickets använder samma beständiga
@@ -474,6 +509,20 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     FlashBoot är Standard/enabled, ingen network volume. UI:s millisekunder
     avviker från officiell docs sekundavrundning; använd konservativ sekundgräns.
     Total kallstartsgräns och exakt lagringstariff återstår; inga inställningar ändrades.
+    Avgränsad officiell återläsning 4 oktober bekräftar tre externa underlag som
+    fortfarande behövs: Cartesia-nyckelägarens konto-/credit-/overagepris,
+    uttryckligt pris eller gratisbevis för OpenAI `responses/input_tokens`,
+    samt Runpods debiterade gräns från workerstart till full stopp inklusive
+    lagring. [Cartesias publika priser](https://www.cartesia.ai/pricing) anger
+    olika overagerater per plan; de identifierar inte nyckelns konto.
+    [Tokenräkningsguiden](https://developers.openai.com/api/docs/guides/token-counting)
+    och den öppnade prislistan ger inget uttryckligt counting-pris/gratisbevis.
+    [Runpods debitering](https://docs.runpod.io/serverless/pricing) omfattar
+    start, körning och idle; 600 s execution-timeout är ingen verifierad
+    kallstartsgräns och jobbets TTL/404 är ingen worker-stopkvittens.
+    Det privata `p6-cost-evidence-20261004.json` samlar den riktade läsningen.
+    Upprepa inte samma prisinventering utan nytt kontounderlag; behåll ursprunglig
+    kampanj, numerisk budget och förbrukad reservation. Obetald QA fortsätter.
   - Läsande GitGuardian-anslutning verifierad efter Jakobs uttryckliga godkännande:
     årsnyckel med endast `incidents:read,sources:read`, lokalt DPAPI-krypterad
     utanför Git. Två MCP-verktyg är låsta till source `30689542` i workspace
@@ -796,11 +845,13 @@ sekventiellt. P8 är en obligatorisk del av leveransen, inte ett möjligt senare
 
 ## Ytor och datalagring — produktion och nya QA
 
-Källleveransen före denna städning är `b7940dd8`. Senaste dokumenterade
-installation och autentiserade fyrdealerprov i de tre nya QA-byggena gäller
-`966991ef`; det fulla native90-kvittot gäller äldre `190399`.
+Källleveransen med gemensamma credentials är `e461ef07`. Alla tre nya
+QA-tjänster är installerade och återlästa på den versionen 4 oktober.
+Senaste fyrdealer-rehearsal och shared-credential-HTTP/DOM gäller `e461ef07`;
+det fulla native90-kvittot gäller äldre `190399`.
 Källkod, publicerad runtime och acceptansbevis har därför separata revisioner.
-Full AI/GPU-acceptans, cookie/loader-bevis och produktionsbytet är fortfarande öppna.
+Full AI/GPU-acceptans inklusive dess cookie/loader-bevis och produktionsbytet
+är fortfarande öppna.
 
 | Ansvar | Nuvarande produktion | Ny isolerad native-QA / mål efter P7 |
 | --- | --- | --- |

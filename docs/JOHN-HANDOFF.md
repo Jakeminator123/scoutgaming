@@ -1,7 +1,87 @@
 # Aktuell handoff — Croupier
 
-Uppdaterad 3 oktober 2026. Detta är den enda löpande John-handofffilen.
+Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
+
+## P6: parallellt QA-pass och avgränsade kostnadsgap — 4 oktober
+
+Fryst källversion är `e461ef073b63b2d1c937454bbfa31289774fcb8f` på main.
+Aktuell GitHub-återläsning: Actions-run `37155095975`, samtliga tre jobb
+completed/success och båda ordinarie Vercel-statusar success. GitGuardian-
+suite är queued utan run; den separat fullständigt paginerade incidentlistan
+för workspace `795524`/source `30689542` visar fem IGNORED och noll öppna.
+Fil/rad i API är fortsatt partial för två historiska ID:n; ingen incident ändrades.
+
+Tre befintliga isolerade QA-tjänster är installerade på exakt e461ef07;
+QA-alias är bundna och faktiskt återlästa 4 oktober 00:15:56 svensk tid.
+Render `dep-db0nq30u01pc73b6ep40` är LIVE med health 200, frontend
+`dpl_2tY7tigYk7ZDXoQGzfGC3ekvSnws` och Studio
+`dpl_CMoZh3VwNx8FVc17gF8iWjnbEN5K` är READY. Alla tio före/eftergrupper
+PASS: samma env/disk, konton/saldon, hela QA-volymen, råmedia och journaler.
+SDK 7.12.1 är faktiskt laddat och dess 2 962 filer bevarade; 17 privata
+flyktiga källfiler är återlagda, fyra kontexter och nio publika spelmoduler
+matchar faktisk Linux/Git-källa. `/api/auth/session` visar sharedCredentials.
+Privat kvitto: `native-p6-qa-release-e461ef07/ready.json`. Ingen QA-env,
+beständig plan/SDK, SQL, provider eller produktionsaktivering ändrades.
+
+QA-installation, riktad shared-credential-acceptans och AI/GPU-förberedelse
+delades mellan tre parallella agenter. Privat käll-overlay för exakt e461ef07
+omfattar 202 filer; 193 fokuserade offlineguards PASS, noll skip. Detta är
+förberedelse, inte installerad full AI/GPU-acceptans. SDK:s gamla cb9b6b53-
+plan är prepare-only med null budget/providerContext; den blir aldrig en
+full-run-admission genom att återanvända dess manifest.
+
+Riktad live authacceptans på denna SHA: 80/80 kontroller PASS över 68 riktiga
+HTTPS-anrop. Admin fick spel, `/studio`, native `/studio/administration`
+utan iframe och sessions-/konto-/overview-API på båda QA-origins. Spelare
+nekades native login/session/admin och gamla BO/Lab-cookies rensades.
+Native spelarpasswordbyte återkallade gammalt lösenord och cookie före OK;
+samma spelar-ID/saldo/transaktioner/historik/presentation bestod. Render skrev
+verklig cancellation-probe-epoch 1/reason inactive. Reader/staff förblev
+game-only efter verklig engångsreset utan mejl; adminreset återkallade gamla
+spel- och båda Studio-sessioner. Tre egna användare/fyra spelare städades;
+27 återläsningsgrupper PASS, noll egna rader kvar och övriga konton/saldo/
+historik/signer oförändrade. 14 riktade auth-/password-/authorityprov PASS.
+Privata HTTP- och städkvitton finns i
+`p6-shared-auth-evidence/157ef3e2-d91a-4ab9-89b1-515460988c5e/`.
+Verkligt pågående providerjobb är inte provat; väntan på pending cancellation
+är fortfarande isolerat testbevis. Inga mejl/provider-/produktionsanrop gjordes.
+
+Verkliga loginformulär i isolerad Chrome på samma QA: 18 UI-kontroller,
+två städ-/paritetskontroller och två laddade källmoduler PASS (22/22).
+Admin nådde Studio/native Konton med spelcookien; faktisk utloggning och
+spelarnekande verifierades. Egna fixtures är borttagna och användarens
+Chrome-profil/flikar bevarade. Provets första råkälljämförelse missade den
+avsiktliga tvåstegsbyggomskrivningen; originalkvittot är bevarat och separat
+återattest verifierar fångade bytes mot exakt e461-bygge utan ny loginrunda.
+Privat `p6-shared-auth-browser-evidence/1a6a69a9-a9b8-4a3c-94e7-79e67b9d182c/source-reattest.json`.
+
+Samordnande agenten verifierade Astrid/Vera/Amira/Mei var för sig i faktisk
+QA-rehearsal på e461: rätt greeting/matching clip och Play twice låst under
+sekvensen, återaktiverat efteråt, utan synligt fel. Kvittot
+`p6-browser-evidence-e461ef07/receipt.json` har inget explicit ended-tal,
+nytt mediehashbevis eller mänsklig läppsynkapproval. Detta bevisar befintliga
+klipps tvåspelskontroll; nytt AI→tal→GPU-paket och dess acceptans återstår.
+
+Färsk läsning på denna QA verifierar originalets två journalposter:
+10 USD totaltak, 5,251152 USD förbrukad/kvarhållen reservation och
+4,748848 USD oreserverat; ett SDK-anrop är förbrukat och nio återstår.
+Ingen återbetalning görs och äldre GPU-reservation är inte dränerad.
+Aktuell scoped QA har noll aktiva leases/osäkra anrop/request-/kostnadsrader,
+men saknar installerad GPU-/fullfilspolicy och operatörskampanj. Router/authority
+är inaktiv; full-run-admission och immutable basimage är inte verifierade.
+Privat beredskapskvitto `p6-ai-readiness-e461ef07/readiness.json` har exakta
+käll-, SDK-, budgetkvitton och avgränsade fortsättningskommandon.
+
+Den riktade offentliga prisåterläsningen ligger privat i
+`lab/data/platform-private/p6-cost-evidence-20261004.json`. Tre kontounderlag
+saknas fortfarande: Cartesia-nyckelägarens credit-/overagepris, uttryckligt
+counting-pris/gratisbevis samt Runpods totala workerstart/körning/idle/stopp
+och lagringstak. Se P6 i masterplanen för officiella källor. Utan nytt
+underlag behöver nästa agent inte upprepa samma dokumentationssökning.
+Ingen ny budget/journal, providerdispatch eller produktionsaktivering görs.
+Färska full-run worker/router/entry/authority-manifest och faktisk
+speluppspelning krävs fortsatt efter giltig admission.
 
 ## Gemensamma credentials och två behörigheter — 3 oktober
 
