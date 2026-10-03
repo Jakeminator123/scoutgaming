@@ -141,8 +141,11 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
     await check('actual Render default schema factory accepts001004 saved Neon policy and denies missing import without seeding', async () => {
       // URL validation is inert; the supplied pool remains the owned localhost
       // cluster. No fake schemaCheck replaces the real migrator/catalog checks.
+      const fixtureGameDatabaseUrl = new URL('postgresql://ep-fixture.neon.tech/croupier_game?sslmode=require');
+      fixtureGameDatabaseUrl.username = 'fixture';
+      fixtureGameDatabaseUrl.password = 'synthetic';
       const env = { CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_DATABASE:'postgres',
-        CROUPIER_GAME_DATABASE_URL:'postgresql://fixture:synthetic@ep-fixture.neon.tech/croupier_game?sslmode=require',
+        CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl.href,
         CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment, CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId };
       const before = await runtime.gamePolicy.readSaved();
       const saved = await createRenderStudioPolicy({ storage:runtime.store, env, dealerIdle:idle });
