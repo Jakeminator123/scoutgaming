@@ -30,23 +30,49 @@ sammanhållna återkörningen. Obligatorisk full hook och fyra-dealer-audit
 Loggar finns privat i `migration-root-{directed,full}-check.log` och
 `migration-root-dealer-probe.log`. Inget nytt SQL-/HTTPS-/restart-livekvitto
 eller fyra-dealer-native90-kvitto hävdas för denna senare källkod.
-Den privata `native-p6-product-playback.mjs` samlar en verklig produktklass,
-en video/WS, samma mottagna bytes, presenterad rVFC-bildruta och video-ended.
-12 collector-, 20 runner- och 13 befintliga produktströmprov PASS i
-`migration-root-playback-check.log`. Importen gör inga liveanrop. Kvittot
-anger `decoded-product-class-qa-mount`, `gameWrapperIntegrated:false`;
-browser/CSP, cookieägarskap, wire-/descriptor-/GPU-korrelation och faktisk
-spelköintegration återstår. `fullP6Passed` är fortsatt false. Privata
-källhashar/testloggar finns i `migration-root-source-readiness-20261003.json`;
-det är lokal beredskapsmetadata, inte ett rått runtime- eller kostnadskvitto.
+Nästa obetalda kodpaket binder en opt-in GET
+`/api/presentation/native-p6-playback-context` till den verkliga auth-cookien,
+exakt egen länkad QA-spelare, serverägd session/runda och återläst sparat projekt.
+Den är avstängd som standard, skapar ingen gäst och tar inga klientrevisioner.
+Den privata `native-p6-product-playback.mjs` kör nu själva hashbundna
+`playGeneratedSpeech`-wrappern och dess tre produktberoenden: en video/WS,
+samma mottagna bytes, presenterad rVFC-bildruta och video-ended. Tre färska
+cookieägda GET-kontroller krävs före connect, före play och efter slut.
+25 collector-, 21 runner- och 32 produktströmprov PASS. Importen gör inga
+liveanrop; fixturprov bevisar inte faktisk cookie-/browser-/CSP-acceptans.
+Kvittot anger `decoded-product-wrapper-qa-mount`, `productWrapperExecuted:true`,
+`gameWrapperIntegrated:false`; verklig spelkö, wire-/descriptor-/GPU-korrelation
+och liveacceptans återstår. `fullP6Passed` är fortsatt false.
+`migration-root-source-readiness-20261003.json` är historisk privat metadata
+för den tidigare källversionen; dess gamla privata hashvärden får inte återbrukas.
+Full obligatorisk hook och fyra-dealer-audit `--probe` PASS för endpointpaketet;
+loggar är `migration-root-resume-{full-check,dealer-probe}.log`.
 
-GitGuardian för `bba3cc28`: check-runs/check-suites/status fullständigt lästa;
-3/3 ordinary CI PASS, ingen GG-run, GG-suite queued. Rätt Chrome-workspace
-`795524` och valt Source `Jakeminator123/github-work`/`30689542` är återlästa.
-UI:s enda sida visar fem Triggered-ID:n: `37840514`, `37830671`, `37828691`,
-`37828386`, `37827237`; Next page är disabled. Endast ID/status/filter har
-lästs, inte scannertext. Fil/rad och full API-incidentlista är fortfarande
-not-read. Fixturrättningen ingår i `bba3cc28`; den bevisar inte rensade incidenter.
+GitGuardian: remote `7b501576d42682e5c7626da6d4fe7a052605ea3f` är återläst med
+alla check-runs/check-suites/status: 3/3 CI och båda Vercel-statusar success;
+ingen GG-run, GG-suite queued. Detta visar inte en tom incidentlista.
+Jakob godkände separat två lässcope och därefter ett års giltighet. Årsnyckeln
+för workspace `795524` är Active, endast `incidents:read,sources:read`, och
+lagras Windows-DPAPI CurrentUser-krypterad utanför Git i
+`~/.codex/private-connections/gitguardian-795524.dpapi`. Den egna oanvända
+sjudagarsnyckeln är återkallad. Inga incidenter eller övriga rättigheter ändrades.
+Den lokala Codex-MCP:n `gitguardian` använder `tools/gitguardian-mcp.mjs` med
+bara `read_source_binding` och `read_repo_incidents`. Bryggan är låst till
+`Jakeminator123/github-work`/source `30689542`, GET och metadata; ingen scan,
+scannertext, secret reveal eller write. Inga nyckelvärden finns i konfigurationen.
+Hosted OAuth stoppades av Cloudflare; den lokala stdio-anslutningen är faktiskt
+verifierad genom initialize, tools/list och båda autentiserade läsverktygen.
+Nästa chatt kan behöva ladda om MCP-konfigurationen. Manuell läsning:
+`node tools/gitguardian-read.mjs --source` eller `--incidents`.
+API-incidentlistan är nu fullständigt läst för denna källa: en incidentsida och
+fem locationsidor, fem TRIGGERED-ID:n `37827237`, `37828386`, `37828691`,
+`37830671`, `37840514`. Filpositioner finns för tre: `lab/test/studio-native-`
+`{runtime,request}.test.mjs`, `ops/cloud/test/container-entry.test.mjs` och
+`ops/cloud/test/native-p6-router-hook.test.mjs`. ID `37828691` och `37830671`
+saknar locations i API:t; fil/rad-täckningen är därför partial. Rå incidenttext
+eller sekretessvärden är inte lästa. Ingen incident är därmed klassad/rensad.
+Privat metadata och stdio-kvitto: `migration-root-gitguardian-mcp-verified-20261003.json`;
+15 riktade redaktions-/paginering-/behörighetsprov PASS.
 
 Fortsätt i denna ordning:
 
@@ -56,6 +82,13 @@ Fortsätt i denna ordning:
    manifest, inklusive entry-contexts obligatoriska `routerManifestSha256`,
    och verifiera faktisk installation/readback. Använd inte shared OpenClaw
    som QA-runtime eller deterministisk baseline som providerbevis.
+   `native-p6-runtime-stage.mjs --stage <full-HEAD> source-<kort-SHA>` bygger
+   endast en privat käll-overlay och en derivative Docker-recipe. Offentliga
+   filer måste matcha HEAD:s Git-blobs; privata filer och image-bytes hashbinds.
+   `QA_BASE_IMAGE` måste vara en immutable digest för samma källa. Inga manifest,
+   secrets, journaler, SDK-downloads eller aktiverande env skickas med. SDK
+   `openai@7.12.1`, verklig env, runtimeinstallation/readback och betald admission
+   återstår; en source-artifact är inte bevis för något av detta.
 2. **Lös bara de konkreta återstående åtkomst-/kostnadsgapen.** Den senaste
    läsningen saknar counting-tariff/explicit gratisbevis, Cartesia-kontots
    USD/credit (`/usage/credits` gav 401) och RunPods avsedda endpoints faktiska
@@ -72,6 +105,15 @@ Fortsätt i denna ordning:
    inga fler inloggningsförsök begärs. Public counting/pricing gav inget
    uttryckligt tariff-/gratisbevis. Dessa kvarvarande gap får inte döljas
    genom att sätta nollkostnad eller blanda in en annan kontoägares åtkomst.
+   **Prisbacklog enligt Jakob:** usage kan mätas utan en verifierad dollaravgift
+   (input/output-tokens, talets tecken/credits, GPU start/execution/idle-tid).
+   De så kallade pristesterna är budget-/admissionskontroller för betalda prov:
+   de binder rätt konto, modell, tariff, maxförbrukning och journal innan dispatch,
+   och testar även restart/retry/parallellitet så kostnad inte räknas bort.
+   De testar inte spelkvalitet. Kontoägarens Cartesia USD/credit/plan, officiellt
+   counting-tariff-/gratisunderlag och RunPods totala GPU-/startup-/idlekostnadsgräns
+   är återstående underlag. Dokumentera usage och prisosäkerhet separat; detta
+   stoppar nya betalda prov men inte obetald kod, source-staging eller fixtur-QA.
    Nya QA:s GPU-/fullfilspolicy och operatörskampanj är ännu inte installerade;
    regelbunden SDK-runtime/readback saknas. Privata faktakällor:
    `native-p6-readonly-phase/{host-actual.json,remote-actual-final-2.jsonl,minimum-proposal.json}`.
