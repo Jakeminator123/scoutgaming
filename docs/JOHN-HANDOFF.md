@@ -9,18 +9,78 @@ Pågående fortsättning 3 oktober: gemensam Neon-policy mellan Studio/Render,
 native konto-/partner-/authhandlers och tillhörande formulär är implementerade
 på main. Grovt cirka 75 % av sammanslagningen; källbyte, full helhetsacceptans
 och faktisk avveckling återstår. Inget i detta kodsteg har aktiverat produktion.
-Senaste kodleverans är `b2d9ab7e36615701ca86f103427c39e57b815523`: full
-obligatorisk hook och samtliga tre GitHub-kontroller PASS. Additiv 004 är nu
+Verifierad runtimeleverans är `4d84bffc655bc061a387ac8b98d1b40ac02f2c91`,
+pushad på GitHub main efter full obligatorisk hook och samtliga tre
+GitHub-kontroller PASS. Additiv 004 är nu
 också installerad i den separata `croupier_studio_qa_abc92154cb15`, utan
 budget-/grindbootstrap: 45 befintliga QA-tabeller och 32 tabeller vardera i
 produktion/äldre QA har identiska före-/efterfingerprints. Båda nya
 fullfilstabellerna är tomma. Detta är QA-verifiering, inte produktionsimport.
-Render-QA:s b2-deploy misslyckades vid containerstart; drift är inte omkopplad.
+Render-QA:s tidigare b2-deploy misslyckades vid containerstart och gav health 502.
 Render-fabriken krävde felaktigt bara 001–003 och nekade installerad 004.
 Rättningen omfattar nu samtliga fyra scheman. Faktiskt isolerat SQL-prov
 kör standardfabriken mot sparad Neon-policy och nekar saknad import utan seed.
 41 acceptansgrupper, fyra retained-guards och 46 oförändrade källhashar PASS.
-Ny molnleverans och komplett QA-acceptans krävs; tidigare FAIL-kvitton bevaras.
+Återhämtningsguarden har 15 offlineprov och oberoende granskning PASS.
+Det korrigerade Render-QA-bygget på exakt `4d84bffc` är nu LIVE med health 200
+och matchande env-fingerprint. Färsk SSH-bevarandeparitet efter LIVE visar samma
+SHA/mtime för äldre journaler och bevarar en icke-terminal reservation; detta
+är inte ett dräneringsbevis. Båda egna Vercel-QA-aliasen är nu kopplade på samma SHA.
+Alla 14 boot-/readinesskontroller och kall/hydrerad formulärkontroll på båda origins
+PASS. Två nya 90-körningar har samtliga 89 insamlade kontroller PASS vardera,
+inklusive två verkliga plays för var och en av de fyra dealers och sparad
+revision, men båda kvittona är FAIL med
+`no_provider_or_unapproved_network_request`. Fyra POST till
+`/api/probe/presence` blockerades per körning; provideranrop var noll. Body/MIME
+observerades inte, så exakt requesttyp är ännu inte bevisad. Probe initieras
+enbart för Astrid, som också skickar vanlig heartbeat med identity/activity;
+antagandet om en close-begäran per dealer var fel. Projekt och pit är verifierat
+CAS-återställda till exakt före-hash i båda körningar. Första körningens åtta
+maskade bildrutor visar rätt dealer/layout utan ny läppsynk-approval.
+Separat Astrid-diagnostik `presence-9d69f8b8-9d8f-4a61-bf2c-1d0e901ab134`
+observerade därefter ett verkligt heartbeat: JSON 241 byte, exakt sex fält,
+fem booleska flags och `present=true`. Begäran avbröts; projekt-/pit-/provider-
+anrop var noll. Ägd CDP-nätverksspärr kvitterades före stängning; runner och
+headless-browser är verifierat avslutade. Detta är inte ett 90-kvitto och
+identifierar inte retroaktivt body/MIME i de två tidigare FAIL-körningarna.
+Senaste obetalda native-molnprov är nu PASS: 90/90 kontroller i
+`aa23e484-8f13-421d-b680-ce16df4d1ccf` på exakt runtime-SHA `4d84bffc`.
+Privat immutable receipt har SHA256
+`0368ac1bca980ba050c4fce041f354ae028080aca9ed127e581a39df92cca6e1`.
+Alla fyra dealers kvitterade samma sparade Neon-revision och två verkliga,
+avkodade och avslutade plays vardera. Tre faktiska heartbeat-svar var 200/JSON
+med mode off; noll close-beacons krävs eller påstås. Blockerade och betalda
+endpointanrop var noll. Endast testetiketten och QA-projektets Probe-mode ändrades
+tillfälligt med CAS. Ägd CDP-spärr och route-drain kvitterades före återställning;
+projekt/pit har identiska före-/efterhashar och originalets automatic-mode består.
+Browser/context är stängda och actual resultatvalidator PASS. 40 fokuserade
+guardprov och oberoende granskning PASS, inklusive misslyckad stängning utan
+osäker återställning samt exakta UUID-typer. Root har granskat alla åtta nya
+bildrutor: rätt dealer/layout; i Veras första övergångsruta syns dubbla händer.
+Ingen ny läppsynk-/take-approval ges av dessa statiska rutor.
+Färsk läsande QA-inventering visar en syntetisk BO-identitet med en länkad
+spelare, saldo 1000 och en transaktion; inga riktiga konton används. Alla elva
+tal-/GPU-/fullfil-/operatörskostnadstabeller är tomma. Studio-raderna är
+filtrerade på fysiska scope-kolumner; ingen anslutning till produktion/äldre QA.
+Egna runner- och headless-processer är verifierat avslutade.
+Tidigare FAIL-kvitton bevaras oförändrade. Produktion är inte omkopplad.
+
+Privat P6-körförberedelse har 28 offlineprov och tre isoleringsguards PASS.
+Sju faktiska PostgreSQL-/restartgrupper binder 38 oförändrade källhashar:
+aktuella 001–004, låst auth-epok, tappad COMMIT-kvittens utan återförsök,
+befintlig grind/stale JWT, verklig memory-HMAC och ägarbundet färdigt paket,
+förbrukad nyckel/cache efter omstart samt elva läsande kostnadsfingerprints.
+Den fysiska 004-kolumnen `reserved_at_ms` och den faktiska
+`web/generated-speech-chat.mjs` är rättade i P6-kontraktet. Ett fake-provideranrop
+användes; nätverksanrop till providers och skrivningar till befintliga databaser
+var noll. Eget kluster/process städades. Den privata STT-fixturen är 2,03 s WAV
+från exakt befintligt Astrid-goodluck-ljud/text/baseline; originalet är oförändrat
+och detta ger ingen ny mänsklig eller visuell approval.
+Gatewayens observerade retryräknare kan minskas och är ingen absolut gräns
+för betalda dispatches eller input-tokenmängd. Därför finns ännu inget faktiskt
+USD-övre tak eller körbar numerisk livebudget. SDK-admission är inte installerad;
+injicerade callbacks är enbart förberedelsekontrakt. Verkliga fas-/transportadaptrar
+och full P6 återstår; CLI tillåter enbart förberedelse.
 
 Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
 `/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
@@ -256,10 +316,10 @@ Den befintliga konsolen visar samma Croupier-endpoint under Jakobs profil,
 min workers 0, max 1, idle timeout 5 s och en individuell idle worker.
 Detta är inte ett dräneringsbevis. Jakob uppger att befintliga nycklar kan
 tillhöra Emil; inga nycklar eller kontoövergripande inställningar ändras.
-Färsk endpoint-/processkontroll krävs vid frysningen. Resend-sändarnyckel
+Färsk endpoint-/processkontroll krävs vid frysningen. Faktisk Resend-nyckel
 saknas i både nuvarande Render och Lab och i riktade relevanta lokala env-filer;
-fråga om eget konto/avsändardomän väntar på svar. Inga verkliga providermejl är
-verifierade eller skickade.
+en verifierad egen avsändardomän saknas också. Invitation/reset-acceptans är
+öppen; inga verkliga providermejl är verifierade eller skickade.
 
 Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
 är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.

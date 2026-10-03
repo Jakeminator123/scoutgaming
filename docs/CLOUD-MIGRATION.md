@@ -366,8 +366,9 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     obetalt repro ger nu 403/en originalkreditering; sex kommandoprov PASS.
   - [ ] Verifiera aktuell inkoppling av native konto-/partner-/authfunktioner och
     spelarstatus inklusive Render-runtime cancellation; medie-review,
-    gemensam spelprojektion och diskfri Studio-start. Den nya exakta tier/idle-
-    valideringen och konto-/auth-/Render-kommandogränsen implementeras parallellt.
+    gemensam spelprojektion och diskfri Studio-start. Exakt tier/idle-validering
+    och konto-/auth-/Render-kommandogräns är implementerade och verifierade
+    i det aktuella isolerade SQL-/HTTPS-/restartprovet.
     Spelkonsumenter läser samma sparade projektrevision; Render behåller kort,
     wallet och runtimeauktoritet. Gamla BO-konfigskrivare måste spärras vid
     Neon-källbyte så att bo.json inte blir en andra writer. Produktdriften har
@@ -397,16 +398,54 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Egna processer, certifikat och temporär databas städas i runnerns finally.
     Inga riktiga konton, molndatabaser, providermejl eller betalda jobb används.
     Full P6 med fyra dealers, live ström/GPU och mänsklig acceptans består öppet.
+  - Avgränsad privat P6-körförberedelse: 28 offlineprov och tre isoleringsguards
+    PASS. Sju faktiska SQL-/restartgrupper binder 38 oförändrade källhashar och
+    verifierar fysisk 001–004, auth-epokens FOR UPDATE, tappad COMMIT-kvittens
+    utan återförsök/reset, gammal grind/JWT, verklig memory-HMAC och färdigt
+    ägarbundet paket, förbrukad nyckel/cache efter omstart samt elva läsande
+    kostnadsfingerprints. `reserved_at_ms` och den faktiska
+    `web/generated-speech-chat.mjs` är rättade i P6:s kolumn-/källkontrakt.
+    Fake-provider användes en gång; inga provider-/molnanrop eller skrivningar
+    till befintliga databaser gjordes. Eget tillfälligt kluster är borttaget.
+    STT-fixturen är en privat 2,03 s WAV från exakt befintligt Astrid-goodluck-
+    ljud/text/baseline, med oförändrat original och utan ny visuell approval.
+    Den observerade Gateway-retryräknaren kan minskas och begränsar inte
+    absolut betalda dispatches/input. Faktiskt USD-övre tak och körbar numerisk
+    livebudget saknas. SDK-admission är inte installerad; injicerade callbacks
+    är förberedelsekontrakt. Verkliga fas-/transportadaptrar och full P6 återstår.
   - Ny separat Neon-QA-databas är initierad med checksumverifierad product-v1,
     Studio 001/002/003/004, en syntetisk administratör och tre dokument.
     004 lades till separat efter verkligt 15-gruppers SQL/restartprov och
     granskad plan: exakt 45 befintliga QA-fingerprints består, liksom 32
     tabeller vardera i produktion och äldre QA. De två nya fullfilstabellerna
     är tomma; ingen policy, budget eller grind seedades.
-    B2:s Render-QA-deploy misslyckades före listen eftersom standardfabriken
-    fortfarande krävde bara 001–003. Rättningen är isolerat SQL-verifierad;
-    nästa exakta leverans måste bli LIVE före nya boot-/browserprov.
-    Spelar-/kostnadsstate är tomma. De sex exakta originalmedierna har sex
+    Den tidigare fullfilsleveransen B2:s Render-QA-deploy misslyckades före
+    listen eftersom standardfabriken fortfarande krävde bara 001–003.
+    Rättningen är pushad i `4d84bffc` efter full hook och alla tre CI-jobb PASS,
+    med standardfabriken verifierad i 41 SQL-/HTTPS-/restartgrupper/46 källhashar.
+    B2 gav health 502. Återhämtningsguarden har 15 offlineprov och oberoende
+    granskning PASS. Korrigerad Render-QA på exakt `4d84bffc` är nu LIVE med
+    health 200 och matchande env-fingerprint. Färsk SSH-paritet efter LIVE
+    verifierar samma äldre journal-SHA/mtime och bevarar en icke-terminal
+    reservation; ingen dränering hävdas. Båda egna Vercel-QA-aliasen är kopplade
+    på samma SHA. Alla 14 boot-/readinesskontroller och kall/hydrerad
+    formulärkontroll på båda origins PASS. Två nya 90-körningar har vardera
+    samtliga 89 insamlade kontroller PASS, inklusive alla fyra dealers två plays
+    och sparad revision; båda kvittona är ändå FAIL med
+    `no_provider_or_unapproved_network_request`, provideranrop noll. Fyra POST
+    till `/api/probe/presence` blockerades per körning. Body/MIME är inte
+    observerade; requesttyp är inte bevisad. Probe initieras bara för Astrid,
+    även med vanlig identity/activity-heartbeat, inte en close per dealer.
+    Projekt/pit är CAS-återställda med identiska före-/efterhashar i båda.
+    Första körningens åtta maskade bildrutor visar rätt dealer/layout utan ny
+    läppsynk-approval. Separat Astrid-diagnostik observerade ett verkligt
+    heartbeat: JSON 241 byte, exakt sex fält och fem booleska flags,
+    `present=true`. Begäran avbröts; projekt-/pit-/provideranrop var noll.
+    Ägd CDP-spärr kvitterades före stängning och egna processer är avslutade.
+    De gamla FAIL-körningarnas body/MIME förblir okända.
+    Tidigare FAIL-kvitton består, produktion är inte omkopplad.
+    Vid initieringen var spelar-/kostnadsstate i nya Neon-QA tomma. De sex
+    exakta originalmedierna har sex
     auditposter och återkörning skrev noll rader. Aktuellt projekt med alla 18
     verifierade bindningar är kopierat via explicit CAS enbart till nya QA;
     neutral BO-/socialpolicy är oförändrad. Privat
@@ -439,11 +478,33 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Första provets nätverksguard är rättad; nästa hade noll blockerade anrop
     men saknade förväntat konfigurationskvitto. Faktisk diagnos bekräftar samma
     Neon-revision men gamla filnamnet i legacy-kvittot. Native-adaptern är
-    rättad med 23 fokuserade prov PASS; nästa fullprov kräver nya leveransen.
+    rättad med 23 fokuserade prov PASS. Dessa tidigare prov föregår den
+    verifierade runtimeleveransen `4d84bffc` och dess nya molnkvitto nedan.
     Projekt-/pitinnehållet är verifierat återställt i båda, providers noll;
     båda oföränderliga FAIL-kvittona bevaras. Fullacceptans/aktivering är öppna.
     Produktion/äldre QA består. Native mail kräver explicit konfigurerad
-    avsändare och Resend-nyckel; fyra adapterprov PASS, faktisk leverans öppen.
+    avsändare och Resend-nyckel; fyra adapterprov PASS. Faktisk nyckel och
+    verifierad egen sändardomän saknas; invitation/reset-leverans är öppen.
+  - [x] **Obetald native-molnacceptans:** 90/90 kontroller PASS på exakt
+    `4d84bffc655bc061a387ac8b98d1b40ac02f2c91`, privat immutable receipt
+    `aa23e484-8f13-421d-b680-ce16df4d1ccf` med SHA256
+    `0368ac1bca980ba050c4fce041f354ae028080aca9ed127e581a39df92cca6e1`.
+    Backoffice utan iframe, CAS/utkast/privata medier och alla fyra dealers
+    två verkliga avkodade/avslutade plays och samma sparade Neon-revision PASS.
+    Tre verkliga heartbeat-svar var 200/JSON/off; inga blockerade eller
+    betalda endpointanrop. Testetikett och Probe-mode ändrades tillfälligt i
+    eget QA-projekt. Ägd CDP-spärr och route-drain kvitterades före exakt
+    återställning av projekt/pit och ursprunglig automatic-policy. Browser-
+    cleanup och rootens separata actual resultatvalidator PASS. 40 fokuserade
+    guardprov och oberoende granskning PASS. Åtta nya bildrutor är granskade
+    för dealer/layout; Veras första övergångsruta visar dubbla händer.
+    Ingen ny mänsklig läppsynk-/take-approval, full P6 eller aktivering följer
+    av detta delprov. Betald text/bild/transkribering/ström/GPU/fullfil och
+    verklig invitation/reset-leverans återstår.
+    Färsk scoped läsning visar en syntetisk BO-identitet med en länkad spelare,
+    saldo 1000/en transaktion, och samtliga elva kostnadstabeller tomma.
+    Egna runner/headless-processer är avslutade. Ingen anslutning till
+    produktion/äldre QA eller nya betalda anrop i den kontrollen.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
   genomförandeuppdrag. Frys aktuella skrivare där det behövs, importera endast
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
@@ -495,11 +556,13 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   kontrollerade. Kvarvarande mänsklig acceptans/blockerare uttryckligen öppna.
   - Kod [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
     på GitHub main har alla tre CI-jobb PASS och Vercel-frontend READY.
-    Senaste kodleverans `6efb50ee` är pushad efter full hook och alla tre CI-jobb
-    PASS. Nytt faktiskt isolerat SQL-/HTTPS-/restartprov: 40 grupper, fyra
-    retained-kontroller, 44 oförändrade källhashar och separat noll-process/
-    fixturkatalog-kontroll PASS. Nya native-QA-byggen/browserprov på samma SHA
-    pågår; föregående `ae54a61b` hade båda Vercelbyggen READY.
+    Verifierad runtimeleverans `4d84bffc655bc061a387ac8b98d1b40ac02f2c91`
+    är pushad på main efter full hook och alla tre CI-jobb PASS. Aktuellt
+    isolerat SQL-/HTTPS-/restartprov: 41 grupper, fyra retained-kontroller och
+    46 oförändrade källhashar; processer/fixturkatalog städade.
+    Den tidigare leveransen `6efb50ee` har sitt separata 40-gruppers/44-hashars
+    kvitto; `ae54a61b` hade båda Vercelbyggen READY. Dessa historiska kvitton
+    ersätter inte ny LIVE-/90-acceptans efter QA:s misslyckade B2-start.
     Lokal traceguard/build har 50 sanerade traces
     PASS. Flagga-av-leveransen
     och SQL-fixturerna bockar inte av P1–P9, aktivering eller avveckling.
