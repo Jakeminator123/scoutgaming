@@ -42,11 +42,17 @@ schema-check läser uttryckligt spårade SQL-källfiler, inte webpack asset-URL:
 Byggkvitto visar product-v1 samt 001/002 i native admin-routens file trace.
 Det tidigare verkliga PostgreSQL-/restartprovet (15 PASS) är äldre; senaste
 schema-/runtimepaket behöver aktuellt isolerat SQL-/restart-/HTTPS-prov före cutover.
-Ordinarie hook omfattar nu även de nya testerna. Leveransstatus kompletteras
-efter gemensam kontroll; ingen produktionseffekt ska härledas från enbart fixturprov.
+Ordinarie full hook PASS och omfattar nu även de nya testerna. Kodleverans
+`1efcbb9c011893ae9aad03bd317cd33833655e5d` är verifierad på GitHub main.
+Vid leveranskontrollen var två av tre [CI-jobb](https://github.com/Jakeminator123/github-work/actions/runs/37080063154)
+gröna och dealer-regression fortfarande igång; frontend var READY och
+`croupier-lab-ui` BUILDING för samma SHA. Kontrollera aktuella slutstatusar innan
+nästa driftsteg. Native-flaggan är fortsatt avstängd; publicerad kod är inte
+live-cutover och ingen produktionseffekt ska härledas från enbart fixturprov.
 Jakob bad att stänga Backoffice-webview och eventuell devserver: CUA kunde inte
 starta (kernel-sökväg), så flikstängningen är inte bekräftad. Read-only kontroll
-visade inga Croupier-nodeprocesser eller lyssnare på 4179/4188/4190/4191. Ingen
+visade även efter testerna inga Croupier-nodeprocesser eller lyssnare på
+4173/4179/4188/4190/4191. Ingen
 ny devserver startas; andra projekts/verktygens processer lämnas ifred.
 `test/` och `pipeline/` är inte raderingsmål i sin helhet: vid inventeringen
 fanns 107 respektive 119 spårade filer, med många aktiva CI-/mediaanrop. Ingen
