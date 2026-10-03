@@ -416,19 +416,31 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Beständiga numeriska, SDK- och Render-fasadaptrar har 36/27/44 offlineprov
     PASS utan provideranrop, inklusive verklig SDK 7.12.1 mot simulerad HTTP.
     Root har granskat exakta filhashar och återkört 106 PASS/1 SKIP (borttagen
-    SDK-fixtur redan verifierad av underagenten). Verklig isolerad SDK-installation,
+    SDK-fixtur redan verifierad av underagenten). Separat fasattestering och
+    opt-in worker har ytterligare 21/22 offlineprov PASS, återkörda av root;
+    faktisk product-speech/adaptive-kod, exakta rollprompts, signerade tickets
+    och bundna process-/SDK-fakta. Ursprunglig plan/budget/TTL består.
+    Verklig isolerad SDK-installation,
     input-/dispatch-/retry- och prisgräns samt färskhetsbindning under faktisk
     fasdeploy återstår. Inget totaltak får nollställas/återbetalas vid omstart,
     och förberedelse-/adapterprov är inte full P6 eller produktionsgodkännande.
     Resend Free är valt, Vercel-CLI OAuth och Marketplace-villkor är godkända
     av Jakob. Marketplace spärrar en ny Free-installation eftersom kontot redan
     tillhör ett Resend-team. Hans befintliga Free-team är nu verifierat med
-    4/3 000 mejl, 0/100 idag, 1/3 domäner och betalning över kvoten avstängd.
-    Dess Vercel-integration är förberedd med åtkomst endast till QA Studio;
-    Install inväntar godkännande för den specifika env-skrivbehörigheten.
-    scoutgaming.tech ägs på samma Vercel-konto. Faktisk domänverifiering,
+    4/3 000 mejl, 0/100 idag, initialt 1/3 domäner och betalning över kvoten avstängd.
+    Dess Vercel-integration är förberedd med åtkomst endast till QA Studio.
+    Automatisk behörighetsgranskning nekade Install-försöket eftersom allmänt
+    ”fortsätt” inte godkände ny projektåtkomst/nyckelskrivning uttryckligen;
+    den specifika tillåtelsen återstår och ingen installation utfördes.
+    scoutgaming.tech är nu tillagd i befintlig Free, i Irland, och Resend
+    visar **Verified** 3 oktober 14:11 svensk tid (dashboardkontroll 14:19).
+    Exakta DKIM-TXT-, send-MX- och send-SPF-TXT-poster är skapade, återlästa
+    publikt; de fem tidigare zonposternas råhashar är oförändrade.
+    Separat SPF-fortsättning bevarar första intent/resultat efter MX-kvittots
+    kanoniska slutpunkt; inga tidigare DNS-skrivningar återförsöktes.
     QA-nyckelkoppling och invitation/reset-leverans återstår; ingen betald
-    mejlplan eller faktisk mejlleverans har skapats.
+    mejlplan eller faktisk mejlleverans har skapats. Nästa liveprov hålls litet
+    inom befintligt totaltak 10 USD enligt Jakobs senaste styrning.
   - Ny separat Neon-QA-databas är initierad med checksumverifierad product-v1,
     Studio 001/002/003/004, en syntetisk administratör och tre dokument.
     004 lades till separat efter verkligt 15-gruppers SQL/restartprov och
@@ -499,8 +511,9 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Projekt-/pitinnehållet är verifierat återställt i båda, providers noll;
     båda oföränderliga FAIL-kvittona bevaras. Fullacceptans/aktivering är öppna.
     Produktion/äldre QA består. Native mail kräver explicit konfigurerad
-    avsändare och Resend-nyckel; fyra adapterprov PASS. Faktisk nyckel och
-    verifierad egen sändardomän saknas; invitation/reset-leverans är öppen.
+    avsändare och Resend-nyckel; fyra adapterprov PASS. Egen sändardomän
+    är nu verifierad; faktisk QA-nyckelkoppling och invitation/
+    reset-leverans är fortfarande öppna.
   - [x] **Obetald native-molnacceptans:** 90/90 kontroller PASS på exakt
     `4d84bffc655bc061a387ac8b98d1b40ac02f2c91`, privat immutable receipt
     `aa23e484-8f13-421d-b680-ce16df4d1ccf` med SHA256
