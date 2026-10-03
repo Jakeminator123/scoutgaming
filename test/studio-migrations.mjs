@@ -57,7 +57,7 @@ async function fixture() {
               working.indexes.push({ table_name: table, name: `${table}_pkey`, valid: true, ready: true, definition: `fixture primary key index for ${table}` });
             }
             for (const name of migration.indexes) {
-              const table = name.startsWith('gpu_reservations') ? 'gpu_reservations' : 'gpu_sessions';
+              const table = name.startsWith('fullfile_reservations') ? 'fullfile_reservations' : name.startsWith('gpu_reservations') ? 'gpu_reservations' : 'gpu_sessions';
               working.relations.push({ name, kind: 'i', table_name: table, is_constraint: false });
               working.indexes.push({ table_name: table, name, valid: true, ready: true, definition: `fixture explicit ${name}` });
             }
@@ -83,8 +83,8 @@ async function installed() {
 
 test('Studio migration sources are fixed, ordered, bounded and independent of runtime environment', async () => {
   const migrations = await loadStudioMigrations();
-  assert.deepEqual(migrations.map(row => row.version), ['001', '002', '003']);
-  assert.deepEqual(migrations.map(row => row.file), ['001-studio-metadata.sql', '002-generation-journals.sql', '003-operator-speech-qa.sql']);
+  assert.deepEqual(migrations.map(row => row.version), ['001', '002', '003', '004']);
+  assert.deepEqual(migrations.map(row => row.file), ['001-studio-metadata.sql', '002-generation-journals.sql', '003-operator-speech-qa.sql', '004-fullfile-reservations.sql']);
   assert.ok(migrations.every(row => /^[a-f0-9]{64}$/.test(row.checksum) && Object.isFrozen(row)));
   assert.equal(migrations[0].tables.includes('storage_migrations'), true);
   assert.equal(migrations[1].tables.includes('storage_migrations'), false);
@@ -94,7 +94,7 @@ test('Studio migration sources are fixed, ordered, bounded and independent of ru
 test('plan is strictly read-only and does not bootstrap absent schema/ledger', async () => {
   const pool = await fixture(), before = pool.snapshot(), plan = await planStudioMigrations({ pool });
   assert.deepEqual(plan.target, target); assert.equal(plan.schemaPresent, false); assert.equal(plan.applied.length, 0);
-  assert.deepEqual(plan.toApply.map(row => row.version), ['001', '002', '003']); assert.deepEqual(plan.pending, plan.toApply);
+  assert.deepEqual(plan.toApply.map(row => row.version), ['001', '002', '003', '004']); assert.deepEqual(plan.pending, plan.toApply);
   assert.deepEqual(pool.snapshot(), before);
   assert.equal(pool.calls[0].sql, 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   assert.equal(pool.calls.some(row => row.marker === 'lock' || row.marker.startsWith('ddl-') || row.marker === 'record'), false);
@@ -114,12 +114,26 @@ test('apply needs explicit confirmation and an exactly matching freshly verified
 test('explicit apply records immutable source and structure checksums once; subsequent apply is a no-op', async () => {
   const pool = await fixture(), plan = await planStudioMigrations({ pool });
   const first = await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true });
-  assert.deepEqual(first.appliedNow, ['001', '002', '003']); assert.deepEqual(first.toApply, []);
-  assert.equal(pool.snapshot().ledger.length, 3);
+  assert.deepEqual(first.appliedNow, ['001', '002', '003', '004']); assert.deepEqual(first.toApply, []);
+  assert.equal(pool.snapshot().ledger.length, 4);
   assert.ok(first.applied.every(row => /^[a-f0-9]{64}$/.test(row.checksum) && /^[a-f0-9]{64}$/.test(row.structureChecksum)));
   const before = pool.snapshot(), ddlCalls = pool.calls.filter(row => row.marker.startsWith('ddl-')).length;
   assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })).appliedNow, []);
   assert.deepEqual(pool.snapshot(), before); assert.equal(pool.calls.filter(row => row.marker.startsWith('ddl-')).length, ddlCalls);
+});
+
+test('004 upgrades an exact 001/002/003 catalog while preserving all prior ledger bytes', async () => {
+  const pool=await installed();
+  pool.change(state=>{
+    state.ledger=state.ledger.slice(0,3);
+    const newTables=['fullfile_budget_policies','fullfile_reservations'];
+    state.relations=state.relations.filter(row=>!newTables.includes(row.name)&&!newTables.includes(row.table_name));
+    for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!newTables.includes(row.table_name));
+  });
+  const original=pool.snapshot().ledger;
+  assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['004']);
+  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['004']);
+  assert.deepEqual(pool.snapshot().ledger.slice(0,3),original);
 });
 
 test('checksum drift is refused without repairing, backfilling or replaying the ledger', async () => {
@@ -172,8 +186,8 @@ test('COMMIT returning rollback cannot report installed migrations', async () =>
 test('concurrent explicit applies share the short global lock and ledger every version once', async () => {
   const pool = await fixture(), plan = await planStudioMigrations({ pool });
   const results = await Promise.all([1, 2].map(() => applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })));
-  assert.deepEqual(results.map(row => row.appliedNow.length).sort(), [0, 3]);
-  assert.equal(pool.snapshot().ledger.length, 3); assert.equal(pool.calls.filter(row => row.marker.startsWith('ddl-')).length, 3);
+  assert.deepEqual(results.map(row => row.appliedNow.length).sort(), [0, 4]);
+  assert.equal(pool.snapshot().ledger.length, 4); assert.equal(pool.calls.filter(row => row.marker.startsWith('ddl-')).length, 4);
 });
 
 test('private database diagnostics never leak through planning/apply failures', async () => {

@@ -270,6 +270,19 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     återläses med exakt paket-/ägarmetadata, hash och storlek. Beständig disk-
     artifact-/budgetfallback saknas i detta läge; endast städad OS-temp används.
     Isolerade byte-/retry-/ägarprov passerar utan betalda provideranrop.
+  - [ ] Fullfilernas monetära reservation före TTS/GPU: det tidigare request-
+    journalprovet täckte inte beloppsreservationen. Additiv 004 och gemensam
+    stream-/fullfilsdygnssumma är implementerade med explicit fullfilsbelopp,
+    beständig requestägare, lease-/tidsfence och ingen budgetnollställning.
+    83 fokuserade prov PASS; separat faktisk localhost-PostgreSQL/restart
+    gav 15/15 grupper och tre guards PASS, inklusive samtidighet/dygnsgräns,
+    tappad COMMIT-kvittens, fenced ägare och riktiga serviceanrops noll provider
+    före nekad policy/budget/authfördröjning. 13 källhashar är oförändrade och
+    egen fixtur städad. Slutlig uppdaterad bred SQL-/HTTPS-/restartacceptans
+    gav 40/40 grupper och fyra retained-kontraktsprov PASS; alla 45 källhashar
+    består och separat städkontroll fann noll egna fixturkataloger.
+    Explicit livebudget återstår. Migration/import seedar ingen fullfilspolicy i äldre
+    förbrukad produktionsjournal; separat verifierad adoption krävs.
   - [x] Rent förberedelsekontrakt för fryst legacy-policy och kostnadsjournal:
     exakta källhashar, scope, budgetversion, förbrukade requests/reservationer
     och stoppade/dränerade skrivare krävs. Osäkra jobb får inte återbetalas eller
@@ -410,15 +423,25 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     fallback ger 415 före auth/mejl. Tolv native adminformer använder också
     POST. 38 riktade SSR/API-/verkliga React-browserprov och TypeScript PASS.
     Bara den nya QA:s syntetiska lösenord/epoch har roterats; signer och andra
-    konton består. Ny leverans och faktisk fullacceptans återstår.
-    Ingen komplett browseracceptans eller aktivering är därför verifierad.
-    Produktion/äldre QA består.
+    konton består. Leverans `b5c0ddc7` har full obligatorisk hook och alla tre
+    CI-jobb PASS. Alla nya QA-byggen är LIVE/READY på samma SHA; 14 bootprov
+    samt faktiskt kallt/hydrerat formulärprov på båda origins PASS.
+    Två fullprov klarade 76 kontroller och stoppades sedan i Vera-rehearsal.
+    Första provets nätverksguard är rättad; nästa hade noll blockerade anrop
+    men saknade förväntat konfigurationskvitto. Faktisk diagnos bekräftar samma
+    Neon-revision men gamla filnamnet i legacy-kvittot. Native-adaptern är
+    rättad med 23 fokuserade prov PASS; nästa fullprov kräver nya leveransen.
+    Projekt-/pitinnehållet är verifierat återställt i båda, providers noll;
+    båda oföränderliga FAIL-kvittona bevaras. Fullacceptans/aktivering är öppna.
+    Produktion/äldre QA består. Native mail kräver explicit konfigurerad
+    avsändare och Resend-nyckel; fyra adapterprov PASS, faktisk leverans öppen.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
   genomförandeuppdrag. Frys aktuella skrivare där det behövs, importera endast
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
   verifiera riktig HTTPS-adress, sparning, spel, auth och återstart.
-  - Privata importspärrar: 130 kritiska käll-/SQL-/manifest-/indexfiler måste
-    matcha exakt levererad main-SHA. Alla 18 aktiva videobindningar ska
+  - Privata importspärrar: kritiska käll-/SQL-/manifest-/indexfiler måste
+    matcha exakt levererad main-SHA; tidigare 130-filers grund utökas med 004.
+    Alla 18 aktiva videobindningar ska
     fullåterläsas från Blob innan skrivning. Skarpa QA-läsaren har nu
     fullverifierat alla 18 inklusive sex original från tom OS-cache,
     med noll SQL-/provider-skrivningar. Efter import krävs slutlig sex-medie-

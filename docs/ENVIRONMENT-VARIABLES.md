@@ -50,7 +50,7 @@ från Render; den får inte falla tillbaka till ett nytt lokalt seed-projekt.
 Gemensam sparad policy är ett **ännu ej aktiverat** kodsteg:
 `CROUPIER_STUDIO_NEON_POLICY=1` på Render och båda Vercel-byggena kräver samma
 `CROUPIER_GAME_DATABASE_URL` till befintliga game/auth-Neon, installerat
-checksumverifierat product-v1 samt Studio-migrationerna 001, 002 och 003. Samma
+checksumverifierat product-v1 samt Studio-migrationerna 001, 002, 003 och 004. Samma
 `CROUPIER_STUDIO_ENVIRONMENT_ID` och `CROUPIER_STUDIO_WORKSPACE_ID` måste anges
 på båda tjänsterna. Projekt och administration läses i en enda transaktion;
 projektrevision, administrationsrevision och gemensam spelrevision redovisas.
@@ -76,12 +76,14 @@ Den använder befintliga `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`
 och `CROUPIER_VERCEL_INGRESS_SECRET`. Verifierad import, auth/HTTPS- och
 restartacceptans i drift återstår före aktivering; det isolerade SQL-/HTTPS-/
 restartprovet är godkänt. En koddeploy är inte källbytet.
-`RESEND_API_KEY` på Vercel-Studio är villkorlig för riktiga invite/resend/reset-
-mail. Saknad leveransadapter gör dessa actions otillgängliga; befintliga
+`RESEND_API_KEY` och `CROUPIER_STUDIO_MAIL_FROM` på Vercel-Studio krävs tillsammans
+för riktiga invite/resend/reset-mail. Avsändaren är en explicit e-postadress
+på en ägd och providerverifierad domän; ingen äldre hårdkodad avsändare används.
+Saknad leveransadapter gör dessa actions otillgängliga; befintliga
 inloggningar kräver inte en mailnyckel och tokenläckage till UI är inte fallback.
 Kontrollerade Render-/Vercel-/repomiljöer saknar ännu en tillgänglig native
 Resend-koppling. Avsändardomän och fungerande invitation/reset ska verifieras
-före produktionsbytet; kodens äldre `bo@axelio.io` bevisar inte domänägande.
+före produktionsbytet. Kodens äldre `bo@axelio.io` bevisar inte domänägande.
 För driftkonfiguration används avsedda Render-/Vercel-värden. Lokala provider-
 nycklar kan tillhöra ett annat konto och får inte automatiskt ersätta dem.
 Native videoregistret kräver `CROUPIER_MEDIA_STORAGE=blob`,
@@ -125,6 +127,15 @@ cache-/inställningsläsning och Cartesia-anrop när Neon- eller nativeflaggan �
 `LAB_STUDIO_DATA_DIR` är bara en kvarvarande lokal legacy-consumer; det ger
 inte Vercel en beständig talcache.
 
+Fullfilsvägen med Neon kräver separat explicit `CROUPIER_SPEECH_FULLFILE_RESERVE_USD`
+och `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD` samt motsvarande redan verifierad
+beständig policy. Värdena skickas endast till Web när fullfilsvägen uttryckligen
+är vald; streamvägen behåller sin sessionsreservation. De båda vägarna räknas
+i samma dygnstak. Belopp accepterar högst sex decimaler och 1–10 000 000
+mikro-USD. Migration 004 skapar ingen policy och återbetalar eller nollställer
+ingen historisk kostnad. Den gamla streamreservationen bevisar inte rätt
+fullfilspris; detta måste bestämmas mot avsedda providerkonton innan liveprov.
+
 Fryst export av äldre Studio-/taljournalfiler på befintlig PostgreSQL-drift:
 `CROUPIER_STORAGE_MAINTENANCE=studio-export`, `CROUPIER_DATABASE=postgres`,
 `CROUPIER_STUDIO_NEON_POLICY=0` samt `CROUPIER_GENERATED_SPEECH=0`,
@@ -142,7 +153,7 @@ Kod och isolerade tester är förberedelse, inte genomfört produktionsbyte.
 | --- | --- | --- | --- | --- |
 | Render: spel + BO + Lab (`/studio`) | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_CLOUD_DATA_ROOT`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER` + `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` på tom databas | Se grupper nedan | Render sätter `PORT`, `RENDER_EXTERNAL_URL` |
 | Vercel: spel/BO (`apps/croupier-frontend`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet; UI behöver inga modell-/DB-/Blob-nycklar | – |
-| Vercel: Lab UI (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Dagens SSR läser Render; nytt native-läge kräver gemensam `CROUPIER_STUDIO_NEON_POLICY`, explicit scope/game-Neon och alla tre migrationsversionerna ovan | – |
+| Vercel: Lab UI (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Dagens SSR läser Render; nytt native-läge kräver gemensam `CROUPIER_STUDIO_NEON_POLICY`, explicit scope/game-Neon och alla fyra migrationsversionerna ovan | – |
 | Vercel: äldre statisk ingång (`ops/vercel-entry`, inte längre publicerad) | `CROUPIER_GAME_ORIGIN` = Render-tjänstens exakta HTTPS-origin utan snedstreck på slutet | – | Historiskt byggkontrakt | – |
 | Render: separat GPU-relä (ännu ej driftsatt) | `WORKER_SECRET`, annat `TICKET_SECRET` (båda minst 32 tecken), `ALLOWED_ORIGINS` = exakta spel-origins | – | – | Render sätter `PORT` |
 | Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAWAPI_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |

@@ -41,7 +41,8 @@ Den nya administrationen provas i en separat molnmiljö med egen databas.
 Den använder samma sparade revisionskälla som spelmotorn och bevarar osparade
 utkast vid en sparningskonflikt. Den är ännu inte aktiverad på den vanliga
 Studio-adressen. Invitationer och lösenordsåterställning väntar på en verifierad
-mejlkoppling; befintliga konton och saldo flyttas eller återställs inte för provet.
+mejlkoppling med en avsändaradress på din verifierade domän. Befintliga konton
+och saldo flyttas eller återställs inte för provet.
 
 OpenClaw öppnar den befintliga autentiserade dashboarden på Render.
 Agentinställningar, pairing och modell-/GPU-konfiguration förändras inte av

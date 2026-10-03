@@ -210,7 +210,7 @@ export async function applyLegacySpeechLedgerSnapshot({ pool, prepared, expected
   const importChecksum = hash(canonicalStudioJson({sourceId:source.sourceId,sourceChecksum:source.checksum,scope:rows.scope,costRows:wanted,retainedOperatorQa:rows.retainedOperatorQa}));
   const eventId = identityUuid(canonicalStudioJson({sourceId:source.sourceId,scope:rows.scope}));
   const plan = await schemaCheck({pool});
-  if (!plan.schemaPresent || plan.toApply.length || plan.applied.map(row=>row.version).join(',') !== '001,002,003'
+  if (!plan.schemaPresent || plan.toApply.length || plan.applied.map(row=>row.version).join(',') !== '001,002,003,004'
     || plan.applied.some(row=>!sha.test(row.checksum) || !sha.test(row.structureChecksum)) || !same(plan.target,target)) fail('studio_speech_import_schema_unverified',409);
   let client, began = false;
   const query = async (tag,sql,values=[]) => client.query(`/* speech-import:${tag} */ ${sql}`,values);
@@ -226,6 +226,13 @@ export async function applyLegacySpeechLedgerSnapshot({ pool, prepared, expected
     const ledger=(await query('schema','SELECT version,checksum,structure_checksum FROM croupier_studio.storage_migrations ORDER BY version')).rows;
     if (!same(ledger,plan.applied.map(row=>({version:row.version,checksum:row.checksum,structure_checksum:row.structureChecksum})))) fail('studio_speech_import_schema_unverified',409);
     const env=rows.scope.environment, found={};
+    // Legacy snapshots contain no authoritative fullfile prices/reservations.
+    // Preserve their original checksum; new capability costs must remain empty,
+    // including on replay, rather than fabricate a policy or merge later usage.
+    for(const [kind,table] of [['fullfilePolicies','fullfile_budget_policies'],['fullfileReservations','fullfile_reservations']]){
+      if((await query(`read_${kind}`,`SELECT * FROM croupier_studio.${table} WHERE environment_id=$1 LIMIT 1`,[env])).rows.length)
+        fail('studio_speech_import_target_conflict',409);
+    }
     for (const [kind,table,order] of [['leases','speech_execution_leases','resource'],['policy','gpu_budget_policies','environment_id'],['requests','speech_requests','request_key'],['sessions','gpu_sessions','session_id'],['reservations','gpu_reservations','session_id,day'],
       ['operatorCampaigns','operator_qa_campaigns','campaign_id'],['operatorAttempts','operator_qa_attempts','campaign_id,attempt'],['operatorGates','operator_qa_gate','campaign_id']]) {
       const saved=(await query(`read_${kind}`,`SELECT ${kind==='reservations'?'environment_id,session_id,day::text,reserved_micro_usd':'*'} FROM croupier_studio.${table} WHERE environment_id=$1 ORDER BY ${order} LIMIT 16385`,[env])).rows;

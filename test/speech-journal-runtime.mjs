@@ -25,7 +25,10 @@ async function fixture(t, { stamp = Date.parse('2026-10-03T23:59:00Z'), submit, 
   const directory = await mkdtemp(join(tmpdir(), 'croupier-journal-runtime-'));
   let time = stamp, connected = false, busy = false, starts = 0;
   const pool = speechMemoryPool(() => time), journal = await createSpeechJournal({ pool, environmentId:'isolated-runtime', now:() => time });
-  if (initialPolicy) await journal.initializeBudgetPolicy({ dailyBudgetMicroUsd:1000000, confirmation:'verified-new-empty-cost-journal' });
+  if (initialPolicy) {
+    await journal.initializeBudgetPolicy({ dailyBudgetMicroUsd:1000000, confirmation:'verified-new-empty-cost-journal' });
+    await journal.initializeFullfileBudgetPolicy({ reserveMicroUsd:200000,currentBudgetMicroUsd:1000000,confirmation:'verified-new-empty-cost-journal' });
+  }
   const config = { directory, apiKey:'synthetic-private-key', endpointId:'runtime-fixture',
     workerSecret:'worker-fixture-secret-at-least-32-characters', origin:'https://render.croupier-qa.invalid', reserveUsd:'0.20', dailyBudgetUsd:'1' };
   const calls = [], managers = [], services = [], jobs = new Map();
@@ -59,7 +62,7 @@ async function fixture(t, { stamp = Date.parse('2026-10-03T23:59:00Z'), submit, 
 
 test('Neon opt-in without journal fails before disk, relay or provider; no policy auto bootstrap', async t => {
   const f = await fixture(t, { initialPolicy:false }); let relay = 0;
-  assert.throws(() => createGeneratedSpeechService({ directory:f.directory }, { journalRequired:true }), { code:'generated_speech_journal_unavailable' });
+  assert.throws(() => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journalRequired:true }), { code:'generated_speech_journal_unavailable' });
   assert.throws(() => createSpeechSessionManager(f.config, { ...f.deps, journal:null }), { code:'generated_speech_journal_unavailable' });
   await assert.rejects(createGeneratedSpeechStreamService({}, { directory:f.directory }, { journalRequired:true, resolveOwner:() => '', attachRelay:() => { relay++; } }), { code:'generated_speech_journal_unavailable' });
   assert.equal(relay, 0); assert.equal(f.calls.length, 0); assert.deepEqual(await readdir(f.directory), []);
@@ -102,7 +105,7 @@ test('failed durable submit marker never reaches the provider and keeps reservat
 
 test('fullfile caller caches SQL identity on restart, preserves owned bytes and blocks capability replay', async t => {
   const f = await fixture(t); let paid = 0;
-  const construct = () => createGeneratedSpeechService({ directory:f.directory }, { journal:f.journal, journalRequired:true, artifacts:f.artifacts,
+  const construct = () => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:f.journal, journalRequired:true, artifacts:f.artifacts,
     provider:{ generate:async ({ text, beforeCostly }) => { await beforeCostly(); paid++; return generated(text); } } });
   const service = construct(), packageValue = await service.generate(input());
   assert.equal(paid, 1); assert.equal([...f.pool.state.requests.values()][0].state, 'completed');
@@ -118,7 +121,7 @@ test('fullfile caller caches SQL identity on restart, preserves owned bytes and 
 
 test('fullfile uncertainty and lost submit-marker commit never authorize a second mutation', async t => {
   const f = await fixture(t); let paid = 0;
-  const construct = () => createGeneratedSpeechService({ directory:f.directory }, { journal:f.journal, artifacts:f.artifacts, provider:{ generate:async () => { paid++; throw Error('unknown paid result'); } } });
+  const construct = () => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:f.journal, artifacts:f.artifacts, provider:{ generate:async () => { paid++; throw Error('unknown paid result'); } } });
   await assert.rejects(construct().generate(input()), { code:'generated_speech_failed' });
   assert.equal(paid, 1); assert.equal([...f.pool.state.requests.values()][0].state, 'submission_uncertain');
   await assert.rejects(construct().generate(input()), { code:'generated_speech_request_already_attempted' }); assert.equal(paid, 1);
@@ -128,7 +131,7 @@ test('fullfile uncertainty and lost submit-marker commit never authorize a secon
 
 test('Neon fullfile requires private artifact adapter before any reservation or provider call', async t => {
   const f = await fixture(t);
-  assert.throws(() => createGeneratedSpeechService({ directory:f.directory }, { journal:f.journal, journalRequired:true }), { code:'generated_speech_artifacts_unavailable' });
+  assert.throws(() => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:f.journal, journalRequired:true }), { code:'generated_speech_artifacts_unavailable' });
   assert.equal(f.pool.state.requests.size, 0); assert.deepEqual(await readdir(f.directory), []);
 });
 
@@ -136,7 +139,7 @@ test('lost fullfile submit-marker commit cannot call provider and completed owne
   const f = await fixture(t); let paid = 0;
   const wrapped = { ...f.journal,
     async markRequestSubmissionStarted(value) { f.pool.failNext('COMMIT', { afterCommit:true }); return f.journal.markRequestSubmissionStarted(value); } };
-  const service = createGeneratedSpeechService({ directory:f.directory }, { journal:wrapped, artifacts:f.artifacts, provider:{ generate:async () => { paid++; } } });
+  const service = createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:wrapped, artifacts:f.artifacts, provider:{ generate:async () => { paid++; } } });
   await assert.rejects(service.generate(input()), { code:'generated_speech_journal_unavailable' }); assert.equal(paid, 0);
   assert.equal([...f.pool.state.requests.values()][0].state, 'submission_uncertain');
   const foreign = await createSpeechJournal({ pool:f.pool, environmentId:'foreign-runtime', now:f.getTime });

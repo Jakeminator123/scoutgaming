@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { speechMemoryPool as memoryPool } from './fixtures/speech-memory-pool.mjs';
-import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS, speechRequestKey } from '../web/postgres-speech-journal.mjs';
+import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS, speechRequestKey } from '../web/postgres-speech-journal.mjs';
 
 // Deterministic transaction fixture, not a substitute for real PostgreSQL DDL,
 // lock/constraint tests. No server, provider, env credential or Blob access.
@@ -19,10 +19,15 @@ async function fixture({ environmentId = 'isolated-qa', stamp = Date.parse('2026
   return { pool, journal, options, setTime: value => { time = value; }, getTime: () => time };
 }
 const streamLease = journal => journal.acquireLease({ resource: 'stream-session', holderId: 'runtime-a', ttlMs: GPU_RESERVATION_WINDOW_MS });
-const fileLease = journal => journal.acquireLease({ resource: 'fullfile-provider', holderId: 'runtime-a', ttlMs: GPU_RESERVATION_WINDOW_MS });
+const fileBudget = Object.freeze({ reserveMicroUsd:250000, currentBudgetMicroUsd:1000000 });
+const initFilePolicy = async journal => {
+  await initPolicy(journal);
+  await journal.initializeFullfileBudgetPolicy({ ...fileBudget, confirmation:'verified-new-empty-cost-journal' });
+};
+const fileLease = async journal => { await initFilePolicy(journal); return journal.acquireLease({ resource:'fullfile-provider', holderId:'runtime-a', ttlMs:GPU_RESERVATION_WINDOW_MS }); };
 const initPolicy = (journal, dailyBudgetMicroUsd = 1000000) => journal.initializeBudgetPolicy({ dailyBudgetMicroUsd, confirmation: 'verified-new-empty-cost-journal' });
 const reserve = (journal, lease, id = sessionId, extra = {}) => journal.reserveSession({ sessionId: id, endpointId: 'endpoint-fixture', lease, reserveMicroUsd: 250000, currentBudgetMicroUsd: 1000000, workerState: emptyWorker, ...extra });
-const claim = (journal, lease, extra = {}) => journal.claimRequest({ ownerHash, requestId: 'request-1', fingerprint, capability: 'fullfile', lease, ...extra });
+const claim = (journal, lease, extra = {}) => journal.claimRequest({ ownerHash, requestId: 'request-1', fingerprint, capability: 'fullfile', lease, ...fileBudget, ...extra });
 async function running(journal, lease, id = sessionId) {
   await reserve(journal, lease, id);
   await journal.markSubmissionStarted({ sessionId: id, lease });
@@ -55,7 +60,7 @@ test('two writers claim one durable common key; conflicts cannot switch fingerpr
 
 test('completed private metadata survives restart and is owner/environment scoped', async () => {
   const { pool, journal, options } = await fixture(), lease = await fileLease(journal), request = await claim(journal, lease);
-  await journal.markRequestSubmissionStarted({ key: request.key, lease });
+  await journal.markRequestSubmissionStarted({ key: request.key, lease, ...fileBudget });
   const packageMetadata = { packageId: 'generated-fixture', exactText: 'Hej.', reviewStatus: 'pending', audio: { pathname: 'croupier/generated/audio.wav', sha256: 'e'.repeat(64) } };
   await journal.completeRequest({ key: request.key, lease, packageId: 'generated-fixture', packageMetadata });
   packageMetadata.audio.pathname = 'changed-after-call';
@@ -72,7 +77,7 @@ test('completed private metadata survives restart and is owner/environment scope
 
 test('package metadata rejects credential/binary/query URL/getter inputs before persistence', async () => {
   const { journal, pool } = await fixture(), lease = await fileLease(journal), request = await claim(journal, lease);
-  await journal.markRequestSubmissionStarted({ key: request.key, lease });
+  await journal.markRequestSubmissionStarted({ key: request.key, lease, ...fileBudget });
   const cases = [{ token: 'private' }, { nested: { apiKey: 'private' } }, { audio: 'data:audio/wav;base64,AAA=' }, { authorization: 'Bearer secret' },
     { video: 'https://blob.invalid/file?X-Amz-Signature=private' }, { audio: '/api/audio?token=private' }, { video: 'wss://worker.invalid/private' },
     { ticket: 'single-use-private' }, { video: 'https://user:private@blob.invalid/file' }, { get forbidden() { throw new Error('must not execute'); } }];
@@ -83,7 +88,7 @@ test('package metadata rejects credential/binary/query URL/getter inputs before 
 
 test('uncertain and failed request keys cannot retry after restart; expiry cannot forgive paid full-file work', async () => {
   const f = await fixture(), lease = await fileLease(f.journal), request = await claim(f.journal, lease);
-  await f.journal.markRequestSubmissionStarted({ key: request.key, lease });
+  await f.journal.markRequestSubmissionStarted({ key: request.key, lease, ...fileBudget });
   assert.equal((await f.journal.failRequest({ key: request.key, lease })).state, 'submission_uncertain');
   f.setTime(f.getTime() + GPU_RESERVATION_WINDOW_MS + 1);
   const restarted = await createSpeechJournal(f.options);
@@ -104,7 +109,7 @@ test('lease renewal/fence and stale completion are enforced on every writer', as
   assert.equal(fresh.fence, lease.fence + 1);
   const renewed = await f.journal.renewLease({ lease: fresh, ttlMs: 5000 }); assert.equal(renewed.fence, fresh.fence);
   await assert.rejects(claim(f.journal, lease), rejection('generated_speech_stale_fence', 409));
-  const request = await claim(f.journal, fresh); await f.journal.markRequestSubmissionStarted({ key: request.key, lease: fresh });
+  const request = await claim(f.journal, fresh); await f.journal.markRequestSubmissionStarted({ key: request.key, lease: fresh, ...fileBudget });
   await assert.rejects(f.journal.completeRequest({ key: request.key, lease, packageId: 'generated-test', packageMetadata: {} }), rejection('generated_speech_stale_fence', 409));
   await assert.rejects(f.journal.releaseLease({ lease: fresh }), rejection('generated_speech_recovery_required', 409));
 });
@@ -117,7 +122,7 @@ test('budget is never implicit; confirmed empty-only bootstrap does not increase
   await initPolicy(journal, 500000);
   assert.deepEqual(await initPolicy(journal, 1000000), { dailyBudgetMicroUsd: 500000, savedBudgetMicroUsd: 500000 });
   assert.deepEqual(await journal.getBudgetPolicy({ currentBudgetMicroUsd: 300000 }), { dailyBudgetMicroUsd: 300000, savedBudgetMicroUsd: 500000 });
-  const occupied = await fixture(), file = await fileLease(occupied.journal); await claim(occupied.journal, file);
+  const occupied = await fixture(), file = await streamLease(occupied.journal); await claim(occupied.journal, file, {capability:'stream'});
   await assert.rejects(initPolicy(occupied.journal), rejection('generated_speech_journal_invalid', 409));
   assert.equal(occupied.pool.state.policies.size, 0);
 });
@@ -199,7 +204,7 @@ test('recovery fences former writer; known expired 404 can retire only after ful
 
 test('stream request completion is a permanent spent key, no fresh ticket or full-file fallback', async () => {
   const { journal, options } = await fixture(), lease = await streamLease(journal), request = await claim(journal, lease, { capability: 'stream' });
-  await journal.markRequestSubmissionStarted({ key: request.key, lease });
+  await journal.markRequestSubmissionStarted({ key: request.key, lease, ...fileBudget });
   await assert.rejects(journal.completeRequest({ key: request.key, lease, packageId: 'invalid', packageMetadata: {} }), rejection('invalid_generated_speech_package', 422));
   await journal.completeRequest({ key: request.key, lease }); await journal.releaseLease({ lease });
   const restart = await createSpeechJournal(options); assert.equal((await claim(restart, undefined, { capability: 'stream' })).status, 'alreadyAttempted');
@@ -252,4 +257,81 @@ test('SQL remains additive five tables/three indexes, bounded scopes and narrow 
   assert.doesNotMatch(sql, /\b(?:BEGIN|COMMIT|IF NOT EXISTS|DROP|TRUNCATE)\b/);
   assert.match(sql, /PRIMARY KEY \(environment_id, request_key\)/); assert.match(sql, /WHERE released_at_ms IS NULL/); assert.match(sql, /REVOKE ALL ON croupier_studio\.speech_execution_leases/);
   assert.doesNotMatch(source, /\b(?:fetch|process\.env|setInterval|setTimeout)\b|\bDELETE FROM\b|\bUPDATE croupier_studio\.gpu_reservations\b/);
+});
+
+test('fullfile reservation requires explicit immutable policy and atomically rolls back with its request', async () => {
+  const f=await fixture(), lease=await f.journal.acquireLease({resource:'fullfile-provider',holderId:'runtime-a',ttlMs:720000});
+  await assert.rejects(claim(f.journal,lease,{reserveMicroUsd:undefined}),rejection('invalid_generated_speech_budget',422));
+  await assert.rejects(claim(f.journal,lease),rejection('generated_speech_fullfile_budget_policy_missing',409));
+  assert.equal(f.pool.state.requests.size,0);assert.equal(f.pool.state.fileReservations.size,0);
+  await initFilePolicy(f.journal);
+  await assert.rejects(f.journal.initializeFullfileBudgetPolicy({...fileBudget,reserveMicroUsd:300000,confirmation:'verified-new-empty-cost-journal'}),rejection('generated_speech_fullfile_budget_policy_conflict',409));
+  f.pool.failNext('insert_file_reservation');
+  await assert.rejects(claim(f.journal,lease),rejection('generated_speech_journal_unavailable',503));
+  assert.equal(f.pool.state.requests.size,0);assert.equal(f.pool.state.fileReservations.size,0);
+  const request=await claim(f.journal,lease);
+  assert.equal(f.pool.state.fileReservations.size,1);assert.equal(f.pool.state.sessions.size,0);
+  f.pool.state.fileReservations.clear();
+  await assert.rejects(f.journal.markRequestSubmissionStarted({key:request.key,lease,...fileBudget}),rejection('generated_speech_fullfile_reservation_invalid',409));
+  assert.equal([...f.pool.state.requests.values()][0].state,'reserved');
+});
+
+test('fullfile and GPU share the same immutable daily cap on every charged UTC day', async () => {
+  const f=await fixture({stamp:Date.parse('2026-10-03T23:55:00Z')});
+  await initPolicy(f.journal,500000);await f.journal.initializeFullfileBudgetPolicy({...fileBudget,confirmation:'verified-new-empty-cost-journal'});
+  const file=await f.journal.acquireLease({resource:'fullfile-provider',holderId:'runtime-a',ttlMs:720000});
+  const request=await claim(f.journal,file);
+  assert.deepEqual([...f.pool.state.fileReservations.values()].map(r=>r.day),['2026-10-03','2026-10-04']);
+  await f.journal.failRequest({key:request.key,lease:file});await f.journal.releaseLease({lease:file});
+  const stream=await streamLease(f.journal);await running(f.journal,stream);await finish(f.journal,stream);
+  await assert.rejects(reserve(f.journal,stream,sessionId2),rejection('generated_speech_daily_budget_exhausted',429));
+  const nextFile=await f.journal.acquireLease({resource:'fullfile-provider',holderId:'runtime-a',ttlMs:720000});
+  await assert.rejects(claim(f.journal,nextFile,{requestId:'second-file'}),rejection('generated_speech_daily_budget_exhausted',429));
+  assert.equal(f.pool.state.fileReservations.size,2);assert.equal(f.pool.state.reservations.size,2);
+  assert.equal(f.pool.state.requests.size,1);
+});
+
+test('renewed fullfile fence cannot extend provider admission past the original paid window', async () => {
+  const f=await fixture({stamp:Date.parse('2026-10-03T23:48:00Z')}), lease=await fileLease(f.journal), request=await claim(f.journal,lease);
+  const reservedAt=f.getTime(), args={key:request.key,lease,...fileBudget};
+  await f.journal.markRequestSubmissionStarted(args);
+  f.setTime(reservedAt+GPU_RESERVATION_WINDOW_MS-FULLFILE_ADMISSION_REMAINING_MS);
+  const renewed=await f.journal.renewLease({lease,ttlMs:720000});
+  assert.equal((await f.journal.assertFullfileReservation({...args,lease:renewed})).expiresAt,reservedAt+720000);
+  f.setTime(f.getTime()+1);
+  await assert.rejects(f.journal.assertFullfileReservation({...args,lease:renewed}),rejection('generated_speech_fullfile_reservation_expired',409));
+  f.setTime(Date.parse('2026-10-03T23:59:59Z'));
+  await assert.rejects(f.journal.assertFullfileReservation({...args,lease:renewed}),rejection('generated_speech_fullfile_reservation_expired',409));
+  assert.equal(f.pool.state.fileReservations.size,2);
+  assert.equal([...f.pool.state.fileReservations.values()][0].reserved_at_ms,String(reservedAt));
+  await assert.rejects(f.journal.assertFullfileReservation({...args,lease:{...renewed,fence:renewed.fence+1}}),rejection('generated_speech_stale_fence',409));
+});
+
+test('fullfile row tampering, tightened cap and old unreserved requests fail before submission', async () => {
+  const f=await fixture(),lease=await fileLease(f.journal),request=await claim(f.journal,lease),args={key:request.key,lease,...fileBudget};
+  for(const [field,value] of [['day','2026-10-04'],['reserved_micro_usd','1'],['reserved_at_ms','0']]){
+    const row=[...f.pool.state.fileReservations.values()][0],prior=row[field];row[field]=value;
+    await assert.rejects(f.journal.markRequestSubmissionStarted(args),rejection('generated_speech_fullfile_reservation_invalid',409));[...f.pool.state.fileReservations.values()][0][field]=prior;
+  }
+  await assert.rejects(f.journal.markRequestSubmissionStarted({...args,currentBudgetMicroUsd:249999}),rejection('generated_speech_daily_budget_exhausted',429));
+  assert.equal([...f.pool.state.requests.values()][0].state,'reserved');
+  const original=[...f.pool.state.fileReservations.values()].map(value=>structuredClone(value));
+  f.pool.state.filePolicies.clear();
+  await assert.rejects(f.journal.initializeFullfileBudgetPolicy({...fileBudget,confirmation:'verified-new-empty-cost-journal'}),rejection('generated_speech_journal_invalid',409));
+  assert.deepEqual([...f.pool.state.fileReservations.values()],original);
+  await assert.rejects(f.journal.markRequestSubmissionStarted(args),rejection('generated_speech_fullfile_budget_policy_missing',409));
+});
+
+test('lost fullfile COMMIT and uncertain/cancelled jobs keep reserved cost after restart with no fresh claim', async () => {
+  const f=await fixture(),lease=await fileLease(f.journal);
+  f.pool.failNext('COMMIT',{afterCommit:true});
+  await assert.rejects(claim(f.journal,lease),rejection('generated_speech_journal_unavailable',503));
+  assert.equal(f.pool.state.fileReservations.size,1);
+  const restart=await createSpeechJournal(f.options),key=speechRequestKey(ownerHash,'request-1');
+  assert.equal((await claim(restart,lease)).status,'inFlight');
+  await restart.markRequestSubmissionStarted({key,lease,...fileBudget});
+  await restart.failRequest({key,lease,safeCode:'generated_speech_cancelled'});
+  assert.equal((await claim(restart,lease)).status,'alreadyAttempted');
+  assert.equal(f.pool.state.fileReservations.size,1);assert.equal([...f.pool.state.requests.values()][0].state,'submission_uncertain');
+  assert.equal(f.pool.trace.filter(t=>t==='insert_file_reservation').length,1);
 });
