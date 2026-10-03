@@ -9,5 +9,5 @@ export default async function Page({searchParams}:{searchParams:Promise<Record<s
   const config = nativeStudioAdminConfiguration();
   if (!config) notFound();
   const query = await searchParams;
-  return <StudioLogin authBase={config.authBase} mode="set-password" token={studioPasswordToken(query.t)} />;
+  return <StudioLogin authBase={config.authBase} mode="set-password" token={studioPasswordToken(query.t)} gameOrigin={config.allowedOrigins[0]} />;
 }

@@ -3,12 +3,15 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createStudioLoginClient, StudioLoginUiError, studioLoginDestination, studioLoginReturnTo, studioPasswordToken } from '../lib/studio-login-client.mjs';
 import styles from './studio-administration.module.css';
 
-type Props = { authBase:'/studio/api/auth'|'/api/auth'; returnTo?:string; token?:string|null; mode?:'login'|'set-password';fetchImpl?:typeof fetch;resetAvailable?:boolean };
-export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,resetAvailable = false }:Props) {
+type Props = { authBase:'/studio/api/auth'|'/api/auth'; returnTo?:string; token?:string|null; mode?:'login'|'set-password';fetchImpl?:typeof fetch;resetAvailable?:boolean;gameOrigin?:string };
+export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,resetAvailable = false,gameOrigin }:Props) {
   const client = useMemo(() => createStudioLoginClient({authBase,fetchImpl}),[authBase,fetchImpl]);
   const [ready,setReady] = useState(false), [busy,setBusy] = useState(false), [notice,setNotice] = useState(''), [complete,setComplete] = useState(false);
   const writing = useRef(false), alive = useRef(false), passwordToken = useRef(studioPasswordToken(token));
   const loginPath = authBase === '/studio/api/auth' ? '/studio/login' : '/login';
+  // Native auth is enabled with the canonical game policy. The game may have
+  // a different public origin from standalone Studio, especially in QA.
+  const gameLoginPath = gameOrigin ? new URL('/player-login',gameOrigin).href : '/player-login';
   useEffect(() => {
     alive.current = true;
     // Remove the bearer from browser history before any interactive request.
@@ -52,7 +55,7 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
         {resetAvailable && <details><summary>Glömt lösenordet?</summary><form className={styles.form} method="post" action={`${authBase}/reset-request`} onSubmit={event => void submit(event,'reset-request')}>
           <label>Användarnamn eller e-post<input name="user" autoComplete="username" required maxLength={254} disabled={!ready || busy} /></label><button type="submit" disabled={!ready || busy}>Begär återställningslänk</button>
         </form></details>}
-      </> : complete ? <><p><a href="/blackjack">Logga in i spelet</a></p><p>Administratör? <a href={loginPath}>Logga in i Studio</a>.</p></> : passwordToken.current ? <form className={styles.form} method="post" action={`${authBase}/set-password`} onSubmit={event => void submit(event,'set-password')}>
+      </> : complete ? <><p><a href={gameLoginPath}>Logga in i spelet</a></p><p>Administratör? <a href={loginPath}>Logga in i Studio</a>.</p></> : passwordToken.current ? <form className={styles.form} method="post" action={`${authBase}/set-password`} onSubmit={event => void submit(event,'set-password')}>
         <label>Nytt lösenord (8–128 tecken)<input name="pass" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label>
         <label>Upprepa lösenordet<input name="confirm" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label><button type="submit" disabled={!ready || busy}>Spara lösenord</button>
       </form> : <p role="alert">Länken saknas eller är ogiltig. Be en administratör om en ny inbjudan eller begär återställning från <a href={loginPath}>inloggningen</a>.</p>}

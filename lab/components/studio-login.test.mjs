@@ -22,7 +22,7 @@ function harness() {
     useMemo(fn,deps){const index=cursor++;if(!hooks[index]||deps.some((value,i)=>value!==hooks[index].deps[i]))hooks[index]={kind:'memo',value:fn(),deps};return hooks[index].value;},
     useEffect(fn,deps){const index=cursor++;if(!hooks[index]||deps.some((value,i)=>value!==hooks[index].deps[i]))pending.push(()=>{hooks[index]?.cleanup?.();hooks[index]={kind:'effect',fn,deps,cleanup:fn()};});},
   };
-  vm.runInNewContext(compiled,{module,exports:module.exports,FormData,HTMLInputElement:Input,
+  vm.runInNewContext(compiled,{module,exports:module.exports,FormData,HTMLInputElement:Input,URL,
     window:{location:{pathname:'/studio/set-password',assign:value=>destinations.push(value)},history:{replaceState:(...args)=>history.push(args)}},
     require:name=>name==='react'?fakeReact:name==='../lib/studio-login-client.mjs'?loginClient:name.endsWith('.module.css')?{__esModule:true,default:{}}:require(name)});
   return {destinations,history,render(props){cursor=0;return module.exports.StudioLogin(props);},effects(){while(pending.length)pending.shift()();},
@@ -97,16 +97,34 @@ test('cold submit handlers never dispatch until the readiness effect has rendere
  }
 });
 
-test('password reset success offers fixed game and admin login paths without request-selected redirects',async()=>{
-  for(const authBase of ['/studio/api/auth','/api/auth']){
+test('password reset success offers canonical game and admin login paths without request-selected redirects',async()=>{
+  for(const authBase of ['/studio/api/auth','/api/auth']) for(const gameOrigin of [undefined,'https://game.fixture.invalid']){
     const h=harness(),token='b'.repeat(43);
-    const props={authBase,mode:'set-password',token,returnTo:'https://untrusted.example.test/redirect',fetchImpl:async()=>Response.json({ok:true,returnTo:'//untrusted.example.test/redirect'})};
+    const props={authBase,gameOrigin,mode:'set-password',token,returnTo:'https://untrusted.example.test/redirect',fetchImpl:async()=>Response.json({ok:true,returnTo:'//untrusted.example.test/redirect'})};
     let tree=h.render(props);h.effects();tree=h.render(props);
     forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({pass:'new-private-pass',confirm:'new-private-pass'})});
     await flush();tree=h.render(props);
-    assert.deepEqual(nodes(tree,node=>node.type==='a').map(node=>node.props.href),['/blackjack',authBase==='/studio/api/auth'?'/studio/login':'/login']);
+    assert.deepEqual(nodes(tree,node=>node.type==='a').map(node=>node.props.href),[gameOrigin?`${gameOrigin}/player-login`:'/player-login',authBase==='/studio/api/auth'?'/studio/login':'/login']);
     assert.match(renderToStaticMarkup(tree),/Logga in i spelet/);assert.match(renderToStaticMarkup(tree),/Administratör/);
     assert.doesNotMatch(renderToStaticMarkup(tree),/untrusted|new-private-pass|bbbbbbbb/);
     assert.deepEqual(h.destinations,[]);assert.equal(forms(tree).length,0);h.unmount();
+  }
+});
+
+test('native password page binds the player entrance to configured game origin across mounted and standalone Studio',async()=>{
+  const pageSource=readFileSync(new URL('../app/set-password/page.tsx',import.meta.url),'utf8');
+  const pageCode=transformSync(pageSource,{filename:'page.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
+  for(const authBase of ['/studio/api/auth','/api/auth']){
+    const gameOrigin='https://game.fixture.invalid',page={exports:{}};
+    const overrides={
+      '@/components/studio-login':{StudioLogin:()=>null},
+      '@/lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>({authBase,allowedOrigins:[gameOrigin,'https://studio.fixture.invalid']})},
+      '@/lib/studio-login-client.mjs':loginClient,
+      'next/navigation':{notFound(){assert.fail('native page is enabled');}},
+    };
+    vm.runInNewContext(pageCode,{module:page,exports:page.exports,require:name=>Object.hasOwn(overrides,name)?overrides[name]:require(name)});
+    const tree=await page.exports.default({searchParams:Promise.resolve({t:'b'.repeat(43),gameOrigin:'https://untrusted.example.test',returnTo:'//untrusted.example.test'})});
+    assert.equal(tree.props.gameOrigin,gameOrigin);assert.equal(tree.props.authBase,authBase);
+    assert.equal(tree.props.token,'b'.repeat(43));assert.equal(tree.props.returnTo,undefined);
   }
 });
