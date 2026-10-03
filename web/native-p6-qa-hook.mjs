@@ -77,3 +77,15 @@ export function nativeP6OwnedSpeechFetch(router,{request,status,playerId,owner,r
       return normalizeProductSpeechEnvelope({request,status:projected,...(model==='gateway-default'?{}:{model})});
     }});
 }
+
+// Bound by the real authenticated presentation request. The registry snapshots
+// the exact projected Director body when the existing caller sends it, and
+// re-reads the saved policy and session before a stage can reach the worker.
+export function nativeP6OwnedDirectorFetch(router,{playerId,owner,readOwner,readStatus,readProject,project,signal}){
+  if(!router)return null;
+  need(typeof readOwner==='function'&&typeof readStatus==='function'&&typeof readProject==='function',
+    'native_p6_qa_actual_director_callbacks_required');
+  const ownedFetch=router.fetchForOwnedDirectorRequest({playerId,owner,readOwner,readStatus,readProject,project,signal});
+  ownedFetch.cacheScope=hash(JSON.stringify([owner,project]));
+  return ownedFetch;
+}

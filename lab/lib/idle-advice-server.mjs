@@ -129,12 +129,15 @@ const publicProvider = status => typeof status === 'string'
 export function createIdleAdviceServer({ settings, videoRegistry, registryLoader = studioVideoRegistry, fetchImpl = fetch, now = Date.now } = {}) {
   const jobs = new Map();
   let active = 0;
-  return async function advise(body, { signal } = {}) {
+  return async function advise(body, { signal, fetchImpl: requestFetch = fetchImpl, cacheScope } = {}) {
+    if (cacheScope !== undefined && (typeof cacheScope !== 'string' || !/^[a-f0-9]{64}$/.test(cacheScope))) fail('idle_advice_invalid_owner_scope');
     const checked = validateBody(body, now());
     const { body: inputBody, input, expiresAt } = checked;
-    const fingerprint = hash(inputBody), messageKey = canonical([inputBody.sourceRef.channel, inputBody.sourceRef.messageId]);
+    const scoped = value => cacheScope === undefined ? value : canonical([cacheScope, value]);
+    const jobKey = scoped(inputBody.requestId),channel = scoped(inputBody.sourceRef.channel);
+    const fingerprint = hash(inputBody), messageKey = canonical([channel, inputBody.sourceRef.messageId]);
     for (const [key, entry] of jobs) if (entry.settled && entry.until <= now()) jobs.delete(key);
-    const prior = jobs.get(inputBody.requestId);
+    const prior = jobs.get(jobKey);
     if (prior) {
       if (prior.fingerprint !== fingerprint) fail('idle_advice_request_conflict', 409);
       const reused = structuredClone(await prior.promise);
@@ -142,9 +145,9 @@ export function createIdleAdviceServer({ settings, videoRegistry, registryLoader
     }
     if ([...jobs.values()].some(entry => entry.messageKey === messageKey)) fail('idle_advice_message_already_considered', 409);
     if (jobs.size >= IDLE_ADVICE_LIMITS.capacity) fail('idle_advice_capacity', 429);
-    const job = { fingerprint, messageKey, channel: inputBody.sourceRef.channel, started: now(), attempted: false,
+    const job = { fingerprint, messageKey, channel, started: now(), attempted: false,
       until: now() + IDLE_ADVICE_LIMITS.ledgerMs, settled: false, promise: null };
-    jobs.set(inputBody.requestId, job);
+    jobs.set(jobKey, job);
     const result = (provider, contextReceipt = { contractVersion: null, observedChatMessages: null }, videoId = null, wouldChooseId = null) => ({
       requestId: inputBody.requestId, sourceRef: inputBody.sourceRef, videoId, wouldChooseId, provider, contextReceipt,
       expiresAt: new Date(expiresAt).toISOString(),
@@ -169,7 +172,7 @@ export function createIdleAdviceServer({ settings, videoRegistry, registryLoader
       const deadline = Math.max(1, Math.min(30000, expiresAt - now()));
       const timeout = Number.isFinite(configured.adviceTimeoutMs) ? configured.adviceTimeoutMs : 2500;
       const deadlineSignal = AbortSignal.timeout(deadline);
-      const boundedFetch = (url, options = {}) => fetchImpl(url, { ...options,
+      const boundedFetch = (url, options = {}) => requestFetch(url, { ...options,
         signal: AbortSignal.any([deadlineSignal, ...(options.signal ? [options.signal] : []), ...(signal ? [signal] : [])]) });
       let reply;
       active++; job.attempted = true;

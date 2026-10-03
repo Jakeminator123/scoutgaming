@@ -8,7 +8,7 @@ import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
-import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch } from './native-p6-qa-hook.mjs';
+import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch } from './native-p6-qa-hook.mjs';
 import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
@@ -841,11 +841,11 @@ function chatSpeechPolicy(dealerId) {
   };
 }
 
-async function authoritativeChatStatus(playerId, session, request) {
+async function authoritativeChatStatus(playerId, session, request, { allowCurrentRound = false } = {}) {
   const saved = (await db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(playerId));
   const game = saved ? JSON.parse(saved.state) : newGame();
   const view = shoeCommand(game, { op: 'state' }, 0).view;
-  if (request.roundRevision !== String(view.version)) {
+  if (request.roundRevision !== String(view.version) && !(allowCurrentRound && request.roundRevision === undefined)) {
     const error = new Error('stale_round_revision'); error.statusCode = 409; throw error;
   }
   const receipt = (await db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId));
@@ -1120,6 +1120,15 @@ const server = createServer(async (req, res) => {
   if (pathname.startsWith('/api/presentation/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db,
+        ...(nativeP6QaRouter ? { directorFetchFactory: async ({ req: request, playerId, project, readProject, signal }) => {
+          const owner = await chatSessionOwner(request, playerId);
+          const initial = await authoritativeChatStatus(playerId, await playerSession(request), {
+            dealerId: 'astrid', sessionRevision: createHash('sha256').update(owner).digest('hex') }, { allowCurrentRound: true });
+          const revision = { dealerId: initial.dealerId, sessionRevision: initial.sessionRevision, roundRevision: initial.roundRevision };
+          return nativeP6OwnedDirectorFetch(nativeP6QaRouter, { playerId, owner, project, readProject, signal,
+            readOwner: () => chatSessionOwner(request, playerId),
+            readStatus: async () => authoritativeChatStatus(playerId, await playerSession(request), revision) });
+        } } : {}),
         ...(studioPolicyRuntime ? { store: studioPolicyRuntime.policy.projectStore(), registryLoader: studioMediaRuntime.videoRegistry,
           videoResponse: studioMediaRuntime.videoResponse, legacyControls: studioMediaRuntime.legacyControls } : {}) });
       if (await presentationApi(req, res, pathname, authenticated)) return;

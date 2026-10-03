@@ -34,7 +34,7 @@ export function presentationInput(event, published) {
 
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data'), 'videos') },
-  select = selectPresentation, legacyOptions, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
+  select = selectPresentation, directorFetchFactory = null, legacyOptions, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   legacyControls = project => legacyClipControls(project, { ...legacyOptions, ...(env.CROUPIER_DATA_DIR ? { dataDirectory: env.CROUPIER_DATA_DIR } : {}) }) } = {}) {
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
@@ -84,7 +84,14 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         const controller = new AbortController();
         const disconnected = () => { if (!res.writableEnded) controller.abort(); };
         res.once('close', disconnected);
-        try { json(200, { ...await advise({ ...body, project }, { signal: controller.signal }), projectRevision: project.revision, configurationSource }); }
+        try {
+          const fetchImpl = directorFetchFactory ? await directorFetchFactory({ req, playerId, project,
+            readProject: () => store.load(), signal: controller.signal }) : null;
+          if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable', 503);
+          json(200, { ...await advise({ ...body, project }, { signal: controller.signal,
+            ...(fetchImpl ? { fetchImpl, ...(fetchImpl.cacheScope === undefined ? {} : { cacheScope: fetchImpl.cacheScope }) } : {}) }),
+            projectRevision: project.revision, configurationSource });
+        }
         finally { res.removeListener('close', disconnected); }
         return true;
       }
@@ -95,17 +102,30 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
       const eventId = prepareDecision(buildRuntimeCatalog(project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;
       const key = JSON.stringify([playerId, body.version, sourceEvent, body.mode, project.revision]);
-      if (!decisions.has(key)) {
-        if (decisions.size >= 256) decisions.delete(decisions.keys().next().value);
-        decisions.set(key, select({ requestId: randomUUID(), project, dealerId: body.dealerId, eventId, sourceEvent, mode: body.mode }, { settings, videoRegistry: inventory }).then(result => {
-          const video = inventory.videos.find(item => item.id === result.videoGenerationId);
-          const family = inventory.families.find(item => item.id === video?.familyId);
-          const standard = inventory.videos.find(item => family?.standardIds.includes(item.id) && item.available);
-          const publicVideo = item => item ? { id: item.id, sha256: item.sha256, fileName: item.fileName, src: `/api/presentation/videos/${item.id}` } : null;
-          return { ...result, video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource };
-        }));
-      }
-      json(200, await decisions.get(key));
+      const controller = new AbortController();
+      const disconnected = () => { if (!res.writableEnded) controller.abort(); };
+      res.once('close', disconnected);
+      try {
+        const fetchImpl = directorFetchFactory ? await directorFetchFactory({ req, playerId, project,
+          readProject: () => store.load(), signal: controller.signal }) : null;
+        if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable', 503);
+        const selectOwned = () => select({ requestId: randomUUID(), project, dealerId: body.dealerId, eventId, sourceEvent, mode: body.mode },
+          { settings, videoRegistry: inventory, ...(fetchImpl ? { fetchImpl } : {}) }).then(result => {
+            const video = inventory.videos.find(item => item.id === result.videoGenerationId);
+            const family = inventory.families.find(item => item.id === video?.familyId);
+            const standard = inventory.videos.find(item => family?.standardIds.includes(item.id) && item.available);
+            const publicVideo = item => item ? { id: item.id, sha256: item.sha256, fileName: item.fileName, src: `/api/presentation/videos/${item.id}` } : null;
+            return { ...result, video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource };
+          });
+        // A QA transport closes over the actual authenticated HTTP request.
+        // It must never be reused through the ordinary presentation cache.
+        if (fetchImpl) { json(200, await selectOwned()); return true; }
+        if (!decisions.has(key)) {
+          if (decisions.size >= 256) decisions.delete(decisions.keys().next().value);
+          decisions.set(key, selectOwned());
+        }
+        json(200, await decisions.get(key));
+      } finally { res.removeListener('close', disconnected); }
     } catch (error) { json(error.statusCode || 400, { error: error.message || 'Presentation unavailable' }); }
     return true;
   };

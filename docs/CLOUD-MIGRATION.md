@@ -384,6 +384,18 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   ljud/chatt samt båda GPU-vägar verifieras utan oavsiktlig ändring. Fixtures först;
   betalda liveprov kräver uttryckligt avgränsad budget/auktorisation. Fysisk kamera/
   mikrofon/mobil/Safari och mänsklig läppsynk redovisas separat om de återstår.
+  - Fortsättningskoden 3 oktober kopplar faktisk Director/SDK till serverägd
+    Web-session, aktuell spelstatus och återläst sparad policy. Idle-cache
+    avgränsas per ägare/policy, signerade tickets använder samma beständiga
+    text-slot som texttal och giltigt avstående består. QA-entry binder råa
+    router-/worker-manifest och faktisk Web-child-env; full Render-env och
+    SDK-child-env har fortsatt egna bindningar. Ny privat runner går genom
+    `/api/presentation/idle-advice` i shadow och kräver färsk Neon-policy,
+    modellcandidates och verkligt Director-svar. En Director-Terra och fyra
+    högst Terra/Deep-par ryms i nio återstående SDK-dispatches; originalets
+    totaltak/journal/reservation ändras inte. Kod/offlineprov är inte faktisk
+    installation eller P6-acceptans. Nya sourcepins/context ska regenereras;
+    konto-/tariffbevis, faktisk runtime och två avkodade playback-ACK återstår.
   - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 41 acceptansgrupper samt
     runnerguard PASS i tillfällig lokal PostgreSQL och kortlivad HTTPS-fixture.
     Revisionskonflikt/rollback, spelkonfigprojektion, auth/engångstoken/epoch,

@@ -48,6 +48,23 @@ function fixture({ configured = direct(), registry = inventory(), registryLoader
   return { calls, setNow(value) { at = value; }, advise: createIdleAdviceServer({ settings: configured, videoRegistry: registryLoader ? undefined : registry, registryLoader, fetchImpl: fetcher, now: () => at }) };
 }
 const errorCode = expected => error => error.message === expected;
+test('per-request owned transports remain separate while the idle service retains its shared concurrency guard', async()=>{
+  const f=fixture({configured:remote(),fetchImpl:noFetch}),calls=[],pending=[];
+  const fetchFor=owner=>async (_url,options)=>{
+    calls.push(owner);const payload=JSON.parse(options.body);
+    await new Promise(done=>pending.push(done));
+    return Response.json({advice:{requestId:payload.input.requestId,catalogRevision:payload.catalog.revision,variantId:null},provider:{status:'responded',contextContractVersion:2,
+      observedChatMessages:payload.input.context.observedChat.messages.length}});
+  };
+  const first=body(),second=structuredClone(first),third=structuredClone(first);
+  const scopes=['a'.repeat(64),'b'.repeat(64),'c'.repeat(64)];
+  const running=[f.advise(first,{fetchImpl:fetchFor('one'),cacheScope:scopes[0]}),f.advise(second,{fetchImpl:fetchFor('two'),cacheScope:scopes[1]})];
+  await new Promise(done=>setImmediate(done));assert.deepEqual(calls,['one','two']);
+  assert.equal((await f.advise(third,{fetchImpl:noFetch,cacheScope:scopes[2]})).provider,'idle_advice_rate_limited_baseline');
+  pending.forEach(done=>done());assert.deepEqual((await Promise.all(running)).map(r=>r.provider),['responded','responded']);
+  await f.advise(first,{fetchImpl:noFetch,cacheScope:scopes[0]});assert.equal(calls.length,2,'Same owner/policy ledger still prevents a provider retry.');
+  await assert.rejects(f.advise(first,{fetchImpl:noFetch,cacheScope:'untrusted-owner'}),/idle_advice_invalid_owner_scope/);
+});
 
 test('fresh opportunities reload uploaded candidates while retries and rate limits retain their ledger', async () => {
   let current = inventory(), loads = 0;
