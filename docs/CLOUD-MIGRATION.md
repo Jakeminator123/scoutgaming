@@ -740,8 +740,8 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
 
   Avgränsad städning före P7 har tagit bort frontendens oroutade blackjack-demo,
   oanvänd UI-/tema-/hookscaffold och dess exklusiva beroenden, samt pensionerad
-  GitLab-GPU-CI och dubblerad miljökarta. Lokala Next-/TypeScript-byggen rensas
-  efter kontroll av sessionsvakt och processägare. Dessa mål har ingen aktiv
+  GitLab-GPU-CI och dubblerad miljökarta. Disponibel Next-/TypeScript-cache är rensad
+  efter kontroll av sessionsvakt och processägare; labbtesternas runtime behålls. Dessa mål har ingen aktiv
   produktions-/QA-konsument. Tabellen ovan gäller de större P8-beroendena;
   deras disk-/envborttagning kräver fortsatt molnåterläsning och restart.
   - `services/test`/`services/test/fixtures` finns inte. De faktiska GPU-worker-
@@ -793,7 +793,7 @@ Full AI/GPU-acceptans, cookie/loader-bevis och produktionsbytet är fortfarande 
 | Mediefiler och färdiga paket | Privat Blob `croupier-media-private`; äldre alias och diskgrenar kvar där de används | Samma privata Blob, exakta objekt/hashar; Neon håller metadata och bindningar |
 | AI/GPU-jobb och kostnader | Render/RunPod/OpenClaw samt befintliga skyddade journaler | Neon-journaler och oförändrade reservations-/ägargates; P6-budget och kvitton bevaras |
 | Director/Gateway | Egna aktiva tjänster, `/data/catalog` och `/data/openclaw` | Behålls; Studio länkar till befintlig native dashboard |
-| Lokal utveckling | Koordinerat produkt-/labbpar; sparad data i `lab/data` | Samma sessionsvakt; `.next` och `tsconfig.tsbuildinfo` är disponibla byggen |
+| Lokal utveckling | Koordinerat produkt-/labbpar; sparad data i `lab/data` | Samma sessionsvakt; byggcache är disponibel, men Lab-integrationstestet använder färdig runtime |
 
 Ny QA bevisar ersättningen i en separat miljö. P7 byter produktionskälla efter
 verifierad paritet och dränering; P8 tar därefter bort gamla BO-/diskgrenar,
