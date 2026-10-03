@@ -184,3 +184,26 @@ test('stream prepare remains unpaid, paid source uses SQL identity and cancellat
   await assert.rejects(restarted.prepare(input()), { code:'generated_speech_request_already_attempted' });
   assert.deepEqual(await readdir(f.directory), []);
 });
+
+test('Neon close waits for pending idle cancellation, terminal and drain before releasing the lease', async t => {
+  const f = await fixture(t);
+  let releaseCancel, cancelStarted = false, closed = false;
+  const held = new Promise(resolve => { releaseCancel = resolve; });
+  const manager = f.manager({ idleTimeoutMs: 10, fetchImpl: async (url, init) => {
+    if (url.includes('/cancel/')) { cancelStarted = true; await held; }
+    return f.deps.fetchImpl(url, init);
+  } });
+  await manager.ensure(input());
+  await t.waitFor(() => assert.equal(cancelStarted, true), { interval: 5, timeout: 1000 });
+  const closing = manager.close().then(() => { closed = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(closed, false);
+  assert.equal([...f.pool.state.sessions.values()][0].terminal_status, null);
+  releaseCancel(); await closing;
+  const session = [...f.pool.state.sessions.values()][0];
+  assert.equal(session.terminal_status, 'CANCELLED');
+  assert.notEqual(session.released_at_ms, null);
+  assert.equal(f.calls.filter(c => c.url.includes('/cancel/')).length, 1);
+  assert.equal(f.starts(), 1);
+  assert.equal(f.pool.state.reservations.size, 2, 'all day reservations retained');
+});

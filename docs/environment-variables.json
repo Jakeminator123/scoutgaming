@@ -11,6 +11,7 @@
         "ops/cloud/storage-export.mjs",
         "web/operator-speech-qa.mjs",
         "web/native-p6-qa-hook.mjs",
+        "web/native-ai-qa-runtime.mjs",
         "web/storage/studio-runtime.mjs",
         "web/storage/studio-game-policy.mjs",
         "web/studio-game-commands.mjs"
@@ -86,7 +87,10 @@
         "CROUPIER_P6_SDK_DEPLOYMENT_ID",
         "CROUPIER_P6_SDK_WORKER_TOKEN",
         "CROUPIER_P6_SDK_READBACK_TOKEN",
-        "CROUPIER_P6_SDK_TICKET_SECRET"
+        "CROUPIER_P6_SDK_TICKET_SECRET",
+        "CROUPIER_P6_BOUNDED_TEST",
+        "CROUPIER_P6_BOUNDED_MANIFEST_SHA256",
+        "CROUPIER_P6_SDK_OPENAI_API_KEY"
       ],
       "managed": [
         "PORT",

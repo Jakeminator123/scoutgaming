@@ -82,15 +82,16 @@ let singleton = null;
 let singletonKey = null;
 let speechJournal = null;
 let speechArtifacts = null;
+let speechProviderFetch = null;
 function requireArtifacts(artifacts) {
   if (!artifacts || typeof artifacts.save !== 'function' || typeof artifacts.get !== 'function') fail('generated_speech_artifacts_unavailable');
   return artifacts;
 }
-export function configureGeneratedSpeechJournal(journal, { artifacts = null } = {}) {
+export function configureGeneratedSpeechJournal(journal, { artifacts = null, providerFetch = null } = {}) {
   if (journal !== null) requireSpeechJournal(journal);
   if (journal !== null) requireArtifacts(artifacts);
-  if (speechJournal !== journal || speechArtifacts !== artifacts) {
-    singleton = null; singletonKey = null; speechJournal = journal; speechArtifacts = artifacts;
+  if (speechJournal !== journal || speechArtifacts !== artifacts || speechProviderFetch !== providerFetch) {
+    singleton = null; singletonKey = null; speechJournal = journal; speechArtifacts = artifacts; speechProviderFetch = providerFetch;
   }
 }
 export function getGeneratedSpeechService() {
@@ -98,14 +99,14 @@ export function getGeneratedSpeechService() {
   if (!configured) return null;
   if (process.env.CROUPIER_STUDIO_NEON_POLICY === '1') requireSpeechJournal(speechJournal);
   const key = digest(JSON.stringify([value, process.env.CROUPIER_STUDIO_NEON_POLICY === '1']));
-  if (key !== singletonKey) { singleton = createGeneratedSpeechService(value, { journal:speechJournal, artifacts:speechArtifacts }); singletonKey = key; }
+  if (key !== singletonKey) { singleton = createGeneratedSpeechService(value, { journal:speechJournal, artifacts:speechArtifacts, fetchImpl:speechProviderFetch ?? fetch }); singletonKey = key; }
   return singleton;
 }
 
 // Only an explicitly isolated, private preview store. Artifacts never enter the
 // dealer bank or inherit visual acceptance. Request reservations survive failed
 // jobs/restarts: an uncertain paid request is not automatically charged again.
-export function createGeneratedSpeechService(config, { provider = null, journal = null, artifacts = null,
+export function createGeneratedSpeechService(config, { provider = null, journal = null, artifacts = null, fetchImpl = fetch,
   journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' } = {}) {
   if (journalRequired || journal) requireSpeechJournal(journal);
   if (journal && typeof journal.assertFullfileReservation !== 'function') fail('generated_speech_journal_unavailable');
@@ -205,7 +206,7 @@ export function createGeneratedSpeechService(config, { provider = null, journal 
       if (input.signal?.aborted) fail('generated_speech_cancelled', 499);
       await writeFile(reservation, JSON.stringify({ fingerprint, ownerHash }), { flag: 'wx', mode: 0o600 });
       reserved = true;
-      runtime ??= createGeneratedSpeechProvider({ ...config, voiceId, modelId });
+      runtime ??= createGeneratedSpeechProvider({ ...config, voiceId, modelId }, { fetchImpl });
       const result = await runtime.generate({ requestId: `speech-${key}`, text: input.text, signal: input.signal, beforeCostly: input.beforeCostly, onProgress: input.onProgress });
       if (input.signal?.aborted) fail('generated_speech_cancelled', 499);
       const id = randomBytes(16).toString('hex');
@@ -242,7 +243,7 @@ export function createGeneratedSpeechService(config, { provider = null, journal 
       if (claim.status !== 'new') fail('generated_speech_request_already_attempted', 409);
       claimed = true;
       await journal.markRequestSubmissionStarted({ key, lease:await ownership.get(), ...budget });
-      runtime ??= createGeneratedSpeechProvider({ ...config, voiceId, modelId });
+      runtime ??= createGeneratedSpeechProvider({ ...config, voiceId, modelId }, { fetchImpl });
       const result = await runtime.generate({ requestId:`speech-${key}`, text:input.text, signal:input.signal,
         beforeCostly:async () => {
           input.signal?.throwIfAborted(); await input.beforeCostly?.();

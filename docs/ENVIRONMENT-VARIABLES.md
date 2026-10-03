@@ -123,6 +123,18 @@ Lab får inga nya QA-nycklar. Opt-in nekar `NODE_OPTIONS`, `NODE_PATH`,
 En saknad, ändrad eller osäkert lagrad privat adapter stoppar uppstarten.
 Kopplingen är ännu inte installerad eller aktiverad i QA eller produktion.
 
+Det avgränsade funktionstestet använder dessutom `CROUPIER_P6_BOUNDED_TEST=1`,
+`CROUPIER_P6_BOUNDED_MANIFEST_SHA256` och `CROUPIER_P6_SDK_OPENAI_API_KEY`.
+Dessa får endast nå Web i den ovan namngivna isolerade QA-tjänsten, med
+full käll-SHA, befintlig operatör/spelarlänk och ett privat manifest med
+högst 30 minuters giltighet. Lab får inga nya QA-nycklar. SDK-nyckeln hör
+till den installerade OpenAI-klienten; ordinarie talnycklar fortsätter följa
+den explicita befintliga providerkopplingen. Ursprunglig journal och redan
+förbrukade reservationer bevaras. Högst två generationer, tre SDK-anrop,
+två TTS-anrop, två GPU-submissioner och en worker tillåts utan automatisk
+omkörning. Exakta Cartesia-/counting-priser är backlog; faktisk USD-kostnad
+är okänd och ingen återbetalning eller nollkostnad antas.
+
 Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
 `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_GAME_ORIGIN` och
 `BETTALOTTO_PARTNER_BASE_URL` anger samma exakta publika Vercel-origin.

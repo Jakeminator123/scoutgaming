@@ -401,3 +401,23 @@ test('provider failures yield fixed diagnostic codes without exposing input or r
     await assert.rejects(f.create().ensure(f.input), { code: `generated_speech_session_provider_${code}` });
   }
 });
+
+test('close joins an already pending idle cancellation and terminal write without another provider dispatch', async t => {
+  const f = await fixture(t, { idleTimeoutMs: 10 });
+  let releaseCancel, cancelStarted = false, closed = false;
+  const held = new Promise(resolve => { releaseCancel = resolve; });
+  const manager = f.create({}, { fetchImpl: async (url, init) => {
+    if (url.includes('/cancel/')) { cancelStarted = true; await held; }
+    return f.fetchImpl(url, init);
+  } });
+  await manager.ensure(f.input);
+  await t.waitFor(() => assert.equal(cancelStarted, true), { interval: 5, timeout: 1000 });
+  const closing = manager.close().then(() => { closed = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(closed, false, 'close waits for the cancellation response and durable terminal receipt');
+  releaseCancel(); await closing;
+  assert.equal(f.calls.filter(call => call.url.includes('/cancel/')).length, 1);
+  assert.equal(starts(f.calls).length, 1);
+  const terminalFile = (await readdir(f.directory)).find(name => name.endsWith('.terminal.json'));
+  assert.deepEqual(JSON.parse(await readFile(join(f.directory, terminalFile), 'utf8')), { status: 'CANCELLED' });
+});

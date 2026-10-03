@@ -34,6 +34,12 @@ export async function initializeNativeP6QaRouter(env=process.env){
   const rootInfo=await lstat(qa.stateRoot);
   need(rootInfo.isDirectory()&&!rootInfo.isSymbolicLink()&&rootInfo.uid===1000&&!(rootInfo.mode&0o077)
     &&await realpath(qa.stateRoot)===qa.stateRoot,'native_p6_qa_private_root_required');
+  if(env.CROUPIER_P6_BOUNDED_TEST==='1') {
+    const {initializeBoundedAiQa}=await import('./native-ai-qa-runtime.mjs');
+    const middleware=await initializeBoundedAiQa(qa,env);
+    middleware.readOwnedPlaybackContext=createNativeP6OwnedPlaybackContextReader({ownLinkedPlayerSha256:middleware.ownLinkedPlayerSha256});
+    return middleware;
+  }
   const [{value:manifest},{bytes:contextBytes,value:context},{value:workerManifest}]=await Promise.all([
     privateJson(qa.stateRoot+'/router-manifest.json'),privateJson(qa.stateRoot+'/authority-context.json'),privateJson(qa.stateRoot+'/manifest.json')]);
   need(manifest.runId===qa.runId&&manifest.deploymentId===qa.deploymentId

@@ -52,6 +52,7 @@ export function createSpeechSessionManager(configuration, {
   const root = resolve(directory), lockPath = join(root, 'stream-session.lock');
   const managerAbort = new AbortController();
   let pending = null, activeJob = null, idleTimer = null, closing = false;
+  const cancellations = new Map();
 
   async function store() {
     await mkdir(root, { recursive: true, mode: 0o700 });
@@ -133,7 +134,15 @@ export function createSpeechSessionManager(configuration, {
     }
     return value.status;
   }
-  async function cancel(job) {
+  function cancel(job) {
+    if (!job) return Promise.resolve();
+    if (cancellations.has(job.jobId)) return cancellations.get(job.jobId);
+    const task = cancelOnce(job);
+    cancellations.set(job.jobId, task);
+    void task.finally(() => cancellations.delete(job.jobId));
+    return task;
+  }
+  async function cancelOnce(job) {
     if (!job) return;
     if (activeJob?.jobId === job.jobId) { activeJob = null; clearTimeout(idleTimer); }
     try {
@@ -292,6 +301,14 @@ export function createSpeechSessionManager(configuration, {
       pending = ensure(input, lifetime).finally(() => { pending = null; if (lifetime.idleSuspended && activeJob && !closing) touch(); });
       return pending;
     },
-    async close() { closing = true; clearTimeout(idleTimer); managerAbort.abort(); await cancel(activeJob); activeJob = null; },
+    async close() {
+      closing = true; clearTimeout(idleTimer); managerAbort.abort();
+      await cancel(activeJob);
+      await pending?.catch(() => {});
+      // Idle cancellation clears activeJob before awaiting provider/ledger I/O.
+      // Shutdown must join that work before callers close or remove the store.
+      while (cancellations.size) await Promise.all([...cancellations.values()]);
+      activeJob = null;
+    },
   };
 }
