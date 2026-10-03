@@ -4,6 +4,7 @@ import { backofficeOrigin } from '@/lib/backoffice-navigation.mjs';
 import { BackofficePanel } from '@/components/backoffice-panel';
 import { NativeAdministration } from '@/components/native-administration';
 import { nativeStudioAdminEnabled, nativeStudioAdminConfiguration, assertNativeStudioRequest, studioNativeRuntime } from '@/lib/studio-native-runtime.mjs';
+import { normalizeNativeStudioPageRequest } from '@/lib/studio-native-request.mjs';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export default async function Page() {
   const h = await headers();
   if (nativeStudioAdminEnabled()) {
     const config = nativeStudioAdminConfiguration();
-    const request = new Request(`https://${h.get('host') || 'invalid'}/studio/administration`, { headers: h });
+    const request = normalizeNativeStudioPageRequest(new Request(`https://${h.get('host') || 'invalid'}/studio/administration`, { headers: h }), config);
     assertNativeStudioRequest(request, config);
     const native = await studioNativeRuntime();
     let session;

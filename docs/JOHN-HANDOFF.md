@@ -7,7 +7,7 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 Pågående fortsättning 3 oktober: gemensam Neon-policy mellan Studio/Render,
 native konto-/partner-/authhandlers och tillhörande formulär är implementerade
-på main. Grovt cirka 65–70 % av sammanslagningen; källbyte, full helhetsacceptans
+på main. Grovt cirka 75 % av sammanslagningen; källbyte, full helhetsacceptans
 och faktisk avveckling återstår. Inget i detta kodsteg har aktiverat produktion.
 Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
 `/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
@@ -114,11 +114,40 @@ noll rader. Den aktuella projektkopian med alla 18 verifierade bindningar är
 sparad där via explicit CAS, med oförändrad neutral BO-/socialpolicy. Privat
 `native-qa-project-replica-imported.json` är kvitto för QA-kopian, inte fryst
 produktionsimport. Produktions- och äldre QA-rader är oförändrade.
-Render-QA är nu suspenderad för samordnad kandidatändring till den nya
-databasen/scope och en separat datarot; gamla QA-filer och en gammal öppen
-reservation bevaras oförändrade. Tal-/stream-/kameraproviders är avstängda.
-Två separata Vercel-QA-projekt är skapade; kandidatbyggen pågår utan byte av
-befintliga produktions-/QA-alias. Faktisk molnacceptans återstår.
+Render-QA är återstartad på exakt `ae54a61b`, nya databasen/scope och separat
+datarot. Faktisk health/konfiguration PASS; gamla QA-filer och en gammal öppen
+reservation har samma hash och mtime efter återstart. Tal-/stream-/kamera-
+providers är avstängda. Två separata Vercel-QA-projekt är READY på samma SHA.
+Den exakta Lab-QA-domänen behövde registreras som projektets produktionsdomän
+eftersom Vercel förkortade standardnamnet; native login ger nu 200 och auth-
+methodkontrollen 405. Standard-SSO och befintliga projekt/domäner består.
+Faktisk komplett browseracceptans återstår; detta är ingen produktionsaktivering.
+
+Den första riktiga native-API-kontrollen hittade stripad Next-basePath och
+olika transport-/publik host genom frontendens Vercel-rewrite. En gemensam
+serveradapter återställer bara exakt konfigurerade Studio-namespaces/origins
+för auth, administration, projekt, socialpolicy, video och clip-controls samt
+SSR-sidor. Cookie, body, Origin, roller, CAS och transaktionskontroller består;
+främmande/mixade hosts, protokoll och actions nekas. 63 relevanta prov och
+Lab-TypeScript PASS; två oberoende läsgranskningar har inga kvarvarande
+materiella fynd. Slutlig hook/ny drift-SHA och faktisk molnacceptans återstår.
+
+Den privata produktionsimporten kräver nu normaliserade hashkontroller för
+130 beroenden/SQL/aktiva manifest och Blob-index mot den levererade main-SHA:n.
+Alla 18 aktiva videobindningar ska fullåterläsas/hashas före SQL-skrivning.
+Samma skarpa läsare har nu fullverifierat alla 18 i nya QA mot Blob med
+tom egen OS-cache, inklusive sex original; noll SQL-/provider-skrivningar.
+Efter import krävs exakt sex-medieparitet, oförändrade konton/spelrader och
+en andra kostnadsimport som skriver noll rader. 40 privata spärrprov PASS
+utan anslutning eller skrivning. Ingen importplan/apply har körts mot drift.
+
+RunPods faktiska endpoint-health visar kö/pågående jobb 0/0, men idle/ready 1/1.
+Den befintliga konsolen visar samma Croupier-endpoint under Jakobs profil,
+min workers 0, max 1, idle timeout 5 s och en individuell idle worker.
+Detta är inte ett dräneringsbevis. Jakob uppger att befintliga nycklar kan
+tillhöra Emil; inga nycklar eller kontoövergripande inställningar ändras.
+Färsk endpoint-/processkontroll krävs vid frysningen. Resend-sändarnyckel
+saknas i både nuvarande Render och Lab; inga verkliga providermejl är verifierade.
 
 Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
 är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.
@@ -128,10 +157,11 @@ nu READY för denna leverans; lokal traceguard/build PASS med 50 sanerade
 traces. Senaste [3a5f0517](https://github.com/Jakeminator123/github-work/commit/3a5f0517db5f7f74d494e742f6a0401ed551bb8a)
 är pushad efter full hook med de 40 SQL-/HTTPS-/restartgrupperna ovan,
 röstgranskning, mejl-/skoöversikt och childless PostgreSQL-underhållsläge.
-CI och Vercel-Lab för den leveransen kontrolleras fortfarande; frontend är
-READY. Ett kandidatbygge hittade en legacy-middleware-fixture som ärvde
+Alla tre CI-jobb och båda Vercelbyggen för leveransen PASS/READY.
+Ett kandidatbygge hittade en legacy-middleware-fixture som ärvde
 nativeflaggan. Testmiljön anger nu båda flaggorna explicit av; alla 31
-frontendtester PASS även när omgivande native-/Neonflaggor är på.
+frontendtester PASS även när omgivande native-/Neonflaggor är på. Rättningen
+är levererad i `ae54a61b` efter full obligatorisk hook och alla tre CI-jobb PASS.
 Den publicerade flagga-av-koden är inte ett produktionskällbyte.
 Lab-TypeScript samt lokala Lab-/frontend-produktionsbyggen PASS. Privata env,
 lokala databaser, QA-underlag och agentstate har noll referenser i de 50

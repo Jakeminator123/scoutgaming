@@ -1,6 +1,7 @@
 import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope, STUDIO_JSON_LIMIT } from '../../web/storage/studio-contract.mjs';
 import { createNeonProjectStore, createNeonSocialStore } from './neon-project-store.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
+import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 
 const fail = (code, statusCode = 503) => { throw new StudioStorageError(code, statusCode); };
 const json = value => Response.json(value, { headers: {
@@ -50,6 +51,7 @@ export function createStudioDocumentApi({ repository, authorize, config, validat
   const endpoints = new Map([[`${base}/project`, ['project', createNeonProjectStore]], [`${base}/social`, ['policy', createNeonSocialStore]]]);
   return Object.freeze({ async handle(request) {
     try {
+      request = normalizeNativeStudioRequest(request, config);
       assertNativeStudioRequest(request, config);
       const endpoint = endpoints.get(new URL(request.url).pathname);
       if (!endpoint) fail('studio_document_unknown', 404);

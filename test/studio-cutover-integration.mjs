@@ -74,7 +74,9 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
     const store = createPostgresStore({ pool }); await store.db.assertInstalled();
     const repository = createStudioRepository({ pool, scope }), gamePolicy = createStudioGamePolicy({ repository, scope, dealerIdle: idle });
     const authorize = createStudioNativeAuth({ boDb: store.boDb, scope });
-    const config = { scope, allowedOrigins: [studioOrigin], publicHosts: [new URL(studioOrigin).host], apiBase: '/studio/api/admin', authBase: '/studio/api/auth' };
+    const publicOrigin = `https://public.croupier-qa.invalid:${new URL(studioOrigin).port}`;
+    const allowedOrigins = [publicOrigin, studioOrigin];
+    const config = { scope, allowedOrigins, publicHosts: allowedOrigins.map(origin => new URL(origin).host), apiBase: '/studio/api/admin', authBase: '/studio/api/auth' };
     const gameAuthority = createStudioGameAuthority({ env: { CROUPIER_PUBLIC_ORIGIN: studioOrigin, CROUPIER_BACKEND_ORIGIN: backendOrigin, CROUPIER_VERCEL_INGRESS_SECRET: commandSecret }, scope, fetchImpl: transport });
     const data = createStudioAdminData({ db: store.db, boDb: store.boDb, repository, scope, gamePolicy, canAssignDealer: gamePolicy.canAssignDealer, voiceLines });
     const accounts = createStudioAdminAccounts({ boDb: store.boDb, scope, gameAuthority, mail, publicOrigin: studioOrigin });
