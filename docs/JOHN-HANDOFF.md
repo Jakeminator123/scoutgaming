@@ -77,10 +77,20 @@ var noll. Eget kluster/process städades. Den privata STT-fixturen är 2,03 s WA
 från exakt befintligt Astrid-goodluck-ljud/text/baseline; originalet är oförändrat
 och detta ger ingen ny mänsklig eller visuell approval.
 Gatewayens observerade retryräknare kan minskas och är ingen absolut gräns
-för betalda dispatches eller input-tokenmängd. Därför finns ännu inget faktiskt
-USD-övre tak eller körbar numerisk livebudget. SDK-admission är inte installerad;
-injicerade callbacks är enbart förberedelsekontrakt. Verkliga fas-/transportadaptrar
-och full P6 återstår; CLI tillåter enbart förberedelse.
+för betalda dispatches eller input-tokenmängd. Jakob har nu uttryckligen godkänt
+**totalt högst 10 USD för den avgränsade livekampanjen, inklusive alla försök**.
+Det oföränderliga privata budgetankaret har SHA256
+`d1a8f8fedb96008369a9ec87091744718d03f2678a465a80d147101271f6c523`.
+Beloppet är ett totaltak, inte en tillåtelse att återställa förbrukning eller
+öka budgeten per omstart/dygn. Ingen betald AI-/GPU-körning har startats.
+Separat beständig numerisk admission samt SDK-/Render-fasadaptrar har nu
+36/44/27 offlineprov PASS, inklusive faktisk SDK 7.12.1 mot simulerad HTTP.
+Root har granskat exakta filhashar och återkört 106 PASS/1 SKIP; det överhoppade
+provet använder underagentens redan verifierade och borttagna SDK-fixtur.
+Verklig isolerad SDK-installation, verifierad
+input-/dispatch-/retry- och prisgräns samt kopplade färska driftobservationer
+återstår. De privata adapterproven ersätter inte full P6; CLI tillåter fortsatt
+enbart förberedelse och produktionen är fortsatt oaktiverad.
 
 Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
 `/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
@@ -318,8 +328,19 @@ Detta är inte ett dräneringsbevis. Jakob uppger att befintliga nycklar kan
 tillhöra Emil; inga nycklar eller kontoövergripande inställningar ändras.
 Färsk endpoint-/processkontroll krävs vid frysningen. Faktisk Resend-nyckel
 saknas i både nuvarande Render och Lab och i riktade relevanta lokala env-filer;
-en verifierad egen avsändardomän saknas också. Invitation/reset-acceptans är
-öppen; inga verkliga providermejl är verifierade eller skickade.
+invitation/reset-acceptans är öppen och inga verkliga providermejl är verifierade
+eller skickade. Jakob har valt **Resend Free**, förnyat Vercel-CLI OAuth och
+själv godkänt Marketplace-villkoren. Marketplace spärrar en ny Free-installation
+eftersom hans konto redan tillhör ett Resend-team. Vanlig Google-inloggning med
+samma konto som Vercel verifierar nu hans befintliga Resend **Free**: 4/3 000
+mejl denna månad, 0/100 idag, 1/3 domäner och avstängd betalning över kvoten.
+Det befintliga teamets Vercel-integration är förberedd med **Specific Projects**
+och endast `croupier-native-studio-qa-abc92154cb15`. Den nya behörigheten att
+skriva integrationsägda QA-env inväntar Jakobs uttryckliga godkännande; Install
+är inte klickat. scoutgaming.tech är verifierat köpt i samma Vercel-konto med
+Vercels DNS. Föreslagen avsändare är `no-reply@scoutgaming.tech`; domänens
+Resend-verifiering och faktisk invitation/reset-leverans återstår. Ingen betald
+mejlplan, DNS-ändring, API-nyckelkoppling eller produktionsaktivering har utförts.
 
 Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
 är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.
