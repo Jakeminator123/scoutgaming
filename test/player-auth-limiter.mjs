@@ -35,12 +35,12 @@ test('CRAIG aliases share a failure limit while other accounts on loopback can s
   const site=await serve(auth);
   const login=(email,pass=password,headers={})=>site.post('/api/auth/login',{email,password:pass},headers);
   try{
-    for(let i=0;i<11;i++)assert.equal((await login('alice','wrong')).status,400);
+    for(let i=0;i<11;i++)assert.equal((await login('alice','wrong')).status,401);
     // A successful login clears earlier failures; successes never consume the limit.
     for(let i=0;i<15;i++)assert.equal((await login('ALICE@EXAMPLE.INVALID')).status,200);
-    for(let i=0;i<12;i++)assert.equal((await login(i%2?'alice@example.invalid':'alice','wrong')).status,400);
+    for(let i=0;i<12;i++)assert.equal((await login(i%2?'alice@example.invalid':'alice','wrong')).status,401);
     assert.equal((await login('alice',password,{'x-forwarded-for':'203.0.113.1'})).status,429);
-    assert.equal((await login('bob','wrong',{'x-forwarded-for':'203.0.113.1'})).status,400);
+    assert.equal((await login('bob','wrong',{'x-forwarded-for':'203.0.113.1'})).status,401);
     assert.equal((await login('bob')).status,200);
   }finally{await site.close();players.close();craig.close();}
 });

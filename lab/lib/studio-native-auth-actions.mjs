@@ -3,6 +3,8 @@ import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
 import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { isStudioRole } from './studio-access-policy.mjs';
+import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
+import { effectiveAccountRole } from '../../web/account-role.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_auth_request_rejected'), { statusCode }); };
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -26,7 +28,7 @@ export function createStudioPasswordDelivery({ boDb, mail, publicOrigin, now = D
   publicOrigin = origin(publicOrigin);
   return {
     async mint({ username,email,role,kind }) {
-      if (!text(username,254) || !text(email,254) || !isStudioRole(role) || !['invite','reset'].includes(kind)) fail();
+      if (!text(username,254) || !text(email,254) || !effectiveAccountRole(role) || !['invite','reset'].includes(kind)) fail();
       const token = randomBytes(32).toString('base64url');
       await boDb.prepare('DELETE FROM tokens WHERE username=?').run(username);
       await boDb.prepare('INSERT INTO tokens (token,username,kind,exp) VALUES (?,?,?,?)')
@@ -109,13 +111,14 @@ async function revokeIdentity(boDb,id) {
 
 // Direct handlers for the existing CRAIG identity. No account/bootstrap/signing
 // secret is invented; all mutations require the explicit native request origin.
-export function createStudioNativeAuthActions({ boDb,scope,authorize,mail,publicOrigin,allowedOrigins = [publicOrigin],
+export function createStudioNativeAuthActions({ boDb,gameDb,scope,authorize,mail,publicOrigin,allowedOrigins = [publicOrigin],
   authBase = '/studio/api/auth',rateLimit,clientAddress,now = Date.now } = {}) {
   if (!boDb?.prepare || !boDb?.transaction || typeof authorize !== 'function'
     || !['/studio/api/auth','/api/auth'].includes(authBase) || !Array.isArray(allowedOrigins) || !allowedOrigins.length) fail(503);
   scope = validateStudioScope(scope);
   const origins = new Set(allowedOrigins.map(origin));
   const identity = craigIdentity(boDb), authEpoch = installBoAuthEpoch(boDb);
+  const credentials = gameDb?.prepare ? createAccountCredentialResolver({ identity, playerDb: gameDb, playerAccounts: true }) : null;
   const delivery = mail?.send ? createStudioPasswordDelivery({ boDb,mail,publicOrigin,now }) : null;
   const limited = typeof rateLimit === 'function' && typeof clientAddress === 'function';
   const availableActions = Object.freeze(['logout',...(limited ? ['login','set-password',...(delivery ? ['reset-request'] : [])] : [])]);
@@ -141,20 +144,24 @@ export function createStudioNativeAuthActions({ boDb,scope,authorize,mail,public
         keys(body,['user','pass','returnTo'],['user','pass']);
         if (!text(body.user,254) || !body.user.trim() || !text(body.pass,256)
           || body.returnTo !== undefined && !['/studio','/studio/administration'].includes(body.returnTo)) fail();
-        const login = body.user.trim().toLowerCase(); await limit(request,login,action);
+        const login = body.user.trim().toLowerCase();
+        if (!credentials) fail(503);
+        await limit(request,await credentials.keyFor(login),action);
         const session = await boDb.transaction(async () => {
           const matches = await boDb.prepare('SELECT id,username,role FROM users WHERE lower(username)=? OR lower(email)=? FOR UPDATE').all(login,login);
-          let account;
-          try { account = await identity.authenticate(login,body.pass); }
-          catch (error) { if (error.message === 'Account setup is incomplete. Finish your Scout invitation before signing in.') fail(401); throw error; }
-          if (matches.length !== 1 || !account || String(matches[0].id) !== account.id || !isStudioRole(matches[0].role)) fail(401);
+          const account = await credentials.authenticate(login,body.pass);
+          // Same credential namespace as the game, with explicit Studio admission.
+          // Collision, pending invitation and non-admin credentials never mint BO cookies.
+          if (matches.length !== 1 || account?.kind !== 'craig' || account.role !== 'admin'
+            || String(matches[0].id) !== account.id || matches[0].role !== account.accountRole
+            || !isStudioRole(matches[0].role)) fail(401);
           const signer = await boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
           if (!/^[a-f0-9]{64}$/i.test(signer?.v || '')) fail(503);
           const role = matches[0].role, epoch = await authEpoch(account.id);
           const parts = [{ alg:'HS256',typ:'JWT' },{ sub:account.name,role,aud:'backoffice',source_stamp:account.stamp,
             auth_epoch:epoch,exp:Math.floor(now()/1000) + 7 * 86400 }].map(value => Buffer.from(JSON.stringify(value)).toString('base64url'));
           const token = `${parts.join('.')}.${createHmac('sha256',Buffer.from(signer.v,'hex')).update(parts.join('.')).digest('base64url')}`;
-          return { token,username:account.name,role };
+          return { token,username:account.name,role:'admin' };
         });
         return response({ ok:true,username:session.username,role:session.role },200,[cookie('bo_jwt',session.token,604800)]);
       }
@@ -176,7 +183,7 @@ export function createStudioNativeAuthActions({ boDb,scope,authorize,mail,public
         const invitation = await boDb.transaction(async () => {
           const matches = await boDb.prepare('SELECT id,username,email,role,hash FROM users WHERE lower(username)=? OR lower(email)=? FOR UPDATE').all(login,login);
           const user = matches.length === 1 ? matches[0] : null;
-          if (!user?.hash || !text(user.email,254) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(user.email) || !isStudioRole(user.role)) return null;
+          if (!user?.hash || !text(user.email,254) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(user.email) || !effectiveAccountRole(user.role)) return null;
           return delivery.mint({ ...user,kind:'reset' });
         });
         if (invitation) await delivery.send(invitation);
@@ -191,6 +198,8 @@ export function createStudioNativeAuthActions({ boDb,scope,authorize,mail,public
         const tokens = await boDb.prepare("DELETE FROM tokens WHERE (token=? OR token=?) AND exp>=? AND kind IN ('invite','reset') RETURNING username,kind")
           .all(tokenKey(body.token),body.token,Math.floor(now()/1000));
         if (tokens.length !== 1) fail();
+        const target = await boDb.prepare('SELECT id,role FROM users WHERE username=? FOR UPDATE').get(tokens[0].username);
+        if (!target || !effectiveAccountRole(target.role)) fail();
         const changed = await boDb.prepare('UPDATE users SET salt=?,hash=? WHERE username=? RETURNING id').all(salt,hash,tokens[0].username);
         if (changed.length !== 1) fail();
         // product-v1's update trigger bumps auth_epoch in this transaction.

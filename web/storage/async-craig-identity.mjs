@@ -5,6 +5,10 @@ import { scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 export function craigIdentity(db) {
   const fingerprint = u => u?.salt && u?.hash ? createHash('sha256').update(`${u.salt}:${u.hash}`).digest('hex') : null;
   return {
+    async candidates(login) {
+      const key=String(login??'').trim().toLowerCase();
+      return await db.prepare('SELECT id,username,role FROM users WHERE lower(username)=? OR lower(email)=?').all(key,key);
+    },
     async find(login) {
       const key=String(login??'').trim().toLowerCase();
       const matches=(await db.prepare('SELECT id,username,salt,hash FROM users WHERE lower(username)=? OR lower(email)=?').all(key,key));

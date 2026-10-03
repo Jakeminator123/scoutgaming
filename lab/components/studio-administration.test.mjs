@@ -19,12 +19,13 @@ const compiled = transformSync(source, {
 }).code;
 
 class Element { closest() { return this.form ?? null; } }
-class Input extends Element { constructor(value = '') { super(); this.value = value; } }
+class Input extends Element { constructor(value = '') { super(); this.value = value; this.validationMessage = ''; this.reported = false; } setCustomValidity(message) { this.validationMessage = message; } reportValidity() { this.reported = true; return !this.validationMessage; } }
 class Form extends Element {
   constructor(fields = {}) {
     super(); this.fields = fields; this.resets = 0;
     this.passwordInput = new Input(fields.password ?? '');
-    this.elements = { namedItem: name => name === 'password' ? this.passwordInput : null };
+    this.confirmInput = new Input(fields.confirm ?? '');
+    this.elements = { namedItem: name => name === 'password' ? this.passwordInput : name === 'confirm' ? this.confirmInput : null };
   }
   reset() { ++this.resets; }
 }
@@ -103,8 +104,8 @@ function resources() {
     overview: { payload: { players: 2, rooms: config().rooms, dealers: [{ key: 'vera' }] } },
     config: { payload: config() },
     players: { payload: { administration: true, players: [
-      { id: 'player-active', name: 'Active', balance: 1000, currency: 'SEK', status: 'active' },
-      { id: 'player-closed', name: 'Closed', balance: 42, currency: 'EUR', status: 'closed' },
+      { id: 'player-active', name: 'Active', balance: 1000, currency: 'SEK', status: 'active', passwordChangeAllowed: true },
+      { id: 'player-closed', name: 'Closed', balance: 42, currency: 'EUR', status: 'closed', passwordChangeAllowed: true },
     ] } },
     users: { payload: { users: [
       { username: actor('superadmin').username, role: 'superadmin', active: 1 },
@@ -179,8 +180,8 @@ test('each request checks live identity, role floors and self-role/self-removal 
   await assert.rejects(client.request('POST', 'users/remove', { username: ' OWNER@EXAMPLE.TEST ' }), status(403));
   await assert.rejects(client.request('POST', 'users/role', { username: 'other', role: '__proto__' }), status(400));
   current = actor('reader');
-  await assert.rejects(client.request('POST', 'players/create', { username: 'test-one' }), status(403));
-  await assert.rejects(client.request('GET', 'users'), status(403));
+  await assert.rejects(client.request('POST', 'players/create', { username: 'test-one' }), status(401));
+  await assert.rejects(client.request('GET', 'users'), status(401));
   current = { username: 'user', role: 'invalid' };
   await assert.rejects(client.request('GET', 'config'), status(401));
   assert.equal(fetches, 0);
@@ -238,7 +239,7 @@ test('partner forms retain explicit role/scopes/wallet boundaries and send only 
   const h = harness(), calls = [], data = resources();
   data.apikeys.payload.keys[0].scopes = ['launch','wallet']; data.apikeys.payload.keys[0].walletConfigured = false;
   const tree = h.StudioAdministrationView({...viewProps('admin','partners'),resources:data,command:(action,body)=>calls.push({action,body})});
-  assert.equal(buttons(tree,'Skapa partnernyckel').length,0); assert.equal(buttons(tree,'Rotera hemlighet').length,0);
+  assert.equal(buttons(tree,'Skapa partnernyckel').length,1); assert.equal(buttons(tree,'Rotera hemlighet').length,1);
   const formFor = text => nodes(tree,node=>node.type==='form' && buttons(node,text).length)[0];
   formFor('Skapa spellänk').props.onSubmit({preventDefault(){},currentTarget:new Form({playerId:'partner-player',displayName:'Player',currency:'EUR',language:'en'})});
   formFor('Kreditera demo-saldo').props.onSubmit({preventDefault(){},currentTarget:new Form({playerId:'partner-player',amount:'12.50'})});
@@ -292,19 +293,21 @@ test('malformed list payloads are unavailable, never a fabricated empty account/
   await assert.rejects(unconfirmed.request('POST', 'users/remove', { username: 'other' }), status(503));
 });
 
-test('readers have no write controls; staff/admin/superadmin have only their established section/action floors', () => {
+test('admin is the only Studio UI role; superadmin is a legacy alias and nonadmins have no controls', () => {
   const h = harness();
-  for (const group of navigation.BACKOFFICE_GROUPS) {
-    const reader = h.StudioAdministrationView(viewProps('reader', group.id));
-    assert.equal(nodes(reader, node => node.type === 'form' || node.type === 'button').length, 0);
+  for (const role of ['reader','staff','player']) for (const group of navigation.BACKOFFICE_GROUPS) {
+    const tree = h.StudioAdministrationView(viewProps(role, group.id));
+    assert.equal(nodes(tree, node => node.type === 'form' || node.type === 'button').length, 0);
+    assert.match(renderToStaticMarkup(tree), /Okänd session/);
   }
-  const staffTables = renderToStaticMarkup(h.StudioAdministrationView(viewProps('staff', 'tables')));
-  assert.match(staffTables, /Skapa turneringsutkast/); assert.doesNotMatch(staffTables, /Spara rum|Spara dealer|Spara pit bosses/);
-  const adminAccounts = renderToStaticMarkup(h.StudioAdministrationView(viewProps('admin', 'accounts')));
-  assert.match(adminAccounts, /Skapa spelarkonto/); assert.doesNotMatch(adminAccounts, /Bjud in administratör|Ta bort administratör|data-admin-section="users"/);
-  const superAccounts = h.StudioAdministrationView(viewProps('superadmin', 'accounts'));
-  assert.equal(buttons(superAccounts, 'Spara roll').length, 1); assert.equal(buttons(superAccounts, 'Ta bort administratör').length, 1);
-  assert.match(renderToStaticMarkup(superAccounts), /Ditt eget konto: rollbyte och borttagning är spärrade/);
+  for (const role of ['admin','superadmin']) {
+    const tree = h.StudioAdministrationView(viewProps(role,'accounts')),html=renderToStaticMarkup(tree);
+    assert.match(html,/Skapa spelarkonto|Bjud in administratör/);assert.match(html,/Ditt eget konto: rollbyte och borttagning är spärrade/);
+    assert.equal(buttons(tree,'Spara roll').length,1);assert.equal(buttons(tree,'Ta bort konto').length,1);
+    assert.doesNotMatch(html,/<option[^>]*>(reader|staff|superadmin)<\/option>/);
+    assert.match(html,/Administratör/);assert.match(html,/Spelare/);
+  }
+  assert.equal(h.studioAdminActor(actor('superadmin')).role,'admin');
 });
 
 test('player lifecycle is create/status, never hard delete or reopening closed accounts; inactive action is explicit', () => {
@@ -332,7 +335,7 @@ test('forms emit established payloads, string CAS, cap and cleared password inpu
   formFor('Skapa spelarkonto').props.onSubmit({ preventDefault() {}, currentTarget: playerForm });
   assert.equal(playerForm.passwordInput.value, ''); assert.equal(calls.at(-1).body.password, 'temporary-password');
   assert.equal(calls.at(-1).action, 'players/create');
-  tree = h.StudioAdministrationView({ ...viewProps('staff', 'tables'), command: (action, body) => calls.push({ action, body }) });
+  tree = h.StudioAdministrationView({ ...viewProps('admin', 'tables'), command: (action, body) => calls.push({ action, body }) });
   formFor('Skapa turneringsutkast').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ name: 'Unlimited', format: 'Elimination', buyin: '0', pool: '1', starts: 'TBD' }) });
   assert.equal(calls.at(-1).body.cap, 0);
 });
@@ -353,7 +356,7 @@ test('media preview allowlist refuses external/query/traversal URLs and manual r
   for (const url of ['https://outside.test/a.mp4', '//outside.test/a.mp4', '/dealers/astrid/../a.mp4', '/dealer/a.mp4?token=secret', '/api/admin/config.mp4', '/dealer//a.mp4', 'javascript:alert(1)', null]) assert.equal(h.studioAdminMediaUrl(url), null);
   assert.equal(h.studioAdminMediaUrl('/dealer/preview/line.mp4'), '/dealer/preview/line.mp4');
   const calls = [];
-  const tree = h.StudioAdministrationView({ ...viewProps('staff', 'media-review'), command: (action, body) => calls.push({ action, body }) });
+  const tree = h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), command: (action, body) => calls.push({ action, body }) });
   assert.equal(nodes(tree, node => node.type === 'video' && node.props.preload === 'none').length, 1);
   nodes(tree, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ verdict: 'approved' }) });
   assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), { action: 'voiceline-review', body: { dealer: 'astrid', line: 'goodluck', verdict: 'approved',expectedIdentity:'exact-pair-fixture', expectedRevision: 'studio-v1' } });
@@ -361,7 +364,7 @@ test('media preview allowlist refuses external/query/traversal URLs and manual r
 });
 
 test('native mail previews escape content, render placeholders and never send or navigate',()=>{
-  const h=harness();const tree=h.StudioAdministrationView(viewProps('reader','partners'));
+  const h=harness();const tree=h.StudioAdministrationView(viewProps('admin','partners'));
   const html=renderToStaticMarkup(tree);
   assert.match(html,/Hello &lt;script&gt;/);assert.match(html,/\[PLAYER EMAIL\]/);
   assert.doesNotMatch(html,/<iframe|<script|srcDoc|dangerouslySetInnerHTML/);
@@ -377,8 +380,8 @@ test('revoked session clears old account data/controls, and explicit reload reco
   buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
   const html = renderToStaticMarkup(tree);
   assert.match(html, /Sessionen är avslutad/); assert.doesNotMatch(html, /owner@example.test|Backoffice-grupper/); assert.equal(count, 2);
-  current = actor('reader'); buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush();
-  assert.match(renderToStaticMarkup(h.render(props)), /owner@example.test · reader/); assert.equal(count, 4); h.unmount();
+  current = actor('admin'); buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush();
+  assert.match(renderToStaticMarkup(h.render(props)), /owner@example.test · Administratör/); assert.equal(count, 4); h.unmount();
 });
 
 test('a lower role mid-load fails closed instead of retaining stale higher-role controls', async () => {
@@ -386,7 +389,7 @@ test('a lower role mid-load fails closed instead of retaining stale higher-role 
   const props = { apiBase: '/api/admin', availableActions: ['GET overview', 'GET config'], session: async () => actor(++identities === 1 ? 'superadmin' : 'reader'), fetchImpl: async url => reply(url.endsWith('/config') ? config() : resources().overview.payload) };
   h.render(props); h.effects(); await flush();
   const html = renderToStaticMarkup(h.render(props));
-  assert.match(html, /Behörigheten saknas eller har ändrats/); assert.doesNotMatch(html, /Backoffice-grupper|superadmin/); h.unmount();
+  assert.match(html, /Sessionen är avslutad/); assert.doesNotMatch(html, /Backoffice-grupper|superadmin/); h.unmount();
 });
 
 test('unmount aborts read transaction before fetch; no background mutation or late UI result', async () => {
@@ -417,7 +420,7 @@ test('saving one form preserves other drafts; double command cannot send two wri
   const h = harness(); let writes = 0; let submitted;
   const props = { apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async (url, init) => {
     if (init.method === 'POST') { ++writes; submitted = JSON.parse(init.body); return reply({ ok: true }); }
-    return reply(url.endsWith('/config') ? config() : url.endsWith('/players') ? resources().players.payload : resources().overview.payload);
+    return reply(url.endsWith('/config') ? config() : url.endsWith('/players') ? resources().players.payload : url.endsWith('/users') ? resources().users.payload : resources().overview.payload);
   } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
   buttons(tree, 'Konton')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
@@ -466,4 +469,49 @@ test('acknowledged write plus unavailable reload is not advertised as fully refr
   native.props.onDirty(form); native.props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v1' }, form);
   await flush(); tree = h.render(props); const html = renderToStaticMarkup(tree);
   assert.match(html, /Skicka inte samma åtgärd igen/); assert.doesNotMatch(html, /Tillgänglig serverdata har lästs om|SECRET_DB_ERROR/); assert.equal(form.resets, 0); h.unmount();
+});
+
+
+test('Backoffice password form confirms twice, clears both fields and excludes closed accounts', () => {
+  const h=harness(),calls=[];
+  const tree=h.StudioAdministrationView({...viewProps('admin'),command:(action,body)=>calls.push({action,body})});
+  const forms=nodes(tree,node=>node.type==='form' && buttons(node,'Spara nytt lösenord').length);
+  assert.equal(forms.length,1);
+  const mismatch=new Form({password:'fixture-new-password',confirm:'different-password',reason:'Operator reset'});
+  forms[0].props.onSubmit({preventDefault(){},currentTarget:mismatch});
+  assert.equal(calls.length,0);assert.equal(mismatch.passwordInput.value,'');assert.equal(mismatch.confirmInput.value,'');
+  assert.equal(mismatch.confirmInput.reported,true);assert.match(mismatch.confirmInput.validationMessage,/stämmer inte/);
+  const form=new Form({password:'fixture-new-password',confirm:'fixture-new-password',reason:' Operator reset '});
+  forms[0].props.onSubmit({preventDefault(){},currentTarget:form});
+  assert.equal(form.passwordInput.value,'');assert.equal(form.confirmInput.value,'');
+  assert.equal(calls.length,1);assert.equal(calls[0].action,'players/password');
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0].body)),{playerId:'player-active',password:'fixture-new-password',reason:'Operator reset'});
+  assert.doesNotMatch(renderToStaticMarkup(tree),/fixture-new-password|different-password/);
+  const blocked=resources();blocked.players.payload.players[0].status='blocked';
+  assert.equal(buttons(h.StudioAdministrationView({...viewProps('admin'),resources:blocked}),'Spara nytt lösenord').length,1);
+  const craigOnly=resources();craigOnly.players.payload.players[0].passwordChangeAllowed=false;
+  assert.equal(buttons(h.StudioAdministrationView({...viewProps('admin'),resources:craigOnly}),'Spara nytt lösenord').length,0);
+  delete craigOnly.players.payload.players[0].passwordChangeAllowed;
+  assert.equal(buttons(h.StudioAdministrationView({...viewProps('admin'),resources:craigOnly}),'Spara nytt lösenord').length,0);
+  const unavailable=h.StudioAdministrationView({...viewProps('admin'),available:(method,action)=>available(method,action)&&action!=='players/password'});
+  assert.equal(buttons(unavailable,'Spara nytt lösenord').length,0);assert.match(renderToStaticMarkup(unavailable),/players\/password är ännu inte ansluten/);
+});
+
+test('password command is single dispatch, never stores the password and does not retry an uncertain failure', async () => {
+  const h=harness();let writes=0,release,submitted;
+  const waiting=new Promise(resolve=>{release=resolve;});
+  const props={apiBase:'/studio/api/admin',availableActions:allActions,session:async()=>actor('admin'),fetchImpl:async(url,init)=>{
+    if(init.method==='POST'){++writes;submitted=JSON.parse(init.body);await waiting;return reply({error:'PRIVATE SERVER TEXT'},503);}
+    const key=url.slice(url.lastIndexOf('/')+1);return reply(resources()[key]?.payload||resources().overview.payload);
+  }};
+  h.render(props);h.effects();await flush();let tree=h.render(props);
+  buttons(tree,'Konton')[0].props.onClick();h.render(props);h.effects();await flush();tree=h.render(props);
+  const view=nodes(tree,node=>node.type===h.StudioAdministrationView)[0],body={playerId:'player-active',password:'fixture-new-password',reason:'Operator reset'};
+  view.props.command('players/password',body,new Form({}));view.props.command('players/password',{...body},new Form({}));
+  await flush();assert.equal(writes,1);assert.equal(submitted.password,'fixture-new-password');
+  assert.doesNotMatch(renderToStaticMarkup(h.render(props)),/fixture-new-password/);
+  release();await flush();await flush();tree=h.render(props);
+  assert.equal(writes,1);assert.equal(Object.hasOwn(body,'password'),false);
+  assert.doesNotMatch(renderToStaticMarkup(tree),/fixture-new-password|PRIVATE SERVER TEXT/);
+  assert.match(renderToStaticMarkup(tree),/tillfälligt otillgänglig/);h.unmount();
 });

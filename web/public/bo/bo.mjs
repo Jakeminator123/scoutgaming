@@ -13,7 +13,7 @@ document.body.classList.toggle('lab-embedded',isEmbeddedWorkspace(location.href,
 api('/api/bo/me').then(me=>{
   $('#account-name').textContent=me.user||'Ej inloggad';
   $('#account-avatar').textContent=me.user?.slice(0,1).toUpperCase()||'?';
-  $('#account-role').textContent=me.role?.toUpperCase()||'INGEN BEHÖRIGHET';
+  $('#account-role').textContent=canOpenLab(me.role)?'ADMIN':me.role?'PLAYER':'INGEN BEHÖRIGHET';
   const link=$('#workspace-link');
   if(canOpenLab(me.role)&&labWorkspace){link.hidden=false;link.href=labWorkspace;link.target='_top';}
 }).catch(()=>{$('#account-role').textContent='KUNDE INTE LÄSA BEHÖRIGHET';});
@@ -60,6 +60,11 @@ async function render(id){
   const meta=SECTIONS.find(s=>s[0]===id)||SECTIONS[0];
   $('#title').textContent=meta[1]; $('#sub').textContent=meta[2];
   const C=$('#content'); mediaPreviews.release(C); C.innerHTML='<div class="mono" style="color:var(--mut);font-size:11px">loading&hellip;</div>';
+  let actor=null;
+  if(['users','apikeys'].includes(id)){
+    actor=await api('/api/bo/me');
+    if(!canOpenLab(actor.role)){C.innerHTML='<div class="mono" style="color:var(--mut);font-size:11px">ADMIN ONLY</div>';return;}
+  }
   const ov=await api('/api/bo/overview');
   const sum=t=>ov.tx.find(x=>x.type===t)||{n:0,sum:0};
   if(id==='ops'){
@@ -305,26 +310,24 @@ async function render(id){
     });
   }
   if(id==='users'){
-    const me=await api('/api/bo/me');
-    if(me.role!=='superadmin'){C.innerHTML='<div class="mono" style="color:var(--mut);font-size:11px">SUPERADMIN ONLY</div>';return;}
+    const me=actor;
     const u=await api('/api/bo/users');
-    const ROLES=['reader','staff','admin','superadmin'];
     C.innerHTML=`<div class="panel"><div class="t">BACKOFFICE USERS &middot; CRAIG</div><table><thead><tr><th>USER</th><th>EMAIL</th><th>ROLE</th><th>STATE</th><th>SINCE</th><th></th></tr></thead><tbody>
     ${u.users.map(x=>{const self=x.username===me.user;
       return `<tr><td>${x.username}${self?' <span class="mono" style="color:var(--lime);font-size:8px">YOU</span>':''}</td><td style="color:var(--mut)">${x.email||'—'}</td>
-      <td>${self?`<span class="mono">${x.role.toUpperCase()}</span>`:`<select data-role-user="${x.username}">${ROLES.map(r=>`<option value="${r}" ${r===x.role?'selected':''}>${r.toUpperCase()}</option>`).join('')}</select>`}</td>
+      <td><span class="mono">${canOpenLab(x.role)?'ADMIN':'PLAYER'}</span>${!self&&!canOpenLab(x.role)?` <button data-role-user="${x.username}">MAKE ADMIN</button>`:''}</td>
       <td>${x.active?pill('ACTIVE','live'):pill('INVITED','pending')}</td><td style="color:var(--mut)">${(x.created_at||'').slice(0,10)}</td>
       <td style="white-space:nowrap">${x.email?`<button data-resend="${x.username}">${x.active?'SEND RESET':'RESEND INVITE'}</button> `:''}${self?'':`<button data-remove="${x.username}" style="color:var(--red);border-color:rgba(232,106,94,.4)">REMOVE</button>`}</td></tr>`;}).join('')}
     </tbody></table></div>
     <div class="panel" style="max-width:640px"><div class="t">INVITE BY EMAIL &middot; THEY CHOOSE THEIR OWN PASSWORD</div>
     <div class="pad" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <input id="inv-email" type="email" placeholder="name@company.com" style="flex:2;min-width:200px">
-      <select id="inv-role"><option value="reader">READER (read-only)</option><option value="staff">STAFF</option><option value="admin">ADMIN</option><option value="superadmin">SUPER ADMIN</option></select>
+      <select id="inv-role"><option value="admin">ADMIN</option></select>
       <button class="pri" id="inv-send">SEND INVITE</button>
     </div><div class="pad" id="inv-out" style="padding-top:0"></div></div>`;
-    C.querySelectorAll('select[data-role-user]').forEach(sel=>sel.onchange=async()=>{
-      const r=await api('/api/bo/users/role',{username:sel.dataset.roleUser,role:sel.value});
-      if(r.ok)toast(`${sel.dataset.roleUser} → ${sel.value.toUpperCase()}`);else{toast(r.error);render('users');}
+    C.querySelectorAll('button[data-role-user]').forEach(sel=>sel.onclick=async()=>{
+      const r=await api('/api/bo/users/role',{username:sel.dataset.roleUser,role:'admin'});
+      if(r.ok)toast(`${sel.dataset.roleUser} → ADMIN`);else{toast(r.error);render('users');}
     });
     C.querySelectorAll('button[data-resend]').forEach(b=>b.onclick=async()=>{
       const r=await api('/api/bo/users/resend',{username:b.dataset.resend});

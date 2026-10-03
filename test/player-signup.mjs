@@ -13,7 +13,7 @@ test('player account survives restart, remains separate from Scout, rejects impe
   let db=new DatabaseSync(join(directory,'test.db'));
   db.exec('CREATE TABLE players (id INTEGER PRIMARY KEY, name TEXT)');
   const createPlayer=({name})=>({id:String(db.prepare('INSERT INTO players (name) VALUES (?)').run(name).lastInsertRowid)});
-  const identity={find:()=>({id:'operator'}),stamp:()=> 'operator-stamp',authenticate:()=>{throw Error('Player login must not query CRAIG');}};
+  const identity={candidates:()=>[],find:()=>({id:'operator'}),stamp:()=> 'operator-stamp',authenticate:()=>{throw Error('Player login must not query CRAIG');}};
   let auth=playerAuth(db,createPlayer,identity,{playerAccounts:true});
   const server=createServer(async(req,res)=>{if(await auth.handle(req,res))return;const playerId=auth.user(req);res.writeHead(playerId?200:401);res.end(playerId??'unauthorized');});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));

@@ -20,5 +20,9 @@ export default {
       '../media/dealers/*/runtime/**/audio/en/bank.json', '../media/dealers/*/runtime/**/performance/manifest.json',
       '../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', '../media/game/runtime/speech-media.json',
       '../media/dealers/*/runtime/composited/**/speak.json']])),
-  experimental: { externalDir: true },
+  experimental: {
+    externalDir: true,
+    // Limit local Windows build workers; retain deployment/CI defaults.
+    ...(process.platform === 'win32' && !process.env.CI ? { cpus: 4 } : {}),
+  },
 };

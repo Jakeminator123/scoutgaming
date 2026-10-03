@@ -39,6 +39,7 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
   return <main className={styles.administration} style={{maxWidth:'40rem',margin:'2rem auto',padding:'1rem'}}>
     <section className={styles.section} aria-busy={!ready || busy}>
       <h1>{mode === 'set-password' ? 'Välj lösenord' : 'Logga in i Croupier Studio'}</h1>
+      {mode === 'login' && <p>Administratörer använder samma Croupier-konto och lösenord i spelet och Studio. Spelarkonton har bara tillgång till spelet. Konton hanteras i Backoffice.</p>}
       {!ready && <p role="status">Inloggningen laddas. Vänta tills formuläret är klart.</p>}
       <noscript><p>Aktivera JavaScript för att använda den säkra inloggningen.</p></noscript>
       {notice && <p role="status" className={styles.notice}>{notice}</p>}
@@ -51,7 +52,7 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
         {resetAvailable && <details><summary>Glömt lösenordet?</summary><form className={styles.form} method="post" action={`${authBase}/reset-request`} onSubmit={event => void submit(event,'reset-request')}>
           <label>Användarnamn eller e-post<input name="user" autoComplete="username" required maxLength={254} disabled={!ready || busy} /></label><button type="submit" disabled={!ready || busy}>Begär återställningslänk</button>
         </form></details>}
-      </> : complete ? <a href={loginPath}>Logga in</a> : passwordToken.current ? <form className={styles.form} method="post" action={`${authBase}/set-password`} onSubmit={event => void submit(event,'set-password')}>
+      </> : complete ? <><p><a href="/blackjack">Logga in i spelet</a></p><p>Administratör? <a href={loginPath}>Logga in i Studio</a>.</p></> : passwordToken.current ? <form className={styles.form} method="post" action={`${authBase}/set-password`} onSubmit={event => void submit(event,'set-password')}>
         <label>Nytt lösenord (8–128 tecken)<input name="pass" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label>
         <label>Upprepa lösenordet<input name="confirm" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label><button type="submit" disabled={!ready || busy}>Spara lösenord</button>
       </form> : <p role="alert">Länken saknas eller är ogiltig. Be en administratör om en ny inbjudan eller begär återställning från <a href={loginPath}>inloggningen</a>.</p>}

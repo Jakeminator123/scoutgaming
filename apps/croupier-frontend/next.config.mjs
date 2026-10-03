@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 const platform = platformConfiguration();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Keep local Windows builds responsive while other apps and agents are running.
+  ...(process.platform === 'win32' && !process.env.CI ? { experimental: { cpus: 4 } } : {}),
   outputFileTracingRoot: fileURLToPath(new URL('../../', import.meta.url)),
   outputFileTracingIncludes: platform ? { '/game': ['./runtime-ui/game.html'], '/v2': ['./runtime-ui/game.html'], '/casino.html': ['./runtime-ui/casino.html'], '/blackjack': ['./runtime-ui/blackjack.html'], '/bo/[[...path]]': ['./runtime-ui/bo*.html'] } : {},
   typescript: {

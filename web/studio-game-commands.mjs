@@ -3,7 +3,7 @@ import { studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
 import { validateStudioScope, canonicalStudioJson } from './storage/studio-contract.mjs';
 import { studioAdminActionPolicy, meetsStudioAdminActionRole } from '../lab/lib/studio-access-policy.mjs';
 
-const actions = new Set(['players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
+const actions = new Set(['players/status', 'players/password', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const fail = (statusCode = 403) => { throw Object.assign(new Error('studio_game_command_rejected'), { statusCode }); };
 const response = (status, body) => Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 

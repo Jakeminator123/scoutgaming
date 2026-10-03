@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createAccountCredentialResolver, isAdministratorRole } from './account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
@@ -295,7 +296,7 @@ function dealerScan() {
 // password change. Current logins survive server restarts.
 const boDb = storage?.boDb ?? new DatabaseSync(join(dataDir, 'craig.db'));
 const playerAdministration = postgres
-  ? (await import('./storage/player-administration.mjs')).createPlayerAdministration({ db }) : null;
+  ? (await import('./storage/player-administration.mjs')).createPlayerAdministration({ db, boDb }) : null;
 if (!postgres) boDb.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
@@ -328,7 +329,7 @@ if (!postgres) {
     console.log('[bo] craig: users table migrated for invite flow');
   }
 }
-const ROLE_RANK = { reader: 0, staff: 1, admin: 2, superadmin: 3 };
+const ROLE_RANK = { admin: 3, superadmin: 3 };
 const boAuthEpoch = (await installBoAuthEpoch(boDb));
 async function boSecret() {
   const row = (await boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get());
@@ -385,10 +386,17 @@ if (!(await boDb.prepare('SELECT COUNT(*) n FROM users').get()).n) {
 }
 if (cloudRuntime) delete process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
 async function boCheckLogin(user, pass) {
-  const account = (await scoutIdentity.authenticate(user, pass));
-  if (!account) return null;
-  const role = (await boDb.prepare('SELECT role FROM users WHERE id = ?').get(account.id))?.role;
-  return Object.hasOwn(ROLE_RANK, role) ? { ...account, role } : null;
+  const account = await accountCredentials.authenticate(user,pass);
+  return account?.kind === 'craig' && account.role === 'admin' ? {...account,role:account.accountRole} : null;
+}
+async function administratorGameSession(req,account) {
+  const current=await scoutIdentity.find(account.name);
+  const role=(await boDb.prepare('SELECT role FROM users WHERE id=?').get(account.id))?.role;
+  if(!current || current.id!==account.id || current.stamp!==account.stamp || !isAdministratorRole(role)) throw Error('Administrator identity changed');
+  const tok=jwtSign({sub:account.name,role,aud:'backoffice',source_stamp:account.stamp,
+    auth_epoch:await boAuthEpoch(account.id),exp:Math.floor(Date.now()/1000)+7*86400});
+  const secure=req.socket.encrypted || process.env.NODE_ENV==='production' ? '; Secure' : '';
+  return `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`;
 }
 async function boSessionOk(req) {
   const c = req.headers.cookie ?? '';
@@ -554,7 +562,7 @@ async function boApi(url) {
     return { tiers: cfg.tiers, rooms: cfg.rooms, tx, players: players.n, dealers: dealerScan() };
   }
   if (url === '/api/bo/players') {
-    return { players: (await db.prepare(`SELECT id, name, currency, balance, created_at${postgres ? ', status, closed_at' : ''} FROM players ORDER BY created_at DESC LIMIT 500`).all()),
+    return { players: (await db.prepare(`SELECT id, name, currency, balance, created_at${postgres ? ', status, closed_at, EXISTS (SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id) AS passwordChangeAllowed' : ''} FROM players ORDER BY created_at DESC LIMIT 500`).all()),
       administration: Boolean(playerAdministration), storage: databaseBackend };
   }
   if (url === '/api/bo/transactions') {
@@ -594,6 +602,57 @@ async function boApi(url) {
   }
   return null;
 }
+// Recheck the actor after the request body arrives, under the same lock as the
+// target change. In SQLite the entire final read/write section stays synchronous.
+async function boChangeUser(body, who, remove) {
+  const reject=statusCode=>{throw Object.assign(Error('User administration rejected'),{statusCode});};
+  const text=value=>typeof value==='string'&&value.trim().length>0&&value.length<=254&&!/[\u0000-\u001f\u007f-\u009f]/u.test(value);
+  const known=user=>user&&text(user.username)&&['reader','staff','admin','superadmin'].includes(user.role)
+    && (user.email===null||user.email===undefined||text(user.email)&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(user.email))
+    && (user.hash===null||user.hash===undefined||typeof user.hash==='string'&&/^[a-f0-9]{128}$/i.test(user.hash)&&text(user.salt));
+  const active=user=>known(user)&&typeof user.hash==='string'&&isAdministratorRole(user.role);
+  try {
+    if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).sort().join(',')!==(remove?'username':'role,username')
+      ||!text(body.username)||!remove&&!['reader','staff','admin','superadmin'].includes(body.role))reject(400);
+    if(!who||!text(who.sub)||!isAdministratorRole(who.role)||who.aud!=='backoffice'||who.partner
+      ||typeof who.source_stamp!=='string'||!Number.isSafeInteger(who.auth_epoch))reject(403);
+    const columns='id,username,email,role,salt,hash';
+    const administratorsSql=`SELECT ${columns} FROM users WHERE role IN ('admin','superadmin') ORDER BY id`;
+    const userSql=`SELECT ${columns} FROM users WHERE lower(username)=? OR lower(email)=?`;
+    const targetKey=body.username.trim().toLowerCase(),actorKey=who.sub.trim().toLowerCase();
+    const checked=(administrators,actors,targets,epoch)=>{
+      const actor=actors.length===1?actors[0]:null,target=targets.length===1?targets[0]:null;
+      if(!active(actor)||actor.username!==who.sub||actor.role!==who.role
+        ||createHash('sha256').update(`${actor.salt}:${actor.hash}`).digest('hex')!==who.source_stamp
+        ||Number(epoch)!==who.auth_epoch||!Number.isFinite(who.exp)||who.exp<=Date.now()/1000)reject(403);
+      if(!targets.length)reject(404);
+      if(!known(target))reject(409);
+      if(String(target.id)===String(actor.id))reject(403);
+      if(active(target)&&(remove||!isAdministratorRole(body.role))&&administrators.filter(active).length<=1)reject(409);
+      return target;
+    };
+    if(postgres)return await boDb.transaction(async()=>{
+      const administrators=await boDb.prepare(administratorsSql+' FOR UPDATE').all();
+      const actors=await boDb.prepare(userSql+' FOR UPDATE').all(actorKey,actorKey);
+      const targets=await boDb.prepare(userSql+' FOR UPDATE').all(targetKey,targetKey);
+      const epoch=actors.length===1?(await boDb.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(actors[0].id))?.epoch??0:0;
+      const target=checked(administrators,actors,targets,epoch);
+      if(remove){await boDb.prepare('DELETE FROM tokens WHERE username=?').run(target.username);await boDb.prepare('DELETE FROM users WHERE id=?').run(target.id);}
+      else await boDb.prepare('UPDATE users SET role=? WHERE id=?').run(body.role,target.id);
+      return{ok:true};
+    });
+    boDb.exec('BEGIN IMMEDIATE');
+    try {
+      const administrators=boDb.prepare(administratorsSql).all(),actors=boDb.prepare(userSql).all(actorKey,actorKey),targets=boDb.prepare(userSql).all(targetKey,targetKey);
+      const epoch=actors.length===1?boDb.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(actors[0].id)?.epoch??0:0;
+      const target=checked(administrators,actors,targets,epoch);
+      if(remove){boDb.prepare('DELETE FROM tokens WHERE username=?').run(target.username);boDb.prepare('DELETE FROM users WHERE id=?').run(target.id);}
+      else boDb.prepare('UPDATE users SET role=? WHERE id=?').run(body.role,target.id);
+      boDb.exec('COMMIT');return{ok:true};
+    }catch(error){boDb.exec('ROLLBACK');throw error;}
+  }catch(error){return{error:'User administration rejected',statusCode:[400,403,404,409].includes(error?.statusCode)?error.statusCode:503};}
+}
+
 async function boPost(url, body, who) {
   if (studioPolicyRuntime) return { error: 'Use the native Studio command', statusCode: 410 };
   if (url === '/api/bo/players/create' || url === '/api/bo/players/status') {
@@ -656,20 +715,7 @@ async function boPost(url, body, who) {
     }));
     return { ok: true, kind: 'reset', emailSent: mail.sent, reason: mail.reason };
   }
-  if (url === '/api/bo/users/role') {
-    const { username, role } = body;
-    if (!['reader', 'staff', 'admin', 'superadmin'].includes(role)) return { error: 'bad role' };
-    if (username === who?.sub) return { error: 'cannot change your own role' };
-    const r = (await boDb.prepare('UPDATE users SET role = ? WHERE username = ?').run(role, username));
-    return r.changes ? { ok: true } : { error: 'no such user' };
-  }
-  if (url === '/api/bo/users/remove') {
-    const { username } = body;
-    if (username === who?.sub) return { error: 'cannot remove yourself' };
-    (await boDb.prepare('DELETE FROM tokens WHERE username = ?').run(username));
-    const r = (await boDb.prepare('DELETE FROM users WHERE username = ?').run(username));
-    return r.changes ? { ok: true } : { error: 'no such user' };
-  }
+  if (url === '/api/bo/users/role' || url === '/api/bo/users/remove') return boChangeUser(body,who,url.endsWith('/remove'));
   if (url === '/api/bo/reset-request') {
     const { user } = body;
     const u = (await boDb.prepare('SELECT username, email FROM users WHERE username = ? OR email = ?').get(user ?? '', user ?? ''));
@@ -908,9 +954,10 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
 
 const scoutIdentity=(await craigIdentity(boDb));
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
+const accountCredentials=createAccountCredentialResolver({identity:scoutIdentity,playerDb:db,playerAccounts});
 const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
 const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
-const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,
+const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
 const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp)));};
 const boGameAuth=(await backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',publicGamePath:gamePath,boUrl:BO_URL}));
@@ -966,11 +1013,20 @@ const operatorSpeechQa = createOperatorSpeechQa({
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
   }),
 });
+const playerPasswordCommand=playerAdministration ? (await import('./storage/player-administration.mjs')).createPlayerPasswordCommand({
+  administration:playerAdministration,
+  cancelRuntime:async playerId=>{
+    await speechStreamService?.cancelPlayer(playerId);
+    for(const dealerId of Object.keys(CHAT_DEALERS))activePlayerChats.get(JSON.stringify([playerId,dealerId]))?.abort('player_password_changed');
+    await probeRuntime.cancel({playerId,dealerId:'astrid'},'player_password_changed');
+  },
+}) : null;
 const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
   scope: studioPolicyRuntime.scope, secret: process.env.CROUPIER_VERCEL_INGRESS_SECRET,
   publicOrigin: process.env.CROUPIER_PUBLIC_ORIGIN,
   authorize: createStudioNativeAuth({ boDb, scope: studioPolicyRuntime.scope }), boDb,
   execute: async ({ action, body, actor }) => {
+    if (action === 'players/password') return playerPasswordCommand({body,actor});
     if (action === 'players/status') {
       const changed = await playerAdministration.setStatus({ ...body, actor: actor.user });
       if (changed.changed || changed.status !== 'active') {
@@ -1049,7 +1105,7 @@ const server = createServer(async (req, res) => {
   const guest=guestPreview && !authenticated && !backoffice && !nativePlaybackContext && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=(await previewPlayer(req,res));
   if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
-  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,sharedCredentials:true,...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method))) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method)){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}
@@ -1262,8 +1318,8 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify(who ? { user: who.sub, role: who.role } : {}));
       return;
     }
-    if (req.url === '/api/bo/users' && (who?.role !== 'superadmin')) {
-      res.writeHead(403, { 'Content-Type': 'application/json' }); res.end('{"error":"superadmin only"}'); return;
+    if (req.url === '/api/bo/users' && !isAdministratorRole(who?.role)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' }); res.end('{"error":"admin only"}'); return;
     }
     const out = (await boApi(req.url));
     res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });

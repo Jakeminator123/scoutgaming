@@ -42,7 +42,7 @@ test('public frontend rewrite preserves original CSRF origin, cookie and body fo
 
 test('a rewritten exact native read reaches existing authorization and role checks',async()=>{
   let authorized=0;const request=normalizeNativeStudioRequest(new NextRequest(labOrigin+'/api/admin/overview',{headers:forwarded}),config);
-  const api=createStudioAdminApi({authorize:async r=>{authorized++;assert.equal(r.headers.get('cookie'),forwarded.cookie);return {user:'fixture',role:'reader',scope};},allowedOrigins:config.allowedOrigins,publicHosts:config.publicHosts,handlers:new Map([['GET /studio/api/admin/overview',async()=>({fixture:true})]])});
+  const api=createStudioAdminApi({authorize:async r=>{authorized++;assert.equal(r.headers.get('cookie'),forwarded.cookie);return {user:'fixture',role:'admin',scope};},allowedOrigins:config.allowedOrigins,publicHosts:config.publicHosts,handlers:new Map([['GET /studio/api/admin/overview',async()=>({fixture:true})]])});
   assert.equal((await api.handle(request)).status,200);assert.equal(authorized,1);
   const deniedApi=createStudioAdminApi({authorize:async()=>null,allowedOrigins:config.allowedOrigins,publicHosts:config.publicHosts,handlers:new Map([['GET /studio/api/admin/overview',async()=>{assert.fail('unauthenticated handler');}]])});
   assert.equal((await deniedApi.handle(request)).status,401);

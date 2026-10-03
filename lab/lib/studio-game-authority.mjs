@@ -1,7 +1,8 @@
 import { createHmac, randomUUID } from 'node:crypto';
 import { validateStudioScope, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
+import { normalizeStudioRole } from './studio-access-policy.mjs';
 
-const actions = new Set(['players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
+const actions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const fail = (statusCode = 503) => { throw Object.assign(new Error('studio_game_authority_unavailable'), { statusCode }); };
 function origin(value) {
   let url; try { url = new URL(value); } catch { fail(); }
@@ -21,10 +22,10 @@ export function createStudioGameAuthority({ env = process.env, scope, fetchImpl 
   if (publicOrigin === backendOrigin || typeof secret !== 'string' || Buffer.byteLength(secret) < 32 || /[\r\n]/.test(secret)) fail();
   return Object.freeze({ async execute({ action, body, actor, scope: requestedScope, request }) {
     if (!actions.has(action) || canonicalStudioJson(validateStudioScope(requestedScope)) !== canonicalStudioJson(scope)
-      || !request?.headers || !actor?.user || !actor?.role) fail(403);
+      || !request?.headers || !actor?.user || !normalizeStudioRole(actor?.role)) fail(403);
     const cookie = request.headers.get('cookie') || '';
     if (!cookie || cookie.length > 16384) fail(401);
-    const payload = canonicalStudioJson({ action, body, actor: { user: actor.user, role: actor.role }, scope, commandId: randomUUID() });
+    const payload = canonicalStudioJson({ action, body, actor: { user: actor.user, role: normalizeStudioRole(actor.role) }, scope, commandId: randomUUID() });
     if (Buffer.byteLength(payload) > 16384) fail(413);
     const timestamp = String(now());
     let response;
@@ -45,6 +46,10 @@ export function createStudioGameAuthority({ env = process.env, scope, fetchImpl 
       raw += decoder.decode();
       const result = JSON.parse(raw);
       if (result?.ok !== true || result.authority !== 'render' || canonicalStudioJson(result.scope) !== canonicalStudioJson(scope)) fail();
+      if (action === 'players/password') {
+        if (result.id !== body?.playerId || result.changed !== true) fail();
+        return { ok: true, id: result.id, changed: true };
+      }
       return result;
     } catch { fail(); }
   } });

@@ -37,7 +37,7 @@ test('login render has no request, accessible username/password/reset forms and 
   const h=harness();let calls=0;
   const html=renderToStaticMarkup(h.render({authBase:'/studio/api/auth',resetAvailable:true,fetchImpl:async()=>{calls++;throw Error('no');}}));
   assert.equal(calls,0);assert.match(html,/autoComplete="username"|autoComplete="current-password"|autocomplete="username"/);
-  assert.match(html,/Glömt lösenordet/);assert.doesNotMatch(html,/localStorage|sessionStorage|type="hidden"/);
+  assert.match(html,/Glömt lösenordet/);assert.match(html,/samma Croupier-konto och lösenord/);assert.match(html,/Spelarkonton har bara tillgång till spelet/);assert.doesNotMatch(html,/localStorage|sessionStorage|type="hidden"/);
 });
 
 test('login sends one event only, clears password DOM immediately and navigates exact allowlisted page',async()=>{
@@ -95,4 +95,18 @@ test('cold submit handlers never dispatch until the readiness effect has rendere
   h.effects();tree=h.render(props);assert.ok(nodes(tree,node=>node.type==='button').every(node=>!node.props.disabled));
   forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:cold});await flush();assert.equal(writes,1);h.unmount();
  }
+});
+
+test('password reset success offers fixed game and admin login paths without request-selected redirects',async()=>{
+  for(const authBase of ['/studio/api/auth','/api/auth']){
+    const h=harness(),token='b'.repeat(43);
+    const props={authBase,mode:'set-password',token,returnTo:'https://untrusted.example.test/redirect',fetchImpl:async()=>Response.json({ok:true,returnTo:'//untrusted.example.test/redirect'})};
+    let tree=h.render(props);h.effects();tree=h.render(props);
+    forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({pass:'new-private-pass',confirm:'new-private-pass'})});
+    await flush();tree=h.render(props);
+    assert.deepEqual(nodes(tree,node=>node.type==='a').map(node=>node.props.href),['/blackjack',authBase==='/studio/api/auth'?'/studio/login':'/login']);
+    assert.match(renderToStaticMarkup(tree),/Logga in i spelet/);assert.match(renderToStaticMarkup(tree),/Administratör/);
+    assert.doesNotMatch(renderToStaticMarkup(tree),/untrusted|new-private-pass|bbbbbbbb/);
+    assert.deepEqual(h.destinations,[]);assert.equal(forms(tree).length,0);h.unmount();
+  }
 });

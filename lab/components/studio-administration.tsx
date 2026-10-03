@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
-import { isStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
+import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import styles from './studio-administration.module.css';
 
 type JsonObject = Record<string, unknown>;
@@ -45,12 +45,13 @@ function rows(value: unknown): JsonObject[] { return Array.isArray(value) ? valu
 function label(value: unknown, fallback = '—'): string { return typeof value === 'string' && value.length > 0 ? value.slice(0, 500) : typeof value === 'number' && Number.isFinite(value) ? String(value) : fallback; }
 function value(form: HTMLFormElement, name: string): string { return String(new FormData(form).get(name) ?? '').trim(); }
 function validRevision(value: unknown): value is string { return typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value); }
+function accountRole(value: unknown): string { return normalizeStudioRole(value) === 'admin' ? 'Administratör' : 'Spelare'; }
 function sameIdentity(left: unknown, right: string): boolean { return typeof left === 'string' && left.trim().toLowerCase() === right.trim().toLowerCase(); }
 
 export function studioAdminActor(value: unknown): StudioAdminActor | null {
   const actor = object(value);
   if (!actor || !Object.hasOwn(actor, 'username') || !Object.hasOwn(actor, 'role') || typeof actor.username !== 'string' || !actor.username.trim() || actor.username.length > 254 || /[\u0000-\u001f\u007f-\u009f]/.test(actor.username) || !isStudioRole(actor.role)) return null;
-  return { username: actor.username, role: actor.role };
+  return { username: actor.username, role: normalizeStudioRole(actor.role) as StudioRole };
 }
 
 export class StudioAdminUiError extends Error {
@@ -211,6 +212,24 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       command(action, { ...build(form), ...(needsRevision ? { expectedRevision: revision } : {}) }, form);
     };
   }
+  function passwordSubmit(playerId: unknown) {
+    return (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const form = event.currentTarget, fields = new FormData(form);
+      const password = String(fields.get('password') ?? ''), confirmation = String(fields.get('confirm') ?? '');
+      for (const name of ['password', 'confirm']) {
+        const field = form.elements.namedItem(name);
+        if (field instanceof HTMLInputElement) field.value = '';
+      }
+      if (busy || !mayWrite('players/password')) return;
+      const confirmField = form.elements.namedItem('confirm');
+      if (password !== confirmation) {
+        if (confirmField instanceof HTMLInputElement) { confirmField.setCustomValidity('Lösenorden stämmer inte överens. Ange dem igen.'); confirmField.reportValidity(); }
+        return;
+      }
+      command('players/password', { playerId, password, reason: String(fields.get('reason') ?? '').trim() }, form);
+    };
+  }
   function configNotice() {
     return config && !validRevision(revision) ? <p className={styles.notice}>Serverns konfigurationsrevision saknas. Inställningar kan läsas men inte sparas.</p> : null;
   }
@@ -290,9 +309,9 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </form>}
       </>}
       {section === 'players' && <>
-        <p>Spelarkonton är skilda från Studio-administratörer. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
+        <p>Spelare har tillgång till spelet. Administratörer använder samma konto och lösenord i spelet och Studio. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
         <ResourceNotice resource={resources.players} />
-        {unavailableWrite('players/create')}{unavailableWrite('players/status')}
+        {unavailableWrite('players/create')}{unavailableWrite('players/status')}{unavailableWrite('players/password')}
         {resources.players?.payload && <><EmptyRows count={rows(resources.players.payload.players).length} /><div className={styles.tableWrap}><table>
           <thead><tr><th>Spelare / ID</th><th>Saldo</th><th>Status</th><th>Åtgärd</th></tr></thead>
           <tbody>{rows(resources.players.payload.players).map((player, index) => <tr key={label(player.id, String(index))}>
@@ -301,7 +320,16 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
               <label>Ny status<select name="status" defaultValue={player.status === 'active' ? 'blocked' : 'active'} disabled={busy}>
                 <option value={player.status === 'active' ? 'blocked' : 'active'}>{player.status === 'active' ? 'blocked' : 'active'}</option><option value="closed">closed (slutgiltigt)</option>
               </select></label><label>Orsak<input name="reason" required maxLength={500} disabled={busy} /></label><button disabled={busy}>Ändra spelarstatus</button>
-            </form> : player.status === 'closed' ? 'Stängt konto – ingen återöppning' : 'Läsning'}</td>
+            </form> : player.status === 'closed' ? 'Stängt konto – ingen återöppning' : 'Läsning'}
+              {mayWrite('players/password') && resources.players.payload?.administration === true && player.passwordChangeAllowed === true && ['active', 'blocked'].includes(String(player.status)) && <details>
+                <summary>Ändra lösenord</summary><form method="post" onSubmit={passwordSubmit(player.id)} autoComplete="off">
+                  <label>Nytt lösenord (12–128 tecken)<input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" disabled={busy} /></label>
+                  <label>Upprepa lösenordet<input name="confirm" type="password" minLength={12} maxLength={128} required autoComplete="new-password" disabled={busy} onInput={event => event.currentTarget.setCustomValidity('')} /></label>
+                  <label>Orsak<input name="reason" maxLength={500} required disabled={busy} /></label>
+                  <p>Spelarens befintliga sessioner avslutas. Saldo och spelhistorik bevaras.</p><button disabled={busy}>Spara nytt lösenord</button>
+                </form>
+              </details>}
+            </td>
           </tr>)}</tbody>
         </table></div></>}
         {resources.players?.payload?.administration === false && <p className={styles.notice}>Spelarkontonas lagring stödjer inte administration i den här miljön.</p>}
@@ -323,16 +351,16 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         <ResourceNotice resource={resources.users} />
         {['users/invite', 'users/resend', 'users/role', 'users/remove'].map(action => <div key={action}>{unavailableWrite(action)}</div>)}
         {resources.users?.payload && <><EmptyRows count={rows(resources.users.payload.users).length} />{rows(resources.users.payload.users).map((user, index) => <div className={styles.row} key={label(user.username, String(index))}>
-          <div><strong>{label(user.username)}</strong><p>{label(user.role)} · {user.active ? 'aktiverat' : 'väntar på aktivering'}</p></div>
+          <div><strong>{label(user.username)}</strong><p>{accountRole(user.role)} · {user.active ? 'aktiverat' : 'väntar på aktivering'}</p></div>
           {sameIdentity(user.username, actor.username) ? <p>Ditt eget konto: rollbyte och borttagning är spärrade.</p> : <div className={styles.actions}>
-            {mayWrite('users/role') && <form method="post" onSubmit={submit('users/role', form => ({ username: user.username, role: value(form, 'role') }))}><label>Roll<select name="role" defaultValue={label(user.role, 'reader')} disabled={busy}>{STUDIO_ROLES.map(role => <option key={role}>{role}</option>)}</select></label><button disabled={busy}>Spara roll</button></form>}
-            {mayWrite('users/remove') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Ta bort administratören ${label(user.username)}? Detta är inte ett spelarkonto.`)) command('users/remove', { username: user.username }); }}>Ta bort administratör</button>}
+            {mayWrite('users/role') && <form method="post" onSubmit={submit('users/role', form => ({ username: user.username, role: value(form, 'role') }))}><label>Roll<select name="role" defaultValue={normalizeStudioRole(user.role) || 'admin'} disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör</option>)}</select></label><button disabled={busy}>Spara roll</button></form>}
+            {mayWrite('users/remove') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Ta bort inloggningskontot ${label(user.username)}?`)) command('users/remove', { username: user.username }); }}>Ta bort konto</button>}
           </div>}
           {mayWrite('users/resend') && <button disabled={busy} type="button" onClick={() => command('users/resend', { username: user.username })}>Skicka nytt aktiverings-/återställningsmejl</button>}
         </div>)}</>}
         {mayWrite('users/invite') && <form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
           <h4>Bjud in administratör</h4><label>E-post<input type="email" name="email" required maxLength={254} disabled={busy} /></label>
-          <label>Roll<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role}>{role}</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
+          <label>Roll<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
         </form>}
       </>}
       {section === 'apikeys' && <>
@@ -493,7 +521,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
         return;
       }
       if (form) {
-        if (['players/create', 'users/invite', 'tournament', 'apikeys/create'].includes(action)) form.reset();
+        if (['players/create', 'players/password', 'users/invite', 'tournament', 'apikeys/create'].includes(action)) form.reset();
         draftForms.current.delete(form);
       }
       changed.current = draftForms.current.size > 0; setDirty(changed.current);
@@ -511,7 +539,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }
 
   return <div className={styles.administration} aria-busy={busy}>
-    <header className={styles.header}><div><h2>Backoffice</h2><p>{actor ? `${actor.username} · ${actor.role}` : 'Verifierar Studio-sessionen'}</p></div>
+    <header className={styles.header}><div><h2>Backoffice</h2><p>{actor ? `${actor.username} · ${accountRole(actor.role)}` : 'Verifierar Studio-sessionen'}</p></div>
       <button type="button" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>
     </header>
     <p className={styles.notice}>UI-behörighet är en visningsregel. Servern kontrollerar session, aktuell roll, origin och varje ändring.</p>

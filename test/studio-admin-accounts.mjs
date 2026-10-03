@@ -5,7 +5,7 @@ import { createStudioAdminApi } from '../lab/lib/studio-admin-api.mjs';
 
 const scope = {environment:'fixture',workspaceId:'croupier'}, publicOrigin = 'https://studio.example.invalid';
 function fixture(overrides = {}) {
-  let state = {users:[],tokens:[],apiKeys:[]};
+  let state = {users:[],tokens:[],apiKeys:[],playerAccounts:[]};
   const writes = [],sent = [],requests = [], failure = {sql:null};
   const boDb = { transaction:async work => {
     const previous = structuredClone(state);
@@ -24,22 +24,26 @@ function fixture(overrides = {}) {
     };
     return {all:(...args)=>rows(args),get:async (...args)=>(await rows(args))[0],run:async (...args)=>{await rows(args);return {changes:1};}};
   }};
-  const options = {boDb,scope,publicOrigin,now:()=>2_000_000,mail:{send:async value=>{sent.push(value);return {sent:true};}},...overrides};
+  const gameDb = { prepare(sql) {
+    assert.equal(sql, 'SELECT player_id FROM player_accounts WHERE lower(email)=? OR lower(email)=?');
+    return { all: async (...args) => state.playerAccounts.filter(account => args.includes(account.email.toLowerCase())) };
+  } };
+  const options = {boDb,gameDb,scope,publicOrigin,now:()=>2_000_000,mail:{send:async value=>{sent.push(value);return {sent:true};}},...overrides};
   const data = createStudioAdminAccounts(options);
-  const context = (action,body,role='superadmin') => ({body,scope,actor:{user:'operator',role},endpoint:{action},
+  const context = (action,body,role='admin') => ({body,scope,actor:{user:'operator',role},endpoint:{action},
     request:new Request(`${publicOrigin}/studio/api/admin/${action}`,{method:'POST',body:JSON.stringify(body)})});
   const call = (action,body,role) => data.handlers.get(`POST /studio/api/admin/${action}`)(context(action,body,role));
   return {get state(){return state;},writes,sent,requests,failure,boDb,data,options,context,call};
 }
 
 test('invite creates an inactive existing-domain identity and hashed invitation; no bearer returns to browser', async () => {
-  const f = fixture(), response = await f.call('users/invite',{email:' NEW@EXAMPLE.INVALID ',role:'reader'});
+  const f = fixture(), response = await f.call('users/invite',{email:' NEW@EXAMPLE.INVALID ',role:'admin'});
   assert.deepEqual(response,{ok:true,kind:'invite',emailSent:true});
-  assert.equal(f.state.users[0].username,'new@example.invalid'); assert.equal(f.state.users[0].hash,null);
+  assert.equal(f.state.users[0].role,'admin'); assert.equal(f.state.users[0].username,'new@example.invalid'); assert.equal(f.state.users[0].hash,null);
   assert.equal(f.state.tokens.length,1); assert.match(f.state.tokens[0].token,/^studio-sha256:/);
   assert.equal(f.sent.length,1); assert.match(f.sent[0].link,/\/studio\/set-password\?t=/);
   assert.equal(JSON.stringify(response).includes(new URL(f.sent[0].link).searchParams.get('t')),false);
-  await assert.rejects(f.call('users/invite',{email:'NEW@example.invalid',role:'staff'}),error=>error.statusCode===409);
+  await assert.rejects(f.call('users/invite',{email:'NEW@example.invalid',role:'admin'}),error=>error.statusCode===409);
   assert.equal(f.state.users.length,1);
 });
 
@@ -57,7 +61,7 @@ test('native invitations send only after the outer product transaction commits',
     mutationTransaction: async work => { locked = true; try { return await f.boDb.transaction(work); } finally { locked = false; } } });
   const request = action => new Request(`${publicOrigin}/studio/api/admin/${action}`, { method: 'POST',
     headers: { origin: publicOrigin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
-    body: JSON.stringify(action === 'users/invite' ? { email: 'new@example.invalid', role: 'reader' } : { username: 'new@example.invalid' }) });
+    body: JSON.stringify(action === 'users/invite' ? { email: 'new@example.invalid', role: 'admin' } : { username: 'new@example.invalid' }) });
   for (const action of ['users/invite', 'users/resend']) {
     const response = await api.handle(request(action)); assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { ok: true, kind: 'invite', emailSent: true });
@@ -72,7 +76,7 @@ test('an outer transaction failure never delivers its otherwise minted invitatio
     mutationTransaction: work => f.boDb.transaction(async () => { await work(); throw Error('PRIVATE COMMIT FAILURE'); }) });
   const response = await api.handle(new Request(`${publicOrigin}/studio/api/admin/users/invite`, { method: 'POST',
     headers: { origin: publicOrigin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
-    body: JSON.stringify({ email: 'new@example.invalid', role: 'reader' }) }));
+    body: JSON.stringify({ email: 'new@example.invalid', role: 'admin' }) }));
   assert.equal(response.status, 500); assert.doesNotMatch(await response.text(), /PRIVATE/);
   assert.deepEqual(f.state.users, []); assert.deepEqual(f.state.tokens, []); assert.deepEqual(f.sent, []);
 });
@@ -90,10 +94,14 @@ test('resend invalidates prior invitation, selects proper invite/reset kind and 
 
 test('role, server scope, unknown fields and missing mail are enforced before account writes', async () => {
   const f = fixture();
-  for (const [body,role] of [[{email:'new@example.invalid',role:'reader'},'admin'],[{email:'new@example.invalid',role:'player'},'superadmin'],[{email:'new@example.invalid',role:'reader',actor:'other'},'superadmin']]) {
+  for (const [body,role] of [
+    ...['reader','staff','player','superadmin','unknown'].map(role=>[{email:'new@example.invalid',role},'admin']),
+    ...['reader','staff','player','unknown'].map(role=>[{email:'new@example.invalid',role:'admin'},role]),
+    [{email:'new@example.invalid',role:'admin',actor:'other'},'admin'],
+  ]) {
     await assert.rejects(f.call('users/invite',body,role));
   }
-  const context = f.context('users/invite',{email:'new@example.invalid',role:'reader'}); context.scope = {...scope,workspaceId:'other'};
+  const context = f.context('users/invite',{email:'new@example.invalid',role:'admin'}); context.scope = {...scope,workspaceId:'other'};
   await assert.rejects(f.data.handlers.get('POST /studio/api/admin/users/invite')(context));
   assert.equal(f.writes.length,0);
   const noMail = fixture({mail:undefined});
@@ -109,7 +117,7 @@ test('partner create validates exact scopes and creates one-time credentials in 
   for (const body of [{name:'Example',scopes:['bogus']},{name:'Example',scopes:['play','play']},{name:'Example',scopes:[]},{name:'Example',secret:'injected'},{name:'Example',ipAllow:'*'}]) {
     await assert.rejects(f.call('apikeys/create',body));
   }
-  await assert.rejects(f.call('apikeys/create',{name:'Example'},'admin'));
+  for (const role of ['reader','staff','player','unknown']) await assert.rejects(f.call('apikeys/create',{name:'Example'},role),error=>error.statusCode===403);
   assert.equal(f.state.apiKeys.length,1);
 });
 
@@ -125,7 +133,7 @@ test('wallet callback metadata rejects local addresses, credentials and malforme
 
 test('missing Render authority does not advertise or register player/runtime/partner mutations', () => {
   const f = fixture();
-  for (const action of ['players/status','apikeys/revoke','apikeys/rotate','apikeys/launch','apikeys/credit']) {
+  for (const action of ['players/password','players/status','apikeys/revoke','apikeys/rotate','apikeys/launch','apikeys/credit']) {
     assert.equal(f.data.handlers.has(`POST /studio/api/admin/${action}`),false);
   }
   const api = createStudioAdminApi({authorize:async()=>({user:'operator',role:'superadmin',scope}),mutationTransaction:work=>work(),handlers:f.data.handlers,gates:f.data.gates,
@@ -140,7 +148,7 @@ test('all runtime operations delegate the full transaction to Render with truste
     ['apikeys/credit',{id:'key',playerId:'partner-player',amount:100}]];
   for (const [action,body] of inputs) await f.call(action,body);
   assert.equal(calls.length,5); assert.deepEqual(f.writes,[]);
-  for (const item of calls) { assert.deepEqual(item.actor,{user:'operator',role:'superadmin'}); assert.deepEqual(item.scope,scope); assert.ok(item.request instanceof Request); }
+  for (const item of calls) { assert.deepEqual(item.actor,{user:'operator',role:'admin'}); assert.deepEqual(item.scope,scope); assert.ok(item.request instanceof Request); }
   const gate = f.data.gates.get('cancel-player-runtime');
   assert.equal(gate(f.context('players/status',inputs[0][1])),true); assert.equal(gate(f.context('apikeys/credit',inputs[4][1])),false);
 });

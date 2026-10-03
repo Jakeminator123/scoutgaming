@@ -111,8 +111,9 @@ try {
   const loginPage = await request(bo + location(loginRedirect));
   assert.equal(loginPage.status, 200); assert.match(await loginPage.text(), /game-login\|lab-login/);
 
-  const readerCookie = await login();
-  assert.equal((await request(anonymous.authorize, { cookie: readerCookie })).status, 403, 'reader cannot mint a Lab code');
+  const readerLogin = await request(bo + '/api/bo/login', { body: { user: 'lab-admin', pass: password } });
+  assert.equal(readerLogin.status, 401, 'reader cannot receive a Backoffice session');
+  assert.equal(readerLogin.headers.getSetCookie().length, 0, 'rejected reader cannot mint a Lab code');
   const partner = sign({ sub: 'partner-player', partner: 'partner-key', exp: Date.now() / 1000 + 60 });
   const partnerRedirect = await request(anonymous.authorize, { cookie: `bo_jwt=${partner}` });
   assert.match(location(partnerRedirect), /^\/bo\/login\.html/, 'Partner JWT is not a BO admin session');

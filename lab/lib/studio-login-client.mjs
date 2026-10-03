@@ -8,7 +8,7 @@ export function studioPasswordToken(value) { return typeof value === 'string' &&
 export class StudioLoginUiError extends Error {
   constructor(status = 503) {
     super(({400:'Kontrollera uppgifterna eller öppna en ny aktiverings-/återställningslänk.',401:'Inloggningen kunde inte verifieras.',
-      403:'Inloggningen avvisades. Öppna Studio på rätt adress.',429:'För många försök. Vänta 15 minuter och försök igen.',
+      403:'Studio kräver administratörsbehörighet och rätt inloggningsadress.',429:'För många försök. Vänta 15 minuter och försök igen.',
       503:'Inloggningstjänsten är tillfälligt otillgänglig.'})[status] || 'Åtgärden kunde inte bekräftas. Försök igen senare.');
     this.name = 'StudioLoginUiError'; this.status = status;
   }

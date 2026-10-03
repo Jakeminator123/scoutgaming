@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
+import { createPlayerPasswordCommand } from '../web/storage/player-administration.mjs';
 import { createStudioGameCommandApi } from '../web/studio-game-commands.mjs';
 import { studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
 
 const scope = { environment: 'fixture', workspaceId: 'croupier' }, secret = 's'.repeat(40);
 const publicOrigin = 'https://public.example.invalid', at = 1_800_000_000_000;
-function fixture() {
+function fixture(executeCommand) {
   let state = { nonces: new Map(), balance: 0 }, tail = Promise.resolve(), executions = 0, failExecution = false;
   let session = { user: 'operator', role: 'superadmin', scope }, authorizations = 0, changeOnSecond;
   let clock=at, onAuthorize=()=>{};
@@ -21,7 +23,9 @@ function fixture() {
   } }; } };
   const api = createStudioGameCommandApi({ scope, secret, publicOrigin, boDb, now: () => clock,
     authorize: async () => { authorizations++;await onAuthorize(authorizations); return authorizations === 2 && changeOnSecond ? changeOnSecond : session; },
-    execute: async ({body, actor}) => { executions++; assert.equal(actor.user, 'operator'); state.balance += body.amount;
+    execute: async ({action, body, actor}) => { executions++; assert.equal(actor.user, 'operator');
+      if(executeCommand) return executeCommand({action,body,actor});
+      state.balance += body.amount;
       if (failExecution) throw Error('PRIVATE CONNECTION'); return {ok: true, balance: state.balance}; } });
   const command = { action: 'apikeys/credit', body: {id: 'partner', playerId: 'player', amount: 100}, actor: {user: 'operator', role: 'superadmin'}, scope,
     commandId: 'd6339fa6-f202-47bb-9308-3f81440d1394' };
@@ -84,4 +88,27 @@ test('tampering, expired signature, cross origin and oversized signed body are r
     [{origin:'https://evil.invalid'},at,undefined,403], [{},at,'x'.repeat(16385),413], [{},at,'null',403], [{},at,'{',400]]) {
     const f=fixture(); assert.equal((await f.api(f.request({},headers,timestamp,raw))).status,expected); assert.equal(f.executions,0);
   }
+});
+
+
+test('signed player password command waits for cancellation and cannot replay after acceptance',async()=>{
+  const body={playerId:'player',password:randomBytes(24).toString('base64url'),reason:'disposable fixture password change'};
+  let release,entered,updates=0,settled=false;
+  const ready=new Promise(resolve=>{entered=resolve;});
+  const command=createPlayerPasswordCommand({administration:{async setPassword(request){
+    assert.deepEqual(request,{...body,actor:'operator'});updates++;return{id:body.playerId,changed:true};
+  }},cancelRuntime:async id=>{assert.equal(id,body.playerId);entered();await new Promise(resolve=>{release=resolve;});}});
+  const f=fixture(command);f.session={user:'operator',role:'admin',scope};
+  const changes={action:'players/password',body,actor:{user:'operator',role:'admin'}};
+  const pending=f.api(f.request(changes)).then(response=>{settled=true;return response;});
+  await ready;await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(settled,false);assert.equal(updates,1);assert.equal(f.state.nonces.size,1);
+  release();assert.equal((await pending).status,200);
+  assert.equal((await f.api(f.request(changes))).status,409);assert.equal(updates,1);assert.equal(f.state.balance,0);
+
+  const failed=fixture(createPlayerPasswordCommand({administration:{async setPassword(){return{id:body.playerId,changed:true};}},
+    cancelRuntime:async()=>{throw Error('PRIVATE CANCEL FAILURE');}}));
+  failed.session={user:'operator',role:'admin',scope};
+  const rejection=await failed.api(failed.request(changes));assert.equal(rejection.status,503);
+  assert.equal((await rejection.text()).includes('PRIVATE'),false);assert.equal(failed.state.nonces.size,0);
 });

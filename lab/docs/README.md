@@ -48,6 +48,23 @@ verifierade; full invitation/reset-acceptans och produktionskopplingen återstå
 Befintliga konton
 och saldo flyttas eller återställs inte för provet.
 
+**Konton och lösenord:** använd samma användarnamn eller e-postadress och
+lösenord i spelet och Studio. Du väljer ingen kontotyp i inloggningen.
+**Admin** får använda spelet och hela Backoffice. **Spelare** får använda
+spelet och nekas Studio/Backoffice. Ett äldre superadmin-konto fungerar som
+admin; befintliga konton och saldo bevaras.
+
+I den nya native-administrationen går du till **Backoffice → Konton**.
+Skapa och hantera spelare där. För en aktiv eller blockerad spelare med
+eget spelarlösenord anger du nytt lösenord två gånger och en anledning.
+Gamla spelsessioner återkallas vid bytet; saldo och spelhistorik behålls.
+Stängda konton har inget lösenordsbyte. Administratörers invitationer,
+aktivering och återställningslänkar hanteras i samma Backoffice.
+Ett administratörskonto som också spelar använder sitt administratörslösenord.
+
+Förenklingen finns i den nya koden. Native-QA måste installeras från samma
+källversion och provas igen före produktionsbyte; äldre livekvitton visar
+inte att detta nya kontoflöde har aktiverats där.
 OpenClaw öppnar den befintliga autentiserade dashboarden på Render.
 Agentinställningar, pairing och modell-/GPU-konfiguration förändras inte av
 den nya menyn. Vanliga sparade klippval kräver ingen Render-omstart;

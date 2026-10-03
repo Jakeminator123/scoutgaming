@@ -18,7 +18,7 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
   voiceLines = createRegisteredVoiceLines(), now = () => new Date().toISOString() } = {}) {
   if (!db?.prepare || !boDb?.prepare || !repository?.readDocument || !repository?.saveDocument) fail(503);
   scope = validateStudioScope(scope);
-  const players = createPlayerAdministration({ db, now }), handlers = new Map(), gates = new Map();
+  const players = createPlayerAdministration({ db, boDb, now }), handlers = new Map(), gates = new Map();
   function trusted(context) {
     if (canonicalStudioJson(validateStudioScope(context.scope)) !== canonicalStudioJson(scope)
       || !text(context.actor?.user, 254) || !isStudioRole(context.actor.role)) fail(403);
@@ -77,7 +77,8 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     return { tiers: saved.value.tiers, rooms: saved.value.rooms, revision: saved.revision, players: total.n, tx };
   });
   register('GET', 'players', async () => ({
-    players: await db.prepare('SELECT id,name,currency,balance,created_at,status,closed_at FROM players ORDER BY created_at DESC LIMIT 500').all(),
+    players: await db.prepare('SELECT players.id,name,currency,balance,created_at,status,closed_at,EXISTS(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id) AS passwordChangeAllowed FROM players ORDER BY created_at DESC LIMIT 500').all()
+      .then(rows => rows.map(row => ({ ...row, passwordChangeAllowed: row.passwordChangeAllowed === true || row.passwordChangeAllowed === 1 }))),
     administration: true, storage: 'postgres',
   }));
   register('GET', 'transactions', async () => ({ tx: await db.prepare('SELECT player_id,type,amount,currency,meta,at FROM transactions ORDER BY id DESC LIMIT 100').all() }));
@@ -118,11 +119,17 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     const body = context.body, actor = trusted(context);
     bodyKeys(body, remove ? ['username'] : ['username','role']);
     if (!text(body.username,254) || body.username.trim().toLowerCase() === actor.trim().toLowerCase()
-      || !remove && !isStudioRole(body.role)) fail(403);
+      || !remove && body.role !== 'admin') fail(403);
     return boDb.transaction(async () => {
-      const target = await boDb.prepare('SELECT id,username FROM users WHERE username=? FOR UPDATE').get(body.username);
+      const target = await boDb.prepare('SELECT id,username,role,hash FROM users WHERE username=? FOR UPDATE').get(body.username);
       if (!target) fail(404);
       if (remove) {
+        // The existing product transaction serializes identity changes. Also lock
+        // the current active administrators so direct trusted callers cannot
+        // remove the final admin or act after a concurrent removal.
+        const administrators = await boDb.prepare("SELECT id,username,role FROM users WHERE role IN ('admin','superadmin') AND hash IS NOT NULL ORDER BY id FOR UPDATE").all();
+        if (!administrators.some(row => row.username.toLowerCase() === actor.trim().toLowerCase())) fail(403);
+        if (isStudioRole(target.role) && target.hash && administrators.length <= 1) fail(409);
         await boDb.prepare('DELETE FROM tokens WHERE username=?').run(target.username);
         await boDb.prepare('DELETE FROM users WHERE id=?').run(target.id);
       } else await boDb.prepare('UPDATE users SET role=? WHERE id=?').run(body.role, target.id);

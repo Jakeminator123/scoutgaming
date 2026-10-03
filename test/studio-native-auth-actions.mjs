@@ -8,7 +8,7 @@ const scope = { environment:'fixture',workspaceId:'croupier' }, publicOrigin = '
 const password = 'existing-private-password', salt = 'fixture-salt';
 function fixture(overrides = {}) {
   let state = { users:[{ id:'7',username:'Operator',email:'operator@example.invalid',role:'superadmin',salt,
-    hash:scryptSync(password,salt,64).toString('hex') }], tokens:[],meta:{ jwt_secret:'a'.repeat(64) },epochs:{ 7:2 },lab:['7'],handoffs:['7'] };
+    hash:scryptSync(password,salt,64).toString('hex') }], tokens:[],playerAccounts:[],meta:{ jwt_secret:'a'.repeat(64) },epochs:{ 7:2 },lab:['7'],handoffs:['7'] };
   const reads = [], mail = [], counters = [], clock = { value:2_000_000 }, failure = { sql:null };
   let tail = Promise.resolve();
   const boDb = { transaction(work) {
@@ -25,7 +25,7 @@ function fixture(overrides = {}) {
       if (sql === 'SELECT v FROM meta WHERE k=? FOR UPDATE') return state.meta[args[0]] === undefined ? [] : [{v:state.meta[args[0]]}];
       if (sql.startsWith('INSERT INTO meta')) { state.meta[args[0]] = args[1]; return []; }
       if (sql.includes('FROM users WHERE lower(username)=? OR lower(email)=?')) return state.users.filter(user => user.username.toLowerCase() === args[0] || user.email?.toLowerCase() === args[1]);
-      if (sql === 'SELECT id FROM users WHERE username=? FOR UPDATE') return state.users.filter(user => user.username === args[0]);
+      if (sql === 'SELECT id FROM users WHERE username=? FOR UPDATE' || sql === 'SELECT id,role FROM users WHERE username=? FOR UPDATE') return state.users.filter(user => user.username === args[0]);
       if (sql === 'SELECT role FROM users WHERE id=?' || sql === 'SELECT salt,hash FROM users WHERE id=?') return state.users.filter(user => user.id === String(args[0]));
       if (sql === 'SELECT epoch FROM bo_auth_epochs WHERE user_id=?') return [{epoch:state.epochs[args[0]] || 0}];
       if (sql.startsWith('INSERT INTO bo_auth_epochs')) { state.epochs[args[0]] = (state.epochs[args[0]] || 0) + 1; return []; }
@@ -46,10 +46,15 @@ function fixture(overrides = {}) {
     };
     return { all:(...args) => query(args),get:async (...args) => (await query(args))[0],run:async (...args) => { await query(args); return {changes:1}; } };
   } };
+  const gameDb = { prepare(sql) {
+    reads.push(sql);
+    assert.equal(sql, 'SELECT email,player_id,salt,hash FROM player_accounts WHERE lower(email)=? OR lower(email)=?');
+    return { all: async (...args) => state.playerAccounts.filter(account => args.includes(account.email.toLowerCase())) };
+  } };
   const authorize = createStudioNativeAuth({ boDb,scope,now:() => clock.value });
   const rateLimit = createStudioLoginRateLimit({ boDb,now:() => clock.value });
   const send = async invitation => { mail.push(invitation); return {sent:true}; };
-  const options = { boDb,scope,authorize,publicOrigin,allowedOrigins:[publicOrigin],now:() => clock.value,
+  const options = { boDb,gameDb,scope,authorize,publicOrigin,allowedOrigins:[publicOrigin],now:() => clock.value,
     mail:{send},clientAddress:() => 'trusted-edge-client',rateLimit:async input => { counters.push(input); return rateLimit(input); },...overrides };
   const actions = createStudioNativeAuthActions(options);
   function request(action,body = {},options = {}) {
@@ -64,19 +69,21 @@ const status = expected => error => error.statusCode === expected;
 test('native login reuses existing identity and signer; resulting cookie validates all current claims', async () => {
   const f = fixture();
   const login = await f.call('login',{user:' OPERATOR@EXAMPLE.INVALID ',pass:password});
-  assert.equal(login.status,200); assert.deepEqual(await login.json(),{ok:true,username:'Operator',role:'superadmin'});
+  assert.equal(login.status,200); assert.deepEqual(await login.json(),{ok:true,username:'Operator',role:'admin'});
   const cookie = login.headers.get('set-cookie');
   assert.match(cookie,/HttpOnly; SameSite=Lax; Max-Age=604800; Secure/);
   const jwt = cookie.split(';')[0];
-  assert.deepEqual(await f.authorize(new Request(`${publicOrigin}/studio/api/auth/session`,{headers:{cookie:jwt}})),{user:'Operator',role:'superadmin',scope});
+  assert.deepEqual(await f.authorize(new Request(`${publicOrigin}/studio/api/auth/session`,{headers:{cookie:jwt}})),{user:'Operator',role:'admin',scope});
   assert.equal(f.state.meta.jwt_secret,'a'.repeat(64)); assert.equal(f.state.users.length,1);
+  assert.equal(f.state.users[0].role,'superadmin'); assert.equal(f.counters[0].user,'craig:7');
   f.state.epochs['7']++;
   await assert.rejects(f.authorize(new Request(`${publicOrigin}/studio/api/auth/session`,{headers:{cookie:jwt}})),status(401));
 });
 
 test('login refuses wrong passwords, ambiguous identities, invalid role, incomplete account and missing existing signer', async () => {
   for (const [alter,pass] of [[f => {},'wrong-password'],[f => f.state.users.push({...f.state.users[0],id:'8'}),password],
-    [f => f.state.users[0].role='player',password],[f => f.state.users[0].hash=null,password]]) {
+    ...['reader','staff','player','unknown'].map(role=>[f => f.state.users[0].role=role,password]),[f => f.state.users[0].hash=null,password],
+    [f => f.state.playerAccounts.push({email:'username:operator',player_id:'local-player'}),password]]) {
     const f = fixture(); alter(f);
     const result = await f.call('login',{user:'operator',pass});
     assert.equal(result.status,401); assert.equal(result.headers.get('set-cookie'),null);

@@ -15,7 +15,7 @@ let r=await post('/api/auth/register',{email,password});assert.equal(r.status,20
 const cookie=r.headers.get('set-cookie');assert.match(cookie,/HttpOnly/);assert.match(cookie,/SameSite=Strict/);
 assert.equal(await(await fetch(base,{headers:{cookie}})).text(),'player-1');
 const account=db.prepare('SELECT * FROM player_accounts').get();assert.notEqual(account.hash,password);assert.equal(account.hash.length,128);
-assert.equal((await post('/api/auth/login',{email,password:'Incorrect-Password-4173'})).status,400);
+assert.equal((await post('/api/auth/login',{email,password:'Incorrect-Password-4173'})).status,401);
 assert.equal((await post('/api/auth/register',{email,password})).status,400);
 assert.equal((await post('/api/auth/login',{email,password},'','https://evil.invalid')).status,403);
 r=await post('/api/auth/login',{email,password});assert.equal(r.status,200);const loginCookie=r.headers.get('set-cookie');

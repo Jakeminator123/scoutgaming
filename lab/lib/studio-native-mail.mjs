@@ -22,8 +22,8 @@ export function createNativeStudioMail({ env = process.env, fetchImpl = fetch } 
       const sent = await fetchImpl('https://api.resend.com/emails', { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10000),
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: `Croupier Studio <${from}>`, to: [to],
-          subject: kind === 'invite' ? 'Croupier Studio: välj ditt lösenord' : 'Croupier Studio: återställ lösenord',
-          text: `${kind === 'invite' ? 'Aktivera ditt befintliga Studio-konto' : 'Återställ lösenordet för ditt Studio-konto'}: ${link}` }) });
+          subject: kind === 'invite' ? 'Croupier: välj ditt lösenord' : 'Croupier: återställ lösenord',
+          text: `${kind === 'invite' ? 'Aktivera ditt befintliga Croupier-konto' : 'Återställ lösenordet för ditt Croupier-konto'}: ${link}` }) });
       await sent.body?.cancel(); return { sent: sent.ok };
     } catch { return { sent: false }; }
   } });

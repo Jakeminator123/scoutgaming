@@ -2,50 +2,53 @@ import {canonicalGameDestination} from './game-entry-contract.mjs';
 const form = document.querySelector('form');
 const status = document.querySelector('#status');
 const submit = document.querySelector('#submit');
-const toggle = document.querySelector('#toggle');
 const password = document.querySelector('#password');
 const username = document.querySelector('#username');
+const help = document.querySelector('#login-help');
+const administratorEntry = document.querySelector('#legacy-admin');
 const destination = '/?dealer=astrid&presentation=local';
 const gameDestination = document.documentElement.dataset.gamePath === '/blackjack'
   ? canonicalGameDestination(new URL(location.search ? location.href : '/player-login?dealer=astrid&presentation=local',location.origin),{includeLaunch:false}) : destination;
-let registering = false, playerAccounts = false, busy = false;
-const kind = () => form.elements.kind.value;
-function render() {
-  if (kind() !== 'player') registering = false;
-  toggle.hidden = !playerAccounts || kind() !== 'player';
-  toggle.textContent = registering ? 'Jag har redan ett spelarkonto' : 'Skapa spelarkonto';
-  submit.textContent = registering ? 'Skapa konto och spela' : 'Logga in';
-  password.autocomplete = registering ? 'new-password' : 'current-password';
-  password.minLength = registering ? 12 : 1;
-  username.maxLength = kind() === 'player' ? 32 : 254;
-  username.previousElementSibling.textContent = kind() === 'player' ? 'Användarnamn (3–32 tecken)' : 'Scout-användarnamn eller e-post';
+let busy = false, loginEndpoint = null, localLogin = false;
+submit.disabled = true;
+function loginError(code) {
+  return ({401:'Inloggningen kunde inte verifieras. Kontrollera användarnamn och lösenord.',
+    403:'Kontot har inte tillgång till spelet.',429:'För många försök. Vänta och försök igen.'})[code]
+    || 'Inloggningen är tillfälligt otillgänglig. Försök igen senare.';
 }
-toggle.onclick = () => { if (!busy) { registering = !registering; password.value = ''; status.textContent = ''; render(); } };
-form.onchange = event => { if (event.target.name === 'kind') { password.value = ''; render(); } };
 form.onsubmit = async event => {
-  event.preventDefault(); if (busy) return;
-  busy = true; submit.disabled = toggle.disabled = true; status.textContent = 'Loggar in…';
+  event.preventDefault(); if (busy || !loginEndpoint) return;
+  busy = true; submit.disabled = true; status.textContent = 'Loggar in…';
+  const body = {[localLogin ? 'username' : 'email']:username.value.trim(),password:password.value};
+  password.value = '';
   try {
-    const local = kind() === 'player';
-    const response = await fetch(local ? `/api/auth/player/${registering ? 'register' : 'login'}` : '/api/auth/login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [local ? 'username' : 'email']: username.value, password: password.value }),
+    const response = await fetch(loginEndpoint, {
+      method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',
+      headers:{Accept:'application/json','Content-Type':'application/json'},body:JSON.stringify(body),
     });
+    if (!response.ok) { status.textContent = loginError(response.status); return; }
     const result = await response.json();
-    if (!response.ok) throw Error(result.error || 'Inloggningen misslyckades.');
-    password.value = ''; location.assign(gameDestination);
-  } catch (error) { status.textContent = error.message; }
-  finally { busy = false; submit.disabled = toggle.disabled = false; }
+    if (result?.ok !== true) throw Error('login_unconfirmed');
+    location.assign(gameDestination);
+  } catch { status.textContent = loginError(503); }
+  finally { delete body.password; busy = false; submit.disabled = false; }
 };
 try {
-  const response = await fetch('/api/auth/session', { cache: 'no-store' });
-  if (!response.ok) throw Error('Inloggningen är inte tillgänglig. Ladda om för att försöka igen.');
+  const response = await fetch('/api/auth/session', {credentials:'same-origin',cache:'no-store',redirect:'error',headers:{Accept:'application/json'}});
+  if (!response.ok) throw Error('session_unavailable');
   const session = await response.json();
+  if (!session || typeof session !== 'object' || Array.isArray(session) || typeof session.authenticated !== 'boolean') throw Error('session_unavailable');
+  password.maxLength = session.sharedCredentials === true ? 256 : 128;
+  localLogin = session.sharedCredentials !== true && session.playerAccounts === true;
+  loginEndpoint = localLogin ? '/api/auth/player/login' : '/api/auth/login';
   if (session.authenticated && !session.localDemoProfiles) location.replace(gameDestination);
   else {
-    playerAccounts = session.playerAccounts === true;
-    if (!playerAccounts) form.elements.kind.value = 'scout';
-    document.querySelector('#account-kind').hidden = !playerAccounts;
-    status.textContent = ''; form.hidden = false; render();
+    help.textContent = session.sharedCredentials === true
+      ? 'Administratörer använder samma konto och lösenord i spelet och Studio.'
+      : localLogin ? 'Här loggar du in med ditt befintliga spelarkonto. Administratörer loggar in via Studio tills spelserverns gemensamma inloggning är aktiverad.'
+        : 'Logga in med ditt befintliga Croupier-konto. Spelserverns gemensamma inloggning är ännu inte aktiverad.';
+    administratorEntry.hidden = !localLogin;
+    username.maxLength = localLogin ? 32 : 254;
+    status.textContent = ''; form.hidden = false; submit.disabled = false;
   }
-} catch (error) { status.textContent = error.message; }
+} catch { status.textContent = 'Inloggningen är inte tillgänglig. Ladda om för att försöka igen.'; }

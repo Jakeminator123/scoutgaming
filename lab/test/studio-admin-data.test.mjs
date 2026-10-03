@@ -53,19 +53,19 @@ test('voice readouts preserve four dealers but only bind human reviews to the ex
   assert.deepEqual(f.state.writes, []);
 });
 
-test('voice review requires staff, exact registered line/hash set and administration CAS; hash alone never approves', async () => {
+test('voice review requires admin, exact registered line/hash set and administration CAS; hash alone never approves', async () => {
   const f = fixture(), handler = f.data.handlers.get('POST /studio/api/admin/voiceline-review');
   const body = { dealer: 'astrid', line: 'goodluck', verdict: 'approved', expectedIdentity: structuredClone(voiceIdentity), expectedRevision: 'studio-original' };
   const context = role => ({ ...f.context(body), actor: { user: 'reviewer', role } });
-  await assert.rejects(handler(context('reader')), error => error.statusCode === 403);
+  for (const role of ['reader','staff','player']) await assert.rejects(handler(context(role)), error => error.statusCode === 403);
   for (const patch of [{ dealer: 'unknown' }, { line: 'does-not-exist' }, { verdict: 'auto-approved' },
     { expectedIdentity: { ...voiceIdentity, audioSha256: 'f'.repeat(64) } }, { expectedRevision: 'stale' }, { actor: 'spoofed' }])
     await assert.rejects(f.call('POST','voiceline-review', { ...body, ...patch }));
   assert.deepEqual(f.state.writes, []);
   f.state.voices.dealers[1].lines[0].reviewable = false;
-  await assert.rejects(handler(context('staff')), error => error.statusCode === 409);
+  await assert.rejects(handler(context('admin')), error => error.statusCode === 409);
   f.state.voices.dealers[1].lines[0].reviewable = true;
-  assert.deepEqual(await handler(context('staff')), { ok: true, revision: 'studio-new' });
+  assert.deepEqual(await handler(context('admin')), { ok: true, revision: 'studio-new' });
   const review = f.state.document.value.voiceReview.astrid.goodluck;
   assert.deepEqual(review, { verdict: 'approved', identity: voiceIdentity, by: 'reviewer', at: '2026-10-03T00:00:00.000Z' });
   assert.equal(f.state.writes[0].options.actor, 'reviewer');
@@ -98,7 +98,7 @@ test('partner metadata does not select credentials and incomplete runtime action
   const f = fixture(); f.state.rows = [{ id: 'x', scopes: '["launch"]', name: 'Partner' }];
   assert.deepEqual((await f.call('GET','apikeys')).keys[0].scopes, ['launch']);
   assert.ok(!/\b(?:key|secret)\b/.test(f.state.reads.at(-1)));
-  for (const action of ['players/status','apikeys/revoke','apikeys/credit','speech-qa','tier']) {
+  for (const action of ['players/password','players/status','apikeys/revoke','apikeys/credit','speech-qa','tier']) {
     assert.equal(f.data.handlers.has(`POST /studio/api/admin/${action}`), false);
   }
 });
@@ -108,6 +108,14 @@ test('self change, invalid role and wrong server scope are denied before mutatio
   await assert.rejects(f.call('POST','users/role',{ username: 'someone', role: 'player' }));
   await assert.rejects(f.data.handlers.get('GET /studio/api/admin/users')({ ...f.context(), scope: { ...scope, workspaceId: 'other' } }));
   assert.equal(f.state.writes.length, 0);
-  await f.call('POST','users/role',{ username: 'someone', role: 'reader' });
+  await f.call('POST','users/role',{ username: 'someone', role: 'admin' });
   assert.ok(f.state.writes.some(write => write.sql.startsWith('DELETE FROM lab_sessions')));
+});
+
+test('players expose an exact boolean password capability without changing account data',async()=>{
+  const f=fixture();f.state.rows=[{id:'local',passwordChangeAllowed:true},{id:'sqlite-fixture',passwordChangeAllowed:1},{id:'craig-only',passwordChangeAllowed:false},{id:'ambiguous',passwordChangeAllowed:'true'}];
+  const result=await f.call('GET','players');
+  assert.deepEqual(result.players.map(row=>row.passwordChangeAllowed),[true,true,false,false]);
+  assert.match(f.state.reads.at(-1),/EXISTS\(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id\)/);
+  assert.deepEqual(f.state.writes,[]);
 });

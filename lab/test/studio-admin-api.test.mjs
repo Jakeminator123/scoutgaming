@@ -26,11 +26,11 @@ test('local API base only replaces the exact canonical prefix', async () => {
 });
 
 test('live authorization and explicit role floor deny players and reader writes', async () => {
-  for (const principal of [null, { user: 'p', role: 'player' }, { user: '', role: 'admin' }]) assert.equal((await api({ authorize: () => principal }).handle(request())).status, 401);
+  for (const principal of [null, { user: '', role: 'admin' }]) assert.equal((await api({ authorize: () => principal }).handle(request())).status, 401);
   const reader = api({ authorize: () => ({ user: 'r', role: 'reader', scope: session.scope }) });
   assert.equal((await reader.handle(request())).status, 403);
-  assert.deepEqual(reader.availableActions({ user: 'r', role: 'reader' }), ['GET players']);
-  assert.equal((await reader.handle(new Request(origin + path('players')))).status, 200);
+  assert.deepEqual(reader.availableActions({ user: 'r', role: 'reader' }), []);
+  assert.equal((await reader.handle(new Request(origin + path('players')))).status, 403);
 });
 
 test('host and browser-origin spoofing cannot invoke a write', async () => {
@@ -46,7 +46,7 @@ test('bounded strict UTF8 object JSON and server-owned actor/scope', async () =>
   assert.equal((await api().handle(request('room', { body: JSON.stringify({ text: 'x'.repeat(65536) }) }))).status, 413);
   assert.equal((await api().handle(request('room', { headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'text/plain' } }))).status, 415);
   const result = await (await api().handle(request())).json();
-  assert.deepEqual(result, { actor: { user: 'Jakob', role: 'superadmin' }, scope: session.scope });
+  assert.deepEqual(result, { actor: { user: 'Jakob', role: 'admin' }, scope: session.scope });
 });
 
 test('extra requirements need explicit gates for capabilities and execution', async () => {

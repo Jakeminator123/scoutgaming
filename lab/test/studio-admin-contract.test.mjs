@@ -20,7 +20,7 @@ test('proposed native addresses contain one Studio and one actual game address',
 });
 
 test('admin method/path pairs explicitly cover the action policy without a catch-all', () => {
-  assert.equal(STUDIO_ADMIN_ENDPOINTS.length, 35);
+  assert.equal(STUDIO_ADMIN_ENDPOINTS.length, 36);
   const keys = STUDIO_ADMIN_ENDPOINTS.map(endpoint => `${endpoint.method} ${endpoint.path}`);
   assert.equal(new Set(keys).size, keys.length);
   assert.deepEqual([...new Set(STUDIO_ADMIN_ENDPOINTS.map(endpoint => endpoint.action))].sort(),
@@ -32,7 +32,7 @@ test('admin method/path pairs explicitly cover the action policy without a catch
     assert.equal(endpoint.handlerRequirements, policy.handlerRequirements);
     assert.equal(studioAdminEndpoint(endpoint.method, endpoint.path), endpoint);
   }
-  assert.equal(studioAdminEndpoint('GET', '/studio/api/admin/users').minimumRole, 'superadmin');
+  assert.equal(studioAdminEndpoint('GET', '/studio/api/admin/users').minimumRole, 'admin');
   assert.equal(studioAdminEndpoint('POST', '/studio/api/admin/players/create').minimumRole, 'admin');
 });
 
