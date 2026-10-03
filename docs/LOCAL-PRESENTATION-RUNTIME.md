@@ -26,12 +26,15 @@ I den aktiva checkouten ligger de alltså under `C:\Users\jakem\Projects\croupie
 | Lokal path | Verifierat efter städningen 3 oktober |
 | --- | --- |
 | `lab/.next/cache` | Borttagen; återskapas vid nästa bygge |
-| `apps/croupier-frontend/.next/cache` | Borttagen tillsammans med frontendens hela `.next` |
+| `apps/croupier-frontend/.next/cache` | Borttagen efter senaste verifierade bygge; återskapas vid nästa bygge |
 | `lab/tsconfig.tsbuildinfo`, `apps/croupier-frontend/tsconfig.tsbuildinfo` | Borttagna; kan återskapas av TypeScript |
-| `lab/.next` utan cache | 8 211 983 byte färdig runtime behålls för anslutningstestet |
+| `lab/.next` utan cache | 8 306 510 byte färdig runtime behålls för anslutningstestet |
+| `apps/croupier-frontend/.next` utan cache | 3 503 289 byte färdig runtime behålls |
 
-Städningen frigjorde netto 1 032 360 345 byte bygglagring, utöver borttagna
-beroenden. Cache är knuten till den checkout där bygget körs. Vercel har också
+Första städleveransen frigjorde netto 1 032 360 345 byte bygglagring, utöver
+borttagna beroenden. Efter credentials-passens nya byggen rensades 292 363 385
+byte återskapad cache igen; den räknas inte dubbelt som nettofrigjord lagring.
+Cache är knuten till den checkout där bygget körs. Vercel har också
 egen deployment-/byggcache i molnet; den här lokala rensningen tömmer inte den.
 `lab/data/platform-private`, SDK/sourcepins, QA-receipts, kostnadsjournaler,
 konton och media är beständig arbetsdata och ingick inte i cacheborttagningen.
