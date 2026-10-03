@@ -212,6 +212,9 @@ export async function inspectCloudDisk(config) {
 // A read-only preflight prevents --check from approving a blank CRAIG volume
 // that the Web child would reject on startup. It never creates a database.
 export async function inspectCloudBootstrap(config) {
+  // This maintenance process starts no product/Lab child and cannot bootstrap
+  // or query PostgreSQL. Disk/build preflight remains in start.mjs.
+  if (config.storageExport?.mode === 'studio-export') return;
   if (config.bootstrapAdmin) return;
   if (config.database === 'postgres') {
     const storage = createPostgresStore({ connectionString: config.gameDatabaseUrl, zonesConnectionString: config.zonesDatabaseUrl });

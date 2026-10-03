@@ -9,6 +9,8 @@ import { createStudioGamePolicy, studioGamePolicyConfiguration } from '../../web
 import { createRegisteredDealerIdle } from '../../web/storage/studio-runtime.mjs';
 import { resolveMediaPath } from '../../tools/media-layout.mjs';
 import { createStudioAdminAccounts } from './studio-admin-accounts.mjs';
+import { createStudioAdminReadouts } from './studio-admin-readouts.mjs';
+import { createRegisteredVoiceLines } from './studio-voice-lines.mjs';
 import { createStudioNativeAuthActions, createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
 import { createStudioGameAuthority } from './studio-game-authority.mjs';
 import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
@@ -91,7 +93,10 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const uploads = createStudioUploadService({ repository, scope: config.scope, ticketKey: Buffer.from(signer.v, 'hex'), env });
     const authorize = authFactory({ boDb: store.boDb, scope: config.scope });
     const { handlers, gates } = dataFactory({ db: store.db, boDb: store.boDb, repository, scope: config.scope,
-      gamePolicy, canAssignDealer: gamePolicy.canAssignDealer });
+      gamePolicy, canAssignDealer: gamePolicy.canAssignDealer,voiceLines:createRegisteredVoiceLines({env,repositoryRoot}) });
+    for(const [key,handler] of createStudioAdminReadouts({db:store.db,scope:config.scope}).handlers) {
+      if(handlers.has(key))unavailable();handlers.set(key,handler);
+    }
     const gameAuthority = createStudioGameAuthority({ env, scope: config.scope });
     const mail = nativeStudioMail(env);
     const accounts = accountsFactory({ boDb: store.boDb, scope: config.scope, gameAuthority, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN });

@@ -12,6 +12,12 @@ const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(proc
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
 const ID = /^[a-f0-9]{64}$/;
 const inFlight = new Map();
+const neonMode = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1' || env?.CROUPIER_STUDIO_NATIVE_ADMIN === '1';
+const disabledMessage = 'Det fristående röstprovet är avstängt. Tal i molnläget kräver Render och dess beständiga kostnadsjournal.';
+function assertPreviewEnabled(options = {}) {
+  if (neonMode(process.env) || neonMode(options.env) || options.settings?.disabled)
+    throw new StudioError(disabledMessage, 503);
+}
 export const VOICE_PREVIEW = Object.freeze({
   voiceId: ASTRID_VOICE_PROFILE.voiceId, voiceName: ASTRID_VOICE_PROFILE.name, modelId: ASTRID_VOICE_PROFILE.modelId,
   outputFormat: Object.freeze({ container: 'mp3', sample_rate: 44100, bit_rate: 128000 }), maxTextLength: 500,
@@ -24,6 +30,7 @@ export const VOICE_PHRASES = Object.freeze([
 
 // Server-only, selective key read. Never write credentials into process.env or responses.
 export function readVoiceSettings({ env = process.env, envFiles = [resolve(LAB_DIR, '../.env')] } = {}) {
+  if (neonMode(env)) return { key: '', mismatch: false, cacheDir: '', disabled: true };
   const values = {};
   for (const file of envFiles) {
     try {
@@ -40,6 +47,10 @@ export function readVoiceSettings({ env = process.env, envFiles = [resolve(LAB_D
 }
 
 export function voicePreviewStatus(settings = readVoiceSettings()) {
+  if (settings.disabled || neonMode(process.env)) return {
+    configured: false, message: disabledMessage, voiceName: VOICE_PREVIEW.voiceName, modelId: VOICE_PREVIEW.modelId,
+    maxTextLength: VOICE_PREVIEW.maxTextLength, phrases: VOICE_PHRASES,
+  };
   return {
     configured: Boolean(settings.key) && !settings.mismatch,
     message: settings.key ? 'Cartesia-nyckel finns på servern. Ingen röst genereras förrän du trycker på knappen.' : 'Lägg CARTESIA_API_KEY i rotens .env.',
@@ -162,7 +173,11 @@ async function generateOnce(text, id, settings, fetchImpl) {
   }
 }
 
-export async function generateVoicePreview(body, { settings = readVoiceSettings(), fetchImpl = fetch } = {}) {
+export async function generateVoicePreview(body, options = {}) {
+  assertPreviewEnabled(options);
+  const settings = options.settings ?? readVoiceSettings({ env: options.env ?? process.env });
+  assertPreviewEnabled({ ...options, settings });
+  const fetchImpl = options.fetchImpl ?? fetch;
   const text = voicePreviewText(body), id = voicePreviewId(text);
   const key = `${settings.cacheDir}\0${id}`;
   if (inFlight.has(key)) return { ...await inFlight.get(key), cached: true };
@@ -175,7 +190,10 @@ export async function generateVoicePreview(body, { settings = readVoiceSettings(
   try { return await task; } finally { inFlight.delete(key); }
 }
 
-export async function voicePreviewResponse(request, id, { settings = readVoiceSettings() } = {}) {
+export async function voicePreviewResponse(request, id, options = {}) {
+  assertPreviewEnabled(options);
+  const settings = options.settings ?? readVoiceSettings({ env: options.env ?? process.env });
+  assertPreviewEnabled({ ...options, settings });
   assertLocalRequest(request);
   if (!['GET', 'HEAD'].includes(request.method)) throw new StudioError('Metoden stöds inte.', 405);
   if (!ID.test(id)) throw new StudioError('Okänt röstprov.', 404);
@@ -186,6 +204,7 @@ export async function voicePreviewResponse(request, id, { settings = readVoiceSe
 
 export async function voicePreviewEndpoint(request, options = {}) {
   try {
+    assertPreviewEnabled(options);
     assertLocalRequest(request);
     if (request.method === 'GET') return jsonResponse(voicePreviewStatus(options.settings));
     if (request.method !== 'POST') throw new StudioError('Metoden stöds inte.', 405);

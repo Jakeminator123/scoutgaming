@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { isStudioRole } from './studio-access-policy.mjs';
+import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
 import { createPlayerAdministration } from '../../web/storage/player-administration.mjs';
+import { createRegisteredVoiceLines, studioVoiceIdentity, voiceReviewMatches } from './studio-voice-lines.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
@@ -13,7 +14,8 @@ function bodyKeys(body, allowed, required = allowed) {
 
 // Actual domain handlers, not a forwarding proxy. Missing domains are not
 // registered; callers cannot turn a future descriptor into an active feature.
-export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy, canAssignDealer, now = () => new Date().toISOString() } = {}) {
+export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy, canAssignDealer,
+  voiceLines = createRegisteredVoiceLines(), now = () => new Date().toISOString() } = {}) {
   if (!db?.prepare || !boDb?.prepare || !repository?.readDocument || !repository?.saveDocument) fail(503);
   scope = validateStudioScope(scope);
   const players = createPlayerAdministration({ db, now }), handlers = new Map(), gates = new Map();
@@ -23,7 +25,7 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     return context.actor.user;
   }
   const register = (method, action, run) => handlers.set(`${method} /studio/api/admin/${action}`, async context => {
-    trusted(context); return run(context);
+    trusted(context); if (!meetsStudioAdminActionRole(context.actor.role, action)) fail(403); return run(context);
   });
   async function config() {
     const document = gamePolicy ? await gamePolicy.readAdministration() : await repository.readDocument('administration');
@@ -45,6 +47,28 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     });
   }
   register('GET', 'config', async () => { const saved = await config(); return { ...saved.value, revision: saved.revision }; });
+  register('GET', 'voicelines', async () => {
+    const [saved, registry] = await Promise.all([config(), voiceLines()]);
+    return { ...registry, revision: saved.revision, dealers: registry.dealers.map(dealer => ({ ...dealer,
+      lines: dealer.lines.map(line => {
+        const review = saved.value.voiceReview?.[dealer.dealer]?.[line.key];
+        const matches = voiceReviewMatches(review, line.identity);
+        return { ...line, review: matches ? review.verdict : null,
+          reviewState: matches ? 'current-human-review' : review ? 'unbound-or-changed-media' : 'unreviewed',
+          productionApproved: false };
+      }) })) };
+  });
+  change('voiceline-review', ['dealer', 'line', 'verdict', 'expectedIdentity'], async (value, body, context) => {
+    if (!dealers.has(body.dealer) || !text(body.line, 100) || !['approved', 'rejected', null].includes(body.verdict)) fail();
+    const registry = await voiceLines(), line = registry.dealers.find(row => row.dealer === body.dealer)?.lines.find(row => row.key === body.line);
+    if (!line) fail(404);
+    if (body.verdict !== null && (!line.reviewable || !studioVoiceIdentity(body.expectedIdentity)
+      || !studioVoiceIdentity(line.identity) || canonicalStudioJson(body.expectedIdentity) !== canonicalStudioJson(line.identity))) fail(409);
+    if (body.verdict === null && body.expectedIdentity !== null && !studioVoiceIdentity(body.expectedIdentity)) fail();
+    value.voiceReview ??= {}; value.voiceReview[body.dealer] ??= {};
+    if (body.verdict === null) delete value.voiceReview[body.dealer][body.line];
+    else value.voiceReview[body.dealer][body.line] = { verdict: body.verdict, identity: structuredClone(line.identity), by: trusted(context), at: now() };
+  });
   register('GET', 'overview', async () => {
     const [saved, total, tx] = await Promise.all([
       config(), db.prepare('SELECT COUNT(*) n FROM players').get(),

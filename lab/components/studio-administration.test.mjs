@@ -112,7 +112,9 @@ function resources() {
     ] } },
     apikeys: { payload: { keys: [{ id: 'partner-one', name: 'Test partner', scopes: ['play'], key: 'MUST-NOT-RENDER', secret: 'MUST-NOT-RENDER', walletConfigured: true }] } },
     transactions: { payload: { tx: [{ player_id: 'player-closed', type: 'open', amount: 42, currency: 'EUR', at: '2026-10-02T00:00:00Z' }] } },
-    voicelines: { payload: { dealers: [{ dealer: 'astrid', name: 'Astrid', lines: [{ key: 'goodluck', text: 'Lycka till', review: null, preview: '/dealers/astrid/preview/goodluck.mp4', audio: '/dealers/astrid/audio/en/goodluck.mp3' }] }] } },
+    voicelines: { payload: { dealers: [{ dealer: 'astrid', name: 'Astrid', lines: [{ key: 'goodluck', text: 'Lycka till', review: null, reviewable:true,identity:'exact-pair-fixture', preview: '/dealers/astrid/preview/goodluck.mp4', audio: '/dealers/astrid/audio/en/goodluck.mp3' }] }] } },
+    shoes:{payload:{rules:{decks:8,total:416,cutAfter:312,burn:1},tableCount:2,shoes:2,activeRounds:1,cutReached:0,observedAt:'2026-10-03T02:00:00.000Z'}},
+    emails:{payload:{previewOnly:true,templates:[{id:'welcome',name:'Welcome',heading:'Hello <script>',text:'Preview',fields:[['Account','[PLAYER EMAIL]']],action:'Take a seat'}]}},
   };
 }
 const viewProps = (role = 'superadmin', group = 'accounts') => ({ actor: actor(role), group, resources: resources(), busy: false, available, command() { throw new Error('Unexpected render mutation'); } });
@@ -334,7 +336,7 @@ test('config writes disappear without valid revision while read data and honest 
     assert.match(html, /konfigurationsrevision saknas/); assert.doesNotMatch(html, /<form/); assert.match(html, /Existing tournament/);
   }
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'operations')));
-  assert.match(html, /Inget RNG-certifikat påstås/); assert.doesNotMatch(html, /CERTIFIED|VALID/);
+  assert.match(html, /Certifieringsunderlag: saknas/); assert.match(html,/Cut card efter 312/);assert.doesNotMatch(html, /CERTIFIED|VALID/);
 });
 
 test('media preview allowlist refuses external/query/traversal URLs and manual review uses exact line/dealer/revision', () => {
@@ -345,8 +347,16 @@ test('media preview allowlist refuses external/query/traversal URLs and manual r
   const tree = h.StudioAdministrationView({ ...viewProps('staff', 'media-review'), command: (action, body) => calls.push({ action, body }) });
   assert.equal(nodes(tree, node => node.type === 'video' && node.props.preload === 'none').length, 1);
   nodes(tree, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ verdict: 'approved' }) });
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), { action: 'voiceline-review', body: { dealer: 'astrid', line: 'goodluck', verdict: 'approved', expectedRevision: 'studio-v1' } });
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), { action: 'voiceline-review', body: { dealer: 'astrid', line: 'goodluck', verdict: 'approved',expectedIdentity:'exact-pair-fixture', expectedRevision: 'studio-v1' } });
   assert.match(renderToStaticMarkup(tree), /Betald speech-QA körs inte/);
+});
+
+test('native mail previews escape content, render placeholders and never send or navigate',()=>{
+  const h=harness();const tree=h.StudioAdministrationView(viewProps('reader','partners'));
+  const html=renderToStaticMarkup(tree);
+  assert.match(html,/Hello &lt;script&gt;/);assert.match(html,/\[PLAYER EMAIL\]/);
+  assert.doesNotMatch(html,/<iframe|<script|srcDoc|dangerouslySetInnerHTML/);
+  assert.equal(buttons(tree,'Take a seat').length,0);assert.match(html,/Take a seat/);
 });
 
 test('revoked session clears old account data/controls, and explicit reload recovers without a local fallback', async () => {

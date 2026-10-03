@@ -12,6 +12,7 @@ import { createSeedProject } from '../lab/lib/studio-model.mjs';
 import { createStudioNativeAuth } from '../lab/lib/studio-native-auth.mjs';
 import { createStudioNativeAuthActions, createStudioLoginRateLimit } from '../lab/lib/studio-native-auth-actions.mjs';
 import { createStudioAdminData } from '../lab/lib/studio-admin-data.mjs';
+import { createStudioAdminReadouts } from '../lab/lib/studio-admin-readouts.mjs';
 import { createStudioAdminAccounts } from '../lab/lib/studio-admin-accounts.mjs';
 import { createStudioAdminApi } from '../lab/lib/studio-admin-api.mjs';
 import { createStudioDocumentApi } from '../lab/lib/studio-document-api.mjs';
@@ -24,6 +25,7 @@ import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../web/genera
 import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from '../web/generated-speech-provider.mjs';
 import { createSpeechBlobArtifacts } from '../web/speech-blob-artifacts.mjs';
+import { SHOE_RULES, newGame } from '../web/shoe-game.mjs';
 
 // This fixture accepts only a fresh user-owned localhost cluster. It never reads
 // production environment/config files and is not a product/lab devserver.
@@ -40,6 +42,11 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
   for (const [index, username] of names.entries()) await pool.query('INSERT INTO croupier_auth.users(username,email,salt,hash,role,created_at) VALUES ($1,$2,$3,$4,$5,$6)',
     [username, `${username}@example.invalid`, salt, scryptSync(password, salt, 64).toString('hex'), index === 0 ? 'superadmin' : 'reader', new Date().toISOString()]);
   const idle = dealerId => ({ dealerId, engineKey: 'idle-1/idle/idle', available: true });
+  const voiceIdentity = Object.fromEntries(['audioSha256','videoSha256','previewSha256','textSha256','indexSha256']
+    .map((key, index) => [key, String(index + 1).repeat(64)])); voiceIdentity.audioDelayMs = 200;
+  let currentVoiceIdentity = structuredClone(voiceIdentity);
+  const voiceLines = async () => ({ dealers: [{ dealer: 'astrid', name: 'Astrid', lines: [{ key: 'goodluck', text: 'Synthetic review fixture',
+    identity: structuredClone(currentVoiceIdentity), reviewable: true, productionApproved: false }] }] });
   let runtime, cancellations = 0, server, studioOrigin, backendOrigin, cookies = {};
   let lastMail;
   const commandSecret = randomBytes(32).toString('hex'), mail = { send: async message => { lastMail = message; return { sent: true }; } };
@@ -69,9 +76,10 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
     const authorize = createStudioNativeAuth({ boDb: store.boDb, scope });
     const config = { scope, allowedOrigins: [studioOrigin], publicHosts: [new URL(studioOrigin).host], apiBase: '/studio/api/admin', authBase: '/studio/api/auth' };
     const gameAuthority = createStudioGameAuthority({ env: { CROUPIER_PUBLIC_ORIGIN: studioOrigin, CROUPIER_BACKEND_ORIGIN: backendOrigin, CROUPIER_VERCEL_INGRESS_SECRET: commandSecret }, scope, fetchImpl: transport });
-    const data = createStudioAdminData({ db: store.db, boDb: store.boDb, repository, scope, gamePolicy, canAssignDealer: gamePolicy.canAssignDealer });
+    const data = createStudioAdminData({ db: store.db, boDb: store.boDb, repository, scope, gamePolicy, canAssignDealer: gamePolicy.canAssignDealer, voiceLines });
     const accounts = createStudioAdminAccounts({ boDb: store.boDb, scope, gameAuthority, mail, publicOrigin: studioOrigin });
-    const handlers = new Map([...data.handlers, ...accounts.handlers]), gates = new Map([...data.gates, ...accounts.gates]);
+    const readouts = createStudioAdminReadouts({ db: store.db, scope });
+    const handlers = new Map([...data.handlers, ...accounts.handlers, ...readouts.handlers]), gates = new Map([...data.gates, ...accounts.gates]);
     const admin = createStudioAdminApi({ authorize, handlers, gates, allowedOrigins: config.allowedOrigins, publicHosts: config.publicHosts,
       mutationTransaction:work => store.boDb.transaction(work) });
     const auth = createStudioNativeAuthActions({ boDb: store.boDb, scope, authorize, mail, publicOrigin: studioOrigin,
@@ -136,6 +144,69 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       assert.equal((await call('/studio/api/project', { cookie: cookies.reader })).status, 403);
       assert.equal((await call('/studio/api/admin/config', { cookie: cookies.reader })).status, 200);
     });
+    await check('HTTPS native reader sees four inert mail previews and empty persisted shoes; anonymous/mutations denied', async () => {
+      assert.equal((await pool.query('SELECT count(*)::int n FROM croupier_game.blackjack_tables')).rows[0].n, 0);
+      for (const action of ['shoes','emails']) {
+        assert.equal((await call(`/studio/api/admin/${action}`, { cookie: '' })).status, 401);
+        assert.equal((await call(`/studio/api/admin/${action}`, { method: 'POST', cookie: cookies.reader, body: {} })).status, 405);
+      }
+      const empty = await call('/studio/api/admin/shoes', { cookie: cookies.reader }); assert.equal(empty.status, 200);
+      const state = await empty.json();
+      assert.deepEqual(state.rules, SHOE_RULES); assert.equal(state.tableCount, 0); assert.equal(state.shoes, 0);
+      assert.equal(state.activeRounds, 0); assert.equal(state.cutReached, 0); assert.equal(state.partial, false);
+      const emails = await call('/studio/api/admin/emails', { cookie: cookies.reader }); assert.equal(emails.status, 200);
+      const preview = await emails.json(); assert.equal(preview.templates.length, 4); assert.equal(preview.previewOnly, true);
+      assert.doesNotMatch(JSON.stringify(preview), /https?:|<iframe|<script|bettalotto|backoffice|@/i);
+      assert.equal(lastMail, undefined);
+    });
+    const shoePlayers = Array.from({ length: 4 }, (_, index) => `shoe-private-${randomUUID()}-${index}`);
+    const shoeState = (dealt, phase = null, paid = false) => ({ ...newGame(), version: 1, paid,
+      shoe: { id: randomUUID(), dealt, cards: Array.from({ length: SHOE_RULES.total - dealt }, () => ({ rank: 'K', suit: 'private-card-sentinel' })),
+        cutReached: dealt >= SHOE_RULES.cutAfter }, round: phase ? { phase, holeCard: { privateHole: 'private-hole-sentinel' } } : null });
+    const savedShoes = [newGame(), shoeState(SHOE_RULES.burn, 'insurance'), shoeState(SHOE_RULES.cutAfter, 'decisions'), shoeState(SHOE_RULES.cutAfter + 1, 'settled', true)];
+    for (let index = 0; index < shoePlayers.length; index++) {
+      await pool.query('INSERT INTO croupier_game.players(id,name,created_at) VALUES ($1,$2,$3)', [shoePlayers[index], 'private-player-name', new Date().toISOString()]);
+      await pool.query('INSERT INTO croupier_game.blackjack_tables(player_id,state) VALUES ($1,$2)', [shoePlayers[index], JSON.stringify(savedShoes[index])]);
+    }
+    await check('actual persisted shoe/burn/cut/current-round SQL returns only bounded reader aggregates over HTTPS', async () => {
+      const result = await call('/studio/api/admin/shoes', { cookie: cookies.reader }); assert.equal(result.status, 200);
+      const state = await result.json();
+      assert.equal(state.tableCount, 4); assert.equal(state.sampledTables, 4); assert.equal(state.partial, false);
+      assert.equal(state.shoes, 3); assert.equal(state.activeRounds, 2); assert.equal(state.cutReached, 2);
+      assert.equal(state.certificationVerified, false); assert.equal(state.source, 'render-persisted-state');
+      assert.doesNotMatch(JSON.stringify(state), /private-|player|cards|hole|balance|rank|suit|shoe_id/i);
+      for (const id of shoePlayers) assert.equal(JSON.stringify(state).includes(id), false);
+    });
+    await check('actual malformed/scalar/missing shoe JSON and invalid cut arithmetic fail closed without hidden card disclosure', async () => {
+      const corrupt = [ 'not-json', 'null', '[]', JSON.stringify({ ...newGame(), shoe: 'broken', round: 'broken' }),
+        JSON.stringify({ ...newGame(), shoe: {} }), JSON.stringify({ ...newGame(), round: {} }),
+        JSON.stringify({ ...newGame(), paid: 'false' }), JSON.stringify({ paid: false }),
+        JSON.stringify({ ...savedShoes[1], shoe: { ...savedShoes[1].shoe, cards: 'private-card-sentinel' } }),
+        JSON.stringify({ ...savedShoes[2], shoe: { ...savedShoes[2].shoe, cutReached: false } }),
+        JSON.stringify({ ...savedShoes[1], shoe: { ...savedShoes[1].shoe, dealt: 2 } }) ];
+      try {
+        for (const state of corrupt) {
+          await pool.query('UPDATE croupier_game.blackjack_tables SET state=$1 WHERE player_id=$2', [state, shoePlayers[0]]);
+          const result = await call('/studio/api/admin/shoes', { cookie: cookies.reader });
+          assert.ok([500, 503].includes(result.status), `corrupt persisted state must reject (${result.status})`);
+          assert.doesNotMatch(await result.text(), /private-|cards|hole|rank|suit|SELECT|jsonb|syntax|postgres|invalid input/i);
+        }
+      } finally { await pool.query('UPDATE croupier_game.blackjack_tables SET state=$1 WHERE player_id=$2', [JSON.stringify(savedShoes[0]), shoePlayers[0]]); }
+      assert.equal((await call('/studio/api/admin/shoes', { cookie: cookies.reader })).status, 200);
+    });
+    await check('actual persisted shoe aggregate caps its sample at 500 and exposes partial rather than a false total', async () => {
+      const prefix = `partial-${randomUUID()}`;
+      try {
+        await pool.query("INSERT INTO croupier_game.players(id,name,created_at) SELECT $1||'-'||n,'private-player-name',$2 FROM generate_series(1,500) n", [prefix, new Date().toISOString()]);
+        await pool.query('INSERT INTO croupier_game.blackjack_tables(player_id,state) SELECT id,$1 FROM croupier_game.players WHERE id LIKE $2', [JSON.stringify(newGame()), `${prefix}-%`]);
+        const result = await call('/studio/api/admin/shoes', { cookie: cookies.reader }); assert.equal(result.status, 200);
+        const state = await result.json(); assert.equal(state.tableCount, 504); assert.equal(state.sampledTables, 500); assert.equal(state.partial, true);
+        assert.doesNotMatch(JSON.stringify(state), /private-|player|cards|hole|balance|rank|suit/i);
+      } finally {
+        await pool.query('DELETE FROM croupier_game.blackjack_tables WHERE player_id LIKE $1', [`${prefix}-%`]);
+        await pool.query('DELETE FROM croupier_game.players WHERE id LIKE $1', [`${prefix}-%`]);
+      }
+    });
     let updatedProject, previousProjection;
     await check('Studio HTTPS save is observed by Render with exact saved revision and CAS conflict', async () => {
       previousProjection = await (await call('/api/bo/config')).json();
@@ -155,6 +226,27 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       assert.equal(results.filter(result => result.status === 'fulfilled').length, 1); assert.equal(results.filter(result => result.status === 'rejected' && result.reason.code === 'studio_conflict').length, 1);
       assert.equal((await runtime.repository.listDocumentHistory('administration')).length, 1);
       assert.equal((await pool.query('SELECT count(*)::int n FROM croupier_studio.audit_events WHERE environment_id=$1 AND action=$2', [scope.environment, 'save_document'])).rows[0].n, 2);
+    });
+    await check('actual native voice review binds exact identities, current roles and saved CAS with changed-media approval invalidation', async () => {
+      const first = await call('/studio/api/admin/voicelines', { cookie: cookies.reader }); assert.equal(first.status, 200);
+      const lines = await first.json(), line = lines.dealers[0].lines[0];
+      const body = { dealer: 'astrid', line: 'goodluck', verdict: 'approved', expectedIdentity: line.identity, expectedRevision: lines.revision };
+      assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', cookie: cookies.reader, body })).status, 403);
+      assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', cookie: '', body })).status, 401);
+      const tampered = { ...body, expectedIdentity: { ...line.identity, audioSha256: '9'.repeat(64) } };
+      assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', body: tampered })).status, 409);
+      const saved = await call('/studio/api/admin/voiceline-review', { method: 'POST', body }); assert.equal(saved.status, 200);
+      assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', body })).status, 409);
+      const document = await runtime.repository.readDocument('administration');
+      assert.deepEqual(document.value.voiceReview.astrid.goodluck.identity, voiceIdentity);
+      assert.equal(document.value.voiceReview.astrid.goodluck.by, names[0]);
+      assert.equal((await (await call('/studio/api/admin/voicelines')).json()).dealers[0].lines[0].reviewState, 'current-human-review');
+      currentVoiceIdentity.audioSha256 = '8'.repeat(64);
+      try {
+        const changed = await (await call('/studio/api/admin/voicelines')).json(), changedLine = changed.dealers[0].lines[0];
+        assert.equal(changedLine.review, null); assert.equal(changedLine.reviewState, 'unbound-or-changed-media'); assert.equal(changedLine.productionApproved, false);
+        assert.equal((await call('/studio/api/admin/voiceline-review', { method: 'POST', body: { ...body, expectedRevision: changed.revision } })).status, 409);
+      } finally { currentVoiceIdentity = structuredClone(voiceIdentity); }
     });
     let player;
     await check('native account creation and invite/resend execute actual SQL with isolated mail fixture', async () => {
@@ -214,6 +306,9 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       assert.equal((await runtime.store.db.prepare('SELECT balance,status FROM players WHERE id=?').get(player.id)).balance, 1025);
       assert.equal((await runtime.repository.listDocumentHistory('project')).length, 1);
       assert.equal((await pool.query("SELECT count(*)::int n FROM croupier_auth.meta WHERE k LIKE 'studio-command:%'")).rows[0].n, 2);
+      const readout = await call('/studio/api/admin/shoes', { cookie: cookies.reader }); assert.equal(readout.status, 200);
+      assert.equal((await readout.json()).cutReached, 2);
+      assert.equal((await (await call('/studio/api/admin/voicelines')).json()).dealers[0].lines[0].reviewState, 'current-human-review');
     });
     await check('role revoke and logout invalidate real JWT across deployments after restart', async () => {
       await pool.query('UPDATE croupier_auth.users SET role=$1 WHERE username=$2', ['staff', names[1]]);

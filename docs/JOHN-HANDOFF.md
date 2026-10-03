@@ -27,14 +27,25 @@ Partnercredentials och spellänk visas i en tillfällig separat resultatvy,
 aldrig listmetadata/storage, och rensas vid omladdning/gruppbyte/logout.
 
 57 riktade konto-/auth-/partner-/UI-prov samt Lab-TypeScript PASS.
-Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 35
-acceptansgrupper och 35 oförändrade källhashar, plus runnerguard. Fyra rena
+Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 40
+acceptansgrupper och 44 oförändrade källhashar, plus runnerguard. Fyra rena
 retained-media-guards PASS. 85 riktade
 tal-/journal-/Blob-/import-/operatörsprov PASS. SQL-provet täcker sparad revision/CAS,
 konkurrens/rollback, native login/invite/resend/engångslösenord, logout/roll-
 revoke, signerad actor/scope och walletnonce utan dubbel kreditering.
 Fixtureprocesser, certifikat och databas städades. Inga riktiga konton,
 providermejl, molndatabaser eller betalda jobb användes.
+
+Native röstgranskning binder nu exakt text/audio/video/preview/index och
+kalibrering till sparad CAS-revision och aktuell granskarroll. Äldre obundna
+eller ändrade medier får ingen automatisk approval. Fyra mejlmallar visas
+lokalt utan iframe eller mejlanrop. Skoöversikten visar endast SQL-projicerade
+regler/räknare, aldrig kortordning, hålkort eller spelaruppgifter; korrupt
+JSON stoppas och högst 500 tabeller visas med explicit delresultat. Dessa
+flöden inklusive negativa roller, ändrat mediepar och restart PASS i verklig
+isolerad SQL/HTTPS. Den äldre direkta betalda röstpreviewn stoppas före
+disk/provider i gemensamt/native läge. 52 kombinerade fokuserade BO-/röst-/
+readout-/UI-prov PASS; detta är inte mänsklig läppsynkacceptans.
 
 Talets aktiva fullfil-/stream-/sessionscallers är kopplade till Neon-journalen
 under gemensamma policyflaggan. Nya fullfilspaket använder befintlig privat
@@ -70,6 +81,13 @@ socialpolicyfil saknas; effektiva standardvärden har separat proveniens och
 får inte presenteras som exporterade sparade filer. Importen kräver fryst
 fullständighet och verifierade källor före byte och avveckling.
 
+PostgreSQL-underhållsläget `studio-export` är implementerat och isolerat
+verifierat men inte aktiverat i drift. Det kräver explicit avstängd gemensam
+policy och fullfils-/streamtal, startar inga Web-/Lab-barn och ansluter inte
+till databasen. Exakt health visar läge/noll barn/skrivare/provideranrop;
+övriga routes ger 503. Frysta bytes hämtas privat via SSH och extern
+GPU-dränering måste verifieras separat. Äldre SQLite-export består.
+
 Det sparade projektet har 18 aktiva bindningar. Tolv matchar exakt dagens
 lokala och inventerade Render-register. Sex bundna UUID saknas i båda:
 `891c432a` den 29 september ersatte klipp med samma filnamn/familj/roll men
@@ -90,18 +108,22 @@ Den äldre Neon-QA-databasen har 25 befintliga konton och ska inte återanvända
 för ett tomt importprov. En separat QA-databas och begränsad roll är nu
 skapade. Den nya databasen är nu initierad med checksumverifierad product-v1,
 Studio 001/002/003, en syntetisk administratör och tre neutrala dokument.
-Spelar-, kostnads- och mediestate är tomma; produktions- och äldre QA-rader är
-oförändrade. Render-QA är inte suspenderad enligt aktuell läskontroll;
+Spelar-/kostnadsstate är tomma. De sex originalens exakta mediemetadata är
+nu registrerade enbart i nya QA med sex auditposter; exakt återkörning skrev
+noll rader. Den aktuella projektkopian med alla 18 verifierade bindningar är
+sparad där via explicit CAS, med oförändrad neutral BO-/socialpolicy. Privat
+`native-qa-project-replica-imported.json` är kvitto för QA-kopian, inte fryst
+produktionsimport. Produktions- och äldre QA-rader är oförändrade.
+Render-QA är inte suspenderad enligt aktuell läskontroll;
 health-/aktivitetskontroll pågår före eventuell samordnad kandidatändring.
 Moln-QA/Render-env är inte aktiverade av denna databasförberedelse.
 
 Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
 är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.
-Senaste [c78e2cbd](https://github.com/Jakeminator123/github-work/commit/c78e2cbd8feff06c9b2b4995cdbefe20f47dc34f)
-är pushad på main efter full hook PASS. Lab-cloudrättningen är fortfarande
-overifierad: traceguardens fel utreds även mot standalonelänkar; senaste lokala
-Lab-produktionsbygge PASS med 50 sanerade traces räcker inte som molnkvitto. Publicerad kod betyder
-inte produktionskällbyte.
+Senaste [c667aa22](https://github.com/Jakeminator123/github-work/commit/c667aa22205fba9e872e744cfe1aba2add3adf84)
+är pushad på main efter full hook och alla tre CI-jobb PASS. Vercel-Lab är
+nu READY för denna leverans; lokal traceguard/build PASS med 50 sanerade
+traces. Den publicerade flagga-av-koden är inte ett produktionskällbyte.
 Lab-TypeScript samt lokala Lab-/frontend-produktionsbyggen PASS. Privata env,
 lokala databaser, QA-underlag och agentstate har noll referenser i de 50
 kontrollerade lokala traces. Spelmediers aktiva
@@ -143,7 +165,7 @@ Läsgranskningen fann ett återspelningsfel när en signerad body fördröjdes
 förbi nonce-städningen. Rättningen återkontrollerar signaturens tidsfönster
 efter body, auth, låsväntan och SQL före mutation. Samma obetalda repro ger
 nu 403 och en enda originalkreditering; sex riktade kommandoprov PASS.
-Rättningen är en senare arbetsändring än leverans `c78e2cbd` ovan.
+Rättningen ingår i leverans `c667aa22` ovan.
 
 Föregående grundkodsteg 3 oktober: Neon-/jobbjournalgrund samt native BO bakom
 **avstängd** `CROUPIER_STUDIO_NATIVE_ADMIN`. Då var läget cirka 40 % av den nya

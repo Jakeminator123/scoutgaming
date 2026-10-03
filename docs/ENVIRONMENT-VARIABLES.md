@@ -111,6 +111,25 @@ skrivare. Normalt spel ger 503; endast hemlighetsskyddad POST kan hämta backup
 inklusive committad WAL. Flaggan får inte kombineras med postgres. Ta bort
 båda efter migrering. Aktuellt verifieringsläge står i handoffen.
 
+Native talgranskning använder samma privata Blobindex och exakta registrerade
+audio-/video-/text-/indexhashar. Det äldre fristående röstprovet stoppas före
+cache-/inställningsläsning och Cartesia-anrop när Neon- eller nativeflaggan är på.
+`LAB_STUDIO_DATA_DIR` är bara en kvarvarande lokal legacy-consumer; det ger
+inte Vercel en beständig talcache.
+
+Fryst export av äldre Studio-/taljournalfiler på befintlig PostgreSQL-drift:
+`CROUPIER_STORAGE_MAINTENANCE=studio-export`, `CROUPIER_DATABASE=postgres`,
+`CROUPIER_STUDIO_NEON_POLICY=0` samt `CROUPIER_GENERATED_SPEECH=0`,
+`CROUPIER_CLOUD_GENERATED_SPEECH=0` och `CROUPIER_GENERATED_SPEECH_STREAMING=0`
+måste anges uttryckligen. En separat `CROUPIER_STORAGE_EXPORT_SECRET` med minst
+32 byte krävs. Starten behåller disk-/byggkontroller men ansluter inte till
+PostgreSQL eller bootstrappar konton. Inga Web-/Lab-barn startas; exakt GET
+`/__cloud/health` bekräftar läget och noll barn, skrivare och provideranrop.
+Alla andra anrop ger 503, även den äldre export-API:n med korrekt hemlighet.
+Frysta bytes hämtas separat privat via SSH. Hälsokontrollen bevisar inte att
+tidigare externa GPU-jobb har dränerats; detta måste verifieras före import.
+Kod och isolerade tester är förberedelse, inte genomfört produktionsbyte.
+
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
 | Render: spel + BO + Lab (`/studio`) | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_CLOUD_DATA_ROOT`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER` + `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` på tom databas | Se grupper nedan | Render sätter `PORT`, `RENDER_EXTERNAL_URL` |
