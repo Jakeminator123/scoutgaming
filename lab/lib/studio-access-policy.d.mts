@@ -2,7 +2,7 @@ export type StudioRole = 'reader' | 'staff' | 'admin' | 'superadmin';
 export type StudioAdminSectionId = 'ops' | 'voice' | 'clips' | 'gens' | 'apikeys'
   | 'emails' | 'users' | 'rooms' | 'dealers' | 'pit' | 'tours' | 'players' | 'pay' | 'shoes';
 export type StudioAdminActionId = 'overview' | 'config' | 'voicelines' | 'clips'
-  | 'generations' | 'gen-verdicts' | 'apikeys' | 'users' | 'players' | 'transactions'
+  | 'generations' | 'gen-verdicts' | 'apikeys' | 'users' | 'players' | 'transactions' | 'emails' | 'shoes'
   | 'voiceline-review' | 'tournament' | 'pitboss' | 'tier' | 'room' | 'clip-landing'
   | 'clip-never' | 'gen-landing' | 'gen-verdict' | 'players/create' | 'players/status'
   | 'users/invite' | 'users/resend' | 'users/role' | 'users/remove' | 'apikeys/create'

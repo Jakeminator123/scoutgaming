@@ -35,6 +35,29 @@ test('Cartesia credential is required and never appears in status', () => {
   assert.equal(voicePreviewStatus(readVoiceSettings({ env: {}, envFiles: [] })).configured, false);
 });
 
+test('shared Neon and native Studio fail before secret/cache/provider access even with caller settings', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-disabled-voice-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const cacheDir = join(directory, 'must-not-exist'), settings = { key: 'fixture-only', mismatch: false, cacheDir };
+  for (const key of ['CROUPIER_STUDIO_NEON_POLICY', 'CROUPIER_STUDIO_NATIVE_ADMIN']) {
+    const env = { [key]: '1' };
+    const disabled = readVoiceSettings({ env, envFiles: [directory] }); // Directory read would fail if attempted.
+    assert.equal(disabled.disabled, true); assert.equal(disabled.key, '');
+    assert.equal(voicePreviewStatus(disabled).configured, false);
+    await assert.rejects(generateVoicePreview({ text: 'Hej' }, { env, settings, fetchImpl: noFetch }), error => error.statusCode === 503);
+    await assert.rejects(voicePreviewResponse(request('GET'), 'a'.repeat(64), { env, settings }), error => error.statusCode === 503);
+    for (const method of ['GET', 'POST']) assert.equal((await voicePreviewEndpoint(request(method), { env, settings, fetchImpl: noFetch })).status, 503);
+  }
+  const previous = process.env.CROUPIER_STUDIO_NEON_POLICY;
+  try {
+    process.env.CROUPIER_STUDIO_NEON_POLICY = '1';
+    await assert.rejects(generateVoicePreview({ text: 'Hej' }, { env: {}, settings, fetchImpl: noFetch }), error => error.statusCode === 503);
+  } finally {
+    if (previous === undefined) delete process.env.CROUPIER_STUDIO_NEON_POLICY; else process.env.CROUPIER_STUDIO_NEON_POLICY = previous;
+  }
+  assert.deepEqual(await readdir(directory), []);
+});
+
 test('text validation rejects oversized input and arbitrary provider parameters without truncation', () => {
   assert.equal(voicePreviewText({ text: '  Hej!\r\nGodkväll.  ' }), 'Hej!\nGodkväll.');
   assert.equal(voicePreviewText({ text: 'a'.repeat(500) }).length, 500);

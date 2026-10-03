@@ -5,11 +5,11 @@
       "sources": [
         "ops/cloud/config.mjs",
         "ops/cloud/start.mjs",
-      "ops/cloud/container-entry.mjs",
+        "ops/cloud/container-entry.mjs",
         "ops/cloud/vercel-ingress.mjs",
         "ops/cloud/storage-export.mjs",
-      "web/operator-speech-qa.mjs",
-      "web/storage/studio-runtime.mjs",
+        "web/operator-speech-qa.mjs",
+        "web/storage/studio-runtime.mjs",
         "web/storage/studio-game-policy.mjs",
         "web/studio-game-commands.mjs"
       ],
@@ -304,7 +304,9 @@
         "lab/lib/studio-native-runtime.mjs",
         "web/storage/studio-game-policy.mjs",
         "lab/lib/studio-game-authority.mjs",
-        "lab/lib/neon-video-registry.mjs"
+        "lab/lib/neon-video-registry.mjs",
+        "lab/lib/voice-preview.mjs",
+        "lab/lib/studio-voice-lines.mjs"
       ],
       "project": "croupier-lab-ui",
       "gitBranch": "main",
@@ -328,7 +330,8 @@
         "RESEND_API_KEY",
         "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
-        "BLOB_READ_WRITE_TOKEN"
+        "BLOB_READ_WRITE_TOKEN",
+        "LAB_STUDIO_DATA_DIR"
       ],
       "managed": [],
       "blocked": [

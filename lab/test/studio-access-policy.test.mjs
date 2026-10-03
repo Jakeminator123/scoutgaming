@@ -21,15 +21,15 @@ test('native Studio preserves the fourteen section IDs and section-specific read
 
 test('known action role floors preserve staff/admin/superadmin boundaries', () => {
   const floors = {
-    reader: ['overview', 'config', 'voicelines', 'clips', 'generations', 'gen-verdicts', 'apikeys', 'players', 'transactions'],
+    reader: ['overview', 'config', 'voicelines', 'clips', 'generations', 'gen-verdicts', 'apikeys', 'players', 'transactions','emails','shoes'],
     staff: ['voiceline-review', 'tournament'],
     admin: ['pitboss', 'tier', 'room', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict',
       'players/create', 'players/status', 'apikeys/launch', 'apikeys/credit', 'speech-qa'],
     superadmin: ['users', 'users/invite', 'users/resend', 'users/role', 'users/remove',
       'apikeys/create', 'apikeys/revoke', 'apikeys/rotate'],
   };
-  assert.equal(STUDIO_ADMIN_ACTIONS.length, 31);
-  assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 31);
+  assert.equal(STUDIO_ADMIN_ACTIONS.length, 33);
+  assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 33);
   for (const [minimum, actions] of Object.entries(floors)) {
     for (const action of actions) {
       assert.equal(studioAdminActionPolicy(action).minimumRole, minimum);

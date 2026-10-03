@@ -230,7 +230,9 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     PostgreSQL/HTTPS/restart. Alla sex original är nu uppladdade som nya
     immutabla privata Blobobjekt, totalt 8 262 169 bytes; full återläsning/SHA
     PASS. Privat `retained-bank-blob-receipt.json` har `blobReadbackVerified:true`.
-    Ingen retained-media-SQL/import i drift; detta är inte visuell approval.
+    Sex exakta retained-mediarader är registrerade enbart i nya isolerade QA
+    med sex auditposter och noll nya rader vid exakt återkörning. Ingen sådan
+    produktionsimport är genomförd; detta är inte visuell approval.
     P1 är därför inte helt klart.
 - [ ] **P2 — Neon-state:** projekt/revision/historik/profiler, videoregister/
   klassificering och beständig BO-konfiguration har en gemensam databasadapter.
@@ -285,7 +287,11 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     flaggbyte. Render-API, Neon och SSH till produkttjänsten nås. Datorns
     befintliga publika SSH-nyckel är registrerad efter uttryckligt godkännande;
     ingen privat nyckel överfördes. Den privata 129-filers exporten är ännu
-    ofryst och är inte ett godkänt importunderlag. Full fryst export, exakta
+    ofryst och är inte ett godkänt importunderlag. PostgreSQL-underhållsläget
+    `studio-export` är implementerat men inte aktiverat: policy/tal/streaming
+    explicit av, inga Web-/Lab-barn eller DB-anslutningar, endast health och
+    övriga routes 503. Privata SSH-bytes och verifierad extern GPU-dränering
+    krävs fortfarande. Full fryst export, exakta
     spelmediereferenser och paritet återstår; ingen schema-/journalimport i drift.
 - [ ] **P4 — en Studio:** native administration ersätter iframe; navigation,
   rollstyrd kontohantering (lägg till/spärra/ta bort enligt nuvarande livscykel)
@@ -311,7 +317,12 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     resultatvy och tas bort vid omladdning, gruppbyte, behörighetsändring eller
     logout; partnerlistan behåller bara godkänd metadata. Native login och
     lösenordsval finns på `/studio/login` respektive `/studio/set-password`.
-    Drift använder ännu den tidigare ytan.
+    Drift använder ännu den tidigare ytan. Native exakta röstpar/review/CAS,
+    fyra lokala mejlpreviewer och sparade skoregler/räknare är nu implementerade.
+    Kortordning, hålkort och spelare lämnar inte sko-API:n; korrupt JSON nekas,
+    högst 500 tabeller samplas och delresultat markeras. Direkta gamla betalda
+    röstpreviewn stoppas före disk/provider i gemensamt/native läge. 52 kombinerade
+    fokuserade BO-/röst-/readout-/UI-prov PASS, utan ny visuell approval.
 - [ ] **P5 — API på Vercel:** Studio/admin använder P2/P3 utan beständig lokal
   disk. Render-spelet läser samma policy och får erforderlig spelkonfigprojektion.
   Bevis: sparning från Studio följs av spelets kvitterade revision, utan iframe,
@@ -334,7 +345,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     57 isolerade konto/auth/partner-/UI-prov och Lab-TypeScript PASS, inklusive
     samtidig tokenförbrukning, rollback, origin, roller, kapacitetsgräns och
     engångsresultatens rensning. Aktuellt isolerat PostgreSQL-/HTTPS-/restartprov
-    PASS: 35 acceptansgrupper samt runnerns isoleringsguard, däribland dessa
+    PASS: 40 acceptansgrupper samt runnerns isoleringsguard, däribland dessa
     login/invite/resend/lösenord/logout/roll-revoke-flöden. Ingen verklig
     mailleverans eller produktionsaktivering följer av det provet.
     Senare kommandorättningen nekar också fördröjd signerad body efter
@@ -355,7 +366,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   ljud/chatt samt båda GPU-vägar verifieras utan oavsiktlig ändring. Fixtures först;
   betalda liveprov kräver uttryckligt avgränsad budget/auktorisation. Fysisk kamera/
   mikrofon/mobil/Safari och mänsklig läppsynk redovisas separat om de återstår.
-  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 35 acceptansgrupper samt
+  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 40 acceptansgrupper samt
     runnerguard PASS i tillfällig lokal PostgreSQL och kortlivad HTTPS-fixture.
     Revisionskonflikt/rollback, spelkonfigprojektion, auth/engångstoken/epoch,
     roll-revoke, signerad actor/scope och återspelad walletnonce täcks. Nytt
@@ -364,15 +375,22 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     operatörens kvarvarande tredje försök och atomisk kostnads-/QA-rollback
     täcks också. De sex exakta retained-mediernas scope, oföränderlighet,
     återkörning, korrupt tuple och återläsning efter restart PASS, liksom fyra
-    rena retained-guards. 35 källhashar är oförändrade under körningen; 85 riktade
+    rena retained-guards. Röstens exakta identitet/roller/CAS/ändrat par/restart
+    samt mejlpreviewer och skostatus med negativ JSON/auth, kortsekretess och
+    500-gräns PASS. 44 källhashar är oförändrade under körningen; 85 riktade
     tal-/journal-/Blob-/import-/operatörsprov PASS.
     Egna processer, certifikat och temporär databas städas i runnerns finally.
     Inga riktiga konton, molndatabaser, providermejl eller betalda jobb används.
     Full P6 med fyra dealers, live ström/GPU och mänsklig acceptans består öppet.
   - Ny separat Neon-QA-databas är initierad med checksumverifierad product-v1,
-    Studio 001/002/003, en syntetisk administratör och tre neutrala dokument.
-    Spelar-/kostnads-/mediestate är tomma. Äldre QA:s 25 konton och produktion
-    är oförändrade. Render-QA är inte suspenderad enligt läskontroll; faktisk
+    Studio 001/002/003, en syntetisk administratör och tre dokument.
+    Spelar-/kostnadsstate är tomma. De sex exakta originalmedierna har sex
+    auditposter och återkörning skrev noll rader. Aktuellt projekt med alla 18
+    verifierade bindningar är kopierat via explicit CAS enbart till nya QA;
+    neutral BO-/socialpolicy är oförändrad. Privat
+    `native-qa-project-replica-imported.json` är QA-kvitto, inte fryst driftimport.
+    Äldre QA:s 25 konton och produktion är oförändrade.
+    Render-QA är inte suspenderad enligt läskontroll; faktisk
     health-/aktivitetskontroll pågår före kandidatändring. Ingen moln-QA-
     aktivering eller nytt Render-env följer av databasförberedelsen.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
@@ -407,9 +425,9 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   kontrollerade. Kvarvarande mänsklig acceptans/blockerare uttryckligen öppna.
   - Kod [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
     på GitHub main har alla tre CI-jobb PASS och Vercel-frontend READY.
-    Senaste kodleverans `c78e2cbd` är pushad efter full hook PASS.
-    Lab-cloudrättningen är ännu overifierad; traceguard/standalonelänkar utreds,
-    medan senaste lokala Lab-produktionsbygget har 50 sanerade traces PASS. Flagga-av-leveransen
+    Senaste kodleverans `c667aa22` är pushad efter full hook och alla tre CI-jobb
+    PASS; Vercel-Lab är nu READY. Lokal traceguard/build har 50 sanerade traces
+    PASS. Flagga-av-leveransen
     och SQL-fixturerna bockar inte av P1–P9, aktivering eller avveckling.
 
 **Körordning:** P1 först. P2 (metadata), P3 (media/journaler) och P4 (UI)

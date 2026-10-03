@@ -70,7 +70,7 @@ export async function main(args = process.argv.slice(2), env = process.env,
   let children, gateway;
   try {
     if (config.storageExport) {
-      gateway = createStorageExportServer(config, config.storageExport);
+      gateway = createStorageExportServer(config, config.storageExport, { childlessStartup: true });
       await listen(gateway, config.publicPort, '0.0.0.0');
       console.log('Storage maintenance active; no product or Lab writers started.');
       await new Promise(done => { abort.signal.addEventListener('abort', done, { once: true }); if (abort.signal.aborted) done(); });

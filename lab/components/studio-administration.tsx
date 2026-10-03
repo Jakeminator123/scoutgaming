@@ -30,8 +30,8 @@ export type StudioPartnerResult =
 
 const CONFIG_COMMANDS = new Set(['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const GROUP_READS: Record<string, readonly string[]> = {
-  operations: ['overview', 'config'], tables: ['overview', 'config'], accounts: ['players', 'users'],
-  partners: ['apikeys'], finance: ['transactions'], 'media-review': ['config', 'voicelines'],
+  operations: ['overview', 'config','shoes'], tables: ['overview', 'config'], accounts: ['players', 'users'],
+  partners: ['apikeys','emails'], finance: ['transactions'], 'media-review': ['config', 'voicelines'],
 };
 const CURRENCIES = ['USD', 'EUR', 'SEK'];
 const PLAYER_STATES = ['active', 'blocked', 'closed'];
@@ -233,9 +233,16 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       </>}
       {section === 'shoes' && <>
         <p>Spelmotorn ansvarar för shuffle, shoe, kort och utfall. Administrationen ändrar inte en pågående hand.</p>
-        <ResourceNotice resource={resources.config} />
-        {config && <dl className={styles.metrics}><div><dt>Konfigurationsrevision</dt><dd>{label(revision)}</dd></div></dl>}
-        <p className={styles.notice}>Detaljerad shoe-status och verifierat integritetsunderlag är inte anslutna här. Inget RNG-certifikat påstås av den här vyn.</p>
+        <ResourceNotice resource={resources.shoes} />
+        {resources.shoes?.payload && <><dl className={styles.metrics}>
+          <div><dt>Sparade bord</dt><dd>{label(resources.shoes.payload.tableCount)}</dd></div>
+          <div><dt>Shoes / pågående rundor</dt><dd>{label(resources.shoes.payload.shoes)} / {label(resources.shoes.payload.activeRounds)}</dd></div>
+          <div><dt>Cut card nådd</dt><dd>{label(resources.shoes.payload.cutReached)}</dd></div>
+          <div><dt>Kortlekar / kort</dt><dd>{label(object(resources.shoes.payload.rules)?.decks)} / {label(object(resources.shoes.payload.rules)?.total)}</dd></div>
+        </dl><p>Cut card efter {label(object(resources.shoes.payload.rules)?.cutAfter)} dragna kort; {label(object(resources.shoes.payload.rules)?.burn)} bränt kort. Shuffle sker mellan rundor när cut card nåtts.</p>
+          <p>Sparad spelmotorstatus: {label(resources.shoes.payload.observedAt)}.{resources.shoes.payload.partial === true ? ` Visar ${label(resources.shoes.payload.sampledTables)} av ${label(resources.shoes.payload.tableCount)} bord.` : ''}</p>
+          <p>Certifieringsunderlag: saknas.</p>
+        </>}
       </>}
       {section === 'rooms' && <>
         <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('room')}
@@ -356,8 +363,13 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         <p className={styles.notice}>Nyckel och HMAC-hemlighet visas endast direkt efter skapande eller rotation. Kopiera dem till partnerns säkra förvaring innan du lämnar vyn. Spelmotorn bekräftar launch, återkallelse och demo-saldo.</p>
       </>}
       {section === 'emails' && <>
-        <p>Befintliga mallar: välkomstmejl, insättningskvitto, turneringsinbjudan och ansvarsfullt-spel-checkin.</p>
-        <p className={styles.notice}>Native förhandsvisning av mallarna är ännu inte ansluten. Inbjudan och återställning skickas från Konton; den här vyn skickar inte testmejl vid öppning.</p>
+        <ResourceNotice resource={resources.emails} />
+        <p>Förhandsvisning med exempeluppgifter. Inbjudan och återställning skickas från Konton.</p>
+        {resources.emails?.payload && rows(resources.emails.payload.templates).map(template=><article className={styles.review} key={label(template.id)}>
+          <h4>{label(template.name)}</h4><strong>{label(template.heading)}</strong><p>{label(template.text)}</p>
+          <dl>{Array.isArray(template.fields) && template.fields.filter(Array.isArray).map((field,index)=><div key={index}><dt>{label(field[0])}</dt><dd>{label(field[1])}</dd></div>)}</dl>
+          <p><strong>{label(template.action)}</strong></p><p>18+ · Play responsibly · Scout Gaming</p>
+        </article>)}
       </>}
       {section === 'pay' && <>
         <ResourceNotice resource={resources.transactions} />
@@ -369,9 +381,10 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           <h4>{label(dealer.name, label(dealer.dealer))}</h4>
           {rows(dealer.lines).map((line, lineIndex) => <article className={styles.review} key={label(line.key, String(lineIndex))}>
             <strong>{label(line.key)}</strong><p>{label(line.text)}</p><p>Manuell bedömning: {label(line.review, 'ej granskad')}</p>
+            {line.reviewState === 'unbound-or-changed-media' && <p>Tidigare bedömning gäller inte för nuvarande mediepar.</p>}
             {studioAdminMediaUrl(line.preview) && <video controls preload="none" src={studioAdminMediaUrl(line.preview)!} aria-label={`Förhandsvisning ${label(line.key)}`} />}
             {studioAdminMediaUrl(line.audio) && <audio controls preload="none" src={studioAdminMediaUrl(line.audio)!} aria-label={`Ljud ${label(line.key)}`} />}
-            {mayWrite('voiceline-review', true) && <form onSubmit={submit('voiceline-review', form => ({ dealer: dealer.dealer, line: line.key, verdict: value(form, 'verdict') || null }), true)}>
+            {mayWrite('voiceline-review', true) && line.reviewable === true && <form onSubmit={submit('voiceline-review', form => ({ dealer: dealer.dealer, line: line.key, verdict: value(form, 'verdict') || null, expectedIdentity: line.identity }), true)}>
               <label>Bedömning<select name="verdict" defaultValue={label(line.review, '')} disabled={busy}><option value="">Ej granskad</option><option value="approved">Godkänd</option><option value="rejected">Underkänd</option></select></label><button disabled={busy}>Spara manuell granskning</button>
             </form>}
           </article>)}

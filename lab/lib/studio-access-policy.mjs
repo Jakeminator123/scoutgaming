@@ -26,7 +26,7 @@ export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['overview', 'reader'], ['config', 'reader'], ['voicelines', 'reader'],
   ['clips', 'reader'], ['generations', 'reader'], ['gen-verdicts', 'reader'],
   ['apikeys', 'reader'], ['users', 'superadmin'], ['players', 'reader'],
-  ['transactions', 'reader'],
+  ['transactions', 'reader'], ['emails', 'reader'], ['shoes', 'reader'],
   ['voiceline-review', 'staff'], ['tournament', 'staff'],
   ['pitboss', 'admin'], ['tier', 'admin'], ['room', 'admin'],
   ['clip-landing', 'admin'], ['clip-never', 'admin'],
