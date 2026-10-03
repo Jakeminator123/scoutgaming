@@ -1,0 +1,108 @@
+#!/usr/bin/env node
+import { spawn } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile, lstat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+import { createHash, randomUUID } from 'node:crypto';
+import { createServer } from 'node:net';
+
+const repository = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const owner = randomUUID();
+function run(command, args, { cwd, env = process.env, timeout = 60000 } = {}) {
+  return new Promise((resolveRun, reject) => {
+    const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    let output = ''; child.stdout.on('data', chunk => { output += chunk; }); child.stderr.on('data', chunk => { output += chunk; });
+    const timer = setTimeout(() => { child.kill('SIGTERM'); reject(new Error('isolated_qa_process_timeout')); }, timeout);
+    child.once('error', error => { clearTimeout(timer); reject(error); });
+    child.once('exit', code => { clearTimeout(timer); code === 0 ? resolveRun(output) : reject(new Error(`isolated_qa_process_failed:${command}:${code}:${output.slice(-1800)}`)); });
+  });
+}
+async function port() {
+  const server = createServer(); await new Promise((yes, no) => { server.once('error', no); server.listen(0, '127.0.0.1', yes); });
+  const value = server.address().port; await new Promise(yes => server.close(yes)); return value;
+}
+export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = false } = {}) {
+  if (process.platform !== 'linux' || process.getuid?.() === 0) throw new Error('isolated_qa_requires_nonroot_linux');
+  const root = await mkdtemp(join(tmpdir(), 'croupier-studio-qa-'));
+  await writeFile(join(root, '.croupier-qa-owned'), owner, { mode: 0o600 });
+  const guarded = async path => {
+    if (await realpath(root) !== root || await readFile(join(root, '.croupier-qa-owned'), 'utf8') !== owner
+      || !(path === root || path.startsWith(root + sep)) || (await lstat(root)).isSymbolicLink()) throw new Error('isolated_qa_path_guard');
+  };
+  const pgRoot = join(root, 'pg'), data = join(root, 'data');
+  let active = false, pool;
+  const env = { ...process.env }; for (const key of Object.keys(env)) if (/^(CROUPIER_|BLOB_|RESEND_|RUNPOD_|CARTESIA_|OPENCLAW_)/.test(key)) delete env[key];
+  try {
+    await guarded(root);
+    if (downloadPostgres) {
+      if (postgresBin) throw new Error('choose_download_or_existing_binaries');
+      const packages = join(root, 'packages'); await mkdir(packages);
+      console.log('Preparing isolated PostgreSQL packages; no system install or service.');
+      const lists = join(packages, 'lists'), cache = join(packages, 'cache');
+      await mkdir(join(lists, 'partial'), { recursive: true }); await mkdir(cache);
+      const aptScope = ['-o', `Dir::State::lists=${lists}`, '-o', `Dir::Cache=${cache}`, '-o', 'Debug::NoLocking=1'];
+      // Existing system APT metadata can be stale. Refresh only task-owned
+      // lists/cache, retaining APT signature/hash verification without sudo.
+      await run('apt-get', [...aptScope, 'update'], { cwd: packages, env, timeout: 120000 });
+      await run('apt-get', [...aptScope, 'download', 'postgresql-16', 'postgresql-client-16', 'libpq5'], { cwd: packages, env, timeout: 120000 });
+      await mkdir(pgRoot);
+      for (const file of await readdir(packages)) {
+        if (['lists', 'cache'].includes(file)) continue;
+        if (!/^[a-z0-9][a-z0-9+_.~-]*\.deb$/.test(file)) throw new Error('unexpected_isolated_package');
+        await run('dpkg-deb', ['-x', join(packages, file), pgRoot], { env });
+      }
+      postgresBin = join(pgRoot, 'usr/lib/postgresql/16/bin');
+      env.LD_LIBRARY_PATH = join(pgRoot, 'usr/lib/x86_64-linux-gnu');
+    }
+    if (!postgresBin || !postgresBin.startsWith('/')) throw new Error('explicit_postgres_bin_required');
+    const binary = name => join(postgresBin, name);
+    const share = downloadPostgres ? join(pgRoot, 'usr/share/postgresql/16') : undefined;
+    await run(binary('initdb'), ['-D', data, '--username=studio_qa', '--auth=trust', '--no-locale', '--encoding=UTF8', ...(share ? ['-L', share] : [])], { env });
+    const pgPort = await port();
+    await writeFile(join(data, 'postgresql.auto.conf'), `listen_addresses='127.0.0.1'\nport=${pgPort}\nunix_socket_directories='${root}'\njit=off\n`, { mode: 0o600 });
+    const start = async () => { await guarded(data); await run(binary('pg_ctl'), ['-D', data, '-l', join(root, 'postgres.log'), '-w', 'start'], { env }); active = true; };
+    const stop = async () => { if (active) { await guarded(data); await run(binary('pg_ctl'), ['-D', data, '-m', 'fast', '-w', 'stop'], { env }); active = false; } };
+    const { Pool } = createRequire(new URL('../web/package.json', import.meta.url))('pg');
+    const open = () => new Pool({ connectionString: `postgresql://studio_qa@127.0.0.1:${pgPort}/postgres`, max: 8, connectionTimeoutMillis: 5000, query_timeout: 15000 });
+    await start(); pool = open();
+    const restart = async () => { await pool.end(); await stop(); await start(); pool = open(); return pool; };
+    const sql = (await readFile(join(repository, 'ops/neon-game/product-schema.sql'), 'utf8')).replace(/\r\n/g, '\n');
+    await pool.query(sql);
+    await pool.query('INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES ($1,$2,$3,$4)',
+      ['product-v1', createHash('sha256').update(sql).digest('hex'), '{}', new Date().toISOString()]);
+    await run('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=studio.croupier-qa.invalid',
+      '-addext', 'subjectAltName=DNS:studio.croupier-qa.invalid,DNS:render.croupier-qa.invalid', '-keyout', join(root, 'fixture.key'), '-out', join(root, 'fixture.crt')], { env });
+    const { runStudioPostgresChecks } = await import('../test/studio-postgres-integration.mjs');
+    const existing = await runStudioPostgresChecks({ pool, restart }); pool = existing.pool;
+    const testedSources = ['ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql',
+      'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs',
+      'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
+      'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
+      'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'web/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech.mjs',
+      'web/speech-blob-artifacts.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs'];
+    const sourceHashes = async () => Object.fromEntries(await Promise.all(testedSources.map(async file => [file, createHash('sha256').update(await readFile(join(repository, file))).digest('hex')])));
+    const before = await sourceHashes();
+    const { runStudioCutoverChecks } = await import('../test/studio-cutover-integration.mjs');
+    const current = await runStudioCutoverChecks({ pool, restart, tls: { key: await readFile(join(root, 'fixture.key')), cert: await readFile(join(root, 'fixture.crt')) } });
+    pool = current.pool;
+    if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
+    console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', legacyChecks: existing.checks, integrationChecks: current.checks, sourceHashes: before }, null, 2));
+    await pool.end(); pool = null; await stop();
+    return { legacyChecks: existing.checks, integrationChecks: current.checks };
+  } finally {
+    try { await pool?.end(); } catch {}
+    if (active && postgresBin) { await guarded(data); await run(join(postgresBin, 'pg_ctl'), ['-D', data, '-m', 'fast', '-w', 'stop'], { env }); active = false; }
+    if (active) throw new Error('isolated_qa_cleanup_refused_running_cluster');
+    await guarded(root); await rm(root, { recursive: true, force: false });
+  }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const args = process.argv.slice(2);
+  const options = args.length === 1 && args[0] === '--download-postgres' ? { downloadPostgres: true }
+    : args.length === 2 && args[0] === '--postgres-bin' ? { postgresBin: args[1] } : null;
+  if (!options) { console.error('Usage: node tools/studio-isolated-qa.mjs --download-postgres | --postgres-bin /absolute/bin'); process.exitCode = 1; }
+  else runIsolatedStudioQa(options).catch(error => { console.error(error.message); process.exitCode = 1; });
+}

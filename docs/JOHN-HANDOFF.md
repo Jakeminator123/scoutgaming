@@ -5,9 +5,78 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 ## Pågående uppdrag: en Studio — inte genomförd migrering
 
-Senaste kodsteg 3 oktober: Neon-/jobbjournalgrund samt native BO bakom
-**avstängd** `CROUPIER_STUDIO_NATIVE_ADMIN`. Det är cirka 40 % av den nya
-sammanslagningen, inte live-cutover. Tre agentdelar har integrerats på main:
+Pågående fortsättning 3 oktober: gemensam Neon-policy mellan Studio/Render,
+native konto-/partner-/authhandlers och tillhörande formulär är implementerade
+på main. Grovt cirka 60 % av sammanslagningen; källbyte, full helhetsacceptans
+och faktisk avveckling återstår. Inget i detta kodsteg har aktiverat produktion.
+Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
+`/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
+och `/player-login` visar spelarentrén. BO/partner launch och callback följer
+den nya effektiva adressen. Dagens flagga-av-adresser består tills bytet.
+Spelarstatus, partner rotate/revoke/launch/credit kräver den signerade
+Render-kommandogränsen; Vercel får inte skriva saldo eller ersätta runtime-
+cancellation med en no-op. Invite/resend och nyckelskapande använder den
+befintliga Neon-identiteten. Native login/lösenordsval finns på `/studio/login`
+och `/studio/set-password`, med exakt returnTo för Studio/administration.
+Nya lösenordstokens lagras hashade och förbrukas atomiskt; äldre utestående
+råtokens kan fortfarande användas en gång. Login läser befintlig signer/roll/
+fingerprint/epoch och använder en gemensam beständig begränsning av försök.
+Logout/lösenordsbyte återkallar Lab-sessioner/handoffs. Mejl annonseras bara
+med serverkonfigurerad sändare; återställning avslöjar inte kontots existens.
+Partnercredentials och spellänk visas i en tillfällig separat resultatvy,
+aldrig listmetadata/storage, och rensas vid omladdning/gruppbyte/logout.
+
+57 riktade konto-/auth-/partner-/UI-prov samt Lab-TypeScript PASS.
+Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 27
+acceptansgrupper plus runnerguard. Det täcker bland annat sparad revision/CAS,
+konkurrens/rollback, native login/invite/resend/engångslösenord, logout/roll-
+revoke, signerad actor/scope och walletnonce utan dubbel kreditering.
+Fixtureprocesser, certifikat och databas städades. Inga riktiga konton,
+providermejl, molndatabaser eller betalda jobb användes. Gemensamt bygge/hook,
+aktuell GitHub-leverans och drift-SHA redovisas av integratören när klara.
+
+Talets aktiva fullfil-/stream-/sessionscallers är kopplade till Neon-journalen
+under gemensamma policyflaggan. Nya fullfilspaket använder befintlig privat
+Blob, exakta text-/audio-/video-hashar och ägarbunden färdig SQL-metadata.
+Enbart egen temporär OS-cache används och städas; detta läge läser/skriver
+inte beständiga paket- eller budgetfiler på disk. Saknad journal eller
+Blobadapter stoppar jobbet. Den befintliga budgetpolicyn måste redan vara
+installerad/importerad, aldrig seedas med noll förbrukning. Nedstängning sparar
+stream-cancellation innan journalens databasanslutning stängs.
+
+Förberedelseverktygen kräver frysta exakta källbytes/hashar för Studio/BO-
+policy och gamla kostnadsjournaler, stoppade skrivare och dränerad worker.
+Osäkra/förbrukade jobb bevaras och får inte återbetalas eller skickas om.
+Read-only Neon-kontroll visar att 001/002 ännu är pending i drift; ingen
+live-SQL har applicerats. Render-API och SSH fungerar nu: Jakob godkände
+registrering av datorns befintliga publika Ed25519-nyckel på sitt Render-konto.
+Ingen privat nyckel har överförts, ändrats eller skapats. Read-only pwd på
+produkten PASS. Aktuell export/paritet återstår före byte och avveckling.
+
+Lab-TypeScript samt Lab- och frontend-produktionsbyggen PASS. Privata env, lokala databaser,
+QA-underlag och agentstate utesluts från Nexts deploytraces, även på Windows;
+kontroll av 50 färdiga traces har noll privata referenser. Spelmediers aktiva
+index/bank/speech-metadata är fortsatt inkluderade. Dealer-audit med --probe
+PASS för baselinen; detta är inte mänsklig läppsynkacceptans.
+
+Riktad städningskontroll: iframe/`BackofficePanel` och gamla BO-routes är
+fortfarande aktiva när nativeflaggan är av; de raderas efter verifierat
+källbyte. `StudioPage`/`Studio` används av sex äldre/avancerade routes,
+inklusive tree; hela komponenten är därför inget bevisat oanvänt raderingsmål.
+Ingen ny integration refererar GitLab, Jira eller Supabase. Aktiva spelklipp,
+konton/saldo, kostnadsjournaler och OpenClaw-state har inte rensats. Ingen
+devserver har startats; SQL/HTTPS-provet var en kortlivad isolerad fixture.
+
+Jakobs extra städfråga: `services/test` och `services/test/fixtures` finns inte.
+De faktiska mapparna `services/astrid-gpu-worker/gateway/test` och
+`services/astrid-gpu-worker/tests` används av CI/testskript och manuella
+browser-/benchmarkverktyg. Fyra Node- och fyra Python-filers syntax PASS.
+Rotens fem JavaScript-fixtures är aktiva imports; kamerans HTML-fixture är
+fortsatt manuell QA utan verifierad ersättare. De behålls, inga blindraderingar.
+
+Föregående grundkodsteg 3 oktober: Neon-/jobbjournalgrund samt native BO bakom
+**avstängd** `CROUPIER_STUDIO_NATIVE_ADMIN`. Då var läget cirka 40 % av den nya
+sammanslagningen, inte live-cutover. Tre agentdelar integrerades på main:
 `web/storage/studio-{contract,repository}.mjs`, `ops/neon-studio/001/002` och
 migrationsrunner; `web/postgres-speech-journal.mjs`; native komponent och
 `lab/lib/studio-{admin-api,admin-data,native-auth,native-runtime}.mjs`.
@@ -24,24 +93,24 @@ strängrevision/CAS och kastar inte äldre formulärutkast tyst efter omladdning
 API-grunden har säkra errors, Origin/Host/JSON-gräns, explicita specialgates och
 serverägd actor/scope. Partnerlistan väljer inte credential-kolumner.
 
-Native BO är ännu **inte redo att aktiveras**: invite/resend/mail, partner-
-launch/credit/revoke, spelarstatus med Render chat/speech/probe-cancellation,
-exakt tier-/klippvalidering och full medie-review behöver riktiga handlers.
-Render läser/skriver fortfarande bo.json och Studio-dokument på disk. Nästa
-integratör fortsätter med dessa motsvarigheter och en enda sparad spelprojektion,
-verifierar aktuell explicit import och auth i isolerad HTTPS-miljö, därefter
-samordnat källbyte och verklig borttagning. Slå inte bara på flaggan: det skulle
-ge splittrad konfiguration och saknade funktioner. Förbrukade kostnadsjournaler
+Produktionsaktivering kräver fortfarande hela återstående P2–P6: aktuell
+explicit import/paritet, privata medieflöden, kostnads-/jobbjournalernas aktiva
+callers och riktig transport-/dealeracceptans. Nuvarande produktdrift använder
+fortfarande bo.json/Studio-disk tills det samordnade källbytet genomförs.
+Den aktuella isolerade SQL/HTTPS-verifieringen ovan ska inte upprepas som
+förstudie eller förväxlas med produktions-/GPU-/mänsklig acceptans. Byt
+källa samordnat och ta sedan faktiskt bort ersatta kodvägar/diskberoenden.
+Förbrukade kostnadsjournaler
 ska importeras, aldrig återinitialiseras. Ingen live-migration, moln-env-ändring,
 disk-/Blob-radering eller betald provkampanj har gjorts i detta kodsteg.
 
-Verifiering av senaste grund: 90 riktade prov PASS (44 lagring/journal och
+Verifiering av föregående grund: 90 riktade prov PASS (44 lagring/journal och
 46 native API/auth/data/runtime/UI), TypeScript och Next-produktionsbygge PASS.
 En tidig serverbundlingskrasch reparerades: pg-loadern är lazy och native
 schema-check läser uttryckligt spårade SQL-källfiler, inte webpack asset-URL:er.
 Byggkvitto visar product-v1 samt 001/002 i native admin-routens file trace.
-Det tidigare verkliga PostgreSQL-/restartprovet (15 PASS) är äldre; senaste
-schema-/runtimepaket behöver aktuellt isolerat SQL-/restart-/HTTPS-prov före cutover.
+Det tidigare PostgreSQL-/restartprovet (15 PASS) är äldre; aktuell
+SQL-/restart-/HTTPS-verifiering för fortsättningssteget anges ovan.
 Ordinarie full hook PASS och omfattar nu även de nya testerna. Kodleverans
 `1efcbb9c011893ae9aad03bd317cd33833655e5d` är verifierad på GitHub main.
 Vid leveranskontrollen var två av tre [CI-jobb](https://github.com/Jakeminator123/github-work/actions/runs/37080063154)

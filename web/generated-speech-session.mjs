@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { lstat, mkdir, open, readdir, realpath, unlink } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 import { setTimeout as pause } from 'node:timers/promises';
+import { createJournalSpeechSessionManager, requireSpeechJournal } from './speech-journal-runtime.mjs';
 
 export const SPEECH_SESSION_POLICY = Object.freeze({
   seconds: 540, executionTimeout: 600000, ttl: 660000,
@@ -31,7 +32,9 @@ export function createSpeechSessionManager(configuration, {
   workerState, stopWorker = () => {}, fetchImpl = fetch, now = Date.now,
   sleep = (ms, signal) => pause(ms, undefined, { signal }),
   readyTimeoutMs = 90000, pollMs = 500, idleTimeoutMs = 60000,
+  journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1', leaseManager,
 } = {}) {
+  if (journalRequired || journal) requireSpeechJournal(journal);
   const { directory, apiKey, endpointId, workerSecret, origin, reserveUsd, dailyBudgetUsd } = configuration ?? {};
   const reserveMicroUsd = sessionReserveMicroUsd(reserveUsd);
   const dailyBudgetMicroUsd = sessionReserveMicroUsd(dailyBudgetUsd);
@@ -43,6 +46,8 @@ export function createSpeechSessionManager(configuration, {
     || url?.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
     fail('generated_speech_session_not_configured');
   }
+  if (journal) return createJournalSpeechSessionManager(configuration, { journal, leaseManager, workerState, stopWorker,
+    fetchImpl, now, sleep, readyTimeoutMs, pollMs, idleTimeoutMs, policy:SPEECH_SESSION_POLICY, reserveMicroUsd, dailyBudgetMicroUsd });
   const base = `https://api.runpod.ai/v2/${endpointId}`;
   const root = resolve(directory), lockPath = join(root, 'stream-session.lock');
   const managerAbort = new AbortController();

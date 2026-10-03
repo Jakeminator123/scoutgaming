@@ -6,6 +6,7 @@ import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:p
 import { fileURLToPath } from 'node:url';
 import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
 import { createSpeechSessionManager, sessionReserveMicroUsd } from './generated-speech-session.mjs';
+import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-runtime.mjs';
 
 const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -68,7 +69,13 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
 export async function createGeneratedSpeechStreamService(server, configuration, {
   resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager,
   freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000,
+  journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1',
 } = {}) {
+  if (journalRequired || journal) requireSpeechJournal(journal);
+  if (journal && suppliedSessionManager) fail('generated_speech_journal_unavailable');
+  const ownership = journal ? createSpeechJournalLease({ journal, resource:'stream-session' }) : null;
+  const journalTasks = new Set();
+  const track = task => { journalTasks.add(task); task.finally(() => journalTasks.delete(task)).catch(() => {}); return task; };
   if (!privateDirectory(configuration?.directory) || typeof resolveOwner !== 'function') fail('generated_speech_stream_not_configured');
   const [{ issueTicket, ticketAuthenticator }, { createCartesiaSource }] = await Promise.all([
     import('../services/astrid-gpu-worker/gateway/auth.mjs'),
@@ -106,6 +113,11 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   const cancel = record => {
     if (!records.has(record.id)) return;
     record.controller.abort(); record.handle?.abort(); forget(record);
+    if (journal && record.journalClaim && !record.journalSettled) {
+      record.journalSettled = true;
+      track((async () => { await journal.failRequest({ key:record.journalClaim.key,
+        lease:await ownership.get(), safeCode:'generated_speech_stream_cancelled' }); })()).catch(() => {});
+    }
   };
   const fresh = async record => {
     if (record.controller.signal.aborted || record.input.signal?.aborted || records.get(record.id) !== record) fail('generated_speech_stream_cancelled', 499);
@@ -143,7 +155,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       clearTimeout(record.deadline);
       record.deadline = setTimeout(() => cancel(record), streamLifetimeMs); record.deadline.unref?.();
       record.wireSignal = identity.signal;
-      record.wireAbort = () => { record.controller.abort(); forget(record); };
+      record.wireAbort = () => cancel(record);
       identity.signal.addEventListener('abort', record.wireAbort, { once: true });
       if (identity.signal.aborted) { record.wireAbort(); return; }
       try {
@@ -162,7 +174,13 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         const ttsStartedAt = performance.now();
         let firstAudio = true;
         unpaidTrace('tts_source_before');
-        for await (const pcm of source({ text: record.input.text, signal, beforeCostly: () => fresh(record) })) {
+        if (journal) {
+          await journal.markRequestSubmissionStarted({ key:record.journalClaim.key, lease:await ownership.get() });
+          await fresh(record);
+        }
+        for await (const pcm of source({ text: record.input.text, signal, beforeCostly: async () => {
+          await fresh(record); if (ownership) await ownership.get(); await fresh(record);
+        } })) {
           await fresh(record);
           if (firstAudio) {
             firstAudio = false;
@@ -173,6 +191,10 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         }
         mark(record, 'tts_complete_ms', Math.round(performance.now() - ttsStartedAt));
         await fresh(record); record.handle.end();
+        if (journal) {
+          await journal.completeRequest({ key:record.journalClaim.key, lease:await ownership.get() });
+          record.journalSettled = true;
+        }
         // Keep freshness monitoring through the final encoded fragment, even
         // after the HTTP TTS response has ended. Wire terminal ack owns cleanup.
       } catch { unpaidTrace('source_error'); cancel(record); throw Error('Speech source unavailable'); }
@@ -180,8 +202,20 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   });
   sessionManager = suppliedSessionManager ?? (configuration.session ? createSpeechSessionManager({
     ...configuration.session, directory, workerSecret, origin,
-  }, { workerState: id => id ? relay.workerStatus(id) : relay.status(), stopWorker: id => relay.stopWorker(id) }) : null);
+  }, { workerState: id => id ? relay.workerStatus(id) : relay.status(), stopWorker: id => relay.stopWorker(id), journal, journalRequired, leaseManager:ownership }) : null);
   async function reserve(input, key, fingerprint) {
+    if (journal) {
+      const identity = { ownerHash:digest(input.owner), requestId:input.requestId, fingerprint, capability:'stream' };
+      if (await journal.findRequest(identity)) fail('generated_speech_request_already_attempted', 409);
+      const lease = await ownership.get({ recover:true });
+      if (lease.recoveryOnly) {
+        if (sessionManager) await sessionManager.ensure({ signal:input.signal, beforeCostly:input.beforeCostly });
+        fail('generated_speech_recovery_required', 409);
+      }
+      const claim = await journal.claimRequest({ ...identity, lease });
+      if (claim.status !== 'new') fail('generated_speech_request_already_attempted', 409);
+      return claim;
+    }
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const info = await lstat(directory);
     if (!info.isDirectory() || info.isSymbolicLink() || !equalPath(await realpath(directory), resolve(directory))) fail('generated_speech_stream_invalid_directory');
@@ -223,7 +257,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       if (!sessionManager && !relay.status().available) fail('generated_speech_stream_worker_unavailable', 503);
       if (records.size >= 32) fail('generated_speech_stream_busy', 429);
       if (owners.has(input.owner)) cancel(owners.get(input.owner));
-      await reserve(input, key, fingerprint);
+      preparation.journalClaim = await reserve(input, key, fingerprint);
       current(); await input.beforeCostly(); current();
       if (sessionManager) {
         await sessionManager.ensure({ signal: input.signal, beforeCostly: async () => { current(); await input.beforeCostly(); current(); } });
@@ -234,13 +268,16 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       const descriptor = { schemaVersion: 1, kind: 'generated-speech-stream', id, requestId: input.requestId, dealerId: 'astrid', exactText: input.text,
         textSha256: digest(input.text), reviewStatus: 'pending', url: '/speech-stream',
         ticket: issueTicket(ticketSecret, { userId: digest(input.owner), sessionId: id, ttlSeconds: ticketLifetimeMs / 1000 }, issuedAt), expiresAt };
-      const record = { id, descriptor, input, controller, state: 'prepared' };
+      const record = { id, descriptor, input, controller, state: 'prepared', journalClaim:preparation.journalClaim };
       records.set(id, record); owners.set(input.owner, record);
       record.externalAbort = () => cancel(record);
       input.signal?.addEventListener('abort', record.externalAbort, { once: true });
       record.deadline = setTimeout(() => cancel(record), ticketLifetimeMs); record.deadline.unref?.();
       return descriptor;
       } catch (error) {
+        if (journal && preparation.journalClaim) {
+          try { await journal.failRequest({ key:preparation.journalClaim.key, lease:await ownership.get(), safeCode:'generated_speech_stream_failed' }); } catch {}
+        }
         releaseOwner(input.owner);
         if (/^(?:generated_speech_|invalid_generated_speech_)/.test(error?.code || '') || /^(?:stale_chat_|chat_cancelled)/.test(error?.message || '')) throw error;
         if (input.signal?.aborted) fail('generated_speech_stream_cancelled', 499);
@@ -252,6 +289,9 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     },
     cancelOwner(owner) { preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); releaseOwner(owner); },
     cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) { preparations.delete(owner); releaseOwner(owner); } for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
-    close() { preparations.clear(); for (const record of [...records.values()]) cancel(record); relay.close(); return sessionManager?.close(); },
+    async close() { preparations.clear(); for (const record of [...records.values()]) cancel(record); relay.close();
+      await Promise.allSettled([...journalTasks]); await sessionManager?.close();
+      if (ownership) { try { await ownership.release(); } catch {} }
+    },
   };
 }

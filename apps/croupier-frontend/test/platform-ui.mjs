@@ -12,6 +12,16 @@ const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_PUBLIC_ORIGIN: 'https://preview.e
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
 const config = platformConfiguration(env);
 
+test('native Studio routes use the Vercel data writer while game commands stay on Render', () => {
+  const native = platformConfiguration({...env,CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
+  for (const path of ['/studio/api/project','/studio/api/social','/studio/api/videos','/studio/api/videos/upload','/studio/api/videos/classify','/studio/api/videos/one']) {
+    assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'lab',path);
+  }
+  assert.equal(platformRoute(new URL('/studio/api/social/profile',native.publicOrigin),native).kind,'backend');
+  for (const path of ['/api/studio-game/command','/api/table','/api/presentation/config']) assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'backend',path);
+  assert.equal(backendPlatformPath('/api/studio-game/commands'),false);
+});
+
 test('platform routes preserve exact backend boundaries, public origin and query correlation', () => {
   assert.equal(platformConfiguration({}), null);
   assert.throws(() => platformConfiguration({...env, CROUPIER_BACKEND_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN}));

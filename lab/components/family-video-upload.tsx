@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { labUrl } from '../lib/lab-url.mjs';
 import { kindForEvent, MAX_VIDEO_BYTES, type VideoMetadata } from '../lib/video-intake.mjs';
 import { mediaSituationLabel } from '../lib/media-family-policy.mjs';
+import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
 import type { StudioProject } from '../lib/studio-model.mjs';
 import { requestJson, type VideoEntry, type VideoInventory } from './studio-types';
 import styles from './video-intake.module.css';
@@ -24,6 +25,7 @@ export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
   const [notice, setNotice] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const request = useRef<XMLHttpRequest | null>(null);
+  const nativeRequest = useRef<AbortController | null>(null);
   const families = inventory.families ?? [];
   const family = families.find(row => row.id === familyId);
   useEffect(() => {
@@ -31,7 +33,7 @@ export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
     const url = URL.createObjectURL(file); setLocalUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
-  useEffect(() => () => request.current?.abort(), []);
+  useEffect(() => () => {request.current?.abort();nativeRequest.current?.abort();}, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -48,9 +50,14 @@ export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
       label: label.trim() || file.name, notes: '',
     };
     setBusy(true); setError(''); setNotice(''); setSaved(null); setProgress(0);
+    const controller = new AbortController();nativeRequest.current = controller;
     let stored = false;
     try {
-      const result = await new Promise<{ id: string; duplicate: boolean }>((resolve, reject) => {
+      const capability = await requestJson<VideoInventory & {uploadMode?: string}>('/api/videos',{signal:controller.signal});
+      const result = capability.uploadMode === 'private-client-blob'
+        ? await uploadNativeVideo(file,metadata,/\.webm$/i.test(file.name) ? 'video/webm' : 'video/mp4',
+          {signal:controller.signal,onUploadProgress:event => setProgress(Math.round(event.percentage))})
+        : await new Promise<{ id: string; duplicate: boolean }>((resolve, reject) => {
         const xhr = new XMLHttpRequest(); request.current = xhr;
         xhr.open('POST', labUrl('/api/videos'));
         xhr.setRequestHeader('Content-Type', /\.webm$/i.test(file.name) ? 'video/webm' : 'video/mp4');
@@ -68,14 +75,16 @@ export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
         xhr.send(file);
       });
       stored = true;
-      const next = await requestJson<VideoInventory>('/api/videos');
+      controller.signal.throwIfAborted();
+      const next = await requestJson<VideoInventory>('/api/videos',{signal:controller.signal});
+      controller.signal.throwIfAborted();
       const video = next.videos.find(row => row.id === result.id && row.familyId === family.id && row.available);
       if (!video) throw new Error('Filen är sparad men familjen kunde inte återläsas. Läs om biblioteket.');
       onUploaded(next); setSaved(video);
       setNotice(`${result.duplicate ? 'Klippet fanns redan' : 'Klippet är sparat'} i ${mediaSituationLabel(family.situation)}. Välj nedan hur det får användas.`);
       setFile(null); if (input.current) input.current.value = '';
     } catch (cause) { setError(`${stored ? 'Uppladdningen är sparad. ' : ''}${cause instanceof Error ? cause.message : 'Kunde inte spara klippet.'}`); }
-    finally { setBusy(false); request.current = null; }
+    finally { setBusy(false); request.current = null;nativeRequest.current = null; }
   }
   return <section className={styles.upload} aria-label="Ladda upp en variant">
     <h2>Ladda upp en variant</h2>

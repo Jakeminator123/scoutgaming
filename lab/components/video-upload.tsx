@@ -9,6 +9,7 @@ import { requestJson } from './studio-types';
 import { VideoMetadataFields } from './video-metadata-fields';
 import { VariantSelectionFields } from './variant-selection';
 import styles from './video-intake.module.css';
+import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
 
 export interface UploadBinding { role: 'standard' | 'alternative'; selection: VariantSelection; triggerIds: string[] }
 export function VideoUpload({ project, dealerId, eventId, onUploaded }: {
@@ -40,9 +41,14 @@ export function VideoUpload({ project, dealerId, eventId, onUploaded }: {
     setBusy(true); setError(''); setNotice('');
     let saved = false;
     try {
-      const response = await fetch(labUrl('/api/videos'), { method: 'POST', headers: { 'Content-Type': type, 'X-Video-Metadata': encodeURIComponent(JSON.stringify(metadata)) }, body: file });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? 'Videon kunde inte sparas.');
+      const mode = await requestJson<VideoInventory & {uploadMode?:string}>('/api/videos');
+      let result: {id:string;duplicate:boolean};
+      if (mode.uploadMode === 'private-client-blob') result = await uploadNativeVideo(file,metadata,type);
+      else {
+        const response = await fetch(labUrl('/api/videos'), { method: 'POST', headers: { 'Content-Type': type, 'X-Video-Metadata': encodeURIComponent(JSON.stringify(metadata)) }, body: file });
+        result = await response.json();
+        if (!response.ok) throw new Error((result as {error?:string}).error ?? 'Videon kunde inte sparas.');
+      }
       saved = true;
       const inventory = await requestJson<VideoInventory>('/api/videos');
       const video = inventory.videos.find(v => v.id === result.id);

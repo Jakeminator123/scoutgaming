@@ -210,10 +210,10 @@ export async function loadVideoRegistry(options = {}) {
   };
   let entries, families = [];
   try { ({ entries, families } = await readEntries(options)); summary.snapshotReadable = true; }
-  catch { summary.notes.push('Originalregistret kunde inte läsas.'); entries = new Map(); }
+  catch (error) { if (options.strict) throw error; summary.notes.push('Originalregistret kunde inte läsas.'); entries = new Map(); }
   let uploads = [];
-  try { uploads = await readUploads(options); }
-  catch { summary.notes.push('Uppladdningsregistret kunde inte läsas; befintliga filer är bevarade.'); }
+  try { uploads = await (options.readUploads ?? readUploads)(options); }
+  catch (error) { if (options.strict) throw error; summary.notes.push('Uppladdningsregistret kunde inte läsas; befintliga filer är bevarade.'); }
   for (const entry of uploads) {
     if (entries.has(entry.id)) throw new RegistryError(503, 'Duplicate video identity.');
     entries.set(entry.id, entry);
@@ -230,8 +230,8 @@ export async function loadVideoRegistry(options = {}) {
   }
   const videos = [];
   let classifications = [];
-  try { classifications = await readClassifications(options); }
-  catch { summary.notes.push('Kategorisering kunde inte läsas. Inga nya klassificeringar används.'); }
+  try { classifications = await (options.readClassifications ?? readClassifications)(options); }
+  catch (error) { if (options.strict) throw error; summary.notes.push('Kategorisering kunde inte läsas. Inga nya klassificeringar används.'); }
   const classified = new Map(classifications.map(item => [item.id, item]));
   const familyById = new Map(families.map(family => [family.id, family]));
   // Sequential metadata checks avoid opening hundreds of files at once.
@@ -338,7 +338,7 @@ export async function getVideoResponse(id, request, options = {}) {
     try { entry = (await readEntries(options)).entries.get(id); }
     catch { snapshotFailed = true; }
     if (!entry) {
-      uploaded = (await readUploads(options)).find(v => v.id === id);
+      uploaded = (await (options.readUploads ?? readUploads)(options)).find(v => v.id === id);
       entry = uploaded;
     }
     if (!entry && snapshotFailed) throw new RegistryError(503, 'Video inventory unavailable.');

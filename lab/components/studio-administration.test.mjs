@@ -64,7 +64,7 @@ function harness() {
   };
   const module = { exports: {} };
   vm.runInNewContext(compiled, {
-    module, exports: module.exports, window, DOMException, AbortController,
+    module, exports: module.exports, window, DOMException, AbortController, URL,
     FormData: TestFormData, HTMLElement: Element, HTMLFormElement: Form, HTMLInputElement: Input,
     fetch() { throw new Error('Unexpected real fetch'); },
     require: name => name === 'react' ? fakeReact
@@ -187,14 +187,75 @@ test('all config mutations carry exact string revision; no numeric/missing/proto
   assert.ok(requests.every(request => typeof request.body.expectedRevision === 'string'));
 });
 
-test('one-time partner secrets, launch/credit and paid speech QA have no actionable UI transport', async () => {
+test('activated partner actions use explicit transient projections while paid speech QA stays gated', async () => {
   const h = harness(); let fetches = 0;
-  const client = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => actor('superadmin'), fetchImpl: async () => { ++fetches; return reply({ key: 'hidden', secret: 'hidden' }); } });
-  for (const action of ['apikeys/create', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit', 'speech-qa']) await assert.rejects(client.request('POST', action, {}), status(501));
-  assert.equal(fetches, 0);
+  const secret = `cs_${'s'.repeat(43)}`, key = `ck_live_${'k'.repeat(24)}`;
+  const responses = {
+    'apikeys/create': { ok:true,key:{id:'partner-one',key,secret,note:'ARBITRARY_TEXT'},leaked:'EXTRA_SECRET' },
+    'apikeys/rotate': {ok:true,id:'partner-one',secret,leaked:'EXTRA_SECRET'},
+    'apikeys/launch': {ok:true,url:'https://game.example.test/game?dealer=astrid&launch=a.b.c',playerRef:'game-player',curlLines:['EXTRA_SECRET']},
+    'apikeys/credit': {ok:true,playerId:'partner-player',balance:100,currency:'EUR',secret:'EXTRA_SECRET'},
+  };
+  const client = h.createStudioAdminClient({ apiBase:'/api/admin',gameOrigin:'https://game.example.test', availableActions:allActions,
+    session:async()=>actor('superadmin'),fetchImpl:async url=>{++fetches;return reply(responses[url.slice('/api/admin/'.length)]);}});
+  for (const action of ['apikeys/create','apikeys/rotate','apikeys/launch','apikeys/credit']) {
+    const response = await client.request('POST',action,{});
+    assert.ok(response.payload.oneTime); assert.doesNotMatch(JSON.stringify(response),/EXTRA_SECRET|ARBITRARY_TEXT|curlLines/);
+  }
+  await assert.rejects(client.request('POST','speech-qa',{}),status(501));
+  assert.equal(fetches,4);
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'partners')));
   assert.doesNotMatch(html, /MUST-NOT-RENDER|wallet_url|type="password"/);
-  assert.match(html, /säker engångsexport/); assert.match(html, /Återkalla partnernyckel/);
+  assert.match(html,/Skapa partnernyckel|Rotera hemlighet/); assert.match(html, /Återkalla partnernyckel/);
+});
+
+test('partner result projection rejects malformed credentials and cross-origin/ambiguous launch URLs', () => {
+  const h = harness();
+  for (const payload of [{key:{id:'partner-one',key:'short',secret:`cs_${'s'.repeat(43)}`}},{key:{id:'partner-one',key:`ck_live_${'k'.repeat(24)}`,secret:'short'}}]) {
+    assert.throws(()=>h.studioPartnerResult('apikeys/create',payload),status(503));
+  }
+  for (const url of ['https://outside.test/game?dealer=astrid&launch=a.b.c','http://game.example.test/game?dealer=astrid&launch=a.b.c',
+    'https://game.example.test/other?dealer=astrid&launch=a.b.c','https://game.example.test/game?dealer=astrid&launch=a.b.c&launch=x.y.z',
+    'https://game.example.test/game?dealer=wrong&launch=a.b.c','https://game.example.test/game?dealer=astrid&launch=bad',
+    'https://game.example.test/game?dealer=astrid&launch=a.b.c#secret']) {
+    assert.throws(()=>h.studioPartnerResult('apikeys/launch',{url,playerRef:'player'},'https://game.example.test'),status(503));
+  }
+  assert.throws(()=>h.studioPartnerResult('apikeys/credit',{playerId:'player',balance:NaN,currency:'EUR'}),status(503));
+});
+
+test('partner forms retain explicit role/scopes/wallet boundaries and send only task fields', () => {
+  const h = harness(), calls = [], data = resources();
+  data.apikeys.payload.keys[0].scopes = ['launch','wallet']; data.apikeys.payload.keys[0].walletConfigured = false;
+  const tree = h.StudioAdministrationView({...viewProps('admin','partners'),resources:data,command:(action,body)=>calls.push({action,body})});
+  assert.equal(buttons(tree,'Skapa partnernyckel').length,0); assert.equal(buttons(tree,'Rotera hemlighet').length,0);
+  const formFor = text => nodes(tree,node=>node.type==='form' && buttons(node,text).length)[0];
+  formFor('Skapa spellänk').props.onSubmit({preventDefault(){},currentTarget:new Form({playerId:'partner-player',displayName:'Player',currency:'EUR',language:'en'})});
+  formFor('Kreditera demo-saldo').props.onSubmit({preventDefault(){},currentTarget:new Form({playerId:'partner-player',amount:'12.50'})});
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)),[
+    {action:'apikeys/launch',body:{id:'partner-one',playerId:'partner-player',displayName:'Player',currency:'EUR',language:'en'}},
+    {action:'apikeys/credit',body:{id:'partner-one',playerId:'partner-player',amount:12.5}},
+  ]);
+  data.apikeys.payload.keys[0].walletConfigured = true;
+  assert.equal(buttons(h.StudioAdministrationView({...viewProps('admin','partners'),resources:data}),'Kreditera demo-saldo').length,0);
+});
+
+test('one-time credential display clears on explicit reload/group change and never enters account metadata', async () => {
+  const h = harness(), secret = `cs_${'s'.repeat(43)}`, key = `ck_live_${'k'.repeat(24)}`;
+  const props = {apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('superadmin'),fetchImpl:async(url,init)=>
+    init.method==='POST' ? reply({ok:true,key:{id:'partner-one',key,secret}}) : reply(url.endsWith('/config') ? config() : url.endsWith('/apikeys') ? resources().apikeys.payload : resources().overview.payload)};
+  h.render(props); h.effects(); await flush(); let tree = h.render(props);
+  buttons(tree,'Partner')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  let native = nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
+  native.props.command('apikeys/create',{name:'Example'}); await flush(); tree = h.render(props);
+  assert.match(renderToStaticMarkup(tree),new RegExp(secret));
+  native = nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
+  assert.equal(JSON.stringify(native.props.resources).includes(secret),false);
+  buttons(tree,'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
+  assert.doesNotMatch(renderToStaticMarkup(tree),new RegExp(secret));
+  nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.command('apikeys/create',{name:'Example'}); await flush(); tree=h.render(props);
+  assert.match(renderToStaticMarkup(tree),new RegExp(secret));
+  buttons(tree,'Konton')[0].props.onClick(); tree=h.render(props);
+  assert.doesNotMatch(renderToStaticMarkup(tree),new RegExp(secret)); h.unmount();
 });
 
 test('keys/invite responses are projected before state, and server errors never echo secret bodies', async () => {

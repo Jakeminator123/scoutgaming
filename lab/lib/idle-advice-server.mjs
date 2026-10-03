@@ -4,8 +4,7 @@ import { normalizeInput, prepareDecision, finalizeDecision, SOURCE_TYPES } from 
 import { askDirector } from '../../open-claw/lab/src/openclaw.mjs';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { buildRuntimeCatalog, validateProject } from './studio-model.mjs';
-import { loadVideoRegistry } from './video-registry.mjs';
-import { remoteRequest } from './studio-server.mjs';
+import { remoteRequest, studioVideoRegistry } from './studio-server.mjs';
 import { StudioError } from './project-store.mjs';
 import { readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
 
@@ -127,7 +126,7 @@ const publicProvider = status => typeof status === 'string'
 // Process-local and bounded: one provider attempt per request/message while the
 // observation is fresh. Failures are retained, never retried. Restarts are not a
 // distributed exactly-once guarantee; the client also consumes each native ID.
-export function createIdleAdviceServer({ settings, videoRegistry, registryLoader = loadVideoRegistry, fetchImpl = fetch, now = Date.now } = {}) {
+export function createIdleAdviceServer({ settings, videoRegistry, registryLoader = studioVideoRegistry, fetchImpl = fetch, now = Date.now } = {}) {
   const jobs = new Map();
   let active = 0;
   return async function advise(body, { signal } = {}) {

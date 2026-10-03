@@ -139,7 +139,9 @@ export function SocialChatPanel({ compact = false, dealerId, eventId, onGoToIdle
     const controller = new AbortController(), run = generation.current;
     request.current = controller; setBusy('loading'); setError('');
     try {
-      const next = await requestJson<SocialStatus>('/api/social', { signal: controller.signal });
+      const policy = await requestJson<SocialStatus>('/api/social', { signal: controller.signal });
+      const next = typeof policy.configured === 'boolean' ? policy
+        : {...policy,...await requestJson<Omit<SocialStatus,'policy'>>('/api/social/status',{signal:controller.signal})};
       if (controller.signal.aborted || run !== generation.current) return;
       setStatus(next); setDraft(next.policy);
     } catch (cause) { if (!controller.signal.aborted && run === generation.current) setError(cause instanceof Error ? cause.message : 'Sociala inställningar kunde inte läsas.'); }

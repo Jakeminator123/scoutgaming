@@ -1,0 +1,2 @@
+export function studioCommandSignature(secret: string, timestamp: string, body: string): string;
+export function createStudioGameAuthority(options: {env?: Record<string,string | undefined>; scope: {environment: string; workspaceId: string}; fetchImpl?: typeof fetch; now?: () => number}): {execute(context: {action: string; body: unknown; actor: {user: string; role: string}; scope: {environment: string; workspaceId: string}; request: Request}): Promise<Record<string,unknown>>};

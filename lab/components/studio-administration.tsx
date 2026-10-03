@@ -17,10 +17,16 @@ export type StudioAdministrationProps = {
   /** Exact activated handler keys, for example "GET players". Descriptors alone are not activation. */
   availableActions?: readonly string[];
   fetchImpl?: typeof fetch;
+  /** Explicit public game origin from server configuration, never request JSON. */
+  gameOrigin?: string;
 };
 type Resource = { payload?: JsonObject; error?: StudioAdminUiError };
 type Resources = Record<string, Resource>;
 type Command = (action: string, body: JsonObject, form?: HTMLFormElement) => void;
+export type StudioPartnerResult =
+  | { kind: 'credentials'; id: string; key?: string; secret: string }
+  | { kind: 'launch'; url: string; playerRef: string }
+  | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
 const CONFIG_COMMANDS = new Set(['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const GROUP_READS: Record<string, readonly string[]> = {
@@ -70,7 +76,7 @@ function uiError(error: unknown): StudioAdminUiError { return error instanceof S
 function aborted(signal?: AbortSignal) { if (signal?.aborted) throw new DOMException('Aborted', 'AbortError'); }
 
 /** UI transport, NOT session/Origin/CSRF/CAS authorization. No route is activated by this helper. */
-export function createStudioAdminClient({ apiBase, session, availableActions = EMPTY_ACTIONS, fetchImpl = fetch }: StudioAdministrationProps) {
+export function createStudioAdminClient({ apiBase, session, availableActions = EMPTY_ACTIONS, fetchImpl = fetch, gameOrigin }: StudioAdministrationProps) {
   const baseIsValid = apiBase === '/studio/api/admin' || apiBase === '/api/admin';
   const activated = new Set(availableActions);
   async function identity(): Promise<StudioAdminActor> {
@@ -97,9 +103,7 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if ((action === 'users/remove' || action === 'users/role') && sameIdentity(body?.username, actor.username)) throw new StudioAdminUiError(403);
       if (action === 'users/role' && !isStudioRole(body?.role)) throw new StudioAdminUiError(400);
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
-      // These responses contain one-time credentials or game-authority launch data.
-      // They require a separate, secure export/launch contract; this UI never requests them.
-      if (['apikeys/create', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit', 'speech-qa'].includes(action)) throw new StudioAdminUiError(501);
+      if (action === 'speech-qa') throw new StudioAdminUiError(501);
     }
     let response: Response;
     try {
@@ -117,8 +121,10 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     if (!payload || payload.ok === false || typeof payload.error === 'string') throw new StudioAdminUiError(400);
     if (method === 'POST') {
       if (payload.ok !== true) throw new StudioAdminUiError(503);
-      // Never retain invite token links, credentials or arbitrary response text in React state.
-      return { actor, payload: { ok: true, ...(typeof payload.emailSent === 'boolean' ? { emailSent: payload.emailSent } : {}) } };
+      // Explicit one-time partner values are isolated from lists/resources. Invite
+      // links, curl snippets, arbitrary server text and other fields never persist.
+      const oneTime = studioPartnerResult(action, payload, gameOrigin);
+      return { actor, payload: { ok: true, ...(typeof payload.emailSent === 'boolean' ? { emailSent: payload.emailSent } : {}), ...(oneTime ? { oneTime } : {}) } };
     }
     if (action === 'apikeys') {
       if (!Array.isArray(payload.keys)) throw new StudioAdminUiError(503);
@@ -129,6 +135,34 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     return { actor, payload };
   }
   return { identity, available, request };
+}
+
+export function studioPartnerResult(action: string, payload: JsonObject, gameOrigin?: string): StudioPartnerResult | null {
+  const clean = (value: unknown, max: number): value is string => typeof value === 'string' && value.length > 0 && value.length <= max && !/[\u0000-\u001f\u007f-\u009f]/.test(value);
+  if (action === 'apikeys/create' || action === 'apikeys/rotate') {
+    const values = action === 'apikeys/create' ? object(payload.key) : payload;
+    if (!values || !clean(values.id, 256) || typeof values.secret !== 'string' || !/^cs_[A-Za-z0-9_-]{43}$/.test(values.secret)
+      || action === 'apikeys/create' && (typeof values.key !== 'string' || !/^ck_live_[A-Za-z0-9_-]{24}$/.test(values.key))) throw new StudioAdminUiError(503);
+    return { kind: 'credentials', id: values.id, secret: values.secret, ...(action === 'apikeys/create' ? { key: values.key as string } : {}) };
+  }
+  if (action === 'apikeys/launch') {
+    let url: URL, approved: URL;
+    try { url = new URL(String(payload.url)); approved = new URL(gameOrigin || ''); } catch { throw new StudioAdminUiError(503); }
+    const query = [...url.searchParams.keys()];
+    if (approved.origin !== gameOrigin || approved.protocol !== 'https:' || approved.username || approved.password
+      || url.origin !== approved.origin || url.username || url.password || url.hash || !['/game', '/blackjack'].includes(url.pathname)
+      || query.length !== 2 || !query.includes('dealer') || !query.includes('launch')
+      || !['vera','astrid','amira','mei'].includes(url.searchParams.get('dealer') || '')
+      || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(url.searchParams.get('launch') || '')
+      || url.href.length > 16384 || !clean(payload.playerRef,256)) throw new StudioAdminUiError(503);
+    return { kind: 'launch', url: url.href, playerRef: payload.playerRef };
+  }
+  if (action === 'apikeys/credit') {
+    if (!clean(payload.playerId,256) || typeof payload.balance !== 'number' || !Number.isFinite(payload.balance) || payload.balance < 0
+      || !CURRENCIES.includes(String(payload.currency))) throw new StudioAdminUiError(503);
+    return { kind: 'credit', playerId: payload.playerId, balance: payload.balance, currency: payload.currency as string };
+  }
+  return null;
 }
 
 /** Whitelist metadata before it enters component state; masked/raw key fields are both omitted. */
@@ -296,12 +330,30 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       </>}
       {section === 'apikeys' && <>
         <ResourceNotice resource={resources.apikeys} />
-        {unavailableWrite('apikeys/revoke')}
+        {['apikeys/create','apikeys/rotate','apikeys/revoke','apikeys/launch','apikeys/credit'].map(action => <div key={action}>{unavailableWrite(action)}</div>)}
         {resources.apikeys?.payload && <><EmptyRows count={rows(resources.apikeys.payload.keys).length} />{rows(resources.apikeys.payload.keys).map((key, index) => <div className={styles.row} key={label(key.id, String(index))}>
           <div><strong>{label(key.name)}</strong><p>Nyckel: dold · {Array.isArray(key.scopes) ? key.scopes.filter(scope => typeof scope === 'string' && PARTNER_SCOPES.includes(scope)).join(', ') : '—'}</p><p>{key.revoked_at ? `Återkallad: ${label(key.revoked_at)}` : 'Aktiv'} · Senast använd: {label(key.last_used)} · Wallet: {key.walletConfigured === true ? 'ansluten' : 'ej ansluten'}</p></div>
           {!key.revoked_at && mayWrite('apikeys/revoke') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Återkalla partnernyckeln för ${label(key.name)}?`)) command('apikeys/revoke', { id: key.id }); }}>Återkalla partnernyckel</button>}
+          {!key.revoked_at && mayWrite('apikeys/rotate') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Byta HMAC-hemligheten för ${label(key.name)}? Den tidigare hemligheten slutar fungera.`)) command('apikeys/rotate', { id: key.id }); }}>Rotera hemlighet</button>}
+          {!key.revoked_at && mayWrite('apikeys/launch') && Array.isArray(key.scopes) && key.scopes.includes('launch') && <form className={styles.form} onSubmit={submit('apikeys/launch', form => ({ id:key.id, playerId:value(form,'playerId'), displayName:value(form,'displayName'), currency:value(form,'currency'), language:value(form,'language') }))}>
+            <h4>Starta partnerspel</h4><label>Partnerns spelar-ID<input name="playerId" required maxLength={256} disabled={busy} /></label>
+            <label>Visningsnamn<input name="displayName" required maxLength={40} disabled={busy} /></label>
+            <label>Valuta<select name="currency" defaultValue="EUR" disabled={busy}>{CURRENCIES.map(currency => <option key={currency}>{currency}</option>)}</select></label>
+            <label>Språk<select name="language" disabled={busy}><option value="en">English</option><option value="sv">Svenska</option></select></label><button disabled={busy}>Skapa spellänk</button>
+          </form>}
+          {!key.revoked_at && key.walletConfigured !== true && mayWrite('apikeys/credit') && Array.isArray(key.scopes) && key.scopes.includes('wallet') && <form className={styles.form} onSubmit={submit('apikeys/credit', form => ({ id:key.id, playerId:value(form,'playerId'), amount:Number(value(form,'amount')) }))}>
+            <h4>Demo-kreditering</h4><label>Partnerns spelar-ID<input name="playerId" required maxLength={256} disabled={busy} /></label>
+            <label>Belopp<input name="amount" type="number" min="0.01" max="100000" step="0.01" required disabled={busy} /></label><button disabled={busy}>Kreditera demo-saldo</button>
+          </form>}
         </div>)}</>}
-        <p className={styles.notice}>Skapa/rotera nyckel kräver en säker engångsexport som ännu inte är ansluten. Partnerlaunch och kreditering väntar på spelmotorns retur- och walletkontrakt. Inga nyckelvärden visas här.</p>
+        {mayWrite('apikeys/create') && <form className={styles.form} onSubmit={submit('apikeys/create', form => ({ name:value(form,'name'), scopes:PARTNER_SCOPES.filter(scope => new FormData(form).has(`scope-${scope}`)), walletUrl:value(form,'walletUrl'), ipAllow:value(form,'ipAllow') }))}>
+          <h4>Ny partnernyckel</h4><label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
+          <label>Wallet-URL (valfritt, HTTPS)<input name="walletUrl" type="url" maxLength={2048} disabled={busy} /></label>
+          <label>IP-adresser (valfritt, kommaseparerat)<input name="ipAllow" maxLength={2048} disabled={busy} /></label>
+          <fieldset><legend>Rättigheter</legend>{PARTNER_SCOPES.map(scope => <label className={styles.checkbox} key={scope}><input type="checkbox" name={`scope-${scope}`} defaultChecked disabled={busy} />{scope}</label>)}</fieldset>
+          <button disabled={busy}>Skapa partnernyckel</button>
+        </form>}
+        <p className={styles.notice}>Nyckel och HMAC-hemlighet visas endast direkt efter skapande eller rotation. Kopiera dem till partnerns säkra förvaring innan du lämnar vyn. Spelmotorn bekräftar launch, återkallelse och demo-saldo.</p>
       </>}
       {section === 'emails' && <>
         <p>Befintliga mallar: välkomstmejl, insättningskvitto, turneringsinbjudan och ansvarsfullt-spel-checkin.</p>
@@ -334,7 +386,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
 }
 
 export function StudioAdministration(props: StudioAdministrationProps) {
-  const client = useMemo(() => createStudioAdminClient(props), [props.apiBase, props.session, props.availableActions, props.fetchImpl]);
+  const client = useMemo(() => createStudioAdminClient(props), [props.apiBase, props.session, props.availableActions, props.fetchImpl, props.gameOrigin]);
   const [group, setGroup] = useState('operations');
   const [actor, setActor] = useState<StudioAdminActor | null>(null);
   const [resources, setResources] = useState<Resources>({});
@@ -343,6 +395,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   const [editorEpoch, setEditorEpoch] = useState(0);
   const [notice, setNotice] = useState('');
   const [fatal, setFatal] = useState<StudioAdminUiError | null>(null);
+  const [oneTime, setOneTime] = useState<StudioPartnerResult | null>(null);
   const sequence = useRef(0);
   const activeRead = useRef<AbortController | null>(null);
   const alive = useRef(false);
@@ -358,14 +411,15 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     return () => window.removeEventListener('beforeunload', guard);
   }, []);
 
-  async function load(target: string, preserveNotice = false): Promise<boolean> {
+  async function load(target: string, preserveNotice = false, preserveOneTime = false): Promise<boolean> {
     const ticket = ++sequence.current;
     activeRead.current?.abort();
     const controller = new AbortController(); activeRead.current = controller;
-    if (alive.current) { setBusy(true); setFatal(null); if (!preserveNotice) setNotice(''); }
+    if (alive.current) { setBusy(true); setFatal(null); if (!preserveNotice) setNotice(''); if (!preserveOneTime) setOneTime(null); }
     try {
       const initialActor = await client.identity();
       aborted(controller.signal);
+      if (preserveOneTime && (!actor || initialActor.username !== actor.username || initialActor.role !== actor.role)) setOneTime(null);
       const reads = GROUP_READS[target];
       if (!reads) throw new StudioAdminUiError(400);
       const results = await Promise.all(reads.filter(action => {
@@ -385,7 +439,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
         && results.every(result => 'payload' in result || result.error.status === 501);
     } catch (error) {
       if (!alive.current || ticket !== sequence.current || controller.signal.aborted) return false;
-      setActor(null); setResources({}); setFatal(uiError(error)); return false;
+      setActor(null); setResources({}); setOneTime(null); setFatal(uiError(error)); return false;
     } finally { if (alive.current && ticket === sequence.current && !writing.current) setBusy(false); }
   }
 
@@ -400,7 +454,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   function changeGroup(next: string) {
     if (!BACKOFFICE_GROUPS.some(item => item.id === next) || busy || writing.current || next === group) return;
     if (changed.current && !window.confirm('Lämna osparade formulärfält och byta administrationsgrupp?')) return;
-    draftForms.current.clear(); changed.current = false; setDirty(false); setNotice(''); setResources({}); setGroup(next);
+    draftForms.current.clear(); changed.current = false; setDirty(false); setNotice(''); setOneTime(null); setResources({}); setGroup(next);
   }
 
   function discardDrafts() {
@@ -412,20 +466,21 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   async function command(action: string, body: JsonObject, form?: HTMLFormElement) {
     if (writing.current || busy || !actor) { delete body.password; return; }
     if (form && CONFIG_COMMANDS.has(action) && draftForms.current.has(form)) body.expectedRevision = draftForms.current.get(form);
-    writing.current = true; setBusy(true); setNotice(''); setFatal(null);
+    writing.current = true; setBusy(true); setNotice(''); setFatal(null); setOneTime(null);
     try {
       const result = await client.request('POST', action, body);
       if (!alive.current) return;
       if (result.actor.username !== actor.username || result.actor.role !== actor.role) throw new StudioAdminUiError(403);
+      setOneTime((result.payload.oneTime as StudioPartnerResult | undefined) || null);
       // The server is authoritative: no optimistic accounts, balances or role updates.
-      const reloaded = await load(group, true);
+      const reloaded = await load(group, true, true);
       if (!alive.current) return;
       if (!reloaded) {
         setNotice('Servern bekräftade åtgärden, men serverdata kunde inte läsas om helt. Skicka inte samma åtgärd igen; ladda om och kontrollera resultatet först.');
         return;
       }
       if (form) {
-        if (['players/create', 'users/invite', 'tournament'].includes(action)) form.reset();
+        if (['players/create', 'users/invite', 'tournament', 'apikeys/create'].includes(action)) form.reset();
         draftForms.current.delete(form);
       }
       changed.current = draftForms.current.size > 0; setDirty(changed.current);
@@ -433,7 +488,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     } catch (error) {
       if (!alive.current) return;
       const failure = uiError(error);
-      if (failure.status === 401 || failure.status === 403) { setActor(null); setResources({}); setFatal(failure); }
+      if (failure.status === 401 || failure.status === 403) { setActor(null); setResources({}); setOneTime(null); setFatal(failure); }
       else setNotice(failure.message);
     } finally {
       delete body.password;
@@ -449,6 +504,14 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     <p className={styles.notice}>UI-behörighet är en visningsregel. Servern kontrollerar session, aktuell roll, origin och varje ändring.</p>
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
+    {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">
+      {oneTime.kind === 'credentials' && <><h3>Engångsuppgifter</h3><p>Kopiera nu. Uppgifterna försvinner när du döljer dem, laddar om eller lämnar vyn.</p>
+        {oneTime.key && <label>API-nyckel<input readOnly value={oneTime.key} autoComplete="off" spellCheck={false} /></label>}
+        <label>HMAC-hemlighet<input readOnly value={oneTime.secret} autoComplete="off" spellCheck={false} /></label></>}
+      {oneTime.kind === 'launch' && <><h3>Partnerspel</h3><p>Spelmotorn har skapat en tillfällig spellänk.</p><a href={oneTime.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Öppna partnerspelet</a></>}
+      {oneTime.kind === 'credit' && <><h3>Demo-saldo bekräftat</h3><p>{oneTime.playerId}: {oneTime.balance} {oneTime.currency}</p></>}
+      <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
+    </section>}
     {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten och deras ursprungliga revision; den skriver inte över nyare serverändringar.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
     {actor && <><nav className={styles.groups} aria-label="Backoffice-grupper">{BACKOFFICE_GROUPS.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={busy} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>
       <StudioAdministrationView key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />

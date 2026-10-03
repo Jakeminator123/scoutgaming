@@ -205,3 +205,34 @@ test('new-upload registration is idempotent, classification is CAS, and referenc
   assert.deepEqual(references.checked, ['documents', 'document_history']);
   assert.equal(typeof repo.deleteMedia, 'undefined');
 });
+
+test('native media listing is scope-bound, complete, validated and never seeds or silently truncates', async () => {
+  const pool = createStudioMemoryPool(), repo = repository(pool);
+  const other = createStudioRepository({ pool, scope: { ...scope, workspaceId: 'other' } });
+  assert.deepEqual(await repo.listMedia({ limit: 5000 }), []);
+  const record = (id, dealerId = 'astrid') => ({ id, sha256: 'a'.repeat(64), size: 100, contentType: 'video/mp4',
+    pathname: `croupier/media/dealers/${dealerId}/review/uploads/${id}/${'a'.repeat(64)}.mp4`,
+    classification: { dealerId, eventId: 'speak.goodluck', kind: 'speech', role: 'alternative', situation: 'goodluck', label: 'New', notes: '', playback: 'once' } });
+  const first = await repo.registerMedia(record('00000000-0000-4000-8000-000000000001'), { actor: 'tester' });
+  const second = await repo.registerMedia(record('00000000-0000-4000-8000-000000000002'), { actor: 'tester' });
+  await other.registerMedia(record('00000000-0000-4000-8000-000000000003', 'vera'), { actor: 'tester' });
+  assert.deepEqual(await repo.listMedia({ limit: 2 }), [first.media, second.media]);
+  await assert.rejects(repo.listMedia({ limit: 1 }), rejection('studio_media_limit_exceeded', 503));
+  const before = pool.connects;
+  for (const limit of [0, -1, 5001, 1.1, '100']) await assert.rejects(repo.listMedia({ limit }), rejection('studio_invalid_data', 422));
+  assert.equal(pool.connects, before);
+  const calls = pool.calls.filter(call => call.marker === 'list-media');
+  assert.ok(calls.every(call => call.values[0] === scope.environment && call.values[1] === scope.workspaceId));
+  assert.equal(pool.snapshot().audits.length, 3); // Listing never initializes or rewrites anything.
+  const connect = pool.connect.bind(pool);
+  pool.connect = async () => {
+    const client = await connect(), query = client.query.bind(client);
+    client.query = async (sql, values) => {
+      const result = await query(sql, values);
+      if (sql.includes('studio:list-media')) result.rows[0].record.pathname = 'untrusted/different-object.mp4';
+      return result;
+    };
+    return client;
+  };
+  await assert.rejects(repo.listMedia(), rejection('studio_corrupt_media', 503));
+});

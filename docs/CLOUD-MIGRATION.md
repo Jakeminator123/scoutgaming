@@ -51,8 +51,9 @@ löpande; inga nya plandokument eller parallella statuskopior i docs.
   Lab/BO försvinner som separata användarytor och menybegrepp. Ingen admin-iframe.
 - Måladress för spelet: `/blackjack`; `/game` blir en omdirigering dit med
   bevarade godkända query-parametrar. **Idag är det omvänt:** `/blackjack`
-  visar spelarens inloggningsentré och `/game` visar spelet. Adressbytet måste
-  göras tillsammans med launch/callback/returnTo- och partnerkontrakten.
+  visar spelarens inloggningsentré och `/game` visar spelet. Adressbytet är nu
+  implementerat bakom gemensamma avstängda policyflaggan tillsammans med
+  launch/callback/returnTo- och partnerkontrakten; `/player-login` blir entrén.
 - Vercel äger Studio, dess administrations-/Studio-API och spelargränssnittet.
   Två tekniska Vercel-byggen får användas under samma adress; en sammanslagning
   av Next-versioner/paket är inte ett separat mål eller skäl att försena flytten.
@@ -84,6 +85,11 @@ löpande; inga nya plandokument eller parallella statuskopior i docs.
    Vercel-Studio läser. CAS-konflikter, transaktioner, historik och audit;
    osparade utkast blir aldrig spelpolicy. Enbart disk-lock/rename räcker inte
    med flera Vercel-instanser. Ingen oreglerad dubbelskrivning under migrering.
+   Gemensamma flaggan `CROUPIER_STUDIO_NEON_POLICY=1` kräver samma explicita
+   miljö/workspace och game/auth-Neon på Render och Vercel-Studio. Native BO
+   kräver dessutom `CROUPIER_STUDIO_NATIVE_ADMIN=1`; separata flaggor får inte
+   skapa två aktiva policykällor. Gemensam spelrevision binder de två sparade
+   dokumentrevisionerna; exakta projektrevisionen bevaras för presentationens kvitton.
    "Profiler" i P2/Agent A avser Studios presentationsinställningar, inte
    OpenClaws companion-minne/agentprofiler eller aktiv Director/Gateway-state.
    Spelarprofiler som redan finns i Neon ligger kvar där; lokala privata
@@ -176,7 +182,11 @@ Procent i chatten är en grov bedömning av **den nya Studio-sammanslagningen**,
 inte filantal eller den tidigare frontendflytten. Startläge efter kontraktsgrunden:
 cirka 10 %. Efter kontrakt, isolerade oaktiverade lagringsutkast och den
 publicerade UI-förenklingen 3 oktober: cirka 30 %. Efter levererbar Neon-/journalgrund
-och native BO-UI/API bakom avstängd aktivering: cirka 40 %. Viktning: kontrakt/åtkomst
+och native BO-UI/API bakom avstängd aktivering: cirka 40 %.
+Det pågående fortsättningssteget med gemensam policy, konto-/partner-/authfunktioner
+och aktuell isolerad SQL/HTTPS/restartacceptans är grovt cirka 60 %; riktig
+produktionsimport, helhetsacceptans och avveckling är ännu inte verifierade.
+Viktning: kontrakt/åtkomst
 10, beständig Studio-state 20, enkel native
 UI/auth 20, API-/spelintegration 20, säkra jobbjournaler 10, QA 10, avveckling/docs 10.
 Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
@@ -207,8 +217,19 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     migration; asynkron repository med serverägd scope, CAS, historik/audit,
     transaktionsrollback och explicit snapshotimport. 27 repository/migrations-
     fixturtester PASS. Inget fröprojekt eller diskfallback. Ett tidigare isolerat
-    PostgreSQL-/omstartsprov gav 15 PASS; detta har inte körts om för senaste paketet.
+    PostgreSQL-/omstartsprov gav 15 PASS; senaste paketets SQL/HTTPS/restartkvitto
+    redovisas under P6.
   - [ ] Verifierad aktuell import och aktiv gemensam källa för Studio/Render.
+  - Pågående nästa integrationssteg: `studio-game-policy` läser projekt och
+    administration i en gemensam repeatable-read-transaktion, returnerar en
+    oföränderlig scopebunden spelrevision och bevarar båda källrevisionerna.
+    Studio-/Render-adaptrar sparar med CAS/historik/audit. Exakt tier/idle-
+    validering nekar fel dealer, närliggande klippnyckel och saknat aktivt media.
+    12 riktade policyprov och 17 repositoryprov PASS, inklusive samtidiga
+    sparningar, blandad revisionsrace, rollback och scopegränser. `listMedia`
+    läser endast avsedd Neon-scope och nekar ofullständig lista. Detta är
+    fixturbevis kompletterade av P6:s SQL/restartprov; aktuell produktionsimport
+    och produktionsacceptans är fortfarande öppna.
 - [ ] **P3 — Blob och jobbstate:** beständiga generationer/talpaket ligger i
   samma privata Blob; request-idempotens, sessionägarskap, kostnadsreservationer,
   job recovery och budgetledger är beständiga i Neon. Bevis: hash/HEAD/Range,
@@ -217,7 +238,19 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   gammal slaskmedia. Slopad mediaimport gör inte osäkra betalda jobb nya igen.
   - [x] Fristående Neon-jobbjournal med fenced lease, request-idempotens,
     submit/cancel/terminal och budgetreservationer: 17 fixturtester PASS.
-    Aktiva stream-/fullfilscallers och nya Blob-talpaket är ännu inte inkopplade.
+  - [x] Aktiva stream-/session-/fullfilscallers använder Neon-journalen under
+    gemensamma policyflaggan. Fullfilsbytes lagras privat i befintlig Blob och
+    återläses med exakt paket-/ägarmetadata, hash och storlek. Beständig disk-
+    artifact-/budgetfallback saknas i detta läge; endast städad OS-temp används.
+    Isolerade byte-/retry-/ägarprov passerar utan betalda provideranrop.
+  - [x] Rent förberedelsekontrakt för fryst legacy-policy och kostnadsjournal:
+    exakta källhashar, scope, budgetversion, förbrukade requests/reservationer
+    och stoppade/dränerade skrivare krävs. Osäkra jobb får inte återbetalas eller
+    skickas om. Verktyget läser/importerar inte driftdata automatiskt.
+  - [ ] Aktuell komplett drift-export, journalimport och paritetsprov före
+    flaggbyte. Render-API, Neon och SSH till produkttjänsten nås. Datorns
+    befintliga publika SSH-nyckel är registrerad efter uttryckligt godkännande;
+    ingen privat nyckel överfördes. Full aktuell fryst export/paritet återstår.
 - [ ] **P4 — en Studio:** native administration ersätter iframe; navigation,
   rollstyrd kontohantering (lägg till/spärra/ta bort enligt nuvarande livscykel)
   och speladresser är integrerade. Bevis: login, callback/launch, alla roller,
@@ -237,7 +270,12 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   - [x] Native administrationskomponent skriven: sex lokala grupper, rollstyrda
     formulär, serverannonserade aktiva actions, strängrevision/CAS och bevarade
     formulärutkast. Inga iframe- eller parallella gamla menyer inuti komponenten.
-    Funktionsluckor visas uttryckligen. Drift använder ännu den tidigare ytan.
+    Konto-/partnerformulären omfattar nu invite/resend och create/rotate/revoke/
+    launch/demo-credit. Engångsnycklar visas endast i en separat tillfällig
+    resultatvy och tas bort vid omladdning, gruppbyte, behörighetsändring eller
+    logout; partnerlistan behåller bara godkänd metadata. Native login och
+    lösenordsval finns på `/studio/login` respektive `/studio/set-password`.
+    Drift använder ännu den tidigare ytan.
 - [ ] **P5 — API på Vercel:** Studio/admin använder P2/P3 utan beständig lokal
   disk. Render-spelet läser samma policy och får erforderlig spelkonfigprojektion.
   Bevis: sparning från Studio följs av spelets kvitterade revision, utan iframe,
@@ -248,16 +286,44 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     begränsad JSON och explicita extra gates. Config/room/pit/tournament använder
     repository-CAS; kontoläsning, atomiskt skapa spelare och BO-roll/remove finns.
     Inga kunddata eller providerhemligheter går via klientprops.
-  - [ ] Komplettera native invite/resend, partnerfunktioner och spelarstatus
-    inklusive Render-runtime cancellation; exakt tier-idle-validering, medie-
-    review och spelkonfigprojektion. Produktens gamla skrivare är fortfarande aktiva.
-    `CROUPIER_STUDIO_NATIVE_ADMIN` får inte aktiveras innan detta och importen verifierats.
+  - [x] Konto-/partner-/authhandlers implementerade utan livekontoskrivning:
+    inbjudan/omskick använder befintliga Neon-identiteter och atomiska, hashade
+    engångstokens; mail visas som anslutet endast med serverns konfigurerade
+    sändare. Login använder befintligt lösenord/signern, delad beständig begränsning
+    av försök och aktuell role/fingerprint/auth_epoch. Logout/lösenordsbyte
+    återkallar Lab-sessioner och handoffs; utestående äldre lösenordslänkar kan
+    fortfarande användas en gång. Spelarstatus och partner rotate/revoke/launch/
+    credit kräver en verklig Render-kommandogräns och registreras inte utan den.
+    Vercel gör inte saldo- eller runtimeändringar följda av lokal no-op cancellation.
+    57 isolerade konto/auth/partner-/UI-prov och Lab-TypeScript PASS, inklusive
+    samtidig tokenförbrukning, rollback, origin, roller, kapacitetsgräns och
+    engångsresultatens rensning. Aktuellt isolerat PostgreSQL-/HTTPS-/restartprov
+    PASS: 27 acceptansgrupper samt runnerns isoleringsguard, däribland dessa
+    login/invite/resend/lösenord/logout/roll-revoke-flöden. Ingen verklig
+    mailleverans eller produktionsaktivering följer av det provet.
+  - [ ] Verifiera aktuell inkoppling av native konto-/partner-/authfunktioner och
+    spelarstatus inklusive Render-runtime cancellation; medie-review,
+    gemensam spelprojektion och diskfri Studio-start. Den nya exakta tier/idle-
+    valideringen och konto-/auth-/Render-kommandogränsen implementeras parallellt.
+    Spelkonsumenter läser samma sparade projektrevision; Render behåller kort,
+    wallet och runtimeauktoritet. Gamla BO-konfigskrivare måste spärras vid
+    Neon-källbyte så att bo.json inte blir en andra writer. Produktdriften har
+    ännu inte bytt källa. Båda native-/policyflaggorna förblir av tills aktuell
+    import, verkliga handlers och isolerad SQL/HTTPS/restartacceptans verifierats.
 - [ ] **P6 — helhets-QA:** isolerad backend/databas/hostname, ett koordinerat
   serverpar. Fyra dealers med två faktiska plays, sparade revisioner/native-kvitton,
   auth/revoke, privata media och strömtransport. OpenClaw-roller, bild/transkriberat
   ljud/chatt samt båda GPU-vägar verifieras utan oavsiktlig ändring. Fixtures först;
   betalda liveprov kräver uttryckligt avgränsad budget/auktorisation. Fysisk kamera/
   mikrofon/mobil/Safari och mänsklig läppsynk redovisas separat om de återstår.
+  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 27 acceptansgrupper samt
+    runnerguard PASS i tillfällig lokal PostgreSQL och kortlivad HTTPS-fixture.
+    Revisionskonflikt/rollback, spelkonfigprojektion, auth/engångstoken/epoch,
+    roll-revoke, signerad actor/scope och återspelad walletnonce täcks. Nytt
+    anrop med återspelad nonce får 409 och skapar ingen dubbel kreditering.
+    Egna processer, certifikat och temporär databas städas i runnerns finally.
+    Inga riktiga konton, molndatabaser, providermejl eller betalda jobb används.
+    Full P6 med fyra dealers, live ström/GPU och mänsklig acceptans består öppet.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
   genomförandeuppdrag. Frys aktuella skrivare där det behövs, importera endast
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
@@ -271,6 +337,14 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   inte fröprojekt/nollbudget/diskfallback. En ren Git-diff bevisar inte att en
   molnresurs är borta. Äldre 12 `croupier/videos`-alias kräver referensprov i
   både aktuellt uppladdningsregister och historik före borttagning.
+  - Riktad källkontroll 3 oktober: iframe-komponenten `BackofficePanel` används
+    fortfarande av `/administration` när nativeflaggan är av. Render har kvar
+    BO-login/API och bo.json-vägar för samma aktiva läge. `StudioPage`/`Studio`
+    används av tree, activity, events, guide, probe och videos; borttagning av
+    hela komponenten nu skulle även ta den avancerade editorn. Dessa är konkreta
+    cutover-/ersättningsmål, inte verifierat oanvända filer. Ingen av dem har
+    blindraderats. Avvecklingen ska verifiera faktisk routing efter källbytet,
+    samt hantera återstående aktiva profiler, transport och kostnadsjournaler.
 - [ ] **P9 — slutleverans:** fem docs uppdaterade, en John-handoff, aktuella
   miljönamn/guide, endast taskägda commits på main, CI och avsedd drift-SHA
   kontrollerade. Kvarvarande mänsklig acceptans/blockerare uttryckligen öppna.

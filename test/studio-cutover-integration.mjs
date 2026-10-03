@@ -1,0 +1,314 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createServer, request as httpsRequest } from 'node:https';
+import { createHash, randomBytes, randomUUID, scryptSync } from 'node:crypto';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createPostgresStore } from '../web/storage/postgres-store.mjs';
+import { createStudioRepository } from '../web/storage/studio-repository.mjs';
+import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';
+import { createSeedProject } from '../lab/lib/studio-model.mjs';
+import { createStudioNativeAuth } from '../lab/lib/studio-native-auth.mjs';
+import { createStudioNativeAuthActions, createStudioLoginRateLimit } from '../lab/lib/studio-native-auth-actions.mjs';
+import { createStudioAdminData } from '../lab/lib/studio-admin-data.mjs';
+import { createStudioAdminAccounts } from '../lab/lib/studio-admin-accounts.mjs';
+import { createStudioAdminApi } from '../lab/lib/studio-admin-api.mjs';
+import { createStudioDocumentApi } from '../lab/lib/studio-document-api.mjs';
+import { createStudioGameAuthority, studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
+import { createStudioGameCommandApi } from '../web/studio-game-commands.mjs';
+import { createPlayerAdministration } from '../web/storage/player-administration.mjs';
+import { planStudioMigrations } from '../ops/neon-studio/migrations.mjs';
+import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
+import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
+import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
+import { GENERATED_SPEECH_DEFAULTS } from '../web/generated-speech-provider.mjs';
+import { createSpeechBlobArtifacts } from '../web/speech-blob-artifacts.mjs';
+
+// This fixture accepts only a fresh user-owned localhost cluster. It never reads
+// production environment/config files and is not a product/lab devserver.
+export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
+  assert.equal(typeof pool?.query, 'function'); assert.equal(typeof restart, 'function');
+  const target = (await pool.query("SELECT host(inet_server_addr()) AS address,current_user AS role,current_database() AS database,current_setting('listen_addresses') AS listeners")).rows[0];
+  assert.deepEqual(target, { address: '127.0.0.1', role: 'studio_qa', database: 'postgres', listeners: '127.0.0.1' });
+  assert.ok(tls?.key && tls?.cert);
+  const checks = [], scope = { environment: `https_qa_${randomBytes(6).toString('hex')}`, workspaceId: 'croupier' };
+  async function check(name, work) { await work(); checks.push(name); console.log(`PASS ${name}`); }
+  const password = `fixture-${randomBytes(18).toString('hex')}`, salt = randomBytes(16).toString('hex'), signer = randomBytes(32).toString('hex');
+  const names = ['qa-superadmin', 'qa-reader'];
+  await pool.query('INSERT INTO croupier_auth.meta(k,v) VALUES ($1,$2)', ['jwt_secret', signer]);
+  for (const [index, username] of names.entries()) await pool.query('INSERT INTO croupier_auth.users(username,email,salt,hash,role,created_at) VALUES ($1,$2,$3,$4,$5,$6)',
+    [username, `${username}@example.invalid`, salt, scryptSync(password, salt, 64).toString('hex'), index === 0 ? 'superadmin' : 'reader', new Date().toISOString()]);
+  const idle = dealerId => ({ dealerId, engineKey: 'idle-1/idle/idle', available: true });
+  let runtime, cancellations = 0, server, studioOrigin, backendOrigin, cookies = {};
+  let lastMail;
+  const commandSecret = randomBytes(32).toString('hex'), mail = { send: async message => { lastMail = message; return { sent: true }; } };
+  const transport = (url, options = {}) => new Promise((yes, no) => {
+    const destination = new URL(url);
+    if (![studioOrigin, backendOrigin].includes(destination.origin)) return no(new Error('fixture_external_request_rejected'));
+    const outgoing = httpsRequest(destination, { method: options.method || 'GET', headers: options.headers, ca: tls.cert,
+      lookup: (_name, options, callback) => callback(null, options.all ? [{ address: '127.0.0.1', family: 4 }] : '127.0.0.1', 4),
+      signal: options.signal }, incoming => {
+      const chunks = []; let bytes = 0;
+      incoming.on('data', chunk => { bytes += chunk.length; if (bytes > 2 * 1024 * 1024) incoming.destroy(new Error('fixture_response_limit')); else chunks.push(chunk); });
+      incoming.once('error', no);
+      incoming.once('end', () => {
+        const headers = new Headers(); for (const [key, value] of Object.entries(incoming.headers)) for (const item of Array.isArray(value) ? value : [value]) if (item !== undefined) headers.append(key, String(item));
+        yes(new Response(Buffer.concat(chunks), { status: incoming.statusCode, headers }));
+      });
+    });
+    outgoing.once('error', no); outgoing.end(options.body);
+  });
+  const call = (path, { method = 'GET', body, cookie = cookies.admin, origin = studioOrigin, headers = {} } = {}) => transport(`${studioOrigin}${path}`, {
+    method, body: body === undefined ? undefined : JSON.stringify(body), headers: { ...(cookie ? { cookie } : {}),
+      ...(method === 'GET' ? {} : { 'content-type': 'application/json', origin, 'sec-fetch-site': 'same-origin' }), ...headers },
+  });
+  async function setup() {
+    const store = createPostgresStore({ pool }); await store.db.assertInstalled();
+    const repository = createStudioRepository({ pool, scope }), gamePolicy = createStudioGamePolicy({ repository, scope, dealerIdle: idle });
+    const authorize = createStudioNativeAuth({ boDb: store.boDb, scope });
+    const config = { scope, allowedOrigins: [studioOrigin], publicHosts: [new URL(studioOrigin).host], apiBase: '/studio/api/admin', authBase: '/studio/api/auth' };
+    const gameAuthority = createStudioGameAuthority({ env: { CROUPIER_PUBLIC_ORIGIN: studioOrigin, CROUPIER_BACKEND_ORIGIN: backendOrigin, CROUPIER_VERCEL_INGRESS_SECRET: commandSecret }, scope, fetchImpl: transport });
+    const data = createStudioAdminData({ db: store.db, boDb: store.boDb, repository, scope, gamePolicy, canAssignDealer: gamePolicy.canAssignDealer });
+    const accounts = createStudioAdminAccounts({ boDb: store.boDb, scope, gameAuthority, mail, publicOrigin: studioOrigin });
+    const handlers = new Map([...data.handlers, ...accounts.handlers]), gates = new Map([...data.gates, ...accounts.gates]);
+    const admin = createStudioAdminApi({ authorize, handlers, gates, allowedOrigins: config.allowedOrigins, publicHosts: config.publicHosts,
+      mutationTransaction:work => store.boDb.transaction(work) });
+    const auth = createStudioNativeAuthActions({ boDb: store.boDb, scope, authorize, mail, publicOrigin: studioOrigin,
+      rateLimit: createStudioLoginRateLimit({ boDb: store.boDb }), clientAddress: () => 'fixture-client' });
+    const document = createStudioDocumentApi({ repository, authorize, config, gamePolicy, mutationTransaction:work => store.boDb.transaction(work),
+      // Only animation labels are changed by this fixture; no new media binding
+      // is accepted or marked reviewed by this synthetic verification callback.
+      validateProjectBindings: value => { assert.ok(value.lines.every(line => line.variants.every(variant => variant.videoGenerationId === null))); } });
+    const players = createPlayerAdministration({ db: store.db });
+    const command = createStudioGameCommandApi({ scope, secret: commandSecret, publicOrigin: studioOrigin, authorize, boDb: store.boDb,
+      execute: async ({ action, body, actor }) => {
+        if (action === 'players/status') { const player = await players.setStatus({ ...body, actor: actor.user }); if (player.changed && body.status !== 'active') cancellations++; return { ok: true, player }; }
+        if (action === 'apikeys/credit') {
+          // Synthetic engine-owned wallet mutation proves nonce + domain atomicity.
+          await store.db.prepare('UPDATE players SET balance=balance+? WHERE id=?').run(body.amount, body.playerId);
+          await store.db.prepare('INSERT INTO transactions(player_id,type,amount,currency,meta,at) VALUES (?,?,?,?,?,?)')
+            .run(body.playerId, 'qa-credit', body.amount, 'USD', 'isolated-engine-command', new Date().toISOString());
+          return { ok: true };
+        }
+        throw Object.assign(new Error('fixture_action_unavailable'), { statusCode: 503 });
+      } });
+    runtime = { store, repository, gamePolicy, authorize, admin, auth, document, command };
+  }
+  server = createServer(tls, async (incoming, outgoing) => {
+    try {
+      const chunks = []; let size = 0; for await (const chunk of incoming) { size += chunk.length; if (size > 2 * 1024 * 1024) throw new Error('fixture_body_limit'); chunks.push(chunk); }
+      const raw = Buffer.concat(chunks), headers = new Headers(incoming.headers), path = incoming.url.split('?')[0];
+      const engine = incoming.headers.host === new URL(backendOrigin).host;
+      if (engine && incoming.headers['x-croupier-vercel-secret'] !== commandSecret) { outgoing.writeHead(403); outgoing.end(); return; }
+      // The trusted ingress supplies the exact public host to the Render API.
+      if (engine) headers.set('host', new URL(studioOrigin).host);
+      const request = new Request(`${studioOrigin}${incoming.url}`, { method: incoming.method, headers,
+        ...(!['GET', 'HEAD'].includes(incoming.method) ? { body: raw } : {}) });
+      let result;
+      if (path === '/api/studio-game/command') result = await runtime.command(request);
+      else if (path.startsWith('/studio/api/auth/')) result = await runtime.auth.handle(request);
+      else if (['/studio/api/project', '/studio/api/social'].includes(path)) result = await runtime.document.handle(request);
+      else if (path === '/api/bo/config') result = Response.json(await runtime.gamePolicy.readGameConfiguration());
+      else result = await runtime.admin.handle(request);
+      outgoing.writeHead(result.status, Object.fromEntries(result.headers)); outgoing.end(Buffer.from(await result.arrayBuffer()));
+    } catch { outgoing.writeHead(503, { 'content-type': 'application/json' }); outgoing.end('{"error":"fixture_unavailable"}'); }
+  });
+  await new Promise((yes, no) => { server.once('error', no); server.listen(0, '127.0.0.1', yes); });
+  const port = server.address().port;
+  studioOrigin = `https://studio.croupier-qa.invalid:${port}`; backendOrigin = `https://render.croupier-qa.invalid:${port}`;
+  try {
+    await setup();
+    const adminValue = { tiers: { classic: 'vera', high: 'astrid', vip: 'amira' }, rooms: [],
+      pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 }, tournaments: [] };
+    await runtime.repository.initializeDocument('project', { value: createSeedProject(), revision: 'https-project-initial', actor: 'fixture-import' });
+    await runtime.repository.initializeDocument('administration', { value: adminValue, revision: 'https-admin-initial', actor: 'fixture-import' });
+    await check('current product-v1 and Studio001/002 SQL are checksum-verified', async () => {
+      await runtime.store.db.assertInstalled(); const plan = await planStudioMigrations({ pool });
+      assert.deepEqual(plan.applied.map(row => row.version), ['001', '002']); assert.equal(plan.toApply.length, 0);
+    });
+    await check('HTTPS real native login authenticates current Neon roles and never grants reader project writes', async () => {
+      for (const [key, user] of [['admin', names[0]], ['reader', names[1]]]) {
+        const result = await call('/studio/api/auth/login', { method: 'POST', body: { user, pass: password }, cookie: '' });
+        assert.equal(result.status, 200); cookies[key] = result.headers.get('set-cookie').split(';')[0];
+      }
+      assert.equal((await call('/studio/api/project', { cookie: '' })).status, 401);
+      assert.equal((await call('/studio/api/project', { cookie: cookies.reader })).status, 403);
+      assert.equal((await call('/studio/api/admin/config', { cookie: cookies.reader })).status, 200);
+    });
+    let updatedProject, previousProjection;
+    await check('Studio HTTPS save is observed by Render with exact saved revision and CAS conflict', async () => {
+      previousProjection = await (await call('/api/bo/config')).json();
+      const source = (await (await call('/studio/api/project')).json()).project, draft = structuredClone(source); draft.lines[0].label = 'HTTPS saved label';
+      const save = await call('/studio/api/project', { method: 'PUT', body: { project: draft, expectedRevision: source.revision } });
+      assert.equal(save.status, 200); updatedProject = (await save.json()).project;
+      assert.notEqual(updatedProject.revision, source.revision);
+      const config = await (await call('/api/bo/config')).json(); assert.equal(config.projectRevision, updatedProject.revision); assert.notEqual(config.revision, previousProjection.revision);
+      assert.equal(config.configurationSource, 'neon/croupier_studio');
+      assert.equal((await call('/studio/api/project', { method: 'PUT', body: { project: draft, expectedRevision: source.revision } })).status, 409);
+      assert.equal((await runtime.repository.listDocumentHistory('project')).length, 1);
+    });
+    await check('actual two-deployment concurrent saves have one winner with history and audit committed together', async () => {
+      const documents = await runtime.gamePolicy.readSaved(), another = createStudioGamePolicy({ repository: createStudioRepository({ pool, scope }), scope, dealerIdle: idle });
+      const results = await Promise.allSettled([runtime.gamePolicy, another].map((policy, index) => policy.saveAdministration({ ...documents.administration,
+        tiers: { ...documents.administration.tiers, classic: index ? 'mei' : 'astrid' } }, documents.administrationRevision, { actor: names[0] })));
+      assert.equal(results.filter(result => result.status === 'fulfilled').length, 1); assert.equal(results.filter(result => result.status === 'rejected' && result.reason.code === 'studio_conflict').length, 1);
+      assert.equal((await runtime.repository.listDocumentHistory('administration')).length, 1);
+      assert.equal((await pool.query('SELECT count(*)::int n FROM croupier_studio.audit_events WHERE environment_id=$1 AND action=$2', [scope.environment, 'save_document'])).rows[0].n, 2);
+    });
+    let player;
+    await check('native account creation and invite/resend execute actual SQL with isolated mail fixture', async () => {
+      const created = await call('/studio/api/admin/players/create', { method: 'POST', body: { username: 'isolated-user', password, name: 'Isolated user' } });
+      assert.equal(created.status, 200); player = (await created.json()).player;
+      assert.equal((await runtime.store.db.prepare('SELECT balance FROM players WHERE id=?').get(player.id)).balance, 1000);
+      const invited = await call('/studio/api/admin/users/invite', { method: 'POST', body: { email: 'invite@example.invalid', role: 'staff' } });
+      assert.equal(invited.status, 200); assert.equal((await invited.json()).emailSent, true);
+      assert.equal((await call('/studio/api/admin/users/resend', { method: 'POST', body: { username: 'invite@example.invalid' } })).status, 200);
+      assert.equal((await pool.query('SELECT count(*)::int n FROM croupier_auth.tokens WHERE username=$1', ['invite@example.invalid'])).rows[0].n, 1);
+      const invitationToken = new URL(lastMail.link).searchParams.get('t');
+      const setupPassword = await call('/studio/api/auth/set-password', { method: 'POST', cookie: '', body: { token: invitationToken, pass: password } });
+      assert.equal(setupPassword.status, 200);
+      assert.equal((await call('/studio/api/auth/set-password', { method: 'POST', cookie: '', body: { token: invitationToken, pass: password } })).status, 400);
+      assert.equal((await pool.query('SELECT count(*)::int n FROM croupier_auth.tokens WHERE username=$1', ['invite@example.invalid'])).rows[0].n, 0);
+      assert.equal((await call('/studio/api/auth/login', { method: 'POST', cookie: '', body: { user: 'invite@example.invalid', pass: password } })).status, 200);
+    });
+    await check('signed Render status command calls cancellation and preserves authoritative balance', async () => {
+      const result = await call('/studio/api/admin/players/status', { method: 'POST', body: { playerId: player.id, status: 'blocked', reason: 'isolated QA' } });
+      assert.equal(result.status, 200); assert.equal((await result.json()).authority, 'render'); assert.equal(cancellations, 1);
+      const stored = await runtime.store.db.prepare('SELECT status,balance,account_epoch FROM players WHERE id=?').get(player.id);
+      assert.equal(stored.status, 'blocked'); assert.equal(stored.balance, 1000); assert.equal(stored.account_epoch, 1);
+    });
+    await check('Render command replay rejects a second SQL credit in the same nonce transaction', async () => {
+      const command = { action: 'apikeys/credit', actor: { user: names[0], role: 'superadmin' }, body: { id: 'qa-partner', playerId: player.id, amount: 25 }, commandId: randomUUID(), scope };
+      const raw = JSON.stringify(command), timestamp = String(Date.now()), headers = { cookie: cookies.admin, origin: studioOrigin, 'content-type': 'application/json',
+        'x-croupier-vercel-secret': commandSecret, 'x-forwarded-host': new URL(studioOrigin).host,
+        'x-croupier-studio-timestamp': timestamp, 'x-croupier-studio-signature': studioCommandSignature(commandSecret, timestamp, raw) };
+      assert.equal((await transport(`${backendOrigin}/api/studio-game/command`, { method: 'POST', headers, body: raw })).status, 200);
+      assert.equal((await transport(`${backendOrigin}/api/studio-game/command`, { method: 'POST', headers, body: raw })).status, 409);
+      assert.equal((await runtime.store.db.prepare('SELECT balance FROM players WHERE id=?').get(player.id)).balance, 1025);
+      assert.equal((await pool.query("SELECT count(*)::int n FROM croupier_game.transactions WHERE player_id=$1 AND type='qa-credit'", [player.id])).rows[0].n, 1);
+    });
+    await check('Host/Origin/scope/actor tampering rejects without changing saved policy or wallet', async () => {
+      assert.equal((await call('/studio/api/admin/tier', { method: 'POST', body: {}, origin: 'https://wrong.invalid' })).status, 403);
+      // HTTPS itself rejects an invalid Host/SNI before application routing.
+      await assert.rejects(call('/studio/api/project', { headers: { host: 'wrong.invalid' } }), error => error.code === 'ERR_TLS_CERT_ALTNAME_INVALID');
+      assert.equal((await call('/studio/api/project', { headers: { 'x-forwarded-host': 'wrong.invalid' } })).status, 403);
+      const other = createStudioGamePolicy({ repository: createStudioRepository({ pool, scope: { ...scope, workspaceId: 'wrong' } }), scope: { ...scope, workspaceId: 'wrong' }, dealerIdle: idle });
+      await assert.rejects(other.readSaved(), error => error.code === 'studio_game_policy_missing');
+      for (const tampering of [{ actor: { user: 'forged-user', role: 'superadmin' } }, { scope: { ...scope, workspaceId: 'wrong' } }]) {
+        const raw = JSON.stringify({ action: 'apikeys/credit', actor: { user: names[0], role: 'superadmin' }, body: { id: 'qa-partner', playerId: player.id, amount: 100 },
+          commandId: randomUUID(), scope, ...tampering }), timestamp = String(Date.now());
+        const denied = await transport(`${backendOrigin}/api/studio-game/command`, { method: 'POST', body: raw,
+          headers: { cookie: cookies.admin, origin: studioOrigin, 'content-type': 'application/json', 'x-croupier-vercel-secret': commandSecret,
+            'x-forwarded-host': new URL(studioOrigin).host, 'x-croupier-studio-timestamp': timestamp,
+            'x-croupier-studio-signature': studioCommandSignature(commandSecret, timestamp, raw) } });
+        assert.equal(denied.status, 403);
+      }
+      assert.equal((await runtime.store.db.prepare('SELECT balance FROM players WHERE id=?').get(player.id)).balance, 1025);
+    });
+    const savedBeforeRestart = await runtime.gamePolicy.readSaved();
+    await check('actual cluster restart preserves saved policy, native auth, account balance, history and nonce', async () => {
+      pool = await restart(); await setup();
+      assert.deepEqual(await runtime.gamePolicy.readSaved(), savedBeforeRestart);
+      assert.equal((await call('/studio/api/admin/config')).status, 200);
+      assert.equal((await runtime.store.db.prepare('SELECT balance,status FROM players WHERE id=?').get(player.id)).balance, 1025);
+      assert.equal((await runtime.repository.listDocumentHistory('project')).length, 1);
+      assert.equal((await pool.query("SELECT count(*)::int n FROM croupier_auth.meta WHERE k LIKE 'studio-command:%'")).rows[0].n, 2);
+    });
+    await check('role revoke and logout invalidate real JWT across deployments after restart', async () => {
+      await pool.query('UPDATE croupier_auth.users SET role=$1 WHERE username=$2', ['staff', names[1]]);
+      assert.equal((await call('/studio/api/admin/config', { cookie: cookies.reader })).status, 401);
+      assert.equal((await call('/studio/api/auth/logout', { method: 'POST', body: {} })).status, 200);
+      assert.equal((await call('/studio/api/admin/config')).status, 401);
+    });
+    await check('schema-checksum mismatch fails closed and never creates replacement disk/default state', async () => {
+      const checksum = (await pool.query("SELECT checksum FROM croupier_studio.storage_migrations WHERE version='002'")).rows[0].checksum;
+      await pool.query("UPDATE croupier_studio.storage_migrations SET checksum=$1 WHERE version='002'", ['0'.repeat(64)]);
+      await assert.rejects(planStudioMigrations({ pool }));
+      await pool.query("UPDATE croupier_studio.storage_migrations SET checksum=$1 WHERE version='002'", [checksum]);
+      assert.deepEqual(await runtime.gamePolicy.readSaved(), savedBeforeRestart);
+    });
+    await check('active speech callers use actual SQL reservations, package identity and restart uncertainty without disk journals', async () => {
+      const directory = await mkdtemp(join(tmpdir(), 'croupier-cutover-speech-'));
+      const environmentId = `speech_${randomBytes(6).toString('hex')}`;
+      let stamp = Date.parse('2026-10-03T23:59:00Z'), connected = false, paid = 0, packageCalls = 0;
+      let journal = await createSpeechJournal({ pool, environmentId, now:() => stamp });
+      const managers = [];
+      const speechInput = { owner:'real-sql-fixture-owner', requestId:'real-sql-request', dealerId:'astrid', text:'Exact synthetic speech.', beforeCostly:async () => {} };
+      const config = { directory, apiKey:'synthetic-no-live-provider', endpointId:'isolated-provider', origin:'https://render.croupier-qa.invalid',
+        workerSecret:'isolated-worker-no-live-secret-at-least-32', reserveUsd:'0.20', dailyBudgetUsd:'1' };
+      const response = value => new Response(JSON.stringify(value), { headers:{ 'content-type':'application/json' } });
+      const manager = (uncertain = false) => {
+        const value = createSpeechSessionManager(config, { journal, journalRequired:true, now:() => stamp,
+          workerState:() => ({ workers:Number(connected), available:Number(connected), busy:0 }), stopWorker:() => { connected = false; }, sleep:async ms => { stamp += ms; },
+          fetchImpl:async (url) => {
+            if (url.endsWith('/run')) { paid++; if (uncertain) throw Error('fixture lost paid response'); return response({ id:'known-fixture-job', status:'IN_QUEUE' }); }
+            if (url.includes('/status/')) { connected = true; return response({ id:'known-fixture-job', status:'IN_PROGRESS' }); }
+            if (url.includes('/cancel/')) { connected = false; return response({ id:'known-fixture-job', status:'CANCELLED' }); }
+            assert.fail('unexpected fixture provider endpoint');
+          } }); managers.push(value); return value;
+      };
+      const hash = value => createHash('sha256').update(value).digest('hex');
+      const artifactValues = new Map(); let blobReads = 0;
+      const blobMetadata = (pathname, value) => ({ pathname, url:`https://fixture.private.blob.vercel-storage.com/${pathname}`,
+        size:value.bytes.length, contentType:value.contentType });
+      const artifacts = createSpeechBlobArtifacts({ env:{ CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-storage-token' }, blobClient:{
+        put:async (pathname, bytes, options) => {
+          assert.equal(options.access, 'private'); assert.equal(options.allowOverwrite, false); assert.equal(options.addRandomSuffix, false);
+          assert.equal(artifactValues.has(pathname), false);
+          const value = { bytes:Buffer.from(bytes), contentType:options.contentType }; artifactValues.set(pathname, value);
+          return blobMetadata(pathname, value);
+        },
+        get:async (pathname, options) => {
+          assert.equal(options.access, 'private'); assert.equal(options.useCache, false); blobReads++;
+          const value = artifactValues.get(pathname); if (!value) return null;
+          return { statusCode:200, stream:new Response(value.bytes).body, blob:blobMetadata(pathname, value) };
+        },
+        del:async pathname => { artifactValues.delete(pathname); },
+      } });
+      const files = () => createGeneratedSpeechService({ directory }, { journal, journalRequired:true, artifacts, provider:{
+        generate:async ({ text, beforeCostly }) => {
+          await beforeCostly(); packageCalls++;
+          const audio = Buffer.from(`fixture-audio:${text}`), video = Buffer.from(`fixture-video:${text}`);
+          return { exactText:text, ...GENERATED_SPEECH_DEFAULTS, provider:{ kind:'cartesia-runpod' },
+            audio:{ bytes:audio, sha256:hash(audio), durationMs:2000, contentType:'audio/wav' },
+            video:{ bytes:video, sha256:hash(video), fps:24, frameCount:48, contentType:'video/mp4' } };
+        } } });
+      try {
+        const absent = manager();
+        await assert.rejects(absent.ensure(speechInput), { code:'generated_speech_budget_policy_missing' });
+        assert.equal(paid, 0); await absent.close();
+        await journal.initializeBudgetPolicy({ dailyBudgetMicroUsd:1000000, confirmation:'verified-new-empty-cost-journal' });
+        const active = manager(); await Promise.all([active.ensure(speechInput), active.ensure(speechInput)]); assert.equal(paid, 1);
+        const charges = (await pool.query('SELECT day::text,reserved_micro_usd::text FROM croupier_studio.gpu_reservations WHERE environment_id=$1 ORDER BY day', [environmentId])).rows;
+        assert.deepEqual(charges, [{ day:'2026-10-03', reserved_micro_usd:'200000' }, { day:'2026-10-04', reserved_micro_usd:'200000' }]);
+        await active.close();
+        const cached = await files().generate(speechInput); assert.equal(packageCalls, 1);
+        assert.equal(artifactValues.size, 2); assert.equal(blobReads, 2, 'private save readback verifies exact bytes before SQL completion');
+        assert.equal(hash((await files().media({ id:cached.packageId.slice('generated-'.length), kind:'audio', owner:speechInput.owner })).bytes), cached.audio.sha256);
+        await assert.rejects(files().media({ id:cached.packageId.slice('generated-'.length), kind:'audio', owner:'foreign' }), { code:'generated_speech_not_found' });
+        assert.equal(blobReads, 3, 'foreign owner is denied by SQL before private Blob access');
+        assert.deepEqual(await files().generate(speechInput), cached); assert.equal(packageCalls, 1);
+        await assert.rejects(files().generate({ ...speechInput, text:'Changed text.' }), { code:'generated_speech_request_conflict' });
+        const uncertain = manager(true); await assert.rejects(uncertain.ensure(speechInput)); assert.equal(paid, 2); await uncertain.close();
+        assert.equal((await pool.query("SELECT count(*)::int n FROM croupier_studio.gpu_sessions WHERE environment_id=$1 AND state='submission_uncertain'", [environmentId])).rows[0].n, 1);
+        pool = await restart(); await setup(); stamp += SPEECH_SESSION_POLICY.reservationWindowMs + 1;
+        journal = await createSpeechJournal({ pool, environmentId, now:() => stamp });
+        await assert.rejects(manager().ensure(speechInput), { code:'generated_speech_session_submission_uncertain' }); assert.equal(paid, 2);
+        assert.deepEqual(await files().generate(speechInput), cached); assert.equal(packageCalls, 1);
+        assert.equal(hash((await files().media({ id:cached.packageId.slice('generated-'.length), kind:'video', owner:speechInput.owner })).bytes), cached.video.sha256);
+        assert.equal(blobReads, 4, 'new operation reads private Blob after actual SQL restart');
+        assert.equal((await pool.query('SELECT sum(reserved_micro_usd)::text used FROM croupier_studio.gpu_reservations WHERE environment_id=$1', [environmentId])).rows[0].used, '800000');
+        assert.equal((await readdir(directory)).filter(name => name.endsWith('.json')).length, 0);
+      } finally { await Promise.allSettled(managers.map(value => value.close())); await rm(directory, { recursive:true, force:true }); }
+    });
+    return { checks, pool };
+  } finally { await new Promise(yes => server.close(yes)); server.closeAllConnections(); }
+}
+
+test('latest SQL/HTTPS fixture rejects a foreign database before any mutation or listener', async () => {
+  const calls = [];
+  const pool = { query: async sql => { calls.push(sql); return { rows: [{ address: '10.0.0.1', role: 'production', database: 'product', listeners: '*' }] }; } };
+  await assert.rejects(runStudioCutoverChecks({ pool, restart: async () => pool }), assert.AssertionError);
+  assert.equal(calls.length, 1); assert.match(calls[0], /^SELECT /);
+});

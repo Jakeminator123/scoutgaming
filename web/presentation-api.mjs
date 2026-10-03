@@ -34,8 +34,10 @@ export function presentationInput(event, published) {
 
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data'), 'videos') },
-  select = selectPresentation, legacyOptions } = {}) {
+  select = selectPresentation, legacyOptions, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
+  legacyControls = project => legacyClipControls(project, { ...legacyOptions, ...(env.CROUPIER_DATA_DIR ? { dataDirectory: env.CROUPIER_DATA_DIR } : {}) }) } = {}) {
   const decisions = new Map();
+  const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
   let adviceService;
   return async function handle(req, res, pathname, playerId) {
@@ -55,20 +57,20 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         const trustedProxyOrigin = publicOrigin && exactHttpsOrigin(frontendOrigin)
           && [new URL(publicOrigin).host, new URL(frontendOrigin).host].includes(req.headers.host)
           ? frontendOrigin : null;
-        const response = await getVideoResponse(id,
+        const response = await (videoResponse || ((videoId, request) => getVideoResponse(videoId, request, { ...registryOptions, trustedProxyOrigin })))(id,
           new Request(`${publicOrigin || 'http://localhost'}${pathname}`, { method: req.method, headers: req.headers }),
-          { ...registryOptions, trustedProxyOrigin });
+        );
         res.writeHead(response.status, Object.fromEntries(response.headers));
         if (response.body) Readable.fromWeb(response.body).on('error', () => res.destroy()).pipe(res); else res.end();
         return true;
       }
       if (pathname === '/api/presentation/config' && req.method === 'GET') {
-        const [project, inventory] = await Promise.all([store.load(), loadVideoRegistry(registryOptions)]);
-        json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource: 'lab/project.json', idlePolicy: project.idlePolicy, inventory,
+        const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
+        json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: project.idlePolicy, inventory,
           defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
       }
       if (pathname === '/api/presentation/legacy-config' && req.method === 'GET') {
-        const controls = await legacyClipControls(await store.load(), { ...legacyOptions, ...(env.CROUPIER_DATA_DIR ? { dataDirectory: env.CROUPIER_DATA_DIR } : {}) });
+        const controls = await legacyControls(await store.load());
         json(200, controls.runtime); return true;
       }
       if (!['/api/presentation/select', '/api/presentation/idle-advice'].includes(pathname) || req.method !== 'POST') fail('Unknown presentation endpoint', 404);
@@ -77,12 +79,12 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       const body = JSON.parse(raw);
       if (pathname === '/api/presentation/idle-advice') {
         const project = await store.load();
-        adviceService ??= createIdleAdviceServer({ settings, registryLoader: () => loadVideoRegistry(registryOptions) });
+        adviceService ??= createIdleAdviceServer({ settings, registryLoader });
         const advise = await adviceService;
         const controller = new AbortController();
         const disconnected = () => { if (!res.writableEnded) controller.abort(); };
         res.once('close', disconnected);
-        try { json(200, { ...await advise({ ...body, project }, { signal: controller.signal }), projectRevision: project.revision, configurationSource: 'lab/project.json' }); }
+        try { json(200, { ...await advise({ ...body, project }, { signal: controller.signal }), projectRevision: project.revision, configurationSource }); }
         finally { res.removeListener('close', disconnected); }
         return true;
       }
@@ -90,7 +92,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
       if (['deal', 'reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
-      const [project, inventory] = await Promise.all([store.load(), loadVideoRegistry(registryOptions)]);
+      const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
       const eventId = prepareDecision(buildRuntimeCatalog(project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;
       const key = JSON.stringify([playerId, body.version, sourceEvent, body.mode, project.revision]);
       if (!decisions.has(key)) {
@@ -100,7 +102,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
           const family = inventory.families.find(item => item.id === video?.familyId);
           const standard = inventory.videos.find(item => family?.standardIds.includes(item.id) && item.available);
           const publicVideo = item => item ? { id: item.id, sha256: item.sha256, fileName: item.fileName, src: `/api/presentation/videos/${item.id}` } : null;
-          return { ...result, video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource: 'lab/project.json' };
+          return { ...result, video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource };
         }));
       }
       json(200, await decisions.get(key));

@@ -67,6 +67,7 @@ export function createStudioMemoryPool() {
               .sort((a, b) => b.replaced_at.localeCompare(a.replaced_at) || a.revision.localeCompare(b.revision)).slice(0, values[3]));
             case 'audit': working.audits.push({ environment_id: values[0], workspace_id: values[1], id: values[2], action: values[3], subject: values[4], revision: values[5], actor: values[6], at: at() }); return result([], 'INSERT');
             case 'read-media': return result(working.media.has(key(values)) ? [working.media.get(key(values))] : []);
+            case 'list-media': return result([...working.media.values()].filter(row => scoped(row, values)).sort((a, b) => a.id.localeCompare(b.id)).slice(0, values[2]));
             case 'insert-media': {
               if (working.media.has(key(values))) throw Object.assign(new Error('duplicate'), { code: '23505' });
               const row = { environment_id: values[0], workspace_id: values[1], id: values[2], revision: values[3], record: JSON.parse(values[4]), updated_at: at() };

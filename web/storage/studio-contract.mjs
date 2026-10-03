@@ -12,7 +12,7 @@ const safeCode = /^(?:studio_|generated_speech_|operator_speech_|invalid_generat
 const id = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const sha = /^[a-f0-9]{64}$/;
-const adminKeys = new Set(['tiers', 'rooms', 'pitboss', 'tournaments', 'voiceReview', 'genVerdicts', 'genLandings']);
+const adminKeys = new Set(['tiers', 'rooms', 'pitboss', 'tournaments', 'voiceReview', 'genVerdicts', 'genLandings', 'legacyClipReview']);
 
 // Public failures contain a fixed code only, never a database/provider message.
 export class StudioStorageError extends Error {

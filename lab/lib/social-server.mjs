@@ -10,10 +10,20 @@ import { generateVoicePreview, voicePreviewStatus } from './voice-preview.mjs';
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
 import { companionRequest, labCompanionIdentity } from './companion-server.mjs';
 import { getGeneratedSpeechService, generatedSpeechStatus, speechVisitor } from './generated-speech-server.mjs';
+import { studioRenderPersistence, assertRenderStudioWritable } from './studio-render-persistence.mjs';
 
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 const settingsNow = () => readSettings({ envFiles: [resolve(LAB_DIR, '../.env'), resolve(LAB_DIR, '.env.local')] });
-export const socialStore = () => createSocialStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR, 'data'));
+export const socialStore = () => ({
+  async load() {
+    const shared = await studioRenderPersistence();
+    return shared ? shared.socialStore.load() : createSocialStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR,'data')).load();
+  },
+  async save(next,revision) {
+    assertRenderStudioWritable();
+    return createSocialStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR,'data')).save(next,revision);
+  },
+});
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 
 function validateLocalReply(reply, input) {
@@ -124,11 +134,12 @@ export async function socialEndpoint(request, { store = socialStore(), service: 
   try {
     assertLocalRequest(request);
     const path = stripLabBasePath(new URL(request.url).pathname);
+    if (path === '/api/social' && request.method === 'PUT') assertRenderStudioWritable();
     const config = settings ?? settingsNow();
-    if (path === '/api/social' && request.method === 'GET') {
+    if (['/api/social','/api/social/status'].includes(path) && request.method === 'GET') {
       const generatedSpeech = speechStatus();
       const speech = generatedSpeech.configured ? speechVisitor(request, { create: true }) : null;
-      const response = jsonResponse({ policy: await store.load(), configured: connectionStatus(config).configured, voiceConfigured: voicePreviewStatus(voiceSettings).configured, generatedSpeech, companionEnabled: config.companionEnabled === true });
+      const response = jsonResponse({ ...(path === '/api/social' ? {policy:await store.load()} : {}), configured: connectionStatus(config).configured, voiceConfigured: voicePreviewStatus(voiceSettings).configured, generatedSpeech, companionEnabled: config.companionEnabled === true });
       if (speech?.cookie) response.headers.append('Set-Cookie', speech.cookie);
       return response;
     }
