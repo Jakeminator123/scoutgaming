@@ -1,5 +1,6 @@
 import { canonicalStudioJson, StudioStorageError, validateActor, validateMediaId, validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
+import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
 
 const fail = (code, statusCode = 503) => { throw new StudioStorageError(code, statusCode); };
@@ -15,6 +16,7 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
   }
   return Object.freeze({async handle(request) {
     try {
+      request = normalizeNativeStudioRequest(request,config);
       assertNativeStudioRequest(request,config);
       const path = new URL(request.url).pathname;
       if (path !== base && !path.startsWith(`${base}/`)) fail('studio_media_unknown',404);

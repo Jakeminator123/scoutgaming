@@ -15,6 +15,7 @@ import { createStudioNativeAuthActions, createStudioLoginRateLimit } from './stu
 import { createStudioGameAuthority } from './studio-game-authority.mjs';
 import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
 import { createStudioUploadService } from './studio-upload-service.mjs';
+import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 
@@ -49,6 +50,7 @@ export function nativeStudioAdminConfiguration(env = process.env) {
 
 export function assertNativeStudioRequest(request, config) {
   if (!config) unavailable();
+  request = normalizeNativeStudioRequest(request, config);
   const url = new URL(request.url);
   if (!config.allowedOrigins.includes(url.origin) || !config.publicHosts.includes(url.host)
     || url.username || url.password || url.pathname.includes('%') || url.search || url.hash) denied();
@@ -134,7 +136,7 @@ function nativeStudioMail(env) {
 
 export async function handleNativeAuthAction(request) {
   try {
-    const config = nativeStudioAdminConfiguration(); assertNativeStudioRequest(request, config);
+    const config = nativeStudioAdminConfiguration(); request = normalizeNativeStudioRequest(request, config); assertNativeStudioRequest(request, config);
     return (await studioNativeRuntime()).authActions.handle(request);
   } catch (error) { return nativeStudioErrorResponse(error); }
 }
@@ -154,13 +156,13 @@ export function nativeStudioErrorResponse(error) {
 
 export async function handleNativeAdmin(request) {
   try {
-    const config = nativeStudioAdminConfiguration(); assertNativeStudioRequest(request, config);
+    const config = nativeStudioAdminConfiguration(); request = normalizeNativeStudioRequest(request, config); assertNativeStudioRequest(request, config);
     return (await studioNativeRuntime()).api.handle(request);
   } catch (error) { return nativeStudioErrorResponse(error); }
 }
 export async function handleNativeSession(request) {
   try {
-    const config = nativeStudioAdminConfiguration(); assertNativeStudioRequest(request, config);
+    const config = nativeStudioAdminConfiguration(); request = normalizeNativeStudioRequest(request, config); assertNativeStudioRequest(request, config);
     if (request.method !== 'GET' || new URL(request.url).pathname !== `${config.authBase}/session`) {
       return new Response(null, { status: 405, headers: { Allow: 'GET', 'Cache-Control': 'private, no-store' } });
     }

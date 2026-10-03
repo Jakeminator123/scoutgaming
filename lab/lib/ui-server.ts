@@ -3,17 +3,12 @@ import { assertLocalPageRequest } from './http-guard.mjs';
 import { studioInitialData } from './studio-server.mjs';
 import { remoteUiConfiguration, authorizeRemoteUi, remoteUiInitialData } from './remote-ui.mjs';
 import { nativeStudioAdminEnabled, nativeStudioAdminConfiguration, assertNativeStudioRequest, studioNativeRuntime } from './studio-native-runtime.mjs';
+import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 
 async function nativeUi(request: Request) {
   const config = nativeStudioAdminConfiguration();
   if (!config) throw Object.assign(new Error('studio_native_unavailable'), {statusCode: 503});
-  // Next pages construct an internal http Request; exact public headers and
-  // the configured origins still determine the authenticated HTTPS boundary.
-  const url = new URL(request.url), origin = config.allowedOrigins.find(value => new URL(value).host === url.host);
-  if (!origin) throw Object.assign(new Error('studio_request_rejected'), {statusCode: 403});
-  const headers = new Headers(request.headers);
-  if (headers.get('sec-fetch-mode') === 'navigate' && headers.get('sec-fetch-dest') === 'document') headers.delete('sec-fetch-site');
-  const normalized = new Request(new URL(url.pathname + url.search, origin), { method: request.method, headers });
+  const normalized = normalizeNativeStudioPageRequest(request, config);
   assertNativeStudioRequest(normalized, config);
   const native = await studioNativeRuntime();
   let session;

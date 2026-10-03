@@ -390,13 +390,26 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     neutral BO-/socialpolicy är oförändrad. Privat
     `native-qa-project-replica-imported.json` är QA-kvitto, inte fryst driftimport.
     Äldre QA:s 25 konton och produktion är oförändrade.
-    Render-QA är inte suspenderad enligt läskontroll; faktisk
-    health-/aktivitetskontroll pågår före kandidatändring. Ingen moln-QA-
-    aktivering eller nytt Render-env följer av databasförberedelsen.
+    Render-QA är återstartad på `ae54a61b`, separat ny datarot/databas/scope,
+    med avstängda tal-/stream-/kameraproviders. Faktisk health/env och samma
+    hash/mtime för äldre öppen QA-reservation PASS. Två nya Vercelprojekt är
+    READY på samma SHA; deras egna canonicaldomäner ger native boot efter
+    exakt Lab-projektdomänregistrering/promotion. Standard-SSO består.
+    Komplett faktisk browseracceptans pågår; produktion/äldre QA består.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
   genomförandeuppdrag. Frys aktuella skrivare där det behövs, importera endast
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
   verifiera riktig HTTPS-adress, sparning, spel, auth och återstart.
+  - Privata importspärrar: 130 kritiska käll-/SQL-/manifest-/indexfiler måste
+    matcha exakt levererad main-SHA. Alla 18 aktiva videobindningar ska
+    fullåterläsas från Blob innan skrivning. Skarpa QA-läsaren har nu
+    fullverifierat alla 18 inklusive sex original från tom OS-cache,
+    med noll SQL-/provider-skrivningar. Efter import krävs slutlig sex-medie-
+    paritet och kostnadsreplay med noll nya rader. 40 obetalda guards PASS.
+    Faktisk providerhealth har inga köade/pågående jobb men en idle/ready
+    worker; färsk dränering återstår. Keys kan enligt Jakob tillhöra Emil;
+    inga konto-/nyckeländringar görs. Verklig Resend-sändarkonfiguration
+    saknas i Render/Lab. Ingen produktionsimport eller aktivering är gjord.
 - [ ] **P8 — faktisk avveckling:** gamla BO/Lab-UI och ersatta Render-API/skrivare
   borttagna, inga permanenta diskfallbacks. Gamla Blob-alias tas bort efter
   verifierad referensmigrering. Onödiga env och produkt/QA-disk tas bort endast
@@ -425,8 +438,8 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   kontrollerade. Kvarvarande mänsklig acceptans/blockerare uttryckligen öppna.
   - Kod [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
     på GitHub main har alla tre CI-jobb PASS och Vercel-frontend READY.
-    Senaste kodleverans `c667aa22` är pushad efter full hook och alla tre CI-jobb
-    PASS; Vercel-Lab är nu READY. Lokal traceguard/build har 50 sanerade traces
+    Senaste kodleverans `ae54a61b` är pushad efter full hook och alla tre CI-jobb
+    PASS; båda Vercelbyggen är READY. Lokal traceguard/build har 50 sanerade traces
     PASS. Flagga-av-leveransen
     och SQL-fixturerna bockar inte av P1–P9, aktivering eller avveckling.
 

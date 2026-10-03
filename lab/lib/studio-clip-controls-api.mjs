@@ -1,5 +1,6 @@
 import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
+import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 
 export function createStudioClipControlsApi({config,authorize,gamePolicy,legacyControls} = {}) {
   const fail = (code,statusCode = 503) => {throw new StudioStorageError(code,statusCode);};
@@ -8,6 +9,7 @@ export function createStudioClipControlsApi({config,authorize,gamePolicy,legacyC
   const path = config.apiBase === '/api/admin' ? '/api/clip-controls' : '/studio/api/clip-controls';
   return Object.freeze({async handle(request) {
     try {
+      request = normalizeNativeStudioRequest(request,config);
       assertNativeStudioRequest(request,config);
       if (new URL(request.url).pathname !== path) fail('studio_document_unknown',404);
       if (request.method !== 'GET') return new Response(null,{status:405,headers:{Allow:'GET','Cache-Control':'private, no-store'}});
