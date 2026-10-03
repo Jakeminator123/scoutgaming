@@ -7,6 +7,8 @@
         "ops/cloud/start.mjs",
         "ops/cloud/vercel-ingress.mjs",
         "ops/cloud/storage-export.mjs",
+      "web/operator-speech-qa.mjs",
+      "web/storage/studio-runtime.mjs",
         "web/storage/studio-game-policy.mjs",
         "web/studio-game-commands.mjs"
       ],

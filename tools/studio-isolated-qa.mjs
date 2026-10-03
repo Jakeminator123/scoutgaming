@@ -76,21 +76,25 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       '-addext', 'subjectAltName=DNS:studio.croupier-qa.invalid,DNS:render.croupier-qa.invalid', '-keyout', join(root, 'fixture.key'), '-out', join(root, 'fixture.crt')], { env });
     const { runStudioPostgresChecks } = await import('../test/studio-postgres-integration.mjs');
     const existing = await runStudioPostgresChecks({ pool, restart }); pool = existing.pool;
-    const testedSources = ['ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql',
+    const testedSources = ['ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql',
+      'ops/neon-studio/migrations.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
       'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs',
       'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
       'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
       'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'web/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech.mjs',
-      'web/speech-blob-artifacts.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs'];
+      'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs'];
     const sourceHashes = async () => Object.fromEntries(await Promise.all(testedSources.map(async file => [file, createHash('sha256').update(await readFile(join(repository, file))).digest('hex')])));
     const before = await sourceHashes();
     const { runStudioCutoverChecks } = await import('../test/studio-cutover-integration.mjs');
     const current = await runStudioCutoverChecks({ pool, restart, tls: { key: await readFile(join(root, 'fixture.key')), cert: await readFile(join(root, 'fixture.crt')) } });
     pool = current.pool;
+    const { runSpeechLedgerImportSqlChecks } = await import('../test/speech-ledger-import.mjs');
+    const imported = await runSpeechLedgerImportSqlChecks({ pool, restart }); pool = imported.pool;
+    const integrationChecks = [...current.checks, ...imported.checks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
-    console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', legacyChecks: existing.checks, integrationChecks: current.checks, sourceHashes: before }, null, 2));
+    console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));
     await pool.end(); pool = null; await stop();
-    return { legacyChecks: existing.checks, integrationChecks: current.checks };
+    return { legacyChecks: existing.checks, integrationChecks };
   } finally {
     try { await pool?.end(); } catch {}
     if (active && postgresBin) { await guarded(data); await run(join(postgresBin, 'pg_ctl'), ['-D', data, '-m', 'fast', '-w', 'stop'], { env }); active = false; }

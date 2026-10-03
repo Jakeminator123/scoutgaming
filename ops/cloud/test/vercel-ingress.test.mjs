@@ -29,6 +29,30 @@ test('only a secret-authenticated exact Vercel origin can cross the backend tran
   assert.equal(vercelIngressRequest(request('/__vercel/lab/session'), ingress).accepted, false);
 });
 
+test('canonical blackjack launch crosses exact authenticated ingress only under the shared Neon flag', () => {
+  const native=readVercelIngressConfig({...env,CROUPIER_STUDIO_NEON_POLICY:'1'});
+  assert.equal(native.canonicalGame,true);assert.equal(Object.hasOwn(ingress,'canonicalGame'),false);
+  for (const path of ['/blackjack?launch=fixture.claim.signature','/blackjack/?dealer=mei&launch=fixture.claim.signature']) {
+    for (const method of ['GET','HEAD']) {
+      const input={...request(path),method},accepted=vercelIngressRequest(input,native);
+      assert.equal(accepted.transported,true,path);assert.equal(accepted.headers.host,'preview.example.test');
+      assert.equal(accepted.headers.cookie,'player_session=isolated');assert.equal(accepted.headers['x-croupier-vercel-secret'],undefined);
+      assert.equal(vercelIngressRequest(input,ingress).accepted,false,'off mode keeps blackjack outside authenticated game ingress');
+      for (const extra of [{'x-croupier-vercel-secret':'wrong'},{'x-croupier-public-origin':'https://evil.test'},
+        {'x-forwarded-host':'evil.test'},{'x-forwarded-proto':'http'}]) {
+        assert.equal(vercelIngressRequest({...request(path,extra),method},native).accepted,false);
+      }
+    }
+  }
+  for (const path of ['/blackjack','/blackjack/','/blackjack-extra?launch=fixture.claim.signature',
+    '/%62lackjack?launch=fixture.claim.signature','/blackjack//?launch=fixture.claim.signature',
+    '/blackjack/../game?launch=fixture.claim.signature','/blackjack/api?launch=fixture.claim.signature']) {
+    assert.equal(vercelIngressRequest({...request(path),method:'GET'},native).accepted,false,path);
+  }
+  for (const method of ['POST','PUT','DELETE']) assert.equal(vercelIngressRequest({...request('/blackjack?launch=fixture.claim.signature'),method},native).accepted,false);
+  assert.equal(vercelIngressRequest({...request('/game?launch=fixture.claim.signature'),method:'GET'},ingress).transported,true);
+});
+
 test('old Render document bookmarks redirect to canonical UI without forwarding credentials or accepting APIs', () => {
   const direct=url=>({url,method:'GET',headers:{host:'isolated.onrender.com'}});
   assert.equal(vercelIngressRequest(direct('/blackjack?dealer=astrid&presentation=local&launch=private&token=secret'),ingress).redirect,'https://preview.example.test/game?dealer=astrid&presentation=local');

@@ -7,7 +7,8 @@ export function readVercelIngressConfig(env = process.env) {
   const publicOrigin = exactPlatformOrigin(env.CROUPIER_PUBLIC_ORIGIN, 'CROUPIER_PUBLIC_ORIGIN');
   const secret = env.CROUPIER_VERCEL_INGRESS_SECRET;
   if (transportOrigin === publicOrigin || typeof secret !== 'string' || Buffer.byteLength(secret) < 32 || /[\r\n]/.test(secret)) throw Error('Invalid private Vercel ingress configuration.');
-  return { transportOrigin, publicOrigin, secret };
+  return { transportOrigin, publicOrigin, secret,
+    ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? {canonicalGame:true} : {}) };
 }
 
 export function vercelIngressRequest(request, ingress) {
@@ -32,7 +33,9 @@ export function vercelIngressRequest(request, ingress) {
   const key = Buffer.from(ingress.secret), supplied = request.headers['x-croupier-vercel-secret'];
   const bytes = typeof supplied === 'string' ? Buffer.from(supplied) : Buffer.alloc(0);
   const path = canonicalPlatformPath(request.url);
-  const launch = path && ['/', '/game', '/game/'].includes(path) && new URL(request.url, ingress.publicOrigin).searchParams.has('launch');
+  const launch = path && (['/', '/game', '/game/'].includes(path)
+    || ingress.canonicalGame && ['/blackjack','/blackjack/'].includes(path) && ['GET','HEAD'].includes(request.method))
+    && new URL(request.url, ingress.publicOrigin).searchParams.has('launch');
   const session = path === '/__vercel/lab/session';
   if (request.headers.host !== transportHost || request.headers['x-croupier-public-origin'] !== ingress.publicOrigin
       || bytes.length !== key.length || !timingSafeEqual(bytes, key)

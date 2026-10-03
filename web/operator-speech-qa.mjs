@@ -25,7 +25,11 @@ const fail = (code, statusCode = 503) => { throw Object.assign(new Error(code), 
 /** An opt-in operator test inside the existing Web process. It owns no player
  * database or provider. All paid work uses the supplied product stream service,
  * including its immutable reservations, worker admission and budget policy. */
-export function createOperatorSpeechQa({ directory, origin, authenticate, service, decide, now = Date.now }) {
+export function createOperatorSpeechQa({ directory, origin, authenticate, service, decide, now = Date.now,
+  gateStore, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' }) {
+  // Shared mode never consults or recreates the retained disk gate. A missing
+  // adapter is disabled, even if a valid legacy directory was supplied.
+  const sharedGate = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' || journalRequired || Boolean(gateStore);
   const root = typeof directory === 'string' && isAbsolute(directory) ? resolve(directory) : null;
   let publicOrigin;
   try { const url = new URL(origin); if (url.origin === origin && url.protocol === 'https:') publicOrigin = url; } catch {}
@@ -35,15 +39,16 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
   const identities = new Map();
   let pending = false, preparing = null;
 
-  async function principal(req) {
+  async function authorizedPrincipal(req) {
     // Validate the live BO account/epoch before inspecting a QA identity.
     let claims;
     try { claims = await authenticate(req); } catch { fail('operator_speech_qa_auth_required', 403); }
     if (!claims || !['admin', 'superadmin'].includes(claims.role)) fail('operator_speech_qa_auth_required', 403);
     const cookies = (req.headers.cookie ?? '').split(';').map(value => value.trim()).filter(value => value.startsWith('bo_jwt='));
     if (cookies.length !== 1 || !/^bo_jwt=[A-Za-z0-9_.-]{1,8192}$/.test(cookies[0])) fail('operator_speech_qa_auth_required', 403);
-    return digest(JSON.stringify([cookies[0].slice(7), claims.sub, claims.role, claims.source_stamp, claims.auth_epoch, claims.exp]));
+    return { binding: digest(JSON.stringify([cookies[0].slice(7), claims.sub, claims.role, claims.source_stamp, claims.auth_epoch, claims.exp])), actor: claims.sub };
   }
+  const principal = async req => (await authorizedPrincipal(req)).binding;
   function cancel(entry) {
     if (entry.controller.signal.aborted && !identities.has(entry.playerId)) return;
     clearTimeout(entry.timer);
@@ -78,24 +83,35 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
   async function state() {
     let gate = null, attempts = 0;
     try {
-      await directoryReady();
-      const value = await json('operator-qa.json'), time = now();
-      if (!exact(value, ['id', 'createdAt', 'expiresAt']) || !UUID.test(value.id)
-        || !Number.isSafeInteger(time) || !Number.isSafeInteger(value.createdAt) || value.createdAt < 0
-        || !Number.isSafeInteger(value.expiresAt) || value.createdAt > time || value.expiresAt <= time
-        || value.expiresAt <= value.createdAt || value.expiresAt - value.createdAt > MAX_LIFETIME) fail('operator_speech_qa_disabled');
-      const campaign = await optional(campaignName(value));
-      if (campaign && (!exact(campaign, ['id', 'createdAt', 'expiresAt']) || fingerprint(campaign) !== fingerprint(value))) fail('operator_speech_qa_invalid_gate');
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const record = await optional(attemptName(value, attempt));
-        if (!record) continue;
-        if (!campaign || !exact(record, ['campaignId', 'attempt', 'turn', 'reservedAt']) || record.campaignId !== value.id
-          || record.attempt !== attempt || ![1, 2].includes(record.turn) || !Number.isSafeInteger(record.reservedAt)
-          || record.reservedAt < value.createdAt || record.reservedAt >= value.expiresAt) fail('operator_speech_qa_invalid_gate');
-        attempts++;
+      if (sharedGate) {
+        if (!publicOrigin || !gateStore || typeof gateStore.state !== 'function' || typeof gateStore.reserve !== 'function') fail('operator_speech_qa_disabled');
+        const saved = await gateStore.state();
+        if (!saved || !Number.isSafeInteger(saved.attempts) || saved.attempts < 0 || saved.attempts > MAX_ATTEMPTS) fail('operator_speech_qa_invalid_gate');
+        attempts = saved.attempts;
+        if (saved.gate && exact(saved.gate, ['id', 'createdAt', 'expiresAt']) && UUID.test(saved.gate.id)
+          && Number.isSafeInteger(saved.gate.createdAt) && saved.gate.createdAt >= 0
+          && Number.isSafeInteger(saved.gate.expiresAt) && saved.gate.createdAt <= now() && saved.gate.expiresAt > now()
+          && saved.gate.expiresAt > saved.gate.createdAt && saved.gate.expiresAt - saved.gate.createdAt <= MAX_LIFETIME) gate = saved.gate;
+      } else {
+        await directoryReady();
+        const value = await json('operator-qa.json'), time = now();
+        if (!exact(value, ['id', 'createdAt', 'expiresAt']) || !UUID.test(value.id)
+          || !Number.isSafeInteger(time) || !Number.isSafeInteger(value.createdAt) || value.createdAt < 0
+          || !Number.isSafeInteger(value.expiresAt) || value.createdAt > time || value.expiresAt <= time
+          || value.expiresAt <= value.createdAt || value.expiresAt - value.createdAt > MAX_LIFETIME) fail('operator_speech_qa_disabled');
+        const campaign = await optional(campaignName(value));
+        if (campaign && (!exact(campaign, ['id', 'createdAt', 'expiresAt']) || fingerprint(campaign) !== fingerprint(value))) fail('operator_speech_qa_invalid_gate');
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          const record = await optional(attemptName(value, attempt));
+          if (!record) continue;
+          if (!campaign || !exact(record, ['campaignId', 'attempt', 'turn', 'reservedAt']) || record.campaignId !== value.id
+            || record.attempt !== attempt || ![1, 2].includes(record.turn) || !Number.isSafeInteger(record.reservedAt)
+            || record.reservedAt < value.createdAt || record.reservedAt >= value.expiresAt) fail('operator_speech_qa_invalid_gate');
+          attempts++;
+        }
+        if (now() >= value.expiresAt || now() < value.createdAt) fail('operator_speech_qa_disabled');
+        gate = value;
       }
-      if (now() >= value.expiresAt || now() < value.createdAt) fail('operator_speech_qa_disabled');
-      gate = value;
     } catch { gate = null; }
     for (const entry of identities.values()) {
       if (!gate || fingerprint(entry.gate) !== fingerprint(gate)) cancel(entry);
@@ -164,7 +180,7 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
     },
     async handle(req, res, pathname) {
       if (pathname !== PATH) return false;
-      let entry, lock, lockInfo, lockPath, attempt, success = false;
+      let entry, lock, lockInfo, lockPath, reservation, attempt, success = false;
       const disconnected = () => { if (!res.writableEnded && entry) cancel(entry); };
       try {
         const binding = await principal(req);
@@ -187,10 +203,21 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
           if (!current.gate || !stream) fail('operator_speech_qa_disabled');
           const relay = capacity(stream);
           if (relay.busy || relay.pending) fail('operator_speech_qa_busy', 409);
-          lockPath = join(root, `${PREFIX}${current.gate.id}.lock`);
-          try { lock = await open(lockPath, 'wx', 0o600); lockInfo = await lock.stat(); }
-          catch (error) { if (error.code === 'EEXIST') fail('operator_speech_qa_busy', 409); throw error; }
-          attempt = await reserve(current.gate, turn);
+          if (sharedGate) {
+            reservation = await gateStore.reserve({ gate: current.gate, turn, authorize: async () => {
+              const live = await authorizedPrincipal(req);
+              if (live.binding !== binding || preparing.controller.signal.aborted) fail('operator_speech_qa_auth_required', 403);
+              return { actor: live.actor };
+            } });
+            if (!reservation || ![1, 2, 3].includes(reservation.attempt) || typeof reservation.release !== 'function'
+              || typeof reservation.check !== 'function') fail('operator_speech_qa_disabled');
+            attempt = reservation.attempt;
+          } else {
+            lockPath = join(root, `${PREFIX}${current.gate.id}.lock`);
+            try { lock = await open(lockPath, 'wx', 0o600); lockInfo = await lock.stat(); }
+            catch (error) { if (error.code === 'EEXIST') fail('operator_speech_qa_busy', 409); throw error; }
+            attempt = await reserve(current.gate, turn);
+          }
           if (preparing.controller.signal.aborted) fail('operator_speech_qa_cancelled', 499);
           const playerId = `${PREFIX}${randomUUID()}`;
           entry = { playerId, binding, gate: current.gate, owner: `${PREFIX}${current.gate.id}-${binding}`,
@@ -211,7 +238,8 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
           const timings = {};
           const decision = await completeChatWithSpeech({ request, status: context, owner: entry.owner, playerId,
             signal: entry.controller.signal,
-            readOwner: async () => !entry.controller.signal.aborted && now() < entry.gate.expiresAt && await principal(req) === binding ? entry.owner : null,
+            readOwner: async () => !entry.controller.signal.aborted && now() < entry.gate.expiresAt
+              && await principal(req) === binding && (!reservation || await reservation.check()) ? entry.owner : null,
             readStatus: async () => { await currentEntry(req, playerId); return context; },
             decide: (value, state) => decide(value, state, entry.controller.signal),
             streamService: stream,
@@ -228,6 +256,10 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
       } finally {
         res.removeListener('close', disconnected);
         if (entry && !success) cancel(entry);
+        if (reservation) {
+          try { await reservation.release(); }
+          catch { if (entry) cancel(entry); /* Uncertain release leaves the SQL lock fail-closed. */ }
+        }
         if (lock) {
           await lock.close();
           try {

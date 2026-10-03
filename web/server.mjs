@@ -951,6 +951,10 @@ async function chatSessionOwner(req, playerId) {
 // calls player APIs or persists synthetic conversations in either database.
 const operatorSpeechQa = createOperatorSpeechQa({
   directory: process.env.CROUPIER_GENERATED_SPEECH_DIR,
+  journalRequired: Boolean(studioPolicyRuntime),
+  gateStore: studioPolicyRuntime
+    ? (await import('./postgres-operator-speech-qa.mjs')).createPostgresOperatorSpeechQa({pool:storage.pool,scope:studioPolicyRuntime.scope})
+    : undefined,
   origin: process.env.PUBLIC_URL ?? gameOrigin,
   authenticate: boSessionOk,
   service: () => speechStreamService,

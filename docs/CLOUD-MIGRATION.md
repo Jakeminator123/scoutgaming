@@ -184,7 +184,7 @@ cirka 10 %. Efter kontrakt, isolerade oaktiverade lagringsutkast och den
 publicerade UI-förenklingen 3 oktober: cirka 30 %. Efter levererbar Neon-/journalgrund
 och native BO-UI/API bakom avstängd aktivering: cirka 40 %.
 Det pågående fortsättningssteget med gemensam policy, konto-/partner-/authfunktioner
-och aktuell isolerad SQL/HTTPS/restartacceptans är grovt cirka 60 %; riktig
+och aktuell isolerad SQL/HTTPS/restartacceptans är grovt cirka 65 %; riktig
 produktionsimport, helhetsacceptans och avveckling är ännu inte verifierade.
 Viktning: kontrakt/åtkomst
 10, beständig Studio-state 20, enkel native
@@ -206,7 +206,15 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     11 isolerade tester PASS, inklusive negativa fall. Inga aktiva route-, cookie-
     eller lagringsbyten. Detta bockar inte av hela P1/P4 eller live-acceptans.
   - [ ] Full molndiskinventering och återstående lagrings-/journal-/transportkontrakt
-    låsta före migreringsintegration och radering. P1 är därför inte helt klart.
+    låsta före migreringsintegration och radering. Render-SSH är nu verifierad
+    efter godkänd registrering av befintlig publik nyckel. Den ofrysta läsexporten
+    visar 129 journalfiler: 18 terminala GPU-jobb, 46 streamrequestkvitton,
+    tre operatörskampanjer/sju försök och ingen aktiv grind. Rå BO-/socialpolicy
+    saknas; effektiva defaults kräver explicit proveniens, aldrig påhittad råfil.
+    Sex av 18 sparade mediebindningar saknar exakt UUID i lokalt/inventerat
+    Render-register efter byte av bytes/hash/storlek den 29 september i
+    `891c432a`. Samma filnamn/familj/roll är inte importparitet; ingen automappning.
+    P1 är därför inte helt klart.
 - [ ] **P2 — Neon-state:** projekt/revision/historik/profiler, videoregister/
   klassificering och beständig BO-konfiguration har en gemensam databasadapter.
   Bevis: schema-migration, importparitet, samtidiga sparningar/rollback och
@@ -247,10 +255,21 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     exakta källhashar, scope, budgetversion, förbrukade requests/reservationer
     och stoppade/dränerade skrivare krävs. Osäkra jobb får inte återbetalas eller
     skickas om. Verktyget läser/importerar inte driftdata automatiskt.
+  - [x] Explicit atomisk SQL-import för verifierat fryst underlag: källchecksumma,
+    scope, stoppade/dränerade skrivare och installerade 001/002/003 krävs.
+    Sparad budget, båda UTC-dygnens kostnader och opaka förbrukade requestnycklar
+    bevaras. En receipt binder importen; exakt återkörning duplicerar ingenting,
+    ändrade leases/förbrukning stoppar merge/reset och sista receipt-fel ger full
+    rollback. Additiv 003 lagrar operatörens ursprungliga kampanj/grind/försök
+    med rå källhash; historiska actors fabriceras inte och saknad grind förblir
+    avstängd. Färdiga paket blockerar utan exakt privat Blob-/byteverifiering.
+    85 fokuserade prov och verkligt SQL-/restartprov PASS; ingen liveimport.
   - [ ] Aktuell komplett drift-export, journalimport och paritetsprov före
     flaggbyte. Render-API, Neon och SSH till produkttjänsten nås. Datorns
     befintliga publika SSH-nyckel är registrerad efter uttryckligt godkännande;
-    ingen privat nyckel överfördes. Full aktuell fryst export/paritet återstår.
+    ingen privat nyckel överfördes. Den privata 129-filers exporten är ännu
+    ofryst och är inte ett godkänt importunderlag. Full fryst export, exakta
+    spelmediereferenser och paritet återstår; ingen schema-/journalimport i drift.
 - [ ] **P4 — en Studio:** native administration ersätter iframe; navigation,
   rollstyrd kontohantering (lägg till/spärra/ta bort enligt nuvarande livscykel)
   och speladresser är integrerade. Bevis: login, callback/launch, alla roller,
@@ -298,7 +317,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     57 isolerade konto/auth/partner-/UI-prov och Lab-TypeScript PASS, inklusive
     samtidig tokenförbrukning, rollback, origin, roller, kapacitetsgräns och
     engångsresultatens rensning. Aktuellt isolerat PostgreSQL-/HTTPS-/restartprov
-    PASS: 27 acceptansgrupper samt runnerns isoleringsguard, däribland dessa
+    PASS: 33 acceptansgrupper samt runnerns isoleringsguard, däribland dessa
     login/invite/resend/lösenord/logout/roll-revoke-flöden. Ingen verklig
     mailleverans eller produktionsaktivering följer av det provet.
   - [ ] Verifiera aktuell inkoppling av native konto-/partner-/authfunktioner och
@@ -316,14 +335,22 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   ljud/chatt samt båda GPU-vägar verifieras utan oavsiktlig ändring. Fixtures först;
   betalda liveprov kräver uttryckligt avgränsad budget/auktorisation. Fysisk kamera/
   mikrofon/mobil/Safari och mänsklig läppsynk redovisas separat om de återstår.
-  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 27 acceptansgrupper samt
+  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 33 acceptansgrupper samt
     runnerguard PASS i tillfällig lokal PostgreSQL och kortlivad HTTPS-fixture.
     Revisionskonflikt/rollback, spelkonfigprojektion, auth/engångstoken/epoch,
     roll-revoke, signerad actor/scope och återspelad walletnonce täcks. Nytt
     anrop med återspelad nonce får 409 och skapar ingen dubbel kreditering.
+    Fryst journalimport, samtidiga importer/exakt återkörning efter restart,
+    operatörens kvarvarande tredje försök och atomisk kostnads-/QA-rollback
+    täcks också. 33 källhashar är oförändrade under körningen; 85 riktade
+    tal-/journal-/Blob-/import-/operatörsprov PASS.
     Egna processer, certifikat och temporär databas städas i runnerns finally.
     Inga riktiga konton, molndatabaser, providermejl eller betalda jobb används.
     Full P6 med fyra dealers, live ström/GPU och mänsklig acceptans består öppet.
+  - En ny separat tom Neon-QA-databas och begränsad roll är skapade; noll
+    tabeller är verifierade. Äldre QA:s 25 konton och produktionsrader är
+    oförändrade. Scheman, fixtures och Render-env på den nya targeten är ännu
+    inte applicerade; det är förberedelse för moln-QA, inte färdigt P6.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
   genomförandeuppdrag. Frys aktuella skrivare där det behövs, importera endast
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
@@ -345,9 +372,17 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     cutover-/ersättningsmål, inte verifierat oanvända filer. Ingen av dem har
     blindraderats. Avvecklingen ska verifiera faktisk routing efter källbytet,
     samt hantera återstående aktiva profiler, transport och kostnadsjournaler.
+  - `services/test`/`services/test/fixtures` finns inte. De faktiska GPU-worker-
+    testmapparna och rotens importerade JavaScript-fixtures används aktivt;
+    kamerans HTML-fixture har ingen verifierad ersättare. Dessa behålls.
 - [ ] **P9 — slutleverans:** fem docs uppdaterade, en John-handoff, aktuella
   miljönamn/guide, endast taskägda commits på main, CI och avsedd drift-SHA
   kontrollerade. Kvarvarande mänsklig acceptans/blockerare uttryckligen öppna.
+  - Kod [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
+    på GitHub main har alla tre CI-jobb PASS och Vercel-frontend READY.
+    Lab-cloudbygget är ERROR från traceguard; lokalt rättat bygge PASS med 50
+    sanerade traces, men molnrättningen är inte verifierad. Flagga-av-leveransen
+    och SQL-fixturerna bockar inte av P1–P9, aktivering eller avveckling.
 
 **Körordning:** P1 först. P2 (metadata), P3 (media/journaler) och P4 (UI)
 kan därefter köras parallellt på överenskomna filer/datakontrakt. P5 och
