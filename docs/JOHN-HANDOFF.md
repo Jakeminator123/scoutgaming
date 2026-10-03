@@ -10,7 +10,7 @@ Den tar bort 62 frontendfiler: oanvänd klientblackjack, UI-/tema-/hookscaffold
 och dubbla stylesheet, samt 41 exklusiva direktberoenden. Låsfilen regenererades
 offline utan nya versionsbindningar; fryst installation tog bort 134 lokala paket. Aktiv Button, landningssida,
 kortsymboler, serverägda spelrutter och fyrdealerspelaren behålls. Sista
-referensgranskningen tar även bort 13 oanvända klientspellogikexports från
+referensgranskningen tog även bort 13 oanvända klientspellogikexports från
 `lib/blackjack.ts`; bara oförändrade `Suit` och `SUIT_SYMBOL` har aktiva importörer.
 Pensionerad GitLab-GPU-CI och den gamla dubbla miljökartan tas bort;
 dokumentlänkar går till de befintliga fem docs och aktuell OpenClaw-guide.
@@ -44,7 +44,10 @@ leverantörernas utvecklingsberoenden. 123 lokala dokumentlänkar och diffkontro
 PASS. Den första fulla regressionen gav 1 216 PASS, fem skip och endast felet
 om saknad runtime ovan. Efter rättelsen är full obligatorisk commit-hook PASS:
 1 217 tester PASS, fem skip, noll fail. Kod- och dokumentstädningen är committad
-på `be204ed8719dcc9577f3118c7145caec12bfe1d7`; denna slutnotis ändrar bara docs.
+på `be204ed8719dcc9577f3118c7145caec12bfe1d7`, kompletterad med
+`d6e39a01427e7708999202580513d2e069122f26` för sista klientregelstädningen. Även den senare committens fulla
+hook gav 1 217 PASS/fem skip/noll fail, efter ny frontend 32/32, typkontroll
+och produktionsbygge PASS. Denna slutnotis ändrar bara docs.
 Kontrolloggar ligger privat i Windows temp som `croupier-housekeeping-*.log`.
 Push sker via ordinarie main-helper; slutlig SHA/checkstatus läses från GitHub,
 och detta arbete bockar inte av P6/P7/P8.
