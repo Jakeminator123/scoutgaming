@@ -30,6 +30,15 @@ sammanhållna återkörningen. Obligatorisk full hook och fyra-dealer-audit
 Loggar finns privat i `migration-root-{directed,full}-check.log` och
 `migration-root-dealer-probe.log`. Inget nytt SQL-/HTTPS-/restart-livekvitto
 eller fyra-dealer-native90-kvitto hävdas för denna senare källkod.
+Den privata `native-p6-product-playback.mjs` samlar en verklig produktklass,
+en video/WS, samma mottagna bytes, presenterad rVFC-bildruta och video-ended.
+12 collector-, 20 runner- och 13 befintliga produktströmprov PASS i
+`migration-root-playback-check.log`. Importen gör inga liveanrop. Kvittot
+anger `decoded-product-class-qa-mount`, `gameWrapperIntegrated:false`;
+browser/CSP, cookieägarskap, wire-/descriptor-/GPU-korrelation och faktisk
+spelköintegration återstår. `fullP6Passed` är fortsatt false. Privata
+källhashar/testloggar finns i `migration-root-source-readiness-20261003.json`;
+det är lokal beredskapsmetadata, inte ett rått runtime- eller kostnadskvitto.
 
 GitGuardian för `bba3cc28`: check-runs/check-suites/status fullständigt lästa;
 3/3 ordinary CI PASS, ingen GG-run, GG-suite queued. Rätt Chrome-workspace
