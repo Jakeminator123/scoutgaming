@@ -67,7 +67,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
  * browser attachment. Normal HTTP result completion does not own this lifetime.
  */
 export async function createGeneratedSpeechStreamService(server, configuration, {
-  resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager,
+  resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch,
   freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000,
   journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1',
 } = {}) {
@@ -83,7 +83,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   ]);
   const { directory, workerSecret, ticketSecret, origin } = configuration;
   const authenticateTicket = ticketAuthenticator(ticketSecret);
-  const source = pcmSource ?? createCartesiaSource(configuration);
+  const source = pcmSource ?? createCartesiaSource(configuration, { fetchImpl });
   const attach = attachRelay ?? (await import('../services/astrid-gpu-worker/gateway/relay.mjs')).attachSpeechRelay;
   const records = new Map(), owners = new Map(), preparations = new Map(), inFlight = new Set();
   let exclusive = null;
@@ -202,7 +202,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   });
   sessionManager = suppliedSessionManager ?? (configuration.session ? createSpeechSessionManager({
     ...configuration.session, directory, workerSecret, origin,
-  }, { workerState: id => id ? relay.workerStatus(id) : relay.status(), stopWorker: id => relay.stopWorker(id), journal, journalRequired, leaseManager:ownership }) : null);
+  }, { workerState: id => id ? relay.workerStatus(id) : relay.status(), stopWorker: id => relay.stopWorker(id), fetchImpl, journal, journalRequired, leaseManager:ownership }) : null);
   async function reserve(input, key, fingerprint) {
     if (journal) {
       const identity = { ownerHash:digest(input.owner), requestId:input.requestId, fingerprint, capability:'stream' };

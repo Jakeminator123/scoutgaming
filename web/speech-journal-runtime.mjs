@@ -59,6 +59,7 @@ export function createJournalSpeechSessionManager(configuration, {
   const originUrl = new URL(origin), base = `https://api.runpod.ai/v2/${endpointId}`;
   const shutdown = new AbortController();
   let pending = null, active = null, idleTimer = null, closing = false;
+  const cancellations = new Map();
 
   async function call(route, { signal, body } = {}) {
     const response = await fetchImpl(`${base}/${route}`, { method: body ? 'POST' : 'GET', redirect: 'error',
@@ -105,7 +106,15 @@ export function createJournalSpeechSessionManager(configuration, {
     const saved = await journal.recordProviderStatus({ sessionId: job.sessionId, lease: await ownership.get(), jobId: job.jobId, status: response.status });
     Object.assign(job, saved); return response.status;
   }
-  async function cancel(job) {
+  function cancel(job) {
+    if (!job?.jobId) return Promise.resolve();
+    if (cancellations.has(job.jobId)) return cancellations.get(job.jobId);
+    const task = cancelOnce(job);
+    cancellations.set(job.jobId, task);
+    void task.finally(() => cancellations.delete(job.jobId));
+    return task;
+  }
+  async function cancelOnce(job) {
     if (!job?.jobId) return;
     if (active?.sessionId === job.sessionId) { active = null; clearTimeout(idleTimer); }
     try {
@@ -210,6 +219,13 @@ export function createJournalSpeechSessionManager(configuration, {
       if (pending) return pending.then(async result => { input.signal?.throwIfAborted(); await input.beforeCostly(); touch(); return result; });
       pending = ensure(input).finally(() => { pending = null; if (active && !closing) touch(); }); return pending;
     },
-    async close() { closing = true; clearTimeout(idleTimer); shutdown.abort(); if (pending) { try { await pending; } catch {} } await cancel(active); active = null; try { await ownership.release(); } catch {} },
+    async close() {
+      closing = true; clearTimeout(idleTimer); shutdown.abort();
+      if (pending) { try { await pending; } catch {} }
+      await cancel(active);
+      while (cancellations.size) await Promise.all([...cancellations.values()]);
+      active = null;
+      try { await ownership.release(); } catch {}
+    },
   });
 }

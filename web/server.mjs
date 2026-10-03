@@ -73,6 +73,7 @@ const speechJournal = studioPolicyRuntime ? await (await import('./postgres-spee
   pool: storage.pool, environmentId: studioPolicyRuntime.scope.environment }) : null;
 if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
   artifacts: (await import('./speech-blob-artifacts.mjs')).createSpeechBlobArtifacts(),
+  ...(nativeP6QaRouter?.providerFetch ? { providerFetch:nativeP6QaRouter.providerFetch } : {}),
 });
 const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
@@ -1597,6 +1598,7 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
+    ...(nativeP6QaRouter?.providerFetch ? { fetchImpl:nativeP6QaRouter.providerFetch } : {}),
     ...(speechJournal ? { journal: speechJournal, journalRequired: true } : {}),
     resolveOwner: async (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)
       ? operatorSpeechQa.resolveOwner(req, playerId) : (await chatSessionOwner(req, playerId)),
