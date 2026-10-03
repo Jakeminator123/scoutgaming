@@ -41,7 +41,7 @@ function browser(t, { play, autoDecode = true } = {}) {
   }
   class SourceBuffer extends EventTarget {
     constructor() { super(); this.buffered = { length: 0, start: () => 0, end: () => .5 }; }
-    appendBuffer() { this.updating = true; if (autoDecode) queueMicrotask(() => this.decode()); }
+    appendBuffer(bytes) { this.appendedBytes = new Uint8Array(bytes.slice(0)); this.updating = true; if (autoDecode) queueMicrotask(() => this.decode()); }
     decode() { this.updating = false; this.buffered.length = 1; this.dispatchEvent(new Event('updateend')); }
     abort() { this.updating = false; }
   }
@@ -125,6 +125,20 @@ test('failed initial pose recheck opens no socket or media', async t => {
   const env = browser(t);
   await assert.rejects(playGeneratedSpeech(descriptor(), options({ mount: env.mount, beforeStart: () => { throw new Error('stale_pose'); } })), /stale_pose/);
   assert.equal(env.sockets.length, 0); assert.equal(env.media.length, 0);
+});
+
+test('optional observer follows the same player/frame and cannot mutate accepted decoder bytes', async t => {
+  const env = browser(t), observed = []; let player;
+  const playback = playGeneratedSpeech(descriptor(), options({ mount: env.mount, streamObserver: {
+    onPlayer: value => { player = value.player; assert.equal(value.video, env.media[0]); observed.push('player'); },
+    onBinary: value => { assert.equal(value.player, player); new Uint8Array(value.bytes).fill(255); observed.push('bytes'); },
+    onFrame: value => { assert.equal(value.player, player); assert.equal(value.video, env.media[0]);
+      assert.equal(value.info.mediaTime, 0); observed.push('frame'); },
+  } }));
+  await until(() => env.sockets.length); env.feed(); await until(() => env.media[0].playCalls === 1);
+  assert.deepEqual([...env.sources[0].buffer.appendedBytes], Array(16).fill(0));
+  env.present(); env.done(); await pause(5); env.media[0].ended = true; env.media[0].dispatchEvent(new Event('ended')); await playback;
+  assert.deepEqual(observed, ['player', 'bytes', 'frame']); assert.equal(env.sockets.length, 1); assert.equal(env.media.length, 1);
 });
 
 test('aborting audible playback removes completion evidence and ignores a late video end', async t => {

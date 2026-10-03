@@ -5,8 +5,8 @@ const MIME = 'video/mp4; codecs="avc1.64002a, mp4a.40.2"';
 
 export class SpeechStreamPlayer {
   constructor(video, { signal, beforePlay = async () => {}, onStart = () => {}, onFirstFrame = () => {},
-    onAutoplayBlocked = () => {}, maxQueueBytes = 16 * 1024 * 1024 } = {}) {
-    Object.assign(this, { video, signal, beforePlay, onStart, onFirstFrame, onAutoplayBlocked, maxQueueBytes });
+    onAutoplayBlocked = () => {}, onBinary, maxQueueBytes = 16 * 1024 * 1024 } = {}) {
+    Object.assign(this, { video, signal, beforePlay, onStart, onFirstFrame, onAutoplayBlocked, onBinary, maxQueueBytes });
     this.queue = []; this.queuedBytes = 0; this.totalBytes = 0; this.listeners = [];
     this.timings = {};
   }
@@ -72,6 +72,9 @@ export class SpeechStreamPlayer {
         }
         this.queuedBytes += data.byteLength; this.totalBytes += data.byteLength;
         if (this.queuedBytes > this.maxQueueBytes || this.totalBytes > 128 * 1024 * 1024) throw new Error('speech_stream_too_large');
+        // Optional per-play QA observation sees a copy of the exact accepted
+        // packet. It cannot replace or mutate bytes passed to the decoder.
+        this.onBinary?.({ bytes: data.slice(0), player: this });
         this.queue.push(data); this.pump(); return;
       }
       const message = JSON.parse(data);

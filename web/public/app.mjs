@@ -9,6 +9,7 @@ import { CHAT_STAGES, readChatResponse, chatFailureMessage, chatFailureCode } fr
 import { playGeneratedSpeech, loadGeneratedSpeech } from './generated-speech-player.mjs';
 import { createChatPlaybackDiagnostic } from './chat-playback-diagnostic.mjs';
 import { createNativeSpeechBridge } from './lab-speech-bridge.mjs';
+import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, NATIVE_P6_GAME_ORIGIN } from './native-p6-game-playback.mjs';
 import { createTableAudio } from './table-audio.mjs';
 import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
@@ -2243,6 +2244,7 @@ async function playChatDecision(decision, signal, jobId) {
           setChatStatus('Förbereder röst och läppsynk…');
           await playGeneratedSpeech(decision.speechStream, { exactText: decision.exactText, dealerId: DEALER.key,
             requestId: jobId, mount: $('#scene'), signal, beforeStart: beforeStreamStart,
+            streamObserver: pendingChatReplies.get(jobId)?.nativeP6Observer,
             onStart: text => {
               const pending = pendingChatReplies.get(jobId);
               if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));
@@ -2254,6 +2256,7 @@ async function playChatDecision(decision, signal, jobId) {
             },
             onReceipt: receipt => {
               const pending = pendingChatReplies.get(jobId); if (pending) pending.playbackReceipt = receipt;
+              pending?.nativeP6Receipt?.(receipt);
               chatPlaybackDiagnostic.stream(jobId, receipt);
               nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync-stream',
                 synthetic: Boolean(pending?.synthetic), ...receipt, requestId: jobId });
@@ -2772,4 +2775,30 @@ if (DEALER.key === 'astrid') {
     play.onclick=async()=>{play.disabled=true;try{await probeClient.test({caseId:params.get('probeCase'),model:params.get('probeModel')??'gateway-default'});}finally{play.disabled=false;}};
     trial.append(title,description,play);memoryPanel.append(trial);chatMemory.open=true;
   }
+}
+
+// Explicit ownQA install. The cookie-owned endpoint must authorize the current
+// user before an API is exposed; ordinary dealer launches perform no QA IO.
+if (location.origin === NATIVE_P6_GAME_ORIGIN && localPresentationEnabled
+  && new URLSearchParams(location.search).get('nativeP6GamePlayback') === '1') {
+  const quietForNativeP6 = () => {
+    const state = speechPoseGate.state;
+    return !busy && !round && !chatBusy && !speaking && !voice.muted && !document.hidden
+      && speechQueue.pending === 0 && speechPoseGate.pendingCount === 0 && state.actionOwner === 'none'
+      && state.speechOwner === 'none' && state.dealerPose === 'standard-idle' && state.idlePresented !== null;
+  };
+  let nativeP6WasDisabled;
+  const deliverNativeP6=createNativeP6GameQueueDelivery({identity:poseIdentity,isAvailable:quietForNativeP6,
+    gate:speechPoseGate,pending:pendingChatReplies,pendingFields:()=>({correlation:nativeObservation.context()}),
+    onAcquire:()=>{nativeP6WasDisabled=$('#chat-send').disabled;chatBusy=true;$('#chat-send').disabled=true;
+      localPresentation?.state({ready:true});},
+    onRelease:()=>{chatBusy=false;$('#chat-send').disabled=nativeP6WasDisabled;
+      if(!pendingChatReplies.size)localPresentation?.state({ready:false});},
+  });
+  void installNativeP6GamePlayback({href:location.href,identity:poseIdentity,isAvailable:quietForNativeP6,
+    mount:$('#scene'),deliver:deliverNativeP6}).then(api => {
+    if (!api) return;
+    Object.defineProperty(window, 'croupierNativeP6GamePlayback', { value: api, configurable: true });
+    window.addEventListener('pagehide', () => { api.close(); delete window.croupierNativeP6GamePlayback; }, { once: true });
+  }).catch(() => { /* Disabled/unauthorized/stale ownQA installs expose no capability. */ });
 }
