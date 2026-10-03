@@ -9,7 +9,9 @@ Städningen utgår från ren GitHub-main `b7940dd82078794d38ff9e2466e5aea615aae8
 Den tar bort 62 frontendfiler: oanvänd klientblackjack, UI-/tema-/hookscaffold
 och dubbla stylesheet, samt 41 exklusiva direktberoenden. Låsfilen regenererades
 offline utan nya versionsbindningar; fryst installation tog bort 134 lokala paket. Aktiv Button, landningssida,
-kortsymboler, serverägda spelrutter och fyrdealerspelaren behålls.
+kortsymboler, serverägda spelrutter och fyrdealerspelaren behålls. Sista
+referensgranskningen tar även bort 13 oanvända klientspellogikexports från
+`lib/blackjack.ts`; bara oförändrade `Suit` och `SUIT_SYMBOL` har aktiva importörer.
 Pensionerad GitLab-GPU-CI och den gamla dubbla miljökartan tas bort;
 dokumentlänkar går till de befintliga fem docs och aktuell OpenClaw-guide.
 Duplicerade agentprompter i masterplanen ersätts av dess aktuella acceptanschecklista.
