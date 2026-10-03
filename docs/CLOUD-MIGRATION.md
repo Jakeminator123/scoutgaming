@@ -738,9 +738,12 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   | Genererade paket/journaler | Äldre beständiga paket-/cachegrenar under `generations/`, `speech/`, `studio/voice-cache/` efter Blob/Neon-paritet, terminal-/dräneringsbevis och kallstart utan diskfallback | Förbrukade request-/kostnads-/GPU-/operatörskvitton, även originalets nya P6-budgetjournal och kvarhållna reservation; aktiva spelklipp/text/audio/video/index/kalibrering består |
   | Legacy env och produkt/QA-mount | Diskkopplingar `LAB_STUDIO_DATA_DIR`, `CROUPIER_PRESENTATION_STUDIO_DIR`, `CROUPIER_GENERATIONS_DIR`, `CROUPIER_GENERATED_SPEECH_DIR` när gamla läsare/skrivare och cloud-fabrikens child-config är ersatta; produkt/QA-mount först efter sista beständiga beroendet | `BO_URL` och aktuella origins används ännu för auth/handoff/ingress; Neon/Blob/provider-/streamnycklar och `/data/catalog`/`/data/openclaw` är aktiva, inte generella raderingsmål |
 
-  Källorna visar inget ytterligare fristående kodmål som säkert kan raderas
-  före P7. Disk-/envborttagning kräver faktisk molnåterläsning och restart;
-  taskens nuvarande dokumentationsstädning aktiverar eller raderar inget.
+  Avgränsad städning före P7 har tagit bort frontendens oroutade blackjack-demo,
+  oanvänd UI-/tema-/hookscaffold och dess exklusiva beroenden, samt pensionerad
+  GitLab-GPU-CI och dubblerad miljökarta. Lokala Next-/TypeScript-byggen rensas
+  efter kontroll av sessionsvakt och processägare. Dessa mål har ingen aktiv
+  produktions-/QA-konsument. Tabellen ovan gäller de större P8-beroendena;
+  deras disk-/envborttagning kräver fortsatt molnåterläsning och restart.
   - `services/test`/`services/test/fixtures` finns inte. De faktiska GPU-worker-
     testmapparna och rotens importerade JavaScript-fixtures används aktivt;
     kamerans HTML-fixture har ingen verifierad ersättare. Dessa behålls.
@@ -772,137 +775,30 @@ kan därefter köras parallellt på överenskomna filer/datakontrakt. P5 och
 OpenClaw/GPU-integration använder deras resultat. P6 → P7 → P8 → P9 samordnas
 sekventiellt. P8 är en obligatorisk del av leveransen, inte ett möjligt senare städjobb.
 
-### Agentprompter att återanvända
+## Ytor och datalagring — produktion och nya QA
 
-Kopiera relevant block till en agent. Dessa är **genomförandemallar**;
-kontraktsgrunden är påbörjad, men P2–P8 är inte levererade eller aktiverade. Varje agent
-läser först AGENTS.md och hela masterplanen ovan, arbetar i
-`C:\Users\jakem\Projects\croupier` på `main`, använder agent-talk och
-reserverar faktiska filer innan ändring. Ingen ny branch/worktree, GitLab,
-force-push eller självständig produktionsradering. Checklistans acceptansvillkor,
-isolerad QA och repo-/mediaregler gäller. Orchestratorn ensam äger docs, integration och push.
-Vid överlapp: stanna för ping/ack; återställ aldrig annans ändringar.
+Källleveransen före denna städning är `b7940dd8`. Senaste dokumenterade
+installation och autentiserade fyrdealerprov i de tre nya QA-byggena gäller
+`966991ef`; det fulla native90-kvittot gäller äldre `190399`.
+Källkod, publicerad runtime och acceptansbevis har därför separata revisioner.
+Full AI/GPU-acceptans, cookie/loader-bevis och produktionsbytet är fortfarande öppna.
 
-#### Orchestrator — kontrakt, integration och städning
+| Ansvar | Nuvarande produktion | Ny isolerad native-QA / mål efter P7 |
+| --- | --- | --- |
+| Publik webb och spel-UI | Vercel `apps/croupier-frontend`, `/game`; `/blackjack` är spelarentré | Samma routekontrakt; nya adressbytet ligger bakom gemensam policyflagga |
+| Croupier Studio | Separat Vercelbygge `lab` under `/studio`; äldre BO/admin via Render | Native Studio/admin/auth-API på Vercel; samma serverkontroller och roller |
+| Auktoritativt spel | Render: slump, shoe, wallet, rundor, kommandon, cancellation och live-transport | Samma Render-ansvar; Studio får aldrig äga spelresultat |
+| Konton och speldata | Neon `croupier_game`/`croupier_auth`; zoner i separat `croupier_zones` | Separat QA-databas och explicit miljö/workspace; inga produktionskonton återställs |
+| Studio-policy, historik, BO och medieregister | Beständig Render-disk `/var/data/studio` och äldre BO-källa | Revisionsstyrd Neon `croupier_studio`, CAS/historik/audit och en sparad spelpolicy |
+| Mediefiler och färdiga paket | Privat Blob `croupier-media-private`; äldre alias och diskgrenar kvar där de används | Samma privata Blob, exakta objekt/hashar; Neon håller metadata och bindningar |
+| AI/GPU-jobb och kostnader | Render/RunPod/OpenClaw samt befintliga skyddade journaler | Neon-journaler och oförändrade reservations-/ägargates; P6-budget och kvitton bevaras |
+| Director/Gateway | Egna aktiva tjänster, `/data/catalog` och `/data/openclaw` | Behålls; Studio länkar till befintlig native dashboard |
+| Lokal utveckling | Koordinerat produkt-/labbpar; sparad data i `lab/data` | Samma sessionsvakt; `.next` och `tsconfig.tsbuildinfo` är disponibla byggen |
 
-```text
-Samordna flytten enligt Masterplan: en Croupier Studio i docs/CLOUD-MIGRATION.md.
-Läs AGENTS.md och masterplanen helt i C:\Users\jakem\Projects\croupier på main.
-Börja med P1: lås identitet/adresser, revisionsstyrd lagring, media/job-state,
-API-ägarskap, migreringsgräns och exakt vad varje ersättare avvecklar. Fördela
-exklusiva filer till agenter för Neon, media/journaler och Studio-UI. Shared
-auth/server/routing/config-filer ägs av en utsedd integratör, inte flera;
-Agent A äger nya DB-migrationer och delade lagringskontrakt efter avstämning.
-Läs uppdragets förväntade resultat före implementation; använd GitHub och
-denna checklista, inte Jira eller GitLab. Bocka inte av efter bara källanalys/fixtures.
-Uppdatera denna checklista, befintliga guide/envdocs och JOHN-HANDOFF löpande.
-Kör P2/P3/P4 parallellt efter kontraktet; integrera P5 och därefter P6 sekventiellt.
-Ingen produktionsaktivering/radering eller betald provkampanj under planfasen.
-Inför P7/P8 redovisa exakta targets, verifierade beroenden och restdata; ta sedan
-bort faktiskt ersatt kod/resurser, utan permanent gammal fallback. OpenClaw-
-systemstate, aktiva kostnadsjournaler och unika konton/media är inte blindstädning.
-Leverera endast taskägda commits via push-github-work efter chef/agent-talk-kontroll.
-Slutrapport: avbockat, verkliga tester, faktiskt borttaget och ärligt kvarstående.
-```
-
-#### Agent A — Neon och gemensam beständig metadata
-
-```text
-Genomför P2 enligt hela masterplanen i docs/CLOUD-MIGRATION.md och AGENTS.md,
-i C:\Users\jakem\Projects\croupier på main. Stäm av låst P1 och filägarskap
-med orchestratorn innan du ändrar. Planera/implementera gemensam asynkron
-lagring för projekt/revision/historik/profiler, videoindex/klassificering och
-BO-konfiguration (bo.json innehåller mer än konton). Prioritera dokument/CAS/history/
-audit; gammal Studio-slaskmedia ska inte få en import-/backupkampanj. Befintliga game/auth och
-zonernas separata anslutning ska bestå. Ändra inte checksumlåst product-v1 SQL;
-använd separat versionerad Studio-migration. Bevara CAS, transaktioner, audit,
-ID:n och sparad-policy-vs-utkast. Agent B äger media/job/budgetjournaler:
-samordna scheman/API, rör inte dess filer utan ping/ack. Testa migration/import/
-återläsning, samtidighet/konflikter och restart i isolerad DB. Inga livekonton,
-produktionsmigrationsanrop, deploys eller raderingar. Returnera till orchestratorn
-exakta API-kontrakt, ändrade filer, testbevis, kvarvarande diskläsare/skrivare
-och vilka tidigare metadataimplementationer som nu kan tas bort. Ingen egen push/docs.
-```
-
-#### Agent B — privata medier, generationer och GPU-journaler
-
-```text
-Genomför P3 enligt hela masterplanen och AGENTS.md i
-C:\Users\jakem\Projects\croupier på main; invänta låst P1 och filanspråk.
-Använd befintliga privata croupier-media-private, inte ett nytt lager. Flytta
-nya beständiga generationer/talpaket till Blob med metadata och
-request-idempotens/job recovery/GPU-reservationer/budgetledger i Neon enligt
-Agent A:s kontrakt. Migrera inte bortvalt Studio-slask; inventera nödvändiga
-journaler och aktiva spelreferenser före diskavveckling. Blob-kopiering ensam
-gör inte disken överflödig. Bevara aktiva spelmediers ID, bytes, hash,
-talpar/kalibrering, privata HEAD/Range och serverbehörighet. Tillfällig scratch
-får vara disponibel, men inget beständigt state får kräva diskfallback.
-Testa retries, cancellation, konkurrens, restart och förhindrad dubbeldebitering
-med obetalda fixtures/isolerad data. Ingen modell-/GPU-image-/budgetändring,
-inga produktionsobjekt eller diskar raderas här. Kör obligatorisk mediaaudit
-vid media/playerändring. Redovisa exakta borttagningsmål och referensbevis till
-orchestratorn; ingen självständig deploy/push eller docsändring.
-```
-
-#### Agent C — en Studio, inloggning och speladresser
-
-```text
-Genomför P4 enligt hela masterplanen och AGENTS.md i
-C:\Users\jakem\Projects\croupier på main efter P1 och filanspråk. Bygg en
-Croupier Studio under /studio: klipp/regler/observation/zoner och native
-administration, inte iframe till gammalt BO. Förenkla överlappande menyer och
-gruppera befintliga användbara adminfunktioner; gamla klipp-/generationsslaskvyer
-behöver inte kopieras. Bara kontosidan räcker däremot inte för hela administrationen.
-Använd låsta API-kontrakt och
-befintliga roller per sektion; testspelare blir aldrig administratörer.
-Konton ska kunna skapas/spärras/tas bort med bevarad ledger/livscykel. Ändra
-inte nuvarande lösenord eller auth-storage blindt. Samordna målet /blackjack
-som spel och /game som redirect med integratörens launch/callback/returnTo-
-allowlists, queryparametrar och login. Länka befintliga OpenClaw-dashboarden;
-rör inte dess origin/pairing/roller. Visa sparfel/revisionskonflikter och bevara
-utkast. Ingen Next-paket/version-sammanslagning bara för att få en användaryta.
-Testa anonym/spelarnekning, reader/staff/admin/superadmin, sessionsrevoke och
-nya/gamla adresser. Inga livekontoskrivningar, deploys eller cloud deletion.
-Redovisa ersatta UI-filer och tester till orchestratorn, ingen egen docs/push.
-```
-
-#### Integratör — Vercel-API, OpenClaw/GPU och helhets-QA
-
-```text
-Genomför P5/P6 enligt hela masterplanen och AGENTS.md i
-C:\Users\jakem\Projects\croupier på main. Läs först open-claw/lab/docs/README.md.
-Invänta Agent A/B/C:s kontrakt/resultat och ta exklusivt ägarskap för shared
-server/auth/routing/runtimekonfiguration. Flytta lätta Studio/admin-API till
-Vercel mot gemensam Neon/Blob; bevara Render-spelmotorns beslutsansvar och säkra
-spelkonfigprojektionen som idag nås via /api/bo/config innan äldre BO tas bort.
-Verifiera /blackjack-launch/callback, saved revision till verkligt spelar-kvitto,
-OpenClaw-roller/image/transkriberat ljud/chatt, länk till befintlig autentiserad
-native-dashboard på Render (Gateway förblir privat),
-/speech-stream och GPU-workerens WebSocket till /lipsync-worker. Båda GPU-vägar
-(streaming och fullfil) samt reservation/retry/cancel/restart måste bestå.
-Isolerad QA-backend/databas/hostname, ett koordinerat serverpar, fyra dealers
-två plays, exakt mediaaudit och negativa auth/origin/token/Range-tester.
-Fixtures är inte bevis för fysisk mic/kamera/Safari eller mänsklig läppsynk.
-Betalda liveprov först efter uttrycklig avgränsad budget; gör ingen självständig
-produktionsaktivering/radering. Lämna P7/P8-ready-bevis och kvarstående frågor
-till orchestratorn. Ingen egen docs/push eller OpenClaw/GPU-uppgradering.
-```
-
-## Ytor och datalagring — nuvarande drift
-
-| Yta/data | Ansvar och plats |
-| --- | --- |
-| Publik frontend | `apps/croupier-frontend`, Vercel `croupier-frontend`; [scoutgaming.tech](https://www.scoutgaming.tech/) |
-| Spelgränssnitt | Vercel [scoutgaming.tech/game](https://www.scoutgaming.tech/game); Render äger slump, kort, shoe, regler, wallet och resultat |
-| Backoffice/Lab | Vercel [scoutgaming.tech/studio](https://www.scoutgaming.tech/studio), gemensam navigation för Studio, media, event, zoner, OpenClaw och uppspelning; `/studio/tree` är allmänna editorn |
-| Administration | `/studio/administration` återanvänder befintlig `/bo`; samma konton och rollkontroller, ingen separat dealerström |
-| Lokal beständig data | `lab/data` för projekt, historik och profiler; `lab/data/players` för konto-/speldatabaser; Lissabon är borttagen med privat backup |
-| Spelarkonton/rundor | Separat Neon game-databas, schema `croupier_game` |
-| CRAIG/BO-konton | Samma game-databas, separat schema `croupier_auth` |
-| Studio-projekt/index | `/var/data/studio`, beständig Render-disk |
-| Privata media | Vercel Blob `croupier-media-private`, skyddad serverrutt med hash/familj/Range |
-| Zonmetadata | Dedikerad Neon, schema `croupier_zones`; browserkopia är separat |
-| Director/Gateway | Egna beständiga diskar, se återställningsguiden |
+Ny QA bevisar ersättningen i en separat miljö. P7 byter produktionskälla efter
+verifierad paritet och dränering; P8 tar därefter bort gamla BO-/diskgrenar,
+env och mount efter referens-/restartprov. Att rensa oanvänd frontendkod eller
+lokal byggcache genomför inte det produktionsbytet.
 
 ### Blob är ett gemensamt filarkiv, inte två tjänster
 

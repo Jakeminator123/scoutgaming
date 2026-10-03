@@ -8,7 +8,10 @@ Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
 I molnet finns [spelet](https://www.scoutgaming.tech/game) och
 [Backoffice/Lab](https://www.scoutgaming.tech/studio) på samma exakta origin.
-Vercel visar gränssnitten; Render äger spelmotor, API och sparade projekt.
+Vercel visar gränssnitten; Render äger auktoritativ spelmotor och live-transport.
+I produktion finns äldre Studio/BO-API och projekt ännu på Render. Nya isolerade
+native-QA har Studio/admin-API på Vercel och sparad policy/metadata/journaler i
+Neon. Produktionsbytet är ännu inte genomfört; se [driftkartan](CLOUD-MIGRATION.md).
 **Anslut & följ spelet** använder BO-inloggning och den faktiska spelflikens
 native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
 behöriga mediarutter. Tal och lipsync-worker har varsin autentiserad native
@@ -49,7 +52,9 @@ verifierade staged-destinationer. Dessa läses vid sidstart; ladda om mellan
 händer efter sparning. Inspelat tal följer sitt befintliga exakta audio/video-par.
 Astrids `presentation=local` använder fortsatt `mediaPolicy`/`idlePolicy`.
 Projekt, versioner och historik sparas i samma Lab-projekt; lokalt `lab/data`,
-i molnet `/var/data/studio`. Medieregistren återanvänds med bevarade fil-ID och bytes.
+i nuvarande produktion `/var/data/studio`; nya native-QA använder revisionsstyrd
+Neon-lagring. Det är två uttryckliga miljöer, inte parallella policykällor i samma spel.
+Medieregistren återanvänds med bevarade fil-ID och bytes.
 
 Helpern ger Web och Lab samma isolerade projektkatalog. Spara ändringar i
 Eventstudion. Nästa deal/replik läser sparad policy; idlepolicyn läses vid

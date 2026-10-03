@@ -1,11 +1,11 @@
 # Streaming relay and browser reference
 
 The relay and shared player are integrated into Croupier behind explicit
-streaming flags. Production activation and real GPU streaming verification are
-still pending as of 2026-09-29. The standalone server below does not create a
-Render service or launch a paid GPU worker. See
-[`docs/STREAMING-INTEGRATION.md`](../../../docs/STREAMING-INTEGRATION.md)
-and the application's activation receipt for current deployment status.
+streaming flags. The standalone server below does not create a Render service
+or launch a paid GPU worker. See the
+[runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) and
+[John handoff](../../../docs/JOHN-HANDOFF.md) for current deployment and
+GPU acceptance; the retired integration report is no longer a separate source.
 
 ## Run
 
@@ -59,7 +59,8 @@ warm or restart workers: the application must own that lifecycle and budget.
 
 The existing TTS adapter must deliver PCM with the declared rate, and the game
 must switch to this player without running its legacy MP4 or audio player in
-parallel. Those integration edits and all four dealer QA remain outstanding.
+parallel. Croupier's application integration exists; consult the handoff for
+the current four-dealer and GPU acceptance instead of this reference fixture.
 No LLM or TTS API credentials are needed by this relay itself. The standalone
 `server.mjs` only exposes health and socket attachment; a production application
 must import the module and wire `onSessionReady` to its TTS adapter. There is
@@ -138,39 +139,3 @@ timeout, browser disconnect or an early iterator return. The existing
 ownership/round check belongs in `beforeCostly`. Keep voice/model values tied
 to the existing server voice profile. This removes full-audio buffering but
 does not itself stream incomplete LLM text.
-
-## Historical Croupier integration touchpoints (initial read-only inspection)
-
-The list below records the original pre-integration audit. Application-side
-stream descriptors, authenticated relay attachment and shared-player handling
-have since been implemented. Consult the current integration document linked
-above before using this list as remaining work.
-
-- `web/generated-speech-provider.mjs`: `createGeneratedSpeechProvider` currently
-  buffers `/tts/bytes`, makes a WAV, submits RunPod `/run`, polls `/status` and
-  decodes Base64 MP4. Add a separate streaming entry point using the iterator
-  and `openSource`; preserve request-id idempotency and `beforeCostly` checks.
-- `web/generated-speech-chat.mjs`: `completeChatWithSpeech` waits for the whole
-  `service.generate`. A streaming decision needs its own transport descriptor
-  (ticket and request identity), issued after fresh owner/round checks. Preserve
-  checks on cancellation and stale model/session/round state.
-- `web/server.mjs`: existing chat route obtains `playerSession`,
-  `chatSessionOwner` and `authoritativeChatStatus`, then calls the above helper.
-  Attach the relay to the existing HTTP server object, issue tickets inside
-  authenticated session context, and bind ready events to the reserved request.
-  Never copy browser-supplied ownership into the relay source.
-- `web/generated-speech.mjs`: complete-artifact reservation and storage assume
-  full WAV/MP4 hashes. Streaming needs a separate lifecycle and durable request
-  reservation; keep final archive/hash metadata if a take will be retained.
-  Never label an in-flight or unreviewed stream as an approved speech package.
-- `web/public/generated-speech-player.mjs`: current player fetches complete
-  audio and video, plays a separate `Audio` and muted `video`, and corrects drift.
-  Streaming must use one MSE video with muxed audio, within the same pose gate,
-  single speech queue and visible pending-review treatment.
-- `web/public/app.mjs`: the generated playback call around line 2175 and media
-  loader around line 2583 are current consumers. Update all consumers of the
-  shared player deliberately, including native/lab bridge expectations. Test
-  two consecutive plays and cancellation; preserve all four dealers on their
-  shared playback path before enabling any default.
-
-These main-project files were inspected but not edited by this gateway task.

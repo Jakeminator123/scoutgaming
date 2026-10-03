@@ -47,7 +47,8 @@ Vercel-Lab UI: `CROUPIER_LAB_REMOTE_UI=1`, samma fyra origins/ingressnyckel,
 och `BO_URL` till publik origin. Serverrendering läser autentiserad revision
 från Render; den får inte falla tillbaka till ett nytt lokalt seed-projekt.
 
-Gemensam sparad policy är ett **ännu ej aktiverat** kodsteg:
+Gemensam sparad policy är aktiverad i den nya isolerade native-QA-miljön;
+**produktion är ännu inte omkopplad**:
 `CROUPIER_STUDIO_NEON_POLICY=1` på Render och båda Vercel-byggena kräver samma
 `CROUPIER_GAME_DATABASE_URL` till befintliga game/auth-Neon, installerat
 checksumverifierat product-v1 samt Studio-migrationerna 001, 002, 003 och 004. Samma

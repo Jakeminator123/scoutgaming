@@ -2,7 +2,9 @@
 
 **En arbetsyta: Croupier Studio.** I molnet öppnar du
 [`/studio`](https://www.scoutgaming.tech/studio) på Vercel. Render äger
-spelmotorn, API och sparade projekt. Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
+spelmotorn och live-transporten. Produktionsprojekt sparas fortfarande på
+Render; nya native-QA använder Neon för policy och administrationsmetadata.
+Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
 **Öppna spelet** i molnstudion fungerar med vanlig spelarinloggning även om
 Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
 presentationsväg och kopplar dessutom spelflikens händelser till Studio.
@@ -13,7 +15,8 @@ ingen separat spelström.
 för spelets presentation: exempelvis vilka dealerklipp som används och när
 de spelas. "Lab-projekt" är inget separat projekt; det syftar på samma
 sparning. Lab är arbetsmiljön, Studio är editorn. Inställningarna och äldre
-versioner sparas på Render-disken. Själva mediefilerna finns i privat Vercel
+versioner sparas på Render-disken i nuvarande produktion och i Neon i den
+nya isolerade native-QA-miljön. Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med Studios sparknapp att göra.
 
@@ -40,8 +43,9 @@ inloggning ger inga nya administrativa rättigheter.
 Den nya administrationen provas i en separat molnmiljö med egen databas.
 Den använder samma sparade revisionskälla som spelmotorn och bevarar osparade
 utkast vid en sparningskonflikt. Den är ännu inte aktiverad på den vanliga
-Studio-adressen. Invitationer och lösenordsåterställning väntar på en verifierad
-mejlkoppling med en avsändaradress på din verifierade domän. Befintliga konton
+Studio-adressen. QA:s mejlkoppling och ett levererat invitationsmejl är
+verifierade; full invitation/reset-acceptans och produktionskopplingen återstår.
+Befintliga konton
 och saldo flyttas eller återställs inte för provet.
 
 OpenClaw öppnar den befintliga autentiserade dashboarden på Render.

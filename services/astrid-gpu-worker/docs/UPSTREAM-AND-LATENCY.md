@@ -47,7 +47,7 @@ bildrutan i verklig drift är ännu omätt; rapportera ingen sparad tid som
 faktum före A/B-mätning på samma GPU och nätverk.
 
 Nästa optimering bör väljas med de befintliga mätpunkterna i
-[GPU-planen](../../../docs/ASTRID-GPU-CLOUD-TEST.md): textväntan, första TTS-PCM, första
+[runtime-guiden](../../../docs/LOCAL-PRESENTATION-RUNTIME.md): textväntan, första TTS-PCM, första
 workerfragment, `audio_analysis`, `inference`, `composition`,
 `overlay_encode_wall` och klientens första bildruta. Upprepade överlappande
 Whisper-fönster och 16-rutors modellbatch för 12 nya rutor är möjliga

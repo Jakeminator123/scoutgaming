@@ -1,7 +1,10 @@
 # Verifierad OpenClaw- och Vercel-konfiguration — 2026-09-29
 
-Denna aktuella kontroll ersätter de borttagna driftkvittona från den
-25 och 28 september och äldre instruktioner för det separata Lab-upplägget.
+Detta är ett daterat kvitto från 29 september, inte dagens driftkonfiguration.
+Det ersatte kvittona från 25 och 28 september och äldre instruktioner för det
+separata Lab-upplägget. Aktuell drift, modell och migration finns i
+[molnkartan](../../../docs/CLOUD-MIGRATION.md) och
+[handoffen](../../../docs/JOHN-HANDOFF.md).
 Kontrollen gjordes mot Render Dashboard, Vercels autentiserade CLI/API och
 den lokala anslutningshelpern. Hemligheter jämfördes endast i minnet.
 
@@ -72,7 +75,7 @@ serverägda. Env-matchning bevisar inte ett fullständigt tal-/bild-/GPU-prov
 eller godkänd läppsynk. Det kräver syntetiskt end-to-end-prov med explicit
 kostnadsram och faktisk ljud-/videogranskning.
 
-Se [miljökartan](../../../_ENVIROMENT-INFO.md),
+Se [variabelregistret](../../../docs/ENVIRONMENT-VARIABLES.md),
 [speech-kontraktet](PRODUCT-SPEECH-DEPLOYMENT-SV.md),
 [medieguiden](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) och
 [game-Neon-planen](../../../docs/CLOUD-MIGRATION.md).
