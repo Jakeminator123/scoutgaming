@@ -399,9 +399,18 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Faktiskt fullprov stoppades efter fyra lyckade åtkomstkontroller eftersom
     Nexts SSR-redirect gav dubbel `/studio/studio/login` och 404. Rättningen
     är implementerad med apprelativ login och bevarad publik returnTo;
-    24 fokuserade Next-/SSR-prov och TypeScript PASS. Ny leverans och
-    molnprov återstår; inget login-POST, konfigbyte eller provideranrop
-    hann utföras i det stoppade provet.
+    24 fokuserade Next-/SSR-prov och TypeScript PASS. Rättningen är levererad
+    på `7fe032a8` med obligatorisk full regression och alla tre GitHub-jobb PASS.
+    Nya isolerade Vercel-/Render-byggen är READY/LIVE på samma SHA; alla 14
+    faktiska bootkontroller PASS. Nästa fullprov stoppades efter fyra godkända
+    åtkomstkontroller eftersom det ohydrerade loginformuläret kunde skickas
+    som GET. Anonymt skarpt repro på båda origins bekräftar default GET och
+    `user`/`pass`-FormData, utan credential-submit eller scriptfel.
+    Nu är alla tre authformer initialt spärrade och använder exakt intern POST;
+    fallback ger 415 före auth/mejl. Tolv native adminformer använder också
+    POST. 38 riktade SSR/API-/verkliga React-browserprov och TypeScript PASS.
+    Bara den nya QA:s syntetiska lösenord/epoch har roterats; signer och andra
+    konton består. Ny leverans och faktisk fullacceptans återstår.
     Ingen komplett browseracceptans eller aktivering är därför verifierad.
     Produktion/äldre QA består.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt

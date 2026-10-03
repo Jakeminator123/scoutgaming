@@ -44,7 +44,7 @@ test('login sends one event only, clears password DOM immediately and navigates 
   const h=harness(),writes=[];let release;
   const ready=new Promise(resolve=>{release=resolve;});
   const props={authBase:'/studio/api/auth',returnTo:'/studio/administration',fetchImpl:async(url,init)=>{writes.push({url,body:JSON.parse(init.body)});await ready;return Response.json({ok:true,secret:'SERVER_SECRET'});}};
-  let tree=h.render(props);h.effects();
+  let tree=h.render(props);h.effects();tree=h.render(props);
   const form=new Form({user:' Operator ',pass:' PRIVATE-PASSWORD '});
   forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:form});forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:form});
   assert.equal(form.inputs.pass.value,'');assert.equal(writes.length,1);assert.deepEqual(writes[0].body,{user:'Operator',pass:' PRIVATE-PASSWORD ',returnTo:'/studio/administration'});
@@ -56,7 +56,7 @@ test('login sends one event only, clears password DOM immediately and navigates 
 test('password token is removed from URL, stays outside DOM/state and survives strict effect replay',async()=>{
   const h=harness(),token='b'.repeat(43),writes=[];
   const props={authBase:'/studio/api/auth',mode:'set-password',token,fetchImpl:async(url,init)=>{writes.push({url,body:JSON.parse(init.body)});return Response.json({ok:true});}};
-  let tree=h.render(props);h.effects();h.replayEffects();
+  let tree=h.render(props);h.effects();h.replayEffects();tree=h.render(props);
   assert.deepEqual(h.history[0],[null,'','/studio/set-password']);assert.doesNotMatch(renderToStaticMarkup(tree),new RegExp(token));
   const form=new Form({pass:'new-private-pass',confirm:'new-private-pass'});
   forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:form});await flush();tree=h.render(props);
@@ -68,17 +68,31 @@ test('password token is removed from URL, stays outside DOM/state and survives s
 
 test('password mismatch or invalid link does not issue a request and reset response reveals no account existence',async()=>{
   const h=harness(),writes=[],props={authBase:'/studio/api/auth',mode:'set-password',token:'b'.repeat(32),fetchImpl:async(...args)=>{writes.push(args);return Response.json({ok:true});}};
-  let tree=h.render(props);h.effects();forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({pass:'private-pass',confirm:'different-pass'})});
+  let tree=h.render(props);h.effects();tree=h.render(props);forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({pass:'private-pass',confirm:'different-pass'})});
   tree=h.render(props);assert.match(renderToStaticMarkup(tree),/stämmer inte överens/);assert.equal(writes.length,0);h.unmount();
   const invalid=harness();tree=invalid.render({...props,token:'invalid'});invalid.effects();assert.equal(forms(tree).length,0);assert.match(renderToStaticMarkup(tree),/Länken saknas eller är ogiltig/);invalid.unmount();
   const reset=harness(),login={authBase:'/studio/api/auth',resetAvailable:true,fetchImpl:async()=>Response.json({ok:true,accountExists:true,secret:'PRIVATE_TOKEN'})};
-  tree=reset.render(login);reset.effects();forms(tree)[1].props.onSubmit({preventDefault(){},currentTarget:new Form({user:'operator'})});await flush();tree=reset.render(login);
+  tree=reset.render(login);reset.effects();tree=reset.render(login);forms(tree)[1].props.onSubmit({preventDefault(){},currentTarget:new Form({user:'operator'})});await flush();tree=reset.render(login);
   assert.match(renderToStaticMarkup(tree),/Om ett aktivt konto/);assert.doesNotMatch(renderToStaticMarkup(tree),/accountExists|PRIVATE_TOKEN/);reset.unmount();
 });
 
 test('unmount prevents late credential response from navigating or changing UI state',async()=>{
-  const h=harness();let release;const ready=new Promise(resolve=>{release=resolve;});
-  const props={authBase:'/studio/api/auth',fetchImpl:async()=>{await ready;return Response.json({ok:true});}};
-  const tree=h.render(props);h.effects();forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({user:'operator',pass:'private-pass'})});
+  const h=harness();let release,writes=0;const ready=new Promise(resolve=>{release=resolve;});
+  const props={authBase:'/studio/api/auth',fetchImpl:async()=>{++writes;await ready;return Response.json({ok:true});}};
+  let tree=h.render(props);h.effects();tree=h.render(props);forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({user:'operator',pass:'private-pass'})});
+  assert.equal(writes,1);
   h.unmount();release();await flush();assert.deepEqual(h.destinations,[]);
+});
+
+test('cold submit handlers never dispatch until the readiness effect has rendered enabled controls',async()=>{
+ for(const mode of ['login','set-password']){
+  const h=harness();let writes=0,prevented=0;
+  const props={authBase:'/studio/api/auth',mode,resetAvailable:true,token:'b'.repeat(43),fetchImpl:async()=>{++writes;return Response.json({ok:true});}};
+  let tree=h.render(props);const cold=new Form({user:'synthetic',pass:'private-pass',confirm:'private-pass'});
+  for(const form of forms(tree))form.props.onSubmit({preventDefault(){++prevented;},currentTarget:cold});
+  assert.equal(writes,0);assert.equal(prevented,forms(tree).length);
+  assert.ok(nodes(tree,node=>node.type==='button').every(node=>node.props.disabled));
+  h.effects();tree=h.render(props);assert.ok(nodes(tree,node=>node.type==='button').every(node=>!node.props.disabled));
+  forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:cold});await flush();assert.equal(writes,1);h.unmount();
+ }
 });
