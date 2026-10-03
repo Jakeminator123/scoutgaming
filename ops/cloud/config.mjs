@@ -94,9 +94,14 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (streaming && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(sessionReserveUsd)
     || Number(sessionReserveUsd) <= 0 || Number(sessionReserveUsd) > 10)) fail('CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD');
   const dailyBudgetUsd = env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD || '';
-  if (streaming && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(dailyBudgetUsd)
+  const fullfileBudgetRequired = generatedSpeech && !streaming && env.CROUPIER_STUDIO_NEON_POLICY === '1';
+  const fullfileReserveUsd = env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD || '';
+  if (fullfileBudgetRequired && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(fullfileReserveUsd)
+    || Number(fullfileReserveUsd) <= 0 || Number(fullfileReserveUsd) > 10)) fail('CROUPIER_SPEECH_FULLFILE_RESERVE_USD');
+  if ((streaming || fullfileBudgetRequired) && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(dailyBudgetUsd)
     || Number(dailyBudgetUsd) <= 0 || Number(dailyBudgetUsd) > 10
-    || Number(sessionReserveUsd) > Number(dailyBudgetUsd))) fail('CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD');
+    || (streaming && Number(sessionReserveUsd) > Number(dailyBudgetUsd))
+    || (fullfileBudgetRequired && Number(fullfileReserveUsd) > Number(dailyBudgetUsd)))) fail('CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD');
   const cartesiaKey = env.CARTESIA_API_KEY || '';
   const runpodKey = env.RUNPOD_API_KEY || '';
   const runpodEndpointId = env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID || '';
@@ -190,6 +195,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     mediaStorage, mediaBlobIndex, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
+    fullfileBudget: fullfileBudgetRequired ? { reserveUsd:fullfileReserveUsd, dailyBudgetUsd } : null,
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
     translationKey: camera ? translationKey : '',
     speechProvider: generatedSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null,
@@ -285,6 +291,10 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
           CROUPIER_SPEECH_STREAM_TICKET_SECRET: config.streamSecrets.ticketSecret,
           CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: config.streamSecrets.sessionReserveUsd,
           CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: config.streamSecrets.dailyBudgetUsd,
+        } : {}),
+        ...(config.fullfileBudget ? {
+          CROUPIER_SPEECH_FULLFILE_RESERVE_USD:config.fullfileBudget.reserveUsd,
+          CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:config.fullfileBudget.dailyBudgetUsd,
         } : {}),
         ...(config.speechProvider ? {
           CARTESIA_API_KEY: config.speechProvider.cartesiaKey,

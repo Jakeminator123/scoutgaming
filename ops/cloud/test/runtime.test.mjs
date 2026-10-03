@@ -224,6 +224,24 @@ test('streaming secrets and switch reach Web only after explicit paid speech opt
   }
 });
 
+test('Neon fullfile budget must be explicit and reaches only the Web fullfile child', () => {
+  const env={...fixture(),CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_GENERATED_SPEECH:'1',CROUPIER_CLOUD_GENERATED_SPEECH:'1',
+    CARTESIA_API_KEY:'fixture-cartesia',RUNPOD_API_KEY:'fixture-runpod',CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'fixture-endpoint',
+    CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'0.50',CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'1'};
+  const config=validateCloudConfig(env),specs=childSpecifications(config,env,{labInternalSecret:LAB_SECRET});
+  assert.deepEqual(config.fullfileBudget,{reserveUsd:'0.50',dailyBudgetUsd:'1'});
+  assert.equal(specs.web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,'0.50');
+  assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD,'1');
+  for(const name of ['CROUPIER_SPEECH_FULLFILE_RESERVE_USD','CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD'])assert.equal(specs.lab.env[name],undefined);
+  for(const value of [undefined,'','0','-1','10.01','1e-2','0.0000001',' 0.5'])
+    assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_FULLFILE_RESERVE_USD:value}),/CROUPIER_SPEECH_FULLFILE_RESERVE_USD/);
+  for(const value of [undefined,'','0','0.49','Infinity','1.0000001'])
+    assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:value}),/CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD/);
+  assert.equal(validateCloudConfig({...env,CROUPIER_STUDIO_NEON_POLICY:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:''}).fullfileBudget,null);
+  const off={...env,CROUPIER_GENERATED_SPEECH:'0',CROUPIER_CLOUD_GENERATED_SPEECH:'0'};
+  assert.equal(childSpecifications(validateCloudConfig(off),off,{labInternalSecret:LAB_SECRET}).web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,undefined);
+});
+
 test('disk preflight accepts its actual directory despite Windows path casing', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-cloud-disk-'));
   try { await inspectCloudDisk(validateCloudConfig({ ...fixture(), CROUPIER_CLOUD_DATA_ROOT: directory })); }

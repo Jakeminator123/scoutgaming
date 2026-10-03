@@ -13,7 +13,7 @@ import { createPostgresOperatorSpeechQa } from '../web/postgres-operator-speech-
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);
 const target={database:'postgres',role:'studio_qa',address:'127.0.0.1',port:55432};
-const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
+const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
 const packet=(name,value)=>{const bytes=Buffer.from(JSON.stringify(value));return {name,bytes,sha256:hash(bytes),updatedAt:observedAt};};
 function prepared(scope={environment:'import-qa',workspaceId:'croupier'},extras=[]) {
   return prepareLegacySpeechLedgerSnapshot({scope,endpointId:'legacy-endpoint',observedAt,
@@ -37,7 +37,7 @@ function qaPackets({gate=false,campaign=true,attempts=2,at=stamp}={}) {
 }
 
 function memoryPool() {
-  let state={leases:[],policy:[],requests:[],sessions:[],reservations:[],operatorCampaigns:[],operatorAttempts:[],operatorGates:[],markers:[],history:['preserved-preexisting-document-history']},tail=Promise.resolve(),failure=null;
+  let state={fullfilePolicies:[],fullfileReservations:[],leases:[],policy:[],requests:[],sessions:[],reservations:[],operatorCampaigns:[],operatorAttempts:[],operatorGates:[],markers:[],history:['preserved-preexisting-document-history']},tail=Promise.resolve(),failure=null;
   const trace=[],counts={connects:0,releases:0};
   const rows=value=>({rows:structuredClone(value??[])});
   return {
@@ -85,6 +85,17 @@ test('explicit import preserves saved budget, opaque spent key, uncertain submit
 test('simultaneous explicit imports serialize and replay exactly without duplicate reservations',async()=>{
   const pool=memoryPool(),input=args(pool),results=await Promise.all([applyLegacySpeechLedgerSnapshot(input),applyLegacySpeechLedgerSnapshot(input)]);
   assert.deepEqual(results.map(row=>row.replayed).sort(),[false,true]);assert.equal(pool.state.reservations.length,2);assert.equal(pool.state.markers.length,1);
+});
+
+test('legacy import never invents fullfile policy or merges later fullfile costs on replay',async()=>{
+  for(const kind of ['fullfilePolicies','fullfileReservations']){
+    const pool=memoryPool();await applyLegacySpeechLedgerSnapshot(args(pool));
+    assert.deepEqual(pool.state[kind],[]);
+    pool.state[kind].push({environment_id:'import-qa'});
+    const before=structuredClone(pool.state);
+    await assert.rejects(applyLegacySpeechLedgerSnapshot(args(pool)),{code:'studio_speech_import_target_conflict'});
+    assert.deepEqual(pool.state,before);
+  }
 });
 
 test('scope/checksum/frozen proof/schema confirmation mismatches stop before write transaction',async()=>{
@@ -175,7 +186,7 @@ test('import contains only inserted cost rows and one scoped receipt, no schema/
   assert.doesNotMatch(code,/croupier_game\.|croupier_auth\.|fetch\(|process\.env|api\.runpod|cartesia\.ai/);
 });
 
-// Parent's isolated runner can invoke this after installing exact001/002/003.
+// Parent's isolated runner can invoke this after installing exact001/002/003/004.
 // The target guard runs before any mutation; no environment or live URL lookup.
 export async function runSpeechLedgerImportSqlChecks({pool,restart}={}) {
   const actual=(await pool.query("SELECT host(inet_server_addr()) AS address,current_user AS role,current_database() AS database,current_setting('listen_addresses') AS listeners")).rows[0];

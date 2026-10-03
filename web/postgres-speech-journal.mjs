@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { StudioStorageError, validateStudioEnvironmentId } from './storage/studio-contract.mjs';
-import { GPU_RESERVATION_WINDOW_MS } from './speech-journal-constants.mjs';
+import { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS } from './speech-journal-constants.mjs';
 
-export { GPU_RESERVATION_WINDOW_MS };
+export { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS };
 const MAX_MICRO_USD = 10000000;
 const resources = new Set(['fullfile-provider', 'stream-session', 'operator-qa']);
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
@@ -174,6 +174,35 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
     if (!persisted) fail('generated_speech_journal_invalid', 409);
     return { dailyBudgetMicroUsd: Math.min(persisted, microUsd(current)), savedBudgetMicroUsd: persisted };
   };
+  const getFullfilePolicy = async (client, reserve, time) => {
+    microUsd(reserve);
+    const saved = await row(client, 'get_file_policy', 'SELECT * FROM croupier_studio.fullfile_budget_policies WHERE environment_id=$1', [environment]);
+    if (!saved || integer(saved.version) !== 1) fail('generated_speech_fullfile_budget_policy_missing', 409);
+    if (integer(saved.reserve_micro_usd, MAX_MICRO_USD) !== reserve
+      || integer(saved.reservation_window_ms) !== GPU_RESERVATION_WINDOW_MS || integer(saved.created_at_ms) > time)
+      fail('generated_speech_fullfile_budget_policy_conflict', 409);
+    return { reserveMicroUsd:reserve, reservationWindowMs:GPU_RESERVATION_WINDOW_MS };
+  };
+  // All paid capabilities share one daily cap and the same advisory lock. A
+  // completed/cancelled/uncertain request still consumes its original amount.
+  const dayUsed = async (client, day) => integer((await row(client, 'day_sum', `SELECT coalesce(sum(reserved_micro_usd),0)::bigint AS used FROM (
+    SELECT reserved_micro_usd FROM croupier_studio.gpu_reservations WHERE environment_id=$1 AND day=$2::date
+    UNION ALL SELECT reserved_micro_usd FROM croupier_studio.fullfile_reservations WHERE environment_id=$1 AND day=$2::date
+  ) costs`, [environment,day])).used);
+  const requestDays = time => [...new Set([time,time+GPU_RESERVATION_WINDOW_MS].map(stamp=>new Date(stamp).toISOString().slice(0,10)))];
+  const assertFileReserve = async (client, saved, time, reserve, current) => {
+    const policy = await getFullfilePolicy(client,reserve,time), budget = await getPolicy(client,current), created = integer(saved.created_at_ms);
+    if (saved.capability !== 'fullfile' || time < created
+      || time + FULLFILE_ADMISSION_REMAINING_MS > created + policy.reservationWindowMs)
+      fail('generated_speech_fullfile_reservation_expired',409);
+    const rows=(await client.query(`/* speech:file_reservations */ SELECT request_key,to_char(day,'YYYY-MM-DD') AS day,reserved_micro_usd,reserved_at_ms
+      FROM croupier_studio.fullfile_reservations WHERE environment_id=$1 AND request_key=$2 ORDER BY day LIMIT 3`,[environment,saved.request_key])).rows;
+    const days=requestDays(created);
+    if(rows.length!==days.length || rows.some((r,i)=>r.request_key!==saved.request_key || r.day!==days[i]
+      || integer(r.reserved_micro_usd)!==reserve || integer(r.reserved_at_ms)!==created)) fail('generated_speech_fullfile_reservation_invalid',409);
+    for(const day of days)if(await dayUsed(client,day)>budget.dailyBudgetMicroUsd)fail('generated_speech_daily_budget_exhausted',429);
+    return {key:saved.request_key,days,reservedMicroUsd:reserve,expiresAt:created+policy.reservationWindowMs};
+  };
 
   return Object.freeze({
     environmentId: environment,
@@ -223,7 +252,7 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
         return { released: true };
       });
     },
-    async claimRequest({ ownerHash, requestId, fingerprint, capability, lease } = {}) {
+    async claimRequest({ ownerHash, requestId, fingerprint, capability, lease, reserveMicroUsd, currentBudgetMicroUsd } = {}) {
       const key = speechRequestKey(ownerHash, requestId); check(fingerprint, hash);
       if (!['fullfile', 'stream'].includes(capability)) fail('invalid_generated_speech_journal_input', 422);
       return transaction(async (client, time) => {
@@ -238,16 +267,31 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
         if (capability === 'fullfile') {
           const active = await row(client, 'active_file_requests', "SELECT count(*)::bigint AS count FROM croupier_studio.speech_requests WHERE environment_id = $1 AND capability = 'fullfile' AND state IN ('reserved', 'submission_started', 'submission_uncertain')", [environment]);
           if (integer(active.count)) fail('generated_speech_busy', 429);
+          await getFullfilePolicy(client,reserveMicroUsd,time);
+          const budget=await getPolicy(client,currentBudgetMicroUsd);
+          for(const day of requestDays(time))if(await dayUsed(client,day)+reserveMicroUsd>budget.dailyBudgetMicroUsd)
+            fail('generated_speech_daily_budget_exhausted',429);
         }
         await row(client, 'insert_request', `INSERT INTO croupier_studio.speech_requests (environment_id, request_key, owner_hash, request_id, fingerprint, capability, state, lease_resource, holder_id, lease_fence, created_at_ms, updated_at_ms)
           VALUES ($1, $2, $3, $4, $5, $6, 'reserved', $7, $8, $9, $10, $10) RETURNING *`, [environment, key, ownerHash, requestId, fingerprint, capability, lease.resource, lease.holderId, lease.fence, time]);
+        if(capability==='fullfile')for(const day of requestDays(time))await row(client,'insert_file_reservation',
+          'INSERT INTO croupier_studio.fullfile_reservations(environment_id,request_key,day,reserved_micro_usd,reserved_at_ms) VALUES($1,$2,$3::date,$4,$5) RETURNING *',
+          [environment,key,day,reserveMicroUsd,time]);
         return { status: 'new', key };
       });
     },
-    async markRequestSubmissionStarted({ key, lease } = {}) {
+    async assertFullfileReservation({key,lease,reserveMicroUsd,currentBudgetMicroUsd}={}){
+      return transaction(async(client,time)=>{
+        const saved=await ownedRequest(client,key,lease,time,true);
+        if(!['reserved','submission_started'].includes(saved.state))fail('generated_speech_request_already_attempted',409);
+        return assertFileReserve(client,saved,time,reserveMicroUsd,currentBudgetMicroUsd);
+      });
+    },
+    async markRequestSubmissionStarted({ key, lease, reserveMicroUsd, currentBudgetMicroUsd } = {}) {
       return transaction(async (client, time) => {
         const saved = await ownedRequest(client, key, lease, time, true);
         if (saved.state !== 'reserved') fail('generated_speech_request_already_attempted', 409);
+          if (saved.capability === 'fullfile') await assertFileReserve(client, saved, time, reserveMicroUsd, currentBudgetMicroUsd);
         await row(client, 'update_request', 'UPDATE croupier_studio.speech_requests SET state = $3, updated_at_ms = $4, safe_error = $5, package_id = $6, package_metadata = $7::jsonb WHERE environment_id = $1 AND request_key = $2 RETURNING *', [environment, key, 'submission_started', time, null, null, null]);
         return { key, state: 'submission_started' };
       });
@@ -301,10 +345,29 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
         if (existing) return getPolicy(client, dailyBudgetMicroUsd);
         const count = await row(client, 'journal_count', `SELECT ((SELECT count(*) FROM croupier_studio.speech_requests WHERE environment_id = $1)
           + (SELECT count(*) FROM croupier_studio.gpu_sessions WHERE environment_id = $1)
-          + (SELECT count(*) FROM croupier_studio.gpu_reservations WHERE environment_id = $1))::bigint AS count`, [environment]);
+            + (SELECT count(*) FROM croupier_studio.gpu_reservations WHERE environment_id = $1)
+            + (SELECT count(*) FROM croupier_studio.fullfile_reservations WHERE environment_id = $1))::bigint AS count`, [environment]);
         if (integer(count.count)) fail('generated_speech_journal_invalid', 409);
         await row(client, 'insert_policy', 'INSERT INTO croupier_studio.gpu_budget_policies (environment_id, version, daily_budget_micro_usd, created_at_ms) VALUES ($1, 1, $2, $3) RETURNING *', [environment, dailyBudgetMicroUsd, time]);
         return { dailyBudgetMicroUsd, savedBudgetMicroUsd: dailyBudgetMicroUsd };
+      });
+    },
+    async initializeFullfileBudgetPolicy({reserveMicroUsd,currentBudgetMicroUsd,confirmation}={}){
+      microUsd(reserveMicroUsd);microUsd(currentBudgetMicroUsd);
+      if(confirmation!=='verified-new-empty-cost-journal')fail('generated_speech_budget_bootstrap_required',409);
+      return transaction(async(client,time)=>{
+        const budget=await getPolicy(client,currentBudgetMicroUsd);
+        if(reserveMicroUsd>budget.dailyBudgetMicroUsd)fail('generated_speech_daily_budget_exhausted',429);
+        const existing=await row(client,'get_file_policy','SELECT * FROM croupier_studio.fullfile_budget_policies WHERE environment_id=$1',[environment]);
+        if(existing)return getFullfilePolicy(client,reserveMicroUsd,time);
+        const count=await row(client,'journal_count',`SELECT ((SELECT count(*) FROM croupier_studio.speech_requests WHERE environment_id=$1)
+          +(SELECT count(*) FROM croupier_studio.gpu_sessions WHERE environment_id=$1)
+          +(SELECT count(*) FROM croupier_studio.gpu_reservations WHERE environment_id=$1)
+          +(SELECT count(*) FROM croupier_studio.fullfile_reservations WHERE environment_id=$1))::bigint AS count`,[environment]);
+        if(integer(count.count))fail('generated_speech_journal_invalid',409);
+        await row(client,'insert_file_policy','INSERT INTO croupier_studio.fullfile_budget_policies(environment_id,version,reserve_micro_usd,reservation_window_ms,created_at_ms) VALUES($1,1,$2,$3,$4) RETURNING *',
+          [environment,reserveMicroUsd,GPU_RESERVATION_WINDOW_MS,time]);
+        return {reserveMicroUsd,reservationWindowMs:GPU_RESERVATION_WINDOW_MS};
       });
     },
     async getBudgetPolicy({ currentBudgetMicroUsd } = {}) {
@@ -321,8 +384,7 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
         const policy = await getPolicy(client, currentBudgetMicroUsd);
         const days = [...new Set([time, time + GPU_RESERVATION_WINDOW_MS].map(stamp => new Date(stamp).toISOString().slice(0, 10)))];
         for (const day of days) {
-          const used = await row(client, 'day_sum', 'SELECT coalesce(sum(reserved_micro_usd), 0)::bigint AS used FROM croupier_studio.gpu_reservations WHERE environment_id = $1 AND day = $2::date', [environment, day]);
-          if (integer(used.used) + reserveMicroUsd > policy.dailyBudgetMicroUsd) fail('generated_speech_daily_budget_exhausted', 429);
+            if (await dayUsed(client,day) + reserveMicroUsd > policy.dailyBudgetMicroUsd) fail('generated_speech_daily_budget_exhausted', 429);
         }
         const saved = await row(client, 'insert_session', `INSERT INTO croupier_studio.gpu_sessions (environment_id, session_id, endpoint_id, worker_id, holder_id, lease_fence, state, created_at_ms)
           VALUES ($1, $2, $3, $4, $5, $6, 'reserved', $7) RETURNING *`, [environment, sessionId, endpointId, `croupier-${sessionId}`, lease.holderId, lease.fence, time]);

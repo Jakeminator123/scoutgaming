@@ -18,6 +18,11 @@ const STORE_LIMIT = 256 * 1024 * 1024;
 const MEDIA_ID = /^[a-f0-9]{32}$/;
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
 const equalPath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+const budgetAmount = value => {
+  if (typeof value !== 'string' || !/^(?:0|[1-9]\d?)(?:\.\d{1,6})?$/.test(value)) return undefined;
+  const amount = Math.round(Number(value) * 1000000);
+  return Number.isSafeInteger(amount) && amount > 0 && amount <= 10000000 ? amount : undefined;
+};
 const privateDirectory = directory => {
   if (typeof directory !== 'string' || !isAbsolute(directory)) return false;
   const path = resolve(directory), inside = relative(REPOSITORY, path);
@@ -59,7 +64,9 @@ function configuration(env) {
   const value = { directory: env.CROUPIER_GENERATED_SPEECH_DIR,
     cartesiaApiKey: env.CARTESIA_API_KEY,
     runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
-    voiceId: GENERATED_SPEECH_DEFAULTS.voiceId, modelId: GENERATED_SPEECH_DEFAULTS.modelId };
+    voiceId: GENERATED_SPEECH_DEFAULTS.voiceId, modelId: GENERATED_SPEECH_DEFAULTS.modelId,
+    reserveMicroUsd: budgetAmount(env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD),
+    dailyBudgetMicroUsd: budgetAmount(env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD) };
   const token = input => typeof input === 'string' && input.length > 0 && input.length <= 2048 && !/\s/.test(input);
   const configured = enabled && privateDirectory(value.directory)
     && token(value.cartesiaApiKey) && token(value.runpodApiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(value.runpodEndpointId ?? '');
@@ -101,6 +108,7 @@ export function getGeneratedSpeechService() {
 export function createGeneratedSpeechService(config, { provider = null, journal = null, artifacts = null,
   journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' } = {}) {
   if (journalRequired || journal) requireSpeechJournal(journal);
+  if (journal && typeof journal.assertFullfileReservation !== 'function') fail('generated_speech_journal_unavailable');
   if (journal) requireArtifacts(artifacts);
   if (!config || !privateDirectory(config.directory)) fail('generated_speech_invalid_directory');
   const directory = resolve(config.directory);
@@ -229,13 +237,19 @@ export function createGeneratedSpeechService(config, { provider = null, journal 
     try {
       const lease = await ownership.get();
       input.signal?.throwIfAborted(); await input.beforeCostly?.(); input.signal?.throwIfAborted();
-      const claim = await journal.claimRequest({ ...identity, lease });
+      const budget = { reserveMicroUsd:config.reserveMicroUsd, currentBudgetMicroUsd:config.dailyBudgetMicroUsd };
+      const claim = await journal.claimRequest({ ...identity, lease, ...budget });
       if (claim.status !== 'new') fail('generated_speech_request_already_attempted', 409);
       claimed = true;
-      await journal.markRequestSubmissionStarted({ key, lease:await ownership.get() });
+      await journal.markRequestSubmissionStarted({ key, lease:await ownership.get(), ...budget });
       runtime ??= createGeneratedSpeechProvider({ ...config, voiceId, modelId });
       const result = await runtime.generate({ requestId:`speech-${key}`, text:input.text, signal:input.signal,
-        beforeCostly:async () => { input.signal?.throwIfAborted(); await input.beforeCostly?.(); await ownership.get(); input.signal?.throwIfAborted(); }, onProgress:input.onProgress });
+        beforeCostly:async () => {
+          input.signal?.throwIfAborted(); await input.beforeCostly?.();
+          const currentLease = await ownership.get();
+          await journal.assertFullfileReservation({ key, lease:currentLease, ...budget });
+          input.signal?.throwIfAborted();
+        }, onProgress:input.onProgress });
       if (input.signal?.aborted) fail('generated_speech_cancelled', 499);
       const id = randomBytes(16).toString('hex'), speechPackage = outputPackage(result, input, id);
       const saved = await artifacts.save({ artifactId:id, ownerHash, speechPackage, audio:result.audio, video:result.video });

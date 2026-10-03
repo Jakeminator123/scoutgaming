@@ -14,6 +14,8 @@ const sources = Object.freeze([
     indexes: ['gpu_sessions_open_idx', 'gpu_sessions_provider_job_idx', 'gpu_reservations_day_idx'] },
   { version: '003', file: '003-operator-speech-qa.sql', optional: true,
     tables: ['operator_qa_campaigns', 'operator_qa_gate', 'operator_qa_attempts'], indexes: [] },
+  { version: '004', file: '004-fullfile-reservations.sql', optional: true,
+    tables: ['fullfile_budget_policies', 'fullfile_reservations'], indexes: ['fullfile_reservations_day_idx'] },
 ]);
 const migrationLock = Object.freeze([1129467987, 1398035778]);
 

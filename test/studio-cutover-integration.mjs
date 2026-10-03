@@ -133,9 +133,9 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 }, tournaments: [] };
     await runtime.repository.initializeDocument('project', { value: createSeedProject(), revision: 'https-project-initial', actor: 'fixture-import' });
     await runtime.repository.initializeDocument('administration', { value: adminValue, revision: 'https-admin-initial', actor: 'fixture-import' });
-    await check('current product-v1 and Studio001/002/003 SQL are checksum-verified', async () => {
+    await check('current product-v1 and Studio001/002/003/004 SQL are checksum-verified', async () => {
       await runtime.store.db.assertInstalled(); const plan = await planStudioMigrations({ pool });
-      assert.deepEqual(plan.applied.map(row => row.version), ['001', '002', '003']); assert.equal(plan.toApply.length, 0);
+      assert.deepEqual(plan.applied.map(row => row.version), ['001', '002', '003', '004']); assert.equal(plan.toApply.length, 0);
     });
     await check('HTTPS real native login authenticates current Neon roles and never grants reader project writes', async () => {
       for (const [key, user] of [['admin', names[0]], ['reader', names[1]]]) {
@@ -363,7 +363,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
         },
         del:async pathname => { artifactValues.delete(pathname); },
       } });
-      const files = () => createGeneratedSpeechService({ directory }, { journal, journalRequired:true, artifacts, provider:{
+      const files = () => createGeneratedSpeechService({ directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal, journalRequired:true, artifacts, provider:{
         generate:async ({ text, beforeCostly }) => {
           await beforeCostly(); packageCalls++;
           const audio = Buffer.from(`fixture-audio:${text}`), video = Buffer.from(`fixture-video:${text}`);
@@ -376,6 +376,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
         await assert.rejects(absent.ensure(speechInput), { code:'generated_speech_budget_policy_missing' });
         assert.equal(paid, 0); await absent.close();
         await journal.initializeBudgetPolicy({ dailyBudgetMicroUsd:1000000, confirmation:'verified-new-empty-cost-journal' });
+        await journal.initializeFullfileBudgetPolicy({ reserveMicroUsd:200000, currentBudgetMicroUsd:1000000, confirmation:'verified-new-empty-cost-journal' });
         const active = manager(); await Promise.all([active.ensure(speechInput), active.ensure(speechInput)]); assert.equal(paid, 1);
         const charges = (await pool.query('SELECT day::text,reserved_micro_usd::text FROM croupier_studio.gpu_reservations WHERE environment_id=$1 ORDER BY day', [environmentId])).rows;
         assert.deepEqual(charges, [{ day:'2026-10-03', reserved_micro_usd:'200000' }, { day:'2026-10-04', reserved_micro_usd:'200000' }]);

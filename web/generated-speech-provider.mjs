@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
+import { FULLFILE_PROVIDER_MAX_TIMEOUT_MS, FULLFILE_RUNPOD_POLICY } from './speech-journal-constants.mjs';
 
 // Provider-only adapter. No env, filesystem, browser, room broadcast or game state.
 // Wire-contract provenance (not vendored implementation):
@@ -16,7 +17,7 @@ export const GENERATED_SPEECH_DEFAULTS = Object.freeze({
 export const GENERATED_SPEECH_LIMITS = Object.freeze({
   textChars: 500, durationMs: 25000, sampleRate: 24000, fps: 24,
   videoBytes: 30 * 1024 * 1024, retainedBytes: 64 * 1024 * 1024,
-  requestLedger: 1024, maxTimeoutMs: 300000,
+  requestLedger: 1024, maxTimeoutMs: FULLFILE_PROVIDER_MAX_TIMEOUT_MS,
 });
 const PCM_BYTES = GENERATED_SPEECH_LIMITS.sampleRate * 2 * GENERATED_SPEECH_LIMITS.durationMs / 1000;
 const BASE64_BYTES = 4 * Math.ceil(GENERATED_SPEECH_LIMITS.videoBytes / 3);
@@ -165,7 +166,7 @@ export function createGeneratedSpeechProvider(configuration, { fetchImpl = fetch
         // RunPod's per-job policy remains effective if this process disconnects
         // before it receives a job ID and cannot send its usual cancellation.
         // https://docs.runpod.io/serverless/endpoints/send-requests#execution-policies
-        policy: { executionTimeout: 120000, ttl: 180000 },
+        policy: FULLFILE_RUNPOD_POLICY,
       }) });
       if (typeof job?.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(job.id)) fail('invalid_generated_speech_job');
       jobId = job.id;

@@ -47,6 +47,7 @@
         "CROUPIER_SPEECH_STREAM_WORKER_SECRET",
         "CROUPIER_SPEECH_STREAM_TICKET_SECRET",
         "CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD",
+        "CROUPIER_SPEECH_FULLFILE_RESERVE_USD",
         "CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD",
         "CARTESIA_API_KEY",
         "RUNPOD_API_KEY",
@@ -302,6 +303,7 @@
       "sources": [
         "lab/lib/remote-ui.mjs",
         "lab/lib/studio-native-runtime.mjs",
+        "lab/lib/studio-native-mail.mjs",
         "web/storage/studio-game-policy.mjs",
         "lab/lib/studio-game-authority.mjs",
         "lab/lib/neon-video-registry.mjs",
@@ -328,6 +330,7 @@
         "CROUPIER_STUDIO_WORKSPACE_ID",
         "CROUPIER_GAME_DATABASE_URL",
         "RESEND_API_KEY",
+        "CROUPIER_STUDIO_MAIL_FROM",
         "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",

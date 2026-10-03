@@ -62,11 +62,11 @@ test('existing BO login returns only to native administration or exact one-use h
     assert.equal(target(next), '/bo/');
   }
 });
-test('bundled source paths load all three migrations without asset URLs', async () => {
+test('bundled source paths load all four migrations without asset URLs', async () => {
   const directory = resolve(fileURLToPath(new URL('../../ops/neon-studio/', import.meta.url)));
   const expected = await loadStudioMigrations();
   const actual = await loadStudioMigrations({ directory });
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
-  assert.equal(actual.length, 3);
+  assert.equal(actual.length, 4);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 // Deterministic SQL transaction fixture; actual SQL acceptance runs separately.
 export function speechMemoryPool(clock = () => Date.parse('2026-10-03T12:00:00Z')) {
-  let state = { leases: new Map(), requests: new Map(), policies: new Map(), sessions: new Map(), reservations: new Map() };
+  let state = { leases: new Map(), requests: new Map(), policies: new Map(), sessions: new Map(), reservations: new Map(), filePolicies: new Map(), fileReservations: new Map() };
   let tail = Promise.resolve(), injected = null, connects = 0, releases = 0;
   const trace = [];
   const key = (...parts) => parts.join('\0');
@@ -72,7 +72,20 @@ export function speechMemoryPool(clock = () => Date.parse('2026-10-03T12:00:00Z'
             const saved = { environment_id: env, version: 1, daily_budget_micro_usd: number(p[1]), created_at_ms: number(p[2]) };
             state.policies.set(env, saved); return rows(saved);
           }
-          if (tag === 'journal_count') return rows({ count: number(['requests', 'sessions', 'reservations'].reduce((sum, kind) => sum + [...state[kind].values()].filter(r => r.environment_id === env).length, 0)) });
+          if (tag === 'get_file_policy') return rows(state.filePolicies.get(env));
+          if (tag === 'insert_file_policy') {
+            if (state.filePolicies.has(env)) duplicate();
+            const saved = { environment_id:env, version:1, reserve_micro_usd:number(p[1]), reservation_window_ms:number(p[2]), created_at_ms:number(p[3]) };
+            state.filePolicies.set(env,saved); return rows(saved);
+          }
+          if (tag === 'file_reservations') return rows([...state.fileReservations.values()].filter(r=>r.environment_id===env && r.request_key===id).sort((a,b)=>a.day.localeCompare(b.day)).slice(0,3));
+          if (tag === 'insert_file_reservation') {
+            if (state.fileReservations.has(key(env,id,p[2]))) duplicate();
+            assert.ok(state.requests.has(key(env,id))); assert.ok(state.filePolicies.has(env));
+            const saved={environment_id:env,request_key:id,day:p[2],reserved_micro_usd:number(p[3]),reserved_at_ms:number(p[4])};
+            state.fileReservations.set(key(env,id,p[2]),saved); return rows(saved);
+          }
+          if (tag === 'journal_count') return rows({ count: number(['requests', 'sessions', 'reservations', 'fileReservations'].reduce((sum, kind) => sum + [...state[kind].values()].filter(r => r.environment_id === env).length, 0)) });
           if (tag === 'get_session') return rows(state.sessions.get(key(env, id)));
           if (tag === 'open_session') return rows([...state.sessions.values()].find(r => r.environment_id === env && r.released_at_ms === null));
           if (tag === 'insert_session') {
@@ -87,7 +100,7 @@ export function speechMemoryPool(clock = () => Date.parse('2026-10-03T12:00:00Z'
             if (saved.job_id && [...state.sessions.values()].some(r => r !== saved && r.environment_id === env && r.endpoint_id === saved.endpoint_id && r.job_id === saved.job_id)) duplicate();
             return rows(saved);
           }
-          if (tag === 'day_sum') return rows({ used: number([...state.reservations.values()].filter(r => r.environment_id === env && r.day === id).reduce((sum, r) => sum + Number(r.reserved_micro_usd), 0)) });
+          if (tag === 'day_sum') return rows({ used: number([...state.reservations.values(),...state.fileReservations.values()].filter(r => r.environment_id === env && r.day === id).reduce((sum, r) => sum + Number(r.reserved_micro_usd), 0)) });
           if (tag === 'insert_reservation') {
             if (state.reservations.has(key(env, id, p[2]))) duplicate();
             const saved = { environment_id: env, session_id: id, day: p[2], reserved_micro_usd: number(p[3]) };

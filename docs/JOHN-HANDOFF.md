@@ -160,11 +160,56 @@ PASS, inklusive installerad React/SWC-SSR och faktisk headless React-hydration,
 kall Enter/submit samt JSON-POST efter hydration. Lab-TypeScript PASS.
 Enbart den nya QA:s syntetiska operatör har fått bytt lösenord och epoch+1;
 egna sessions-/handoff-/lösenordstokens är återkallade, signer och övriga
-identiteter består. Ingen produktions-/äldre-QA-anslutning eller provider
-användes. Leverans, ny QA-ombyggnad och komplett browseracceptans återstår.
+identiteter består. Rättningen är levererad i `b5c0ddc7` efter full obligatorisk
+hook och alla tre GitHub-kontroller PASS. Render och båda nya Vercel-QA är
+LIVE/READY på samma SHA; alla 14 bootkontroller och faktisk kall/hydrerad
+formulärkontroll på båda origins PASS utan credential-submit.
+Två fullprov passerade 76 kontroller: login, sex administrationsgrupper,
+14 sektioner, åtta readouts, utkast/CAS-konflikt, fyra Render-revisionskvitton
+och privata originalklipps HEAD/Range/fullhash. Båda stoppades därefter i
+Vera-rehearsal. Första provets för snäva nätverksguard blockerade det egna
+spelaruppslaget och de aktiva typsnitten; andra provet hade noll blockerade
+anrop men saknade förväntat konfigurationskvitto. Ett avgränsat faktiskt
+molnprov bekräftade samma sparade Neon-revision på båda API-vägar, men gamla
+`lab/project.json` i legacy-kvittot. Native-adaptern anger nu korrekt källa;
+23 fokuserade prov PASS, nytt fullprov kräver den nya leveransen.
+Projekt-/pitinnehåll återlästes efter exakt CAS-återställning
+i båda proven; providers användes inte. Oföränderliga FAIL-kvitton består.
+Ingen komplett browseracceptans eller produktionsaktivering är verifierad.
 
-Den privata produktionsimporten kräver nu normaliserade hashkontroller för
-130 beroenden/SQL/aktiva manifest och Blob-index mot den levererade main-SHA:n.
+Fullfilsvägen hade ett separat kostnadsgap: request-/submitjournalen skapade
+ingen monetär reservation före TTS/GPU. Additiv 004 och en requestägd,
+beständig reservation är implementerade; beloppet ska anges explicit och
+delas i dygnssumman med streamkostnader. Tidigare kostnader bevaras och inga
+legacy-fullfilsrequests får fabricerade nollkostnader eller återbetalningar.
+83 fokuserade journal-/service-/provider-/molnprov PASS. Faktisk separat lokal
+PostgreSQL/restart gav 15/15 grupper plus tre isoleringsguards PASS: båda
+admissionsordningarna/samtidighet, UTC-dygn, minskat tak, oföränderlig policy,
+tappad faktisk COMMIT-kvittens, gamla oreserverade nycklar och fenced ägare.
+Verkliga serviceanrop nekas före provider vid saknat belopp/policy/budget
+eller försenad ny auth. Åtta minuter måste återstå av ursprungliga tolv;
+300 sekunders maximal klientdeadline och 180 sekunders separat RunPod-TTL
+täcks även vid osäker POST. Alla 13 källhashar består; egen databas/process
+är städade. Det breda uppdaterade SQL-/HTTPS-/restartprovet gav åter 40/40
+grupper samt fyra retained-kontraktsprov PASS. Alla 45 källhashar är
+oförändrade; separat kontroll bekräftar noll egna fixturkataloger.
+Betalda prov och aktivering väntar fortsatt på avgränsad livebudget.
+Migration/import seedar ingen fullfilspolicy i den äldre förbrukade
+produktionsjournalen; en explicit verifierad policyadoption krävs där.
+
+Native mejladaptern kräver nu både Resend-nyckel och explicit
+`CROUPIER_STUDIO_MAIL_FROM`; den tidigare hårdkodade avsändaren är borttagen.
+Fyra obetalda adapterprov PASS, med exakt mottagare/tokenorigin och nekad
+osäker leverans utan automatisk retry. Verklig domän/nyckel och invitation/
+reset-acceptans saknas fortfarande.
+Aktuellt Lab-produktionsbygge/TypeScript PASS med 50 sanerade traces och
+noll kvarvarande privata referenser. Administration/authspår innehåller alla
+fyra SQL-versionerna. Dealer-audit --probe PASS mot oförändrad baseline;
+befintliga mänskliga läppsynkgap kvarstår.
+
+Den privata produktionsimporten kräver normaliserade hashkontroller för
+kritiska beroenden/SQL/aktiva manifest och Blob-index mot levererad main-SHA.
+Den tidigare 130-filers grunden utökas med 004; gamla planer ska inte återbrukas.
 Alla 18 aktiva videobindningar ska fullåterläsas/hashas före SQL-skrivning.
 Samma skarpa läsare har nu fullverifierat alla 18 i nya QA mot Blob med
 tom egen OS-cache, inklusive sex original; noll SQL-/provider-skrivningar.
@@ -174,7 +219,9 @@ utan anslutning eller skrivning. Återupptagning binder originalpayloaden och
 separata färska driftbevis; originalreceipt, källtid och kostnader skrivs inte om.
 En fullbordad import kan endast återkontrolleras med läsanslutning och ett nytt
 oföränderligt paritetskvitto för tre dokument, sex registerposter, 18 mediefiler,
-nio kostnads-/operatörstabeller och skyddade spel-/kontorader. Sex tidsgränsprov
+kostnads-/operatörstabeller och skyddade spel-/kontorader. De nya privata
+paritetskraven omfattar även 004:s båda fullfilstabeller; äldre kvitton gäller
+sin tidigare schema- och källversion. Sex tidsgränsprov
 nekar även bevis som hinner gå ut under ett awaitat driftsanrop; 17 ytterligare
 freeze-/recovery-/providerprov PASS. Ingen importplan/apply har körts mot drift.
 Den privata readonly-kontrollen efter driftstart binder separat oföränderlig
@@ -359,7 +406,7 @@ request-/budgetjournal och aktiv förenkling av Studio-navigationen. Gemensamma
 runtimecallers och driftkällor byts inte förrän delarna verifierats/integrerats.
 Efter kontrakt, isolerade lagringsutkast och publicerat UI-steg var läget cirka 30 %;
 native integrationsgrund gav då grovt cirka 40 %; aktuell fortsättning är
-cirka 65–70 % enligt statusen överst.
+cirka 75 % enligt statusen överst.
 Detta är en grov omfattningsbedömning, inte uppmätt tidsåtgång eller ett tidslöfte.
 Äldre GitHub-/Vercel-kvitton gäller sina angivna SHA, inte automatiskt senaste kodsteget.
 

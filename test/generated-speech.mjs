@@ -7,6 +7,8 @@ import { join, resolve } from 'node:path';
 import { createGeneratedSpeechService, generatedSpeechStatus } from '../web/generated-speech.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from '../web/generated-speech-provider.mjs';
 import { validateSpeechPackage } from '../web/public/speech-package.mjs';
+import { createSpeechJournal, FULLFILE_ADMISSION_REMAINING_MS } from '../web/postgres-speech-journal.mjs';
+import { speechMemoryPool } from './fixtures/speech-memory-pool.mjs';
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const input = extra => ({ requestId: 'fixture-generated-1', text: 'Hej, dina kort är ess och nio.', dealerId: 'astrid', owner: 'fixture-private-session', ...extra });
@@ -22,6 +24,29 @@ async function fixture(t, generate = async ({ text }) => result(text)) {
   const config = { directory };
   const provider = { generate };
   return { directory, config, provider, service: createGeneratedSpeechService(config, { provider }) };
+}
+
+async function sharedFixture(t,{policy=true,configPatch={},providerGenerate}={}){
+  const directory=await mkdtemp(join(tmpdir(),'croupier-shared-file-fixture-'));
+  t.after(()=>rm(directory,{recursive:true,force:true}));
+  let time=Date.parse('2026-10-03T23:47:59Z'),calls=0,tts=0,gpu=0,saves=0;
+  const pool=speechMemoryPool(()=>time),journal=await createSpeechJournal({pool,environmentId:'isolated-file-qa'});
+  if(policy){
+    await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:1000000,confirmation:'verified-new-empty-cost-journal'});
+    await journal.initializeFullfileBudgetPolicy({reserveMicroUsd:250000,currentBudgetMicroUsd:1000000,confirmation:'verified-new-empty-cost-journal'});
+  }
+  const provider={generate:async value=>{
+    calls++;
+    if(providerGenerate)return providerGenerate(value,{setTime:v=>{time=v;},getTime:()=>time,tts:()=>{tts++;},gpu:()=>{gpu++;}});
+    await value.beforeCostly();tts++;await value.beforeCostly();gpu++;return result(value.text);
+  }};
+  const blobs=new Map(),artifacts={
+    async save(value){saves++;blobs.set(value.artifactId,value);return{speechPackage:value.speechPackage,artifacts:{audio:{sha256:value.audio.sha256},video:{sha256:value.video.sha256}}};},
+    async get({artifactId,kind}){return blobs.get(artifactId)[kind];}
+  };
+  const config={directory,reserveMicroUsd:250000,dailyBudgetMicroUsd:1000000,...configPatch};
+  return{pool,journal,config,provider,artifacts,directory,service:createGeneratedSpeechService(config,{provider,journal,artifacts,journalRequired:true}),
+    counts:()=>({calls,tts,gpu,saves}),getTime:()=>time,setTime:v=>{time=v;}};
 }
 
 test('env gate requires both opt-ins, loopback, private directory and dedicated speech endpoint', () => {
@@ -149,4 +174,55 @@ test('persisted media tampering is detected before bytes reach HTTP', async t =>
   const id = speechPackage.packageId.slice('generated-'.length);
   await writeFile(join(directory, id, 'video.mp4'), 'tampered-fixture');
   await assert.rejects(service.media({ id, kind: 'video', owner: input().owner }), { code: 'generated_speech_corrupt_artifact' });
+});
+
+test('shared fullfile cannot invoke a provider without persisted policy and explicit configured bounds',async t=>{
+  const absent=await sharedFixture(t,{policy:false});
+  await assert.rejects(absent.service.generate(input()),{code:'generated_speech_fullfile_budget_policy_missing'});
+  assert.deepEqual(absent.counts(),{calls:0,tts:0,gpu:0,saves:0});assert.equal(absent.pool.state.requests.size,0);
+  for(const configPatch of [{reserveMicroUsd:undefined},{dailyBudgetMicroUsd:undefined},{reserveMicroUsd:10000001},{reserveMicroUsd:1},{dailyBudgetMicroUsd:249999}]){
+    const f=await sharedFixture(t,{configPatch});
+    await assert.rejects(f.service.generate(input()));assert.equal(f.counts().calls,0);assert.equal(f.pool.state.fileReservations.size,0);
+  }
+});
+
+test('shared fullfile reserves before both paid POSTs and completed replay needs no new budget or persistent disk',async t=>{
+  const f=await sharedFixture(t),first=await f.service.generate(input());
+  assert.deepEqual(f.counts(),{calls:1,tts:1,gpu:1,saves:1});assert.equal(f.pool.state.fileReservations.size,1);
+  assert.equal(f.pool.state.sessions.size,0);assert.deepEqual(await readdir(f.directory),[]);
+  const trace=f.pool.trace;
+  assert.ok(trace.indexOf('insert_file_reservation')<trace.indexOf('update_request'));
+  assert.equal(trace.filter(v=>v==='file_reservations').length,3);
+  const replay=createGeneratedSpeechService({...f.config,reserveMicroUsd:undefined,dailyBudgetMicroUsd:undefined},{provider:f.provider,journal:f.journal,artifacts:f.artifacts,journalRequired:true});
+  assert.deepEqual(await replay.generate(input()),first);assert.equal(f.counts().calls,1);
+  const id=first.packageId.slice('generated-'.length),media=await replay.media({id,kind:'audio',owner:input().owner});
+  assert.equal(digest(media.bytes),first.audio.sha256);assert.equal(f.pool.state.fileReservations.size,1);
+});
+
+test('shared fullfile rechecks the paid window after awaited authorization and stops a delayed second POST',async t=>{
+  const f=await sharedFixture(t,{providerGenerate:async(value,state)=>{
+    await value.beforeCostly();state.tts();
+    state.setTime(state.getTime()+720000-FULLFILE_ADMISSION_REMAINING_MS+1);
+    await value.beforeCostly();state.gpu();return result(value.text);
+  }});
+  await assert.rejects(f.service.generate(input()),{code:'generated_speech_fullfile_reservation_expired'});
+  assert.deepEqual(f.counts(),{calls:1,tts:1,gpu:0,saves:0});
+  assert.equal([...f.pool.state.requests.values()][0].state,'submission_uncertain');assert.equal(f.pool.state.fileReservations.size,1);
+  const restarted=createGeneratedSpeechService(f.config,{provider:f.provider,journal:f.journal,artifacts:f.artifacts,journalRequired:true});
+  await assert.rejects(restarted.generate(input()),{code:'generated_speech_request_already_attempted'});assert.equal(f.counts().calls,1);
+  const blocked=await sharedFixture(t);let authCalls=0;
+  await assert.rejects(blocked.service.generate(input({beforeCostly:async()=>{if(++authCalls===2)blocked.setTime(blocked.getTime()+240001);}})),{code:'generated_speech_fullfile_reservation_expired'});
+  assert.equal(blocked.counts().tts,0);assert.equal(blocked.counts().gpu,0);
+});
+
+test('shared cancelled/lost acknowledgements keep the monetary tombstone and do not retry or leak failures',async t=>{
+  const abort=new AbortController();
+  const f=await sharedFixture(t,{providerGenerate:async(value,state)=>{await value.beforeCostly();state.tts();abort.abort();throw Object.assign(new Error('private-provider-url-token'),{code:'generated_speech_cancelled',statusCode:499});}});
+  await assert.rejects(f.service.generate(input({signal:abort.signal})),error=>error.code==='generated_speech_cancelled'&&error.message===error.code);
+  await assert.rejects(f.service.generate(input()),{code:'generated_speech_request_already_attempted'});
+  assert.equal(f.pool.state.fileReservations.size,1);assert.equal(f.counts().calls,1);assert.equal(f.counts().saves,0);
+  assert.doesNotMatch(JSON.stringify([...f.pool.state.requests.values()]),/private-provider-url-token/);
+  const lost=await sharedFixture(t);lost.pool.failNext('insert_file_reservation');
+  await assert.rejects(lost.service.generate(input()),{code:'generated_speech_journal_unavailable'});
+  assert.equal(lost.counts().calls,0);assert.equal(lost.pool.state.requests.size,0);assert.equal(lost.pool.state.fileReservations.size,0);
 });

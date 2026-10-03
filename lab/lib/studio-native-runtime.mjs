@@ -16,6 +16,7 @@ import { createStudioGameAuthority } from './studio-game-authority.mjs';
 import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
 import { createStudioUploadService } from './studio-upload-service.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
+import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 
@@ -67,7 +68,7 @@ export function assertNativeStudioRequest(request, config) {
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
   schemaCheck = async pool => {
     const plan = await planStudioMigrations({ pool, directory: resolve(schemaRoot(), 'neon-studio') });
-    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003') unavailable();
+    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004') unavailable();
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
   policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,
@@ -100,7 +101,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       if(handlers.has(key))unavailable();handlers.set(key,handler);
     }
     const gameAuthority = createStudioGameAuthority({ env, scope: config.scope });
-    const mail = nativeStudioMail(env);
+    const mail = createNativeStudioMail({ env });
     const accounts = accountsFactory({ boDb: store.boDb, scope: config.scope, gameAuthority, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN });
     for (const [key, handler] of accounts.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     for (const [key, gate] of accounts.gates) gates.set(key, gate);
@@ -118,20 +119,6 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     try { await pool.end(); } catch { /* Preserve safe initialization failure. */ }
     unavailable();
   }
-}
-
-function nativeStudioMail(env) {
-  if (!env.RESEND_API_KEY) return undefined;
-  return Object.freeze({ async send({ to, kind, link }) {
-    try {
-      const sent = await fetch('https://api.resend.com/emails', { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10000),
-        headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: 'Scout Backoffice <bo@axelio.io>', to: [to],
-          subject: kind === 'invite' ? 'Croupier Studio: välj ditt lösenord' : 'Croupier Studio: återställ lösenord',
-          text: `${kind === 'invite' ? 'Aktivera ditt befintliga Studio-konto' : 'Återställ lösenordet för ditt Studio-konto'}: ${link}` }) });
-      await sent.body?.cancel(); return { sent: sent.ok };
-    } catch { return { sent: false }; }
-  } });
 }
 
 export async function handleNativeAuthAction(request) {
