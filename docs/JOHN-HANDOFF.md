@@ -43,12 +43,29 @@ liveanrop; fixturprov bevisar inte faktisk cookie-/browser-/CSP-acceptans.
 Kvittot anger `decoded-product-wrapper-qa-mount`, `productWrapperExecuted:true`,
 `gameWrapperIntegrated:false`; verklig spelkö, wire-/descriptor-/GPU-korrelation
 och liveacceptans återstår. `fullP6Passed` är fortsatt false.
+Spelkopplingen har därefter implementerats i själva `app.mjs`: exakt egen
+QA-origin, Astrid/local, explicit `nativeP6GamePlayback=1` och lyckat cookieägt
+GET krävs innan `window.croupierNativeP6GamePlayback.run(...)` exponeras.
+Den tar redan utfärdad descriptor genom befintlig posegrind/talkö och ordinarie
+`playChatDecision`/`playGeneratedSpeech`; inget nytt `/chat`, provideranrop,
+extra WS/video eller Blob-importerad ersättningswrapper. Per-play-observation
+får en kopia av accepterade decoderbytes och verklig frame-/ended-lifecycle.
+Renderer-sessionens klient-UUID hålls separat från serverns cookieägarhash,
+men båda binds till samma aktuella runda. De tre ägarkontrollerna och verkligt
+köslut/idle-stages krävs. 85 riktade offlineprov och fyra-dealer-audit PASS;
+mänsklig synkacceptans och nya live-rehearsals är inte utförda.
+Nytt kvittoscope är `decoded-product-game-queue`, `gameQueueExecuted:true`;
+`gameWrapperIntegrated:false`, `liveIntegrationVerified:false` och
+`sourceVerification: same-origin-source-readback-loaded-module-unverified`
+redovisar kvarvarande installation/browserbevis. Runner får inte förväxla
+detta kod-/fixturbevis med full liveacceptans eller godkänna ett äldre mountkvitto
+som verklig spelkö. De nya funktionstesterna ingår nu i obligatorisk hook.
 `migration-root-source-readiness-20261003.json` är historisk privat metadata
 för den tidigare källversionen; dess gamla privata hashvärden får inte återbrukas.
 Full obligatorisk hook och fyra-dealer-audit `--probe` PASS för endpointpaketet;
 loggar är `migration-root-resume-{full-check,dealer-probe}.log`.
 
-GitGuardian: remote `7b501576d42682e5c7626da6d4fe7a052605ea3f` är återläst med
+GitGuardian: remote `8da9d636032bae342d9d1feb5d319f6221b37399` är återläst med
 alla check-runs/check-suites/status: 3/3 CI och båda Vercel-statusar success;
 ingen GG-run, GG-suite queued. Detta visar inte en tom incidentlista.
 Jakob godkände separat två lässcope och därefter ett års giltighet. Årsnyckeln
@@ -62,15 +79,19 @@ bara `read_source_binding` och `read_repo_incidents`. Bryggan är låst till
 scannertext, secret reveal eller write. Inga nyckelvärden finns i konfigurationen.
 Hosted OAuth stoppades av Cloudflare; den lokala stdio-anslutningen är faktiskt
 verifierad genom initialize, tools/list och båda autentiserade läsverktygen.
-Nästa chatt kan behöva ladda om MCP-konfigurationen. Manuell läsning:
+Verktygen har också laddats i Codex och `read_source_binding` är återläst där.
+Manuell läsning:
 `node tools/gitguardian-read.mjs --source` eller `--incidents`.
 API-incidentlistan är nu fullständigt läst för denna källa: en incidentsida och
 fem locationsidor, fem TRIGGERED-ID:n `37827237`, `37828386`, `37828691`,
 `37830671`, `37840514`. Filpositioner finns för tre: `lab/test/studio-native-`
 `{runtime,request}.test.mjs`, `ops/cloud/test/container-entry.test.mjs` och
 `ops/cloud/test/native-p6-router-hook.test.mjs`. ID `37828691` och `37830671`
-saknar locations i API:t; fil/rad-täckningen är därför partial. Rå incidenttext
-eller sekretessvärden är inte lästa. Ingen incident är därmed klassad/rensad.
+saknar locations i API:t; fil/rad-täckningen är därför partial. Läsning av de
+tre lokaliserade incidenternas aktuella källrader visar isolerade testfixtures
+med uttryckliga fixturelösenord eller syntetiska testvärden. Det bevisar inte
+historiska incidentsnippets eller rensade incidenter; de två övriga är okända.
+Rå incidenttext eller sekretessvärden är inte lästa. Alla fem är fortsatt TRIGGERED.
 Privat metadata och stdio-kvitto: `migration-root-gitguardian-mcp-verified-20261003.json`;
 15 riktade redaktions-/paginering-/behörighetsprov PASS.
 
@@ -89,6 +110,28 @@ Fortsätt i denna ordning:
    secrets, journaler, SDK-downloads eller aktiverande env skickas med. SDK
    `openai@7.12.1`, verklig env, runtimeinstallation/readback och betald admission
    återstår; en source-artifact är inte bevis för något av detta.
+   Staging omfattar nu även transitiva literal-relative imports och de nio
+   faktiska spelkällorna (200 filer/401 relationer vid kodgranskningen).
+   Externa paket och fem beräknade importkällor redovisas som uttryckliga
+   installationsgap; immutable basimage, byggd frontend och runtimepaket är
+   inte verifierade av källkopieringen. Gamla source-artifacts överlagras aldrig.
+   Officiellt npm-paket `openai@7.12.1` är hämtat och separat återläst privat i
+   `native-p6-sdk-source-20261003/verified-source`: 2 962 filer, 15 733 385 bytes;
+   npm-integritet samt oförändrade package/client-pins matchar exakt.
+   Arkiv-SHA256 `8b70fcbcee7ee7398edf93ed729d2b77ea3b08e65df16d1237cbff6f71968d55`;
+   source-tree `6b2d24b71e129725534d85b5b2197f70d6091c29a899d67ca64fdd31ff3695fa`.
+   4/4 separata parser-/återläsningsprov PASS. Inga lifecycle-skript, imports,
+   SDK-runtimeinstallationer eller provideranrop gjordes. Worker-readerns
+   annorlunda trädfingerprint är `ebbb70cbf3b784adcee13323880215dc360ac0e1c5d78891f9813368e6c3da0a`;
+   jämför samma format, inte dessa två olika fingerprintformat med varandra.
+   Första source-only-artifact för `8da9d636` finns privat i
+   `native-p6-runtime-artifacts/source-8da9d636/`: 59 filer, descriptor-råhash
+   `5c8125f7b6328324a97c2796b585d868a4ee97a245d2da1a77ce905d60177c45`.
+   Den är historisk efter senare källändringar; ingen build/install/aktivering
+   gjordes. 107 riktade offlineprov PASS i
+   `migration-root-annual-directed-check-2.log`; full hook PASS under commit
+   i `migration-root-annual-commit-check.log`. Ursprunglig testkörning saknade
+   egen TEMP-katalog; katalogen skapades och alla prov återkördes utan kodundantag.
 2. **Lös bara de konkreta återstående åtkomst-/kostnadsgapen.** Den senaste
    läsningen saknar counting-tariff/explicit gratisbevis, Cartesia-kontots
    USD/credit (`/usage/credits` gav 401) och RunPods avsedda endpoints faktiska

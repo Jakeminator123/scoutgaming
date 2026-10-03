@@ -36,7 +36,7 @@ export async function validateGeneratedSpeechStream(value, { exactText, dealerId
 }
 
 async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal,
-  beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {} } = {}) {
+  beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver } = {}) {
   if (!mount || signal?.aborted) throw abortError();
   const controller = new AbortController();
   const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true });
@@ -59,13 +59,17 @@ async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId
     label.style.cssText = 'position:absolute;top:var(--generated-speech-label-top,8px);left:8px;padding:5px 8px;background:#101618dd;color:#eee;font:11px sans-serif;';
     surface.append(video, label); mount.append(surface);
     player = new SpeechStreamPlayer(video, { signal: controller.signal, beforePlay: beforeStart,
-      onFirstFrame: () => { if (!controller.signal.aborted) { surface.style.visibility = ''; onFirstFrame(); } },
+      onBinary: streamObserver?.onBinary,
+      onFirstFrame: info => { if (!controller.signal.aborted) {
+        surface.style.visibility = ''; onFirstFrame(); streamObserver?.onFrame?.({ info, video, surface, player });
+      } },
       onStart: () => {
         started = true; onStart(exactText);
         onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId, evidence: 'media-playing', reviewStatus: 'pending',
           timings: { ...player.timings } });
       },
     });
+    streamObserver?.onPlayer?.({ player, video, surface });
     await player.connect(speech.url, speech.ticket);
     await player.done;
     completed = true;
@@ -115,10 +119,10 @@ export async function loadGeneratedSpeech(value, { exactText, dealerId, signal, 
 
 /** The caller owns the pose gate and single speech queue. This owns one exact,
  * hash-checked audio/video pair, never a substitute recorded sentence. */
-export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {} } = {}) {
+export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver } = {}) {
   if (value?.kind === 'generated-speech-stream') {
     if (media) throw new Error('Stream playback cannot substitute transferred media');
-    return playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal, beforeStart, onStart, onFirstFrame, onReceipt });
+    return playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal, beforeStart, onStart, onFirstFrame, onReceipt, streamObserver });
   }
   if (!mount || signal?.aborted) throw abortError();
   const controller = new AbortController();

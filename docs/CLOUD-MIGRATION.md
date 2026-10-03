@@ -404,6 +404,17 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     `gameWrapperIntegrated:false` och full P6 kvarstår. Privat source-staging
     bygger en verifierbar Docker-overlay från exakt HEAD, utan SDK-download,
     manifest, secrets, journalbyte eller aktivering. Installation är ännu obevisad.
+    Spelkopplingen finns nu även i appens faktiska posegrind/talkö: redan
+    genererad descriptor, en ordinarie spelare/WS/video, tre cookieägda GET,
+    separata renderer-/serveridentiteter och verkligt köslut. Den är avstängd
+    utom på avsedd egen QA-origin med explicit flagga och godkänd auth.
+    85 riktade offlineprov och audit PASS; faktisk installerad browserkedja,
+    nya rehearsalplays och source-loaded-bevis återstår. Nytt kvitto är ärligt
+    `decoded-product-game-queue`, men ingen full liveacceptans hävdas.
+    Käll-overlay omfattar även transitiva literal imports; externa/dynamiska
+    beroenden och basimage/frontendinstallationen hålls öppna. Officiell SDK
+    7.12.1 är privat source-stagad, full återläsning och 4 prov PASS, befintliga
+    pins oförändrade; detta är ännu inte faktisk Linux-runtimeinstallation.
   - Prisgap får enligt Jakob stå som backlog: faktisk Cartesia-kontotariff
     (extern nyckel, ingen egen kontoinloggning), counting-tariff/uttryckligt
     gratisbevis och RunPods totala startup/execution/idlekostnadsgräns saknas.
