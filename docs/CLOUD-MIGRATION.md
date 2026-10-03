@@ -123,6 +123,20 @@ löpande; inga nya plandokument eller parallella statuskopior i docs.
    alla äldre BO-endpoints innan de tas bort: spelet läser idag `/api/bo/config`,
    och launch-allowlists accepterar idag `/` eller `/game`, inte `/blackjack`.
 
+### Senaste kontoförenkling — 3 oktober
+
+Jakob beställde två effektiva behörigheter och gemensamma credentials:
+admin för spel + hela Studio/Backoffice, spelare för spelet. Den nya koden
+ersätter kontotypsväljaren med gemensam resolver; superadmin är adminalias
+och reader/staff blir game-only utan live roll-/kontomigrering.
+Native Backoffice har spelarpasswordbyte via signerad Render-authority,
+serverstyrd formbehörighet, sessionåterkallelse och runtimecancel före OK.
+CRAIG-konton hanteras genom befintliga invitations-/resetlänkar.
+Riktade collision-, roll-, reset-/saldo-/historik- och samtidiga adminprov
+är godkända. Full lokal regression och byggen redovisas i John-handoff.
+Installerad QA från samma källa och riktad browser/auth/revoke-acceptans
+återstår i P6; tidigare installerade SHA/kvitton täcker inte denna ändring.
+Historiska rollkontrakt nedan beskriver tidigare paket, inte den nya policyn.
 ### Första kodpaketet: native administrationskontrakt
 
 `lab/lib/studio-access-policy.mjs` och `studio-admin-contract.mjs`, med
@@ -464,9 +478,14 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     årsnyckel med endast `incidents:read,sources:read`, lokalt DPAPI-krypterad
     utanför Git. Två MCP-verktyg är låsta till source `30689542` i workspace
     `795524` och returnerar endast metadata. Full API-lista (en incidentsida,
-    fem locationsidor) visar fem TRIGGERED-incidenter; två saknar fil/rad.
-    Incidenter är inte ändrade eller klassade som rensade. Se aktuell handoff
-    för ID:n, metadata-kvitto och anslutningens användning.
+    fem locationsidor) visade först fem TRIGGERED-incidenter. Efter Jakobs
+    uttryckliga triageuppdrag har de granskats som testcredentials och stängts
+    med detta skäl i rätt webbworkspace; API bekräftar fem IGNORED-ID:n.
+    Webbplatslistorna lokaliserar även export-/cutover-fixtures för de två
+    API-locationluckorna. Full paginerad API-återläsning efter räknaruppdatering
+    bekräftar hela källans fem IGNORED och noll öppna; fil/rad-täckning i API
+    är fortsatt partial för två. Ingen grön main-check hävdas. Se aktuell
+    handoff för ID:n, verifiering och anslutningens användning.
   - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 41 acceptansgrupper samt
     runnerguard PASS i tillfällig lokal PostgreSQL och kortlivad HTTPS-fixture.
     Revisionskonflikt/rollback, spelkonfigprojektion, auth/engångstoken/epoch,

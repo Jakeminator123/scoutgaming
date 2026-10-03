@@ -29,6 +29,7 @@ test('invite and reset send exactly the configured server sender and owned token
     const body = JSON.parse(init.body);
     assert.equal(body.from, `Croupier Studio <${env.CROUPIER_STUDIO_MAIL_FROM}>`);
     assert.deepEqual(body.to, [invitation.to]); assert.ok(body.text.endsWith(invitation.link));
+    assert.match(body.text, /Croupier-konto/); assert.doesNotMatch(body.text, /Studio-konto/);
     assert.equal(JSON.stringify(body).includes(env.RESEND_API_KEY), false); assert.doesNotMatch(JSON.stringify(body), /axelio/);
   }
   assert.notEqual(JSON.parse(calls[0].init.body).subject, JSON.parse(calls[1].init.body).subject);

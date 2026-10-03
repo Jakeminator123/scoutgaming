@@ -1,5 +1,5 @@
 export type NativeStudioSession = Readonly<{
-  user: string; role: 'reader' | 'staff' | 'admin' | 'superadmin';
+  user: string; role: 'admin';
   scope: Readonly<{environment: string; workspaceId: string}>;
 }>;
 export class NativeStudioAuthError extends Error { code: string; statusCode: number; }

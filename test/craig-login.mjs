@@ -16,8 +16,8 @@ const server=createServer(async(req,res)=>{if(await auth.handle(req,res))return;
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
 const login=(email,p=password)=>fetch(base+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:p})});
 try {
-assert.equal((await login('existing','wrong')).status,400);assert.equal(created,0);
-const invited=await login('invited');assert.equal(invited.status,400);assert.match((await invited.json()).error,/Account setup is incomplete/);assert.equal(created,0);
+assert.equal((await login('existing','wrong')).status,401);assert.equal(created,0);
+const invited=await login('invited');assert.equal(invited.status,401);assert.match((await invited.json()).error,/Username or password is incorrect/);assert.equal(created,0);
 const first=await login(' EXISTING@EXAMPLE.INVALID ');assert.equal(first.status,200);const cookie=first.headers.get('set-cookie');
 assert.deepEqual(await(await fetch(base,{headers:{cookie}})).json(),{id:'casino-1'});
 const second=await login('existing');assert.equal(second.status,200);assert.equal(created,1);
@@ -26,7 +26,7 @@ assert.deepEqual(craig.prepare('SELECT * FROM users').all(),before,'CRAIG creden
 auth=playerAuth(players,makePlayer,craigIdentity(craig));assert.equal((await fetch(base,{headers:{cookie}})).status,200);
 assert.equal((await fetch(base+'/api/auth/register',{method:'POST',body:'{}'})).status,403);
 craig.prepare('UPDATE users SET hash=? WHERE id=1').run(scryptSync('Changed123','test-salt',64).toString('hex'));
-assert.equal((await fetch(base,{headers:{cookie}})).status,401);assert.equal((await login('existing')).status,400);
+assert.equal((await fetch(base,{headers:{cookie}})).status,401);assert.equal((await login('existing')).status,401);
 const changed=await login('existing','Changed123');assert.equal(changed.status,200);assert.equal(created,1);
 craig.prepare('DELETE FROM users WHERE id=1').run();assert.equal((await fetch(base,{headers:{cookie:changed.headers.get('set-cookie')}})).status,401);
 console.log('CRAIG integration passed: existing email/username and legacy password, stable profile link, no password/role copying, registration blocked, restart persistence, password-change and deleted-user revocation');

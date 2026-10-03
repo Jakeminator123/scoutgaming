@@ -329,6 +329,7 @@
       "project": "croupier-lab-ui",
       "gitBranch": "main",
       "rootDirectory": "lab",
+      "credentialPolicy": "Shared game/CRAIG credentials: admin has game/Studio/Backoffice access; player has game access. Native password changes use the signed Render authority and existing native/Neon flags; no new environment keys.",
       "required": [],
       "firstBoot": [],
       "conditional": [

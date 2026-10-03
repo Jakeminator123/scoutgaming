@@ -1,4 +1,5 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
+import { createAccountCredentialResolver } from './account-credentials.mjs';
 
 // Vercel's preview proxy is trusted only when the cloud launcher has supplied
 // one exact origin. Web still expects its own public Host behind the proxy.
@@ -18,12 +19,13 @@ export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' }
   return host === gameHost && parsed.host === host && (!frontendOrigin || origin === gameOrigin);
 }
 
-export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '' } = {}) {
+export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession } = {}) {
   db.exec(`CREATE TABLE IF NOT EXISTS player_accounts (email TEXT PRIMARY KEY, player_id TEXT UNIQUE NOT NULL, salt TEXT NOT NULL, hash TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS player_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL);`);
   db.exec('CREATE TABLE IF NOT EXISTS craig_player_links (craig_user_id TEXT PRIMARY KEY, player_id TEXT UNIQUE NOT NULL)');
   if(!db.prepare('PRAGMA table_info(player_sessions)').all().some(c=>c.name==='source_stamp'))db.exec('ALTER TABLE player_sessions ADD COLUMN source_stamp TEXT');
   if(!db.prepare('PRAGMA table_info(player_sessions)').all().some(c=>c.name==='display_name'))db.exec('ALTER TABLE player_sessions ADD COLUMN display_name TEXT');
+  const credentials = createAccountCredentialResolver({identity,playerDb:db,playerAccounts});
   const digest=t=>createHash('sha256').update(t).digest('hex');
   const accountStamp = account => account ? `local:${digest(`${account.salt}:${account.hash}`)}` : null;
   // The cloud gateway connects to Web over loopback and does not forward a
@@ -47,7 +49,7 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     if(!session)return null;
     // Partner-launched sessions belong to an operator's player, not a Craig user, so they carry a partner stamp instead of a Craig fingerprint.
     if(String(session.source_stamp??'').startsWith('local:')) {
-      if(!playerAccounts || accountStamp(db.prepare('SELECT salt,hash FROM player_accounts WHERE player_id=?').get(session.player_id))!==session.source_stamp)return null;
+      if(identity && !playerAccounts || accountStamp(db.prepare('SELECT salt,hash FROM player_accounts WHERE player_id=?').get(session.player_id))!==session.source_stamp)return null;
     } else if(identity && !String(session.source_stamp??'').startsWith('partner:')){const link=db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id);if(!link || !session.source_stamp || identity.stamp(link.craig_user_id)!==session.source_stamp)return null;}
     const partnerKeyId=String(session.source_stamp ?? '').startsWith('partner:') ? session.source_stamp.slice(8) || null : null;
     return partnerKeyId
@@ -94,16 +96,45 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     try {
       let raw='';for await(const part of req){raw+=part;if(raw.length>4096)throw Error('Request too large');}
       const body=JSON.parse(raw);
+      if (req.url === '/api/auth/login') {
+        if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).sort().join(',') !== 'email,password'
+          || typeof body.email !== 'string' || !body.email.trim() || body.email.length > 254
+          || typeof body.password !== 'string' || !body.password.length || body.password.length > 256) {
+          reply(400,{error:'Invalid login request'}); return true;
+        }
+        try {
+          const loginKey = await credentials.keyFor(body.email);
+          if (loginBlocked(loginKey)) { reply(429,{error:'Too many attempts. Try again in 10 minutes.'}); return true; }
+          const establish = async () => {
+            const existing = await credentials.authenticate(body.email,body.password);
+            if (!existing) return null;
+            const adminCookie = existing.kind === 'craig' && existing.role === 'admin' && typeof administratorSession === 'function'
+              ? await administratorSession(req,existing) : null;
+            const account = existing.kind === 'craig' ? linkIdentity(existing) : {player_id:existing.playerId,source_stamp:existing.sourceStamp};
+            const header = issue(req,account);
+            return {header,adminCookie,role:existing.role};
+          };
+          const accepted = await (async () => { db.exec('BEGIN IMMEDIATE'); try { const value=await establish(); db.exec('COMMIT'); return value; } catch(error) { db.exec('ROLLBACK'); throw error; } })();
+          if (!accepted) { loginFailed(loginKey); reply(401,{error:'Username or password is incorrect.'}); return true; }
+          attempts.delete(loginKey);
+          const secure=req.socket.encrypted || process.env.NODE_ENV==='production' ? '; Secure' : '';
+          const cleared = typeof administratorSession === 'function' && accepted.role === 'player'
+            ? [`bo_jwt=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,`lab_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`] : [];
+          reply(200,{ok:true},{'Set-Cookie':accepted.adminCookie ? [accepted.header,accepted.adminCookie] : cleared.length ? [accepted.header,...cleared] : accepted.header});
+        } catch { reply(503,{error:'Authentication unavailable'}); }
+        return true;
+      }
       if(localAccount) {
         const username=String(body.username??'').trim().toLowerCase(), password=body.password;
         const registering=req.url.endsWith('/register');
         if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username) || typeof password!=='string' || password.length<(registering?12:1) || password.length>128)throw Error('Use a username of 3–32 letters/numbers and a password of 12–128 characters when creating an account.');
         // A separate namespace cannot shadow a Scout/CRAIG operator identity.
         const key=`username:${username}`;
-        const loginKey=`player:${key}`;
+        const loginKey=registering ? `player:${key}` : await credentials.keyFor(username);
         if(!registering && loginBlocked(loginKey)){reply(429,{error:'Too many attempts. Try again in 10 minutes.'});return true;}
         let account=db.prepare('SELECT * FROM player_accounts WHERE email=?').get(key);
         if(registering) {
+          if(identity && (await identity.candidates(username)).length)throw Error('Account unavailable. Try signing in.');
           if(account)throw Error('Account unavailable. Try signing in.');
           const salt=randomBytes(16).toString('hex'), hash=scryptSync(password,salt,64).toString('hex');
           db.exec('BEGIN IMMEDIATE');

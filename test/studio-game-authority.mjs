@@ -10,7 +10,7 @@ test('engine bridge uses bounded signed trusted transport and confirms exact Ren
     calls++; assert.equal(url,`${env.CROUPIER_BACKEND_ORIGIN}/api/studio-game/command`); assert.equal(options.redirect,'error');
     assert.equal(options.headers.cookie,'bo_jwt=existing'); assert.equal(options.headers.origin,env.CROUPIER_PUBLIC_ORIGIN);
     assert.equal(options.headers['x-croupier-studio-signature'],studioCommandSignature(env.CROUPIER_VERCEL_INGRESS_SECRET,options.headers['x-croupier-studio-timestamp'],options.body));
-    const command=JSON.parse(options.body); assert.deepEqual(command.scope,scope); assert.deepEqual(command.actor,input.actor); assert.ok(command.commandId);
+    const command=JSON.parse(options.body); assert.deepEqual(command.scope,scope); assert.deepEqual(command.actor,{...input.actor,role:'admin'}); assert.ok(command.commandId);
     return Response.json({ok:true,authority:'render',scope,balance:10});
   }});
   assert.equal((await authority.execute(input)).balance,10); assert.equal(calls,1);

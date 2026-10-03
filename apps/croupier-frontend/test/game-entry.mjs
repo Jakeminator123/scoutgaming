@@ -45,8 +45,12 @@ test('prepared player login and modal distinguish canonical game from account en
   assert.ok(result.files.every(path => !/\.(mp4|webm|mp3|wav|png)$/.test(path)));
   const login = await readFile(join(directory,'public/blackjack-entry.mjs'),'utf8');
   assert.match(login,/canonicalGameDestination/);assert.match(login,/location\.assign\(gameDestination\)/);
-  const modal = await readFile(join(directory,'public/auth-modal.mjs'),'utf8');assert.match(modal,/\/player-login/);
-  assert.match(modal,/: '\/blackjack';/);assert.ok(!modal.includes('/frontend-preview/blackjack/'));
+  const modal = await readFile(join(directory,'public/auth-modal.mjs'),'utf8');
+  const html = await readFile(join(directory,'runtime-ui/blackjack.html'),'utf8');
+  assert.match(modal,/Croupier account/);assert.match(modal,/\/api\/auth\/login/);
+  for (const text of [html,login,modal]) assert.doesNotMatch(text,/account-kind|name="kind"|Skapa spelarkonto|\/api\/auth\/player\/register|existing Scout account/);
+  assert.match(html,/Användarnamn eller e-post/);assert.match(html,/id="legacy-admin" hidden>Administratör\? <a href="\/studio\/login"/);
+  assert.match(modal,/const playerLoginPath = '\/blackjack'/);
 });
 
 test('actual login module sends fresh and existing player sessions to the game without an entry loop',async t => {
@@ -55,9 +59,8 @@ test('actual login module sends fresh and existing player sessions to the game w
   const sourceUrl = new URL('../../../web/public/blackjack-entry.mjs',import.meta.url);
   const source = (await readFile(sourceUrl,'utf8')).replace("'./game-entry-contract.mjs'",JSON.stringify(new URL('game-entry-contract.mjs',sourceUrl).href));
   for (const [canonical,authenticated] of [[true,false],[true,true],[false,true]]) {
-    const form = {elements:{kind:{value:'player'}},hidden:true};
-    const nodes = {form,'#status':{},'#submit':{},'#toggle':{},'#password':{value:'isolated-password'},
-      '#username':{value:'isolated-player',previousElementSibling:{}},'#account-kind':{}};
+    const form = {hidden:true};
+    const nodes = {form,'#status':{},'#submit':{},'#password':{value:'isolated-password'},'#username':{value:'isolated-player'},'#login-help':{},'#legacy-admin':{}};
     globalThis.document = {documentElement:{dataset:canonical ? {gamePath:'/blackjack'} : {}},querySelector:selector => nodes[selector]};
     const navigations = [],requests = [];
     const current = new URL('/player-login?dealer=mei&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid',env.CROUPIER_PUBLIC_ORIGIN);
@@ -65,15 +68,152 @@ test('actual login module sends fresh and existing player sessions to the game w
       assign:destination => navigations.push(['assign',destination]),replace:destination => navigations.push(['replace',destination])};
     globalThis.fetch = async (url,options) => {
       requests.push([url,options]);return new Response(JSON.stringify(url === '/api/auth/session'
-        ? {authenticated,playerAccounts:true,localDemoProfiles:false} : {ok:true}),{headers:{'Content-Type':'application/json'}});
+        ? {authenticated,playerAccounts:true,sharedCredentials:true,localDemoProfiles:false} : {ok:true}),{headers:{'Content-Type':'application/json'}});
     };
     await import('data:text/javascript;base64,'+Buffer.from(source+`\n// case ${canonical}-${authenticated}`).toString('base64'));
     if (!authenticated) {assert.equal(form.hidden,false);await form.onsubmit({preventDefault(){}});}
     assert.deepEqual(navigations,[[authenticated ? 'replace' : 'assign',canonical ? '/blackjack?dealer=mei&motion=smooth60' : '/?dealer=astrid&presentation=local']]);
     if (!authenticated) {
-      assert.equal(requests[1][0],'/api/auth/player/login');assert.equal(requests[1][1].method,'POST');
-      assert.deepEqual(JSON.parse(requests[1][1].body),{username:'isolated-player',password:'isolated-password'});
+      assert.equal(requests[1][0],'/api/auth/login');assert.equal(requests[1][1].method,'POST');
+      assert.deepEqual(JSON.parse(requests[1][1].body),{email:'isolated-player',password:'isolated-password'});
       assert.equal(nodes['#password'].value,'');
     }
   }
+});
+
+
+test('shared login clears credentials before pending dispatch, prevents duplicates and sanitizes failures',async t=>{
+  const original=new Map(['document','location','fetch'].map(key=>[key,globalThis[key]]));
+  t.after(()=>{for(const [key,value]of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}});
+  const sourceUrl=new URL('../../../web/public/blackjack-entry.mjs',import.meta.url);
+  const source=(await readFile(sourceUrl,'utf8')).replace("'./game-entry-contract.mjs'",JSON.stringify(new URL('game-entry-contract.mjs',sourceUrl).href));
+  const form={hidden:true},nodes={form,'#status':{},'#submit':{},'#password':{value:'fixture-login-password'},'#username':{value:' Administrator '},'#login-help':{},'#legacy-admin':{}};
+  globalThis.document={documentElement:{dataset:{gamePath:'/blackjack'}},querySelector:key=>nodes[key]};
+  const navigations=[];globalThis.location={href:env.CROUPIER_PUBLIC_ORIGIN+'/player-login',origin:env.CROUPIER_PUBLIC_ORIGIN,search:'',assign:x=>navigations.push(x),replace:x=>navigations.push(x)};
+  let writes=0,release,request;const waiting=new Promise(resolve=>{release=resolve;});
+  globalThis.fetch=async(url,init)=>{if(url==='/api/auth/session')return Response.json({authenticated:false,sharedCredentials:true});++writes;request=[url,init];await waiting;return Response.json({error:'PRIVATE SERVER TEXT'},{status:401});};
+  await import('data:text/javascript;base64,'+Buffer.from(source+'\n// pending shared login').toString('base64'));
+  const first=form.onsubmit({preventDefault(){}});await form.onsubmit({preventDefault(){}});
+  assert.equal(nodes['#password'].value,'');assert.equal(writes,1);assert.equal(request[0],'/api/auth/login');
+  assert.deepEqual(JSON.parse(request[1].body),{email:'Administrator',password:'fixture-login-password'});
+  assert.equal(request[1].credentials,'same-origin');assert.equal(request[1].cache,'no-store');assert.equal(request[1].redirect,'error');
+  release();await first;assert.equal(writes,1);assert.equal(navigations.length,0);
+  assert.match(nodes['#status'].textContent,/kunde inte verifieras/);assert.doesNotMatch(nodes['#status'].textContent,/PRIVATE|fixture-login-password/);
+});
+
+test('actual game modal accepts shared credentials, clears passwords and ignores a cancelled earlier response',async t=>{
+  const original=new Map(['document','location','fetch'].map(key=>[key,globalThis[key]]));
+  t.after(()=>{for(const [key,value]of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}});
+  const nodes={'form':{},'.auth-close':{},'#auth-email':{value:' Operator '},'#auth-password':{value:'fixture-modal-password'},'#auth-error':{},'#auth-submit':{},'#auth-purpose':{},'#auth-account':{},'#auth-player-login':{}};
+  let closeListener;const dialog={open:false,returnValue:'',setAttribute(){},querySelector:key=>nodes[key],
+    addEventListener(type,listener){closeListener=listener;},showModal(){this.open=true;},close(value){this.returnValue=value;this.open=false;closeListener?.();}};
+  globalThis.document={documentElement:{dataset:{}},createElement:()=>dialog,body:{appendChild(){}}};
+  let writes=0,release;const waiting=new Promise(resolve=>{release=resolve;});const requests=[];
+  globalThis.fetch=async(url,init)=>{if(url==='/api/auth/session')return Response.json({authenticated:false,sharedCredentials:true});requests.push([url,init]);++writes;if(writes===1){await waiting;return Response.json({ok:true});}return Response.json({error:'PRIVATE SERVER TEXT'},{status:401});};
+  const source=(await readFile(new URL('../../../web/public/auth-modal.mjs',import.meta.url),'utf8')).replace("'./game-entry-contract.mjs'",JSON.stringify(new URL('../../../web/public/game-entry-contract.mjs',import.meta.url).href));
+  const modal=await import('data:text/javascript;base64,'+Buffer.from(source+'\n// shared modal lifecycle').toString('base64'));
+  const firstResult=modal.requestLogin('Sign in to play');await new Promise(resolve=>setImmediate(resolve));nodes['#auth-password'].value='fixture-modal-password';
+  const first=nodes.form.onsubmit({preventDefault(){}});
+  await nodes.form.onsubmit({preventDefault(){}});assert.equal(writes,1);assert.equal(nodes['#auth-password'].value,'');
+  assert.equal(requests[0][0],'/api/auth/login');assert.deepEqual(JSON.parse(requests[0][1].body),{email:'Operator',password:'fixture-modal-password'});
+  dialog.close('cancel');assert.equal(await firstResult,false);
+  const secondResult=modal.requestLogin('Sign in again');await new Promise(resolve=>setImmediate(resolve));nodes['#auth-password'].value='fixture-second-password';
+  await nodes.form.onsubmit({preventDefault(){}});assert.equal(writes,2);assert.equal(dialog.open,true);
+  assert.match(nodes['#auth-error'].textContent,/Unable to verify/);assert.doesNotMatch(nodes['#auth-error'].textContent,/PRIVATE|fixture-second-password/);
+  release();await first;assert.equal(dialog.open,true);assert.equal(writes,2);dialog.close('cancel');assert.equal(await secondResult,false);
+});
+
+const flush=()=>new Promise(resolve=>setImmediate(resolve));
+let importCase=0;
+async function capabilityFixture(kind,{canonical=true,session={authenticated:false,sharedCredentials:true,playerAccounts:true},capability,post}={},run){
+  const original=new Map(['document','location','fetch'].map(key=>[key,globalThis[key]]));
+  const requests=[],navigations=[],current=new URL('/player-login?dealer=mei&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid',env.CROUPIER_PUBLIC_ORIGIN);
+  const nodes=kind==='entry' ? {form:{hidden:true},'#status':{},'#submit':{},'#password':{value:'fixture-login-password'},'#username':{value:' identifier@example.invalid '},'#login-help':{},'#legacy-admin':{hidden:true}}
+    : {'form':{},'.auth-close':{},'#auth-email':{value:' Operator '},'#auth-password':{value:''},'#auth-error':{},'#auth-submit':{},'#auth-purpose':{},'#auth-account':{},'#auth-player-login':{hidden:true}};
+  let closeListener;const dialog={open:false,returnValue:'',setAttribute(){},querySelector:key=>nodes[key],addEventListener(type,listener){closeListener=listener;},showModal(){this.open=true;},close(value){this.returnValue=value;this.open=false;closeListener?.();}};
+  globalThis.document={documentElement:{dataset:canonical?{gamePath:'/blackjack'}:{}},querySelector:key=>nodes[key],createElement:()=>dialog,body:{appendChild(){}}};
+  globalThis.location={href:current.href,origin:current.origin,search:current.search,assign:x=>navigations.push(x),replace:x=>navigations.push(x)};
+  globalThis.fetch=async(url,init)=>{requests.push([url,init]);return url==='/api/auth/session' ? capability?capability():Response.json(session) : post?post(url,init):Response.json({ok:true});};
+  try{
+    const url=new URL('../../../web/public/'+(kind==='entry'?'blackjack-entry.mjs':'auth-modal.mjs'),import.meta.url);
+    const source=(await readFile(url,'utf8')).replace("'./game-entry-contract.mjs'",JSON.stringify(new URL('game-entry-contract.mjs',url).href));
+    const module=await import('data:text/javascript;base64,'+Buffer.from(source+'\n// capability case '+(++importCase)).toString('base64'));
+    await run({nodes,dialog,module,requests,navigations,writes:()=>requests.filter(([,init])=>init?.method==='POST')});
+  }finally{for(const[key,value]of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
+}
+
+test('entry capability picks exactly one old/new contract without username/password or privilege heuristics',async()=>{
+  for(const [session,endpoint,key,legacyPlayer]of [
+    [{authenticated:false,sharedCredentials:true,playerAccounts:true},'/api/auth/login','email',false],
+    [{authenticated:false,sharedCredentials:true,playerAccounts:false},'/api/auth/login','email',false],
+    [{authenticated:false,playerAccounts:true},'/api/auth/player/login','username',true],
+    [{authenticated:false,sharedCredentials:false,playerAccounts:true},'/api/auth/player/login','username',true],
+    [{authenticated:false,playerAccounts:false},'/api/auth/login','email',false],
+  ])await capabilityFixture('entry',{session,post:()=>Response.json({error:'PRIVATE SERVER TEXT'},{status:401})},async({nodes,writes,navigations,requests})=>{
+    assert.equal(nodes.form.hidden,false);assert.equal(nodes['#submit'].disabled,false);
+    assert.equal(nodes['#legacy-admin'].hidden,!legacyPlayer);
+    assert.equal(nodes['#password'].maxLength,session.sharedCredentials===true?256:128);
+    await nodes.form.onsubmit({preventDefault(){}});
+    assert.equal(writes().length,1);const[url,init]=writes()[0];assert.equal(url,endpoint);
+    assert.deepEqual(JSON.parse(init.body),{[key]:'identifier@example.invalid',password:'fixture-login-password'});
+    assert.equal(nodes['#password'].value,'');assert.equal(navigations.length,0);
+    assert.doesNotMatch(nodes['#status'].textContent,/PRIVATE|fixture-login-password/);assert.match(nodes['#status'].textContent,/kunde inte verifieras/);
+    assert.equal(init.credentials,'same-origin');assert.equal(init.cache,'no-store');assert.equal(init.redirect,'error');
+    assert.equal(requests[0][1].cache,'no-store');assert.equal(requests[0][1].redirect,'error');
+  });
+});
+
+test('legacy entry clears passwords before pending dispatch and cannot repeat or switch namespace after failure',async()=>{
+  let release;const waiting=new Promise(resolve=>{release=resolve;});
+  await capabilityFixture('entry',{session:{authenticated:false,playerAccounts:true},post:async()=>{await waiting;return Response.json({error:'PRIVATE SERVER TEXT'},{status:401});}},async({nodes,writes})=>{
+    const first=nodes.form.onsubmit({preventDefault(){}});await nodes.form.onsubmit({preventDefault(){}});
+    assert.equal(writes().length,1);assert.equal(nodes['#password'].value,'');assert.equal(nodes['#submit'].disabled,true);
+    release();await first;assert.equal(writes().length,1);assert.equal(nodes['#submit'].disabled,false);
+  });
+});
+
+test('entry and modal block all password dispatch when capability GET or JSON fails',async()=>{
+  for(const capability of [()=>Response.json({},{status:503}),()=>{throw Error('PRIVATE NETWORK TEXT');},()=>new Response('bad json'),()=>Response.json([]),()=>Response.json({sharedCredentials:true})]){
+    await capabilityFixture('entry',{capability},async({nodes,writes})=>{
+      await nodes.form.onsubmit({preventDefault(){}});assert.equal(writes().length,0);assert.equal(nodes.form.hidden,true);assert.equal(nodes['#submit'].disabled,true);
+      assert.doesNotMatch(nodes['#status'].textContent,/PRIVATE/);
+    });
+    await capabilityFixture('modal',{capability},async({module,nodes,dialog,writes})=>{
+      const result=module.requestLogin('Sign in');await flush();nodes['#auth-password'].value='fixture-modal-password';
+      await nodes.form.onsubmit({preventDefault(){}});assert.equal(writes().length,0);assert.equal(nodes['#auth-submit'].disabled,true);assert.equal(nodes['#auth-player-login'].hidden,true);
+      assert.doesNotMatch(nodes['#auth-error'].textContent,/PRIVATE/);dialog.close('cancel');assert.equal(await result,false);
+    });
+  }
+});
+
+test('modal keeps one CRAIG/shared POST and exposes only a fixed or query-allowlisted legacy entry',async()=>{
+  for(const[shared,players,canonical]of [[true,true,true],[false,true,true],[false,true,false],[false,false,true]])
+    await capabilityFixture('modal',{canonical,session:{authenticated:false,playerAccounts:players,...(shared?{sharedCredentials:true}:{})},post:()=>Response.json({error:'PRIVATE SERVER TEXT'},{status:401})},async({module,nodes,dialog,writes})=>{
+      const result=module.requestLogin('Sign in');await flush();
+      assert.equal(nodes['#auth-player-login'].hidden,shared||!players);
+      assert.equal(nodes['#auth-password'].maxLength,shared?256:128);
+      assert.equal(nodes['#auth-player-login'].href,canonical?'/player-login?dealer=mei&motion=smooth60':'/blackjack');
+      nodes['#auth-password'].value='fixture-modal-password';await nodes.form.onsubmit({preventDefault(){}});
+      assert.equal(writes().length,1);assert.equal(writes()[0][0],'/api/auth/login');
+      assert.deepEqual(JSON.parse(writes()[0][1].body),{email:'Operator',password:'fixture-modal-password'});
+      assert.equal(nodes['#auth-password'].value,'');assert.doesNotMatch(nodes['#auth-error'].textContent,/PRIVATE|fixture-modal-password/);
+      dialog.close('cancel');assert.equal(await result,false);
+    });
+});
+
+test('modal stays inert before capability resolves and ignores a cancelled stale GET response',async()=>{
+  let release;const waiting=new Promise(resolve=>{release=resolve;});
+  await capabilityFixture('modal',{capability:async()=>{await waiting;return Response.json({authenticated:false,sharedCredentials:true});}},async({module,nodes,dialog,writes})=>{
+    const result=module.requestLogin('Sign in');nodes['#auth-password'].value='fixture-modal-password';await nodes.form.onsubmit({preventDefault(){}});
+    assert.equal(writes().length,0);assert.equal(nodes['#auth-submit'].disabled,true);
+    release();await flush();await nodes.form.onsubmit({preventDefault(){}});
+    assert.equal(writes().length,1);assert.equal(await result,true);assert.equal(dialog.open,false);
+  });
+  let releaseCapability,reads=0;const stale=new Promise(resolve=>{releaseCapability=resolve;});
+  await capabilityFixture('modal',{capability:async()=>{if(++reads===1){await stale;return Response.json({authenticated:false,playerAccounts:true});}return Response.json({authenticated:false,sharedCredentials:true});}},async({module,nodes,dialog})=>{
+    const firstResult=module.requestLogin('Sign in');dialog.close('cancel');assert.equal(await firstResult,false);
+    const secondResult=module.requestLogin('Sign in again');await flush();assert.equal(nodes['#auth-player-login'].hidden,true);
+    releaseCapability();await flush();assert.equal(nodes['#auth-player-login'].hidden,true);assert.equal(nodes['#auth-submit'].disabled,false);
+    dialog.close('cancel');assert.equal(await secondResult,false);
+  });
 });

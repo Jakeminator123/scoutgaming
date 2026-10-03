@@ -2,7 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
 import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
-import { isStudioRole } from './studio-access-policy.mjs';
+import { isStudioRole, normalizeStudioRole } from './studio-access-policy.mjs';
 
 export class NativeStudioAuthError extends Error {
   constructor(code = 'studio_auth_unavailable', statusCode = 503) {
@@ -54,7 +54,7 @@ export function createStudioNativeAuth({ boDb, scope, now = Date.now } = {}) {
         if (!account || account.stamp !== claims.source_stamp
           || (await boDb.prepare('SELECT role FROM users WHERE id=?').get(account.id))?.role !== claims.role
           || await authEpoch(account.id) !== claims.auth_epoch) denied();
-        return Object.freeze({ user: account.name, role: claims.role, scope });
+        return Object.freeze({ user: account.name, role: normalizeStudioRole(claims.role), scope });
       }
       // A present invalid BO cookie must not silently fall back to another session.
       const bearer = cookie(request, 'lab_session', /^[a-f0-9]{64}$/);
@@ -65,7 +65,7 @@ export function createStudioNativeAuth({ boDb, scope, now = Date.now } = {}) {
       const account = await boDb.prepare('SELECT id,username,role FROM users WHERE id=?').get(session.craig_user_id);
       if (!account || account.role !== session.role || await identity.stamp(account.id) !== session.source_stamp
         || await authEpoch(account.id) !== session.auth_epoch) denied();
-      return Object.freeze({ user: account.username, role: account.role, scope });
+      return Object.freeze({ user: account.username, role: normalizeStudioRole(account.role), scope });
     } catch (error) {
       if (error instanceof NativeStudioAuthError) throw error;
       throw new NativeStudioAuthError();

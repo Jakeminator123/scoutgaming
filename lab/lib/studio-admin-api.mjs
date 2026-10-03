@@ -1,17 +1,19 @@
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint } from './studio-admin-contract.mjs';
-import { isStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
+import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 
 const MAX_BODY = 64 * 1024;
-const renderActions = new Set(['players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
+const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [503, 'Action unavailable'], [500, 'Request failed']]);
 function failure(status) { return Object.assign(new Error(publicErrors.get(status)), { statusCode: status }); }
 function json(value, status = 200, extra = {}) {
   return new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', ...extra } });
 }
 function sessionActor(session) {
-  if (!session || typeof session.user !== 'string' || !session.user.trim() || !isStudioRole(session.role)) throw failure(401);
-  return Object.freeze({ user: session.user, role: session.role });
+  if (!session || typeof session.user !== 'string' || !session.user.trim()) throw failure(401);
+  const role = normalizeStudioRole(session.role);
+  if (!role) throw failure(403);
+  return Object.freeze({ user: session.user, role });
 }
 async function readObject(request) {
   if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type') || '')) throw failure(415);
@@ -86,7 +88,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       if (['users/role', 'users/remove'].includes(endpoint.action)) {
         if (typeof body.username !== 'string' || !body.username.trim()) throw failure(400);
         if (body.username.trim().toLowerCase() === actor.user.trim().toLowerCase()) throw failure(403);
-        if (endpoint.action === 'users/role' && !isStudioRole(body.role)) throw failure(400);
+        if (endpoint.action === 'users/role' && body.role !== 'admin') throw failure(400);
       }
       const localMutation = request.method !== 'GET' && !renderActions.has(endpoint.action);
       const deferred = []; let queueOpen = true;

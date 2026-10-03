@@ -102,10 +102,10 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     }
     const gameAuthority = createStudioGameAuthority({ env, scope: config.scope });
     const mail = createNativeStudioMail({ env });
-    const accounts = accountsFactory({ boDb: store.boDb, scope: config.scope, gameAuthority, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN });
+    const accounts = accountsFactory({ boDb: store.boDb, gameDb: store.db, scope: config.scope, gameAuthority, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN });
     for (const [key, handler] of accounts.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     for (const [key, gate] of accounts.gates) gates.set(key, gate);
-    const authActions = authActionsFactory({ boDb: store.boDb, scope: config.scope, authorize, mail,
+    const authActions = authActionsFactory({ boDb: store.boDb, gameDb: store.db, scope: config.scope, authorize, mail,
       publicOrigin: env.CROUPIER_PUBLIC_ORIGIN, allowedOrigins: config.allowedOrigins, authBase: config.authBase,
       rateLimit: createStudioLoginRateLimit({ boDb: store.boDb }),
       // Use Vercel's trusted connection header only; caller-supplied forwarded

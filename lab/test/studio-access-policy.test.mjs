@@ -2,76 +2,64 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
 import {
-  STUDIO_ROLES, STUDIO_ADMIN_SECTIONS, STUDIO_ADMIN_ACTIONS, isStudioRole,
+  STUDIO_ROLES, STUDIO_ADMIN_SECTIONS, STUDIO_ADMIN_ACTIONS, normalizeStudioRole, isStudioRole,
   studioRoleMeetsMinimum, studioAdminSectionPolicy, studioAdminActionPolicy,
   meetsStudioAdminSectionRole, meetsStudioAdminActionRole,
 } from '../lib/studio-access-policy.mjs';
 
-test('native Studio preserves the fourteen section IDs and section-specific read floors', () => {
-  assert.deepEqual(STUDIO_ROLES, ['reader', 'staff', 'admin', 'superadmin']);
+test('administrator is the only Studio role and owns every existing section/action', () => {
+  assert.deepEqual(STUDIO_ROLES, ['admin']);
   assert.deepEqual(STUDIO_ADMIN_SECTIONS.map(section => section.id), BACKOFFICE_SECTIONS.map(section => section.id));
   assert.equal(STUDIO_ADMIN_SECTIONS.length, 14);
-  for (const role of STUDIO_ROLES) {
+  assert.equal(STUDIO_ADMIN_ACTIONS.length, 34);
+  assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 34);
+  for (const role of ['admin','superadmin']) {
+    assert.equal(normalizeStudioRole(role), 'admin');
+    assert.equal(isStudioRole(role), true);
     for (const section of STUDIO_ADMIN_SECTIONS) {
-      assert.equal(meetsStudioAdminSectionRole(role, section.id), section.id !== 'users' || role === 'superadmin');
+      assert.equal(section.minimumRole, 'admin');
+      assert.equal(meetsStudioAdminSectionRole(role, section.id), true);
       assert.equal(studioAdminSectionPolicy(section.id), section);
     }
-  }
-});
-
-test('known action role floors preserve staff/admin/superadmin boundaries', () => {
-  const floors = {
-    reader: ['overview', 'config', 'voicelines', 'clips', 'generations', 'gen-verdicts', 'apikeys', 'players', 'transactions','emails','shoes'],
-    staff: ['voiceline-review', 'tournament'],
-    admin: ['pitboss', 'tier', 'room', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict',
-      'players/create', 'players/status', 'apikeys/launch', 'apikeys/credit', 'speech-qa'],
-    superadmin: ['users', 'users/invite', 'users/resend', 'users/role', 'users/remove',
-      'apikeys/create', 'apikeys/revoke', 'apikeys/rotate'],
-  };
-  assert.equal(STUDIO_ADMIN_ACTIONS.length, 33);
-  assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 33);
-  for (const [minimum, actions] of Object.entries(floors)) {
-    for (const action of actions) {
-      assert.equal(studioAdminActionPolicy(action).minimumRole, minimum);
-      for (const role of STUDIO_ROLES) {
-        assert.equal(meetsStudioAdminActionRole(role, action), STUDIO_ROLES.indexOf(role) >= STUDIO_ROLES.indexOf(minimum));
-      }
+    for (const action of STUDIO_ADMIN_ACTIONS) {
+      assert.equal(action.minimumRole, 'admin');
+      assert.equal(meetsStudioAdminActionRole(role, action.id), true);
     }
   }
-  assert.deepEqual(Object.values(floors).flat().sort(), STUDIO_ADMIN_ACTIONS.map(action => action.id).sort());
 });
 
-test('unknown, inherited, coerced and player roles or identifiers always fail closed', () => {
-  const invalid = [undefined, null, '', 'ADMIN', ' admin', 'player', 'partner', 'constructor',
+test('game-only, unknown, inherited and coerced roles never acquire Studio access', () => {
+  const invalid = [undefined, null, '', 'reader','staff','ADMIN', ' admin', 'player', 'partner', 'constructor',
     '__proto__', 'toString', 3, {}, [], new String('admin'), Symbol('admin')];
   for (const value of invalid) {
+    assert.equal(normalizeStudioRole(value), null);
     assert.equal(isStudioRole(value), false);
-    assert.equal(studioRoleMeetsMinimum(value, 'reader'), false);
-    assert.equal(studioRoleMeetsMinimum('superadmin', value), false);
-    assert.equal(meetsStudioAdminSectionRole(value, 'players'), false);
-    assert.equal(meetsStudioAdminActionRole(value, 'players/create'), false);
+    assert.equal(studioRoleMeetsMinimum(value, 'admin'), false);
+    assert.equal(studioRoleMeetsMinimum('admin', value), false);
+    for (const section of STUDIO_ADMIN_SECTIONS) assert.equal(meetsStudioAdminSectionRole(value, section.id), false);
+    for (const action of STUDIO_ADMIN_ACTIONS) assert.equal(meetsStudioAdminActionRole(value, action.id), false);
   }
   for (const value of [...invalid, 'players?token=secret', '#players', '../users', '/users', 'users/unknown', 'clip-assign']) {
     assert.equal(studioAdminSectionPolicy(value), null);
     assert.equal(studioAdminActionPolicy(value), null);
-    assert.equal(meetsStudioAdminSectionRole('superadmin', value), false);
-    assert.equal(meetsStudioAdminActionRole('superadmin', value), false);
+    assert.equal(meetsStudioAdminSectionRole('admin', value), false);
+    assert.equal(meetsStudioAdminActionRole('admin', value), false);
   }
 });
 
-test('special handler requirements remain explicit instead of pretending a role is authorization', () => {
+test('administrator role preserves explicit lifecycle, owner and cancellation requirements', () => {
   assert.deepEqual(studioAdminActionPolicy('users/role').handlerRequirements,
     ['forbid-self-role-change', 'revoke-changed-identity']);
   assert.deepEqual(studioAdminActionPolicy('users/remove').handlerRequirements,
     ['forbid-self-removal', 'revoke-changed-identity']);
   assert.deepEqual(studioAdminActionPolicy('speech-qa').handlerRequirements, ['operator-speech-qa-gate']);
+  assert.deepEqual(studioAdminActionPolicy('players/password').handlerRequirements,
+    ['game-authority','player-lifecycle-and-ledger','cancel-player-runtime']);
   assert.deepEqual(studioAdminActionPolicy('players/status').handlerRequirements,
     ['player-lifecycle-and-ledger', 'cancel-player-runtime']);
-  assert.deepEqual(studioAdminActionPolicy('apikeys/credit').handlerRequirements, ['game-authority']);
-  assert.equal(meetsStudioAdminActionRole('staff', 'speech-qa'), false);
 });
 
-test('exported roles, sections, actions and nested requirements cannot be changed', () => {
+test('exported policies and nested requirements remain immutable', () => {
   for (const list of [STUDIO_ROLES, STUDIO_ADMIN_SECTIONS, STUDIO_ADMIN_ACTIONS]) {
     assert.equal(Object.isFrozen(list), true);
     assert.throws(() => list.push('player'), TypeError);

@@ -32,10 +32,10 @@ function fixture(role = 'admin') {
 }
 const code = expected => error => error.code === expected;
 
-test('all four existing BO roles use the live identity without writes', async () => {
-  for (const role of ['reader','staff','admin','superadmin']) {
+test('admin and stored superadmin use live identity with canonical admin privilege and no writes', async () => {
+  for (const role of ['admin','superadmin']) {
     const f = fixture(role), session = await f.authorize(f.request());
-    assert.deepEqual(session, { user: 'operator', role, scope });
+    assert.deepEqual(session, { user: 'operator', role:'admin', scope });
     assert.ok(Object.isFrozen(session));
     assert.ok(f.state.queries.every(sql => sql.startsWith('SELECT')));
   }
@@ -64,9 +64,11 @@ test('opaque Lab access revalidates role, stamp and epoch but never admits reade
   assert.equal((await f.authorize(f.request(`lab_session=${bearer}`))).user, 'operator');
   f.state.lab.auth_epoch++;
   await assert.rejects(f.authorize(f.request(`lab_session=${bearer}`)), code('studio_login_required'));
-  for (const role of ['reader','staff']) {
+  for (const role of ['reader','staff','player']) {
     const lower = fixture(role);
     await assert.rejects(lower.authorize(lower.request(`lab_session=${bearer}`)), code('studio_login_required'));
+    await assert.rejects(lower.authorize(lower.request()), code('studio_login_required'));
+    assert.equal(lower.state.user.role, role, 'denial does not rewrite the stored legacy role');
   }
 });
 test('missing signer and DB failures fail closed without exposing secrets or seeding', async () => {

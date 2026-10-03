@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createStudioAdminReadouts} from '../lib/studio-admin-readouts.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 const scope={environment:'readout_fixture',workspaceId:'croupier'};
-const actor={user:'reader@example.invalid',role:'reader'};
+const actor={user:'operator@example.invalid',role:'admin'};
 const row={total:'1',state_type:'object',shoe_type:'object',round_type:'object',paid_type:'boolean',version:'1',
   shoe_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',dealt:'312',remaining:104,cut_reached:'true',phase:'decisions',paid:'false'};
 const fixture=rows=>createStudioAdminReadouts({scope,now:()=> '2026-10-03T02:00:00.000Z',db:{prepare(sql){
@@ -29,9 +29,10 @@ test('corrupt persisted state and wrong scope cannot produce replacement status'
   }
   const read=fixture([]).handlers.get('GET /studio/api/admin/shoes');
   await assert.rejects(read({scope:{...scope,environment:'foreign'},actor}),e=>e.statusCode===403);
-  await assert.rejects(read({scope,actor:{user:'',role:'reader'}}),e=>e.statusCode===403);
+  await assert.rejects(read({scope,actor:{user:'',role:'admin'}}),e=>e.statusCode===403);
+  for(const role of ['reader','staff','player']) await assert.rejects(read({scope,actor:{user:'game-only',role}}),e=>e.statusCode===403);
 });
-test('reader can see four native template previews; anonymous and mutations rejected',async()=>{
+test('administrator can see four native template previews; anonymous and mutations rejected',async()=>{
   const {handlers}=fixture([]);
   const api=createStudioAdminApi({authorize:async request=>{if(!request.headers.has('cookie'))throw Object.assign(Error('login'),{statusCode:401});return{...actor,scope};},
     handlers,gates:new Map(),apiBase:'/studio/api/admin',allowedOrigins:['https://studio.example.invalid'],publicHosts:['studio.example.invalid']});

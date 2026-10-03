@@ -25,6 +25,7 @@ export interface StudioUserRemoveRequest { username: string; }
 export interface StudioPlayerCreateRequest {
   username: string; name: string; password: string; currency: string; reason: string;
 }
+export interface StudioPlayerPasswordRequest { playerId: string; password: string; reason: string; }
 export interface StudioPlayerStatusRequest {
   playerId: string; status: 'active' | 'blocked' | 'closed'; reason: string;
 }

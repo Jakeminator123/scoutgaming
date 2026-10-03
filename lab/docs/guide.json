@@ -1,6 +1,6 @@
 {
   "title": "En Studio. Välj dealer och klipp.",
-  "intro": "Studio har tre delar: Dealer & klipp, Backoffice och OpenClaw. På klippsidan väljer du dealer och kategori: Idle, Kort & deal, Fasta repliker, Bakgrund eller Probe. Uppladdning hör till klipparbetet; granskning i spel är ett utfällbart verktyg. Backoffice behåller sina 14 funktioner och befintliga behörigheter. OpenClaw öppnar den befintliga dashboarden på Render.",
+  "intro": "Studio har tre delar: Dealer & klipp, Backoffice och OpenClaw. På klippsidan väljer du dealer och kategori: Idle, Kort & deal, Fasta repliker, Bakgrund eller Probe. Uppladdning hör till klipparbetet; granskning i spel är ett utfällbart verktyg. Backoffice samlar sina 14 funktioner. Gemensam inloggning använder samma användarnamn eller e-post och lösenord: admin har tillgång till spelet och hela Backoffice, spelare till spelet. OpenClaw öppnar den befintliga dashboarden på Render.",
   "steps": [
     {
       "view": "tree",
@@ -34,6 +34,7 @@
     }
   ],
   "boundaries": [
+    "Konton hanteras i native Backoffice → Konton. Admin använder samma credentials i spelet och Studio; spelare nekas Studio. Admin kan byta lösenord för en aktiv eller blockerad spelare med eget spelarlösenord: ange nytt lösenord två gånger och en anledning. Gamla sessioner återkallas, saldo och spelhistorik behålls. Stängda konton kan inte återställas. Administratörers lösenord hanteras genom invitation och återställningslänkar. Det nya flödet behöver installeras och provas i native-QA före produktionsbyte.",
     "Aktiva originalklipp för Vera, Astrid, Amira och Mei väljs under Ladda upp & bibliotek. Valen sparas med projektets vanliga knapp och revisionshistorik. Ladda om originalspelaren mellan händer efter sparning. Astrids presentation=local använder sina exakta Studiofamiljer; deal/repliker läses inför nästa beslut och idle efter omladdning. Äldre BO-val är inaktiva, skrivskyddade och importeras bara uttryckligen vid exakt match.",
     "Uppspelning och spår observerar en spelare. Anslutning, återanslutning och Ny observation startar aldrig en extra Lab-uppspelning. Separat Lab-preview kräver ett uttryckligt val. Klippval, nedladdning och registrering är inte bevis på uppspelning; native-kvittot måste visa faktisk bild/talstart. Partner-SSE och genererat tal visas som egna tydligt märkta flöden.",
     "Bakgrundszoner är ett separat prov: markera en pixelruta på 1080×1920-startbilden och skapa eller lägg in ett klipp med exakt rutans storlek. Webbläsarkopian sparas lokalt. Spara till molnet sparar koordinater i zonernas Neon-databas och klipp i privat Blob när molnlagringen är konfigurerad. Läs från molnet öppnar molnvyn och behåller webbläsarkopian. Exportera JSON och klipp för separat backup. Zonerna styr ännu inte spelet; kontrollera varje tagning och att dealern aldrig täcker zonen innan spelintegration.",

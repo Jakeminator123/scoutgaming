@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStudioLoginClient, studioLoginReturnTo, studioLoginDestination, studioPasswordToken } from '../lib/studio-login-client.mjs';
+import { createStudioLoginClient, StudioLoginUiError, studioLoginReturnTo, studioLoginDestination, studioPasswordToken } from '../lib/studio-login-client.mjs';
 
 test('native login returnTo is exactly the two Studio pages with explicit standalone mapping', () => {
   for (const value of ['/studio','/studio/administration']) assert.equal(studioLoginReturnTo(value),value);
@@ -32,4 +32,9 @@ test('client rejects unknown bases/actions and sanitizes all server/network fail
   }
   const malformed = createStudioLoginClient({fetchImpl:async()=>Response.json({ok:false})});
   await assert.rejects(malformed.request('logout',{}),error=>error.status===503);
+});
+
+
+test('Studio permission denial explains the admin boundary without echoing server data',()=>{
+  assert.match(new StudioLoginUiError(403).message,/administratörsbehörighet/);
 });

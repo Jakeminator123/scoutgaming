@@ -22,6 +22,12 @@ I dagens ännu oflyttade drift sparas aktiva klippval i `LAB_STUDIO_DATA_DIR`;
 Web läser samma projekt via `CROUPIER_PRESENTATION_STUDIO_DIR`. Dessa sökvägar
 är inte reservkällor när den nya gemensamma Neon-policyn är aktiverad.
 Inga credentials skickas i navigationen.
+Gemensam inloggning använder de befintliga game-/CRAIG-kontona och två
+behörigheter: admin för spel/Studio/Backoffice, spelare för spel. Native
+lösenordshantering går genom samma signerade Render-authority som övrig
+administration; `CROUPIER_STUDIO_NATIVE_ADMIN` och Neon-policyn ovan styr
+runtimevalet. Ingen ny roll-, lösenords- eller inloggningsvariabel införs.
+Kontoroller och lösenord ändras i Backoffice, aldrig genom klientens env.
 
 ### Ny plattform: explicit opt-in
 

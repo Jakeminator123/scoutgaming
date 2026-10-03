@@ -3,6 +3,139 @@
 Uppdaterad 3 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Gemensamma credentials och två behörigheter — 3 oktober
+
+På Jakobs uppdrag används ett gemensamt användarnamn/e-post och lösenord,
+utan kontotypsval. **Admin** kommer in i spel, Studio och hela Backoffice;
+**spelare** kommer bara in i spelet. Befintlig `superadmin` är adminalias,
+medan äldre CRAIG `reader`/`staff` är game-only. Råroller, konton, kopplade
+player-ID:n, saldo och historik bevaras; inga livekonton eller DB-scheman
+ändrades av denna källleverans. En admin som spelar har samma lösenord.
+
+`web/account-credentials.mjs` läser båda befintliga credentialregistren före
+lösenordsprov. Exakt en kandidat krävs; kollision, pending invitation och
+fel lösenord ger generiskt avslag utan fallback eller klientvald roll.
+BO-cookies använder egen audience och live roll/fingerprint/auth_epoch.
+Spelarlogin rensar gamla BO/Lab-cookies. `/api/auth/session` annonserar
+`sharedCredentials:true` först från en backend med den nya resolvern.
+Frontend läser kapabiliteten före login och bevarar äldre entry-/modalroutes
+tills Render är uppgraderad. Ingen lösenords-/namespacefallback sker efter
+nekad POST. Misslyckad kapabilitetsläsning blockerar dispatch.
+Guestpolicyn för lokal utveckling
+är oförändrad.
+
+Native Backoffice → Konton kan skapa spelare och byta deras lösenord genom
+signerad Render-authority: `POST /studio/api/admin/players/password`.
+Formen kräver två lika lösenord och anledning, tömmer lösenordsfälten direkt
+och väntar på serverkvittot. Endast aktiva/blockerade konton med faktisk
+`player_accounts`-credential får formen (`passwordChangeAllowed`).
+CRAIG-kopplade spelare använder kontots befintliga invitation/resetväg;
+reader/staff återfår aldrig Studioåtkomst av en lösenordsåterställning.
+Bytet låser konto/spelare, ersätter salt/hash och återkallar gamla sessioner.
+Render väntar på runtimecancel före OK; lösenord lämnar inget svar/auditvärde.
+Saldo, transaktioner, rundor och kostnadsjournaler berörs inte.
+Adminborttagning skyddas mot att två samtidiga åtgärder tar bort sista admin.
+
+Riktade isolerade auth-/API-/UI-prov är godkända. Sammanhållen full regression,
+typkontroller och båda byggresultaten kompletteras i leveransnotisen nedan.
+Den obligatoriska hooken/CI tar nu även nya resolver-, password- och native-
+credentialtester. Windows lokala test-/Next-workers begränsas till fyra;
+CI/publicering behåller sina tidigare workerinställningar.
+
+**Nästa driftprov:** installera samma nya källversion i alla tre QA-tjänster.
+Prova admin från spel till Studio, spelarnekande, gamla cookie-/lösenords-
+återkallelser, legacy game-only reset och saldo/historik före/efter. Använd
+syntetiska QA-konton. Detta är en del av P6:s återstående authacceptans,
+inte bevis på installerad QA eller färdigt produktionsbyte.
+## Nästa agent: slutför P6:s AI/GPU-acceptans — 3 oktober
+
+Städleveransen på main är `63d0e917c9828be82e25b0f039c4ef9a1c8f92f4`.
+Dess tre GitHub-CI-jobb och båda Vercel-publiceringar är verifierade success.
+Senaste dokumenterade installerade native-QA och fyrdealerprov gäller däremot
+`966991ef`; native90-kvittot gäller `190399`. Frys aktuell main och återläs de
+faktiska tre QA-publiceringarna före nästa prov. En senare källcommit gör inte
+äldre runtime-/browserkvitton aktuella.
+
+**Förväntat resultat:** ett verifierat verkligt AI/GPU-varv i isolerad QA,
+med giltig kostnadsadmission, rätt autentiserad spelägare och två avslutade
+uppspelningar genom samma produktspelare. Det visar att Director kan välja
+ett svar, SDK/modellen generera det, talmotorn skapa ljudet, GPU:n skapa den
+synkade videon och spelaren faktiskt visa och spela resultatet. SDK-import,
+inspelade greetings och enbart WebSocket-bytes täcker inte detta resultat.
+
+1. Läs `AGENTS.md`, `agent-talk/README.md`, denna handoff,
+   `ENVIRONMENT-RESTORATION.md` och P6-checklistan i `CLOUD-MIGRATION.md`.
+   Arbeta i befintliga `C:\Users\jakem\Projects\croupier` på main. Kontrollera
+   Node/engines och projektpins; Volta-resolverad Node är nu v22.22.2 och Lab
+   kräver >=22.16.0. Kör status/security och registrera faktiska ändringspaths.
+2. Återläs befintlig kampanj `f2c28b62-9ae7-4cd6-abcd-e2137f2206d6`, budget,
+   reservationer, sourcepins och stageadmission. Senaste dokumenterade totaltak
+   är 10 USD, kvarhållen reservation 5,251152 USD och oreserverat 4,748848 USD;
+   ett av tio SDK-dispatches är förbrukat. Dessa siffror måste återläsas före
+   användning. Behåll originaljournalen och dess numeriska budgetankare.
+   Lös Cartesia USD/credit, counting-tariff eller uttryckligt gratisbevis och
+   RunPods hela startup/execution/idle-gräns. Cartesia-nyckeln är extern och
+   Jakob saknar kontoinloggning; begär inte en ny sådan. Mät usage separat från
+   dollarpris. Ingen påhittad nolltariff, ny journal eller återställd budget.
+3. Bygg färska full-run-manifest för exakt vald källa och immutable basimage,
+   inklusive entry-contexts `routerManifestSha256`. Återläs SDK, privata
+   contexts, faktisk child-env, authority/router och installerade spelmoduler.
+   Prepare-only/router-off ger avsiktligt 404 på playback-context och räknas
+   inte som acceptans. Normal QA-login finns redan; använd befintlig syntetisk
+   operatör. Ingen recreate/invite/reset/mejlleverans beställs av denna handoff.
+4. Kör den verkliga ägda QA-kedjan: cookieautentiserad idle-advice/Director i
+   shadow, faktiskt SDK-svar, tal via avsedd Cartesia-konfiguration och GPU via
+   avsedd RunPod-endpoint. Bind sparad Neon-policy, serverägd session/runda,
+   request/job-ID, source/env/manifest och mediahashar till samma körning.
+   Använd redan utfärdad descriptor genom spelets faktiska posegrind/talkö och
+   `playGeneratedSpeech`; kvittot ska visa `decoded-product-game-queue`, faktisk
+   integration och laddad källa. Tre färska cookieägarkontroller, presenterade
+   avkodade bildrutor, hörbart ljud och två verkliga ended/playback-ACK krävs.
+5. Verifiera kostnadsjournal före/efter, cancel/terminal/drain, retry och restart
+   utan extra providerdispatch eller dubbeldebitering. Återanvänd samma ägda
+   spelare/WS/video. Full P6 omfattar även text/bild/STT, fullfil och stream,
+   SQL/HTTPS/restart samt auth/revoke och invitation/reset där de återstår.
+   Alla fyra dealers provas två gånger enligt checklistan. Fysisk kamera,
+   mikrofon, mobil/Safari och mänsklig läppsynk redovisas separat; ändra ingen
+   assetbaseline utifrån enbart hashar, automatiska tester eller stillbilder.
+6. Bevara privata receipts och FAIL-historik. Bocka bara av verifierade delmål
+   och sätt `fullP6Passed` först när hela kontraktet är uppfyllt. Leverera
+   taskägda ändringar och faktisk drift-SHA via ordinarie main-helper, med
+   uppdaterad handoff och säkerhetsstatus. Koordinera .git med andra agenter.
+
+AI/GPU är nästa stora acceptanspass. Produktionsbyte **P7** kräver därefter
+verifierad P2–P6 och ett uttryckligt genomförandeuppdrag; **P8** avvecklar sedan
+ersatta gamla UI/API-/disk-/envgrenar med referens-, paritets- och restartbevis.
+Det är därför inte färdig migration efter en lyckad GPU-render ensam.
+
+### GitGuardian efter den beställda triagen
+
+API/MCP fungerar med befintlig läsnyckel. Workspace `795524`, source `30689542`
+och repo `Jakeminator123/github-work` har verifierats både via API och webbfilter.
+På Jakobs uttryckliga uppdrag granskades fem öppna incidenter mot testkod och
+stängdes i webbgränssnittet med **These are test credentials**. API-återläsning
+bekräftar **IGNORED** för samtliga fem; ingen incident markerades som en verklig
+återkallad produktionsnyckel. Inga scopes, nycklar eller generella scanregler ändrades.
+
+| Incident | Verifierad fixtureplats | Status efter triage |
+| --- | --- | --- |
+| 37827237 | `lab/test/studio-native-runtime.test.mjs`, `lab/test/studio-native-request.test.mjs` | IGNORED |
+| 37828386 | `ops/cloud/test/container-entry.test.mjs:30` | IGNORED |
+| 37828691 | `ops/cloud/test/storage-export.test.mjs` (webbplatslista; API saknar location) | IGNORED |
+| 37830671 | `test/studio-cutover-integration.mjs` (två webbplatser; API saknar location) | IGNORED |
+| 37840514 | `ops/cloud/test/native-p6-router-hook.test.mjs` | IGNORED |
+
+Testvärdena är lokalt deklarerade fixtures. Exportprovet använder temporär
+SQLite/lokal server och städar efter sig; cutover-provet kontrollerar en ny
+ägd localhost-pool innan seedning, och URL-fixturen ansluter inte till Neon.
+Cutover-fixturens tidigare kodrättning i `bba3cc28` består. Rå scannerutdrag och
+credentialvärden är inte återgivna. Direkt efter triagen gav API:t temporärt
+`gg_read_incident_count_mismatch`. Ny full paginerad återläsning efter att
+källräknarna uppdaterats bekräftar hela källans fem IGNORED-ID:n och noll öppna.
+Incidenttäckning är `complete-for-source`; fil/rad-täckning är fortsatt partial
+för två i API:t, kompletterad med webbplatslistorna ovan. Detta är ingen grön
+GitGuardian-check på main. Läsnyckeln har fortsatt bara `incidents:read,sources:read`.
+
 ## Städning och aktuell systemkarta — 3 oktober
 
 Städningen utgår från ren GitHub-main `b7940dd82078794d38ff9e2466e5aea615aae877`.

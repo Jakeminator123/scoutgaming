@@ -4,9 +4,17 @@ import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { runInNewContext } from 'node:vm';
 import { build } from '../build.mjs';
+import { runInNewContext } from 'node:vm';
 import { canonicalGameDestination } from '../../../web/public/game-entry-contract.mjs';
+
+function legacyPlayerEntryDestination(source,canonical=false){
+  const playerEntry={},nodes=new Map(),dialog={setAttribute(){},querySelector:key=>{if(key==='#auth-player-login')return playerEntry;if(!nodes.has(key))nodes.set(key,{});return nodes.get(key);}};
+  const document={documentElement:{dataset:canonical?{gamePath:'/blackjack'}:{}},body:{appendChild(){}},createElement:()=>dialog};
+  const runnable=source.replace(/^import .*;\r?$/gm,'').replace('export function requestLogin','function requestLogin');
+  return runInNewContext(runnable+'\nplayerEntry.href;',{document,URL,canonicalGameDestination,location:{href:'https://preview.example/game?dealer=mei&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid'}});
+}
+
 
 const origin = 'https://game.example.test';
 
@@ -24,23 +32,6 @@ async function files(directory, prefix = '') {
     else result.push(name.split(sep).join('/'));
   }
   return result.sort();
-}
-
-function playerEntryDestination(source, canonical = false) {
-  let playerEntry;
-  const controls = new Map();
-  const dialog = {setAttribute() {},append(element) {playerEntry = element;},
-    querySelector(selector) {if (!controls.has(selector)) controls.set(selector,{});return controls.get(selector);}};
-  // Execute the generated module's setup with its real query contract. Only
-  // import/export syntax is adapted for this small DOM fixture.
-  const script = source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'');
-  runInNewContext(script,{URL,canonicalGameDestination,
-    document:{documentElement:{dataset:canonical ? {gamePath:'/blackjack'} : {}},body:{appendChild() {}},
-      createElement:tag => tag === 'dialog' ? dialog : {}},
-    location:{href:'https://preview.example/frontend-preview/game/?dealer=mei&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid'},
-    fetch:async () => ({ok:true,json:async () => ({playerAccounts:true})}),
-  },{timeout:1000});
-  return playerEntry.href;
 }
 
 test('default build keeps the exact two-file Production landing and Render link', async () => {
@@ -98,8 +89,10 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
     const login = await readFile(join(directory, 'blackjack-entry.mjs'), 'utf8');
     const modal = await readFile(join(directory, 'auth-modal.mjs'), 'utf8');
     assert.match(login, /const destination = '\/frontend-preview\/game\/\?dealer=astrid&presentation=local'/);
-    assert.equal(playerEntryDestination(modal),'/frontend-preview/blackjack/');
-    assert.equal(playerEntryDestination(modal,true),'/player-login?dealer=mei&motion=smooth60');
+    assert.match(modal,/\/api\/auth\/login/);assert.doesNotMatch(modal,/\/api\/auth\/player\/(?:login|register)/);assert.match(modal,/const playerLoginPath = '\/frontend-preview\/blackjack\/'/);
+    assert.equal(legacyPlayerEntryDestination(modal),'/frontend-preview/blackjack/');
+    assert.equal(legacyPlayerEntryDestination(modal,true),'/player-login?dealer=mei&motion=smooth60');
+    assert.equal(modal,(await readFile(new URL('../../../web/public/auth-modal.mjs',import.meta.url),'utf8')).replace("const playerLoginPath = '/blackjack';","const playerLoginPath = '/frontend-preview/blackjack/';"));
     assert.doesNotMatch(login, /const destination = '\/\?dealer=/);
     assert.equal(await readFile(join(directory, 'frontend-preview/blackjack/index.html'), 'utf8'),
       await readFile(new URL('../../../web/public/blackjack-entry.html', import.meta.url), 'utf8'));

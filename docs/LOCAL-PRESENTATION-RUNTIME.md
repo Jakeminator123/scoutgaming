@@ -17,6 +17,57 @@ native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
 behöriga mediarutter. Tal och lipsync-worker har varsin autentiserad native
 Node-WebSocket-ingress på Vercel och behåller Render som sessionsägare.
 
+## Lokal byggcache och runtime
+
+Next skriver byggutdata under respektive apps `.next` och disponibel byggcache
+under `.next/cache`. TypeScript kan dessutom skriva `tsconfig.tsbuildinfo`.
+I den aktiva checkouten ligger de alltså under `C:\Users\jakem\Projects\croupier`:
+
+| Lokal path | Verifierat efter städningen 3 oktober |
+| --- | --- |
+| `lab/.next/cache` | Borttagen; återskapas vid nästa bygge |
+| `apps/croupier-frontend/.next/cache` | Borttagen tillsammans med frontendens hela `.next` |
+| `lab/tsconfig.tsbuildinfo`, `apps/croupier-frontend/tsconfig.tsbuildinfo` | Borttagna; kan återskapas av TypeScript |
+| `lab/.next` utan cache | 8 211 983 byte färdig runtime behålls för anslutningstestet |
+
+Städningen frigjorde netto 1 032 360 345 byte bygglagring, utöver borttagna
+beroenden. Cache är knuten till den checkout där bygget körs. Vercel har också
+egen deployment-/byggcache i molnet; den här lokala rensningen tömmer inte den.
+`lab/data/platform-private`, SDK/sourcepins, QA-receipts, kostnadsjournaler,
+konton och media är beständig arbetsdata och ingick inte i cacheborttagningen.
+Om hela Lab-runtime behöver byggas om används `npm --prefix lab run build` med
+projektets kompatibla Node och aktuell workergräns. Detta startar ingen server.
+Kör inte dubbla tunga byggen i samma checkout och radera inte `.next` under
+pågående bygge, server eller regression. Följ sessionsvakt och agent-talk.
+
+## Gemensam kontoåtkomst
+
+Spelets `/api/auth/login` och native Studios `/studio/api/auth/login` använder
+samma serverresolver för befintliga CRAIG- och player_accounts-credentials.
+Inloggningsnamn/e-post normaliseras; exakt en kandidat i båda registren krävs
+innan hashkontroll. Klienten väljer varken kontoägare eller behörighet.
+Admin/superadmin ger effektiv admin; äldre reader/staff och spelarkonton
+ger effektiv spelare. Studio/Backoffice kräver admin på alla administrativa
+ytor och actions, med färsk lagrad roll/fingerprint/auth_epoch.
+
+Kapabiliteten `sharedCredentials:true` i `/api/auth/session` binder den nya
+gemensamma frontendloggen till installerad backend. Saknad signal bevarar
+de tidigare entry-/modalprotokollen; ingen lösenordsfallback eller klientroll
+läggs till. En misslyckad kapabilitetsläsning blockerar login-POST. Detta
+behövs när Vercel och Render uppdateras vid olika tidpunkter.
+
+Cookies behåller separata game-/backoffice-audiences. Adminlogin kan utfärda
+båda via befintlig signerare på samma tillåtna origin; spelarlogin rensar
+BO/Lab-cookie. En gemensam credential gör inte cookies giltiga på andra
+QA-/produktionshostar. Både namnrymder, live roll och epoch kontrolleras före
+utfärdande, och Origin/Host/CSRF består.
+
+Spelarlösenord hanteras i native Backoffice via signerad Render-command
+`players/password`. Game-Neon äger salt/hash och sessioner; Render låser
+konto/spelare, återkallar och väntar på runtimecancel. `passwordChangeAllowed`
+visas endast för konton med eget spelarlösenord. CRAIG-konton använder
+befintliga invitations-/resetlänkar, även när deras äldre roll är game-only.
+Ingen kontoflytt, plånboksjustering eller schemaändring ingår.
 ## Ägarskap och ordning
 
 Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordning.
