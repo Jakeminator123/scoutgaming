@@ -1,5 +1,12 @@
 # Streaming implementation — 2026-09-28
 
+This file preserves the dated import and synthetic-test record. Branches,
+provider access and pending-work observations below describe that time.
+Current source uses `main` in `Jakeminator123/github-work`; current deployment
+and acceptance are tracked in the [cloud map](../../../docs/CLOUD-MIGRATION.md)
+and [John handoff](../../../docs/JOHN-HANDOFF.md). Historical instructions do
+not authorize GitLab work or a new deployment.
+
 ## GHCR and RunPod access — 2026-09-29
 
 The [CPU-only Docker build](https://github.com/Jakeminator123/github-work/actions/runs/36509057844)
@@ -51,8 +58,9 @@ A manual, SHA-tagged GHCR publish workflow is prepared for the corrected
 `ghcr.io/jakeminator123/astrid-gpu-worker` package. Its first run failed at
 push as recorded above; the corrected target has **not** been run.
 The existing RunPod endpoint and Emil's GitLab repository remain untouched.
-The [cloud GPU plan](../../../docs/ASTRID-GPU-CLOUD-TEST.md) gives blank config,
-private digest pull/rollback and the fixed-phrase cold/warm two-play test.
+The current [cloud migration checklist](../../../docs/CLOUD-MIGRATION.md)
+and [runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) own deployment
+and cold/warm two-play acceptance; the earlier standalone GPU plan was retired.
 
 Local verification for this follow-up: cloud/WebSocket and generated-speech
 tests, 13 relay/TTS tests, nine Python worker tests with real local FFmpeg,
@@ -141,8 +149,9 @@ whether to cache features, change block size or replace the audio encoder.
 
 This section records the standalone clone's handoff. The service is now vendored
 into Croupier and its server/shared-player integration is implemented. See
-`../../../docs/STREAMING-INTEGRATION.md` for current validation and outstanding
-deployment work. The current scoped endpoint configuration has since returned
+[the runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) and
+[John handoff](../../../docs/JOHN-HANDOFF.md) for current validation and
+outstanding deployment work. The scoped endpoint configuration at that time returned
 HTTP 200 to a read-only health request; no GPU job was submitted.
 
 1. Coordinate shared Croupier edits with the cloud/storage chat. Its working

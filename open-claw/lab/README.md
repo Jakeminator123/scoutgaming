@@ -4,12 +4,13 @@ Den här mappen innehåller de två befintliga Render-tjänsternas serverkod,
 Gateway-konfiguration och driftverktyg. Den aktuella arbetsytan för media och
 projekt är [studion i repots lab/](../../lab/docs/README.md).
 
-Arbetsrepo: `Jakeminator123/github-work`, branch `jakemanator123-github-work`.
+Arbetsrepo: `Jakeminator123/github-work`, branch `main`.
 Båda OpenClaw-tjänsterna kör denna GitHub-källa. Den tidigare separata
 labbeditorns installations- och GitLab-instruktioner har tagits bort.
 
-- [Aktuell miljökarta för dator, Render och Vercel](../../_ENVIROMENT-INFO.md)
-- [Verifierad anslutning och aktuellt driftkvitto](docs/CLOUD-ACTIVATION-2026-09-29.md)
+- [Aktuell drift, QA och återstående migrering](../../docs/CLOUD-MIGRATION.md)
+- [Nyckelnamn och placering per tjänst](../../docs/ENVIRONMENT-VARIABLES.md)
+- [Daterat OpenClaw-anslutningskvitto från 29 september](docs/CLOUD-ACTIVATION-2026-09-29.md)
 - [Drift av befintliga Render-tjänster](docs/RENDER-START-SV.md)
 - [Roller, talbeslut och behörigheter](docs/PRODUCT-SPEECH-DEPLOYMENT-SV.md)
 - [Lokal isolerad anslutning](docs/LOCAL-CONNECTION-SV.md)
@@ -21,5 +22,6 @@ Labguiden. Starta inte den äldre editorn parallellt med detta serverpar.
 
 Produktservern på Render anropar Director med sin separat avgränsade
 speech-token. Director anropar privat Gateway med Gateway-nyckeln. Endast
-Gateway har modellleverantörens API-nyckel. Startsidan på Vercel använder
-`CROUPIER_GAME_URL` och har ingen OpenClaw- eller databasanslutning.
+Gateway har modellleverantörens API-nyckel. Vercels frontend använder det
+serverägda origin-/ingresskontraktet i variabelregistret; `CROUPIER_GAME_URL`
+är äldre flagga-av-kompatibilitet. OpenClaw-hemligheterna stannar på servern.

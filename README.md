@@ -4,13 +4,15 @@ Croupier is the working blackjack demo with server-owned game state and a
 shared playback path for four AI dealers. It is a development product, not a
 certified RNG/RGS or a real-money system.
 
-The focused Astrid studio, advanced editor and administration share **Backoffice/Lab**.
+The dealer editor, advanced tools and administration share **Croupier Studio**.
 See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
 The cloud entry is [Croupier on Vercel](https://www.scoutgaming.tech/).
 [The game](https://www.scoutgaming.tech/game) and
-[Backoffice/Lab](https://www.scoutgaming.tech/studio) share that origin.
-Render owns the game engine, APIs and persistent projects. Existing BO tools are available under
-Administration with their original permissions. Observation follows the game
+[Croupier Studio](https://www.scoutgaming.tech/studio) share that origin.
+Render owns the authoritative game engine and live transport. Production still
+uses its Studio/BO persistence; the native Neon replacement is running in isolated
+QA and awaits full AI/GPU acceptance and a coordinated production switch.
+Existing BO tools keep their original permissions. Observation follows the game
 player's receipts; a separate Lab preview requires an explicit action.
 See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)
 and [route guide](docs/LOCAL-PRESENTATION-RUNTIME.md).

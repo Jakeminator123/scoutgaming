@@ -1,12 +1,13 @@
 # Aktuell drift: Director och OpenClaw Gateway
 
 Driftunderlaget gäller `Jakeminator123/github-work` på
-`jakemanator123-github-work`. Tjänsterna finns redan på Render och ska
+`main`. Tjänsterna finns redan på Render och ska
 förvaltas där. De äldre anvisningarna för ett separat labbrepo är borttagna.
 
 Den fullständiga variabellistan och rätt placering finns i
-[rotens miljökarta](../../../_ENVIROMENT-INFO.md). Faktisk kontroll av
-nyckelmatchning finns i [driftkvittot](CLOUD-ACTIVATION-2026-09-29.md).
+[variabelregistret](../../../docs/ENVIRONMENT-VARIABLES.md). Den daterade kontrollen av
+nyckelmatchning finns i [29 september-kvittot](CLOUD-ACTIVATION-2026-09-29.md).
+Aktuell drift och QA finns i [molnkartan](../../../docs/CLOUD-MIGRATION.md).
 
 ## Tjänster och behörighet
 
@@ -17,7 +18,8 @@ nyckelmatchning finns i [driftkvittot](CLOUD-ACTIVATION-2026-09-29.md).
   `OPENCLAW_MODEL_API_KEY` och beständig state på `/data/openclaw`.
 - `croupier-v2`: produktservern har speech-URL/token och separata
   Director-/Lab-rådpar. Den validerar session, kort, saldo och modellbeslut.
-- Vercels Next-startsidor har `CROUPIER_GAME_URL`. Ingen av ovanstående
+- Vercels frontend följer origin-/ingresskontraktet i variabelregistret.
+  `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet. Ingen av ovanstående
   OpenClaw-hemligheter behövs där.
 
 Gateway-starten mappar `OPENCLAWAPI_KEY` till OpenClaws interna

@@ -31,6 +31,12 @@ separat och kopiera den verifierade backupens `lissabon/data` till en tom
 
 ## Beständig molndata
 
+Tabellen beskriver nuvarande produktionslagring. Nya isolerade native-QA
+använder Neon för Studio-policy, metadata och kostnads-/jobbjournaler samt privat
+Blob för beständiga paket. QA:s installerade SDK, sourcepins, budgetjournal och
+kvitton behövs fortfarande för P6 och är inte disponibel cache. Produktionsdisk
+och gamla läsare/skrivare avvecklas först efter verifierat P7-källbyte och P8-prov.
+
 | Tjänst | Datarot | Bevara tillsammans |
 | --- | --- | --- |
 | Produkt/BO/Studio | `/var/data` | `players/croupier.db`, `players/craig.db`, `players/bo.json`, hela `studio/`, använda `generations/` och `speech/` |
@@ -83,6 +89,17 @@ både Web och Lab och bevisade noll skrivare; samma aktuella snapshot krävdes
 omedelbart före aktivering. Studio-index och Director/Gateway behöver sina
 separata fulla diskbackuper. Efter nya Neon-skrivningar är äldre SQLite
 ingen automatisk återgång.
+
+## Disponibel lokal byggcache
+
+`lab/.next/cache`, `apps/croupier-frontend/.next` och deras
+`tsconfig.tsbuildinfo` är återbyggbara. Rensa endast när sessionsvakten saknar
+aktiv session och inga berörda Next-/byggprocesser kör. `lab/tsconfig.json`
+utesluter privat `data/` från appens typkontroll. Labbets övriga `.next`
+innehåller en runtime som det befintliga integrationstestet faktiskt använder;
+behåll den eller kör `npm --prefix lab run build` före full regression.
+Använd exakta sökvägar; rensa inte `lab/data`, privata QA-kvitton, medier
+eller journaler. Interaktiv start använder alltid den koordinerade startaren.
 
 ## Media och regression
 

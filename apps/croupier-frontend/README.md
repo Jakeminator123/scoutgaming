@@ -1,50 +1,56 @@
-# Croupier landing page
+# Croupier frontend
 
-## Lab entry points
+## Aktuell källa och drift
 
-The main site exposes operator shortcuts: `/labb` opens the existing Render
-Lab at `/studio/`, `/labb/filmer` opens its video bank, `/labb/zoner` opens
-background zones, and `/labb/guide` opens the guide. These temporary HTTP 307
-redirects keep Render's existing login and upload handling. They do not host
-the Lab on Vercel or migrate its files to Blob. These links target the live
-Lab, including if this directory is manually deployed as a design preview;
-they are not links to an isolated Lab test environment.
+Den här katalogen är Vercel-projektet `croupier-frontend` i
+[Jakeminator123/github-work](https://github.com/Jakeminator123/github-work),
+branch `main`. [Startsida](https://www.scoutgaming.tech/),
+[spel](https://www.scoutgaming.tech/game) och
+[Croupier Studio](https://www.scoutgaming.tech/studio) har samma publika origin.
+Studio byggs i ett separat Vercel-projekt; Render äger auktoritativ spelmotor
+och live-transport. Se [driftkartan](../../docs/CLOUD-MIGRATION.md) och
+[senaste verifierade leverans](../../docs/JOHN-HANDOFF.md) för produktion och QA.
 
-## Current deployment — 2026-09-29
+Med `CROUPIER_VERCEL_UI=1` använder frontend de incheckade route-/ingress-
+kontrakten och paketerade produktgränssnitten. `/lab`, `/labb` och äldre
+Studio-adresser omdirigerar till `/studio`; video-, zon- och guidegenvägar
+behåller sina undersidor. Utan flaggan används de äldre Render-genvägarna och
+`CROUPIER_GAME_URL`. Den grenen behövs ännu och är inte en isolerad QA-konfiguration.
+`/demo` länkar till det serverägda spelet. Den oanvända klientbaserade
+blackjack-demon, dubbla CSS-filen och oanvända UI-/tema-/hookkomponenter är borttagna.
+Den aktiva Button-komponenten och landningssidans kortsymboler är kvar.
 
-The Git-connected landing page is [croupier-frontend.vercel.app](https://croupier-frontend.vercel.app/). Vercel project `croupier-frontend` builds this directory from `Jakeminator123/github-work`, branch `main`. `CROUPIER_GAME_URL` is stored for Production and Preview as `https://croupier-v2.onrender.com/blackjack?dealer=astrid`. Both game links open the Render-hosted game. See the [delivery handoff](../../docs/JOHN-HANDOFF.md) for the latest verified deployment and checks.
+Native Studio/Neon och nya speladresser provas i en separat QA-miljö.
+Produktion använder ännu äldre BO-/Studio-grenar tills full AI/GPU-acceptans
+och det samordnade källbytet är verifierade. `/blackjack` är idag spelarentré,
+`/game` spelet; målbilden är `/player-login` respektive `/blackjack`.
 
-The old Vercel projects `github-work-vercel-entry`, `croupier-landing-preview-qa` and `modern-landing-page` have been removed. The separate source repository `Jakeminator123/croupier-frontend` was also removed after import; this directory is the maintained source. See the [current cloud map](../../docs/CLOUD-CURRENT-STATE-2026-09-29.md) and [frontend migration contract](../../docs/VERCEL-FRONTEND-MIGRATION.md) before changing deployments or game routing.
+## Landningssidans uppspelning
 
-Import receipt: this directory came from `Jakeminator123/croupier-frontend`, `main` at commit `2ec2b3f2f7ea11c57f703f58a8fecdb540e5649c`, on 2026-09-29. That repository was previously named `modern-landing-page`.
+Startsida och spelknappar renderas direkt. Datorintrot laddas efter hydration
+och spelas en gång per full sidladdning. Mobil och surfplatta importerar varken
+introfilmer eller de extra desktopeffekterna. Reduced motion, dold sida,
+history-navigation och ändrad enhetskapacitet lämnar sidan användbar.
+Skip/Escape, mediefel och watchdog frigör intro; teardown släpper video/WebGL.
+Originalmedier och den delade fyrdealerspelaren ändras inte av frontendstädningen.
 
-This is a [Next.js](https://nextjs.org) landing page. `/` shows the imported design and `/demo` links to the server-owned blackjack game. `CROUPIER_GAME_URL` sets the exact target for both game links on `/demo`; without it, the existing `https://croupier-v2.onrender.com/blackjack?dealer=astrid` pilot link is used. This page has no database. The unused client-only `BlackjackGame` component is retained as upstream source but is not routed publicly.
+## Lokal verifiering och QA
 
-The landing content and game links render directly. On computers, the original
-fullscreen retro HTML scene and Astrid avatar intro load after hydration and
-play once per full page load. Phones and tablets never import that intro or
-request its videos, including iPad desktop mode. Touchscreen laptops remain
-computers, and a narrow desktop window still plays the intro. Reduced motion,
-restored scroll, hidden pages, browsing gestures and history navigation leave
-the page usable without a late overlay. Skip/Escape, media errors and a 30 s
-watchdog release the intro; teardown releases videos and WebGL resources.
-The server renders a still Astrid poster and working links. Mobile,
-touch devices and reduced-motion clients never import the other desktop effects:
-no autoplay videos, card stream, parallax, floor, laser or WebGL renderer.
-The optional desktop bundle loads only while the page is visible at >=1024px
-with a fine hovering pointer, no touch points and motion allowed. Hiding the
-page or losing those capabilities unmounts all effects; an in-flight import
-cannot reactivate them after a resize or navigation. The floor renderer also
-retains its own visibility gate. Original media remain untouched.
+```sh
+pnpm install --frozen-lockfile
+pnpm exec tsc --noEmit
+pnpm build
+```
 
-## Isolated Preview
+`npm test` kör SSR-, routing-, autentiserings- och uppspelningsregressioner.
+Bygget kör testerna före `next build`; separat typkontroll krävs eftersom
+Next-konfigurationen tills vidare hoppar över byggens typfel.
+Interaktiva produkt-/labbprov använder den gemensamma sessionsvakten.
 
-The former standalone landing QA project has been removed. Use this project's Preview workflow for future design previews, explicitly configuring `CROUPIER_GAME_URL` to an isolated game target before gameplay QA: the current Preview value still points to production Render. The separate `croupier-player-preview-qa` remains because it holds the private Blob and Neon connections. Its game proxy targets `croupier-vercel-preview-qa` on Render, whose separate disk and empty SQLite test database are currently suspended. The connected Neon resources are not yet runtime databases.
+Preview är inte automatiskt isolerad från produktion. Använd bara rätt QA-
+backend, separat databas och hostname för syntetiskt spelprov; följ driftkartan.
+Ta inte bort lagringsprojektet `croupier-player-preview-qa` som en dubblett.
 
-For a reviewable local build, use `pnpm install --frozen-lockfile`, `pnpm exec tsc --noEmit`, and `pnpm build` from this directory. The local Croupier server session guard still applies to any interactive product run.
-
-`npm test` runs the landing SSR and decorative-playback lifecycle regressions.
-The normal build script runs these tests before `next build`; type checking
-is also required separately because Next's build currently skips type errors.
-
-Any future design changes from a separate repository need a deliberate import here with a new source commit receipt. The old Vercel project behind the original v0 integration has been deleted; do not treat that old connection as an active deployment target.
+Importproveniens: katalogen kom från `Jakeminator123/croupier-frontend`,
+`main` på `2ec2b3f2f7ea11c57f703f58a8fecdb540e5649c`, 29 september 2026.
+Den fristående källan och äldre v0/Vercel-projekt är avvecklade.

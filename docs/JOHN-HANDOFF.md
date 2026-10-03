@@ -3,6 +3,48 @@
 Uppdaterad 3 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Städning och aktuell systemkarta — 3 oktober
+
+Städningen utgår från ren GitHub-main `b7940dd82078794d38ff9e2466e5aea615aae877`.
+Den tar bort 62 frontendfiler: oanvänd klientblackjack, UI-/tema-/hookscaffold
+och dubbla stylesheet, samt 41 exklusiva direktberoenden. Låsfilen regenererades
+offline utan nya versionsbindningar; fryst installation tog bort 134 lokala paket. Aktiv Button, landningssida,
+kortsymboler, serverägda spelrutter och fyrdealerspelaren behålls.
+Pensionerad GitLab-GPU-CI och den gamla dubbla miljökartan tas bort;
+dokumentlänkar går till de befintliga fem docs och aktuell OpenClaw-guide.
+Duplicerade agentprompter i masterplanen ersätts av dess aktuella acceptanschecklista.
+
+Lokal Next-/TypeScript-cache rensas på exakta paths efter read-only kontroll:
+sessionsvakten har ingen sessionspost, inga lokala produkt-/labbportar lyssnar
+och de main-bundna Node-processerna är GitGuardian-MCP. Inga privata QA-bevis,
+SDK, sourcepins, kostnadsjournaler, konton, råmedia eller kalibreringar raderas.
+Labbets gamla hela `.next` rensades först. Full regression visade då ett enda
+fel: anslutningstestet kräver en verifierad Next-runtime. Den är återbyggd;
+slutstädningen behåller 8 211 983 byte runtime och tar bara dess cache. Netto
+frigörs 1 032 360 345 byte bygglagring (cirka 1,03 GB). Frontendens hela
+byggutdata och båda TypeScript-cachefilerna kan tas bort efter verifieringen.
+
+Den uppdaterade [systemkartan](CLOUD-MIGRATION.md#ytor-och-datalagring--produktion-och-nya-qa)
+skiljer produktion, nya QA och mål efter P7. Senaste QA-installation/fyrdealerprov
+gäller `966991ef`; native90 gäller äldre `190399`. Full AI/GPU,
+loader/cookie-bevis, produktionsimport, P7 och den större P8-avvecklingen återstår.
+
+GitHub-startstatus på `b7940dd8`: 3/3 CI success, båda Vercel-statusar success,
+GitGuardian-suite queued och ingen GG-run. Intended workspace/source är återläst
+med read-only MCP: fem TRIGGERED-ID:n `37827237`, `37828386`, `37828691`,
+`37830671`, `37840514`; en incidentsida/fem locationsidor, full incidenttäckning
+men partial fil/rad för två. Inga incidentstatusar ändras av städningen.
+Verifierat: frontend 32/32, explicit TypeScript och produktionsbygge PASS;
+Lab-produktionsbygge inklusive typkontroll och 50 sanerade buildtraces PASS;
+det isolerade native/Next-startprovet PASS efter återbygget. Labbets tsconfig
+utesluter nu privata `data/` ur app-typkontrollen, så SDK-källpaket inte kräver
+leverantörernas utvecklingsberoenden. 123 lokala dokumentlänkar och diffkontroll
+PASS. Den första fulla regressionen gav 1 216 PASS, fem skip och endast felet
+om saknad runtime ovan; leverans kräver ny godkänd full commit-hook efter rättelsen.
+Kontrolloggar ligger privat i Windows temp som `croupier-housekeeping-*.log`.
+Push sker via ordinarie main-helper; slutlig SHA/checkstatus läses från GitHub,
+och detta arbete bockar inte av P6/P7/P8.
+
 ## Börja här vid övertagande
 
 Arbeta i `C:\Users\jakem\Projects\croupier`, på `main` i
@@ -884,10 +926,11 @@ handlerkrav, inte genomförda i dessa helpers. Ingen UI-/API-aktivering ingår.
   Studio-projekt, historik och familjeindex ligger fortfarande på beständig Render-disk.
   Director/Gateway behåller sina befintliga tjänster och diskar.
 
-Molnacceptansen verifierar runtime/media i 22dca5c4; senare slutcommits ändrar bara dokumentation och guide.
-Frontend och Lab är aktiverade på de kanoniska Vercel-adresserna och uppdateras
-från main. Slutleveransen fb3c0860 ändrar bara dokumentation och guideinnehåll;
-båda UI-byggena är publicerade och kontrollerade igen. Render-koden och godkända media är oförändrade.
+Dessa produktionsflyttkvitton gäller `22dca5c4` och dokument-/guideleveransen
+`fb3c0860` från 2 oktober. Frontend och Lab är aktiverade på de kanoniska
+Vercel-adresserna från main. Senare native-QA-kod, installation och städning
+har separata revisioner och bevis överst; dessa äldre kvitton är inte en
+aktuell P6-acceptans.
 
 ## Verifierat
 
@@ -983,7 +1026,8 @@ exakt Neon/Blob-motsvarighet, journalparitet och restart utan diskfallback är b
 Konkreta käll-/env-/diskmål finns i [P8](CLOUD-MIGRATION.md#checklista-och-beroenden).
 Aktiva `test/fixtures`, `tools/`, `web/`, `pipeline/`, medier/kalibreringar,
 konton/saldo, kostnadsjournaler och Director/Gateway/OpenClaw-state behålls.
-Ingen ytterligare kod-/diskradering är verifierat säker före detta byte.
+De större legacy-/diskmålen kan inte raderas före detta byte; den avgränsade
+frontend-, dokumentations- och cachestädningen redovisas överst.
 
 ## Kända öppna kvalitetsfrågor
 
